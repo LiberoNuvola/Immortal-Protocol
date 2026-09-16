@@ -18,8 +18,14 @@ import qualified PlutusTx.AssocMap as AssocMap
 import PlutusTx.Builtins (toBuiltin)
 import PlutusTx.Prelude (BuiltinByteString)
 
-import Economic (oraclePriceFor)
-import Types (OracleDatum (..), OracleStateId (..))
+import Economic
+  ( oraclePriceFor
+  )
+
+import OracleTypes
+  ( OracleDatum (..)
+  , OracleStateId (..)
+  )
 
 data Case = Case
   { caseName :: String

@@ -36,13 +36,16 @@ import GameRules
 
 import Types
   ( PrizeAction (..)
-  , OracleStateId
   , PrizeDatum (..)
   , PrizeStatus (..)
   , BeaconStatus (..)
   , BeaconTarget (..)
   , BeaconRegistryDatum (..)
   , B1PrizePoolDatum (..)
+  )
+
+import OracleTypes
+  ( OracleStateId
   )
 
 -- ============================================================

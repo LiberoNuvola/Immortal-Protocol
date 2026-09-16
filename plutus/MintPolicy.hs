@@ -30,9 +30,12 @@ import Types
   , BeaconStatus (..)
   , B1PrizePoolDatum (..)
   , BeaconTarget (..)
-  , OracleStateId
   , PrizeDatum (..)
   , PrizeStatus (..)
+  )
+
+import OracleTypes
+  ( OracleStateId
   )
 
 -- ============================================================

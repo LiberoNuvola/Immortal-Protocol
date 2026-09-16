@@ -20,9 +20,12 @@ import B1LegacyAdapter ( legacyB1ToAggregateV3View )
 import Types
   ( B1PrizePoolDatum (..)
   , B1PrizePoolAction (..)
-  , OracleStateId
   , PrizeDatum (..)
   , PrizeStatus (..)
+  )
+
+import OracleTypes
+  ( OracleStateId
   )
 
 -- ============================================================
