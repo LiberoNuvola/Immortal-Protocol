@@ -19,7 +19,7 @@ import PlutusLedgerApi.V2.Contexts
 import PlutusTx.Prelude
 import qualified PlutusTx.AssocMap as AssocMap
 
-import Types
+import OracleTypes
   ( OracleStateId (..)
   , OracleDatum (..)
   , precision
@@ -42,6 +42,11 @@ oracleMaxAge = maxOracleAge
 -- | Ceiling division.
 -- Positive economic quantities are rounded upward so a settlement
 -- can never be accepted below its required USDM value.
+--
+-- NOTE:
+-- This remains temporarily in Economic.hs during M4.3.1.
+-- It is removed in M4.3.2 when Economic delegates to the canonical
+-- IMMORTAL EconomicKernel implementation.
 {-# INLINABLE ceilingDiv #-}
 ceilingDiv :: Integer -> Integer -> Integer
 ceilingDiv a b
@@ -56,6 +61,7 @@ ceilingDiv a b
 
   | otherwise =
       (a + b - 1) `divide` b
+
 
 -- | Oracle timestamp validation against the transaction validity
 -- upper bound.
@@ -77,6 +83,7 @@ validOracleTimestamp timestamp info =
     _ ->
       False
 
+
 {-# INLINABLE decodeOracleDatum #-}
 decodeOracleDatum
   :: TxInfo
@@ -97,6 +104,7 @@ decodeOracleDatum info out =
 
     NoOutputDatum ->
       Nothing
+
 
 -- | Resolve an oracle price from the authorized Oracle State reference input.
 --
@@ -153,6 +161,7 @@ oraclePriceFor
         info
         csBytes
         tnBytes
+
 
 -- | Canonical conversion from Value to USDM sub-units.
 --
@@ -221,6 +230,7 @@ totalUsdmValue info oracleState publisher val =
               refs
               csBytes
               rest
+
 
 -- | Canonical Pool valuation excluding the protocol singleton NFT.
 {-# INLINABLE poolUsdmValue #-}
