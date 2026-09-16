@@ -27,6 +27,10 @@ import OracleTypes
   , maxOracleAge
   )
 
+import EconomicKernel
+  ( ceilingDiv
+  )
+
 {-# INLINABLE usdmPrecision #-}
 usdmPrecision :: Integer
 usdmPrecision = precision
@@ -38,29 +42,6 @@ adaMinUtxo = minUtxoLovelace
 {-# INLINABLE oracleMaxAge #-}
 oracleMaxAge :: Integer
 oracleMaxAge = maxOracleAge
-
--- | Ceiling division.
--- Positive economic quantities are rounded upward so a settlement
--- can never be accepted below its required USDM value.
---
--- NOTE:
--- This remains temporarily in Economic.hs during M4.3.1.
--- It is removed in M4.3.2 when Economic delegates to the canonical
--- IMMORTAL EconomicKernel implementation.
-{-# INLINABLE ceilingDiv #-}
-ceilingDiv :: Integer -> Integer -> Integer
-ceilingDiv a b
-  | b == 0 =
-      traceError "Economic: division by zero"
-
-  | a <= 0 =
-      0
-
-  | b < 0 =
-      traceError "Economic: invalid divisor"
-
-  | otherwise =
-      (a + b - 1) `divide` b
 
 
 -- | Oracle timestamp validation against the transaction validity
