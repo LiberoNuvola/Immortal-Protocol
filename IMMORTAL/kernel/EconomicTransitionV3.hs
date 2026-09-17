@@ -41,7 +41,7 @@ transition s (Issue cid price) =
       | price /= canonicalPrice -> Nothing
       | not (EconomicKernel.classSaleable s cid) -> Nothing
       | otherwise ->
-          case updateClass cid issueClass (v3Classes s) of
+          case updateClass cid (issueClass price) (v3Classes s) of
             Nothing -> Nothing
             Just cs ->
               Just s
@@ -49,13 +49,6 @@ transition s (Issue cid price) =
                 , v3UnresolvedTicketCount = v3UnresolvedTicketCount s + 1
                 , v3Classes = cs
                 }
-  where
-    issueClass c =
-      c
-        { tcsIssued = tcsIssued c + 1
-        , tcsUnresolved = tcsUnresolved c + 1
-        , tcsExposure = tcsExposure c + price
-        }
 
 transition s (Reveal cid payout) =
   case classPrice cid of
@@ -63,7 +56,7 @@ transition s (Reveal cid payout) =
     Just price
       | not (EconomicKernel.payoutSufficient price payout) -> Nothing
       | otherwise ->
-          case updateClass cid revealClass (v3Classes s) of
+          case updateClass cid (revealClass price) (v3Classes s) of
             Nothing -> Nothing
             Just cs
               | totalUnresolved cid (v3Classes s) <= 0 -> Nothing
@@ -78,12 +71,6 @@ transition s (Reveal cid payout) =
                         v3UnresolvedTicketCount s - 1
                     , v3Classes = cs
                     }
-  where
-    revealClass c =
-      c
-        { tcsUnresolved = tcsUnresolved c - 1
-        , tcsExposure = tcsExposure c - price
-        }
 
 transition s (Claim amount)
   | amount <= 0 = Nothing
@@ -98,7 +85,7 @@ transition s (Expire cid) =
   case classPrice cid of
     Nothing -> Nothing
     Just price ->
-      case updateClass cid expireClass (v3Classes s) of
+      case updateClass cid (expireClass price) (v3Classes s) of
         Nothing -> Nothing
         Just cs
           | totalUnresolved cid (v3Classes s) <= 0 -> Nothing
@@ -111,12 +98,31 @@ transition s (Expire cid) =
                     v3UnresolvedTicketCount s - 1
                 , v3Classes = cs
                 }
-  where
-    expireClass c =
-      c
-        { tcsUnresolved = tcsUnresolved c - 1
-        , tcsExposure = tcsExposure c - price
-        }
+
+{-# INLINABLE issueClass #-}
+issueClass :: Integer -> TicketClassState -> TicketClassState
+issueClass price c =
+  c
+    { tcsIssued = tcsIssued c + 1
+    , tcsUnresolved = tcsUnresolved c + 1
+    , tcsExposure = tcsExposure c + price
+    }
+
+{-# INLINABLE revealClass #-}
+revealClass :: Integer -> TicketClassState -> TicketClassState
+revealClass price c =
+  c
+    { tcsUnresolved = tcsUnresolved c - 1
+    , tcsExposure = tcsExposure c - price
+    }
+
+{-# INLINABLE expireClass #-}
+expireClass :: Integer -> TicketClassState -> TicketClassState
+expireClass price c =
+  c
+    { tcsUnresolved = tcsUnresolved c - 1
+    , tcsExposure = tcsExposure c - price
+    }
 
 {-# INLINABLE totalUnresolved #-}
 totalUnresolved :: TicketClass -> [TicketClassState] -> Integer

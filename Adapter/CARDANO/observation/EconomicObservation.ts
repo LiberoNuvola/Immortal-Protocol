@@ -1,4 +1,4 @@
-import type { EconomicStateV3 } from '../serialization/CanonicalEconomicState'
+import { validateEconomicStateV3, type EconomicStateV3 } from '../serialization/CanonicalEconomicState'
 
 export type ObservationSource =
   | 'datum'
@@ -25,12 +25,9 @@ export function acceptEconomicObservation(
   }
 
   try {
-    // Runtime validation is intentionally performed at the Adapter boundary.
-    // The observation layer does not create economic state; it only accepts
-    // a state already decoded from an authoritative chain object.
-    const { validateEconomicStateV3 } =
-      require('../serialization/CanonicalEconomicState') as typeof import('../serialization/CanonicalEconomicState')
-
+    // Runtime validation is performed at the Adapter boundary.
+    // The observation layer does not create economic state; it validates
+    // state already decoded from an authoritative chain object.
     validateEconomicStateV3(observation.state)
     return { ok: true, observation }
   } catch (e) {

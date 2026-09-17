@@ -1,3 +1,11 @@
+
+const CANONICAL_PRICES = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n]
+
+function canonicalPrice(classId: bigint): bigint | undefined {
+  if (classId < 0n || classId > 7n) return undefined
+  return CANONICAL_PRICES[Number(classId)]
+}
+
 export type TicketClassStateV3 = {
   classId: bigint
   issued: bigint
@@ -62,6 +70,17 @@ export function validateEconomicStateV3(s: EconomicStateV3): void {
     const key = c.classId.toString()
     if (ids.has(key)) throw new Error(`Duplicate ticket class ${key}`)
     ids.add(key)
+
+    const price = canonicalPrice(c.classId)
+    if (price === undefined) {
+      throw new Error(`Unknown canonical ticket class ${key}`)
+    }
+    const expectedExposure = price * c.unresolved
+    if (c.exposure !== expectedExposure) {
+      throw new Error(
+        `Class ${key} exposure mismatch: expected ${expectedExposure}, got ${c.exposure}`,
+      )
+    }
 
     reserve += c.exposure
     unresolved += c.unresolved
