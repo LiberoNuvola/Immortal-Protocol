@@ -93,23 +93,6 @@ if (!RELAYER_PRIVATE_KEY) {
 // Script loading
 // ---------------------------------------------------------------------------
 
-function loadJsonScript(relativePath) {
-  const fullPath = path.resolve(__dirname, relativePath)
-  const raw = fs.readFileSync(fullPath, 'utf8')
-  const env = JSON.parse(raw)
-
-  if (!env || typeof env.cborHex !== 'string') {
-    throw new Error(
-      `Invalid script envelope at ${fullPath}`,
-    )
-  }
-
-  return {
-    type: 'PlutusV2',
-    script: env.cborHex,
-  }
-}
-
 const TREASURY_SCRIPT =
   loadScript(TREASURY_SCRIPT_PATH)
 
@@ -118,8 +101,7 @@ const BEACON_REGISTRY_SCRIPT_PATH =
   '../plutus/out/beaconRegistry.plutus.json'
 
 const BEACON_REGISTRY_SCRIPT =
-  loadJsonScript(BEACON_REGISTRY_SCRIPT_PATH)
-
+  loadScript(BEACON_REGISTRY_SCRIPT_PATH)
 // ---------------------------------------------------------------------------
 // Treasury configuration
 // ---------------------------------------------------------------------------
