@@ -1,5 +1,6 @@
 import {
   applyParamsToScript,
+  type Data,
   type Script,
 } from 'lucid-cardano'
 
@@ -20,7 +21,7 @@ export function toLucidScript(
 
 export function applyScriptParams(
   cborHex: string,
-  params: unknown[],
+  params: Data[],
 ): string {
   return applyParamsToScript(
     cborHex,
