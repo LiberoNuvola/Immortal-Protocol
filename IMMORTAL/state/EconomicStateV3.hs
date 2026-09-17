@@ -1,10 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DerivingStrategies #-}
 
--- | Canonical, chain-neutral V3 economic state.
---
--- This module intentionally contains no Cardano/PlutusLedgerApi types.
--- It is the state contract consumed by the pure Economic Kernel.
 module EconomicStateV3
   ( TicketClass
   , canonicalClasses
@@ -19,16 +15,12 @@ module EconomicStateV3
 
 import PlutusTx.Prelude
 
--- | Canonical ticket-class identifier.
--- 0..7 correspond to 1/2/3/5/10/25/50/100 USDM.
 type TicketClass = Integer
 
 {-# INLINABLE canonicalClasses #-}
 canonicalClasses :: [TicketClass]
 canonicalClasses = [0,1,2,3,4,5,6,7]
 
--- | Canonical class price in USDM.
--- This is a fixed protocol ladder; it is not a configurable economic input.
 {-# INLINABLE classPrice #-}
 classPrice :: TicketClass -> Maybe Integer
 classPrice c
@@ -42,24 +34,17 @@ classPrice c
   | c == 7 = Just 100
   | otherwise = Nothing
 
--- | Per-class V3 economic state.
---
--- tcsSaleable is an explicit state surface for compatibility with the
--- canonical specification, but the Kernel treats the deterministic
--- saleability predicate as authoritative. Implementations must not allow
--- this field to become an independent source of truth.
 data TicketClassState = TicketClassState
-  { tcsClassId   :: TicketClass
-  , tcsIssued    :: Integer
+  { tcsClassId :: TicketClass
+  , tcsIssued :: Integer
   , tcsUnresolved :: Integer
-  , tcsExposure  :: Integer
-  , tcsCap       :: Integer
-  , tcsSaleable  :: Bool
+  , tcsExposure :: Integer
+  , tcsCap :: Integer
+  , tcsSaleable :: Bool
   }
 
--- | Historical/control state.
 data EconomicControlState = EconomicControlState
-  { ecsCurrentActiveClass    :: TicketClass
+  { ecsCurrentActiveClass :: TicketClass
   , ecsHighestClassEverActivated :: TicketClass
   }
 
@@ -72,40 +57,34 @@ data JackpotStatus
 instance Eq JackpotStatus where
   {-# INLINABLE (==) #-}
   JackpotInactive == JackpotInactive = True
-  JackpotLocked   == JackpotLocked   = True
-  JackpotPayable  == JackpotPayable  = True
-  JackpotClosed   == JackpotClosed   = True
-  _               == _               = False
+  JackpotLocked == JackpotLocked = True
+  JackpotPayable == JackpotPayable = True
+  JackpotClosed == JackpotClosed = True
+  _ == _ = False
 
--- | Jackpot state. Status/cycle are persisted because they are not
--- reconstructible from the legacy B1 datum.
 data JackpotState = JackpotState
   { jsLockedAmount :: Integer
-  , jsThreshold    :: Integer
-  , jsStatus       :: JackpotStatus
-  , jsCycle        :: Integer
+  , jsThreshold :: Integer
+  , jsStatus :: JackpotStatus
+  , jsCycle :: Integer
   }
 
--- | Canonical V3 PrizePool economic state.
 data V3EconomicState = V3EconomicState
   { v3CrystallizedLiabilities :: Integer
-  , v3UnresolvedReserve       :: Integer
-  , v3UnresolvedTicketCount   :: Integer
-  , v3SafetyCapital           :: Integer
-  , v3ReserveProtection       :: Integer
-  , v3MandatoryFutureCosts    :: Integer
-  , v3Classes                 :: [TicketClassState]
-  , v3Control                 :: EconomicControlState
-  , v3Jackpot                 :: JackpotState
+  , v3UnresolvedReserve :: Integer
+  , v3UnresolvedTicketCount :: Integer
+  , v3SafetyCapital :: Integer
+  , v3ReserveProtection :: Integer
+  , v3MandatoryFutureCosts :: Integer
+  , v3Classes :: [TicketClassState]
+  , v3Control :: EconomicControlState
+  , v3Jackpot :: JackpotState
   }
 
--- | Empty deterministic starting shape. It deliberately does not invent
--- class caps or jackpot thresholds; those must be supplied by protocol state.
 {-# INLINABLE zeroV3EconomicState #-}
 zeroV3EconomicState :: V3EconomicState
 zeroV3EconomicState =
   V3EconomicState
-    0 0 0 0 0 0
-    []
+    0 0 0 0 0 0 []
     (EconomicControlState 0 0)
     (JackpotState 0 0 JackpotInactive 0)

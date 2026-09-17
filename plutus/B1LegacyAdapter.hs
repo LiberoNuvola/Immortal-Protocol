@@ -3,14 +3,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- | Explicit compatibility boundary between legacy B1 and canonical V3.
---
--- This module is intentionally Cardano-facing because B1 contains ScriptHash.
--- The Kernel never imports this module.
 module B1LegacyAdapter
   ( LegacyProjectionError (..)
   , legacyB1ToV3
-  , legacyB1ToAggregateV3View,`r`n  v3ToLegacyB1
+  , legacyB1ToAggregateV3View
+  , v3ToLegacyB1
   , legacyAggregateMatchesV3
   , legacyProjectionIsLossless
   , legacySuspendedMask
@@ -20,10 +17,10 @@ import PlutusLedgerApi.V2
 import PlutusTx
 import PlutusTx.Prelude
 
-import Types
-  ( B1PrizePoolDatum (..)
-  )
-import EconomicStateV3`r`nimport qualified EconomicKernel
+import Types (B1PrizePoolDatum (..))
+import EconomicStateV3
+import qualified EconomicKernel
+
 data LegacyProjectionError
   = LegacyHasUnresolvedTickets
   | LegacyMissingClassComposition
@@ -39,60 +36,33 @@ data LegacyProjectionError
 
 PlutusTx.unstableMakeIsData ''LegacyProjectionError
 
--- | Safe direction: legacy B1 can only become a full V3 state when no
--- information absent from B1 is required. In particular, unresolved
--- class composition cannot be guessed from aggregate reserve/count.
 {-# INLINABLE legacyB1ToV3 #-}
-legacyB1ToV3
-  :: B1PrizePoolDatum
-  -> Either LegacyProjectionError V3EconomicState
+legacyB1ToV3 :: B1PrizePoolDatum -> Either LegacyProjectionError V3EconomicState
 legacyB1ToV3 d
-  | ppUnresolvedTicketCount d /= 0 =
-      Left LegacyHasUnresolvedTickets
-  | ppUnresolvedReserve d /= 0 =
-      Left LegacyAggregateMismatch
-  | ppLockedJackpot d /= 0 =
-      Left LegacyMissingJackpotLifecycle
+  | ppUnresolvedTicketCount d /= 0 = Left LegacyHasUnresolvedTickets
+  | ppUnresolvedReserve d /= 0 = Left LegacyAggregateMismatch
+  | ppLockedJackpot d /= 0 = Left LegacyMissingJackpotLifecycle
   | otherwise =
       Right
         (V3EconomicState
-          (ppPendingLiabilities d)
-          0
-          0
-          0
-          0
-          0
-          []
+          (ppPendingLiabilities d) 0 0 0 0 0 []
           (EconomicControlState 0 0)
           (JackpotState 0 (ppJackpotThreshold d) JackpotInactive 0)
         )
 
--- | Compatibility-only aggregate view used while B1 remains the live
--- | chain representation. B1 does not encode per-class composition, so
--- | this view is intentionally NOT a canonical V3 reconstruction.
--- |
--- | It exists only to delegate aggregate arithmetic to the pure Kernel
--- | during the compatibility migration. Do not use it for V3 serialization
--- | or class-aware conformance.
 {-# INLINABLE legacyB1ToAggregateV3View #-}
-legacyB1ToAggregateV3View
-  :: B1PrizePoolDatum
-  -> V3EconomicState
+legacyB1ToAggregateV3View :: B1PrizePoolDatum -> V3EconomicState
 legacyB1ToAggregateV3View d =
   V3EconomicState
     (ppPendingLiabilities d)
     (ppUnresolvedReserve d)
     (ppUnresolvedTicketCount d)
-    0
-    0
-    0
+    0 0 0
     [ TicketClassState
-        0
-        0
+        0 0
         (ppUnresolvedReserve d)
         (ppUnresolvedReserve d)
-        0
-        False
+        0 False
     ]
     (EconomicControlState 0 0)
     (JackpotState
@@ -102,9 +72,7 @@ legacyB1ToAggregateV3View d =
          then JackpotLocked
          else JackpotInactive)
       0)
--- | Project a V3 state to legacy B1 only when the fields that B1 cannot
--- represent are neutral. Total liquidity and prize hash remain explicit
--- chain-facing inputs.
+
 {-# INLINABLE v3ToLegacyB1 #-}
 v3ToLegacyB1
   :: Integer
@@ -112,14 +80,10 @@ v3ToLegacyB1
   -> V3EconomicState
   -> Either LegacyProjectionError B1PrizePoolDatum
 v3ToLegacyB1 totalLiquidity prizeHash s
-  | v3SafetyCapital s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | v3ReserveProtection s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | v3MandatoryFutureCosts s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | jsLockedAmount (v3Jackpot s) /= 0 =
-      Left V3ContainsUnsupportedJackpotState
+  | v3SafetyCapital s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | v3ReserveProtection s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | v3MandatoryFutureCosts s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | jsLockedAmount (v3Jackpot s) /= 0 = Left V3ContainsUnsupportedJackpotState
   | ecsHighestClassEverActivated (v3Control s)
       /= ecsCurrentActiveClass (v3Control s) =
       Left LegacyMissingHistoricalControl
@@ -135,10 +99,8 @@ v3ToLegacyB1 totalLiquidity prizeHash s
           0
           (jsThreshold (v3Jackpot s))
           (legacySuspendedMask (v3Control s))
-          prizeHash
-        )
+          prizeHash)
 
--- | Explicitly document the lossy boundary.
 {-# INLINABLE legacyAggregateMatchesV3 #-}
 legacyAggregateMatchesV3 :: B1PrizePoolDatum -> V3EconomicState -> Bool
 legacyAggregateMatchesV3 d s =
@@ -158,7 +120,6 @@ legacyProjectionIsLossless s =
        == ecsCurrentActiveClass (v3Control s)
   && EconomicKernel.conservationInvariant s
 
--- | Legacy bitmask encoding of classes above currentActiveClass.
 {-# INLINABLE legacySuspendedMask #-}
 legacySuspendedMask :: EconomicControlState -> Integer
 legacySuspendedMask c =
@@ -167,5 +128,5 @@ legacySuspendedMask c =
     active = ecsCurrentActiveClass c
     maskFrom i
       | i > 7 = 0
-      | i > active = (2 `multiply` maskFrom (i + 1)) + 1
-      | otherwise = 2 `multiply` maskFrom (i + 1)
+      | i > active = 2 * maskFrom (i + 1) + 1
+      | otherwise = 2 * maskFrom (i + 1)

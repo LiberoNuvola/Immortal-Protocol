@@ -13,6 +13,10 @@ export type ScriptEnvelope = {
 export function toLucidScript(
   env: ScriptEnvelope,
 ): Script {
+  if (!env || typeof env.cborHex !== 'string' || env.cborHex.length === 0) {
+    throw new Error('Invalid Cardano script envelope')
+  }
+
   return {
     type: 'PlutusV2',
     script: env.cborHex,
@@ -23,8 +27,9 @@ export function applyScriptParams(
   cborHex: string,
   params: Data[],
 ): string {
-  return applyParamsToScript(
-    cborHex,
-    params,
-  )
+  if (!cborHex) {
+    throw new Error('Cannot parameterize an empty script')
+  }
+
+  return applyParamsToScript(cborHex, params)
 }

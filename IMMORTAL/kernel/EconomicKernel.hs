@@ -1,8 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Pure, chain-neutral PRE-RICH economic kernel.
---
--- No TxInfo / TxOut / Value / Datum / Redeemer / UTxO / Lucid dependencies.
 module EconomicKernel
   ( ceilingDiv
   , classExposure
@@ -38,7 +35,7 @@ ceilingDiv a b
 classExposure :: TicketClassState -> Integer
 classExposure c =
   case classPrice (tcsClassId c) of
-    Just p  -> p * tcsUnresolved c
+    Just p -> p * tcsUnresolved c
     Nothing -> 0
 
 {-# INLINABLE totalClassExposure #-}
@@ -53,14 +50,11 @@ totalUnresolvedCount [] = 0
 totalUnresolvedCount (c:cs) =
   tcsUnresolved c + totalUnresolvedCount cs
 
--- | V3 worst-case normal payout exposure.
 {-# INLINABLE worstCaseExposure #-}
 worstCaseExposure :: V3EconomicState -> Integer
 worstCaseExposure s =
   500 * totalClassExposure (v3Classes s)
 
--- | EffectivePool = EEV - crystallized liabilities
---   - unresolved price reserve - locked jackpot.
 {-# INLINABLE effectivePool #-}
 effectivePool :: Integer -> V3EconomicState -> Integer
 effectivePool eev s =
@@ -69,7 +63,6 @@ effectivePool eev s =
     - v3UnresolvedReserve s
     - jsLockedAmount (v3Jackpot s)
 
--- | Capital that must remain protected.
 {-# INLINABLE protectedCapital #-}
 protectedCapital :: V3EconomicState -> Integer
 protectedCapital s =
@@ -85,9 +78,6 @@ rawSurplus :: Integer -> V3EconomicState -> Integer
 rawSurplus eev s =
   max 0 (eev - protectedCapital s)
 
--- | Deterministic saleability for the current state.
--- The stored tcsSaleable flag is deliberately ignored as an independent
--- truth source. Numerical hysteresis thresholds remain external/open.
 {-# INLINABLE classSaleable #-}
 classSaleable :: V3EconomicState -> TicketClass -> Bool
 classSaleable s cid =
@@ -116,15 +106,12 @@ reserveExpiryDelta priceUsdm = negate priceUsdm
 
 {-# INLINABLE liabilityRevealDelta #-}
 liabilityRevealDelta :: Integer -> Integer
-liabilityRevealDelta prizeAmount =
-  max 0 prizeAmount
+liabilityRevealDelta prizeAmount = max 0 prizeAmount
 
 {-# INLINABLE liabilityClaimDelta #-}
 liabilityClaimDelta :: Integer -> Integer
-liabilityClaimDelta claimedAmount =
-  negate (max 0 claimedAmount)
+liabilityClaimDelta claimedAmount = negate (max 0 claimedAmount)
 
--- | A payout must be non-negative and no greater than 500x ticket price.
 {-# INLINABLE payoutSufficient #-}
 payoutSufficient :: Integer -> Integer -> Bool
 payoutSufficient priceUsdm payoutAmount =
@@ -132,7 +119,6 @@ payoutSufficient priceUsdm payoutAmount =
   && payoutAmount >= 0
   && payoutAmount <= 500 * priceUsdm
 
--- | Canonical solvency predicate.
 {-# INLINABLE solvencyInvariant #-}
 solvencyInvariant :: Integer -> V3EconomicState -> Bool
 solvencyInvariant eev s =
@@ -146,7 +132,6 @@ solvencyInvariant eev s =
   && jsLockedAmount (v3Jackpot s) >= 0
   && eev >= protectedCapital s
 
--- | Stored aggregate fields must equal their class decomposition.
 {-# INLINABLE conservationInvariant #-}
 conservationInvariant :: V3EconomicState -> Bool
 conservationInvariant s =
