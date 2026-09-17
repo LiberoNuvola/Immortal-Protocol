@@ -1,141 +1,60 @@
-# PRE-RICH
+# IMMORTAL Protocol — Documentation
 
-**An open-source decentralized economic framework for designing transparent, programmable and resilient systems for coordinating value.**
+## IMMORTAL v3.0.0
 
-**Scratch & Win is the first concrete implementation of the PRE-RICH framework, currently developed on Cardano.**
+This directory contains the crystallized IMMORTAL v3.0.0 specification and its associated
+certification, audit, explanatory, and historical material.
 
-> **PRE-RICH is an open protocol to be extended, not a product to be copied. Scratch & Win is only the first implementation.**
+### Authority model
 
-## Status
 
-| Area | Current status |
-|---|---|
-| Economic semantics | **Closed** |
-| B1 architecture | **Substantially implemented** |
-| Cryptographic core | **Final validation** |
-| State-machine conformance | **In progress** |
-| Economic implementation conformance | **Open / closing** |
-| B3 / canonical Beacon | **Target / in progress** |
-| Mainnet | **Not ready** |
+Constitution
+    ↓
+Normative specification
+    ↓
+Contracts
+    ↓
+Certification requirements
+    ↓
+Audit / evidence
+    ↓
+Implementation conformance
 
-Publishing the repository openly does **not** imply production readiness or mainnet readiness.
 
-## What is PRE-RICH?
+**Normative authority comes from the canonical specification and contracts.** Certification
+and audit documents record what must be demonstrated and what evidence has been established;
+they do not create new normative authority.
 
-PRE-RICH is an open protocol/framework for economic systems whose important rules can be made explicit, inspectable and programmatically enforceable.
+## Reading order
 
-Its design direction includes:
+1. `00-normative/01_CONSTITUTION_FINAL.md` — root authority
+2. `00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md` — universal economic model
+3. `00-normative/03_ECONOMIC_KERNEL_FINAL.md` — economic kernel and formal results
+4. `00-normative/04_STATE_TRANSITION_SPECIFICATION.md` — state-transition discipline
+5. `00-normative/05_INVARIANTS_CONSERVATION_FINAL.md` — invariants and conservation
+6. `02-analysis/06_ADVERSARIAL_GAME_THEORETIC_FINAL.md` — adversarial analysis
+7. `00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` — conformance requirements
+8. `01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md` — proof register
+9. `01-formal-records/09_DECISION_REGISTER_FINAL.md` — decision record
+10. `01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md` — closure matrix
+11. `01-contracts/` — liveness, upgrade, composition and Ω contracts
+12. `02-analysis/` — adversarial and game-theoretic analysis
+13. `02-certification/` — concrete-kernel, refinement, accounting, EEV and related certification specifications
+14. `03-audit/` — status, residual obligations, traceability, claim and mechanical-verification records
+15. `04-guides/` — algorithm guide and non-mathematical explanation
+16. `05-history/` — historical change records
 
-- deterministic and auditable economic rules;
-- explicit solvency and liability constraints;
-- programmable state transitions;
-- blockchain-enforced settlement;
-- transparent verification;
-- participatory and extensible protocol design;
-- open research and community development.
+## Verification boundary
 
-## Scratch & Win
+The v3.0.0 mathematical model and normative specification are treated as closed in this
+baseline. Implementation conformance is a separate evidence question and must not be inferred
+from the existence of the mathematical proofs or finite-model checks.
 
-The first implementation is a Cardano-based on-chain scratch-and-win system using:
+The executable finite-model material lives in the repository-level `verification/` directory,
+not in this documentation tree.
 
-- unique NFT tickets;
-- commit-reveal;
-- deterministic outcome derivation;
-- Beacon-based randomness;
-- liability-first accounting;
-- non-custodial claims;
-- protocol-controlled settlement.
+## Scope
 
-The current operational architecture is **B1 (Authorized Publisher)**. B3 is the longer-term publisher-independent target.
-
-**B1 is not presented as B3.**
-
-## Current economic baseline
-
-The frozen normative baseline includes:
-
-- USDM as canonical economic unit;
-- KA = 8, KC = 4, KD = 4;
-- Genesis = 1 USDM;
-- verified PRE Treasury bootstrap threshold >= 4,000 USDM;
-- 1 / 2 / 3 / 5 / 10 / 25 / 50 / 100 USDM classes;
-- maximum normal payout of 500× ticket price;
-- liability-first accounting;
-- ProtectedCapital / RawSurplus boundary;
-- deterministic worst-case exposure;
-- distinction between `CurrentActiveClass` and `HighestClassEverActivated`;
-- final expiry semantics;
-- separate locked Jackpot protection.
-
-The hysteresis semantic principle is **CLOSED**. Remaining quantitative validation is implementation/evidence work.
-
-The only genuinely open policy set is:
-
-1. Jackpot payout mode: threshold payout vs full current locked-balance payout.
-2. Exact ticket expiry duration.
-3. Future Jackpot allocation policy, but only if an explicit allocation rule is required.
-
-## Architecture and trust
-
-The hierarchy is:
-
-**Constitution → Specifications → Implementation → Tests / Proofs**
-
-The frontend, backend, relayer and data providers are not intended to have discretionary economic authority.
-
-The current B1 Beacon architecture retains an explicit authorized-publisher trust assumption.
-
-## Documentation
-
-Start here:
-
-- [`ROADMAP.md`](ROADMAP.md)
-- [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md)
-- [`docs/Game-Economy.md`](docs/Game-Economy.md)
-- [`docs/Game-Economy-Specification.md`](docs/Game-Economy-Specification.md)
-- [`docs/ECONOMIC-ALGORITHM.md`](docs/ECONOMIC-ALGORITHM.md)
-- [`docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`](docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md)
-- [`docs/CONSTITUTION-GAP-MATRIX.md`](docs/CONSTITUTION-GAP-MATRIX.md)
-- [`docs/architecture-spec.md`](docs/architecture-spec.md)
-- [`docs/beacon-trust-model.md`](docs/beacon-trust-model.md)
-
-## Development
-
-```bash
-npm install
-npm run dev
-```
-
-The repository contains Plutus scripts and off-chain components. Full protocol verification requires more than the development server.
-
-## Development status and limitations
-
-No property is considered complete merely because a reference model or TypeScript test passes.
-
-The project distinguishes:
-
-- specification;
-- implementation;
-- computational/reference-model validation;
-- validator/on-chain evidence;
-- adversarial/integration evidence.
-
-Current limitations include the remaining B1 conformance work and the absence of an independent external security audit.
-
-## Contributing
-
-Contributions, reviews and security findings are welcome.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Security
-
-This is an active research and development repository and is **not mainnet-ready**.
-
-See [`SECURITY.md`](SECURITY.md) for security reporting guidance.
-
-## License
-
-**License: to be finalized.**
-
-The project will publish an explicit license before claiming a finalized open-source release.
+IMMORTAL is specified as a universal, chain-neutral, application-neutral economic protocol.
+Application-specific PRE-RICH mechanics and Cardano implementation details belong to their
+respective implementation/adapter layers rather than to the universal model.

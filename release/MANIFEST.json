@@ -1,0 +1,229 @@
+{
+  "name": "IMMORTAL Protocol — Repository Documentation Set",
+  "version": "3.0.0",
+  "crystallization_date": "2026-09-17",
+  "purpose": "Repository-ready organization of the IMMORTAL v3.0.0 documentation and verification baseline.",
+  "file_count": 36,
+  "package_sha256": "e46fadf2de3a286598af23829047289bf59d907373b195dcdc68922f2acea522",
+  "package_sha256_algorithm": "SHA-256 over newline-terminated, lexicographically sorted lines \"<relative path>  <sha256>\" for every listed file, excluding this manifest.",
+  "read_first": "docs/README.md",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 929,
+      "sha256": "cb2175eac48e97d17e77ad664e900e0b993a79a681f172dcd9f07dc486b1fd71",
+      "role": "repository-readme"
+    },
+    {
+      "path": "docs/00-normative/01_CONSTITUTION_FINAL.md",
+      "bytes": 4953,
+      "sha256": "fb0fc47ddc44c3e390f4edd17bbf494e0cd9f40846bf5fc8f4b60288bc09d382",
+      "role": "normative"
+    },
+    {
+      "path": "docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md",
+      "bytes": 3373,
+      "sha256": "9e13080911e6f7c849451ad8872cd7105c65fabd6ec461488ebda478b0e2b45a",
+      "role": "normative"
+    },
+    {
+      "path": "docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md",
+      "bytes": 12590,
+      "sha256": "b69a581bfa82d3bb8647544cb268dc5f8b2b40df147e52836a3fac23b12db20b",
+      "role": "normative"
+    },
+    {
+      "path": "docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md",
+      "bytes": 3042,
+      "sha256": "a73c9d50bef7878ad4cf79936b47254d54ddc13e8793a35ec1191078403d7ad4",
+      "role": "normative"
+    },
+    {
+      "path": "docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md",
+      "bytes": 3012,
+      "sha256": "26fe094e61112f4ccbb826d52d54359d0763b0018f4daf06ad858baff9662d80",
+      "role": "normative"
+    },
+    {
+      "path": "docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md",
+      "bytes": 4417,
+      "sha256": "adfb9b433e4a1cd08402a42e2e0487804841b693c78cfdfb164090804b252e9f",
+      "role": "normative"
+    },
+    {
+      "path": "docs/01-contracts/13_LIVENESS_AND_PROGRESS_SPECIFICATION.md",
+      "bytes": 5322,
+      "sha256": "19d4dc58d835868af3cecb8e875ca8f6381e0d62fadab1c82a66ad771035b99d",
+      "role": "normative-contract"
+    },
+    {
+      "path": "docs/01-contracts/14_UPGRADE_AND_KERNEL_MIGRATION.md",
+      "bytes": 5855,
+      "sha256": "8f4c338544ad89663542142beecc64c5b16ceebb8e8e185842b29028968025ac",
+      "role": "normative-contract"
+    },
+    {
+      "path": "docs/01-contracts/15_COMPOSITION_CONTRACT.md",
+      "bytes": 8641,
+      "sha256": "451e610e705b3f1dd64c031fda63bd68d22e13483945f1250e80c0b3c71f0c9e",
+      "role": "normative-contract"
+    },
+    {
+      "path": "docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md",
+      "bytes": 5319,
+      "sha256": "7d532ed06bd04dd53c9ff8350dc125a3e06b2efcf0482cd85e8fa7c9ebb7c715",
+      "role": "normative-contract"
+    },
+    {
+      "path": "docs/01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md",
+      "bytes": 11797,
+      "sha256": "c051c93b83ad361f005d0962bdc09514fc6fd3e93e33dd7baab8be73f3953cd0",
+      "role": "formal-record"
+    },
+    {
+      "path": "docs/01-formal-records/09_DECISION_REGISTER_FINAL.md",
+      "bytes": 4092,
+      "sha256": "d6f4458cc63d7566aabe088d4331b608f0c666401fe218bd770400bf726aa4ec",
+      "role": "formal-record"
+    },
+    {
+      "path": "docs/01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md",
+      "bytes": 7579,
+      "sha256": "7b61e9af6134aeee964494e258f58eb01829f78afd35feca0b1a1f9a9a5732ba",
+      "role": "formal-record"
+    },
+    {
+      "path": "docs/02-analysis/06_ADVERSARIAL_GAME_THEORETIC_FINAL.md",
+      "bytes": 3182,
+      "sha256": "c810830b03eddf1aedc4e1a194e424f2ad60c874c47c1c1de74fd7b6a9079e25",
+      "role": "analysis"
+    },
+    {
+      "path": "docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md",
+      "bytes": 7676,
+      "sha256": "4649c053cd6a600c539205ecc74619ff621003a47947e81f2114de78a4bbecbd",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/COMPOSITIONALITY_PROOF_AND_CERTIFICATION.md",
+      "bytes": 6443,
+      "sha256": "8d20df5a77dfed7cf6e33647a8ae64108fb6747e114701a81c28cb0541919140",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md",
+      "bytes": 8050,
+      "sha256": "c8e6e5937ced2de4db323b16a362e4056a4a618cb4d2dd27d6112b81e0dcea75",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md",
+      "bytes": 5311,
+      "sha256": "bf39524f07f667eb78bb95b6cc935c9a4890ef66d8b871797b465037fe991fe8",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/LIVENESS_AND_PROGRESS_PROOF_SPECIFICATION.md",
+      "bytes": 6680,
+      "sha256": "15c238e7d99edc1a2cda789e804bf0113ea1a3ba0588a20a1465b411a796d76e",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md",
+      "bytes": 5223,
+      "sha256": "87ad6ba60ee2ad05454be2491f0d0552b9c0218ede0ae9d23285ffc88f556d49",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md",
+      "bytes": 6239,
+      "sha256": "32b331a0a022787d6979bbdc1b6690597af723950cee8ff40515fa024c32705c",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/REFINEMENT_CONFORMANCE_SPECIFICATION.md",
+      "bytes": 6367,
+      "sha256": "5b7edd116d7d77f4424dea7d06f86f17fc80ea0809b0fa2049eac8f2aedf6c4c",
+      "role": "certification"
+    },
+    {
+      "path": "docs/02-certification/UPGRADE_MIGRATION_PROOF_AND_CERTIFICATION.md",
+      "bytes": 7072,
+      "sha256": "7ec62df60151e24e37b26169beff671bd958f42624b10129b97aa97555013258",
+      "role": "certification"
+    },
+    {
+      "path": "docs/03-audit/CLAIM_AUDIT.md",
+      "bytes": 4492,
+      "sha256": "f20c683173d14cf459e3a28e81f779c4d18ec9d7b8b948e0961d00dc0f31c798",
+      "role": "audit"
+    },
+    {
+      "path": "docs/03-audit/MECHANICAL_VERIFICATION_REPORT.md",
+      "bytes": 5048,
+      "sha256": "f6c2854e81c9308b722a256e7ecd3d323d17370fcdcbeed9d22b35e61973497a",
+      "role": "audit"
+    },
+    {
+      "path": "docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md",
+      "bytes": 8966,
+      "sha256": "d5f4b9f6e0d7afd8cd24dd0b098daed37aa7e31c59a934b87cacb11af9ffa551",
+      "role": "audit"
+    },
+    {
+      "path": "docs/03-audit/TRACEABILITY_MATRIX.md",
+      "bytes": 11497,
+      "sha256": "db402e9578ea5024182a4ae73ade830c63ebbd69adcab943a0775ae469723266",
+      "role": "audit"
+    },
+    {
+      "path": "docs/03-audit/VERIFICATION_STATUS.md",
+      "bytes": 6661,
+      "sha256": "84677d080c408c509eef210d05c3903ee9dc917fe1d99ee9666b17f37986bbd6",
+      "role": "audit"
+    },
+    {
+      "path": "docs/04-guides/11_ALGORITHM_LINE_BY_LINE_GUIDE.md",
+      "bytes": 9065,
+      "sha256": "2cd92bd94ab444e909dbffa3ef408712ec79dd368fcf950d501aff7dbd77f201",
+      "role": "supporting"
+    },
+    {
+      "path": "docs/04-guides/12_IMMORTAL_EXPLAINED_FOR_EVERYONE.md",
+      "bytes": 6817,
+      "sha256": "95c14a2551e8c6ffb5238e6a0b962975a253ddb61a5e8001942089e80838f7c2",
+      "role": "supporting"
+    },
+    {
+      "path": "docs/05-history/CHANGELOG_FROM_2026-09-17.md",
+      "bytes": 7819,
+      "sha256": "98a3d0efcedf3d03e0be4aa2978fe59cea83c490a3d4ec7ae39fb4c094bdf327",
+      "role": "history"
+    },
+    {
+      "path": "docs/05-history/CHANGELOG_FROM_HARDENED.md",
+      "bytes": 5463,
+      "sha256": "41bb982d7af8deac96c52a457dac55d887d41f5f0fecac1990329103b7f10442",
+      "role": "history"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 2526,
+      "sha256": "409bc9210bbab8f5010f7005e52e0141a9d853e3c91afee89ce103d7a3a2ce81",
+      "role": "documentation-index"
+    },
+    {
+      "path": "verification/FINITE_MODEL_CHECK_RESULTS.txt",
+      "bytes": 2113,
+      "sha256": "a920eed66ed7c8d1cadc7795591853f4905a8b7f6db34ae93420999ef6531c85",
+      "role": "verification-evidence"
+    },
+    {
+      "path": "verification/finite_model_checks.py",
+      "bytes": 17518,
+      "sha256": "d2d828b12094daedd69daa3ce8db0b5924e1b97676f74d449c183f676f0c73c2",
+      "role": "verification-evidence"
+    }
+  ],
+  "implementation_conformance": "EVIDENCE REQUIRED — this documentation set does not itself certify the repository implementation."
+}

@@ -513,8 +513,8 @@ contains(
 
 contains(
   loadTs,
-  /applyParamsToScript/,
-  'loadValidator uses applyParamsToScript'
+  /applyScriptParams/,
+  'loadValidator uses applyScriptParams'
 )
 
 contains(
@@ -525,7 +525,7 @@ contains(
 
 contains(
   loadTs,
-  /applyParamsToScript\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
+  /applyScriptParams\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
   'TypeScript applies MintPolicy parameters in B1 order'
 )
 
