@@ -8,6 +8,7 @@ library
         .
         ../IMMORTAL/state
         ../IMMORTAL/kernel
+        ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
 
     exposed-modules:
@@ -24,6 +25,9 @@ library
         Treasury
         EconomicStateV3
         EconomicKernel
+        EconomicTransitionV3
+        RefinementV3
+        GoldenVectors
 
     build-depends:
         base ^>=4.18.2,
@@ -47,6 +51,7 @@ executable export-scripts
         .
         ../IMMORTAL/state
         ../IMMORTAL/kernel
+        ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
 
     main-is:            Export.hs
@@ -86,6 +91,18 @@ test-suite economic-oracle-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        pre-rich-plutus
+
+    default-language: Haskell2010
+
+test-suite v3-golden-vector-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+
+    main-is:            GoldenVectorsTest.hs
+
+    build-depends:
+        base ^>=4.18.2,
         pre-rich-plutus
 
     default-language: Haskell2010

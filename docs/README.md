@@ -1,60 +1,72 @@
-# IMMORTAL Protocol — Documentation
+# IMMORTAL Documentation
 
-## IMMORTAL v3.0.0
+## Purpose
 
-This directory contains the crystallized IMMORTAL v3.0.0 specification and its associated
-certification, audit, explanatory, and historical material.
+This directory is the canonical documentation system for IMMORTAL.
 
-### Authority model
+The repository distinguishes universal protocol semantics from adapter and application material.
 
+## Authority
 
-Constitution
-    ↓
-Normative specification
-    ↓
-Contracts
-    ↓
-Certification requirements
-    ↓
-Audit / evidence
-    ↓
-Implementation conformance
+```text
+1. Constitution
+2. Normative specifications
+3. Contracts
+4. Certification requirements
+5. Formal records / analysis
+6. Audit and evidence
+7. Implementation
+8. Tests and deployment evidence
+9. Historical archive
+```
 
+Evidence records do not create normative authority.
 
-**Normative authority comes from the canonical specification and contracts.** Certification
-and audit documents record what must be demonstrated and what evidence has been established;
-they do not create new normative authority.
+## Recommended paths
 
-## Reading order
+### For everyone
 
-1. `00-normative/01_CONSTITUTION_FINAL.md` — root authority
-2. `00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md` — universal economic model
-3. `00-normative/03_ECONOMIC_KERNEL_FINAL.md` — economic kernel and formal results
-4. `00-normative/04_STATE_TRANSITION_SPECIFICATION.md` — state-transition discipline
-5. `00-normative/05_INVARIANTS_CONSERVATION_FINAL.md` — invariants and conservation
-6. `02-analysis/06_ADVERSARIAL_GAME_THEORETIC_FINAL.md` — adversarial analysis
-7. `00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` — conformance requirements
-8. `01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md` — proof register
-9. `01-formal-records/09_DECISION_REGISTER_FINAL.md` — decision record
-10. `01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md` — closure matrix
-11. `01-contracts/` — liveness, upgrade, composition and Ω contracts
-12. `02-analysis/` — adversarial and game-theoretic analysis
-13. `02-certification/` — concrete-kernel, refinement, accounting, EEV and related certification specifications
-14. `03-audit/` — status, residual obligations, traceability, claim and mechanical-verification records
-15. `04-guides/` — algorithm guide and non-mathematical explanation
-16. `05-history/` — historical change records
+- [Executive Summary](EXECUTIVE-SUMMARY.md)
+- [Glossary](GLOSSARY.md)
+- [White Paper](../WHITEPAPER.md)
 
-## Verification boundary
+### For protocol readers
 
-The v3.0.0 mathematical model and normative specification are treated as closed in this
-baseline. Implementation conformance is a separate evidence question and must not be inferred
-from the existence of the mathematical proofs or finite-model checks.
+- [Constitution](00-normative/01_CONSTITUTION_FINAL.md)
+- [Universal Economic Model](00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md)
+- [Economic Kernel](00-normative/03_ECONOMIC_KERNEL_FINAL.md)
+- [State Transition](00-normative/04_STATE_TRANSITION_SPECIFICATION.md)
+- [Invariants](00-normative/05_INVARIANTS_CONSERVATION_FINAL.md)
+- [Conformance](00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md)
 
-The executable finite-model material lives in the repository-level `verification/` directory,
-not in this documentation tree.
+### For formal review
 
-## Scope
+- `01-formal-records/`
+- `01-contracts/`
+- `02-analysis/`
+- `02-certification/`
 
-IMMORTAL is specified as a universal, chain-neutral, application-neutral economic protocol.
-Application-specific PRE-RICH mechanics and Cardano implementation details belong to their
-respective implementation/adapter layers rather than to the universal model.
+### For evidence
+
+- `03-audit/`
+- repository `verification/`
+
+### For implementation
+
+- `../IMMORTAL/`
+- `../Adapter/CARDANO/`
+- `../PRE-RICH/`
+
+## Layer rule
+
+If a statement contains Cardano-specific mechanics, it belongs in the adapter layer.
+
+If a statement contains PRE-RICH-specific economic policy, it belongs in PRE-RICH.
+
+If a statement is intended to hold for any conforming implementation, it belongs in IMMORTAL.
+
+When in doubt, do not promote an application rule into the universal layer.
+
+## Archive rule
+
+Historical documents remain available for traceability but are not current normative authority unless explicitly referenced by the authority hierarchy.

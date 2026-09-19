@@ -1,61 +1,54 @@
 # Security Policy
 
-## Current status
+## Status
 
-PRE-RICH is an active research and development project.
+IMMORTAL is an experimental open-source protocol and is not presented as a production security guarantee or mainnet-ready system.
 
-**The current repository is not mainnet-ready.** Publication of the repository does not constitute a security guarantee, production deployment approval, or independent audit certification.
+The repository distinguishes:
 
-The project distinguishes:
-
-- documented protocol rules;
-- implementation;
-- computational/reference-model validation;
-- validator/on-chain evidence;
-- adversarial and integration evidence.
+- normative specification;
+- mathematical proof;
+- executable/reference-model validation;
+- implementation tests;
+- adapter evidence;
+- application evidence;
+- deployment evidence.
 
 These categories must not be conflated.
 
-## Reporting a vulnerability
+## Reporting
 
-Please do **not** report suspected vulnerabilities through a public GitHub issue, discussion, or pull request.
+Please do not publish exploitable vulnerability details in a public issue.
 
-Use GitHub's private vulnerability reporting / Security Advisories facility when it is enabled for the repository.
+Use the repository's available private security-reporting mechanism where enabled, or contact the maintainers privately through the project's GitHub channels.
 
-If private reporting is not available, contact the repository maintainers privately through GitHub and provide enough information to reproduce the issue without publicly disclosing exploit details.
+## Useful report contents
 
-## What to include
+Include, where possible:
 
-Where possible, include:
-
-- affected component or file;
-- affected commit, branch, or release;
-- concise description of the vulnerability;
-- reproduction steps or proof of concept;
+- affected component;
+- affected commit/branch;
+- reproduction steps;
 - expected versus observed behavior;
-- potential impact;
-- any proposed mitigation.
+- impact;
+- relevant assumptions;
+- mitigation proposal.
 
-Avoid including private keys, seed phrases, credentials, personal data, or funds.
+Do not include private keys, seed phrases, credentials or unrelated personal data.
 
 ## Scope
 
-Security reports may concern, among other things:
+Reports may concern:
 
-- Plutus validators and on-chain state transitions;
-- authorization and trust boundaries;
-- commit-reveal and randomness handling;
-- economic invariants and solvency protection;
-- claim, expiry, and double-claim behavior;
-- multi-asset settlement and conversion;
-- treasury and Jackpot accounting;
-- minting policies;
-- off-chain transaction construction;
-- relayer and adapter trust assumptions;
-- dependency or build/reproducibility issues.
+- universal economic invariants;
+- kernel or transition implementations;
+- adapter trust boundaries;
+- application economic logic;
+- randomness/evidence handling;
+- expiry and claim behavior;
+- accounting and protected capital;
+- authorization;
+- serialization;
+- dependency/build/reproducibility issues.
 
-## Disclosure
-
-The maintainers will assess reports in good faith and may request additional information. Public disclosure should be coordinated after a fix or mitigation is available where practical.
-
-Because the project is not mainnet-ready, researchers should clearly distinguish vulnerabilities in experimental code from vulnerabilities affecting a deployed production system.
+A vulnerability in an experimental component should be described as such. The existence of a formal theorem does not imply that every implementation path satisfies it.
