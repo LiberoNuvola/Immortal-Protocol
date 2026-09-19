@@ -20,15 +20,16 @@ module EconomicKernel
   , conservationInvariant
   ) where
 
+import PlutusTx.Builtins.HasOpaque (stringToBuiltinString)
 import PlutusTx.Prelude
 import EconomicStateV3
 
 {-# INLINABLE ceilingDiv #-}
 ceilingDiv :: Integer -> Integer -> Integer
 ceilingDiv a b
-  | b == 0 = traceError "EconomicKernel: division by zero"
+  | b == 0 = traceError (stringToBuiltinString "EconomicKernel: division by zero")
   | a <= 0 = 0
-  | b < 0 = traceError "EconomicKernel: invalid divisor"
+  | b < 0 = traceError (stringToBuiltinString "EconomicKernel: invalid divisor")
   | otherwise = (a + b - 1) `divide` b
 
 {-# INLINABLE classExposure #-}
