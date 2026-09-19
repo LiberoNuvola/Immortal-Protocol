@@ -10,6 +10,7 @@ library
         ../IMMORTAL/kernel
         ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
+        ../IMMORTAL/governance
 
     exposed-modules:
         Types
@@ -28,6 +29,7 @@ library
         EconomicTransitionV3
         RefinementV3
         GoldenVectors
+        Governance
 
     build-depends:
         base ^>=4.18.2,
@@ -53,6 +55,7 @@ executable export-scripts
         ../IMMORTAL/kernel
         ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
+        ../IMMORTAL/governance
 
     main-is:            Export.hs
 
@@ -100,6 +103,18 @@ test-suite v3-golden-vector-tests
     hs-source-dirs:     test
 
     main-is:            GoldenVectorsTest.hs
+
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+
+    default-language: Haskell2010
+
+test-suite governance-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+
+    main-is:            GovernanceTest.hs
 
     build-depends:
         base ^>=4.18.2,

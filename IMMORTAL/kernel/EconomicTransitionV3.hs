@@ -1,10 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- Canonical V3 transition layer.
--- This module is deliberately chain-neutral: Cardano/TxInfo/Value types
--- must not enter here. The Adapter proves that a concrete transaction
--- refines one of these transitions.
-
 module EconomicTransitionV3
   ( V3Action (..)
   , transition
@@ -134,10 +129,33 @@ totalUnresolved cid (c:cs)
 {-# INLINABLE transitionValid #-}
 transitionValid :: V3EconomicState -> V3Action -> Bool
 transitionValid s a =
-  case transition s a of
-    Nothing -> False
-    Just s' ->
-         EconomicKernel.conservationInvariant s'
-      && v3CrystallizedLiabilities s' >= 0
-      && v3UnresolvedReserve s' >= 0
-      && v3UnresolvedTicketCount s' >= 0
+     preStateValid s
+  && case transition s a of
+       Nothing -> False
+       Just s' -> postStateValid s'
+  where
+    preStateValid st =
+         EconomicKernel.conservationInvariant st
+      && nonNegativeState st
+
+    postStateValid st =
+         EconomicKernel.conservationInvariant st
+      && nonNegativeState st
+
+    nonNegativeState st =
+         v3CrystallizedLiabilities st >= 0
+      && v3UnresolvedReserve st >= 0
+      && v3UnresolvedTicketCount st >= 0
+      && v3SafetyCapital st >= 0
+      && v3ReserveProtection st >= 0
+      && v3MandatoryFutureCosts st >= 0
+      && jsLockedAmount (v3Jackpot st) >= 0
+      && allClassesNonNegative (v3Classes st)
+
+    allClassesNonNegative [] = True
+    allClassesNonNegative (c:cs) =
+         tcsIssued c >= 0
+      && tcsUnresolved c >= 0
+      && tcsExposure c >= 0
+      && tcsCap c >= 0
+      && allClassesNonNegative cs

@@ -1,74 +1,93 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module GoldenVectors
-  ( vectorIssue
-  , vectorReveal
-  , vectorExpire
-  , vectorClaim
+  ( baseClass
+  , baseState
+  , issueZeroExpected
+  , issueOneExpected
+  , revealZeroExpected
+  , expireZeroExpected
+  , claimExpected
+  , invalidIssuePrice
+  , invalidRevealPayout
+  , invalidRevealWithoutTicket
+  , invalidExpireWithoutTicket
+  , invalidClaimAmount
   ) where
 
 import PlutusTx.Prelude
 import EconomicStateV3
 import EconomicTransitionV3
-import qualified EconomicKernel
 
-class0 :: TicketClassState
-class0 = TicketClassState 0 0 0 0 10 True
+baseClass :: TicketClassState
+baseClass = TicketClassState 0 0 0 0 10 True
 
 baseState :: V3EconomicState
 baseState =
   V3EconomicState
     0 0 0 0 0 0
-    [class0]
+    [baseClass]
     (EconomicControlState 0 0)
     (JackpotState 0 0 JackpotInactive 0)
 
-{-# INLINABLE vectorIssue #-}
-vectorIssue :: Bool
-vectorIssue =
-  case transition baseState (Issue 0 1) of
-    Nothing -> False
-    Just s ->
-         v3UnresolvedReserve s == 1
-      && v3UnresolvedTicketCount s == 1
-      && EconomicKernel.conservationInvariant s
+issueZeroExpected :: V3EconomicState
+issueZeroExpected =
+  baseState
+    { v3UnresolvedReserve = 1
+    , v3UnresolvedTicketCount = 1
+    , v3Classes = [TicketClassState 0 1 1 1 10 True]
+    }
 
-{-# INLINABLE vectorReveal #-}
-vectorReveal :: Bool
-vectorReveal =
-  case transition (issueState baseState) (Reveal 0 500) of
-    Nothing -> False
-    Just s ->
-         v3UnresolvedReserve s == 0
-      && v3UnresolvedTicketCount s == 0
-      && v3CrystallizedLiabilities s == 500
-      && EconomicKernel.conservationInvariant s
+issueOneExpected :: V3EconomicState
+issueOneExpected =
+  baseState
+    { v3UnresolvedReserve = 2
+    , v3UnresolvedTicketCount = 1
+    , v3Classes = [TicketClassState 0 2 1 1 10 True]
+    }
 
-{-# INLINABLE vectorExpire #-}
-vectorExpire :: Bool
-vectorExpire =
-  case transition (issueState baseState) (Expire 0) of
-    Nothing -> False
-    Just s ->
-         v3UnresolvedReserve s == 0
-      && v3UnresolvedTicketCount s == 0
-      && v3CrystallizedLiabilities s == 0
-      && EconomicKernel.conservationInvariant s
+revealZeroExpected :: V3EconomicState
+revealZeroExpected =
+  baseState
+    { v3CrystallizedLiabilities = 500
+    }
 
-{-# INLINABLE vectorClaim #-}
-vectorClaim :: Bool
-vectorClaim =
-  case transition (issueState baseState) (Reveal 0 500) of
-    Nothing -> False
-    Just revealed ->
-      case transition revealed (Claim 500) of
-        Nothing -> False
-        Just claimed ->
-             v3CrystallizedLiabilities claimed == 0
-          && EconomicKernel.conservationInvariant claimed
+expireZeroExpected :: V3EconomicState
+expireZeroExpected = baseState
 
-issueState :: V3EconomicState -> V3EconomicState
-issueState s =
-  case transition s (Issue 0 1) of
-    Just s' -> s'
-    Nothing -> s
+claimExpected :: V3EconomicState
+claimExpected = baseState
+
+invalidIssuePrice :: Bool
+invalidIssuePrice =
+  case transition baseState (Issue 0 2) of
+    Nothing -> True
+    Just _ -> False
+
+invalidRevealPayout :: Bool
+invalidRevealPayout =
+  case transition
+         (baseState { v3UnresolvedReserve = 1
+                    , v3UnresolvedTicketCount = 1
+                    , v3Classes = [TicketClassState 0 1 1 1 10 True] })
+         (Reveal 0 501) of
+    Nothing -> True
+    Just _ -> False
+
+invalidRevealWithoutTicket :: Bool
+invalidRevealWithoutTicket =
+  case transition baseState (Reveal 0 1) of
+    Nothing -> True
+    Just _ -> False
+
+invalidExpireWithoutTicket :: Bool
+invalidExpireWithoutTicket =
+  case transition baseState (Expire 0) of
+    Nothing -> True
+    Just _ -> False
+
+invalidClaimAmount :: Bool
+invalidClaimAmount =
+  case transition baseState (Claim 1) of
+    Nothing -> True
+    Just _ -> False
