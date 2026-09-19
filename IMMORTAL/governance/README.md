@@ -1,30 +1,28 @@
-# GOV-IMPLEMENTATION-02 — Chain-neutral Governance Core Skeleton
+# Governance Core — Implementation Status
 
-Target branch: `b1-hardening`.
+Baseline: `b7a182c8a7b1c7cb39e7d8c7a86e2092894106a2`
 
-## Files
+This patch converges the governance implementation actually present in the
+repository with the current GOV-18 core rules before introducing the
+canonical-event/finality layers.
 
-- `IMMORTAL/governance/Governance.hs`
-- `plutus/test/GovernanceTest.hs`
+## Changes
 
-This is the first pure governance-core skeleton. It deliberately does not
-modify `EconomicStateV3` or `EconomicKernel`, and it contains no Cardano
-serialization or PRE-RICH application policy.
+- Uses the explicit `Snapshot` type everywhere.
+- Makes snapshot validity explicit.
+- Makes abstention semantics explicit.
+- Adds effective delegated voting weight.
+- Rejects self-delegation, recursive delegation and cycles.
+- Rejects direct voting by a delegator.
+- Rejects ineligible voters.
+- Makes delegation time-bound to the voting window.
+- Makes gate mutation lifecycle-bound.
+- Updates the repository governance test to the current API.
+- Adds adversarial checks for the corrected core behavior.
 
-## Frozen rules represented
+## Deliberately not included
 
-- ledger entities are the representation boundary;
-- voting weight is linear in PRE;
-- quorum is `Q/E >= 1/4`;
-- ordinary approval is `Y/(Y+N) > 1/2`;
-- kernel approval is `Y/(Y+N) >= 2/3`;
-- abstention contributes to quorum and not to the approval denominator;
-- lifecycle transitions are explicit;
-- governance events are replayable.
+Canonical event schema, cryptographic commitment, challenge/finality state,
+ruleset immutability and independent replay remain separate next layers.
 
-## Important implementation status
-
-This is a skeleton, not a conformance certificate. Temporal clocks,
-snapshot acquisition from chain state, full delegation validation,
-challenge/finality windows, emergency expiry enforcement, canonical
-serialization, and Cardano integration remain subsequent work.
+This is a convergence patch, not a conformance certificate.

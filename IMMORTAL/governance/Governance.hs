@@ -1,12 +1,15 @@
 module Governance
-  ( EntityId, ProposalId, Weight, Timestamp, Snapshot(..), ProposalClass(..)
-  , ProposalStatus(..), Choice(..), Vote(..), Delegation(..), GateResult(..)
-  , Proposal(..), GovernanceState(..), GovernanceEvent(..), emptyState
-  , snapshotWeight, eligibleWeight, voteWeight, participatingWeight
-  , quorumReached, approvalReached, gatesPassed
-  , delegationValid, delegatedWeight, delegationConserves
-  , transition, voteWindowOpen, communityReviewOpen, finalityWindowOpen
-  , emergencyActive, emergencyExpired, applyEvent, replay
+  ( EntityId, ProposalId, Weight, Timestamp, Snapshot(..)
+  , ProposalClass(..), ProposalStatus(..), Choice(..), Vote(..)
+  , Delegation(..), GateResult(..), Proposal(..)
+  , GovernanceState(..), GovernanceEvent(..), emptyState
+  , communityReviewSeconds, votingSeconds, finalitySeconds, emergencySeconds
+  , snapshotValid, snapshotWeight, eligibleWeight, voteWeight
+  , effectiveVoteWeight, participatingWeight, quorumReached
+  , approvalReached, gatesPassed, delegationValid, delegatedWeight
+  , delegationConserves, transition, communityReviewOpen, voteWindowOpen
+  , finalityWindowOpen, emergencyActive, emergencyExpired
+  , applyEvent, replay
   ) where
 
 type EntityId = Integer
@@ -80,7 +83,7 @@ data GovernanceEvent
   | ProposalClassified ProposalId ProposalClass
   | StatusChanged ProposalId ProposalStatus Timestamp
   | VoteCast Vote
-  | DelegationSet ProposalId Delegation
+  | DelegationSet ProposalId Delegation Timestamp
   | GatesSet ProposalId GateResult
   deriving (Eq, Show)
 
@@ -93,8 +96,15 @@ votingSeconds = 5 * 24 * 60 * 60
 finalitySeconds = 3 * 24 * 60 * 60
 emergencySeconds = 72 * 60 * 60
 
+snapshotValid :: Snapshot -> Bool
+snapshotValid (Snapshot _ at ws) =
+  at >= 0 && all (\(_,w) -> w > 0) ws && distinct [e | (e,_) <- ws]
+
 snapshotWeight :: Snapshot -> EntityId -> Weight
-snapshotWeight (Snapshot _ _ ws) e = sum [w | (e',w) <- ws, e' == e]
+snapshotWeight (Snapshot _ _ ws) e =
+  case [w | (e',w) <- ws, e' == e] of
+    [w] -> w
+    _ -> 0
 
 eligibleWeight :: Snapshot -> Weight
 eligibleWeight (Snapshot _ _ ws) = sum (map snd ws)
@@ -102,42 +112,55 @@ eligibleWeight (Snapshot _ _ ws) = sum (map snd ws)
 voteWeight :: Snapshot -> Vote -> Weight
 voteWeight s v = snapshotWeight s (voter v)
 
-participatingWeight :: Snapshot -> [Vote] -> Weight
-participatingWeight s vs =
-  sum [voteWeight s v | v <- vs, choice v /= Abstain || choice v == Abstain]
+delegatedWeight :: Snapshot -> [Delegation] -> EntityId -> Weight
+delegatedWeight s ds target =
+  sum [snapshotWeight s (delegator d) | d <- ds, delegate d == target]
 
-quorumReached :: Snapshot -> [Vote] -> Bool
-quorumReached s vs =
-  let e = eligibleWeight s
-      q = participatingWeight s vs
-  in e > 0 && 4*q >= e
+effectiveVoteWeight :: Snapshot -> [Delegation] -> Vote -> Weight
+effectiveVoteWeight s ds v =
+  snapshotWeight s (voter v) + delegatedWeight s ds (voter v)
 
-approvalReached :: ProposalClass -> Snapshot -> [Vote] -> Bool
-approvalReached cls s vs =
-  let y = sum [voteWeight s v | v <- vs, choice v == For]
-      n = sum [voteWeight s v | v <- vs, choice v == Against]
+participatingWeight :: Snapshot -> [Delegation] -> [Vote] -> Weight
+participatingWeight s ds vs =
+  sum [effectiveVoteWeight s ds v | v <- vs]
+
+quorumReached :: Snapshot -> [Delegation] -> [Vote] -> Bool
+quorumReached s ds vs =
+  snapshotValid s &&
+  delegationConserves s ds &&
+  eligibleWeight s > 0 &&
+  4 * participatingWeight s ds vs >= eligibleWeight s
+
+approvalReached :: ProposalClass -> Snapshot -> [Delegation] -> [Vote] -> Bool
+approvalReached cls s ds vs =
+  snapshotValid s &&
+  delegationConserves s ds &&
+  let y = sum [effectiveVoteWeight s ds v | v <- vs, choice v == For]
+      n = sum [effectiveVoteWeight s ds v | v <- vs, choice v == Against]
       d = y + n
   in d > 0 && case cls of
-       ConstitutionalKernel -> 3*y >= 2*d
-       _ -> 2*y > d
+       ConstitutionalKernel -> 3 * y >= 2 * d
+       _ -> 2 * y > d
 
 gatesPassed :: ProposalClass -> GateResult -> Bool
 gatesPassed cls g = case cls of
-  ConstitutionalKernel -> evidenceGate g && compatibilityGate g && conformanceGate g
+  ConstitutionalKernel ->
+    evidenceGate g && compatibilityGate g && conformanceGate g
   Application -> applicationConformanceGate g
   _ -> True
 
 delegationValid :: Snapshot -> [Delegation] -> Bool
 delegationValid s ds =
+  snapshotValid s &&
   distinct [delegator d | d <- ds] &&
-  all (\d -> delegator d /= delegate d &&
-             snapshotWeight s (delegator d) > 0 &&
-             snapshotWeight s (delegate d) > 0) ds &&
+  all validOne ds &&
   not (cycleExists ds)
-
-delegatedWeight :: Snapshot -> [Delegation] -> EntityId -> Weight
-delegatedWeight s ds target =
-  sum [snapshotWeight s (delegator d) | d <- ds, delegate d == target]
+  where
+    validOne d =
+      delegator d /= delegate d &&
+      snapshotWeight s (delegator d) > 0 &&
+      snapshotWeight s (delegate d) > 0 &&
+      not (any (\x -> delegator x == delegate d) ds)
 
 delegationConserves :: Snapshot -> [Delegation] -> Bool
 delegationConserves s ds =
@@ -181,7 +204,7 @@ finalityWindowOpen p now =
 emergencyActive :: Proposal -> Timestamp -> Bool
 emergencyActive p now =
   case emergencyActivatedAt p of
-    Just t -> now < t + emergencySeconds
+    Just t -> now >= t && now < t + emergencySeconds
     Nothing -> False
 
 emergencyExpired :: Proposal -> Timestamp -> Bool
@@ -226,10 +249,11 @@ applyEvent :: GovernanceState -> GovernanceEvent
            -> Either String GovernanceState
 applyEvent st ev = case ev of
   ProposalSubmitted p ->
-    if any ((== proposalId p) . proposalId) (proposals st)
-    then Left "proposal already exists"
-    else Right st { proposals = proposals st ++ [p]
+    if snapshotValid (proposalSnapshot p) &&
+       not (any ((== proposalId p) . proposalId) (proposals st))
+    then Right st { proposals = proposals st ++ [p]
                   , eventsApplied = eventsApplied st + 1 }
+    else Left "invalid or duplicate proposal"
 
   ProposalClassified pid cls -> do
     ps <- updateProposal pid
@@ -255,19 +279,23 @@ applyEvent st ev = case ev of
     ps <- updateProposal (voteProposal v)
       (\p -> if proposalStatus p == Voting &&
                  voteWindowOpen p (castAt v) &&
-                 not (any ((== voter v) . voter) (proposalVotes p))
+                 snapshotWeight (proposalSnapshot p) (voter v) > 0 &&
+                 not (any ((== voter v) . voter) (proposalVotes p)) &&
+                 not (any ((== voter v) . delegator) (proposalDelegations p))
              then p { proposalVotes = proposalVotes p ++ [v] }
              else p)
       (proposals st)
     case [p | p <- ps, proposalId p == voteProposal v,
                     any (==v) (proposalVotes p)] of
       [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
-      _ -> Left "vote rejected: not open, late, or duplicate"
+      _ -> Left "vote rejected: ineligible, delegated, late, or duplicate"
 
-  DelegationSet pid d -> do
+  DelegationSet pid d at -> do
     ps <- updateProposal pid
       (\p -> if proposalStatus p == Voting &&
-                voteWindowOpen p (maybe 0 id (votingOpenedAt p))
+                voteWindowOpen p at &&
+                delegationValid (proposalSnapshot p) (proposalDelegations p ++ [d]) &&
+                not (any ((== delegate d) . voter) (proposalVotes p))
              then p { proposalDelegations = proposalDelegations p ++ [d] }
              else p)
       (proposals st)
@@ -277,14 +305,23 @@ applyEvent st ev = case ev of
       _ -> Left "delegation rejected"
 
   GatesSet pid g -> do
-    ps <- updateProposal pid (\p -> p { proposalGates = g }) (proposals st)
-    Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
+    ps <- updateProposal pid
+      (\p -> if proposalStatus p `elem` [EvidenceReview, CommunityReview]
+             then p { proposalGates = g }
+             else p)
+      (proposals st)
+    case [p | p <- ps, proposalId p == pid, proposalGates p == g] of
+      [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
+      _ -> Left "gate update rejected outside evidence/community review"
 
 recordTime :: Proposal -> ProposalStatus -> Timestamp -> Proposal
 recordTime p s at = case s of
   CommunityReview -> p { proposalStatus = s, communityReviewOpenedAt = Just at }
   Voting -> p { proposalStatus = s, votingOpenedAt = Just at }
-  DecisionRecorded -> p { proposalStatus = s, votingClosedAt = Just at, finalizationAt = Just (at + finalitySeconds) }
+  DecisionRecorded ->
+    p { proposalStatus = s
+      , votingClosedAt = Just at
+      , finalizationAt = Just (at + finalitySeconds) }
   EmergencyReview -> p { proposalStatus = s, emergencyActivatedAt = Just at }
   _ -> p { proposalStatus = s }
 
