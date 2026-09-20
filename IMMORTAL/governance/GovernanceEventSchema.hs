@@ -5,8 +5,9 @@ module GovernanceEventSchema
   ) where
 
 import Governance
-  ( GovernanceState, GovernanceEvent(..), ProposalId, Timestamp
-  , ProposalStatus(..), Proposal(..), proposals )
+  ( GovernanceEvent(..), ProposalId, Timestamp
+  , ProposalClass(..), ProposalStatus(..)
+  )
 
 data ActorClass
   = System | Proposer | Voter | Delegate | Reviewer | Auditor | EmergencyAuthority
@@ -39,25 +40,25 @@ data CanonicalEvent = CanonicalEvent
 canonicalPayload :: GovernanceEvent -> String
 canonicalPayload e = case e of
   ProposalSubmitted p ->
-    "proposal:" ++ show (proposalId p) ++
-    "|class:" ++ show (proposalClass p) ++
-    "|snapshot:" ++ show (proposalSnapshot p) ++
-    "|created:" ++ show (proposalCreatedAt p)
+    "proposal_id=" ++ show (proposalId p) ++
+    ";class=" ++ show (proposalClass p) ++
+    ";created_at=" ++ show (proposalCreatedAt p)
   ProposalClassified pid cls ->
-    "proposal:" ++ show pid ++ "|class:" ++ show cls
+    "proposal_id=" ++ show pid ++ ";class=" ++ show cls
   StatusChanged pid st at ->
-    "proposal:" ++ show pid ++ "|status:" ++ show st ++ "|at:" ++ show at
+    "proposal_id=" ++ show pid ++ ";status=" ++ show st ++ ";at=" ++ show at
   VoteCast v ->
-    "proposal:" ++ show (voteProposal v) ++
-    "|voter:" ++ show (voter v) ++
-    "|choice:" ++ show (choice v) ++
-    "|cast:" ++ show (castAt v)
-  DelegationSet pid d ->
-    "proposal:" ++ show pid ++
-    "|delegator:" ++ show (delegator d) ++
-    "|delegate:" ++ show (delegate d)
+    "proposal_id=" ++ show (voteProposal v) ++
+    ";voter=" ++ show (voter v) ++
+    ";choice=" ++ show (choice v) ++
+    ";cast_at=" ++ show (castAt v)
+  DelegationSet pid d at ->
+    "proposal_id=" ++ show pid ++
+    ";delegator=" ++ show (delegator d) ++
+    ";delegate=" ++ show (delegate d) ++
+    ";at=" ++ show at
   GatesSet pid g ->
-    "proposal:" ++ show pid ++ "|gates:" ++ show g
+    "proposal_id=" ++ show pid ++ ";gates=" ++ show g
 
 canonicalEventBody :: CanonicalEvent -> String
 canonicalEventBody e =
@@ -80,10 +81,12 @@ eventSchemaValid e =
   eventTimestamp e >= 0 &&
   not (null (payloadCommitment e)) &&
   unique (evidenceRefs e)
+
+unique :: Eq a => [a] -> Bool
+unique xs = length xs == length (dedup xs)
   where
-    unique xs = length xs == length (dedup xs)
     dedup [] = []
-    dedup (x:rest) = x : dedup (filter (/=x) rest)
+    dedup (x:rest) = x : dedup (filter (/= x) rest)
 
 predecessorValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 predecessorValid Nothing e = predecessor e == Nothing
@@ -93,6 +96,4 @@ canonicalEventValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 canonicalEventValid prev e =
   eventSchemaValid e &&
   predecessorValid prev e &&
-  case eventStatus e of
-    RejectedEvent -> True
-    _ -> True
+  eventStatus e == AcceptedEvent

@@ -1,0 +1,20 @@
+{
+  "version": "GOV-28",
+  "positive": [
+    "proposal submission authorization",
+    "classification authorization",
+    "unique evidence",
+    "registered ruleset",
+    "predecessor continuity"
+  ],
+  "negative": [
+    "wrong actor",
+    "missing evidence",
+    "duplicate evidence",
+    "unregistered ruleset",
+    "commitment mismatch",
+    "rejected event",
+    "wrong predecessor"
+  ],
+  "reference": "verification/gov28_reference.py"
+}

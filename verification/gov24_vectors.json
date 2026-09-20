@@ -1,0 +1,18 @@
+{
+  "schema": "IMMORTAL-GOV-24/1",
+  "encoding": "UTF-8",
+  "canonical_order": ["event_id","proposal_id","ruleset_version","event_type","actor_class","timestamp","payload","payload_commitment","predecessor","evidence_refs","status"],
+  "event": {
+    "event_id": "evt-001",
+    "proposal_id": 1,
+    "ruleset_version": 1,
+    "event_type": "ProposalSubmitted",
+    "actor_class": "Proposer",
+    "timestamp": 100,
+    "payload": {"proposal_id": 1, "proposal_class": "Ordinary", "status": "Submitted"},
+    "payload_commitment": "placeholder-gov24-001",
+    "predecessor": null,
+    "evidence_refs": ["ev-001"],
+    "status": "AcceptedEvent"
+  }
+}
