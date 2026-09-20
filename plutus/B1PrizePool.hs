@@ -950,8 +950,7 @@ mkValidator
                            oraclePublisher
                            poolPolicy
                            poolName
-                           (txOutValue
-                             (ownOutputValue ctx))
+                           (ownOutputValue ctx)
 
                      in
                            traceIfFalse

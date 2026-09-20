@@ -31,6 +31,9 @@ library
         GoldenVectors
         Governance
 
+    other-modules:
+        B1LegacyAdapter
+
     build-depends:
         base ^>=4.18.2,
         plutus-core ^>=1.67.0.0,
@@ -50,12 +53,7 @@ library
 
 executable export-scripts
     hs-source-dirs:
-        .
-        ../IMMORTAL/state
-        ../IMMORTAL/kernel
-        ../IMMORTAL/conformance
-        ../Adapter/CARDANO/observation
-        ../IMMORTAL/governance
+        export
 
     main-is:            Export.hs
 

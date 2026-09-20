@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
