@@ -1,0 +1,3 @@
+# GOV-20 CABAL FRAGMENT
+
+Add `RulesetRegistry` to exposed governance modules and register `RulesetRegistryTest.hs` as a test suite.
