@@ -50,10 +50,18 @@ revealZeroExpected :: V3EconomicState
 revealZeroExpected =
   baseState
     { v3CrystallizedLiabilities = 500
+    , v3UnresolvedReserve = 0
+    , v3UnresolvedTicketCount = 0
+    , v3Classes = [TicketClassState 0 1 0 0 10 True]
     }
 
 expireZeroExpected :: V3EconomicState
-expireZeroExpected = baseState
+expireZeroExpected =
+  baseState
+    { v3UnresolvedReserve = 0
+    , v3UnresolvedTicketCount = 0
+    , v3Classes = [TicketClassState 0 1 0 0 10 True]
+    }
 
 claimExpected :: V3EconomicState
 claimExpected = baseState

@@ -11,16 +11,16 @@ import Governance
   )
 
 data ActorClass = System | Proposer | Voter | Delegate | Reviewer | Auditor | EmergencyAuthority
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data EventType = EProposalSubmitted | EProposalClassified | EStatusChanged
   | EVoteCast | EDelegationSet | EGatesSet
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data EventStatus = Pending | AcceptedEvent | RejectedEvent
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
-newtype EvidenceRef = EvidenceRef String deriving (Eq, Show)
+newtype EvidenceRef = EvidenceRef String deriving (Eq, Show, Ord)
 
 data CanonicalPayload
   = PayloadProposalSubmitted Proposal
@@ -29,7 +29,7 @@ data CanonicalPayload
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
   | PayloadGatesSet ProposalId GateResult
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data CanonicalEvent = CanonicalEvent
   { eventId :: String
@@ -43,7 +43,7 @@ data CanonicalEvent = CanonicalEvent
   , predecessor :: Maybe String
   , evidenceRefs :: [EvidenceRef]
   , eventStatus :: EventStatus
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 
 canonicalPayloadText :: CanonicalPayload -> String
 canonicalPayloadText p = case p of

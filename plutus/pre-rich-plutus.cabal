@@ -30,6 +30,13 @@ library
         RefinementV3
         GoldenVectors
         Governance
+        GovernanceEventSchema
+        GovernanceAuthorization
+        GovernanceCanonicalReplay
+        GovernanceCanonicalSerialization
+        GovernanceCommitment
+        RulesetRegistry
+
 
     other-modules:
         B1LegacyAdapter
@@ -118,4 +125,13 @@ test-suite governance-tests
         base ^>=4.18.2,
         pre-rich-plutus
 
+    default-language: Haskell2010
+
+test-suite governance-canonical-replay-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+    main-is:            GovernanceCanonicalReplayTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
     default-language: Haskell2010

@@ -7,7 +7,7 @@ import {
   PRE_UNIT,
   SNEK_CURVE_VALIDATOR_HASH,
   SNEK_POOL_NFT_POLICY_ID,
-  decodeAssetClass,
+
   decodePreSnekDatum,
   decodeState0,
   parsePlutusData,
