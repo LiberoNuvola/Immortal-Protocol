@@ -39,6 +39,11 @@ jobs:
           ghc-version: '9.6.7'
           cabal-version: '3.12.1.0'
 
+      - name: Record pinned Haskell toolchain
+        run: |
+          echo "HEAD=$(git rev-parse HEAD)"
+          ghc --version
+          cabal --version
       - name: Install Plutus native dependencies
         run: |
           sudo apt-get update
