@@ -1,7 +1,7 @@
-import { Blockfrost, Lucid, generateSeedPhrase } from '@lucid-evolution/lucid'
+import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
 import { writeFileSync } from 'node:fs'
 
-const seed = generateSeedPhrase()
+const seed = 'test test test test test test test test test test test test test test test test test test test test test test test sauce'
 const lucid = await Lucid(
   new Blockfrost('http://127.0.0.1:8080/api/v1', ''),
   'Preprod',
