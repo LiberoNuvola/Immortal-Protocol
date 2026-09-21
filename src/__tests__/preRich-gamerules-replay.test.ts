@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { fromHex, sha256, concatBytes, field, fieldInteger } from '../beacon'
+import { fromHex, sha256, concatBytes, field } from '../beacon'
 import { generateSymbols, rowTierFromIndex, classifyRowTier } from '../gameRules'
 
-type ReplayCase = {
+type ReplayGameCase = {
   symbolsSeed: string
   symbols: number[]
   rows: Array<{
@@ -15,12 +15,16 @@ type ReplayCase = {
   }>
 }
 
+type ReplayBoundaryCase = {
+  boundaryOutcomeCases: Array<{ outcome: number; tier: number }>
+}
+
 type ReplayVectors = {
   outcomeDomain: number
   accepted16BitUpperBound: number
   reduction: string
   payoutSubunitsPerUSDM: number
-  cases: ReplayCase[]
+  cases: Array<ReplayGameCase | ReplayBoundaryCase>
 }
 
 const vectors = (
@@ -47,7 +51,7 @@ describe('PRE-RICH GameRules replay vectors', () => {
     expect(vectors.payoutSubunitsPerUSDM).toBe(100)
   })
 
-  for (const testCase of vectors.cases.filter((candidate) => 'symbolsSeed' in candidate)) {
+  for (const testCase of vectors.cases.filter((candidate): candidate is ReplayGameCase => 'symbolsSeed' in candidate)) {
     it('replays ' + testCase.symbolsSeed, async () => {
       const seed = fromHex(testCase.symbolsSeed)
       const actualSymbols = await generateSymbols(seed)
@@ -70,9 +74,10 @@ describe('PRE-RICH GameRules replay vectors', () => {
 
   it('preserves every canonical interval boundary', () => {
     const boundaries = vectors.cases.find(
-      (candidate) => 'boundaryOutcomeCases' in candidate,
-    ) as ReplayCase & {
-      boundaryOutcomeCases: Array<{ outcome: number; tier: number }>
+      (candidate): candidate is ReplayBoundaryCase => 'boundaryOutcomeCases' in candidate,
+    )
+    if (!boundaries) {
+      throw new Error('canonical boundary vector missing')
     }
 
     for (const boundary of boundaries.boundaryOutcomeCases) {
