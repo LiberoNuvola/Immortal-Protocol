@@ -1153,3 +1153,44 @@ Commits:
 **Expected next evidence:** the next runs must pass native dependency resolution and reach the actual Haskell/Yaci tests. Only then can any regression or ledger result be classified.
 
 **Status:** INFRASTRUCTURE FIX APPLIED / CI EVIDENCE PENDING.
+
+
+---
+## 48. CURRENT SESSION RESULT — Economic Admission connectivity audit
+
+**Date:** 2026-09-22  
+**Front:** B5/RF8 — runtime connectivity, no economic changes
+
+### Verified current Cardano commit paths
+
+The current TypeScript paths were inspected directly on the active branch:
+
+- `src/mint.ts` constructs the serial sale transaction and submits through `createCardanoExecutionAdapter`.
+- `src/gameFlow.ts` constructs SyncBeacon/Reveal/Claim transactions and routes submission through `signAndSubmitTx`.
+- `src/registryFlow.ts` constructs BeaconReady publication and routes submission through `signAndSubmitTx`.
+- `src/createRound.ts` constructs BeaconPending creation and routes submission through `signAndSubmitTx`.
+- `src/txHelpers.ts` is the centralized `signAndSubmitTx` boundary and delegates to `CardanoExecutionAdapter.submit`.
+
+No direct `signTx`/`submitTx` side door was found in these inspected paths.
+
+### Important connectivity finding
+
+`PRE-RICH/profile/PreRichEconomicAdmission.hs` composes:
+
+`structural transition → PRE-RICH projection → EconomicGate → Viability`
+
+but the inspected TypeScript transaction construction/submission paths do not demonstrate invocation of this admission witness before transaction submission.
+
+Therefore the correct current classification remains:
+
+- EconomicGate / PreRichEconomicAdmission: **implemented + conformance-tested, runtime consumption NOT demonstrated**.
+- Cardano validator predicates: **concrete economic enforcement** on the actual transaction path.
+- Submission boundary: **concretely centralized**.
+
+This is an evidence/connectivity gap, not evidence that the Gate is redundant and not a reason to duplicate or move economic rules into TypeScript.
+
+### Next action
+
+Close the gap by tracing one economically material action end-to-end (preferably Reveal, because B6 evidence already exists): identify the canonical admission witness inputs, concrete Cardano transaction, resulting transaction reference, pre/post state fingerprints, and verify that stale/duplicate realization cannot create a second economic effect.
+
+Do **not** change `EconomicGate`, `EconomicTransitionV3`, ProtectedCapital, EffectivePool, Jackpot policy, or validator economics merely to force architectural symmetry.
