@@ -44,6 +44,7 @@ import {
 } from 'lucid-cardano'
 
 import wallet from './wallet'
+import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 
 import {
   buildScriptsFromLucid,
@@ -1193,15 +1194,14 @@ export async function mintSerialNFT(
   // Sign + submit
   // ----------------------------------------------------------
 
-  const signed =
-    await lucid.signTx(
-      tx,
-    )
+  const cardanoAdapter =
+    createCardanoExecutionAdapter(lucid)
+
+  const submission =
+    await cardanoAdapter.submit(tx)
 
   const txHash =
-    await lucid.submitTx(
-      signed,
-    )
+    submission.transactionRef
 
   // ----------------------------------------------------------
   // Result
