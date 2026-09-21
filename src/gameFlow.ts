@@ -449,8 +449,7 @@ export async function syncBeacon(opts: {
     .addSigner(owner)
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  return lucid.submitTx(signed)
+  return signAndSubmitTx(lucid, tx)
 }
 
 // ---------------------------------------------------------------------------
