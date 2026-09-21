@@ -867,3 +867,15 @@ The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check
 **Verified limitation:** the schema validates shape and tuple binding only. It does not claim cryptographic finality/storage-proof verification or publisher-independent Materios authenticity.
 
 **Status:** IMPLEMENTATION BOUNDARY / CI VERIFICATION PENDING ON LATEST HEAD.
+
+---
+## 35. SESSION RESULT — B6 Issue Ticket-Level Refinement
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B6 — Issue ticket-level refinement
+**Result:** added `PRE-RICH/profile/PreRichIssueRefinement.ts`, reusing the existing class-saleability evidence and adding ticket-level binding for canonical class price, explicit 100-subunit denomination, ticket identity, counter n→n+1, unresolved count/reserve deltas, Treasury economic price, Pending PrizeDatum state, zero pre-reveal outcome fields and BeaconPending state.
+**Evidence:** current Cardano MintPolicy/B1PrizePool already enforce these properties on-chain; the refinement provides an off-chain conformance witness rather than a second authority.
+**CI:** run `35654129336` — PRE-RICH Action Refinement Conformance — **SUCCESS**, including Issue/Expire refinement suite and TypeScript typecheck.
+**Important:** the only failed predecessor fixture was corrected at the fixture level: for a 2-USDM class, a 1,000-subunit unresolved reserve becomes 1,200, not 1,100. No economic invariant was weakened.
+**Remaining:** full B6 V3↔Cardano semantic equivalence, live-ledger evidence and Gate connectivity remain open.
+**Status:** POSITIVE REFINEMENT EVIDENCE / FULL CONFORMANCE OPEN
