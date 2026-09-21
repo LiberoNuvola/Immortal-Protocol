@@ -11,6 +11,7 @@ library
         ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
         ../IMMORTAL/governance
+        ../PRE-RICH/profile
 
     exposed-modules:
         Types
@@ -24,11 +25,13 @@ library
         MintPolicy
         PrizeValidator
         Treasury
+        EconomicProfile
         EconomicStateV3
         EconomicKernel
         EconomicTransitionV3
         RefinementV3
         GoldenVectors
+        PreRichEconomicProfile
         Governance
         GovernanceEventSchema
         GovernanceAuthorization
@@ -36,7 +39,6 @@ library
         GovernanceCanonicalSerialization
         GovernanceCommitment
         RulesetRegistry
-
 
     other-modules:
         B1LegacyAdapter
