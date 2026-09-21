@@ -1,0 +1,91 @@
+import { createHash } from 'node:crypto'
+
+export type ProofRef = {
+  kind: 'finality' | 'storage'
+  digest: string
+  uri?: string
+}
+
+export type CanonicalEvidencePacket = {
+  schemaVersion: 'immortal-anchor-v1'
+  chainId: string
+  genesisHash: string
+  blockHash: string
+  blockNumber: bigint
+  stateRoot: string
+  storageKey: string
+  authorityCommitment: string
+  finalityProof: ProofRef
+  storageProof: ProofRef
+  producedAt: string
+}
+
+function hex32(value: string, name: string): string {
+  const clean = value.replace(/^0x/i, '').toLowerCase()
+  if (!/^[0-9a-f]{64}$/.test(clean)) throw new Error(`${name} must be 32-byte hex`)
+  return clean
+}
+
+function nonEmpty(value: string, name: string): void {
+  if (!value.trim()) throw new Error(`${name} is required`)
+}
+
+function proofRefValid(ref: ProofRef, name: string): void {
+  if (ref.digest.length !== 64 || !/^[0-9a-f]+$/.test(ref.digest)) {
+    throw new Error(`${name}.digest must be a 32-byte lowercase hex digest`)
+  }
+}
+
+export function canonicalAnchorKey(packet: Omit<CanonicalEvidencePacket,'finalityProof'|'storageProof'|'producedAt'>): string {
+  nonEmpty(packet.schemaVersion, 'schemaVersion')
+  nonEmpty(packet.chainId, 'chainId')
+  hex32(packet.genesisHash, 'genesisHash')
+  hex32(packet.blockHash, 'blockHash')
+  hex32(packet.stateRoot, 'stateRoot')
+  nonEmpty(packet.storageKey, 'storageKey')
+  nonEmpty(packet.authorityCommitment, 'authorityCommitment')
+  if (packet.blockNumber < 0n) throw new Error('blockNumber must be non-negative')
+
+  const input = [
+    packet.schemaVersion,
+    packet.chainId,
+    hex32(packet.genesisHash,'genesisHash'),
+    hex32(packet.blockHash,'blockHash'),
+    packet.blockNumber.toString(),
+    hex32(packet.stateRoot,'stateRoot'),
+    packet.storageKey,
+    packet.authorityCommitment.toLowerCase(),
+  ].join('|')
+
+  return createHash('sha256').update(input, 'utf8').digest('hex')
+}
+
+export function validateCanonicalEvidencePacket(packet: CanonicalEvidencePacket): void {
+  if (packet.schemaVersion !== 'immortal-anchor-v1') throw new Error('unsupported anchor schema')
+  nonEmpty(packet.chainId, 'chainId')
+  hex32(packet.genesisHash, 'genesisHash')
+  hex32(packet.blockHash, 'blockHash')
+  hex32(packet.stateRoot, 'stateRoot')
+  if (packet.blockNumber < 0n) throw new Error('blockNumber must be non-negative')
+  nonEmpty(packet.storageKey, 'storageKey')
+  nonEmpty(packet.authorityCommitment, 'authorityCommitment')
+  proofRefValid(packet.finalityProof, 'finalityProof')
+  proofRefValid(packet.storageProof, 'storageProof')
+  if (Number.isNaN(Date.parse(packet.producedAt))) throw new Error('producedAt must be ISO-8601')
+
+  const anchor = canonicalAnchorKey({
+    schemaVersion: packet.schemaVersion,
+    chainId: packet.chainId,
+    genesisHash: packet.genesisHash,
+    blockHash: packet.blockHash,
+    blockNumber: packet.blockNumber,
+    stateRoot: packet.stateRoot,
+    storageKey: packet.storageKey,
+    authorityCommitment: packet.authorityCommitment,
+  })
+  const expectedPrefix = anchor.slice(0, 8)
+  if (packet.finalityProof.digest.slice(0, 8) === expectedPrefix && packet.storageProof.digest.slice(0, 8) === expectedPrefix) {
+    // Valid shape is enough here. Proof semantics remain the responsibility
+    // of the B3 verifier; no authenticity claim is made by this schema.
+  }
+}
