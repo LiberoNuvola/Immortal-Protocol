@@ -27,7 +27,7 @@ assert condition label =
 validState :: V3EconomicState
 validState =
   V3EconomicState
-    250 300 2 17 19 23
+    250 5 3 17 19 23
     [ TicketClassState 0 2 1 1 10 True
     , TicketClassState 1 3 2 4 20 True
     ]
@@ -37,23 +37,23 @@ validState =
 main :: IO ()
 main = do
   assert
-    (projectionBoundaryEquivalent profile 1000 validState)
+    (projectionBoundaryEquivalent profile 4000 validState)
     "valid multi-class state preserves V3 and Universal protected-capital boundary"
 
   case projectPreRichState profile validState of
     Nothing -> error "FAIL: valid state projection rejected"
     Just projected -> do
-      assert (UniversalKernel.protectedCapital projected == 1_352) "projected ProtectedCapital counts liabilities, exposure and protected components once"
-      assert (UniversalKernel.rawSurplus 2000 projected == 648) "projected RawSurplus matches exact universal formula"
+      assert (UniversalKernel.protectedCapital projected == 2_809) "projected ProtectedCapital counts liabilities, exposure and protected components once"
+      assert (UniversalKernel.rawSurplus 4000 projected == 1_191) "projected RawSurplus matches exact universal formula"
 
   assert
-    (case projectPreRichState profile (validState { v3UnresolvedReserve = 301 }) of
+    (case projectPreRichState profile (validState { v3UnresolvedReserve = 6 }) of
        Nothing -> True
        Just _ -> False)
     "aggregate unresolved reserve mismatch fails closed"
 
   assert
-    (case projectPreRichState profile (validState { v3UnresolvedTicketCount = 1 }) of
+    (case projectPreRichState profile (validState { v3UnresolvedTicketCount = 2 }) of
        Nothing -> True
        Just _ -> False)
     "aggregate unresolved count mismatch fails closed"
