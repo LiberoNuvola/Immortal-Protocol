@@ -105,7 +105,7 @@ main = do
        Just _ -> False)
     "invalid pre-state fails closed before admission"
 
-  case preRichEconomicAdmission profile issuedState (Reveal 0 500) 501 500 500 True True True True of
+  case preRichEconomicAdmission profile issuedState (Reveal 0 500) 500 501 500 500 True True True True of
     Nothing -> error "FAIL: valid reveal was rejected"
     Just admitted -> do
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 500) "reveal crystallises exact liability"
