@@ -594,3 +594,14 @@ and B4/B6 still require preservation/equivalence through the actual Cardano exec
 **Decision:** no payout-unit code fix is required. No new G7 implementation front is claimed by this session.
 **Remaining evidence:** executable parity and real Cardano settlement evidence remain part of the broader conformance program; they do not reopen the economic model.
 **Status:** TRIANGULATED / CLOSED IMPLEMENTATION FINDING — EVIDENCE REMAINS
+
+---
+## 25. SESSION CLAIM — B5 Economic Admission Bridge
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B5 — Economic Gate → Viability → Atomic Transition
+**Objective:** add the smallest non-destructive composition layer that evaluates a candidate V3 transition through the existing PRE-RICH projection, Universal Economic Gate and explicit viability certificate, while keeping `transitionValid` structural and keeping economic authority in IMMORTAL.
+**Files likely affected:** `PRE-RICH/profile/PreRichEconomicAdmission.hs`, focused conformance tests, cabal registration if required, coordination register.
+**Current evidence:** `IMMORTAL/kernel/EconomicGate.hs` already separates structural transition validity, verified EEV inputs, immediate economic gate and viability; `PRE-RICH/profile/PreRichEconomicProjection.hs` provides a fail-closed V3→universal projection; current matrix requires this chain but no direct V3-action composition exists yet.
+**Expected output:** typed admission result for V3 actions, fail-closed projection/Gate/viability composition, boundary tests; no universal formula changes.
+**Status:** IN_PROGRESS
