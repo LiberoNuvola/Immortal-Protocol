@@ -1,0 +1,58 @@
+name: P2.8-B.1 Inline Runtime Diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - audit/p2-8-b1-inline-runtime-diagnostic-2026-09-21
+
+jobs:
+  inline-runtime-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Verify lineage
+        run: |
+          set -euo pipefail
+          BASE="1e64ec9f31ba50e04e36b4576ba66d73bfefc0a8"
+          HEAD="$(git rev-parse HEAD)"
+          MERGE_BASE="$(git merge-base HEAD "$BASE")"
+          echo "BASE=$BASE"
+          echo "HEAD=$HEAD"
+          echo "MERGE_BASE=$MERGE_BASE"
+          test "$MERGE_BASE" = "$BASE"
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Verify Lucid 0.10.11
+        run: |
+          set -euo pipefail
+          npm ls lucid-cardano --depth=0
+          node -e "const p=require('./package-lock.json'); const v=p.packages?.['node_modules/lucid-cardano']?.version; if(v!=='0.10.11') throw new Error(v);"
+
+      - name: Run inline Reveal runtime diagnostic
+        shell: bash
+        run: |
+          set -o pipefail
+          node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs 2>&1 | tee inline-runtime-diagnostic.txt
+
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p2-8-b1-inline-runtime-diagnostic
+          path: inline-runtime-diagnostic.txt
+          if-no-files-found: ignore
