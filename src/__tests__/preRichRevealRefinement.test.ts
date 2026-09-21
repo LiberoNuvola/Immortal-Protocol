@@ -14,6 +14,8 @@ const base: RevealRefinementEvidence = {
   row1Tier: 0n,
   row2Tier: 2n,
   prizeTier: 2n,
+  row1PayoutSubunits: 0n,
+  row2PayoutSubunits: 250n,
   prizeAmountSubunits: 250n,
   revealValidityUpperBound: 1_000n,
   expiresAt: 1_000n,
@@ -48,9 +50,12 @@ describe('PRE-RICH ticket-level Reveal refinement', () => {
     expect(revealRefinementAdmissible({ ...base, row1Tier: 5n, row2Tier: 2n, prizeTier: 5n })).toBe(true)
   })
 
-  it('enforces the 500x payout cap', () => {
-    expect(() => validateRevealRefinementEvidence({ ...base, prizeAmountSubunits: 50_001n }))
-      .toThrow('reveal payout exceeds the canonical 500x cap')
+  it('binds ticket payout to the sum of both row payouts, capped at 500x', () => {
+    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 100n, row2PayoutSubunits: 250n, prizeAmountSubunits: 250n }))
+      .toThrow('prize amount must equal the sum of both row payouts capped at 500x')
+    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 40_000n, row2PayoutSubunits: 20_000n, prizeAmountSubunits: 50_000n })).not.toThrow()
+    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 40_000n, row2PayoutSubunits: 20_000n, prizeAmountSubunits: 60_000n }))
+      .toThrow('prize amount must equal the sum of both row payouts capped at 500x')
   })
 
   it('allows reveal at the exact expiry boundary', () => {
@@ -75,7 +80,7 @@ describe('PRE-RICH ticket-level Reveal refinement', () => {
   })
 
   it('rejects a payout above pre-reveal effective pool', () => {
-    expect(() => validateRevealRefinementEvidence({ ...base, prizeAmountSubunits: 8_501n, pendingLiabilityAfter: 9_001n, row2Tier: 5n, prizeTier: 5n }))
+    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 8_501n, row2PayoutSubunits: 0n, prizeAmountSubunits: 8_501n, pendingLiabilityAfter: 9_001n, row2Tier: 5n, prizeTier: 5n }))
       .toThrow('reveal payout exceeds pre-reveal effective pool')
   })
 
