@@ -493,7 +493,7 @@ describe('TicketIssued', () => {
 
   it('solvency preserved when underlying state is solvent', () => {
     const d = makeState({
-      ppTotalLiquidity: 10_000,
+      ppTotalLiquidity: 50_000,
       ppPendingLiabilities: 0,
       ppUnresolvedReserve: 0,
       ppLockedJackpot: 0,
@@ -864,16 +864,16 @@ describe('Solvency Invariant', () => {
 
   it('payout within effectivePool preserves solvency', () => {
     const d = makeState({
-      ppTotalLiquidity: 1000,
+      ppTotalLiquidity: 200_250,
       ppPendingLiabilities: 0,
       ppUnresolvedReserve: 500,
       ppUnresolvedTicketCount: 5,
       ppLockedJackpot: 0,
     })
-    // effectivePool = 1000 - 0 - 500 - 0 = 500
+    // effectivePool = 200250 - 0 - 500 - 0 = 199750
     const n = applyTicketRevealed(d, 100, 250)
     // n.pendingLiabilities = 250, n.reserve = 400
-    // n.effectivePool = 1000 - 250 - 400 - 0 = 350 >= 0
+    // n.effectivePool = 200250 - 250 - 400 - 0 = 199600 >= 0
     assert.ok(solvencyOk(n))
   })
 
@@ -1047,11 +1047,11 @@ describe('Edge Cases', () => {
 // On-chain enforcement requires a Plutus emulator.
 // ============================================================
 
-describe('21-field PrizeDatum Schema', () => {
-  it('PrizeDatum has 21 fields (indices 0..20)', () => {
+describe('23-field PrizeDatum Schema', () => {
+  it('PrizeDatum has 23 fields (indices 0..22)', () => {
     // Canonical field count from Types.hs PrizeDatum
     const FIELD_COUNT = 23
-    // Build a mock 21-field datum to verify round-trip
+    // Build a mock 23-field datum to verify round-trip
     const fields: unknown[] = new Array(FIELD_COUNT).fill(null).map((_, i) => {
       if (i === 10) return { index: 0, fields: [] } // Pending status
       if (i === 13) return { index: 0, fields: [0, 0, '', ''] } // BeaconTarget
@@ -1071,7 +1071,7 @@ describe('21-field PrizeDatum Schema', () => {
     const poolHashHex = '0'.repeat(56)
     const issuedAt = BigInt(Date.now())
     const expiresAt = issuedAt + 365n * 86_400_000n
-    // Simulate 21-field array
+    // Simulate the legacy prefix used by the field-order test
     const fields: unknown[] = new Array(21).fill('')
     fields[18] = poolHashHex  // pdPrizePoolHash
     fields[19] = issuedAt      // pdIssuedAt
@@ -1327,7 +1327,7 @@ describe('C-02: Atomic Ticket Sale', () => {
 
   it('an issued ticket must be economically reserved', () => {
     const before = makeState({
-      ppTotalLiquidity: 10_000,
+      ppTotalLiquidity: 50_000,
       ppUnresolvedTicketCount: 0,
       ppUnresolvedReserve: 0,
     })
