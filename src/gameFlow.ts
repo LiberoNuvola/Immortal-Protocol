@@ -686,6 +686,12 @@ export async function claimPrize(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const b1PrizePoolAddress =
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) {
+    throw new Error('B1PrizePool address cannot be resolved')
+  }
+  const settlementValue = validateSettlementValue(opts.settlementValue)
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
