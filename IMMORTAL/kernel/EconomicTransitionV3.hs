@@ -9,6 +9,7 @@ module EconomicTransitionV3
 
 import PlutusTx.Prelude
 import EconomicStateV3
+import EconomicProfile (EconomicProfile)
 import qualified EconomicKernel
 
 data V3Action
@@ -28,9 +29,9 @@ updateClass cid f (c:cs)
         Just xs -> Just (c : xs)
 
 {-# INLINABLE transition #-}
-transition :: V3EconomicState -> V3Action -> Maybe V3EconomicState
-transition s (Issue cid price) =
-  case classPrice cid of
+transition :: EconomicProfile -> V3EconomicState -> V3Action -> Maybe V3EconomicState
+transition profile s (Issue cid price) =
+  case classPrice profile cid of
     Nothing -> Nothing
     Just canonicalPrice
       | price /= canonicalPrice -> Nothing
@@ -45,11 +46,11 @@ transition s (Issue cid price) =
                 , v3Classes = cs
                 }
 
-transition s (Reveal cid payout) =
-  case classPrice cid of
+transition profile s (Reveal cid payout) =
+  case classPrice profile cid of
     Nothing -> Nothing
     Just price
-      | not (EconomicKernel.payoutSufficient price payout) -> Nothing
+      | not (EconomicKernel.payoutSufficient profile price payout) -> Nothing
       | otherwise ->
           case updateClass cid (revealClass price) (v3Classes s) of
             Nothing -> Nothing
@@ -67,7 +68,7 @@ transition s (Reveal cid payout) =
                     , v3Classes = cs
                     }
 
-transition s (Claim amount)
+transition _ s (Claim amount)
   | amount <= 0 = Nothing
   | amount > v3CrystallizedLiabilities s = Nothing
   | otherwise =
@@ -76,8 +77,8 @@ transition s (Claim amount)
             v3CrystallizedLiabilities s - amount
         }
 
-transition s (Expire cid) =
-  case classPrice cid of
+transition profile s (Expire cid) =
+  case classPrice profile cid of
     Nothing -> Nothing
     Just price ->
       case updateClass cid (expireClass price) (v3Classes s) of
@@ -127,21 +128,16 @@ totalUnresolved cid (c:cs)
   | otherwise = totalUnresolved cid cs
 
 {-# INLINABLE transitionValid #-}
-transitionValid :: V3EconomicState -> V3Action -> Bool
-transitionValid s a =
-     preStateValid s
-  && case transition s a of
+transitionValid :: EconomicProfile -> V3EconomicState -> V3Action -> Bool
+transitionValid profile s a =
+     EconomicKernel.conservationInvariant profile s
+  && profileValid profile
+  && case transition profile s a of
        Nothing -> False
-       Just s' -> postStateValid s'
+       Just s' ->
+            EconomicKernel.conservationInvariant profile s'
+         && nonNegativeState s'
   where
-    preStateValid st =
-         EconomicKernel.conservationInvariant st
-      && nonNegativeState st
-
-    postStateValid st =
-         EconomicKernel.conservationInvariant st
-      && nonNegativeState st
-
     nonNegativeState st =
          v3CrystallizedLiabilities st >= 0
       && v3UnresolvedReserve st >= 0
