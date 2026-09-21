@@ -703,10 +703,10 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
                    Just pd ->
                         pdStatus pd == Pending
@@ -1029,12 +1029,20 @@ mkValidator
                                info)
 
                        && traceIfFalse
+                            "B1PrizePool: prize pool binding mismatch"
+                            (pdPrizePoolHash pd == ownScriptHash ctx)
+
+                       && traceIfFalse
                             "B1PrizePool: payout must be zero for unrevealed"
                             (payout == 0)
 
                        && traceIfFalse
                             "B1PrizePool: status must be Pending"
                             (pdStatus pd == Pending)
+
+                       && traceIfFalse
+                            "B1PrizePool: price must be positive"
+                            (reservePerTicket > 0)
 
                        && ppTotalLiquidity n
                             == ppTotalLiquidity datum
