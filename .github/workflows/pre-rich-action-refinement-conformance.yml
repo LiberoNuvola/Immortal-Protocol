@@ -7,8 +7,17 @@ on:
     paths:
       - "PRE-RICH/profile/PreRichIssueEvidence.ts"
       - "PRE-RICH/profile/PreRichExpireRefinement.ts"
+      - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
+      - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
+      - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
+      - "src/__tests__/preRichExpiryEvidence.test.ts"
+      - "src/__tests__/preRichCertifiedTicket.test.ts"
+      - "src/__tests__/preRichJackpotPolicy.test.ts"
+      - "src/ticket3d.ts"
+      - "src/gameFlow.ts"
+      - "src/txHelpers.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
       - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
       - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
@@ -16,7 +25,8 @@ on:
       - "src/ticket3d.ts"
       - "src/gameFlow.ts"
       - "src/txHelpers.ts"
-      - "src/*.ts"\n  pull_request:
+      - "src/*.ts"
+  pull_request:
     branches:
       - work/immortal-green-closure
     paths:
