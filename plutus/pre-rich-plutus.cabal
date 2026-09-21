@@ -191,3 +191,12 @@ test-suite legacy-adapter-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language:   Haskell2010
+
+test-suite projection-boundary-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+    main-is:            ProjectionBoundaryConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language:   Haskell2010
