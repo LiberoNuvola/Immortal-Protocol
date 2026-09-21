@@ -28,6 +28,7 @@ library
         EconomicProfile
         EconomicStateV3
         UniversalEconomicState
+        EconomicGate
         EconomicKernel
         UniversalEconomicKernel
         EconomicTransitionV3
