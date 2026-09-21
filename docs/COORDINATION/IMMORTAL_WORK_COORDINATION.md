@@ -1070,3 +1070,59 @@ The existing `EconomicObservation` remains unchanged and retains its narrower ro
 
 ### Do not redo
 Do not modify `EconomicTransitionV3`, ProtectedCapital, EconomicGate, EffectivePool, Jackpot policy, or Cardano validator economics for this front. The next evidence step is to populate this envelope from an actual settlement trace and prove rejection of stale/duplicate realization, not to add another economic rule.
+
+
+---
+## 47. ARCHITECTURE REALITY AUDIT — current-head snapshot
+
+**Date:** 2026-09-22  
+**Head verified by latest CI:** `2f23bd6fd260e8b8cf8b8e40775baaed71fc200e`  
+**Purpose:** distinguish architectural design claims from demonstrated execution/generalization. No economic canon changed.
+
+### Classification rule
+
+- 🟢 **LIVE / ENFORCED** — participates in the concrete Cardano economic path or is enforced on-chain.
+- 🟡 **LIVE / INDIRECT** — consumed through a real boundary but not itself the final execution authority.
+- 🔵 **IMPLEMENTED / VERIFIED / NOT RUNTIME-CONSUMED** — code and tests exist, but no current production path was established as consuming it.
+- 🟠 **DESIGN / PROTOTYPE** — specification or proof-of-concept without current end-to-end execution evidence.
+- ⚪ **ORPHAN / CANDIDATE** — no demonstrated consumer after the required source audit.
+
+### Findings
+
+| Component | Evidence on current branch | Classification | Conclusion |
+|---|---|---|---|
+| `EconomicKernel` / V3 class exposure | `B1PrizePool.hs` and transition/conformance code consume it; PRE-RICH class/profile semantics are explicit | 🟢 | Real, but application-shaped; not evidence of a second independent application. |
+| `UniversalEconomicState` | Projected from V3 by `PreRichEconomicProjection.hs`; projection has dedicated conformance tests | 🔵 | Real compatibility/conformance boundary, not yet the canonical runtime state. |
+| `UniversalEconomicKernel` | Used by B1 through the legacy aggregate projection and by projection/admission tests | 🟡 | It has a real Cardano validator consumer for aggregate safety, but its full semantic role is still narrower than the architectural model. |
+| `EconomicGate` | Consumed by `PreRichEconomicAdmission.hs`; dedicated `EconomicAdmissionTest` exercises it | 🔵 | Implemented and tested, but no evidence in the current DApp/Cardano transaction path shows that production submission invokes this gate. |
+| `PreRichEconomicAdmission` | Explicit structural → projection → Gate → viability witness exists | 🔵 | Conformance/admission witness, not demonstrated as runtime transaction authority. |
+| Cardano Adapter submission boundary | `mint.ts` submits through `createCardanoExecutionAdapter`; other transaction paths use `signAndSubmitTx` | 🟢 | Submission/signing boundary is concretely centralized; transaction construction remains partly in DApp code. |
+| Cardano validator solvency | B1 checks post-state solvency for Issue/Reveal/Claim/Expire | 🟢 | Concrete economic enforcement exists independently of the off-chain Gate interface. |
+| Jackpot | Present in PRE-RICH/V3/Cardano accounting and policy | 🟢 | Application policy is real; it must not be advertised as universal IMMORTAL state semantics. |
+| Second adapter/application generalization | Bitcoin workflow exists as design work only; no second end-to-end conformance path is established | 🟠 | Chain/application neutrality remains a design property, not an empirically demonstrated generalization. |
+
+### Architectural conclusion
+
+The audit does **not** justify collapsing IMMORTAL / Adapter / PRE-RICH. It does justify stopping further abstraction growth until the existing boundaries are connected to demonstrated execution.
+
+Public wording should distinguish:
+
+> IMMORTAL is designed as a chain-neutral economic layer. Current end-to-end implementation and evidence are demonstrated through PRE-RICH on Cardano; broader generality remains an architectural property to be validated through additional adapters or applications.
+
+The immediate engineering priority is therefore **connectivity and evidence**, not another universal rewrite:
+
+1. enumerate every economically material Cardano commit path;
+2. determine which paths actually consume `EconomicGate`/admission versus relying directly on validator predicates;
+3. close B4/B5/B6 evidence at those real boundaries;
+4. only then decide whether any universal module is genuinely redundant.
+
+This audit does not reopen KA/KC/KD, ticket ladder, 500×, Jackpot ownership, expiry semantics, or any other closed economic decision.
+
+### Current CI evidence
+
+- Cardano Adapter Sale Conformance run `35661171376`: **SUCCESS**.
+- PRE-RICH Action Refinement run `35661171411`: **FAILURE**, one fixture invariant defect; all other 70 tests passed. The mismatch fixture now aligns `pendingLiabilityAfter` with the intentionally altered payout (`850`) so the test reaches the payout-sum assertion rather than failing first on crystallized-liability accounting.
+- Kernel Invalid-Class run `35661171407`: native dependency setup reached the real Haskell suite, but the suite failed at Cabal invocation (`Cabal-7107`); this is no longer the previous missing-`libblst.a` setup failure.
+- Cardano Integration Lab run `35661171386`: still blocked in native Plutus dependency setup before Yaci/devnet execution.
+
+**Status:** REALITY AUDIT COMPLETED / CONNECTIVITY EVIDENCE REMAINS OPEN.
