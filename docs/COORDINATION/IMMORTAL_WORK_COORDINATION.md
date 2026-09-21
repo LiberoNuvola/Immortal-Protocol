@@ -828,3 +828,42 @@ No universal expiry number was introduced by this work.
 The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check.mjs`.
 
 **Status:** RESTORED / VALIDATION RUNNING
+
+---
+
+## 32. SESSION RESULT — R4 Liveness Boundary
+
+**Result:** the R4 executable stall classifier now matches the normative FM1-FM10 precedence.
+
+**Verified:** workflow `35652921847` succeeded on commit `d3fd63d709577f13db91a3e2d6e8b1e8c7c9dc30` after correcting two real test expectation/order defects:
+- observed internal stall with inputs is classified as FM3 before `PROGRESS_AVAILABLE`;
+- a certified state outside `K_c` is FM1;
+- a certified state with no eligible action and no separate failure witness remains FM10 rather than being mislabeled FM1.
+
+**Boundary:** this is an executable liveness-observability classifier. It does not prove L1-L4 for a deployment and does not claim IMMORTAL liveness universally.
+
+**Status:** IMPLEMENTATION TEST GREEN.
+
+---
+
+## 33. SESSION RESULT — 3D Certified Ticket Boundary
+
+**Result:** added `PRE-RICH/profile/PreRichCertifiedTicket.ts` as the certified persistent identity/state boundary and `src/ticket3d.ts` as a presentation-only interactive renderer.
+
+**Verified semantics:** NFT identity is `(policyId, assetName)` and is checked against the authoritative PrizeDatum identity before a renderer state can exist. The renderer never computes authorization, payout, Reveal, Claim or Expire decisions. Terminal checks are time-explicit (`ticketTerminalAt(state, now)`).
+
+**Important limitation:** the renderer is not yet wired into the production page shell. The on-chain NFT/datum remains the authoritative source; this change does not create a new persistence mechanism.
+
+**Status:** BOUNDARY IMPLEMENTED / UI INTEGRATION OPEN.
+
+---
+
+## 34. SESSION RESULT — B3 Canonical Evidence Boundary
+
+**Result:** added `poc/materios-checkpoint/src/canonicalEvidence.ts` and a dedicated deterministic test/CI boundary.
+
+**Semantics:** each evidence packet binds chain ID, genesis hash, block hash/number, state root, storage key and authority commitment through a deterministic SHA-256 `anchorKey`. Finality and storage proof references are mandatory fields.
+
+**Verified limitation:** the schema validates shape and tuple binding only. It does not claim cryptographic finality/storage-proof verification or publisher-independent Materios authenticity.
+
+**Status:** IMPLEMENTATION BOUNDARY / CI VERIFICATION PENDING ON LATEST HEAD.
