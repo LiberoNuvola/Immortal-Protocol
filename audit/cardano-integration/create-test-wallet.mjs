@@ -10,7 +10,7 @@ lucid.selectWallet.fromSeed(seed)
 
 const address = await lucid.wallet().address()
 
-writeFileSync('audit/yaci-evidence/test-wallet.json', JSON.stringify({
+writeFileSync('/tmp/immortal-yaci-test-wallet.json', JSON.stringify({
   purpose: 'ephemeral-local-devnet-only',
   address,
   seed,
