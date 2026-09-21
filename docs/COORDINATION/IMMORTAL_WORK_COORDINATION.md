@@ -447,3 +447,31 @@ These are implementation/documentation evidence, not a replacement for the norma
 **The coordination file coordinates work; it does not define IMMORTAL.**
 
 If this file ever conflicts with canonical specifications or consolidated normative decisions, the canonical source wins and this register must be corrected.
+
+
+---
+
+## 19. SESSION RESULT — B2 Numerical Hysteresis
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B2 — Numerical Hysteresis
+**Result:** implemented a PRE-RICH application-level exact-integer hysteresis reference without modifying IMMORTAL universal kernel/state. Canonical baseline is KA=8, KC=4, KD=4. Activation, maintenance, distribution-floor and direct-contraction predicates are evaluated by integer cross-multiplication (C >= K*X(P)), avoiding floating-point division and without embedding PRE-RICH ladder policy in the universal kernel.
+**Files changed:**
+- src/preRichHysteresis.ts
+- src/__tests__/preRichHysteresis.test.ts
+- .github/workflows/pre-rich-hysteresis-conformance.yml
+- docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md
+**Tests/evidence:** dedicated GitHub Actions run 35649345343 (PRE-RICH Hysteresis Conformance) completed successfully on commit ea8b0740ba04da771cee5884db3d8114428660e4. The initial boundary fixture was corrected when review found that class 3 remained activation-eligible at capacity 639; the invariant was not weakened.
+**Verified semantics:** exact activation boundary, exact maintenance boundary, KD distribution floor, highest activation-eligible class, direct contraction, retention below activation while maintenance holds, monotonic HighestClassEverActivated and safe halt when no class remains maintainable.
+**Remaining uncertainty:** live integration into PRE-RICH class-control state and on-chain enforcement/conformance. This result does not prove infinite-horizon viability or Cardano equivalence.
+**Status:** NEEDS-EVIDENCE / IMPLEMENTATION CONFORMANCE
+
+## 20. SESSION CLAIM — G7 Payout-Unit Conformance
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B3-D / G7 — payout-unit conformance
+**Objective:** verify the canonical 2.5-USDM tier representation across GameRules → PrizeDatum → PrizeValidator → Adapter/settlement without changing canonical economics.
+**Files likely affected:** existing GameRules/result/PrizeDatum/PrizeValidator/Adapter paths only; no universal kernel changes.
+**Current evidence:** current checkpoint says exact 2.5-USDM representation remains the implementation gate; canonical result preserves both row outcomes.
+**Expected output:** end-to-end representation map and smallest conformance fix, if required.
+**Status:** IN_PROGRESS
