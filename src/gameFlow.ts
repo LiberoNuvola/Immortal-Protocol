@@ -7,7 +7,7 @@
  *     → Claim → Claimed (NFT kept, no mandatory burn, liability reduced)
  *
  * PrizeStatus: Pending=0, Revealed=1, Claimed=2
- * PrizeDatum fields 0..20 (18 prizePoolHash, 19 issuedAt, 20 expiresAt)
+ * PrizeDatum fields 0..22 (18 prizePoolHash, 19 issuedAt, 20 expiresAt, 21 row1Tier, 22 row2Tier)
  *
  * B1: reveal/claim transactions coordinate PrizeValidator + B1PrizePool.
  */
@@ -32,10 +32,11 @@ import {
 } from './beacon'
 
 import {
+  classifyRowTier,
   classifyTier,
   defaultPrizeTable,
   generateSymbols,
-  prizeAmountForTier,
+  rowPayoutTotal,
   type PrizeTable,
 } from './gameRules'
 
@@ -225,7 +226,7 @@ function decodePrizeDatum(utxo: UTxO): PrizeState | null {
     if (raw == null) return null
     const parsed = parseData(raw)
     const fields = asFields(parsed)
-    if (!fields || fields.length !== 21) return null
+    if (!fields || fields.length !== 23) return null
     return { fields }
   } catch {
     return null
@@ -467,6 +468,8 @@ export async function revealPrize(opts: {
   txHash: string
   tier: number
   prizeAmount: number
+  row1Tier: number
+  row2Tier: number
   resultHex: string
 }> {
   const lucid = wallet.getLucid()
@@ -575,8 +578,10 @@ export async function revealPrize(opts: {
   const expectedResult = await sha256(
     new Uint8Array([...field(digest), ...field(symbols)]),
   )
-  const tier = classifyTier(symbols)
-  const prizeAmount = prizeAmountForTier(table, tier, priceUsdm)
+  const row1Tier = classifyRowTier(symbols.slice(0, 3))
+  const row2Tier = classifyRowTier(symbols.slice(3, 6))
+  const tier = Math.max(row1Tier, row2Tier)
+  const prizeAmount = rowPayoutTotal(table, row1Tier, row2Tier, priceUsdm)
 
   // Update PrizeDatum
   const nextFields = [...datum.fields]
@@ -584,6 +589,8 @@ export async function revealPrize(opts: {
   nextFields[10] = emptyConstr(1) // Revealed
   nextFields[11] = toHex(expectedResult)
   nextFields[12] = BigInt(tier)
+  nextFields[21] = BigInt(row1Tier)
+  nextFields[22] = BigInt(row2Tier)
 
   const nextDatum = datumFromFields(nextFields)
   const owner = await lucid.wallet.address()
@@ -633,6 +640,8 @@ export async function revealPrize(opts: {
     txHash,
     tier,
     prizeAmount,
+    row1Tier,
+    row2Tier,
     resultHex: toHex(expectedResult),
   }
 }
