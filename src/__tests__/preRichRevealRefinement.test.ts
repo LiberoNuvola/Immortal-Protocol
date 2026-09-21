@@ -51,7 +51,7 @@ describe('PRE-RICH ticket-level Reveal refinement', () => {
   })
 
   it('binds ticket payout to the sum of both row payouts, capped at 500x', () => {
-    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 100n, row2PayoutSubunits: 250n, prizeAmountSubunits: 250n }))
+    expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 100n, row2PayoutSubunits: 250n, prizeAmountSubunits: 250n, pendingLiabilityAfter: 850n }))
       .toThrow('prize amount must equal the sum of both row payouts capped at 500x')
     expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 40_000n, row2PayoutSubunits: 20_000n, prizeAmountSubunits: 50_000n, pendingLiabilityAfter: 50_500n })).not.toThrow()
     expect(() => validateRevealRefinementEvidence({ ...base, row1PayoutSubunits: 40_000n, row2PayoutSubunits: 20_000n, prizeAmountSubunits: 60_000n, pendingLiabilityAfter: 60_500n }))
