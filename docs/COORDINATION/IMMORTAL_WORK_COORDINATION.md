@@ -775,3 +775,17 @@ No universal expiry number was introduced by this work.
 **CI status:** current branch CI was triggered after the latest changes; final Haskell/Cardano results are still pending. The earlier Adapter failures were fixture/runner synchronization issues and are being corrected without relaxing economic checks.
 **Architectural boundary:** `transitionValid` remains structural; Economic Gate remains IMMORTAL authority; Viability remains distinct; Adapter remains evidence/realization layer.
 **Status:** CLOSING — IMPLEMENTATION IN, EVIDENCE PENDING
+
+
+---
+
+## 29. SESSION UPDATE — A1 / B3 / B5 Evidence
+
+**Date:** 2026-09-21
+**A1 Expiry:** implementation boundary now removes the historical fixed 365-day calculation from `src/mint.ts`. The ticket mint accepts an explicit DApp/profile expiry policy plus an issuance-state snapshot and crystallizes `expiresAt = issuedAt + F_D(S_issuance)`. New `PRE-RICH/profile/PreRichExpiryPolicy.ts` and `src/__tests__/preRichExpiryPolicy.test.ts` provide deterministic state-derived policy evidence. RF9 CI run `35651359698` completed successfully.
+**B3-D Replay:** canonical GameRules replay vector CI run `35651369735` completed successfully. The test now matches the exact `GameRules.hs` raw `[row,attempt] || seed` input.
+**B5 Economic Gate:** Gate now carries explicit `availableExecutableLiquidity` and `requiredImmediateLiquidity`, distinct from EEV. PRE-RICH admission bridge composes structural transition → universal projection → Economic Gate → Viability. Haskell evidence is pending because the regression workflow is still progressing through toolchain setup; CI was also corrected to build blst using upstream `build.sh` rather than `make`.
+**B6 Cardano:** P2.7 Adapter/semantic conformance has passed on recent runs; the Reveal counterexample is now represented explicitly as execution-liquidity evidence. B6 remains partial until action-by-action refinement and ticket-level Expire/Issue semantics are fully proven.
+**B4:** no ProtectedCapital formula change introduced. The existing universal bridge remains additive and fail-closed.
+**3D:** no implementation authority gap found in this pass; canonical pipeline remains economic state → certified NFT identity/state → renderer.
+**Status:** MULTI-FRONT PROGRESS — A1 implementation evidence green; B3 replay evidence green; B5 implementation closing/evidence pending; B6 partial; B4 open.
