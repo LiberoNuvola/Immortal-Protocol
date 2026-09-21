@@ -192,7 +192,7 @@ classifyTier bs =
         if t1 >= t2 then t1 else t2
 
 {-# INLINABLE rowPayoutTotal #-}
-rowPayoutTotal :: PrizeTable -> Integer -> Integer -> Integer -> Integer -> Integer
+rowPayoutTotal :: PrizeTable -> Integer -> Integer -> Integer -> Integer
 rowPayoutTotal table row1Tier row2Tier priceUsdm =
   min
     (prizeAmountForTier table row1Tier priceUsdm
