@@ -23,6 +23,7 @@ module EconomicKernel
 import PlutusTx.Builtins.HasOpaque (stringToBuiltinString)
 import PlutusTx.Prelude
 import EconomicStateV3
+import EconomicProfile (EconomicProfile, profilePrice, epMaxNormalPayoutMultiplier)
 
 {-# INLINABLE ceilingDiv #-}
 ceilingDiv :: Integer -> Integer -> Integer
@@ -33,18 +34,18 @@ ceilingDiv a b
   | otherwise = (a + b - 1) `divide` b
 
 {-# INLINABLE classExposure #-}
-classExposure :: TicketClassState -> Integer
-classExposure c =
-  case classPrice (tcsClassId c) of
+classExposure :: EconomicProfile -> TicketClassState -> Integer
+classExposure profile c =
+  case profilePrice profile (tcsClassId c) of
     Just p -> p * tcsUnresolved c
     Nothing ->
       traceError (stringToBuiltinString "EconomicKernel: unknown ticket class")
 
 {-# INLINABLE totalClassExposure #-}
-totalClassExposure :: [TicketClassState] -> Integer
-totalClassExposure [] = 0
-totalClassExposure (c:cs) =
-  classExposure c + totalClassExposure cs
+totalClassExposure :: EconomicProfile -> [TicketClassState] -> Integer
+totalClassExposure _ [] = 0
+totalClassExposure profile (c:cs) =
+  classExposure profile c + totalClassExposure profile cs
 
 {-# INLINABLE totalUnresolvedCount #-}
 totalUnresolvedCount :: [TicketClassState] -> Integer
@@ -53,9 +54,10 @@ totalUnresolvedCount (c:cs) =
   tcsUnresolved c + totalUnresolvedCount cs
 
 {-# INLINABLE worstCaseExposure #-}
-worstCaseExposure :: V3EconomicState -> Integer
-worstCaseExposure s =
-  500 * totalClassExposure (v3Classes s)
+worstCaseExposure :: EconomicProfile -> V3EconomicState -> Integer
+worstCaseExposure profile s =
+  epMaxNormalPayoutMultiplier profile
+    * totalClassExposure profile (v3Classes s)
 
 {-# INLINABLE effectivePool #-}
 effectivePool :: Integer -> V3EconomicState -> Integer
@@ -66,19 +68,19 @@ effectivePool eev s =
     - jsLockedAmount (v3Jackpot s)
 
 {-# INLINABLE protectedCapital #-}
-protectedCapital :: V3EconomicState -> Integer
-protectedCapital s =
+protectedCapital :: EconomicProfile -> V3EconomicState -> Integer
+protectedCapital profile s =
     v3CrystallizedLiabilities s
-  + worstCaseExposure s
+  + worstCaseExposure profile s
   + v3SafetyCapital s
   + v3ReserveProtection s
   + jsLockedAmount (v3Jackpot s)
   + v3MandatoryFutureCosts s
 
 {-# INLINABLE rawSurplus #-}
-rawSurplus :: Integer -> V3EconomicState -> Integer
-rawSurplus eev s =
-  max 0 (eev - protectedCapital s)
+rawSurplus :: EconomicProfile -> Integer -> V3EconomicState -> Integer
+rawSurplus profile eev s =
+  max 0 (eev - protectedCapital profile s)
 
 {-# INLINABLE classSaleable #-}
 classSaleable :: V3EconomicState -> TicketClass -> Bool
@@ -115,15 +117,15 @@ liabilityClaimDelta :: Integer -> Integer
 liabilityClaimDelta claimedAmount = negate (max 0 claimedAmount)
 
 {-# INLINABLE payoutSufficient #-}
-payoutSufficient :: Integer -> Integer -> Bool
-payoutSufficient priceUsdm payoutAmount =
+payoutSufficient :: EconomicProfile -> Integer -> Integer -> Bool
+payoutSufficient profile priceUsdm payoutAmount =
      priceUsdm >= 0
   && payoutAmount >= 0
-  && payoutAmount <= 500 * priceUsdm
+  && payoutAmount <= epMaxNormalPayoutMultiplier profile * priceUsdm
 
 {-# INLINABLE solvencyInvariant #-}
-solvencyInvariant :: Integer -> V3EconomicState -> Bool
-solvencyInvariant eev s =
+solvencyInvariant :: EconomicProfile -> Integer -> V3EconomicState -> Bool
+solvencyInvariant profile eev s =
      eev >= 0
   && v3CrystallizedLiabilities s >= 0
   && v3UnresolvedReserve s >= 0
@@ -132,10 +134,10 @@ solvencyInvariant eev s =
   && v3ReserveProtection s >= 0
   && v3MandatoryFutureCosts s >= 0
   && jsLockedAmount (v3Jackpot s) >= 0
-  && eev >= protectedCapital s
+  && eev >= protectedCapital profile s
 
 {-# INLINABLE conservationInvariant #-}
-conservationInvariant :: V3EconomicState -> Bool
-conservationInvariant s =
-     v3UnresolvedReserve s == totalClassExposure (v3Classes s)
+conservationInvariant :: EconomicProfile -> V3EconomicState -> Bool
+conservationInvariant profile s =
+     v3UnresolvedReserve s == totalClassExposure profile (v3Classes s)
   && v3UnresolvedTicketCount s == totalUnresolvedCount (v3Classes s)
