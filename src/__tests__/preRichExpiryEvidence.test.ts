@@ -6,6 +6,11 @@ import {
   validBeforeExpiry,
   validateTicketExpiryEvidence,
 } from '../../PRE-RICH/profile/PreRichExpiryEvidence'
+import {
+  crystallizeTicketExpiry,
+  type PreRichExpiryIssuanceState,
+  type PreRichExpiryPolicy,
+} from '../../PRE-RICH/profile/PreRichExpiryPolicy'
 
 const evidence = {
   ticketId: 'ticket-001',
@@ -43,6 +48,40 @@ describe('PRE-RICH ticket expiry refinement evidence', () => {
         expiresAt: 999n,
       }),
     ).toThrow('expiresAt must not precede issuedAt')
+  })
+
+  it('connects a state-derived policy output to the ticket expiry verifier', () => {
+    const issuanceState: PreRichExpiryIssuanceState = {
+      issuanceStateHash: 'fixture-state',
+      economicEpoch: 4n,
+      currentActiveClass: 2n,
+      highestClassEverActivated: 2n,
+      eev: 5_000n,
+      unresolvedReserve: 400n,
+      unresolvedTicketCount: 20n,
+    }
+    const policy: PreRichExpiryPolicy = {
+      policyId: 'fixture-policy',
+      policyVersion: 1n,
+      deriveHorizonMs: (state) => 500n + state.economicEpoch * 10n,
+    }
+
+    const crystallized = crystallizeTicketExpiry(
+      policy,
+      issuanceState,
+      10_000n,
+    )
+    const ticketEvidence = {
+      ticketId: 'ticket-policy-bound',
+      issuedAt: crystallized.issuedAt,
+      expiresAt: crystallized.expiresAt,
+    }
+
+    expect(crystallized.expiresAt).toBe(10_540n)
+    expect(() => validateTicketExpiryEvidence(ticketEvidence)).not.toThrow()
+    expect(validBeforeExpiry(10_540n, ticketEvidence)).toBe(true)
+    expect(expiredAtOrAfter(10_540n, ticketEvidence)).toBe(true)
+    expect(lateRevealEconomicEffect(10_541n, ticketEvidence)).toBe(0n)
   })
 
   it('fails closed on empty ticket identity', () => {
