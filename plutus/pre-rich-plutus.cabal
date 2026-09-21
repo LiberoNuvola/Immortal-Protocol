@@ -163,3 +163,21 @@ test-suite protected-capital-conformance-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language:   Haskell2010
+
+test-suite governance-ruleset-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     ../IMMORTAL/governance
+    main-is:            RulesetRegistryTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language:   Haskell2010
+
+test-suite governance-phase6-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     ../IMMORTAL/governance
+    main-is:            GovernancePhase6Test.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language:   Haskell2010
