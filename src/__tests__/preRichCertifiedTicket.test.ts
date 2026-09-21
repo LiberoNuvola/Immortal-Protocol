@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { certifyTicketBinding } from '../../PRE-RICH/profile/PreRichCertifiedTicket'
+import { assertObservedTicketNft, certifyTicketBinding } from '../../PRE-RICH/profile/PreRichCertifiedTicket'
 
 const datum = {
   ticketPolicy: 'aa'.repeat(28),
@@ -74,5 +74,31 @@ describe('Certified persistent ticket binding', () => {
     expect(state.row1Tier).toBe(2n)
     expect(state.row2Tier).toBe(0n)
     expect(state.prizeTier).toBe(2n)
+  })
+})
+
+describe('Certified ticket NFT observation', () => {
+  it('accepts exactly one observed ticket NFT', () => {
+    expect(() => assertObservedTicketNft(
+      { ['aa'.repeat(28) + '3132']: 1n },
+      'aa'.repeat(28),
+      '3132',
+    )).not.toThrow()
+  })
+
+  it('rejects a missing ticket NFT', () => {
+    expect(() => assertObservedTicketNft(
+      {},
+      'aa'.repeat(28),
+      '3132',
+    )).toThrow('certified ticket NFT must be observed with quantity exactly one')
+  })
+
+  it('rejects multiple units of the same ticket NFT', () => {
+    expect(() => assertObservedTicketNft(
+      { ['aa'.repeat(28) + '3132']: 2n },
+      'aa'.repeat(28),
+      '3132',
+    )).toThrow('certified ticket NFT must be observed with quantity exactly one')
   })
 })
