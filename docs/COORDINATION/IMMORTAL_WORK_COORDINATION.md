@@ -879,3 +879,14 @@ The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check
 **Important:** the only failed predecessor fixture was corrected at the fixture level: for a 2-USDM class, a 1,000-subunit unresolved reserve becomes 1,200, not 1,100. No economic invariant was weakened.
 **Remaining:** full B6 V3↔Cardano semantic equivalence, live-ledger evidence and Gate connectivity remain open.
 **Status:** POSITIVE REFINEMENT EVIDENCE / FULL CONFORMANCE OPEN
+
+---
+## 36. SESSION RESULT — Certified 3D Ticket Integration
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** C6 / 3D certified persistent ticket
+**Result:** wired the existing certified-ticket boundary into `src/main.ts` without creating a second economic state source. The shell now exposes a 3D container; after a successful ticket purchase it retains only the returned immutable asset ID, observes the corresponding on-chain `PrizeDatum`, converts the observed fields into `CertifiedTicketState` through `certifyTicketBinding`, and only then mounts `mountCertifiedTicket3D`.
+**Files changed:** `src/gameFlow.ts`, `src/main.ts`, this coordination register.
+**Architectural property:** renderer remains presentation-only. Reveal/Claim/Expire authorization is never derived from renderer-local state. A canonical refresh re-observes the current PrizeDatum and re-certifies it.
+**Remaining:** 3D visual/UX evidence and full canonical NFT-state coverage remain open; if the ticket UTxO is not yet observable after submission, the UI reports canonical state unavailable and can refresh rather than inventing a state.
+**Status:** IMPLEMENTED / CONFORMANCE EVIDENCE PENDING
