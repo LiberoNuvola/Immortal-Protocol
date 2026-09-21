@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assertObservedTicketNft, certifyTicketBinding } from '../../PRE-RICH/profile/PreRichCertifiedTicket'
+import { escapeHtml } from '../../src/ticket3d'
 
 const datum = {
   ticketPolicy: 'aa'.repeat(28),
@@ -18,6 +19,14 @@ const datum = {
   row2Tier: 0n,
   beaconTarget: 'target-12',
 }
+
+describe('Certified 3D renderer escaping', () => {
+  it('escapes all HTML-significant characters deterministically', () => {
+    expect(escapeHtml('<script>alert("x")</script> & \'ticket\'')).toBe(
+      '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;ticket&#39;',
+    )
+  })
+})
 
 describe('Certified persistent ticket binding', () => {
   it('certifies the immutable NFT identity against PrizeDatum', () => {
