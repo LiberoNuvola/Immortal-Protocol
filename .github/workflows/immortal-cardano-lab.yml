@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  devnet-smoke:
+  devnet-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout green
         uses: actions/checkout@v4
@@ -32,27 +32,47 @@ jobs:
       - name: Install Yaci DevKit
         run: npm install -g @bloxbean/yaci-devkit
 
-      - name: Check Yaci DevKit
-        run: yaci-devkit --help
-
       - name: Start isolated Cardano devnet
         run: |
           mkdir -p audit/yaci-evidence
-          yaci-devkit up --help
-          echo "YACI_BOOTSTRAP_READY=1" | tee audit/yaci-evidence/bootstrap.txt
+          nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
+          echo $! > audit/yaci-evidence/yaci.pid
 
-      - name: Record repository and environment manifest
+      - name: Wait for Yaci Store
+        run: |
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest.json; then
+              echo "YACI_STORE_READY=1" | tee audit/yaci-evidence/bootstrap.txt
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
+          tail -200 audit/yaci-evidence/yaci.log || true
+          exit 1
+
+      - name: Record devnet information
         run: |
           {
             echo "branch=work/immortal-green-closure"
             echo "commit=$GITHUB_SHA"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
-            echo "timestamp=$GITHUB_RUN_ID"
+            echo "yaci=$(yaci-devkit --version || true)"
+            echo "run_id=$GITHUB_RUN_ID"
           } | tee audit/yaci-evidence/manifest.txt
 
       - name: Run existing pure invariant suite
         run: npx tsx src/__tests__/b1-invariants.test.ts
+
+      - name: Run predeploy structural gate
+        run: npm run test:predeploy
+
+      - name: Preserve devnet evidence and logs
+        if: always()
+        run: |
+          curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
+          tail -500 audit/yaci-evidence/yaci.log || true
 
       - name: Upload laboratory evidence
         if: always()
