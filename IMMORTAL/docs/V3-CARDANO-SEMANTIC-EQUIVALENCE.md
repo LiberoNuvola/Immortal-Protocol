@@ -65,7 +65,7 @@ V3 post-state ProtectedCapital can equal 500, so post-state solvency can hold ex
 
 B1 pre-reveal effective pool is `500 - 1 = 499`, so the Cardano validator rejects a 500-unit payout.
 
-**Conclusion:** this is a genuine refinement mismatch unless the canonical Economic Gate explicitly includes the additional immediate executable-liquidity condition, or the Cardano predicate is proven to be a required conservative realization constraint under the declared Adapter contract.
+**Conclusion:** the canonical Economic Gate now exposes an explicit, chain-neutral immediate-executable-liquidity condition. The Gate does not replace the validator predicate; it requires a verified execution envelope when the action needs immediate settlement. The Cardano `payout <= effectivePool(pre)` check can therefore be represented as an Adapter-side execution-liquidity witness rather than as a new economic formula.
 
 This is a B5/B6 interface question, not a reason to weaken B1 or V3.
 
