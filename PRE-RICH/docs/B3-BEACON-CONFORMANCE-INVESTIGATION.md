@@ -91,6 +91,10 @@ The previous OPEN finding was therefore a unit-interpretation error, not an impl
 
 Remaining work is executable unit-boundary conformance across Plutus, TypeScript, economic state and settlement.
 
+## Replay vectors
+
+A first language-neutral replay vector set is now stored at `verification/pre-rich-gamerules-v1-vectors.json`. It covers deterministic symbols-seed cases plus every material outcome-interval boundary. This is evidence for the mapping layer; an independent Plutus/TypeScript execution runner is still required before marking mirror conformance closed.
+
 ## B3 closure questions
 
 | Question | Current evidence | Status |
