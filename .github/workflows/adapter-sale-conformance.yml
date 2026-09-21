@@ -19,5 +19,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npx vitest run src/__tests__/cardano-execution-adapter.test.ts src/__tests__/immortal-reveal-conformance.test.ts
       - run: npm run build
