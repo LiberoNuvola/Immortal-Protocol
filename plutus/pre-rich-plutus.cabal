@@ -27,11 +27,14 @@ library
         Treasury
         EconomicProfile
         EconomicStateV3
+        UniversalEconomicState
         EconomicKernel
+        UniversalEconomicKernel
         EconomicTransitionV3
         RefinementV3
         GoldenVectors
         PreRichEconomicProfile
+        PreRichEconomicProjection
         Governance
         GovernanceEventSchema
         GovernanceAuthorization
