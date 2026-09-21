@@ -1022,3 +1022,51 @@ Important boundary:
 
 **Commit:** `0e03526297b1e3f8fbf4c7135c85cd7b2b732b77`
 **Status:** REFINEMENT LOGIC CORRECTED / CI EVIDENCE PENDING
+
+
+---
+## 46. CURRENT SESSION RESULT — RF10/RF11 Transition Evidence Binding
+
+**Date:** 2026-09-21
+**Front:** B6 — RF10 atomicity / RF11 determinism-history evidence boundary
+
+### Triangulated finding
+Current Notion conformance material requires economically material atomic realization to be bound to the canonical pre-state and post-state, while the existing `EconomicObservation` schema intentionally remains an observation of canonical state and must not be treated as proof of atomic realization by itself.
+
+The current branch already provides deterministic V3 transition functions and Cardano→V3 replay tests, including exact post-state equality and mutation rejection. The remaining evidence gap was the explicit identity binding between:
+
+`canonical action + pre-state + post-state + concrete settlement transaction`.
+
+### Change
+Added:
+- `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts`
+- `src/__tests__/canonical-transition-evidence.test.ts`
+
+The new evidence-only envelope requires non-empty:
+- EvidenceId
+- FixtureId
+- ActionClass
+- ProtocolVersion
+- ProfileVersion
+- AdapterId / AdapterVersion
+- Environment
+- pre-state fingerprint
+- post-state fingerprint
+- action fingerprint
+- TransactionRef
+
+This does **not** validate economics, replace the Economic Gate, or claim atomicity merely because the envelope exists. It provides the missing auditable binding required to correlate a candidate canonical transition with its concrete settlement realization.
+
+The existing `EconomicObservation` remains unchanged and retains its narrower role as state observation.
+
+### Commits
+- `e760dbf5528e5f31296c25abe9e23993e5e3fb46` — evidence envelope
+- `53705b9d7b547eb475c5eb4e1a3034639645abcb` — conformance tests
+- `7a0e1b656be3d1d144e6dc9b0ee3a82199cd4668` — CI workflow binding
+
+### Status
+- RF11: **IMPLEMENTATION BOUNDARY / TEST ADDED / FULL EVIDENCE OPEN**
+- RF10: **PARTIAL / NEEDS-EVIDENCE** — identity binding now exists, but this is not yet proof that Cardano realization is indivisible under concurrent/stale-state execution.
+
+### Do not redo
+Do not modify `EconomicTransitionV3`, ProtectedCapital, EconomicGate, EffectivePool, Jackpot policy, or Cardano validator economics for this front. The next evidence step is to populate this envelope from an actual settlement trace and prove rejection of stale/duplicate realization, not to add another economic rule.
