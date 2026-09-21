@@ -2,6 +2,9 @@ name: P2.8-B.1 Lucid Evolution Diagnostic
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - audit/p2-8-b1-lucid-evolution-2026-09-21
 
 jobs:
   lucid-evolution:
