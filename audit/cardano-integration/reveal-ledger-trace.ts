@@ -16,6 +16,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
+import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
   generateSymbols,
@@ -354,9 +355,18 @@ const reveal = await lucid
   .validTo(Number(expiresAt))
   .complete()
 
-const revealSigned = await reveal.sign().complete()
-const txCbor = revealSigned.toCBOR()
-const txHash = await revealSigned.submit()
+let signedReveal: any = null
+const executionAdapter = createCardanoExecutionAdapter({
+  signTx: async (tx: unknown) => {
+    signedReveal = await lucid.signTx(tx as any)
+    return signedReveal
+  },
+  submitTx: async (signedTx: unknown) => lucid.submitTx(signedTx as any),
+})
+const submission = await executionAdapter.submit(reveal)
+const txHash = submission.transactionRef
+if (!signedReveal) throw new Error('Adapter did not retain the signed Reveal for replay evidence')
+const txCbor = signedReveal.toCBOR()
 await lucid.awaitTx(txHash)
 
 const postPrizeUtxos = await waitFor(
@@ -424,7 +434,7 @@ assertCanonicalTransitionBinding(evidence, {
 let replayRejected = false
 let replayError = ''
 try {
-  await revealSigned.submit()
+  await lucid.submitTx(signedReveal)
 } catch (error) {
   replayRejected = true
   replayError = error instanceof Error ? error.message : String(error)
