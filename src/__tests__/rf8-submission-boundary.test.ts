@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join, relative } from 'node:path'
+
+const ROOT = join(process.cwd(), 'src')
+const ALLOWED_SUBMIT_BOUNDARY = new Set(['txHelpers.ts'])
+
+function collectTsFiles(dir: string): string[] {
+  const out: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === '__tests__') continue
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...collectTsFiles(path))
+    else if (entry.name.endsWith('.ts')) out.push(path)
+  }
+  return out
+}
+
+describe('RF8 application submission boundary', () => {
+  it('contains direct Lucid sign/submit calls to the single approved helper', () => {
+    const files = collectTsFiles(ROOT)
+    const violations: string[] = []
+    for (const file of files) {
+      const rel = relative(ROOT, file)
+      const source = readFileSync(file, 'utf8')
+      if (/\.signTx\s*\(/.test(source) || /\.submitTx\s*\(/.test(source)) {
+        const allowed = ALLOWED_SUBMIT_BOUNDARY.has(rel.replaceAll('\\', '/'))
+        if (!allowed) violations.push(rel)
+      }
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('keeps transaction submission behind the Cardano adapter helper', () => {
+    const source = readFileSync(join(ROOT, 'txHelpers.ts'), 'utf8')
+    expect(source).toMatch(/createCardanoExecutionAdapter\s*\(/)
+    expect(source).toMatch(/adapter\.submit\s*\(/)
+  })
+})
