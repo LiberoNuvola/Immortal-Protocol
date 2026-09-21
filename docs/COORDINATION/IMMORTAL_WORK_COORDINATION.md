@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-21  
-**Latest observed commit:** `9fa9dd68ec5be9060e419326d891dd5505094b81` — `docs: close economic decision-boundary interface`
+**Latest observed commit at audit start:** `9fa9dd68ec5be9060e419326d891dd5505094b81` — `docs: close economic decision-boundary interface`
 
 ---
 
@@ -173,7 +173,7 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 
 ## 7. Current verified architectural concern
 
-The current branch still contains PRE-RICH-shaped state concepts inside the V3 economic state/kernel, including concepts such as:
+The current branch still contains PRE-RICH-shaped state concepts inside the V3 economic state/kernel, including:
 
 - `TicketClass`;
 - `TicketClassState`;
@@ -190,89 +190,176 @@ The kernel also uses structures such as `TicketClassState`, `classExposure` and 
 
 ---
 
-## 8. Current session claim
+## 8. First triangulated state-boundary audit
 
-### SESSION CLAIM
+### 8.1 Current branch implementation evidence
+
+The live branch files were inspected directly:
+
+- `IMMORTAL/state/EconomicStateV3.hs`
+- `IMMORTAL/kernel/EconomicKernel.hs`
+- `IMMORTAL/state/EconomicProfile.hs`
+- `PRE-RICH/profile/PreRichEconomicProfile.hs`
+- `plutus/B1LegacyAdapter.hs`
+
+Observed facts:
+
+1. `EconomicProfile` correctly externalizes concrete class prices and the maximum payout multiplier as application-supplied parameters.
+2. PRE-RICH concretely supplies the ladder `1/2/3/5/10/25/50/100` and `500`.
+3. `EconomicKernel.worstCaseExposure` consumes the profile multiplier rather than hard-coding 500 on this branch.
+4. Nevertheless, `V3EconomicState` structurally embeds `v3Classes`, `v3Control` and `v3Jackpot`.
+5. `EconomicKernel` derives exposure from `TicketClassState` and uses Jackpot/control state in economic calculations.
+6. `B1LegacyAdapter` contains explicit fail-closed checks for unsupported protected-capital components, unsupported Jackpot state, historical control loss, and aggregate mismatch. This is evidence that the current legacy projection is not lossless for the full V3 state.
+
+### 8.2 Triangulated Notion evidence
+
+Current Notion sources searched/fetched include:
+
+- **IMMORTAL — Economic Canon & Parameter Boundary Register v0.1**
+- **Economic Rule Classification Matrix — Immortal Protocol / Adapter / PRE-RICH**
+- **2026-09-21 — A1/A2/A3 Policy Closure — Ticket Expiry & Jackpot**
+- **2026-09-21 — IMMORTAL Multi-Front Workflow Checkpoint**
+- **IMMORTAL / PRE-RICH — End-to-End System Map & Continuity Checkpoint**
+- **M3 — Chain Adapter & Serialization Boundary Design v0.1**
+
+The economic canon confirms:
+
+- worst-case exposure is a universal economic concept;
+- the numeric payout bound is profile/application supplied;
+- `500` is PRE-RICH policy, not IMMORTAL law;
+- ProtectedCapital and RawSurplus are universal semantic concepts;
+- implementation gaps must not reopen closed semantic decisions;
+- the target architecture is a typed boundary between universal semantics and profile/application policy.
+
+### 8.3 Preliminary classification
+
+| Element | Current role | Preliminary classification | Action |
+|---|---|---|---|
+| `TicketClass` | profile key / identifier | **PROFILE-BOUND TYPE / UNIVERSAL IDENTIFIER PRIMITIVE** | Do not delete; consider renaming/abstracting only if consumer audit proves value. |
+| `TicketClassState` | per-class issued/unresolved/exposure/cap/saleability state | **APPLICATION/PROFILE STATE** | Candidate for extraction from universal state. Preserve while consumers are mapped. |
+| `EconomicControlState` | current/highest activated class | **APPLICATION STATE / POLICY STATE** | Not universal absent proof that all DApps require activation hysteresis. |
+| `JackpotStatus` | Jackpot lifecycle enum | **APPLICATION STATE** | Strong candidate to move outside universal state. |
+| `JackpotState` | locked amount/threshold/status/cycle | **APPLICATION STATE** | Strong candidate to move outside universal state; universal layer should protect economically material locked obligations without requiring a Jackpot concept. |
+| `v3CrystallizedLiabilities` | authoritative protected liability | **UNIVERSAL ECONOMIC STATE** | Retain in universal model. |
+| `v3UnresolvedReserve` | aggregate unresolved accounting representation | **UNIVERSAL SEMANTIC ACCOUNTING CONCEPT, implementation representation still under audit** | Retain semantic role; avoid assuming the class-list representation is universal. |
+| `v3UnresolvedTicketCount` | aggregate unresolved count | **UNIVERSAL / DERIVED ACCOUNTING STATE** | Retain if canonical specs require it; otherwise derive from obligations. |
+| `v3SafetyCapital` | protected capital component | **UNIVERSAL SEMANTIC COMPONENT** | Retain; prove provenance/preservation. |
+| `v3ReserveProtection` | protected capital component | **UNIVERSAL SEMANTIC COMPONENT** | Retain; prove provenance/preservation. |
+| `v3MandatoryFutureCosts` | protected future obligations | **UNIVERSAL SEMANTIC COMPONENT** | Retain; prove provenance/preservation. |
+| `epClassPrices` | concrete profile values | **PROFILE PARAMETER** | Correctly outside concrete IMMORTAL constants. |
+| `epMaxNormalPayoutMultiplier` | concrete payout bound | **PROFILE PARAMETER** | Correctly profile-supplied. |
+| `classExposure` | price × unresolved count by class | **UNIVERSAL CONCEPT, APPLICATION-SHAPED REPRESENTATION** | Generalize toward obligations/exposure interface; do not prematurely delete. |
+| `classSaleable` | class activation/capacity policy | **APPLICATION RULE** | Should not be a universal economic primitive. |
+
+### 8.4 Important architectural conclusion
+
+The evidence supports a **conceptual split**, but does **not yet justify a destructive immediate refactor**.
+
+The most likely target is:
+
+`UniversalEconomicState`
++
+`Profile/ApplicationState`
++
+`EconomicProfile`
+
+with a typed economic projection/interface from application state into universal obligations/exposure.
+
+The universal kernel should reason about economically material obligations/exposure and admissibility, not require a ticket ladder or Jackpot merely because PRE-RICH currently has them.
+
+However, the exact new Haskell types and transition signatures must be derived from all consumers and current V3/Cardano conformance tests before changing code.
+
+---
+
+## 9. Important legacy finding
+
+`plutus/B1LegacyAdapter.hs` is currently a useful boundary witness:
+
+- legacy → V3 rejects unresolved tickets, non-zero unresolved reserve mismatch, and locked Jackpot state rather than inventing semantics;
+- V3 → legacy rejects non-zero SafetyCapital, ReserveProtection, MandatoryFutureCosts, locked Jackpot and historical-control loss;
+- `legacyProjectionIsLossless` is explicitly conditional and therefore does not establish full V3 ↔ legacy equivalence.
+
+**Implication:** the lossy legacy projection must not be used as the universal semantic model. B4/B6 remain open.
+
+---
+
+## 10. Search caveat
+
+GitHub code search for this repository currently returns matches from the repository's indexed/default-branch history in some cases, not necessarily `work/immortal-green-closure`.
+
+Therefore:
+
+- direct fetches against the working branch are authoritative for current implementation inspection;
+- default-branch search hits are treated as historical/provenance evidence until independently verified on the working branch;
+- no refactor is based solely on an unverified default-branch search result.
+
+This is a non-obvious anti-regression constraint for both sessions.
+
+---
+
+## 11. Current session result
+
+### SESSION RESULT
 
 **Session:** autonomous coordination session — 2026-09-21  
 **Front:** IMMORTAL-STATE-BOUNDARY-001  
-**Objective:** establish a shared handoff protocol and begin evidence-based classification of universal vs application-shaped state without changing economic canon.  
-**Files likely affected:** `docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md` initially; later state/kernel files only after consumer/evidence audit.  
-**Current evidence:** latest branch commit `9fa9dd68`; current architecture/decision records; Notion A1/A2/A3 closure; prior cross-source audit.  
-**Expected output:** synchronized work register plus classification evidence for the next implementation pass.  
-**Status:** IN_PROGRESS
+**Result:** completed first cross-source classification pass. Confirmed that parameter separation is substantially in place, while V3 state remains structurally mixed with PRE-RICH-shaped class/control/Jackpot concepts. Confirmed that the legacy B1 projection is intentionally lossy for several V3 components. No economic canon was changed.  
+**Files changed:** `docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md` only.  
+**Tests run:** no code changes; no test suite required for this documentation-only audit.  
+**Evidence:** current branch implementation; current Notion Economic Canon / Classification Matrix / A1-A3 Closure / Multi-Front Checkpoint / End-to-End System Map; legacy adapter implementation.  
+**Remaining uncertainty:** exact universal state/type boundary and the minimal compatible refactor cannot be finalized until all V3 transition consumers and conformance tests are mapped.  
+**Status:** DONE / NEEDS-EVIDENCE
 
 ---
 
-## 9. Handoff protocol
+## 12. Handoff
 
-Before substantive work, append a session claim:
+### HANDOFF
 
-```text
-SESSION CLAIM
+**Completed:**
+- Created the shared coordination register.
+- Triangulated the live branch state model against current Notion economic-boundary decisions.
+- Classified the main V3 fields/types provisionally.
+- Identified the legacy projection as intentionally non-lossless.
 
-Session:
-Front:
-Objective:
-Files likely affected:
-Current evidence:
-Expected output:
-Status: IN_PROGRESS
-```
+**Changed:**
+- `docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md`
 
-On completion, append:
+**Verified:**
+- `EconomicProfile` carries application values rather than universal numeric constants.
+- `500×` is profile-supplied on the current branch.
+- Jackpot/control/class activation remain structurally embedded in V3.
+- ProtectedCapital components exist in V3 and are not all representable in legacy B1.
 
-```text
-SESSION RESULT
+**Important findings:**
+- Do not perform a big-bang V3 state refactor.
+- The likely architectural target is universal economic state plus application/profile state with an explicit typed projection.
+- `classExposure` is a universal economic concept but its current class-list representation is application-shaped.
+- Jackpot should not become a universal state primitive merely because PRE-RICH currently uses it.
 
-Session:
-Front:
-Result:
-Files changed:
-Tests run:
-Evidence:
-Remaining uncertainty:
-Status: DONE / NEEDS-EVIDENCE / BLOCKED
-```
+**Do not redo:**
+- Do not re-audit closed A1/A2/A3 policy decisions from scratch.
+- Do not treat 365 days, 500× or the PRE-RICH ladder as universal constants.
+- Do not treat default-branch GitHub search hits as current-branch truth without verification.
 
-For a significant handoff:
+**Next recommended action:**
+1. Map all consumers of `V3EconomicState`, `TicketClassState`, `EconomicControlState`, `JackpotState`, `classExposure`, `protectedCapital`, and transition functions on `work/immortal-green-closure`.
+2. Map the current V3 transition/action types and Cardano validator/adapter inputs.
+3. Build a minimal compatibility matrix showing which fields are required by universal semantics versus PRE-RICH policy.
+4. Only then design the smallest non-destructive type boundary refactor.
+5. In parallel, continue B4/B5/B6 using the existing state until the new boundary is proven equivalent.
 
-```text
-HANDOFF
+**Open uncertainty:**
+- Whether some class-level aggregation is required by the universal canonical state for arbitrary DApps, or whether it can be generalized as an application-provided obligation/exposure projection.
 
-Completed:
-- ...
-
-Changed:
-- ...
-
-Verified:
-- ...
-
-Important findings:
-- ...
-
-Do not redo:
-- ...
-
-Next recommended action:
-- ...
-
-Open uncertainty:
-- ...
-
-Evidence:
-- ...
-
-Commit:
-- ...
-```
-
-Never overwrite another session's entry. Append or make a clearly attributable update.
+**Evidence:**
+- Current branch: `work/immortal-green-closure`
+- Latest branch commit observed before coordination update: `9fa9dd68ec5be9060e419326d891dd5505094b81`
+- Coordination commit: `74f81d8dd8ed3e19538c647133fcbdcfdee05ccd`
 
 ---
 
-## 10. Conflict protocol
+## 13. Conflict protocol
 
 If sources disagree, record:
 
@@ -292,7 +379,7 @@ Resolve autonomously when the canonical evidence determines the answer. Escalate
 
 ---
 
-## 11. Non-regression rules
+## 14. Non-regression rules
 
 Before moving, renaming or deleting an artifact:
 
@@ -308,7 +395,7 @@ Never weaken an invariant merely to make a test pass. If a fixture contradicts t
 
 ---
 
-## 12. Recent repository activity
+## 15. Recent repository activity
 
 The current branch recently recorded:
 
@@ -322,7 +409,7 @@ These are implementation/documentation evidence, not a replacement for the norma
 
 ---
 
-## 13. Change log
+## 16. Change log
 
 ### 2026-09-21 — Coordination register created
 
@@ -331,11 +418,18 @@ These are implementation/documentation evidence, not a replacement for the norma
 - Recorded closed economic policy boundaries.
 - Registered state-boundary audit as the active front.
 - No protocol semantics changed by this file.
-- Next action: classify V3/kernel state concepts against canonical responsibilities and consumer evidence.
+
+### 2026-09-21 — First state-boundary triangulation
+
+- Triangulated current branch implementation against current Notion economic canon.
+- Confirmed mixed universal/application state representation.
+- Confirmed legacy B1 projection is intentionally lossy.
+- Marked exact type boundary as NEEDS-EVIDENCE rather than inventing a refactor.
+- Handed off consumer/conformance mapping as the next action.
 
 ---
 
-## 14. Important rule
+## 17. Important rule
 
 **The coordination file coordinates work; it does not define IMMORTAL.**
 
