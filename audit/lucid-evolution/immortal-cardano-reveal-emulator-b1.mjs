@@ -26,6 +26,8 @@
  * separate transactions, matching the size constraint observed previously.
  */
 
+import { createScalusEvaluator } from "@lucid-evolution/scalus-uplc";
+
 import {
   Lucid,
   Emulator,
@@ -368,7 +370,10 @@ async function main() {
     maxTxExSteps: 100_000_000_000n,
   };
   const emulator = new Emulator([app, refs], diagnosticProtocol);
-  const lucid = await Lucid(emulator, "Custom");
+  const useScalus = process.env.P2_8_USE_SCALUS === "1";
+  const evaluator = useScalus ? createScalusEvaluator() : undefined;
+  evidence("SCALUS_EVALUATOR", useScalus);
+  const lucid = await Lucid(emulator, "Custom", evaluator ? { evaluator } : {});
   lucid.selectWallet.fromSeed(app.seedPhrase);
 
   const protocol = await emulator.getProtocolParameters();
