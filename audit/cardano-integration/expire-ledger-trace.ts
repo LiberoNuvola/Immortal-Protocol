@@ -24,6 +24,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import {
+  assertCanonicalTransitionBinding,
+  type CanonicalTransitionEvidence,
+} from '../../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
 import { defaultPrizeTable } from '../../src/gameRules'
 
 const API = 'http://127.0.0.1:8080/api/v1'
@@ -394,6 +398,14 @@ const evidence = {
   transactionRef: txHash,
 }
 
+const canonicalEvidence: CanonicalTransitionEvidence = evidence
+assertCanonicalTransitionBinding(canonicalEvidence, {
+  actionFingerprint,
+  preStateFingerprint,
+  postStateFingerprint,
+  transactionRef: txHash,
+})
+
 let replayRejected = false
 let replayError = ''
 try {
@@ -437,7 +449,7 @@ writeFileSync(
     },
     consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
     producedUtxos: [ref(postPool)],
-    canonicalEvidence: evidence,
+    canonicalEvidence,
     replay: {
       rejected: replayRejected,
       error: replayError,
