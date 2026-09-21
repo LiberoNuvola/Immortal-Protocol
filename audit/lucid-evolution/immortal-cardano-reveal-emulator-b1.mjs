@@ -254,6 +254,7 @@ function prizeAmountForTier(tier) {
 }
 
 const EARLY_FAIL = process.env.P2_8_DIAG_EARLY_FAIL === "1";
+const ADA_ONLY_PRIZE = process.env.P2_8_DIAG_ADA_ONLY_PRIZE === "1";
 
 function prizeDatum({
   playerCommitmentValue,
@@ -536,15 +537,21 @@ async function main() {
    * B) Application script UTxOs, deliberately without reference scripts.
    */
 
+  const prizeSetupAssets = ADA_ONLY_PRIZE
+    ? { lovelace: 5_000_000n }
+    : {
+        lovelace: 5_000_000n,
+        [ticketPolicy + ticketName]: 1n,
+      };
+
+  evidence("ADA_ONLY_PRIZE", ADA_ONLY_PRIZE);
+
   const setupTx = await lucid
     .newTx()
     .pay.ToAddressWithData(
       prizeAddress,
       { kind: "inline", value: toData(prePrize) },
-      {
-        lovelace: 5_000_000n,
-        [ticketPolicy + ticketName]: 1n,
-      },
+      prizeSetupAssets,
     )
     .pay.ToAddressWithData(
       poolAddress,
