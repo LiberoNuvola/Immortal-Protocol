@@ -1,7 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module GoldenVectors
-  ( baseClass
+  ( baseProfile
+  , baseClass
   , baseState
   , issueZeroExpected
   , issueOneExpected
@@ -16,8 +17,13 @@ module GoldenVectors
   ) where
 
 import PlutusTx.Prelude
+import EconomicProfile
 import EconomicStateV3
 import EconomicTransitionV3
+import PreRichEconomicProfile
+
+baseProfile :: EconomicProfile
+baseProfile = preRichEconomicProfileV1
 
 baseClass :: TicketClassState
 baseClass = TicketClassState 0 0 0 0 10 True
@@ -68,13 +74,14 @@ claimExpected = baseState
 
 invalidIssuePrice :: Bool
 invalidIssuePrice =
-  case transition baseState (Issue 0 2) of
+  case transition baseProfile baseState (Issue 0 2) of
     Nothing -> True
     Just _ -> False
 
 invalidRevealPayout :: Bool
 invalidRevealPayout =
   case transition
+         baseProfile
          (baseState { v3UnresolvedReserve = 1
                     , v3UnresolvedTicketCount = 1
                     , v3Classes = [TicketClassState 0 1 1 1 10 True] })
@@ -84,18 +91,18 @@ invalidRevealPayout =
 
 invalidRevealWithoutTicket :: Bool
 invalidRevealWithoutTicket =
-  case transition baseState (Reveal 0 1) of
+  case transition baseProfile baseState (Reveal 0 1) of
     Nothing -> True
     Just _ -> False
 
 invalidExpireWithoutTicket :: Bool
 invalidExpireWithoutTicket =
-  case transition baseState (Expire 0) of
+  case transition baseProfile baseState (Expire 0) of
     Nothing -> True
     Just _ -> False
 
 invalidClaimAmount :: Bool
 invalidClaimAmount =
-  case transition baseState (Claim 1) of
+  case transition baseProfile baseState (Claim 1) of
     Nothing -> True
     Just _ -> False
