@@ -3,6 +3,8 @@ import wallet from './wallet'
 import claim from './claim'
 import tickets from './tickets'
 import ui from './ui'
+import { loadCertifiedTicketState } from './gameFlow'
+import { mountCertifiedTicket3D } from './ticket3d'
 import adSlots, {
   AD_SLOT_PACKAGES,
   calculateAdTotalUsd,
@@ -22,6 +24,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </div>
 
     <div id="wallet-info"><span id="wallet-balance">Balance: Not connected</span></div>
+
+    <section class="card">
+      <h2>Your certified ticket</h2>
+      <p>Only an observed and identity-certified PrizeDatum can be rendered here.</p>
+      <div id="ticket-3d"><div class="slot-status">No canonical ticket loaded.</div></div>
+    </section>
 
     <section class="card">
       <h2>Ad slot pricing</h2>
@@ -67,6 +75,27 @@ const renderAdPackages = () => {
 
 renderAdPackages()
 
+const ticket3dContainer = document.getElementById('ticket-3d')
+let lastTicketAssetId: string | null = null
+
+const renderLastCertifiedTicket = async () => {
+  if (!ticket3dContainer || !lastTicketAssetId) return
+  try {
+    const certified = await loadCertifiedTicketState({ assetId: lastTicketAssetId })
+    mountCertifiedTicket3D(ticket3dContainer, certified, {
+      onRequestCanonicalRefresh: async () => {
+        await renderLastCertifiedTicket()
+      },
+    })
+    status('Certified ticket state loaded from the canonical PrizeDatum.')
+  } catch (e: any) {
+    if (ticket3dContainer) {
+      ticket3dContainer.innerHTML = '<div class="slot-status">Canonical ticket state unavailable.</div>'
+    }
+    status('3D ticket refresh error: ' + (e.message || e))
+  }
+}
+
 const connectBtn = document.getElementById('connect') as HTMLButtonElement | null
 let connected = false
 connectBtn?.addEventListener('click', async () => {
@@ -104,8 +133,15 @@ document.getElementById('claim')?.addEventListener('click', async () => {
 
 document.getElementById('buy')?.addEventListener('click', async () => {
   try {
-    const tx = await tickets.buyTickets(1)
-    status('Purchase submitted: ' + tx)
+    const purchases = await tickets.buyTickets(1)
+    const latest = purchases[purchases.length - 1]
+    if (latest) {
+      lastTicketAssetId = latest.assetId
+    }
+    status('Purchase submitted: ' + purchases.map((p) => p.txHash).join(', '))
+    if (lastTicketAssetId) {
+      await renderLastCertifiedTicket()
+    }
     const bal = await ui.refreshBalance().catch(() => '—')
     ui.updateWalletUI(true, await wallet.getAddress().catch(() => ''), bal)
   } catch (e: any) {
