@@ -37,6 +37,7 @@ library
         PreRichEconomicProfile
         PreRichEconomicProjection
         PreRichEconomicAdmission
+        ProtectedCapitalConformance
         Governance
         GovernanceEventSchema
         GovernanceAuthorization
@@ -152,3 +153,13 @@ test-suite economic-admission-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
+
+
+test-suite protected-capital-conformance-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+    main-is:            ProtectedCapitalConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language:   Haskell2010
