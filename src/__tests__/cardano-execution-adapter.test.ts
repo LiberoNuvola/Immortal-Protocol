@@ -47,4 +47,23 @@ describe('CardanoExecutionAdapter', () => {
     expect(source).not.toMatch(/lucid\.(signTx|submitTx)\b/)
     expect(source).toContain('createCardanoExecutionAdapter')
   })
+  it('keeps every TypeScript economic transaction orchestrator behind the Adapter submit boundary', () => {
+    const files = [
+      '../mint.ts',
+      '../gameFlow.ts',
+      '../txHelpers.ts',
+    ]
+
+    for (const relativePath of files) {
+      const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8')
+      expect(source).not.toMatch(/(?:lucid|wallet|client)\.(signTx|submitTx)\s*\(/)
+    }
+
+    const txHelpers = readFileSync(
+      new URL('../txHelpers.ts', import.meta.url),
+      'utf8',
+    )
+    expect(txHelpers).toContain('createCardanoExecutionAdapter')
+  })
+
 })
