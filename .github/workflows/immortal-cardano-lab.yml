@@ -78,11 +78,18 @@ jobs:
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
 
+      - name: Measure script and transaction resource footprint
+        run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
+
       - name: Run existing pure invariant suite
         run: npx tsx src/__tests__/b1-invariants.test.ts
 
       - name: Run predeploy structural gate
         run: npm run test:predeploy
+
+      - name: Print resource audit summary
+        if: always()
+        run: cat audit/yaci-evidence/resource-audit.json 2>/dev/null || true
 
       - name: Preserve devnet evidence and logs
         if: always()
