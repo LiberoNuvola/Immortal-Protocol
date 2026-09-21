@@ -1,0 +1,102 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
+module Main where
+
+import Prelude
+  ( Bool (False, True)
+  , IO
+  , String
+  , error
+  , putStrLn
+  , (&&)
+  , (==)
+  )
+
+import PlutusLedgerApi.V2 (ScriptHash)
+import PlutusTx.Prelude (BuiltinByteString, emptyByteString)
+
+import B1LegacyAdapter
+import EconomicStateV3
+import Types
+
+assert :: Bool -> String -> IO ()
+assert condition label =
+  if condition then putStrLn ("PASS: " ++ label) else error ("FAIL: " ++ label)
+
+dummyHash :: ScriptHash
+dummyHash = ScriptHash emptyByteString
+
+zeroState :: V3EconomicState
+zeroState = zeroV3EconomicState
+
+representableState :: V3EconomicState
+representableState = zeroState
+
+classfulState :: V3EconomicState
+classfulState =
+  zeroState
+    { v3Classes =
+        [ TicketClassState 0 1 1 1 10 True ]
+    }
+
+protectedState :: V3EconomicState
+protectedState =
+  zeroState
+    { v3SafetyCapital = 1 }
+
+historicalState :: V3EconomicState
+historicalState =
+  zeroState
+    { v3Control = EconomicControlState 1 1 }
+
+jackpotState :: V3EconomicState
+jackpotState =
+  zeroState
+    { v3Jackpot = JackpotState 1 10 JackpotLocked 1 }
+
+main :: IO ()
+main = do
+  assert
+    (legacyProjectionIsLossless representableState)
+    "zero/empty V3 state is lossless through legacy representation"
+
+  assert
+    (not (legacyProjectionIsLossless classfulState))
+    "class composition is explicitly classified as lossy"
+
+  assert
+    (not (legacyProjectionIsLossless protectedState))
+    "unsupported ProtectedCapital is explicitly classified as lossy"
+
+  assert
+    (not (legacyProjectionIsLossless historicalState))
+    "non-zero historical class state is explicitly classified as lossy"
+
+  assert
+    (not (legacyProjectionIsLossless jackpotState))
+    "locked Jackpot state is explicitly classified as lossy"
+
+  case legacyB1ToV3
+    (B1PrizePoolDatum 100 0 0 0 0 10 0 dummyHash) of
+    Right projected ->
+      assert
+        (legacyProjectionIsLossless projected)
+        "empty legacy pool projects to a lossless V3 state"
+    Left _ ->
+      error "FAIL: empty legacy pool should project"
+
+  case legacyB1ToV3
+    (B1PrizePoolDatum 100 0 1 1 0 10 0 dummyHash) of
+    Left LegacyHasUnresolvedTickets ->
+      putStrLn "PASS: unresolved legacy tickets fail closed"
+    _ ->
+      error "FAIL: unresolved legacy tickets were accepted"
+
+  case legacyB1ToV3
+    (B1PrizePoolDatum 100 0 0 0 1 10 0 dummyHash) of
+    Left LegacyMissingJackpotLifecycle ->
+      putStrLn "PASS: legacy locked Jackpot fails closed"
+    _ ->
+      error "FAIL: legacy locked Jackpot was accepted"
+
+  putStrLn "ALL LEGACY ADAPTER CONFORMANCE TESTS PASSED"
