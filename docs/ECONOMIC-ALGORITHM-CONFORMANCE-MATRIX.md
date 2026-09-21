@@ -1,7 +1,7 @@
 # IMMORTAL / PRE-RICH — Economic Algorithm Conformance Matrix
 
 **Status:** OPERATIONAL / NON-NORMATIVE  
-**Repository reference:** `b1-hardening` / `9d0b8c6`  
+**Repository reference:** current PRE-RICH closure lineage  
 **Purpose:** track implementation, proof and evidence against canonical economic semantics.  
 **Authority:** this matrix does not create or modify economic policy.
 
@@ -46,7 +46,7 @@ This matrix is a measurement layer, not a second authority.
 | CLOSING — CONFORMANCE | rule is settled; implementation/evidence remains |
 | IMPLEMENTATION GAP/FAIL | implementation does not satisfy a settled rule |
 | EVIDENCE GAP | conformance evidence is missing or incomplete |
-| OPEN DECISION | genuine normative choice is still required |
+| DEPLOYMENT PARAMETER | deliberately profile/application-specific; not universal IMMORTAL law |
 | HISTORICAL CLOSED | retained for traceability, not authority |
 
 **Critical rule:** `GAP/FAIL ≠ OPEN DECISION`.
@@ -62,15 +62,16 @@ This matrix is a measurement layer, not a second authority.
 | HighestClassEverActivated | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Class contraction | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Hysteresis semantics/structure | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
-| Hysteresis numerical parametrization | CLOSED baseline/structure | CLOSING | CLOSING | OPEN | OPEN |
+| Hysteresis numerical parametrization | CLOSED baseline/structure | CLOSED | CLOSING | CLOSING | OPEN |
 | KA/KC/KD roles | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | KA/KC/KD baseline `8/4/4` | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Deterministic exposure | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Expiry finality | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
-| Exact ticket lifetime | OPEN DECISION | — | — | TARGET | OPEN |
-| Jackpot isolation/protection | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
-| Jackpot payout mode | OPEN DECISION | — | — | TARGET | OPEN |
-| Future Jackpot allocation policy | OPEN only if required | — | — | TARGET | OPEN |
+| Exact ticket lifetime mechanism | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
+| Exact expiry numeric value | DEPLOYMENT PARAMETER | — | — | TARGET | OPEN |
+| Jackpot ownership/isolation/protection | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
+| Jackpot payout mode | CLOSED — full current locked-balance payout exactly once | CLOSED | CLOSING | CLOSING | OPEN |
+| Fixed future Jackpot allocation | CLOSED — no fixed percentage; minimum state-derived gap is canonical | CLOSED | CLOSING | CLOSING | OPEN |
 | Ticket transfer / identity | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Voluntary burn / CLAIM != BURN | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
 | Sale atomicity | CLOSED | CLOSED | CLOSING | CLOSING | OPEN |
@@ -100,9 +101,12 @@ The following are not OPEN DECISIONS:
 - `CurrentActiveClass` may contract
 - `HighestClassEverActivated` is monotonic non-decreasing
 - expiry finality and dissolution of expired payment commitment
-- protected/isolated Jackpot
+- exact expiry is crystallized at issuance from a declared DApp/profile horizon
+- protected/isolated Jackpot owned by PRE-RICH
 - `NewJackpot <= RawSurplus`
 - Jackpot payout `<= LockedJackpotLiquidity`
+- Jackpot payout mode = full current locked-balance payout exactly once
+- no fixed Jackpot allocation percentage; funding is the minimum state-derived gap to the current floor
 - five normal payout tiers: `2→1×P`, `5→2.5×P`, `10→5×P`, `200→100×P`, `1000→500×P`
 - Jackpot probability independence
 - ticket transferability / identity preservation
@@ -119,13 +123,16 @@ The following are not OPEN DECISIONS:
 
 ## 5. True OPEN DECISION SET
 
-Exactly three normative items remain:
+**There are currently no unresolved normative economic decisions in the PRE-RICH Game Economy baseline represented here.**
 
-1. **Jackpot payout mode:** threshold payout OR full current locked-balance payout.
-2. **Exact ticket expiry duration.**
-3. **Future Jackpot allocation policy**, only if an explicit future allocation policy is actually required.
+The former three-item list is superseded by the current PRE-RICH policy closure:
 
-No other implementation, proof or evidence gap may be relabeled as an OPEN DECISION.
+- Jackpot payout mode: **CLOSED** — full current locked-balance payout exactly once.
+- Ticket expiry mechanism: **CLOSED** — deterministic DApp/profile horizon crystallized at issuance.
+- Exact expiry numeric value: **DEPLOYMENT/APPLICATION PARAMETER**, not a universal IMMORTAL constant.
+- Fixed future Jackpot allocation percentage: **CLOSED as unnecessary for the current policy**; funding uses the minimum state-derived gap and surplus remains RawSurplus.
+
+Remaining work is implementation, proof, conformance or deployment evidence. None of it reopens these semantics.
 
 ## 6. Historical / non-canonical material
 
@@ -134,6 +141,7 @@ No other implementation, proof or evidence gap may be relabeled as an OPEN DECIS
 - `K*=1.482` = historical numerical oracle/reference.
 - old Constitution / Architecture / Economic Algorithm documents = ARCHIVE / non-authoritative.
 - Beacon B1/B3 historical research = evidence/research, not economic authority.
+- historical Jackpot maturity ladders and fixed allocation splits are non-canonical.
 
 Historical material may remain useful for regression, comparison and evidence.
 
