@@ -106,3 +106,14 @@ export function assertRendererIsNotAuthority(): void {
   // Deliberate no-op marker for presentation-layer audits. Economic decisions
   // must never be derived from renderer-local state.
 }
+
+export function assertObservedTicketNft(
+  assets: Readonly<Record<string, bigint>>,
+  policyId: string,
+  assetNameHex: string,
+): void {
+  const unit = normalizeHex(policyId) + normalizeHex(assetNameHex)
+  if (assets[unit] !== 1n) {
+    throw new Error('certified ticket NFT must be observed with quantity exactly one')
+  }
+}
