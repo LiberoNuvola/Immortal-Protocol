@@ -15,7 +15,7 @@
  * It is not a replacement for live Cardano/emulator execution.
  */
 
-import { describe, it } from 'node:test'
+import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 
 import {
@@ -271,7 +271,7 @@ describe('P2.7 — Cardano Adapter extended conformance', () => {
             (c) => c.classId !== 0n,
           ),
         }),
-      /(missing or ambiguous|unresolvedReserve does not equal class decomposition)/,
+      /(missing or ambiguous|unresolvedReserve does not equal class decomposition|must contain exactly 8)/,
     )
 
     assert.throws(
