@@ -936,3 +936,25 @@ This is a documentation/conformance reconciliation only. No closed economic poli
 The Haskell and Yaci workflows previously failed before actual regression execution because the pinned `blst` build output was located under the build directory rather than the repository root. The workflows were corrected to discover `libblst.a` by path instead of assuming a root location.
 
 **Required evidence:** next current-head Kernel and Cardano Integration Lab run must pass native dependency setup and reach actual test/gate steps before any Haskell/Yaci claim is marked green.
+
+---
+## 41. CURRENT SESSION DELTA — B4 Direct Universal Bridge / C6 Renderer
+
+**Date:** 2026-09-21
+
+### B4 — legacy aggregate boundary
+The legacy B1 economic path no longer needs to manufacture a synthetic V3 class record for aggregate ProtectedCapital/solvency evaluation. B1LegacyAdapter now exposes legacyB1ToUniversalEconomicState, lifting only quantities actually represented by the legacy datum and deriving the PRE-RICH 500x unresolved exposure from the aggregate reserve. B1PrizePool now uses this universal aggregate for worst-case exposure and solvency; local EffectivePool remains the explicit legacy accounting expression.
+
+The reverse V3 -> legacy B1 path remains fail-closed for non-representable class composition and protected Jackpot/ProtectedCapital components.
+
+A focused legacy-adapter test also proves equality of the representable ProtectedCapital boundary between a class-aware V3 state and the directly projected legacy aggregate. This is intentionally not claimed as full state equivalence.
+
+**Current CI:** Cardano Adapter Sale Conformance on the preceding complete commit passed; the current-head Kernel Haskell regression remains the authoritative pending evidence for the new bridge.
+
+### C6 — certified 3D ticket
+certifyTicketBinding now requires a non-empty verification reference, so a synthetic datum cannot be promoted to a certified presentation state by omission of its observation trail. The 3D renderer also escapes all ticket-derived HTML fields, with a deterministic escaping regression test. These are presentation/evidence hardenings; the renderer remains non-authoritative.
+
+### B6 semantic check — Claim
+A current Notion decision-register lookup confirms that the V3 claim predicate is intentionally aggregate: Claim amount <= crystallised liability. Therefore this session does not change EconomicTransitionV3 to an exact-ticket payout model. Full V3/Cardano action equivalence remains an evidence/conformance task, not a reopened normative decision.
+
+**Status:** B4 CLOSING / CI PENDING; C6 HARDENED / EVIDENCE PENDING; B6 FULL EQUIVALENCE OPEN.
