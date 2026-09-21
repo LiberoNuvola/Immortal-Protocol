@@ -8,6 +8,7 @@ module B1LegacyAdapter
   ( LegacyProjectionError (..)
   , legacyB1ToV3
   , legacyB1ToAggregateV3View
+  , legacyB1ToUniversalEconomicState
   , v3ToLegacyB1
   , legacyAggregateMatchesV3
   , legacyProjectionIsLossless
@@ -20,6 +21,7 @@ import PlutusTx.Prelude
 
 import Types (B1PrizePoolDatum (..))
 import EconomicStateV3
+import UniversalEconomicState
 import qualified EconomicKernel
 
 data LegacyProjectionError
@@ -74,6 +76,34 @@ legacyB1ToAggregateV3View d =
          then JackpotLocked
          else JackpotInactive)
       0)
+
+
+-- | Direct legacy B1 -> application-neutral universal economic state.
+--
+-- Unlike the compatibility V3 view above, this function does not invent
+-- per-class V3 records. It lifts only quantities that the legacy B1 datum
+-- actually observes and derives the PRE-RICH worst-case exposure from the
+-- application payout bound. The universal kernel receives EEV in the same
+-- accounting unit as this datum.
+{-# INLINABLE legacyB1ToUniversalEconomicState #-}
+legacyB1ToUniversalEconomicState :: B1PrizePoolDatum -> UniversalEconomicState
+legacyB1ToUniversalEconomicState d =
+  UniversalEconomicState
+    (ppPendingLiabilities d)
+    (ppUnresolvedReserve d)
+    (ppUnresolvedTicketCount d)
+    (500 * ppUnresolvedReserve d)
+    0
+    0
+    0
+    (ppLockedJackpot d)
+  where
+    preRichLegacyProfile =
+      EconomicProfile
+        { epVersion = 1
+        , epClassPrices = [(0, 1)]
+        , epMaxNormalPayoutMultiplier = 500
+        }
 
 {-# INLINABLE v3ToLegacyB1 #-}
 v3ToLegacyB1
