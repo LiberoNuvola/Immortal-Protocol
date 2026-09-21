@@ -10,7 +10,13 @@ on:
       - "src/__tests__/preRichIssueEvidence.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
-  pull_request:
+      - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
+      - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
+      - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
+      - "src/ticket3d.ts"
+      - "src/gameFlow.ts"
+      - "src/txHelpers.ts"
+      - "src/*.ts"\n  pull_request:
     branches:
       - work/immortal-green-closure
     paths:
