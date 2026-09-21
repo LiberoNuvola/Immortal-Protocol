@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 
 import {
   createCardanoExecutionAdapter,
@@ -7,7 +8,6 @@ import {
 describe('CardanoExecutionAdapter', () => {
   it('owns signing and submission', async () => {
     const calls: string[] = []
-
     const adapter = createCardanoExecutionAdapter({
       signTx: async (tx) => {
         expect(tx).toBe('built')
@@ -36,5 +36,15 @@ describe('CardanoExecutionAdapter', () => {
     await expect(adapter.submit('built')).rejects.toThrow(
       'empty transaction reference',
     )
+  })
+
+  it('keeps SALE/MINT free of direct Lucid sign/submit calls', () => {
+    const source = readFileSync(
+      new URL('../mint.ts', import.meta.url),
+      'utf8',
+    )
+
+    expect(source).not.toMatch(/lucid\.(signTx|submitTx)\b/)
+    expect(source).toContain('createCardanoExecutionAdapter')
   })
 })
