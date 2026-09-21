@@ -809,3 +809,22 @@ No universal expiry number was introduced by this work.
 **Current artifact:** `IMMORTAL/conformance/ProtectedCapitalConformance.hs` + `plutus/test/ProtectedCapitalConformanceTest.hs`.  
 **Expected evidence:** successful V3 Issue/Reveal/Claim/Expire traces preserve the declared ProtectedCapital partition; Reveal delta is `payout - M×P <= 0`; Claim/Expire deltas are non-positive; partition rejects omission.  
 **Status:** IN_PROGRESS
+
+
+---
+
+## 31. CI / Predeploy Gate Restoration
+
+**Finding:** the branch had a real CI infrastructure regression: `package.json` referenced `scripts/predeploy-check.mjs`, but that file was absent from the branch. Library retained the complete historical B1 gate and prior Notion records document it as the established deployment tooling.
+
+**Action:** restored the exact `scripts/predeploy-check.mjs` file from the Library artifact, rather than rewriting or weakening its checks.
+
+**Result pending:** a new Cardano integration lab run is evaluating the restored gate. Earlier Yaci evidence already established:
+- isolated Yaci devnet boot and sync;
+- real Cardano ledger smoke transaction success;
+- pure B1 invariant suite: 190 tests / 41 suites, 190 passed / 0 failed;
+- resource audit and artifact upload success.
+
+The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check.mjs`.
+
+**Status:** RESTORED / VALIDATION RUNNING
