@@ -33,12 +33,13 @@ import {
 
 import {
   classifyRowTier,
-  classifyTier,
   defaultPrizeTable,
   generateSymbols,
   rowPayoutTotal,
   type PrizeTable,
 } from './gameRules'
+
+import { signAndSubmitTx } from './txHelpers'
 
 // ---------------------------------------------------------------------------
 // Plutus Data helpers
@@ -400,13 +401,8 @@ export async function syncBeacon(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
-  const settlementValue = validateSettlementValue(opts.settlementValue)
-  const b1PrizePoolAddress =
-    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
-
-  if (!b1PrizePoolAddress) {
-    throw new Error('B1PrizePool address cannot be resolved')
-  }
+  const b1PrizePoolAddress = opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) throw new Error('B1PrizePool address cannot be resolved')
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
@@ -736,7 +732,7 @@ export async function claimPrize(opts: {
   const nextDatum = datumFromFields(nextFields)
 
   // B1PrizePool: find and update
-  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, opts.b1PrizePoolAddress)
+  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
 
   const b1ppDatum = decodeB1PrizePoolDatum(b1ppUtxo)
@@ -771,7 +767,7 @@ export async function claimPrize(opts: {
     )
     // Output: updated B1PrizePool datum
     .payToContract(
-      opts.b1PrizePoolAddress,
+      b1PrizePoolAddress,
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
