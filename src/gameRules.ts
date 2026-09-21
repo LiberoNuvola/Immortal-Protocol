@@ -1,26 +1,12 @@
 /**
- * Mirror of plutus/GameRules.hs
+ * Mirror of plutus/GameRules.hs.
  *
- * PrizeTable defines base multipliers for each winning tier.
- * Payout = baseForTier(tier) * priceUsdm / 2
+ * PRE-RICH Classic-6 is economically defined as two independent rows.
+ * Each row samples one of 20,000 canonical outcome slots:
+ *   17,500 loss / 1,700 tier1 / 600 tier2 / 180 tier3 / 19 tier4 / 1 tier5.
  *
- * USDM SUB-UNITS: 1 USDM = 100 integer units.
- * pdPriceUsdm is stored in sub-units (e.g. Genesis = 100, Class 1 = 200).
- * The payout formula is: payout = base * priceUsdm / 2
- * With priceUsdm in sub-units, the result is in sub-units:
- *   payout_subunits = base * priceUsdm / 2
- *   payout_USDM = payout_subunits / 100
- *
- * Example (Genesis, priceUsdm = 100):
- *   Tier 1: 2 * 100 / 2 = 100 sub-units = 1.00 USDM
- *   Tier 2: 5 * 100 / 2 = 250 sub-units = 2.50 USDM
- *   Tier 3: 10 * 100 / 2 = 500 sub-units = 5.00 USDM
- *   Tier 4: 200 * 100 / 2 = 10000 sub-units = 100.00 USDM
- *   Tier 5: 1000 * 100 / 2 = 50000 sub-units = 500.00 USDM
- *
- * Ticket CLASS (pdPriceUsdm) != winning TIER.
- * A 1 USDM ticket can win tier 5 (500 USDM).
- * A 100 USDM ticket can win tier 1 (100 USDM).
+ * A 16-bit draw accepts only values < 60,000, then applies modulo 20,000.
+ * This is unbiased because 60,000 = 3 * 20,000.
  */
 
 import { sha256, concatBytes } from './beacon'
@@ -50,72 +36,112 @@ function baseForTier(t: PrizeTable, tier: number): number {
   return 0
 }
 
-/**
- * Returns payout in USDM sub-units (1 USDM = 100 sub-units).
- *
- * Parity with Plutus GameRules.prizeAmountForTier:
- *   Plutus: (baseForTier tier * priceUsdm) `divide` 2
- *   TypeScript: Math.floor((baseForTier tier * priceUsdm) / 2)
- *
- *   Both produce identical results for positive integers.
- *   The divisor is 2 in both. Sub-unit representation comes from
- *   priceUsdm being stored in sub-units (e.g. 100 for Genesis = 1 USDM).
- *
- *   Example (Genesis, priceUsdm = 100):
- *     Tier 1: 2 * 100 / 2 = 100 sub-units = 1.00 USDM
- *     Tier 2: 5 * 100 / 2 = 250 sub-units = 2.50 USDM
- *     Tier 3: 10 * 100 / 2 = 500 sub-units = 5.00 USDM
- *     Tier 4: 200 * 100 / 2 = 10000 sub-units = 100.00 USDM
- *     Tier 5: 1000 * 100 / 2 = 50000 sub-units = 500.00 USDM
- */
 export function prizeAmountForTier(
   table: PrizeTable,
   tier: number,
-  priceUsdm: number
+  priceUsdm: number,
 ): number {
   if (tier <= 0 || priceUsdm <= 0) return 0
   return Math.floor((baseForTier(table, tier) * priceUsdm) / 2)
 }
 
-export function classifyTier(symbols: Uint8Array): number {
-  if (symbols.length < 6) return 0
-  for (let sym = 5; sym >= 1; sym--) {
-    let count = 0
-    for (let i = 0; i < 6; i++) {
-      if (symbols[i] === sym) count++
-    }
-    if (count >= 3) return sym
-  }
-  return 0
+export function rowPayoutTotal(
+  table: PrizeTable,
+  row1Tier: number,
+  row2Tier: number,
+  priceUsdm: number,
+): number {
+  return Math.min(
+    prizeAmountForTier(table, row1Tier, priceUsdm)
+      + prizeAmountForTier(table, row2Tier, priceUsdm),
+    500 * priceUsdm,
+  )
 }
 
-/** Must match GameRules.generateSymbols on-chain (rejection sampling, bounded within 32 bytes). */
-export async function generateSymbols(symbolsSeed: Uint8Array): Promise<Uint8Array> {
-  const out = new Uint8Array(6)
-  let count = 0
-  let hashPos = 0
-  while (count < 6) {
-    if (hashPos >= 32) {
-      throw new Error('generateSymbols: hash exhausted for position')
-    }
-    const h = await sha256(concatBytes(new Uint8Array([count]), symbolsSeed))
-    const byte = h[hashPos]
-    if (byte === 255) {
-      hashPos++
-    } else {
-      out[count] = (byte % 5) + 1
-      count++
-      hashPos = 0
-    }
+export function rowTierFromIndex(rowIndex: number): number {
+  if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= 20_000) {
+    throw new Error('row outcome index out of range')
   }
-  return out
+  if (rowIndex < 17_500) return 0
+  if (rowIndex < 19_200) return 1
+  if (rowIndex < 19_800) return 2
+  if (rowIndex < 19_980) return 3
+  if (rowIndex < 19_999) return 4
+  return 5
+}
+
+export function classifyRowTier(symbols: Uint8Array): number {
+  if (symbols.length < 3) return 0
+  const [a, b, c] = symbols
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    c !== undefined &&
+    a === b &&
+    b === c &&
+    a >= 1 &&
+    a <= 5
+  ) ? a : 0
+}
+
+export function classifyTier(symbols: Uint8Array): number {
+  if (symbols.length < 6) return 0
+  const row1 = symbols.slice(0, 3)
+  const row2 = symbols.slice(3, 6)
+  return Math.max(classifyRowTier(row1), classifyRowTier(row2))
+}
+
+function outcomeToLossTriple(outcome: number): Uint8Array {
+  const rank = outcome % 120
+  const first = Math.floor(rank / 24) + 1
+  const pairRank = rank % 24
+  const excluded = (first - 1) * 6
+  const pairIndex = pairRank < excluded ? pairRank : pairRank + 1
+  const second = Math.floor(pairIndex / 5) + 1
+  const third = (pairIndex % 5) + 1
+  return new Uint8Array([first, second, third])
+}
+
+function outcomeToSymbols(outcome: number): Uint8Array {
+  const tier = rowTierFromIndex(outcome)
+  if (tier === 0) return outcomeToLossTriple(outcome)
+  return new Uint8Array([tier, tier, tier])
+}
+
+async function nextRowOutcome(
+  seed: Uint8Array,
+  row: 1 | 2,
+): Promise<number> {
+  for (let attempt = 0; attempt < 256; attempt++) {
+    const h = await sha256(
+      concatBytes(
+        new Uint8Array([row, attempt]),
+        seed,
+      ),
+    )
+    const u = h[0] * 256 + h[1]
+    if (u < 60_000) return u % 20_000
+  }
+  throw new Error('GameRules: row randomness exhausted')
+}
+
+export async function generateSymbols(
+  symbolsSeed: Uint8Array,
+): Promise<Uint8Array> {
+  const row1 = outcomeToSymbols(
+    await nextRowOutcome(symbolsSeed, 1),
+  )
+  const row2 = outcomeToSymbols(
+    await nextRowOutcome(symbolsSeed, 2),
+  )
+  return new Uint8Array([...row1, ...row2])
 }
 
 export async function resultBinding(
   digest: Uint8Array,
   symbols: Uint8Array,
   fieldFn: (bs: Uint8Array) => Uint8Array,
-  sha: (d: Uint8Array) => Promise<Uint8Array>
+  sha: (d: Uint8Array) => Promise<Uint8Array>,
 ): Promise<Uint8Array> {
   return sha(concatBytes(fieldFn(digest), fieldFn(symbols)))
 }
