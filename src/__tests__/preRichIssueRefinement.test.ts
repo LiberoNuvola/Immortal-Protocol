@@ -45,6 +45,7 @@ describe('PRE-RICH ticket-level Issue refinement', () => {
       currentActiveClass: 1n,
       highestClassEverActivated: 1n,
       ticketPriceSubunits: 200n,
+      unresolvedReserveAfter: 1_200n,
       treasuryPaymentReferenceUnits: 2n,
     })).toBe(true)
   })
