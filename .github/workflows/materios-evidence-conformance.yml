@@ -1,0 +1,29 @@
+name: Materios Canonical Evidence Boundary
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "poc/materios-checkpoint/src/canonicalEvidence.ts"
+      - "poc/materios-checkpoint/test-canonicalEvidence.ts"
+      - ".github/workflows/materios-evidence-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "poc/materios-checkpoint/src/canonicalEvidence.ts"
+      - "poc/materios-checkpoint/test-canonicalEvidence.ts"
+      - ".github/workflows/materios-evidence-conformance.yml"
+
+jobs:
+  evidence-boundary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix poc/materios-checkpoint
+      - run: npx --prefix poc/materios-checkpoint tsx --test poc/materios-checkpoint/test-canonicalEvidence.ts
+      - run: npm run typecheck --prefix poc/materios-checkpoint
