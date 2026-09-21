@@ -1006,7 +1006,7 @@ export async function expirePrize(opts: {
   //   1 pendingLiabilities
   //   2 unresolvedReserve
   //   3 unresolvedTicketCount
-  if (pendingCount === null || unresolvedReserve === null) {
+  if (unresolvedReserve === null) {
     throw new Error('B1PrizePool datum has incomplete expiry accounting')
   }
 
