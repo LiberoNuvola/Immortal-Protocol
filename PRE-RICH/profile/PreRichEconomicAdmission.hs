@@ -3,11 +3,9 @@
 module PreRichEconomicAdmission
   ( PreRichEconomicAdmission (..)
   , preRichEconomicAdmission
-  , preRichEconomicAdmissionWithLiquidity
   ) where
 
 import PlutusTx.Prelude
-
 import EconomicGate
   ( EconomicGateInput (..)
   , executionAdmissible
@@ -23,58 +21,32 @@ import PreRichEconomicProjection
 
 -- | Successful economic-admission witness for one PRE-RICH action.
 --
--- Both V3 and application-neutral universal representations are carried
--- so downstream conformance code can inspect the same candidate state.
--- This module does not perform chain realization.
+-- `availableLiquidity` is an explicit verified execution-boundary input.
+-- It must already exclude funds that cannot be spent immediately (for
+-- example ring-fenced unresolved reserve, liabilities or locked Jackpot).
+-- `eev` remains a distinct economic-value input.
 data PreRichEconomicAdmission = PreRichEconomicAdmission
   { peaAction :: V3Action
   , peaCandidateV3 :: V3EconomicState
   , peaCandidateUniversal :: UniversalEconomicState
   , peaEEV :: Integer
+  , peaAvailableExecutableLiquidity :: Integer
+  , peaRequiredImmediateLiquidity :: Integer
   }
 
 -- | Compose the already-separated layers:
 -- structural transition validity -> candidate V3 state
--- -> fail-closed PRE-RICH projection -> verified EEV inputs
+-- -> fail-closed PRE-RICH projection -> verified EEV/execution evidence
 -- -> IMMORTAL Economic Gate -> explicit Viability certificate.
 --
--- transitionValid remains structural. Economic admissibility is evaluated
--- here, not hidden inside the transition predicate.
+-- `transitionValid` remains structural. Economic admissibility is evaluated
+-- here, never hidden inside the transition predicate.
 {-# INLINABLE preRichEconomicAdmission #-}
 preRichEconomicAdmission
   :: EconomicProfile
   -> V3EconomicState
   -> V3Action
   -> Integer
-  -> Bool
-  -> Bool
-  -> Bool
-  -> Bool
-  -> Maybe PreRichEconomicAdmission
-preRichEconomicAdmission profile preState action eev truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
-  preRichEconomicAdmissionWithLiquidity
-    profile
-    preState
-    action
-    eev
-    eev
-    (immediateLiquidity action)
-    truthVerified
-    eevFresh
-    obligationsComplete
-    allOmegaSuccessorsInCertifiedKernel
-
-{-# INLINABLE immediateLiquidity #-}
-immediateLiquidity :: V3Action -> Integer
-immediateLiquidity (Claim amount) = amount
-immediateLiquidity _ = 0
-
-{-# INLINABLE preRichEconomicAdmissionWithLiquidity #-}
-preRichEconomicAdmissionWithLiquidity
-  :: EconomicProfile
-  -> V3EconomicState
-  -> V3Action
-  -> Integer
   -> Integer
   -> Integer
   -> Bool
@@ -82,7 +54,7 @@ preRichEconomicAdmissionWithLiquidity
   -> Bool
   -> Bool
   -> Maybe PreRichEconomicAdmission
-preRichEconomicAdmissionWithLiquidity profile preState action eev availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
+preRichEconomicAdmission profile preState action eev availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
   if not (transitionValid profile preState action)
     then Nothing
     else
@@ -106,5 +78,14 @@ preRichEconomicAdmissionWithLiquidity profile preState action eev availableLiqui
                   UniversalKernel.solvencyInvariant eev candidateUniversal
               in
                 if executionAdmissible gateInput candidateUniversal safePostState allOmegaSuccessorsInCertifiedKernel
-                  then Just (PreRichEconomicAdmission action candidateV3 candidateUniversal eev)
+                  then
+                    Just
+                      (PreRichEconomicAdmission
+                        { peaAction = action
+                        , peaCandidateV3 = candidateV3
+                        , peaCandidateUniversal = candidateUniversal
+                        , peaEEV = eev
+                        , peaAvailableExecutableLiquidity = availableLiquidity
+                        , peaRequiredImmediateLiquidity = requiredLiquidity
+                        })
                   else Nothing
