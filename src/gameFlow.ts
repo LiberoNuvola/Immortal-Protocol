@@ -1023,6 +1023,18 @@ export async function expirePrize(opts: {
 
   const nextPoolDatum = datumFromFields(poolFields)
   const executor = await lucid.wallet.address()
+  const prizeAssets = utxoAssets(prizeUtxo)
+  const nonLovelaceAssets = Object.entries(prizeAssets).filter(
+    ([unit, quantity]) => unit !== 'lovelace' && quantity !== 0n,
+  )
+  if (nonLovelaceAssets.length > 0) {
+    throw new Error(
+      'EXPIRE Prize UTxO must contain only execution-collateral ADA',
+    )
+  }
+  const prizeCollateral = {
+    lovelace: prizeAssets.lovelace ?? 0n,
+  }
 
   const tx = await lucid
     .newTx()
@@ -1046,7 +1058,7 @@ export async function expirePrize(opts: {
     // economic accounting.
     .payToAddress(
       executor,
-      utxoAssets(prizeUtxo),
+      prizeCollateral,
     )
     .payToContract(
       b1PrizePoolAddress,
