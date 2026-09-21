@@ -40,6 +40,8 @@ import {
 } from './gameRules'
 
 import { signAndSubmitTx } from './txHelpers'
+import { certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
+
 import {
   assertSettlementQuoteMatchesPrize,
   type CertifiedSettlementQuote,
@@ -649,6 +651,117 @@ export async function revealPrize(opts: {
     row2Tier,
     resultHex: toHex(expectedResult),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Certified ticket observation — read-only UI boundary
+// ---------------------------------------------------------------------------
+
+export async function loadCertifiedTicketState(opts: {
+  assetId: string
+}): Promise<CertifiedTicketState> {
+  const lucid = wallet.getLucid()
+  if (!lucid) throw new Error('Wallet not connected')
+
+  const assetId = opts.assetId.replace(/^0x/i, '').toLowerCase()
+  if (assetId.length < 57 || !/^[0-9a-f]+$/.test(assetId)) {
+    throw new Error('assetId must contain a policy id followed by a token name')
+  }
+
+  const ticketPolicyId = assetId.slice(0, 56)
+  const ticketAssetNameHex = assetId.slice(56)
+  if (!ticketAssetNameHex) {
+    throw new Error('assetId is missing ticket asset name')
+  }
+
+  const scripts = buildScriptsFromLucid(
+    lucid,
+    defaultPrizeTable,
+    ORACLE_PUBLISHER_PKH,
+  )
+  const prizeUtxo = await findPrizeUtxo(
+    lucid,
+    scripts.prizeAddress,
+    ticketPolicyId,
+    ticketAssetNameHex,
+  )
+  if (!prizeUtxo) {
+    throw new Error('Certified ticket PrizeDatum not found')
+  }
+
+  const datum = decodePrizeDatum(prizeUtxo)
+  if (!datum) {
+    throw new Error('Certified ticket PrizeDatum not decodable')
+  }
+
+  const statusIndex = constrIndex(datum.fields[10])
+  const status =
+    statusIndex === 0 ? 'Pending'
+    : statusIndex === 1 ? 'Revealed'
+    : statusIndex === 2 ? 'Claimed'
+    : null
+  if (!status) {
+    throw new Error('Certified ticket has unknown PrizeStatus')
+  }
+
+  const target = parseBeaconTarget(datum.fields[13])
+  const priceUsdm = integerField(datum.fields[3])
+  const ticketNonce = integerField(datum.fields[6])
+  const prizeAmount = integerField(datum.fields[7])
+  const prizeTier = integerField(datum.fields[12])
+  const issuedAt = integerField(datum.fields[19])
+  const expiresAt = integerField(datum.fields[20])
+  const row1Tier = integerField(datum.fields[21])
+  const row2Tier = integerField(datum.fields[22])
+
+  const commitment = bytesField(datum.fields[4])
+  const gameVersion = bytesField(datum.fields[5])
+  const result = bytesField(datum.fields[11])
+
+  if (
+    priceUsdm === null ||
+    ticketNonce === null ||
+    prizeAmount === null ||
+    prizeTier === null ||
+    issuedAt === null ||
+    expiresAt === null ||
+    row1Tier === null ||
+    row2Tier === null ||
+    commitment === null ||
+    gameVersion === null ||
+    result === null
+  ) {
+    throw new Error('Certified ticket PrizeDatum has incomplete state')
+  }
+
+  const purchaseTxHash =
+    typeof prizeUtxo.txHash === 'string' ? prizeUtxo.txHash : undefined
+
+  return certifyTicketBinding({
+    walletAssetPolicyId: ticketPolicyId,
+    walletAssetNameHex: ticketAssetNameHex,
+    datum: {
+      ticketPolicy: bytesField(datum.fields[0]) ?? '',
+      ticketName: bytesField(datum.fields[1]) ?? '',
+      priceUsdm: BigInt(priceUsdm),
+      commitment,
+      gameVersion,
+      ticketNonce: BigInt(ticketNonce),
+      status,
+      result,
+      prizeTier: BigInt(prizeTier),
+      prizeAmount: BigInt(prizeAmount),
+      issuedAt: BigInt(issuedAt),
+      expiresAt: BigInt(expiresAt),
+      row1Tier: BigInt(row1Tier),
+      row2Tier: BigInt(row2Tier),
+      beaconTarget: JSON.stringify(target),
+    },
+    purchaseTxHash,
+    verificationReference: purchaseTxHash
+      ? purchaseTxHash + '#' + String(prizeUtxo.outputIndex)
+      : undefined,
+  })
 }
 
 // ---------------------------------------------------------------------------
