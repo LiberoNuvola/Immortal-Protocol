@@ -54,3 +54,48 @@ export function acceptCanonicalTransitionEvidence(
     }
   }
 }
+
+export type CanonicalTransitionBinding = {
+  actionFingerprint: string
+  preStateFingerprint: string
+  postStateFingerprint: string
+  transactionRef: string
+}
+
+export function assertCanonicalTransitionBinding(
+  evidence: CanonicalTransitionEvidence,
+  expected: CanonicalTransitionBinding,
+): void {
+  validateCanonicalTransitionEvidence(evidence)
+  if (evidence.actionFingerprint !== expected.actionFingerprint) {
+    throw new Error('canonical action fingerprint mismatch')
+  }
+  if (evidence.preStateFingerprint !== expected.preStateFingerprint) {
+    throw new Error('canonical pre-state fingerprint mismatch')
+  }
+  if (evidence.postStateFingerprint !== expected.postStateFingerprint) {
+    throw new Error('canonical post-state fingerprint mismatch')
+  }
+  if (evidence.transactionRef !== expected.transactionRef) {
+    throw new Error('settlement transaction reference mismatch')
+  }
+}
+
+export function assertUniqueCanonicalTransitionRealizations(
+  evidence: CanonicalTransitionEvidence[],
+): void {
+  const evidenceIds = new Set<string>()
+  const transactionRefs = new Set<string>()
+
+  for (const item of evidence) {
+    validateCanonicalTransitionEvidence(item)
+    if (evidenceIds.has(item.evidenceId)) {
+      throw new Error('duplicate canonical evidence ID')
+    }
+    if (transactionRefs.has(item.transactionRef)) {
+      throw new Error('duplicate settlement transaction reference')
+    }
+    evidenceIds.add(item.evidenceId)
+    transactionRefs.add(item.transactionRef)
+  }
+}
