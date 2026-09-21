@@ -29,7 +29,8 @@ data PreRichEconomicAdmission = PreRichEconomicAdmission
   { peaAction :: V3Action
   , peaCandidateV3 :: V3EconomicState
   , peaCandidateUniversal :: UniversalEconomicState
-  , peaEEV :: Integer
+  , peaPreEEV :: Integer
+  , peaCandidateEEV :: Integer
   , peaAvailableExecutableLiquidity :: Integer
   , peaRequiredImmediateLiquidity :: Integer
   }
@@ -54,7 +55,7 @@ preRichEconomicAdmission
   -> Bool
   -> Bool
   -> Maybe PreRichEconomicAdmission
-preRichEconomicAdmission profile preState action eev availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
+preRichEconomicAdmission profile preState action preEEV candidateEEV availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
   if not (transitionValid profile preState action)
     then Nothing
     else
@@ -70,12 +71,12 @@ preRichEconomicAdmission profile preState action eev availableLiquidity required
                     { egiAuthoritativeTruthVerified = truthVerified
                     , egiEEVFresh = eevFresh
                     , egiObligationsComplete = obligationsComplete
-                    , egiEEV = eev
+                    , egiEEV = candidateEEV
                     , egiAvailableExecutableLiquidity = availableLiquidity
                     , egiRequiredImmediateLiquidity = requiredLiquidity
                     }
                 safePostState =
-                  UniversalKernel.solvencyInvariant eev candidateUniversal
+                  UniversalKernel.solvencyInvariant candidateEEV candidateUniversal
               in
                 if executionAdmissible gateInput candidateUniversal safePostState allOmegaSuccessorsInCertifiedKernel
                   then
@@ -84,7 +85,8 @@ preRichEconomicAdmission profile preState action eev availableLiquidity required
                         { peaAction = action
                         , peaCandidateV3 = candidateV3
                         , peaCandidateUniversal = candidateUniversal
-                        , peaEEV = eev
+                        , peaPreEEV = preEEV
+                        , peaCandidateEEV = candidateEEV
                         , peaAvailableExecutableLiquidity = availableLiquidity
                         , peaRequiredImmediateLiquidity = requiredLiquidity
                         })
