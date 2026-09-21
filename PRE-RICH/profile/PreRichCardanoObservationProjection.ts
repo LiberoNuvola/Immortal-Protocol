@@ -144,7 +144,7 @@ function projectClasses(
   authoritativeClasses: AuthoritativeClassState[],
 ) {
   if (authoritativeClasses.length !== PRE_RICH_CANONICAL_PRICES.length) {
-    throw new Error('authoritative class state must contain exactly 8 canonical ticket classes')
+    throw new Error('missing or ambiguous authoritative class state: expected exactly 8 canonical ticket classes')
   }
 
   const authoritativeIds = new Set<bigint>()
