@@ -17,6 +17,9 @@ import PlutusTx.Prelude (BuiltinByteString, emptyByteString)
 
 import B1LegacyAdapter
 import EconomicStateV3
+import qualified EconomicKernel
+import PreRichEconomicProfile
+import qualified UniversalEconomicKernel
 import Types
 import qualified UniversalEconomicState
 
@@ -104,6 +107,26 @@ main = do
   let universalAggregate =
         legacyB1ToUniversalEconomicState
           (B1PrizePoolDatum 1000 7 4 2 9 10 0 dummyHash)
+  let aggregateComparableState =
+        V3EconomicState
+          7 5 3 0 0 0
+          [ TicketClassState 0 2 2 2 10 True
+          , TicketClassState 2 1 1 3 10 True
+          ]
+          (EconomicControlState 0 0)
+          (JackpotState 9 10 JackpotLocked 0)
+
+  let universalComparable =
+        legacyB1ToUniversalEconomicState
+          (B1PrizePoolDatum 1000 7 5 3 9 10 0 dummyHash)
+
+  assert
+    (EconomicKernel.protectedCapital
+       preRichEconomicProfileV1
+       aggregateComparableState
+       == UniversalEconomicKernel.protectedCapital universalComparable)
+    "legacy aggregate preserves the representable ProtectedCapital boundary"
+
   assert
     (UniversalEconomicState.uesCrystallizedLiabilities universalAggregate == 7)
     "legacy B1 liabilities map directly to universal aggregate"
