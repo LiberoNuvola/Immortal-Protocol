@@ -40,6 +40,10 @@ import {
 } from './gameRules'
 
 import { signAndSubmitTx } from './txHelpers'
+import {
+  assertSettlementQuoteMatchesPrize,
+  type CertifiedSettlementQuote,
+} from '../PRE-RICH/profile/PreRichCertifiedSettlement'
 
 // ---------------------------------------------------------------------------
 // Plutus Data helpers
@@ -678,7 +682,8 @@ export async function claimPrize(opts: {
   ticketPolicyId: string
   ticketAssetNameHex: string
   b1PrizePoolAddress?: string
-  settlementValue: ExactSettlementValue
+  settlementValue?: ExactSettlementValue
+  settlementQuote?: CertifiedSettlementQuote
   table?: PrizeTable
 }): Promise<string> {
   const lucid = wallet.getLucid()
@@ -691,7 +696,15 @@ export async function claimPrize(opts: {
   if (!b1PrizePoolAddress) {
     throw new Error('B1PrizePool address cannot be resolved')
   }
-  const settlementValue = validateSettlementValue(opts.settlementValue)
+  const settlementValue = opts.settlementQuote
+    ? (() => {
+        assertSettlementQuoteMatchesPrize(
+          opts.settlementQuote,
+          BigInt(prizeAmount ?? 0),
+        )
+        return opts.settlementQuote.assetMap
+      })()
+    : validateSettlementValue(opts.settlementValue)
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
