@@ -13,12 +13,14 @@ on:
       - "PRE-RICH/profile/PreRichExpireRefinement.ts"
       - "PRE-RICH/profile/PreRichIssueRefinement.ts"
       - "PRE-RICH/profile/PreRichClaimRefinement.ts"
+      - "PRE-RICH/profile/PreRichRevealRefinement.ts"
       - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
       - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
       - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
       - "src/__tests__/preRichIssueRefinement.test.ts"
       - "src/__tests__/preRichClaimRefinement.test.ts"
+      - "src/__tests__/preRichRevealRefinement.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
       - "src/__tests__/preRichExpiryEvidence.test.ts"
       - "src/__tests__/preRichCertifiedTicket.test.ts"
@@ -60,7 +62,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts
       
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit
