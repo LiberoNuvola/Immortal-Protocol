@@ -1,6 +1,6 @@
 // src/tickets.ts
 import wallet from './wallet'
-import { mintSerialNFT } from './mint'
+import { mintSerialNFT, type MintSerialOptions } from './mint'
 import { COUNTER_SCRIPT_ADDRESS } from './config'
 
 /**
@@ -14,7 +14,10 @@ import { COUNTER_SCRIPT_ADDRESS } from './config'
  *
  * qty > 1 = multiple sequential transactions (one per ticket).
  */
-export async function buyTickets(qty: number = 1) {
+export async function buyTickets(
+  qty: number = 1,
+  mintOptions: MintSerialOptions = {},
+) {
   const lucid = wallet.getLucid()
 
   if (!lucid) {
@@ -38,7 +41,7 @@ export async function buyTickets(qty: number = 1) {
   }> = []
 
   for (let i = 0; i < qty; i++) {
-    const r = await mintSerialNFT({})
+    const r = await mintSerialNFT(mintOptions)
     results.push(r)
   }
 
