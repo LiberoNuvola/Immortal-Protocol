@@ -1,0 +1,29 @@
+name: P2.8-B.1 Lucid Evolution Diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lucid-evolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout canonical audit branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: audit/lucid-evolution/package.json
+
+      - name: Install pinned Lucid Evolution 0.6.2
+        run: |
+          node --version
+          npm --version
+          npm install --prefix audit/lucid-evolution --ignore-scripts --no-audit --no-fund
+          npm ls --prefix audit/lucid-evolution --depth=0
+
+      - name: Run P2.8-B.1 real Plutus V2 diagnostic
+        run: node audit/lucid-evolution/immortal-cardano-reveal-emulator-b1.mjs
