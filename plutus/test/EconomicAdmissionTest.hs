@@ -82,7 +82,13 @@ main = do
     "economic gate rejects incomplete obligation coverage"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 True True True False of
+    (case preRichEconomicAdmissionWithLiquidity profile baseState (Issue 0 1) 500 0 1 True True True True of
+       Nothing -> True
+       Just _ -> False)
+    "economic gate rejects unavailable immediate liquidity"
+
+  assert
+    (case preRichEconomicAdmissionWithLiquidity profile baseState (Issue 0 1) 500 0 0 True True True False of
        Nothing -> True
        Just _ -> False)
     "viability gate rejects uncertified Omega successors"
@@ -106,7 +112,7 @@ main = do
       assert (uesUnresolvedReserve (peaCandidateUniversal admitted) == 0) "reveal releases unresolved reserve"
       assert (solvencyInvariant 500 (peaCandidateUniversal admitted)) "revealed candidate remains universally solvent"
 
-  case preRichEconomicAdmission profile revealedState (Claim 500) 500 True True True True of
+  case preRichEconomicAdmissionWithLiquidity profile revealedState (Claim 500) 500 500 500 True True True True of
     Nothing -> error "FAIL: valid claim was rejected"
     Just admitted -> do
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 0) "claim closes crystallised liability"
