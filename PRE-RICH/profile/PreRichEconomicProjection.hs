@@ -2,12 +2,15 @@
 
 module PreRichEconomicProjection
   ( projectPreRichState
+  , projectionBoundaryEquivalent
   ) where
 
 import PlutusTx.Prelude
 import EconomicProfile
 import EconomicStateV3
 import UniversalEconomicState
+import qualified EconomicKernel as V3Kernel
+import qualified UniversalEconomicKernel as UniversalKernel
 
 -- | Project the richer PRE-RICH V3 state into the application-neutral
 -- economic state consumed by the universal economic kernel.
@@ -113,3 +116,25 @@ classesNonNegative (c:cs) =
 containsClass :: TicketClass -> [TicketClass] -> Bool
 containsClass _ [] = False
 containsClass x (y:ys) = x == y || containsClass x ys
+
+
+-- | Conformance witness for the aggregate economic boundary.
+-- This proves only equality of the represented ProtectedCapital-derived
+-- boundary functions for the projected state. It does not prove Economic Gate
+-- soundness, viability, atomicity, or full Cardano/V3 equivalence.
+{-# INLINABLE projectionBoundaryEquivalent #-}
+projectionBoundaryEquivalent
+  :: EconomicProfile
+  -> Integer
+  -> V3EconomicState
+  -> Bool
+projectionBoundaryEquivalent profile eev s =
+  case projectPreRichState profile s of
+    Nothing -> False
+    Just u ->
+         V3Kernel.protectedCapital profile s
+           == UniversalKernel.protectedCapital u
+      && V3Kernel.rawSurplus profile eev s
+           == UniversalKernel.rawSurplus eev u
+      && V3Kernel.solvencyInvariant profile eev s
+           == UniversalKernel.solvencyInvariant eev u
