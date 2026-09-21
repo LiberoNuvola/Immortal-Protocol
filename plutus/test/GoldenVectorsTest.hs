@@ -20,6 +20,17 @@ import EconomicTransitionV3
 import GoldenVectors
 
 
+import Control.Exception (SomeException, evaluate, try)
+
+
+expectIntegerThrows :: String -> IO Integer -> IO ()
+expectIntegerThrows label action = do
+  result <- try action :: IO (Either SomeException Integer)
+  case result of
+    Left _ -> putStrLn ("PASS: " ++ label)
+    Right _ -> error ("FAIL: " ++ label)
+
+
 sameState :: V3EconomicState -> V3EconomicState -> Bool
 sameState a b =
      v3CrystallizedLiabilities a == v3CrystallizedLiabilities b
@@ -141,5 +152,12 @@ main = do
   assert
     (conservationInvariant expireZeroExpected)
     "expiry conservation"
+
+  let invalidClass =
+        TicketClassState 999 1 1 0 10 True
+
+  expectIntegerThrows
+    "unknown class exposure fails closed"
+    (evaluate (classExposure invalidClass))
 
   putStrLn "ALL GOLDEN VECTOR TESTS PASSED"
