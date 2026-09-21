@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichExpireRefinement.test.ts
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts
       
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit
