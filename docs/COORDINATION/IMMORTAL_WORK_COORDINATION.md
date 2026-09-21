@@ -1444,3 +1444,66 @@ The Sale Conformance workflow is GREEN on the corrected head. Kernel and Cardano
 **Status:** infrastructure correction applied; real-ledger/Haskell evidence still pending.
 
 **Non-regression:** no economic parameter, invariant, adapter authority boundary or canonical policy changed.
+
+---
+## 53. 2026-09-22 — A2/A3 Jackpot activation boundary correction
+
+**Front:** PRE-RICH Jackpot activation / B5-B6 boundary
+
+Triangulation was performed against the current Notion A1/A2/A3 policy closure and the live working-branch Cardano/V3 implementation.
+
+### Finding
+
+The Cardano-side helper previously encoded:
+
+`jackpotActive = effectivePool >= ppJackpotThreshold`
+
+That scalar threshold comparison is **not** the current A2 activation semantics. A2 requires the PRE-RICH state-derived stable-ladder condition:
+- current active class = highest class ever activated = top PRE-RICH class;
+- existing activation predicate satisfied;
+- top class not suspended;
+followed by A3 funding eligibility only when the state-derived funding need is positive and the Economic Gate accepts.
+
+The obsolete helper was not used as validator authorization, but retaining it created a misleading alternate activation rule.
+
+### Surgical correction
+
+Removed the unused `jackpotActive` helper from `plutus/B1PrizePool.hs`.
+
+Removed the obsolete threshold-based activation tests from `src/__tests__/b1-invariants.test.ts` and retained the actual accounting invariant that locked Jackpot liquidity reduces `effectivePool`.
+
+Added:
+- `PRE-RICH/profile/PreRichJackpotActivation.ts`
+  - `isPreRichJackpotStableLadder`
+  - `preRichJackpotFundingNeed`
+  - `isPreRichJackpotFundingEligible`
+- `src/__tests__/preRichJackpotActivation.test.ts`
+  - top-class/current-vs-highest checks;
+  - activation/suspension predicate composition;
+  - minimum shortfall funding calculation;
+  - Economic Gate requirement;
+  - negative-value fail-closed checks.
+
+The new boundary is deliberately a **PRE-RICH policy/conformance witness**. It does not introduce a new IMMORTAL economic authority, a new scalar maturity threshold, or a fixed Jackpot allocation rate.
+
+### Documentation correction
+
+Updated `plutus/Types.hs` so `ppJackpotThreshold` is described as a state-derived PRE-RICH floor/target and explicitly **not** a standalone activation authorization.
+
+### Commits created
+
+- `4bf1e5856cf8079064b935cbe7cfc75afa4da31f` — remove obsolete Cardano activation helper
+- `b0b4b97449be0af4caa77f7d0e9d9d9498769ac5` — remove obsolete threshold activation tests
+- `6a2c35b34e83c52a8d9551f06ccb9f815a3723bf` — add PRE-RICH activation policy boundary
+- `e8368e52a0fdc136b7ef60ce129ee15d9d253d1f` — add activation policy tests
+- `354035fc87b17a5c125c2a5e231ca1fce2dcdb02` — clarify on-chain threshold field semantics
+
+### Evidence status
+
+No CI green claim is made for this delta. The latest previously observed infrastructure runs (`35663204233`, `35663204402`, `35663204486`) had the Integration Lab and Kernel audit cancelled while the Sale Conformance run completed successfully; subsequent pushes may have superseded those runs.
+
+### Remaining gap
+
+The new policy boundary is not itself runtime transaction authority. The remaining proof is to connect the authoritative PRE-RICH class-control/hysteresis state and the canonical Economic Gate to the actual Jackpot funding transition, then prove the same conditions at the Cardano realization boundary.
+
+**Status:** A2/A3 policy semantics represented without duplication; implementation/conformance remains open.
