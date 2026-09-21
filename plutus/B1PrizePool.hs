@@ -1002,10 +1002,10 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
                    Just pd ->
                      let
