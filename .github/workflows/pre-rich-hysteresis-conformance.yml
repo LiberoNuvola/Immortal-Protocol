@@ -1,0 +1,36 @@
+name: PRE-RICH Hysteresis Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/preRichHysteresis.ts"
+      - "src/__tests__/preRichHysteresis.test.ts"
+      - ".github/workflows/pre-rich-hysteresis-conformance.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/preRichHysteresis.ts"
+      - "src/__tests__/preRichHysteresis.test.ts"
+      - ".github/workflows/pre-rich-hysteresis-conformance.yml"
+
+jobs:
+  hysteresis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Run PRE-RICH hysteresis conformance
+        run: npx vitest run src/__tests__/preRichHysteresis.test.ts
