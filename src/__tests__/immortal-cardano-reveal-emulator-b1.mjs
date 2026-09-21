@@ -473,22 +473,41 @@ async function main() {
   const walletAddress =
     await probe.wallet.address();
 
+  /*
+   * DIAGNOSTIC ONLY:
+   * preserve Lucid 0.10.11 cost model but lift tx-size and execution
+   * ceilings so the inline Reveal can be evaluated for root-cause analysis.
+   * This branch is not an acceptance environment.
+   */
+  const baseProtocolParameters =
+    await (new Emulator([], undefined)).getProtocolParameters();
+
+  const diagnosticProtocolParameters = {
+    ...baseProtocolParameters,
+    maxTxSize: 65_536,
+    maxTxExMem: 100_000_000_000n,
+    maxTxExSteps: 100_000_000_000n,
+  };
+
   const emulator =
-    new Emulator([
-      {
-        address: walletAddress,
+    new Emulator(
+      [
+        {
+          address: walletAddress,
 
-        assets: {
-          lovelace: 100_000_000n,
+          assets: {
+            lovelace: 100_000_000n,
 
-          [ticketPolicy + ticketName]:
-            1n,
+            [ticketPolicy + ticketName]:
+              1n,
 
-          [poolPolicy + poolToken]:
-            1n,
+            [poolPolicy + poolToken]:
+              1n,
+          },
         },
-      },
-    ]);
+      ],
+      diagnosticProtocolParameters,
+    );
 
   const lucid =
     await Lucid.new(
@@ -983,6 +1002,10 @@ async function main() {
   const revealUtilization =
     revealSignedBytes / revealMaxTxSize;
 
+  console.log(
+    "DIAGNOSTIC_PROTOCOL_LIMITS",
+    true,
+  );
   console.log(
     "REVEAL_TX_SIZE_UNSIGNED_BYTES",
     revealUnsignedBytes,
