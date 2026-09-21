@@ -108,6 +108,8 @@ main = do
   case preRichEconomicAdmission profile issuedState (Reveal 0 500) 500 501 500 500 True True True True of
     Nothing -> error "FAIL: valid reveal was rejected"
     Just admitted -> do
+      assert (peaPreEEV admitted == 500) "reveal preserves observed pre-state EEV"
+      assert (peaCandidateEEV admitted == 501) "reveal evaluates candidate post-state EEV"
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 500) "reveal crystallises exact liability"
       assert (uesUnresolvedReserve (peaCandidateUniversal admitted) == 0) "reveal releases unresolved reserve"
       assert (solvencyInvariant 500 (peaCandidateUniversal admitted)) "revealed candidate remains universally solvent"
