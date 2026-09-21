@@ -682,6 +682,21 @@ export async function loadCertifiedTicketState(opts: {
   if (!scripts.prizeAddress) {
     throw new Error('Prize address cannot be resolved')
   }
+
+  const ticketUtxo = await findTicketUtxoInWallet(
+    lucid,
+    ticketPolicyId,
+    ticketAssetNameHex,
+  )
+  if (!ticketUtxo) {
+    throw new Error('Certified ticket NFT is not currently held by the connected wallet')
+  }
+
+  const ticketUnit = ticketPolicyId + ticketAssetNameHex
+  if (ticketUtxo.assets[ticketUnit] !== 1n) {
+    throw new Error('Certified ticket NFT quantity must be exactly one')
+  }
+
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     scripts.prizeAddress,
