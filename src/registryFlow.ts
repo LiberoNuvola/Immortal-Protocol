@@ -19,6 +19,8 @@
  * BeaconRegistry validator.
  */
 
+import { signAndSubmitTx } from './txHelpers'
+
 import {
   deriveBeacon,
   deriveGameRoundCommitment,
