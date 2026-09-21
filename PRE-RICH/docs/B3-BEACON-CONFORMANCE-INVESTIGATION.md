@@ -63,19 +63,33 @@ The current implementations match on the material construction points inspected:
 
 This is source-level parity evidence, not yet an independently executed byte-for-byte conformance result.
 
-## Adjacent economic finding — payout quantization remains OPEN
+## Adjacent economic finding — payout units reconciled
 
-The current outcome probabilities are aligned with the 20,000-slot model, but the current prizeAmountForTier implementation uses integer division: (baseForTier × priceUsdm) / 2.
+The earlier apparent tier-2 truncation was caused by evaluating the function with `priceUsdm = 1` as though the parameter were whole USDM.
 
-The canonical table contains a tier-2 multiplier of 5, which mathematically corresponds to 2.5× at a 1-USDM ticket. Integer division at priceUsdm = 1 truncates this to 2.
+The current implementation uses **100 USDM sub-units per USDM** at the Cardano-facing boundary. Genesis is therefore `priceUsdm = 100`.
 
-Therefore the current branch has:
+With the current formula:
 
-- 20,000 outcome-domain mapping: implementationally aligned;
-- unbiased rejection sampling: implementationally aligned;
-- exact payout arithmetic at fractional 2.5-USDM-equivalent result: OPEN.
+```
+(baseMultiplier × priceUsdm) / 2
+```
 
-This is not a reason to change the frozen economics or weaken a test. It is a separate GameRules / unit-representation conformance issue that must be resolved by the existing economic specification and denomination model.
+the canonical tier-2 payout is:
+
+```
+5 × 100 / 2 = 250 sub-units = 2.5 USDM
+```
+
+The 500× cap is likewise exact:
+
+```
+500 × 100 = 50,000 sub-units = 500 USDM
+```
+
+The previous OPEN finding was therefore a unit-interpretation error, not an implementation defect. No economic rule or code change is required.
+
+Remaining work is executable unit-boundary conformance across Plutus, TypeScript, economic state and settlement.
 
 ## B3 closure questions
 
