@@ -130,14 +130,20 @@ totalUnresolved cid (c:cs)
 {-# INLINABLE transitionValid #-}
 transitionValid :: EconomicProfile -> V3EconomicState -> V3Action -> Bool
 transitionValid profile s a =
-     EconomicKernel.conservationInvariant profile s
-  && profileValid profile
+     profileValid profile
+  && preStateValid s
   && case transition profile s a of
        Nothing -> False
-       Just s' ->
-            EconomicKernel.conservationInvariant profile s'
-         && nonNegativeState s'
+       Just s' -> postStateValid s'
   where
+    preStateValid st =
+         EconomicKernel.conservationInvariant profile st
+      && nonNegativeState st
+
+    postStateValid st =
+         EconomicKernel.conservationInvariant profile st
+      && nonNegativeState st
+
     nonNegativeState st =
          v3CrystallizedLiabilities st >= 0
       && v3UnresolvedReserve st >= 0
