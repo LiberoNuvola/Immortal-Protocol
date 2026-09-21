@@ -463,6 +463,22 @@ export async function syncBeacon(opts: {
 // Reveal — coordinates PrizeValidator + B1PrizePool
 // ---------------------------------------------------------------------------
 
+/**
+ * Canonical Classic-6 ticket-level Reveal result.
+ *
+ * G7 requires both independent row results to remain observable. `tier` is
+ * only the legacy summary max(row1Tier,row2Tier); `prizeAmount` is the
+ * already-capped ticket payout in the established USDM sub-unit encoding.
+ */
+export type Classic6RevealResult = {
+  txHash: string
+  tier: number
+  prizeAmount: number
+  row1Tier: number
+  row2Tier: number
+  resultHex: string
+}
+
 export async function revealPrize(opts: {
   prizeAddress: string
   ticketPolicyId: string
@@ -470,14 +486,7 @@ export async function revealPrize(opts: {
   playerSecretHex: string
   b1PrizePoolAddress: string
   table?: PrizeTable
-}): Promise<{
-  txHash: string
-  tier: number
-  prizeAmount: number
-  row1Tier: number
-  row2Tier: number
-  resultHex: string
-}> {
+}): Promise<Classic6RevealResult> {
   const lucid = wallet.getLucid()
   if (!lucid) throw new Error('Wallet not connected')
 
