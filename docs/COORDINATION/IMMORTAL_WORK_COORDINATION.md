@@ -958,3 +958,19 @@ certifyTicketBinding now requires a non-empty verification reference, so a synth
 A current Notion decision-register lookup confirms that the V3 claim predicate is intentionally aggregate: Claim amount <= crystallised liability. Therefore this session does not change EconomicTransitionV3 to an exact-ticket payout model. Full V3/Cardano action equivalence remains an evidence/conformance task, not a reopened normative decision.
 
 **Status:** B4 CLOSING / CI PENDING; C6 HARDENED / EVIDENCE PENDING; B6 FULL EQUIVALENCE OPEN.
+---
+## 41. STATE BOUNDARY — FIELD OWNERSHIP MATRIX
+
+**Date:** 2026-09-21  
+**Artifact:** `IMMORTAL/state/STATE-FIELD-OWNERSHIP.md`
+
+The current rich `EconomicStateV3` is explicitly classified field-by-field:
+
+- liabilities, SafetyCapital, ReserveProtection and MandatoryFutureCosts are universal economic primitives;
+- unresolved reserve/count are universal aggregates with application/profile-derived provenance;
+- TicketClassState, activation history/control and Jackpot lifecycle are PRE-RICH/profile-shaped;
+- only universally meaningful protected amounts may cross the projection boundary as aggregate protected capital.
+
+**Rule:** no big-bang V3 refactor. Consumers should migrate incrementally to `UniversalEconomicState`; V3 remains the rich compatibility/refinement representation until action-by-action equivalence exists.
+
+**Status:** DOCUMENTED / REFACTOR GUARDRAIL
