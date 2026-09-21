@@ -57,3 +57,18 @@ Status: repository licensing package for `b1-hardening`.
     grant.
 5.  This matrix describes project intent and repository classification;
     it is not a legal opinion.
+
+## Current repository-layer snapshot — 2026-09-21
+
+The licensing decisions recorded for the current project baseline remain:
+
+- original IMMORTAL software: MPL-2.0;
+- original IMMORTAL and PRE-RICH documentation/specification: CC BY 4.0;
+- original PRE-RICH software: MPL-2.0;
+- original Cardano Adapter software: MPL-2.0 candidate pending final provenance/dependency audit;
+- third-party components remain under their upstream licenses;
+- assets/branding/trademarks remain separately classified.
+
+The current repository architecture is now explicitly layered as IMMORTAL/, Adapter/, and PRE-RICH/. This matrix must follow the actual authorship/provenance of files rather than directory names alone.
+
+**Release gate:** no final repository-wide license freeze is claimed until SPDX placement, contributor/copyright provenance, third-party notices and component-specific exceptions have been mechanically audited on the release tree.
