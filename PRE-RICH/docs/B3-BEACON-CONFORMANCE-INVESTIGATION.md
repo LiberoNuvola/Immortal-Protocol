@@ -119,7 +119,7 @@ A first language-neutral replay vector set is now stored at `verification/pre-ri
 3. Verify failure behavior when Beacon evidence is absent, malformed or inconsistent.
 4. Verify the full validator path cannot substitute an operator-selected outcome.
 5. Separately inspect Jackpot randomness so it cannot consume the normal-game domain accidentally.
-6. Close the payout-unit issue using the canonical denomination/economic model; do not silently round or truncate a frozen payout.
+6. Preserve the already-closed payout-unit boundary in replay/settlement evidence; do not silently round or truncate a frozen payout.
 
 ## Current closure statement
 
