@@ -974,3 +974,26 @@ The current rich `EconomicStateV3` is explicitly classified field-by-field:
 **Rule:** no big-bang V3 refactor. Consumers should migrate incrementally to `UniversalEconomicState`; V3 remains the rich compatibility/refinement representation until action-by-action equivalence exists.
 
 **Status:** DOCUMENTED / REFACTOR GUARDRAIL
+
+---
+## 42. FINAL TRANCHE — B5 pre/post EEV
+
+PRE-RICH economic admission now distinguishes `preEEV` from `candidateEEV`. The Economic Gate evaluates `candidateEEV` against the candidate post-state; the pre-state EEV is retained only for evidence/reconciliation and is fail-closed if negative.
+
+Tests explicitly demonstrate a valid Reveal with pre-state EEV 500 and candidate-state EEV 501.
+
+**Status:** IMPLEMENTATION CORRECTED / HASKELL EVIDENCE PENDING
+
+---
+## 43. FINAL TRANCHE — Classic-6 exact distribution
+
+`GAME-ECONOMY.md` is reconciled with DEC-1 Classic-6: two independent 20,000-row domains, row-level five winning tiers, ticket-level sum capped at 500×P. The exact 400,000,000-pair distribution is tested independently.
+
+**Status:** DOCUMENTATION + MATHEMATICAL CONFORMANCE TEST READY
+
+---
+## 44. FINAL TRANCHE — RF8 and 3D security
+
+RF8 now has a source-level regression preventing direct `signTx/submitTx` calls in `src/` outside the single approved submission helper. `ticket3d.ts` escapes all canonical data before DOM insertion and has dedicated security tests.
+
+**Status:** BOUNDED IMPLEMENTATION EVIDENCE GREEN
