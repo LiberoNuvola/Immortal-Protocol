@@ -40,6 +40,11 @@ function preInput() {
       { classId: 0n, issued: 1n, cap: 1n, saleable: true },
       { classId: 1n, issued: 1n, cap: 1n, saleable: true },
       { classId: 2n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 3n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 4n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 5n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 6n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 7n, issued: 1n, cap: 1n, saleable: true },
     ],
   }
 }
@@ -52,8 +57,10 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
     assert.equal(state.unresolvedReserve, 6n)
     assert.equal(state.unresolvedTicketCount, 3n)
 
+    assert.equal(state.classes.length, 8)
+
     assert.deepEqual(
-      state.classes.map((c) => ({
+      state.classes.slice(0, 3).map((c) => ({
         classId: c.classId,
         issued: c.issued,
         unresolved: c.unresolved,
