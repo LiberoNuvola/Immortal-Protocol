@@ -46,6 +46,7 @@ describe('Certified persistent ticket binding', () => {
       walletAssetPolicyId: datum.ticketPolicy,
       walletAssetNameHex: '3334',
       datum,
+      verificationReference: 'verify-2',
     })).toThrow('ticket asset name does not match PrizeDatum identity')
   })
 
@@ -54,6 +55,7 @@ describe('Certified persistent ticket binding', () => {
       walletAssetPolicyId: datum.ticketPolicy,
       walletAssetNameHex: datum.ticketName,
       datum: { ...datum, expiresAt: 999n },
+      verificationReference: 'verify-3',
     })).toThrow('expiresAt must not precede issuedAt')
   })
 
@@ -70,6 +72,7 @@ describe('Certified persistent ticket binding', () => {
         row1Tier: 2n,
         row2Tier: 0n,
       },
+      verificationReference: 'verify-4',
     })
     expect(state.row1Tier).toBe(2n)
     expect(state.row2Tier).toBe(0n)
