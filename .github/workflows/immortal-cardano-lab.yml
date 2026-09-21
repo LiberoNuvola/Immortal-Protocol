@@ -49,8 +49,10 @@ jobs:
           package["type"] = "module"
           package["exports"] = {
               ".": {
-                  "import": "./esm/mod.js",
                   "types": "./types/mod.d.ts",
+                  "import": "./esm/mod.js",
+                  "require": "./esm/mod.js",
+                  "default": "./esm/mod.js",
               }
           }
           package_path.write_text(json.dumps(package, indent=2) + "\n")
