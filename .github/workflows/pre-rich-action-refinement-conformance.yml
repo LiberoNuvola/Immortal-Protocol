@@ -1,0 +1,33 @@
+name: PRE-RICH Action Refinement Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/PreRichIssueEvidence.ts"
+      - "src/__tests__/preRichIssueEvidence.test.ts"
+      - ".github/workflows/pre-rich-action-refinement-conformance.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/PreRichIssueEvidence.ts"
+      - "src/__tests__/preRichIssueEvidence.test.ts"
+      - ".github/workflows/pre-rich-action-refinement-conformance.yml"
+
+jobs:
+  action-refinement:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Issue refinement conformance
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts
