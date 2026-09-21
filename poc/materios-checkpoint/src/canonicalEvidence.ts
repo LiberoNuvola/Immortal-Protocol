@@ -37,7 +37,7 @@ function proofRefValid(ref: ProofRef, name: string): void {
   }
 }
 
-export function canonicalAnchorKey(packet: Omit<CanonicalEvidencePacket,'finalityProof'|'storageProof'|'producedAt'>): string {
+export function canonicalAnchorKey(packet: Omit<CanonicalEvidencePacket,'anchorKey'|'finalityProof'|'storageProof'|'producedAt'>): string {
   nonEmpty(packet.schemaVersion, 'schemaVersion')
   nonEmpty(packet.chainId, 'chainId')
   hex32(packet.genesisHash, 'genesisHash')
