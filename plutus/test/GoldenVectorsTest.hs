@@ -12,13 +12,14 @@ import Prelude
   , (++)
   , (==)
   , (&&)
+  , not
   )
 
 import EconomicStateV3
 import EconomicKernel
 import EconomicTransitionV3
 import UniversalEconomicState
-import UniversalEconomicKernel
+import qualified UniversalEconomicKernel as UniversalKernel
 import PreRichEconomicProjection
 import GoldenVectors
 import GameRules
@@ -79,6 +80,10 @@ assertState result expected label =
 
 
 
+isNothing :: Maybe a -> Bool
+isNothing Nothing = True
+isNothing _ = False
+
 sameUniversalState :: UniversalEconomicState -> UniversalEconomicState -> Bool
 sameUniversalState a b =
      uesCrystallizedLiabilities a == uesCrystallizedLiabilities b
@@ -115,7 +120,7 @@ main = do
     "valid issue"
 
   assertState
-    (transition baseState (Issue 0 1))
+    (transition baseProfile baseState (Issue 0 1))
     issueZeroExpected
     "issue state"
 
@@ -124,7 +129,7 @@ main = do
     "valid reveal"
 
   assertState
-    (transition issueZeroExpected (Reveal 0 500))
+    (transition baseProfile issueZeroExpected (Reveal 0 500))
     revealZeroExpected
     "reveal state"
 
@@ -133,7 +138,7 @@ main = do
     "valid expiry"
 
   assertState
-    (transition issueZeroExpected (Expire 0))
+    (transition baseProfile issueZeroExpected (Expire 0))
     expireZeroExpected
     "expiry state"
 
@@ -203,37 +208,65 @@ main = do
     "expiry V3 -> universal projection"
 
   assert
-    (projectPreRichState
-       baseProfile
-       (baseState
-         { v3Classes =
-             [TicketClassState 99 0 0 0 10 True] })
-       == Nothing)
+    (isNothing
+      (projectPreRichState
+        baseProfile
+        (baseState
+          { v3Classes =
+              [TicketClassState 99 0 0 0 10 True] })))
     "projection rejects unknown class"
 
   assert
-    (projectPreRichState
-       baseProfile
-       (baseState
-         { v3Classes =
-             [TicketClassState 0 0 0 1 10 True] })
-       == Nothing)
+    (isNothing
+      (projectPreRichState
+        baseProfile
+        (baseState
+          { v3Classes =
+              [TicketClassState 0 0 0 1 10 True] })))
     "projection rejects inconsistent class exposure"
 
   case projectPreRichState baseProfile baseState of
     Nothing -> error "FAIL: base projection unavailable"
     Just universalBase -> do
       assert
-        (protectedCapital universalBase == 500)
+        (UniversalKernel.protectedCapital universalBase == 500)
         "universal protected capital"
       assert
-        (rawSurplus 1000 universalBase == 500)
+        (UniversalKernel.rawSurplus 1000 universalBase == 500)
         "universal raw surplus"
       assert
-        (solvencyInvariant 1000 universalBase)
+        (UniversalKernel.solvencyInvariant 1000 universalBase)
         "universal solvency boundary"
       assert
-        (not (solvencyInvariant 499 universalBase))
+        (not (UniversalKernel.solvencyInvariant 499 universalBase))
         "universal solvency rejects under-protected EEV"
+      assert
+        (EconomicKernel.protectedCapital baseProfile baseState
+          == UniversalKernel.protectedCapital universalBase)
+        "V3 and universal protected-capital bridge equivalence"
+      assert
+        (EconomicKernel.rawSurplus baseProfile 1000 baseState
+          == UniversalKernel.rawSurplus 1000 universalBase)
+        "V3 and universal raw-surplus bridge equivalence"
+      assert
+        (EconomicKernel.solvencyInvariant baseProfile 1000 baseState
+          == UniversalKernel.solvencyInvariant 1000 universalBase)
+        "V3 and universal solvency bridge equivalence"
+
+      let richState =
+            baseState
+              { v3CrystallizedLiabilities = 7
+              , v3SafetyCapital = 11
+              , v3ReserveProtection = 13
+              , v3MandatoryFutureCosts = 17
+              , v3Jackpot = JackpotState 19 0 JackpotLocked 1
+              }
+      case projectPreRichState baseProfile richState of
+        Nothing -> error "FAIL: rich projection unavailable"
+        Just richUniversal ->
+          assert
+            (EconomicKernel.protectedCapital baseProfile richState
+              == UniversalKernel.protectedCapital richUniversal)
+            "protected-capital preservation for non-zero protected components"
 
   putStrLn "ALL GOLDEN VECTOR TESTS PASSED"
