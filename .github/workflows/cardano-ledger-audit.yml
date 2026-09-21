@@ -1,0 +1,48 @@
+name: Cardano Ledger Audit Runner
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "audit/cardano-ledger-runner/**"
+      - "src/plutusScripts/**"
+
+jobs:
+  build-and-safe-stall:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: audit/cardano-ledger-runner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup GHC and Cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+
+      - name: Update Cabal index
+        run: cabal update
+
+      - name: Build ledger runner
+        run: cabal build cardano-ledger-runner
+
+      - name: Verify fail-closed behavior without synthetic evidence
+        run: |
+          set +e
+          cabal run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence
+          rc=$?
+          set -e
+          test "$rc" -eq 0
+
+      - name: Assert SAFE_STALL is explicit
+        run: |
+          output="$(cabal run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)"
+          printf '%s\n' "$output"
+          grep -q "RESULT: SAFE_STALL" <<< "$output"
+          grep -q "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE" <<< "$output"
+          ! grep -q "NORMATIVE A/B VERDICT" <<< "$output" || true
