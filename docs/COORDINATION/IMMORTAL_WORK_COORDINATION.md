@@ -1370,3 +1370,31 @@ A failing fixture must be corrected when it contradicts the already-established 
 The next session may continue directly from this entry. In particular, do not redo the Reveal refinement audit: the suite is already green at 73/73 + typecheck. Focus instead on the still-unproven execution boundary and real-ledger evidence.
 
 **Status:** COORDINATED / ACTION REFINEMENT GREEN / LEDGER + HASKELL EVIDENCE PENDING.
+
+
+---
+## 51. CURRENT SESSION DELTA — real Reveal now crosses the Cardano Adapter
+
+**Date:** 2026-09-22  
+**Front:** B5 / B6 / RF8 / RF10 — execution boundary correction
+
+The real Reveal trace was refined so that the economically material first submission no longer calls Lucid submission directly.
+
+The trace now:
+- builds the existing PrizeValidator + B1PrizePool Reveal transaction;
+- passes the completed transaction through createCardanoExecutionAdapter;
+- records the adapter-returned transaction reference;
+- retains the signed transaction only for the explicit stale/duplicate replay test;
+- submits that same signed transaction directly only for the replay attempt, after the original UTxOs have already been consumed.
+
+This preserves the architectural distinction:
+- normal realization → Cardano Adapter;
+- replay probe → deliberate direct stale transaction submission to demonstrate ledger rejection.
+
+No economic logic changed.
+
+**Commit:** 77c753753f4cabe3c4471a22cef8180ec18e33a4
+
+**Status:** implementation corrected; current-head CI/evidence pending.
+
+**Handoff:** observe the Cardano Integration Lab triggered by this change before any further modification.
