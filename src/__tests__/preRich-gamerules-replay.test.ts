@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fromHex, sha256, concatBytes, field } from '../beacon'
+import { fromHex, sha256, concatBytes } from '../beacon'
 import { generateSymbols, rowTierFromIndex, classifyRowTier } from '../gameRules'
 
 type ReplayGameCase = {
@@ -33,7 +33,7 @@ const vectors = (
 
 function expectedRowAttemptInput(seed: Uint8Array, row: 1 | 2, attempt: number): Uint8Array {
   return concatBytes(
-    field(new Uint8Array([row, attempt])),
+    new Uint8Array([row, attempt]),
     seed,
   )
 }
