@@ -181,3 +181,28 @@ This matrix does not:
 **Canonical V3 Economic Gate equivalence: OPEN.**
 
 **Full V3 protected-capital preservation through B1 legacy projection: OPEN.**
+
+
+## 2026-09-21 implementation boundary update
+
+The branch now contains an additive universal economic boundary:
+
+- `IMMORTAL/state/UniversalEconomicState.hs` — application-neutral aggregate state;
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs` — ProtectedCapital, RawSurplus and non-negativity/solvency predicates over that aggregate;
+- `IMMORTAL/kernel/EconomicGate.hs` — explicit Economic Gate → Viability → execution-admissibility interface.
+
+The bridge `PRE-RICH/profile/PreRichEconomicProjection.hs` projects the existing rich V3 state into the universal aggregate and fails closed on invalid profile data, unknown classes, inconsistent per-class exposure, duplicate class state, and aggregate reserve/count mismatch.
+
+The implementation intentionally does **not** claim that the new aggregate is already the canonical transition state, nor that the booleans entering `EconomicGateInput` constitute a proof. The interface requires the authoritative observation/refinement layer to bind truth, freshness and obligation-completeness inputs to actual evidence. Likewise, `viabilityGate` requires the safe-post-state predicate and the authoritative-Ω successor condition over a certified `K_c`; certification remains a separate CK1–CK8 conformance burden.
+
+Therefore the current closure state is:
+
+- **Universal aggregate boundary:** implemented as an additive compatibility layer;
+- **Economic Gate interface:** implemented;
+- **V3 ↔ universal aggregate equivalence:** witnessed for the represented ProtectedCapital/RawSurplus/solvency functions where projection succeeds;
+- **Economic Gate integration into `EconomicTransitionV3`:** OPEN;
+- **Cardano execution wiring:** OPEN;
+- **Viability certificate / `K_c` conformance:** OPEN;
+- **Full V3 ↔ Cardano equivalence:** OPEN.
+
+This update records implementation status only and does not change the normative formulas or closed policy decisions.
