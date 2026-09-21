@@ -1,0 +1,31 @@
+name: Kernel Invalid-Class Fail-Closed Audit
+
+on:
+  push:
+    branches:
+      - audit/kernel-invalid-class-fail-closed
+      - work/immortal-green-closure
+  pull_request:
+    branches:
+      - b1-hardening
+
+jobs:
+  kernel-fail-closed:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.8.4'
+          cabal-version: '3.12.1.0'
+
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev pkg-config
+
+      - name: Run kernel regression suite
+        working-directory: plutus
+        run: |
+          cabal test v3-golden-vector-tests --enable-tests --test-show-details=direct --with-compiler=ghc
