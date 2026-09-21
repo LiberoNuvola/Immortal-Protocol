@@ -126,9 +126,7 @@ export async function claimPrizeAuto(
     .addSigner(claimantAddr)
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  const txHash = await lucid.submitTx(signed)
-  return txHash
+  return signAndSubmitTx(lucid, tx)
 }
 
 export async function tryClaimAndNotify(
