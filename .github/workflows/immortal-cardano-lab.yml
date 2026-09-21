@@ -52,7 +52,10 @@ jobs:
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
           set +e
-          /tmp/blst/build.sh
+          (
+            cd /tmp/blst
+            ./build.sh
+          )
           BLST_BUILD_RC=$?
           set -e
           BLST_LIB="$(find /tmp/blst -name libblst.a -type f -print -quit)"
