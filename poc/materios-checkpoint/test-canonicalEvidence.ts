@@ -4,7 +4,7 @@ import {
   canonicalAnchorKey,
   validateCanonicalEvidencePacket,
   type CanonicalEvidencePacket,
-} from './canonicalEvidence.js'
+} from './src/canonicalEvidence.ts'
 
 function makePacket(): CanonicalEvidencePacket {
   const base = {
