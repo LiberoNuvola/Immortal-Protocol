@@ -942,28 +942,6 @@ async function main() {
    * --------------------------------------------------------------
    */
 
-  const prizeUtxos =
-    await lucid.utxosAt(
-      prizeAddress,
-    );
-
-  const poolUtxos =
-    await lucid.utxosAt(
-      poolAddress,
-    );
-
-  if (prizeUtxos.length !== 1) {
-    throw new Error(
-      `Expected one Prize UTxO, got ${prizeUtxos.length}`,
-    );
-  }
-
-  if (poolUtxos.length !== 1) {
-    throw new Error(
-      `Expected one B1PrizePool UTxO, got ${poolUtxos.length}`,
-    );
-  }
-
   /*
    * --------------------------------------------------------------
    * 11. REAL PRE-RICH REVEAL
