@@ -15,6 +15,7 @@ export type CanonicalEvidencePacket = {
   stateRoot: string
   storageKey: string
   authorityCommitment: string
+  anchorKey: string
   finalityProof: ProofRef
   storageProof: ProofRef
   producedAt: string
@@ -83,9 +84,7 @@ export function validateCanonicalEvidencePacket(packet: CanonicalEvidencePacket)
     storageKey: packet.storageKey,
     authorityCommitment: packet.authorityCommitment,
   })
-  const expectedPrefix = anchor.slice(0, 8)
-  if (packet.finalityProof.digest.slice(0, 8) === expectedPrefix && packet.storageProof.digest.slice(0, 8) === expectedPrefix) {
-    // Valid shape is enough here. Proof semantics remain the responsibility
-    // of the B3 verifier; no authenticity claim is made by this schema.
-  }
+  if (packet.anchorKey !== anchor) throw new Error('anchorKey does not match canonical evidence tuple')
+  // Proof semantics remain the responsibility of the B3 verifier; this schema
+  // only guarantees that the evidence packet is bound to one canonical tuple.
 }
