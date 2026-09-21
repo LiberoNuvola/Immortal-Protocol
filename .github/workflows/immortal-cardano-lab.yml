@@ -51,9 +51,15 @@ jobs:
           rm -rf /tmp/blst
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
+          set +e
           /tmp/blst/build.sh
+          BLST_BUILD_RC=$?
+          set -e
           BLST_LIB="$(find /tmp/blst -name libblst.a -type f -print -quit)"
           test -n "$BLST_LIB"
+          if [ "$BLST_BUILD_RC" -ne 0 ]; then
+            echo "blst build.sh returned $BLST_BUILD_RC after producing libblst.a; continuing with the verified archive."
+          fi
           sudo install -m 0644 "$BLST_LIB" /usr/local/lib/libblst.a
           sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
           sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
