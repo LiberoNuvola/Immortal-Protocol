@@ -75,3 +75,30 @@ This distinction is deliberate: it prevents implementation green from being misr
 - 3D certified ticket binding is wired into the production shell; renderer remains presentation-only.
 
 The remaining items in this document are therefore certification/conformance obligations or deployment-specific evidence, not untracked implementation TODOs.
+
+## Current observed status — 2026-09-21
+
+**Latest observed branch head:** `3df288a3ecf63ee047b06a2c13cf51634659c94e`
+
+### Implementation evidence now available
+- Classic-6 current ticket-level distribution is documented and independently convolved; the exact 400,000,000-pair distribution and EV are covered by `src/__tests__/preRich-gamerules-distribution.test.ts`.
+- PRE-RICH Issue/Expire/Claim refinement plus TypeScript typecheck have recent green CI evidence.
+- Cardano Adapter economic conformance plus browser build have recent green CI evidence.
+- ProtectedCapital lifecycle and V3→Universal projection have dedicated Haskell regression suites registered in the Kernel gate.
+- B5 admission now carries distinct `preEEV` and `candidateEEV`; the Gate evaluates candidate-state EEV.
+- 3D renderer is state-driven, HTML-escaped, and submission/authorization-free; production shell integration exists.
+- RF8 application submission boundary has an executable regression test.
+- Materios canonical evidence packet has deterministic tuple binding and adversarial mutation coverage.
+
+### Current hard blockers
+- Current-head Haskell runner completion is still pending; no green claim is made until the actual `cabal test` step succeeds.
+- Current-head Yaci/P2.8 full lifecycle evidence is still pending; prior Yaci evidence (boot/smoke/190 invariants) is not conflated with full lifecycle certification.
+- B3-A/B cryptographic finality/storage-proof verification remains open.
+- B3-C succinct/ZK system remains intentionally unfixed.
+- B5 authoritative EEV provenance, live Gate enforcement and full viability certificate remain open.
+- B6 full V3↔Cardano semantic equivalence remains partial despite Issue/Reveal/Claim/Expire refinement evidence.
+- RF6/Kc/Ω deployment certification and RF8 whole-program proof remain open.
+- Exact numeric expiry remains an application/deployment parameter; no universal number is fixed.
+
+### Non-reopening statement
+The current work does not reopen closed economic policy decisions. In particular, Classic-6, the PRE-RICH ladder, 500× cap, Jackpot semantics and expiry mechanism remain governed by their current decision records. Historical/legacy distributions are provenance only.
