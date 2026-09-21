@@ -57,7 +57,9 @@ preRichEconomicAdmission
   -> Bool
   -> Maybe PreRichEconomicAdmission
 preRichEconomicAdmission profile preState action preEEV candidateEEV availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
-  if not (transitionValid profile preState action)
+  if preEEV < 0
+    then Nothing
+    else if not (transitionValid profile preState action)
     then Nothing
     else
       case transition profile preState action of
