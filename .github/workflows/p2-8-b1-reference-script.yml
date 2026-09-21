@@ -1,0 +1,98 @@
+name: P2.8-B.1 Reference Script Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - audit/p2-8-b1-reference-scripts-2026-09-21
+  pull_request:
+    branches:
+      - b1-hardening
+
+jobs:
+  p2-8-b1-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout audited branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Verify immutable audit base
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="1e64ec9f31ba50e04e36b4576ba66d73bfefc0a8"
+          HEAD="$(git rev-parse HEAD)"
+          MERGE_BASE="$(git merge-base HEAD "$BASE")"
+          echo "AUDIT_BASE_COMMIT=$BASE" | tee audit-environment.txt
+          echo "AUDIT_HEAD_COMMIT=$HEAD" | tee -a audit-environment.txt
+          echo "AUDIT_MERGE_BASE=$MERGE_BASE" | tee -a audit-environment.txt
+          test "$MERGE_BASE" = "$BASE"
+          node --version | tee -a audit-environment.txt
+          npm --version | tee -a audit-environment.txt
+
+      - name: Install exact lockfile dependencies
+        run: npm ci
+
+      - name: Verify critical dependency versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ls lucid-cardano vite tsx typescript --depth=0 | tee audit-dependencies.txt
+          node -e "const p=require('./package-lock.json'); const v=p.packages?.['node_modules/lucid-cardano']?.version; if(v !== '0.10.11') throw new Error('Expected lucid-cardano 0.10.11, got '+v); console.log('lucid-cardano='+v)"
+
+      - name: Verify reference fixture and source artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f src/__tests__/immortal-cardano-reveal-emulator-b1-reference.mjs
+          test -f src/plutusScripts/prizeValidatorFactory.plutus.json
+          test -f src/plutusScripts/b1PrizePoolFactory.plutus.json
+          find src/plutusScripts -maxdepth 1 -name '*.plutus.json' -print | sort | tee audit-artifacts.txt
+
+      - name: Static script-size evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE' | tee audit-script-size.txt
+          const fs = require('fs');
+          const names = [
+            'src/plutusScripts/prizeValidatorFactory.plutus.json',
+            'src/plutusScripts/b1PrizePoolFactory.plutus.json'
+          ];
+          for (const file of names) {
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const hex = String(j.cborHex || '');
+            if (!/^[0-9a-f]+$/i.test(hex) || hex.length % 2) throw new Error('Invalid cborHex: '+file);
+            console.log(file+'='+hex.length/2+' bytes full cborHex');
+          }
+          console.log('NOTE: reference scripts are stored in UTxOs and are not counted as witness script bytes in the Reveal transaction. Their storage/deployment cost remains separate evidence.');
+          NODE
+
+      - name: Run P2.8-B.1 reference-script emulator fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          node src/__tests__/immortal-cardano-reveal-emulator-b1-reference.mjs 2>&1 | tee audit-p2-8-b1-reference.txt
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p2-8-b1-reference-script-evidence
+          path: |
+            audit-environment.txt
+            audit-dependencies.txt
+            audit-artifacts.txt
+            audit-script-size.txt
+            audit-p2-8-b1-reference.txt
+          if-no-files-found: ignore
