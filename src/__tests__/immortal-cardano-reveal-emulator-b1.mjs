@@ -888,14 +888,16 @@ async function main() {
       .collectFrom(
         [prizeUtxos[0]],
 
-        constr(
-          1,
+        Data.to(
+          constr(
+            1,
 
-          [
-            bytesData(
-              toHex(playerSecret),
-            ),
-          ],
+            [
+              bytesData(
+                toHex(playerSecret),
+              ),
+            ],
+          ),
         ),
       )
 
@@ -906,14 +908,16 @@ async function main() {
       .collectFrom(
         [poolUtxos[0]],
 
-        constr(
-          2,
+        Data.to(
+          constr(
+            2,
 
-          [
-            BigInt(
-              priceUsdm,
-            ),
-          ],
+            [
+              BigInt(
+                priceUsdm,
+              ),
+            ],
+          ),
         ),
       )
 
