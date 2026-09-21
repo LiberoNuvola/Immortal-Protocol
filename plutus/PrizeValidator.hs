@@ -593,6 +593,8 @@ validateExpire datum ctx =
                  (ppPrizeHash poolOut == ownPrizeHash)
             && traceIfFalse "Prize: input pool prize hash mismatch"
                  (ppPrizeHash poolIn == ownPrizeHash)
+            && traceIfFalse "Prize: pool prize hash changed on expire"
+                 (ppPrizeHash poolOut == ppPrizeHash poolIn)
             && traceIfFalse "Prize: pool liquidity changed on expire"
                  (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
             && traceIfFalse "Prize: pool liabilities changed on expire"
