@@ -64,3 +64,14 @@ test('missing proof references fail closed', () => {
     /storageProof.digest/
   )
 })
+
+test('proof kind mismatch fails closed', () => {
+  const packet = makePacket()
+  assert.throws(
+    () => validateCanonicalEvidencePacket({
+      ...packet,
+      finalityProof: { kind: 'storage', digest: 'ee'.repeat(32) },
+    }),
+    /finalityProof\.kind/,
+  )
+})
