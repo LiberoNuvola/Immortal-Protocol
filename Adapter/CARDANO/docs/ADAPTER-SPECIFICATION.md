@@ -41,3 +41,13 @@ For the current PRE-RICH integration, B1 is an authorized-publisher trust model 
 ## 6. Conformance
 
 Cardano adapter conformance requires preservation of IMMORTAL predicates plus the requirements of the relevant application profile. This document does not declare the current implementation conforming.
+
+
+## 7. Operational execution boundary
+
+For the current SALE/MINT slice, the DApp may construct the transaction shape,
+but signing and submission cross the chain boundary through
+`Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`.
+
+The adapter returns the chain transaction reference. It does not choose
+economic results, alter application economics, or convert application values.
