@@ -789,3 +789,14 @@ No universal expiry number was introduced by this work.
 **B4:** no ProtectedCapital formula change introduced. The existing universal bridge remains additive and fail-closed.
 **3D:** no implementation authority gap found in this pass; canonical pipeline remains economic state → certified NFT identity/state → renderer.
 **Status:** MULTI-FRONT PROGRESS — A1 implementation evidence green; B3 replay evidence green; B5 implementation closing/evidence pending; B6 partial; B4 open.
+
+
+---
+
+## 30. SESSION UPDATE — Expire Refinement
+
+**Front:** B6 — V3 ↔ Cardano Expire refinement
+**Result:** added `PRE-RICH/profile/PreRichExpireRefinement.ts` and `src/__tests__/preRichExpireRefinement.test.ts`. The witness binds aggregate `Expire(cid)` to a concrete ticket only when class identity, canonical price, crystallized expiry boundary, one-ticket count delta and exact reserve release all agree.
+**Boundary:** this is evidence/refinement only. It does not make V3 ticket-aware, does not grant arbitrary ticket-selection authority, and does not replace Cardano on-chain enforcement.
+**CI:** the existing PRE-RICH Action Refinement workflow now runs both Issue and Expire refinement tests.
+**Status:** CLOSING — local implementation committed; CI evidence pending.
