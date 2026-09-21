@@ -11,6 +11,8 @@ export type RevealRefinementEvidence = {
   row1Tier: bigint
   row2Tier: bigint
   prizeTier: bigint
+  row1PayoutSubunits: bigint
+  row2PayoutSubunits: bigint
   prizeAmountSubunits: bigint
   revealValidityUpperBound: bigint
   expiresAt: bigint
@@ -37,9 +39,13 @@ export function validateRevealRefinementEvidence(evidence: RevealRefinementEvide
   if (evidence.row1Tier < 0n || evidence.row2Tier < 0n || evidence.prizeTier < 0n) throw new Error('tier values must be non-negative')
   const expectedTier = evidence.row1Tier > evidence.row2Tier ? evidence.row1Tier : evidence.row2Tier
   if (evidence.prizeTier !== expectedTier) throw new Error('prize tier must equal max(row1Tier,row2Tier)')
-  if (evidence.prizeAmountSubunits < 0n) throw new Error('prize amount must be non-negative')
-  if (evidence.prizeAmountSubunits > 500n * evidence.priceSubunits) {
-    throw new Error('reveal payout exceeds the canonical 500x cap')
+  if (evidence.row1PayoutSubunits < 0n || evidence.row2PayoutSubunits < 0n) throw new Error('row payouts must be non-negative')
+  const canonicalUncappedPayout = evidence.row1PayoutSubunits + evidence.row2PayoutSubunits
+  const canonicalPayout = canonicalUncappedPayout < 500n * evidence.priceSubunits
+    ? canonicalUncappedPayout
+    : 500n * evidence.priceSubunits
+  if (evidence.prizeAmountSubunits !== canonicalPayout) {
+    throw new Error('prize amount must equal the sum of both row payouts capped at 500x')
   }
   if (evidence.revealValidityUpperBound < 0n || evidence.expiresAt < 0n) throw new Error('reveal timestamps must be non-negative')
   if (evidence.revealValidityUpperBound > evidence.expiresAt) throw new Error('reveal validity window exceeds ticket expiry')
