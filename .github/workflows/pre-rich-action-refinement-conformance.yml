@@ -18,6 +18,8 @@ on:
       - "src/ticket3d.ts"
       - "src/gameFlow.ts"
       - "src/txHelpers.ts"
+      - "PRE-RICH/profile/PreRichCertifiedSettlement.ts"
+      - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
       - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
       - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
@@ -50,7 +52,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts
       
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit
