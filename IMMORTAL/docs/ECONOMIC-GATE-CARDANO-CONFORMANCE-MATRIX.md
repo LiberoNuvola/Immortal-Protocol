@@ -219,3 +219,20 @@ Therefore the current closure state is:
 - **Full V3 ↔ Cardano equivalence:** OPEN.
 
 This update records implementation status only and does not change the normative formulas or closed policy decisions.
+
+
+## 2026-09-21 — Current evidence delta
+
+The current PRE-RICH admission bridge now instantiates the previously specified boundary as an implementation witness:
+
+`structural transition validity → V3 candidate → fail-closed universal projection → explicit EEV/executable-liquidity inputs → Economic Gate → Viability → admission witness`.
+
+This does **not** make `transitionValid` an economic gate and does not certify the caller-supplied observation booleans. Those remain upstream evidence bindings.
+
+Recent CI evidence on the working branch:
+- Cardano Adapter Sale Conformance: SUCCESS on head `349d5c444c605722c2396987abc01d83e6ed72e6`.
+- PRE-RICH Action Refinement Conformance: SUCCESS on the same head, including refinement tests and TypeScript typecheck.
+- The Haskell Kernel Invalid-Class workflow remains pending at toolchain setup in the latest observed run.
+- The Cardano Integration Lab remains in progress in the latest observed run.
+
+Accordingly the Gate interface is implemented, while semantic V3↔Cardano equivalence, full ProtectedCapital preservation, authoritative observation provenance and viability certification remain OPEN.
