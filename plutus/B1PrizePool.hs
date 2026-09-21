@@ -462,7 +462,7 @@ payoutPaidUsdm
               outValue
 
         in
-          usdmValue >= requiredUsdm
+          usdmValue == requiredUsdm
             || payoutPaidUsdm
                  info
                  oracleState
