@@ -1,5 +1,9 @@
 name: IMMORTAL Cardano Integration Lab
 
+concurrency:
+  group: -github-workflows-immortal-cardano-lab-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
