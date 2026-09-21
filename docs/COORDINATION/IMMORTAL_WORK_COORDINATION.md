@@ -1194,3 +1194,34 @@ This is an evidence/connectivity gap, not evidence that the Gate is redundant an
 Close the gap by tracing one economically material action end-to-end (preferably Reveal, because B6 evidence already exists): identify the canonical admission witness inputs, concrete Cardano transaction, resulting transaction reference, pre/post state fingerprints, and verify that stale/duplicate realization cannot create a second economic effect.
 
 Do **not** change `EconomicGate`, `EconomicTransitionV3`, ProtectedCapital, EffectivePool, Jackpot policy, or validator economics merely to force architectural symmetry.
+
+
+---
+## 49. CURRENT SESSION RESULT — RF10/RF11 stale/duplicate evidence verifier
+
+**Date:** 2026-09-22  
+**Front:** B6 — transition realization evidence
+
+Notion checkpoint confirms the intended convergence:
+`PRE-RICH action → V3 transition → Economic Gate/Viability → Cardano Adapter → on-chain revalidation → atomic realization`, with stale references explicitly identified as a remaining evidence concern. The Cardano settlement model also relies on transaction-level UTxO consumption for atomic realization.
+
+### Minimal evidence-only closure step
+
+Extended `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` with:
+- `assertCanonicalTransitionBinding`: exact equality binding of action fingerprint, canonical pre-state fingerprint, canonical post-state fingerprint and concrete transaction reference;
+- `assertUniqueCanonicalTransitionRealizations`: rejects duplicate evidence IDs and duplicate settlement transaction references inside an evidence set.
+
+Extended `src/__tests__/canonical-transition-evidence.test.ts` with:
+- valid canonical binding acceptance;
+- stale action rejection;
+- stale pre-state rejection;
+- duplicate transaction realization rejection;
+- duplicate evidence identity rejection.
+
+This remains an **evidence verifier**, not an economic gate and not a second transaction validator. It does not claim to prove Cardano execution by itself. The remaining proof is to feed these checks with a real Yaci/ledger Reveal trace and demonstrate the same transaction cannot be realized twice because the concrete consumed UTxOs have already been spent.
+
+**Commits:**
+- `438681e5dffe6b12e336781756a44e565e122523` — verifier implementation
+- `c5721d3483d0c6fa43cbc19e04cd0dfe6bbf8126` — stale/duplicate tests
+
+**Status:** RF10/RF11 — evidence verifier strengthened; real-ledger realization proof still OPEN.
