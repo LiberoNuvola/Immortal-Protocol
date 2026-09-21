@@ -68,6 +68,7 @@ export function certifyTicketBinding(input: {
   if (expectedName !== datumName) {
     throw new Error('ticket asset name does not match PrizeDatum identity')
   }
+  if (!input.verificationReference?.trim()) throw new Error('verification reference is required for certification')
   if (input.datum.priceUsdm <= 0n) throw new Error('ticket price must be positive')
   if (input.datum.prizeAmount < 0n) throw new Error('prize amount must be non-negative')
   if (input.datum.prizeTier < 0n) throw new Error('prize tier must be non-negative')
