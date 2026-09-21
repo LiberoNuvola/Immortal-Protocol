@@ -618,3 +618,15 @@ and B4/B6 still require preservation/equivalence through the actual Cardano exec
 **Current evidence:** normative transition spec v3.0.0; Economic Gate ↔ Cardano matrix; EconomicTransitionV3.hs; B1PrizePool.hs; B1LegacyAdapter.hs; current Cardano Adapter conformance tests; current Notion Adapter/Settlement and Multi-Front checkpoints.  
 **Expected output:** explicit refinement relation, action-by-action pre/post correspondence, lossiness boundaries and focused adversarial conformance suite.  
 **Status:** IN_PROGRESS
+
+
+---
+
+## 26. SESSION RESULT — B3-D Replay Vectors
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B3-D — deterministic Beacon/GameRules replay
+**Result:** added executable TypeScript replay coverage over the existing canonical vector file `verification/pre-rich-gamerules-v1-vectors.json`. The test verifies the canonical 20,000 domain, 60,000 rejection bound, modulo reduction, exact row-attempt inputs, generated six-symbol output for the published seed cases, row-tier classification and every material outcome interval boundary.
+**Files changed:** `src/__tests__/preRich-gamerules-replay.test.ts`, plus this coordination register.
+**Important:** existing Materios PoCs were not recreated or modified. The test is evidence for the mapping layer only; it does not establish publisher-independent Materios authenticity or full Plutus/TypeScript byte-for-byte parity.
+**Status:** NEEDS-EVIDENCE / CI RUNNING
