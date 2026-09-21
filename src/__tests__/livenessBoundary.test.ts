@@ -64,7 +64,11 @@ describe('IMMORTAL R4 liveness boundary', () => {
     expect(noLiveActionCanFollowSafeIdleWitness()).toBe(true)
   })
 
-  it('classifies a certified state with no eligible action as an FM1 boundary', () => {
-    expect(classifyStall({ ...base, eligibleActionCount: 0n })).toBe('FM1_VIABILITY_BOUNDARY')
+  it('classifies a state outside Kc as an FM1 viability boundary', () => {
+    expect(classifyStall({ ...base, inCertifiedKernel: false })).toBe('FM1_VIABILITY_BOUNDARY')
+  })
+
+  it('classifies a certified state with no eligible action as FM10', () => {
+    expect(classifyStall({ ...base, eligibleActionCount: 0n })).toBe('FM10_OVER_CONSERVATIVE_CERTIFICATE')
   })
 })
