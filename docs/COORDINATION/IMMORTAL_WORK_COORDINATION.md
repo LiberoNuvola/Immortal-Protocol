@@ -1410,3 +1410,37 @@ Latest trace commit:
 
 Current Cardano Integration Lab run: 35662771118 — PENDING.
 No RF10/RF11 green claim is made until this run executes the trace and produces the expected evidence artifact.
+
+
+---
+## 52. 2026-09-22 — Cardano Lab blst working-directory correction
+
+**Front:** C4 / RF10 / RF11 / infrastructure evidence
+
+The latest Cardano Integration Lab run on `15ccb06c2d0ee25112c25e9ed814e2b9fd4e9391` reached the native dependency step and failed because `/tmp/blst/build.sh` was invoked from the repository root while the generated `libblst.a` was subsequently searched for under `/tmp/blst`.
+
+This was an infrastructure-only failure, not an economic or ledger-semantic failure.
+
+The Kernel workflow already used the correct isolated working directory. The Cardano Lab workflow was corrected to execute:
+
+```
+(
+  cd /tmp/blst
+  ./build.sh
+)
+```
+
+and retain the existing verification that a non-empty `/tmp/blst/libblst.a` is produced.
+
+**Commit:** dfe5fe5f0c3113d73ea24671ffaa4d9a4cef1867
+
+Fresh workflows were triggered from that commit:
+- IMMORTAL Cardano Integration Lab: 35663204233
+- Cardano Adapter Sale Conformance: 35663204402
+- Kernel Invalid-Class Fail-Closed Audit: 35663204486
+
+The Sale Conformance workflow is GREEN on the corrected head. Kernel and Cardano Lab are executing their fresh attempts.
+
+**Status:** infrastructure correction applied; real-ledger/Haskell evidence still pending.
+
+**Non-regression:** no economic parameter, invariant, adapter authority boundary or canonical policy changed.
