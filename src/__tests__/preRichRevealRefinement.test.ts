@@ -89,3 +89,5 @@ describe('PRE-RICH ticket-level Reveal refinement', () => {
       .toThrow('pre-reveal effective pool is already insolvent')
   })
 })
+
+// CI re-observation marker: fixture correction is intentional and carries no economic-rule change.
