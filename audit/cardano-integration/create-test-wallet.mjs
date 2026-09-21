@@ -1,8 +1,11 @@
-import { Lucid, generateSeedPhrase } from '@lucid-evolution/lucid'
+import { Blockfrost, Lucid, generateSeedPhrase } from '@lucid-evolution/lucid'
 import { writeFileSync } from 'node:fs'
 
 const seed = generateSeedPhrase()
-const lucid = await Lucid(undefined, 'Preprod')
+const lucid = await Lucid(
+  new Blockfrost('http://127.0.0.1:8080/api/v1', ''),
+  'Preprod',
+)
 lucid.selectWallet.fromSeed(seed)
 
 const address = await lucid.wallet().address()
