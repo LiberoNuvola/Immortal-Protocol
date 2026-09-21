@@ -64,9 +64,21 @@ main = do
     (not (legacyProjectionIsLossless classfulState))
     "class composition is explicitly classified as lossy"
 
+  case v3ToLegacyB1 100 dummyHash classfulState of
+    Left V3ContainsUnsupportedClassComposition ->
+      putStrLn "PASS: V3 class composition fails closed in legacy projection"
+    _ ->
+      error "FAIL: class composition was silently projected to legacy B1"
+
   assert
     (not (legacyProjectionIsLossless protectedState))
     "unsupported ProtectedCapital is explicitly classified as lossy"
+
+  case v3ToLegacyB1 100 dummyHash protectedState of
+    Left V3ContainsUnsupportedProtectedCapital ->
+      putStrLn "PASS: unsupported ProtectedCapital fails closed in legacy projection"
+    _ ->
+      error "FAIL: unsupported ProtectedCapital was silently projected"
 
   assert
     (not (legacyProjectionIsLossless historicalState))
@@ -75,6 +87,18 @@ main = do
   assert
     (not (legacyProjectionIsLossless jackpotState))
     "locked Jackpot state is explicitly classified as lossy"
+
+  case v3ToLegacyB1 100 dummyHash jackpotState of
+    Left V3ContainsUnsupportedJackpotState ->
+      putStrLn "PASS: locked Jackpot fails closed in legacy projection"
+    _ ->
+      error "FAIL: locked Jackpot was silently projected to legacy B1"
+
+  case v3ToLegacyB1 100 dummyHash historicalState of
+    Left LegacyMissingHistoricalControl ->
+      putStrLn "PASS: historical control loss fails closed in legacy projection"
+    _ ->
+      error "FAIL: historical control was silently projected"
 
   case legacyB1ToV3
     (B1PrizePoolDatum 100 0 0 0 0 10 0 dummyHash) of
