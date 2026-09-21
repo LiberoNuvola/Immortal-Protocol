@@ -2,19 +2,33 @@
 
 ## 1. Boundary
 
-Cardano is an adapter/implementation environment for IMMORTAL, not a dependency of IMMORTAL's abstract protocol semantics.
+PRE-RICH is a **Cardano-native DApp** and, at the same time, an **IMMORTAL-conformant application**.
+It belongs to the execution environment in which it is built (Cardano) and adopts
+IMMORTAL's protocol semantics to move autonomously within the economic space that
+IMMORTAL determines to be admissible.
 
-The Adapter is the operational bridge through which the DApp communicates with IMMORTAL and through which IMMORTAL observes and interacts with the concrete chain.
+The Cardano Adapter is the **translation, observation and realization layer** between
+the abstract IMMORTAL side and Cardano-specific execution. It is not the owner of
+the DApp, and it is not an independent economic engine.
 
 ```text
-PRE-RICH DApp
-      ↕
-IMMORTAL Adapter
-      ↕
-IMMORTAL Core
-      ↕
-   Cardano chain
+                    IMMORTAL CORE
+              economic semantics / authority
+                         ↕
+                  CARDANO ADAPTER
+          translate · observe · realize · report
+                    ↙         ↘
+           PRE-RICH DApp      Cardano chain
+        (Cardano-native +     (execution layer)
+         IMMORTAL-conformant)
 ```
+
+The Adapter translates IMMORTAL-prescribed economic requirements and admissible
+actions into Cardano-realizable action candidates, and translates Cardano state,
+execution results and evidence back into the forms IMMORTAL evaluates.
+
+PRE-RICH remains an application of Cardano while using IMMORTAL as its governing
+economic/protocol model.
 
 ## 2. Responsibilities
 
@@ -38,11 +52,19 @@ The adapter maps generic concepts to Cardano mechanisms, including where applica
 
 The Adapter is not an economic authority.
 
-It may observe and analyze the concrete chain environment, normalize its state, determine what transaction/UTxO realizations are physically possible, and report candidate realization trajectories and their consequences.
+It may observe and analyze the concrete chain environment, normalize its state, determine
+what transaction/UTxO realizations are physically possible, and report candidate
+chain-realization trajectories and their technical/economic consequences.
 
-IMMORTAL alone evaluates the economic meaning of those observations and determines economic admissibility, safety, viability and required economic effects.
+IMMORTAL alone evaluates the economic meaning of those observations and determines
+economic admissibility, safety, viability and required economic effects.
 
-The Adapter must not independently decide an economic result that the IMMORTAL predicate requires to be verified.
+The Adapter may answer **"what can this chain realize, under these concrete conditions?"**
+but it must not turn that answer into **"what is economically allowed by IMMORTAL?"**.
+That second decision belongs to IMMORTAL.
+
+The DApp chooses application intent and strategy. It cannot make an action economically
+valid merely by requesting it, and the Adapter cannot make it valid merely by realizing it.
 
 ## 4. External evidence
 
@@ -72,23 +94,30 @@ economic results, alter application economics, or convert application values.
 The canonical interaction is:
 
 ```text
-DApp intent
-    ↓
-Adapter
-    ↓
-IMMORTAL economic evaluation
-    ↓
-admissible action / economic conditions
-    ↓
-Adapter chain realization analysis
-    ↓
-Cardano transaction / observation
-    ↓
-Adapter evidence
-    ↓
-IMMORTAL revalidation
-    ↓
-DApp result
+PRE-RICH DApp intent / strategy
+            ↓
+      CARDANO ADAPTER
+            ↓
+   IMMORTAL economic evaluation
+            ↓
+ admissible action / conditions
+            ↓
+      CARDANO ADAPTER
+   chain-realization analysis
+            ↓
+     Cardano transaction
+            ↓
+   chain observation/evidence
+            ↓
+   IMMORTAL revalidation
+            ↓
+      PRE-RICH DApp result
 ```
 
-The DApp may choose application strategy and express intent. IMMORTAL determines the economically admissible action space. The Adapter is the communication, observation and realization bridge; it does not become a second economic engine.
+The DApp is native to Cardano and is an application of IMMORTAL at the economic/protocol
+level. It expresses intent and strategy; IMMORTAL determines the admissible economic
+space; the Adapter translates between those abstract requirements and concrete Cardano
+actions, while carrying observations and evidence back to IMMORTAL.
+
+The Adapter is therefore a **translator**, not a second economic authority:
+it does not invent, override or reinterpret IMMORTAL economic rules.
