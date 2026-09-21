@@ -31,5 +31,7 @@ jobs:
           npm install --prefix audit/lucid-evolution --ignore-scripts --no-audit --no-fund
           npm ls --prefix audit/lucid-evolution --depth=0
 
-      - name: Run P2.8-B.1 real Plutus V2 diagnostic
+      - name: Run P2.8-B.1 short-circuit evaluator probe
+        env:
+          P2_8_DIAG_EARLY_FAIL: "1"
         run: node audit/lucid-evolution/immortal-cardano-reveal-emulator-b1.mjs
