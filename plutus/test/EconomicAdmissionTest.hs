@@ -50,7 +50,7 @@ assert condition label =
 
 main :: IO ()
 main = do
-  case preRichEconomicAdmission profile baseState (Issue 0 1) 500 True True True True of
+  case preRichEconomicAdmission profile baseState (Issue 0 1) 500 500 0 True True True True of
     Nothing -> error "FAIL: valid issue was rejected"
     Just admitted -> do
       assert (peaEEV admitted == 500) "issue preserves explicit EEV"
@@ -58,61 +58,61 @@ main = do
       assert (uesWorstCaseExposure (peaCandidateUniversal admitted) == 500) "issue candidate carries 500x worst-case exposure"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 0 1) 499 True True True True of
+    (case preRichEconomicAdmission profile baseState (Issue 0 1) 499 499 0 True True True True of
        Nothing -> True
        Just _ -> False)
     "economic gate rejects insufficient EEV"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 False True True True of
+    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 500 0 False True True True of
        Nothing -> True
        Just _ -> False)
     "economic gate rejects unverified authority input"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 True False True True of
+    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 500 0 True False True True of
        Nothing -> True
        Just _ -> False)
     "economic gate rejects stale EEV"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 True True False True of
+    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 500 0 True True False True of
        Nothing -> True
        Just _ -> False)
     "economic gate rejects incomplete obligation coverage"
 
   assert
-    (case preRichEconomicAdmissionWithLiquidity profile baseState (Issue 0 1) 500 0 1 True True True True of
+    (case preRichEconomicAdmission profile issuedState (Reveal 0 500) 500 499 500 True True True True of
        Nothing -> True
        Just _ -> False)
-    "economic gate rejects unavailable immediate liquidity"
+    "economic gate rejects insufficient immediately executable liquidity"
 
   assert
-    (case preRichEconomicAdmissionWithLiquidity profile baseState (Issue 0 1) 500 0 0 True True True False of
+    (case preRichEconomicAdmission profile baseState (Issue 0 1) 500 500 0 True True True False of
        Nothing -> True
        Just _ -> False)
     "viability gate rejects uncertified Omega successors"
 
   assert
-    (case preRichEconomicAdmission profile baseState (Issue 99 1) 500 True True True True of
+    (case preRichEconomicAdmission profile baseState (Issue 99 1) 500 500 0 True True True True of
        Nothing -> True
        Just _ -> False)
     "structural transition rejects unknown class"
 
   assert
-    (case preRichEconomicAdmission profile (baseState { v3Classes = [TicketClassState 0 0 0 1 1 True] }) (Issue 0 1) 500 True True True True of
+    (case preRichEconomicAdmission profile (baseState { v3Classes = [TicketClassState 0 0 0 1 1 True] }) (Issue 0 1) 500 500 0 True True True True of
        Nothing -> True
        Just _ -> False)
     "invalid pre-state fails closed before admission"
 
-  case preRichEconomicAdmission profile issuedState (Reveal 0 500) 500 True True True True of
+  case preRichEconomicAdmission profile issuedState (Reveal 0 500) 501 500 500 True True True True of
     Nothing -> error "FAIL: valid reveal was rejected"
     Just admitted -> do
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 500) "reveal crystallises exact liability"
       assert (uesUnresolvedReserve (peaCandidateUniversal admitted) == 0) "reveal releases unresolved reserve"
       assert (solvencyInvariant 500 (peaCandidateUniversal admitted)) "revealed candidate remains universally solvent"
 
-  case preRichEconomicAdmissionWithLiquidity profile revealedState (Claim 500) 500 500 500 True True True True of
+  case preRichEconomicAdmission profile revealedState (Claim 500) 500 500 500 True True True True of
     Nothing -> error "FAIL: valid claim was rejected"
     Just admitted -> do
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 0) "claim closes crystallised liability"
