@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-21  
-**Latest observed commit at audit start:** `9fa9dd68ec5be9060e419326d891dd5505094b81` — `docs: close economic decision-boundary interface`
+**Latest observed commit:** `571efa04c59de392dd825bea102cf7915828a44a` — universal economic bridge conformance test
 
 ---
 
@@ -159,7 +159,7 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 
 | ID | Front | Status | Objective |
 |---|---|---|---|
-| IMMORTAL-STATE-BOUNDARY-001 | Universal/application state boundary | **IN_PROGRESS / NEEDS-EVIDENCE** | Classify every relevant type/field in `IMMORTAL/state/EconomicStateV3.hs`, `IMMORTAL/kernel/EconomicKernel.hs`, profile code and PRE-RICH state as UNIVERSAL / PROFILE PARAMETER / APPLICATION STATE-RULE / ADAPTER REPRESENTATION / EVIDENCE / LEGACY before refactoring. |
+| IMMORTAL-STATE-BOUNDARY-001 | Universal/application state boundary | **BRIDGE IMPLEMENTED / NEEDS-EVIDENCE** | Classify every relevant type/field in `IMMORTAL/state/EconomicStateV3.hs`, `IMMORTAL/kernel/EconomicKernel.hs`, profile code and PRE-RICH state as UNIVERSAL / PROFILE PARAMETER / APPLICATION STATE-RULE / ADAPTER REPRESENTATION / EVIDENCE / LEGACY before refactoring. |
 | B2 | Numerical hysteresis | OPEN | Derive and verify exact semantics; do not promote application values into IMMORTAL constants. |
 | B4 | ProtectedCapital preservation | OPEN | Formalize and test preservation through relevant transitions. |
 | B5 | Economic Gate → Viability → Atomic Transition | OPEN | Make the complete admissibility chain explicit and testable. |
@@ -451,7 +451,124 @@ If this file ever conflicts with canonical specifications or consolidated normat
 
 ---
 
-## 19. SESSION RESULT — B2 Numerical Hysteresis
+
+---
+
+## 21. SESSION RESULT — Universal Economic State Bridge
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)  
+**Front:** IMMORTAL-STATE-BOUNDARY-001 / B4 preparation  
+**Result:** introduced a non-destructive typed boundary between the rich current PRE-RICH/V3 representation and an application-neutral universal economic aggregate. The existing `V3EconomicState` and `EconomicTransitionV3` remain unchanged; the new bridge is additive and fail-closed.
+
+**New IMMORTAL modules:**
+- `IMMORTAL/state/UniversalEconomicState.hs`
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs`
+
+**New PRE-RICH boundary module:**
+- `PRE-RICH/profile/PreRichEconomicProjection.hs`
+
+**Build integration:**
+- `plutus/pre-rich-plutus.cabal` now exposes the three modules.
+
+**Conformance changes:**
+- `plutus/test/GoldenVectorsTest.hs` now supplies the required `EconomicProfile` to existing V3 transition/conservation predicates, removes the import ambiguity between the V3 and universal kernels, and tests:
+  - V3 → universal projection for issue/reveal/expiry;
+  - unknown-class rejection;
+  - inconsistent-exposure rejection;
+  - invalid-profile rejection;
+  - duplicate-class rejection;
+  - universal ProtectedCapital / RawSurplus / solvency predicates;
+  - aggregate boundary equivalence;
+  - preservation of non-zero protected components, including locked application-specific capital.
+
+### Semantic result
+
+For a successful PRE-RICH projection ( pi_P(S)=U ), the bridge explicitly witnesses equality of the **represented aggregate boundary functions**:
+
+`ProtectedCapital_V3(P,S) = ProtectedCapital_U(U)`
+
+`RawSurplus_V3(P,EEV,S) = RawSurplus_U(EEV,U)`
+
+`Solvency_V3(P,EEV,S) = Solvency_U(EEV,U)`
+
+This is a **bridge/conformance property**, not a proof of Economic Gate soundness, Viability, Atomicity, or full V3 ↔ Cardano equivalence.
+
+### CI evidence
+
+GitHub Actions has executed the branch automatically.
+
+- Cardano Adapter conformance test step passed in the inspected runs, including the modified reveal conformance suite.
+- The associated frontend workflow still fails at `npm run build` inside `node-fetch/src/body.js` because Vite externalizes Node built-ins; this failure occurs after the targeted conformance tests pass and is not an economic-state assertion.
+- The Haskell kernel regression workflow for the latest bridge commit is currently executing; no final Haskell test result is claimed yet.
+- Local execution is unavailable because the environment lacks GHC/Cabal.
+
+### Important architectural finding
+
+The repository now has two distinct aggregate boundaries:
+
+1. rich V3/application state, retained for compatibility and application behavior;
+2. application-neutral universal economic state, intended for universal economic evaluation.
+
+They are intentionally connected by an explicit PRE-RICH projection rather than by embedding application policy into the Adapter or universal state.
+
+### Remaining uncertainty
+
+The projection is not yet the canonical transition boundary. B5 still requires an explicit path from:
+
+`Candidate Post-State → Economic Gate → Viability → Atomic Transition`
+
+and B4/B6 still require preservation/equivalence through the actual Cardano execution path, including the legacy B1 boundary.
+
+**Status:** NEEDS-EVIDENCE / IMPLEMENTATION CONFORMANCE
+
+---
+
+## 22. HANDOFF — Universal Economic State Bridge
+
+**Completed:**
+- additive universal state type;
+- additive universal kernel primitives;
+- PRE-RICH fail-closed projection;
+- bridge conformance tests;
+- correction of existing golden-test call signatures/ambiguity.
+
+**Changed:**
+- `IMMORTAL/state/UniversalEconomicState.hs`
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs`
+- `PRE-RICH/profile/PreRichEconomicProjection.hs`
+- `plutus/pre-rich-plutus.cabal`
+- `plutus/test/GoldenVectorsTest.hs`
+- this coordination register
+
+**Verified:**
+- PRE-RICH class/payout/Jackpot policy remains outside the universal aggregate type;
+- the bridge preserves the existing V3 aggregate ProtectedCapital-derived boundary for successful projections;
+- invalid/ambiguous application decomposition fails closed;
+- the existing V3 transition model is not yet rewritten.
+
+**Do not redo:**
+- do not replace `V3EconomicState` wholesale;
+- do not move Jackpot or the PRE-RICH ladder back into the universal state;
+- do not interpret the bridge property as infinite-horizon viability proof;
+- do not treat the frontend Vite build failure as evidence that the economic bridge is wrong.
+
+**Next recommended action:**
+- Use the universal state as the typed input to the Economic Gate/B5 design, while preserving application state alongside it.
+- Audit the Cardano validator's legacy B1 projection against the universal state and fail closed whenever protected economic information cannot be represented.
+- Then establish action-by-action B6 equivalence.
+
+**Commit range:**
+- `38fb34bd` universal state
+- `7717771f` universal kernel
+- `fbdca2d0` PRE-RICH projection
+- `db9b6f1e` cabal integration
+- `5da89ceb` duplicate-class hardening
+- `3ae9a249` bridge test/signature repair
+- `1d0e5134` aggregate boundary equivalence helper
+- `571efa04` conformance tests
+
+---
+## 23. SESSION RESULT — B2 Numerical Hysteresis
 
 **Session:** autonomous coordination session — 2026-09-21 (follow-on)
 **Front:** B2 — Numerical Hysteresis
@@ -466,7 +583,7 @@ If this file ever conflicts with canonical specifications or consolidated normat
 **Remaining uncertainty:** live integration into PRE-RICH class-control state and on-chain enforcement/conformance. This result does not prove infinite-horizon viability or Cardano equivalence.
 **Status:** NEEDS-EVIDENCE / IMPLEMENTATION CONFORMANCE
 
-## 20. SESSION CLAIM — G7 Payout-Unit Conformance
+## 24. SESSION CLAIM — G7 Payout-Unit Conformance
 
 **Session:** autonomous coordination session — 2026-09-21 (follow-on)
 **Front:** B3-D / G7 — payout-unit conformance
