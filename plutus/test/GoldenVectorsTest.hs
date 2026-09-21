@@ -18,6 +18,7 @@ import EconomicStateV3
 import EconomicKernel
 import EconomicTransitionV3
 import GoldenVectors
+import GameRules
 
 
 sameState :: V3EconomicState -> V3EconomicState -> Bool
@@ -141,5 +142,17 @@ main = do
   assert
     (conservationInvariant expireZeroExpected)
     "expiry conservation"
+
+  assert (rowTierFromIndex 0 == 0) "Classic-6 lower boundary"
+  assert (rowTierFromIndex 17499 == 0) "Classic-6 loss interval"
+  assert (rowTierFromIndex 17500 == 1) "Classic-6 tier1 boundary"
+  assert (rowTierFromIndex 19199 == 1) "Classic-6 tier1 interval"
+  assert (rowTierFromIndex 19200 == 2) "Classic-6 tier2 boundary"
+  assert (rowTierFromIndex 19800 == 3) "Classic-6 tier3 boundary"
+  assert (rowTierFromIndex 19980 == 4) "Classic-6 tier4 boundary"
+  assert (rowTierFromIndex 19999 == 5) "Classic-6 tier5 boundary"
+  assert
+    (rowPayoutTotal defaultPrizeTable 5 5 100 == 50000)
+    "Classic-6 dual tier payout capped at 500x"
 
   putStrLn "ALL GOLDEN VECTOR TESTS PASSED"
