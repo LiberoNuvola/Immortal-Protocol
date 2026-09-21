@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   acceptCanonicalTransitionEvidence,
+  assertCanonicalTransitionBinding,
+  assertUniqueCanonicalTransitionRealizations,
   validateCanonicalTransitionEvidence,
   type CanonicalTransitionEvidence,
 } from '../../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
@@ -44,4 +46,40 @@ describe('RF10/RF11 — canonical transition evidence binding', () => {
     })
     expect(result.ok).toBe(false)
   })
+  it('binds the evidence to the expected canonical action, pre-state, post-state and settlement', () => {
+    expect(() => assertCanonicalTransitionBinding(valid, {
+      actionFingerprint: 'action-sha256',
+      preStateFingerprint: 'pre-sha256',
+      postStateFingerprint: 'post-sha256',
+      transactionRef: 'tx-123',
+    })).not.toThrow()
+
+    expect(() => assertCanonicalTransitionBinding(valid, {
+      actionFingerprint: 'stale-action',
+      preStateFingerprint: 'pre-sha256',
+      postStateFingerprint: 'post-sha256',
+      transactionRef: 'tx-123',
+    })).toThrow('canonical action fingerprint mismatch')
+
+    expect(() => assertCanonicalTransitionBinding(valid, {
+      actionFingerprint: 'action-sha256',
+      preStateFingerprint: 'stale-pre-state',
+      postStateFingerprint: 'post-sha256',
+      transactionRef: 'tx-123',
+    })).toThrow('canonical pre-state fingerprint mismatch')
+  })
+
+  it('rejects duplicate evidence or settlement transaction references', () => {
+    expect(() => assertUniqueCanonicalTransitionRealizations([valid, {
+      ...valid,
+      evidenceId: 'evidence-2',
+    }])).toThrow('duplicate settlement transaction reference')
+
+    expect(() => assertUniqueCanonicalTransitionRealizations([valid, {
+      ...valid,
+      evidenceId: 'evidence-1',
+      transactionRef: 'tx-456',
+    }])).toThrow('duplicate canonical evidence ID')
+  })
+
 })
