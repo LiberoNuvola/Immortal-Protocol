@@ -30,6 +30,7 @@ import {
   Lucid,
   Emulator,
   generateEmulatorAccount,
+  PROTOCOL_PARAMETERS_DEFAULT,
   Constr,
   Data,
   applyParamsToScript,
@@ -355,7 +356,15 @@ async function main() {
     lovelace: 100_000_000n,
   });
 
-  const emulator = new Emulator([app, refs]);
+  // Diagnostic-only: raise the execution envelope to distinguish a real
+  // over-budget execution from a hard evaluator/runtime failure. This does
+  // not alter any validator, datum, redeemer, or economic rule.
+  const diagnosticProtocol = {
+    ...PROTOCOL_PARAMETERS_DEFAULT,
+    maxTxExMem: 100_000_000_000n,
+    maxTxExSteps: 100_000_000_000n,
+  };
+  const emulator = new Emulator([app, refs], diagnosticProtocol);
   const lucid = await Lucid(emulator, "Custom");
   lucid.selectWallet.fromSeed(app.seedPhrase);
 
@@ -366,6 +375,8 @@ async function main() {
   evidence("MAX_TX_SIZE", protocol.maxTxSize);
   evidence("MAX_TX_EX_MEM", protocol.maxTxExMem);
   evidence("MAX_TX_EX_STEPS", protocol.maxTxExSteps);
+  evidence("DIAGNOSTIC_MAX_TX_EX_MEM", diagnosticProtocol.maxTxExMem);
+  evidence("DIAGNOSTIC_MAX_TX_EX_STEPS", diagnosticProtocol.maxTxExSteps);
   evidence("MIN_FEE_A", protocol.minFeeA);
   evidence("MIN_FEE_B", protocol.minFeeB);
   evidence("COINS_PER_UTXO_BYTE", protocol.coinsPerUtxoByte);
