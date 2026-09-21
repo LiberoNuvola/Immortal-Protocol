@@ -1225,3 +1225,73 @@ This remains an **evidence verifier**, not an economic gate and not a second tra
 - `c5721d3483d0c6fa43cbc19e04cd0dfe6bbf8126` — stale/duplicate tests
 
 **Status:** RF10/RF11 — evidence verifier strengthened; real-ledger realization proof still OPEN.
+
+
+---
+## 50. CURRENT SESSION RESULT — RF10/RF11 real Yaci Reveal trace
+
+**Date:** 2026-09-22  
+**Front:** B6 / RF10 / RF11 — execution-backed Reveal realization
+
+### Triangulation completed
+
+Before changing the integration lab, the current branch was checked against:
+- src/gameFlow.ts — existing canonical Reveal transaction shape;
+- plutus/PrizeValidator.hs — Reveal checks commitment, beacon derivation, expiry, payout, and PrizeDatum continuation;
+- plutus/B1PrizePool.hs — Reveal consumes the singleton Pool UTxO and enforces exact reserve/liability/count deltas plus pre-reveal effective-pool affordability;
+- src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts — existing P2.8 fixture;
+- src/__tests__/immortal-reveal-conformance.test.ts — canonical projection/conformance;
+- Notion pages 09 / 23 and the 2026-09-21 Multi-Front Checkpoint — real-ledger evidence is required and must not be replaced by the fixture/emulator;
+- the coordination register — next step explicitly identified as a real Yaci Reveal trace.
+
+No economic rule was changed.
+
+### Change
+
+Added:
+
+- audit/cardano-integration/reveal-ledger-trace.ts
+
+The lab now bootstraps the minimum test state and performs a real Cardano transaction containing both:
+1. PrizeValidator Reveal;
+2. B1PrizePool TicketRevealed.
+
+The trace records:
+- bootstrap transaction reference;
+- real Reveal transaction reference;
+- consumed Prize and B1PrizePool UTxOs;
+- produced continuing UTxOs;
+- pre/post canonical fingerprints;
+- action fingerprint;
+- payout and both row tiers;
+- result;
+- full signed transaction CBOR;
+- Yaci transaction UTxO response;
+- CanonicalTransitionEvidence;
+- replay attempt using the same already-consumed signed transaction and its rejection.
+
+The bootstrap uses wallet-controlled native assets only as test identities for the ticket/pool/liquidity fixture. It is explicitly not a production token/economic definition.
+
+### Workflow
+
+.github/workflows/immortal-cardano-lab.yml now executes the real Reveal trace immediately after the existing ledger smoke transaction.
+
+### Commits
+
+- b2c468609cf8eeef37d563191f898fad3ddd970e — real Reveal trace
+- f5a71bcc2889be4c16a48db74473520f8f20431d — execute Reveal trace in Cardano lab
+
+### Evidence status
+
+Implementation is present. **Ledger evidence is still PENDING until the current-head GitHub Actions run completes successfully.**
+
+If the trace fails, classify the failure as fixture/infrastructure/validator compatibility and repair without weakening invariants.
+
+### Handoff
+
+Next session should:
+1. observe the new Cardano Integration Lab run on the current head;
+2. inspect any failure before changing code;
+3. if successful, verify reveal-transition.json contains the real transaction/UTxO/replay evidence;
+4. promote RF10/RF11 only to the level actually demonstrated;
+5. continue B4/B5/B6 without reopening closed economics.
