@@ -583,12 +583,14 @@ and B4/B6 still require preservation/equivalence through the actual Cardano exec
 **Remaining uncertainty:** live integration into PRE-RICH class-control state and on-chain enforcement/conformance. This result does not prove infinite-horizon viability or Cardano equivalence.
 **Status:** NEEDS-EVIDENCE / IMPLEMENTATION CONFORMANCE
 
-## 24. SESSION CLAIM — G7 Payout-Unit Conformance
+---
+
+## 24. TRIANGULATION NOTE — G7 Payout-Unit Status
 
 **Session:** autonomous coordination session — 2026-09-21 (follow-on)
 **Front:** B3-D / G7 — payout-unit conformance
-**Objective:** verify the canonical 2.5-USDM tier representation across GameRules → PrizeDatum → PrizeValidator → Adapter/settlement without changing canonical economics.
-**Files likely affected:** existing GameRules/result/PrizeDatum/PrizeValidator/Adapter paths only; no universal kernel changes.
-**Current evidence:** current checkpoint says exact 2.5-USDM representation remains the implementation gate; canonical result preserves both row outcomes.
-**Expected output:** end-to-end representation map and smallest conformance fix, if required.
-**Status:** IN_PROGRESS
+**Result:** current branch `PRE-RICH/docs/PAYOUT-UNIT-CONFORMANCE.md` explicitly closes the prior 2.5-USDM truncation finding as a unit-interpretation false positive. With the established `1 USDM = 100 sub-units` representation, tier 2 is exactly `5 × 100 / 2 = 250` sub-units. Current `Types.hs`, `GameRules.hs`, `src/gameRules.ts` and `PrizeValidator.hs` preserve the 2.5-USDM value and the two row results.
+**Evidence:** current branch payout-unit conformance document and implementation; current Notion G7/DEC-3 material; Library conformance artifacts.
+**Decision:** no payout-unit code fix is required. No new G7 implementation front is claimed by this session.
+**Remaining evidence:** executable parity and real Cardano settlement evidence remain part of the broader conformance program; they do not reopen the economic model.
+**Status:** TRIANGULATED / CLOSED IMPLEMENTATION FINDING — EVIDENCE REMAINS
