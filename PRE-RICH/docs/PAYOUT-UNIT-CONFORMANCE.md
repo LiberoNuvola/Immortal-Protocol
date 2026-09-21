@@ -1,82 +1,62 @@
-# PRE-RICH Payout Unit Conformance Investigation
+# PRE-RICH Payout Unit Conformance
 
-Status: OPEN — implementation/unit boundary
+Status: CLOSED — false positive resolved by unit triangulation
 Branch: work/immortal-green-closure
 
-## Finding
+## Finding and correction
 
-The current PRE-RICH economic baseline requires the 20,000-row distribution:
+The previous checkpoint incorrectly evaluated `prizeAmountForTier` with `priceUsdm = 1` and therefore appeared to truncate the canonical 2.5 USDM tier-2 payout to 2.
 
-- 17,500 loss
-- 1,700 × 1
-- 600 × 2.5
-- 180 × 5
-- 19 × 100
-- 1 × 500
+That interpretation was wrong.
 
-The current Plutus and TypeScript GameRules implementations contain the correct outcome probabilities and the correct payout table shape, but prizeAmountForTier computes:
+The current PRE-RICH Cardano-facing implementation represents USDM amounts in **100 sub-units per USDM**. The current `src/mint.ts` explicitly documents:
 
-    floor(baseMultiplier × priceUsdm / 2)
+```
+1 USDM = 100 sub-units
+DEFAULT_PRICE_USDM = 100
+```
 
-using Integer/number ticket prices expressed as whole USDM values.
+The current Adapter/settlement evidence also maps canonical reference-unit prices into USDM sub-units, e.g. class 0 → 1 RU → 100 USDM sub-units.
 
-At Genesis price = 1 USDM:
+Therefore Genesis is represented as:
 
-    tier 1 = floor(2 × 1 / 2) = 1
-    tier 2 = floor(5 × 1 / 2) = 2  <-- canonical value is 2.5
-    tier 3 = floor(10 × 1 / 2) = 5
-    tier 4 = floor(200 × 1 / 2) = 100
-    tier 5 = floor(1000 × 1 / 2) = 500
+```
+priceUsdm = 100
+```
 
-Therefore the implementation cannot represent the canonical 2.5-USDM payout at a 1-USDM ticket.
+and the current arithmetic gives:
 
-## Independent triangulation
+```
+tier 1: 2 × 100 / 2 = 100 sub-units = 1 USDM
+tier 2: 5 × 100 / 2 = 250 sub-units = 2.5 USDM
+tier 3: 10 × 100 / 2 = 500 sub-units = 5 USDM
+tier 4: 200 × 100 / 2 = 10,000 sub-units = 100 USDM
+tier 5: 1000 × 100 / 2 = 50,000 sub-units = 500 USDM
+```
 
-Notion current decision material records both the 20,000-slot distribution and the 2.5× tier-2 payout. The current branch GameRules code records the same 20,000-slot probabilities but uses integer arithmetic for payout calculation.
+The 500× cap is therefore also exact:
 
-This is a genuine implementation/conformance mismatch, not a test-fixture error and not a reason to weaken the economic invariant.
+```
+500 × 100 = 50,000 sub-units = 500 USDM
+```
 
-## Consequence
+## Result
 
-At Genesis price, the current implementation's row EV is lower than the frozen mathematical model because the 600 tier-2 outcomes are paid as 2 instead of 2.5.
+There is **no payout-unit truncation bug** in the current implementation under the established 100-sub-unit representation.
 
-The correction must therefore be made at the denomination/unit boundary, not by changing the frozen probability distribution, payout multipliers, or 500× cap.
+The earlier OPEN finding was a unit-interpretation error, not a code defect.
 
-## Required closure
+No code change is required.
 
-Before changing code, establish the canonical payout unit used by PRE-RICH and prove the conversion at every boundary:
+## Remaining evidence
 
-    application denomination
-        ↓
-    exact integer representation
-        ↓
-    GameRules payout
-        ↓
-    economic kernel liability
-        ↓
-    Cardano datum/value
-        ↓
-    claim settlement
+The unit boundary should still be covered by executable conformance vectors:
 
-The chosen representation must:
+- Genesis 1 USDM → 100 sub-units;
+- tier 2 → 250 sub-units;
+- tier 5 → 50,000 sub-units;
+- all ladder prices map exactly;
+- Plutus and TypeScript agree;
+- Cardano settlement preserves exact USDM equivalence.
 
-1. represent 2.5 USDM exactly;
-2. preserve the 500× maximum exactly;
-3. preserve all frozen ticket prices exactly;
-4. preserve EV and distribution exactly;
-5. avoid floating-point economic authority;
-6. remain compatible with the existing exact-USDM settlement rule;
-7. have executable Plutus/TypeScript parity evidence.
-
-## Non-goals
-
-- Do not change the 20,000 outcome domain.
-- Do not change 17,500 / 1,700 / 600 / 180 / 19 / 1 probabilities.
-- Do not change the ticket ladder.
-- Do not change the 500× ceiling.
-- Do not round 2.5 to 2 or 3.
-- Do not introduce a new statistical reserve formula.
-
-## Status
-
-OPEN — unit representation and exact payout conversion must be closed before claiming full GameRules economic conformance.
+These are conformance tests, not a reopened economic-policy decision.
