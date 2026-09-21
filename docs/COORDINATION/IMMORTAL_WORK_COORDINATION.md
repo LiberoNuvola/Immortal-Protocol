@@ -163,7 +163,7 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 | B2 | Numerical hysteresis | OPEN | Derive and verify exact semantics; do not promote application values into IMMORTAL constants. |
 | B4 | ProtectedCapital preservation | OPEN | Formalize and test preservation through relevant transitions. |
 | B5 | Economic Gate → Viability → Atomic Transition | OPEN | Make the complete admissibility chain explicit and testable. |
-| B6 | V3 ↔ Cardano semantic equivalence | OPEN | Establish transition-level semantic correspondence for Issue / Reveal / Claim / Expire / Jackpot-related application transitions. |
+| B6 | V3 ↔ Cardano semantic equivalence | **PARTIAL / NEEDS-EVIDENCE** | Establish transition-level semantic correspondence for Issue / Reveal / Claim / Expire / Jackpot-related application transitions. |
 | C1–C6 | Evidence / conformance | OPEN | Close evidence matrix without confusing tests/simulations with proofs. |
 | 3D | Certified persistent NFT binding | OPEN | Close certified persistence/binding semantics and evidence. |
 | VIABILITY-INF | Infinite-horizon viability | OPEN | Distinguish local safety from existence of a continuation strategy; no overclaiming. |
@@ -630,3 +630,62 @@ and B4/B6 still require preservation/equivalence through the actual Cardano exec
 **Files changed:** `src/__tests__/preRich-gamerules-replay.test.ts`, plus this coordination register.
 **Important:** existing Materios PoCs were not recreated or modified. The test is evidence for the mapping layer only; it does not establish publisher-independent Materios authenticity or full Plutus/TypeScript byte-for-byte parity.
 **Status:** NEEDS-EVIDENCE / CI RUNNING
+
+---
+
+## 27. SESSION RESULT — B6 V3 ↔ Cardano Semantic Equivalence
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B6 — V3 ↔ Cardano semantic equivalence
+**Status:** **PARTIAL / NEEDS-EVIDENCE**
+
+### Completed
+
+- Audited the live V3 transition semantics for Issue / Reveal / Claim / Expire.
+- Audited the Cardano B1 / PrizeValidator lifecycle path and legacy projection.
+- Created `IMMORTAL/docs/V3-CARDANO-SEMANTIC-EQUIVALENCE.md`.
+- Moved the PRE-RICH-specific Cardano observation projection out of `Adapter/CARDANO` into `PRE-RICH/profile/PreRichCardanoObservationProjection.ts`.
+- Removed the stale Adapter projection that depended on the old application-shaped `CanonicalEconomicState`.
+- Updated the P2.7 conformance test to use the PRE-RICH projection.
+- Fixed `src/txHelpers.ts` so its use of `createCardanoExecutionAdapter` has the required import.
+- Added the full P2.7 semantic conformance suite to the Cardano Adapter CI command.
+
+### Current evidence
+
+The action-by-action audit establishes:
+
+- **Issue:** V3 requires profile price + class saleability; B1 currently proves price/NFT/aggregate accounting but does not itself reconstruct V3 activation/saleability.
+- **Reveal:** V3 structural/post-state conditions and B1's `payout <= effectivePool(pre)` are not algebraically identical. The concrete `EEV=500, unresolvedReserve=1, payout=500` example exposes the difference.
+- **Claim:** Cardano requires ownership, signature, expiry and exact settlement-oracle evidence in addition to the economic liability delta.
+- **Expire:** Cardano carries per-ticket `pdExpiresAt`; current V3 `Expire cid` is aggregate and therefore requires an explicit ticket-level refinement/evidence boundary.
+
+### Architectural implication
+
+These are not reasons to weaken either side. They are RF2/RF3/RF5/RF6/RF8/RF9 conformance obligations that must be represented explicitly.
+
+### CI
+
+A new Cardano Adapter run was triggered on commit `a53dcc6` and is currently queued. The Haskell kernel run is also queued. No passing result is claimed yet for the new P2.7 test or the Haskell bridge.
+
+The repository still has the known frontend build failure class around Vite/node-fetch; this remains separate from the economic-state/refinement findings.
+
+### Handoff
+
+**Do not redo:**
+- the state-boundary audit;
+- the closed A1/A2/A3 economic policy decisions;
+- the adapter-specific projection separation;
+- the P2.7 test inclusion in CI.
+
+**Next recommended action:**
+- B5 owner: resolve the immediate executable-liquidity interface exposed by the Reveal counterexample.
+- B6 owner: continue RF8 whole-program action enumeration and ticket-level Issue/Expire refinement.
+- After B5 and these evidence bridges are in place, rerun the P2.7 differential lifecycle suite and close RF1–RF11 row-by-row where evidence supports it.
+
+**Relevant commits:**
+- `852c972b` move PRE-RICH projection out of Adapter
+- `b1365439` clarify PRE-RICH ownership
+- `87939eb0` update P2.7 test import
+- `9696bbee` remove stale Adapter projection
+- `079222a5` fix Adapter import in txHelpers
+- `a53dcc6f` register V3/Cardano equivalence gaps
