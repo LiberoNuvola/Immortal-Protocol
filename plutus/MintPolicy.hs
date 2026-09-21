@@ -324,6 +324,8 @@ newPrizeDatumValid
               pdStatus pd == Pending
                 && pdBeaconStatus pd == BeaconPending
                 && pdPrizeTier pd == 0
+                && pdRow1Tier pd == 0
+                && pdRow2Tier pd == 0
                 && lengthOfByteString (pdResult pd) == 0
                 && lengthOfByteString (pdBeaconValue pd) == 0
                 && lengthOfByteString (pdMcHash pd) == 0
