@@ -22,6 +22,14 @@ data EconomicGateInput = EconomicGateInput
   , egiEEVFresh :: Bool
   , egiObligationsComplete :: Bool
   , egiEEV :: Integer
+  -- | Immediately executable economic liquidity available to the action.
+  -- This is distinct from EEV: EEV may include value that is economically
+  -- executable over a wider horizon, while the action may require a
+  -- present-settlement capacity check.
+  , egiAvailableExecutableLiquidity :: Integer
+  -- | Immediate liquidity that must be spendable by the candidate action.
+  -- Zero means the action has no immediate settlement requirement.
+  , egiRequiredImmediateLiquidity :: Integer
   }
 
 -- | Immediate economic admissibility for a candidate post-state.
@@ -34,6 +42,10 @@ economicGate input candidate =
      egiAuthoritativeTruthVerified input
   && egiEEVFresh input
   && egiObligationsComplete input
+  && egiAvailableExecutableLiquidity input >= 0
+  && egiRequiredImmediateLiquidity input >= 0
+  && egiRequiredImmediateLiquidity input
+       <= egiAvailableExecutableLiquidity input
   && Kernel.solvencyInvariant (egiEEV input) candidate
 
 -- | Viability is evaluated after immediate post-state safety has been checked.
