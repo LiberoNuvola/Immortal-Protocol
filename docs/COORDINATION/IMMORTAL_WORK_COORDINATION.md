@@ -1126,3 +1126,30 @@ This audit does not reopen KA/KC/KD, ticket ladder, 500×, Jackpot ownership, ex
 - Cardano Integration Lab run `35661171386`: still blocked in native Plutus dependency setup before Yaci/devnet execution.
 
 **Status:** REALITY AUDIT COMPLETED / CONNECTIVITY EVIDENCE REMAINS OPEN.
+
+
+---
+## 48. CI INFRASTRUCTURE DELTA — Plutus native dependency closure
+
+**Date:** 2026-09-22
+
+The latest Kernel and Cardano Integration Lab runs reached the actual dependency resolver. The prior `blst` setup problem is therefore closed as a setup-path issue. The next concrete failure was explicit:
+
+`cardano-crypto-class:+secp256k1-support` was rejected because `libsecp256k1-any` was absent from pkg-config.
+
+### Surgical fix
+
+Added `libsecp256k1-dev` to the native dependency installation of:
+
+- `.github/workflows/kernel-invalid-class-fail-closed.yml`
+- `.github/workflows/immortal-cardano-lab.yml`
+
+No Haskell source, economic formula, test invariant or validator logic changed.
+
+Commits:
+- `2d9d6db178f2f070ad216c3198a0df2060d1551c` — Kernel workflow
+- `2806e4d612cbd6cd2eca6a1dd0a7f436c246a127` — Cardano Integration Lab workflow
+
+**Expected next evidence:** the next runs must pass native dependency resolution and reach the actual Haskell/Yaci tests. Only then can any regression or ledger result be classified.
+
+**Status:** INFRASTRUCTURE FIX APPLIED / CI EVIDENCE PENDING.
