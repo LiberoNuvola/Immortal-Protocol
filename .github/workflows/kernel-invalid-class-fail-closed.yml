@@ -1,5 +1,9 @@
 name: Kernel Invalid-Class Fail-Closed Audit
 
+concurrency:
+  group: -github-workflows-kernel-invalid-class-fail-closed-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
