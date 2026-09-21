@@ -8,7 +8,7 @@ describe('PRE-RICH certified settlement quote', () => {
   it('certifies a concrete positive settlement asset bundle', () => {
     const quote = certifySettlementQuote(
       {
-        'aa'.repeat(28) + '00': 250n,
+        ['aa'.repeat(28) + '00']: 250n,
       },
       250n,
       'oracle-state-123',
