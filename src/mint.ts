@@ -501,7 +501,7 @@ async function getTreasuryDatum(
 // ============================================================
 
 /**
- * PrizeDatum fields 0..20 (Types.hs):
+ * PrizeDatum fields 0..22 (Types.hs):
  *
  *  0 pdTicketPolicy
  *  1 pdTicketName
