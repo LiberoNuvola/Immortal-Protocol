@@ -974,7 +974,7 @@ async function main() {
         4_000_000_000_000,
       )
 
-      .complete();
+      .complete({ nativeUplc: false });
 
   const revealSigned =
     await revealTx
