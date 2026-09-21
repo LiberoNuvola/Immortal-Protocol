@@ -124,3 +124,26 @@ Next actions:
 5. repeat action-by-action differential replay after those bridges are connected.
 
 **No universal economic formula is changed by this register.**
+## 10. RF8 — economic transaction path enumeration
+
+Current TypeScript source audit identified these transaction-producing paths:
+
+| Path | Economic state mutation | Submission boundary | Current result |
+|---|---|---|---|
+| `src/mint.ts` | Ticket sale / B1 `TicketIssued` / PrizeDatum issuance | `createCardanoExecutionAdapter` directly | submit centralized; construction remains in DApp code |
+| `src/gameFlow.ts` | SyncBeacon, Reveal, Claim and associated B1 updates | `signAndSubmitTx` → Cardano Adapter | submit centralized; construction remains in DApp code |
+| `src/txHelpers.ts` | reusable claim transaction helper | `createCardanoExecutionAdapter` | submit centralized |
+| `src/registryFlow.ts` | Beacon registry state, not direct economic liability state | `signAndSubmitTx` | adapter-routed, non-economic support path |
+| `src/createRound.ts` | round/registry state, not direct economic liability state | `signAndSubmitTx` | adapter-routed, non-economic support path |
+
+Current source inspection found no direct `lucid.signTx(...)` or `lucid.submitTx(...)` in the three TypeScript economic orchestrators `mint.ts`, `gameFlow.ts`, and `txHelpers.ts`.
+
+A regression test now enforces this boundary for those files. This is evidence for the TypeScript side of RF8, not a whole-program proof: Plutus validator paths, dynamically loaded modules and any future transaction constructors still require enumeration.
+
+### Adapter-scope residual
+
+The Cardano Adapter specification describes transaction construction as an Adapter responsibility where applicable, while the current application code still constructs Lucid transactions in `src/mint.ts` and `src/gameFlow.ts` before handing the built transaction to the Adapter for signing/submission.
+
+This is therefore a remaining **Adapter responsibility-scope gap**, but it does not create a second economic authority by itself. The current immediate safety boundary is preserved because signing/submission is centralized and on-chain validators still enforce their own predicates.
+
+Do not silently migrate all transaction construction in this front: it may affect many application consumers and is not required to prove the economic semantics yet. It remains an explicit follow-on conformance task.
