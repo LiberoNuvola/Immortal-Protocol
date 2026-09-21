@@ -6,8 +6,8 @@
 
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
-**Snapshot:** 2026-09-21  
-**Latest observed commit:** `571efa04c59de392dd825bea102cf7915828a44a` — universal economic bridge conformance test
+**Snapshot:** 2026-09-22  
+**Latest observed commit:** `1dac8573cafd380ef35291037939fc55cfc89613` — B4 / G7 closure deltas
 
 ---
 
