@@ -73,11 +73,6 @@ solvencyInvariant d =
     (ppTotalLiquidity d)
     (legacyB1ToUniversalEconomicState d)
 
-{-# INLINABLE jackpotActive #-}
-jackpotActive :: B1PrizePoolDatum -> Bool
-jackpotActive d =
-  effectivePool d >= ppJackpotThreshold d
-
 {-# INLINABLE ownInputResolved #-}
 ownInputResolved :: ScriptContext -> TxOut
 ownInputResolved ctx =
