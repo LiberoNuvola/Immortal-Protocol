@@ -67,7 +67,7 @@ describe('PRE-RICH ticket-level Claim refinement', () => {
   })
 
   it('fails closed for non-Revealed input or wrong terminal state', () => {
-    expect(claimRefinementAdmissible({ ...base, statusBefore: 'Pending' } as ClaimRefinementEvidence)).toBe(false)
-    expect(claimRefinementAdmissible({ ...base, statusAfter: 'Revealed' } as ClaimRefinementEvidence)).toBe(false)
+    expect(claimRefinementAdmissible({ ...base, statusBefore: 'Pending' } as unknown as ClaimRefinementEvidence)).toBe(false)
+    expect(claimRefinementAdmissible({ ...base, statusAfter: 'Revealed' } as unknown as ClaimRefinementEvidence)).toBe(false)
   })
 })
