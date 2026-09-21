@@ -89,7 +89,7 @@ The 500× cap is likewise exact:
 
 The previous OPEN finding was therefore a unit-interpretation error, not an implementation defect. No economic rule or code change is required.
 
-Remaining work is executable unit-boundary conformance across Plutus, TypeScript, economic state and settlement.
+Remaining evidence is executable Plutus/TypeScript replay parity, economic-state integration and real Cardano settlement evidence.
 
 ## Replay vectors
 
@@ -131,4 +131,4 @@ B3 20,000 outcome mapping and unbiased rejection construction: IMPLEMENTED / SOU
 
 B3 publisher-independent canonical randomness: NOT YET PROVEN.
 
-Payout-unit exactness: OPEN and tracked separately from Beacon canonicality.
+Payout-unit exactness: reconciled; the prior truncation finding was a unit-interpretation false positive. Remaining parity/settlement evidence is tracked separately from Beacon canonicality.
