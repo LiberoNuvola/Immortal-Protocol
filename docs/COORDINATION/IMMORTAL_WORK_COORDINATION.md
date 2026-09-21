@@ -755,3 +755,23 @@ No universal expiry number was introduced by this work.
 **Expected result:** `npx tsx --test src/__tests__/immortal-cardano-adapter-conformance.test.ts` should execute all P2.7 subtests directly; the Adapter workflow continues to keep ordinary Vitest tests separate.
 
 **Status:** verification pending on the current branch CI.
+
+---
+
+## 28. SESSION RESULT — B5 Economic Admission Bridge
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B5 — Economic Gate → Viability → Atomic Transition
+**Result:** implemented the smallest typed PRE-RICH admission composition around the existing V3 structural transition, fail-closed PRE-RICH→universal projection, explicit verified EEV, Economic Gate and Viability witness. The universal Gate now additionally separates **EEV** from **immediately executable settlement liquidity** through two generic inputs: `availableExecutableLiquidity` and `requiredImmediateLiquidity`.
+**Why:** B6 exposed a real Reveal boundary where V3 post-state solvency can hold while Cardano's pre-reveal executable pool is lower because the unresolved reserve remains ring-fenced. This is represented as an explicit execution-liquidity constraint, not as a new economic formula.
+**Files changed:**
+- `IMMORTAL/kernel/EconomicGate.hs`
+- `PRE-RICH/profile/PreRichEconomicAdmission.hs`
+- `plutus/test/EconomicAdmissionTest.hs`
+- `plutus/pre-rich-plutus.cabal`
+- `IMMORTAL/docs/V3-CARDANO-SEMANTIC-EQUIVALENCE.md`
+- this coordination register
+**Verified by tests in source:** insufficient EEV rejected; missing truth/freshness/obligation evidence rejected; insufficient immediate executable liquidity rejected; uncertified Ω successor rejected; invalid class/pre-state rejected; Reveal/Claim candidate state retains the expected liability/reserve semantics.
+**CI status:** current branch CI was triggered after the latest changes; final Haskell/Cardano results are still pending. The earlier Adapter failures were fixture/runner synchronization issues and are being corrected without relaxing economic checks.
+**Architectural boundary:** `transitionValid` remains structural; Economic Gate remains IMMORTAL authority; Viability remains distinct; Adapter remains evidence/realization layer.
+**Status:** CLOSING — IMPLEMENTATION IN, EVIDENCE PENDING
