@@ -1,5 +1,9 @@
 name: Materios Canonical Evidence Boundary
 
+concurrency:
+  group: -github-workflows-materios-evidence-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
