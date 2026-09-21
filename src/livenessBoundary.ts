@@ -48,15 +48,16 @@ export function livenessConditionalPreconditions(snapshot: LivenessSnapshot): bo
     snapshot.deliveryAndInclusionFair &&
     snapshot.deciderAvailable &&
     !snapshot.governanceLocked &&
-    !snapshot.observedSuccessorOutsideKernel
+    !snapshot.observedSuccessorOutsideKernel &&
+    !snapshot.observedInternalStallWithInputs
   )
 }
 
 export function classifyStall(snapshot: LivenessSnapshot): StallClassification {
-  if (livenessConditionalPreconditions(snapshot)) return 'PROGRESS_AVAILABLE'
   if (snapshot.observedSuccessorOutsideKernel) return 'FM2_CERTIFICATE_DEFECT'
   if (snapshot.observedInternalStallWithInputs && eligibleState(snapshot)) return 'FM3_CERTIFICATE_LIVENESS_DEFECT'
   if (!eligibleState(snapshot)) return 'FM1_VIABILITY_BOUNDARY'
+  if (livenessConditionalPreconditions(snapshot)) return 'PROGRESS_AVAILABLE'
   if (snapshot.governanceLocked) return 'FM7_GOVERNANCE_LOCK'
   if (!snapshot.authoritativeInputsAvailable) return 'FM6_EXTERNAL_TRUTH_UNAVAILABLE'
   if (!snapshot.proposerAvailable) return 'FM4_ACTOR_UNAVAILABLE'
