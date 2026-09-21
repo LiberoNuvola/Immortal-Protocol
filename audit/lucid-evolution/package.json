@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@lucid-evolution/lucid": "0.6.2"
+    "@lucid-evolution/lucid": "0.6.2",
+    "@lucid-evolution/scalus-uplc": "0.1.4"
   }
 }
