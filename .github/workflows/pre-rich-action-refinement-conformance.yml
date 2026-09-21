@@ -1,5 +1,9 @@
 name: PRE-RICH Action Refinement Conformance
 
+concurrency:
+  group: -github-workflows-pre-rich-action-refinement-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
