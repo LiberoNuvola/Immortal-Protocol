@@ -401,9 +401,6 @@ export async function syncBeacon(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
-  const b1PrizePoolAddress = opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
-  if (!b1PrizePoolAddress) throw new Error('B1PrizePool address cannot be resolved')
-
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     opts.prizeAddress,
@@ -489,6 +486,8 @@ export async function revealPrize(opts: {
   const playerSecret = fromHex(secretHex)
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const b1PrizePoolAddress = opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) throw new Error('B1PrizePool address cannot be resolved')
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
