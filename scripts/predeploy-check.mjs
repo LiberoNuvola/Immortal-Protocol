@@ -211,7 +211,7 @@ contains(mintHs, /atomicTreasuryPaymentValid/, 'MintPolicy enforces atomic Treas
 contains(mintHs, /atomicPoolReservationValid/, 'MintPolicy enforces atomic Pool reservation')
 contains(mintHs, /mintedExactlyOneSerial/, 'MintPolicy enforces exactly one ticket NFT')
 contains(mintHs, /pdPrizePoolHash/, 'MintPolicy binds PrizeDatum to B1PrizePool')
-contains(mintHs, /ticketPaymentLovelace\s*::\s*Integer/, 'B1 sale settlement constant exists on-chain')
+contains(mintHs, /atomicTreasuryPaymentValid/, 'B1 sale settlement is verified on-chain by oracle value')
 
 contains(poolHs, /TicketIssued/, 'B1PrizePool supports TicketIssued')
 contains(poolHs, /TicketRevealed/, 'B1PrizePool supports TicketRevealed')
@@ -272,14 +272,14 @@ const configTs = read('src/config.ts')
 
 contains(loadTs, /b1PrizePoolFactory\.plutus\.json/, 'loadValidator imports B1PrizePool factory')
 contains(loadTs, /buildB1PrizePool/, 'loadValidator exposes buildB1PrizePool')
-contains(loadTs, /applyParamsToScript/, 'loadValidator uses applyParamsToScript')
+contains(loadTs, /applyScriptParams/, 'loadValidator uses the Cardano script-parameter adapter')
 
 contains(loadTs,
   /buildMintPolicy\s*\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
   'TypeScript MintPolicy builder accepts all five B1 hashes')
 
 contains(loadTs,
-  /applyParamsToScript\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
+  /applyScriptParams\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
   'TypeScript applies MintPolicy parameters in B1 order')
 
 contains(loadTs, /b1PrizePoolHash/, 'TypeScript wiring exposes B1PrizePool hash')
