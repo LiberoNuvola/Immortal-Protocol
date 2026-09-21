@@ -17,6 +17,9 @@ import Prelude
 import EconomicStateV3
 import EconomicKernel
 import EconomicTransitionV3
+import UniversalEconomicState
+import UniversalEconomicKernel
+import PreRichEconomicProjection
 import GoldenVectors
 import GameRules
 
@@ -75,6 +78,29 @@ assertState result expected label =
     Nothing -> error ("FAIL: " ++ label)
 
 
+
+sameUniversalState :: UniversalEconomicState -> UniversalEconomicState -> Bool
+sameUniversalState a b =
+     uesCrystallizedLiabilities a == uesCrystallizedLiabilities b
+  && uesUnresolvedReserve a == uesUnresolvedReserve b
+  && uesUnresolvedTicketCount a == uesUnresolvedTicketCount b
+  && uesWorstCaseExposure a == uesWorstCaseExposure b
+  && uesSafetyCapital a == uesSafetyCapital b
+  && uesReserveProtection a == uesReserveProtection b
+  && uesMandatoryFutureCosts a == uesMandatoryFutureCosts b
+  && uesAdditionalProtectedCapital a == uesAdditionalProtectedCapital b
+
+assertUniversalState
+  :: Maybe UniversalEconomicState
+  -> UniversalEconomicState
+  -> String
+  -> IO ()
+assertUniversalState result expected label =
+  case result of
+    Just actual -> assert (sameUniversalState actual expected) label
+    Nothing -> error ("FAIL: " ++ label)
+
+
 assert :: Bool -> String -> IO ()
 assert condition label =
   if condition
@@ -85,7 +111,7 @@ assert condition label =
 main :: IO ()
 main = do
   assert
-    (transitionValid baseState (Issue 0 1))
+    (transitionValid baseProfile baseState (Issue 0 1))
     "valid issue"
 
   assertState
@@ -94,7 +120,7 @@ main = do
     "issue state"
 
   assert
-    (transitionValid issueZeroExpected (Reveal 0 500))
+    (transitionValid baseProfile issueZeroExpected (Reveal 0 500))
     "valid reveal"
 
   assertState
@@ -103,7 +129,7 @@ main = do
     "reveal state"
 
   assert
-    (transitionValid issueZeroExpected (Expire 0))
+    (transitionValid baseProfile issueZeroExpected (Expire 0))
     "valid expiry"
 
   assertState
@@ -132,15 +158,15 @@ main = do
     "reject claim above liability"
 
   assert
-    (conservationInvariant issueZeroExpected)
+    (conservationInvariant baseProfile issueZeroExpected)
     "issue conservation"
 
   assert
-    (conservationInvariant revealZeroExpected)
+    (conservationInvariant baseProfile revealZeroExpected)
     "reveal conservation"
 
   assert
-    (conservationInvariant expireZeroExpected)
+    (conservationInvariant baseProfile expireZeroExpected)
     "expiry conservation"
 
   assert (rowTierFromIndex 0 == 0) "Classic-6 lower boundary"
@@ -154,5 +180,60 @@ main = do
   assert
     (rowPayoutTotal defaultPrizeTable 5 5 100 == 50000)
     "Classic-6 dual tier payout capped at 500x"
+
+
+  assertUniversalState
+    (projectPreRichState baseProfile baseState)
+    (UniversalEconomicState 0 0 0 500 0 0 0 0)
+    "base V3 -> universal projection"
+
+  assertUniversalState
+    (projectPreRichState baseProfile issueZeroExpected)
+    (UniversalEconomicState 0 1 1 500 0 0 0 0)
+    "issue V3 -> universal projection"
+
+  assertUniversalState
+    (projectPreRichState baseProfile revealZeroExpected)
+    (UniversalEconomicState 500 0 0 0 0 0 0 0)
+    "reveal V3 -> universal projection"
+
+  assertUniversalState
+    (projectPreRichState baseProfile expireZeroExpected)
+    (UniversalEconomicState 0 0 0 0 0 0 0 0)
+    "expiry V3 -> universal projection"
+
+  assert
+    (projectPreRichState
+       baseProfile
+       (baseState
+         { v3Classes =
+             [TicketClassState 99 0 0 0 10 True] })
+       == Nothing)
+    "projection rejects unknown class"
+
+  assert
+    (projectPreRichState
+       baseProfile
+       (baseState
+         { v3Classes =
+             [TicketClassState 0 0 0 1 10 True] })
+       == Nothing)
+    "projection rejects inconsistent class exposure"
+
+  case projectPreRichState baseProfile baseState of
+    Nothing -> error "FAIL: base projection unavailable"
+    Just universalBase -> do
+      assert
+        (protectedCapital universalBase == 500)
+        "universal protected capital"
+      assert
+        (rawSurplus 1000 universalBase == 500)
+        "universal raw surplus"
+      assert
+        (solvencyInvariant 1000 universalBase)
+        "universal solvency boundary"
+      assert
+        (not (solvencyInvariant 499 universalBase))
+        "universal solvency rejects under-protected EEV"
 
   putStrLn "ALL GOLDEN VECTOR TESTS PASSED"
