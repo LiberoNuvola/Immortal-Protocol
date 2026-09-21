@@ -78,9 +78,13 @@ describe('PRE-RICH ticket-level Issue refinement', () => {
       .toThrow('new ticket result must be empty before reveal')
   })
 
-  it('rejects a non-pending Beacon status at issuance', () => {
-    expect(() => validateIssueTicketRefinementEvidence({ ...base, beaconStatus: 'BeaconPending' as 'BeaconPending' }))
-      .not.toThrow()
+  it('rejects a Beacon status different from the issuance state', () => {
+    const invalid = {
+      ...base,
+      beaconStatus: 'BeaconReady',
+    } as unknown as IssueTicketRefinementEvidence
+    expect(() => validateIssueTicketRefinementEvidence(invalid))
+      .toThrow('new ticket Beacon status must be BeaconPending')
   })
 
   it('inherits class saleability fail-closed behavior', () => {
