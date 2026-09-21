@@ -563,7 +563,7 @@ validateClaim oracleState oraclePublisher datum ctx =
         oracleState
         oraclePublisher
         claimantValue
-    paid = paidUsdm >= pdPrizeAmount datum
+    paid = paidUsdm == pdPrizeAmount datum
 
     -- Continuing UTxO marked Claimed; frozen economic fields immutable.
     nextOk =
