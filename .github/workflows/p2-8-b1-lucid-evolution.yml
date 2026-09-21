@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - audit/p2-8-b1-lucid-evolution-2026-09-21
+  pull_request:
+    branches:
+      - b1-hardening
 
 jobs:
   lucid-evolution:
