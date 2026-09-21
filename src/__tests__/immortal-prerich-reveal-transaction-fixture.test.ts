@@ -32,7 +32,7 @@ import assert from 'node:assert/strict'
 import {
   expectedRevealPostState,
   projectCardanoToImmortalV3,
-} from '../../Adapter/CARDANO/observation/ImmortalP25ObservationProjection'
+} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
