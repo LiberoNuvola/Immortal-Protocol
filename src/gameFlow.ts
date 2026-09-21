@@ -2,7 +2,6 @@
  * PRE-RICH prize flow:
  *
  *   Mint → Pending / BeaconPending
- *     → Pay Treasury (separate tx)
  *     → SyncBeacon → Pending / BeaconReady
  *     → Reveal → Revealed (payout frozen, reserve released, liability created)
  *     → Claim → Claimed (NFT kept, no mandatory burn, liability reduced)
