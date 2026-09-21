@@ -19,6 +19,7 @@
 
 import { Data } from 'lucid-cardano'
 import wallet from './wallet'
+import { signAndSubmitTx } from './txHelpers'
 import { beaconRegistryValidator } from './loadValidator'
 import type { BeaconTarget } from './beacon'
 import {
