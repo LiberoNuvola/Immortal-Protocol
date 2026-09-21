@@ -1,0 +1,28 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-ledger
+  tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
+  subdir:
+    eras/alonzo/impl
+    libs/cardano-ledger-core
+    libs/cardano-ledger-api
+    libs/cardano-ledger-binary
+    libs/cardano-data
+    libs/cardano-ledger-pretty
+    libs/cardano-protocol-tpraos
+    libs/small-steps
+    libs/non-integral
+    libs/set-algebra
+    libs/vector-map
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/plutus
+  tag: 2334b4e98f21653e3cdaf7ec25878e781ce7d5dc
+  subdir:
+    plutus-core
+    plutus-ledger-api
+
+index-state: 2026-08-07T15:03:01Z
