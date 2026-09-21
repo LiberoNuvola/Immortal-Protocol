@@ -1,5 +1,6 @@
 // src/txHelpers.ts
 import { prizeValidator } from './loadValidator'
+import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 
 /**
  * Helper leggero per costruire una claim tx.
