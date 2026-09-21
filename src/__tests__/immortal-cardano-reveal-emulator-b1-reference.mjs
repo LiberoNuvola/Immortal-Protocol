@@ -484,22 +484,41 @@ async function main() {
   const walletAddress =
     await probe.wallet.address();
 
+  /*
+   * DIAGNOSTIC ONLY:
+   * preserve Lucid 0.10.11's cost model, fee parameters and coinsPerUtxoByte,
+   * but lift only maxTxSize / maxTxExMem / maxTxExSteps so the builder can
+   * complete the transaction and expose the validator's actual execution cost.
+   *
+   * This branch is never an acceptance environment and must not be used as
+   * evidence of Cardano mainnet/preprod feasibility.
+   */
+  const diagnosticProtocolParameters = {
+    ...(await (new Emulator([], undefined)).getProtocolParameters()),
+    maxTxSize: 65_536,
+    maxTxExMem: 100_000_000_000n,
+    maxTxExSteps: 100_000_000_000n,
+  };
+
   const emulator =
-    new Emulator([
-      {
-        address: walletAddress,
+    new Emulator(
+      [
+        {
+          address: walletAddress,
 
-        assets: {
-          lovelace: 100_000_000n,
+          assets: {
+            lovelace: 100_000_000n,
 
-          [ticketPolicy + ticketName]:
-            1n,
+            [ticketPolicy + ticketName]:
+              1n,
 
-          [poolPolicy + poolToken]:
-            1n,
+            [poolPolicy + poolToken]:
+              1n,
+          },
         },
-      },
-    ]);
+      ],
+      diagnosticProtocolParameters,
+    );
 
   const lucid =
     await Lucid.new(
@@ -1114,6 +1133,22 @@ async function main() {
   console.log(
     "REFERENCE_SCRIPT_MODE",
     true,
+  );
+  console.log(
+    "DIAGNOSTIC_PROTOCOL_LIMITS",
+    true,
+  );
+  console.log(
+    "DIAGNOSTIC_MAX_TX_SIZE_BYTES",
+    emulatorProtocolParameters.maxTxSize,
+  );
+  console.log(
+    "DIAGNOSTIC_MAX_TX_EX_MEM",
+    emulatorProtocolParameters.maxTxExMem.toString(),
+  );
+  console.log(
+    "DIAGNOSTIC_MAX_TX_EX_STEPS",
+    emulatorProtocolParameters.maxTxExSteps.toString(),
   );
   console.log(
     "REFERENCE_SCRIPT_UTXO_COUNT",
