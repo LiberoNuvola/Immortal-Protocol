@@ -80,15 +80,7 @@ function makeFixture(
 function project(fixture: Fixture) {
   return projectCardanoToImmortalV3(fixture)
 }
-
-function cloneTicket(
-  ticket: ObservedUnresolvedTicket,
-  changes: Partial<ObservedUnresolvedTicket>,
-): ObservedUnresolvedTicket {
-  return { ...ticket, ...changes }
-}
-
-describe('P2.7 — Cardano Adapter extended conformance', () => {
+\ndescribe('P2.7 — Cardano Adapter extended conformance', () => {
   it('maps every canonical IMMORTAL class to the exact Cardano unit boundary', () => {
     const tickets = pricesUsdm.map((priceUsdm, i) => ({
       ticketId: `class-${i}`,
