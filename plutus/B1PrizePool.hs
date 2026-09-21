@@ -17,6 +17,7 @@ import PlutusTx.Prelude hiding (Semigroup (..), unless)
 import qualified Economic
 import qualified EconomicKernel
 import qualified UniversalEconomicKernel
+import qualified UniversalEconomicState
 import B1LegacyAdapter ( legacyB1ToUniversalEconomicState )
 import Types
   ( B1PrizePoolDatum (..)
@@ -59,7 +60,7 @@ effectivePool d =
 {-# INLINABLE worstCaseExposure #-}
 worstCaseExposure :: B1PrizePoolDatum -> Integer
 worstCaseExposure d =
-  uesWorstCaseExposure (legacyB1ToUniversalEconomicState d)
+  UniversalEconomicState.uesWorstCaseExposure (legacyB1ToUniversalEconomicState d)
 
 -- | Deterministic worst-case solvency invariant.
 --
