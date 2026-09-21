@@ -399,7 +399,7 @@ atomicTreasuryPaymentValid
         oracleState
         oraclePublisher
         outputValue
-        >= priceUsdm
+        == priceUsdm
 
     Nothing ->
       False
