@@ -19,6 +19,7 @@ import EconomicStateV3
 import EconomicKernel
 import EconomicTransitionV3
 import UniversalEconomicState
+import EconomicGate
 import qualified UniversalEconomicKernel as UniversalKernel
 import PreRichEconomicProjection
 import GoldenVectors
