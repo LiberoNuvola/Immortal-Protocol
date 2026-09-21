@@ -18,7 +18,6 @@ export type IssueTicketRefinementEvidence = IssueRefinementEvidence & {
   unresolvedReserveBefore: bigint
   unresolvedReserveAfter: bigint
   treasuryPaymentReferenceUnits: bigint
-  classIdPriceReferenceUnits: bigint
   prizeStatus: 'Pending'
   prizeAmountSubunits: bigint
   row1Tier: bigint
@@ -72,7 +71,7 @@ export function validateIssueTicketRefinementEvidence(
     throw new Error('ticket issue must reserve the exact ticket price')
   }
 
-  if (evidence.treasuryPaymentReferenceUnits !== evidence.classIdPriceReferenceUnits) {
+  if (evidence.treasuryPaymentReferenceUnits !== evidence.priceReferenceUnits) {
     throw new Error('treasury payment must equal the canonical ticket price in reference units')
   }
 
