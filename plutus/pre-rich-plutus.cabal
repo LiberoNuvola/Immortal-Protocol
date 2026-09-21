@@ -181,3 +181,13 @@ test-suite governance-phase6-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language:   Haskell2010
+
+
+test-suite legacy-adapter-tests
+    type:               exitcode-stdio-1.0
+    hs-source-dirs:     test
+    main-is:            B1LegacyAdapterTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language:   Haskell2010
