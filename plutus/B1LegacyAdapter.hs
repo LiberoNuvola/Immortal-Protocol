@@ -32,6 +32,7 @@ data LegacyProjectionError
   | LegacyMissingJackpotLifecycle
   | LegacyAggregateMismatch
   | V3ContainsUnsupportedProtectedCapital
+  | V3ContainsUnsupportedClassComposition
   | V3ContainsUnsupportedJackpotState
   deriving ()
 
@@ -81,6 +82,7 @@ v3ToLegacyB1
   -> V3EconomicState
   -> Either LegacyProjectionError B1PrizePoolDatum
 v3ToLegacyB1 totalLiquidity prizeHash s
+  | v3Classes s /= [] = Left V3ContainsUnsupportedClassComposition
   | v3SafetyCapital s /= 0 = Left V3ContainsUnsupportedProtectedCapital
   | v3ReserveProtection s /= 0 = Left V3ContainsUnsupportedProtectedCapital
   | v3MandatoryFutureCosts s /= 0 = Left V3ContainsUnsupportedProtectedCapital
