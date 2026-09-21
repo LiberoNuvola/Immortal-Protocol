@@ -429,7 +429,20 @@ These are implementation/documentation evidence, not a replacement for the norma
 
 ---
 
-## 17. Important rule
+
+## 17. SESSION CLAIM — Consumer / Conformance Mapping
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** IMMORTAL-STATE-BOUNDARY-001 → V3 consumer/conformance mapping
+**Objective:** map all live-branch consumers of V3 state and economic functions, identify which transitions require application-shaped state versus universal semantics, and produce the minimum-safe refactor boundary.
+**Files likely affected:** documentation/coordination first; code changes only after consumer map is complete.
+**Current evidence:** branch `ad778912c68274203560f9391ee71a634ac2478f`; live `EconomicStateV3.hs`, `EconomicKernel.hs`, `B1LegacyAdapter.hs`; current Notion Economic Canon / Classification Matrix / Multi-Front Checkpoint.
+**Expected output:** consumer matrix + transition dependency map + explicit evidence for any boundary change.
+**Status:** IN_PROGRESS
+
+
+---
+## 18. Important rule
 
 **The coordination file coordinates work; it does not define IMMORTAL.**
 
