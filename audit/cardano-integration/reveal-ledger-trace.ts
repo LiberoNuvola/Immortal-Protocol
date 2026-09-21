@@ -1,4 +1,5 @@
 /**
+ * Current lab trigger: real Reveal path is intentionally executed on every lab-relevant source change.
  * RF10/RF11 — real Yaci/Cardano Reveal realization trace.
  *
  * Evidence-backed fixture:
