@@ -1,0 +1,8 @@
+{
+  "name": "immortal-p2-8-b1-lucid-evolution-audit",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@lucid-evolution/lucid": "0.6.2"
+  }
+}
