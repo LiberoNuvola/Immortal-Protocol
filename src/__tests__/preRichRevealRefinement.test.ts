@@ -75,7 +75,7 @@ describe('PRE-RICH ticket-level Reveal refinement', () => {
   })
 
   it('rejects a payout above pre-reveal effective pool', () => {
-    expect(() => validateRevealRefinementEvidence({ ...base, prizeAmountSubunits: 8_501n, row2Tier: 5n, prizeTier: 5n }))
+    expect(() => validateRevealRefinementEvidence({ ...base, prizeAmountSubunits: 8_501n, pendingLiabilityAfter: 9_001n, row2Tier: 5n, prizeTier: 5n }))
       .toThrow('reveal payout exceeds pre-reveal effective pool')
   })
 
