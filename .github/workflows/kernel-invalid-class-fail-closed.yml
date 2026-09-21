@@ -52,4 +52,4 @@ jobs:
       - name: Run kernel regression suite
         working-directory: plutus
         run: |
-          cabal test v3-golden-vector-tests economic-admission-tests protected-capital-conformance-tests --enable-tests --test-show-details=direct --with-compiler=ghc
+          cabal test v3-golden-vector-tests economic-admission-tests protected-capital-conformance-tests governance-tests governance-canonical-replay-tests --enable-tests --test-show-details=direct --with-compiler=ghc
