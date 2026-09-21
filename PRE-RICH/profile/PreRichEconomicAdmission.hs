@@ -51,6 +51,18 @@ preRichEconomicAdmission
   -> Bool
   -> Maybe PreRichEconomicAdmission
 preRichEconomicAdmission profile preState action eev truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
+  preRichEconomicAdmissionWithLiquidity
+    profile
+    preState
+    action
+    eev
+    eev
+    (immediateLiquidity action)
+    truthVerified
+    eevFresh
+    obligationsComplete
+    allOmegaSuccessorsInCertifiedKernel
+
   if not (transitionValid profile preState action)
     then Nothing
     else
@@ -67,6 +79,8 @@ preRichEconomicAdmission profile preState action eev truthVerified eevFresh obli
                     , egiEEVFresh = eevFresh
                     , egiObligationsComplete = obligationsComplete
                     , egiEEV = eev
+                    , egiAvailableExecutableLiquidity = eev
+                    , egiRequiredImmediateLiquidity = immediateLiquidity action
                     }
                 safePostState =
                   UniversalKernel.solvencyInvariant
@@ -88,3 +102,48 @@ preRichEconomicAdmission profile preState action eev truthVerified eevFresh obli
                         })
                   else
                     Nothing
+
+{-# INLINABLE immediateLiquidity #-}
+immediateLiquidity :: V3Action -> Integer
+immediateLiquidity (Claim amount) = amount
+immediateLiquidity _ = 0
+
+{-# INLINABLE preRichEconomicAdmissionWithLiquidity #-}
+preRichEconomicAdmissionWithLiquidity
+  :: EconomicProfile
+  -> V3EconomicState
+  -> V3Action
+  -> Integer
+  -> Integer
+  -> Integer
+  -> Bool
+  -> Bool
+  -> Bool
+  -> Bool
+  -> Maybe PreRichEconomicAdmission
+preRichEconomicAdmissionWithLiquidity profile preState action eev availableLiquidity requiredLiquidity truthVerified eevFresh obligationsComplete allOmegaSuccessorsInCertifiedKernel =
+  if not (transitionValid profile preState action)
+    then Nothing
+    else
+      case transition profile preState action of
+        Nothing -> Nothing
+        Just candidateV3 ->
+          case projectPreRichState profile candidateV3 of
+            Nothing -> Nothing
+            Just candidateUniversal ->
+              let
+                gateInput =
+                  EconomicGateInput
+                    { egiAuthoritativeTruthVerified = truthVerified
+                    , egiEEVFresh = eevFresh
+                    , egiObligationsComplete = obligationsComplete
+                    , egiEEV = eev
+                    , egiAvailableExecutableLiquidity = availableLiquidity
+                    , egiRequiredImmediateLiquidity = requiredLiquidity
+                    }
+                safePostState =
+                  UniversalKernel.solvencyInvariant eev candidateUniversal
+              in
+                if executionAdmissible gateInput candidateUniversal safePostState allOmegaSuccessorsInCertifiedKernel
+                  then Just (PreRichEconomicAdmission action candidateV3 candidateUniversal eev)
+                  else Nothing
