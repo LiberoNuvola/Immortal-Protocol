@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test'
-import assert from 'node:assert/strict'
+import { describe, expect, it } from 'vitest'
 import {
   acceptCanonicalTransitionEvidence,
   validateCanonicalTransitionEvidence,
@@ -23,25 +22,16 @@ const valid: CanonicalTransitionEvidence = {
 
 describe('RF10/RF11 — canonical transition evidence binding', () => {
   it('accepts a complete action/pre/post/transaction evidence record', () => {
-    assert.deepEqual(acceptCanonicalTransitionEvidence(valid), {
-      ok: true,
-      evidence: valid,
-    })
+    expect(acceptCanonicalTransitionEvidence(valid)).toEqual({ ok: true, evidence: valid })
   })
 
   it('requires the settlement transaction reference', () => {
-    assert.throws(
-      () => validateCanonicalTransitionEvidence({ ...valid, transactionRef: ' ' }),
-      /transactionRef must be non-empty/,
-    )
+    expect(() => validateCanonicalTransitionEvidence({ ...valid, transactionRef: ' ' })).toThrow('transactionRef must be non-empty')
   })
 
   it('requires both canonical state endpoints and the action fingerprint', () => {
     for (const field of ['preStateFingerprint', 'postStateFingerprint', 'actionFingerprint'] as const) {
-      assert.throws(
-        () => validateCanonicalTransitionEvidence({ ...valid, [field]: '' }),
-        new RegExp(field + ' must be non-empty'),
-      )
+      expect(() => validateCanonicalTransitionEvidence({ ...valid, [field]: '' })).toThrow(field + ' must be non-empty')
     }
   })
 
@@ -52,6 +42,6 @@ describe('RF10/RF11 — canonical transition evidence binding', () => {
       actionFingerprint: '',
       transactionRef: '',
     })
-    assert.equal(result.ok, false)
+    expect(result.ok).toBe(false)
   })
 })
