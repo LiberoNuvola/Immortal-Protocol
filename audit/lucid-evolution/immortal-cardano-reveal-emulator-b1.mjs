@@ -332,7 +332,12 @@ function assetsEqual(a, b) {
 }
 
 function evidence(name, value) {
-  console.log(name, JSON.stringify(value));
+  console.log(
+    name,
+    JSON.stringify(value, (_key, entry) =>
+      typeof entry === "bigint" ? entry.toString() : entry,
+    ),
+  );
 }
 
 function txSize(hexCbor) {
