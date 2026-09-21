@@ -1,7 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module EconomicProfile
-  ( EconomicProfile (..)
+  ( TicketClass
+  , EconomicProfile (..)
   , profilePrice
   , profileClasses
   , profileValid
@@ -9,7 +10,7 @@ module EconomicProfile
 
 import PlutusTx.Prelude
 
-import EconomicStateV3 (TicketClass)
+type TicketClass = Integer
 
 -- | Declarative economic parameters supplied by an application deployment.
 -- IMMORTAL owns the interpretation of these parameters; the application owns
@@ -22,12 +23,12 @@ data EconomicProfile = EconomicProfile
 
 {-# INLINABLE profilePrice #-}
 profilePrice :: EconomicProfile -> TicketClass -> Maybe Integer
-profilePrice p cid = findPrice (epClassPrices p)
+profilePrice p cid = findPrice (epClassPrices p) cid
   where
-    findPrice [] = Nothing
-    findPrice ((k,v):xs)
-      | k == cid = Just v
-      | otherwise = findPrice xs
+    findPrice [] _ = Nothing
+    findPrice ((k,v):xs) x
+      | k == x = Just v
+      | otherwise = findPrice xs x
 
 {-# INLINABLE profileClasses #-}
 profileClasses :: EconomicProfile -> [TicketClass]
