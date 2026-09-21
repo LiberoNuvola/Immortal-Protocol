@@ -33,6 +33,38 @@ jobs:
       - name: Install project dependencies
         run: npm ci
 
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+          cabal-version: '3.12.1.0'
+
+      - name: Install Plutus native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev pkg-config build-essential git
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          /tmp/blst/build.sh
+          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          printf '%s\n' \
+            'prefix=/usr/local' \
+            'exec_prefix=\${prefix}' \
+            'libdir=\${exec_prefix}/lib' \
+            'includedir=\${prefix}/include' \
+            'Name: libblst' \
+            'Description: Multilingual BLS12-381 signature library' \
+            'Version: 0.3.14' \
+            'Cflags: -I\${includedir}' \
+            'Libs: -L\${libdir} -lblst' \
+            | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          sudo ldconfig
+          pkg-config --modversion libblst
       - name: Install isolated lab dependencies
         run: npm install --prefix audit/cardano-integration
 
