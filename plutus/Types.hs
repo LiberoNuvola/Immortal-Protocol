@@ -148,10 +148,17 @@ PlutusTx.unstableMakeIsData ''PrizeDatum
 -- | SyncBeacon: copy R from registry ref input.
 --   Reveal playerSecret
 --   Claim: pay once, keep NFT, status → Claimed (no mandatory burn)
+--   Expire: consume the Pending PrizeDatum at/after pdExpiresAt.
+--     No continuing PrizeDatum is produced; the ticket NFT itself is not
+--     required to be burned and may remain with its holder.
+--
+-- Constructor indices are compatibility API: SyncBeacon=0, Reveal=1,
+-- Claim=2, Expire=3.
 data PrizeAction
   = SyncBeacon
   | Reveal BuiltinByteString
   | Claim
+  | Expire
 
 PlutusTx.unstableMakeIsData ''PrizeAction
 
