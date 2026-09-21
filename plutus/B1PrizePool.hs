@@ -16,7 +16,8 @@ import PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), unless)
 import qualified Economic
 import qualified EconomicKernel
-import B1LegacyAdapter ( legacyB1ToAggregateV3View )
+import qualified UniversalEconomicKernel
+import B1LegacyAdapter ( legacyB1ToUniversalEconomicState )
 import Types
   ( B1PrizePoolDatum (..)
   , B1PrizePoolAction (..)
@@ -43,46 +44,33 @@ import OracleTypes
 {-# INLINABLE effectivePool #-}
 effectivePool :: B1PrizePoolDatum -> Integer
 effectivePool d =
-  EconomicKernel.effectivePool (ppTotalLiquidity d) (legacyB1ToAggregateV3View d)
+  ppTotalLiquidity d
+    - ppPendingLiabilities d
+    - ppUnresolvedReserve d
+    - ppLockedJackpot d
 
 -- | Worst-case payout exposure of all unresolved tickets.
 --
---   Every unresolved ticket can legally resolve to the canonical
---   maximum payout of 500x its economic ticket price.
---
---   Therefore:
---
---     WorstCaseExposure = 500 * unresolvedReserve
---
---   No additional datum field is required because the exposure is
---   deterministically derivable from the already canonical
---   unresolved reserve.
+--   The legacy B1 datum does not encode per-class composition. We therefore
+--   project directly to IMMORTAL's application-neutral aggregate state rather
+--   than inventing a synthetic V3 class. The aggregate unresolved reserve is
+--   already the exact sum of class ticket prices, so the PRE-RICH 500x bound
+--   derives the exact aggregate worst-case exposure.
 {-# INLINABLE worstCaseExposure #-}
 worstCaseExposure :: B1PrizePoolDatum -> Integer
 worstCaseExposure d =
-  EconomicKernel.worstCaseExposure (legacyB1ToAggregateV3View d)
+  uesWorstCaseExposure (legacyB1ToUniversalEconomicState d)
 
 -- | Deterministic worst-case solvency invariant.
 --
---   The PrizePool must be able to cover simultaneously:
---
---     1. crystallized pending liabilities;
---     2. the maximum possible payout of every unresolved ticket;
---     3. locked jackpot capital.
---
---   Hence:
---
---     totalLiquidity >=
---       pendingLiabilities
---       + 500 * unresolvedReserve
---       + lockedJackpot
---
---   This is deliberately stronger than merely requiring
---   effectivePool >= 0.
+--   The legacy B1 accounting unit is passed consistently as the EEV input and
+--   as the universal economic state's monetary fields.
 {-# INLINABLE solvencyInvariant #-}
 solvencyInvariant :: B1PrizePoolDatum -> Bool
 solvencyInvariant d =
-     EconomicKernel.solvencyInvariant (ppTotalLiquidity d) (legacyB1ToAggregateV3View d)
+  UniversalEconomicKernel.solvencyInvariant
+    (ppTotalLiquidity d)
+    (legacyB1ToUniversalEconomicState d)
 
 {-# INLINABLE jackpotActive #-}
 jackpotActive :: B1PrizePoolDatum -> Bool
