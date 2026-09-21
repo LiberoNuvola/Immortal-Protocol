@@ -29,9 +29,10 @@ import Beacon
 
 import GameRules
   ( PrizeTable
+  , classifyRowTier
   , classifyTier
-  , prizeAmountForTier
   , generateSymbols
+  , rowPayoutTotal
   )
 
 import Types
@@ -447,9 +448,19 @@ validateReveal table datum playerSecret ctx =
     expectedSymbols = generateSymbols symbolsSeed
     expectedResult =
       resultBinding (sha2_256 symbolsSeed) expectedSymbols
+    row1 =
+      consByteString (indexByteString expectedSymbols 0)
+        (consByteString (indexByteString expectedSymbols 1)
+          (consByteString (indexByteString expectedSymbols 2) emptyByteString))
+    row2 =
+      consByteString (indexByteString expectedSymbols 3)
+        (consByteString (indexByteString expectedSymbols 4)
+          (consByteString (indexByteString expectedSymbols 5) emptyByteString))
+    row1Tier = classifyRowTier row1
+    row2Tier = classifyRowTier row2
     tier = classifyTier expectedSymbols
     amountUsdm =
-      prizeAmountForTier table tier (pdPriceUsdm datum)
+      rowPayoutTotal table row1Tier row2Tier (pdPriceUsdm datum)
 
     nextOk =
       case findSingleContinuing ctx of
@@ -464,6 +475,8 @@ validateReveal table datum playerSecret ctx =
           && pdStatus n == Revealed
           && pdResult n == expectedResult
           && pdPrizeTier n == tier
+          && pdRow1Tier n == row1Tier
+          && pdRow2Tier n == row2Tier
           && pdPrizeAmount n == amountUsdm
 
     -- B1PrizePool cross-validation: pool accounting must be consistent
