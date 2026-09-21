@@ -1,5 +1,9 @@
 name: PRE-RICH Expiry Refinement Conformance
 
+concurrency:
+  group: -github-workflows-pre-rich-expiry-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
