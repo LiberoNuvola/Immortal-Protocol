@@ -448,7 +448,6 @@ These are implementation/documentation evidence, not a replacement for the norma
 
 If this file ever conflicts with canonical specifications or consolidated normative decisions, the canonical source wins and this register must be corrected.
 
-
 ---
 
 
@@ -597,7 +596,6 @@ and B4/B6 still require preservation/equivalence through the actual Cardano exec
 
 ---
 ## 25. SESSION CLAIM — B5 Economic Admission Bridge
-
 **Session:** autonomous coordination session — 2026-09-21 (follow-on)
 **Front:** B5 — Economic Gate → Viability → Atomic Transition
 **Objective:** add the smallest non-destructive composition layer that evaluates a candidate V3 transition through the existing PRE-RICH projection, Universal Economic Gate and explicit viability certificate, while keeping `transitionValid` structural and keeping economic authority in IMMORTAL.
@@ -747,7 +745,6 @@ No universal expiry number was introduced by this work.
 ---
 
 ## 30. SESSION UPDATE — P2.7 native test harness correction
-
 **Finding:** P2.7 semantic subtests were passing under Vitest's transformed environment, but `tsx --test` failed because the file still imported `describe`/`it` from Vitest.
 
 **Correction:** `src/__tests__/immortal-cardano-adapter-conformance.test.ts` now imports `describe` and `it` from `node:test` and uses `node:assert/strict`. This makes the extended semantic suite a genuine native Node test and removes the mixed-runner ambiguity.
@@ -1295,3 +1292,81 @@ Next session should:
 3. if successful, verify reveal-transition.json contains the real transaction/UTxO/replay evidence;
 4. promote RF10/RF11 only to the level actually demonstrated;
 5. continue B4/B5/B6 without reopening closed economics.
+
+---
+
+## 50. CURRENT SESSION RESULT — Coordination handoff / green-closure re-observation
+
+**Date:** 2026-09-22  
+**Front:** cross-session coordination → B4/B5/B6/C3/C4/C5/C6
+
+This entry is an operational handoff only. No normative economic decision was changed.
+
+### Current branch/head observed
+
+Working branch remains `work/immortal-green-closure`.
+
+Current branch head at coordination write: `a5587ee683afdb8c7bc44f0ee9dae91bfcb3025a`.
+
+### Re-observed CI after the latest cross-session corrections
+
+- **PRE-RICH Action Refinement Conformance:** GREEN on commit `c3358bf3963b4a06e37c75033e51d404b20d42ae`:
+  - 10 test files passed;
+  - 73/73 tests passed;
+  - TypeScript typecheck passed.
+- The final Action Refinement correction was not an economic change:
+  - the reveal-cap positive fixture was given sufficient pre-reveal liquidity;
+  - the RF8 source-boundary test replaced `String.replaceAll` with equivalent `split().join()` to match the configured TypeScript target.
+- **Cardano Adapter Sale Conformance:** GREEN on the current observed head before/around this handoff.
+- **Kernel Invalid-Class Fail-Closed Audit:** running through the Haskell/native dependency setup after the `blst` and `libsecp256k1` infrastructure corrections. No green claim until the actual regression suite completes.
+- **IMMORTAL Cardano Integration Lab:** progressing through the Haskell/native setup toward Yaci/devnet. No green claim until the actual ledger path, resource audit and gates complete.
+
+### Cross-session instruction
+
+The coordination file remains the shared anti-regression register.
+
+Before modifying any overlapping artifact:
+
+1. read the latest coordination snapshot;
+2. verify the current branch head;
+3. verify the current file blob SHA;
+4. classify the change against canonical Notion/specification sources;
+5. make the smallest reversible change;
+6. wait for the corresponding evidence/CI;
+7. append the result here.
+
+Do not overwrite another session's newer work from a stale snapshot.
+
+### Current green-closure priority
+
+Do not create another abstraction layer.
+
+Priority order remains evidence/connectivity:
+
+1. finish Kernel native/Haskell regression evidence;
+2. finish Cardano/Yaci real-ledger evidence;
+3. use the real Reveal trace to populate RF10/RF11 canonical transition evidence;
+4. close the B4/B5/B6 gaps only where the concrete execution path proves them;
+5. then advance C3/C4/C5/C6 using real ledger evidence rather than test-only witnesses.
+
+### Explicit non-regression guardrail
+
+The following remain closed and must not be reopened merely to obtain green CI:
+
+- KA/KC/KD;
+- PRE-RICH ticket ladder;
+- PRE-RICH 500× payout ceiling;
+- Jackpot application ownership and current funding semantics;
+- state-derived DApp/profile expiry horizon;
+- liability-first accounting;
+- ProtectedCapital / RawSurplus semantics;
+- two-row Classic-6 result preservation;
+- RF8 adapter submission boundary.
+
+A failing fixture must be corrected when it contradicts the already-established canonical invariant; an implementation must be changed only when the authoritative semantic evidence requires it.
+
+### Handoff to the other session
+
+The next session may continue directly from this entry. In particular, do not redo the Reveal refinement audit: the suite is already green at 73/73 + typecheck. Focus instead on the still-unproven execution boundary and real-ledger evidence.
+
+**Status:** COORDINATED / ACTION REFINEMENT GREEN / LEDGER + HASKELL EVIDENCE PENDING.
