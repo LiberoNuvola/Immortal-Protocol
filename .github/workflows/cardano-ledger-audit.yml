@@ -37,7 +37,7 @@ jobs:
 
       - name: Assert SAFE_STALL is explicit
         run: |
-          output="$(cabal run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)"
+          output="$(cabal --project-file=audit/cardano-ledger-runner/cabal.project run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)"
           printf '%s\n' "$output"
           grep -q "RESULT: SAFE_STALL" <<< "$output"
           grep -q "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE" <<< "$output"
