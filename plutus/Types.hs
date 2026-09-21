@@ -162,7 +162,9 @@ PlutusTx.unstableMakeIsData ''PrizeAction
 --   pendingLiabilities + unresolvedReserve + lockedJackpot <= totalLiquidity
 --   i.e. effectivePool >= 0
 --
--- JackpotActive is derived: effectivePool >= jackpotThreshold.
+-- Jackpot activation is PRE-RICH application policy. This datum may carry
+-- a state-derived floor/target value for accounting compatibility, but that
+-- scalar is NOT a standalone activation authority.
 --
 -- Accounting unit: ALL monetary fields are in USDM sub-units (1 USDM = 100).
 -- The actual PrizePool UTxO may contain USDM tokens plus ADA required for
@@ -192,7 +194,8 @@ data B1PrizePoolDatum = B1PrizePoolDatum
   -- ^ Liquidity locked for jackpot in USDM sub-units (subtracted only
   --   when separately reserved). Not double-counted with liabilities.
   , ppJackpotThreshold   :: Integer
-  -- ^ Effective pool level (USDM sub-units) above which jackpot is active.
+  -- ^ State-derived PRE-RICH Jackpot floor/target in USDM sub-units.
+  --   This field is not, by itself, an activation authorization.
   , ppSuspendedClasses   :: Integer
   -- ^ Bitmask of suspended ticket classes.
   --   Bit 0 = Genesis (1 USDM), bit 1 = Class 1 (2 USDM), ..., bit 7 = 100 USDM.
