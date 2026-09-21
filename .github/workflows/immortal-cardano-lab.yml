@@ -36,6 +36,26 @@ jobs:
       - name: Install isolated lab dependencies
         run: npm install --prefix audit/cardano-integration
 
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          package_path = Path("node_modules/lucid-cardano/package.json")
+          package = json.loads(package_path.read_text())
+          if not (package_path.parent / "esm" / "mod.js").is_file():
+              raise SystemExit("lucid-cardano ESM entrypoint missing")
+          package["type"] = "module"
+          package["exports"] = {
+              ".": {
+                  "import": "./esm/mod.js",
+                  "types": "./types/mod.d.ts",
+              }
+          }
+          package_path.write_text(json.dumps(package, indent=2) + "\n")
+          print("Normalized lucid-cardano ESM export for CI runtime")
+
       - name: Install pinned Yaci DevKit
         run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
 
@@ -80,10 +100,10 @@ jobs:
         run: node audit/cardano-integration/ledger-smoke.mjs
 
       - name: Execute real economic Reveal transition trace
-        run: node --require tsx/cjs -e "require('./audit/cardano-integration/reveal-ledger-trace.ts')"
+        run: npx tsx audit/cardano-integration/reveal-ledger-trace.ts
 
       - name: Execute real economic Expire transition trace
-        run: node --require tsx/cjs -e "require('./audit/cardano-integration/expire-ledger-trace.ts')"
+        run: npx tsx audit/cardano-integration/expire-ledger-trace.ts
 
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
