@@ -402,7 +402,11 @@ export async function syncBeacon(opts: {
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
   const settlementValue = validateSettlementValue(opts.settlementValue)
   const b1PrizePoolAddress =
-    opts.b1PrizePoolAddress ?? scripts.b1PrizePool.address
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+
+  if (!b1PrizePoolAddress) {
+    throw new Error('B1PrizePool address cannot be resolved')
+  }
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
