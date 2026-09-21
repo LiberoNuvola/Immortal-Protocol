@@ -37,7 +37,8 @@ classExposure :: TicketClassState -> Integer
 classExposure c =
   case classPrice (tcsClassId c) of
     Just p -> p * tcsUnresolved c
-    Nothing -> 0
+    Nothing ->
+      traceError (stringToBuiltinString "EconomicKernel: unknown ticket class")
 
 {-# INLINABLE totalClassExposure #-}
 totalClassExposure :: [TicketClassState] -> Integer
