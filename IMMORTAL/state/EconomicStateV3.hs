@@ -14,25 +14,20 @@ module EconomicStateV3
   ) where
 
 import PlutusTx.Prelude
-
-type TicketClass = Integer
+import EconomicProfile
+  ( TicketClass
+  , EconomicProfile
+  , profileClasses
+  , profilePrice
+  )
 
 {-# INLINABLE canonicalClasses #-}
-canonicalClasses :: [TicketClass]
-canonicalClasses = [0,1,2,3,4,5,6,7]
+canonicalClasses :: EconomicProfile -> [TicketClass]
+canonicalClasses = profileClasses
 
 {-# INLINABLE classPrice #-}
-classPrice :: TicketClass -> Maybe Integer
-classPrice c
-  | c == 0 = Just 1
-  | c == 1 = Just 2
-  | c == 2 = Just 3
-  | c == 3 = Just 5
-  | c == 4 = Just 10
-  | c == 5 = Just 25
-  | c == 6 = Just 50
-  | c == 7 = Just 100
-  | otherwise = Nothing
+classPrice :: EconomicProfile -> TicketClass -> Maybe Integer
+classPrice = profilePrice
 
 data TicketClassState = TicketClassState
   { tcsClassId :: TicketClass
