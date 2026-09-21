@@ -16,7 +16,15 @@ Liveness infrastructure and evidence producers are subordinate execution/evidenc
 
 Defines state semantics, economic invariants, admissible transitions, authority boundaries, deterministic derivations, expiry and conformance.
 
-It does not require a particular ledger.
+IMMORTAL is not a blockchain-specific protocol. It does not require a particular
+ledger or a particular class of execution infrastructure. Its economic and
+constitutional principles are defined independently of the environment in which
+they are realized.
+
+A blockchain is therefore one possible realization environment, not the purpose
+or prerequisite of IMMORTAL. Other execution environments may be supported when
+their adapter can preserve the applicable IMMORTAL semantics and authority
+boundaries.
 
 ## 3. Implementation
 
@@ -46,4 +54,23 @@ The evidence producer is not the verifier merely because it generated the eviden
 
 ## 8. Portability
 
-An adapter should map its environment to canonical state, verified evidence, obligations, executable liquidity, admissible transitions and atomic commitment without importing application semantics into the protocol core.
+An adapter should map its environment to canonical state, verified evidence, obligations,
+executable liquidity, admissible transitions and atomic commitment without importing
+application semantics into the protocol core.
+
+Multiple adapters are therefore possible: Cardano is one realization environment,
+not the definition of IMMORTAL. A new adapter is conforming only to the extent that
+the concrete environment can realize the required IMMORTAL semantics without
+silently weakening, replacing or adding economic authority.
+
+The portability condition is:
+
+```text
+IMMORTAL principles / economic semantics
+                ↓
+        adapter translation
+                ↓
+     concrete environment
+                ↓
+same semantics preserved
+```
