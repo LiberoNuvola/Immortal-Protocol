@@ -304,6 +304,8 @@ identityFieldsEq a b =
   && pdPrizePoolHash a == pdPrizePoolHash b
   && pdIssuedAt a == pdIssuedAt b
   && pdExpiresAt a == pdExpiresAt b
+  && pdRow1Tier a == pdRow1Tier b
+  && pdRow2Tier a == pdRow2Tier b
 
 -- ============================================================
 -- Registry reference
