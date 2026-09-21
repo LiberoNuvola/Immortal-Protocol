@@ -1,0 +1,18 @@
+cabal-version: 3.0
+name: cardano-ledger-runner
+version: 0.1.0.0
+build-type: Simple
+
+executable cardano-ledger-runner
+  hs-source-dirs: .
+  main-is: Main.hs
+  build-depends:
+      base >=4.18 && <5
+    , bytestring
+    , text
+    , cardano-ledger-alonzo ==1.16.0.0
+    , cardano-ledger-core ==1.21.0.0
+    , plutus-core ==1.67.0.0
+    , plutus-ledger-api ==1.67.0.0
+  default-language: Haskell2010
+  ghc-options: -Wall
