@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  validateEconomicStateV3,
-  type EconomicStateV3,
+  validateCanonicalEconomicState,
+  type CanonicalEconomicState,
 } from '../../Adapter/CARDANO/serialization/CanonicalEconomicState'
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
+const PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER = 500n
 
 type B1PoolObservation = {
   totalLiquidity: bigint
@@ -20,7 +21,6 @@ type B1PoolObservation = {
 type TicketObservation = {
   classId: bigint
   priceUsdm: bigint
-  issued: bigint
   unresolved: bigint
 }
 
@@ -35,93 +35,81 @@ function classFromUsdmPrice(priceUsdm: bigint): bigint {
   const price = referencePriceFromUsdm(priceUsdm)
   const prices = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n]
   const classId = prices.indexOf(price)
-  if (classId < 0) throw new Error(`price ${price} is not a canonical IMMORTAL class`)
+  if (classId < 0) throw new Error(`price ${price} is not a canonical PRE-RICH class`)
   return BigInt(classId)
 }
 
-function projectObservedB1ToV3(
+/**
+ * PRE-RICH performs the application-specific projection before the generic
+ * Cardano Adapter boundary. The Adapter receives only the canonical aggregate.
+ */
+function projectObservedB1ToCanonical(
   pool: B1PoolObservation,
   tickets: TicketObservation[],
-): EconomicStateV3 {
-  const classes = tickets.map((ticket) => {
+): CanonicalEconomicState {
+  let ticketReserve = 0n
+  let worstCaseExposure = 0n
+  let unresolved = 0n
+
+  for (const ticket of tickets) {
     const classId = classFromUsdmPrice(ticket.priceUsdm)
     if (classId !== ticket.classId) {
       throw new Error(`ticket class/price mismatch for class ${ticket.classId}`)
     }
 
     const price = referencePriceFromUsdm(ticket.priceUsdm)
+    ticketReserve += price * ticket.unresolved
+    unresolved += ticket.unresolved
+    worstCaseExposure +=
+      PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER * price * ticket.unresolved
+  }
 
-    return {
-      classId,
-      issued: ticket.issued,
-      unresolved: ticket.unresolved,
-      exposure: price * ticket.unresolved,
-      cap: 0n,
-      saleable: true,
-    }
-  })
+  if (ticketReserve !== pool.unresolvedReserve / USDM_SUBUNITS_PER_REFERENCE_UNIT) {
+    throw new Error('unresolvedReserve does not equal ticket decomposition')
+  }
+  if (unresolved !== pool.unresolvedTicketCount) {
+    throw new Error('unresolvedTicketCount does not equal ticket decomposition')
+  }
 
-  const state: EconomicStateV3 = {
+  const state: CanonicalEconomicState = {
     crystallizedLiabilities:
       pool.pendingLiabilities / USDM_SUBUNITS_PER_REFERENCE_UNIT,
     unresolvedReserve:
       pool.unresolvedReserve / USDM_SUBUNITS_PER_REFERENCE_UNIT,
     unresolvedTicketCount: pool.unresolvedTicketCount,
+    worstCaseExposure,
     safetyCapital: 0n,
     reserveProtection: 0n,
     mandatoryFutureCosts: 0n,
-    classes,
-    control: {
-      currentActiveClass: 0n,
-      highestClassEverActivated: 0n,
-    },
-    jackpot: {
-      lockedAmount:
-        pool.lockedJackpot / USDM_SUBUNITS_PER_REFERENCE_UNIT,
-      threshold:
-        pool.jackpotThreshold / USDM_SUBUNITS_PER_REFERENCE_UNIT,
-      status: pool.lockedJackpot > 0n ? 'locked' : 'inactive',
-      cycle: 0n,
-    },
+    additionalProtectedCapital:
+      pool.lockedJackpot / USDM_SUBUNITS_PER_REFERENCE_UNIT,
   }
 
-  validateEconomicStateV3(state)
+  validateCanonicalEconomicState(state)
   return state
 }
 
 function applyImmortalReveal(
-  pre: EconomicStateV3,
-  classId: bigint,
+  pre: CanonicalEconomicState,
+  ticketPriceReferenceUnits: bigint,
   payoutReferenceUnits: bigint,
-): EconomicStateV3 {
-  const classes = pre.classes.map((c) => {
-    if (c.classId !== classId) return c
-    if (c.unresolved <= 0n) throw new Error('reveal requires an unresolved ticket')
-    const price = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n][Number(classId)]
-    return {
-      ...c,
-      unresolved: c.unresolved - 1n,
-      exposure: price * (c.unresolved - 1n),
-    }
-  })
-
-  if (!classes.some((c) => c.classId === classId)) {
-    throw new Error('reveal class not present')
-  }
-
+): CanonicalEconomicState {
+  if (pre.unresolvedTicketCount <= 0n) throw new Error('reveal requires an unresolved ticket')
   return {
     ...pre,
     crystallizedLiabilities:
       pre.crystallizedLiabilities + payoutReferenceUnits,
     unresolvedReserve:
-      pre.unresolvedReserve - [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n][Number(classId)],
+      pre.unresolvedReserve - ticketPriceReferenceUnits,
     unresolvedTicketCount: pre.unresolvedTicketCount - 1n,
-    classes,
+    worstCaseExposure:
+      pre.worstCaseExposure -
+      PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER * ticketPriceReferenceUnits,
   }
 }
 
 describe('IMMORTAL / PRE-RICH Reveal conformance', () => {
-  it('maps a concrete B1 Reveal observation to the canonical V3 post-state', () => {
+  it('maps a concrete B1 Reveal observation to the canonical economic post-state', () => {
     const prePool: B1PoolObservation = {
       totalLiquidity: 100_000n,
       pendingLiabilities: 500n,
@@ -133,13 +121,13 @@ describe('IMMORTAL / PRE-RICH Reveal conformance', () => {
     }
 
     const preTickets: TicketObservation[] = [
-      { classId: 0n, priceUsdm: 100n, issued: 1n, unresolved: 1n },
-      { classId: 1n, priceUsdm: 200n, issued: 1n, unresolved: 1n },
-      { classId: 2n, priceUsdm: 300n, issued: 1n, unresolved: 1n },
+      { classId: 0n, priceUsdm: 100n, unresolved: 1n },
+      { classId: 1n, priceUsdm: 200n, unresolved: 1n },
+      { classId: 2n, priceUsdm: 300n, unresolved: 1n },
     ]
 
-    const pre = projectObservedB1ToV3(prePool, preTickets)
-    const expected = applyImmortalReveal(pre, 1n, 10n)
+    const pre = projectObservedB1ToCanonical(prePool, preTickets)
+    const expected = applyImmortalReveal(pre, 2n, 10n)
 
     const postPool: B1PoolObservation = {
       ...prePool,
@@ -149,41 +137,39 @@ describe('IMMORTAL / PRE-RICH Reveal conformance', () => {
     }
 
     const postTickets: TicketObservation[] = [
-      { classId: 0n, priceUsdm: 100n, issued: 1n, unresolved: 1n },
-      { classId: 1n, priceUsdm: 200n, issued: 1n, unresolved: 0n },
-      { classId: 2n, priceUsdm: 300n, issued: 1n, unresolved: 1n },
+      { classId: 0n, priceUsdm: 100n, unresolved: 1n },
+      { classId: 1n, priceUsdm: 200n, unresolved: 0n },
+      { classId: 2n, priceUsdm: 300n, unresolved: 1n },
     ]
 
-    const observed = projectObservedB1ToV3(postPool, postTickets)
-
+    const observed = projectObservedB1ToCanonical(postPool, postTickets)
     expect(observed).toEqual(expected)
-    validateEconomicStateV3(observed)
+    validateCanonicalEconomicState(observed)
   })
 
-  it('rejects a pool observation whose aggregate reserve disagrees with ticket composition', () => {
-    const pool: B1PoolObservation = {
-      totalLiquidity: 100_000n,
-      pendingLiabilities: 0n,
-      unresolvedReserve: 250n,
-      unresolvedTicketCount: 2n,
-      lockedJackpot: 0n,
-      jackpotThreshold: 10_000n,
-      suspendedClasses: 0n,
-    }
-
-    const tickets: TicketObservation[] = [
-      { classId: 0n, priceUsdm: 100n, issued: 1n, unresolved: 1n },
-      { classId: 1n, priceUsdm: 200n, issued: 1n, unresolved: 1n },
-    ]
-
-    expect(() => projectObservedB1ToV3(pool, tickets)).toThrow(
-      'unresolvedReserve does not equal class decomposition',
-    )
-  })
-
-  it('rejects a non-canonical USDM price at the adapter boundary', () => {
+  it('rejects an aggregate reserve that disagrees with application-level ticket composition', () => {
     expect(() =>
-      projectObservedB1ToV3(
+      projectObservedB1ToCanonical(
+        {
+          totalLiquidity: 100_000n,
+          pendingLiabilities: 0n,
+          unresolvedReserve: 250n,
+          unresolvedTicketCount: 2n,
+          lockedJackpot: 0n,
+          jackpotThreshold: 10_000n,
+          suspendedClasses: 0n,
+        },
+        [
+          { classId: 0n, priceUsdm: 100n, unresolved: 1n },
+          { classId: 1n, priceUsdm: 200n, unresolved: 1n },
+        ],
+      ),
+    ).toThrow('unresolvedReserve does not equal ticket decomposition')
+  })
+
+  it('keeps non-canonical application price rejection above the generic Adapter boundary', () => {
+    expect(() =>
+      projectObservedB1ToCanonical(
         {
           totalLiquidity: 100_000n,
           pendingLiabilities: 0n,
@@ -196,5 +182,20 @@ describe('IMMORTAL / PRE-RICH Reveal conformance', () => {
         [{ classId: 0n, priceUsdm: 150n, unresolved: 1n }],
       ),
     ).toThrow('non-canonical USDM price')
+  })
+
+  it('accepts an application-independent canonical state without class or Jackpot fields', () => {
+    const state: CanonicalEconomicState = {
+      crystallizedLiabilities: 10n,
+      unresolvedReserve: 4n,
+      unresolvedTicketCount: 2n,
+      worstCaseExposure: 40n,
+      safetyCapital: 3n,
+      reserveProtection: 2n,
+      mandatoryFutureCosts: 1n,
+      additionalProtectedCapital: 5n,
+    }
+
+    expect(() => validateCanonicalEconomicState(state)).not.toThrow()
   })
 })
