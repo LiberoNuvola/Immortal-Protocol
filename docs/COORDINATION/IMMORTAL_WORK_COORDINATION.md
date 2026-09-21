@@ -997,3 +997,28 @@ Tests explicitly demonstrate a valid Reveal with pre-state EEV 500 and candidate
 RF8 now has a source-level regression preventing direct `signTx/submitTx` calls in `src/` outside the single approved submission helper. `ticket3d.ts` escapes all canonical data before DOM insertion and has dedicated security tests.
 
 **Status:** BOUNDED IMPLEMENTATION EVIDENCE GREEN
+
+---
+## 45. CURRENT SESSION RESULT — B6 Reveal payout binding
+
+**Date:** 2026-09-21
+**Front:** B6 — V3 ↔ Cardano Reveal ticket-level refinement
+
+The Reveal refinement gap identified during cross-session audit is now closed at the witness boundary without changing economic policy.
+
+Canonical sources triangulated:
+- `src/gameRules.ts` computes ticket payout as the sum of both row payouts, capped at `500 × P`.
+- `plutus/GameRules.hs` independently implements the same `rowPayoutTotal` rule.
+- `plutus/PrizeValidator.hs` derives `row1Tier`, `row2Tier`, computes `amountUsdm = rowPayoutTotal ...`, and requires the continuing PrizeDatum payout to equal that amount.
+- Classic-6 reconciliation in this register already records the same ticket-level rule.
+
+Change:
+- `PRE-RICH/profile/PreRichRevealRefinement.ts` now carries `row1PayoutSubunits` and `row2PayoutSubunits` and requires `prizeAmountSubunits = min(row1Payout + row2Payout, 500 × price)`.
+- `src/__tests__/preRichRevealRefinement.test.ts` now covers sum binding and exact cap behavior.
+
+Important boundary:
+- `prizeTier = max(row1Tier,row2Tier)` remains a summary/classification field; it is no longer implicitly treated as the payout calculation.
+- No change was made to IMMORTAL economics, EconomicStateV3, EffectivePool, Jackpot semantics, or the 500× rule.
+
+**Commit:** `0e03526297b1e3f8fbf4c7135c85cd7b2b732b77`
+**Status:** REFINEMENT LOGIC CORRECTED / CI EVIDENCE PENDING
