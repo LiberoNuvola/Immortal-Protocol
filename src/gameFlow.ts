@@ -696,16 +696,6 @@ export async function claimPrize(opts: {
   if (!b1PrizePoolAddress) {
     throw new Error('B1PrizePool address cannot be resolved')
   }
-  const settlementValue = opts.settlementQuote
-    ? (() => {
-        assertSettlementQuoteMatchesPrize(
-          opts.settlementQuote,
-          BigInt(prizeAmount ?? 0),
-        )
-        return opts.settlementQuote.assetMap
-      })()
-    : validateSettlementValue(opts.settlementValue)
-
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     opts.prizeAddress,
@@ -742,6 +732,16 @@ export async function claimPrize(opts: {
       'Claim window closed. Historical reveal OK; economic claim no.',
     )
   }
+
+  const settlementValue = opts.settlementQuote
+    ? (() => {
+        assertSettlementQuoteMatchesPrize(
+          opts.settlementQuote,
+          BigInt(prizeAmount),
+        )
+        return opts.settlementQuote.assetMap
+      })()
+    : validateSettlementValue(opts.settlementValue)
 
   const buyer = await lucid.wallet.address()
 
