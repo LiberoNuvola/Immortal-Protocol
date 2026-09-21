@@ -24,7 +24,7 @@ describe('RF8 application submission boundary', () => {
       const rel = relative(ROOT, file)
       const source = readFileSync(file, 'utf8')
       if (/\.signTx\s*\(/.test(source) || /\.submitTx\s*\(/.test(source)) {
-        const allowed = ALLOWED_SUBMIT_BOUNDARY.has(rel.replaceAll('\\', '/'))
+        const allowed = ALLOWED_SUBMIT_BOUNDARY.has(rel.split('\\').join('/'))
         if (!allowed) violations.push(rel)
       }
     }
