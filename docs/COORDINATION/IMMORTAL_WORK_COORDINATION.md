@@ -1398,3 +1398,15 @@ No economic logic changed.
 **Status:** implementation corrected; current-head CI/evidence pending.
 
 **Handoff:** observe the Cardano Integration Lab triggered by this change before any further modification.
+
+
+### 2026-09-22 — RF10/RF11 implementation correction
+
+The real Reveal trace was additionally corrected to use the repository's existing CardanoExecutionAdapter for the first economically material submission. The Lucid 0.10 constructor was corrected to Lucid.new.
+
+Latest trace commit:
+- 77c753753f4cabe3c4471a22cef8180ec18e33a4 — Adapter-bound submission
+- 305a77fd9716819bba3a7c5e4d0ba5d29cb9e1fe — Lucid 0.10 constructor correction
+
+Current Cardano Integration Lab run: 35662771118 — PENDING.
+No RF10/RF11 green claim is made until this run executes the trace and produces the expected evidence artifact.
