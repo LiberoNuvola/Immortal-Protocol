@@ -24,4 +24,4 @@ jobs:
       - name: Run kernel regression suite
         working-directory: plutus
         run: |
-          cabal test economic-kernel-fail-closed-tests --enable-tests --test-show-details=direct
+          cabal test v3-golden-vector-tests --enable-tests --test-show-details=direct
