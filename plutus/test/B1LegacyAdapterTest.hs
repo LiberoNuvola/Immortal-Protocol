@@ -18,6 +18,7 @@ import PlutusTx.Prelude (BuiltinByteString, emptyByteString)
 import B1LegacyAdapter
 import EconomicStateV3
 import Types
+import qualified UniversalEconomicState
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -99,6 +100,25 @@ main = do
       putStrLn "PASS: historical control loss fails closed in legacy projection"
     _ ->
       error "FAIL: historical control was silently projected"
+
+  let universalAggregate =
+        legacyB1ToUniversalEconomicState
+          (B1PrizePoolDatum 1000 7 4 2 9 10 0 dummyHash)
+  assert
+    (UniversalEconomicState.uesCrystallizedLiabilities universalAggregate == 7)
+    "legacy B1 liabilities map directly to universal aggregate"
+  assert
+    (UniversalEconomicState.uesUnresolvedReserve universalAggregate == 4)
+    "legacy B1 unresolved reserve maps directly to universal aggregate"
+  assert
+    (UniversalEconomicState.uesUnresolvedTicketCount universalAggregate == 2)
+    "legacy B1 unresolved count maps directly to universal aggregate"
+  assert
+    (UniversalEconomicState.uesWorstCaseExposure universalAggregate == 2000)
+    "legacy B1 derives exact PRE-RICH 500x aggregate exposure"
+  assert
+    (UniversalEconomicState.uesAdditionalProtectedCapital universalAggregate == 9)
+    "legacy B1 locked Jackpot maps to additional protected capital"
 
   case legacyB1ToV3
     (B1PrizePoolDatum 100 0 0 0 0 10 0 dummyHash) of
