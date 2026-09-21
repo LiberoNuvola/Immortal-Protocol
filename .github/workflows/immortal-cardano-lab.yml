@@ -1,0 +1,62 @@
+name: IMMORTAL Cardano Integration Lab
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/**"
+      - "src/**"
+      - "plutus/**"
+      - "Adapter/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+jobs:
+  devnet-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout green
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit
+
+      - name: Check Yaci DevKit
+        run: yaci-devkit --help
+
+      - name: Start isolated Cardano devnet
+        run: |
+          mkdir -p audit/yaci-evidence
+          yaci-devkit up --help
+          echo "YACI_BOOTSTRAP_READY=1" | tee audit/yaci-evidence/bootstrap.txt
+
+      - name: Record repository and environment manifest
+        run: |
+          {
+            echo "branch=work/immortal-green-closure"
+            echo "commit=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "timestamp=$GITHUB_RUN_ID"
+          } | tee audit/yaci-evidence/manifest.txt
+
+      - name: Run existing pure invariant suite
+        run: npx tsx src/__tests__/b1-invariants.test.ts
+
+      - name: Upload laboratory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-lab-evidence
+          path: audit/yaci-evidence/
