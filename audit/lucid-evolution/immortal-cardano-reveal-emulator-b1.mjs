@@ -253,6 +253,8 @@ function prizeAmountForTier(tier) {
   return Math.floor((bases[tier] * priceUsdm) / 2);
 }
 
+const EARLY_FAIL = process.env.P2_8_DIAG_EARLY_FAIL === "1";
+
 function prizeDatum({
   playerCommitmentValue,
   ticketCommitmentValue,
@@ -458,7 +460,10 @@ async function main() {
     ticketCommitmentValue,
     beacon,
     prizePoolHash: poolHash,
+    status: EARLY_FAIL ? 1 : 0,
   });
+
+  evidence("EARLY_FAIL_MODE", EARLY_FAIL);
 
   const postPrize = prizeDatum({
     playerCommitmentValue,
