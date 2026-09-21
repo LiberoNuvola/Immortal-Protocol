@@ -75,3 +75,48 @@ test('proof kind mismatch fails closed', () => {
     /finalityProof\.kind/,
   )
 })
+
+
+test('mutation of any canonical tuple field invalidates the anchor', () => {
+  const packet = makePacket()
+  const tuples = [
+    { ...packet, chainId: 'other-chain' },
+    { ...packet, genesisHash: '11'.repeat(32) },
+    { ...packet, blockHash: '22'.repeat(32) },
+    { ...packet, blockNumber: 1235n },
+    { ...packet, stateRoot: '33'.repeat(32) },
+    { ...packet, storageKey: '0x02bb' },
+    { ...packet, authorityCommitment: '44'.repeat(32) },
+  ]
+  for (const candidate of tuples) {
+    assert.notEqual(
+      packet.anchorKey,
+      canonicalAnchorKey({
+        schemaVersion: candidate.schemaVersion,
+        chainId: candidate.chainId,
+        genesisHash: candidate.genesisHash,
+        blockHash: candidate.blockHash,
+        blockNumber: candidate.blockNumber,
+        stateRoot: candidate.stateRoot,
+        storageKey: candidate.storageKey,
+        authorityCommitment: candidate.authorityCommitment,
+      }),
+    )
+  }
+})
+
+test('unsupported schema and malformed hashes fail closed', () => {
+  const packet = makePacket()
+  assert.throws(
+    () => validateCanonicalEvidencePacket({ ...packet, schemaVersion: 'immortal-anchor-v2' as 'immortal-anchor-v1' }),
+    /unsupported anchor schema/,
+  )
+  assert.throws(
+    () => validateCanonicalEvidencePacket({ ...packet, stateRoot: 'aa' }),
+    /stateRoot must be 32-byte hex/,
+  )
+  assert.throws(
+    () => validateCanonicalEvidencePacket({ ...packet, blockNumber: -1n }),
+    /blockNumber must be non-negative/,
+  )
+})
