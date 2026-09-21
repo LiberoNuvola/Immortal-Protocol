@@ -1000,7 +1000,6 @@ export async function expirePrize(opts: {
   if (!poolDatum) throw new Error('B1PrizePool datum not decodable')
 
   const poolFields = [...poolDatum.fields]
-  const pendingCount = b1ppInt(poolDatum, 2)
   const unresolvedReserve = b1ppInt(poolDatum, 2)
   // B1 field layout:
   //   0 totalLiquidity
@@ -1082,5 +1081,6 @@ export default {
   syncBeacon,
   revealPrize,
   claimPrize,
+  expirePrize,
   validatePlayerSecretHex,
 }
