@@ -53,7 +53,7 @@ function validateEconomicStateV3(state: EconomicStateV3): void {
   if (aggregateValues.some((value) => value < 0n)) {
     throw new Error('V3 state contains a negative economic value')
   }
-  if (state.classes.length !== IMMORTAL_CANONICAL_PRICES.length) {
+  if (state.classes.length !== PRE_RICH_CANONICAL_PRICES.length) {
     throw new Error('V3 state must contain exactly 8 canonical ticket classes')
   }
   state.classes.forEach((entry, index) => {
@@ -63,7 +63,7 @@ function validateEconomicStateV3(state: EconomicStateV3): void {
     if (entry.issued < 0n || entry.unresolved < 0n || entry.exposure < 0n || entry.cap < 0n) {
       throw new Error('V3 class state contains a negative value')
     }
-    if (entry.exposure !== IMMORTAL_CANONICAL_PRICES[index] * entry.unresolved) {
+    if (entry.exposure !== PRE_RICH_CANONICAL_PRICES[index] * entry.unresolved) {
       throw new Error('V3 class exposure does not match the canonical price')
     }
     if (entry.unresolved > entry.issued) {
@@ -72,7 +72,8 @@ function validateEconomicStateV3(state: EconomicStateV3): void {
   })
 }
 export const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
-export const IMMORTAL_CANONICAL_PRICES = [
+export const PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER = 500n
+export const PRE_RICH_CANONICAL_PRICES = [
   1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n,
 ] as const
 
@@ -119,7 +120,7 @@ function referenceUnitFromUsdm(priceUsdm: bigint): bigint {
   }
 
   const referencePrice = priceUsdm / USDM_SUBUNITS_PER_REFERENCE_UNIT
-  if (!IMMORTAL_CANONICAL_PRICES.includes(referencePrice as never)) {
+  if (!PRE_RICH_CANONICAL_PRICES.includes(referencePrice as never)) {
     throw new Error(
       `non-canonical IMMORTAL reference price: ${referencePrice}`,
     )
@@ -129,7 +130,7 @@ function referenceUnitFromUsdm(priceUsdm: bigint): bigint {
 }
 
 function classIdFromReferencePrice(referencePrice: bigint): bigint {
-  const index = IMMORTAL_CANONICAL_PRICES.findIndex(
+  const index = PRE_RICH_CANONICAL_PRICES.findIndex(
     (p) => p === referencePrice,
   )
   if (index < 0) {
@@ -142,7 +143,7 @@ function projectClasses(
   tickets: ObservedUnresolvedTicket[],
   authoritativeClasses: AuthoritativeClassState[],
 ) {
-  if (authoritativeClasses.length !== IMMORTAL_CANONICAL_PRICES.length) {
+  if (authoritativeClasses.length !== PRE_RICH_CANONICAL_PRICES.length) {
     throw new Error('authoritative class state must contain exactly 8 canonical ticket classes')
   }
 
@@ -150,7 +151,7 @@ function projectClasses(
   for (const authoritative of authoritativeClasses) {
     if (
       authoritative.classId < 0n ||
-      authoritative.classId >= BigInt(IMMORTAL_CANONICAL_PRICES.length) ||
+      authoritative.classId >= BigInt(PRE_RICH_CANONICAL_PRICES.length) ||
       authoritativeIds.has(authoritative.classId)
     ) {
       throw new Error('missing or ambiguous authoritative class state')
@@ -189,7 +190,7 @@ function projectClasses(
       }
 
       if (value.exposure !== value.unresolved * (
-        IMMORTAL_CANONICAL_PRICES[Number(authoritative.classId)] ?? -1n
+        PRE_RICH_CANONICAL_PRICES[Number(authoritative.classId)] ?? -1n
       )) {
         throw new Error(
           `class exposure mismatch for class ${authoritative.classId}`,
@@ -207,7 +208,7 @@ function projectClasses(
     })
     .sort((a, b) => Number(a.classId - b.classId))
 
-  if (classes.length !== IMMORTAL_CANONICAL_PRICES.length) {
+  if (classes.length !== PRE_RICH_CANONICAL_PRICES.length) {
     throw new Error('authoritative class state must cover all canonical classes')
   }
   for (let index = 0; index < classes.length; index += 1) {
@@ -307,9 +308,9 @@ export function expectedRevealPostState(
     throw new Error(`class ${classId} has no unresolved ticket`)
   }
 
-  const price = IMMORTAL_CANONICAL_PRICES[Number(classId)]
+  const price = PRE_RICH_CANONICAL_PRICES[Number(classId)]
   if (price === undefined) throw new Error(`unknown reveal class ${classId}`)
-  if (payout < 0n || payout > 500n * price) {
+  if (payout < 0n || payout > PRE_RICH_MAX_NORMAL_PAYOUT_MULTIPLIER * price) {
     throw new Error(`invalid payout for class ${classId}`)
   }
 
