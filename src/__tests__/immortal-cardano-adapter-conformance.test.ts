@@ -19,14 +19,14 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  IMMORTAL_CANONICAL_PRICES,
+  PRE_RICH_CANONICAL_PRICES,
   USDM_SUBUNITS_PER_REFERENCE_UNIT,
   expectedRevealPostState,
   projectCardanoToImmortalV3,
   type AuthoritativeClassState,
   type ObservedB1Pool,
   type ObservedUnresolvedTicket,
-} from '../../Adapter/CARDANO/observation/ImmortalP25ObservationProjection'
+} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
 
 type Fixture = {
   pool: ObservedB1Pool
@@ -39,12 +39,12 @@ type Fixture = {
   highestClassEverActivated: bigint
 }
 
-const pricesUsdm = IMMORTAL_CANONICAL_PRICES.map(
+const pricesUsdm = PRE_RICH_CANONICAL_PRICES.map(
   (price) => price * USDM_SUBUNITS_PER_REFERENCE_UNIT,
 )
 
 function allClasses(issued = 1n): AuthoritativeClassState[] {
-  return IMMORTAL_CANONICAL_PRICES.map((_, i) => ({
+  return PRE_RICH_CANONICAL_PRICES.map((_, i) => ({
     classId: BigInt(i),
     issued,
     cap: 10n,
@@ -115,7 +115,7 @@ describe('P2.7 — Cardano Adapter extended conformance', () => {
       const cls = state.classes[i]
       assert.equal(cls.classId, BigInt(i))
       assert.equal(cls.unresolved, 1n)
-      assert.equal(cls.exposure, IMMORTAL_CANONICAL_PRICES[i])
+      assert.equal(cls.exposure, PRE_RICH_CANONICAL_PRICES[i])
       assert.equal(cls.issued, 1n)
     }
   })
