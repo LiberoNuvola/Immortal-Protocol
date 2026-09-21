@@ -97,13 +97,6 @@ legacyB1ToUniversalEconomicState d =
     0
     0
     (ppLockedJackpot d)
-  where
-    preRichLegacyProfile =
-      EconomicProfile
-        { epVersion = 1
-        , epClassPrices = [(0, 1)]
-        , epMaxNormalPayoutMultiplier = 500
-        }
 
 {-# INLINABLE v3ToLegacyB1 #-}
 v3ToLegacyB1
