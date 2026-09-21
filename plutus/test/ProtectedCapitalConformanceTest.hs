@@ -18,7 +18,9 @@ import EconomicStateV3
 import EconomicTransitionV3
 import qualified EconomicKernel
 import PreRichEconomicProfile
+import PreRichEconomicProjection
 import ProtectedCapitalConformance
+import qualified UniversalEconomicState
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -105,5 +107,44 @@ main = do
   assert
     (not (protectedCapitalPartitionExact 7 500 11 13 17 19 566))
     "ProtectedCapital partition rejects arithmetic omission"
+
+  let protectedProjectionState =
+        V3EconomicState
+          100 1 1 11 13 17
+          [TicketClassState 0 1 1 1 10 True]
+          (EconomicControlState 0 0)
+          (JackpotState 19 98 JackpotLocked 1)
+
+  case projectPreRichState profile protectedProjectionState of
+    Nothing ->
+      error "FAIL: non-zero protected V3 projection rejected"
+    Just u -> do
+      assert
+        (UniversalEconomicState.uesCrystallizedLiabilities u == 100)
+        "projection preserves crystallised liabilities"
+      assert
+        (UniversalEconomicState.uesUnresolvedReserve u == 1)
+        "projection preserves unresolved reserve"
+      assert
+        (UniversalEconomicState.uesUnresolvedTicketCount u == 1)
+        "projection preserves unresolved count"
+      assert
+        (UniversalEconomicState.uesWorstCaseExposure u == 500)
+        "projection preserves derived worst-case exposure"
+      assert
+        (UniversalEconomicState.uesSafetyCapital u == 11)
+        "projection preserves SafetyCapital"
+      assert
+        (UniversalEconomicState.uesReserveProtection u == 13)
+        "projection preserves ReserveProtection"
+      assert
+        (UniversalEconomicState.uesMandatoryFutureCosts u == 17)
+        "projection preserves MandatoryFutureCosts"
+      assert
+        (UniversalEconomicState.uesAdditionalProtectedCapital u == 19)
+        "projection preserves locked Jackpot protection"
+      assert
+        (projectionBoundaryEquivalent profile 1000 protectedProjectionState)
+        "non-zero protected components preserve V3/universal boundary equivalence"
 
   putStrLn "ALL PROTECTED CAPITAL CONFORMANCE TESTS PASSED"
