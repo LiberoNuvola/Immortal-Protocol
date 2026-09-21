@@ -50,6 +50,7 @@ preRichEconomicAdmission
   -> Integer
   -> Integer
   -> Integer
+  -> Integer
   -> Bool
   -> Bool
   -> Bool
