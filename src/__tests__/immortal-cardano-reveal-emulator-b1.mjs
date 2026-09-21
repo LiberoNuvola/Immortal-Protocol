@@ -497,6 +497,9 @@ async function main() {
 
   lucid.selectWalletFromSeed(seed);
 
+  const emulatorProtocolParameters =
+    await emulator.getProtocolParameters();
+
   /*
    * --------------------------------------------------------------
    * 2. Load actual PRE-RICH Plutus artifacts
@@ -953,6 +956,62 @@ async function main() {
     await revealTx
       .sign()
       .complete();
+
+  /*
+   * --------------------------------------------------------------
+   * 11a. Transaction size / execution instrumentation
+   * --------------------------------------------------------------
+   *
+   * Lucid 0.10.11 exposes the exact serialized transaction through
+   * TxComplete/TxSigned.toString() (hex CBOR). Measure the actual
+   * unsigned and signed transaction rather than estimating from script
+   * artifact sizes. maxTxSize comes from the same emulator provider that
+   * the fixture uses for construction and submission.
+   */
+
+  const revealUnsignedCbor = revealTx.toString();
+  const revealSignedCbor = revealSigned.toString();
+  const revealUnsignedBytes = revealUnsignedCbor.length / 2;
+  const revealSignedBytes = revealSignedCbor.length / 2;
+  const revealMaxTxSize = emulatorProtocolParameters.maxTxSize;
+  const revealHeadroom = revealMaxTxSize - revealSignedBytes;
+  const revealUtilization =
+    revealSignedBytes / revealMaxTxSize;
+
+  console.log(
+    "REVEAL_TX_SIZE_UNSIGNED_BYTES",
+    revealUnsignedBytes,
+  );
+  console.log(
+    "REVEAL_TX_SIZE_SIGNED_BYTES",
+    revealSignedBytes,
+  );
+  console.log(
+    "REVEAL_MAX_TX_SIZE_BYTES",
+    revealMaxTxSize,
+  );
+  console.log(
+    "REVEAL_TX_HEADROOM_BYTES",
+    revealHeadroom,
+  );
+  console.log(
+    "REVEAL_TX_UTILIZATION",
+    revealUtilization,
+  );
+  console.log(
+    "REVEAL_TX_FEE_LOVELACE",
+    revealTx.fee,
+  );
+  console.log(
+    "REVEAL_TX_EX_UNITS",
+    JSON.stringify(revealTx.exUnits),
+  );
+
+  if (revealSignedBytes > revealMaxTxSize) {
+    throw new Error(
+      "P2.8-B.1 SIZE SAFETY STALL: signed Reveal transaction exceeds emulator maxTxSize; submission intentionally blocked.",
+    );
+  }
 
   let revealHash;
 
