@@ -113,12 +113,13 @@ legacyAggregateMatchesV3 d s =
 {-# INLINABLE legacyProjectionIsLossless #-}
 legacyProjectionIsLossless :: V3EconomicState -> Bool
 legacyProjectionIsLossless s =
-     v3SafetyCapital s == 0
+     v3Classes s == []
+  && v3SafetyCapital s == 0
   && v3ReserveProtection s == 0
   && v3MandatoryFutureCosts s == 0
   && jsLockedAmount (v3Jackpot s) == 0
-  && ecsHighestClassEverActivated (v3Control s)
-       == ecsCurrentActiveClass (v3Control s)
+  && ecsCurrentActiveClass (v3Control s) == 0
+  && ecsHighestClassEverActivated (v3Control s) == 0
   && EconomicKernel.conservationInvariant s
 
 {-# INLINABLE legacySuspendedMask #-}
