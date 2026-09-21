@@ -130,6 +130,9 @@ jobs:
       - name: Execute real economic Reveal transition trace
         run: npx tsx audit/cardano-integration/reveal-ledger-trace.ts
 
+      - name: Execute real economic Expire transition trace
+        run: npx tsx audit/cardano-integration/expire-ledger-trace.ts
+
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
 
