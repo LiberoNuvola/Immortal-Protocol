@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {
   expectedRevealPostState,
   projectCardanoToImmortalV3,
-} from '../../Adapter/CARDANO/observation/ImmortalP25ObservationProjection'
+} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
@@ -44,7 +44,7 @@ function preInput() {
   }
 }
 
-describe('P2.6 — Cardano Reveal replay conformance', () => {
+describe('P2.6 â€” Cardano Reveal replay conformance', () => {
   test('projects a concrete B1 observation into the expected V3 pre-state', () => {
     const state = projectCardanoToImmortalV3(preInput())
 
