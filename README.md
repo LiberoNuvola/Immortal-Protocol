@@ -6,6 +6,23 @@
 
 IMMORTAL is an experimental open-source protocol. It is not presented as a company, custodial service, financial product, or finished production system. There is no claim here of a permanent team, privileged operator, or unilateral authority.
 
+
+## Why IMMORTAL exists
+
+> **What would happen if humanity's guiding light were a shared ethical code rather than the individual pursuit of profit?**
+
+IMMORTAL is an experiment built around that question.
+
+It is designed from principles first: open source, no privileged economic authority outside the protocol's principles, no central owner whose role is to extract value from the protocol itself, and explicit rules that can be inspected, challenged and verified.
+
+IMMORTAL is **blockchain-agnostic because it was not born from blockchain**.
+
+Blockchain is one possible realization environment, not the purpose of the protocol. Other environments may be connected through adapters when they can preserve the applicable IMMORTAL semantics and authority boundaries.
+
+> **Many environments, one economic constitution.**
+
+See [IMMORTAL — Socioeconomic Experimental Premise](IMMORTAL/docs/SOCIOECONOMIC-PREMISE.md) for the full public rationale and experimental hypothesis.
+
 ## Start here
 
 If you are new:
