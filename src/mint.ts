@@ -75,7 +75,6 @@ import {
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
-const MS_PER_DAY = 86_400_000n
 
 const DEFAULT_NETWORK_ID = 0
 const DEFAULT_ROUND_ID = 0
@@ -623,6 +622,17 @@ export type MintSerialOptions = {
   table?: PrizeTable
   playerSecret?: Uint8Array
   ticketNonce?: number
+  /**
+   * The DApp/profile-declared expiry policy. It is evaluated against the
+   * verified issuance-state snapshot below and crystallized into the ticket.
+   * No universal duration is supplied here.
+   */
+  expiryPolicy?: PreRichExpiryPolicy
+  /**
+   * Authoritative issuance-state snapshot used to derive this ticket's
+   * expiry horizon. The caller is responsible for sourcing/verifying it.
+   */
+  expiryIssuanceState?: PreRichExpiryIssuanceState
 }
 
 // ============================================================
@@ -922,9 +932,19 @@ export async function mintSerialNFT(
   const issuedAtMs =
     BigInt(Date.now())
 
-  const expiresAtMs =
-    issuedAtMs +
-    365n * MS_PER_DAY
+  if (!opts.expiryPolicy || !opts.expiryIssuanceState) {
+    throw new Error(
+      'verified expiry policy and issuance state are required; no fixed expiry duration is available',
+    )
+  }
+
+  const expiry = crystallizeTicketExpiry(
+    opts.expiryPolicy,
+    opts.expiryIssuanceState,
+    issuedAtMs,
+  )
+
+  const expiresAtMs = expiry.expiresAt
 
   // ----------------------------------------------------------
   // PrizeDatum
