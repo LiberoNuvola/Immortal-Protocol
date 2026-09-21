@@ -95,6 +95,21 @@ countOwnScriptInputs ctx =
         _ ->
           go is
 
+{-# INLINABLE countOwnScriptOutputs #-}
+countOwnScriptOutputs :: ScriptContext -> Integer
+countOwnScriptOutputs ctx =
+  go (txInfoOutputs (scriptContextTxInfo ctx))
+  where
+    thisHash = ownScriptHash ctx
+    go [] = 0
+    go (o:os) =
+      case addressCredential (txOutAddress o) of
+        ScriptCredential h
+          | h == thisHash ->
+              1 + go os
+        _ ->
+          go os
+
 {-# INLINABLE pkElem #-}
 pkElem :: PubKeyHash -> [PubKeyHash] -> Bool
 pkElem _ [] = False
@@ -285,6 +300,17 @@ claimBeforeExpiry expiresAt info =
   case ivTo (txInfoValidRange info) of
     UpperBound (Finite t) _ ->
       getPOSIXTime t <= expiresAt
+    _ ->
+      False
+
+-- | EXPIRE is valid only when the validity interval lower bound is at/after
+-- the ticket's crystallized expiry boundary.
+{-# INLINABLE expireAtOrAfter #-}
+expireAtOrAfter :: Integer -> TxInfo -> Bool
+expireAtOrAfter expiresAt info =
+  case ivFrom (txInfoValidRange info) of
+    LowerBound (Finite t) _ ->
+      getPOSIXTime t >= expiresAt
     _ ->
       False
 
@@ -532,6 +558,76 @@ validateReveal table datum playerSecret ctx =
     && traceIfFalse "Prize: pool accounting wrong" poolOk
 
 -- ============================================================
+-- Expire
+-- Canonical semantics: consume the Pending PrizeDatum at/after expiry.
+-- No continuing PrizeDatum is produced. The ticket NFT is independent and
+-- remains transferable; EXPIRE only closes the economic promise and releases
+-- its unresolved reserve from the PrizePool.
+-- ============================================================
+
+{-# INLINABLE validateExpire #-}
+validateExpire
+  :: PrizeDatum
+  -> ScriptContext
+  -> Bool
+validateExpire datum ctx =
+  let
+    info = scriptContextTxInfo ctx
+    prizePoolBs = pdPrizePoolHash datum
+    ownPrizeHash = ownScriptHash ctx
+
+    poolOk =
+      case findB1PrizePoolOutput info prizePoolBs of
+        Nothing ->
+          traceIfFalse "Prize: B1PrizePool output missing" False
+        Just poolOut ->
+          let
+            poolIn = readPoolInput info prizePoolBs
+            expectedReserve =
+              ppUnresolvedReserve poolIn
+                - pdPriceUsdm datum
+            expectedCount =
+              ppUnresolvedTicketCount poolIn - 1
+          in
+               traceIfFalse "Prize: pool prize hash mismatch"
+                 (ppPrizeHash poolOut == ownPrizeHash)
+            && traceIfFalse "Prize: input pool prize hash mismatch"
+                 (ppPrizeHash poolIn == ownPrizeHash)
+            && traceIfFalse "Prize: pool liquidity changed on expire"
+                 (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
+            && traceIfFalse "Prize: pool liabilities changed on expire"
+                 (ppPendingLiabilities poolOut == ppPendingLiabilities poolIn)
+            && traceIfFalse "Prize: pool reserve release"
+                 (ppUnresolvedReserve poolOut == expectedReserve)
+            && traceIfFalse "Prize: pool reserve non-negative"
+                 (expectedReserve >= 0)
+            && traceIfFalse "Prize: pool count release"
+                 (ppUnresolvedTicketCount poolOut == expectedCount)
+            && traceIfFalse "Prize: pool locked Jackpot changed"
+                 (ppLockedJackpot poolOut == ppLockedJackpot poolIn)
+            && traceIfFalse "Prize: pool Jackpot floor changed"
+                 (ppJackpotThreshold poolOut == ppJackpotThreshold poolIn)
+            && traceIfFalse "Prize: pool suspended classes changed"
+                 (ppSuspendedClasses poolOut == ppSuspendedClasses poolIn)
+            && traceIfFalse "Prize: pool prize hash changed"
+                 (ppPrizeHash poolOut == ppPrizeHash poolIn)
+
+  in
+       traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
+    && traceIfFalse "Prize: no continuing PrizeDatum on expire"
+         (countOwnScriptOutputs ctx == 0)
+    && traceIfFalse "Prize: not pending" (pdStatus datum == Pending)
+    && traceIfFalse "Prize: beacon state invalid"
+         (pdBeaconStatus datum == BeaconPending
+            || pdBeaconStatus datum == BeaconReady)
+    && traceIfFalse "Prize: invalid ticket price" (pdPriceUsdm datum > 0)
+    && traceIfFalse "Prize: prize amount must be zero" (pdPrizeAmount datum == 0)
+    && traceIfFalse "Prize: expiry not reached"
+         (expireAtOrAfter (pdExpiresAt datum) info)
+    && traceIfFalse "Prize: pool input count" (countPoolInputs info prizePoolBs == 1)
+    && traceIfFalse "Prize: pool accounting wrong" poolOk
+
+-- ============================================================
 -- Claim
 -- Constitution: pay once, keep NFT (no mandatory burn), status → Claimed
 -- ============================================================
@@ -659,6 +755,8 @@ mkValidator regHash table oracleState oraclePublisher datum action ctx =
       validateReveal table datum playerSecret ctx
     Claim ->
       validateClaim oracleState oraclePublisher datum ctx
+    Expire ->
+      validateExpire datum ctx
 
 {-# INLINABLE wrap #-}
 wrap
