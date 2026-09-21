@@ -80,10 +80,10 @@ jobs:
         run: node audit/cardano-integration/ledger-smoke.mjs
 
       - name: Execute real economic Reveal transition trace
-        run: node --require tsx/cjs audit/cardano-integration/reveal-ledger-trace.ts
+        run: node --require tsx/cjs -e "require('./audit/cardano-integration/reveal-ledger-trace.ts')"
 
       - name: Execute real economic Expire transition trace
-        run: node --require tsx/cjs audit/cardano-integration/expire-ledger-trace.ts
+        run: node --require tsx/cjs -e "require('./audit/cardano-integration/expire-ledger-trace.ts')"
 
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
