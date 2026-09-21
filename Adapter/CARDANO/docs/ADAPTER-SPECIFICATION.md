@@ -81,12 +81,21 @@ Cardano adapter conformance requires preservation of IMMORTAL predicates plus th
 
 ## 7. Operational execution boundary
 
-For the current SALE/MINT slice, the DApp may construct the transaction shape,
-but signing and submission cross the chain boundary through
+The DApp formulates an **application intent** and supplies application-specific data.
+It must not be the economic authority and should not independently define the
+chain-specific realization of an IMMORTAL-admissible action.
+
+The Cardano Adapter is responsible for translating the admissible requirements
+into Cardano-specific transaction/UTxO realization, including construction,
+signing and submission where applicable, and for translating the resulting
+chain evidence back toward IMMORTAL and the DApp.
+
+For the current SALE/MINT slice, signing and submission cross the chain boundary through
 `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`.
 
-The adapter returns the chain transaction reference. It does not choose
-economic results, alter application economics, or convert application values.
+The adapter returns the chain transaction reference. It does not choose economic
+results, alter application economics, or convert application values outside the
+declared IMMORTAL/application contract.
 
 
 ## 10. DApp ↔ IMMORTAL operational contract
