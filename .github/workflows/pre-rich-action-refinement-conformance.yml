@@ -22,6 +22,7 @@ on:
       - "src/__tests__/preRichClaimRefinement.test.ts"
       - "src/__tests__/preRichRevealRefinement.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
+      - "src/__tests__/canonical-transition-evidence.test.ts"
       - "src/__tests__/preRichExpiryEvidence.test.ts"
       - "src/__tests__/preRichCertifiedTicket.test.ts"
       - "src/__tests__/preRichJackpotPolicy.test.ts"
@@ -29,6 +30,7 @@ on:
       - "src/gameFlow.ts"
       - "src/txHelpers.ts"
       - "src/__tests__/rf8-submission-boundary.test.ts"
+      - "src/__tests__/canonical-transition-evidence.test.ts"
       - "PRE-RICH/profile/PreRichCertifiedSettlement.ts"
       - "src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/preRich-gamerules-distribution.test.ts src/__tests__/ticket3dSecurity.test.ts src/__tests__/rf8-submission-boundary.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
@@ -63,7 +65,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts
       
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit
