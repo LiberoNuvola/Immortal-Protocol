@@ -134,6 +134,12 @@ data PrizeDatum = PrizeDatum
   , pdIssuedAt         :: Integer
   -- | POSIX time (ms). Immutable. Claim window ends here.
   , pdExpiresAt        :: Integer
+  -- | Canonical Classic-6 row 1 result tier (0 = loss).
+  --   Appended to preserve the existing 0..20 field numbering.
+  , pdRow1Tier         :: Integer
+  -- | Canonical Classic-6 row 2 result tier (0 = loss).
+  , pdRow2Tier         :: Integer
+  -- The legacy pdPrizeTier remains the summary max(row1,row2).
   }
 
 PlutusTx.unstableMakeIsData ''PrizeDatum
