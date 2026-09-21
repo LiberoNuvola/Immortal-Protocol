@@ -123,7 +123,10 @@ jobs:
 
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
-\n      - name: Execute real economic Reveal transition trace\n        run: npx tsx audit/cardano-integration/reveal-ledger-trace.ts\n
+
+      - name: Execute real economic Reveal transition trace
+        run: npx tsx audit/cardano-integration/reveal-ledger-trace.ts
+
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
 
