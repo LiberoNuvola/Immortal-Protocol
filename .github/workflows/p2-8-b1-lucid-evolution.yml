@@ -33,5 +33,6 @@ jobs:
 
       - name: Run P2.8-B.1 short-circuit evaluator probe
         env:
-          P2_8_DIAG_EARLY_FAIL: "1"
+          P2_8_DIAG_EARLY_FAIL: "0"
+          P2_8_DIAG_ADA_ONLY_PRIZE: "1"
         run: node audit/lucid-evolution/immortal-cardano-reveal-emulator-b1.mjs
