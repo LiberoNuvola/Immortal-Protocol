@@ -1,0 +1,11 @@
+{
+  "schema": "IMMORTAL-P2.8-B.1-ledger-evidence-v0.1",
+  "status": "template",
+  "required_files": ["tx.cbor","utxo.json","pparams.json","epoch-info.json","system-start.json"],
+  "required_manifest_fields": ["network","era","transaction_hash","inputs","acquisition_source","acquired_at","script_artifacts","sha256"],
+  "policy": {
+    "synthetic_emulator_context": "forbidden",
+    "missing_context": "safe_stall",
+    "validator_failure_requires_ledger_evaluation": true
+  }
+}
