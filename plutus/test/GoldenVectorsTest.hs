@@ -225,6 +225,28 @@ main = do
               [TicketClassState 0 0 0 1 10 True] })))
     "projection rejects inconsistent class exposure"
 
+  assert
+    (isNothing
+      (projectPreRichState
+        (baseProfile { epClassPrices = [] })
+        baseState))
+    "projection rejects invalid profile"
+
+  assert
+    (isNothing
+      (projectPreRichState
+        baseProfile
+        (baseState
+          { v3Classes =
+              [ TicketClassState 0 0 0 0 10 True
+              , TicketClassState 0 0 0 0 10 True
+              ] })))
+    "projection rejects duplicate class state"
+
+  assert
+    (projectionBoundaryEquivalent baseProfile 1000 baseState)
+    "aggregate economic boundary equivalence"
+
   case projectPreRichState baseProfile baseState of
     Nothing -> error "FAIL: base projection unavailable"
     Just universalBase -> do
