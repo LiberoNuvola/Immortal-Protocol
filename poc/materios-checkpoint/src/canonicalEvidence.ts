@@ -31,9 +31,12 @@ function nonEmpty(value: string, name: string): void {
   if (!value.trim()) throw new Error(`${name} is required`)
 }
 
-function proofRefValid(ref: ProofRef, name: string): void {
+function proofRefValid(ref: ProofRef, expectedKind: ProofRef['kind'], name: string): void {
+  if (ref.kind !== expectedKind) {
+    throw new Error(name + '.kind must be ' + expectedKind)
+  }
   if (ref.digest.length !== 64 || !/^[0-9a-f]+$/.test(ref.digest)) {
-    throw new Error(`${name}.digest must be a 32-byte lowercase hex digest`)
+    throw new Error(name + '.digest must be a 32-byte lowercase hex digest')
   }
 }
 
@@ -70,8 +73,8 @@ export function validateCanonicalEvidencePacket(packet: CanonicalEvidencePacket)
   if (packet.blockNumber < 0n) throw new Error('blockNumber must be non-negative')
   nonEmpty(packet.storageKey, 'storageKey')
   nonEmpty(packet.authorityCommitment, 'authorityCommitment')
-  proofRefValid(packet.finalityProof, 'finalityProof')
-  proofRefValid(packet.storageProof, 'storageProof')
+  proofRefValid(packet.finalityProof, 'finality', 'finalityProof')
+  proofRefValid(packet.storageProof, 'storage', 'storageProof')
   if (Number.isNaN(Date.parse(packet.producedAt))) throw new Error('producedAt must be ISO-8601')
 
   const anchor = canonicalAnchorKey({
