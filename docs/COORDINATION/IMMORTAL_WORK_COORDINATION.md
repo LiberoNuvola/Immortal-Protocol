@@ -800,3 +800,12 @@ No universal expiry number was introduced by this work.
 **Boundary:** this is evidence/refinement only. It does not make V3 ticket-aware, does not grant arbitrary ticket-selection authority, and does not replace Cardano on-chain enforcement.
 **CI:** the existing PRE-RICH Action Refinement workflow now runs both Issue and Expire refinement tests.
 **Status:** CLOSING — local implementation committed; CI evidence pending.
+
+---
+## 31. SESSION CLAIM — B4 ProtectedCapital Preservation Subfront
+**Session:** autonomous coordination session — 2026-09-21  
+**Front:** B4 / PC-02 + PC-05 — transition-level ProtectedCapital preservation and disjoint component accounting  
+**Scope:** formalize local arithmetic preservation properties only; do not change ProtectedCapital formula, Gate, viability, or application policy.  
+**Current artifact:** `IMMORTAL/conformance/ProtectedCapitalConformance.hs` + `plutus/test/ProtectedCapitalConformanceTest.hs`.  
+**Expected evidence:** successful V3 Issue/Reveal/Claim/Expire traces preserve the declared ProtectedCapital partition; Reveal delta is `payout - M×P <= 0`; Claim/Expire deltas are non-positive; partition rejects omission.  
+**Status:** IN_PROGRESS
