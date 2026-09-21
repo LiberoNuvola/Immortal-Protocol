@@ -1030,7 +1030,9 @@ mkValidator
 
                        && traceIfFalse
                             "B1PrizePool: prize pool binding mismatch"
-                            (pdPrizePoolHash pd == ownScriptHash ctx)
+                            (case ownScriptHash ctx of
+                               ScriptHash h ->
+                                 pdPrizePoolHash pd == h)
 
                        && traceIfFalse
                             "B1PrizePool: payout must be zero for unrevealed"
