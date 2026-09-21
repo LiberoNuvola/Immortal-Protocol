@@ -51,9 +51,20 @@ foldClasses
   :: EconomicProfile
   -> [TicketClassState]
   -> Maybe (Integer, Integer, Integer)
-foldClasses _ [] = Just (0, 0, 0)
-foldClasses profile (c:cs) =
-  case classPrice profile (tcsClassId c) of
+foldClasses profile classes =
+  foldClassesSeen profile [] classes
+
+{-# INLINABLE foldClassesSeen #-}
+foldClassesSeen
+  :: EconomicProfile
+  -> [TicketClass]
+  -> [TicketClassState]
+  -> Maybe (Integer, Integer, Integer)
+foldClassesSeen _ _ [] = Just (0, 0, 0)
+foldClassesSeen profile seen (c:cs)
+  | containsClass (tcsClassId c) seen = Nothing
+  | otherwise =
+    case classPrice profile (tcsClassId c) of
     Nothing -> Nothing
     Just price ->
       if tcsClassId c < 0
@@ -64,7 +75,7 @@ foldClasses profile (c:cs) =
          || tcsExposure c /= price * tcsUnresolved c
       then Nothing
       else
-        case foldClasses profile cs of
+        case foldClassesSeen profile (tcsClassId c : seen) cs of
           Nothing -> Nothing
           Just (reserve, count, exposure) ->
             Just
@@ -97,3 +108,8 @@ classesNonNegative (c:cs) =
   && tcsExposure c >= 0
   && tcsCap c >= 0
   && classesNonNegative cs
+
+{-# INLINABLE containsClass #-}
+containsClass :: TicketClass -> [TicketClass] -> Bool
+containsClass _ [] = False
+containsClass x (y:ys) = x == y || containsClass x ys
