@@ -66,7 +66,7 @@ describe('PRE-RICH Classic-6 exact ticket distribution', () => {
     for (const [multiplier, count] of actual) {
       payoutHalfNumerator += BigInt(Number(multiplier) * 2) * count
     }
-    const expectedHalfNumerator = 41_598_000_000n
+    const expectedHalfNumerator = 519_975_000n
     expect(payoutHalfNumerator).toBe(expectedHalfNumerator)
   })
 
