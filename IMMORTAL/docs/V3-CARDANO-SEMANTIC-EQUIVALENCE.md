@@ -147,3 +147,20 @@ The Cardano Adapter specification describes transaction construction as an Adapt
 This is therefore a remaining **Adapter responsibility-scope gap**, but it does not create a second economic authority by itself. The current immediate safety boundary is preserved because signing/submission is centralized and on-chain validators still enforce their own predicates.
 
 Do not silently migrate all transaction construction in this front: it may affect many application consumers and is not required to prove the economic semantics yet. It remains an explicit follow-on conformance task.
+## 2026-09-21 — Expire Refinement Delta
+
+V3 remains an aggregate class-level action (`Expire cid`), while the Cardano PrizeDatum carries ticket-specific `pdExpiresAt` and the B1 PrizePool transition releases exactly that ticket's `pdPriceUsdm` reserve.
+
+A new PRE-RICH refinement witness makes the missing relation explicit:
+- the selected ticket must belong to the aggregate class;
+- its price must equal the canonical profile price for that class;
+- the transaction time must be at or after the ticket's crystallized expiry;
+- exactly one unresolved ticket is consumed;
+- exactly one ticket-price reserve is released;
+- no liability is created by expiry.
+
+Files:
+- PRE-RICH/profile/PreRichExpireRefinement.ts
+- src/__tests__/preRichExpireRefinement.test.ts
+
+This is a refinement/evidence layer, not a replacement for on-chain enforcement and not a proof of arbitrary-ticket selection authority. The Cardano B1 validator remains responsible for transaction-level enforcement of its own predicate.
