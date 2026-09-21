@@ -1,4 +1,7 @@
-import { validateEconomicStateV3, type EconomicStateV3 } from '../serialization/CanonicalEconomicState'
+import {
+  validateCanonicalEconomicState,
+  type CanonicalEconomicState,
+} from '../serialization/CanonicalEconomicState'
 
 export type ObservationSource =
   | 'datum'
@@ -9,7 +12,7 @@ export type ObservationSource =
 export type EconomicObservation = {
   source: ObservationSource
   observedAt: bigint
-  state: EconomicStateV3
+  state: CanonicalEconomicState
   stateHash?: string
 }
 
@@ -25,15 +28,15 @@ export function acceptEconomicObservation(
   }
 
   try {
-    // Runtime validation is performed at the Adapter boundary.
-    // The observation layer does not create economic state; it validates
-    // state already decoded from an authoritative chain object.
-    validateEconomicStateV3(observation.state)
+    // The Adapter validates an already-derived canonical state.
+    // It does not interpret ticket classes, Jackpot state, payout tables,
+    // activation policy, or any other PRE-RICH application rule.
+    validateCanonicalEconomicState(observation.state)
     return { ok: true, observation }
   } catch (e) {
     return {
       ok: false,
-      reason: e instanceof Error ? e.message : 'invalid economic observation',
+      reason: e instanceof Error ? e.message : 'invalid canonical economic observation',
     }
   }
 }
