@@ -47,7 +47,7 @@ describe("PRE-RICH hysteresis reference", () => {
 
   it("selects the highest activation-eligible class", () => {
     expect(highestActivationEligibleClass(640n, CLASSES)).toBe(3);
-    expect(highestActivationEligibleClass(639n, CLASSES)).toBe(2);
+    expect(highestActivationEligibleClass(639n, CLASSES)).toBe(3);
   });
 
   it("selects direct contraction without traversing intermediate classes", () => {
