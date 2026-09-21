@@ -6,14 +6,18 @@ on:
       - work/immortal-green-closure
     paths:
       - "PRE-RICH/profile/PreRichIssueEvidence.ts"
+      - "PRE-RICH/profile/PreRichExpireRefinement.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
   pull_request:
     branches:
       - work/immortal-green-closure
     paths:
       - "PRE-RICH/profile/PreRichIssueEvidence.ts"
+      - "PRE-RICH/profile/PreRichExpireRefinement.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
 
 jobs:
@@ -29,5 +33,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run Issue refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts
+      - name: Run Issue and Expire refinement conformance
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichExpireRefinement.test.ts
