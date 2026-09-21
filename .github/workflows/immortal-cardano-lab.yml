@@ -29,12 +29,24 @@ jobs:
       - name: Install project dependencies
         run: npm ci
 
-      - name: Install Yaci DevKit
-        run: npm install -g @bloxbean/yaci-devkit
+      - name: Install isolated lab dependencies
+        run: npm install --prefix audit/cardano-integration
 
-      - name: Start isolated Cardano devnet
+      - name: Install pinned Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
+
+      - name: Derive ephemeral CI wallet
+        id: wallet
         run: |
           mkdir -p audit/yaci-evidence
+          address="$(node audit/cardano-integration/create-test-wallet.mjs)"
+          echo "address=$address" >> "$GITHUB_OUTPUT"
+          echo "TOPUP_ADDRESS=$address"
+
+      - name: Start isolated Cardano devnet with funded CI wallet
+        env:
+          topup_addresses: ${{ steps.wallet.outputs.address }}:1000
+        run: |
           nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
           echo $! > audit/yaci-evidence/yaci.pid
 
@@ -48,7 +60,7 @@ jobs:
             sleep 2
           done
           echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
-          tail -200 audit/yaci-evidence/yaci.log || true
+          tail -300 audit/yaci-evidence/yaci.log || true
           exit 1
 
       - name: Record devnet information
@@ -58,9 +70,13 @@ jobs:
             echo "commit=$GITHUB_SHA"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
-            echo "yaci=$(yaci-devkit --version || true)"
+            echo "yaci=0.12.0-beta5"
             echo "run_id=$GITHUB_RUN_ID"
+            echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
+
+      - name: Execute real Cardano ledger smoke transaction
+        run: node audit/cardano-integration/ledger-smoke.mjs
 
       - name: Run existing pure invariant suite
         run: npx tsx src/__tests__/b1-invariants.test.ts
