@@ -400,6 +400,9 @@ export async function syncBeacon(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const settlementValue = validateSettlementValue(opts.settlementValue)
+  const b1PrizePoolAddress =
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePool.address
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
@@ -596,7 +599,7 @@ export async function revealPrize(opts: {
   const owner = await lucid.wallet.address()
 
   // B1PrizePool: deterministic reserve derivation from PrizeDatum's pdPriceUsdm
-  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, opts.b1PrizePoolAddress)
+  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
 
   const b1ppDatum = decodeB1PrizePoolDatum(b1ppUtxo)
@@ -626,7 +629,7 @@ export async function revealPrize(opts: {
     )
     // Output: updated B1PrizePool datum
     .payToContract(
-      opts.b1PrizePoolAddress,
+      b1PrizePoolAddress,
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
@@ -649,11 +652,34 @@ export async function revealPrize(opts: {
 // Claim — coordinates PrizeValidator + B1PrizePool
 // ---------------------------------------------------------------------------
 
+export type ExactSettlementValue = Record<string, bigint>
+
+function validateSettlementValue(
+  settlementValue: ExactSettlementValue | undefined,
+): ExactSettlementValue {
+  if (!settlementValue || Object.keys(settlementValue).length === 0) {
+    throw new Error(
+      'Exact settlement quote required: provide a settlement asset quantity whose verified USDM value equals pdPrizeAmount',
+    )
+  }
+
+  for (const [unit, quantity] of Object.entries(settlementValue)) {
+    if (!unit || quantity <= 0n) {
+      throw new Error(
+        'Invalid settlement value: asset quantities must be positive',
+      )
+    }
+  }
+
+  return settlementValue
+}
+
 export async function claimPrize(opts: {
   prizeAddress: string
   ticketPolicyId: string
   ticketAssetNameHex: string
-  b1PrizePoolAddress: string
+  b1PrizePoolAddress?: string
+  settlementValue: ExactSettlementValue
   table?: PrizeTable
 }): Promise<string> {
   const lucid = wallet.getLucid()
@@ -745,8 +771,9 @@ export async function claimPrize(opts: {
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
-    // Payout to claimant
-    .payToAddress(buyer, { lovelace: BigInt(prizeAmount) })
+    // Payout to claimant: caller supplies the concrete settlement asset.
+    // On-chain PrizeValidator verifies exact USDM equivalence.
+    .payToAddress(buyer, settlementValue)
     // Ticket NFT back to buyer
     .payToAddress(buyer, { [opts.ticketPolicyId + opts.ticketAssetNameHex]: 1n })
     .addSigner(buyer)
