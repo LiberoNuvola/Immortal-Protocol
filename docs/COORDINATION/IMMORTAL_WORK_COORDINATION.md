@@ -902,3 +902,37 @@ The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check
 **CI:** run `35654602066` — PRE-RICH Action Refinement Conformance — **SUCCESS**, including the complete action refinement suite and TypeScript typecheck.
 **Resulting B6 coverage:** Issue + Claim + Expire ticket-level refinement positive evidence now exists. Reveal remains the major remaining ticket-level/ledger semantic-equivalence gap.
 **Status:** POSITIVE REFINEMENT EVIDENCE / FULL CONFORMANCE OPEN
+
+---
+## 38. CURRENT CANON RECONCILIATION — Classic-6 / Game Economy
+
+**Date:** 2026-09-21  
+**Front:** PRE-RICH GameRules documentation/conformance
+
+The current PRE-RICH Game Economy specification has been reconciled with the closed DEC-1 decision:
+
+- Classic-6 = two independent canonical rows.
+- Each row uses the exact 20,000-slot distribution 17,500 / 1,700 / 600 / 180 / 19 / 1.
+- The five prize tiers are row-level tiers.
+- Ticket payout = sum of both row payouts, capped at 500×P.
+- The historical single-result 75% / 17% / 6% / 1.8% / 0.19% / 0.01% table is historical and non-canonical for current Classic-6 ticket-level outcomes.
+- Exact current ticket-level distribution has an executable conformance test in `src/__tests__/preRich-gamerules-distribution.test.ts`.
+
+This is a documentation/conformance reconciliation only. No closed economic policy was reopened.
+
+---
+## 39. CURRENT FRONT STATUS — B4/B5/B6/C6
+
+- **B4 ProtectedCapital:** local arithmetic preservation evidence added; full authoritative provenance and live Cardano preservation remain OPEN.
+- **B5 Economic Gate:** typed composition exists; runtime DApp submission is not yet a cryptographically verified Gate proof. Do not duplicate the kernel in TypeScript.
+- **B6 Issue/Claim/Expire:** ticket-level refinement evidence is GREEN; full V3↔Cardano semantic equivalence remains OPEN.
+- **B6 Reveal:** source-level row result binding is present on both DApp and PrizeValidator; differential ledger evidence remains OPEN.
+- **C6 certified NFT/3D:** binding is implemented and the shell consumes observed on-chain NFT + PrizeDatum; renderer remains presentation-only.
+- **R4 liveness:** executable FM1–FM10 classification is GREEN as bounded diagnostic evidence, not a liveness theorem.
+
+---
+## 40. CI ENVIRONMENT BLOCKER
+
+The Haskell and Yaci workflows previously failed before actual regression execution because the pinned `blst` build output was located under the build directory rather than the repository root. The workflows were corrected to discover `libblst.a` by path instead of assuming a root location.
+
+**Required evidence:** next current-head Kernel and Cardano Integration Lab run must pass native dependency setup and reach actual test/gate steps before any Haskell/Yaci claim is marked green.
