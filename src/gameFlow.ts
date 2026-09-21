@@ -187,6 +187,10 @@ function claimRedeemer(): Data {
   return emptyConstr(2)
 }
 
+function expireRedeemer(): Data {
+  return emptyConstr(3)
+}
+
 /** B1PrizePool actions: FundTreasury=0, TicketIssued=1, TicketRevealed=2, TicketClaimed=3, TicketExpired=4 */
 
 function b1ppTicketRevealedRedeemer(priceUsdm: bigint): Data {
@@ -195,6 +199,10 @@ function b1ppTicketRevealedRedeemer(priceUsdm: bigint): Data {
 
 function b1ppTicketClaimedRedeemer(claimedAmount: bigint): Data {
   return constr(3, [claimedAmount])
+}
+
+function b1ppTicketExpiredRedeemer(): Data {
+  return emptyConstr(4)
 }
 
 // ---------------------------------------------------------------------------
@@ -933,6 +941,123 @@ export async function claimPrize(opts: {
     .payToAddress(buyer, { [opts.ticketPolicyId + opts.ticketAssetNameHex]: 1n })
     .addSigner(buyer)
     .validTo(expiresAt)
+    .complete()
+
+  return signAndSubmitTx(lucid, tx)
+}
+
+// ---------------------------------------------------------------------------
+// Expire — permissionless post-expiry dissolution
+// ---------------------------------------------------------------------------
+
+export async function expirePrize(opts: {
+  prizeAddress: string
+  ticketPolicyId: string
+  ticketAssetNameHex: string
+  b1PrizePoolAddress?: string
+  table?: PrizeTable
+}): Promise<string> {
+  const lucid = wallet.getLucid()
+  if (!lucid) throw new Error('Wallet not connected')
+
+  const table = opts.table ?? defaultPrizeTable
+  const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const b1PrizePoolAddress =
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) {
+    throw new Error('B1PrizePool address cannot be resolved')
+  }
+
+  const prizeUtxo = await findPrizeUtxo(
+    lucid,
+    opts.prizeAddress,
+    opts.ticketPolicyId,
+    opts.ticketAssetNameHex,
+  )
+  if (!prizeUtxo) throw new Error('Prize UTxO not found')
+
+  const datum = decodePrizeDatum(prizeUtxo)
+  if (!datum) throw new Error('PrizeDatum not decodable')
+
+  if (constrIndex(datum.fields[10]) !== 0) {
+    throw new Error('EXPIRE requires a Pending PrizeDatum')
+  }
+
+  const priceUsdm = integerField(datum.fields[3])
+  const expiresAt = integerField(datum.fields[20])
+  if (priceUsdm === null || priceUsdm <= 0) {
+    throw new Error('EXPIRE requires a positive ticket price')
+  }
+  if (expiresAt === null || !Number.isSafeInteger(expiresAt) || expiresAt < 0) {
+    throw new Error('EXPIRE requires a valid expiresAt')
+  }
+
+  const poolUtxo =
+    await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
+  if (!poolUtxo) throw new Error('B1PrizePool UTxO not found')
+
+  const poolDatum = decodeB1PrizePoolDatum(poolUtxo)
+  if (!poolDatum) throw new Error('B1PrizePool datum not decodable')
+
+  const poolFields = [...poolDatum.fields]
+  const pendingCount = b1ppInt(poolDatum, 2)
+  const unresolvedReserve = b1ppInt(poolDatum, 2)
+  // B1 field layout:
+  //   0 totalLiquidity
+  //   1 pendingLiabilities
+  //   2 unresolvedReserve
+  //   3 unresolvedTicketCount
+  if (pendingCount === null || unresolvedReserve === null) {
+    throw new Error('B1PrizePool datum has incomplete expiry accounting')
+  }
+
+  const currentCount = b1ppInt(poolDatum, 3)
+  if (currentCount === null || currentCount <= 0) {
+    throw new Error('B1PrizePool has no unresolved ticket to expire')
+  }
+  if (unresolvedReserve < priceUsdm) {
+    throw new Error('B1PrizePool unresolved reserve is insufficient for ticket expiry')
+  }
+
+  poolFields[2] = BigInt(unresolvedReserve - priceUsdm)
+  poolFields[3] = BigInt(currentCount - 1)
+
+  const nextPoolDatum = datumFromFields(poolFields)
+  const executor = await lucid.wallet.address()
+
+  const tx = await lucid
+    .newTx()
+    .collectFrom(
+      [prizeUtxo],
+      expireRedeemer(),
+    )
+    .attachSpendingValidator(
+      scripts.prizeValidator as Script,
+    )
+    .collectFrom(
+      [poolUtxo],
+      b1ppTicketExpiredRedeemer(),
+    )
+    .attachSpendingValidator(
+      scripts.b1PrizePool as Script,
+    )
+    // The Prize UTxO carries execution/min-UTxO ADA, while the ticket NFT
+    // remains independently held by its owner. Returning this physical
+    // collateral to the permissionless executor does not alter USDM
+    // economic accounting.
+    .payToAddress(
+      executor,
+      utxoAssets(prizeUtxo),
+    )
+    .payToContract(
+      b1PrizePoolAddress,
+      {
+        inline: Data.to(nextPoolDatum),
+      },
+      poolUtxo.assets,
+    )
+    .addSigner(executor)
+    .validFrom(expiresAt)
     .complete()
 
   return signAndSubmitTx(lucid, tx)
