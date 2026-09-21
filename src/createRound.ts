@@ -80,8 +80,7 @@ export async function createPendingRound(
     )
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  const txHash = await lucid.submitTx(signed)
+  const txHash = await signAndSubmitTx(lucid, tx)
 
   return { txHash, registryAddress }
 }
