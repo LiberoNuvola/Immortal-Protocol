@@ -28,6 +28,46 @@ The current adapter is Cardano. The current application is PRE-RICH.
 
 IMMORTAL does not require either one at the universal semantic layer.
 
+## Experimental and socioeconomic premise
+
+> **What would happen if humanity's guiding light were a shared ethical code rather than the individual pursuit of profit?**
+
+IMMORTAL is an experiment built around that question.
+
+This is not a theorem or a prediction about society. It is a design hypothesis: starting from explicit principles rather than from the objective of maximizing value for a proprietary economic authority may produce different incentive structures and forms of coordination.
+
+The project is therefore not an attempt to put capitalism on a blockchain.
+
+**IMMORTAL is blockchain-agnostic because it was not born from blockchain.**
+
+Blockchain is one possible realization environment among others. Its role is to provide a concrete environment in which the principles can be implemented, observed and challenged. Other environments can be connected through adapters when the applicable IMMORTAL semantics and authority boundaries can be preserved.
+
+The public architecture can therefore be summarized as:
+
+```text
+                    IMMORTAL
+          universal economic principles
+                         |
+        +----------------+----------------+
+        |                |                |
+        v                v                v
+   Cardano Adapter   Bitcoin Adapter   Other Adapter
+        |                |                |
+        v                v                v
+     Cardano          Bitcoin         Environment X
+        |                |                |
+        v                v                v
+     PRE-RICH         DApp Y            DApp Z
+```
+
+> **Many environments, one economic constitution.**
+
+An adapter is not a second economic authority. It is the translation, observation and realization layer between IMMORTAL and a concrete execution environment.
+
+The experiment is not to reproduce an existing economic system on a new technical substrate. It is to explore:
+
+> **What becomes possible when we start from different principles?**
+
 ## 1. Why IMMORTAL
 
 Economic software often combines policy, implementation details and operational authority in a single system. This makes it difficult to determine whether a failure is a violation of the intended economic model, an implementation defect, an environment assumption or simply an application-specific policy choice.
