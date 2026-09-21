@@ -39,7 +39,7 @@ function text(value: unknown): string {
   return String(value)
 }
 
-function escapeHtml(value: unknown): string {
+export function escapeHtml(value: unknown): string {
   return text(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
