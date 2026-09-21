@@ -3,6 +3,7 @@
 module PreRichEconomicAdmission
   ( PreRichEconomicAdmission (..)
   , preRichEconomicAdmission
+  , preRichEconomicAdmissionWithLiquidity
   ) where
 
 import PlutusTx.Prelude
@@ -62,46 +63,6 @@ preRichEconomicAdmission profile preState action eev truthVerified eevFresh obli
     eevFresh
     obligationsComplete
     allOmegaSuccessorsInCertifiedKernel
-
-  if not (transitionValid profile preState action)
-    then Nothing
-    else
-      case transition profile preState action of
-        Nothing -> Nothing
-        Just candidateV3 ->
-          case projectPreRichState profile candidateV3 of
-            Nothing -> Nothing
-            Just candidateUniversal ->
-              let
-                gateInput =
-                  EconomicGateInput
-                    { egiAuthoritativeTruthVerified = truthVerified
-                    , egiEEVFresh = eevFresh
-                    , egiObligationsComplete = obligationsComplete
-                    , egiEEV = eev
-                    , egiAvailableExecutableLiquidity = eev
-                    , egiRequiredImmediateLiquidity = immediateLiquidity action
-                    }
-                safePostState =
-                  UniversalKernel.solvencyInvariant
-                    eev
-                    candidateUniversal
-              in
-                if executionAdmissible
-                    gateInput
-                    candidateUniversal
-                    safePostState
-                    allOmegaSuccessorsInCertifiedKernel
-                  then
-                    Just
-                      (PreRichEconomicAdmission
-                        { peaAction = action
-                        , peaCandidateV3 = candidateV3
-                        , peaCandidateUniversal = candidateUniversal
-                        , peaEEV = eev
-                        })
-                  else
-                    Nothing
 
 {-# INLINABLE immediateLiquidity #-}
 immediateLiquidity :: V3Action -> Integer
