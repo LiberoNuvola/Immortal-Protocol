@@ -66,8 +66,8 @@ export function mountCertifiedTicket3D(
   const back = document.createElement('div')
   back.className = 'pr3d__face pr3d__back'
 
-  const row1 = state.row1Tier === 0n ? 'LOSS' : `ROW 1 · TIER ${text(state.row1Tier)}`
-  const row2 = state.row2Tier === 0n ? 'LOSS' : `ROW 2 · TIER ${text(state.row2Tier)}`
+  const row1 = state.row1Tier === 0n ? 'LOSS' : `ROW 1 · TIER ${escapeHtml(state.row1Tier)}`
+  const row2 = state.row2Tier === 0n ? 'LOSS' : `ROW 2 · TIER ${escapeHtml(state.row2Tier)}`
   const resultLabel = state.status === 'Pending'
     ? 'OUTCOME HIDDEN'
     : state.prizeAmount > 0n
@@ -75,12 +75,12 @@ export function mountCertifiedTicket3D(
       : 'REVEALED / NO PAYOUT'
 
   front.innerHTML = `
-    <div class='pr3d__identity'>CERTIFIED TICKET · ${text(state.identity.policyId)}.${text(state.identity.assetName)}</div>
+    <div class='pr3d__identity'>CERTIFIED TICKET · ${escapeHtml(state.identity.policyId)}.${escapeHtml(state.identity.assetName)}</div>
     <div class='pr3d__title'>PRE-RICH Scratch Ticket</div>
-    <div class='pr3d__status'>${text(state.status)} · ${escapeHtml(resultLabel)}</div>
+    <div class='pr3d__status'>${escapeHtml(state.status)} · ${escapeHtml(resultLabel)}</div>
     <div class='pr3d__grid' style='margin-top:14px'>
-      <div class='pr3d__field'><small>Price</small><strong>${text(state.priceUsdm)} USDM sub-units</strong></div>
-      <div class='pr3d__field'><small>Ticket nonce</small><strong>${text(state.ticketNonce)}</strong></div>
+      <div class='pr3d__field'><small>Price</small><strong>${escapeHtml(state.priceUsdm)} USDM sub-units</strong></div>
+      <div class='pr3d__field'><small>Ticket nonce</small><strong>${escapeHtml(state.ticketNonce)}</strong></div>
       <div class='pr3d__field'><small>Issued</small><strong>${escapeHtml(new Date(Number(state.issuedAt)).toISOString())}</strong></div>
       <div class='pr3d__field'><small>Expires</small><strong>${escapeHtml(new Date(Number(state.expiresAt)).toISOString())}</strong></div>
     </div>
@@ -91,14 +91,14 @@ export function mountCertifiedTicket3D(
     <div class='pr3d__identity'>CANONICAL RECEIPT</div>
     <div class='pr3d__title'>Ticket Receipt</div>
     <div class='pr3d__grid'>
-      <div class='pr3d__field'><small>Policy ID</small><strong>${text(state.identity.policyId)}</strong></div>
-      <div class='pr3d__field'><small>Asset name</small><strong>${text(state.identity.assetName)}</strong></div>
-      <div class='pr3d__field'><small>Game version</small><strong>${text(state.gameVersion)}</strong></div>
-      <div class='pr3d__field'><small>Commitment</small><strong>${text(state.commitment.slice(0, 16))}…</strong></div>
-      <div class='pr3d__field'><small>Beacon target</small><strong>${text(state.beaconTarget)}</strong></div>
-      <div class='pr3d__field'><small>Verification</small><strong>${text(state.verificationReference ?? 'not attached')}</strong></div>
+      <div class='pr3d__field'><small>Policy ID</small><strong>${escapeHtml(state.identity.policyId)}</strong></div>
+      <div class='pr3d__field'><small>Asset name</small><strong>${escapeHtml(state.identity.assetName)}</strong></div>
+      <div class='pr3d__field'><small>Game version</small><strong>${escapeHtml(state.gameVersion)}</strong></div>
+      <div class='pr3d__field'><small>Commitment</small><strong>${escapeHtml(state.commitment.slice(0, 16))}…</strong></div>
+      <div class='pr3d__field'><small>Beacon target</small><strong>${escapeHtml(state.beaconTarget)}</strong></div>
+      <div class='pr3d__field'><small>Verification</small><strong>${escapeHtml(state.verificationReference ?? 'not attached')}</strong></div>
     </div>
-    <div class='pr3d__rows'><span class='pr3d__row'>Row 1: ${text(state.row1Tier)}</span><span class='pr3d__row'>Row 2: ${text(state.row2Tier)}</span><span class='pr3d__row'>Tier: ${text(state.prizeTier)}</span></div>
+    <div class='pr3d__rows'><span class='pr3d__row'>Row 1: ${escapeHtml(state.row1Tier)}</span><span class='pr3d__row'>Row 2: ${escapeHtml(state.row2Tier)}</span><span class='pr3d__row'>Tier: ${escapeHtml(state.prizeTier)}</span></div>
   `
 
   const scratch = document.createElement('canvas')
