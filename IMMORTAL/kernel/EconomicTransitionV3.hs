@@ -9,7 +9,7 @@ module EconomicTransitionV3
 
 import PlutusTx.Prelude
 import EconomicStateV3
-import EconomicProfile (EconomicProfile)
+import EconomicProfile (EconomicProfile, profileValid)
 import qualified EconomicKernel
 
 data V3Action
