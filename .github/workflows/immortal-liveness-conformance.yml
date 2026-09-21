@@ -1,5 +1,9 @@
 name: IMMORTAL Liveness Boundary Conformance
 
+concurrency:
+  group: -github-workflows-immortal-liveness-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
