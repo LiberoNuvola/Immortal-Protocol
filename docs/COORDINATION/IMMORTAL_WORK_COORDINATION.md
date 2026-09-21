@@ -890,3 +890,15 @@ The previous failure was specifically `MODULE_NOT_FOUND: scripts/predeploy-check
 **Architectural property:** renderer remains presentation-only. Reveal/Claim/Expire authorization is never derived from renderer-local state. A canonical refresh re-observes the current PrizeDatum and re-certifies it.
 **Remaining:** 3D visual/UX evidence and full canonical NFT-state coverage remain open; if the ticket UTxO is not yet observable after submission, the UI reports canonical state unavailable and can refresh rather than inventing a state.
 **Status:** IMPLEMENTED / CONFORMANCE EVIDENCE PENDING
+
+
+---
+## 37. SESSION RESULT — B6 Claim Ticket-Level Refinement
+
+**Session:** autonomous coordination session — 2026-09-21 (follow-on)
+**Front:** B6 — Claim ticket-level refinement
+**Result:** added `PRE-RICH/profile/PreRichClaimRefinement.ts` and its conformance suite. The witness covers current owner identity, owner signature, Revealed→Claimed state transition, exact frozen payout-to-settlement equality, exact expiry validity boundary, pending-liability decrease, total-liquidity decrease, insufficient-funds rejection and explicit NFT retention.
+**Evidence:** current `PrizeValidator.hs` performs the corresponding on-chain owner/expiry/exact-payout/pool checks; this refinement is a derived conformance witness, not a second economic authority.
+**CI:** run `35654602066` — PRE-RICH Action Refinement Conformance — **SUCCESS**, including the complete action refinement suite and TypeScript typecheck.
+**Resulting B6 coverage:** Issue + Claim + Expire ticket-level refinement positive evidence now exists. Reveal remains the major remaining ticket-level/ledger semantic-equivalence gap.
+**Status:** POSITIVE REFINEMENT EVIDENCE / FULL CONFORMANCE OPEN
