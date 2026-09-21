@@ -39,6 +39,15 @@ function text(value: unknown): string {
   return String(value)
 }
 
+function escapeHtml(value: unknown): string {
+  return text(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('\"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 export function mountCertifiedTicket3D(
   container: HTMLElement,
   state: CertifiedTicketState,
@@ -68,14 +77,14 @@ export function mountCertifiedTicket3D(
   front.innerHTML = `
     <div class='pr3d__identity'>CERTIFIED TICKET · ${text(state.identity.policyId)}.${text(state.identity.assetName)}</div>
     <div class='pr3d__title'>PRE-RICH Scratch Ticket</div>
-    <div class='pr3d__status'>${text(state.status)} · ${resultLabel}</div>
+    <div class='pr3d__status'>${text(state.status)} · ${escapeHtml(resultLabel)}</div>
     <div class='pr3d__grid' style='margin-top:14px'>
       <div class='pr3d__field'><small>Price</small><strong>${text(state.priceUsdm)} USDM sub-units</strong></div>
       <div class='pr3d__field'><small>Ticket nonce</small><strong>${text(state.ticketNonce)}</strong></div>
-      <div class='pr3d__field'><small>Issued</small><strong>${new Date(Number(state.issuedAt)).toISOString()}</strong></div>
-      <div class='pr3d__field'><small>Expires</small><strong>${new Date(Number(state.expiresAt)).toISOString()}</strong></div>
+      <div class='pr3d__field'><small>Issued</small><strong>${escapeHtml(new Date(Number(state.issuedAt)).toISOString())}</strong></div>
+      <div class='pr3d__field'><small>Expires</small><strong>${escapeHtml(new Date(Number(state.expiresAt)).toISOString())}</strong></div>
     </div>
-    <div class='pr3d__rows'><span class='pr3d__row'>${row1}</span><span class='pr3d__row'>${row2}</span></div>
+    <div class='pr3d__rows'><span class='pr3d__row'>${escapeHtml(row1)}</span><span class='pr3d__row'>${escapeHtml(row2)}</span></div>
   `
 
   back.innerHTML = `
