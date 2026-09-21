@@ -1552,3 +1552,89 @@ Current `src/mint.ts` no longer supplies a fixed 365-day duration. It requires t
 These commits have not been granted a CI-green claim by this coordination entry. The available workflow connector does not enumerate all branch-push runs, and previously observed fresh runs included cancelled Kernel/Cardano attempts. New evidence must be observed on the resulting head.
 
 **Status:** B4 evidence strengthened / G7 type boundary explicit / CI and live-ledger evidence still open.
+
+---
+## 55. 2026-09-22 — C3 EXPIRE end-to-end implementation boundary
+
+**Front:** C3 / P0 liveness / Cardano realization
+
+Triangulation against the current Decision Register and T2 confirms the canonical EXPIRE semantics:
+- expiry is deterministic from the ticket's crystallized `expiresAt`;
+- invocation is permissionless at/after the boundary;
+- the Pending `PrizeDatum` is consumed;
+- no continuing PrizeDatum is created;
+- unresolved reserve/count are released exactly once;
+- pending liabilities are unchanged;
+- the ticket NFT is not required to be burned and remains independently transferable/collectible.
+
+### Implementation
+
+`plutus/Types.hs`
+- added `Expire` as constructor index 3;
+- existing `SyncBeacon=0`, `Reveal=1`, `Claim=2` remain unchanged.
+
+`plutus/PrizeValidator.hs`
+- added `expireAtOrAfter` using the transaction validity lower bound;
+- added `validateExpire`;
+- requires exactly one Prize script input, Pending status, zero payout, positive price, and lower bound >= `pdExpiresAt`;
+- requires no continuing PrizeValidator output;
+- cross-validates the B1PrizePool input/output and exact reserve/count decrement;
+- no liability or total-liquidity change is permitted;
+- wired `Expire -> validateExpire`.
+
+`plutus/B1PrizePool.hs`
+- `TicketExpired` now derives the release from the consumed PrizeDatum input, not from a continuing PrizeDatum output;
+- preserves locked Jackpot/floor/suspended-class state;
+- enforces pool binding and exact deterministic reserve release.
+
+`src/gameFlow.ts`
+- added `expireRedeemer`, `b1ppTicketExpiredRedeemer`, and permissionless `expirePrize`;
+- client validates Pending state, expiry and pool accounting before building the transaction;
+- binds `validFrom(expiresAt)`;
+- returns only the Prize UTxO's ADA execution collateral and fails closed if unexpected non-ADA assets are present;
+- exports `expirePrize` through the module's public flow.
+
+`scripts/predeploy-check.mjs`
+- added structural checks for the canonical EXPIRE action, validator entrypoint, consumed-input semantics, and client lower-bound binding.
+
+### Ledger evidence
+
+Added `audit/cardano-integration/expire-ledger-trace.ts` and connected it to `.github/workflows/immortal-cardano-lab.yml`.
+
+The trace bootstraps an already-expired Pending ticket and pool on isolated Yaci, then:
+1. submits EXPIRE through `createCardanoExecutionAdapter`;
+2. verifies the Prize UTxO is consumed with no replacement;
+3. verifies pool total liquidity and liabilities are unchanged;
+4. verifies unresolved reserve and count each release exactly once;
+5. verifies the ticket NFT remains quantity 1 in the holder wallet;
+6. submits the stale signed transaction again and requires ledger rejection;
+7. writes `audit/yaci-evidence/expire-transition.json`.
+
+### Commits in the C3 chain
+
+- `0aadde354c9504513f60428835ca17844a56e1ab`
+- `8c8c4f0342bcad8b06561b340b657e06dc1a9b9f`
+- `d4c09139edeb2f2534fe929483c7ede9958eedc0`
+- `439fdb27ad2f57a7900a279273bb619c07ebac01`
+- `bd19911a4002e3456a0693f2c98b34eb0a3d57f4`
+- `b3873b27b5c5042f5fffdb2c6259e6cb98f960a2`
+- `45e488615399dcbe07c26a7b29d11a0410a47798`
+- `cc9ff690349f732acfcbbe4b28961917e6b34e00`
+- `72b0471c937d2ef5e2f1367d11634caa4a76a090`
+- `cb03fb78cb96682de25301aebff1514f6857442e`
+- `6a510ad1657bcdc593939d8bfb10618ffc84df50`
+
+### Concurrent-session note
+
+The parallel session subsequently advanced the branch to `c5bca57710ea86d63377749584b2bb9ced26f3e2` to remove a redundant Haskell setup from the Cardano Lab workflow. The current tree still contains the EXPIRE implementation and trace.
+
+### CI status at this checkpoint
+
+On `c5bca577...`:
+- Cardano Adapter Sale Conformance run 35664137869: completed successfully;
+- IMMORTAL Cardano Integration Lab run 35664137894: pending at observation time;
+- Kernel Invalid-Class Audit run 35664137870: pending at observation time.
+
+No C3 green claim is made until the lab executes the new EXPIRE trace and produces the expected evidence artifact.
+
+**Status:** C3 implementation boundary closed at source level; on-chain conformance evidence pending.
