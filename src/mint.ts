@@ -73,6 +73,12 @@ import {
   type PrizeTable,
 } from './gameRules'
 
+import {
+  crystallizeTicketExpiry,
+  type PreRichExpiryIssuanceState,
+  type PreRichExpiryPolicy,
+} from '../PRE-RICH/profile/PreRichExpiryPolicy'
+
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
 
