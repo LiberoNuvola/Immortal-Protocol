@@ -1,5 +1,5 @@
 import { Emulator, Lucid } from "lucid-cardano";
-import { buildScriptsFromLucid } from "./src/loadValidator.ts";
+import { buildScriptsFromLucid } from "../../../src/loadValidator.ts";
 
 async function main() {
   const lucid = await Lucid.new(new Emulator([]), "Preprod");
