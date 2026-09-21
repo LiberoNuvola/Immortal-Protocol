@@ -119,6 +119,19 @@ ViabilityConstraint(...)
 
 The exact viability predicate and its required Ω/risk inputs remain governed by the existing normative model; no new formula is introduced by this matrix.
 
+### Executable-liquidity boundary
+
+EEV and immediately executable settlement liquidity are distinct inputs. When an action requires present settlement capacity, the Economic Gate consumes:
+
+```
+requiredImmediateLiquidity <= availableExecutableLiquidity
+```
+
+Both values must be non-negative and come from the declared, verified execution/evidence boundary. This condition does not replace `ProtectedCapital`, `RawSurplus` or the post-state solvency predicate. It prevents an action from treating ring-fenced or otherwise non-spendable economic value as immediately available.
+
+For Cardano Reveal, the existing validator condition based on the pre-reveal effective pool is represented through this execution envelope. The Adapter supplies the executable-liquidity evidence; it does not choose the economic value or Gate decision.
+
+
 ## Closure matrix
 
 | Action | V3 candidate state | Local V3 validation | ProtectedCapital on candidate | EEV input | Economic Gate | Cardano post-state solvency | Equivalence evidence |
