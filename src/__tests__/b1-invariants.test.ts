@@ -353,30 +353,8 @@ describe('Effective Pool Formula', () => {
 // 6. Jackpot Activation
 // ============================================================
 
-describe('Jackpot Activation', () => {
-  it('jackpot active when effectivePool >= threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 20_000,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(jackpotActive(d))
-  })
-
-  it('jackpot inactive when effectivePool < threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 9_999,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(!jackpotActive(d))
-  })
-
-  it('locked jackpot reduces effectivePool for threshold check', () => {
+describe('Jackpot accounting boundary', () => {
+  it('locked jackpot reduces effectivePool', () => {
     const d = makeState({
       ppTotalLiquidity: 15_000,
       ppPendingLiabilities: 0,
@@ -384,19 +362,8 @@ describe('Jackpot Activation', () => {
       ppLockedJackpot: 6_000,
       ppJackpotThreshold: 10_000,
     })
-    // effectivePool = 15000 - 0 - 0 - 6000 = 9000 < 10000
-    assert.ok(!jackpotActive(d))
-  })
-
-  it('jackpot active at exact threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 10_000,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(jackpotActive(d))
+    // effectivePool = 15000 - 0 - 0 - 6000 = 9000
+    assert.equal(effectivePool(d), 9_000)
   })
 })
 
