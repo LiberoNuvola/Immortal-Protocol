@@ -1,5 +1,9 @@
 name: Cardano Adapter Sale Conformance
 
+concurrency:
+  group: -github-workflows-adapter-sale-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
