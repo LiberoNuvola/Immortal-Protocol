@@ -693,3 +693,36 @@ The repository still has the known frontend build failure class around Vite/node
 - `9696bbee` remove stale Adapter projection
 - `079222a5` fix Adapter import in txHelpers
 - `a53dcc6f` register V3/Cardano equivalence gaps
+
+---
+
+## 28. SESSION UPDATE — B6/RF9 CI verification and B5 handoff
+
+**Date:** 2026-09-21
+
+### Verified
+
+- Cardano Adapter conformance workflow `35650580348`: targeted economic tests pass before the frontend build step.
+- `cardano-execution-adapter.test.ts`: 4 tests pass.
+- `immortal-reveal-conformance.test.ts`: 4 tests pass.
+- P2.7 `immortal-cardano-adapter-conformance.test.ts`: all **14/14** node:test subtests pass when run under `npx tsx --test`.
+- Dedicated PRE-RICH expiry refinement workflow `35650580458`: expiry refinement test step passes.
+- The earlier P2.7 red result was a **test-harness mismatch** (Vitest interpreting a node:test file as an empty suite), not a semantic test failure. The workflow was corrected to run the file with `tsx --test`.
+
+### Separate build failure
+
+The same Adapter workflow still fails at `npm run build` because Vite browser-bundles Node-only dependencies pulled by `lucid-cardano` / `node-fetch`; the concrete Rollup error is `promisify` not exported by `__vite-browser-external` from `node-fetch/src/body.js`.
+
+This is a frontend packaging/runtime boundary issue, not evidence that the economic conformance tests fail. It remains an independent repository-build front and is not silently marked green.
+
+### B5 handoff
+
+The current `PreRichEconomicAdmission` interface evaluates the candidate V3 state against one supplied EEV value. The canonical dependency chain requires explicit `Economic Delta → Candidate Post-State`, so the admission interface must eventually represent the **candidate post-transition EEV** (or an equivalently derived economic post-state) rather than assuming the pre-state EEV remains valid for every action.
+
+This is a substantive B5 integration issue and is assigned to the existing B5 session; do not duplicate its implementation.
+
+### RF9 / expiry policy
+
+The ticket-level refinement boundary is now executable and green, but it intentionally does not choose the concrete PRE-RICH expiry horizon. `src/mint.ts` still contains the historical 365-day implementation placeholder. It remains non-canonical until PRE-RICH supplies an explicit declared deterministic expiry policy.
+
+No universal expiry number was introduced by this work.
