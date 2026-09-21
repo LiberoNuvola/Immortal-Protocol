@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - audit/adapter-sale-conformance
+      - work/immortal-green-closure
   pull_request:
     branches:
       - b1-hardening
