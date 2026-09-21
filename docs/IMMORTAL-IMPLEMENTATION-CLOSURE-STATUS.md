@@ -1,6 +1,6 @@
 # IMMORTAL — Implementation & Conformance Closure Status
 
-**Snapshot branch:** `edf125ba8068a7c18c30920a2ed4aca3a89030fb`
+**Snapshot branch:** `aa2cf1d2eda2977e11e7328e9f235079a836b72c`
 **Classification:** non-normative implementation/evidence checkpoint
 **Date:** 2026-09-21
 
@@ -44,10 +44,10 @@
 | RF6 Ω completeness | Real environment perimeter and over-approximation certificate require deployment-specific evidence. |
 | Non-vacuity / Kc | Concrete S0/QNE/certificate E1–E10 are deployment/profile evidence, not universal math. |
 | B2 live/on-chain control integration | Hysteresis reference is implemented, but live PRE-RICH control datum/on-chain enforcement is separate. |
-| Jackpot activation on-chain | Application policy is defined, but current B1 datum lacks current/highest class state needed for a faithful direct on-chain predicate. |
-| 3D production UI wiring | Certified boundary and renderer exist; production page integration remains a UI task, not a protocol task. |
+| Jackpot activation on-chain | Application policy is implemented; direct on-chain activation remains open because current B1 datum lacks current/highest class state. |
+| 3D production UI wiring | IMPLEMENTED on current branch; visual/UX conformance remains evidence-only. |
 | P2.8 full lifecycle | Yaci lab remains the final real-ledger evidence gate for the whole Issue→Reveal→Claim/Expire path. |
-| Haskell final regression | Toolchain run still needs a completed result on the latest branch snapshot. |
+| Haskell final regression | Pending current-head runner completion; toolchain pin and native dependencies are now aligned with `cabal.project`. |
 
 ## 4. Anti-regression decisions
 
@@ -63,3 +63,15 @@
 The implementation baseline can be called **operationally green** when the current-head Haskell regression and Yaci/P2.8 lab complete successfully. The project can be called **fully certified** only after the deployment-specific R1–R8/RF1–RF11 evidence packages, including Ω perimeter, Kc/non-vacuity, no-side-door and external canonical-state proof, are actually attached to a concrete deployment.
 
 This distinction is deliberate: it prevents implementation green from being misreported as mathematical or deployment certification.
+
+## Current-head evidence delta — 2026-09-21
+
+- PRE-RICH Action Refinement Conformance is green on the current branch lineage: Issue/Expire/refinement tests and TypeScript typecheck pass.
+- Cardano Adapter Sale Conformance is green on the current branch lineage: economic conformance and Vite browser build both pass.
+- The current Cardano workflow is split into independent economic and frontend-build jobs; a frontend build failure cannot be misreported as economic conformance failure.
+- B1 legacy adapter now has an explicit lossless/lossy predicate and dedicated regression suite, with unsupported class/control/protected-capital/Jackpot state classified fail-closed.
+- R4 liveness boundary is green as bounded implementation evidence.
+- B3 canonical evidence packet is implemented as a tuple-binding schema; cryptographic finality/storage-proof verification remains a separate certification obligation.
+- 3D certified ticket binding is wired into the production shell; renderer remains presentation-only.
+
+The remaining items in this document are therefore certification/conformance obligations or deployment-specific evidence, not untracked implementation TODOs.
