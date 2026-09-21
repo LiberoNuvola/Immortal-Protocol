@@ -34,7 +34,9 @@ jobs:
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
           /tmp/blst/build.sh
-          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          BLST_LIB="$(find /tmp/blst -name libblst.a -type f -print -quit)"
+          test -n "$BLST_LIB"
+          sudo install -m 0644 "$BLST_LIB" /usr/local/lib/libblst.a
           sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
           sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
           sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
