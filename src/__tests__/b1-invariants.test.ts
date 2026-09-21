@@ -1056,7 +1056,7 @@ describe('23-field PrizeDatum Schema', () => {
       if (i === 10) return { index: 0, fields: [] } // Pending status
       if (i === 13) return { index: 0, fields: [0, 0, '', ''] } // BeaconTarget
       if (i === 14) return { index: 0, fields: [] } // BeaconPending
-      if (i === 3 || i === 6 || i === 7 || i === 12 || i === 19 || i === 20) return BigInt(0)
+      if (i === 3 || i === 6 || i === 7 || i === 12 || i === 19 || i === 20 || i === 21 || i === 22) return BigInt(0)
       return '' // bytes fields
     })
     assert.equal(fields.length, FIELD_COUNT)
