@@ -40,7 +40,7 @@ import {
 } from './gameRules'
 
 import { signAndSubmitTx } from './txHelpers'
-import { certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
+import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
 
 import {
   assertSettlementQuoteMatchesPrize,
@@ -692,10 +692,7 @@ export async function loadCertifiedTicketState(opts: {
     throw new Error('Certified ticket NFT is not currently held by the connected wallet')
   }
 
-  const ticketUnit = ticketPolicyId + ticketAssetNameHex
-  if (ticketUtxo.assets[ticketUnit] !== 1n) {
-    throw new Error('Certified ticket NFT quantity must be exactly one')
-  }
+  assertObservedTicketNft(ticketUtxo.assets, ticketPolicyId, ticketAssetNameHex)
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
