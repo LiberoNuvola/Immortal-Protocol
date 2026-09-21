@@ -31,6 +31,7 @@ jobs:
           echo "HEAD=$(git rev-parse HEAD)"
           ghc --version
           cabal --version
+
       - name: Install native dependencies
         run: |
           sudo apt-get update
@@ -39,11 +40,14 @@ jobs:
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
           set +e
-          /tmp/blst/build.sh
+          (
+            cd /tmp/blst
+            ./build.sh
+          )
           BLST_BUILD_RC=$?
           set -e
-          BLST_LIB="$(find /tmp/blst -name libblst.a -type f -print -quit)"
-          test -n "$BLST_LIB"
+          BLST_LIB="/tmp/blst/libblst.a"
+          test -s "$BLST_LIB"
           if [ "$BLST_BUILD_RC" -ne 0 ]; then
             echo "blst build.sh returned $BLST_BUILD_RC after producing libblst.a; continuing with the verified archive."
           fi
