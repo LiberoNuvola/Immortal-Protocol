@@ -34,9 +34,9 @@ export async function buildClaimTx(
 }
 
 export async function signAndSubmitTx(lucid: any, tx: any) {
-  const signed = await lucid.signTx(tx)
-  const txHash = await lucid.submitTx(signed)
-  return txHash
+  const adapter = createCardanoExecutionAdapter(lucid)
+  const result = await adapter.submit(tx)
+  return result.transactionRef
 }
 
 export function basicAddressValidate(addr: string): boolean {
