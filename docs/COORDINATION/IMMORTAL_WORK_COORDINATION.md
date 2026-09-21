@@ -726,3 +726,21 @@ This is a substantive B5 integration issue and is assigned to the existing B5 se
 The ticket-level refinement boundary is now executable and green, but it intentionally does not choose the concrete PRE-RICH expiry horizon. `src/mint.ts` still contains the historical 365-day implementation placeholder. It remains non-canonical until PRE-RICH supplies an explicit declared deterministic expiry policy.
 
 No universal expiry number was introduced by this work.
+---
+
+## 29. SESSION RESULT — RF9 / CI harness closure
+
+**Result:** ticket-level expiry refinement evidence is green, and the P2.7 Cardano semantic suite is green when executed under its native `node:test` harness via `tsx`.
+
+**Verified CI evidence:**
+- `PRE-RICH Expiry Refinement Conformance` (`35650580458`) — expiry refinement test step succeeded.
+- `Cardano Adapter Sale Conformance` (`35650580348`) — Vitest Adapter/reveal tests succeeded; P2.7 `tsx --test` execution succeeded with all 14 subtests; the workflow then failed only at frontend `npm run build`.
+- P2.7 therefore has **14/14 semantic subtests passing**; the earlier red was a harness incompatibility, not a semantic regression.
+
+**Frontend build issue:** Vite/Rollup fails while bundling Node-only modules pulled by `lucid-cardano` / `node-fetch`, specifically `promisify` from `node:util` in `node-fetch/src/body.js`. This is now classified as an independent `UI-BUILD`/packaging front; it must not be used to invalidate the economic conformance evidence, and it must not be hidden by removing the build step.
+
+**Expiry policy boundary:** the technical ticket-level boundary is closed as implementation evidence; the concrete PRE-RICH horizon remains deliberately unresolved because current A1 canon does not supply a numerical policy. `src/mint.ts` still contains the historical 365-day placeholder and cannot be promoted to canonical behavior.
+
+**B5 handoff:** `PreRichEconomicAdmission` still accepts a single EEV input for the candidate transition. The canonical chain requires explicit economic delta/post-state EEV. This remains owned by the active B5 session.
+
+**Status:** B6 = PARTIAL / NEEDS-EVIDENCE; RF9 = IMPLEMENTATION TEST GREEN; UI-BUILD = OPEN.
