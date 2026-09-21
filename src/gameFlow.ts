@@ -679,6 +679,9 @@ export async function loadCertifiedTicketState(opts: {
     defaultPrizeTable,
     ORACLE_PUBLISHER_PKH,
   )
+  if (!scripts.prizeAddress) {
+    throw new Error('Prize address cannot be resolved')
+  }
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     scripts.prizeAddress,
