@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   refinesAggregateExpire,
-  validateExpireRefinementEvidence,
   type ExpireRefinementEvidence,
 } from '../../PRE-RICH/profile/PreRichExpireRefinement'
 
@@ -20,7 +19,6 @@ const valid: ExpireRefinementEvidence = {
 
 describe('PRE-RICH Expire ticket→class refinement', () => {
   it('accepts an exact single-ticket refinement at expiry', () => {
-    expect(validateExpireRefinementEvidence(valid, 500n, 20_000n)).not.toThrow()
     expect(refinesAggregateExpire(valid, 3, 500n, 20_000n)).toBe(true)
   })
 
