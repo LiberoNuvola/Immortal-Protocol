@@ -10,7 +10,7 @@ on:
       - b1-hardening
 
 jobs:
-  frontend:
+  economic-conformance:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -21,4 +21,14 @@ jobs:
       - run: npm ci
       - run: npx vitest run src/__tests__/cardano-execution-adapter.test.ts src/__tests__/immortal-reveal-conformance.test.ts
       - run: npx tsx --test src/__tests__/immortal-cardano-adapter-conformance.test.ts
+
+  frontend-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run build
