@@ -1507,3 +1507,48 @@ No CI green claim is made for this delta. The latest previously observed infrast
 The new policy boundary is not itself runtime transaction authority. The remaining proof is to connect the authoritative PRE-RICH class-control/hysteresis state and the canonical Economic Gate to the actual Jackpot funding transition, then prove the same conditions at the Cardano realization boundary.
 
 **Status:** A2/A3 policy semantics represented without duplication; implementation/conformance remains open.
+
+---
+## 54. 2026-09-22 — B4 / G7 closure deltas
+
+**Front:** B4 ProtectedCapital / G7 canonical result typing
+
+### B4 evidence delta
+
+Added a non-zero protected-state projection case to `plutus/test/ProtectedCapitalConformanceTest.hs`.
+
+The fixture carries non-zero:
+- crystallized liabilities;
+- unresolved reserve/count;
+- derived worst-case exposure;
+- SafetyCapital;
+- ReserveProtection;
+- MandatoryFutureCosts;
+- locked Jackpot protection.
+
+The test verifies that `projectPreRichState` preserves each component into `UniversalEconomicState` and that `projectionBoundaryEquivalent` remains true at a solvent EEV snapshot.
+
+This is evidence only. No ProtectedCapital formula, transition rule or legacy compatibility rule changed.
+
+**Commit:** `5d0a5a44782c3eceff6ebcea8a0ccdbe685ee1ea`
+
+### G7 typed result delta
+
+The existing Reveal return object already carried both independent row tiers and the ticket-level summary. It is now named explicitly as `Classic6RevealResult` in `src/gameFlow.ts`, documenting that:
+- `row1Tier` and `row2Tier` are the preserved independent row results;
+- `tier` is only the legacy summary `max(row1Tier,row2Tier)`;
+- `prizeAmount` remains the established capped USDM sub-unit payout.
+
+No API shape or economic value changed.
+
+**Commit:** `bb78069af2ecda25fbcc033d8557f8dacd88a59a`
+
+### Expiry re-observation
+
+Current `src/mint.ts` no longer supplies a fixed 365-day duration. It requires the DApp/profile expiry policy plus the authoritative issuance-state snapshot and crystallizes `expiresAt` through `crystallizeTicketExpiry`. The 365-day value remains historical test/provisional evidence only.
+
+### Evidence status
+
+These commits have not been granted a CI-green claim by this coordination entry. The available workflow connector does not enumerate all branch-push runs, and previously observed fresh runs included cancelled Kernel/Cardano attempts. New evidence must be observed on the resulting head.
+
+**Status:** B4 evidence strengthened / G7 type boundary explicit / CI and live-ledger evidence still open.
