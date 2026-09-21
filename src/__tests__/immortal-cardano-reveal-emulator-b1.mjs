@@ -22,6 +22,7 @@
 
 import {
   Constr,
+  Data,
   Emulator,
   Lucid,
   applyParamsToScript,
@@ -797,7 +798,7 @@ async function main() {
 
         {
           inline:
-            prePrizeDatum,
+            Data.to(prePrizeDatum),
         },
 
         {
@@ -814,7 +815,7 @@ async function main() {
 
         {
           inline:
-            prePoolDatum,
+            Data.to(prePoolDatum),
         },
 
         {
@@ -925,7 +926,7 @@ async function main() {
 
         {
           inline:
-            postPrizeDatum,
+            Data.to(postPrizeDatum),
         },
 
         prizeUtxos[0].assets,
@@ -936,7 +937,7 @@ async function main() {
 
         {
           inline:
-            postPoolDatum,
+            Data.to(postPoolDatum),
         },
 
         poolUtxos[0].assets,
