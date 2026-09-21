@@ -47,7 +47,7 @@ jobs:
       - name: Install Plutus native dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev pkg-config build-essential git
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
           rm -rf /tmp/blst
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
