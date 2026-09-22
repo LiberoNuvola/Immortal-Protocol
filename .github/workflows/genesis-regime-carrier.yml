@@ -9,6 +9,7 @@ on:
       - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichRegimeState.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
