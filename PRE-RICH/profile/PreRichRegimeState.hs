@@ -39,7 +39,7 @@ preGenesisState = PreRichRegimeState PreGenesis
 
 {-# INLINABLE genesisState #-}
 genesisState :: PreRichRegimeState
- genesisState = PreRichRegimeState Genesis
+genesisState = PreRichRegimeState Genesis
 
 -- | Permissionless transition predicate/witness seam. This pure function
 -- does not transfer funds, mint assets, or replace on-chain revalidation.
