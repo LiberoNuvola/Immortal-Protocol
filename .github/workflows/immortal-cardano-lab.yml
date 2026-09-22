@@ -80,6 +80,7 @@ jobs:
           sudo ldconfig
           pkg-config --modversion libblst
 
+      # Cost-model diagnostic run: preserve the real Reveal path while recording the Yaci protocol-model shape.
       # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
       # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
       - name: Generate fresh Plutus validator artifacts
