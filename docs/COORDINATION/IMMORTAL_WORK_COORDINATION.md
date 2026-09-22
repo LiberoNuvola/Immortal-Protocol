@@ -2759,3 +2759,20 @@ The semantic predicate is now **CLOSED** at application level. What remains is c
 5. add a deterministic boundary fixture covering `<4000`, `=4000`, `>4000`, malformed/stale valuation and wrong-Treasury ownership.
 
 **Status:** SEMANTIC CLOSED / IMPLEMENTATION + EVIDENCE OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 reference-script provider decoding repair
+
+Fresh-head CI on `cc81bf3` did **not** reach Plutus execution: the Lucid/Emulator provider rehydrated the two real reference-script UTxOs without a decoded `scriptRef`, despite those outputs having just been created by the fixture's reference-script transactions.
+
+Repair on `work/immortal-green-closure`:
+- retain selection by the exact creating transaction hash;
+- preserve the provider-returned UTxO;
+- restore the already-known `prizeScript` / `poolScript` as the `scriptRef` field only when the provider omitted it;
+- feed those UTxOs to `readFrom()`.
+
+This is a provider-decoding/fixture-boundary repair, not a validator bypass: the reference scripts are still deployed as real ledger UTxOs and are not attached inline to Reveal.
+
+Commit: `4db25d9b74bad1fae50b6aaf8702194b4ed6c811`.
+
+**Status:** fresh emulator CI triggered; validator execution/resource evidence remains OPEN pending the new run.
