@@ -67,7 +67,7 @@ assert.equal(
 )
 assert.equal(
   admitGenesisTreasury(
-    observation({ preQuantity: 4_000n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
+    observation({ preQuantity: 399_999n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
     TREASURY, POLICY, NAME,
   ).admitted,
   true,
