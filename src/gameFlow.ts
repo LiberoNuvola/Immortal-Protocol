@@ -828,6 +828,8 @@ function validateSettlementValue(
 }
 
 export async function claimPrize(opts: {
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
   prizeAddress: string
   ticketPolicyId: string
   ticketAssetNameHex: string
