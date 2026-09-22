@@ -2,8 +2,7 @@
 //
 // The canonical implementation lives in src/gameFlow.ts.
 // This module deliberately has no payment fallbacks: callers must supply the
-// exact settlement asset quantity and the canonical claim flow performs the
-// final on-chain USDM-equivalence check.
+// exact settlement asset quantity and an authoritative economic admission.
 
 import {
   claimPrize as canonicalClaimPrize,
@@ -11,6 +10,7 @@ import {
   findTicketUtxoInWallet,
   type ExactSettlementValue,
 } from './gameFlow'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 export { findPrizeUtxo, findTicketUtxoInWallet }
 export type { ExactSettlementValue }
@@ -23,10 +23,17 @@ export async function claimPrizeAuto(
   statusCb?: (msg: string) => void,
   settlementValue?: ExactSettlementValue,
   b1PrizePoolAddress?: string,
+  economicAdmission?: EconomicAdmissionWitness,
 ): Promise<string> {
   if (!settlementValue || Object.keys(settlementValue).length === 0) {
     throw new Error(
       'Exact settlement quote required: no automatic lovelace/token fallback is permitted',
+    )
+  }
+
+  if (!economicAdmission) {
+    throw new Error(
+      'Authoritative Economic Gate admission required: no synthetic Claim authorization is permitted',
     )
   }
 
@@ -38,6 +45,7 @@ export async function claimPrizeAuto(
   statusCb?.('Building canonical Claim transaction...')
 
   const txHash = await canonicalClaimPrize({
+    economicAdmission,
     prizeAddress: scriptAddress,
     ticketPolicyId,
     ticketAssetNameHex: ticketAssetName,
@@ -57,12 +65,19 @@ export async function tryClaimAndNotify(
   onProgress?: (msg: string) => void,
   settlementValue?: ExactSettlementValue,
   b1PrizePoolAddress?: string,
+  economicAdmission?: EconomicAdmissionWitness,
 ): Promise<string> {
   onProgress?.('Preparing exact settlement Claim...')
 
   if (!settlementValue || Object.keys(settlementValue).length === 0) {
     throw new Error(
       'Exact settlement quote required before Claim can be constructed',
+    )
+  }
+
+  if (!economicAdmission) {
+    throw new Error(
+      'Authoritative Economic Gate admission required before Claim can be constructed',
     )
   }
 
@@ -74,5 +89,6 @@ export async function tryClaimAndNotify(
     onProgress,
     settlementValue,
     b1PrizePoolAddress,
+    economicAdmission,
   )
 }
