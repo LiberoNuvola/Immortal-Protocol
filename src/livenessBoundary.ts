@@ -82,3 +82,35 @@ export function noLiveActionCanFollowSafeIdleWitness(): boolean {
   }
   return !eligibleActionExists(idle) && eligibleState(idle)
 }
+
+export const PERMISSIONLESS_EXECUTION_SEQUENCE = [
+  'CONDITION',
+  'OBSERVABLE_EVENT',
+  'WAKE_UP',
+  'CANDIDATE_CONSTRUCTION',
+  'PERMISSIONLESS_INVOCATION',
+  'ON_CHAIN_REVALIDATION',
+  'ATOMIC_TRANSITION',
+  'CANONICAL_STATE',
+] as const
+
+export type PermissionlessExecutionPhase = typeof PERMISSIONLESS_EXECUTION_SEQUENCE[number]
+
+export type PermissionlessExecutionTrace = {
+  phases: PermissionlessExecutionPhase[]
+  authoritativeRevalidationPassed: boolean
+  atomicCommit: boolean
+  canonicalStateObserved: boolean
+  competingSubmissionRejected: boolean
+}
+
+export function permissionlessExecutionTraceValid(trace: PermissionlessExecutionTrace): boolean {
+  return (
+    trace.phases.length === PERMISSIONLESS_EXECUTION_SEQUENCE.length &&
+    trace.phases.every((phase, index) => phase === PERMISSIONLESS_EXECUTION_SEQUENCE[index]) &&
+    trace.authoritativeRevalidationPassed &&
+    trace.atomicCommit &&
+    trace.canonicalStateObserved &&
+    trace.competingSubmissionRejected
+  )
+}
