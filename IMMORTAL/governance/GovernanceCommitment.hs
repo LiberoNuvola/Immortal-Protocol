@@ -6,15 +6,15 @@ import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.Text
 import qualified Data.Text.Encoding as TE
-import GovernanceCanonicalSerialization (canonicalEventBytes)
+import GovernanceCanonicalSerialization (canonicalCommitmentBytes)
 import GovernanceEventSchema (CanonicalEvent, payloadCommitment)
 
 commitmentAlgorithm :: String
-commitmentAlgorithm = "SHA-256 over UTF-8 canonical event representation"
+commitmentAlgorithm = "SHA-256 over UTF-8 canonical commitment preimage"
 
 commitmentDigestHex :: CanonicalEvent -> String
 commitmentDigestHex e =
-  map lower (BSC.unpack (B16.encode (SHA256.hash (TE.encodeUtf8 (Data.Text.pack (canonicalEventBytes e))))))
+  map lower (BSC.unpack (B16.encode (SHA256.hash (TE.encodeUtf8 (Data.Text.pack (canonicalCommitmentBytes e))))))
   where
     lower 'A' = 'a'
     lower 'B' = 'b'
