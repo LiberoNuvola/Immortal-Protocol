@@ -1,0 +1,17 @@
+name: Algorithmic Governability Adversarial Lab
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+  pull_request:
+
+jobs:
+  no-result-dependent-authority:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
