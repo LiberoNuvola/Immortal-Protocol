@@ -1,7 +1,7 @@
 module RulesetRegistry
   ( RulesetVersion, RulesetDefinition(..), RulesetRegistry, emptyRegistry
   , canonicalRulesetBody, rulesetDefinitionValid, registryValid
-  , registerRuleset, lookupRuleset, activeRuleset, rulesetCompatible
+  , registerRuleset, lookupRuleset, activeRuleset, rulesetCompatible, rulesetVersionRegistered
   ) where
 type RulesetVersion = Integer
 data RulesetDefinition = RulesetDefinition { rulesetVersion :: RulesetVersion, rulesetCommitment :: String, effectiveFrom :: Integer, supersedes :: Maybe RulesetVersion } deriving (Eq,Show,Ord)
@@ -37,3 +37,9 @@ activeRuleset now=foldl choose Nothing where
  choose Nothing r|effectiveFrom r<=now=Just r|otherwise=Nothing
  choose cur@(Just old) r|effectiveFrom r<=now && effectiveFrom r>=effectiveFrom old=Just r|otherwise=cur
 rulesetCompatible v c rs=case lookupRuleset v rs of Just r->rulesetCommitment r==c; Nothing->False
+
+
+rulesetVersionRegistered :: RulesetVersion -> RulesetRegistry -> Bool
+rulesetVersionRegistered v rs = case lookupRuleset v rs of
+  Just _ -> True
+  Nothing -> False
