@@ -194,3 +194,13 @@ test-suite projection-boundary-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
+
+
+test-suite genesis-admission-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: GenesisAdmissionTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
