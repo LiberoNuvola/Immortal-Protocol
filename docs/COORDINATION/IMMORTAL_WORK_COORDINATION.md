@@ -2208,3 +2208,13 @@ However, the live TypeScript execution path does not consume that witness: src/g
 - Cardano lab: the prior Evolution probe failure was diagnosed as the fixture mnemonic mismatch (cost-model lengths were successfully observed); corrected fixture is now on branch. A new lab run should exercise Reveal/Expire after the corrected seed.
 
 **Status:** B5 runtime submission boundary GREEN; authoritative admission production/evidence OPEN. Cardano RF10/RF11/P2.8 evidence OPEN pending a fresh real-ledger run. Materios real authority-selection proof OPEN.
+
+
+## 2026-09-22 — Materios upstream selection triangulation
+
+- Re-read current Materios `main` authority-selection implementation rather than relying on the older snapshot.
+- The actual selection function takes `genesis_utxo`, `AuthoritySelectionInputs`, and `sidechain_epoch`; inside it filters registered/permissioned candidates, computes weights from the D-parameter and stake, sorts by account ID, derives the random seed from Cardano epoch nonce + sidechain epoch, applies the weighted sampler, then applies the repository's deduplication and `MIN_DISTINCT_COMMITTEE=2` safety floor.
+- Therefore the existing IMMORTAL proof statement is correctly keeping the algorithm opaque, but the future proof producer must authenticate the exact serialized `AuthoritySelectionInputs` bytes plus `genesis_utxo` and epoch against the advertised committee. We must not replace this with a TypeScript reimplementation.
+- Current upstream Materios also has later runtime resilience controls around committee selection/fallbacks; these reinforce that the proof boundary must identify the exact runtime/profile context rather than assuming a timeless abstract selection function.
+- Official Polkadot documentation independently confirms GRANDPA finality is a separate consensus service and that authority-set changes are explicit transitions. citeturn0search0turn0search2
+- **Result:** no new semantic field invented. Next real proof target is canonical Rust/WASM selection execution or an authenticated proof produced from it, with exact statement binding.
