@@ -1933,3 +1933,8 @@ Fresh closure CI exposed two compile-only regressions before economic/integratio
 - IMMORTAL/governance/GovernanceCommitment.hs: Data.ByteString.Base16.encode yields ByteString/Word8, while the existing lowercase helper expects characters. Switched only the decoding step to Data.ByteString.Char8.unpack; canonical SHA-256 algorithm and comparison semantics are unchanged.
 
 These are build-boundary corrections only. Do not promote B4/B5/B6/C3/C4 based on them; rerun the relevant CI and continue to real-ledger evidence.
+
+
+## 2026-09-22 — GovernanceCommitment compile regression corrected
+
+Fresh Kernel run `35704026604` reached compilation and exposed `Num Char` inference in `GovernanceCommitment.lower`. Corrected with explicit `A`–`F` character mapping. SHA-256/canonical serialization/commitment semantics unchanged. Commit: `984b77c1a397519ee9b6f38c651882255b30f7dc`. Fresh CI required; no economic status promoted.
