@@ -2952,3 +2952,27 @@ The Plutus-side `genesis-admission-tests` suite was also added to the existing k
 No Genesis predicate, threshold, oracle rule, or economic invariant changed. Fresh CI evidence is pending.
 
 **Status:** CI harness repair IMPLEMENTED / fresh Genesis TS + Plutus execution PENDING.
+
+
+## 2026-09-22 — Notion mapping reconciled with live repository
+
+A broad Notion mapping pass was completed across the current architecture/evidence graph, including the Multi-Front Workflow Checkpoint, T2 Transition Conformance, Architecture & State Machine, Economic Usage Fee workflow, Snek Gates 26–41, governance integration and Algorithmic Governability.
+
+The important new repository-level conclusion is precise:
+- Notion freezes the PRE-RICH regime chain as PRE_GENESIS → GENESIS → ACTIVE → QUIESCENT and binds Genesis activation to verified PRE Treasury value >= 4,000 USDM.
+- The repository already contains the authoritative candidate Plutus admission seam `PRE-RICH/profile/PreRichGenesisAdmission.hs`, exposed in `plutus/pre-rich-plutus.cabal`.
+- That seam verifies the Genesis predicate but does not carry/mutate a canonical PRE-GENESIS/GENESIS state.
+- A current-branch tree inspection found no dedicated Genesis state datum/action/validator module.
+- Therefore the remaining Genesis gap is the **application state carrier + atomic on-chain transition/concurrency boundary**, not another economic predicate.
+- The TS admission seam remains an off-chain/evidence mirror and must not become a second authority.
+
+The complete mapping is recorded in:
+`docs/COORDINATION/NOTION-MAP-IMPLEMENTATION-CROSSWALK-v0.1.md`
+
+Notion evidence also confirms that Snek/Splash Gates 26–41 are a separate external-event/source-qualification workstream. Their historical pool/price evidence must not be silently promoted to the Genesis PRE→USDM oracle source.
+
+**Next Genesis action:** inspect the existing Cardano datum/validator topology and derive the smallest PRE-RICH regime-bearing state carrier from T2/P0 before writing any transition code. No second economic state machine and no invented threshold/Oracle source.
+
+Commit: `59f1279e4a4c864e85d4950de45a7d268ebea2a6` (crosswalk).
+
+**Status:** NOTION MAP RECONCILED / GENESIS CARRIER GAP CONFIRMED / IMPLEMENTATION DESIGN NEXT.
