@@ -84,3 +84,23 @@ Do not mark this front CLOSED until an actual transition trace exists.
 Map the exact PRE-RICH on-chain state datum/validator that should carry the regime boundary, then map the V3-compatible Treasury observation needed by the predicate. Only after those two boundaries are explicit should the minimum transition/revalidation surface be implemented, followed by positive and negative ledger evidence.
 
 **No economic parameter changed by this document.**
+
+## 2026-09-22 P0/T2 reconciliation
+
+The Notion T2 conformance specification and P0 liveness contract were fetched directly on 2026-09-22 and add no new economic rule. For PRE-GENESIS -> GENESIS they require the same chain: verified Genesis predicate, permissionless invocation, independent on-chain revalidation, atomic state consumption, idempotence/concurrency rejection, stale/conflicting-state rejection, and SAFE STALL/re-discovery when nobody submits.
+
+The repository phase-1 `PreRichRegimeState` implements only the pure application carrier seam. It is therefore correctly classified as partial implementation, not P0 conformance. The final carrier still needs a canonical singleton identity plus transition/version binding and authenticated Treasury/Oracle evidence references.
+
+A direct current-branch tree inspection found existing singleton patterns for B1 PrizePool and Oracle, but no already-defined canonical Genesis regime singleton policy/name. Consequently no identity has been invented. This preserves the T2/P0 authority boundary: deployment identity must be established before the Cardano validator can claim a unique canonical regime UTxO.
+
+The Cardano Adapter Sale remains green on the latest observed run. The Reveal emulator remains open; its latest canonical-limit failure is execution-budget exhaustion, while the earlier high-budget differential probe remains the stronger isolation evidence for the B1 `Value/valueOf` evaluation path. These fronts are independent of Genesis semantics.
+
+## Current closure classification
+
+- Genesis admission predicate: GREEN at semantic/conformance seam.
+- Genesis application carrier: IMPLEMENTED phase 1.
+- Genesis Cardano singleton identity: OPEN.
+- Genesis atomic on-chain transition: OPEN.
+- P0 transition conformance: OPEN.
+- Reveal evaluator/runtime compatibility: OPEN.
+- No economic parameter changed.
