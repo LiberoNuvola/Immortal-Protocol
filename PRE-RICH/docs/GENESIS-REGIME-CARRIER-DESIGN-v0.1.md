@@ -227,3 +227,43 @@ The front closes only when:
 `canonical PRE_GENESIS state → verified predicate → permissionless candidate → independent on-chain revalidation → atomic GENESIS state → concurrency rejection → accounting evidence`
 
 is demonstrated reproducibly.
+
+
+## 12.1 — Important implementation boundary discovered during carrier inspection
+
+Direct inspection of the current Plutus surface confirms that `GenesisTreasuryObservation` is presently an **admission seam**, not yet an independently authenticated ledger observation.
+
+Its fields are:
+- identity/state/source/asset/oracle checks represented as boolean evidence flags;
+- PRE quantity;
+- verified PRE→USDM price;
+- oracle precision.
+
+The current `genesisPredicate` therefore proves only the predicate over an already-constructed observation. It does **not** by itself authenticate:
+- which Treasury UTxO supplied `gtoPreQuantity`;
+- which PRE asset quantity was read from that UTxO;
+- which Oracle reference input supplied `gtoVerifiedPreUsdmPrice`;
+- that the transaction's reference inputs correspond to those fields;
+- that the observation is bound to the exact carrier transition.
+
+This is not a reason to weaken or replace the predicate. It is the precise reason the final Cardano carrier validator must add an authenticated observation layer around the existing predicate.
+
+The safe implementation shape is therefore:
+
+```text
+actual Treasury / Oracle reference inputs
+        ↓
+authenticated on-chain observation
+        ↓
+GenesisTreasuryObservation
+        ↓
+existing genesisPredicate
+        ↓
+ActivateGenesis transition
+```
+
+The boolean fields must not be treated as caller-supplied proof of facts that the validator never reconstructs.
+
+**Classification:** ARCHITECTURE GAP / CLOSING, not a new economic decision.
+
+**No new threshold, price, oracle source, or governance authority is introduced.**
