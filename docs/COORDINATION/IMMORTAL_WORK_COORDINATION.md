@@ -1597,7 +1597,6 @@ Triangulation against the current Decision Register and T2 confirms the canonica
 ### Ledger evidence
 
 Added `audit/cardano-integration/expire-ledger-trace.ts` and connected it to `.github/workflows/immortal-cardano-lab.yml`.
-
 The trace bootstraps an already-expired Pending ticket and pool on isolated Yaci, then:
 1. submits EXPIRE through `createCardanoExecutionAdapter`;
 2. verifies the Prize UTxO is consumed with no replacement;
@@ -1797,7 +1796,6 @@ Therefore the export step must execute from repository root:
 `cabal run exe:export-scripts`
 
 The prior configuration would have targeted a nested `plutus/plutus/out` path and would not have bound the generated artifacts to the expected deployment path.
-
 **Correction:** removed the `working-directory: plutus` override from the export step.
 
 **Commit:** `d568485aea38dd4a7323255d6b6024acc3d23884`
@@ -2397,7 +2395,6 @@ The GOV-22 audit was converted into a minimal schema correction on the working c
 - `canonicalPayloadText` includes the timestamp, so the semantic payload representation remains deterministic and binds the same time as the event envelope.
 - `GovernanceCanonicalReplay.hs` was updated only to consume the enriched payload shape; governance transition semantics are unchanged.
 This is a GOV-22 schema-consistency repair, not a new governance rule.
-
 The audit also confirms that `IMMORTAL/governance/CanonicalEvent.hs` is a separate older lifecycle representation and must not silently become a second semantic source of truth. GOV-22's `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` path is the lineage to reconcile against the normative spec; no deletion of the older module is performed without consumer/test reconciliation.
 
 Commits:
@@ -2720,3 +2717,45 @@ Notion T2/P0 and the current PRE-RICH Constitution were triangulated against the
 Added `PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md` with the transition contract, on-chain revalidation requirements, bootstrap non-double-counting invariant, SAFE STALL/liveness requirements, negative cases and closure evidence.
 
 **Status:** semantic boundary CLOSED; transition-level operational conformance CLOSING/OPEN. No economic parameter changed.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS predicate resolved by current PRE-RICH canon
+
+**Triangulation correction / resolution:** inspection of the current branch at the latest diagnostic HEAD `83d459a1c6e584e10af7ebd3f572e5d5159292ff` resolves the apparent ambiguity identified in the previous note.
+
+The current canonical `PRE-RICH/docs/GAME-ECONOMY.md` states explicitly:
+
+`Genesis ticket = 1 USDM`
+`Genesis bootstrap = verified PRE Treasury >= 4000 USDM`
+
+and `PRE-RICH/docs/CONSTITUTION.md` carries the same frozen application baseline. T2/P0 describe the transition operationally as a verified Genesis predicate, permissionless invocation and independent revalidation. Therefore the current PRE-RICH Genesis activation predicate is **verified PRE Treasury >= 4000 USDM**; no additional numerical stability/trajectory threshold should be invented.
+
+The apparent reference in the End-to-End map to “activation follows the required ladder/stability condition and economic trajectory” belongs to the **Jackpot activation/funding section**, where `StableLadder(S)` is explicitly defined. It is not evidence of an additional PRE-GENESIS → GENESIS predicate.
+
+### Critical distinction now clarified
+
+The rule is **not** “ignore all PRE bootstrap when entering Genesis.” The rule is:
+
+- the Snek/PRE bootstrap supply is historical/application bootstrap state;
+- it is **not automatically PrizePool liquidity** and must not be counted as such;
+- a verified PRE amount held in the protocol-controlled **PRE Treasury** may satisfy the Genesis bootstrap predicate when the canonical Treasury observation/value proves `>= 4000 USDM`;
+- only resources explicitly admitted by the PRE-RICH Genesis accounting rules enter the Genesis economic starting state;
+- no automatic conversion of the entire PRE bootstrap supply into PrizePool capital occurs.
+
+So the transition is better represented as:
+
+`PRE-GENESIS observed state → verify PRE Treasury value >= 4000 USDM → crystallize Genesis boundary → Genesis (price = 1 USDM)`
+
+with the bootstrap token supply retained as provenance/history and with Treasury admission separated from PrizePool liquidity admission.
+
+### Remaining implementation/evidence work
+
+The semantic predicate is now **CLOSED** at application level. What remains is conformance/evidence:
+
+1. identify the authoritative on-chain Treasury observation and valuation path;
+2. prove the observed PRE Treasury value is actually controlled by the protocol Treasury and not a user/operator wallet;
+3. prove the Genesis transition consumes/revalidates that observation permissionlessly and atomically;
+4. prove the Genesis starting state does not silently import excluded bootstrap/Pool-NFT/seed assets into PrizePool liquidity;
+5. add a deterministic boundary fixture covering `<4000`, `=4000`, `>4000`, malformed/stale valuation and wrong-Treasury ownership.
+
+**Status:** SEMANTIC CLOSED / IMPLEMENTATION + EVIDENCE OPEN.
