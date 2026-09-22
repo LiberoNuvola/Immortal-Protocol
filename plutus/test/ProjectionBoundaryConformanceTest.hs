@@ -43,8 +43,8 @@ main = do
   case projectPreRichState profile validState of
     Nothing -> error "FAIL: valid state projection rejected"
     Just projected -> do
-      assert (UniversalKernel.protectedCapital projected == 2_809) "projected ProtectedCapital counts liabilities, exposure and protected components once"
-      assert (UniversalKernel.rawSurplus 4000 projected == 1_191) "projected RawSurplus matches exact universal formula"
+      assert (UniversalKernel.protectedCapital projected == 2809) "projected ProtectedCapital counts liabilities, exposure and protected components once"
+      assert (UniversalKernel.rawSurplus 4000 projected == 1191) "projected RawSurplus matches exact universal formula"
 
   assert
     (case projectPreRichState profile (validState { v3UnresolvedReserve = 6 }) of
