@@ -826,6 +826,18 @@ async function main() {
 
       .complete();
 
+  const setupSigned =
+    await setupTx
+      .sign()
+      .complete();
+
+  const setupHash =
+    await setupSigned.submit();
+
+  await emulator.awaitTx(
+    setupHash,
+  );
+
   const prizeReferenceTx =
     await lucid
       .newTx()
@@ -853,18 +865,6 @@ async function main() {
   const poolReferenceSigned = await poolReferenceTx.sign().complete();
   const poolReferenceHash = await poolReferenceSigned.submit();
   await emulator.awaitTx(poolReferenceHash);
-
-  const setupSigned =
-    await setupTx
-      .sign()
-      .complete();
-
-  const setupHash =
-    await setupSigned.submit();
-
-  await emulator.awaitTx(
-    setupHash,
-  );
 
   /*
    * --------------------------------------------------------------
