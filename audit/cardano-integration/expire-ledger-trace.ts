@@ -17,6 +17,7 @@ import {
   Lucid,
   Blockfrost,
   getAddressDetails,
+  nativeScriptFromJson,
   type Script,
   type UTxO,
 } from 'lucid-cardano'
