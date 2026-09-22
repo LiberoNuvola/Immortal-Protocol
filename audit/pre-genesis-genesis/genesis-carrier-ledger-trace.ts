@@ -274,6 +274,11 @@ const postCarrier = await waitFor(
   "GENESIS carrier UTxO",
 );
 
+const genesisCarrierUtxo = postCarrier.find(
+  (u) => u.txHash === transitionHash && u.assets[carrierUnit] === 1n,
+);
+if (!genesisCarrierUtxo) throw new Error("GENESIS carrier UTxO not found");
+
 const replayError = await expectRejected(
   "Genesis transition replay",
   async () => lucid.submitTx(signedTransition),
@@ -308,10 +313,8 @@ const result = {
     policyId: carrierPolicyId,
     tokenNameHex: CARRIER_NAME_HEX,
     preGenesisRef: carrierUtxo.txHash + "#" + carrierUtxo.outputIndex,
-    genesisRef: (
-      postCarrier.find((u) => u.txHash === transitionHash && u.assets[carrierUnit] === 1n)
-      ?? postCarrier[0]
-    ).txHash,
+    genesisRef:
+      genesisCarrierUtxo.txHash + "#" + genesisCarrierUtxo.outputIndex,
   },
   genesisBoundary: {
     preQuantity: PRE_QUANTITY.toString(),
