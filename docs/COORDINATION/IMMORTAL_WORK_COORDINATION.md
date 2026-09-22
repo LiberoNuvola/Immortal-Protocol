@@ -3132,3 +3132,44 @@ Notion T2/P0 confirms the required semantics — canonical state consumption, st
 The implementation boundary is now explicit: **Genesis Cardano singleton identity remains OPEN**, and the next implementation step must come from an authoritative deployment/decision source or an explicit application decision. No new economic parameter was introduced.
 
 Supporting gap-map update: commit `82e54f657dcb04a20d707e44f1d576660bd9faa9`.
+
+
+## 2026-09-22 — Genesis carrier implementation promoted to compile/evidence gate
+
+**Front:** FRONT A — Genesis / PRE-GENESIS
+
+Implemented the first Cardano carrier seam in `PRE-RICH/profile/GenesisRegimeCarrier.hs`.
+
+The carrier is deliberately application-owned and separate from Treasury and B1PrizePool. Its datum binds:
+- regime and monotonic transition nonce/version;
+- canonical Treasury ScriptHash;
+- canonical PRE asset identity;
+- canonical Oracle singleton identity and publisher;
+- carrier singleton identity;
+- canonical B1PrizePool ScriptHash.
+
+`ActivateGenesis` now requires, at validator level:
+- exactly one own carrier input;
+- exactly one continuing carrier output;
+- PRE_GENESIS → GENESIS only;
+- deterministic nonce/version increment;
+- singleton carrier token conservation;
+- exactly one authenticated Treasury reference with decodable Treasury datum;
+- exactly one matching fresh Oracle reference carrying the authenticated Oracle singleton;
+- PRE quantity and PRE→USDM price reconstructed from those reference inputs;
+- the existing `genesisPredicate` applied to that reconstructed observation;
+- no B1PrizePool input/output in the Genesis transition, preventing silent bootstrap→PrizePool reclassification in this atomic step.
+
+Build/export integration:
+- `plutus/pre-rich-plutus.cabal` exposes `GenesisRegimeCarrier`;
+- `plutus/export/Export.hs` exports `genesisRegimeCarrier.plutus.json`;
+- `.github/workflows/genesis-regime-carrier.yml` builds the Plutus package, exports scripts and asserts the artifact exists.
+
+Commits:
+- `f87b59b5c8159013b8543e340e99c54e4bb9fbe0` — authenticated carrier implementation
+- `6063addc09e3711dec1565406a7b7f8f49ac91a6` — cabal exposure
+- `62571c2496c1256823a4c7e837b4bf9a58dcf5b0` — script export
+- `6f0a05d83a80cdba08d51c1e537d7ebf6f660604` — declaration cleanup
+- `8f24d644a2b8947a30eda3cc8de3ae495a52a066` — CI compile/export gate
+
+**Status:** `CLOSING / CI PENDING`. This is not GREEN until the actual workflow compiles the validator and exports the artifact, followed by emulator and real-ledger transition evidence. No new economic threshold or oracle source was introduced.
