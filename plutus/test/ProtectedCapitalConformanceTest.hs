@@ -5,6 +5,7 @@ module Main where
 import Prelude
   ( Bool (False, True)
   , IO
+  , Maybe (Just, Nothing)
   , String
   , error
   , putStrLn
