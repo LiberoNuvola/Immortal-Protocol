@@ -160,7 +160,7 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 
-const lucid = new Lucid(
+const lucid = await Lucid.new(
   new Blockfrost(API, ''),
   'Preprod',
 )
