@@ -241,6 +241,9 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
     const fixture = makeRevealFixture()
 
     const preState = projectCardanoToImmortalV3({
+      safetyCapital: 0n,
+      reserveProtection: 0n,
+      mandatoryFutureCosts: 0n,
       pool: {
         pendingLiabilitiesUsdm: 500n,
         unresolvedReserveUsdm: 600n,
@@ -276,6 +279,9 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
     )
 
     const observedPostState = projectCardanoToImmortalV3({
+      safetyCapital: 0n,
+      reserveProtection: 0n,
+      mandatoryFutureCosts: 0n,
       pool: {
         pendingLiabilitiesUsdm:
           (fixture.produced.b1PrizePool.datum as B1PrizePoolDatumFixture)
