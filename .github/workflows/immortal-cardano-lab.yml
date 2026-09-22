@@ -81,7 +81,6 @@ jobs:
           pkg-config --modversion libblst
 
       - name: Generate fresh Plutus validator artifacts
-        working-directory: plutus
         run: cabal run exe:export-scripts
 
       - name: Bind generated artifacts to trace consumers
