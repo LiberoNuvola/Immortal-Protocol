@@ -824,30 +824,35 @@ async function main() {
         },
       )
 
-      /* Reference scripts: keep the reveal transaction below the 16KB ledger limit. */
-      .payToAddressWithData(
-        walletAddress,
-        {
-          inline: Data.to(constr(0, [])),
-          scriptRef: prizeScript,
-        },
-        {
-          lovelace: 2_000_000n,
-        },
-      )
-
-      .payToAddressWithData(
-        walletAddress,
-        {
-          inline: Data.to(constr(0, [])),
-          scriptRef: poolScript,
-        },
-        {
-          lovelace: 2_000_000n,
-        },
-      )
-
       .complete();
+
+  const prizeReferenceTx =
+    await lucid
+      .newTx()
+      .payToAddressWithData(
+        walletAddress,
+        { scriptRef: prizeScript },
+        { lovelace: 2_000_000n },
+      )
+      .complete();
+
+  const prizeReferenceSigned = await prizeReferenceTx.sign().complete();
+  const prizeReferenceHash = await prizeReferenceSigned.submit();
+  await emulator.awaitTx(prizeReferenceHash);
+
+  const poolReferenceTx =
+    await lucid
+      .newTx()
+      .payToAddressWithData(
+        walletAddress,
+        { scriptRef: poolScript },
+        { lovelace: 2_000_000n },
+      )
+      .complete();
+
+  const poolReferenceSigned = await poolReferenceTx.sign().complete();
+  const poolReferenceHash = await poolReferenceSigned.submit();
+  await emulator.awaitTx(poolReferenceHash);
 
   const setupSigned =
     await setupTx
