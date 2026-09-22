@@ -48,6 +48,17 @@ main = do
           }))
   assert "duplicate evidence refs rejected"
     (not (eventSchemaValid (e1 { evidenceRefs = [EvidenceRef "x", EvidenceRef "x"] })))
+  assert "canonical authorization accepts declared proposer role"
+    (canonicalGovernanceEventValid rs Nothing e1c)
+  assert "self-authorization role mismatch rejected"
+    (not (canonicalGovernanceEventValid rs Nothing
+      (e1c { actorClass = Reviewer })))
+  assert "incompatible ruleset commitment rejected"
+    (not (canonicalGovernanceEventValid rs Nothing
+      (e1c { payloadCommitment = "wrong-commitment" })))
+  assert "unregistered ruleset rejected"
+    (not (canonicalGovernanceEventValid rs Nothing
+      (e1c { rulesetVersion = 2 })))
 
   let Right st1 = replayCanonical rs emptyState [e1c]
       bad = e2c { predecessor = Just "wrong" }
