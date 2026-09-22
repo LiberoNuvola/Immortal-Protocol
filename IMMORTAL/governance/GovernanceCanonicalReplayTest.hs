@@ -75,6 +75,8 @@ main = do
   assert (eventSchemaValid event2) "status payload validates"
   assert (predecessorValid Nothing event1) "genesis predecessor"
   assert (predecessorValid (Just event1) event2) "predecessor chain"
+  assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
+  assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
   case replayCanonical emptyState [event1, event2] of
     Left err -> error ("FAIL: replay rejected: " ++ err)
     Right st -> do
