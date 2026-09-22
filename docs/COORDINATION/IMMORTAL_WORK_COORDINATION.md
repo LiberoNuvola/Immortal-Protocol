@@ -2234,3 +2234,68 @@ The contract explicitly preserves the authority boundary: Materios remains the s
 **Commit:** `9e0c687c20fcfe2a1a0d1e85fff926559da4aa1d`
 
 **Status:** specification/proof-boundary alignment GREEN at the documented level; real Rust/WASM selector execution, authenticated proof, finalized-block fixture and replay evidence remain OPEN. Other sessions should treat this contract as the current non-normative target boundary and avoid duplicating a competing statement shape.
+
+
+## 2026-09-22 — V3 → Universal boundary coverage pass
+
+**Front:** IMMORTAL-STATE-BOUNDARY-001 / B4 / B6
+
+A direct current-branch inspection mapped the semantic contribution of every field in `V3EconomicState` against the universal projection and kernel.
+
+### Coverage result
+
+**Universal economic contribution represented by the projection:**
+- `v3CrystallizedLiabilities` → `uesCrystallizedLiabilities`
+- `v3UnresolvedReserve` → `uesUnresolvedReserve`
+- `v3UnresolvedTicketCount` → `uesUnresolvedTicketCount`
+- class-derived worst-case exposure → `uesWorstCaseExposure`
+- `v3SafetyCapital` → `uesSafetyCapital`
+- `v3ReserveProtection` → `uesReserveProtection`
+- `v3MandatoryFutureCosts` → `uesMandatoryFutureCosts`
+- `jsLockedAmount(v3Jackpot)` → `uesAdditionalProtectedCapital`
+
+**Application/profile semantics intentionally not projected as universal state:**
+- `TicketClass` / `TicketClassState` decomposition
+- `EconomicControlState` / active-class policy
+- `JackpotStatus` lifecycle
+- Jackpot threshold/cycle metadata
+- class saleability/capacity policy
+
+The latter fields are not silently dropped: the projection validates the economically relevant quantities they contribute and fail-closes on malformed class composition, unknown classes, duplicate classes, negative values and inconsistent class exposure. Their policy semantics remain at the PRE-RICH boundary.
+
+### Important distinction
+
+`tcsCap`, `tcsSaleable`, and activation control are not inputs to universal ProtectedCapital. They therefore must not be invented as universal fields merely to achieve structural one-to-one mapping. They remain application-state/policy inputs to the PRE-RICH transition layer.
+
+The current projection also checks:
+
+`tcsExposure == profilePrice(class) × tcsUnresolved`
+
+and independently reconstructs reserve/count/exposure from the class list. This gives a fail-closed consistency bridge rather than trusting duplicated aggregate fields.
+
+### Existing conformance evidence
+
+`projectionBoundaryEquivalent` already establishes, for successfully projected states:
+
+- V3 ProtectedCapital = Universal ProtectedCapital;
+- V3 RawSurplus = Universal RawSurplus;
+- V3 solvency predicate = Universal solvency predicate.
+
+Golden-vector coverage additionally exercises unknown-class rejection, duplicate-class rejection, inconsistent exposure rejection, invalid-profile rejection and preservation of non-zero protected-capital components.
+
+### Remaining gap
+
+This is **aggregate economic conformance**, not full V3 semantic equivalence. It does not prove:
+- application transition correctness;
+- Gate soundness;
+- certified viability;
+- atomicity;
+- Cardano semantic equivalence;
+- Jackpot lifecycle equivalence;
+- canonical class activation semantics.
+
+Therefore B6 remains PARTIAL / NEEDS-EVIDENCE and B4 remains OPEN for transition-level preservation evidence.
+
+**Decision:** no destructive V3 refactor is justified by this pass. The smallest safe architecture remains an explicit PRE-RICH projection into the universal aggregate, with application policy retained outside the universal kernel.
+
+**Status:** boundary coverage GREEN at aggregate semantic level; transition/conformance evidence remains OPEN.
