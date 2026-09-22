@@ -1,0 +1,51 @@
+name: PRE-RICH Emulator Reveal Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/__tests__/immortal-cardano-reveal-emulator-b1.mjs"
+      - "src/__tests__/immortal-cardano-emulator-smoke.mjs"
+      - "src/plutusScripts/**"
+      - "plutus/**"
+      - "src/gameFlow.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pre-rich-emulator-reveal.yml"
+  workflow_dispatch:
+
+jobs:
+  emulator-reveal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Normalize Lucid ESM entrypoint
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs"
+          const p="node_modules/lucid-cardano/package.json"
+          const x=JSON.parse(fs.readFileSync(p,"utf8"))
+          if (!fs.existsSync("node_modules/lucid-cardano/esm/mod.js")) throw new Error("lucid-cardano ESM entrypoint missing")
+          x.type="module"
+          x.exports={".":{types:"./types/mod.d.ts",import:"./esm/mod.js"}}
+          fs.writeFileSync(p, JSON.stringify(x,null,2)+"\n")
+          NODE
+
+      - name: Run isolated emulator smoke
+        run: node src/__tests__/immortal-cardano-emulator-smoke.mjs
+
+      - name: Run real PRE-RICH Reveal emulator conformance
+        run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
