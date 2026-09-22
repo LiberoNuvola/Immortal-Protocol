@@ -3196,3 +3196,13 @@ The Genesis Regime Carrier workflow was previously compiling/exporting the new c
 Commit: `8f8eaa17f4acd46d1eb58aed7be986c308a2a337`.
 
 This is evidence-pipeline hardening only: no Genesis predicate, threshold, Oracle rule, Treasury semantics, or carrier validator logic changed. The carrier remains **CI PENDING** until the new workflow run completes; emulator/real-ledger transition evidence remains OPEN.
+
+## 2026-09-22 — Genesis carrier singleton authority implementation seam
+
+A policy-level singleton authority has now been added for the application-owned Genesis carrier. `PRE-RICH/profile/GenesisCarrierMintPolicy.hs` is a one-shot minting policy parameterized by a concrete seed `TxOutRef` and carrier `TokenName`: it succeeds only when the seed UTxO is consumed and the policy mints exactly one configured carrier asset; there is no burn path. The policy is exposed in Cabal, exported as `plutus/out/genesisCarrierMintPolicy.plutus.json`, and the Genesis carrier CI now asserts both carrier artifacts.
+
+This closes the **policy-design** portion of the singleton-authority gap without changing Genesis economics. It does not yet constitute deployment or ledger evidence: the real seed reference, resulting policy ID/name, initial PRE-GENESIS carrier placement, and successful ActivateGenesis transition still require conformance evidence. The carrier token remains application-state identity only and must not enter Treasury, PrizePool, ProtectedCapital or RawSurplus accounting.
+
+Detailed design/evidence note: `docs/COORDINATION/GENESIS-CARRIER-SINGLETON-AUTHORITY-v0.1.md`.
+
+**Status:** singleton authority DESIGN IMPLEMENTED / DEPLOYMENT + LEDGER EVIDENCE OPEN.
