@@ -18,6 +18,7 @@ function observation(overrides: Partial<GenesisTreasuryObservation> = {}): Genes
     preAssetNameHex: NAME,
     preQuantity: 4_000n,
     verifiedPreUsdmPrice: 1n,
+    oraclePrecision: 1n,
     oracleStateReference: 'oracle#0',
     oraclePublisher: 'publisher',
     oracleTimestamp: 100n,
@@ -63,4 +64,15 @@ assert.equal(
 assert.equal(
   admitGenesisTreasury(observation({ prePolicyId: 'wrong' }), TREASURY, POLICY, NAME).reason,
   'INVALID_ASSET',
+)
+assert.equal(
+  admitGenesisTreasury(
+    observation({ preQuantity: 3_999n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
+    TREASURY, POLICY, NAME,
+  ).admitted,
+  true,
+)
+assert.equal(
+  admitGenesisTreasury(observation({ oraclePrecision: 0n }), TREASURY, POLICY, NAME).reason,
+  'ORACLE_UNVERIFIED',
 )
