@@ -13,7 +13,7 @@ import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 const SEED =
-  'test test test test test test test test test test test test test test test test test test test test test test test test test sauce'
+  'test test test test test test test test test test test test test test test test test test test test test test test sauce'
 
 const provider = new Blockfrost(API, '')
 const protocolParameters = await provider.getProtocolParameters()
