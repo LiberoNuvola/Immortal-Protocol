@@ -2178,3 +2178,16 @@ However, the live TypeScript execution path does not consume that witness: src/g
 **Related current evidence:** the latest Materios upstream-triangulation work remains independent; the real authority-selection proof boundary is still OPEN. Cardano real-ledger evidence remains governed by the active lab run and must not be promoted from implementation alone.
 
 **Status:** B5 semantic boundary GREEN at kernel/profile interface; **runtime consumption OPEN / NEEDS IMPLEMENTATION + EVIDENCE**.
+
+
+---
+
+## 2026-09-22 — Materios bounded proof-boundary checkpoint
+
+- Re-verified `poc/materios-grandpa/src/authority-transition.ts` at the current green branch after the proof-system type-boundary repair.
+- `AuthoritySetTransitionStatement.proofSystem` and `AuthoritySetTransitionPublicStatement.proofSystem` are each present exactly once; the public statement/hash binds proof-system identity, chain identity, genesis context, epoch, selection-input hash, authority sets, activation block and set IDs.
+- `verifyAuthoritySetTransition` remains an explicit untrusted→verified boundary. It does not claim to derive the Materios committee itself.
+- The PoC README still correctly states that authenticated authority-set transitions and a real Materios finality fixture are open obligations.
+- No Materios selection algorithm was reimplemented in TypeScript and no production trust was assigned to a `verify(){ return true }` implementation; such acceptance remains confined to structural tests.
+- External consensus reference triangulation: Polkadot documents GRANDPA as a finality mechanism separate from block production and shows authority-set changes being applied as distinct transitions. citeturn0search0turn0search2
+- **Status:** bounded structural/evidence boundary GREEN; canonical Materios committee-selection proof + authenticated authority-set transition + real finalized-block fixture remain OPEN.
