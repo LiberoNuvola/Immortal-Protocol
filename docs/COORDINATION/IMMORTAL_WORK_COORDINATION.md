@@ -3000,3 +3000,24 @@ This is not yet a production repair and is not treated as proof that every Lucid
 No validator, economic parameter, invariant, or canonical workflow was changed by this investigation.
 
 **Status:** P2.8-B.1 ROOT-CAUSE HYPOTHESIS STRENGTHENED / EVALUATOR PROVENANCE IDENTIFIED / PRODUCTION REPAIR OPEN.
+
+
+## 2026-09-22 — Genesis regime carrier design derived from Notion T2/P0
+
+A second Notion-to-repository pass confirmed the implementation gap and produced the smallest candidate boundary. Notion `04 — Architecture & State Machine` defines the regime chain `PRE_GENESIS → GENESIS → ACTIVE → QUIESCENT`; T2/P0 defines permissionless invocation, independent on-chain revalidation, atomic transition, safe stall and concurrency protection. The live repo contains `PreRichGenesisAdmission.hs` but no dedicated regime-bearing Cardano state carrier/action/validator.
+
+A non-normative design target was added at:
+`PRE-RICH/docs/GENESIS-REGIME-CARRIER-DESIGN-v0.1.md`
+
+The design deliberately proposes a minimal application-owned singleton regime UTxO rather than overloading Treasury or B1PrizePool. It does not change economics. Its purpose is only to provide the canonical state-consumption boundary needed for PRE-GENESIS → GENESIS.
+
+Key required accounting result:
+- regime changes PRE_GENESIS → GENESIS;
+- Treasury identity/evidence remains bound;
+- PrizePool liquidity remains unchanged by regime activation alone;
+- no bootstrap value is silently reclassified;
+- duplicate/concurrent candidates cannot both consume the same canonical state.
+
+**Status:** Genesis predicate GREEN; admission seam GREEN pending fresh execution evidence; canonical regime carrier/atomic transition remains OPEN DESIGN → IMPLEMENTATION.
+
+Commit: `ac92a3c3afe8347cae47b3f3656c7fd5912c460d`.
