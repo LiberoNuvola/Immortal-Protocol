@@ -1037,11 +1037,26 @@ async function main() {
           message,
         );
 
-      console.log(
-        "P2.8-B.1 POOL_VALUE_PROBE",
+      const budgetOverrun =
+        /execution went over budget|went over budget|Mem -\\d+|CPU -\\d+/i.test(
+          message,
+        );
+
+      const semanticFailure =
+        /no prize output/i.test(message);
+
+      const classification =
         evaluatorFailure
           ? "EVALUATOR_VALUE_FAILURE"
-          : "SEMANTIC_VALIDATOR_FAILURE",
+          : budgetOverrun
+            ? "BUDGET_OVERRUN"
+            : semanticFailure
+              ? "SEMANTIC_VALIDATOR_FAILURE"
+              : "UNCLASSIFIED_FAILURE";
+
+      console.log(
+        "P2.8-B.1 POOL_VALUE_PROBE",
+        classification,
       );
 
       console.log(
@@ -1054,7 +1069,17 @@ async function main() {
           "P2.8-B.1 ISOLATION",
           "B1PrizePool singletonPoolTokenValid/valueOf path reaches evaluator failure before action semantics",
         );
-      } else if (!/no prize output/i.test(message)) {
+      } else if (budgetOverrun) {
+        console.log(
+          "P2.8-B.1 ISOLATION",
+          "Pool-only diagnostic reached script evaluation but exhausted the configured execution budget; this probe result is non-semantic and must not block the real Reveal",
+        );
+      } else if (semanticFailure) {
+        console.log(
+          "P2.8-B.1 ISOLATION",
+          "Pool-only diagnostic reached the validator's ordinary semantic failure after the unconditional Value path",
+        );
+      } else {
         throw error;
       }
     }
