@@ -16,5 +16,5 @@ Files:
 - `GovernanceCanonicalReplayTest.hs`
 - `GOV-22-SPEC.md`
 
-This package is prepared for manual application to `b1-hardening`.
-No GitHub commit is claimed by this package.
+The GOV-22 implementation is present on `work/immortal-green-closure`.
+This branch is the active integration/verification surface; `b1-hardening` is not modified by this closure work.
