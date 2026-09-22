@@ -5,6 +5,8 @@ import {
   eligibleState,
   livenessConditionalPreconditions,
   noLiveActionCanFollowSafeIdleWitness,
+  permissionlessExecutionTraceValid,
+  PERMISSIONLESS_EXECUTION_SEQUENCE,
   type LivenessSnapshot,
 } from '../livenessBoundary'
 
@@ -71,4 +73,62 @@ describe('IMMORTAL R4 liveness boundary', () => {
   it('classifies a certified state with no eligible action as FM10', () => {
     expect(classifyStall({ ...base, eligibleActionCount: 0n })).toBe('FM10_OVER_CONSERVATIVE_CERTIFICATE')
   })
+
+  it('requires the complete permissionless execution sequence and terminal checks', () => {
+    expect(
+      permissionlessExecutionTraceValid({
+        phases: [...PERMISSIONLESS_EXECUTION_SEQUENCE],
+        authoritativeRevalidationPassed: true,
+        atomicCommit: true,
+        canonicalStateObserved: true,
+        competingSubmissionRejected: true,
+      }),
+    ).toBe(true)
+  })
+
+  it('rejects skipped or reordered lifecycle phases', () => {
+    expect(
+      permissionlessExecutionTraceValid({
+        phases: [
+          'CONDITION',
+          'OBSERVABLE_EVENT',
+          'WAKE_UP',
+          'PERMISSIONLESS_INVOCATION',
+          'CANDIDATE_CONSTRUCTION',
+          'ON_CHAIN_REVALIDATION',
+          'ATOMIC_TRANSITION',
+          'CANONICAL_STATE',
+        ],
+        authoritativeRevalidationPassed: true,
+        atomicCommit: true,
+        canonicalStateObserved: true,
+        competingSubmissionRejected: true,
+      }),
+    ).toBe(false)
+  })
+
+  it('rejects a trace that lacks independent revalidation or atomicity', () => {
+    expect(
+      permissionlessExecutionTraceValid({
+        phases: [...PERMISSIONLESS_EXECUTION_SEQUENCE],
+        authoritativeRevalidationPassed: false,
+        atomicCommit: false,
+        canonicalStateObserved: true,
+        competingSubmissionRejected: true,
+      }),
+    ).toBe(false)
+  })
+
+  it('requires competing submissions to be rejected rather than duplicated', () => {
+    expect(
+      permissionlessExecutionTraceValid({
+        phases: [...PERMISSIONLESS_EXECUTION_SEQUENCE],
+        authoritativeRevalidationPassed: true,
+        atomicCommit: true,
+        canonicalStateObserved: true,
+        competingSubmissionRejected: false,
+      }),
+    ).toBe(false)
+  })
+
 })
