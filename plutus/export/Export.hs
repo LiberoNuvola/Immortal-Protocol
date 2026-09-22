@@ -176,7 +176,7 @@ main = do
     "plutus/out/genesisRegimeCarrier.plutus.json"
     "PreRich Genesis regime carrier validator"
     (compiledCborHex GenesisRegimeCarrier.compiledValidator)
-\n  writeScriptJson\n    "plutus/out/genesisCarrierMintPolicy.plutus.json"\n    "PreRich Genesis regime carrier one-shot mint policy factory"\n    (compiledCborHex GenesisCarrierMintPolicy.compiledPolicyFactory)\n
+  writeScriptJson    "plutus/out/genesisCarrierMintPolicy.plutus.json"    "PreRich Genesis regime carrier one-shot mint policy factory"    (compiledCborHex GenesisCarrierMintPolicy.compiledPolicyFactory)
   writeScriptJson
     "plutus/out/b1PrizePoolFactory.plutus.json"
     "PreRich B1 PrizePool factory (apply PrizeValidator ScriptHash, Oracle State singleton identity, oracle publisher, pool singleton token off-chain)"
