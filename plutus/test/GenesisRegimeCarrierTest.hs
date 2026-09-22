@@ -48,7 +48,10 @@ main = do
 
   assert
     (case accepted of
-       Just state -> prrsRegime state == Genesis
+       Just state ->
+         case prrsRegime state of
+           Genesis -> True
+           _ -> False
        Nothing -> False)
     "verified PRE-GENESIS predicate produces Genesis state"
 
