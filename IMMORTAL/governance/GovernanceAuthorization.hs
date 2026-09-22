@@ -9,6 +9,7 @@ import Governance
 import GovernanceEventSchema
 import qualified GovernanceEventSchema
 import RulesetRegistry
+import GovernanceCommitment (commitmentDigestHex)
 
 authorizationValid :: CanonicalEvent -> Bool
 authorizationValid e =
@@ -30,7 +31,7 @@ evidenceValid e =
 
 rulesetAuthorizationValid :: RulesetRegistry -> CanonicalEvent -> Bool
 rulesetAuthorizationValid rs e =
-  rulesetCompatible (GovernanceEventSchema.rulesetVersion e) (payloadCommitment e) rs
+  rulesetCompatible (GovernanceEventSchema.rulesetVersion e) (commitmentDigestHex e) rs
 
 canonicalGovernanceEventValid
   :: RulesetRegistry
