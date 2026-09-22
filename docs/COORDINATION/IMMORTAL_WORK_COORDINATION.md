@@ -1787,3 +1787,25 @@ The intended lab sequence remains:
 No economic semantics or validator source changed in this correction.
 
 **Status:** workflow syntax repaired; fresh ledger evidence pending.
+
+
+---
+## 60. 2026-09-22 — Plutus export working-directory correction
+
+**Front:** C3/C4/RF10/RF11 / fresh validator artifact generation
+
+The fresh-artifact Cardano Lab step was initially configured with `working-directory: plutus`. The repository root `cabal.project` explicitly declares `./plutus` as the package, while `plutus/Export.hs` writes its generated files to `plutus/out/*.plutus.json` relative to the project root.
+
+Therefore the export step must execute from repository root:
+
+`cabal run exe:export-scripts`
+
+The prior configuration would have targeted a nested `plutus/plutus/out` path and would not have bound the generated artifacts to the expected deployment path.
+
+**Correction:** removed the `working-directory: plutus` override from the export step.
+
+**Commit:** `d568485aea38dd4a7323255d6b6024acc3d23884`
+
+No validator source, economic formula, DApp policy, or Adapter authority changed.
+
+**Status:** export path corrected; fresh real-ledger evidence pending.
