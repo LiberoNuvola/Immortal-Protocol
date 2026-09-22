@@ -3245,7 +3245,7 @@ The policy-design gap has been advanced to an executable ledger-evidence path wi
   - attempts a burn and requires rejection.
 - `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts`
   - real Yaci/Cardano-node trace;
-  - creates an explicit non-production fixture Treasury reference UTxO carrying exactly 400,000 PRE subunits;
+  - creates an explicit non-production fixture Treasury reference UTxO carrying exactly 10,000,000 PRE tokens, valued at 0.0004 USDM/PRE = 4,000 USDM;
   - creates an Oracle reference UTxO carrying the singleton token and authenticated OracleDatum at 1,000,000 precision;
   - mints the one-shot Genesis carrier and places it in the PRE-GENESIS carrier state;
   - spends that carrier with `ActivateGenesis`;
