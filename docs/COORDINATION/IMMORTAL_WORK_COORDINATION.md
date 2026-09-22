@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-22  
-**Latest observed commit:** `7525eeefa703bb84d3736ce317998fb20d728399` — C3 EXPIRE end-to-end implementation boundary
+**Latest observed commit:** `a7a5ca111d7a7ef28c39d4721a9e62319c157948` — docs: record Cardano Lab YAML correction
 
 ---
 
