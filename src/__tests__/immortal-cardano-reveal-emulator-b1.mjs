@@ -897,15 +897,37 @@ async function main() {
     );
 
   const referenceUtxos = await lucid.utxosAt(walletAddress);
+
+  /*
+   * Lucid/Emulator may normalize the scriptRef representation when it
+   * rehydrates a wallet UTxO. Identify each reference output by the
+   * transaction that created it, then retain the returned UTxO object
+   * (including its decoded reference script) for readFrom().
+   */
   const prizeReferenceUtxo = referenceUtxos.find(
-    (u) => u.scriptRef?.script === prizeScript.script,
+    (u) => u.txHash === prizeReferenceHash,
   );
   const poolReferenceUtxo = referenceUtxos.find(
-    (u) => u.scriptRef?.script === poolScript.script,
+    (u) => u.txHash === poolReferenceHash,
   );
 
   if (!prizeReferenceUtxo || !poolReferenceUtxo) {
+    console.error(
+      "P2.8-B.1 reference UTxOs",
+      JSON.stringify(
+        referenceUtxos.map((u) => ({
+          txHash: u.txHash,
+          outputIndex: u.outputIndex,
+          assets: u.assets,
+          scriptRef: u.scriptRef,
+        })),
+      ),
+    );
     throw new Error("Expected both PRE-RICH reference script UTxOs");
+  }
+
+  if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
+    throw new Error("Reference UTxO missing decoded scriptRef");
   }
 
   if (prizeUtxos.length !== 1) {
