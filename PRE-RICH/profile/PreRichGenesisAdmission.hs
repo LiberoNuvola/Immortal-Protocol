@@ -11,8 +11,11 @@ import EconomicKernel (ceilingDiv)
 
 -- | PRE-RICH application bootstrap predicate. This is deliberately kept
 -- | outside IMMORTAL's universal economic kernel.
-genesisThresholdUsdm :: Integer
-genesisThresholdUsdm = 4000
+usdmSubunitsPerUsdm :: Integer
+usdmSubunitsPerUsdm = 100
+
+genesisThresholdUsdmSubunits :: Integer
+genesisThresholdUsdmSubunits = 4000 * usdmSubunitsPerUsdm
 
 -- | Oracle prices use the shared economic precision. The observation stores
 -- | the already-verified PRE quantity and PRE->USDM price; freshness and
@@ -31,7 +34,7 @@ data GenesisTreasuryObservation = GenesisTreasuryObservation
 
 PlutusTx.unstableMakeIsData ''GenesisTreasuryObservation
 
--- | Value in USDM whole units after integer conversion. This helper assumes
+-- | Value in USDM sub-units after integer conversion. This helper assumes
 -- | the observation has already passed the identity/freshness checks.
 {-# INLINABLE genesisTreasuryValueUsdm #-}
 genesisTreasuryValueUsdm :: GenesisTreasuryObservation -> Maybe Integer
@@ -56,4 +59,4 @@ genesisPredicate o =
   && gtoOracleFresh o
   && case genesisTreasuryValueUsdm o of
        Nothing -> False
-       Just value -> value >= genesisThresholdUsdm
+       Just value -> value >= genesisThresholdUsdmSubunits
