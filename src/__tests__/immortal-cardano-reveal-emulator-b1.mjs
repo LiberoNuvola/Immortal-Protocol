@@ -501,12 +501,11 @@ async function main() {
     "P2.8-B.1 emulator params",
     JSON.stringify({
       maxTxSize: emulatorParams.maxTxSize,
+      maxTxExUnits: emulatorParams.maxTxExUnits,
+      prices: emulatorParams.prices,
       plutusV2CostModelLength: emulatorParams.costModels?.PlutusV2
         ? Object.keys(emulatorParams.costModels.PlutusV2).length
         : 0,
-      plutusV2CostModelSample: emulatorParams.costModels?.PlutusV2
-        ? Object.entries(emulatorParams.costModels.PlutusV2).slice(0, 5)
-        : [],
     }),
   );
 
