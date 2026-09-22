@@ -93,8 +93,6 @@ jobs:
           cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
           cp plutus/out/beaconRegistry.plutus.json src/plutusScripts/beaconRegistry.plutus.json
 
-      - name: Normalize legacy Lucid ESM entrypoint for Node 22
-      - name: Normalize legacy Lucid ESM entrypoint for Node 22
 
       - name: Normalize legacy Lucid ESM entrypoint for Node 22
         run: |
