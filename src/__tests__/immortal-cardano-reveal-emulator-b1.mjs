@@ -474,7 +474,7 @@ async function main() {
     await probe.wallet.address();
 
   const baseEmulatorParams =
-    await probe.getProtocolParameters();
+    await new Emulator([]).getProtocolParameters();
 
   /*
    * Diagnostic-only budget probe.
