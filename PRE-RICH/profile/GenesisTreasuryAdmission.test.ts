@@ -3,7 +3,7 @@ import {
   admitGenesisTreasury,
   GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS,
   type GenesisTreasuryObservation,
-} from './GenesisTreasuryAdmission'
+} from './GenesisTreasuryAdmission.ts'
 
 const TREASURY = 'treasury:pre-rich:v1'
 const POLICY = '1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c'
