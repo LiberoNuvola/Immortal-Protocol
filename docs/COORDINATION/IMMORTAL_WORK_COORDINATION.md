@@ -3097,3 +3097,13 @@ Commits:
 - `d6d5b87bf962c5bb5435c498b1b1796fcb50099d`
 
 No economic/governance rule was changed. The committed script has not yet been executed in the repository runtime, so this is not GREEN until execution evidence exists.
+
+
+## 2026-09-22 — Algorithmic Governability lab wired into CI
+
+The adversarial lab is now executable automatically on pushes/PRs through:
+- `.github/workflows/algorithmic-governability.yml`
+
+Commit: `54147b36ea08781d2e0e22ee28bb0dd697858978`
+
+The front remains **CLOSING / execution evidence pending** until the workflow run is observed. No normative rule or economic parameter changed.
