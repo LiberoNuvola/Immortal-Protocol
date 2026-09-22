@@ -40,6 +40,9 @@ jobs:
       - name: Build PRE-RICH Plutus package
         working-directory: plutus
         run: cabal build pre-rich-plutus
+      - name: Run Genesis regime carrier tests
+        working-directory: plutus
+        run: cabal test genesis-regime-carrier-tests
       - name: Export scripts
         working-directory: plutus
         run: cabal run exe:export-scripts
