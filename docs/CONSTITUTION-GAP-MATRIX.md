@@ -1,7 +1,7 @@
 # IMMORTAL / PRE-RICH — Constitution & Conformance Gap Matrix
 
 **Status:** OPERATIONAL / NON-NORMATIVE  
-**Repository reference:** `b1-hardening` / `9d0b8c6`  
+**Repository reference:** `work/immortal-green-closure`  
 **Role:** implementation/conformance tracker subordinate to the canonical Constitutions and specifications.
 
 > This document does not define protocol semantics. It records gaps against them.
@@ -72,13 +72,16 @@ The gap tracker must never rewrite the following as proposals:
 
 ## 4. True normative OPEN set
 
-Only the following may be marked `OPEN DECISION`:
+After reconciliation with the latest Decision Register and PRE-RICH policy closure, only the following remains an active normative `OPEN DECISION`:
 
-1. Jackpot payout mode: threshold payout vs full current locked-balance payout.
-2. Exact ticket expiry duration.
-3. Future Jackpot allocation policy, only if an explicit future allocation policy is required.
+1. Exact ticket expiry duration.
 
-KA/KC/KD and hysteresis are **not** in this set.
+The following are **CLOSED at the current PRE-RICH policy level** and must not be reintroduced as open decisions:
+- Jackpot payout mode = full current locked-balance payout exactly once.
+- Future Jackpot allocation = no fixed allocation rate; any future change is a new PRE-RICH policy decision rather than a current unresolved choice.
+- Jackpot activation mechanism = current active class = highest class ever activated at the top class, with the existing activation/suspension predicates.
+
+KA/KC/KD and hysteresis are **not** in the normative OPEN set.
 
 ## 5. Gap register
 
