@@ -2338,3 +2338,24 @@ Therefore AG-01 remains OPEN. No authority rule, threshold, economic constant, a
 **Next safe target:** add conformance tests at the governance boundary for negative self-authorization, gate-before-adoption, stale/incompatible ruleset rejection, distinct amendment lifecycle, deterministic replay and application-policy isolation. Any implementation change must preserve the existing normative hierarchy and must not turn the algorithm into an authorization source.
 
 **Status:** governance structural substrate GREEN; executable AG-01 closure evidence OPEN.
+
+
+## 2026-09-22 — Algorithmic governability: competing-monitor toy closure
+
+**Front:** Algorithmic Governability / epistemic non-sovereignty
+
+The master Notion record was advanced from the conceptual competing-monitor model to a closed toy-model result. Two versioned monitors receive the same immutable RawObservation but may produce different metrics. The normative selection rule is predeclared by the ViabilityContract; divergence is routed to the declared selection/contest rule and cannot itself transfer authority to whichever monitor produces the favorable result.
+
+New candidate invariant:
+
+> **No Result-Dependent Authority:** no monitor result may, absent an already-authorized institutional rule, modify the rule that determines monitor authority or the normative metric.
+
+The toy also identifies **MON-COMP-06 — Result-dependent authority capture** as an additional attack class. Defenses are contract precommitment, version binding, provenance, contestability and prohibition of result-dependent authority updates.
+
+This remains a research/test-model result, not a constitutional closure. The next implementation step is an executable adversarial test with two divergent monitors and explicit assertions that neither can mutate ViabilityContract or escalate authority.
+
+**Status:** conceptual/test-model closure GREEN; executable adversarial implementation test OPEN.
+
+## 2026-09-22 — Live branch synchronization check
+
+Direct branch inspection confirms `work/immortal-green-closure` currently points to `683fbd8f3871dbbd7542efc7fe6b915856e71c8e` (`docs: record runtime economic bypass audit`). The coordination snapshot's older `a4e9ec8...` marker is therefore stale and must not be used as current HEAD evidence. Runtime boundary findings recorded below remain current through the direct branch inspection; CI/evidence status must be refreshed from exact current-head runs before promotion.
