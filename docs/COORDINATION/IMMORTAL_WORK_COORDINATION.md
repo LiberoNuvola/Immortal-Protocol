@@ -3058,3 +3058,19 @@ This makes an **evaluator-generation incompatibility** a strong root-cause hypot
 
 **No normative/economic changes in this update.**
 
+
+
+## 2026-09-22 — P2.8-B.1 current-head CI re-observation
+
+**Head:** `7ed1250443006815486d8125e77530a53a847512`
+
+Fresh workflow observation after the evaluator-provenance coordination update:
+
+- PRE-RICH Cardano Emulator Reveal run **97** (`35773924559`) completed **FAILURE** at the single `Run real emulator reveal` step.
+- Setup, checkout and dependency installation all succeeded; the failure is therefore still inside the real emulator path, not CI bootstrap.
+- No successful Reveal evidence was produced; P2.8-B.1 remains OPEN.
+- Kernel Invalid-Class Fail-Closed Audit run **630** is currently IN PROGRESS.
+- IMMORTAL Cardano Integration Lab run **317** is currently IN PROGRESS on an earlier head; no promotion is made until its actual result is observed.
+
+This observation supersedes the earlier wording that the Reveal run was merely “in progress”. No validator, economic parameter, cost limit, or invariant was changed.
+
