@@ -16,7 +16,7 @@ Application conformance is separate from IMMORTAL protocol conformance and Carda
 | current class may contract | CLOSED | GAP/PARTIAL | PARTIAL |
 | historical maximum monotonic | CLOSED | GAP/PARTIAL | PARTIAL |
 | contraction ladder | CLOSED | GAP/PARTIAL | PARTIAL |
-| hysteresis KA=8, KC=4, KD=4 | CLOSED | GAP/PARTIAL | PARTIAL |
+| hysteresis KA=8, KC=4, KD=4 | CLOSED | GREEN / conformance verified | GREEN — CI 35649345343 |
 | sale atomicity | CLOSED | GAP/PARTIAL | PARTIAL |
 | reveal/result derivation | CLOSED | GAP/PARTIAL | PARTIAL |
 | crystallized payout immutability | CLOSED | GAP/PARTIAL | PARTIAL |
