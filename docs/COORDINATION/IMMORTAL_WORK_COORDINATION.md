@@ -3305,3 +3305,12 @@ Commits:
 - `5302dde6e1e26438e7c90c50f0d94e6e4dfb2413` — normalize declaration formatting
 
 This is evidence-pipeline/source hygiene only. No validator, Genesis predicate, economic parameter, Treasury rule, Oracle rule, or PrizePool rule changed. The important point is that repository inspection, not the previous coordination claim, is treated as authoritative until CI actually compiles/exports the artifacts.
+
+
+## 2026-09-22 — Materios upstream selector evidence cross-check
+
+Cross-checked the vendored Materios authority-selection implementation against the upstream runtime test surface. The upstream runtime's `spo_integration_tests.rs` directly invokes the runtime `select_authorities` path with deterministic permissioned-candidate inputs and tests both refusal when no candidates are known-live and seating when all candidates are recently live. This is materially stronger than the local TypeScript structural mock for the **algorithm/runtime-selection** portion.
+
+It still does not close the local Materios authority-proof front: the upstream tests are runtime unit/integration tests, not evidence from a finalized production Materios block with an authenticated authority-set transition and real GRANDPA justification. The local PoC therefore correctly remains open for real node/finality/cryptographic evidence.
+
+No IMMORTAL economics or authority semantics were changed.
