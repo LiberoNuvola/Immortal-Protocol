@@ -1938,3 +1938,24 @@ These are build-boundary corrections only. Do not promote B4/B5/B6/C3/C4 based o
 ## 2026-09-22 — GovernanceCommitment compile regression corrected
 
 Fresh Kernel run `35704026604` reached compilation and exposed `Num Char` inference in `GovernanceCommitment.lower`. Corrected with explicit `A`–`F` character mapping. SHA-256/canonical serialization/commitment semantics unchanged. Commit: `984b77c1a397519ee9b6f38c651882255b30f7dc`. Fresh CI required; no economic status promoted.
+
+
+## 2026-09-22 — Kernel regression test fixture/build-boundary corrections
+
+**Front:** Kernel Invalid-Class Fail-Closed Audit
+
+Fresh run `35706233586` reached the full regression build and exposed test-suite compilation defects unrelated to economic semantics:
+- `ProjectionBoundaryConformanceTest.hs`: unsupported NumericUnderscores literals and a malformed record-update parenthesis;
+- `ProtectedCapitalConformanceTest.hs`: `Maybe` constructors were omitted from the explicit Prelude import;
+- `GoldenVectorsTest.hs`: `EconomicProfile` record selectors were not imported explicitly;
+- `B1LegacyAdapterTest.hs`: the test imported the library's hidden `B1LegacyAdapter` module, so the test package could not load it; the module is now exposed for the conformance surface.
+
+Corrections are compilation/test-harness fixes only. No economic formula, canonical parameter, validator authority or invariant was weakened.
+
+Commits:
+- `aae3166650e4a7c38bef6a9b0dbfdaed91dce39c`
+- `da5899f1c81b47e9fd90fb4ab18ca48e04662801`
+- `0f71b3a5abe27512c96ea3784f95d632d10f5f7d`
+- `bfdb727a8e2c9b4417cd7a92c5a248ef79d2063d`
+
+**Status:** fresh Kernel and Cardano Lab runs triggered from the corrected lineage; no green claim until both complete.
