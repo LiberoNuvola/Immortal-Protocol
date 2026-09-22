@@ -60,7 +60,7 @@ main = do
 
   assert
     (case projectPreRichState profile
-      (validState { v3Classes = [TicketClassState 0 2 1 1 10 True, TicketClassState 0 1 1 1 10 True] })) of
+      (validState { v3Classes = [TicketClassState 0 2 1 1 10 True, TicketClassState 0 1 1 1 10 True] }) of
        Nothing -> True
        Just _ -> False)
     "duplicate class state fails closed"
