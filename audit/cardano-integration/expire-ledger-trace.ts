@@ -58,7 +58,7 @@ function ref(u: UTxO): string {
 }
 
 function nativePolicy(lucid: any, keyHash: string): Script {
-  return lucid.utils.nativeScriptFromJson({
+  return nativeScriptFromJson({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as any)
