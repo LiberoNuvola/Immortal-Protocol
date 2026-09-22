@@ -2042,3 +2042,21 @@ Fresh runs exposed concrete non-economic blockers after the previous C5 work:
 - Cardano Lab `35722633178` successfully generated and bound fresh Plutus artifacts, bootstrapped Yaci and completed ledger smoke, then failed at Reveal because the installed Lucid runtime exposes `nativeScriptFromJson` at package level rather than under `lucid.utils`. Reveal and EXPIRE traces now import/use the package-level helper in commits `7a363286c465b75d9ee3689619ca1fbe4428a9f4` and `7f0e8766a76dd31de0380e907d598a43ba96f008`.
 
 No economic formula, canonical parameter, validator authority or DApp policy changed. Fresh Kernel and Cardano Lab runs are required on the resulting HEAD; no B4/B6/C3/C4 promotion from these failed runs.
+
+## 67. 2026-09-22 — Current cross-session re-observation
+
+**Front:** B4/B5/B6 / C3-C4 / CI closure
+
+The live working branch was re-inspected after the latest concurrent corrections. The current Reveal and EXPIRE traces now use the package-level Lucid helpers (getAddressDetails, nativeScriptFromJson), construct Lucid with the installed 0.10 API, and route the first economically material submission through the Cardano Execution Adapter. The Integration Lab workflow also generates fresh Plutus artifacts from the current checkout before executing the traces.
+
+Verified evidence remains deliberately separated from implementation:
+- PRE-RICH action-refinement run 35654129336 is GREEN (Issue/Expire refinement + TypeScript typecheck).
+- The older Cardano Lab failure 35722633178 is obsolete for the current tree: its concrete blocker was lucid.utils.nativeScriptFromJson, while the live trace now imports the package-level helper. It must not be used to claim a current-head failure.
+- No current-head real-ledger GREEN claim is made here because the available workflow evidence inspected in this pass does not establish a fresh successful Reveal + EXPIRE artifact on the latest tree.
+- The kernel regression evidence inspected from run 35722673599 confirms ProtectedCapital, GoldenVectors and Governance suites passed before the remaining legacy/projection test build defects; those defects have since been corrected in later commits, but a fresh complete current-head run is still required for promotion.
+
+No economic parameters, Jackpot ownership/funding semantics, expiry policy, ProtectedCapital formula, Economic Gate authority, or Adapter authority boundary were changed by this re-observation.
+
+**Next execution priority:** obtain fresh current-head Kernel and Cardano Lab evidence; if either fails, fix only the concrete failure and re-run. Once the real Reveal + EXPIRE artifacts are produced, promote RF10/RF11/C3/C4 only to the level actually evidenced and continue the remaining B4/B5/B6 connectivity work.
+
+**Status:** COORDINATED / IMPLEMENTATION FIXES VERIFIED / FRESH HASKELL + LEDGER EVIDENCE REQUIRED.
