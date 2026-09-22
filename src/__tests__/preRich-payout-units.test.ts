@@ -37,4 +37,8 @@ describe('PRE-RICH canonical payout-unit boundary', () => {
     expect(prizeAmountForTier(defaultPrizeTable, 4, ONE_USDM)).toBe(10_000)
     expect(prizeAmountForTier(defaultPrizeTable, 5, ONE_USDM)).toBe(50_000)
   })
+
+  it('preserves the canonical two-row sum before the 500x cap', () => {
+    expect(rowPayoutTotal(defaultPrizeTable, 2, 4, ONE_USDM)).toBe(10_250)
+  })
 })
