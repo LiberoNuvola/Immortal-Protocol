@@ -2218,3 +2218,19 @@ However, the live TypeScript execution path does not consume that witness: src/g
 - Current upstream Materios also has later runtime resilience controls around committee selection/fallbacks; these reinforce that the proof boundary must identify the exact runtime/profile context rather than assuming a timeless abstract selection function.
 - Official Polkadot documentation independently confirms GRANDPA finality is a separate consensus service and that authority-set changes are explicit transitions. citeturn0search0turn0search2
 - **Result:** no new semantic field invented. Next real proof target is canonical Rust/WASM selection execution or an authenticated proof produced from it, with exact statement binding.
+
+
+---
+## 2026-09-22 — Cross-session Materios proof-contract alignment
+
+**Front:** Materios authority-selection provenance / B3-C
+
+This session coordinated through the repository state rather than chat handoff. The working branch remains `work/immortal-green-closure`; no new branch was created and `b1-hardening` was not touched.
+
+A non-normative proof-boundary contract was added at `poc/materios-grandpa/test/MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md`. It records the minimum statement bindings already established by the upstream Materios triangulation: proof-system identity, runtime/chain identity, exact `genesis_utxo`, exact serialized `AuthoritySelectionInputs` (or commitment), Cardano epoch nonce, sidechain epoch, resulting/predecessor authority sets, activation context and set identifiers.
+
+The contract explicitly preserves the authority boundary: Materios remains the selector; IMMORTAL consumes an authenticated result as `VerifiedAuthoritySetTransition`. No TypeScript selector reimplementation, synthetic production proof, or economic rule was introduced.
+
+**Commit:** `9e0c687c20fcfe2a1a0d1e85fff926559da4aa1d`
+
+**Status:** specification/proof-boundary alignment GREEN at the documented level; real Rust/WASM selector execution, authenticated proof, finalized-block fixture and replay evidence remain OPEN. Other sessions should treat this contract as the current non-normative target boundary and avoid duplicating a competing statement shape.
