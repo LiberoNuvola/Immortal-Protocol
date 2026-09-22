@@ -1,3 +1,8 @@
+import {
+  assertEconomicAdmission,
+  type EconomicAdmissionWitness,
+} from './EconomicAdmission'
+
 export type CardanoLucidExecutionPort = {
   signTx(tx: unknown): Promise<unknown>
   submitTx(signedTx: unknown): Promise<string>
@@ -19,6 +24,21 @@ export function createCardanoExecutionAdapter(
         throw new Error('Cardano submission returned an empty transaction reference')
       }
       return { transactionRef }
+    },
+
+    /**
+     * Economic submission boundary.
+     *
+     * Unlike the generic adapter path, this path requires an explicit
+     * Economic Gate admission witness. The adapter consumes the witness but
+     * does not manufacture or reinterpret economic truth.
+     */
+    async submitEconomic(
+      tx: unknown,
+      admission: EconomicAdmissionWitness | undefined,
+    ): Promise<CardanoSubmissionReceipt> {
+      assertEconomicAdmission(admission)
+      return this.submit(tx)
     },
   }
 }
