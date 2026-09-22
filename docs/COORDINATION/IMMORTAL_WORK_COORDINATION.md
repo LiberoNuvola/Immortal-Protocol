@@ -2390,3 +2390,26 @@ Commits: 3518831eab46e40df4b064b56621d03e71242066, 6b82675bb2eeb98c6e9f11472c363
 No economic rule, validator predicate, witness semantics, or IMMORTAL/PRE-RICH boundary was weakened. Fresh current-head validation is running on 7321880fd06f25f45d519290d4b35d2b24f42c38.
 
 **Status:** compile defect corrected; validation running. B5 runtime boundary remains structurally GREEN; authoritative witness production remains OPEN.
+
+
+## 2026-09-22 — AG-01 canonical payload timestamp repair
+
+The GOV-22 audit was converted into a minimal schema correction on the working closure branch.
+
+- `PayloadProposalClassified` now carries its canonical timestamp.
+- `PayloadGatesSet` now carries its canonical timestamp.
+- `payloadTimestamp` derives the timestamp from those payloads instead of hard-coding zero.
+- `canonicalPayloadText` includes the timestamp, so the semantic payload representation remains deterministic and binds the same time as the event envelope.
+- `GovernanceCanonicalReplay.hs` was updated only to consume the enriched payload shape; governance transition semantics are unchanged.
+
+This is a GOV-22 schema-consistency repair, not a new governance rule.
+
+The audit also confirms that `IMMORTAL/governance/CanonicalEvent.hs` is a separate older lifecycle representation and must not silently become a second semantic source of truth. GOV-22's `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` path is the lineage to reconcile against the normative spec; no deletion of the older module is performed without consumer/test reconciliation.
+
+Commits:
+- `e6a812c23c40d9843203395bff1f47cacf2bbbee` — payload timestamp shape
+- `ddac71d861c752bd86b2c73c20bc9a335e4e25ef` — replay pattern update
+
+No new branch; `b1-hardening` untouched.
+
+**Status:** GOV-22 timestamp consistency repaired; AG-01 governance closure still OPEN pending canonical-module reconciliation, authorization/gate negative evidence, and independent replay evidence.
