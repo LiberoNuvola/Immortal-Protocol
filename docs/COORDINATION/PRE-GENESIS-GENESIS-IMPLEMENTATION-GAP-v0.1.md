@@ -104,3 +104,12 @@ The Cardano Adapter Sale remains green on the latest observed run. The Reveal em
 - P0 transition conformance: OPEN.
 - Reveal evaluator/runtime compatibility: OPEN.
 - No economic parameter changed.
+
+
+## 2026-09-22 canonical identity search result
+
+A second targeted search was run across the current repository branch for a pre-existing Genesis regime/state singleton, state token, regime identity, or equivalent canonical UTxO binding. The search found existing canonical identity patterns for the Oracle State and B1 PrizePool, but no Genesis-specific policy/name, regime-state token, or already-defined singleton datum/validator that can be reused without inventing a new authority surface.
+
+The current P0/T2 text likewise specifies that at most one transition may consume the canonical state and that stale/conflicting submissions must be rejected, but it does not itself define a concrete Cardano asset identity for PRE-GENESIS/GENESIS. Therefore the correct closure state remains **Genesis Cardano singleton identity OPEN**. No validator identity or policy ID is being fabricated from deployment guesses.
+
+This search result is now treated as a hard implementation boundary: the next Genesis implementation step must come from an existing canonical deployment/decision source or an explicit new application decision, not from inference from the B1 Pool NFT, Oracle singleton, Treasury address, or historical Snek Pool NFT.
