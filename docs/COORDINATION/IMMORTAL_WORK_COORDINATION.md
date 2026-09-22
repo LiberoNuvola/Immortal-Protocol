@@ -2503,3 +2503,20 @@ Commit:
 - `16a2e5e368fd47a40abb0dad69f2ee25c3ec3e65`
 
 **Status:** GOV-22 lineage is now structurally separated at the package boundary; remaining AG-01 work is semantic authorization/gate enforcement and independent evidence, not event-model duplication.
+
+
+## 2026-09-22 — Governance conformance test drift repaired
+
+The active `GovernanceConformanceTest.hs` had stale calls against the current delegation-aware quorum/approval APIs and an emergency-expiry assertion that used a proposal with no emergency activation timestamp.
+
+Repair:
+- quorum and approval tests now pass the proposal delegation set explicitly;
+- abstention tests use an explicit empty delegation set;
+- emergency expiry test constructs an explicitly activated emergency and checks the exact 72h boundary.
+
+No governance threshold or lifecycle rule changed; this only restores test fidelity to the existing implementation.
+
+Commit:
+- `726fd848d0c1ed878b19e45d1c9776f3de1c804d`
+
+**Status:** governance conformance surface is now aligned with current function signatures; AG-01 semantic lifecycle/gate enforcement remains the next substantive closure target.
