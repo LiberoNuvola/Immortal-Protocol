@@ -2816,3 +2816,25 @@ Repair:
 Commit: 7ecd9c2255c895463b4640d7e555c2a2a1ac4190.
 
 **Status:** fresh budget-probe CI triggered; real validator execution evidence still OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 probe result: budget ceiling ruled out; Pool validator evaluator failure
+
+The diagnostic emulator was run with `maxTxExMem=100,000,000,000` and `maxTxExSteps=100,000,000,000`. The Reveal still failed at `Spend[1]`, with:
+`attempted to case a non-const Value Con(ProtoPair(Integer,List(Data),...))`.
+
+Therefore the previous 30B/20B execution-budget overrun cannot be treated as the root cause. The enlarged-budget probe reaches a deterministic UPLC evaluator error in the second spending validator, which is the B1PrizePool path. This is now classified as an **emulator/script-evaluation compatibility or script-term issue**, not as evidence that the validator merely needs a larger budget.
+
+Repository facts:
+- `pre-rich-plutus.cabal` compiles against `plutus-core`, `plutus-ledger-api`, and `plutus-tx` 1.67.0.0.
+- The off-chain harness uses legacy `lucid-cardano` 0.10.11.
+- Lucid 0.10.11's release history includes an UPLC update; this makes evaluator/compiler compatibility a concrete investigation target, but does not yet prove incompatibility.
+
+Action taken:
+- diagnostic budget environment removed from canonical CI;
+- default Cardano-like execution limits restored in workflow commit `0b9c75292814b7aeaccce48fe31f718efcee7bd1`;
+- no validator/economic invariant weakened.
+
+Next evidence target: isolate the failing B1PrizePool operation (first `Value`/`valueOf` path versus action branch) and compare the generated Plutus V2 term/evaluator compatibility before changing production validator code.
+
+**Status: P2.8-B.1 remains OPEN — root cause narrowed substantially.**
