@@ -2033,3 +2033,12 @@ This is a conformance model, not a claim of network liveness or a replacement fo
 **Current CI:** fresh Liveness Boundary run '35722633225' is queued on this exact HEAD. Kernel/Cardano/Sale runs were also triggered by the same closure-line commit; no new green promotion is made until those runs complete.
 
 **Status:** C5 executable sequence coverage strengthened; real permissionless lifecycle evidence remains OPEN.
+
+
+## 2026-09-22 — Fresh closure CI: harness/API and test Prelude defects corrected
+
+Fresh runs exposed concrete non-economic blockers after the previous C5 work:
+- Kernel run `35722673599` reached the full conformance suites; ProtectedCapital, GoldenVectors and Governance all passed, but `B1LegacyAdapterTest.hs` lacked `Left/Right` in its explicit Prelude import and `ProjectionBoundaryConformanceTest.hs` lacked `(++)` and `(-)`. Corrected in commits `a01de60061ed2eb8ebbf82aba991f30b2c68d8ee` and `f5255b9b7d45db22c1b7c51e146a0f9007e372ba`.
+- Cardano Lab `35722633178` successfully generated and bound fresh Plutus artifacts, bootstrapped Yaci and completed ledger smoke, then failed at Reveal because the installed Lucid runtime exposes `nativeScriptFromJson` at package level rather than under `lucid.utils`. Reveal and EXPIRE traces now import/use the package-level helper in commits `7a363286c465b75d9ee3689619ca1fbe4428a9f4` and `7f0e8766a76dd31de0380e907d598a43ba96f008`.
+
+No economic formula, canonical parameter, validator authority or DApp policy changed. Fresh Kernel and Cardano Lab runs are required on the resulting HEAD; no B4/B6/C3/C4 promotion from these failed runs.
