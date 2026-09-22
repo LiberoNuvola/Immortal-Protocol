@@ -16,8 +16,13 @@ commitmentDigestHex :: CanonicalEvent -> String
 commitmentDigestHex e =
   map lower (BSC.unpack (B16.encode (SHA256.hash (TE.encodeUtf8 (Data.Text.pack (canonicalEventBytes e))))))
   where
-    lower w | w >= 65 && w <= 70 = w + 32
-            | otherwise = w
+    lower 'A' = 'a'
+    lower 'B' = 'b'
+    lower 'C' = 'c'
+    lower 'D' = 'd'
+    lower 'E' = 'e'
+    lower 'F' = 'f'
+    lower w = w
 
 commitmentMatches :: CanonicalEvent -> Bool
 commitmentMatches e = commitmentDigestHex e == payloadCommitment e
