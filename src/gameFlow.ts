@@ -39,7 +39,8 @@ import {
   type PrizeTable,
 } from './gameRules'
 
-import { signAndSubmitTx } from './txHelpers'
+import { signAndSubmitTx, signAndSubmitEconomicTx } from './txHelpers'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
 
 import {
@@ -409,6 +410,8 @@ export async function syncBeacon(opts: {
   ticketAssetNameHex: string
   registryAddress: string
   table?: PrizeTable
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
 }): Promise<string> {
   const lucid = wallet.getLucid()
   if (!lucid) throw new Error('Wallet not connected')
@@ -464,7 +467,7 @@ export async function syncBeacon(opts: {
     .addSigner(owner)
     .complete()
 
-  return signAndSubmitTx(lucid, tx)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
 }
 
 // ---------------------------------------------------------------------------
@@ -494,6 +497,8 @@ export async function revealPrize(opts: {
   playerSecretHex: string
   b1PrizePoolAddress: string
   table?: PrizeTable
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
 }): Promise<Classic6RevealResult> {
   const lucid = wallet.getLucid()
   if (!lucid) throw new Error('Wallet not connected')
@@ -658,7 +663,7 @@ export async function revealPrize(opts: {
     .addSigner(owner)
     .complete()
 
-  const txHash = await signAndSubmitTx(lucid, tx)
+  const txHash = await signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
 
   return {
     txHash,
@@ -943,7 +948,7 @@ export async function claimPrize(opts: {
     .validTo(expiresAt)
     .complete()
 
-  return signAndSubmitTx(lucid, tx)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
 }
 
 // ---------------------------------------------------------------------------
@@ -951,6 +956,8 @@ export async function claimPrize(opts: {
 // ---------------------------------------------------------------------------
 
 export async function expirePrize(opts: {
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
   prizeAddress: string
   ticketPolicyId: string
   ticketAssetNameHex: string
