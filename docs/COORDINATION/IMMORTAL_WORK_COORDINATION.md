@@ -2299,3 +2299,22 @@ Therefore B6 remains PARTIAL / NEEDS-EVIDENCE and B4 remains OPEN for transition
 **Decision:** no destructive V3 refactor is justified by this pass. The smallest safe architecture remains an explicit PRE-RICH projection into the universal aggregate, with application policy retained outside the universal kernel.
 
 **Status:** boundary coverage GREEN at aggregate semantic level; transition/conformance evidence remains OPEN.
+
+
+## 2026-09-22 — Runtime boundary bypass audit
+
+**Front:** B5 / Adapter separation
+
+A direct current-branch audit traced the Cardano execution choke-points and the PRE-RICH economic flows.
+
+Findings:
+- `revealPrize`, `claimPrize`, and `expirePrize` use `signAndSubmitEconomicTx` and therefore require the typed `EconomicAdmissionWitness` before signing/submission.
+- `CardanoExecutionAdapter.submitEconomic` fails closed through `assertEconomicAdmission`; the adapter does not calculate or reinterpret economic truth.
+- Generic `submit` remains available for non-economic transport operations.
+- `syncBeacon` is intentionally non-economic and correctly uses the generic submission path. An accidental requirement for an Economic Gate witness on `syncBeacon` was removed in commit `f64c1ab5ca5825e8e50872ee73de0e77c8b48152`.
+- The remaining generic `signAndSubmitTx` call in `gameFlow.ts` is the Beacon Sync path, not Reveal/Claim/Expire.
+- `buildClaimTx` is a transaction-builder helper and does not itself sign or submit; it is not an economic submission bypass.
+
+Conclusion: the runtime economic choke-point is structurally intact after the correction. The remaining B5 gap is **authoritative witness production/provenance**, not an observed adapter bypass.
+
+**Status:** runtime boundary GREEN; authoritative producer/evidence OPEN.
