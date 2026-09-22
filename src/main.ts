@@ -1,6 +1,5 @@
 import './style.css'
 import wallet from './wallet'
-import claim from './claim'
 import tickets from './tickets'
 import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
