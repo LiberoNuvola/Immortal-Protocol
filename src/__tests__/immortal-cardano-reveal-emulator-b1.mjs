@@ -984,7 +984,85 @@ async function main() {
 
   /*
    * --------------------------------------------------------------
-   * 11. REAL PRE-RICH REVEAL
+   * 11. DIAGNOSTIC: POOL-ONLY VALUE PATH ISOLATION
+   * --------------------------------------------------------------
+   *
+   * B1PrizePool performs singletonPoolTokenValid before dispatching the
+   * action branch. This probe deliberately omits the Prize output, so if
+   * the Value path evaluates normally the validator should fail later with
+   * its ordinary "no prize output" semantic error. A NonConstrScrutinized /
+   * "attempted to case a non-const" failure here isolates the evaluator
+   * failure to the Pool validator's unconditional Value path.
+   *
+   * The transaction is never accepted, so emulator state is unchanged.
+   */
+  const poolValueProbeTx =
+    await lucid
+      .newTx()
+      .collectFrom(
+        [poolUtxos[0]],
+        Data.to(
+          constr(
+            2,
+            [BigInt(priceUsdm)],
+          ),
+        ),
+      )
+      .readFrom([poolReferenceInput])
+      .payToContract(
+        poolAddress,
+        { inline: Data.to(prePoolDatum) },
+        poolUtxos[0].assets,
+      )
+      .addSigner(walletAddress)
+      .validTo(4_000_000_000_000)
+      .complete();
+
+  const poolValueProbeSigned =
+    await poolValueProbeTx.sign().complete();
+
+  try {
+    await poolValueProbeSigned.submit();
+    throw new Error(
+      "P2.8-B.1 Pool-only Value probe unexpectedly succeeded",
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : String(error);
+
+    const evaluatorFailure =
+      /attempted to case a non-const|NonConstrScrutinized|non-const/i.test(
+        message,
+      );
+
+    console.log(
+      "P2.8-B.1 POOL_VALUE_PROBE",
+      evaluatorFailure
+        ? "EVALUATOR_VALUE_FAILURE"
+        : "SEMANTIC_VALIDATOR_FAILURE",
+    );
+
+    console.log(
+      "P2.8-B.1 POOL_VALUE_PROBE_ERROR",
+      message,
+    );
+
+    if (evaluatorFailure) {
+      console.log(
+        "P2.8-B.1 ISOLATION",
+        "B1PrizePool singletonPoolTokenValid/valueOf path reaches evaluator failure before action semantics",
+      );
+    } else if (!/no prize output/i.test(message)) {
+      throw error;
+    }
+  }
+
+  /*
+   * --------------------------------------------------------------
+   * 12. REAL PRE-RICH REVEAL
+   * --------------------------------------------------------------
    * --------------------------------------------------------------
    *
    * This mirrors src/gameFlow.ts:
