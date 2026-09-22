@@ -31,8 +31,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Diagnostic: swap legacy Lucid evaluator to 0.10.10
-        run: npm install --no-save --package-lock=false lucid-cardano@0.10.10
-
       - name: Run real emulator reveal
         run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
