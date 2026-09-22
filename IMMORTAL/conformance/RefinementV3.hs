@@ -12,6 +12,7 @@ module RefinementV3
 
 import PlutusTx.Prelude
 import EconomicStateV3
+import EconomicProfile (EconomicProfile)
 import qualified EconomicKernel
 
 data ConcreteV3State = ConcreteV3State
@@ -41,9 +42,9 @@ refine c =
     (cvsJackpot c)
 
 {-# INLINABLE refinementExact #-}
-refinementExact :: ConcreteV3State -> Bool
-refinementExact c =
-     EconomicKernel.conservationInvariant (refine c)
+refinementExact :: EconomicProfile -> ConcreteV3State -> Bool
+refinementExact profile c =
+     EconomicKernel.conservationInvariant profile (refine c)
   && allNonNegative (refine c)
   where
     allNonNegative s =
