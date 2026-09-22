@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-22  
-**Latest observed commit:** `1f3f7f7e343b205a790aecb0714e4ecac90c3ae3` — current coordinated closure line
+**Latest observed commit:** `a4e9ec8fa768674a054abe59d689f903d8f7663a` — B4 protected-capital omission boundary
 
 ---
 
