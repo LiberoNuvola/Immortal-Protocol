@@ -1,0 +1,47 @@
+name: Genesis Regime Carrier Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/profile/PreRichRegimeState.hs"
+      - "plutus/Types.hs"
+      - "plutus/Economic.hs"
+      - "plutus/pre-rich-plutus.cabal"
+      - "plutus/export/Export.hs"
+      - ".github/workflows/genesis-regime-carrier.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/profile/PreRichRegimeState.hs"
+      - "plutus/Types.hs"
+      - "plutus/Economic.hs"
+      - "plutus/pre-rich-plutus.cabal"
+      - "plutus/export/Export.hs"
+      - ".github/workflows/genesis-regime-carrier.yml"
+
+jobs:
+  compile-carrier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+      - run: cabal update
+      - name: Build PRE-RICH Plutus package
+        working-directory: plutus
+        run: cabal build pre-rich-plutus
+      - name: Export scripts
+        working-directory: plutus
+        run: cabal run exe:export-scripts
+      - name: Assert Genesis carrier artifact exists
+        run: test -s plutus/out/genesisRegimeCarrier.plutus.json
