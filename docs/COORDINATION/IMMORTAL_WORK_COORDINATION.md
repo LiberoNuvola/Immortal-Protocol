@@ -2556,3 +2556,18 @@ This does **not** mark the ledger/emulator path green: the first CI execution mu
 Commit: `b485f12bcbaad31e0aa63f6c69d0fac234e41345`
 
 **Status:** P2.8-B.1 execution visibility GREEN; runtime acceptance and transaction-size evidence remain OPEN until CI produces a successful real-validator run and resource measurements.
+
+
+## 2026-09-22 — P2.8-B.1 emulator execution promoted to CI + pool-output fail-closed hardening
+
+External audit identified two concrete blind spots: the real PRE-RICH Reveal emulator test existed but was not referenced by any workflow, and PrizeValidator's pool-output lookup accepted the first matching output instead of failing closed on ambiguity.
+
+Actions taken:
+- added dedicated workflow `.github/workflows/pre-rich-emulator-reveal.yml` executing both the isolated Lucid emulator smoke and the real PRE-RICH Reveal emulator test;
+- workflow normalizes the pinned Lucid 0.10.11 ESM entrypoint before execution;
+- hardened `findB1PrizePoolOutput` so a second matching pool-script output or malformed first match cannot silently select an arbitrary output;
+- no economic thresholds or accounting semantics changed.
+
+Commit: 8d817c74706c1d0938e3dcff42f3a8e86b718b2c
+
+**Status:** emulator path is now an automatic CI gate. The first run is the evidence point; any Lucid/Data.to or transaction-size failure must remain visible rather than being masked. P2.8 real-ledger evidence remains separate.
