@@ -148,7 +148,14 @@ async function waitFor<T>(
 const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
-const lucid = await Lucid.new(new Blockfrost(API, ''), 'Preprod')
+const provider = new Blockfrost(API, '')
+const lucid = await Lucid.new(provider, 'Preprod')
+const protocolParameters = await provider.getProtocolParameters()
+console.log(JSON.stringify({
+  protocolParametersCostModelLengths: Object.fromEntries(
+    Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
+  ),
+}, null, 2))
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
