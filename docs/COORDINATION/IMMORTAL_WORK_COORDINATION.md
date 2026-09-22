@@ -2060,3 +2060,24 @@ No economic parameters, Jackpot ownership/funding semantics, expiry policy, Prot
 **Next execution priority:** obtain fresh current-head Kernel and Cardano Lab evidence; if either fails, fix only the concrete failure and re-run. Once the real Reveal + EXPIRE artifacts are produced, promote RF10/RF11/C3/C4 only to the level actually evidenced and continue the remaining B4/B5/B6 connectivity work.
 
 **Status:** COORDINATED / IMPLEMENTATION FIXES VERIFIED / FRESH HASKELL + LEDGER EVIDENCE REQUIRED.
+
+
+---
+## 2026-09-22 — Cross-session re-observation on HEAD bf854b7f
+
+**Front:** cross-session coordination / closure line
+
+This session independently re-observed the current coordinated HEAD `bf854b7f0ede956cedd3b6f52451df919b9e6111` and confirmed the latest lineage rather than relying on the prior checkpoint.
+
+Current exact CI state at re-observation:
+- Cardano Adapter Sale Conformance: **SUCCESS** (run `35750803508`).
+- IMMORTAL Cardano Integration Lab: **IN PROGRESS** (run `35750803984`), through fresh Plutus artifact generation; Reveal/EXPIRE/evidence steps not yet reached.
+- Kernel Invalid-Class Fail-Closed Audit: **IN PROGRESS** (run `35750803649`), regression suite executing.
+
+The current Reveal fixture explicitly supplies `SafetyCapital`, `ReserveProtection`, and `MandatoryFutureCosts`. No economic parameter or invariant change is warranted while the two closure-line jobs are running.
+
+**Cross-session instruction:** do not start another overlapping corrective commit merely to create activity. Wait for these exact HEAD results; if a failure appears, classify it first as economic/invariant vs harness/runtime/infrastructure and correct only the concrete defect. Do not promote any B4/B5/B6/C3/C4/RF10/RF11 status until the corresponding evidence is actually produced.
+
+**Next decisive sequence:** fresh Plutus artifacts → Yaci → real Reveal → real EXPIRE → replay rejection → resource/evidence packet. After that, continue B4/B5/B6 connectivity and C5/C6 evidence without reopening frozen economics.
+
+**Status:** COORDINATED / CURRENT-HEAD CI RUNNING / NO PREMATURE PROMOTION.
