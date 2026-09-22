@@ -15,6 +15,7 @@ import Prelude
   , not
   )
 
+import EconomicProfile (EconomicProfile (..))
 import EconomicStateV3
 import EconomicKernel
 import EconomicTransitionV3
