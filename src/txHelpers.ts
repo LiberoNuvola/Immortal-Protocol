@@ -2,8 +2,8 @@
 import { prizeValidator } from './loadValidator'
 import {
   createCardanoExecutionAdapter,
-  type EconomicAdmissionWitness,
 } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 /**
  * Helper leggero per costruire una claim tx.
