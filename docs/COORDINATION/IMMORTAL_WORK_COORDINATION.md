@@ -497,7 +497,8 @@ This is a **bridge/conformance property**, not a proof of Economic Gate soundnes
 GitHub Actions has executed the branch automatically.
 
 - Cardano Adapter conformance test step passed in the inspected runs, including the modified reveal conformance suite.
-- The associated frontend workflow still fails at `npm run build` inside `node-fetch/src/body.js` because Vite externalizes Node built-ins; this failure occurs after the targeted conformance tests pass and is not an economic-state assertion.- The Haskell kernel regression workflow for the latest bridge commit is currently executing; no final Haskell test result is claimed yet.
+- The associated frontend workflow still fails at `npm run build` inside `node-fetch/src/body.js` because Vite externalizes Node built-ins; this failure occurs after the targeted conformance tests pass and is not an economic-state assertion.
+- The Haskell kernel regression workflow for the latest bridge commit is currently executing; no final Haskell test result is claimed yet.
 - Local execution is unavailable because the environment lacks GHC/Cabal.
 
 ### Important architectural finding
@@ -997,6 +998,7 @@ RF8 now has a source-level regression preventing direct `signTx/submitTx` calls 
 ## 45. CURRENT SESSION RESULT — B6 Reveal payout binding
 **Date:** 2026-09-21
 **Front:** B6 — V3 ↔ Cardano Reveal ticket-level refinement
+
 The Reveal refinement gap identified during cross-session audit is now closed at the witness boundary without changing economic policy.
 
 Canonical sources triangulated:
@@ -1496,6 +1498,7 @@ Updated `plutus/Types.hs` so `ppJackpotThreshold` is described as a state-derive
 ### Evidence status
 
 No CI green claim is made for this delta. The latest previously observed infrastructure runs (`35663204233`, `35663204402`, `35663204486`) had the Integration Lab and Kernel audit cancelled while the Sale Conformance run completed successfully; subsequent pushes may have superseded those runs.
+
 ### Remaining gap
 
 The new policy boundary is not itself runtime transaction authority. The remaining proof is to connect the authoritative PRE-RICH class-control/hysteresis state and the canonical Economic Gate to the actual Jackpot funding transition, then prove the same conditions at the Cardano realization boundary.
@@ -2195,6 +2198,808 @@ However, the live TypeScript execution path does not consume that witness: src/g
 - This closes the **runtime consumption boundary** of B5, but does not claim that the TypeScript witness itself is the authoritative economic producer. The producer/verification provenance remains an upstream economic-layer obligation and must be evidenced before B5 is promoted beyond runtime-boundary closure.
 - No economic constants or kernel formulas were changed.
 - Materios remains bounded at the untrusted→verified transition boundary; real canonical committee-selection proof remains OPEN.
+- Cardano lab: the prior Evolution probe failure was diagnosed as the fixture mnemonic mismatch (cost-model lengths were successfully observed); corrected fixture is now on branch. A new lab run should exercise Reveal/Expire after the corrected seed.
+
+**Status:** B5 runtime submission boundary GREEN; authoritative admission production/evidence OPEN. Cardano RF10/RF11/P2.8 evidence OPEN pending a fresh real-ledger run. Materios real authority-selection proof OPEN.
+
+
+## 2026-09-22 — Materios upstream selection triangulation
+
+- Re-read current Materios `main` authority-selection implementation rather than relying on the older snapshot.
+- The actual selection function takes `genesis_utxo`, `AuthoritySelectionInputs`, and `sidechain_epoch`; inside it filters registered/permissioned candidates, computes weights from the D-parameter and stake, sorts by account ID, derives the random seed from Cardano epoch nonce + sidechain epoch, applies the weighted sampler, then applies the repository's deduplication and `MIN_DISTINCT_COMMITTEE=2` safety floor.
+- Therefore the existing IMMORTAL proof statement is correctly keeping the algorithm opaque, but the future proof producer must authenticate the exact serialized `AuthoritySelectionInputs` bytes plus `genesis_utxo` and epoch against the advertised committee. We must not replace this with a TypeScript reimplementation.
+- Current upstream Materios also has later runtime resilience controls around committee selection/fallbacks; these reinforce that the proof boundary must identify the exact runtime/profile context rather than assuming a timeless abstract selection function.
+- Official Polkadot documentation independently confirms GRANDPA finality is a separate consensus service and that authority-set changes are explicit transitions. citeturn0search0turn0search2
+- **Result:** no new semantic field invented. Next real proof target is canonical Rust/WASM selection execution or an authenticated proof produced from it, with exact statement binding.
+
+
+---
+## 2026-09-22 — Cross-session Materios proof-contract alignment
+
+**Front:** Materios authority-selection provenance / B3-C
+
+This session coordinated through the repository state rather than chat handoff. The working branch remains `work/immortal-green-closure`; no new branch was created and `b1-hardening` was not touched.
+
+A non-normative proof-boundary contract was added at `poc/materios-grandpa/test/MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md`. It records the minimum statement bindings already established by the upstream Materios triangulation: proof-system identity, runtime/chain identity, exact `genesis_utxo`, exact serialized `AuthoritySelectionInputs` (or commitment), Cardano epoch nonce, sidechain epoch, resulting/predecessor authority sets, activation context and set identifiers.
+
+The contract explicitly preserves the authority boundary: Materios remains the selector; IMMORTAL consumes an authenticated result as `VerifiedAuthoritySetTransition`. No TypeScript selector reimplementation, synthetic production proof, or economic rule was introduced.
+
+**Commit:** `9e0c687c20fcfe2a1a0d1e85fff926559da4aa1d`
+
+**Status:** specification/proof-boundary alignment GREEN at the documented level; real Rust/WASM selector execution, authenticated proof, finalized-block fixture and replay evidence remain OPEN. Other sessions should treat this contract as the current non-normative target boundary and avoid duplicating a competing statement shape.
+
+
+## 2026-09-22 — V3 → Universal boundary coverage pass
+
+**Front:** IMMORTAL-STATE-BOUNDARY-001 / B4 / B6
+
+A direct current-branch inspection mapped the semantic contribution of every field in `V3EconomicState` against the universal projection and kernel.
+
+### Coverage result
+
+**Universal economic contribution represented by the projection:**
+- `v3CrystallizedLiabilities` → `uesCrystallizedLiabilities`
+- `v3UnresolvedReserve` → `uesUnresolvedReserve`
+- `v3UnresolvedTicketCount` → `uesUnresolvedTicketCount`
+- class-derived worst-case exposure → `uesWorstCaseExposure`
+- `v3SafetyCapital` → `uesSafetyCapital`
+- `v3ReserveProtection` → `uesReserveProtection`
+- `v3MandatoryFutureCosts` → `uesMandatoryFutureCosts`
+- `jsLockedAmount(v3Jackpot)` → `uesAdditionalProtectedCapital`
+
+**Application/profile semantics intentionally not projected as universal state:**
+- `TicketClass` / `TicketClassState` decomposition
+- `EconomicControlState` / active-class policy
+- `JackpotStatus` lifecycle
+- Jackpot threshold/cycle metadata
+- class saleability/capacity policy
+
+The latter fields are not silently dropped: the projection validates the economically relevant quantities they contribute and fail-closes on malformed class composition, unknown classes, duplicate classes, negative values and inconsistent class exposure. Their policy semantics remain at the PRE-RICH boundary.
+
+### Important distinction
+
+`tcsCap`, `tcsSaleable`, and activation control are not inputs to universal ProtectedCapital. They therefore must not be invented as universal fields merely to achieve structural one-to-one mapping. They remain application-state/policy inputs to the PRE-RICH transition layer.
+
+The current projection also checks:
+
+`tcsExposure == profilePrice(class) × tcsUnresolved`
+
+and independently reconstructs reserve/count/exposure from the class list. This gives a fail-closed consistency bridge rather than trusting duplicated aggregate fields.
+
+### Existing conformance evidence
+
+`projectionBoundaryEquivalent` already establishes, for successfully projected states:
+
+- V3 ProtectedCapital = Universal ProtectedCapital;
+- V3 RawSurplus = Universal RawSurplus;
+- V3 solvency predicate = Universal solvency predicate.
+
+Golden-vector coverage additionally exercises unknown-class rejection, duplicate-class rejection, inconsistent exposure rejection, invalid-profile rejection and preservation of non-zero protected-capital components.
+
+### Remaining gap
+
+This is **aggregate economic conformance**, not full V3 semantic equivalence. It does not prove:
+- application transition correctness;
+- Gate soundness;
+- certified viability;
+- atomicity;
+- Cardano semantic equivalence;
+- Jackpot lifecycle equivalence;
+- canonical class activation semantics.
+
+Therefore B6 remains PARTIAL / NEEDS-EVIDENCE and B4 remains OPEN for transition-level preservation evidence.
+
+**Decision:** no destructive V3 refactor is justified by this pass. The smallest safe architecture remains an explicit PRE-RICH projection into the universal aggregate, with application policy retained outside the universal kernel.
+
+**Status:** boundary coverage GREEN at aggregate semantic level; transition/conformance evidence remains OPEN.
+
+
+## 2026-09-22 — Runtime boundary bypass audit
+
+**Front:** B5 / Adapter separation
+
+A direct current-branch audit traced the Cardano execution choke-points and the PRE-RICH economic flows.
+
+Findings:
+- `revealPrize`, `claimPrize`, and `expirePrize` use `signAndSubmitEconomicTx` and therefore require the typed `EconomicAdmissionWitness` before signing/submission.
+- `CardanoExecutionAdapter.submitEconomic` fails closed through `assertEconomicAdmission`; the adapter does not calculate or reinterpret economic truth.
+- Generic `submit` remains available for non-economic transport operations.
+- `syncBeacon` is intentionally non-economic and correctly uses the generic submission path. An accidental requirement for an Economic Gate witness on `syncBeacon` was removed in commit `f64c1ab5ca5825e8e50872ee73de0e77c8b48152`.
+- The remaining generic `signAndSubmitTx` call in `gameFlow.ts` is the Beacon Sync path, not Reveal/Claim/Expire.
+- `buildClaimTx` is a transaction-builder helper and does not itself sign or submit; it is not an economic submission bypass.
+
+Conclusion: the runtime economic choke-point is structurally intact after the correction. The remaining B5 gap is **authoritative witness production/provenance**, not an observed adapter bypass.
+
+**Status:** runtime boundary GREEN; authoritative producer/evidence OPEN.
+
+
+## 2026-09-22 — AG-01 governance state-machine audit
+
+**Front:** AG-01 Algorithmic Governability / governance execution boundary
+
+A direct current-branch audit of `IMMORTAL/governance/Governance.hs` was performed against the AG-01 obligations. The constitutional principle is preserved: the algorithm must compute candidates within an authorized ruleset; it must not mint authority or silently convert a candidate into canonical state.
+
+The current governance module already provides deterministic primitives for snapshots, quorum, approval thresholds, delegation conservation, lifecycle transitions, ruleset/gate integration points and replay. The audit also identifies the remaining closure boundary without changing governance semantics:
+
+- `applyEvent` currently validates structural event admissibility, but the module does not by itself establish that every lifecycle advancement was preceded by the corresponding review/voting/finality/gate conditions.
+- `GatesSet` is structurally restricted to EvidenceReview/CommunityReview, but promotion from DecisionRecorded to Accepted/Adopted/Canonical is not independently proven by this module to require the relevant gate/quorum/approval evidence.
+- `ProposalClassified` records classification as a state transition, but canonical event provenance/timestamp binding and independent replay commitments remain outside this module's current evidence surface.
+- `replay` demonstrates deterministic state reconstruction from an accepted event stream; it is not yet cryptographic canonical-event evidence.
+
+Therefore AG-01 remains OPEN. No authority rule, threshold, economic constant, application policy or constitutional semantics were changed.
+
+**Next safe target:** add conformance tests at the governance boundary for negative self-authorization, gate-before-adoption, stale/incompatible ruleset rejection, distinct amendment lifecycle, deterministic replay and application-policy isolation. Any implementation change must preserve the existing normative hierarchy and must not turn the algorithm into an authorization source.
+
+**Status:** governance structural substrate GREEN; executable AG-01 closure evidence OPEN.
+
+
+## 2026-09-22 — Algorithmic governability: competing-monitor toy closure
+
+**Front:** Algorithmic Governability / epistemic non-sovereignty
+
+The master Notion record was advanced from the conceptual competing-monitor model to a closed toy-model result. Two versioned monitors receive the same immutable RawObservation but may produce different metrics. The normative selection rule is predeclared by the ViabilityContract; divergence is routed to the declared selection/contest rule and cannot itself transfer authority to whichever monitor produces the favorable result.
+
+New candidate invariant:
+
+> **No Result-Dependent Authority:** no monitor result may, absent an already-authorized institutional rule, modify the rule that determines monitor authority or the normative metric.
+
+The toy also identifies **MON-COMP-06 — Result-dependent authority capture** as an additional attack class. Defenses are contract precommitment, version binding, provenance, contestability and prohibition of result-dependent authority updates.
+
+This remains a research/test-model result, not a constitutional closure. The next implementation step is an executable adversarial test with two divergent monitors and explicit assertions that neither can mutate ViabilityContract or escalate authority.
+
+**Status:** conceptual/test-model closure GREEN; executable adversarial implementation test OPEN.
+
+## 2026-09-22 — Live branch synchronization check
+
+Direct branch inspection confirms `work/immortal-green-closure` currently points to `683fbd8f3871dbbd7542efc7fe6b915856e71c8e` (`docs: record runtime economic bypass audit`). The coordination snapshot's older `a4e9ec8...` marker is therefore stale and must not be used as current HEAD evidence. Runtime boundary findings recorded below remain current through the direct branch inspection; CI/evidence status must be refreshed from exact current-head runs before promotion.
+
+
+## 2026-09-22 — AG-01 canonical-governance schema audit
+
+**Front:** AG-01 / GOV-22 / canonical governance replay
+
+A deeper audit found a concrete schema-consistency gap that must be resolved before governance closure:
+
+1. `GOV-22-SPEC.md` requires every canonical event to bind a semantic payload plus timestamp and states that replay must consume canonical events as the sole semantic source.
+2. `GovernanceEventSchema.hs` defines payload variants `PayloadProposalClassified` and `PayloadGatesSet` without timestamps, while `eventSchemaValid` requires `payloadTimestamp payload == eventTimestamp`. For those variants `payloadTimestamp` is hard-coded to 0, so any classified/gate canonical event with a non-zero event timestamp is rejected.
+3. The existing canonical-event test does not exercise this boundary: its `EStatusChanged` example is structurally distinct from the classification/gates payloads and the authorization/replay path is not tested for a non-zero classified/gates timestamp.
+4. There are also two governance event representations in the working tree: `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` implement the GOV-22 semantic-payload path, while the older/parallel `CanonicalEvent.hs` defines a separate event model and lifecycle. This must be reconciled against the normative GOV-22/GOV-23 lineage before adding further semantics; no assumption is made here about which legacy module is authoritative.
+5. `GovernanceAuthorization.hs` already binds actor class, evidence and ruleset compatibility, but closure evidence must be tested against the canonical event path actually designated authoritative.
+
+No governance threshold, economic rule, constitutional rule or application policy was changed. This is an evidence/schema finding only.
+
+**Status:** AG-01 governance closure remains OPEN; next safe action is canonical-module lineage reconciliation and a minimal negative/positive test for non-zero classified/gate event timestamps, before any implementation change.
+
+## 2026-09-22 — Current-head Action Refinement compile failure corrected
+
+**Front:** B5 runtime admission / PRE-RICH action refinement
+
+The Action Refinement run 35765075059 passed all 10 Vitest files (73/73 tests) and failed only at TypeScript compilation. The concrete regressions were: two ProjectionInput fixtures missing explicit safetyCapital/reserveProtection/mandatoryFutureCosts; claim.ts and claimFlow.ts not threading the mandatory EconomicAdmissionWitness; and txHelpers.ts importing that type from the adapter instead of the dedicated EconomicAdmission module.
+
+Correction was fail-closed: explicit protected-capital fields were restored in the fixtures; the typed witness was threaded through both Claim facades; the import was corrected; and the dev UI Claim button now reports that no authoritative admission producer is available instead of fabricating a witness.
+
+Commits: 3518831eab46e40df4b064b56621d03e71242066, 6b82675bb2eeb98c6e9f11472c363553efca5765, d77710fbc356f3f608c517e258e87cb4a669ca8b, 4d40bb0348d4b1712667b2aec914e3614c719433, 0e6228c7e74c06527b0048d0ccd242f8d7ea4df2, 7321880fd06f25f45d519290d4b35d2b24f42c38.
+
+No economic rule, validator predicate, witness semantics, or IMMORTAL/PRE-RICH boundary was weakened. Fresh current-head validation is running on 7321880fd06f25f45d519290d4b35d2b24f42c38.
+
+**Status:** compile defect corrected; validation running. B5 runtime boundary remains structurally GREEN; authoritative witness production remains OPEN.
+
+
+## 2026-09-22 — AG-01 canonical payload timestamp repair
+
+The GOV-22 audit was converted into a minimal schema correction on the working closure branch.
+
+- `PayloadProposalClassified` now carries its canonical timestamp.
+- `PayloadGatesSet` now carries its canonical timestamp.
+- `payloadTimestamp` derives the timestamp from those payloads instead of hard-coding zero.
+- `canonicalPayloadText` includes the timestamp, so the semantic payload representation remains deterministic and binds the same time as the event envelope.
+- `GovernanceCanonicalReplay.hs` was updated only to consume the enriched payload shape; governance transition semantics are unchanged.
+This is a GOV-22 schema-consistency repair, not a new governance rule.
+The audit also confirms that `IMMORTAL/governance/CanonicalEvent.hs` is a separate older lifecycle representation and must not silently become a second semantic source of truth. GOV-22's `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` path is the lineage to reconcile against the normative spec; no deletion of the older module is performed without consumer/test reconciliation.
+
+Commits:
+- `e6a812c23c40d9843203395bff1f47cacf2bbbee` — payload timestamp shape
+- `ddac71d861c752bd86b2c73c20bc9a335e4e25ef` — replay pattern update
+
+No new branch; `b1-hardening` untouched.
+
+**Status:** GOV-22 timestamp consistency repaired; AG-01 governance closure still OPEN pending canonical-module reconciliation, authorization/gate negative evidence, and independent replay evidence.
+
+
+## 2026-09-22 — AG-01 canonical event timestamp boundary repaired
+
+**Front:** AG-01 / GOV-22 canonical governance replay
+
+The previously identified schema inconsistency was confirmed on the live branch and corrected minimally. `CanonicalPayload` carries timestamps for `PayloadProposalClassified` and `PayloadGatesSet`; `eventSchemaValid` compares those payload timestamps with `eventTimestamp`; the event-type matcher had stale constructor arities (`_ _` / `_ _`) and therefore did not match the current payload constructors. It is now aligned with the actual three-field classification payload and three-field gates payload.
+
+A conformance test was extended with non-zero timestamp cases for both `EProposalClassified` and `EGatesSet`, including evidence refs and predecessor binding. No governance threshold, authority rule, economic rule, or constitutional semantics changed.
+
+Commits:
+- `730c0dd7f7f7b07da83eeac4392701482a4c4a89` — align canonical governance payload arity;
+- `237b793636d34be9deda17502a9561a561b64cce` — add classified/gate timestamp fixtures;
+- `64fd67a3c6f1af5a1c6d9529a6bbc52b11dfcfb0` — assert non-zero canonical timestamps.
+
+Current exact-head workflow results are not yet exposed for this head; no green CI claim is made.
+
+**Status:** schema boundary repaired; executable validation pending. AG-01 remains OPEN for broader lifecycle/finality/self-authorization evidence.
+
+
+## 2026-09-22 — GOV-22 canonical-only conformance test alignment
+
+The governance canonical-event test was stale relative to the current GOV-22 API: it still replayed `(CanonicalEvent, GovernanceEvent)` pairs and used a tautological determinism assertion.
+
+It now:
+- replays `[CanonicalEvent]` only through the current `replayCanonical` API;
+- supplies an explicit ruleset registry required by canonical authorization;
+- verifies predecessor rejection;
+- independently compares incremental replay with full-list replay;
+- adds positive schema coverage proving non-zero timestamps are bound for `ProposalClassified` and `GatesSet`.
+
+This is test/conformance alignment only. No governance thresholds, lifecycle policy, economic rule, or authority boundary changed.
+
+Commit:
+- `61c7fe46605e3ccdc8d6301957f77ca55c98a4a9`
+
+**Status:** GOV-22 implementation/test alignment advanced; full AG-01 closure remains OPEN pending canonical-module reconciliation and stronger authorization/gate/ruleset evidence.
+
+
+## 2026-09-22 — GOV-22 lineage reconciliation boundary
+
+The older `IMMORTAL/governance/CanonicalEvent.hs` lifecycle model was confirmed as structurally distinct from the GOV-22 canonical semantic-payload path. No active consumer was identified through the available repository search surface, but deletion was intentionally avoided because the available code-search index does not provide a reliable current-branch consumer proof.
+
+Safe reconciliation performed instead:
+- marked `CanonicalEvent.hs` explicitly LEGACY / PARALLEL and non-authoritative for GOV-22;
+- stated that `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` are the authoritative GOV-22 semantic replay lineage;
+- removed the stale GOV-22 README wording suggesting manual application to `b1-hardening`.
+
+Commits:
+- `bc4d08b40aa82f7af2942aadd4f908065caebb69` — GOV-22 status wording
+- `9c669ff16556d86f8a32f6c3fd196dbf4d064ed8` — legacy lineage marker
+
+This does not claim deletion or full compile-time exclusion of the legacy module; that remains a separate verification task if the build manifest/consumer graph establishes it is unreachable.
+
+
+## 2026-09-22 — AG-01 authorization conformance hardening
+
+**Front:** AG-01 / GOV-22 canonical authorization
+
+A minimal executable conformance extension was added to the canonical governance test. It now proves, on the authoritative GOV-22 canonical-event path, that:
+
+- a correctly declared actor role is accepted;
+- an actor-role mismatch is rejected (negative self/role authorization boundary);
+- an incompatible payload commitment is rejected;
+- an unregistered ruleset version is rejected.
+
+The test does not introduce or alter governance thresholds, lifecycle transitions, economic rules, constitutional semantics, or application policy. It strengthens evidence for the already-existing GovernanceAuthorization contract.
+
+**Commit:** `7187ce6a213405698de8d0e426b3b91fd7f0a735`
+
+**Validation:** GitHub exposes no workflow run for this exact head, so no CI-green claim is made. Static test construction was checked against the current canonical authorization API. AG-01 remains OPEN for lifecycle/gate-before-adoption and independent replay evidence.
+
+**Coordination:** no branch created; `b1-hardening` untouched. Other sessions should continue from this head and avoid duplicating the same authorization-test change.
+
+
+## 2026-09-22 — Governance build-lineage check
+
+The active Plutus Cabal package was inspected to establish whether the legacy governance module is part of the authoritative build surface.
+
+Finding:
+- `CanonicalEvent.hs` is **not** listed in `exposed-modules`, `other-modules`, or any governance test suite in `plutus/pre-rich-plutus.cabal`.
+- GOV-22's authoritative modules (`GovernanceEventSchema`, `GovernanceAuthorization`, `GovernanceCanonicalReplay`, `GovernanceCommitment`, `RulesetRegistry`) are exposed.
+- `GovernanceFinality` and `GovernanceRuleset` are now explicitly exposed as well, matching the existing Phase-6 governance surface rather than relying on accidental source visibility.
+
+No deletion of `CanonicalEvent.hs` was performed: it remains legacy source outside the active package manifest, preserving historical compatibility while preventing it from being the package's canonical GOV-22 event model.
+
+Commit:
+- `16a2e5e368fd47a40abb0dad69f2ee25c3ec3e65`
+
+**Status:** GOV-22 lineage is now structurally separated at the package boundary; remaining AG-01 work is semantic authorization/gate enforcement and independent evidence, not event-model duplication.
+
+
+## 2026-09-22 — Governance conformance test drift repaired
+
+The active `GovernanceConformanceTest.hs` had stale calls against the current delegation-aware quorum/approval APIs and an emergency-expiry assertion that used a proposal with no emergency activation timestamp.
+
+Repair:
+- quorum and approval tests now pass the proposal delegation set explicitly;
+- abstention tests use an explicit empty delegation set;
+- emergency expiry test constructs an explicitly activated emergency and checks the exact 72h boundary.
+
+No governance threshold or lifecycle rule changed; this only restores test fidelity to the existing implementation.
+
+Commit:
+- `726fd848d0c1ed878b19e45d1c9776f3de1c804d`
+
+**Status:** governance conformance surface is now aligned with current function signatures; AG-01 semantic lifecycle/gate enforcement remains the next substantive closure target.
+
+
+## 2026-09-22 — AG-01 gate-before-adoption enforcement
+
+The governance audit found a concrete executable gap: the existing lifecycle graph allowed DecisionRecorded -> Accepted -> Adopted structurally, but the authoritative applyEvent path did not enforce the already-defined quorum, approval, and gatesPassed predicates before Accepted.
+
+Minimal repair on the canonical Governance path:
+- StatusChanged to Accepted now requires quorumReached + approvalReached + gatesPassed for the proposal's snapshot/delegations/votes/class/gates;
+- Adopted remains reachable only from Accepted;
+- Canonical remains reachable only from Adopted;
+- no new threshold or policy was introduced; the implementation now enforces predicates already present in Governance.hs.
+
+Conformance evidence adds a negative ungated acceptance case and a positive Accepted -> Adopted sequence after a valid vote/decision record.
+
+Commits:
+- d77e04d8fff3549da6a9712841f2f893de290b4e
+- 9040bce4b8b0606b98147516eb9a701dadedfe44
+
+**Status:** AG-01 lifecycle gate enforcement implemented; independent replay/finality and full build validation remain open.
+
+
+## 2026-09-22 — P2.8-B.1 emulator execution promoted to CI
+
+Audit finding confirmed: the real PRE-RICH emulator fixture `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs` existed on the closure branch but none of the existing workflow definitions referenced it.
+
+Action:
+- added `.github/workflows/pre-rich-cardano-emulator-reveal.yml`;
+- runs on pushes to `work/immortal-green-closure` and pull requests;
+- installs the pinned lockfile dependencies with `npm ci`;
+- executes the actual emulator-backed Reveal fixture with the repository's Plutus artifacts.
+
+This does **not** mark the ledger/emulator path green: the first CI execution must establish whether the current fixture reaches validator evaluation, and any failure remains evidence rather than being masked.
+
+Commit: `b485f12bcbaad31e0aa63f6c69d0fac234e41345`
+
+**Status:** P2.8-B.1 execution visibility GREEN; runtime acceptance and transaction-size evidence remain OPEN until CI produces a successful real-validator run and resource measurements.
+
+
+## 2026-09-22 — P2.8-B.1 emulator execution promoted to CI + pool-output fail-closed hardening
+
+External audit identified two concrete blind spots: the real PRE-RICH Reveal emulator test existed but was not referenced by any workflow, and PrizeValidator's pool-output lookup accepted the first matching output instead of failing closed on ambiguity.
+
+Actions taken:
+- added dedicated workflow `.github/workflows/pre-rich-emulator-reveal.yml` executing both the isolated Lucid emulator smoke and the real PRE-RICH Reveal emulator test;
+- workflow normalizes the pinned Lucid 0.10.11 ESM entrypoint before execution;
+- hardened `findB1PrizePoolOutput` so a second matching pool-script output or malformed first match cannot silently select an arbitrary output;
+- no economic thresholds or accounting semantics changed.
+
+Commit: 8d817c74706c1d0938e3dcff42f3a8e86b718b2c
+
+**Status:** emulator path is now an automatic CI gate. The first run is the evidence point; any Lucid/Data.to or transaction-size failure must remain visible rather than being masked. P2.8 real-ledger evidence remains separate.
+
+
+## 2026-09-22 — P2.8-B.1 first CI failure is now reproduced and classified
+
+Fresh CI run `35766684202` reached the real emulator fixture and failed during `setupTx.complete()` with `encoding/hex: invalid byte: [` from Lucid's hex decoder. The stack points to the fixture's inline datum encoding, not validator execution.
+
+Root cause identified by comparison with the repository's active transaction construction (`Data.to(...)`): the emulator fixture passed raw `Constr` values as `inline` datum payloads. The fixture has been corrected to encode all four inline datums explicitly with `Data.to(...)`.
+
+Commit: `608d302b0b335e526dc4492bf219b181a17d3059`
+
+Interpretation: the new CI has already converted the former blind spot into an actionable, reproducible fixture failure. Validator acceptance and transaction-size evidence remain OPEN; next run must get past datum encoding before those can be measured.
+
+
+## 2026-09-22 — P2.8-B.1 first CI failure: redeemer encoding isolated and corrected
+
+The newly activated emulator gate immediately exposed the previously reported encoding blind spot. The first failing run did not reach validator execution: Lucid failed during `Tx.complete()` with `encoding/hex: invalid byte: [`, at the Reveal transaction construction.
+
+Diagnosis: the setup transaction already used `Data.to` for inline datums, while the Reveal `collectFrom` redeemers were still passed as raw `Constr` values. Lucid 0.10.11 expects the serialized datum/redeemer representation at this boundary. Both Reveal redeemers are now explicitly wrapped with `Data.to(...)`.
+
+This is a test-harness encoding correction, not a validator/economic weakening. The CI gate is deliberately retained so the next run proves whether execution reaches the actual validators and, if so, exposes the next real boundary (including resource footprint).
+
+Commit: 2679a1969dd76f072ee32e2347ad71bcce6f0b13f0
+
+**Status:** encoding failure localized and fixed; fresh-head emulator execution pending.
+
+
+## 2026-09-22 — Reference-script deployment split from setup transaction
+
+The first reference-script attempt correctly removed validator bytes from the Reveal witness, but placed both reference scripts in the same setup transaction. That setup transaction itself remained oversized (`18,283 > 16,384`).
+
+Repair:
+- ordinary Prize/Pool script-UTxO setup remains separate;
+- PrizeValidator reference script is deployed in its own transaction;
+- B1PrizePool reference script is deployed in its own transaction;
+- Reveal reads both resulting reference-script UTxOs and does not attach either validator inline.
+
+Commit: `81aa53c336fde5621f08b7c820c8fc3ae9c79f08`
+
+Next evidence target: fresh CI must show setup/reference deployments and then Reveal completion. Only after that can validator acceptance and resource measurements be classified.
+
+
+## 2026-09-22 — Reference-script funding-order failure classified
+
+Fresh P2.8-B.1 CI reached the split reference-script deployment path, but the second reference-script transaction failed because both reference transactions were built before the setup transaction was submitted, so Lucid selected the same pre-setup wallet UTxO twice. This is fixture sequencing, not validator/economic evidence.
+
+Repair: submit and await the Prize/Pool setup transaction first, then build/sign/submit the PrizeValidator reference-script transaction, then the B1PrizePool reference-script transaction.
+
+Commit: `f46e5470b89950f9a46d83dd0ff5d77766f347f6`
+
+
+## 2026-09-22 — P2.8-B.1 emulator budget classified
+
+Fresh CI confirms the fixture now reaches real Plutus execution. The emulator reports `maxTxSize=16384` and a 175-entry PlutusV2 cost model, but Reveal fails at `Spend[1]` with a negative remaining execution budget (`Mem -29986019900`, `CPU -20004554100`). This is no longer transaction-size or reference-script placement evidence; it is an emulator execution-budget compatibility/parameter issue that must be diagnosed without changing validator economics or fabricating a larger budget.
+
+Added diagnostics for `maxTxExUnits` and execution prices in commit `59724385c64bee7b1d88aeea11b92dccdb506288`. Next: capture exact emulator execution parameters, compare them with the Lucid/Cardano version assumptions and repository cost-model history, then choose the smallest evidence-backed repair.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS economic crystallization front opened
+
+**Front:** PRE-GENESIS / GENESIS transition boundary — Snek/PRE-RICH bootstrap provenance
+
+A new coordinated front is opened from the existing Notion PRE-Snek evidence lineage, especially **Gate 41 — PRE Snek Deployment Lineage & Seed Reconciliation v0.1**. The existing evidence closes the Pool-NFT lineage, the Genesis immediate input set, the boundary transaction reconstruction, the exact 1B PRE bootstrap and the first curve transition, but it explicitly leaves the semantic role of the bootstrap/seed/min-ADA boundary and the Genesis funding role open.
+
+Key evidence already established:
+- the Pool-NFT mint transaction distributes exactly `1,000,000,000 PRE`;
+- the NFT-bearing initial pool output contains `13 ADA + 996,071,981 PRE + 1 Pool NFT`;
+- the complementary output contains `3,928,019 PRE`;
+- the subsequent first-curve transition is transaction-level verified;
+- the observed `3 ADA` State-0/provider offset remains an identified pattern, not a proven seed/min-ADA rule;
+- the existing PRE-RICH economic rule says **Genesis bootstrap = PRE Treasury >= 4000 USDM**, while the Genesis PRE bootstrap is **not automatically PrizePool liquidity**.
+
+### New normative/evidence question
+
+Define the exact boundary by which a **PRE-GENESIS observed state becomes a GENESIS economic state**, without silently treating historical PRE bootstrap assets as Genesis capital.
+
+The working hypothesis is deliberately a boundary/projection model, not a token-conversion rule:
+
+`PRE-GENESIS observed state → eligibility predicates → crystallization boundary → GENESIS starting state`
+
+Genesis accounting must therefore be based on an explicitly admitted projection of the pre-Genesis state. Historical/bootstrap assets remain historical/application state unless a canonical PRE-RICH rule explicitly admits them into a Genesis economic field. No asset is reclassified merely because it existed before the boundary.
+
+### Required closure work
+
+1. Identify the authoritative Genesis activation predicates and their source-of-truth location.
+2. Define which PRE-GENESIS quantities are historical/bootstrap/application state and which, if any, are admitted into Genesis economic state.
+3. Define the crystallization function and fail-closed behavior for missing/ambiguous evidence.
+4. Reconcile the existing `Genesis = 1 USDM` and `PRE Treasury >= 4000 USDM` rules with the Snek/PRE deployment lineage without promoting Snek-specific values into IMMORTAL.
+5. Keep the boundary **PRE-RICH/application-specific** unless canonical evidence proves a universal IMMORTAL semantic is required.
+6. Add conformance/evidence only after the semantic boundary is triangulated against Constitution, Economic Canon, PRE-RICH Constitution/Application Spec/Game Economy and Gate-41 evidence.
+
+### Explicit non-assumption
+
+Do **not** infer that the `1B PRE` bootstrap, the `13 ADA` initial pool output, the `3 ADA` provider offset, or any upstream UTxO automatically constitutes Genesis capital. Those are ledger/evidence facts whose economic role must be established separately.
+
+**Status:** OPEN / NEW FRONT — semantic boundary not yet frozen.
+**Next deterministic action:** triangulate the Genesis activation/bootstrapping rules across current repository sources and the relevant Notion documents, then write the smallest canonical transition contract before implementation.
+
+
+## 2026-09-22 — SESSION RESULT — IMMORTAL Treasury/Protocol Revenue representation map
+
+**Front:** IMMORTAL Treasury & Protocol Revenue Boundary
+
+Direct current-branch inspection confirms that the repository currently contains a concrete PRE-RICH/Cardano Treasury mechanism, but not yet a typed universal `ProtocolUsageFee` / `ProtocolRevenue` boundary. The existing `src/treasuryPolicy.ts` percentage/threshold policy, `plutus/Treasury.hs` distribution validator, `TreasuryDatum`, and `TREASURY_ADDRESS` are classified as application/deployment realization and must not be promoted into IMMORTAL semantics.
+
+`src/mint.ts` does perform an atomic Treasury payment in the PRE-RICH sale transaction, while `EconomicKernel` remains the universal ProtectedCapital/RawSurplus accounting boundary. No Treasury balance is therefore being inferred as ProtectedCapital or RawSurplus merely because it is protocol-controlled.
+
+The dedicated front `docs/COORDINATION/FRONT-IMMORTAL-TREASURY-FEE.md` now records this representation map and the smallest safe conceptual boundary: `ProtocolRevenue → ProtocolControlledDestination → AccountingClassification → AdapterSettlement → Evidence`.
+
+**No normative economics changed. No fee amount or distribution percentage was introduced.**
+
+**Status:** REPRESENTATION MAP COMPLETE / NORMATIVE BOUNDARY OPEN.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS predicate triangulation: activation boundary remains underspecified
+
+**Front:** PRE-GENESIS / GENESIS transition boundary — normative triangulation
+
+The new front was triangulated against the current Notion transition documents rather than assuming that the existing `Genesis >= 4000 USDM` statement is already the complete activation rule.
+
+### Findings
+
+1. The **Definitive Decision Register** treats `Genesis = 1 USDM` and verified PRE Treasury `>= 4,000 USDM` as frozen economic decisions, and explicitly states that PRE bootstrap is not automatically PrizePool liquidity.
+2. **T2 — Transition Conformance Specification** states that `PRE_GENESIS → GENESIS` is triggered by a **verified Genesis predicate**, with permissionless execution and independent revalidation.
+3. The same T2/P0 lineage does **not** provide a fully explicit executable predicate in the text itself; it names the verified predicate and the Treasury threshold.
+4. The current **End-to-End System Map & Continuity Checkpoint** adds an important application-level qualification: Genesis/activation follows a required ladder/stability condition and economic trajectory, and its remaining closure work explicitly says to formalize the deterministic activation threshold from verified economic trajectory/state.
+5. Therefore the statement `Verified PRE Treasury >= 4000 USDM` is established evidence for the Genesis bootstrap condition, but it must **not yet be promoted to the complete PRE-GENESIS → GENESIS activation predicate** without reconciling the ladder/stability/trajectory condition.
+
+### Consequence for the bootstrap question
+
+The correct transition model is currently:
+
+`PRE-GENESIS state → verify Genesis predicate(s) → crystallize Genesis state → GENESIS`
+
+where the exact predicate set is still an open conformance/specification boundary. The `1B PRE` Snek bootstrap and its ADA/Pool-NFT lineage remain evidence of the application's pre-Genesis history; they are not automatically imported into Genesis accounting.
+
+### Conflict / unresolved canonical detail
+
+**Source A:** Definitive Decision Register / T2 — verified PRE Treasury `>= 4,000 USDM` is the frozen Genesis bootstrap condition and PRE bootstrap is not automatically PrizePool liquidity.
+
+**Source B:** End-to-End System Map — activation also follows required ladder/stability and economic trajectory, with deterministic activation threshold still to be formalized.
+
+**Implication:** no implementation should hard-code `Treasury >= 4000` as the sole Genesis transition predicate until the source hierarchy reconciles these statements. Conversely, no new numerical threshold should be invented.
+
+**Next deterministic action:** inspect the actual PRE-RICH transition implementation/tests for `PRE_GENESIS → GENESIS`, map every predicate currently enforced, then reconcile that implementation against T2 and the End-to-End map. If the implementation has no complete predicate, define the smallest contract from existing normative material before coding.
+
+**Status:** OPEN / TRIANGULATED — bootstrap condition known; complete activation predicate not yet frozen.
+
+
+## 2026-09-22 — SESSION RESULT — PRE-GENESIS → GENESIS boundary
+
+Notion T2/P0 and the current PRE-RICH Constitution were triangulated against the working branch. The semantic Genesis predicate remains the frozen verified PRE Treasury threshold `>= 4,000 USDM`; execution is permissionless and PRE-GENESIS remains a safe state if nobody submits. The key accounting clarification is now explicit: **Genesis bootstrap evidence/value is not automatically PrizePool liquidity** and must not be double-counted merely because the transition crosses into GENESIS.
+
+Added `PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md` with the transition contract, on-chain revalidation requirements, bootstrap non-double-counting invariant, SAFE STALL/liveness requirements, negative cases and closure evidence.
+
+**Status:** semantic boundary CLOSED; transition-level operational conformance CLOSING/OPEN. No economic parameter changed.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS predicate resolved by current PRE-RICH canon
+
+**Triangulation correction / resolution:** inspection of the current branch at the latest diagnostic HEAD `83d459a1c6e584e10af7ebd3f572e5d5159292ff` resolves the apparent ambiguity identified in the previous note.
+
+The current canonical `PRE-RICH/docs/GAME-ECONOMY.md` states explicitly:
+
+`Genesis ticket = 1 USDM`
+`Genesis bootstrap = verified PRE Treasury >= 4000 USDM`
+
+and `PRE-RICH/docs/CONSTITUTION.md` carries the same frozen application baseline. T2/P0 describe the transition operationally as a verified Genesis predicate, permissionless invocation and independent revalidation. Therefore the current PRE-RICH Genesis activation predicate is **verified PRE Treasury >= 4000 USDM**; no additional numerical stability/trajectory threshold should be invented.
+
+The apparent reference in the End-to-End map to “activation follows the required ladder/stability condition and economic trajectory” belongs to the **Jackpot activation/funding section**, where `StableLadder(S)` is explicitly defined. It is not evidence of an additional PRE-GENESIS → GENESIS predicate.
+
+### Critical distinction now clarified
+
+The rule is **not** “ignore all PRE bootstrap when entering Genesis.” The rule is:
+
+- the Snek/PRE bootstrap supply is historical/application bootstrap state;
+- it is **not automatically PrizePool liquidity** and must not be counted as such;
+- a verified PRE amount held in the protocol-controlled **PRE Treasury** may satisfy the Genesis bootstrap predicate when the canonical Treasury observation/value proves `>= 4000 USDM`;
+- only resources explicitly admitted by the PRE-RICH Genesis accounting rules enter the Genesis economic starting state;
+- no automatic conversion of the entire PRE bootstrap supply into PrizePool capital occurs.
+
+So the transition is better represented as:
+
+`PRE-GENESIS observed state → verify PRE Treasury value >= 4000 USDM → crystallize Genesis boundary → Genesis (price = 1 USDM)`
+
+with the bootstrap token supply retained as provenance/history and with Treasury admission separated from PrizePool liquidity admission.
+
+### Remaining implementation/evidence work
+
+The semantic predicate is now **CLOSED** at application level. What remains is conformance/evidence:
+
+1. identify the authoritative on-chain Treasury observation and valuation path;
+2. prove the observed PRE Treasury value is actually controlled by the protocol Treasury and not a user/operator wallet;
+3. prove the Genesis transition consumes/revalidates that observation permissionlessly and atomically;
+4. prove the Genesis starting state does not silently import excluded bootstrap/Pool-NFT/seed assets into PrizePool liquidity;
+5. add a deterministic boundary fixture covering `<4000`, `=4000`, `>4000`, malformed/stale valuation and wrong-Treasury ownership.
+
+**Status:** SEMANTIC CLOSED / IMPLEMENTATION + EVIDENCE OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 reference-script provider decoding repair
+
+Fresh-head CI on `cc81bf3` did **not** reach Plutus execution: the Lucid/Emulator provider rehydrated the two real reference-script UTxOs without a decoded `scriptRef`, despite those outputs having just been created by the fixture's reference-script transactions.
+
+Repair on `work/immortal-green-closure`:
+- retain selection by the exact creating transaction hash;
+- preserve the provider-returned UTxO;
+- restore the already-known `prizeScript` / `poolScript` as the `scriptRef` field only when the provider omitted it;
+- feed those UTxOs to `readFrom()`.
+
+This is a provider-decoding/fixture-boundary repair, not a validator bypass: the reference scripts are still deployed as real ledger UTxOs and are not attached inline to Reveal.
+
+Commit: `4db25d9b74bad1fae50b6aaf8702194b4ed6c811`.
+
+**Status:** fresh emulator CI triggered; validator execution/resource evidence remains OPEN pending the new run.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS dynamic stress laboratory v0.1
+
+**Front:** PRE-GENESIS / GENESIS transition conformance — dynamic market/valuation stress
+
+Triangulation against the current PRE-RICH canon resolved the earlier apparent ambiguity: the Genesis application predicate is the verified PRE Treasury value >= 4,000 USDM. The End-to-End map's stability/trajectory language belongs to the Jackpot StableLadder section, not to a second Genesis threshold. No stability window or extra numerical threshold was introduced.
+
+A first deterministic stress harness was added:
+- audit/pre-genesis-genesis/README.md
+- audit/pre-genesis-genesis/stress-lab.mjs
+
+The harness exercises:
+1. Treasury value below 4,000;
+2. exact 4,000 crossing;
+3. crossing followed by a PRE price dump before submission;
+4. committed Genesis followed by a PRE price dump;
+5. stale valuation;
+6. wrong Treasury destination;
+7. duplicate/concurrent-style second transition.
+
+It asserts the critical accounting boundary that Genesis activation does not silently increase PrizePool liquidity.
+
+The PRE quantity × observed price calculation is explicitly scenario instrumentation, not a new oracle/valuation rule. A real deployment must replace it with the verified Treasury valuation path.
+
+Commits: 823ccca8d2dee5167ecbfea6528bc7f4f6119dc7 (lab contract) and e9a614023fc215ecd31921a90593d7fc7f4d9647 (harness).
+
+**Status:** deterministic lab scaffold IMPLEMENTED / executable evidence pending runtime execution. On-chain transition implementation remains OPEN. Passing this harness will not be treated as ledger conformance proof.
+
+## 2026-09-22 — P2.8-B.1 budget probe: diagnostic path reached, serialization repair
+
+The explicit high-budget probe reached the fixture but stopped before validator execution because the diagnostic JSON still contained a BigInt protocol-parameter value. This was a test-observability defect only.
+
+Repair:
+- serialize all diagnostic BigInt values through a JSON replacer;
+- no validator, cost model, economic parameter or protocol invariant changed.
+
+Commit: 7ecd9c2255c895463b4640d7e555c2a2a1ac4190.
+
+**Status:** fresh budget-probe CI triggered; real validator execution evidence still OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 probe result: budget ceiling ruled out; Pool validator evaluator failure
+
+The diagnostic emulator was run with `maxTxExMem=100,000,000,000` and `maxTxExSteps=100,000,000,000`. The Reveal still failed at `Spend[1]`, with:
+`attempted to case a non-const Value Con(ProtoPair(Integer,List(Data),...))`.
+
+Therefore the previous 30B/20B execution-budget overrun cannot be treated as the root cause. The enlarged-budget probe reaches a deterministic UPLC evaluator error in the second spending validator, which is the B1PrizePool path. This is now classified as an **emulator/script-evaluation compatibility or script-term issue**, not as evidence that the validator merely needs a larger budget.
+
+Repository facts:
+- `pre-rich-plutus.cabal` compiles against `plutus-core`, `plutus-ledger-api`, and `plutus-tx` 1.67.0.0.
+- The off-chain harness uses legacy `lucid-cardano` 0.10.11.
+- Lucid 0.10.11's release history includes an UPLC update; this makes evaluator/compiler compatibility a concrete investigation target, but does not yet prove incompatibility.
+
+Action taken:
+- diagnostic budget environment removed from canonical CI;
+- default Cardano-like execution limits restored in workflow commit `0b9c75292814b7aeaccce48fe31f718efcee7bd1`;
+- no validator/economic invariant weakened.
+
+Next evidence target: isolate the failing B1PrizePool operation (first `Value`/`valueOf` path versus action branch) and compare the generated Plutus V2 term/evaluator compatibility before changing production validator code.
+
+**Status: P2.8-B.1 remains OPEN — root cause narrowed substantially.**
+
+
+## 2026-09-22 — P2.8-B.1 next isolation target
+
+The enlarged-budget run proves the failure is an evaluator-level `NonConstrScrutinized` on a `Value` representation in `Spend[1]`. The B1PrizePool validator's earliest unconditional `Value` operation is `singletonPoolTokenValid`, which calls `valueOf` on input/output values before the `TicketRevealed` action branch. Therefore the next diagnostic must isolate that path rather than optimizing the full Reveal or changing economic logic.
+
+No production validator change has been made. The temporary Lucid 0.10.10 CI probe was inconclusive (no executable job was produced) and was removed; it is not evidence.
+
+## 2026-09-22 — PRE-GENESIS → GENESIS verified Treasury admission seam
+
+Triangulation against current PRE-RICH canon, Constitution, existing Oracle machinery, Treasury implementation and stress lab found:
+- Genesis predicate remains exactly verified PRE Treasury value >= 4,000 USDM;
+- no second Genesis stability window/threshold;
+- existing Oracle machinery already verifies asset identity, authorized publisher, freshness and price;
+- legacy Treasury.Distribute / tdThreshold is not Genesis authority;
+- Genesis still requires binding the valued PRE quantity to the canonical protocol-controlled Treasury state.
+
+Added an application-specific admission seam:
+- PRE-RICH/profile/GenesisTreasuryAdmission.ts
+- PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+- audit/pre-genesis-genesis/TREASURY-ORACLE-CONCRETE-SURFACE-v0.2.md
+
+The admission layer composes canonical Treasury identity + PRE asset identity + observed quantity + already-verified PRE/USDM price/freshness and returns a fail-closed admission result. It performs no funds transfer and does not replace the existing oracle. On-chain revalidation and the one-shot PRE-GENESIS → GENESIS transition remain OPEN.
+
+Commits: 7455b73ec7a425e8841ca19a1abf1cd522ac243c, 6940d2373eb8c9580e08120febf42c680f604114, aa273d5a7ef066f5cebc4392373f0302855bd22e.
+
+**Status:** application admission seam IMPLEMENTED / runtime and ledger binding OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 Pool-only Value-path isolation probe
+
+A diagnostic-only Pool-only transaction was added to the real emulator harness after reference-script deployment and before the full Reveal. It spends the actual B1PrizePool UTxO with the real parameterized Pool reference script, recreates the continuing Pool output, and deliberately omits a Prize output. This means a normal evaluator path should reach the existing semantic failure `no prize output` only after the unconditional `singletonPoolTokenValid` checks; a `NonConstrScrutinized` / `attempted to case a non-const` failure would isolate the problem to the Pool validator's unconditional `Value`/`valueOf` path.
+
+The probe is never expected to be accepted and therefore must not mutate emulator state. No validator, economic invariant, cost model or production rule was changed.
+
+Commit: `ca5103e17aeffd02943f61874b54609b33962f35`.
+
+Fresh CI is running on this commit. The branch currently also contains the existing explicit high-budget diagnostic environment in the P2.8-B.1 workflow; any resulting evaluator classification remains diagnostic only and must not be promoted into canonical validator economics.
+
+**Status:** isolation probe IMPLEMENTED / fresh runtime evidence PENDING.
+
+
+## 2026-09-22 — P2.8-B.1 Pool-only probe: Value evaluator failure isolated
+
+Fresh high-budget CI on commit `5c5cedc903f7caa1df2cc0397b297c1614260449` executed the Pool-only diagnostic before the full Reveal. Result:
+
+- emulator ceilings: `maxTxExMem=100,000,000,000`, `maxTxExSteps=100,000,000,000`;
+- Pool-only spend reached the B1PrizePool validator;
+- failure was `Spend[0] attempted to case a non-const` on `Value Con(ProtoPair(...))`;
+- diagnostic classified it as `EVALUATOR_VALUE_FAILURE` before action semantics.
+
+This is materially stronger isolation than the full Reveal result: the Prize validator is not involved, the action branch does not need to be reached, and the failure occurs on the unconditional Pool path. The earliest relevant operation remains `singletonPoolTokenValid` → `valueOf` over transaction values.
+
+Canonical workflow was restored to default Cardano-like emulator execution limits, and the diagnostic Pool probe is now gated behind explicit `P2_8_B1_POOL_VALUE_PROBE=1`; no production validator/economic change was made.
+
+Commits: `42ae99229d8323f498f5759f0c5312e2de3a3b38` (diagnostic gate), `29dfce1dfbdfc419cc149a7b2c33fef22400d308` (canonical workflow limits).
+
+**Status:** P2.8-B.1 ROOT-CAUSE CLASS NARROWED — evaluator incompatibility/term semantics in B1PrizePool Value path; production repair still OPEN.
+## 2026-09-22 — Genesis valuation unit triangulation correction
+
+A second triangulation against the current economic accounting model found an important unit boundary in the new admission seam:
+- PRE-RICH economic amounts are represented in USDM sub-units where the Cardano economic layer performs valuation;
+- canonical `1 USDM = 100 sub-units`;
+- therefore the frozen Genesis threshold `4,000 USDM` corresponds to `400,000` USDM sub-units at the economic-kernel boundary.
+
+The admission seam was corrected accordingly:
+- `USDM_SUBUNITS_PER_USDM = 100`
+- `GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS = 4000 * 100`
+- valuation helper explicitly returns USDM sub-units.
+
+This is a conformance correction, not an economic parameter change. The human-readable stress lab remains expressed in USDM; the application admission boundary now matches the economic accounting unit.
+
+Separate Oracle qualification remains OPEN: the existing on-chain Oracle verifier is usable as an authenticated mechanism, but the canonical deployment PRE→USDM source set/provider is still an open evidence gate. The admission seam therefore accepts only an already-verified price/reference and does not claim to solve provider qualification.
+
+Commits: `e4b83edcaac1b594ee0f7d7b3964cafd660ce930`, `67f4a70e849bcfbbdd098107a198210ba29609a6`, `ac1185e117a597624abd93c9f338184aaa4f1b72`.
+
+**Status:** unit boundary corrected / canonical PRE→USDM source qualification OPEN / on-chain Genesis transition OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 diagnostic classifier hardened
+
+The Pool-only diagnostic previously had a binary classifier and re-threw any result that was neither `non-const` nor the expected semantic failure. A real run exposed a third legitimate diagnostic outcome: `execution went over budget` with the probe's intentionally incomplete transaction. The probe has therefore been hardened to classify three known outcomes explicitly: `EVALUATOR_VALUE_FAILURE`, `BUDGET_OVERRUN`, and `SEMANTIC_VALIDATOR_FAILURE`; only genuinely unclassified failures abort the harness. A budget overrun is logged as diagnostic/non-semantic and no longer prevents execution of the real Reveal that follows.
+
+Commit: `139e4f3ff9bcc7fa0402c0f5cb21a45d66d85444`.
+
+**Status:** diagnostic tooling GREEN; fresh real-Reveal evidence still required.
+
+## 2026-09-22 — Genesis admission seam reconciled with existing Plutus boundary
+
+Triangulation found that the repository already contained `PRE-RICH/profile/PreRichGenesisAdmission.hs` and already exposed it from `pre-rich-plutus.cabal`. This is the canonical application-side admission seam; creating a parallel TS-only authority would have duplicated the boundary.
+
+The existing Haskell helper was corrected to the canonical economic unit:
+- `1 USDM = 100` sub-units;
+- Genesis predicate threshold = `4000 * 100 = 400000` USDM sub-units;
+- `genesisTreasuryValueUsdm` therefore returns USDM sub-units and compares against the same unit.
+
+Added `plutus/test/GenesisAdmissionTest.hs` and registered `genesis-admission-tests` in the Cabal package. The suite covers exact threshold, below threshold, stale Oracle, wrong Treasury evidence and wrong source regime.
+
+This supersedes the risk of treating the newer TypeScript admission seam as a second authority. The TS seam remains an application/off-chain mirror for the stress/evidence tooling; the Plutus admission contract is the authoritative candidate for on-chain integration.
+
+Commits: `f54d6da755bdd14941456692755aef36ab278e90`, `63e4bb6663a4d24aabafc95a2a9e2a263b6afe58`, `0d2d72ea5b228283b0a65099a148f8176c571f7f`.
+
+**Status:** existing Plutus admission seam reconciled and unit-correct / test suite added / actual Cabal+Plutus CI execution still required / concrete PRE-GENESIS state carrier and atomic transition remain OPEN.
+
+
+## 2026-09-22 — Genesis admission CI repair
+
+The first Genesis admission CI execution exposed an off-chain test harness defect, not a Genesis semantic failure: `node --import tsx/esm` under the repository's ESM/CJS resolution path could not resolve the extensionless `./GenesisTreasuryAdmission` import. The test now imports `./GenesisTreasuryAdmission.ts` explicitly (`59ef6f150b4ff86b92e1fc450951c6d6b64966d6`).
+
+The Plutus-side `genesis-admission-tests` suite was also added to the existing kernel regression command (`ee99cbdef3426f33bc1808ef39eee990c24b9736`) so the canonical Haskell admission seam is exercised by CI rather than remaining only registered in Cabal.
+
+No Genesis predicate, threshold, oracle rule, or economic invariant changed. Fresh CI evidence is pending.
+
+**Status:** CI harness repair IMPLEMENTED / fresh Genesis TS + Plutus execution PENDING.
+
+
+## 2026-09-22 — Notion mapping reconciled with live repository
+
+A broad Notion mapping pass was completed across the current architecture/evidence graph, including the Multi-Front Workflow Checkpoint, T2 Transition Conformance, Architecture & State Machine, Economic Usage Fee workflow, Snek Gates 26–41, governance integration and Algorithmic Governability.
+
+The important new repository-level conclusion is precise:
+- Notion freezes the PRE-RICH regime chain as PRE_GENESIS → GENESIS → ACTIVE → QUIESCENT and binds Genesis activation to verified PRE Treasury value >= 4,000 USDM.
+- The repository already contains the authoritative candidate Plutus admission seam `PRE-RICH/profile/PreRichGenesisAdmission.hs`, exposed in `plutus/pre-rich-plutus.cabal`.
+- That seam verifies the Genesis predicate but does not carry/mutate a canonical PRE-GENESIS/GENESIS state.
+- A current-branch tree inspection found no dedicated Genesis state datum/action/validator module.
+- Therefore the remaining Genesis gap is the **application state carrier + atomic on-chain transition/concurrency boundary**, not another economic predicate.
+- The TS admission seam remains an off-chain/evidence mirror and must not become a second authority.
+
+The complete mapping is recorded in:
+`docs/COORDINATION/NOTION-MAP-IMPLEMENTATION-CROSSWALK-v0.1.md`
+
+Notion evidence also confirms that Snek/Splash Gates 26–41 are a separate external-event/source-qualification workstream. Their historical pool/price evidence must not be silently promoted to the Genesis PRE→USDM oracle source.
+
+**Next Genesis action:** inspect the existing Cardano datum/validator topology and derive the smallest PRE-RICH regime-bearing state carrier from T2/P0 before writing any transition code. No second economic state machine and no invented threshold/Oracle source.
+
+Commit: `59f1279e4a4c864e85d4950de45a7d268ebea2a6` (crosswalk).
+
+**Status:** NOTION MAP RECONCILED / GENESIS CARRIER GAP CONFIRMED / IMPLEMENTATION DESIGN NEXT.
+
+
+## 2026-09-22 — P2.8-B.1 evaluator provenance narrowed to embedded UPLC engine
+
+A direct dependency audit of the Lucid 0.10.11 emulator identified a concrete evaluator-version boundary:
+
+- Lucid 0.10.11's embedded Cardano Multiplatform Library declares the Rust `uplc` dependency from `aiken-lang/aiken` at exact revision `3d77b5c378ce404cddd9a1f111906d72fd46fc83`.
+- That Aiken commit is the 2024-09-20 release commit and identifies `uplc` as version 1.1.3.
+- Therefore the Lucid 0.10.11 Emulator is not evaluating with the current 2026 Plutus CEK implementation; it carries a frozen 2024 UPLC engine inside its CML WASM dependency.
+- The repository's PRE-RICH Plutus build uses Plutus 1.67-era libraries. Current Plutus release material documents that `PlutusLedgerApi.V1.Data.Value.valueOf` was rewritten in the 1.62 line to walk the underlying BuiltinList directly, and later Plutus releases added/changed Value-related UPLC machinery and conformance work.
+- The observed Lucid error `attempted to case a non-const` on `Value Con(ProtoPair(...))` is therefore consistent with a cross-generation UPLC evaluator/term-semantics mismatch, rather than evidence that the B1PrizePool economic logic is invalid.
+
+This is not yet a production repair and is not treated as proof that every Lucid 0.10.11 / Plutus 1.67 combination is incompatible. It is, however, a materially stronger root-cause hypothesis because the evaluator implementation is now identified exactly rather than inferred from the error text.
+
+### Required next proof
+
+1. Reproduce the same parameterized B1PrizePool artifact with an evaluator known to implement the corresponding Plutus language semantics/cost model (preferably the Plutus `uplc` tool or a current node-compatible evaluator).
+2. Run the existing Pool-only fixture against that evaluator using the same datum/redeemer/context.
+3. If the current evaluator succeeds or reaches the intended semantic `no prize output` failure, classify Lucid 0.10.11's embedded evaluator as the test-harness incompatibility and do not alter validator economics.
+4. If the current evaluator reproduces the same `NonConstrScrutinized` failure, inspect the compiled UPLC term itself before changing production code.
+
+No validator, economic parameter, invariant, or canonical workflow was changed by this investigation.
+
+**Status:** P2.8-B.1 ROOT-CAUSE HYPOTHESIS STRENGTHENED / EVALUATOR PROVENANCE IDENTIFIED / PRODUCTION REPAIR OPEN.
 
 ---
 ## 2026-09-22 — PRE-GENESIS → GENESIS regime carrier seam
