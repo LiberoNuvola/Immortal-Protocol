@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-22  
-**Latest observed commit:** `2db2ea95f0757bf30cdbdc027d5299bfff1b0456` — docs: record Plutus export path correction
+**Latest observed commit:** `b172ad118d9d22d980ce23a4d2d6bba26b272d15` — canonical payload/vector conformance line
 
 ---
 
@@ -1850,3 +1850,29 @@ The verified implementation/conformance covers the canonical baseline `KA=8`, `K
 **Commit:** `f5cfc82ce179f1c8950e55039367df65244b1b1e`
 
 **Status:** B2 hysteresis conformance GREEN. Remaining B2 work, if any, is limited to broader economic/ledger integration evidence and must not reopen the frozen values.
+
+
+---
+## 63. 2026-09-22 — B3-C Ed25519 vector provenance and structural finality conformance
+
+**Front:** B3 canonical evidence / GRANDPA structural finality
+
+The Materios conformance CI exposed that the static B3-03C fixture was internally inconsistent with the canonical GRANDPA SCALE encoding: the code encodes Message::Precommit with discriminant 1, a 32-byte target hash, a u32 target number, then u64 round and u64 setId (53 bytes total), while the old fixture expected a 56-byte payload and signatures that did not verify against the canonical bytes.
+
+Triangulation against the upstream finality-grandpa source confirms Precommit has SCALE codec index 1. The old signatures had no authoritative provenance in the repository. They were therefore not retained as real Materios evidence.
+
+Correction:
+- the fixture now uses the canonical 53-byte payload;
+- the Ed25519 public keys are established RFC 8032 test-vector identities;
+- static signatures are deterministic signatures over the canonical payload, explicitly labelled as a synthetic cryptographic conformance vector;
+- the test proves signature verification, signer binding, round/setId binding, target binding and quorum without a crypto stub;
+- a real Materios signed GRANDPA justification remains a separate evidence obligation.
+
+The structural ancestry verifier was also completed so that a structurally valid ancestry path is accepted, while duplicate, missing, redundant and non-descendant evidence remains fail-closed. Trusted authority state still crosses only the separately branded authority-transition proof boundary.
+
+Latest B3-C CI evidence:
+- run 35687999030
+- commit b172ad118d9d22d980ce23a4d2d6bba26b272d15
+- result completed / success
+
+**Status:** B3 canonical payload + structural finality conformance GREEN; real Materios authority/finality provenance remains OPEN by design.
