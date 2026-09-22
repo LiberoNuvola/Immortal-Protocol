@@ -88,7 +88,7 @@ export function admitGenesisTreasury(
   }
 
   const verifiedTreasuryValueUsdmSubunits = verifiedTreasuryPreValueUsdmSubunits(observation)
-  if (verifiedTreasuryValueUsdm === null) {
+  if (verifiedTreasuryValueUsdmSubunits === null) {
     return { admitted: false, reason: 'ORACLE_UNVERIFIED' }
   }
   if (verifiedTreasuryValueUsdmSubunits < GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS) {
