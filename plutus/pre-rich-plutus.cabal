@@ -39,6 +39,7 @@ library
         PreRichEconomicAdmission
         PreRichGenesisAdmission
         PreRichRegimeState
+        GenesisRegimeCarrier
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
