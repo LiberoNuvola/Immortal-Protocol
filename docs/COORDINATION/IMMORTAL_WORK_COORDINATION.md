@@ -3294,3 +3294,14 @@ The existing application-level Genesis Treasury admission fixture already covere
 Commit: `6845537105d5d6088ad2bbb612c030b6a96d4412`
 
 No Genesis predicate, threshold, Oracle semantics or accounting rule changed. This only closes malformed-input evidence at the off-chain admission mirror; Plutus/ledger evidence remains separate.
+
+
+## 2026-09-22 — Genesis export surface re-verified and repaired again
+
+A fresh repository read exposed that `plutus/export/Export.hs` still contained literal escaped-newline text around the Genesis carrier mint-policy export despite the earlier claimed repair. The source has now been normalized so both Genesis artifacts are emitted as ordinary Haskell declarations.
+
+Commits:
+- `3b9d1813354f0c58b359f4d75faae93a6410abfb` — repair escaped source literal
+- `5302dde6e1e26438e7c90c50f0d94e6e4dfb2413` — normalize declaration formatting
+
+This is evidence-pipeline/source hygiene only. No validator, Genesis predicate, economic parameter, Treasury rule, Oracle rule, or PrizePool rule changed. The important point is that repository inspection, not the previous coordination claim, is treated as authoritative until CI actually compiles/exports the artifacts.
