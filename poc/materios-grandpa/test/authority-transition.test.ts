@@ -283,6 +283,24 @@ describe("authority transition boundary", () => {
     ).toThrow("SELECTION_INPUTS_HASH_MISMATCH");
   });
 
+  it("binds the proof-system identity into the public statement", () => {
+    const statement = baseStatement();
+    const changed = {
+      ...statement,
+      proofSystem: "different-proof-system"
+    };
+
+    expect(
+      Array.from(
+        hashAuthoritySetTransitionStatement(statement)
+      )
+    ).not.toEqual(
+      Array.from(
+        hashAuthoritySetTransitionStatement(changed)
+      )
+    );
+  });
+
   it("binds the activation block hash into the public statement", () => {
     const statement = baseStatement();
     const changed = {
