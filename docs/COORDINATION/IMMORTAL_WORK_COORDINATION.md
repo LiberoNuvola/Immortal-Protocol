@@ -3173,3 +3173,17 @@ Commits:
 - `8f24d644a2b8947a30eda3cc8de3ae495a52a066` — CI compile/export gate
 
 **Status:** `CLOSING / CI PENDING`. This is not GREEN until the actual workflow compiles the validator and exports the artifact, followed by emulator and real-ledger transition evidence. No new economic threshold or oracle source was introduced.
+
+
+## 2026-09-22 — Genesis carrier implementation review: two closure blockers retained
+
+Review of the newly implemented `PRE-RICH/profile/GenesisRegimeCarrier.hs` confirms that the authenticated observation layer is now materially stronger: Treasury and Oracle reference inputs are reconstructed from transaction data, the existing `genesisPredicate` is reused, and the transition explicitly excludes B1PrizePool inputs/outputs.
+
+Two distinct closure blockers remain and are now recorded explicitly:
+
+1. **Carrier singleton authority is not yet demonstrated.** The validator conserves exactly one carrier token for the consumed/continuing state, but the reviewed branch does not yet expose a carrier minting/burning policy or deployment-level proof that the configured carrier policy/name can exist in exactly one canonical UTxO globally. Conservation inside one transition is not by itself proof of global singleton uniqueness.
+2. **Treasury datum semantics are only structurally decoded.** `findSingleTreasuryReference` requires a decodable `TreasuryDatum` at the canonical Treasury ScriptHash, then derives PRE quantity from the actual UTxO Value. It does not currently validate any datum field against a canonical migrated Treasury-state contract. This is acceptable as an observation seam only if the canonical Treasury identity/address is itself the authoritative state boundary; otherwise the Treasury migration front must supply the missing semantic binding. The legacy percentage fields must not be reused as Genesis authority.
+
+The current carrier CI described in the coordination entry is a compile/export gate, not ledger conformance evidence. The integration lab triggered from the same development line is still the required evidence path for actual transition behavior, and the final closure criterion remains positive + negative ledger evidence including duplicate/concurrent-state rejection and singleton uniqueness.
+
+**Classification:** carrier implementation = substantive progress / authenticated observation = implemented seam / singleton authority = OPEN / Treasury semantic migration binding = OPEN / real-ledger transition evidence = OPEN. No economic parameter changed.
