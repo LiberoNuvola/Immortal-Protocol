@@ -473,22 +473,46 @@ async function main() {
   const walletAddress =
     await probe.wallet.address();
 
+  const baseEmulatorParams =
+    await probe.getProtocolParameters();
+
+  /*
+   * Diagnostic-only budget probe.
+   *
+   * Default CI keeps Lucid's Cardano-like limits. When explicitly enabled,
+   * the probe raises ONLY the emulator execution ceilings so we can
+   * distinguish "validator intrinsically exceeds the current limit" from
+   * "validator would execute but the emulator stops before completion".
+   * It never changes the canonical/default CI path.
+   */
+  const emulatorProtocolParameters =
+    process.env.P2_8_B1_BUDGET_PROBE === "1"
+      ? {
+          ...baseEmulatorParams,
+          maxTxExMem: 100_000_000_000n,
+          maxTxExSteps: 100_000_000_000n,
+        }
+      : baseEmulatorParams;
+
   const emulator =
-    new Emulator([
-      {
-        address: walletAddress,
+    new Emulator(
+      [
+        {
+          address: walletAddress,
 
-        assets: {
-          lovelace: 100_000_000n,
+          assets: {
+            lovelace: 100_000_000n,
 
-          [ticketPolicy + ticketName]:
-            1n,
+            [ticketPolicy + ticketName]:
+              1n,
 
-          [poolPolicy + poolToken]:
-            1n,
+            [poolPolicy + poolToken]:
+              1n,
+          },
         },
-      },
-    ]);
+      ],
+      emulatorProtocolParameters,
+    );
 
   const lucid =
     await Lucid.new(
@@ -501,8 +525,11 @@ async function main() {
     "P2.8-B.1 emulator params",
     JSON.stringify({
       maxTxSize: emulatorParams.maxTxSize,
-      maxTxExUnits: emulatorParams.maxTxExUnits,
-      prices: emulatorParams.prices,
+      maxTxExMem: emulatorParams.maxTxExMem,
+      maxTxExSteps: emulatorParams.maxTxExSteps,
+      priceMem: emulatorParams.priceMem,
+      priceStep: emulatorParams.priceStep,
+      budgetProbe: process.env.P2_8_B1_BUDGET_PROBE === "1",
       plutusV2CostModelLength: emulatorParams.costModels?.PlutusV2
         ? Object.keys(emulatorParams.costModels.PlutusV2).length
         : 0,
