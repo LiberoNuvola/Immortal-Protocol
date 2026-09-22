@@ -3228,3 +3228,42 @@ This is **external evaluator/toolchain evidence only**, not protocol authority a
 Source: IntersectMBO/plutus release history, current 1.67/1.68 release material. citeturn0search0
 
 **Status:** P2.8-B.1 differential evaluator experiment remains OPEN; root-cause hypothesis strengthened.
+
+
+## 2026-09-22 — Genesis singleton authority: real-ledger evidence path added
+
+**Front:** FRONT A — PRE-GENESIS → GENESIS / singleton authority / Cardano realization
+
+The policy-design gap has been advanced to an executable ledger-evidence path without introducing any new economic rule.
+
+### Added
+
+- `src/__tests__/genesis-carrier-mint-policy-emulator.mjs`
+  - executes the exported one-shot carrier mint policy against the Lucid/Cardano emulator;
+  - mints exactly one configured carrier asset from an explicit fixture seed `TxOutRef`;
+  - attempts the same mint again and requires rejection;
+  - attempts a burn and requires rejection.
+- `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts`
+  - real Yaci/Cardano-node trace;
+  - creates an explicit non-production fixture Treasury reference UTxO carrying exactly 400,000 PRE subunits;
+  - creates an Oracle reference UTxO carrying the singleton token and authenticated OracleDatum at 1,000,000 precision;
+  - mints the one-shot Genesis carrier and places it in the PRE-GENESIS carrier state;
+  - spends that carrier with `ActivateGenesis`;
+  - independently supplies Treasury/Oracle as reference inputs;
+  - requires the validator to accept the atomic PRE-GENESIS → GENESIS transition;
+  - resubmits the consumed transition and requires replay rejection;
+  - records the transaction CBOR and state/identity evidence under `audit/yaci-evidence/`.
+- `.github/workflows/pre-genesis-genesis-cardano.yml`
+  - builds fresh Plutus artifacts;
+  - starts Yaci DevKit;
+  - derives the funded CI wallet;
+  - executes the real Genesis carrier transition trace;
+  - uploads the resulting ledger evidence.
+
+### Important evidence boundary
+
+The fixture uses explicit test-only asset identities and hashes. It proves the **validator/policy realization path**, not production deployment identity. It does not yet prove that the repository's canonical production Treasury migration contract supplies the authoritative Treasury state semantics; the existing carrier validator still structurally decodes `TreasuryDatum` and derives PRE quantity from actual Value.
+
+No Genesis threshold, Oracle source, stability period, PrizePool accounting rule, or IMMORTAL economic formula was changed.
+
+**Status:** singleton policy = IMPLEMENTED; emulator singleton evidence = WIRED; real Yaci transition evidence = WIRED / EXECUTION PENDING; production Treasury semantic binding = OPEN.
