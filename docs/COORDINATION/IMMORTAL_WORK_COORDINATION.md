@@ -1397,7 +1397,6 @@ No economic logic changed.
 
 **Handoff:** observe the Cardano Integration Lab triggered by this change before any further modification.
 
-
 ### 2026-09-22 — RF10/RF11 implementation correction
 
 The real Reveal trace was additionally corrected to use the repository's existing CardanoExecutionAdapter for the first economically material submission. The Lucid 0.10 constructor was corrected to Lucid.new.
@@ -2397,7 +2396,6 @@ The GOV-22 audit was converted into a minimal schema correction on the working c
 - `payloadTimestamp` derives the timestamp from those payloads instead of hard-coding zero.
 - `canonicalPayloadText` includes the timestamp, so the semantic payload representation remains deterministic and binds the same time as the event envelope.
 - `GovernanceCanonicalReplay.hs` was updated only to consume the enriched payload shape; governance transition semantics are unchanged.
-
 This is a GOV-22 schema-consistency repair, not a new governance rule.
 
 The audit also confirms that `IMMORTAL/governance/CanonicalEvent.hs` is a separate older lifecycle representation and must not silently become a second semantic source of truth. GOV-22's `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` path is the lineage to reconcile against the normative spec; no deletion of the older module is performed without consumer/test reconciliation.
@@ -2678,3 +2676,38 @@ The dedicated front `docs/COORDINATION/FRONT-IMMORTAL-TREASURY-FEE.md` now recor
 **No normative economics changed. No fee amount or distribution percentage was introduced.**
 
 **Status:** REPRESENTATION MAP COMPLETE / NORMATIVE BOUNDARY OPEN.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS predicate triangulation: activation boundary remains underspecified
+
+**Front:** PRE-GENESIS / GENESIS transition boundary — normative triangulation
+
+The new front was triangulated against the current Notion transition documents rather than assuming that the existing `Genesis >= 4000 USDM` statement is already the complete activation rule.
+
+### Findings
+
+1. The **Definitive Decision Register** treats `Genesis = 1 USDM` and verified PRE Treasury `>= 4,000 USDM` as frozen economic decisions, and explicitly states that PRE bootstrap is not automatically PrizePool liquidity.
+2. **T2 — Transition Conformance Specification** states that `PRE_GENESIS → GENESIS` is triggered by a **verified Genesis predicate**, with permissionless execution and independent revalidation.
+3. The same T2/P0 lineage does **not** provide a fully explicit executable predicate in the text itself; it names the verified predicate and the Treasury threshold.
+4. The current **End-to-End System Map & Continuity Checkpoint** adds an important application-level qualification: Genesis/activation follows a required ladder/stability condition and economic trajectory, and its remaining closure work explicitly says to formalize the deterministic activation threshold from verified economic trajectory/state.
+5. Therefore the statement `Verified PRE Treasury >= 4000 USDM` is established evidence for the Genesis bootstrap condition, but it must **not yet be promoted to the complete PRE-GENESIS → GENESIS activation predicate** without reconciling the ladder/stability/trajectory condition.
+
+### Consequence for the bootstrap question
+
+The correct transition model is currently:
+
+`PRE-GENESIS state → verify Genesis predicate(s) → crystallize Genesis state → GENESIS`
+
+where the exact predicate set is still an open conformance/specification boundary. The `1B PRE` Snek bootstrap and its ADA/Pool-NFT lineage remain evidence of the application's pre-Genesis history; they are not automatically imported into Genesis accounting.
+
+### Conflict / unresolved canonical detail
+
+**Source A:** Definitive Decision Register / T2 — verified PRE Treasury `>= 4,000 USDM` is the frozen Genesis bootstrap condition and PRE bootstrap is not automatically PrizePool liquidity.
+
+**Source B:** End-to-End System Map — activation also follows required ladder/stability and economic trajectory, with deterministic activation threshold still to be formalized.
+
+**Implication:** no implementation should hard-code `Treasury >= 4000` as the sole Genesis transition predicate until the source hierarchy reconciles these statements. Conversely, no new numerical threshold should be invented.
+
+**Next deterministic action:** inspect the actual PRE-RICH transition implementation/tests for `PRE_GENESIS → GENESIS`, map every predicate currently enforced, then reconcile that implementation against T2 and the End-to-End map. If the implementation has no complete predicate, define the smallest contract from existing normative material before coding.
+
+**Status:** OPEN / TRIANGULATED — bootstrap condition known; complete activation predicate not yet frozen.
