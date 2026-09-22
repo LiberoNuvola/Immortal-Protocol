@@ -67,42 +67,42 @@ main = do
 
   assert
     (case projectPreRichState profile
-      (validState { v3Classes = [TicketClassState 99 0 0 0 0 True] })) of
+      (validState { v3Classes = [TicketClassState 99 0 0 0 0 True] }) of
        Nothing -> True
        Just _ -> False)
     "unknown class state fails closed"
 
   assert
     (case projectPreRichState profile
-      (validState { v3Classes = [TicketClassState 0 2 1 2 10 True, TicketClassState 1 3 2 4 20 True] })) of
+      (validState { v3Classes = [TicketClassState 0 2 1 2 10 True, TicketClassState 1 3 2 4 20 True] }) of
        Nothing -> True
        Just _ -> False)
     "stored class exposure that differs from price × unresolved fails closed"
 
   assert
     (case projectPreRichState profile
-      (validState { v3SafetyCapital = -1 })) of
+      (validState { v3SafetyCapital = -1 }) of
        Nothing -> True
        Just _ -> False)
     "negative SafetyCapital fails closed"
 
   assert
     (case projectPreRichState profile
-      (validState { v3ReserveProtection = -1 })) of
+      (validState { v3ReserveProtection = -1 }) of
        Nothing -> True
        Just _ -> False)
     "negative ReserveProtection fails closed"
 
   assert
     (case projectPreRichState profile
-      (validState { v3MandatoryFutureCosts = -1 })) of
+      (validState { v3MandatoryFutureCosts = -1 }) of
        Nothing -> True
        Just _ -> False)
     "negative MandatoryFutureCosts fails closed"
 
   assert
     (case projectPreRichState profile
-      (validState { v3CrystallizedLiabilities = -1 })) of
+      (validState { v3CrystallizedLiabilities = -1 }) of
        Nothing -> True
        Just _ -> False)
     "negative crystallised liability fails closed"
