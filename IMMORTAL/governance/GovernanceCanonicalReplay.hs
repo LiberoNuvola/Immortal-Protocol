@@ -9,11 +9,11 @@ import RulesetRegistry
 canonicalPayloadToGovernanceEvent :: CanonicalPayload -> GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
   PayloadProposalSubmitted x -> ProposalSubmitted x
-  PayloadProposalClassified pid cls -> ProposalClassified pid cls
+  PayloadProposalClassified pid cls _ -> ProposalClassified pid cls
   PayloadStatusChanged pid st at -> StatusChanged pid st at
   PayloadVoteCast v -> VoteCast v
   PayloadDelegationSet pid d at -> DelegationSet pid d at
-  PayloadGatesSet pid g -> GatesSet pid g
+  PayloadGatesSet pid g _ -> GatesSet pid g
 
 applyCanonicalEvent :: RulesetRegistry -> GovernanceState -> Maybe CanonicalEvent
                     -> CanonicalEvent -> Either String GovernanceState
