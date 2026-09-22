@@ -2865,3 +2865,16 @@ The admission layer composes canonical Treasury identity + PRE asset identity + 
 Commits: 7455b73ec7a425e8841ca19a1abf1cd522ac243c, 6940d2373eb8c9580e08120febf42c680f604114, aa273d5a7ef066f5cebc4392373f0302855bd22e.
 
 **Status:** application admission seam IMPLEMENTED / runtime and ledger binding OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 Pool-only Value-path isolation probe
+
+A diagnostic-only Pool-only transaction was added to the real emulator harness after reference-script deployment and before the full Reveal. It spends the actual B1PrizePool UTxO with the real parameterized Pool reference script, recreates the continuing Pool output, and deliberately omits a Prize output. This means a normal evaluator path should reach the existing semantic failure `no prize output` only after the unconditional `singletonPoolTokenValid` checks; a `NonConstrScrutinized` / `attempted to case a non-const` failure would isolate the problem to the Pool validator's unconditional `Value`/`valueOf` path.
+
+The probe is never expected to be accepted and therefore must not mutate emulator state. No validator, economic invariant, cost model or production rule was changed.
+
+Commit: `ca5103e17aeffd02943f61874b54609b33962f35`.
+
+Fresh CI is running on this commit. The branch currently also contains the existing explicit high-budget diagnostic environment in the P2.8-B.1 workflow; any resulting evaluator classification remains diagnostic only and must not be promoted into canonical validator economics.
+
+**Status:** isolation probe IMPLEMENTED / fresh runtime evidence PENDING.
