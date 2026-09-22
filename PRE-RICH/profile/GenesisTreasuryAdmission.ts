@@ -6,7 +6,8 @@
  * PRE/USDM price. On-chain revalidation remains a separate obligation.
  */
 
-export const GENESIS_PRE_TREASURY_THRESHOLD_USDM = 4_000n
+export const USDM_SUBUNITS_PER_USDM = 100n
+export const GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS = 4_000n * USDM_SUBUNITS_PER_USDM
 
 export type GenesisTreasuryObservation = {
   sourceRegime: 'PRE-GENESIS' | 'GENESIS'
@@ -45,7 +46,7 @@ export type GenesisTreasuryAdmission =
         | 'BELOW_THRESHOLD'
     }
 
-export function verifiedTreasuryPreValueUsdm(
+export function verifiedTreasuryPreValueUsdmSubunits(
   observation: GenesisTreasuryObservation,
 ): bigint | null {
   if (!observation.valuationVerified || !observation.oracleFresh) return null
@@ -86,13 +87,13 @@ export function admitGenesisTreasury(
     return { admitted: false, reason: 'ORACLE_STALE' }
   }
 
-  const verifiedTreasuryValueUsdm = verifiedTreasuryPreValueUsdm(observation)
+  const verifiedTreasuryValueUsdmSubunits = verifiedTreasuryPreValueUsdmSubunits(observation)
   if (verifiedTreasuryValueUsdm === null) {
     return { admitted: false, reason: 'ORACLE_UNVERIFIED' }
   }
-  if (verifiedTreasuryValueUsdm < GENESIS_PRE_TREASURY_THRESHOLD_USDM) {
+  if (verifiedTreasuryValueUsdmSubunits < GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS) {
     return { admitted: false, reason: 'BELOW_THRESHOLD' }
   }
 
-  return { admitted: true, verifiedTreasuryValueUsdm, observation }
+  return { admitted: true, verifiedTreasuryValueUsdm: verifiedTreasuryValueUsdmSubunits, observation }
 }
