@@ -54,7 +54,6 @@ export interface AuthoritySetTransitionStatement {
   readonly toAuthorities: readonly GrandpaAuthority[];
   readonly activationBlock: AuthorityActivationBlock;
   readonly toSetId: bigint;
-  readonly proofSystem: string;
   readonly proofBytes: Uint8Array;
 }
 
@@ -98,6 +97,8 @@ export interface AuthoritySetTransitionPublicStatement {
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
   readonly selectionInputsHash: Uint8Array;
+  /** Identifies the proof system that authenticated the transition. */
+  readonly proofSystem: string;
   readonly toAuthorities: readonly GrandpaAuthority[];
   readonly activationBlock: AuthorityActivationBlock;
   readonly toSetId: bigint;
