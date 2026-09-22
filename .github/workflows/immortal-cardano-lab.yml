@@ -165,6 +165,9 @@ jobs:
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
 
+      - name: Probe current Yaci cost models with Lucid Evolution
+        run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
+
       - name: Execute real economic Reveal transition trace
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
