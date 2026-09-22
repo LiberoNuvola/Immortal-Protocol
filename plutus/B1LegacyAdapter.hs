@@ -139,7 +139,7 @@ legacyAggregateMatchesV3 d s =
 {-# INLINABLE legacyProjectionIsLossless #-}
 legacyProjectionIsLossless :: V3EconomicState -> Bool
 legacyProjectionIsLossless s =
-     v3Classes s == []
+     null (v3Classes s)
   && v3SafetyCapital s == 0
   && v3ReserveProtection s == 0
   && v3MandatoryFutureCosts s == 0
