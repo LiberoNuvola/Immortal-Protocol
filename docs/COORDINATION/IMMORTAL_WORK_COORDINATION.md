@@ -1994,3 +1994,20 @@ Corrections were made without changing economic formulas, canonical parameters, 
 - `8dd8c50351fddd451b9814bc8809ae7605d42114` — legacy conformance test Plutus dependencies.
 
 **Status:** fresh Kernel + Cardano Lab evidence required on the resulting HEAD; no green promotion yet.
+
+
+## 2026-09-22 — Fresh Kernel CI defects corrected on closure HEAD
+
+**Front:** B4/B6 conformance build / projection boundary
+
+Fresh Kernel run 35718038894 on ffb37f40a14b3aa3379c410acdc1bb20317bce0b reached the full test build and exposed two concrete non-economic defects:
+- ProjectionBoundaryConformanceTest.hs had one extra closing parenthesis in the unknown-class fail-closed case;
+- B1LegacyAdapterTest.hs lacked explicit Plutus package dependencies despite importing PlutusLedgerApi.V2 and PlutusTx.Prelude.
+
+Corrections preserve all economic formulas, canonical parameters, invariants and authority boundaries:
+- dc19b91119a3c01ea5bb402b0f4c4612666a7cf9 — projection test syntax;
+- 9de32eba1c1b406972a6b08e945c28de7571eed0 — legacy adapter test dependencies.
+
+The same CI log confirms the ProtectedCapital, GoldenVectors and Governance suites themselves passed before Cabal stopped on the two build defects. Fresh Kernel evidence is required on the resulting HEAD; no green promotion yet.
+
+The earlier Cardano Lab run 35718016897 completed Yaci bootstrap and ledger smoke but failed in Reveal, so it does not promote C3/C4. Fresh latest-head lab evidence remains required.
