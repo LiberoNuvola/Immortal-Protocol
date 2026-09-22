@@ -398,14 +398,10 @@ export async function verifyFinality(
      * relationships are now structurally
      * verified.
      *
-     * This PoC still does not claim production
-     * GRANDPA finality because authenticated
-     * authority-set transitions remain a
-     * separate obligation.
+     * Authority-set authentication remains a
+     * separate proof obligation, enforced at the
+     * TrustedAuthorityState construction boundary.
      */
-    throw new VerificationError(
-      "ANCESTRY_NOT_VERIFIED"
-    );
   }
 
   return {
