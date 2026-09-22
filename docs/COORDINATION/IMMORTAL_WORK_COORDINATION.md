@@ -1761,3 +1761,29 @@ Fresh Integration Lab and Kernel runs are now triggered from the corrected worki
 - uploads the canonical evidence artifacts.
 
 **Status:** artifact provenance gap repaired in CI; ledger evidence pending.
+
+
+---
+## 59. 2026-09-22 — Cardano Lab workflow syntax correction
+
+**Front:** C3/C4/RF10/RF11 infrastructure
+
+The fresh-artifact CI change initially failed before job creation because the workflow contained a duplicated `name: Normalize legacy Lucid ESM entrypoint for Node 22` step header.
+
+That YAML-only defect was corrected immediately without changing the intended execution sequence.
+
+**Commit:** `43968dec61fca636c0bd9ebd7658cab8b7d45260`
+
+The intended lab sequence remains:
+- Haskell/Plutus toolchain;
+- native dependencies;
+- fresh `cabal run exe:export-scripts`;
+- ephemeral copy of generated factory artifacts into `src/plutusScripts/`;
+- Lucid/Yaci setup;
+- real Reveal;
+- real EXPIRE;
+- evidence upload.
+
+No economic semantics or validator source changed in this correction.
+
+**Status:** workflow syntax repaired; fresh ledger evidence pending.
