@@ -2595,3 +2595,18 @@ This is a test-harness encoding correction, not a validator/economic weakening. 
 Commit: 2679a1969dd76f072ee32e2347ad71bcce6f0b13f0
 
 **Status:** encoding failure localized and fixed; fresh-head emulator execution pending.
+
+
+## 2026-09-22 — Reference-script deployment split from setup transaction
+
+The first reference-script attempt correctly removed validator bytes from the Reveal witness, but placed both reference scripts in the same setup transaction. That setup transaction itself remained oversized (`18,283 > 16,384`).
+
+Repair:
+- ordinary Prize/Pool script-UTxO setup remains separate;
+- PrizeValidator reference script is deployed in its own transaction;
+- B1PrizePool reference script is deployed in its own transaction;
+- Reveal reads both resulting reference-script UTxOs and does not attach either validator inline.
+
+Commit: `81aa53c336fde5621f08b7c820c8fc3ae9c79f08`
+
+Next evidence target: fresh CI must show setup/reference deployments and then Reveal completion. Only after that can validator acceptance and resource measurements be classified.
