@@ -2191,3 +2191,20 @@ However, the live TypeScript execution path does not consume that witness: src/g
 - No Materios selection algorithm was reimplemented in TypeScript and no production trust was assigned to a `verify(){ return true }` implementation; such acceptance remains confined to structural tests.
 - External consensus reference triangulation: Polkadot documents GRANDPA as a finality mechanism separate from block production and shows authority-set changes being applied as distinct transitions. citeturn0search0turn0search2
 - **Status:** bounded structural/evidence boundary GREEN; canonical Materios committee-selection proof + authenticated authority-set transition + real finalized-block fixture remain OPEN.
+
+
+---
+
+## 2026-09-22 — B5 runtime economic submission boundary
+
+- Added `Adapter/CARDANO/runtime/EconomicAdmission.ts` as an explicit runtime witness boundary. The adapter does not manufacture EEV, ProtectedCapital, viability, Ω, or authoritative truth.
+- Added `submitEconomic(...)` to `CardanoExecutionAdapter`; it fails closed before signing when the admission witness is absent or malformed.
+- Added `signAndSubmitEconomicTx(...)` as the explicit economic submission path.
+- `revealPrize`, `claimPrize`, and `expirePrize` now require an `EconomicAdmissionWitness` and use the economic submission path. Beacon sync remains outside the economic gate.
+- Added conformance tests proving missing/malformed admission cannot reach signing and a valid witness is consumed before submission.
+- This closes the **runtime consumption boundary** of B5, but does not claim that the TypeScript witness itself is the authoritative economic producer. The producer/verification provenance remains an upstream economic-layer obligation and must be evidenced before B5 is promoted beyond runtime-boundary closure.
+- No economic constants or kernel formulas were changed.
+- Materios remains bounded at the untrusted→verified transition boundary; real canonical committee-selection proof remains OPEN.
+- Cardano lab: the prior Evolution probe failure was diagnosed as the fixture mnemonic mismatch (cost-model lengths were successfully observed); corrected fixture is now on branch. A new lab run should exercise Reveal/Expire after the corrected seed.
+
+**Status:** B5 runtime submission boundary GREEN; authoritative admission production/evidence OPEN. Cardano RF10/RF11/P2.8 evidence OPEN pending a fresh real-ledger run. Materios real authority-selection proof OPEN.
