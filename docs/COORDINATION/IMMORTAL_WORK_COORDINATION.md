@@ -2915,3 +2915,12 @@ Separate Oracle qualification remains OPEN: the existing on-chain Oracle verifie
 Commits: `e4b83edcaac1b594ee0f7d7b3964cafd660ce930`, `67f4a70e849bcfbbdd098107a198210ba29609a6`, `ac1185e117a597624abd93c9f338184aaa4f1b72`.
 
 **Status:** unit boundary corrected / canonical PRE→USDM source qualification OPEN / on-chain Genesis transition OPEN.
+
+
+## 2026-09-22 — P2.8-B.1 diagnostic classifier hardened
+
+The Pool-only diagnostic previously had a binary classifier and re-threw any result that was neither `non-const` nor the expected semantic failure. A real run exposed a third legitimate diagnostic outcome: `execution went over budget` with the probe's intentionally incomplete transaction. The probe has therefore been hardened to classify three known outcomes explicitly: `EVALUATOR_VALUE_FAILURE`, `BUDGET_OVERRUN`, and `SEMANTIC_VALIDATOR_FAILURE`; only genuinely unclassified failures abort the harness. A budget overrun is logged as diagnostic/non-semantic and no longer prevents execution of the real Reveal that follows.
+
+Commit: `139e4f3ff9bcc7fa0402c0f5cb21a45d66d85444`.
+
+**Status:** diagnostic tooling GREEN; fresh real-Reveal evidence still required.
