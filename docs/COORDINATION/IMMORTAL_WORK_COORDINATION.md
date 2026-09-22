@@ -3187,3 +3187,12 @@ Two distinct closure blockers remain and are now recorded explicitly:
 The current carrier CI described in the coordination entry is a compile/export gate, not ledger conformance evidence. The integration lab triggered from the same development line is still the required evidence path for actual transition behavior, and the final closure criterion remains positive + negative ledger evidence including duplicate/concurrent-state rejection and singleton uniqueness.
 
 **Classification:** carrier implementation = substantive progress / authenticated observation = implemented seam / singleton authority = OPEN / Treasury semantic migration binding = OPEN / real-ledger transition evidence = OPEN. No economic parameter changed.
+
+
+## 2026-09-22 — Genesis carrier CI strengthened
+
+The Genesis Regime Carrier workflow was previously compiling/exporting the new carrier but did not execute the already-registered `genesis-regime-carrier-tests` suite. The workflow has now been strengthened to run that conformance suite before script export.
+
+Commit: `8f8eaa17f4acd46d1eb58aed7be986c308a2a337`.
+
+This is evidence-pipeline hardening only: no Genesis predicate, threshold, Oracle rule, Treasury semantics, or carrier validator logic changed. The carrier remains **CI PENDING** until the new workflow run completes; emulator/real-ledger transition evidence remains OPEN.
