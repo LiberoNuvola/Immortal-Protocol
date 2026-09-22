@@ -2466,3 +2466,23 @@ Commits:
 - `9c669ff16556d86f8a32f6c3fd196dbf4d064ed8` — legacy lineage marker
 
 This does not claim deletion or full compile-time exclusion of the legacy module; that remains a separate verification task if the build manifest/consumer graph establishes it is unreachable.
+
+
+## 2026-09-22 — AG-01 authorization conformance hardening
+
+**Front:** AG-01 / GOV-22 canonical authorization
+
+A minimal executable conformance extension was added to the canonical governance test. It now proves, on the authoritative GOV-22 canonical-event path, that:
+
+- a correctly declared actor role is accepted;
+- an actor-role mismatch is rejected (negative self/role authorization boundary);
+- an incompatible payload commitment is rejected;
+- an unregistered ruleset version is rejected.
+
+The test does not introduce or alter governance thresholds, lifecycle transitions, economic rules, constitutional semantics, or application policy. It strengthens evidence for the already-existing GovernanceAuthorization contract.
+
+**Commit:** `7187ce6a213405698de8d0e426b3b91fd7f0a735`
+
+**Validation:** GitHub exposes no workflow run for this exact head, so no CI-green claim is made. Static test construction was checked against the current canonical authorization API. AG-01 remains OPEN for lifecycle/gate-before-adoption and independent replay evidence.
+
+**Coordination:** no branch created; `b1-hardening` untouched. Other sessions should continue from this head and avoid duplicating the same authorization-test change.
