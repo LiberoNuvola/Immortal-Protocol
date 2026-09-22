@@ -267,13 +267,32 @@ applyEvent st ev = case ev of
 
   StatusChanged pid next at -> do
     ps <- updateProposal pid
-      (\p -> if transition (proposalStatus p) next
+      (\p -> if statusChangeAllowed p next
              then recordTime p next at
              else p)
       (proposals st)
     case [p | p <- ps, proposalId p == pid, proposalStatus p == next] of
       [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
-      _ -> Left "invalid lifecycle transition"
+      _ -> Left "invalid lifecycle transition or unmet governance gates"
+
+statusChangeAllowed :: Proposal -> ProposalStatus -> Bool
+statusChangeAllowed p next =
+  transition (proposalStatus p) next &&
+  case next of
+    Accepted ->
+      quorumReached
+        (proposalSnapshot p)
+        (proposalDelegations p)
+        (proposalVotes p) &&
+      approvalReached
+        (proposalClass p)
+        (proposalSnapshot p)
+        (proposalDelegations p)
+        (proposalVotes p) &&
+      gatesPassed (proposalClass p) (proposalGates p)
+    Adopted -> proposalStatus p == Accepted
+    Canonical -> proposalStatus p == Adopted
+    _ -> True
 
   VoteCast v -> do
     ps <- updateProposal (voteProposal v)
