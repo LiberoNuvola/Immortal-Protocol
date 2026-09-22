@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-22  
-**Latest observed commit:** `a7a5ca111d7a7ef28c39d4721a9e62319c157948` — docs: record Cardano Lab YAML correction
+**Latest observed commit:** `2db2ea95f0757bf30cdbdc027d5299bfff1b0456` — docs: record Plutus export path correction
 
 ---
 
