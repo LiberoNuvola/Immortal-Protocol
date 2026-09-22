@@ -1,0 +1,57 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
+module PreRichGenesisAdmission
+  ( GenesisTreasuryObservation (..)
+  , genesisTreasuryValueUsdm
+  , genesisPredicate
+  ) where
+
+import PlutusTx.Prelude
+
+-- | PRE-RICH application bootstrap predicate. This is deliberately kept
+-- | outside IMMORTAL's universal economic kernel.
+genesisThresholdUsdm :: Integer
+genesisThresholdUsdm = 4000
+
+-- | Oracle prices use the shared economic precision. The observation stores
+-- | the already-verified PRE quantity and PRE->USDM price; freshness and
+-- | source/Treasury binding are explicit evidence fields.
+data GenesisTreasuryObservation = GenesisTreasuryObservation
+  { gtoTreasuryIdentityVerified :: Bool
+  , gtoSourceRegimePreGenesis   :: Bool
+  , gtoPreAssetVerified         :: Bool
+  , gtoTreasuryStateVerified    :: Bool
+  , gtoOracleVerified           :: Bool
+  , gtoOracleFresh              :: Bool
+  , gtoPreQuantity              :: Integer
+  , gtoVerifiedPreUsdmPrice     :: Integer
+  , gtoOraclePrecision          :: Integer
+  }
+
+PlutusTx.unstableMakeIsData ''GenesisTreasuryObservation
+
+-- | Value in USDM whole units after integer conversion. This helper assumes
+-- | the observation has already passed the identity/freshness checks.
+{-# INLINABLE genesisTreasuryValueUsdm #-}
+genesisTreasuryValueUsdm :: GenesisTreasuryObservation -> Maybe Integer
+genesisTreasuryValueUsdm o
+  | gtoPreQuantity o < 0 = Nothing
+  | gtoVerifiedPreUsdmPrice o < 0 = Nothing
+  | gtoOraclePrecision o <= 0 = Nothing
+  | otherwise =
+      Just
+        ((gtoPreQuantity o * gtoVerifiedPreUsdmPrice o)
+          `divide` gtoOraclePrecision o)
+
+{-# INLINABLE genesisPredicate #-}
+genesisPredicate :: GenesisTreasuryObservation -> Bool
+genesisPredicate o =
+  gtoTreasuryIdentityVerified o
+  && gtoSourceRegimePreGenesis o
+  && gtoPreAssetVerified o
+  && gtoTreasuryStateVerified o
+  && gtoOracleVerified o
+  && gtoOracleFresh o
+  && case genesisTreasuryValueUsdm o of
+       Nothing -> False
+       Just value -> value >= genesisThresholdUsdm
