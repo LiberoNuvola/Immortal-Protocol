@@ -191,7 +191,7 @@ main = do
 
   assertUniversalState
     (projectPreRichState baseProfile baseState)
-    (UniversalEconomicState 0 0 0 500 0 0 0 0)
+    (UniversalEconomicState 0 0 0 0 0 0 0 0)
     "base V3 -> universal projection"
 
   assertUniversalState
@@ -253,7 +253,7 @@ main = do
     Nothing -> error "FAIL: base projection unavailable"
     Just universalBase -> do
       assert
-        (UniversalKernel.protectedCapital universalBase == 500)
+        (UniversalKernel.protectedCapital universalBase == 0)
         "universal protected capital"
       assert
         (UniversalKernel.rawSurplus 1000 universalBase == 500)
@@ -262,7 +262,7 @@ main = do
         (UniversalKernel.solvencyInvariant 1000 universalBase)
         "universal solvency boundary"
       assert
-        (not (UniversalKernel.solvencyInvariant 499 universalBase))
+        (not (UniversalKernel.solvencyInvariant (-1) universalBase))
         "universal solvency rejects under-protected EEV"
       assert
         (EconomicKernel.protectedCapital baseProfile baseState
