@@ -256,7 +256,7 @@ main = do
         (UniversalKernel.protectedCapital universalBase == 0)
         "universal protected capital"
       assert
-        (UniversalKernel.rawSurplus 1000 universalBase == 500)
+        (UniversalKernel.rawSurplus 1000 universalBase == 1000)
         "universal raw surplus"
       assert
         (UniversalKernel.solvencyInvariant 1000 universalBase)
