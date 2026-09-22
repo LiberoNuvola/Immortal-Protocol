@@ -16,6 +16,8 @@ on:
       - "PRE-RICH/profile/PreRichRevealRefinement.ts"
       - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
       - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
+      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
       - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
       - "src/__tests__/preRichIssueRefinement.test.ts"
@@ -67,5 +69,7 @@ jobs:
       - name: Run Issue and Expire refinement conformance
         run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts
       
+      - name: Run Genesis Treasury admission conformance
+        run: node --import tsx/esm PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit
