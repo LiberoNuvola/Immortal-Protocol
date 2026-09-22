@@ -10,6 +10,10 @@ const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
 function preInput() {
   return {
+    safetyCapital: 0n,
+    reserveProtection: 0n,
+    mandatoryFutureCosts: 0n,
+
     pool: {
       pendingLiabilitiesUsdm: 500n,
       unresolvedReserveUsdm: 600n,
