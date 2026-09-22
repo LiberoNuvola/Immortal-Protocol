@@ -1979,3 +1979,18 @@ Commits:
 - d9a0ed7051dd8e07f040e926323eb97e7d405ed1
 
 **Status:** fresh Kernel + Cardano Lab rerun required; no green promotion yet.
+
+
+## 2026-09-22 — Closure-line Kernel fixture/build regressions corrected
+
+**Front:** Kernel regression / V3 conformance fixtures
+
+Fresh run `35712353792` on `917b273631a7157ca52eb337539c2d889d8a9d90` reached the full test build and exposed four concrete non-economic defects: a malformed record-update parenthesis in ProjectionBoundaryConformanceTest; missing Prelude operators in ProtectedCapitalConformanceTest; a stale zero-state RawSurplus expectation (zero protected capital at EEV 1000 implies RawSurplus 1000); and missing Plutus package dependencies for B1LegacyAdapterTest.
+
+Corrections were made without changing economic formulas, canonical parameters, validator authority or invariants:
+- `489374c6b2cdc5c440e3e9c6dbaabc41121eae33` — projection fixture syntax;
+- `d659a9e93330225d896adc16be1ccd5f25cd4ff5` — ProtectedCapital test Prelude operators;
+- `ba87f27ada19dd883472166157eebdf42985a7e2` — zero-state RawSurplus expectation;
+- `8dd8c50351fddd451b9814bc8809ae7605d42114` — legacy conformance test Plutus dependencies.
+
+**Status:** fresh Kernel + Cardano Lab evidence required on the resulting HEAD; no green promotion yet.
