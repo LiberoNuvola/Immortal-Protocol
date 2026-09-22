@@ -26,3 +26,7 @@ Canonical event schema, cryptographic commitment, challenge/finality state,
 ruleset immutability and independent replay remain separate next layers.
 
 This is a convergence patch, not a conformance certificate.
+
+## Algorithmic governability
+
+- `ALGORITHMIC-GOVERNABILITY-GAP.md` — AG-01 cross-cutting conformance boundary: the algorithm may adapt within an authorized rule space but cannot self-authorize or rewrite constitutional authority.
