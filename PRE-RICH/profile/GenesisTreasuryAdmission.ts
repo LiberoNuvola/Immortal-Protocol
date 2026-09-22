@@ -16,6 +16,7 @@ export type GenesisTreasuryObservation = {
   preAssetNameHex: string
   preQuantity: bigint
   verifiedPreUsdmPrice: bigint
+  oraclePrecision: bigint
   oracleStateReference: string
   oraclePublisher: string
   oracleTimestamp: bigint
@@ -49,7 +50,9 @@ export function verifiedTreasuryPreValueUsdm(
 ): bigint | null {
   if (!observation.valuationVerified || !observation.oracleFresh) return null
   if (observation.preQuantity < 0n || observation.verifiedPreUsdmPrice < 0n) return null
-  return observation.preQuantity * observation.verifiedPreUsdmPrice
+  if (observation.oraclePrecision <= 0n) return null
+  const numerator = observation.preQuantity * observation.verifiedPreUsdmPrice
+  return (numerator + observation.oraclePrecision - 1n) / observation.oraclePrecision
 }
 
 export function admitGenesisTreasury(
