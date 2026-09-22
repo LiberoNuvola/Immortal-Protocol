@@ -427,8 +427,8 @@ describe("verifier", () => {
           commitTarget
         );
 
-      await expect(
-        verifyFinality(
+      const result =
+        await verifyFinality(
           checkpoint,
           justification,
           makeState(),
@@ -437,11 +437,12 @@ describe("verifier", () => {
             verifyAncestry:
               true
           }
-        )
-      ).rejects.toMatchObject({
-        code:
-          "ANCESTRY_NOT_VERIFIED"
-      });
+        );
+
+      expect(result.verified).toBe(true);
+      expect(result.targetNumber).toBe(100n);
+      expect(result.signedWeight).toBe(3n);
+      expect(result.totalWeight).toBe(4n);
     }
   );
 
