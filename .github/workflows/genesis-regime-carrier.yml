@@ -7,26 +7,31 @@ on:
     paths:
       - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
       - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichRegimeState.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
+      - "src/__tests__/genesis-carrier-mint-policy-emulator.mjs"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/genesis-regime-carrier.yml"
   pull_request:
     branches:
       - work/immortal-green-closure
     paths:
       - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
       - "PRE-RICH/profile/PreRichRegimeState.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
+      - "src/__tests__/genesis-carrier-mint-policy-emulator.mjs"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/genesis-regime-carrier.yml"
 
 jobs:
@@ -55,3 +60,11 @@ jobs:
         run: |
           test -s plutus/out/genesisRegimeCarrier.plutus.json
           test -s plutus/out/genesisCarrierMintPolicy.plutus.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Run Genesis carrier singleton ledger lab
+        run: node src/__tests__/genesis-carrier-mint-policy-emulator.mjs
