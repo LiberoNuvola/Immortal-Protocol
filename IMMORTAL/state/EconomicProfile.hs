@@ -32,9 +32,10 @@ profilePrice p cid = findPrice (epClassPrices p) cid
 
 {-# INLINABLE profileClasses #-}
 profileClasses :: EconomicProfile -> [TicketClass]
-profileClasses p = map first (epClassPrices p)
+profileClasses p = classIds (epClassPrices p)
   where
-    first (k,_) = k
+    classIds [] = []
+    classIds ((k,_):xs) = k : classIds xs
 
 {-# INLINABLE profileValid #-}
 profileValid :: EconomicProfile -> Bool
