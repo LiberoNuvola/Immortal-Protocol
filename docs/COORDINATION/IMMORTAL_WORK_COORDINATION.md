@@ -3074,3 +3074,26 @@ Fresh workflow observation after the evaluator-provenance coordination update:
 
 This observation supersedes the earlier wording that the Reveal run was merely “in progress”. No validator, economic parameter, cost limit, or invariant was changed.
 
+
+
+## 2026-09-22 — Algorithmic Governability executable adversarial lab
+
+**Front:** FRONT E — Algorithmic Governability  
+**Status:** EVIDENCE HARNESS IMPLEMENTED / EXECUTION PENDING
+
+Added a non-normative executable lab:
+- `audit/algorithmic-governability/README.md`
+- `audit/algorithmic-governability/no-result-dependent-authority.mjs`
+
+The harness models already-established boundaries without introducing new protocol parameters:
+- two monitors receive the same immutable observation but derive different metrics;
+- authority and evidence contract remain fixed before monitor evaluation;
+- a result-dependent authority/evidence-contract mutation is detectable and rejected by the adoption boundary;
+- a partial search cannot be adopted as a claim of a complete normative universe;
+- recovery cannot silently widen the search domain or safe set.
+
+Commits:
+- `5c7a4c6b1fbc4e10ff357167a8792061d245020c`
+- `d6d5b87bf962c5bb5435c498b1b1796fcb50099d`
+
+No economic/governance rule was changed. The committed script has not yet been executed in the repository runtime, so this is not GREEN until execution evidence exists.
