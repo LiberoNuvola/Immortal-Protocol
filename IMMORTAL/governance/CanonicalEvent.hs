@@ -1,3 +1,11 @@
+-- LEGACY / PARALLEL GOVERNANCE MODEL
+--
+-- GOV-22 canonical governance replay is defined by GovernanceEventSchema.hs
+-- and GovernanceCanonicalReplay.hs. This module retains the older lifecycle
+-- event representation for historical compatibility only. It is NOT the
+-- authoritative semantic source for GOV-22 replay and must not be introduced
+-- as a second canonical event stream.
+--
 module CanonicalEvent
   ( EventId, ProposalId, RulesetVersion, Timestamp
   , ActorClass(..), EventType(..), EventStatus(..), CanonicalEvent(..)
