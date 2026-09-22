@@ -6,6 +6,7 @@ module ProtectedCapitalConformance
   , expireProtectedCapitalDelta
   , protectedCapitalLifecycleSafe
   , protectedCapitalPartitionExact
+  , V3ActionWitness (..)
   ) where
 
 import PlutusTx.Prelude
