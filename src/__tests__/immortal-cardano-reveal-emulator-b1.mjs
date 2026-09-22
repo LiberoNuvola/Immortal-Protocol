@@ -987,42 +987,37 @@ async function main() {
    * 11. DIAGNOSTIC: POOL-ONLY VALUE PATH ISOLATION
    * --------------------------------------------------------------
    *
-   * B1PrizePool performs singletonPoolTokenValid before dispatching the
-   * action branch. This probe deliberately omits the Prize output, so if
-   * the Value path evaluates normally the validator should fail later with
-   * its ordinary "no prize output" semantic error. A NonConstrScrutinized /
-   * "attempted to case a non-const" failure here isolates the evaluator
-   * failure to the Pool validator's unconditional Value path.
-   *
-   * The transaction is never accepted, so emulator state is unchanged.
+   * Keep the entire build/sign/submit sequence inside the diagnostic catch:
+   * Lucid may evaluate scripts during .complete(), before submit().
    */
-  const poolValueProbeTx =
-    await lucid
-      .newTx()
-      .collectFrom(
-        [poolUtxos[0]],
-        Data.to(
-          constr(
-            2,
-            [BigInt(priceUsdm)],
-          ),
-        ),
-      )
-      .readFrom([poolReferenceInput])
-      .payToContract(
-        poolAddress,
-        { inline: Data.to(prePoolDatum) },
-        poolUtxos[0].assets,
-      )
-      .addSigner(walletAddress)
-      .validTo(4_000_000_000_000)
-      .complete();
-
-  const poolValueProbeSigned =
-    await poolValueProbeTx.sign().complete();
-
   try {
+    const poolValueProbeTx =
+      await lucid
+        .newTx()
+        .collectFrom(
+          [poolUtxos[0]],
+          Data.to(
+            constr(
+              2,
+              [BigInt(priceUsdm)],
+            ),
+          ),
+        )
+        .readFrom([poolReferenceInput])
+        .payToContract(
+          poolAddress,
+          { inline: Data.to(prePoolDatum) },
+          poolUtxos[0].assets,
+        )
+        .addSigner(walletAddress)
+        .validTo(4_000_000_000_000)
+        .complete();
+
+    const poolValueProbeSigned =
+      await poolValueProbeTx.sign().complete();
+
     await poolValueProbeSigned.submit();
+
     throw new Error(
       "P2.8-B.1 Pool-only Value probe unexpectedly succeeded",
     );
