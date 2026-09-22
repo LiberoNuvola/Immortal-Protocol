@@ -24,11 +24,11 @@ newtype EvidenceRef = EvidenceRef String deriving (Eq, Show)
 
 data CanonicalPayload
   = PayloadProposalSubmitted Proposal
-  | PayloadProposalClassified ProposalId ProposalClass
+  | PayloadProposalClassified ProposalId ProposalClass Timestamp
   | PayloadStatusChanged ProposalId ProposalStatus Timestamp
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
-  | PayloadGatesSet ProposalId GateResult
+  | PayloadGatesSet ProposalId GateResult Timestamp
   deriving (Eq, Show)
 
 data CanonicalEvent = CanonicalEvent
@@ -54,8 +54,8 @@ canonicalPayloadText p = case p of
     ";snapshot_at=" ++ show (snapshotAt (proposalSnapshot x)) ++
     ";snapshot_weights=" ++ show (snapshotWeights (proposalSnapshot x)) ++
     ";created_at=" ++ show (proposalCreatedAt x)
-  PayloadProposalClassified pid cls ->
-    "type=ProposalClassified;proposal_id=" ++ show pid ++ ";class=" ++ show cls
+  PayloadProposalClassified pid cls at ->
+    "type=ProposalClassified;proposal_id=" ++ show pid ++ ";class=" ++ show cls ++ ";timestamp=" ++ show at
   PayloadStatusChanged pid st at ->
     "type=StatusChanged;proposal_id=" ++ show pid ++ ";status=" ++ show st ++ ";timestamp=" ++ show at
   PayloadVoteCast v ->
@@ -64,8 +64,8 @@ canonicalPayloadText p = case p of
   PayloadDelegationSet pid d at ->
     "type=DelegationSet;proposal_id=" ++ show pid ++
     ";delegator=" ++ show (delegator d) ++ ";delegate=" ++ show (delegate d) ++ ";timestamp=" ++ show at
-  PayloadGatesSet pid g ->
-    "type=GatesSet;proposal_id=" ++ show pid ++ ";gates=" ++ show g
+  PayloadGatesSet pid g at ->
+    "type=GatesSet;proposal_id=" ++ show pid ++ ";gates=" ++ show g ++ ";timestamp=" ++ show at
 
 canonicalEventBody :: CanonicalEvent -> String
 canonicalEventBody e =
@@ -106,11 +106,11 @@ payloadProposalId p = case p of
 payloadTimestamp :: CanonicalPayload -> Timestamp
 payloadTimestamp p = case p of
   PayloadProposalSubmitted x -> proposalCreatedAt x
-  PayloadProposalClassified _ _ -> 0
+  PayloadProposalClassified _ _ t -> t
   PayloadStatusChanged _ _ t -> t
   PayloadVoteCast v -> castAt v
   PayloadDelegationSet _ _ t -> t
-  PayloadGatesSet _ _ -> 0
+  PayloadGatesSet _ _ t -> t
 
 eventTypeMatchesPayload :: EventType -> CanonicalPayload -> Bool
 eventTypeMatchesPayload t p = case (t,p) of
