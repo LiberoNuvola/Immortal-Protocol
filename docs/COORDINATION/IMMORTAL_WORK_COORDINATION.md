@@ -2163,3 +2163,18 @@ Therefore:
 While the Cardano and Kernel jobs above are running, do not create overlapping corrective commits. Continue independent work only on fronts not touching the active CI artifacts; classify any failure from the exact current-head logs before editing.
 
 **Status:** CURRENT HEAD VERIFIED / CARDANO + KERNEL EVIDENCE RUNNING / MATERIOS AUTHORITY PROOF OPEN.
+
+
+## 2026-09-22 — B5 runtime choke-point audit
+
+**Front:** B5 Economic Gate → Viability → Atomic Transition
+
+A fresh current-branch audit traced the actual PRE-RICH submission path. PRE-RICH/profile/PreRichEconomicAdmission.hs already composes structural transition validity, the fail-closed PRE-RICH projection, EconomicGate, universal solvency and the certified-Ω viability condition into a typed PreRichEconomicAdmission witness. This is the correct semantic admission boundary.
+
+However, the live TypeScript execution path does not consume that witness: src/gameFlow.ts reaches transaction construction directly and then calls signAndSubmitTx; src/txHelpers.ts creates CardanoExecutionAdapter and submits the transaction, while Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts currently requires no economic-admission evidence. Therefore the Gate is implemented in the kernel/profile layer but is not yet a mandatory runtime prerequisite for the actual DApp submission path.
+
+**Important boundary finding:** do not solve this by duplicating the Haskell economic formulas in TypeScript, inventing EEV/liquidity values, or adding a boolean/call-count flag. The next implementation must introduce an explicit typed admission/evidence handoff at the DApp→Adapter boundary, with fail-closed submission semantics, and must identify the authoritative producer of that witness/evidence before making it mandatory. The adapter remains transport/execution infrastructure and must not independently decide economic admissibility.
+
+**Related current evidence:** the latest Materios upstream-triangulation work remains independent; the real authority-selection proof boundary is still OPEN. Cardano real-ledger evidence remains governed by the active lab run and must not be promoted from implementation alone.
+
+**Status:** B5 semantic boundary GREEN at kernel/profile interface; **runtime consumption OPEN / NEEDS IMPLEMENTATION + EVIDENCE**.
