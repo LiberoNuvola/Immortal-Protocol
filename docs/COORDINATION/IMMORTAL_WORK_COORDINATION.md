@@ -2776,3 +2776,31 @@ This is a provider-decoding/fixture-boundary repair, not a validator bypass: the
 Commit: `4db25d9b74bad1fae50b6aaf8702194b4ed6c811`.
 
 **Status:** fresh emulator CI triggered; validator execution/resource evidence remains OPEN pending the new run.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS dynamic stress laboratory v0.1
+
+**Front:** PRE-GENESIS / GENESIS transition conformance — dynamic market/valuation stress
+
+Triangulation against the current PRE-RICH canon resolved the earlier apparent ambiguity: the Genesis application predicate is the verified PRE Treasury value >= 4,000 USDM. The End-to-End map's stability/trajectory language belongs to the Jackpot StableLadder section, not to a second Genesis threshold. No stability window or extra numerical threshold was introduced.
+
+A first deterministic stress harness was added:
+- audit/pre-genesis-genesis/README.md
+- audit/pre-genesis-genesis/stress-lab.mjs
+
+The harness exercises:
+1. Treasury value below 4,000;
+2. exact 4,000 crossing;
+3. crossing followed by a PRE price dump before submission;
+4. committed Genesis followed by a PRE price dump;
+5. stale valuation;
+6. wrong Treasury destination;
+7. duplicate/concurrent-style second transition.
+
+It asserts the critical accounting boundary that Genesis activation does not silently increase PrizePool liquidity.
+
+The PRE quantity × observed price calculation is explicitly scenario instrumentation, not a new oracle/valuation rule. A real deployment must replace it with the verified Treasury valuation path.
+
+Commits: 823ccca8d2dee5167ecbfea6528bc7f4f6119dc7 (lab contract) and e9a614023fc215ecd31921a90593d7fc7f4d9647 (harness).
+
+**Status:** deterministic lab scaffold IMPLEMENTED / executable evidence pending runtime execution. On-chain transition implementation remains OPEN. Passing this harness will not be treated as ledger conformance proof.
