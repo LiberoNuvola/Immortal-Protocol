@@ -104,9 +104,10 @@ export type ProjectionInput = {
   tickets: ObservedUnresolvedTicket[]
   pool: ObservedB1Pool
   authoritativeClasses: AuthoritativeClassState[]
-  safetyCapital?: bigint
-  reserveProtection?: bigint
-  mandatoryFutureCosts?: bigint
+  /** Authoritative protected-capital observations; omission must fail closed. */
+  safetyCapital: bigint
+  reserveProtection: bigint
+  mandatoryFutureCosts: bigint
   currentActiveClass?: bigint
   highestClassEverActivated?: bigint
 }
@@ -271,9 +272,9 @@ export function projectCardanoToImmortalV3(
       'unresolvedReserveUsdm',
     ),
     unresolvedTicketCount: input.pool.unresolvedTicketCount,
-    safetyCapital: input.safetyCapital ?? 0n,
-    reserveProtection: input.reserveProtection ?? 0n,
-    mandatoryFutureCosts: input.mandatoryFutureCosts ?? 0n,
+    safetyCapital: input.safetyCapital,
+    reserveProtection: input.reserveProtection,
+    mandatoryFutureCosts: input.mandatoryFutureCosts,
     classes,
     control: {
       currentActiveClass: input.currentActiveClass ?? 0n,
