@@ -2520,3 +2520,22 @@ Commit:
 - `726fd848d0c1ed878b19e45d1c9776f3de1c804d`
 
 **Status:** governance conformance surface is now aligned with current function signatures; AG-01 semantic lifecycle/gate enforcement remains the next substantive closure target.
+
+
+## 2026-09-22 — AG-01 gate-before-adoption enforcement
+
+The governance audit found a concrete executable gap: the existing lifecycle graph allowed DecisionRecorded -> Accepted -> Adopted structurally, but the authoritative applyEvent path did not enforce the already-defined quorum, approval, and gatesPassed predicates before Accepted.
+
+Minimal repair on the canonical Governance path:
+- StatusChanged to Accepted now requires quorumReached + approvalReached + gatesPassed for the proposal's snapshot/delegations/votes/class/gates;
+- Adopted remains reachable only from Accepted;
+- Canonical remains reachable only from Adopted;
+- no new threshold or policy was introduced; the implementation now enforces predicates already present in Governance.hs.
+
+Conformance evidence adds a negative ungated acceptance case and a positive Accepted -> Adopted sequence after a valid vote/decision record.
+
+Commits:
+- d77e04d8fff3549da6a9712841f2f893de290b4e
+- 9040bce4b8b0606b98147516eb9a701dadedfe44
+
+**Status:** AG-01 lifecycle gate enforcement implemented; independent replay/finality and full build validation remain open.
