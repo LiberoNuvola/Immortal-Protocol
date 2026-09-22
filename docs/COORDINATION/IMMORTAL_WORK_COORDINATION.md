@@ -2376,3 +2376,17 @@ A deeper audit found a concrete schema-consistency gap that must be resolved bef
 No governance threshold, economic rule, constitutional rule or application policy was changed. This is an evidence/schema finding only.
 
 **Status:** AG-01 governance closure remains OPEN; next safe action is canonical-module lineage reconciliation and a minimal negative/positive test for non-zero classified/gate event timestamps, before any implementation change.
+
+## 2026-09-22 — Current-head Action Refinement compile failure corrected
+
+**Front:** B5 runtime admission / PRE-RICH action refinement
+
+The Action Refinement run 35765075059 passed all 10 Vitest files (73/73 tests) and failed only at TypeScript compilation. The concrete regressions were: two ProjectionInput fixtures missing explicit safetyCapital/reserveProtection/mandatoryFutureCosts; claim.ts and claimFlow.ts not threading the mandatory EconomicAdmissionWitness; and txHelpers.ts importing that type from the adapter instead of the dedicated EconomicAdmission module.
+
+Correction was fail-closed: explicit protected-capital fields were restored in the fixtures; the typed witness was threaded through both Claim facades; the import was corrected; and the dev UI Claim button now reports that no authoritative admission producer is available instead of fabricating a witness.
+
+Commits: 3518831eab46e40df4b064b56621d03e71242066, 6b82675bb2eeb98c6e9f11472c363553efca5765, d77710fbc356f3f608c517e258e87cb4a669ca8b, 4d40bb0348d4b1712667b2aec914e3614c719433, 0e6228c7e74c06527b0048d0ccd242f8d7ea4df2, 7321880fd06f25f45d519290d4b35d2b24f42c38.
+
+No economic rule, validator predicate, witness semantics, or IMMORTAL/PRE-RICH boundary was weakened. Fresh current-head validation is running on 7321880fd06f25f45d519290d4b35d2b24f42c38.
+
+**Status:** compile defect corrected; validation running. B5 runtime boundary remains structurally GREEN; authoritative witness production remains OPEN.
