@@ -17,9 +17,9 @@ function observation(overrides: Partial<GenesisTreasuryObservation> = {}): Genes
     treasuryStateReference: 'tx0#0',
     prePolicyId: POLICY,
     preAssetNameHex: NAME,
-    preQuantity: 4_000n,
-    verifiedPreUsdmPrice: 100n,
-    oraclePrecision: 1n,
+    preQuantity: 10_000_000n,
+    verifiedPreUsdmPrice: 40_000n,
+    oraclePrecision: 1_000_000n,
     oracleStateReference: 'oracle#0',
     oraclePublisher: PUBLISHER,
     oracleTimestamp: 100n,
@@ -35,7 +35,7 @@ const admit = (o: GenesisTreasuryObservation) =>
   admitGenesisTreasury(o, TREASURY, POLICY, NAME, PUBLISHER)
 
 assert.equal(
-  admit(observation({ preQuantity: 3_999n })).reason,
+  admit(observation({ preQuantity: 9_999_999n, verifiedPreUsdmPrice: 39_999n })).reason,
   'BELOW_THRESHOLD',
 )
 assert.equal(
@@ -72,7 +72,7 @@ assert.equal(
 )
 assert.equal(
   admit(
-    observation({ preQuantity: 399_999n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
+    observation({ preQuantity: 9_999_999n, verifiedPreUsdmPrice: 40_001n }),
   ).admitted,
   true,
 )
