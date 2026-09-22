@@ -7,6 +7,8 @@ import Prelude
   , IO
   , Maybe (Just, Nothing)
   , String
+  , (++)
+  , (==)
   , error
   , putStrLn
   )
