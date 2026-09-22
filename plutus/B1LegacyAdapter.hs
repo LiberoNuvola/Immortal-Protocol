@@ -23,6 +23,7 @@ import Types (B1PrizePoolDatum (..))
 import EconomicStateV3
 import UniversalEconomicState
 import qualified EconomicKernel
+import PreRichEconomicProfile (preRichEconomicProfileV1)
 
 data LegacyProjectionError
   = LegacyHasUnresolvedTickets
@@ -113,7 +114,7 @@ v3ToLegacyB1 totalLiquidity prizeHash s
   | ecsHighestClassEverActivated (v3Control s)
       /= ecsCurrentActiveClass (v3Control s) =
       Left LegacyMissingHistoricalControl
-  | not (EconomicKernel.conservationInvariant s) =
+  | not (EconomicKernel.conservationInvariant preRichEconomicProfileV1 s) =
       Left LegacyAggregateMismatch
   | otherwise =
       Right
@@ -145,7 +146,7 @@ legacyProjectionIsLossless s =
   && jsLockedAmount (v3Jackpot s) == 0
   && ecsCurrentActiveClass (v3Control s) == 0
   && ecsHighestClassEverActivated (v3Control s) == 0
-  && EconomicKernel.conservationInvariant s
+  && EconomicKernel.conservationInvariant preRichEconomicProfileV1 s
 
 {-# INLINABLE legacySuspendedMask #-}
 legacySuspendedMask :: EconomicControlState -> Integer
