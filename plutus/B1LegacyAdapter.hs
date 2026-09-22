@@ -22,6 +22,7 @@ import PlutusTx.Prelude
 import Types (B1PrizePoolDatum (..))
 import EconomicStateV3
 import UniversalEconomicState
+import EconomicProfile (EconomicProfile, epMaxNormalPayoutMultiplier)
 import qualified EconomicKernel
 import PreRichEconomicProfile (preRichEconomicProfileV1)
 
@@ -87,13 +88,13 @@ legacyB1ToAggregateV3View d =
 -- application payout bound. The universal kernel receives EEV in the same
 -- accounting unit as this datum.
 {-# INLINABLE legacyB1ToUniversalEconomicState #-}
-legacyB1ToUniversalEconomicState :: B1PrizePoolDatum -> UniversalEconomicState
-legacyB1ToUniversalEconomicState d =
+legacyB1ToUniversalEconomicState :: EconomicProfile -> B1PrizePoolDatum -> UniversalEconomicState
+legacyB1ToUniversalEconomicState profile d =
   UniversalEconomicState
     (ppPendingLiabilities d)
     (ppUnresolvedReserve d)
     (ppUnresolvedTicketCount d)
-    (500 * ppUnresolvedReserve d)
+    (epMaxNormalPayoutMultiplier profile * ppUnresolvedReserve d)
     0
     0
     0
