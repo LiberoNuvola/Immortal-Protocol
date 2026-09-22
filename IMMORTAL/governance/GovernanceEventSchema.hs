@@ -115,11 +115,11 @@ payloadTimestamp p = case p of
 eventTypeMatchesPayload :: EventType -> CanonicalPayload -> Bool
 eventTypeMatchesPayload t p = case (t,p) of
   (EProposalSubmitted, PayloadProposalSubmitted _) -> True
-  (EProposalClassified, PayloadProposalClassified _ _) -> True
+  (EProposalClassified, PayloadProposalClassified _ _ _) -> True
   (EStatusChanged, PayloadStatusChanged _ _ _) -> True
   (EVoteCast, PayloadVoteCast _) -> True
   (EDelegationSet, PayloadDelegationSet _ _ _) -> True
-  (EGatesSet, PayloadGatesSet _ _) -> True
+  (EGatesSet, PayloadGatesSet _ _ _) -> True
   _ -> False
 
 unique :: Eq a => [a] -> Bool
