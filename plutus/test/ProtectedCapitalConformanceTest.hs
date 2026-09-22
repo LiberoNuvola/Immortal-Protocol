@@ -12,6 +12,8 @@ import Prelude
   , (==)
   , (&&)
   , not
+  , (++)
+  , (-)
   )
 
 import EconomicProfile
