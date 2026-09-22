@@ -2486,3 +2486,20 @@ The test does not introduce or alter governance thresholds, lifecycle transition
 **Validation:** GitHub exposes no workflow run for this exact head, so no CI-green claim is made. Static test construction was checked against the current canonical authorization API. AG-01 remains OPEN for lifecycle/gate-before-adoption and independent replay evidence.
 
 **Coordination:** no branch created; `b1-hardening` untouched. Other sessions should continue from this head and avoid duplicating the same authorization-test change.
+
+
+## 2026-09-22 — Governance build-lineage check
+
+The active Plutus Cabal package was inspected to establish whether the legacy governance module is part of the authoritative build surface.
+
+Finding:
+- `CanonicalEvent.hs` is **not** listed in `exposed-modules`, `other-modules`, or any governance test suite in `plutus/pre-rich-plutus.cabal`.
+- GOV-22's authoritative modules (`GovernanceEventSchema`, `GovernanceAuthorization`, `GovernanceCanonicalReplay`, `GovernanceCommitment`, `RulesetRegistry`) are exposed.
+- `GovernanceFinality` and `GovernanceRuleset` are now explicitly exposed as well, matching the existing Phase-6 governance surface rather than relying on accidental source visibility.
+
+No deletion of `CanonicalEvent.hs` was performed: it remains legacy source outside the active package manifest, preserving historical compatibility while preventing it from being the package's canonical GOV-22 event model.
+
+Commit:
+- `16a2e5e368fd47a40abb0dad69f2ee25c3ec3e65`
+
+**Status:** GOV-22 lineage is now structurally separated at the package boundary; remaining AG-01 work is semantic authorization/gate enforcement and independent evidence, not event-model duplication.
