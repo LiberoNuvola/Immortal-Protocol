@@ -3024,3 +3024,37 @@ Commits:
 - `1b305752b95e6d1e27edbbe352c04844f161afff` — carrier conformance test hardening
 
 **Status:** application carrier IMPLEMENTED / on-chain atomic transition OPEN / CI evidence pending.
+
+
+## 99. SESSION UPDATE — Lucid evaluator provenance / P2.8-B.1 differential closure
+
+**Snapshot:** 2026-09-22  
+**Front:** P2.8-B.1 real emulator Reveal  
+**Status:** **ROOT-CAUSE HYPOTHESIS STRENGTHENED / PRODUCTION REPAIR OPEN**
+
+Current implementation evidence on `work/immortal-green-closure`:
+
+- `package.json` declares `lucid-cardano ^0.10.11`; the lockfile pins Lucid 0.10.11.
+- The canonical Reveal harness still uses the real parameterized PRE-RICH `PrizeValidator` and `B1PrizePool`, with separate reference-script UTxOs.
+- Canonical emulator limits remain unchanged; the latest real Reveal failure is execution-budget exhaustion.
+- A high-budget diagnostic previously changed the terminal failure to `attempted to case a non-const` on a `Value` term.
+- The Pool-only isolation probe can independently reach the Value path before action semantics; budget/evaluator failures are classified separately and do not weaken the validator.
+
+**External evaluator provenance evidence (research, not protocol authority):**
+
+Lucid 0.10.11's embedded Cardano Multiplatform Library pins Aiken `uplc` revision `3d77b5c378ce404cddd9a1f111906d72fd46fc83`, corresponding to the 2024-era UPLC 1.1.3 line. Current upstream Plutus continues to evolve its evaluator and `Value` handling; current Plutus release material documents later `Value` implementation changes. Recent upstream issue history also shows that alternate UPLC evaluators can lag protocol-version/builtin semantics.
+
+This makes an **evaluator-generation incompatibility** a strong root-cause hypothesis for the observed `Value Con(...)` / `NonConstrScrutinized` behavior, but it is **not yet production proof**.
+
+**Required next experiment — differential evaluator proof:**
+
+1. Keep the existing PRE-RICH validator bytes, parameters, datum, redeemer and transaction context unchanged.
+2. Evaluate the same Pool-only fixture with a current/node-compatible/reference Plutus evaluator.
+3. If the current evaluator reaches the intended validator-level semantic failure (missing Prize output), record Lucid 0.10.11 as a harness/evaluator incompatibility and do **not** alter validator economics.
+4. If it reproduces `NonConstrScrutinized`, inspect the compiled UPLC term and its source/toolchain before changing production code.
+5. Do not raise canonical emulator limits, remove `Value` checks, weaken invariants, or change economic parameters as a workaround.
+
+**Fresh CI observation:** the PRE-RICH emulator workflow is still failing on the current sequence of branch commits; a newer run is in progress. No green claim is made until a real Reveal completes.
+
+**No normative/economic changes in this update.**
+
