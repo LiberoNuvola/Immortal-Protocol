@@ -2804,3 +2804,15 @@ The PRE quantity × observed price calculation is explicitly scenario instrument
 Commits: 823ccca8d2dee5167ecbfea6528bc7f4f6119dc7 (lab contract) and e9a614023fc215ecd31921a90593d7fc7f4d9647 (harness).
 
 **Status:** deterministic lab scaffold IMPLEMENTED / executable evidence pending runtime execution. On-chain transition implementation remains OPEN. Passing this harness will not be treated as ledger conformance proof.
+
+## 2026-09-22 — P2.8-B.1 budget probe: diagnostic path reached, serialization repair
+
+The explicit high-budget probe reached the fixture but stopped before validator execution because the diagnostic JSON still contained a BigInt protocol-parameter value. This was a test-observability defect only.
+
+Repair:
+- serialize all diagnostic BigInt values through a JSON replacer;
+- no validator, cost model, economic parameter or protocol invariant changed.
+
+Commit: 7ecd9c2255c895463b4640d7e555c2a2a1ac4190.
+
+**Status:** fresh budget-probe CI triggered; real validator execution evidence still OPEN.
