@@ -1909,3 +1909,17 @@ No protected-capital formula changed. The legacy B1 projection remains intention
 Sale Conformance already passed on that lineage, confirming existing explicit consumers supply the required values.
 
 **Status:** B4 observation omission boundary hardened; full real Cardano provenance remains OPEN.
+
+
+---
+## 66. 2026-09-22 — Legacy adapter Eq compile regression corrected
+
+**Front:** B4/B6 / kernel regression + Cardano artifact generation
+
+Fresh CI logs identified the concrete blocker after the conservation-profile binding: B1LegacyAdapter.legacyProjectionIsLossless compared [TicketClassState] with [], but TicketClassState intentionally has no Eq instance. This was a pure Haskell type-level regression, not an economic disagreement.
+
+Correction: replaced the empty-list equality check with null (v3Classes s). No economic formula, state field, invariant, authority boundary, or DApp policy changed.
+
+**Commit:** 1b792e809381322583ce984c7bfccc79cd032441
+
+**Status:** compile blocker corrected; fresh Kernel + Cardano Lab evidence pending.
