@@ -73,9 +73,7 @@ library
 executable export-scripts
     hs-source-dirs:
         export
-
-    main-is:            Export.hs
-
+    main-is: Export.hs
     build-depends:
         base ^>=4.18.2,
         plutus-core ^>=1.67.0.0,
@@ -88,9 +86,7 @@ executable export-scripts
         directory,
         text,
         pre-rich-plutus
-
     default-language: Haskell2010
-
     ghc-options:
         -Wall
         -fno-strictness
@@ -100,11 +96,9 @@ executable export-scripts
         -fno-unbox-small-strict-fields
 
 test-suite economic-oracle-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-
-    main-is:            EconomicOracleTest.hs
-
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: EconomicOracleTest.hs
     build-depends:
         base ^>=4.18.2,
         bytestring,
@@ -112,95 +106,88 @@ test-suite economic-oracle-tests
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
         pre-rich-plutus
-
     default-language: Haskell2010
 
 test-suite v3-golden-vector-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-
-    main-is:            GoldenVectorsTest.hs
-
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: GoldenVectorsTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-
     default-language: Haskell2010
 
 test-suite governance-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-
-    main-is:            GovernanceTest.hs
-
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: GovernanceTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-
     default-language: Haskell2010
 
 test-suite governance-canonical-replay-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-    main-is:            GovernanceCanonicalReplayTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: GovernanceCanonicalReplayTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
-
 
 test-suite economic-admission-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-    main-is:            EconomicAdmissionTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: EconomicAdmissionTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
 
-
 test-suite protected-capital-conformance-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-    main-is:            ProtectedCapitalConformanceTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: ProtectedCapitalConformanceTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-    default-language:   Haskell2010
+    default-language: Haskell2010
 
 test-suite governance-ruleset-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     ../IMMORTAL/governance
-    main-is:            RulesetRegistryTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: ../IMMORTAL/governance
+    main-is: RulesetRegistryTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-    default-language:   Haskell2010
+    default-language: Haskell2010
 
 test-suite governance-phase6-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     ../IMMORTAL/governance
-    main-is:            GovernancePhase6Test.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: ../IMMORTAL/governance
+    main-is: GovernancePhase6Test.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-    default-language:   Haskell2010
-
+    default-language: Haskell2010
 
 test-suite legacy-adapter-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-    main-is:            B1LegacyAdapterTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: B1LegacyAdapterTest.hs
     build-depends:
         base ^>=4.18.2,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0,
+        plutus-tx ^>=1.67.0.0,
         pre-rich-plutus
-    default-language:   Haskell2010
+    default-language: Haskell2010
 
 test-suite projection-boundary-tests
-    type:               exitcode-stdio-1.0
-    hs-source-dirs:     test
-    main-is:            ProjectionBoundaryConformanceTest.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: ProjectionBoundaryConformanceTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
-    default-language:   Haskell2010
+    default-language: Haskell2010
