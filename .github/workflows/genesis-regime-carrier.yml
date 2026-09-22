@@ -7,6 +7,7 @@ on:
     paths:
       - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
       - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
       - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
       - "PRE-RICH/profile/PreRichRegimeState.hs"
       - "plutus/Types.hs"
@@ -37,6 +38,8 @@ jobs:
         with:
           ghc-version: "9.6.7"
           cabal-version: "3.12.1.0"
+      - name: Install Plutus native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev pkg-config
       - run: cabal update
       - name: Build PRE-RICH Plutus package
         working-directory: plutus
