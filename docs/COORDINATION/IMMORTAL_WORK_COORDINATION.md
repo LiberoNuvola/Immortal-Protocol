@@ -1809,3 +1809,25 @@ The prior configuration would have targeted a nested `plutus/plutus/out` path an
 No validator source, economic formula, DApp policy, or Adapter authority changed.
 
 **Status:** export path corrected; fresh real-ledger evidence pending.
+
+
+---
+## 61. 2026-09-22 — PRE-RICH policy/conformance documentation reconciliation
+
+**Front:** documentation truth / A1-A2-A3 status alignment
+
+Triangulation against the current Notion policy closure, the active GitHub implementation, and available Library checkpoints confirmed that the old PRE-RICH conformance table was stale in exactly three rows:
+- exact expiry duration;
+- Jackpot payout mode;
+- future Jackpot allocation.
+
+Current policy authority says these are semantically closed at the correct DApp boundary:
+- A1: expiry mechanism is CLOSED; the horizon is DApp/profile-defined and state-derived at issuance, crystallized into the ticket; **365 days is non-canonical**;
+- A2: PRE-RICH Jackpot activation policy is CLOSED at semantic/policy level; deterministic threshold implementation/conformance remains open;
+- A3: no fixed JackpotAllocationRate is canonical; the current policy funds only the state-derived need subject to RawSurplus + Economic Gate.
+
+`PRE-RICH/docs/CONFORMANCE.md` was aligned to distinguish semantic/policy closure from implementation and evidence status. No economic rule, parameter, validator, transition or runtime path changed.
+
+**Commit:** `447ae1dc86b14acf23c9471b9cf9bd00488a1d95`
+
+**Status:** documentation reconciliation complete; implementation/ledger evidence remains independently open and is not promoted by this change.
