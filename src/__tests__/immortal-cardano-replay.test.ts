@@ -133,6 +133,9 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
     )
 
     const postInput = {
+      safetyCapital: 0n,
+      reserveProtection: 0n,
+      mandatoryFutureCosts: 0n,
       pool: {
         pendingLiabilitiesUsdm: 1500n,
         unresolvedReserveUsdm: 400n,
