@@ -1638,3 +1638,65 @@ On `c5bca577...`:
 No C3 green claim is made until the lab executes the new EXPIRE trace and produces the expected evidence artifact.
 
 **Status:** C3 implementation boundary closed at source level; on-chain conformance evidence pending.
+
+
+---
+## 56. 2026-09-22 — CI build/lab corrections and current evidence
+
+**Front:** Kernel regression / C3-C4 / cross-session coordination
+
+### Kernel regression finding
+The first post-toolchain Kernel regression reached project compilation and exposed three concrete build defects:
+- `IMMORTAL/state/EconomicProfile.hs` used `map` under `NoImplicitPrelude`;
+- `IMMORTAL/governance/GovernanceCommitment.hs` imported modules from packages not declared by `pre-rich-plutus.cabal`;
+- `IMMORTAL/governance/GovernanceAuthorization.hs` had an ambiguous `rulesetVersion` selector.
+
+Surgical fixes were applied:
+- `profileClasses` now uses explicit recursion;
+- `bytestring`, `base16-bytestring`, `text`, and `cryptohash-sha256` are declared in the library dependencies;
+- the governance event's `rulesetVersion` selector is explicitly qualified.
+
+Commits:
+- `b5f20aa616b2348db389ec45ea5c071f89d6a0ea`
+- `3a115acb795ff307b6d004f8d43b313b7c6b3681`
+- `8a0a3775350b79a36c39dbe17109d47d3831b2c7`
+
+These changes are build/conformance corrections only; no economic formula or policy changed.
+
+### C3 real-ledger finding
+The first real Yaci lab reached the devnet bootstrap and failed in the Reveal trace because `lucid-cardano` 0.10 exposes `Lucid` as a constructable class; the trace invoked it without `new`.
+
+The parallel session corrected:
+- Reveal trace Lucid construction;
+- EXPIRE trace Lucid construction.
+
+Current branch verification confirms both traces use `new Lucid(...)`, and both retain the Cardano Execution Adapter plus canonical transition binding.
+
+### EXPIRE source-boundary cleanup
+One client-side stale variable (`pendingCount`) was caught by TypeScript typecheck after the EXPIRE refactor and removed in:
+- `1b4e46020976d59470a8acdbaec3670c8f362a61`
+
+The EXPIRE validator was also tightened to derive its ticket facts from the consumed PrizeDatum input rather than a continuing Prize output, and the client fails closed on unexpected non-ADA assets.
+
+### Current coordinated head
+Working branch:
+`work/immortal-green-closure`
+
+Current head at this entry:
+`ca8054432cd226496080916846aa42d3842e1f7a`
+
+The parallel session has already advanced beyond the individual corrections above. Do not overwrite current trace changes from stale snapshots.
+
+### Latest observed CI
+- Cardano Adapter Sale Conformance: repeated GREEN runs on the working lineage.
+- PRE-RICH Action Refinement: GREEN on the recent corrected lineage.
+- Kernel Invalid-Class Fail-Closed Audit: latest attempt is queued after the dependency/build corrections; no green claim until the new regression completes.
+- IMMORTAL Cardano Integration Lab: latest corrected attempt is queued/pending after the trace fixes; no C3/RF10/RF11 green claim until the actual Yaci trace produces and uploads the evidence artifact.
+
+### Next actions
+1. Observe the current Kernel regression on the latest head and fix only the next concrete compile/test failure.
+2. Observe the current Cardano Lab; once Reveal succeeds, require EXPIRE to execute in the same lab and inspect both real evidence artifacts.
+3. Promote C3/RF10/RF11 only from artifact-backed ledger evidence.
+4. Continue B4/B5/B6 equivalence work without reopening closed economics.
+
+**Status:** coordinated; local build blockers repaired; real-ledger evidence remains the decisive open gate.
