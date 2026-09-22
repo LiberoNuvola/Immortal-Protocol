@@ -153,7 +153,7 @@ describe("B3-03C — real GRANDPA Ed25519 vector", () => {
       setId
     );
 
-    expect(payload.length).toBe(56);
+    expect(payload.length).toBe(53);
     expect(bytesToHex(payload)).toBe(
       expectedPayloadHex
     );
