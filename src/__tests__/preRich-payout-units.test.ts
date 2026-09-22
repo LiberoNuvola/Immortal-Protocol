@@ -29,4 +29,12 @@ describe('PRE-RICH canonical payout-unit boundary', () => {
       expect(prizeAmountForTier(defaultPrizeTable, 2, priceSubunits)).toBe(250 * price)
     }
   })
+
+  it('maps every canonical tier exactly at Genesis price', () => {
+    expect(prizeAmountForTier(defaultPrizeTable, 1, ONE_USDM)).toBe(100)
+    expect(prizeAmountForTier(defaultPrizeTable, 2, ONE_USDM)).toBe(250)
+    expect(prizeAmountForTier(defaultPrizeTable, 3, ONE_USDM)).toBe(500)
+    expect(prizeAmountForTier(defaultPrizeTable, 4, ONE_USDM)).toBe(10_000)
+    expect(prizeAmountForTier(defaultPrizeTable, 5, ONE_USDM)).toBe(50_000)
+  })
 })
