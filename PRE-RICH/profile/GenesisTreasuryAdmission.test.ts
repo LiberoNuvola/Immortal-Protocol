@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import {
   admitGenesisTreasury,
-  GENESIS_PRE_TREASURY_THRESHOLD_USDM,
+  GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS,
   type GenesisTreasuryObservation,
 } from './GenesisTreasuryAdmission'
 
@@ -17,7 +17,7 @@ function observation(overrides: Partial<GenesisTreasuryObservation> = {}): Genes
     prePolicyId: POLICY,
     preAssetNameHex: NAME,
     preQuantity: 4_000n,
-    verifiedPreUsdmPrice: 1n,
+    verifiedPreUsdmPrice: 100n,
     oraclePrecision: 1n,
     oracleStateReference: 'oracle#0',
     oraclePublisher: 'publisher',
@@ -40,7 +40,7 @@ assert.equal(
 )
 assert.equal(
   admitGenesisTreasury(
-    observation({ preQuantity: GENESIS_PRE_TREASURY_THRESHOLD_USDM + 1n }),
+    observation({ preQuantity: GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS / 100n + 1n }),
     TREASURY, POLICY, NAME,
   ).admitted,
   true,
@@ -67,7 +67,7 @@ assert.equal(
 )
 assert.equal(
   admitGenesisTreasury(
-    observation({ preQuantity: 3_999n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
+    observation({ preQuantity: 4_000n, verifiedPreUsdmPrice: 1_000_001n, oraclePrecision: 1_000_000n }),
     TREASURY, POLICY, NAME,
   ).admitted,
   true,
