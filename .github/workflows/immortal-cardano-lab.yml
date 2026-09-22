@@ -80,6 +80,7 @@ jobs:
           sudo ldconfig
           pkg-config --modversion libblst
 
+      # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
 
