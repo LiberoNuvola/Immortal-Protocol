@@ -2924,3 +2924,20 @@ The Pool-only diagnostic previously had a binary classifier and re-threw any res
 Commit: `139e4f3ff9bcc7fa0402c0f5cb21a45d66d85444`.
 
 **Status:** diagnostic tooling GREEN; fresh real-Reveal evidence still required.
+
+## 2026-09-22 — Genesis admission seam reconciled with existing Plutus boundary
+
+Triangulation found that the repository already contained `PRE-RICH/profile/PreRichGenesisAdmission.hs` and already exposed it from `pre-rich-plutus.cabal`. This is the canonical application-side admission seam; creating a parallel TS-only authority would have duplicated the boundary.
+
+The existing Haskell helper was corrected to the canonical economic unit:
+- `1 USDM = 100` sub-units;
+- Genesis predicate threshold = `4000 * 100 = 400000` USDM sub-units;
+- `genesisTreasuryValueUsdm` therefore returns USDM sub-units and compares against the same unit.
+
+Added `plutus/test/GenesisAdmissionTest.hs` and registered `genesis-admission-tests` in the Cabal package. The suite covers exact threshold, below threshold, stale Oracle, wrong Treasury evidence and wrong source regime.
+
+This supersedes the risk of treating the newer TypeScript admission seam as a second authority. The TS seam remains an application/off-chain mirror for the stress/evidence tooling; the Plutus admission contract is the authoritative candidate for on-chain integration.
+
+Commits: `f54d6da755bdd14941456692755aef36ab278e90`, `63e4bb6663a4d24aabafc95a2a9e2a263b6afe58`, `0d2d72ea5b228283b0a65099a148f8176c571f7f`.
+
+**Status:** existing Plutus admission seam reconciled and unit-correct / test suite added / actual Cabal+Plutus CI execution still required / concrete PRE-GENESIS state carrier and atomic transition remain OPEN.
