@@ -3274,3 +3274,15 @@ No Genesis threshold, Oracle source, stability period, PrizePool accounting rule
 The Genesis export surface was re-inspected after wiring the ledger lab. A generated edit had left literal `\\n` escape text in `plutus/export/Export.hs` between the carrier and mint-policy export calls. This was corrected in commit `b8e574aae9b1e84760823905a7807fde80246fb8`.
 
 No validator or economic logic changed. The next Genesis workflow run is the first meaningful compile/export + Yaci execution check for the new evidence path.
+
+
+## 2026-09-22 — Genesis Yaci trace review: closure boundary sharpened
+
+Reviewed the newly wired `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts` and its CI workflow. The trace is materially stronger than the previous pure/profile evidence: it constructs actual Treasury and Oracle reference UTxOs, mints the application carrier through the one-shot policy, executes `ActivateGenesis` against the fresh exported Plutus validator on Yaci, observes the resulting GENESIS carrier UTxO, and re-submits the consumed transaction for replay rejection.
+
+Two evidence limits are retained deliberately:
+
+1. The Treasury datum in the fixture is structurally valid but intentionally synthetic. The carrier validator currently decodes it and derives PRE quantity from actual Value; it does not yet prove production Treasury migration semantics. Therefore this is **validator realization evidence**, not production Treasury-authority evidence.
+2. The current trace does not create an actual B1PrizePool fixture and compare its pre/post accounting state. The validator explicitly rejects PrizePool script inputs/outputs, so the atomic transition cannot directly mutate such a pool through the carrier transaction, but the requested end-to-end accounting delta evidence remains OPEN until a concrete pool fixture or equivalent ledger-state witness is included.
+
+No economic rule was changed. Status remains: **real Yaci transition = execution pending; replay boundary wired; production Treasury semantic binding OPEN; explicit PrizePool accounting-delta evidence OPEN.**
