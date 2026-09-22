@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+// Structural-only proof stub. This deliberately does NOT verify Materios
+// committee derivation and must never be used as production trust.
+const acceptingStructuralTestProofVerifier = {
+  verify() {
+    return true;
+  }
+};
+
 import {
   trustedAuthorityStateFromVerifiedTransition,
   validateAuthorityState
@@ -376,7 +384,7 @@ describe("authority transition boundary", () => {
     const verified = await verifyAuthoritySetTransition(
       statement,
       {
-        verify: () => true
+        verify: acceptingStructuralTestProofVerifier.verify
       }
     );
 
@@ -464,9 +472,7 @@ describe("authority transition boundary", () => {
     const verified = await verifyAuthoritySetTransition(
       statement,
       {
-        verify() {
-          return true;
-        }
+        verify: acceptingStructuralTestProofVerifier.verify
       }
     );
 
