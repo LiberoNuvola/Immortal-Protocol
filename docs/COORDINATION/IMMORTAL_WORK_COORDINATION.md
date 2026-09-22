@@ -3121,3 +3121,14 @@ Required final shape:
 The existing predicate remains authoritative for the frozen economic condition; no threshold, price, oracle source or universal-kernel rule was changed. The boolean evidence fields must not become caller-supplied proof in the final validator.
 
 **FRONT A status:** `CLOSING / ARCHITECTURE GAP` — next implementation task is the authenticated observation layer plus singleton carrier validator; operational GREEN still requires real ledger evidence.
+
+
+## 2026-09-22 — Genesis canonical-state identity search closed as evidence gap
+
+A targeted current-branch search was completed for a pre-existing PRE-GENESIS/GENESIS canonical state identity: regime singleton policy/name, state token, dedicated datum/action/validator, registry binding, or deployment configuration. Existing Oracle and B1 PrizePool singleton patterns were found, but no Genesis-specific identity is defined on the working branch.
+
+Notion T2/P0 confirms the required semantics — canonical state consumption, stale/conflicting rejection, permissionless invocation and atomic transition — but does not supply a Cardano asset identity. Therefore no identity is inferred from the Pool NFT, Oracle singleton, Treasury address, or historical Snek deployment.
+
+The implementation boundary is now explicit: **Genesis Cardano singleton identity remains OPEN**, and the next implementation step must come from an authoritative deployment/decision source or an explicit application decision. No new economic parameter was introduced.
+
+Supporting gap-map update: commit `82e54f657dcb04a20d707e44f1d576660bd9faa9`.
