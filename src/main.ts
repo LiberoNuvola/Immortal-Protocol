@@ -119,16 +119,9 @@ connectBtn?.addEventListener('click', async () => {
 })
 
 document.getElementById('claim')?.addEventListener('click', async () => {
-  try {
-    await claim.claimPrize(
-      'addr_test1_scriptplaceholder',
-      'policyplaceholder',
-      'ticketname',
-      (m) => status(m)
-    )
-  } catch (err: any) {
-    status('Claim error: ' + (err.message || err))
-  }
+  // The UI has no authoritative Economic Gate producer yet. Fail closed
+  // rather than manufacturing a witness just to satisfy the runtime boundary.
+  status('Claim unavailable: authoritative Economic Gate admission is required.')
 })
 
 document.getElementById('buy')?.addEventListener('click', async () => {
