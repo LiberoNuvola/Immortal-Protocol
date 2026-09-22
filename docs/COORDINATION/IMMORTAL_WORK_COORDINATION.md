@@ -3267,3 +3267,10 @@ The fixture uses explicit test-only asset identities and hashes. It proves the *
 No Genesis threshold, Oracle source, stability period, PrizePool accounting rule, or IMMORTAL economic formula was changed.
 
 **Status:** singleton policy = IMPLEMENTED; emulator singleton evidence = WIRED; real Yaci transition evidence = WIRED / EXECUTION PENDING; production Treasury semantic binding = OPEN.
+
+
+## 2026-09-22 — Genesis evidence pipeline syntax repair
+
+The Genesis export surface was re-inspected after wiring the ledger lab. A generated edit had left literal `\\n` escape text in `plutus/export/Export.hs` between the carrier and mint-policy export calls. This was corrected in commit `b8e574aae9b1e84760823905a7807fde80246fb8`.
+
+No validator or economic logic changed. The next Genesis workflow run is the first meaningful compile/export + Yaci execution check for the new evidence path.
