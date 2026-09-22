@@ -51,8 +51,6 @@ data GenesisRegimeAction
 
 PlutusTx.unstableMakeIsData ''GenesisRegimeAction
 
-PlutusTx.unstableMakeIsData ''GenesisRegimeAction
-
 preGenesisTag :: Integer
 preGenesisTag = 0
 
