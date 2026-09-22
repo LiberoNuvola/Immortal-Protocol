@@ -16,6 +16,7 @@ import {
   Data,
   Lucid,
   Blockfrost,
+  getAddressDetails,
   type Script,
   type UTxO,
 } from 'lucid-cardano'
@@ -165,7 +166,7 @@ const lucid = new Lucid(
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
-const details = lucid.utils.getAddressDetails(address)
+const details = getAddressDetails(address)
 const keyHash = details.paymentCredential?.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
