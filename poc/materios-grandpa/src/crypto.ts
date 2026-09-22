@@ -1,4 +1,8 @@
 import * as ed25519 from "@noble/ed25519";
+import { sha512 } from "@noble/hashes/sha2.js";
+
+// @noble/ed25519 v3 keeps the synchronous SHA-512 provider explicit.
+ed25519.hashes.sha512 = sha512;
 
 export const ED25519_PUBLIC_KEY_LENGTH = 32;
 export const ED25519_SIGNATURE_LENGTH = 64;
