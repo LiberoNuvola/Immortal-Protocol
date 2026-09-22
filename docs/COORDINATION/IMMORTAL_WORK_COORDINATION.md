@@ -3286,3 +3286,11 @@ Two evidence limits are retained deliberately:
 2. The current trace does not create an actual B1PrizePool fixture and compare its pre/post accounting state. The validator explicitly rejects PrizePool script inputs/outputs, so the atomic transition cannot directly mutate such a pool through the carrier transaction, but the requested end-to-end accounting delta evidence remains OPEN until a concrete pool fixture or equivalent ledger-state witness is included.
 
 No economic rule was changed. Status remains: **real Yaci transition = execution pending; replay boundary wired; production Treasury semantic binding OPEN; explicit PrizePool accounting-delta evidence OPEN.**
+
+## 2026-09-22 — Genesis Treasury admission malformed-input coverage extended
+
+The existing application-level Genesis Treasury admission fixture already covered below/exact/above threshold, stale/unverified valuation, wrong Treasury, wrong asset, wrong publisher and wrong source regime. It now also explicitly covers negative PRE quantity, negative verified price, and invalid negative oracle precision.
+
+Commit: `6845537105d5d6088ad2bbb612c030b6a96d4412`
+
+No Genesis predicate, threshold, Oracle semantics or accounting rule changed. This only closes malformed-input evidence at the off-chain admission mirror; Plutus/ledger evidence remains separate.
