@@ -984,73 +984,79 @@ async function main() {
 
   /*
    * --------------------------------------------------------------
-   * 11. DIAGNOSTIC: POOL-ONLY VALUE PATH ISOLATION
+   * 11. OPTIONAL DIAGNOSTIC: POOL-ONLY VALUE PATH ISOLATION
    * --------------------------------------------------------------
    *
-   * Keep the entire build/sign/submit sequence inside the diagnostic catch:
-   * Lucid may evaluate scripts during .complete(), before submit().
+   * Enable explicitly with P2_8_B1_POOL_VALUE_PROBE=1. The probe spends the
+   * real Pool UTxO and deliberately omits the Prize output. Under a generous
+   * emulator budget, reaching the ordinary "no prize output" failure proves
+   * the Value path evaluated; NonConstrScrutinized isolates the evaluator
+   * failure to singletonPoolTokenValid/valueOf. The transaction is never
+   * accepted, so it does not mutate emulator state.
    */
-  try {
-    const poolValueProbeTx =
-      await lucid
-        .newTx()
-        .collectFrom(
-          [poolUtxos[0]],
-          Data.to(
-            constr(
-              2,
-              [BigInt(priceUsdm)],
+  if (process.env.P2_8_B1_POOL_VALUE_PROBE === "1") {
+    try {
+      const poolValueProbeTx =
+        await lucid
+          .newTx()
+          .collectFrom(
+            [poolUtxos[0]],
+            Data.to(
+              constr(
+                2,
+                [BigInt(priceUsdm)],
+              ),
             ),
-          ),
-        )
-        .readFrom([poolReferenceInput])
-        .payToContract(
-          poolAddress,
-          { inline: Data.to(prePoolDatum) },
-          poolUtxos[0].assets,
-        )
-        .addSigner(walletAddress)
-        .validTo(4_000_000_000_000)
-        .complete();
+          )
+          .readFrom([poolReferenceInput])
+          .payToContract(
+            poolAddress,
+            { inline: Data.to(prePoolDatum) },
+            poolUtxos[0].assets,
+          )
+          .addSigner(walletAddress)
+          .validTo(4_000_000_000_000)
+          .complete();
 
-    const poolValueProbeSigned =
-      await poolValueProbeTx.sign().complete();
+      const poolValueProbeSigned =
+        await poolValueProbeTx.sign().complete();
 
-    await poolValueProbeSigned.submit();
+      await poolValueProbeSigned.submit();
 
-    throw new Error(
-      "P2.8-B.1 Pool-only Value probe unexpectedly succeeded",
-    );
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : String(error);
+      throw new Error(
+        "P2.8-B.1 Pool-only Value probe unexpectedly succeeded",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
 
-    const evaluatorFailure =
-      /attempted to case a non-const|NonConstrScrutinized|non-const/i.test(
+      const evaluatorFailure =
+        /attempted to case a non-const|NonConstrScrutinized|non-const/i.test(
+          message,
+        );
+
+      console.log(
+        "P2.8-B.1 POOL_VALUE_PROBE",
+        evaluatorFailure
+          ? "EVALUATOR_VALUE_FAILURE"
+          : "SEMANTIC_VALIDATOR_FAILURE",
+      );
+
+      console.log(
+        "P2.8-B.1 POOL_VALUE_PROBE_ERROR",
         message,
       );
 
-    console.log(
-      "P2.8-B.1 POOL_VALUE_PROBE",
-      evaluatorFailure
-        ? "EVALUATOR_VALUE_FAILURE"
-        : "SEMANTIC_VALIDATOR_FAILURE",
-    );
-
-    console.log(
-      "P2.8-B.1 POOL_VALUE_PROBE_ERROR",
-      message,
-    );
-
-    if (evaluatorFailure) {
-      console.log(
-        "P2.8-B.1 ISOLATION",
-        "B1PrizePool singletonPoolTokenValid/valueOf path reaches evaluator failure before action semantics",
-      );
-    } else if (!/no prize output/i.test(message)) {
-      throw error;
+      if (evaluatorFailure) {
+        console.log(
+          "P2.8-B.1 ISOLATION",
+          "B1PrizePool singletonPoolTokenValid/valueOf path reaches evaluator failure before action semantics",
+        );
+      } else if (!/no prize output/i.test(message)) {
+        throw error;
+      }
     }
   }
 
