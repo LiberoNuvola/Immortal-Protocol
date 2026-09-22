@@ -2582,3 +2582,16 @@ Root cause identified by comparison with the repository's active transaction con
 Commit: `608d302b0b335e526dc4492bf219b181a17d3059`
 
 Interpretation: the new CI has already converted the former blind spot into an actionable, reproducible fixture failure. Validator acceptance and transaction-size evidence remain OPEN; next run must get past datum encoding before those can be measured.
+
+
+## 2026-09-22 — P2.8-B.1 first CI failure: redeemer encoding isolated and corrected
+
+The newly activated emulator gate immediately exposed the previously reported encoding blind spot. The first failing run did not reach validator execution: Lucid failed during `Tx.complete()` with `encoding/hex: invalid byte: [`, at the Reveal transaction construction.
+
+Diagnosis: the setup transaction already used `Data.to` for inline datums, while the Reveal `collectFrom` redeemers were still passed as raw `Constr` values. Lucid 0.10.11 expects the serialized datum/redeemer representation at this boundary. Both Reveal redeemers are now explicitly wrapped with `Data.to(...)`.
+
+This is a test-harness encoding correction, not a validator/economic weakening. The CI gate is deliberately retained so the next run proves whether execution reaches the actual validators and, if so, exposes the next real boundary (including resource footprint).
+
+Commit: 2679a1969dd76f072ee32e2347ad71bcce6f0b13f0
+
+**Status:** encoding failure localized and fixed; fresh-head emulator execution pending.
