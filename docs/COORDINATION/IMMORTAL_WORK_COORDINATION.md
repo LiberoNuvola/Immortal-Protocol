@@ -2112,3 +2112,54 @@ The prior Kernel run `35750803649` was cancelled while the Cardano lab failure w
 The cost-model diagnostic was present on commit `5686d72218a4f44017247e1b86359bec0e78aefe`, but the following coordination-only commit did not match the lab workflow path filters. To obtain a current-head lab attempt without changing semantics, commit `1523f9bf4ba070bed29baee8104467eaf3035077` adds only a workflow comment under `.github/workflows/immortal-cardano-lab.yml`, thereby re-triggering the existing push path while preserving the diagnostic and real Reveal path.
 
 No economic, validator, adapter, or evidence semantics changed. The next result must be classified from the actual job logs before any further correction.
+
+## 2026-09-22 — CURRENT SESSION RE-OBSERVATION / COST-MODEL PROBE RUNNING
+
+**Fronts:** Cardano C3/C4/RF10/RF11 + Kernel + Materios B3
+
+The live branch was re-observed directly rather than relying on the older coordination snapshot.
+
+### Current closure HEAD
+- `3ddb925fa4cc7e0daabb0e18714f095faf1fd93d`
+- commit: `ci: probe current Yaci cost models with Lucid Evolution`
+
+### Current CI
+- Cardano Adapter Sale Conformance: **SUCCESS** — run `35757501583`.
+- IMMORTAL Cardano Integration Lab: **IN PROGRESS** — run `35757501613`, job `106847179614`.
+  - fresh Plutus artifact generation is currently running;
+  - all bootstrap/native-dependency steps through native dependencies have passed;
+  - Evolution cost-model probe, real Reveal and real EXPIRE have not yet executed.
+- Kernel Invalid-Class Fail-Closed Audit: **IN PROGRESS** — run `35757501610`, job `106847289481`.
+  - Haskell/native dependency setup passed;
+  - the real Kernel regression suite is now executing.
+- Do not promote any green status from these two running jobs until their actual conclusions/evidence are observed.
+
+### Cardano diagnostic boundary
+The current lab preserves the real Reveal path and adds the non-semantic Evolution cost-model probe immediately before Reveal. The probe is diagnostic: it must establish the Yaci protocol-model shape before any decision about migrating away from legacy `lucid-cardano`.
+
+Do **not**:
+- append dummy cost-model entries;
+- alter protocol parameters;
+- bypass validator evaluation;
+- weaken economic invariants;
+- blindly migrate the real trace before the probe result is known.
+
+If the probe confirms the expected incompatibility, the next change must be the smallest compatibility correction that preserves the real ledger path.
+
+### Materios — active parallel front
+The Materios GRANDPA boundary remains intentionally incomplete at the cryptographic authority-transition layer:
+- `verifyFinality` verifies trusted authority binding, Ed25519 signatures, GRANDPA quorum and optional ancestry structure;
+- trusted authority state can only be produced from the branded `VerifiedAuthoritySetTransition`;
+- `AuthoritySetTransitionProofVerifier` is the explicit untrusted→verified boundary;
+- the repository deliberately does **not** yet implement the real Materios authority-selection/finality proof verifier;
+- the existing integration test uses an explicit `verify(){ return true; }` test double and therefore is **not** real Materios proof evidence.
+
+Therefore:
+- B3-C structural finality conformance remains GREEN only at its bounded structural/synthetic-vector level;
+- real Materios authority/finality provenance remains OPEN;
+- no synthetic proof verifier may be promoted to production evidence.
+
+### Coordination rule
+While the Cardano and Kernel jobs above are running, do not create overlapping corrective commits. Continue independent work only on fronts not touching the active CI artifacts; classify any failure from the exact current-head logs before editing.
+
+**Status:** CURRENT HEAD VERIFIED / CARDANO + KERNEL EVIDENCE RUNNING / MATERIOS AUTHORITY PROOF OPEN.
