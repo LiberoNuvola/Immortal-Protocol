@@ -533,7 +533,7 @@ async function main() {
       plutusV2CostModelLength: emulatorParams.costModels?.PlutusV2
         ? Object.keys(emulatorParams.costModels.PlutusV2).length
         : 0,
-    }),
+    }, (_, value) => typeof value === "bigint" ? value.toString() : value),
   );
 
   lucid.selectWalletFromSeed(seed);
