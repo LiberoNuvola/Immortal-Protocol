@@ -1890,3 +1890,22 @@ Current closure HEAD: `1f3f7f7e343b205a790aecb0714e4ecac90c3ae3`.
 Current lab run: `35688090382`, queued at last observation.
 
 **Status:** fresh C3/C4 ledger run required; no green claim until Reveal + EXPIRE + evidence upload succeed.
+---
+## 65. 2026-09-22 — B4 protected-capital omission hardened fail-closed
+
+**Front:** B4 / Cardano observation projection
+
+PreRichCardanoObservationProjection.ProjectionInput now requires explicit:
+- safetyCapital;
+- reserveProtection;
+- mandatoryFutureCosts.
+
+The previous optional fields silently defaulted each missing component to zero. That behavior could erase protected-capital provenance at the observation boundary. The correction removes those defaults and makes omission a type-level/runtime construction failure.
+
+No protected-capital formula changed. The legacy B1 projection remains intentionally lossy and fail-closed where B1 cannot represent V3 protected state.
+
+**Commit:** `6180eff476263cb180618674871956bc48e6ddc4`
+
+Sale Conformance already passed on that lineage, confirming existing explicit consumers supply the required values.
+
+**Status:** B4 observation omission boundary hardened; full real Cardano provenance remains OPEN.
