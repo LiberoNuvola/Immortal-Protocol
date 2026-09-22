@@ -32,6 +32,16 @@ main = do
     (not (delegationValid snap [Delegation 1 2, Delegation 2 1]))
   assert "late vote rejected"
     (not (voteWindowOpen pp (4 + communityReviewSeconds + votingSeconds)))
+  let ungated = pp { proposalGates = GateResult False False False False }
+  assert "acceptance requires gates" 
+    (case applyEvent (s3 { proposals = [ungated] }) (StatusChanged 1 Accepted 10) of
+       Left _ -> True
+       Right _ -> False)
+  let Right s4 = applyEvent s3 (StatusChanged 1 DecisionRecorded (4 + communityReviewSeconds + votingSeconds))
+  let Right s5 = applyEvent s4 (StatusChanged 1 Accepted (4 + communityReviewSeconds + votingSeconds + 1))
+  let Right s6 = applyEvent s5 (StatusChanged 1 Adopted (4 + communityReviewSeconds + votingSeconds + 2))
+  assert "adoption follows accepted state"
+    (proposalStatus (head (proposals s6)) == Adopted)
   let emergency = pp { emergencyActivatedAt = Just 100 }
   assert "72h emergency expires"
     (emergencyExpired emergency (100 + emergencySeconds))
