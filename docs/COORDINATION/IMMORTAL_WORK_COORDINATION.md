@@ -3206,3 +3206,14 @@ This closes the **policy-design** portion of the singleton-authority gap without
 Detailed design/evidence note: `docs/COORDINATION/GENESIS-CARRIER-SINGLETON-AUTHORITY-v0.1.md`.
 
 **Status:** singleton authority DESIGN IMPLEMENTED / DEPLOYMENT + LEDGER EVIDENCE OPEN.
+
+
+## 2026-09-22 — Genesis carrier CI trigger coverage hardened
+
+Review of `.github/workflows/genesis-regime-carrier.yml` found an evidence-pipeline blind spot: the push trigger already watched `PRE-RICH/profile/GenesisCarrierMintPolicy.hs`, but the pull-request trigger did not. A PR changing the singleton authority policy could therefore bypass the Genesis carrier conformance workflow until a later push path matched.
+
+Fixed by adding `PRE-RICH/profile/GenesisCarrierMintPolicy.hs` to the PR path filter. No validator, singleton semantics, Genesis predicate, economic parameter, or deployment identity changed.
+
+Commit: `8b1026085027e9f049dbbd76d9a502640e0ae0d2`.
+
+**Status:** CI trigger coverage CLOSED for the reviewed carrier/mint-policy paths; actual compile/test/export and ledger transition evidence remain separate closure requirements.
