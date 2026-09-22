@@ -2359,3 +2359,20 @@ This remains a research/test-model result, not a constitutional closure. The nex
 ## 2026-09-22 — Live branch synchronization check
 
 Direct branch inspection confirms `work/immortal-green-closure` currently points to `683fbd8f3871dbbd7542efc7fe6b915856e71c8e` (`docs: record runtime economic bypass audit`). The coordination snapshot's older `a4e9ec8...` marker is therefore stale and must not be used as current HEAD evidence. Runtime boundary findings recorded below remain current through the direct branch inspection; CI/evidence status must be refreshed from exact current-head runs before promotion.
+
+
+## 2026-09-22 — AG-01 canonical-governance schema audit
+
+**Front:** AG-01 / GOV-22 / canonical governance replay
+
+A deeper audit found a concrete schema-consistency gap that must be resolved before governance closure:
+
+1. `GOV-22-SPEC.md` requires every canonical event to bind a semantic payload plus timestamp and states that replay must consume canonical events as the sole semantic source.
+2. `GovernanceEventSchema.hs` defines payload variants `PayloadProposalClassified` and `PayloadGatesSet` without timestamps, while `eventSchemaValid` requires `payloadTimestamp payload == eventTimestamp`. For those variants `payloadTimestamp` is hard-coded to 0, so any classified/gate canonical event with a non-zero event timestamp is rejected.
+3. The existing canonical-event test does not exercise this boundary: its `EStatusChanged` example is structurally distinct from the classification/gates payloads and the authorization/replay path is not tested for a non-zero classified/gates timestamp.
+4. There are also two governance event representations in the working tree: `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` implement the GOV-22 semantic-payload path, while the older/parallel `CanonicalEvent.hs` defines a separate event model and lifecycle. This must be reconciled against the normative GOV-22/GOV-23 lineage before adding further semantics; no assumption is made here about which legacy module is authoritative.
+5. `GovernanceAuthorization.hs` already binds actor class, evidence and ruleset compatibility, but closure evidence must be tested against the canonical event path actually designated authoritative.
+
+No governance threshold, economic rule, constitutional rule or application policy was changed. This is an evidence/schema finding only.
+
+**Status:** AG-01 governance closure remains OPEN; next safe action is canonical-module lineage reconciliation and a minimal negative/positive test for non-zero classified/gate event timestamps, before any implementation change.
