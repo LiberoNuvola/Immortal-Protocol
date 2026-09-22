@@ -37,6 +37,7 @@ library
         PreRichEconomicProfile
         PreRichEconomicProjection
         PreRichEconomicAdmission
+        PreRichGenesisAdmission
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
