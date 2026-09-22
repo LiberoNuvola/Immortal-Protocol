@@ -48,6 +48,27 @@ event2 =
     []
     AcceptedEvent
 
+
+classifiedEvent :: CanonicalEvent
+classifiedEvent =
+  CanonicalEvent
+    "evt-classified" 1 1 EProposalClassified System 7
+    (PayloadProposalClassified 1 DocumentationOnly 7)
+    "payload-classified"
+    (Just "evt-1")
+    [EvidenceRef "classification-evidence"]
+    AcceptedEvent
+
+gatesEvent :: CanonicalEvent
+gatesEvent =
+  CanonicalEvent
+    "evt-gates" 1 1 EGatesSet Reviewer 9
+    (PayloadGatesSet 1 (GateResult True True True True) 9)
+    "payload-gates"
+    (Just "evt-classified")
+    [EvidenceRef "gate-evidence"]
+    AcceptedEvent
+
 main :: IO ()
 main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
