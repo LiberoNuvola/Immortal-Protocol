@@ -22,16 +22,20 @@ Application conformance is separate from IMMORTAL protocol conformance and Carda
 | crystallized payout immutability | CLOSED | GAP/PARTIAL | PARTIAL |
 | single claim / CLAIM ≠ BURN | CLOSED | GAP/PARTIAL | PARTIAL |
 | final expiry semantics | CLOSED | GAP/PARTIAL | PARTIAL |
-| exact expiry duration | OPEN | TARGET | MISSING |
+| exact expiry duration | CLOSED (policy boundary) | PARTIAL / DApp profile pending | MISSING |
 | ticket transferability / identity | CLOSED | GAP/PARTIAL | PARTIAL |
 | voluntary burn semantics | CLOSED | GAP/PARTIAL | PARTIAL |
 | Jackpot funding <= RawSurplus | CLOSED | GAP/PARTIAL | PARTIAL |
 | Jackpot payout <= LockedJackpotLiquidity | CLOSED | GAP/PARTIAL | PARTIAL |
-| Jackpot payout mode | OPEN | TARGET | MISSING |
+| Jackpot payout mode | CLOSED (PRE-RICH policy) | PARTIAL / conformance pending | MISSING |
 | non-discretionary Jackpot selection | CLOSED | GAP/PARTIAL | PARTIAL |
 | Jackpot reset / liability accounting | CLOSED | GAP/PARTIAL | PARTIAL |
 | settlement value preservation | CLOSED | GAP/PARTIAL | PARTIAL |
-| future Jackpot allocation if required | OPEN | TARGET | MISSING |
+| future Jackpot allocation if required | CLOSED (no fixed allocation rate) | PARTIAL / conformance pending | MISSING |
 | 75 / 10 / 10 / 5 allocation | HISTORICAL / NON-CANONICAL | HISTORICAL | VERIFIED as historical |
+
+### Policy-closure note
+
+The three rows above are intentionally separated from implementation/evidence status. Current PRE-RICH policy closure defines: expiry as a deterministic DApp/profile policy whose horizon is crystallized at issuance (not a canonical fixed 365-day value); Jackpot payout as full current locked-balance payout exactly once; and no fixed `JackpotAllocationRate`. Remaining implementation and ledger evidence gaps do not reopen those policy decisions.
 
 Implementation or evidence gaps do not reopen CLOSED semantics.
