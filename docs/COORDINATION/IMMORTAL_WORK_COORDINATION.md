@@ -1923,3 +1923,13 @@ Correction: replaced the empty-list equality check with null (v3Classes s). No e
 **Commit:** 1b792e809381322583ce984c7bfccc79cd032441
 
 **Status:** compile blocker corrected; fresh Kernel + Cardano Lab evidence pending.
+
+
+## 2026-09-22 — CI compile regressions corrected
+
+Fresh closure CI exposed two compile-only regressions before economic/integration evidence could run:
+
+- plutus/B1LegacyAdapter.hs: the prior `v3Classes s == []` fix was changed to `null`, but `null` is not in scope under the module's Plutus prelude. Replaced it with an explicit list-case emptiness test; no economic semantics changed.
+- IMMORTAL/governance/GovernanceCommitment.hs: Data.ByteString.Base16.encode yields ByteString/Word8, while the existing lowercase helper expects characters. Switched only the decoding step to Data.ByteString.Char8.unpack; canonical SHA-256 algorithm and comparison semantics are unchanged.
+
+These are build-boundary corrections only. Do not promote B4/B5/B6/C3/C4 based on them; rerun the relevant CI and continue to real-ledger evidence.
