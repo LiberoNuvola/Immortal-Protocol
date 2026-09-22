@@ -1,6 +1,9 @@
 // src/txHelpers.ts
 import { prizeValidator } from './loadValidator'
-import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import {
+  createCardanoExecutionAdapter,
+  type EconomicAdmissionWitness,
+} from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 
 /**
  * Helper leggero per costruire una claim tx.
@@ -37,6 +40,16 @@ export async function buildClaimTx(
 export async function signAndSubmitTx(lucid: any, tx: any) {
   const adapter = createCardanoExecutionAdapter(lucid)
   const result = await adapter.submit(tx)
+  return result.transactionRef
+}
+
+export async function signAndSubmitEconomicTx(
+  lucid: any,
+  tx: any,
+  admission: EconomicAdmissionWitness | undefined,
+) {
+  const adapter = createCardanoExecutionAdapter(lucid)
+  const result = await adapter.submitEconomic(tx, admission)
   return result.transactionRef
 }
 
