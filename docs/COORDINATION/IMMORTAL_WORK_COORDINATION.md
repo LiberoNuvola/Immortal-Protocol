@@ -2711,3 +2711,12 @@ where the exact predicate set is still an open conformance/specification boundar
 **Next deterministic action:** inspect the actual PRE-RICH transition implementation/tests for `PRE_GENESIS → GENESIS`, map every predicate currently enforced, then reconcile that implementation against T2 and the End-to-End map. If the implementation has no complete predicate, define the smallest contract from existing normative material before coding.
 
 **Status:** OPEN / TRIANGULATED — bootstrap condition known; complete activation predicate not yet frozen.
+
+
+## 2026-09-22 — SESSION RESULT — PRE-GENESIS → GENESIS boundary
+
+Notion T2/P0 and the current PRE-RICH Constitution were triangulated against the working branch. The semantic Genesis predicate remains the frozen verified PRE Treasury threshold `>= 4,000 USDM`; execution is permissionless and PRE-GENESIS remains a safe state if nobody submits. The key accounting clarification is now explicit: **Genesis bootstrap evidence/value is not automatically PrizePool liquidity** and must not be double-counted merely because the transition crosses into GENESIS.
+
+Added `PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md` with the transition contract, on-chain revalidation requirements, bootstrap non-double-counting invariant, SAFE STALL/liveness requirements, negative cases and closure evidence.
+
+**Status:** semantic boundary CLOSED; transition-level operational conformance CLOSING/OPEN. No economic parameter changed.
