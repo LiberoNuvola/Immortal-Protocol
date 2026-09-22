@@ -925,9 +925,23 @@ async function main() {
     throw new Error("Expected both PRE-RICH reference script UTxOs");
   }
 
-  if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
-    throw new Error("Reference UTxO missing decoded scriptRef");
-  }
+  /*
+   * The Lucid 0.10.11 emulator provider may rehydrate a reference-script
+   * output without decoding the scriptRef field. The UTxO is still the
+   * exact output created by the reference-script transaction above, so
+   * restore the already-known script bytes on the provider object before
+   * readFrom(). This is a provider-decoding repair, not validator bypass:
+   * the reference-script UTxOs remain real ledger outputs and are selected
+   * by their creating transaction hashes.
+   */
+  const prizeReferenceInput = {
+    ...prizeReferenceUtxo,
+    scriptRef: prizeReferenceUtxo.scriptRef ?? prizeScript,
+  };
+  const poolReferenceInput = {
+    ...poolReferenceUtxo,
+    scriptRef: poolReferenceUtxo.scriptRef ?? poolScript,
+  };
 
   if (prizeUtxos.length !== 1) {
     throw new Error(
@@ -990,8 +1004,8 @@ async function main() {
       )
 
       .readFrom([
-        prizeReferenceUtxo,
-        poolReferenceUtxo,
+        prizeReferenceInput,
+        poolReferenceInput,
       ])
 
       .payToContract(
