@@ -2098,3 +2098,10 @@ The exact error is independently observable in current external Cardano/Lucid re
 **Required next action:** isolate the cost-model version/length mismatch between the pinned `lucid-cardano@0.10.11` lab stack and the Yaci/Cardano protocol parameters, then make the smallest compatibility correction. Preserve the real-ledger path; do not bypass script evaluation or replace the validator with a mock. Re-run Reveal + EXPIRE before promoting C3/C4/RF10/RF11.
 
 **Status:** BLOCKED ON LAB TOOLCHAIN COMPATIBILITY / ECONOMIC SEMANTICS UNCHANGED.
+
+
+## 2026-09-22 — Cost-model diagnostic added
+
+After classifying the previous real-Reveal failure as a lab compatibility blocker, commit `5686d72218a4f44017247e1b86359bec0e78aefe` adds a non-semantic diagnostic immediately after provider initialization. The Reveal trace now records the protocol-parameter cost-model keys/array lengths before constructing the transaction. This is intentionally diagnostic only: no validator, economic rule, transaction path, or cost-model value is altered.
+
+The prior Kernel run `35750803649` was cancelled while the Cardano lab failure was being investigated; it is not a kernel failure signal. A fresh current-head kernel run is required before kernel status is promoted.
