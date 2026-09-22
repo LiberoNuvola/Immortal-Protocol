@@ -2431,3 +2431,22 @@ Commits:
 Current exact-head workflow results are not yet exposed for this head; no green CI claim is made.
 
 **Status:** schema boundary repaired; executable validation pending. AG-01 remains OPEN for broader lifecycle/finality/self-authorization evidence.
+
+
+## 2026-09-22 — GOV-22 canonical-only conformance test alignment
+
+The governance canonical-event test was stale relative to the current GOV-22 API: it still replayed `(CanonicalEvent, GovernanceEvent)` pairs and used a tautological determinism assertion.
+
+It now:
+- replays `[CanonicalEvent]` only through the current `replayCanonical` API;
+- supplies an explicit ruleset registry required by canonical authorization;
+- verifies predecessor rejection;
+- independently compares incremental replay with full-list replay;
+- adds positive schema coverage proving non-zero timestamps are bound for `ProposalClassified` and `GatesSet`.
+
+This is test/conformance alignment only. No governance thresholds, lifecycle policy, economic rule, or authority boundary changed.
+
+Commit:
+- `61c7fe46605e3ccdc8d6301957f77ca55c98a4a9`
+
+**Status:** GOV-22 implementation/test alignment advanced; full AG-01 closure remains OPEN pending canonical-module reconciliation and stronger authorization/gate/ruleset evidence.
