@@ -2976,3 +2976,27 @@ Notion evidence also confirms that Snek/Splash Gates 26–41 are a separate exte
 Commit: `59f1279e4a4c864e85d4950de45a7d268ebea2a6` (crosswalk).
 
 **Status:** NOTION MAP RECONCILED / GENESIS CARRIER GAP CONFIRMED / IMPLEMENTATION DESIGN NEXT.
+
+
+## 2026-09-22 — P2.8-B.1 evaluator provenance narrowed to embedded UPLC engine
+
+A direct dependency audit of the Lucid 0.10.11 emulator identified a concrete evaluator-version boundary:
+
+- Lucid 0.10.11's embedded Cardano Multiplatform Library declares the Rust `uplc` dependency from `aiken-lang/aiken` at exact revision `3d77b5c378ce404cddd9a1f111906d72fd46fc83`.
+- That Aiken commit is the 2024-09-20 release commit and identifies `uplc` as version 1.1.3.
+- Therefore the Lucid 0.10.11 Emulator is not evaluating with the current 2026 Plutus CEK implementation; it carries a frozen 2024 UPLC engine inside its CML WASM dependency.
+- The repository's PRE-RICH Plutus build uses Plutus 1.67-era libraries. Current Plutus release material documents that `PlutusLedgerApi.V1.Data.Value.valueOf` was rewritten in the 1.62 line to walk the underlying BuiltinList directly, and later Plutus releases added/changed Value-related UPLC machinery and conformance work.
+- The observed Lucid error `attempted to case a non-const` on `Value Con(ProtoPair(...))` is therefore consistent with a cross-generation UPLC evaluator/term-semantics mismatch, rather than evidence that the B1PrizePool economic logic is invalid.
+
+This is not yet a production repair and is not treated as proof that every Lucid 0.10.11 / Plutus 1.67 combination is incompatible. It is, however, a materially stronger root-cause hypothesis because the evaluator implementation is now identified exactly rather than inferred from the error text.
+
+### Required next proof
+
+1. Reproduce the same parameterized B1PrizePool artifact with an evaluator known to implement the corresponding Plutus language semantics/cost model (preferably the Plutus `uplc` tool or a current node-compatible evaluator).
+2. Run the existing Pool-only fixture against that evaluator using the same datum/redeemer/context.
+3. If the current evaluator succeeds or reaches the intended semantic `no prize output` failure, classify Lucid 0.10.11's embedded evaluator as the test-harness incompatibility and do not alter validator economics.
+4. If the current evaluator reproduces the same `NonConstrScrutinized` failure, inspect the compiled UPLC term itself before changing production code.
+
+No validator, economic parameter, invariant, or canonical workflow was changed by this investigation.
+
+**Status:** P2.8-B.1 ROOT-CAUSE HYPOTHESIS STRENGTHENED / EVALUATOR PROVENANCE IDENTIFIED / PRODUCTION REPAIR OPEN.
