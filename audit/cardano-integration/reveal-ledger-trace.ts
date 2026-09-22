@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, type Script, type UTxO } from 'lucid-cardano'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, nativeScriptFromJson, type Script, type UTxO } from 'lucid-cardano'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -59,7 +59,7 @@ type NativeScript = { type: 'sig'; keyHash: string } | {
 }
 
 function nativePolicy(lucid: any, keyHash: string): Script {
-  return lucid.utils.nativeScriptFromJson({
+  return nativeScriptFromJson({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as NativeScript)
