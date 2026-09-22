@@ -2878,3 +2878,21 @@ Commit: `ca5103e17aeffd02943f61874b54609b33962f35`.
 Fresh CI is running on this commit. The branch currently also contains the existing explicit high-budget diagnostic environment in the P2.8-B.1 workflow; any resulting evaluator classification remains diagnostic only and must not be promoted into canonical validator economics.
 
 **Status:** isolation probe IMPLEMENTED / fresh runtime evidence PENDING.
+
+
+## 2026-09-22 — P2.8-B.1 Pool-only probe: Value evaluator failure isolated
+
+Fresh high-budget CI on commit `5c5cedc903f7caa1df2cc0397b297c1614260449` executed the Pool-only diagnostic before the full Reveal. Result:
+
+- emulator ceilings: `maxTxExMem=100,000,000,000`, `maxTxExSteps=100,000,000,000`;
+- Pool-only spend reached the B1PrizePool validator;
+- failure was `Spend[0] attempted to case a non-const` on `Value Con(ProtoPair(...))`;
+- diagnostic classified it as `EVALUATOR_VALUE_FAILURE` before action semantics.
+
+This is materially stronger isolation than the full Reveal result: the Prize validator is not involved, the action branch does not need to be reached, and the failure occurs on the unconditional Pool path. The earliest relevant operation remains `singletonPoolTokenValid` → `valueOf` over transaction values.
+
+Canonical workflow was restored to default Cardano-like emulator execution limits, and the diagnostic Pool probe is now gated behind explicit `P2_8_B1_POOL_VALUE_PROBE=1`; no production validator/economic change was made.
+
+Commits: `42ae99229d8323f498f5759f0c5312e2de3a3b38` (diagnostic gate), `29dfce1dfbdfc419cc149a7b2c33fef22400d308` (canonical workflow limits).
+
+**Status:** P2.8-B.1 ROOT-CAUSE CLASS NARROWED — evaluator incompatibility/term semantics in B1PrizePool Value path; production repair still OPEN.
