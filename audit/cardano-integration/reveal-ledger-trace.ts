@@ -157,7 +157,7 @@ const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
 const testPolicy = nativePolicy(lucid, keyHash)
-const testPolicyId = lucid.utils.mintingPolicyToId(testPolicy)
+const testPolicyId = typeof lucid.utils.mintingPolicyToId === 'function' ? lucid.utils.mintingPolicyToId(testPolicy) : lucid.utils.validatorToScriptHash(testPolicy)
 const poolTokenNameHex = '504f4f4c'
 const liquidityTokenNameHex = '5553444d'
 const poolUnit = testPolicyId + poolTokenNameHex
