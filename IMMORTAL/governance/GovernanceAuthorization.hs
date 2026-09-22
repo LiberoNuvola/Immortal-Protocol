@@ -7,6 +7,7 @@ module GovernanceAuthorization
 
 import Governance
 import GovernanceEventSchema
+import qualified GovernanceEventSchema
 import RulesetRegistry
 
 authorizationValid :: CanonicalEvent -> Bool
@@ -29,7 +30,7 @@ evidenceValid e =
 
 rulesetAuthorizationValid :: RulesetRegistry -> CanonicalEvent -> Bool
 rulesetAuthorizationValid rs e =
-  rulesetCompatible (rulesetVersion e) (payloadCommitment e) rs
+  rulesetCompatible (GovernanceEventSchema.rulesetVersion e) (payloadCommitment e) rs
 
 canonicalGovernanceEventValid
   :: RulesetRegistry
