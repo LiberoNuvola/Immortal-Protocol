@@ -2663,3 +2663,18 @@ Do **not** infer that the `1B PRE` bootstrap, the `13 ADA` initial pool output, 
 
 **Status:** OPEN / NEW FRONT — semantic boundary not yet frozen.
 **Next deterministic action:** triangulate the Genesis activation/bootstrapping rules across current repository sources and the relevant Notion documents, then write the smallest canonical transition contract before implementation.
+
+
+## 2026-09-22 — SESSION RESULT — IMMORTAL Treasury/Protocol Revenue representation map
+
+**Front:** IMMORTAL Treasury & Protocol Revenue Boundary
+
+Direct current-branch inspection confirms that the repository currently contains a concrete PRE-RICH/Cardano Treasury mechanism, but not yet a typed universal `ProtocolUsageFee` / `ProtocolRevenue` boundary. The existing `src/treasuryPolicy.ts` percentage/threshold policy, `plutus/Treasury.hs` distribution validator, `TreasuryDatum`, and `TREASURY_ADDRESS` are classified as application/deployment realization and must not be promoted into IMMORTAL semantics.
+
+`src/mint.ts` does perform an atomic Treasury payment in the PRE-RICH sale transaction, while `EconomicKernel` remains the universal ProtectedCapital/RawSurplus accounting boundary. No Treasury balance is therefore being inferred as ProtectedCapital or RawSurplus merely because it is protocol-controlled.
+
+The dedicated front `docs/COORDINATION/FRONT-IMMORTAL-TREASURY-FEE.md` now records this representation map and the smallest safe conceptual boundary: `ProtocolRevenue → ProtocolControlledDestination → AccountingClassification → AdapterSettlement → Evidence`.
+
+**No normative economics changed. No fee amount or distribution percentage was introduced.**
+
+**Status:** REPRESENTATION MAP COMPLETE / NORMATIVE BOUNDARY OPEN.
