@@ -149,7 +149,7 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const lucid = new Lucid(new Blockfrost(API, ''), 'Preprod')
-lucid.selectWallet.fromSeed(SEED)
+lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
 const details = lucid.utils.getAddressDetails(address)
