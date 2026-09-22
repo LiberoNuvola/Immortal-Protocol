@@ -2081,3 +2081,20 @@ The current Reveal fixture explicitly supplies `SafetyCapital`, `ReserveProtecti
 **Next decisive sequence:** fresh Plutus artifacts → Yaci → real Reveal → real EXPIRE → replay rejection → resource/evidence packet. After that, continue B4/B5/B6 connectivity and C5/C6 evidence without reopening frozen economics.
 
 **Status:** COORDINATED / CURRENT-HEAD CI RUNNING / NO PREMATURE PROMOTION.
+
+
+## 2026-09-22 — Current-head Cardano Lab failure classified
+
+**Front:** C3/C4 / RF10/RF11 real Reveal evidence
+
+Fresh current-head lab run `35750803984` checked out `bf854b7f0ede956cedd3b6f52451df919b9e6111`, successfully generated and bound fresh Plutus artifacts, bootstrapped Yaci, and completed the ledger smoke transaction. The first real Reveal trace then failed before submission with:
+
+`CostModel operation 166 out of bounds. Max is 166`
+
+The failure occurs inside the Lucid/serialization-layer transaction evaluation invoked while completing the Reveal transaction, not in the Cardano validator's economic predicate. EXPIRE and downstream evidence steps were therefore skipped. The run is **not evidence of an economic invariant failure**, and it does not promote or invalidate B4/B5/B6; it is a runtime/toolchain compatibility blocker in the current lab harness.
+
+The exact error is independently observable in current external Cardano/Lucid reports as well, so it should not be “fixed” by weakening validator economics. citeturn0search0
+
+**Required next action:** isolate the cost-model version/length mismatch between the pinned `lucid-cardano@0.10.11` lab stack and the Yaci/Cardano protocol parameters, then make the smallest compatibility correction. Preserve the real-ledger path; do not bypass script evaluation or replace the validator with a mock. Re-run Reveal + EXPIRE before promoting C3/C4/RF10/RF11.
+
+**Status:** BLOCKED ON LAB TOOLCHAIN COMPATIBILITY / ECONOMIC SEMANTICS UNCHANGED.
