@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-22  
-**Latest observed commit:** `b172ad118d9d22d980ce23a4d2d6bba26b272d15` — canonical payload/vector conformance line
+**Latest observed commit:** `1f3f7f7e343b205a790aecb0714e4ecac90c3ae3` — current coordinated closure line
 
 ---
 
@@ -1876,3 +1876,17 @@ Latest B3-C CI evidence:
 - result completed / success
 
 **Status:** B3 canonical payload + structural finality conformance GREEN; real Materios authority/finality provenance remains OPEN by design.
+
+---
+## 64. 2026-09-22 — Current closure-line Cardano lab trigger
+
+**Front:** C3/C4/RF10/RF11 / real Cardano observation
+
+The integration lab had remained on an older pre-hardening commit while later source changes were being cancelled/replaced by concurrency. A workflow-only no-op comment was added immediately before fresh Plutus artifact generation so the lab is guaranteed to trigger from the current closure line and bind fresh validator artifacts to that exact checkout.
+
+This is infrastructure-only; no protocol semantics changed.
+
+Current closure HEAD: `1f3f7f7e343b205a790aecb0714e4ecac90c3ae3`.
+Current lab run: `35688090382`, queued at last observation.
+
+**Status:** fresh C3/C4 ledger run required; no green claim until Reveal + EXPIRE + evidence upload succeed.
