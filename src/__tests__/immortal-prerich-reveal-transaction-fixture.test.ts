@@ -347,6 +347,9 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
 
     assert.throws(() =>
       projectCardanoToImmortalV3({
+        safetyCapital: 0n,
+        reserveProtection: 0n,
+        mandatoryFutureCosts: 0n,
         pool: {
           pendingLiabilitiesUsdm: postPool.pendingLiabilitiesUsdm,
           unresolvedReserveUsdm: 500n,
