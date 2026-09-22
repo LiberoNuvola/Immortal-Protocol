@@ -1700,3 +1700,32 @@ The parallel session has already advanced beyond the individual corrections abov
 4. Continue B4/B5/B6 equivalence work without reopening closed economics.
 
 **Status:** coordinated; local build blockers repaired; real-ledger evidence remains the decisive open gate.
+
+---
+## 57. 2026-09-22 — Current Lucid harness correction / fresh ledger re-observation
+
+**Front:** Cardano Lab harness / C3-C4
+
+The current working tree was re-verified after concurrent branch advancement.
+
+### Concrete CI diagnosis
+
+The Integration Lab on the earlier current-line attempt reached the real Yaci bootstrap and ledger smoke successfully, then stopped in the Reveal trace on:
+`TypeError: lucid.selectWallet.fromSeed is not a function`.
+
+This is an off-chain harness/API mismatch, not a validator/economic failure.
+
+Lucid `0.10.11` is the repository's declared legacy dependency. The trace paths have been normalized to the legacy `selectWalletFromSeed(seed)` API on the working tree. The same correction is present in both Reveal and EXPIRE traces.
+
+### Current trace invariants retained
+
+- Reveal and EXPIRE still use the Cardano Execution Adapter for the first economically material submission.
+- CanonicalTransitionEvidence remains the binding evidence layer.
+- EXPIRE remains permissionless, consumes the Pending PrizeDatum, produces no continuing PrizeDatum, releases exactly one reserve/count unit, and does not burn the ticket NFT.
+- No IMMORTAL universal economic formula or closed PRE-RICH parameter changed.
+
+### Re-observation status
+
+A fresh CI-triggering checkpoint is being created on the current branch because the previous Lab attempt predates the final wallet API correction. No green claim is made until the resulting Integration Lab executes Reveal and, subsequently, EXPIRE.
+
+**Status:** harness correction complete; fresh real-ledger evidence required.
