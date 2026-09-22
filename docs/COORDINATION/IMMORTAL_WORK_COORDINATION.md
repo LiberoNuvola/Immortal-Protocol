@@ -2318,3 +2318,23 @@ Findings:
 Conclusion: the runtime economic choke-point is structurally intact after the correction. The remaining B5 gap is **authoritative witness production/provenance**, not an observed adapter bypass.
 
 **Status:** runtime boundary GREEN; authoritative producer/evidence OPEN.
+
+
+## 2026-09-22 — AG-01 governance state-machine audit
+
+**Front:** AG-01 Algorithmic Governability / governance execution boundary
+
+A direct current-branch audit of `IMMORTAL/governance/Governance.hs` was performed against the AG-01 obligations. The constitutional principle is preserved: the algorithm must compute candidates within an authorized ruleset; it must not mint authority or silently convert a candidate into canonical state.
+
+The current governance module already provides deterministic primitives for snapshots, quorum, approval thresholds, delegation conservation, lifecycle transitions, ruleset/gate integration points and replay. The audit also identifies the remaining closure boundary without changing governance semantics:
+
+- `applyEvent` currently validates structural event admissibility, but the module does not by itself establish that every lifecycle advancement was preceded by the corresponding review/voting/finality/gate conditions.
+- `GatesSet` is structurally restricted to EvidenceReview/CommunityReview, but promotion from DecisionRecorded to Accepted/Adopted/Canonical is not independently proven by this module to require the relevant gate/quorum/approval evidence.
+- `ProposalClassified` records classification as a state transition, but canonical event provenance/timestamp binding and independent replay commitments remain outside this module's current evidence surface.
+- `replay` demonstrates deterministic state reconstruction from an accepted event stream; it is not yet cryptographic canonical-event evidence.
+
+Therefore AG-01 remains OPEN. No authority rule, threshold, economic constant, application policy or constitutional semantics were changed.
+
+**Next safe target:** add conformance tests at the governance boundary for negative self-authorization, gate-before-adoption, stale/incompatible ruleset rejection, distinct amendment lifecycle, deterministic replay and application-policy isolation. Any implementation change must preserve the existing normative hierarchy and must not turn the algorithm into an authorization source.
+
+**Status:** governance structural substrate GREEN; executable AG-01 closure evidence OPEN.
