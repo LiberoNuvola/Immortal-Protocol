@@ -2539,3 +2539,20 @@ Commits:
 - 9040bce4b8b0606b98147516eb9a701dadedfe44
 
 **Status:** AG-01 lifecycle gate enforcement implemented; independent replay/finality and full build validation remain open.
+
+
+## 2026-09-22 — P2.8-B.1 emulator execution promoted to CI
+
+Audit finding confirmed: the real PRE-RICH emulator fixture `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs` existed on the closure branch but none of the existing workflow definitions referenced it.
+
+Action:
+- added `.github/workflows/pre-rich-cardano-emulator-reveal.yml`;
+- runs on pushes to `work/immortal-green-closure` and pull requests;
+- installs the pinned lockfile dependencies with `npm ci`;
+- executes the actual emulator-backed Reveal fixture with the repository's Plutus artifacts.
+
+This does **not** mark the ledger/emulator path green: the first CI execution must establish whether the current fixture reaches validator evaluation, and any failure remains evidence rather than being masked.
+
+Commit: `b485f12bcbaad31e0aa63f6c69d0fac234e41345`
+
+**Status:** P2.8-B.1 execution visibility GREEN; runtime acceptance and transaction-size evidence remain OPEN until CI produces a successful real-validator run and resource measurements.
