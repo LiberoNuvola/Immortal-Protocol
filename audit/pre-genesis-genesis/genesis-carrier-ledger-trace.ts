@@ -32,8 +32,8 @@ const PRE_NAME_HEX = "5052452d52494348";
 const ORACLE_NAME_HEX = "4f5241434c45";
 const CARRIER_NAME_HEX = "47454e45534953";
 const PRIZE_POOL_HASH = "ff".repeat(28);
-const PRE_QUANTITY = 400_000n;
-const ORACLE_PRICE = 1_000_000n;
+const PRE_QUANTITY = 10_000_000n;
+// 0.0004 USDM per PRE, expressed as 40,000 USDM subunits at 1e6 oracle precision.\nconst ORACLE_PRICE = 40_000n;
 const ORACLE_PRECISION = 1_000_000n;
 
 function json(path) {
