@@ -3107,3 +3107,17 @@ The adversarial lab is now executable automatically on pushes/PRs through:
 Commit: `54147b36ea08781d2e0e22ee28bb0dd697858978`
 
 The front remains **CLOSING / execution evidence pending** until the workflow run is observed. No normative rule or economic parameter changed.
+
+
+## 2026-09-22 — Genesis carrier authentication boundary clarified
+
+Direct current-branch inspection of `PreRichGenesisAdmission.hs`, `Economic.hs`, `B1PrizePool.hs`, `Treasury.hs`, `BeaconRegistry.hs` and the script export surface found a precise remaining Genesis gap: `GenesisTreasuryObservation` currently contains boolean evidence flags and verified values, but does not itself bind those values to actual Treasury/Oracle transaction inputs.
+
+The carrier design was updated in `PRE-RICH/docs/GENESIS-REGIME-CARRIER-DESIGN-v0.1.md` (commit `1ae6077e1706f714eb895172b39d5f8b90ce1651`).
+
+Required final shape:
+`actual Treasury / Oracle refs → authenticated observation → existing genesisPredicate → ActivateGenesis`.
+
+The existing predicate remains authoritative for the frozen economic condition; no threshold, price, oracle source or universal-kernel rule was changed. The boolean evidence fields must not become caller-supplied proof in the final validator.
+
+**FRONT A status:** `CLOSING / ARCHITECTURE GAP` — next implementation task is the authenticated observation layer plus singleton carrier validator; operational GREEN still requires real ledger evidence.
