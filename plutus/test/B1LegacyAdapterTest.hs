@@ -10,6 +10,7 @@ import Prelude
   , putStrLn
   , (&&)
   , (==)
+  , Either (Left, Right)
   )
 
 import PlutusLedgerApi.V2 (ScriptHash)
