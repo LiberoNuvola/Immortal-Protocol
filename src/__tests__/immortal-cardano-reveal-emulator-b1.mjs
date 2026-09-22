@@ -824,6 +824,29 @@ async function main() {
         },
       )
 
+      /* Reference scripts: keep the reveal transaction below the 16KB ledger limit. */
+      .payToAddressWithData(
+        walletAddress,
+        {
+          inline: Data.to(constr(0, [])),
+          scriptRef: prizeScript,
+        },
+        {
+          lovelace: 2_000_000n,
+        },
+      )
+
+      .payToAddressWithData(
+        walletAddress,
+        {
+          inline: Data.to(constr(0, [])),
+          scriptRef: poolScript,
+        },
+        {
+          lovelace: 2_000_000n,
+        },
+      )
+
       .complete();
 
   const setupSigned =
@@ -853,6 +876,18 @@ async function main() {
     await lucid.utxosAt(
       poolAddress,
     );
+
+  const referenceUtxos = await lucid.utxosAt(walletAddress);
+  const prizeReferenceUtxo = referenceUtxos.find(
+    (u) => u.scriptRef?.script === prizeScript.script,
+  );
+  const poolReferenceUtxo = referenceUtxos.find(
+    (u) => u.scriptRef?.script === poolScript.script,
+  );
+
+  if (!prizeReferenceUtxo || !poolReferenceUtxo) {
+    throw new Error("Expected both PRE-RICH reference script UTxOs");
+  }
 
   if (prizeUtxos.length !== 1) {
     throw new Error(
@@ -898,10 +933,6 @@ async function main() {
         ),
       )
 
-      .attachSpendingValidator(
-        prizeScript,
-      )
-
       .collectFrom(
         [poolUtxos[0]],
 
@@ -918,9 +949,10 @@ async function main() {
         ),
       )
 
-      .attachSpendingValidator(
-        poolScript,
-      )
+      .readFrom([
+        prizeReferenceUtxo,
+        poolReferenceUtxo,
+      ])
 
       .payToContract(
         prizeAddress,
