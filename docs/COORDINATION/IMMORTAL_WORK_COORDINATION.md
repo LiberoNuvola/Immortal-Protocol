@@ -1729,3 +1729,35 @@ Lucid `0.10.11` is the repository's declared legacy dependency. The trace paths 
 A fresh CI-triggering checkpoint is being created on the current branch because the previous Lab attempt predates the final wallet API correction. No green claim is made until the resulting Integration Lab executes Reveal and, subsequently, EXPIRE.
 
 **Status:** harness correction complete; fresh real-ledger evidence required.
+
+
+---
+## 58. 2026-09-22 — Fresh Plutus artifact binding for real Cardano lab
+
+**Front:** C3/C4/RF10/RF11 / Cardano execution evidence
+
+### Finding
+The real Reveal/EXPIRE traces consume the checked-in `src/plutusScripts/*.plutus.json` factories through `src/loadValidator.ts`. Those artifacts predated the current EXPIRE validator changes, so source-level validator correctness alone was insufficient to establish that the real ledger trace exercised the current validator CBOR.
+
+### Surgical CI correction
+The Integration Lab now, before any real ledger trace:
+1. installs the pinned Haskell/Plutus toolchain and native dependencies;
+2. runs `cabal run exe:export-scripts` against the current checkout;
+3. copies the freshly generated `plutus/out/*.plutus.json` artifacts into the trace consumer directory `src/plutusScripts/` inside the ephemeral CI workspace;
+4. then executes the existing Yaci smoke → Reveal → EXPIRE evidence flow.
+
+This is a CI/runtime artifact-binding correction only. It does not change repository economic source, canonical parameters, validator semantics, or Adapter authority.
+
+**Commit:** `29e0b8cecf74b7fe02e67c748bd3cadaba562b94`
+
+### Why this is required
+The repository's own predeploy contract requires generated `plutus/out` artifacts and synchronization with `src/plutusScripts`. The real trace must therefore exercise artifacts generated from the same source revision being tested, rather than stale checked-in CBOR.
+
+### Current status
+Fresh Integration Lab and Kernel runs are now triggered from the corrected working branch. No C3/RF10/RF11 green claim until the lab successfully:
+- generates current artifacts;
+- completes the real Reveal transaction;
+- completes the real EXPIRE transaction;
+- uploads the canonical evidence artifacts.
+
+**Status:** artifact provenance gap repaired in CI; ledger evidence pending.
