@@ -81,6 +81,7 @@ jobs:
           pkg-config --modversion libblst
 
       # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
+      # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
 
