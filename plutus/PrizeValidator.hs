@@ -251,18 +251,24 @@ decodeB1PrizePoolDatum info out =
 
 {-# INLINABLE findB1PrizePoolOutput #-}
 findB1PrizePoolOutput :: TxInfo -> BuiltinByteString -> Maybe B1PrizePoolDatum
-findB1PrizePoolOutput info poolHashB = go (txInfoOutputs info)
+findB1PrizePoolOutput info poolHashB = go (txInfoOutputs info) Nothing
   where
     poolHash = ScriptHash poolHashB
-    go [] = Nothing
-    go (o:os) =
+    go [] found = found
+    go (o:os) found =
       case addressCredential (txOutAddress o) of
         ScriptCredential h
           | h == poolHash ->
-              case decodeB1PrizePoolDatum info o of
-                Just d  -> Just d
-                Nothing -> go os
-        _ -> go os
+              case found of
+                Just _ ->
+                  -- More than one continuing pool output is ambiguous and
+                  -- must fail closed rather than selecting the first one.
+                  Nothing
+                Nothing ->
+                  case decodeB1PrizePoolDatum info o of
+                    Just d  -> go os (Just d)
+                    Nothing -> Nothing
+        _ -> go os found
 
 {-# INLINABLE readPoolInput #-}
 readPoolInput :: TxInfo -> BuiltinByteString -> B1PrizePoolDatum
