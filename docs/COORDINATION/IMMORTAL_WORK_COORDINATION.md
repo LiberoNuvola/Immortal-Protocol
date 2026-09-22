@@ -2450,3 +2450,19 @@ Commit:
 - `61c7fe46605e3ccdc8d6301957f77ca55c98a4a9`
 
 **Status:** GOV-22 implementation/test alignment advanced; full AG-01 closure remains OPEN pending canonical-module reconciliation and stronger authorization/gate/ruleset evidence.
+
+
+## 2026-09-22 — GOV-22 lineage reconciliation boundary
+
+The older `IMMORTAL/governance/CanonicalEvent.hs` lifecycle model was confirmed as structurally distinct from the GOV-22 canonical semantic-payload path. No active consumer was identified through the available repository search surface, but deletion was intentionally avoided because the available code-search index does not provide a reliable current-branch consumer proof.
+
+Safe reconciliation performed instead:
+- marked `CanonicalEvent.hs` explicitly LEGACY / PARALLEL and non-authoritative for GOV-22;
+- stated that `GovernanceEventSchema.hs` + `GovernanceCanonicalReplay.hs` are the authoritative GOV-22 semantic replay lineage;
+- removed the stale GOV-22 README wording suggesting manual application to `b1-hardening`.
+
+Commits:
+- `bc4d08b40aa82f7af2942aadd4f908065caebb69` — GOV-22 status wording
+- `9c669ff16556d86f8a32f6c3fd196dbf4d064ed8` — legacy lineage marker
+
+This does not claim deletion or full compile-time exclusion of the legacy module; that remains a separate verification task if the build manifest/consumer graph establishes it is unreachable.
