@@ -1831,3 +1831,22 @@ Current policy authority says these are semantically closed at the correct DApp 
 **Commit:** `447ae1dc86b14acf23c9471b9cf9bd00488a1d95`
 
 **Status:** documentation reconciliation complete; implementation/ledger evidence remains independently open and is not promoted by this change.
+
+
+---
+## 62. 2026-09-22 — Hysteresis conformance promoted to GREEN
+
+**Front:** B2 numerical hysteresis / PRE-RICH class control
+
+Triangulation result:
+- Notion current checkpoint records the dedicated PRE-RICH Hysteresis Conformance as completed successfully.
+- GitHub run `35649345343` is independently verified `completed / success` on commit `ea8b0740ba04da771cee5884db3d8114428660e4`.
+- Library material containing earlier exploratory `KA/KC/KD` values is historical and explicitly non-authoritative; it is not used to reopen the now-canonical baseline.
+
+The verified implementation/conformance covers the canonical baseline `KA=8`, `KC=4`, `KD=4` without changing those parameters.
+
+`PRE-RICH/docs/CONFORMANCE.md` was updated so this requirement records the actual green CI evidence instead of stale `GAP/PARTIAL` wording.
+
+**Commit:** `f5cfc82ce179f1c8950e55039367df65244b1b1e`
+
+**Status:** B2 hysteresis conformance GREEN. Remaining B2 work, if any, is limited to broader economic/ledger integration evidence and must not reopen the frozen values.
