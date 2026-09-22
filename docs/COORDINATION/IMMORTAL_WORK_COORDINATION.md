@@ -2896,3 +2896,22 @@ Canonical workflow was restored to default Cardano-like emulator execution limit
 Commits: `42ae99229d8323f498f5759f0c5312e2de3a3b38` (diagnostic gate), `29dfce1dfbdfc419cc149a7b2c33fef22400d308` (canonical workflow limits).
 
 **Status:** P2.8-B.1 ROOT-CAUSE CLASS NARROWED — evaluator incompatibility/term semantics in B1PrizePool Value path; production repair still OPEN.
+## 2026-09-22 — Genesis valuation unit triangulation correction
+
+A second triangulation against the current economic accounting model found an important unit boundary in the new admission seam:
+- PRE-RICH economic amounts are represented in USDM sub-units where the Cardano economic layer performs valuation;
+- canonical `1 USDM = 100 sub-units`;
+- therefore the frozen Genesis threshold `4,000 USDM` corresponds to `400,000` USDM sub-units at the economic-kernel boundary.
+
+The admission seam was corrected accordingly:
+- `USDM_SUBUNITS_PER_USDM = 100`
+- `GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS = 4000 * 100`
+- valuation helper explicitly returns USDM sub-units.
+
+This is a conformance correction, not an economic parameter change. The human-readable stress lab remains expressed in USDM; the application admission boundary now matches the economic accounting unit.
+
+Separate Oracle qualification remains OPEN: the existing on-chain Oracle verifier is usable as an authenticated mechanism, but the canonical deployment PRE→USDM source set/provider is still an open evidence gate. The admission seam therefore accepts only an already-verified price/reference and does not claim to solve provider qualification.
+
+Commits: `e4b83edcaac1b594ee0f7d7b3964cafd660ce930`, `67f4a70e849bcfbbdd098107a198210ba29609a6`, `ac1185e117a597624abd93c9f338184aaa4f1b72`.
+
+**Status:** unit boundary corrected / canonical PRE→USDM source qualification OPEN / on-chain Genesis transition OPEN.
