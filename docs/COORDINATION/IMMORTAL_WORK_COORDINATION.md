@@ -2610,3 +2610,12 @@ Repair:
 Commit: `81aa53c336fde5621f08b7c820c8fc3ae9c79f08`
 
 Next evidence target: fresh CI must show setup/reference deployments and then Reveal completion. Only after that can validator acceptance and resource measurements be classified.
+
+
+## 2026-09-22 — Reference-script funding-order failure classified
+
+Fresh P2.8-B.1 CI reached the split reference-script deployment path, but the second reference-script transaction failed because both reference transactions were built before the setup transaction was submitted, so Lucid selected the same pre-setup wallet UTxO twice. This is fixture sequencing, not validator/economic evidence.
+
+Repair: submit and await the Prize/Pool setup transaction first, then build/sign/submit the PrizeValidator reference-script transaction, then the B1PrizePool reference-script transaction.
+
+Commit: `f46e5470b89950f9a46d83dd0ff5d77766f347f6`
