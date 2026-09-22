@@ -1,11 +1,13 @@
 import { claimPrize as canonicalClaimPrize } from './gameFlow'
 import type { ExactSettlementValue } from './gameFlow'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 /**
  * Public UI compatibility wrapper.
  *
- * The canonical Claim requires an explicit concrete settlement value.
- * No fixed ADA amount is inferred from prizeAmount.
+ * The canonical Claim requires an explicit concrete settlement value and an
+ * authoritative Economic Gate admission witness.
+ * No fixed ADA amount or synthetic admission is inferred.
  */
 export async function claimPrize(
   scriptAddress: string,
@@ -14,6 +16,7 @@ export async function claimPrize(
   statusCb: (message: string) => void,
   settlementValue?: ExactSettlementValue,
   b1PrizePoolAddress?: string,
+  economicAdmission?: EconomicAdmissionWitness,
 ): Promise<string> {
   statusCb('Preparing exact-settlement Claim...')
 
@@ -23,7 +26,14 @@ export async function claimPrize(
     )
   }
 
+  if (!economicAdmission) {
+    throw new Error(
+      'Authoritative Economic Gate admission required: Claim will not synthesize or infer economic authorization',
+    )
+  }
+
   const txHash = await canonicalClaimPrize({
+    economicAdmission,
     prizeAddress: scriptAddress,
     ticketPolicyId,
     ticketAssetNameHex: ticketAssetName,
