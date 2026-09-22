@@ -467,7 +467,7 @@ export async function syncBeacon(opts: {
     .addSigner(owner)
     .complete()
 
-  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
+  return signAndSubmitTx(lucid, tx)
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,7 +1078,7 @@ export async function expirePrize(opts: {
     .validFrom(expiresAt)
     .complete()
 
-  return signAndSubmitTx(lucid, tx)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
 }
 
 // ---------------------------------------------------------------------------
