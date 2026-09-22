@@ -38,6 +38,7 @@ library
         PreRichEconomicProjection
         PreRichEconomicAdmission
         PreRichGenesisAdmission
+        PreRichRegimeState
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
@@ -108,6 +109,7 @@ test-suite economic-oracle-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -195,11 +197,19 @@ test-suite projection-boundary-tests
         pre-rich-plutus
     default-language: Haskell2010
 
-
 test-suite genesis-admission-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
     main-is: GenesisAdmissionTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite genesis-regime-carrier-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: GenesisRegimeCarrierTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
