@@ -2941,3 +2941,14 @@ This supersedes the risk of treating the newer TypeScript admission seam as a se
 Commits: `f54d6da755bdd14941456692755aef36ab278e90`, `63e4bb6663a4d24aabafc95a2a9e2a263b6afe58`, `0d2d72ea5b228283b0a65099a148f8176c571f7f`.
 
 **Status:** existing Plutus admission seam reconciled and unit-correct / test suite added / actual Cabal+Plutus CI execution still required / concrete PRE-GENESIS state carrier and atomic transition remain OPEN.
+
+
+## 2026-09-22 — Genesis admission CI repair
+
+The first Genesis admission CI execution exposed an off-chain test harness defect, not a Genesis semantic failure: `node --import tsx/esm` under the repository's ESM/CJS resolution path could not resolve the extensionless `./GenesisTreasuryAdmission` import. The test now imports `./GenesisTreasuryAdmission.ts` explicitly (`59ef6f150b4ff86b92e1fc450951c6d6b64966d6`).
+
+The Plutus-side `genesis-admission-tests` suite was also added to the existing kernel regression command (`ee99cbdef3426f33bc1808ef39eee990c24b9736`) so the canonical Haskell admission seam is exercised by CI rather than remaining only registered in Cabal.
+
+No Genesis predicate, threshold, oracle rule, or economic invariant changed. Fresh CI evidence is pending.
+
+**Status:** CI harness repair IMPLEMENTED / fresh Genesis TS + Plutus execution PENDING.
