@@ -4,6 +4,7 @@ import Governance
 import GovernanceEventSchema
 import GovernanceCanonicalReplay
 import RulesetRegistry
+import GovernanceCommitment
 
 assert :: String -> Bool -> IO ()
 assert label ok =
@@ -20,17 +21,22 @@ main = do
       e2 = CanonicalEvent "evt-2" 1 1 EStatusChanged System 1
              (PayloadStatusChanged 1 Proposed 1) "r1" (Just "evt-1")
              [EvidenceRef "e2"] AcceptedEvent
-      rs = [RulesetDefinition 1 "r1" 0 Nothing]
+      rs = [RulesetDefinition 1 "ruleset-v1" 0 Nothing]
+      committed e = e { payloadCommitment = commitmentDigestHex e }
+      e1c = committed e1
+      e2c = committed e2
 
-  assert "canonical event schema" (eventSchemaValid e1)
-  assert "canonical predecessor" (predecessorValid (Just e1) e2)
+  assert "canonical event schema" (eventSchemaValid e1c)
+  assert "canonical commitment matches" (commitmentMatches e1c)
+  assert "ruleset version is registered" (rulesetVersionRegistered 1 rs)
+  assert "canonical predecessor" (predecessorValid (Just e1c) e2c)
   assert "canonical body deterministic" (canonicalEventBody e1 == canonicalEventBody e1)
   assert "classified payload timestamp is bound"
     (eventSchemaValid
-      (e1 { eventType = EProposalClassified
+      (e1c { eventType = EProposalClassified
           , eventPayload = PayloadProposalClassified 1 DocumentationOnly 7
           , eventTimestamp = 7
-          , payloadCommitment = "r1"
+          , payloadCommitment = payloadCommitment e1c
           }))
   assert "gates payload timestamp is bound"
     (eventSchemaValid
@@ -43,14 +49,14 @@ main = do
   assert "duplicate evidence refs rejected"
     (not (eventSchemaValid (e1 { evidenceRefs = [EvidenceRef "x", EvidenceRef "x"] })))
 
-  let Right st1 = replayCanonical rs emptyState [e1]
-      bad = e2 { predecessor = Just "wrong" }
+  let Right st1 = replayCanonical rs emptyState [e1c]
+      bad = e2c { predecessor = Just "wrong" }
   assert "canonical replay applies event" (eventsApplied st1 == 1)
   assert "bad predecessor rejected"
     (case replayCanonical rs st1 [bad] of Left _ -> True; Right _ -> False)
 
-  let Right st2 = replayCanonical rs st1 [e2]
-      Right st2' = replayCanonical rs emptyState [e1, e2]
+  let Right st2 = replayCanonical rs st1 [e2c]
+      Right st2' = replayCanonical rs emptyState [e1c, e2c]
   assert "canonical-only replay is deterministic" (st2 == st2')
 
   putStrLn "CANONICAL EVENT PHASE CHECKS PASSED"
