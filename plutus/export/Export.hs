@@ -20,6 +20,7 @@ import qualified CounterValidator
 import qualified MintPolicy
 import qualified PrizeValidator
 import qualified Treasury
+import qualified GenesisRegimeCarrier
 
 -- ============================================================
 -- Compiled code -> CBOR
@@ -165,6 +166,15 @@ main = do
   -- The singleton token ensures there is one protocol Pool state
   -- UTxO for the configured B1PrizePool instance.
   --
+
+  -- ----------------------------------------------------------
+  -- Genesis regime carrier
+  -- ----------------------------------------------------------
+
+  writeScriptJson
+    "plutus/out/genesisRegimeCarrier.plutus.json"
+    "PreRich Genesis regime carrier validator"
+    (compiledCborHex GenesisRegimeCarrier.compiledValidator)
 
   writeScriptJson
     "plutus/out/b1PrizePoolFactory.plutus.json"
