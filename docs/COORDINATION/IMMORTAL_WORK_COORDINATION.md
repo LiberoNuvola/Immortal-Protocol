@@ -2845,3 +2845,23 @@ Next evidence target: isolate the failing B1PrizePool operation (first `Value`/`
 The enlarged-budget run proves the failure is an evaluator-level `NonConstrScrutinized` on a `Value` representation in `Spend[1]`. The B1PrizePool validator's earliest unconditional `Value` operation is `singletonPoolTokenValid`, which calls `valueOf` on input/output values before the `TicketRevealed` action branch. Therefore the next diagnostic must isolate that path rather than optimizing the full Reveal or changing economic logic.
 
 No production validator change has been made. The temporary Lucid 0.10.10 CI probe was inconclusive (no executable job was produced) and was removed; it is not evidence.
+
+## 2026-09-22 — PRE-GENESIS → GENESIS verified Treasury admission seam
+
+Triangulation against current PRE-RICH canon, Constitution, existing Oracle machinery, Treasury implementation and stress lab found:
+- Genesis predicate remains exactly verified PRE Treasury value >= 4,000 USDM;
+- no second Genesis stability window/threshold;
+- existing Oracle machinery already verifies asset identity, authorized publisher, freshness and price;
+- legacy Treasury.Distribute / tdThreshold is not Genesis authority;
+- Genesis still requires binding the valued PRE quantity to the canonical protocol-controlled Treasury state.
+
+Added an application-specific admission seam:
+- PRE-RICH/profile/GenesisTreasuryAdmission.ts
+- PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+- audit/pre-genesis-genesis/TREASURY-ORACLE-CONCRETE-SURFACE-v0.2.md
+
+The admission layer composes canonical Treasury identity + PRE asset identity + observed quantity + already-verified PRE/USDM price/freshness and returns a fail-closed admission result. It performs no funds transfer and does not replace the existing oracle. On-chain revalidation and the one-shot PRE-GENESIS → GENESIS transition remain OPEN.
+
+Commits: 7455b73ec7a425e8841ca19a1abf1cd522ac243c, 6940d2373eb8c9580e08120febf42c680f604114, aa273d5a7ef066f5cebc4392373f0302855bd22e.
+
+**Status:** application admission seam IMPLEMENTED / runtime and ledger binding OPEN.
