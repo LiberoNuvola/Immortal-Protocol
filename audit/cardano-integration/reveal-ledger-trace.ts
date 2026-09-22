@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, type Script, type UTxO } from 'lucid-cardano'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, type Script, type UTxO } from 'lucid-cardano'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -152,7 +152,7 @@ const lucid = new Lucid(new Blockfrost(API, ''), 'Preprod')
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
-const details = lucid.utils.getAddressDetails(address)
+const details = getAddressDetails(address)
 const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
