@@ -2011,3 +2011,25 @@ Corrections preserve all economic formulas, canonical parameters, invariants and
 The same CI log confirms the ProtectedCapital, GoldenVectors and Governance suites themselves passed before Cabal stopped on the two build defects. Fresh Kernel evidence is required on the resulting HEAD; no green promotion yet.
 
 The earlier Cardano Lab run 35718016897 completed Yaci bootstrap and ledger smoke but failed in Reveal, so it does not promote C3/C4. Fresh latest-head lab evidence remains required.
+
+
+## 2026-09-22 — C5 permissionless lifecycle trace boundary extended
+
+**Front:** C5 / R4 liveness conformance
+
+Triangulation against the normative liveness contract ('docs/01-contracts/13_LIVENESS_AND_PROGRESS_SPECIFICATION.md'), R4 proof specification, P0 permissionless execution contract, and the existing liveness boundary implementation showed that the previous executable surface classified stalls but did not encode the required execution sequence itself.
+
+A minimal non-economic conformance boundary was added:
+- canonical sequence: 'CONDITION → OBSERVABLE_EVENT → WAKE_UP → CANDIDATE_CONSTRUCTION → PERMISSIONLESS_INVOCATION → ON_CHAIN_REVALIDATION → ATOMIC_TRANSITION → CANONICAL_STATE';
+- independent on-chain revalidation is required;
+- atomic commit is required;
+- canonical post-state observation is required;
+- competing submission must be rejected rather than duplicate the economic effect.
+
+This is a conformance model, not a claim of network liveness or a replacement for Cardano evidence. L1–L4 remain deployment/environment assumptions and R4 remains distinct from proof of actual progress.
+
+**Commit:** 'b466ed522d38cecfcf915e0a201a12e0ede8718d'
+
+**Current CI:** fresh Liveness Boundary run '35722633225' is queued on this exact HEAD. Kernel/Cardano/Sale runs were also triggered by the same closure-line commit; no new green promotion is made until those runs complete.
+
+**Status:** C5 executable sequence coverage strengthened; real permissionless lifecycle evidence remains OPEN.
