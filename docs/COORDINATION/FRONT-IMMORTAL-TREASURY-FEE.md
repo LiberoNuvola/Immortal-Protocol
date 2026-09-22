@@ -119,3 +119,40 @@ Then produce the smallest typed boundary:
 without yet deciding numerical fee amounts or distribution policy.
 
 **Coordination handoff:** other session should inspect this front before introducing overlapping treasury/fee semantics.
+
+
+## 2026-09-22 — Current-branch representation map
+
+A direct fetch against work/immortal-green-closure was used for the concrete repository artifacts; historical/default-branch search hits were not treated as current truth.
+
+### Observed representations
+
+| Artifact | Current role | Boundary classification |
+|---|---|---|
+| src/treasuryPolicy.ts | fixed Lovelace threshold + percentage split + relayer minimum | PRE-RICH / deployment policy legacy; must not be promoted to universal IMMORTAL fee or revenue semantics |
+| plutus/Treasury.hs | on-chain distribution validator enforcing datum threshold, percentage sum and protocol-script destinations | Cardano application/deployment realization; not evidence of a universal IMMORTAL Treasury primitive |
+| plutus/Types.hs::TreasuryDatum | threshold, four destination script hashes and percentage fields | application/adapter representation |
+| src/config.ts::TREASURY_ADDRESS / SALE_ADDRESS | concrete Cardano destination configuration | adapter/deployment representation |
+| src/mint.ts Treasury payment | atomic PRE-RICH sale settlement output in the same Cardano transaction | PRE-RICH application settlement, not yet a universal ProtocolUsageFee realization |
+| EconomicKernel.hs | universal ProtectedCapital / RawSurplus arithmetic | IMMORTAL universal accounting authority; no Treasury balance should be inserted here without canonical classification |
+| explicit ProtocolUsageFee type/field | not found in the directly inspected current-branch artifacts | OPEN representation gap |
+
+### Important result
+
+The current branch therefore contains a real Cardano/PRE-RICH Treasury mechanism, but the requested universal boundary is still absent as a typed IMMORTAL concept. This is consistent with the front's OPEN status.
+
+The existing percentage policy (prizePct, stakePct, reservePct, relayer/minimum values) must remain isolated from any future universal protocol-revenue semantics. No numerical value was promoted, renamed or reused.
+
+### Smallest safe next boundary
+
+Before introducing a universal Treasury state field, the next artifact should be an evidence/specification mapping that distinguishes:
+
+1. ProtocolRevenue — economic category owned by IMMORTAL;
+2. ProtocolControlledDestination — abstract destination identity, independent of Cardano address form;
+3. AccountingClassification — obligation/protected reserve/operating cost/neutral custody/residual surplus, with classification supplied by canonical economics rather than inferred from destination;
+4. AdapterSettlement — Cardano-specific output/UTxO realization;
+5. Evidence — proof that the intended revenue was actually credited.
+
+No implementation change is justified yet from this mapping alone.
+
+Status: REPRESENTATION MAP COMPLETE / NORMATIVE BOUNDARY STILL OPEN.
