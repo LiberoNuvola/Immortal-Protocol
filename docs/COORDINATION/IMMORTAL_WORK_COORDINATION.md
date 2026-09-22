@@ -1959,3 +1959,23 @@ Commits:
 - `bfdb727a8e2c9b4417cd7a92c5a248ef79d2063d`
 
 **Status:** fresh Kernel and Cardano Lab runs triggered from the corrected lineage; no green claim until both complete.
+
+
+## 2026-09-22 — Kernel fixture + Lucid API regressions corrected
+
+**Front:** Kernel conformance / C3-C4 Cardano lab
+
+Fresh CI on the prior closure head exposed concrete non-economic defects:
+- ProtectedCapitalConformanceTest.hs used RevealWitness, ClaimWitness, and ExpireWitness, but the conformance module did not export those witness constructors; the constructors are now explicitly exported for the test surface.
+- GoldenVectorsTest.hs had stale zero-state expectations: an unissued class has zero unresolved exposure, so its universal projection has uesWorstCaseExposure = 0 and ProtectedCapital = 0; the under-protection assertion was corrected to use negative EEV instead of 499.
+- The real Cardano Reveal/EXPIRE traces reached Yaci successfully but failed on lucid.utils.getAddressDetails under the installed Lucid runtime. Both traces now import and call the package-level getAddressDetails helper directly.
+
+No economic formula, canonical parameter, validator authority, or DApp policy changed. The fixes only restore the intended conformance fixtures and the legacy Lucid runtime boundary.
+
+Commits:
+- 167a921ae8f8cb02fb065ea8880301b5af84eaf2
+- da02331fb938381283ab4e763eca7763f8614ffa
+- 68a9f73e3c60c033edfe3a8c37b039096acf3282
+- d9a0ed7051dd8e07f040e926323eb97e7d405ed1
+
+**Status:** fresh Kernel + Cardano Lab rerun required; no green promotion yet.
