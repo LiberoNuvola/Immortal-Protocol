@@ -16,19 +16,22 @@ main = do
         , StatusChanged 1 ImpactReview 2
         , StatusChanged 1 EvidenceReview 3
         , StatusChanged 1 CommunityReview 4
-        , StatusChanged 1 Voting 4 + communityReviewSeconds
+        , StatusChanged 1 Voting (4 + communityReviewSeconds)
         ]
   let Right s3 = applyEvent s2 (VoteCast (Vote 1 1 For (4 + communityReviewSeconds)))
   let pp = head (proposals s3)
-  assert "25% quorum" (quorumReached snap (proposalVotes pp))
-  assert "ordinary >50%" (approvalReached DocumentationOnly snap (proposalVotes pp))
-  assert "abstention is participation" (quorumReached snap [Vote 1 2 Abstain 4])
-  assert "abstention excluded from approval" (not (approvalReached DocumentationOnly snap [Vote 1 2 Abstain 4]))
+  assert "25% quorum" (quorumReached snap (proposalDelegations pp) (proposalVotes pp))
+  assert "ordinary >50%" (approvalReached DocumentationOnly snap (proposalDelegations pp) (proposalVotes pp))
+  assert "abstention is participation"
+    (quorumReached snap [] [Vote 1 2 Abstain 4])
+  assert "abstention excluded from approval"
+    (not (approvalReached DocumentationOnly snap [] [Vote 1 2 Abstain 4]))
   assert "direct delegation conserves weight"
     (delegationConserves snap [Delegation 1 2])
   assert "delegation cycle rejected"
     (not (delegationValid snap [Delegation 1 2, Delegation 2 1]))
   assert "late vote rejected"
     (not (voteWindowOpen pp (4 + communityReviewSeconds + votingSeconds)))
+  let emergency = pp { emergencyActivatedAt = Just 100 }
   assert "72h emergency expires"
-    (emergencyExpired pp (72 * 60 * 60))
+    (emergencyExpired emergency (100 + emergencySeconds))
