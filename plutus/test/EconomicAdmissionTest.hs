@@ -42,6 +42,12 @@ revealedState =
     Just s -> s
     Nothing -> error "fixture: valid reveal did not construct"
 
+expiredState :: V3EconomicState
+expiredState =
+  case transition profile issuedState (Expire 0) of
+    Just s -> s
+    Nothing -> error "fixture: valid expire did not construct"
+
 assert :: Bool -> String -> IO ()
 assert condition label =
   if condition
@@ -119,5 +125,12 @@ main = do
     Just admitted -> do
       assert (uesCrystallizedLiabilities (peaCandidateUniversal admitted) == 0) "claim closes crystallised liability"
       assert (solvencyInvariant 500 (peaCandidateUniversal admitted)) "claimed candidate remains universally solvent"
+
+  case preRichEconomicAdmission profile issuedState (Expire 0) 1 1 1 0 True True True True of
+    Nothing -> error "FAIL: valid expire was rejected"
+    Just admitted -> do
+      assert (uesUnresolvedReserve (peaCandidateUniversal admitted) == 0) "expire releases unresolved reserve"
+      assert (uesUnresolvedTicketCount (peaCandidateUniversal admitted) == 0) "expire removes exactly one unresolved ticket from the candidate"
+      assert (solvencyInvariant 1 (peaCandidateUniversal admitted)) "expired candidate remains universally solvent"
 
   putStrLn "ALL ECONOMIC ADMISSION TESTS PASSED"
