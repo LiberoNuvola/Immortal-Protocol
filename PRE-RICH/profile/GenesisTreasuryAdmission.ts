@@ -41,6 +41,7 @@ export type GenesisTreasuryAdmission =
         | 'INVALID_ASSET'
         | 'INVALID_QUANTITY'
         | 'INVALID_PRICE'
+        | 'WRONG_ORACLE_PUBLISHER'
         | 'ORACLE_UNVERIFIED'
         | 'ORACLE_STALE'
         | 'BELOW_THRESHOLD'
@@ -61,6 +62,7 @@ export function admitGenesisTreasury(
   canonicalTreasuryIdentity: string,
   canonicalPrePolicyId: string,
   canonicalPreAssetNameHex: string,
+  canonicalOraclePublisher: string,
 ): GenesisTreasuryAdmission {
   if (observation.sourceRegime !== 'PRE-GENESIS') {
     return { admitted: false, reason: 'WRONG_SOURCE_REGIME' }
@@ -79,6 +81,9 @@ export function admitGenesisTreasury(
   }
   if (observation.verifiedPreUsdmPrice < 0n) {
     return { admitted: false, reason: 'INVALID_PRICE' }
+  }
+  if (observation.oraclePublisher !== canonicalOraclePublisher) {
+    return { admitted: false, reason: 'WRONG_ORACLE_PUBLISHER' }
   }
   if (!observation.valuationVerified) {
     return { admitted: false, reason: 'ORACLE_UNVERIFIED' }
