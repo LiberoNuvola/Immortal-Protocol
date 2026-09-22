@@ -46,6 +46,8 @@ library
         GovernanceCanonicalSerialization
         GovernanceCommitment
         RulesetRegistry
+        GovernanceRuleset
+        GovernanceFinality
 
     other-modules:
 
