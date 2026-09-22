@@ -2571,3 +2571,14 @@ Actions taken:
 Commit: 8d817c74706c1d0938e3dcff42f3a8e86b718b2c
 
 **Status:** emulator path is now an automatic CI gate. The first run is the evidence point; any Lucid/Data.to or transaction-size failure must remain visible rather than being masked. P2.8 real-ledger evidence remains separate.
+
+
+## 2026-09-22 — P2.8-B.1 first CI failure is now reproduced and classified
+
+Fresh CI run `35766684202` reached the real emulator fixture and failed during `setupTx.complete()` with `encoding/hex: invalid byte: [` from Lucid's hex decoder. The stack points to the fixture's inline datum encoding, not validator execution.
+
+Root cause identified by comparison with the repository's active transaction construction (`Data.to(...)`): the emulator fixture passed raw `Constr` values as `inline` datum payloads. The fixture has been corrected to encode all four inline datums explicitly with `Data.to(...)`.
+
+Commit: `608d302b0b335e526dc4492bf219b181a17d3059`
+
+Interpretation: the new CI has already converted the former blind spot into an actionable, reproducible fixture failure. Validator acceptance and transaction-size evidence remain OPEN; next run must get past datum encoding before those can be measured.
