@@ -3217,3 +3217,14 @@ Fixed by adding `PRE-RICH/profile/GenesisCarrierMintPolicy.hs` to the PR path fi
 Commit: `8b1026085027e9f049dbbd76d9a502640e0ae0d2`.
 
 **Status:** CI trigger coverage CLOSED for the reviewed carrier/mint-policy paths; actual compile/test/export and ledger transition evidence remain separate closure requirements.
+
+
+## 2026-09-22 — P2.8-B.1 external evaluator differential target sharpened
+
+Fresh upstream Plutus release inspection strengthens the planned differential experiment without changing repository semantics. Current Plutus releases expose the `uplc` executable; the 1.67 release added broader `Value` API support and the 1.68 release notes explicitly record new untyped-CEK casing support for builtin constants including `pair`, with corresponding conformance tests. This is relevant to the observed Lucid failure at a `Value Con(ProtoPair(...))` case boundary.
+
+This is **external evaluator/toolchain evidence only**, not protocol authority and not proof that the Lucid failure is definitively caused by evaluator generation. The required experiment remains: evaluate the unchanged parameterized Pool-only artifact/context with a current Plutus `uplc` evaluator, then compare the terminal semantic boundary. No validator/economic workaround is justified by this evidence.
+
+Source: IntersectMBO/plutus release history, current 1.67/1.68 release material. citeturn0search0
+
+**Status:** P2.8-B.1 differential evaluator experiment remains OPEN; root-cause hypothesis strengthened.
