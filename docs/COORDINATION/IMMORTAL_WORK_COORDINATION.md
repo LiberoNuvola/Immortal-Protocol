@@ -2105,3 +2105,10 @@ The exact error is independently observable in current external Cardano/Lucid re
 After classifying the previous real-Reveal failure as a lab compatibility blocker, commit `5686d72218a4f44017247e1b86359bec0e78aefe` adds a non-semantic diagnostic immediately after provider initialization. The Reveal trace now records the protocol-parameter cost-model keys/array lengths before constructing the transaction. This is intentionally diagnostic only: no validator, economic rule, transaction path, or cost-model value is altered.
 
 The prior Kernel run `35750803649` was cancelled while the Cardano lab failure was being investigated; it is not a kernel failure signal. A fresh current-head kernel run is required before kernel status is promoted.
+
+
+## 2026-09-22 — Cardano lab trigger re-armed on current diagnostic HEAD
+
+The cost-model diagnostic was present on commit `5686d72218a4f44017247e1b86359bec0e78aefe`, but the following coordination-only commit did not match the lab workflow path filters. To obtain a current-head lab attempt without changing semantics, commit `1523f9bf4ba070bed29baee8104467eaf3035077` adds only a workflow comment under `.github/workflows/immortal-cardano-lab.yml`, thereby re-triggering the existing push path while preserving the diagnostic and real Reveal path.
+
+No economic, validator, adapter, or evidence semantics changed. The next result must be classified from the actual job logs before any further correction.
