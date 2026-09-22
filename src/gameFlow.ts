@@ -410,8 +410,6 @@ export async function syncBeacon(opts: {
   ticketAssetNameHex: string
   registryAddress: string
   table?: PrizeTable
-  /** Authoritative Economic Gate admission for this economic transition. */
-  economicAdmission: EconomicAdmissionWitness
 }): Promise<string> {
   const lucid = wallet.getLucid()
   if (!lucid) throw new Error('Wallet not connected')
