@@ -797,7 +797,6 @@ No universal expiry number was introduced by this work.
 **Boundary:** this is evidence/refinement only. It does not make V3 ticket-aware, does not grant arbitrary ticket-selection authority, and does not replace Cardano on-chain enforcement.
 **CI:** the existing PRE-RICH Action Refinement workflow now runs both Issue and Expire refinement tests.
 **Status:** CLOSING — local implementation committed; CI evidence pending.
-
 ---
 ## 31. SESSION CLAIM — B4 ProtectedCapital Preservation Subfront
 **Session:** autonomous coordination session — 2026-09-21  
@@ -997,7 +996,6 @@ RF8 now has a source-level regression preventing direct `signTx/submitTx` calls 
 
 ---
 ## 45. CURRENT SESSION RESULT — B6 Reveal payout binding
-
 **Date:** 2026-09-21
 **Front:** B6 — V3 ↔ Cardano Reveal ticket-level refinement
 
@@ -1797,7 +1795,6 @@ No economic semantics or validator source changed in this correction.
 The fresh-artifact Cardano Lab step was initially configured with `working-directory: plutus`. The repository root `cabal.project` explicitly declares `./plutus` as the package, while `plutus/Export.hs` writes its generated files to `plutus/out/*.plutus.json` relative to the project root.
 
 Therefore the export step must execute from repository root:
-
 `cabal run exe:export-scripts`
 
 The prior configuration would have targeted a nested `plutus/plutus/out` path and would not have bound the generated artifacts to the expected deployment path.
@@ -1997,7 +1994,6 @@ Corrections were made without changing economic formulas, canonical parameters, 
 
 
 ## 2026-09-22 — Fresh Kernel CI defects corrected on closure HEAD
-
 **Front:** B4/B6 conformance build / projection boundary
 
 Fresh Kernel run 35718038894 on ffb37f40a14b3aa3379c410acdc1bb20317bce0b reached the full test build and exposed two concrete non-economic defects:
@@ -2626,3 +2622,44 @@ Commit: `f46e5470b89950f9a46d83dd0ff5d77766f347f6`
 Fresh CI confirms the fixture now reaches real Plutus execution. The emulator reports `maxTxSize=16384` and a 175-entry PlutusV2 cost model, but Reveal fails at `Spend[1]` with a negative remaining execution budget (`Mem -29986019900`, `CPU -20004554100`). This is no longer transaction-size or reference-script placement evidence; it is an emulator execution-budget compatibility/parameter issue that must be diagnosed without changing validator economics or fabricating a larger budget.
 
 Added diagnostics for `maxTxExUnits` and execution prices in commit `59724385c64bee7b1d88aeea11b92dccdb506288`. Next: capture exact emulator execution parameters, compare them with the Lucid/Cardano version assumptions and repository cost-model history, then choose the smallest evidence-backed repair.
+
+
+## 2026-09-22 — PRE-GENESIS → GENESIS economic crystallization front opened
+
+**Front:** PRE-GENESIS / GENESIS transition boundary — Snek/PRE-RICH bootstrap provenance
+
+A new coordinated front is opened from the existing Notion PRE-Snek evidence lineage, especially **Gate 41 — PRE Snek Deployment Lineage & Seed Reconciliation v0.1**. The existing evidence closes the Pool-NFT lineage, the Genesis immediate input set, the boundary transaction reconstruction, the exact 1B PRE bootstrap and the first curve transition, but it explicitly leaves the semantic role of the bootstrap/seed/min-ADA boundary and the Genesis funding role open.
+
+Key evidence already established:
+- the Pool-NFT mint transaction distributes exactly `1,000,000,000 PRE`;
+- the NFT-bearing initial pool output contains `13 ADA + 996,071,981 PRE + 1 Pool NFT`;
+- the complementary output contains `3,928,019 PRE`;
+- the subsequent first-curve transition is transaction-level verified;
+- the observed `3 ADA` State-0/provider offset remains an identified pattern, not a proven seed/min-ADA rule;
+- the existing PRE-RICH economic rule says **Genesis bootstrap = PRE Treasury >= 4000 USDM**, while the Genesis PRE bootstrap is **not automatically PrizePool liquidity**.
+
+### New normative/evidence question
+
+Define the exact boundary by which a **PRE-GENESIS observed state becomes a GENESIS economic state**, without silently treating historical PRE bootstrap assets as Genesis capital.
+
+The working hypothesis is deliberately a boundary/projection model, not a token-conversion rule:
+
+`PRE-GENESIS observed state → eligibility predicates → crystallization boundary → GENESIS starting state`
+
+Genesis accounting must therefore be based on an explicitly admitted projection of the pre-Genesis state. Historical/bootstrap assets remain historical/application state unless a canonical PRE-RICH rule explicitly admits them into a Genesis economic field. No asset is reclassified merely because it existed before the boundary.
+
+### Required closure work
+
+1. Identify the authoritative Genesis activation predicates and their source-of-truth location.
+2. Define which PRE-GENESIS quantities are historical/bootstrap/application state and which, if any, are admitted into Genesis economic state.
+3. Define the crystallization function and fail-closed behavior for missing/ambiguous evidence.
+4. Reconcile the existing `Genesis = 1 USDM` and `PRE Treasury >= 4000 USDM` rules with the Snek/PRE deployment lineage without promoting Snek-specific values into IMMORTAL.
+5. Keep the boundary **PRE-RICH/application-specific** unless canonical evidence proves a universal IMMORTAL semantic is required.
+6. Add conformance/evidence only after the semantic boundary is triangulated against Constitution, Economic Canon, PRE-RICH Constitution/Application Spec/Game Economy and Gate-41 evidence.
+
+### Explicit non-assumption
+
+Do **not** infer that the `1B PRE` bootstrap, the `13 ADA` initial pool output, the `3 ADA` provider offset, or any upstream UTxO automatically constitutes Genesis capital. Those are ledger/evidence facts whose economic role must be established separately.
+
+**Status:** OPEN / NEW FRONT — semantic boundary not yet frozen.
+**Next deterministic action:** triangulate the Genesis activation/bootstrapping rules across current repository sources and the relevant Notion documents, then write the smallest canonical transition contract before implementation.
