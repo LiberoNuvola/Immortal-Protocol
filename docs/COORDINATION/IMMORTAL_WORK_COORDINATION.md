@@ -2413,3 +2413,21 @@ Commits:
 No new branch; `b1-hardening` untouched.
 
 **Status:** GOV-22 timestamp consistency repaired; AG-01 governance closure still OPEN pending canonical-module reconciliation, authorization/gate negative evidence, and independent replay evidence.
+
+
+## 2026-09-22 — AG-01 canonical event timestamp boundary repaired
+
+**Front:** AG-01 / GOV-22 canonical governance replay
+
+The previously identified schema inconsistency was confirmed on the live branch and corrected minimally. `CanonicalPayload` carries timestamps for `PayloadProposalClassified` and `PayloadGatesSet`; `eventSchemaValid` compares those payload timestamps with `eventTimestamp`; the event-type matcher had stale constructor arities (`_ _` / `_ _`) and therefore did not match the current payload constructors. It is now aligned with the actual three-field classification payload and three-field gates payload.
+
+A conformance test was extended with non-zero timestamp cases for both `EProposalClassified` and `EGatesSet`, including evidence refs and predecessor binding. No governance threshold, authority rule, economic rule, or constitutional semantics changed.
+
+Commits:
+- `730c0dd7f7f7b07da83eeac4392701482a4c4a89` — align canonical governance payload arity;
+- `237b793636d34be9deda17502a9561a561b64cce` — add classified/gate timestamp fixtures;
+- `64fd67a3c6f1af5a1c6d9529a6bbc52b11dfcfb0` — assert non-zero canonical timestamps.
+
+Current exact-head workflow results are not yet exposed for this head; no green CI claim is made.
+
+**Status:** schema boundary repaired; executable validation pending. AG-01 remains OPEN for broader lifecycle/finality/self-authorization evidence.
