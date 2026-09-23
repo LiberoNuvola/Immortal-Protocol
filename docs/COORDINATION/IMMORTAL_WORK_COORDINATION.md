@@ -5118,3 +5118,51 @@ The governance chain should remain decomposed rather than becoming a mega-certif
 Each edge gets its own witness/recomputation rule. The certificate composition can then be tested for identity continuity without making Governance a hidden economic authority.
 
 No economic constants, validator semantics or current normative protocol rules changed.
+
+
+## 2026-09-23 — Governance research pass IV: temporal rule binding + recomputable proof sets
+
+A fresh 2026 source sweep found multiple independent systems converging on a stronger pattern already emerging in the CAES work: governance evidence must bind the exact rule/version context to the exact governed action, and the verifier should be able to recompute the binding independently.
+
+A recent governance-enforcement patent application describes deterministic replay using the rule artifacts authoritative at the original governance evaluation, specifically to prevent later rule changes from retroactively changing the reconstructed outcome. It also describes checking that an authoritative state mutation has a corresponding authorization outcome aligned with the correct governance scope and rule lineage. This is prior art, not a novelty claim. citeturn0search0
+
+A separate 2026 canonicalization/clearing-kernel disclosure binds governance updates to ledger evidence through an update digest and metadata-binding hash, with independent recomputation of the proof set. Again, this is useful prior art for the evidence pattern only. citeturn0search1
+
+The H33 Governance Proof Model independently specifies deterministic replay of an attested governance DAG, with replay bounded by timestamp, dependency ordering, and independently recomputed root/state hashes. citeturn0search2
+
+### Research deduction for IMMORTAL
+
+The governance replay negative twin should be strengthened from merely:
+
+valid(G, R_g) && R_g != R_c -> REJECT
+
+to an explicit temporal/provenance witness:
+
+GovernanceDecisionDigest = H(canonicalDecision || ruleSetId || ruleSetDigest || authorityId || scopeId || effectiveWindow)
+
+followed by exact correspondence:
+
+G_proposed = G_admitted = G_artifact = G_executed = G_observed
+
+and verification that the ruleSetDigest used for authorization is the rule set that was authoritative for the relevant governance event, unless an explicit continuity rule exists.
+
+Do not freeze this serialization or field set into IMMORTAL. The important research property is temporal rule binding + independent recomputation + exact artifact correspondence.
+
+### New negative twins
+
+1. Same governance decision, different rule-set digest → REJECT.
+2. Correct rule-set digest, but effective window expired before execution → REJECT unless continuity policy explicitly permits it.
+3. Correct approval and artifact, but governance scope differs from executed scope → REJECT.
+4. Correct governance receipt, but ledger mutation has no corresponding governed-event identity → REJECT.
+5. Correct ledger event, but replay using the historically authoritative rule set derives a different result → REJECT.
+6. Producer-supplied proof-set status says VALID, but independently recomputed proof-set binding differs → REJECT.
+
+### Cross-boundary implication
+
+This gives us a reusable invariant across both economic and governance planes:
+
+A valid certificate is not authority by itself; it is evidence whose claims must remain bound to the exact state/rule/action/artifact identity that is actually committed.
+
+This aligns with the existing CAES removal of trusted producer validity assertions and with the economic stale-admission tests. It does not merge GovernanceSafety into EconomicSafety.
+
+No economic constants, validator semantics or current normative protocol rules changed.
