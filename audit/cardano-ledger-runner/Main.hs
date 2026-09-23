@@ -42,24 +42,28 @@ main = do
     else do
       sizes <- mapM (fmap BS.length . BS.readFile) artifactPaths
       putStrLn ("artifact bytes: " <> show sizes)
-
-  let paths = map (evidenceDir <> "/") requiredEvidence
-  present <- mapM doesFileExist paths
-  mapM_ (\(p, ok) -> putStrLn (p <> if ok then " [present]" else " [missing]"))
-        (zip paths present)
-
-  if not (and present)
-    then do
-      putStrLn "RESULT: SAFE_STALL"
-      putStrLn "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE"
-      putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
-    else do
-      nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
-      if not (and nonEmpty)
+      if any (== 0) sizes
         then do
           putStrLn "RESULT: SAFE_STALL"
-          putStrLn "SAFE_STALL_REASON: EMPTY_LEDGER_EVIDENCE_FILE"
+          putStrLn "SAFE_STALL_REASON: EMPTY_EXACT_PLUTUS_ARTIFACT"
         else do
-          putStrLn "RESULT: COMPLETE_EVIDENCE_PACKET_PRESENT"
-          putStrLn "NEXT: parse and validate the packet, then invoke ledger-aligned evalTxExUnitsWithLogs."
-          putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
+          let paths = map (evidenceDir <> "/") requiredEvidence
+          present <- mapM doesFileExist paths
+          mapM_ (\(p, ok) -> putStrLn (p <> if ok then " [present]" else " [missing]"))
+                (zip paths present)
+
+          if not (and present)
+            then do
+              putStrLn "RESULT: SAFE_STALL"
+              putStrLn "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE"
+              putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+            else do
+              nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
+              if not (and nonEmpty)
+                then do
+                  putStrLn "RESULT: SAFE_STALL"
+                  putStrLn "SAFE_STALL_REASON: EMPTY_LEDGER_EVIDENCE_FILE"
+                else do
+                  putStrLn "RESULT: COMPLETE_EVIDENCE_PACKET_PRESENT"
+                  putStrLn "NEXT: parse and validate the packet, then invoke ledger-aligned evalTxExUnitsWithLogs."
+                  putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
