@@ -108,3 +108,17 @@ The current B1PrizePool validator provides the concrete ledger-side liquidity ob
 This establishes an existing canonical source that can be reused: the authenticated singleton B1PrizePool UTxO plus its validated USDM valuation, rather than inventing a new liquidity oracle. It does **not** yet close RT-1.5 because EconomicAdmissionWitness does not currently bind its EEV/liquidity decision to the exact Pool UTxO reference and observed value used by the adapter transaction.
 
 Next binding target: carry the exact Pool UTxO identity and observed executable USDM value through the economic-admission witness, and require the observation to correspond to the transaction's consumed Pool UTxO. Negative tests must reject a different Pool UTxO, stale/double-counted liquidity, and an observed value that differs from the authenticated Pool UTxO valuation. No new economic valuation rule is introduced.
+
+
+## 2026-09-23 — RT-3 concrete economic side-door found: ticket issuance bypassed adapter admission
+
+Inventory of economic mutators found `src/mint.ts::mintSerialNFT` constructing the canonical TicketIssued transaction (Counter + ticket mint + PrizePool state transition + Treasury payment) but submitting it through the generic Cardano adapter path. This was a concrete RF8 side door: the on-chain B1 validators protected the transaction, but the off-chain Economic Gate admission boundary was not mandatory for issuance.
+
+Minimal hardening applied:
+- `MintSerialOptions.economicAdmission` is now mandatory.
+- `mintSerialNFT` now submits through `submitEconomic(...)`, so a missing/invalid admission fails closed at the adapter boundary.
+- `buyTickets` no longer defaults to an empty options object; callers must provide the admission witness.
+
+Commits: `ff778c30d1c64b7692dac75877d007829fa59cfe`, `f7d48278888c572aca755d714ac81091d6326b8d`.
+
+This does not close RT-3 globally: Reveal/Claim/Expire already cross the economic adapter, while every remaining economic mutator still needs inventory and negative twins. Fresh CI is also required because the API was intentionally tightened and no workflow run is yet associated with these commits.
