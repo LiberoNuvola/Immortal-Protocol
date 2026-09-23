@@ -7,6 +7,11 @@
  * This witness is deliberately explicit so an economic transaction cannot
  * silently bypass the gate by calling the generic Cardano submitter.
  */
+import {
+  assertExecutableLiquidityObservation,
+  type ExecutableLiquidityObservation,
+} from '../observation/ExecutableLiquidityObservation'
+
 export type EconomicAdmissionWitness = {
   gateVersion: string
   admitted: true
@@ -14,6 +19,8 @@ export type EconomicAdmissionWitness = {
   authoritativeObservationReference: string
   stateHash: string
   eev: bigint
+  executableLiquidityObservation: ExecutableLiquidityObservation
+  requiredImmediateLiquidity: bigint
 }
 
 export function assertEconomicAdmission(
@@ -38,5 +45,26 @@ export function assertEconomicAdmission(
   }
   if (witness.eev < 0n) {
     throw new Error('Economic admission EEV must be non-negative')
+  }
+  if (witness.requiredImmediateLiquidity < 0n) {
+    throw new Error('required immediate liquidity must be non-negative')
+  }
+
+  assertExecutableLiquidityObservation(witness.executableLiquidityObservation)
+
+  if (
+    witness.executableLiquidityObservation.observationReference !==
+    witness.authoritativeObservationReference
+  ) {
+    throw new Error('executable liquidity observation reference mismatch')
+  }
+
+  if (
+    witness.executableLiquidityObservation.declaredUsdmLiquidity <
+    witness.requiredImmediateLiquidity
+  ) {
+    throw new Error(
+      'required immediate liquidity exceeds observed spendable liquidity',
+    )
   }
 }
