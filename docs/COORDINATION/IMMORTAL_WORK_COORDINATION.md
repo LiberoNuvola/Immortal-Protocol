@@ -4859,3 +4859,93 @@ The same identity-continuity principle should be tested across governance change
 A governance approval must not silently authorize a different rule revision.
 
 No economic constants or current IMMORTAL normative rules were changed by this research pass.
+
+
+## 2026-09-23 — Governance deep pass: authority, contestability and mutation safety
+
+The governance extension produced a stronger distinction than the earlier governance-of/governance-by split.
+
+### A. Deterministic governance is not sufficient by itself
+
+Recent digital-constitutionalism work treats protocol/code architecture as a mechanism that constrains authority and discusses how update authority can be distributed among independent actor classes. It also emphasizes that durability and observability of protocol commitments affect their credibility. citeturn0search1
+
+Adaptation:
+- audit not only whether a governance transition executes deterministically;
+- audit whether the allocation of mutation authority itself is constitutionally constrained;
+- make authority-to-mutation mapping explicit.
+
+### B. Governance requires a contestability/review boundary
+
+A 2026 constitutional-accountability framework separates epistemic, normative and systemic authority and emphasizes structured contestability, independent oversight and remedies where algorithmic infrastructures exercise public-like power. citeturn0search0turn0search10
+
+For IMMORTAL this is useful as an audit distinction:
+- epistemic: who can supply the observation/evidence used by a governance decision?
+- normative: who can authorize a rule mutation?
+- systemic: who/what can review whether the mutation followed the constitution?
+
+Do not import public-law remedies as protocol rules. The useful pattern is to avoid collapsing evidence authority, mutation authority and review authority into one role.
+
+### C. Governance has a proposal/documentation/execution attack surface
+
+A large 2025 DAO study analyzed governance contracts, documentation and proposals as distinct security surfaces, finding governance vulnerabilities and proposal/documentation quality gaps across thousands of DAOs. citeturn0search7
+
+Adaptation:
+- treat proposal identity, proposal semantics, executable payload and approved rule revision as separate objects;
+- require an explicit correspondence chain;
+- test a proposal whose human-readable description is consistent with one rule revision while its executable payload performs another.
+
+### D. Formal governance verification is a separate verification layer
+
+Recent work proposes formal specification and verification of DAO governance properties using Abstract State Machines. citeturn0search3
+
+Therefore CAES should distinguish EconomicSafety from GovernanceSafety.
+
+GovernanceSafety candidates:
+- authority preservation;
+- protected-rule preservation;
+- valid proposal-to-execution binding;
+- upgrade continuity;
+- delegation bounds;
+- governance replay resistance;
+- constitutional mutation constraints.
+
+### E. Cross-chain governance introduces a second trust boundary
+
+A 2026 cross-chain DAO study identifies governance-specific risks including token-control exploits, bribery, HCI deception and protocol vulnerabilities, and proposes layered governance/trust mechanisms. citeturn0academia9
+
+Adaptation:
+- if IMMORTAL governance ever spans multiple execution environments, require one canonical governance decision identity and explicit chain/adapter realization identities;
+- never treat a vote observed on chain A as automatically authoritative execution on chain B.
+
+### F. New governance transition identity chain
+
+The governance research now supports the following audit model:
+
+Proposal P
+→ GovernanceDecision G
+→ AuthorizedRuleRevision R
+→ Artifact A
+→ EconomicTransition T
+→ AdapterTransition C
+→ LedgerObservation L
+
+Required correspondence is explicit at every edge.
+
+New negative twins:
+1. proposal text matches R1 but executable payload is R2;
+2. valid G for R1 is replayed after R2 has become current;
+3. G is valid but signer/delegate lacks authority for this mutation class;
+4. R1 artifact is approved but deployed artifact is A2;
+5. governance decision is valid on chain A but realized as a different decision on chain B;
+6. review evidence refers to G1 while execution commits G2.
+
+### G. Research warning: algorithmic governance has a non-computability/contestability boundary
+
+Recent legal-computability work argues that participation, contestability and reason-giving can impose constraints that are not fully reducible to executable logic. citeturn0search5
+
+For IMMORTAL this should be treated as a design/research question, not a protocol verdict:
+- deterministic economic execution can be fully specified;
+- governance legitimacy/participation may require additional social or institutional mechanisms;
+- therefore “algorithmically determined” should not be conflated with “constitutionally complete”.
+
+No economic constants or current normative protocol rules changed.
