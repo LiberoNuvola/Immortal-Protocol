@@ -4251,3 +4251,46 @@ Therefore the correct next evidence target is **not** to inject an artificial or
 This preserves the separation between Reveal's accounting path and FundTreasury's physical-value recomputation path and avoids inventing a second valuation formula.
 
 **Status:** RT-1.5 **REVEAL UTxO CORRELATION GREEN / CANONICAL ORACLE VALUATION TARGET IDENTIFIED / FUND-TREASURY REAL-LEDGER EVIDENCE OPEN**.
+
+## 2026-09-23 — Current-head triangulation: Pool input binding + Gate 41 first-curve reconciliation
+
+Current Green Closure head is `c0e68db47192f4aba0fa3d080f83b60c9005010e`.
+
+### B1 Prize input binding
+
+The current head hardens the on-chain B1 PrizePool Reveal/Claim boundary so the prize datum is no longer read only from a candidate output. Both transitions now require exactly one decodable Prize input and then correlate input → output:
+
+- Reveal: input must be `Pending`; ticket policy/name must remain identical; input price must equal the action price.
+- Claim: input must be `Revealed`; ticket policy/name and payout must remain identical.
+- The existing output-side payout, solvency and accounting predicates remain in force.
+
+Commit: `c0e68db47192f4aba0fa3d080f83b60c9005010e`.
+
+This is an on-chain identity/state-continuity hardening. It does not change economic constants, valuation, payout ceiling or canonical economic rules.
+
+### Gate 41 triangulation
+
+The current Notion Gate 41 page now contains transaction-level evidence that is stronger than the older coordination entries:
+
+- Pool-NFT mint transaction `0235e186...c6cf4` reconstructed and balanced.
+- Exact PRE bootstrap of 1,000,000,000 PRE observed.
+- Pool NFT-bearing output is `0235...#1`, containing 13,000,000 lovelace + 996,071,981 PRE + 1 Pool NFT.
+- Direct Pool-NFT lineage is closed through the State-0 UTxO.
+- The first curve transition `4288d5b7...` is transaction-level reconstructed and conservation-checked; its direct Pool-NFT state transition is verified.
+- The remaining Gate 41 questions are semantic/provenance questions: Snek `info.outputId` mapping, Genesis funding role, seed/min-ADA semantics and the 3 ADA reconciliation.
+
+Therefore the older coordination statements that still list **FIRST CURVE REPLAY — OPEN** are stale relative to the latest Notion evidence and must not be used as the current status. Current classification: **FIRST CURVE TRANSITION CLOSED / 3 ADA SEMANTICS OPEN**.
+
+No economic interpretation of the 3 ADA is added.
+
+### Evidence discipline
+
+The direct on-chain findings are evidence of ledger facts and conservation, not attribution of economic intent. In particular, the observed 13 ADA initial Pool output and the later first-curve ADA delta do not by themselves prove seed/min-ADA/bootstrap semantics.
+
+Status:
+- **B1 Reveal/Claim Prize-input binding: HARDENED**
+- **Gate 41 first-curve transition: CLOSED**
+- **Gate 41 3 ADA semantics: OPEN**
+- **Gate 41 Genesis funding role: OPEN**
+- **Gate 41 Snek info.outputId mapping: OPEN**
+
