@@ -3406,3 +3406,14 @@ PRE-RICH Cardano Emulator Reveal #165 on current head a2efef1334740cb930189a76f5
 The current Plutus 1.68 release documentation explicitly records CEK casing on constants of builtin types including pair, with conformance tests passing. This is relevant to the previously observed ProtoPair non-const diagnostic and strengthens the differential-evaluator investigation, but is not by itself proof that the Lucid evaluator is the exact cause. No validator economics were changed.
 
 Genesis Conformance #8 remains in progress from the earlier B1 projection-fix head 503e111f; no ledger GREEN claim until the real transition/evidence step completes.
+
+
+---
+
+## 2026-09-23 — Reveal run #165 confirms evaluator/budget reproduction
+
+Fresh run #165 fails with the same quantitative execution-budget boundary, now reported at `Spend[1]`: Mem `-29986019900`, CPU `-20004554100`, with unchanged emulator parameters (`maxTxSize=16384`, `maxTxExMem=14000000`, `maxTxExSteps=10000000000`, PlutusV2 cost-model length 175).
+
+This strengthens classification as the same evaluator/budget compatibility issue rather than a transaction-size regression. The correct next experiment remains a differential evaluation of the same validator bytes/datum/redeemer/context under a current/node-compatible/reference evaluator. No validator economics, 500x parameter, or maxTxSize is to be altered to make the emulator pass.
+
+Genesis run #8 remains active at the Plutus build/export stage; Haskell setup and native dependencies have completed successfully. No Genesis ledger evidence is available yet.
