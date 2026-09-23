@@ -3385,3 +3385,16 @@ Current-head review after the Genesis pipeline unblock found two remaining integ
 These are compile/integration hygiene fixes only. The canonical PRE-RICH profile remains the application-supplied source of the 500x bound; no universal economic rule changed.
 
 Status: B1 projection binding = implementation repaired; authoritative status remains dependent on fresh CI. Projection B4 representation evidence remains valid; no GREEN claim is made from source inspection alone.
+
+
+---
+
+## 2026-09-23 — Reveal differential result + Genesis execution started
+
+Fresh current-head evidence:
+- PRE-RICH Cardano Emulator Reveal #160 failed again at the **same execution-budget boundary** after dependency installation succeeded: `Spend[0] execution went over budget`, Mem `-29986019900`, CPU `-20004554100`, with `maxTxSize=16384`, `maxTxExMem=14000000`, `maxTxExSteps=10000000000`, PlutusV2 cost-model length 175.
+- This reproduces the existing evaluator/budget incompatibility signal; it is not evidence for changing validator economics or transaction-size limits. Differential evaluator experiment remains the correct next diagnostic.
+- Genesis Cardano Conformance #8 is now **in progress** on head `503e111f957aef3f0435fd747fda76773a3a63e5`; it has passed checkout, Node and npm dependencies and is currently at Haskell setup. No ledger result yet.
+- Algorithmic Governability and Cardano Adapter Sale remain successful on the preceding current head.
+
+No economic/normative rule changed.
