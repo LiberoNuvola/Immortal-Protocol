@@ -58,6 +58,10 @@ export function assertPreRichControlMatches(
     )
   }
 
+  // Apply the independent historical-control invariants to the same result
+  // before exposing it as an admissible observation.
+  assertPreRichControlHistory(previousControl, observedControl)
+
   return expected
 }
 
