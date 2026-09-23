@@ -86,6 +86,16 @@ jobs:
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
 
+      - name: Record generated artifact hashes
+        run: |
+          mkdir -p audit/yaci-evidence
+          {
+            echo "artifact_commit=$GITHUB_SHA"
+            for f in plutus/out/*.plutus.json; do
+              sha256sum "$f"
+            done
+          } | tee audit/yaci-evidence/artifact-hashes.txt
+
       - name: Bind generated artifacts to trace consumers
         run: |
           cp plutus/out/treasury.plutus.json src/plutusScripts/treasury.plutus.json
