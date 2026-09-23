@@ -5306,3 +5306,20 @@ Commit: `22feba74d95062b87083e94f70800621b0d61ad8`.
 This does not implement evaluation yet. It tightens the evidence boundary so a malformed/empty artifact cannot be mistaken for an exact validator artifact. The next required step remains typed packet decoding followed by `evalTxExUnitsWithLogs`.
 
 Status: P2.8-B.1 **OPEN — evidence boundary hardened; evaluator implementation still pending**.
+
+
+## 2026-09-23 — Reveal transition-boundary audit: positive path exists, negative twins still missing
+
+A direct inspection of the current green-branch Reveal emulator fixture shows that the fresh-artifact path now exercises the real parameterized Plutus V2 PrizeValidator + B1PrizePool validators and requires continuing Prize/Pool outputs. It also contains optional diagnostic probes for the Pool Value/evaluator boundary.
+
+However, the current emulator conformance fixture is still **positive-path only** after the real Reveal submission. It does not yet execute the highest-value provenance negative twins against the newly hardened validator:
+- Reveal with no matching Prize input;
+- Reveal with substituted ticket identity between Prize input/output;
+- Reveal with mismatched price;
+- analogous Claim input/output substitution checks.
+
+This matters because commit `c0e68db47192f4aba0fa3d080f83b60c9005010e` changed B1PrizePool Reveal/Claim from output-only observation to explicit input/output binding. The next conformance increment should therefore prove both acceptance of the canonical transition and rejection of these altered transitions.
+
+Cardano's EUTXO model independently supports this test boundary: script validity is determined from the transaction and referenced inputs, and a UTxO is consumed as an input only once. citeturn0search0turn0search4
+
+**Classification:** B6 / P2.8 — **POSITIVE REAL-EMULATOR PATH PRESENT; NEGATIVE INPUT-BINDING EVIDENCE OPEN.** No economic rule changed.
