@@ -3718,3 +3718,12 @@ Commits: `975d95d6ade0cad9e105934bc1c93beab726edca`, `a2993ec3c1776d9b1b33cfc78d
 Boundary remains explicit: this is an application-level provenance witness, not yet V3/Cardano atomic integration. It deliberately does not choose or derive X(P) from unverified inputs; the caller must supply the canonical exact-integer class costs. The next closure step is to connect this witness to the authoritative PRE-RICH post-state/capacity computation and then to the V3/Cardano transition so the on-chain control cannot be caller-selected.
 
 **Status:** CONTROLLER PROVENANCE WITNESS IMPLEMENTED / CI PENDING / V3+CARDANO BINDING OPEN.
+
+
+## 2026-09-23 — Genesis CI failure classified and trigger repaired
+
+The previous Genesis ledger run `35782577203` failed at fresh Plutus compilation. The job log showed a concrete stale-source mismatch at `B1PrizePool.hs`: the failing run invoked `legacyB1ToUniversalEconomicState d` although the adapter signature requires `EconomicProfile -> B1PrizePoolDatum -> UniversalEconomicState`. Current branch source now correctly supplies `preRichEconomicProfileV1`, so the failure is classified as stale/intermediate-source CI evidence rather than an economic failure.
+
+A separate workflow hygiene defect was also found in `.github/workflows/pre-genesis-genesis-cardano.yml`: one path entry contained a literal escaped newline before the next path. Corrected in `05631ed2037f0c187f06ddb6b76b9ddb491340a7` so the Genesis ledger workflow has a clean trigger path for the carrier trace and artifact-provenance recorder.
+
+**Status:** previous build failure explained; fresh current-head compilation/ledger execution still required before Genesis/C14 can be promoted GREEN.
