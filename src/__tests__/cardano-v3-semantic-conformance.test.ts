@@ -1,5 +1,5 @@
 import { Constr, type Data } from 'lucid-cardano'
-import { describe, it } from 'node:test'
+import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 
 /**
