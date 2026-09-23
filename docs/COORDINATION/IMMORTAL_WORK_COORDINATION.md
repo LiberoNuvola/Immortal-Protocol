@@ -3879,3 +3879,14 @@ No red-team finding may be closed by weakening a normative economic rule. A fail
 
 Status: RED-TEAM PASS IN PROGRESS / NO NEW ECONOMIC DECISIONS.
 Evidence register: docs/audits/REDTEAM-STATUS.md.
+
+
+## 2026-09-23 — Red-team valuation arithmetic hardening
+
+Adversarial inspection found upward rounding at the Genesis lower-bound conversion. A value below the exact threshold could round upward into admission. GenesisTreasuryAdmission now uses floor division, and its regression suite covers the sub-threshold fractional boundary.
+
+Commits: 388eb97c2ea5d79b7a089336f9f9397593fdd7dd; 547d8f99f00473b3228ba691d576dd0982e4b6eb.
+
+No threshold, price, or economic policy changed. This is arithmetic hardening of the existing lower-bound predicate. Broader RT-1 valuation and executable-liquidity attacks remain open.
+
+Status: RT-1 ARITHMETIC HARDENED / BROADER VALUATION SURFACE OPEN.
