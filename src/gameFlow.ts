@@ -955,6 +955,8 @@ export async function claimPrize(opts: {
     `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
     `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
     `${ticketUtxo.txHash}#${ticketUtxo.outputIndex}`,
+  ], [
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
   ])
 }
 
@@ -1087,6 +1089,8 @@ export async function expirePrize(opts: {
 
   return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
     `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
+  ], [
     `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
   ])
 }
