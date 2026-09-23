@@ -4450,3 +4450,34 @@ These findings reinforce that:
 - the potentially distinctive research question remains their **composition around one canonical economic transition identity**.
 
 No economic constants or normative protocol semantics were changed by this research pass.
+
+
+## 2026-09-23 — P2.8 evaluator deepening: runner gap isolated
+
+A fresh evaluator-focused cross-check was performed against the Cardano ledger/Plutus APIs and the existing P2.8 runner.
+
+### Finding
+The existing `audit/cardano-ledger-runner/Main.hs` is correctly fail-closed, but it currently stops after verifying that the exact artifact pair and the six required evidence files are present/non-empty. Its own next step is explicitly to parse/validate the packet and invoke ledger-aligned `evalTxExUnitsWithLogs`; that invocation is not yet implemented in the inspected runner.
+
+The Cardano ledger API exposes `evalTxExUnitsWithLogs` with the exact inputs already identified by the audit:
+- protocol parameters;
+- transaction;
+- current/relevant UTxO set;
+- EpochInfo;
+- SystemStart.
+
+The same API returns either a `TransactionScriptFailure` or sufficient ExUnits/logs. The Plutus V2 evaluation context separately requires the protocol's cost-model parameters in the exact declared order and must be recreated after protocol updates.
+
+### Consequence
+This sharpens P2.8-B.1 from a generic 'evaluator blocked' statement into a concrete implementation boundary:
+
+`exact ledger evidence packet -> typed Cardano ledger reconstruction -> evalTxExUnitsWithLogs -> ExUnits OR TransactionScriptFailure -> persisted evaluator evidence`
+
+No synthetic PParams/EpochInfo/SystemStart may be substituted. The existing emulator `execution went over budget` symptom remains diagnostic only and is not promoted to a validator/economic verdict.
+
+### Reusable external pattern
+Cardano's own ledger evaluation API and existing budget tooling demonstrate that transaction execution-unit estimation is performed against a ledger-aligned transaction/context, rather than by evaluating an isolated script with guessed context. This supports the current fail-closed architecture and gives a precise implementation target; it does not alter IMMORTAL semantics.
+
+**Status:** P2.8-B.1 **BLOCKED → CONCRETE IMPLEMENTATION TARGET IDENTIFIED**. Evidence acceptance remains open until the runner actually reconstructs the ledger context and records ExUnits or an exact `TransactionScriptFailure`.
+
+No economic constants, valuation rules, validator semantics or protocol decisions changed in this research pass.
