@@ -3674,3 +3674,12 @@ Applied:
 This strengthens C10/C11 without introducing new economics. The trace already rejects replay and verifies Treasury/Oracle reference preservation; the new check extends that evidence to the carrier's complete value conservation. Fresh compilation and Yaci execution are still required before promoting this to ledger GREEN.
 
 **Cross-review assignment:** C10/C11 primary hardening by this session; the other session should adversarially test whether any other carrier-owned value or unrelated transaction leg can alter the canonical transition, and whether the equality check remains compatible with the production deployment path.
+
+
+## 2026-09-23 — Genesis admission boundary test correction
+
+Adversarial review of the Genesis admission mirror found an invalid threshold test. The test attempted to derive a PRE quantity from the USDM-subunit threshold alone, producing a quantity of 4,001 PRE while the fixture price is 0.04 USDM/PRE; that value is far below 4,000 USDM and therefore could never legitimately be admitted.
+
+Corrected in 37b2f2cdd733da94888bb7b415132eba9d348a3f: the boundary is now tested explicitly with 9,999,999 PRE rejected and 10,000,000 PRE admitted at the canonical 0.04 USDM/PRE oracle value. This is a test-fixture correction only; the admission implementation and threshold are unchanged.
+
+Cross-review lesson: Genesis admission tests must vary quantity around the economically derived threshold, not derive quantity by dividing the USDM threshold without accounting for the oracle price.
