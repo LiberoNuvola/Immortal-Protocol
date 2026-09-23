@@ -119,8 +119,8 @@ export type ProjectionInput = {
   safetyCapital: bigint
   reserveProtection: bigint
   mandatoryFutureCosts: bigint
-  currentActiveClass?: bigint
-  highestClassEverActivated?: bigint
+  currentActiveClass: bigint
+  highestClassEverActivated: bigint
 }
 
 function referenceUnitFromUsdm(priceUsdm: bigint): bigint {
