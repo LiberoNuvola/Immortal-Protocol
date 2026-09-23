@@ -78,3 +78,9 @@ Next cross-review question: verify that the evidence consumers actually upload a
 Session A review of the Genesis front found the carrier still used the Ledger API `valueOf` helper for every PRE/carrier/oracle singleton lookup. B1PrizePool had already replaced the same helper with explicit `AssocMap` traversal after the evaluator Value failure. To avoid carrying the same evaluator/compiler compatibility risk into the Genesis carrier, commit `2b589e44dbdc7b411fba8941a4f530f25d820101` applies the same semantics-preserving direct lookup pattern.
 
 **Review status:** targeted compatibility hardening only. Fresh Genesis compilation + Yaci execution must still validate it; no GREEN promotion from source inspection.
+
+## 2026-09-23 — Cross-review: Genesis C9/C10 exclusion evidence
+
+Commit `a2364a00d40d8b149673397b3bc75a8a9c4d1c40` strengthens the real Yaci Genesis trace: after ActivateGenesis it now verifies that the exact Treasury and Oracle reference UTxOs remain unconsumed and records an explicit evidence boundary that the transition touches only the carrier state, not PrizePool/bootstrap liquidity.
+
+This does **not** prove the full Genesis economic state transition; it proves a narrower and important exclusion property when the lab succeeds: Treasury/Oracle references are observational inputs, not consumed funding, and the carrier transition itself does not import bootstrap PRE into PrizePool liquidity.
