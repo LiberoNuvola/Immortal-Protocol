@@ -4152,3 +4152,18 @@ Commits:
 - `47f97cd249fbae9d1a152bbed1530f837ac8708d`
 
 This is observation-layer provenance hardening only. It does not choose a universal freshness window and does not yet constitute real-ledger evidence. RT-1.5 remains open for exercising freshness + authenticated Pool valuation against an actual Cardano/Yaci trace.
+
+
+## 2026-09-23 — RT-2 forged-observation mirror cross-check
+
+Current Green Closure head was re-triangulated against the red-team register and Genesis carrier implementation. The carrier already binds Treasury identity, PRE policy/asset identity, Oracle policy/name/publisher and freshness at the reference-input observation boundary, while the one-shot carrier token provides singleton lifecycle authority. The remaining epistemic gap is narrower: the repository does not yet contain a real adversarial ledger trace demonstrating that an attacker cannot replace the referenced Oracle/Treasury state with a forged state while preserving the required token identities.
+
+Added mirror negative twins to `audit/pre-genesis-genesis/stress-lab.mjs` for wrong PRE asset, forged Oracle publisher and wrong PRE policy. These tests deliberately remain classified as instrumentation, not ledger proof.
+
+Triangulation:
+- Green Closure implementation: `GenesisRegimeCarrier.hs` authenticates the observed fields and singleton carrier transition.
+- Red-team register: RT-2.13 remains OPEN; RT-2.14 remains OPEN; RT-2.15 remains PARTIAL.
+- Audit contract: `TREASURY-OBSERVATION-CONTRACT-v0.1.md` requires canonical Treasury identity, PRE asset identity, valuation evidence/freshness and on-chain revalidation.
+
+No economic rule, threshold, haircut or valuation semantics changed.
+Status: **RT-2 mirror coverage HARDENED / ledger authority evidence OPEN**.
