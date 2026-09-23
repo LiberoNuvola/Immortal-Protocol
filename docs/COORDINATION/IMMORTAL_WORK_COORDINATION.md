@@ -183,6 +183,16 @@ No CI-green claim is made here unless a corresponding workflow run is observed.
 
 `81a7933c6845939c71430f34dd5de174521bd402` records the refinement-boundary hardening.
 
+## 7B. Control-state side-door closure
+
+The PRE-RICH Cardano projection previously defaulted omitted `currentActiveClass` / `highestClassEverActivated` to `0`. That was a representational side-door: missing authoritative control could silently become class 0. The projection now requires both observations explicitly and rejects malformed control values and `CurrentActiveClass > HighestClassEverActivated`.
+
+V3 transition validation additionally enforces monotonic `HighestClassEverActivated` across pre/post states and preserves the invariant `CurrentActiveClass <= HighestClassEverActivated`.
+
+Commits: `020692921024a1ef4ffb8a0fec10f82f63d4c7f1`, `d5bf7e22b06674da2e4e56f6beb49d0667e8ac8b`, `bad410d2d90c560c0eeff7ec6e7d1d52400c7a96`.
+
+This does **not** claim automatic class selection/hysteresis closure; it removes silent defaults and enforces the historical-control invariant while the authoritative PRE-RICH hysteresis controller remains the policy source.
+
 ## 7. Current verified architectural concern
 
 The current branch still contains PRE-RICH-shaped state concepts inside the V3 economic state/kernel, including:
