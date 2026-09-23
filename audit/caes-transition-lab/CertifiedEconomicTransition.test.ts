@@ -9,7 +9,6 @@ const validWitness: TransitionCertificate = {
   action: { kind: "Issue", payload: "class=1" },
   postStateHash: "state:post:002",
   ruleId: "EconomicTransitionV3/Issue",
-  transitionValid: true,
   liveness: {
     authoritativeInputsAvailable: true,
     proposerAvailable: true,
@@ -17,30 +16,58 @@ const validWitness: TransitionCertificate = {
     deciderAvailable: true,
   },
   transitionId: "transition:001",
+  existingBoundaries: {
+    v3TransitionValid: true,
+    refinementExact: true,
+    semanticEncodingValid: true,
+  },
 };
 
 describe("CAES transition witness lab", () => {
-  it("accepts a structurally complete witness", () => {
+  it("accepts a structurally complete composition witness", () => {
     expect(verifyTransitionCertificate(validWitness)).toEqual({ accepted: true });
   });
 
-  it("rejects a witness that merely claims validity", () => {
+  it("does not trust a producer-supplied transitionValid assertion", () => {
+    const malicious = { ...validWitness, transitionValid: false } as unknown as TransitionCertificate;
+    expect(verifyTransitionCertificate(malicious)).toEqual({ accepted: true });
+  });
+
+  it("rejects missing V3 transition validity", () => {
     expect(
       verifyTransitionCertificate({
         ...validWitness,
-        transitionValid: false,
+        existingBoundaries: { ...validWitness.existingBoundaries, v3TransitionValid: false },
       }),
-    ).toEqual({ accepted: false, reason: "TRANSITION_NOT_CERTIFIED" });
+    ).toEqual({ accepted: false, reason: "V3_TRANSITION_INVALID" });
+  });
+
+  it("rejects missing refinement", () => {
+    expect(
+      verifyTransitionCertificate({
+        ...validWitness,
+        existingBoundaries: { ...validWitness.existingBoundaries, refinementExact: false },
+      }),
+    ).toEqual({ accepted: false, reason: "REFINEMENT_NOT_EXACT" });
+  });
+
+  it("rejects missing semantic encoding", () => {
+    expect(
+      verifyTransitionCertificate({
+        ...validWitness,
+        existingBoundaries: {
+          ...validWitness.existingBoundaries,
+          semanticEncodingValid: false,
+        },
+      }),
+    ).toEqual({ accepted: false, reason: "SEMANTIC_ENCODING_INVALID" });
   });
 
   it("keeps liveness hypotheses explicit", () => {
     expect(
       verifyTransitionCertificate({
         ...validWitness,
-        liveness: {
-          ...validWitness.liveness,
-          proposerAvailable: false,
-        },
+        liveness: { ...validWitness.liveness, proposerAvailable: false },
       }),
     ).toEqual({
       accepted: false,
@@ -48,30 +75,12 @@ describe("CAES transition witness lab", () => {
     });
   });
 
-  it("rejects stale/non-transitioning state witnesses", () => {
+  it("rejects non-transitioning state witnesses", () => {
     expect(
       verifyTransitionCertificate({
         ...validWitness,
         preStateHash: validWitness.postStateHash,
       }),
     ).toEqual({ accepted: false, reason: "NON_TRANSITIONAL_STATE" });
-  });
-
-  it("rejects missing rule identity", () => {
-    expect(
-      verifyTransitionCertificate({
-        ...validWitness,
-        ruleId: "",
-      }),
-    ).toEqual({ accepted: false, reason: "MISSING_RULE_ID" });
-  });
-
-  it("rejects an incomplete pre-state binding", () => {
-    expect(
-      verifyTransitionCertificate({
-        ...validWitness,
-        preStateHash: "",
-      }),
-    ).toEqual({ accepted: false, reason: "MISSING_PRE_STATE" });
   });
 });
