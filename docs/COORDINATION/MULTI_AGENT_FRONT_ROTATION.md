@@ -119,3 +119,22 @@ This establishes a stronger transitive binding:
 **generated script bytes → independently recomputed Cardano identity → observed transition evidence identity**.
 
 It still does not parse the signed transaction CBOR to prove that every serialized script witness/redeemer byte is identical to the generated artifact. That remains the next C14 adversarial boundary.
+
+
+## 2026-09-23 — C14 adversarial rotation update
+
+**Primary pass:** C14 provenance  
+**Finding:** hash manifests and evidence-field correlation were insufficient to prove that the generated validator bytes were the bytes carried by the submitted transition.
+
+**Hardening applied**
+- Signed transition CBOR is parsed with Lucid/CML.
+- Plutus V2 witness set is inspected directly.
+- Generated `genesisRegimeCarrier.plutus.json` bytes must occur verbatim in the signed witness set.
+- Observed witness script hashes must independently resolve to the generated carrier validator hash.
+- Evidence records the witness-presence and witness-identity binding results.
+
+**Cross-review conclusion:** this closes the identified artifact→signed-witness identity gap at the evidence-binder layer. It does not close the fresh-ledger evidence requirement.
+
+**Commits:** `35db1b4f6d4137732a6f9ac23c71f676d2661616`, `c20d4b45c4db2c693d76849e8d3777fb64140e89`, coordination `d153370ce47fd94fcbd8ec5546cc52dca7a661ac`.
+
+**Next reviewer attack:** inspect a fresh Genesis workflow artifact packet and confirm the exact submitted CBOR, generated artifact hashes, source commit, observed witness bytes/identity and transition tx reference are all mutually consistent.
