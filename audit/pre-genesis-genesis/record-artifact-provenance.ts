@@ -34,6 +34,7 @@ if (typeof transitionTxCbor !== 'string' || transitionTxCbor.length === 0) {
 // precomputed script-hash fields in the evidence packet.
 const parsedTx = lucid.fromTx(transitionTxCbor) as any
 const coreTx = parsedTx.txComplete
+const signedCborTransactionHash = parsedTx.toHash()
 const witnessSet = coreTx?.witness_set?.()
 const plutusV2Scripts = witnessSet?.plutus_v2_scripts?.()
 const observedScripts: string[] = []
@@ -49,7 +50,13 @@ const witnessScriptHashes = observedScripts.map((script) =>
 )
 const witnessIdentityBound = witnessScriptPresent &&
   witnessScriptHashes.includes(carrierScriptHash)
+const transactionHashBound = signedCborTransactionHash === evidence.transitionTransactionRef
 
+if (!transactionHashBound) {
+  throw new Error(
+    `Signed Genesis transition CBOR hash mismatch: cbor=${signedCborTransactionHash}, evidence=${evidence.transitionTransactionRef}`,
+  )
+}
 if (!witnessScriptPresent) {
   throw new Error('Signed Genesis transition does not carry the generated Genesis carrier PlutusV2 script bytes')
 }
@@ -65,6 +72,8 @@ evidence.artifactProvenance = {
   binding: {
     transitionTransactionRef: evidence.transitionTransactionRef,
     transitionTxCborPresent: true,
+    transactionHash: signedCborTransactionHash,
+    transactionHashBound,
     witnessScriptPresent,
     witnessIdentityBound,
     observedPlutusV2ScriptHashes: witnessScriptHashes,
