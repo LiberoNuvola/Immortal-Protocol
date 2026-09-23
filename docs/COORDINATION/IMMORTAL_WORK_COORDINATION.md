@@ -5063,3 +5063,19 @@ Constitution
 Each arrow is a separate boundary with its own negative twin.
 
 No economic constants, validator semantics or current normative protocol rules changed.
+
+
+## 2026-09-23 — P2.8 fresh-artifact compile gate: import defect fixed
+
+The corrected fresh-artifact Reveal workflow reached the actual Plutus compilation stage and exposed a concrete source-level compile defect:
+`IMMORTAL/kernel/EconomicKernel.hs:106:39 Variable not in scope: profileClasses :: EconomicProfile -> [t]`.
+
+Triangulation confirmed `IMMORTAL/state/EconomicProfile.hs` exports `profileClasses`, while `EconomicKernel.hs` used it in `controlStateValid` but omitted it from the explicit import list. No economic rule was missing; this was a compile-time import defect.
+
+Fixed on `work/immortal-green-closure` by importing `profileClasses` explicitly.
+
+Commit: `040d931b725f192f0331c5a8205159118bae44b5`.
+
+At the same head, Adapter Sale Conformance #897 and Algorithmic Governability Adversarial Lab #270 completed successfully. The Kernel Invalid-Class Fail-Closed Audit #905 is still running. A new Reveal workflow has not yet appeared for the corrected head at the observation point; therefore no evaluator conclusion is claimed yet.
+
+**Classification:** P2.8-B.1 remains **OPEN — fresh-artifact compile fixed; next differential Reveal run pending**.
