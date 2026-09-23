@@ -16,7 +16,7 @@ on:
       - "PRE-RICH/profile/PreRichEconomicProfile.hs"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
-      - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
+      - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"\n      - "audit/pre-genesis-genesis/record-artifact-provenance.ts"
       - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
       - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
       - "audit/cardano-integration/create-test-wallet.mjs"
@@ -159,6 +159,9 @@ jobs:
 
       - name: Execute real PRE-GENESIS -> GENESIS transition
         run: node --import tsx/esm audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts
+
+      - name: Bind Genesis evidence to generated artifact hashes
+        run: node --import tsx/esm audit/pre-genesis-genesis/record-artifact-provenance.ts
 
       - name: Upload Genesis ledger evidence
         if: always()
