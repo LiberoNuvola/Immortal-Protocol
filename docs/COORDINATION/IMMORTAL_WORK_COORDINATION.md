@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `c20d4b45c4db2c693d76849e8d3777fb64140e89` — Genesis evidence trace cleanup after signed-witness provenance binding
+**Latest observed commit:** `36c100a3acae6dd1987ba66faaeb1c5ae2f92d74` — Genesis evidence binds exact signed CBOR to submitted transaction hash
 
 ---
 
@@ -3763,3 +3763,21 @@ If the Genesis workflow exposes a fresh successful run, inspect its uploaded evi
 - the signed CBOR is the exact CBOR submitted by the real Yaci transition, not a reconstructed or post-hoc transaction.
 
 **Status:** C14 **HARDENED / NEEDS-FRESH-CI-EVIDENCE**.
+
+
+### C14 follow-up — exact signed-CBOR transaction identity
+
+The provenance binder now independently computes the transaction hash from the exact signed `transitionTxCbor` parsed by Lucid/CML and requires it to equal the transition transaction reference recorded by the real ledger trace.
+
+Evidence now records:
+- `transactionHash`
+- `transactionHashBound`
+- `witnessScriptPresent`
+- `witnessIdentityBound`
+- observed Plutus V2 witness script hashes
+
+This strengthens the evidence chain to:
+
+`generated artifact bytes → witness bytes in signed CBOR → transaction hash → observed transition tx reference`.
+
+Status remains **HARDENED / NEEDS-FRESH-CI-EVIDENCE** because no fresh workflow result has yet been observed for the latest binder commits.
