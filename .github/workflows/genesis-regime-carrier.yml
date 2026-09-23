@@ -72,5 +72,7 @@ jobs:
           cache: npm
       - name: Install Node dependencies
         run: npm ci
+      - name: Run Genesis Treasury admission mirror
+        run: node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
       - name: Run Genesis carrier singleton ledger lab
         run: node src/__tests__/genesis-carrier-mint-policy-emulator.mjs
