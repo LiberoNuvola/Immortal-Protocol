@@ -171,3 +171,29 @@ export function assertExecutableLiquidityMatchesAuthenticatedPool(
     )
   }
 }
+
+
+/**
+ * Validates observation freshness using caller-supplied authoritative time
+ * and freshness horizon. No protocol-wide age constant is introduced here.
+ */
+export function assertExecutableLiquidityObservationFresh(
+  observation: ExecutableLiquidityObservation,
+  currentObservedAt: bigint,
+  maxAge: bigint,
+): void {
+  assertExecutableLiquidityObservation(observation)
+
+  if (currentObservedAt < 0n) {
+    throw new Error('current observation timestamp must be non-negative')
+  }
+  if (maxAge < 0n) {
+    throw new Error('observation freshness horizon must be non-negative')
+  }
+  if (observation.observedAt > currentObservedAt) {
+    throw new Error('executable liquidity observation is from the future')
+  }
+  if (currentObservedAt - observation.observedAt > maxAge) {
+    throw new Error('executable liquidity observation is stale')
+  }
+}
