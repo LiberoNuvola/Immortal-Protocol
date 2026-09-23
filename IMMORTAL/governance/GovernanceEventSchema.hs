@@ -97,11 +97,11 @@ eventSchemaValid e =
 payloadProposalId :: CanonicalPayload -> ProposalId
 payloadProposalId p = case p of
   PayloadProposalSubmitted x -> proposalId x
-  PayloadProposalClassified x _ -> x
+  PayloadProposalClassified x _ _ -> x
   PayloadStatusChanged x _ _ -> x
   PayloadVoteCast x -> voteProposal x
   PayloadDelegationSet x _ _ -> x
-  PayloadGatesSet x _ -> x
+  PayloadGatesSet x _ _ -> x
 
 payloadTimestamp :: CanonicalPayload -> Timestamp
 payloadTimestamp p = case p of
