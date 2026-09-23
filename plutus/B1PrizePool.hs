@@ -19,6 +19,7 @@ import qualified EconomicKernel
 import qualified UniversalEconomicKernel
 import qualified UniversalEconomicState
 import B1LegacyAdapter ( legacyB1ToUniversalEconomicState )
+import PreRichEconomicProfile ( preRichEconomicProfileV1 )
 import Types
   ( B1PrizePoolDatum (..)
   , B1PrizePoolAction (..)
@@ -60,7 +61,7 @@ effectivePool d =
 {-# INLINABLE worstCaseExposure #-}
 worstCaseExposure :: B1PrizePoolDatum -> Integer
 worstCaseExposure d =
-  UniversalEconomicState.uesWorstCaseExposure (legacyB1ToUniversalEconomicState d)
+  UniversalEconomicState.uesWorstCaseExposure (legacyB1ToUniversalEconomicState preRichEconomicProfileV1 d)
 
 -- | Deterministic worst-case solvency invariant.
 --
