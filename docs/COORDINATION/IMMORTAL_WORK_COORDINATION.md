@@ -4758,3 +4758,104 @@ The corrected fresh-artifact workflow is now executing on commit `1689cc052be1ce
 The concurrent Adapter Sale and Algorithmic Governability workflows were triggered on the same head; both are active/success paths independent of this emulator classification. Kernel/Cardano integration runs on the same push may be cancelled/superseded by concurrency; they must be re-observed from the exact resulting head before promotion.
 
 **Status:** P2.8-B.1 **EVIDENCE PIPELINE CONVERGED / FRESH DIFFERENTIAL RUN IN PROGRESS**.
+
+
+## 2026-09-23 — Governance research expansion: algorithmic governance / constitutional governance
+
+The research scope is now expanded from protocol prior art to algorithmic governance and constitutional governance.
+
+### 1. Important distinction: governance of algorithms vs governance by algorithms
+
+The 2026 Oxford Handbook frames algorithmic governance broadly as both the governance of algorithmic systems and the use of algorithmic systems in governing. It emphasizes participation in the design, operation, evolution and decommissioning of governed systems, alongside validity, accountability and legitimacy. citeturn0search0
+
+For IMMORTAL this suggests keeping two questions separate:
+- Governance of IMMORTAL: who may alter constitutional/economic rules, and under what procedure?
+- Governance by IMMORTAL: once rules are frozen, which decisions are determined mechanically by the protocol rather than by discretionary operators?
+
+The second is already close to IMMORTAL's intended economic architecture; the first is not automatically solved merely because execution is deterministic.
+
+### 2. Full algorithmic governance is established DLT prior art
+
+Banca d'Italia explicitly discusses governance models for DLTs including cases of full algorithmic governance, and analyzes governance tokens and concrete Ethereum/Polkadot structures. Therefore algorithmic governance itself cannot be treated as a novelty claim. citeturn1search7
+
+### 3. Blockchain constitutionalism is established prior art
+
+Research on blockchain constitutionalism argues that blockchain systems can function as constitutional orders and distinguishes formal on-chain constitutions from material/off-chain constitutional forces. This is directly relevant to IMMORTAL because the existing Source-of-Truth hierarchy should be tested not only for formal hierarchy but also for what can actually mutate the enforced system. citeturn1search3
+
+A 2026 constitutional-accountability framework further separates epistemic authority (who controls knowledge/visibility), normative authority (who sets and enforces standards), and systemic authority (which institutions provide review and legitimacy). citeturn1search0
+
+This maps well onto a CAES governance audit without importing the legal framework as protocol semantics.
+
+### 4. DAO governance itself has a new attack surface
+
+A 2026 study of 48 active Ethereum DAOs identifies governance attacks arising from governance-mechanism design even when the underlying contracts are assumed bug-free. This is important: correct execution of a governance mechanism does not prove that the governance mechanism itself is constitutionally safe. citeturn1academia12
+
+Adaptation:
+- add a governance-layer threat model separate from smart-contract correctness;
+- test capture, proposal/vote/execution separation, delegated authority, quorum/threshold manipulation and upgrade-path bypass;
+- distinguish the statement that a vote executed correctly from the statement that the vote was authorized to change this class of rule.
+
+### 5. Formal verification of DAO governance is now an explicit research area
+
+A 2026 ABZ contribution proposes formal specification and verification of DAO governance properties using Abstract State Machines. This confirms that governance properties themselves can be treated as formal state-transition properties, rather than merely documentation. citeturn1search2
+
+Adaptation target:
+- define governance invariants independently from economic invariants;
+- verify that a governance transition cannot mutate constitutionally protected economic primitives unless the constitution explicitly permits that class of mutation;
+- verify upgrade transitions as first-class transitions.
+
+### 6. Constitutional governance should be treated as a separate control plane
+
+Current Cardano governance is explicitly constitution-based and combines decentralized decision-making with accountability and constitutional obligations. citeturn0search9
+
+For IMMORTAL this suggests an architectural distinction worth testing:
+
+Constitutional Control Plane -> Economic Normative State -> Adapter -> Application -> Ledger
+
+rather than allowing application governance or adapter administration to become implicit economic authority.
+
+This does not mean IMMORTAL should copy Cardano's governance model. It is a boundary pattern for analysis.
+
+### 7. New governance negative twins
+
+The research suggests adding a governance-specific negative-twin family:
+
+1. Execution-valid / authority-invalid: governance transaction is technically valid but actor lacks constitutional authority.
+2. Rule-class violation: valid governance procedure attempts to mutate a constitutionally immutable economic invariant.
+3. Upgrade bypass: new implementation is valid but has no valid constitutional transition from the old implementation.
+4. Delegation amplification: delegated authority exceeds the authority of the delegator.
+5. Governance replay: old governance approval is reused after the governing state changed.
+6. Off-chain/on-chain divergence: constitution says one authority hierarchy, executable governance path implements another.
+7. Governance-of-governance bypass: the mechanism that changes governance rules is not itself subject to the constitutional restrictions governing such changes.
+
+### 8. Potentially important conceptual addition: constitutional immutability classes
+
+Do not introduce this into IMMORTAL yet. It is a research model only.
+
+Partition normative objects into:
+- immutable constitutional invariants;
+- constitutionally amendable economic rules;
+- application policy parameters;
+- implementation parameters;
+- operational/evidence metadata.
+
+Then test whether every mutation path has an explicit authority class.
+
+This could become a powerful complement to the existing Source-of-Truth hierarchy because hierarchy answers where truth comes from, while governance analysis asks who may change each class of truth and through which transition.
+
+### 9. Governance provenance
+
+The existing CAES transition identity work can be extended one level upward:
+
+GovernanceDecision -> AuthorizedRuleRevision -> EconomicTransition -> AdapterTransition -> LedgerEvent
+
+The same identity-continuity principle should be tested across governance changes:
+- exact proposal identity;
+- exact constitutional authority;
+- exact approved rule revision;
+- exact deployed artifact;
+- exact economic behavior.
+
+A governance approval must not silently authorize a different rule revision.
+
+No economic constants or current IMMORTAL normative rules were changed by this research pass.
