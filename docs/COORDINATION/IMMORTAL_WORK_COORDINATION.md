@@ -4387,3 +4387,66 @@ The current research pass confirms that state-transition/invariant verification,
 Therefore the research front should continue to test the composition of these boundaries rather than claiming novelty for any individual mechanism.
 
 Status: RT-1.5 ADVANCED / FRESH EXECUTION REQUIRED / NO OVERCLAIM.
+
+
+## 2026-09-23 — Prior-art deep pass: new reusable boundary patterns
+
+A further research pass identified several patterns that are useful as **experimental test designs**, without treating them as new IMMORTAL semantics.
+
+### A. Admission binding is independently established prior art
+
+Recent transaction-admission research explicitly binds an accepted proof to the transaction reference, replay-binding value and current state, and records an accepted digest after verification. This supports continuing to model Economic Admission as a distinct boundary rather than collapsing it into generic transaction validity.
+
+Adaptation target:
+- bind `EconomicAdmissionWitness` to the exact candidate transaction/action identity;
+- reject replay, stale-state and mismatched-transaction witnesses;
+- keep admission evidence non-authoritative with respect to IMMORTAL economics.
+
+### B. Event semantics are a separate evidence boundary
+
+Recent ISSTA 2026 work identifies state/event mismatch, event collision, unauthorized event emission and event-parameter mismatch as distinct blockchain defects.
+
+Adaptation target:
+- add a negative-triad experiment where the validator state transition is valid but the emitted/observed event identifies a different semantic action;
+- require event identity to bind to the same transition identity rather than treating logs as proof of state change.
+
+This is especially relevant to C13/C14 and the CAES composition lab.
+
+### C. Execution-finality / exact-act binding is a close architectural analogue
+
+Recent work on execution-finality architecture requires the enforcement boundary to reconstruct the actual operation, verify exact-act binding and current protected state, prevent stale/replayed authority, and couple authorization to the resulting effect atomically.
+
+Adaptation target:
+- model `proposal -> reconstructed action -> revalidation -> atomic effect`;
+- explicitly reject a certificate that proves an earlier proposal but not the exact action ultimately committed;
+- compare this with the existing PERMISSIONLESS_EXECUTION_SEQUENCE.
+
+This strengthens RT-4/Candidate→Atomic Transition without importing external policy.
+
+### D. Provenance should be lifecycle-oriented, not merely hash-oriented
+
+IEEE P3232.03 frames blockchain provenance across creation, transformation, transfer and verification of artifacts.
+
+Adaptation target:
+- treat C14 provenance as a lifecycle chain:
+  model artifact -> refined artifact -> compiled artifact -> deployed artifact -> observed ledger event;
+- require each edge to identify predecessor/successor artifacts and preserve transition identity;
+- do not treat a final hash alone as proof of semantic continuity.
+
+### E. Shadow-state / dual-check migrations offer a reusable evidence pattern
+
+Current Ethereum state-migration work uses an independently verifiable snapshot, replayed updates, dual checking and a shadow commitment during a transition window.
+
+Adaptation target:
+- for difficult V3/Cardano equivalence fronts, maintain an independent replay/reference state and compare the concrete ledger-derived state against it;
+- classify mismatches as evidence failures rather than changing economic semantics.
+
+This may be useful for B6 and C14, especially where direct validator equivalence is difficult.
+
+### Research classification
+
+These findings reinforce that:
+- transaction admission, exact-act binding, event semantics, provenance, replay protection, refinement and solvency are individually established;
+- the potentially distinctive research question remains their **composition around one canonical economic transition identity**.
+
+No economic constants or normative protocol semantics were changed by this research pass.
