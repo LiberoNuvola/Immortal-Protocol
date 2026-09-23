@@ -4187,3 +4187,19 @@ Commits:
 This closes the **runtime integration gap** between authenticated B1 Pool valuation correlation and Economic Admission. It is still not real-ledger evidence: the authenticated Pool valuation must ultimately be populated from an actual observed B1 PrizePool UTxO in a Yaci/Cardano trace.
 
 **Status:** RT-1.5 **ECONOMIC-ADMISSION INTEGRATION HARDENED / REAL-LEDGER CORRELATION OPEN / FRESH CI OPEN**.
+
+
+## 2026-09-23 — B6 legacy/universal boundary cross-check advanced
+
+Cross-review of the V3/Cardano conformance matrix and the existing B1 legacy adapter found that the repository already had a strong ProtectedCapital equivalence witness for the representable legacy domain, but the test did not explicitly compare the downstream RawSurplus and solvency predicates over the same representable state.
+
+Extended `plutus/test/B1LegacyAdapterTest.hs` with paired assertions for:
+- ProtectedCapital;
+- RawSurplus;
+- solvencyInvariant;
+
+using the same PRE-RICH profile, representable B1 aggregate and identical EEV. This is a conformance strengthening only; it does not claim full V3↔Cardano equivalence and does not alter the legacy fail-closed rules.
+
+Commit: `7585628cf7b158bb8f963b3b97ab1ed0a2a43f89`.
+
+**Status:** B6 **REPRESENTABLE LEGACY→UNIVERSAL BOUNDARY WITNESS STRENGTHENED / FULL V3↔CARDANO EQUIVALENCE OPEN / FRESH CI OPEN**.
