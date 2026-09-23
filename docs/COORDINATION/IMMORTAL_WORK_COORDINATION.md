@@ -4222,3 +4222,16 @@ Current branch ref: `work/immortal-green-closure` = `b4d75279b097e44b47691c953bb
 - **RT-2.13/2.14:** OPEN for ledger-authority/off-on-chain evidence
 
 No economic constants, thresholds, valuation rules or canonical semantics were changed in this triangulation.
+
+
+## 2026-09-23 — RT-1.5 real-Yaci Pool correlation witness added
+
+The existing `audit/cardano-integration/reveal-ledger-trace.ts` already discovers and consumes the real B1PrizePool UTxO on Yaci. It now also constructs an `ExecutableLiquidityObservation` from that exact observed Pool reference and runs the canonical `assertExecutableLiquidityMatchesAuthenticatedPool` correlation helper against the same concrete input/value.
+
+This closes a previously missing **real-ledger reference/value binding witness** for RT-1.5: the observation cannot point at an arbitrary UTxO while the Reveal trace is executing against another Pool input.
+
+Important boundary retained: the Reveal fixture's liquidity asset is a deliberate 1:1 test asset, so this witness records `fixture-1-to-1-test-asset` valuation. It explicitly does **not** claim production `Economic.poolUsdmValue` oracle valuation; canonical oracle valuation remains open conformance evidence.
+
+Commit: `7e6f3148f56445f12d65927b09cc60dba0b8b079`.
+
+**Status:** RT-1.5 **REAL-YACI POOL REFERENCE/VALUE CORRELATION WITNESSED / CANONICAL ORACLE VALUATION OPEN / FRESH CI OPEN**.
