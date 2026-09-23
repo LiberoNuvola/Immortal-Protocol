@@ -9,6 +9,7 @@
  */
 import {
   assertExecutableLiquidityBoundToInputs,
+  assertExecutableLiquidityMatchesAuthenticatedPool,
   type ExecutableLiquidityObservation,
 } from '../observation/ExecutableLiquidityObservation'
 
@@ -20,6 +21,9 @@ export type EconomicAdmissionWitness = {
   stateHash: string
   eev: bigint
   executableLiquidityObservation: ExecutableLiquidityObservation
+  /** Independently authenticated B1 PrizePool state used for value correlation. */
+  authenticatedPoolInputReference: string
+  authenticatedPoolUsdmValue: bigint
   requiredImmediateLiquidity: bigint
 }
 
@@ -55,6 +59,18 @@ export function assertEconomicAdmission(
   assertExecutableLiquidityBoundToInputs(
     witness.executableLiquidityObservation,
     inputReferences,
+  )
+
+  if (!witness.authenticatedPoolInputReference.trim()) {
+    throw new Error('authenticated B1 PrizePool input reference is required')
+  }
+  if (witness.authenticatedPoolUsdmValue < 0n) {
+    throw new Error('authenticated B1 PrizePool USDM valuation must be non-negative')
+  }
+  assertExecutableLiquidityMatchesAuthenticatedPool(
+    witness.executableLiquidityObservation,
+    witness.authenticatedPoolInputReference,
+    witness.authenticatedPoolUsdmValue,
   )
 
   const observedSources = witness.executableLiquidityObservation.sourceInputReferences
