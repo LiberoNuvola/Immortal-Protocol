@@ -22,9 +22,11 @@ import PreRichGenesisAdmission
   , genesisPredicate
   )
 import Types
+  ( TreasuryDatum
+  )
+import OracleTypes
   ( OracleDatum (..)
   , OracleStateId (..)
-  , TreasuryDatum
   , precision
   )
 
