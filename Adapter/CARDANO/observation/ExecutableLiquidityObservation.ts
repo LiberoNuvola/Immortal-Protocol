@@ -120,3 +120,54 @@ export function assertExecutableLiquidityBoundToInputs(
     }
   }
 }
+
+
+/**
+ * Correlates the observation with the authenticated B1 PrizePool state UTxO.
+ *
+ * The caller supplies the Pool UTxO reference and the USDM valuation already
+ * authenticated by the Cardano/B1PrizePool observation path
+ * (Economic.poolUsdmValue). This helper does not perform valuation itself and
+ * therefore cannot introduce a second price source or haircut.
+ */
+export function assertExecutableLiquidityMatchesAuthenticatedPool(
+  observation: ExecutableLiquidityObservation,
+  authenticatedPoolInputReference: string,
+  authenticatedPoolUsdmValue: bigint,
+): void {
+  assertExecutableLiquidityObservation(observation)
+
+  const poolRef = authenticatedPoolInputReference.toLowerCase()
+  const sources = observation.sourceInputReferences.map((ref) => ref.toLowerCase())
+
+  if (sources.length !== 1 || sources[0] !== poolRef) {
+    throw new Error(
+      'executable liquidity observation must be backed by exactly the authenticated B1 PrizePool input',
+    )
+  }
+
+  if (observation.utxos.length !== 1) {
+    throw new Error(
+      'authenticated B1 PrizePool liquidity correlation requires exactly one Pool UTxO',
+    )
+  }
+
+  const observedRef =
+    observation.utxos[0].txHash.toLowerCase() + '#' + observation.utxos[0].index
+
+  if (observedRef !== poolRef) {
+    throw new Error(
+      'observed executable liquidity UTxO does not match the authenticated B1 PrizePool input',
+    )
+  }
+
+  if (authenticatedPoolUsdmValue < 0n) {
+    throw new Error('authenticated B1 PrizePool USDM valuation must be non-negative')
+  }
+
+  if (observation.declaredUsdmLiquidity !== authenticatedPoolUsdmValue) {
+    throw new Error(
+      'observed executable liquidity does not match authenticated B1 PrizePool USDM valuation',
+    )
+  }
+}
