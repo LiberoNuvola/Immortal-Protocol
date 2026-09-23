@@ -3661,3 +3661,16 @@ Required closure path:
 No new threshold was introduced. This note supersedes the stale “numerical hysteresis not frozen” wording above; historical entries remain audit history.
 
 **Status:** POLICY CLOSED / CONTROLLER IMPLEMENTED / V3 + CARDANO BINDING OPEN.
+
+
+## 2026-09-23 — Genesis carrier atomic/value-boundary cross-review
+
+Cross-review of the Genesis carrier transition found a concrete state-integrity side door: the validator already enforced the singleton carrier token, PRE-GENESIS → GENESIS datum transition, Treasury/Oracle reference semantics, and PrizePool exclusion, but it did not require the carrier UTxO's complete asset value to be preserved across the transition. Because the carrier is a state identity and is not an economic funding leg, allowing its value to change would introduce an unaccounted transfer surface.
+
+Applied:
+- `35c63d07f086ec08703600bc3c34cde2db12e776` — Genesis carrier validator now requires `txOutValue ownIn == txOutValue ownOut`.
+- `4a75fdd6f9d79488354b747d9566c97dd97fbf91` — Yaci trace now compares the complete carrier asset map and records `carrierValuePreserved` in the economic-boundary evidence packet.
+
+This strengthens C10/C11 without introducing new economics. The trace already rejects replay and verifies Treasury/Oracle reference preservation; the new check extends that evidence to the carrier's complete value conservation. Fresh compilation and Yaci execution are still required before promoting this to ledger GREEN.
+
+**Cross-review assignment:** C10/C11 primary hardening by this session; the other session should adversarially test whether any other carrier-owned value or unrelated transaction leg can alter the canonical transition, and whether the equality check remains compatible with the production deployment path.
