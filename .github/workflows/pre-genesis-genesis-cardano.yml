@@ -20,6 +20,8 @@ on:
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
+      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
       - "audit/cardano-integration/create-test-wallet.mjs"
       - "package.json"
       - "package-lock.json"
@@ -141,6 +143,9 @@ jobs:
           }
           package_path.write_text(json.dumps(package, indent=2) + "\n")
           PY
+
+      - name: Run Genesis Treasury admission mirror
+        run: node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
 
       - name: Execute real PRE-GENESIS -> GENESIS transition
         run: node --import tsx/esm audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts
