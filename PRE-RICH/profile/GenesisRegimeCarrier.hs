@@ -327,6 +327,7 @@ mkValidator datum action ctx =
              (txOutValue ownOut)
              (prdCarrierPolicy before)
              (prdCarrierName before) == 1
+        && txOutValue ownIn == txOutValue ownOut
         && not (anyScriptInput (prdPrizePoolHash before) (txInfoInputs info))
         && not (anyScriptOutput (prdPrizePoolHash before) (txInfoOutputs info))
         && case observation of
