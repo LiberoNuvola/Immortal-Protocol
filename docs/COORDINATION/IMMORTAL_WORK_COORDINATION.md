@@ -3333,3 +3333,25 @@ This closes a previously unpinned **representation-level** B4 case: Jackpot liqu
 Commit: `c2743ffeec110156c5e88756bfb175a205170eb1`.
 
 No economic rule changed; the test only pins the existing projection semantics.
+
+---
+
+## SESSION RESULT — Genesis ledger pipeline unblock
+
+**Date:** 2026-09-23
+**Front:** PRE-GENESIS → GENESIS / Cardano evidence
+
+The Genesis Cardano workflow was inspected against its actual GitHub Actions failure. The previous run 35782577203 did not reach Yaci: fresh Plutus export was blocked by a stale call site in B1PrizePool.hs, where legacyB1ToUniversalEconomicState had acquired the required EconomicProfile parameter but B1 still called it with only the datum.
+
+**Fixes committed:**
+- a446c4f269a5cb76e8f2dba0905290ee6d990e1a — bind B1 universal projection to the canonical PRE-RICH profile.
+- e4240d90c83fd2f3c4c793aecf143c5f40ca95cb — make Genesis Cardano conformance trigger on B1/projection changes.
+- a61332b7c138e25fc417b85b8c24a97801e084f8 — mirror those paths in the PR trigger.
+
+**Economic semantics unchanged:** the projection uses the existing PRE-RICH profile, including the application-supplied 500x payout parameter; no universal constant or Genesis threshold was changed.
+
+**Genesis canonical fixture remains:** 10,000,000 PRE valued at 0.04 USDM/PRE = 4,000 USDM.
+
+**Evidence status:** previous Genesis workflow failure was build-time only; it is not ledger evidence. The corrected commits now need a fresh Genesis workflow execution before claiming ledger conformance.
+
+**Do not redo:** do not alter Genesis economics or weaken the validator to bypass the build blocker. The blocker was a type/signature integration regression in B1.
