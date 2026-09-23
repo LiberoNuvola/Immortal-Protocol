@@ -3977,3 +3977,56 @@ Classification: RT-3 side-door **HARDENED FOR TICKET ISSUANCE / GLOBAL MUTATOR I
 Commit: `8210d62a1029e6af85b4af8f127a469ce4eb8bb4`.
 
 Status remains **RT-1.5 PROVENANCE BINDING OPEN**: the next step must correlate this reference/value with the exact authenticated B1PrizePool UTxO consumed by the submitted transaction.
+
+
+## 2026-09-23 — RT-3 mutator inventory + B4 preservation hardening
+
+A current-branch mutator audit was completed against the actual execution paths rather than default-branch search results.
+
+### Economic mutator inventory
+
+| Transition / path | Economic effect | Submission boundary | Status |
+|---|---|---|---|
+| TicketIssued / `src/mint.ts` | creates unresolved reserve + ticket liability exposure | `submitEconomic` with mandatory `EconomicAdmissionWitness` | **HARDENED** |
+| Reveal / `src/gameFlow.ts` | releases unresolved reserve + crystallizes payout liability | `signAndSubmitEconomicTx` | **HARDENED** |
+| Claim / `src/gameFlow.ts` | reduces crystallized liability | `signAndSubmitEconomicTx` | **HARDENED** |
+| Expire / `src/gameFlow.ts` | releases unresolved reserve | `signAndSubmitEconomicTx` | **HARDENED** |
+| FundTreasury / `plutus/B1PrizePool.hs` | changes physical Pool liquidity under validator accounting | on-chain validator boundary; off-chain economic-admission integration remains evidence work | **ON-CHAIN HARDENED / EVIDENCE OPEN** |
+| Genesis activation | changes regime/carrier state, not PrizePool liquidity | Genesis carrier validator + real-ledger workflow | **HARDENED / FRESH-CI OPEN** |
+| SyncBeacon / registry publication / pending-round creation | observational/state anchoring only; no V3 economic delta | generic Cardano submission | **NON-ECONOMIC** |
+
+`src/txHelpers.ts::buildClaimTx` remains a construction-only legacy helper and is not a canonical submission path; no caller was found in the current UI flow. It must not be promoted to an economic submitter without the full PrizePool + Economic Gate boundary.
+
+### Concrete RT-3 side-door found and closed
+
+The mandatory `MintSerialOptions.economicAdmission` change exposed a compile-time caller that was previously relying on an implicit empty options object:
+
+`src/main.ts` called `tickets.buyTickets(1)` without an admission witness.
+
+Rather than manufacturing a witness, the UI now fails closed and reports that authoritative Economic Gate admission is required.
+
+Commit: `ff18342abdceb891e338ee1f765804b5c6ef7c71`.
+
+No economic parameter or validator semantics changed.
+
+### B4 ProtectedCapital preservation hardening
+
+The existing conformance suite already proved the arithmetic lifecycle deltas and partition. A cross-review identified a remaining blind spot: it did not explicitly assert that the protected components not touched by Issue/Reveal/Claim/Expire remain unchanged.
+
+Added:
+- `protectedCapitalComponentsPreserved` in `IMMORTAL/conformance/ProtectedCapitalConformance.hs`;
+- non-zero SafetyCapital / ReserveProtection / MandatoryFutureCosts / Jackpot fixtures across Issue, Reveal, Claim and Expire in `plutus/test/ProtectedCapitalConformanceTest.hs`.
+
+The predicate requires semantic preservation of:
+- `v3SafetyCapital`;
+- `v3ReserveProtection`;
+- `v3MandatoryFutureCosts`;
+- Jackpot locked amount, threshold, status and cycle.
+
+Commits:
+- `07713168ebfdf98d5e97647a1d695a8236128d66`
+- `d73cab1fc8542d8725055dc9df787441b7f67e3d`
+
+No fresh workflow result is exposed yet for these commits.
+
+**Status:** B4 **FORMAL PRESERVATION WITNESS HARDENED / CI EVIDENCE OPEN**. RT-3 **MUTATOR INVENTORY ADVANCED / GLOBAL REAL-LEDGER COVERAGE OPEN**.
