@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module PreRichGenesisAdmission
   ( GenesisTreasuryObservation (..)
@@ -7,6 +8,7 @@ module PreRichGenesisAdmission
   ) where
 
 import PlutusTx.Prelude
+import qualified PlutusTx
 import EconomicKernel (ceilingDiv)
 
 -- | PRE-RICH application bootstrap predicate. This is deliberately kept
