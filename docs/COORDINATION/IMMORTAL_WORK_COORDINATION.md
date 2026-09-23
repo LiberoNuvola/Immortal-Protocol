@@ -4056,3 +4056,6 @@ Commits:
 This is still **runtime provenance/source binding**, not production ledger proof of the observed USDM quantity. The remaining RT-1.5 evidence gap is to correlate the observation's declared value with the authenticated B1PrizePool UTxO/value path on a real ledger trace, including stale/wrong-Pool/double-count/value-mismatch negative twins.
 
 **Status:** RT-1.5 **EXACT ECONOMIC SOURCE BINDING HARDENED / REAL-LEDGER VALUE CORRELATION OPEN**.
+
+
+CI coverage for the new source-binding tests was added to `.github/workflows/adapter-sale-conformance.yml` (commit `8b3d03cc7d53b968b8d8d053f36c96fdcfac6167`). The connector exposes no push-trigger run for this commit yet, so CI is **pending evidence**, not green.
