@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createCardanoExecutionAdapter } from '../CardanoExecutionAdapter'
-import { assertExecutableLiquidityMatchesAuthenticatedPool } from '../../observation/ExecutableLiquidityObservation'
+import { assertExecutableLiquidityMatchesAuthenticatedPool, assertExecutableLiquidityObservationFresh } from '../../observation/ExecutableLiquidityObservation'
 import type { EconomicAdmissionWitness } from '../EconomicAdmission'
 
 const pool0 = '11'.repeat(32) + '#0'
@@ -146,5 +146,36 @@ describe('authenticated B1 PrizePool liquidity correlation', () => {
         801n,
       ),
     ).toThrow('does not match authenticated B1 PrizePool USDM valuation')
+  })
+})
+
+
+describe('executable liquidity observation freshness', () => {
+  it('accepts an observation within the caller-supplied freshness horizon', () => {
+    assertExecutableLiquidityObservationFresh(
+      admission.executableLiquidityObservation,
+      150n,
+      50n,
+    )
+  })
+
+  it('rejects a stale observation', () => {
+    expect(() =>
+      assertExecutableLiquidityObservationFresh(
+        admission.executableLiquidityObservation,
+        151n,
+        50n,
+      ),
+    ).toThrow('observation is stale')
+  })
+
+  it('rejects an observation from the future', () => {
+    expect(() =>
+      assertExecutableLiquidityObservationFresh(
+        admission.executableLiquidityObservation,
+        99n,
+        50n,
+      ),
+    ).toThrow('from the future')
   })
 })
