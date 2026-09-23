@@ -4167,3 +4167,23 @@ Triangulation:
 
 No economic rule, threshold, haircut or valuation semantics changed.
 Status: **RT-2 mirror coverage HARDENED / ledger authority evidence OPEN**.
+
+
+## 2026-09-23 — RT-1.5 Economic Admission now consumes authenticated Pool correlation
+
+Cross-review found that the authenticated Pool correlation helper existed and had direct unit tests, but the canonical `assertEconomicAdmission` boundary did not yet consume that witness. This left a gap between the runtime correlation primitive and the actual economic submission gate.
+
+Hardened the boundary:
+- `EconomicAdmissionWitness` now requires `authenticatedPoolInputReference` and `authenticatedPoolUsdmValue`;
+- `assertEconomicAdmission` invokes `assertExecutableLiquidityMatchesAuthenticatedPool` before signing/submission;
+- wrong Pool reference and valuation-mismatch twins now fail at the economic submission boundary, not only in helper-level tests;
+- no second price source, haircut, or economic constant was introduced: the authenticated USDM valuation remains supplied by the Cardano/B1 observation path.
+
+Commits:
+- `a5c0f5f809402185f7c3028916e157fa17380494`
+- `85dca2e2cc8903ff06fa3e43ab76adf12b1917ad`
+- `8c3f03b0e9439d073c162112155fce6fc4b818e7`
+
+This closes the **runtime integration gap** between authenticated B1 Pool valuation correlation and Economic Admission. It is still not real-ledger evidence: the authenticated Pool valuation must ultimately be populated from an actual observed B1 PrizePool UTxO in a Yaci/Cardano trace.
+
+**Status:** RT-1.5 **ECONOMIC-ADMISSION INTEGRATION HARDENED / REAL-LEDGER CORRELATION OPEN / FRESH CI OPEN**.
