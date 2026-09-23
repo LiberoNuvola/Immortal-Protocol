@@ -47,9 +47,10 @@ export async function signAndSubmitEconomicTx(
   lucid: any,
   tx: any,
   admission: EconomicAdmissionWitness | undefined,
+  inputReferences: readonly string[],
 ) {
   const adapter = createCardanoExecutionAdapter(lucid)
-  const result = await adapter.submitEconomic(tx, admission)
+  const result = await adapter.submitEconomic(tx, admission, inputReferences)
   return result.transactionRef
 }
 
