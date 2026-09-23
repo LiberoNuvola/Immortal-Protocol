@@ -15,6 +15,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
+import qualified PlutusTx.AssocMap as AssocMap
 
 import Economic (validOracleTimestamp)
 import PreRichGenesisAdmission
@@ -119,7 +120,12 @@ findSingleOwnOutput ctx =
 {-# INLINABLE singletonAmount #-}
 singletonAmount :: Value -> BuiltinByteString -> BuiltinByteString -> Integer
 singletonAmount val policy name =
-  valueOf val (CurrencySymbol policy) (TokenName name)
+  case AssocMap.lookup (CurrencySymbol policy) (getValue val) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup (TokenName name) tokens of
+        Nothing -> 0
+        Just amount -> amount
 
 {-# INLINABLE totalTokenAmountInputs #-}
 totalTokenAmountInputs :: TxInfo -> BuiltinByteString -> BuiltinByteString -> Integer
