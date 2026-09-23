@@ -661,7 +661,10 @@ export async function revealPrize(opts: {
     .addSigner(owner)
     .complete()
 
-  const txHash = await signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
+  const txHash = await signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+  ])
 
   return {
     txHash,
@@ -948,7 +951,11 @@ export async function claimPrize(opts: {
     .validTo(expiresAt)
     .complete()
 
-  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+    `${ticketUtxo.txHash}#${ticketUtxo.outputIndex}`,
+  ])
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,7 +1085,10 @@ export async function expirePrize(opts: {
     .validFrom(expiresAt)
     .complete()
 
-  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
+  ])
 }
 
 // ---------------------------------------------------------------------------
