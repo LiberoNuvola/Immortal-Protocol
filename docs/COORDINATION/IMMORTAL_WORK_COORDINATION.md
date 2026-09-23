@@ -5422,3 +5422,52 @@ This is the smallest useful next proof surface. It avoids both extremes: keeping
 **Classification:** IMMORTAL-STATE-BOUNDARY-001 / B5 / B6 — **CONCRETE CONSUMER MATRIX ESTABLISHED; TRANSITION-PRESERVATION WITNESS OPEN.**
 
 No protocol/economic constants, governance rules or validator semantics changed.
+
+
+## 2026-09-23 — Gate 41 historical-rule pass: 3 ADA remains unresolved; Genesis role reframed as historical reconstruction
+
+A fresh Gate-41 pass triangulated the current Notion evidence with Cardano protocol-parameter history and independent Snek reverse-engineering evidence.
+
+### Historical chain position
+The Pool-NFT mint transaction is at block height 11760293 / absolute slot 153584200. Using Cardano's post-Allegra/Alonzo epoch schedule, this slot falls in epoch 553. The investigation must therefore use the protocol parameters effective at that historical point rather than today's live parameters. Cardano documents that UTxO-cost parameters are governance-updatable; Babbage changed the minimum-ADA calculation from the Alonzo word-based form to the byte-based coinsPerUTxOByte form. Current independent documentation identifies 4310 lovelace/byte as the long-standing Babbage/Conway value, but this is not by itself a historical proof for the PRE deployment.
+
+### New Snek prior-art boundary
+An independent, explicitly unofficial reverse-engineering of snek.fun's launch flow identifies separate launch-time quantities:
+- ada_cap_thresh_for_pool — per-pool graduation threshold, close to 18,188,400,000 with possible per-launch jitter;
+- metadata_min_ada — min-ADA for metadata output;
+- creator_min_ada — min-ADA for creator output;
+- pool_seed_ada — min-ADA for pool output;
+- launch_fee_ada — launch fee;
+- seed_utxo — creator UTxO used to parameterize the token policy and pool-NFT mint.
+
+This is useful because it confirms that the reverse-engineered launch protocol itself distinguishes pool seed, min-ADA-related quantities, creator/metadata outputs and launch fee. However, it does NOT establish that the PRE-RICH historical 3,000,000 lovelace delta equals any one of those fields, nor that the State-0 provider excludes that quantity for that reason. The reverse-engineering is explicitly marked unofficial/preliminary and must not be treated as canonical Snek documentation.
+
+### Stronger historical inference, still not closure
+The two observed 3-ADA deltas remain:
+- State-0 physical ADA minus Snek provider ADA = 3,000,000 lovelace;
+- State-0 datum threshold minus the documented/base builder threshold = 3,000,000 lovelace.
+
+The new evidence makes a historical deployment-parameter explanation a concrete research target, but does not prove one. In particular, the presence of a named pool_seed_ada quantity in reverse-engineered launch flow is not evidence that the historical PRE pool seed was exactly 3 ADA.
+
+### Genesis funding-role boundary
+The immediate Genesis funding boundary remains CLOSED: the three inputs to the Pool-NFT mint reconcile exactly to outputs plus fee. Upstream provenance is also reconstructed at the UTxO/input-set level. What remains OPEN is the semantic role of those ADA quantities at the historical deployment time.
+
+The correct closure test is now:
+
+historical epoch/parameters + exact mint tx body + exact predecessor outputs + historical deployment implementation/version + any contemporaneous Snek configuration
+→ role attribution
+
+A present-day rule must not be applied retroactively merely because the transaction is now being analyzed. If the historical implementation/version cannot establish whether a quantity was seed, min-ADA, technical funding or another deployment component, the role remains UNRESOLVED rather than being inferred.
+
+### Gate 41 status after this pass
+- State-0 anchor — CLOSED
+- Pool NFT lineage — CLOSED
+- Mint transaction — CLOSED
+- Funding boundary — CLOSED
+- 1B PRE bootstrap — CLOSED
+- First curve transition — CLOSED
+- info.outputId ↔ true NFT-bearing output — OPEN
+- 3 ADA semantics — OPEN
+- Genesis funding role — OPEN / HISTORICAL-RULE RECONSTRUCTION
+
+No economic constants, validator semantics or normative rules changed.
