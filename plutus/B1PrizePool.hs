@@ -811,23 +811,42 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
-                   Just outPd ->
-                     let
-                       payout =
-                         pdPrizeAmount outPd
+                   Just inPd ->
+                     case findPrizeOutput info prizeHash of
+                       Nothing ->
+                         traceError
+                           "B1PrizePool: no prize output"
 
-                       reserveRelease =
-                         priceUsdm
+                       Just outPd ->
+                         let
+                           payout =
+                             pdPrizeAmount outPd
 
-                     in
-                           traceIfFalse
-                             "B1PrizePool: payout exceeds effective pool"
-                             (payout <= effectivePool datum)
+                           reserveRelease =
+                             priceUsdm
+
+                         in
+                              traceIfFalse
+                                "B1PrizePool: reveal prize input must be Pending"
+                                (pdStatus inPd == Pending)
+
+                           && traceIfFalse
+                                "B1PrizePool: reveal ticket identity changed"
+                                (pdTicketPolicy inPd == pdTicketPolicy outPd
+                                  && pdTicketName inPd == pdTicketName outPd)
+
+                           && traceIfFalse
+                                "B1PrizePool: reveal input price mismatch"
+                                (pdPriceUsdm inPd == priceUsdm)
+
+                           && traceIfFalse
+                                "B1PrizePool: payout exceeds effective pool"
+                                (payout <= effectivePool datum)
 
                        && traceIfFalse
                             "B1PrizePool: payout must be non-negative"
@@ -890,14 +909,20 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
-                   Just pd ->
-                     let
-                       ticketCs =
+                   Just inPd ->
+                     case findPrizeOutput info prizeHash of
+                       Nothing ->
+                         traceError
+                           "B1PrizePool: no prize output"
+
+                       Just pd ->
+                         let
+                           ticketCs =
                          pdTicketPolicy pd
 
                        ticketTn =
@@ -954,6 +979,19 @@ mkValidator
 
                      in
                            traceIfFalse
+                             "B1PrizePool: claim prize input must be Revealed"
+                             (pdStatus inPd == Revealed)
+
+                       && traceIfFalse
+                            "B1PrizePool: claim ticket identity changed"
+                            (pdTicketPolicy inPd == pdTicketPolicy pd
+                              && pdTicketName inPd == pdTicketName pd)
+
+                       && traceIfFalse
+                            "B1PrizePool: claim payout changed"
+                            (pdPrizeAmount inPd == pdPrizeAmount pd)
+
+                       && traceIfFalse
                              "B1PrizePool: owner not signed"
                              ownerSigned
 
