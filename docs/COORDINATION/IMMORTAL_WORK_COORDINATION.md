@@ -3914,3 +3914,34 @@ Red-team finding: `egiAvailableExecutableLiquidity` remains an input asserted by
 Classification: **SEMANTIC DISTINCTION PRESENT / PROVENANCE BINDING OPEN**.
 
 No economic rule or haircut was invented. Next step is to identify the authoritative Cardano observation surface for spendable liquidity and bind that observed value to the gate input with negative tests for locked, unrelated, double-counted and non-spendable assets.
+
+
+## 2026-09-23 — RT-1.5 executable-liquidity provenance hardening
+
+Implemented the smallest runtime observation boundary identified by the red-team pass.
+
+Added:
+- `Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts`
+- hardened `Adapter/CARDANO/runtime/EconomicAdmission.ts`
+- expanded `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`
+
+The admission witness now requires an executable-liquidity observation bound to the same authoritative observation reference and validates:
+- concrete Cardano UTxO references;
+- non-negative values;
+- spendable-only inputs;
+- rejection of ring-fenced inputs;
+- duplicate UTxO rejection;
+- exact equality between declared immediate liquidity and the observed spendable UTxO sum;
+- required immediate liquidity <= observed executable liquidity.
+
+This closes the previously unbound **runtime provenance witness** for immediate liquidity without inventing a haircut, valuation rule, or economic constant.
+
+Commits:
+- `1e3e6ed450623264d027e35b6d3a2c7d269eb0ef`
+- `2dc35494957c4b976079986c595054536ea06031`
+- `bec5e017bbb56b1274d2be90e8c158b4ec16ebf7`
+
+Important boundary:
+this is **observation/runtime hardening, not yet ledger proof**. The observation is still supplied by the authoritative Cardano observation layer; the next evidence step is to bind these UTxO references to the actual transaction/input set and reject unrelated/double-counted/non-spendable value in a real-ledger trace.
+
+**Status:** RT-1.5 RUNTIME PROVENANCE WITNESS HARDENED / REAL-LEDGER BINDING OPEN.
