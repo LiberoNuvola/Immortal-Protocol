@@ -72,7 +72,7 @@ solvencyInvariant :: B1PrizePoolDatum -> Bool
 solvencyInvariant d =
   UniversalEconomicKernel.solvencyInvariant
     (ppTotalLiquidity d)
-    (legacyB1ToUniversalEconomicState d)
+    (legacyB1ToUniversalEconomicState preRichEconomicProfileV1 d)
 
 {-# INLINABLE ownInputResolved #-}
 ownInputResolved :: ScriptContext -> TxOut
