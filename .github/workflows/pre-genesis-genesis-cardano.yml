@@ -42,6 +42,7 @@ on:
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
+      - "audit/pre-genesis-genesis/record-artifact-provenance.ts"
       - "audit/cardano-integration/create-test-wallet.mjs"
       - "package.json"
       - "package-lock.json"
