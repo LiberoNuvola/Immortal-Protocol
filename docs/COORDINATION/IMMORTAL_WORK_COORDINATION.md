@@ -3522,3 +3522,47 @@ Cross-read of the canonical Economic Algorithm / Game Economy baseline confirms 
 - exact numerical hysteresis remains an explicit policy/conformance item until frozen.
 
 Therefore the current implementation gap cannot be closed by inventing threshold constants. The correct remaining work is a policy-boundary/conformance task: freeze the numerical hysteresis rule at the authoritative normative layer first, then implement and test the state-derived selector, contraction, recovery and monotonic historical state. Until that happens, CurrentActiveClass / hysteresis / HighestClassEverActivated remain YELLOW by design, not because a missing arbitrary constant can be guessed.
+
+
+## 2026-09-23 — Multi-front closure sweep / new fronts opened
+
+A cross-front review was performed against the current coordination register, current branch architecture, Genesis carrier path, Cardano Adapter, Materios boundary and active Actions. The purpose was to identify closure work that had been implicitly embedded in B4/B5/B6 or Genesis rather than tracked as an independent evidence front.
+
+### Newly opened fronts
+
+| ID | Front | Status | Closure target |
+|---|---|---|---|
+| C7 | Oracle / price provenance | OPEN | Trace raw observation → identified UTxO → authenticated datum/value → verified price → Genesis admission without substituting a fixture constant for provenance. |
+| C8 | Snek UTxO identity / liquidity semantics | OPEN | Prove the authoritative Pool UTxO identity and classify the observed lovelace/seed component; do not infer economic meaning from info.outputId alone. |
+| C9 | PRE bootstrap accounting boundary | OPEN | Prove that the 10,000,000 PRE bootstrap used for the 4,000 USDM admission condition is not silently counted as ordinary Genesis economic supply. |
+| C10 | PRE-GENESIS → GENESIS state semantics | OPEN | Specify and evidence exactly what state is consumed, created, preserved and excluded by the carrier transition. |
+| C11 | Atomic transition end-to-end | OPEN | Connect Gate → Viability → Safe Action → Adapter transaction → observed post-state as one atomic admissibility/evidence chain. |
+| C12 | Cardano lifecycle conformance | OPEN | Obtain equivalent real-ledger evidence for Issue / Reveal / Claim / Expire and a complete lifecycle replay, without treating emulator-only evidence as ledger equivalence. |
+| C13 | Datum/redeemer semantic serialization | OPEN | Establish canonical semantic correspondence between V3 action/state and encoded Cardano datum/redeemer/script inputs. |
+| C14 | Artifact provenance / reproducibility | OPEN | Bind commit → toolchain → generated validator bytes/hash → datum/redeemer → transaction/evidence so no stale artifact can masquerade as current-source evidence. |
+| C15 | Replay / idempotency | OPEN | Demonstrate repeated submission/re-observation cannot duplicate liability, payout, expiry, activation history or Genesis transition. |
+
+### Existing fronts explicitly cross-linked
+
+- B4 now has strong projection-level evidence including locked Jackpot protection, but transition and real-ledger preservation remain OPEN.
+- B5 remains OPEN until Economic Gate → Viability → Safe Action → Atomic Transition is demonstrated as one chain rather than as isolated predicates/tests.
+- B6 now decomposes into C12/C13/C14 plus the existing real-ledger Integration Lab.
+- Genesis carrier retains two specific semantic gaps: production Treasury migration binding and explicit PrizePool accounting-delta evidence; singleton policy design is implemented but deployment/ledger evidence remains OPEN.
+- Materios retains the real cryptographic transition/finality gap; the fail-closed verifier boundary is strengthened but does not constitute proof verification.
+- Class-control/hysteresis remains policy-boundary work. Numerical thresholds must come from canonical normative material; no values are to be invented in implementation.
+
+### Work allocation rule
+
+These fronts are evidence/conformance fronts first. They must not be closed by weakening invariants, changing economic constants, or promoting synthetic fixtures to production authority. Where implementation is missing, first add a minimal executable witness or test that fails closed; only then consider code changes justified by canonical semantics.
+
+### Immediate execution order
+
+1. Keep Reveal fresh-artifact differential run isolated; do not modify economics or transaction-size limits.
+2. Let current Genesis / Integration / Kernel Actions finish and classify only current-head evidence.
+3. Start C7/C8 from the actual Snek/Oracle evidence chain.
+4. Start C9/C10 from the Genesis carrier state machine and existing Yaci trace.
+5. Start C11/C12/C13 from V3 transition ↔ Adapter ↔ ledger traces.
+6. Start C14 by making artifact identity explicit in every evidence-producing workflow.
+7. Start C15 from duplicate/replay cases already present in Genesis and lifecycle tests.
+
+No normative economic decision was changed by this sweep.
