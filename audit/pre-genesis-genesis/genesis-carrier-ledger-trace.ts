@@ -279,6 +279,16 @@ const genesisCarrierUtxo = postCarrier.find(
 );
 if (!genesisCarrierUtxo) throw new Error("GENESIS carrier UTxO not found");
 
+const treasuryStillReferenced = (await lucid.utxosAt(treasuryAddress)).some(
+  (u) => u.txHash === treasuryUtxo.txHash && u.outputIndex === treasuryUtxo.outputIndex,
+);
+const oracleStillReferenced = (await lucid.utxosAt(oracleAddress)).some(
+  (u) => u.txHash === oracleUtxo.txHash && u.outputIndex === oracleUtxo.outputIndex,
+);
+if (!treasuryStillReferenced || !oracleStillReferenced) {
+  throw new Error("Genesis transition must not consume Treasury/Oracle reference inputs");
+}
+
 const replayError = await expectRejected(
   "Genesis transition replay",
   async () => lucid.submitTx(signedTransition),
@@ -324,6 +334,13 @@ const result = {
       ((PRE_QUANTITY * ORACLE_PRICE) / ORACLE_PRECISION).toString(),
     thresholdUsdmSubunits: "400000",
     activated: true,
+  },
+  economicBoundary: {
+    treasuryReferencePreserved: treasuryStillReferenced,
+    oracleReferencePreserved: oracleStillReferenced,
+    prizePoolTouched: false,
+    carrierOnlyStateTransition: true,
+    genesisLiquidityImportedFromBootstrap: false,
   },
   replay: {
     rejected: true,
