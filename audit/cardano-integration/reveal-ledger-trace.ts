@@ -39,6 +39,10 @@ import {
   assertCanonicalTransitionBinding,
   type CanonicalTransitionEvidence,
 } from '../../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
+import {
+  assertExecutableLiquidityMatchesAuthenticatedPool,
+  type ExecutableLiquidityObservation,
+} from '../../Adapter/CARDANO/observation/ExecutableLiquidityObservation'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 const SEED =
@@ -335,6 +339,32 @@ const poolUtxos = await waitFor(
 const prizeUtxo = prizeUtxos.find((u) => u.assets[ticketUnit] === 1n) as UTxO
 const poolUtxo = poolUtxos.find((u) => u.assets[poolUnit] === 1n) as UTxO
 
+// Real-ledger executable-liquidity correlation witness.
+// This fixture's liquidity asset is deliberately a 1:1 USDM test asset, so
+// the authenticated fixture valuation is the exact observed quantity.
+// It is NOT a substitute for production Economic.poolUsdmValue oracle
+// valuation; the latter remains an explicit conformance requirement.
+const poolRef = ref(poolUtxo)
+const fixturePoolUsdmValue = poolUtxo.assets[liquidityUnit] ?? 0n
+const executableLiquidityObservation: ExecutableLiquidityObservation = {
+  observationReference: 'RF10-RF11-YACI-POOL-LIQUIDITY-' + poolRef,
+  observedAt: BigInt(Date.now()),
+  sourceInputReferences: [poolRef],
+  utxos: [{
+    txHash: poolUtxo.txHash,
+    index: poolUtxo.outputIndex,
+    usdmValue: fixturePoolUsdmValue,
+    spendable: true,
+    ringFenced: false,
+  }],
+  declaredUsdmLiquidity: fixturePoolUsdmValue,
+}
+assertExecutableLiquidityMatchesAuthenticatedPool(
+  executableLiquidityObservation,
+  poolRef,
+  fixturePoolUsdmValue,
+)
+
 const preStateFingerprint = hashJson({
   prizeRef: ref(prizeUtxo),
   prizeDatum: prizeUtxo.datum,
@@ -484,6 +514,14 @@ writeFileSync(
     },
     consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
     producedUtxos: [ref(postPrize), ref(postPool)],
+    executableLiquidityCorrelation: {
+      observationReference: executableLiquidityObservation.observationReference,
+      poolInputReference: poolRef,
+      observedPoolUsdmValue: fixturePoolUsdmValue.toString(),
+      sourceSetExact: true,
+      valuationMode: 'fixture-1-to-1-test-asset',
+      canonicalEconomicPoolUsdmValueEvaluated: false,
+    },
     canonicalEvidence: evidence,
     replay: {
       rejected: replayRejected,
