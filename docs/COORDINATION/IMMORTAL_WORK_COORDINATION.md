@@ -4203,3 +4203,22 @@ using the same PRE-RICH profile, representable B1 aggregate and identical EEV. T
 Commit: `7585628cf7b158bb8f963b3b97ab1ed0a2a43f89`.
 
 **Status:** B6 **REPRESENTABLE LEGACY→UNIVERSAL BOUNDARY WITNESS STRENGTHENED / FULL V3↔CARDANO EQUIVALENCE OPEN / FRESH CI OPEN**.
+
+## 2026-09-23 — Green Closure current-head triangulation: B6 / Gate 41 / P2.8
+
+Current branch ref: `work/immortal-green-closure` = `b4d75279b097e44b47691c953bb9bcf774b111f1` (18:50 UTC). The branch contains the earlier `c0e68db...` B1 Pool Reveal/Claim input-binding hardening as an ancestor; current `plutus/B1PrizePool.hs` confirms Reveal and Claim require the corresponding Prize input and validate input/output identity/state/price/payout continuity.
+
+### Triangulation result
+- **GitHub implementation:** B6 witness is present in `plutus/test/B1LegacyAdapterTest.hs`, including paired ProtectedCapital, RawSurplus and solvency comparisons over the representable legacy aggregate; fail-closed tests remain present for unsupported class composition, ProtectedCapital, historical control and locked Jackpot.
+- **Coordination/red-team:** B6 remains **REPRESENTABLE LEGACY→UNIVERSAL BOUNDARY WITNESS STRENGTHENED / FULL V3↔CARDANO EQUIVALENCE OPEN / FRESH CI OPEN**. This matches the implementation: stronger witness, not full closure.
+- **Notion Gate 41:** State-0/current transaction and direct Pool-NFT lineage are closed; **DEPLOYMENT INPUT GRAPH, SEED/MIN-ADA SEMANTICS, 3 ADA RECONCILIATION and FIRST CURVE REPLAY remain OPEN**. No economic interpretation of the 3 ADA is introduced.
+- **CI current head:** Kernel Invalid-Class #872 was in progress at inspection; Algorithmic Governability #237 and Cardano Adapter Sale Conformance #864 succeeded; PRE-RICH Cardano Emulator Reveal #339 failed again. The repeated Reveal failure is the known evaluator/emulator `Spend[0] execution went over budget` class, not evidence of an economic invariant failure.
+
+### Classification
+- **B6:** IN CORSO / NEEDS-EVIDENCE
+- **Gate 41:** IN CORSO — upstream deployment reconstruction is the active deterministic next step
+- **P2.8-B.1:** BLOCCATO — evaluator/emulator, not semantic/economic verdict
+- **RT-1.5:** HARDENED at runtime/Economic Admission; real-ledger value correlation remains OPEN
+- **RT-2.13/2.14:** OPEN for ledger-authority/off-on-chain evidence
+
+No economic constants, thresholds, valuation rules or canonical semantics were changed in this triangulation.
