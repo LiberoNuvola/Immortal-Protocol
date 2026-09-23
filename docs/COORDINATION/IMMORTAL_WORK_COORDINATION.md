@@ -3454,3 +3454,8 @@ The Reveal emulator workflow has now been hardened to install the pinned Plutus 
 Commit: `2c4bcd534887c07e1c480d7262a0df75e76dc84f`.
 
 **Evidence boundary:** prior Reveal failures remain valid as reproduction of the old artifact/evaluator path, but they cannot classify the new `assetAmount` experiment. The next fresh run is the authoritative test. No economics, 500x bound, tx-size limit or validator semantic rule was changed.
+
+
+## 2026-09-23 — Reveal pipeline distinction verified
+
+Run #177 of `PRE-RICH Cardano Emulator Reveal` still used the older lightweight workflow and therefore did not exercise the fresh-artifact rebuild. The corrected `PRE-RICH Emulator Reveal Conformance` run #38 is the authoritative fresh-artifact path and is currently compiling the pinned Haskell toolchain before export. This distinction is now explicit: do not classify #177 as evidence against `assetAmount`.
