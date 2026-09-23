@@ -134,7 +134,7 @@ transitionValid profile s a =
   && preStateValid s
   && case transition profile s a of
        Nothing -> False
-       Just s' -> postStateValid s'
+       Just s' -> postStateValid s' && controlHistoryPreserved s s'
   where
     preStateValid st =
          EconomicKernel.conservationInvariant profile st
@@ -145,6 +145,12 @@ transitionValid profile s a =
          EconomicKernel.conservationInvariant profile st
       && EconomicKernel.controlStateValid profile (v3Control st)
       && nonNegativeState st
+
+    controlHistoryPreserved before after =
+         ecsHighestClassEverActivated (v3Control after)
+           >= ecsHighestClassEverActivated (v3Control before)
+      && ecsCurrentActiveClass (v3Control after)
+           <= ecsHighestClassEverActivated (v3Control after)
 
     nonNegativeState st =
          v3CrystallizedLiabilities st >= 0
