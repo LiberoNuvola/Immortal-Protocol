@@ -1232,8 +1232,8 @@ export async function mintSerialNFT(
   const submission =
     await createCardanoExecutionAdapter(lucid)
       .submitEconomic(tx, opts.economicAdmission, [
-        \`${counterUtxo.txHash}#${counterUtxo.outputIndex}\`,
-        \`${pool.utxo.txHash}#${pool.utxo.outputIndex}\`,
+        `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
+        `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ])
 
   const txHash =
