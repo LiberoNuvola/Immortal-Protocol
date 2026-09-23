@@ -67,3 +67,30 @@ export function assertExecutableLiquidityObservation(
     )
   }
 }
+
+/**
+ * Binds the observation to the concrete inputs of the candidate transaction.
+ *
+ * This is evidence binding, not a new economic rule: an observation cannot
+ * claim immediate liquidity from a UTxO that the candidate transaction does
+ * not actually consume for the action under evaluation.
+ */
+export function assertExecutableLiquidityBoundToInputs(
+  observation: ExecutableLiquidityObservation,
+  inputReferences: readonly string[],
+): void {
+  assertExecutableLiquidityObservation(observation)
+
+  const inputs = new Set(
+    inputReferences.map((ref) => ref.toLowerCase()),
+  )
+
+  for (const utxo of observation.utxos) {
+    const ref = utxo.txHash.toLowerCase() + '#' + utxo.index
+    if (!inputs.has(ref)) {
+      throw new Error(
+        `executable liquidity UTxO ${ref} is not a consumed candidate input`,
+      )
+    }
+  }
+}
