@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `36c100a3acae6dd1987ba66faaeb1c5ae2f92d74` — Genesis evidence binds exact signed CBOR to submitted transaction hash
+**Latest observed commit:** `a209d032f71157d4a4f70a6dffbf0464fc088609` — Genesis provenance parser import correction
 
 ---
 
@@ -3800,3 +3800,12 @@ The witness asserts constructor indices, field ownership/arity, and fail-closed 
 Commits: 9d080f34291c125147675dda805e8d920e63460f, efc9dfb1d6623e68c7af62eac66676029233afe6.
 
 Status: C13 REPRESENTATION WITNESS ADDED / NEEDS CI + LEDGER CORRELATION.
+
+
+### C14 parser sanity correction
+
+A direct current-head source audit caught a concrete TypeScript compile defect in the new provenance binder: the binder used `Lucid` / `Blockfrost` without importing them in the actual branch file. Corrected in `a209d032f71157d4a4f70a6dffbf0464fc088609`.
+
+This is a tooling/compile correction only. No economic or validator semantics changed.
+
+Fresh workflow execution remains required.
