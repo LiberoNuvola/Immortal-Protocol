@@ -4700,3 +4700,39 @@ Expected result: REJECT, unless the protocol explicitly proves that the old basi
 This is a stronger formulation of the existing stale-admission negative twin because it identifies the precise missing edge: decision-basis continuity.
 
 No protocol/economic semantics changed.
+
+
+## 2026-09-23 — Prior-art pass: Cardano native state-transition and artifact boundaries
+
+A fresh Cardano-focused pass adds two useful boundary references.
+
+First, Cardano's STS model explicitly treats the ledger as a state-transition system with small-step operational semantics. The smart-contract model similarly represents state in continuing UTxOs: an old state UTxO is consumed and a new state UTxO is produced, while the validator checks the legality of the transition. This is useful for B6 because the CAES reference transition should be compared against the concrete UTxO transition, not against an abstract notion of “the contract changed”. citeturn0search9turn0search11
+
+Second, CIP-0171 provides an on-chain mechanism for independently linking a Cardano script hash to source origin through repository, commit, compiler/build metadata and parameters, with independent recompilation used to verify the deployed script hash. This is a strong C14 precedent for separating source provenance from deployment identity and for recomputing rather than trusting a declared relationship. citeturn0search7
+
+Third, current Cardano developer documentation makes the transaction identity boundary unusually explicit: transaction ID is derived from the serialized body, while witnesses are not included in that body hash. This gives the lab a useful distinction between economic/action identity and witness/provenance identity; they should not be silently conflated. citeturn0search10
+
+### New B6/C14 experiment
+
+Define a test-only comparison record with four separate identities:
+- economic transition identity;
+- Cardano transaction-body identity;
+- deployed script/artifact identity;
+- observed ledger-state identity.
+
+Require explicit correspondence edges rather than one omnibus hash. A mismatch at one edge is classified by boundary:
+- semantic mismatch;
+- transaction realization mismatch;
+- artifact provenance mismatch;
+- observation mismatch.
+
+This is deliberately compatible with the existing architecture and does not introduce a new protocol primitive.
+
+A separate 2026 financial-process verification paper provides a useful adversarial testing pattern: each processing component must present evidence of the preceding control steps, while an explicit adversary is allowed to reorder components and replay evidence issued for another transaction. The model checks fail-secure and non-bypassability properties and uses weakened baselines to generate counterexamples. This is prior art for the *testing method*, not IMMORTAL semantics. citeturn0search4
+
+Adaptation:
+- add cross-transaction certificate replay to the CAES composition lab;
+- add path-bypass tests where a later certificate is valid but a required earlier boundary is missing;
+- maintain an explicit “weakened checker” baseline so each security condition has a counterexample demonstrating why it is needed.
+
+No economic constants, validator rules or normative protocol semantics changed.
