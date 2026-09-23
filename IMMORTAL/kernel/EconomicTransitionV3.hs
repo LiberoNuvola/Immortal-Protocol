@@ -138,10 +138,12 @@ transitionValid profile s a =
   where
     preStateValid st =
          EconomicKernel.conservationInvariant profile st
+      && EconomicKernel.controlStateValid profile (v3Control st)
       && nonNegativeState st
 
     postStateValid st =
          EconomicKernel.conservationInvariant profile st
+      && EconomicKernel.controlStateValid profile (v3Control st)
       && nonNegativeState st
 
     nonNegativeState st =
