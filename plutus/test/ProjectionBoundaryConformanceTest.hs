@@ -17,7 +17,7 @@ import EconomicProfile
 import EconomicStateV3
 import PreRichEconomicProfile
 import PreRichEconomicProjection
-import qualified UniversalEconomicKernel as UniversalKernel
+import UniversalEconomicState (UniversalEconomicState (..))\nimport qualified UniversalEconomicKernel as UniversalKernel
 
 profile :: EconomicProfile
 profile = preRichEconomicProfileV1
@@ -47,6 +47,21 @@ main = do
     Just projected -> do
       assert (UniversalKernel.protectedCapital projected == 2809) "projected ProtectedCapital counts liabilities, exposure and protected components once"
       assert (UniversalKernel.rawSurplus 4000 projected == 1191) "projected RawSurplus matches exact universal formula"
+
+  let lockedJackpotState =
+        validState
+          { v3Jackpot = JackpotState 700 10000 JackpotLocked 1
+          }
+
+  case projectPreRichState profile lockedJackpotState of
+    Nothing -> error "FAIL: locked-jackpot state projection rejected"
+    Just projected -> do
+      assert
+        (uesAdditionalProtectedCapital projected == 700)
+        "locked Jackpot liquidity projects into universal additional ProtectedCapital"
+      assert
+        (projectionBoundaryEquivalent profile 5000 lockedJackpotState)
+        "locked Jackpot remains inside the same V3/Universal ProtectedCapital boundary"
 
   assert
     (case projectPreRichState profile (validState { v3UnresolvedReserve = 6 }) of
