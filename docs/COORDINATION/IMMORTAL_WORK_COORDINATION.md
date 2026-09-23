@@ -3398,3 +3398,11 @@ Fresh current-head evidence:
 - Algorithmic Governability and Cardano Adapter Sale remain successful on the preceding current head.
 
 No economic/normative rule changed.
+
+## 2026-09-23 — P2.8-B.1 repeated on current head; differential evaluator conclusion unchanged
+
+PRE-RICH Cardano Emulator Reveal #165 on current head a2efef1334740cb930189a76f59331dcb0f748e7 reproduced the identical failure as prior runs: Spend[1] execution went over budget with Mem -29986019900 and CPU -20004554100. The run used the canonical 16KB transaction / 14M ExMem / 10B ExSteps parameters. This reproduces the evaluator-side failure after the B1 projection signature fixes and does not indicate an economic regression.
+
+The current Plutus 1.68 release documentation explicitly records CEK casing on constants of builtin types including pair, with conformance tests passing. This is relevant to the previously observed ProtoPair non-const diagnostic and strengthens the differential-evaluator investigation, but is not by itself proof that the Lucid evaluator is the exact cause. No validator economics were changed.
+
+Genesis Conformance #8 remains in progress from the earlier B1 projection-fix head 503e111f; no ledger GREEN claim until the real transition/evidence step completes.
