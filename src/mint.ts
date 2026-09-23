@@ -45,6 +45,7 @@ import {
 
 import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 import {
   buildScriptsFromLucid,
@@ -618,6 +619,8 @@ export type MintSerialResult = {
 }
 
 export type MintSerialOptions = {
+  /** Authoritative Economic Gate admission for the ticket-issuance transition. */
+  economicAdmission: EconomicAdmissionWitness
   priceUsdm?: number
   networkId?: number
   roundId?: number
@@ -646,7 +649,7 @@ export type MintSerialOptions = {
 // ============================================================
 
 export async function mintSerialNFT(
-  opts: MintSerialOptions = {},
+  opts: MintSerialOptions,
 ): Promise<MintSerialResult> {
   const lucid =
     wallet.getLucid()
@@ -1228,7 +1231,7 @@ export async function mintSerialNFT(
 
   const submission =
     await createCardanoExecutionAdapter(lucid)
-      .submit(tx)
+      .submitEconomic(tx, opts.economicAdmission)
 
   const txHash =
     submission.transactionRef
