@@ -7,6 +7,8 @@ on:
     paths:
       - "src/preRichHysteresis.ts"
       - "src/__tests__/preRichHysteresis.test.ts"
+      - "PRE-RICH/profile/PreRichHysteresisBinding.ts"
+      - "PRE-RICH/profile/PreRichHysteresisBinding.test.ts"
       - ".github/workflows/pre-rich-hysteresis-conformance.yml"
   pull_request:
     branches:
@@ -14,6 +16,8 @@ on:
     paths:
       - "src/preRichHysteresis.ts"
       - "src/__tests__/preRichHysteresis.test.ts"
+      - "PRE-RICH/profile/PreRichHysteresisBinding.ts"
+      - "PRE-RICH/profile/PreRichHysteresisBinding.test.ts"
       - ".github/workflows/pre-rich-hysteresis-conformance.yml"
 
 jobs:
@@ -33,4 +37,4 @@ jobs:
         run: npm ci
 
       - name: Run PRE-RICH hysteresis conformance
-        run: npx vitest run src/__tests__/preRichHysteresis.test.ts
+        run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/profile/PreRichHysteresisBinding.test.ts
