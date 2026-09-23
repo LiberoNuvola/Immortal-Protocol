@@ -5295,3 +5295,14 @@ A separate current Cardano API exposes the same evaluation boundary through `eva
 **Classification:** P2.8-B.1 **BLOCKED → EXACT LEDGER API CONTRACT CONFIRMED / IMPLEMENTATION GAP IS PACKET DECODING + EVALUATION**.
 
 No validator semantics, economic constants, or normative rules changed.
+
+
+## 2026-09-23 — P2.8 runner fail-closed hardening: empty Plutus artifacts
+
+The ledger runner previously checked that the exact Plutus artifact files existed, then read and reported their byte sizes, but did not reject a zero-byte artifact before continuing to the evidence-packet gate. The runner is now fail-closed on empty exact artifacts and emits `EMPTY_EXACT_PLUTUS_ARTIFACT`.
+
+Commit: `22feba74d95062b87083e94f70800621b0d61ad8`.
+
+This does not implement evaluation yet. It tightens the evidence boundary so a malformed/empty artifact cannot be mistaken for an exact validator artifact. The next required step remains typed packet decoding followed by `evalTxExUnitsWithLogs`.
+
+Status: P2.8-B.1 **OPEN — evidence boundary hardened; evaluator implementation still pending**.
