@@ -5349,3 +5349,39 @@ The helper treats acceptance as a test failure and records the validator rejecti
 Commit: `e1682899c6fdd2bcbf2291135eed83fe4efd6206`.
 
 This closes the three highest-value Reveal input-binding negative cases at the emulator-fixture level, subject to CI execution. Claim negative twins remain open. No economic constants, validator semantics, or normative rules were changed; this is evidence/conformance hardening only.
+
+
+## 2026-09-23 — Universal bridge consumer audit: first concrete boundary gap isolated
+
+A direct current-branch inspection of the additive universal bridge and its PRE-RICH projection isolated the next architectural evidence target without changing protocol semantics.
+
+### Confirmed implementation facts
+- `UniversalEconomicState` contains only aggregate economic quantities; no ticket ladder, activation controller, or Jackpot lifecycle fields.
+- `UniversalEconomicKernel` consumes the aggregate state and exposes ProtectedCapital, RawSurplus, non-negative-state and solvency predicates.
+- `PreRichEconomicProjection.projectPreRichState` is fail-closed on invalid profile/state, duplicate/unknown classes, inconsistent class exposure, and inconsistent aggregate reserve/count.
+- The projection maps PRE-RICH class decomposition into `uesWorstCaseExposure` using the profile-supplied maximum normal payout multiplier, and maps locked Jackpot amount into `uesAdditionalProtectedCapital`.
+- `projectionBoundaryEquivalent` currently checks equality of V3 vs universal ProtectedCapital, RawSurplus and solvency predicates for successful projections.
+
+### Important boundary finding
+The bridge deliberately discards several PRE-RICH control/lifecycle dimensions from the universal representation:
+- `EconomicControlState` (current/highest active class);
+- `JackpotStatus`;
+- Jackpot threshold/cycle;
+- per-class issued/cap/saleability details beyond their contribution to aggregate exposure/reserve/count.
+
+This is consistent with the stated universal/application separation **only for the aggregate economic decision boundary**. It does not yet prove that every V3 transition remains semantically representable after projection. In particular, class activation, saleability, Jackpot lifecycle and transition-specific post-state obligations still require consumer-level mapping before they can be declared outside the universal transition model.
+
+### New precise next test
+For each V3 transition/action (Issue, Reveal, Claim, Expire, FundTreasury and application Jackpot transitions), build a matrix with:
+1. fields read to validate the action;
+2. fields changed by the action;
+3. fields required for universal economic admissibility;
+4. fields that are purely application policy;
+5. fields that must survive Cardano refinement/observation even if absent from UniversalEconomicState;
+6. whether `projectPreRichState` before/after is sufficient to witness the same economic transition.
+
+**No refactor is justified yet.** The additive bridge remains the compatibility boundary. The next closure target is a transition-by-transition preservation witness, not deletion of V3 fields.
+
+**Classification:** IMMORTAL-STATE-BOUNDARY-001 — **BRIDGE IMPLEMENTED / CONSUMER PRESERVATION EVIDENCE OPEN**.
+
+No economic constants, validator semantics, governance rules, or canonical policy were changed.
