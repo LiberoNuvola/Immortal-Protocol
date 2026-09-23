@@ -131,3 +131,23 @@ This does not close RT-3 globally: Reveal/Claim/Expire already cross the economi
 This is deliberately classified as an interface hardening only. It does **not** claim that the adapter has proved the observation corresponds to the exact Pool UTxO consumed by the transaction. That correlation remains the next required step. No liquidity haircut, valuation rule, or new economic source was introduced.
 
 Commit: `8210d62a1029e6af85b4af8f127a469ce4eb8bb4`.
+
+
+## 2026-09-23 — RT-1.5 candidate-input binding hardened
+
+The executable-liquidity observation surface now has an explicit evidence-binding check against the concrete inputs of the candidate transaction. The EconomicAdmission witness cannot be accepted through the economic Cardano submission boundary unless every observed liquidity UTxO is among the transaction inputs supplied by the action path.
+
+Applied on `work/immortal-green-closure`:
+- `assertExecutableLiquidityBoundToInputs(...)` added to the observation boundary.
+- `EconomicAdmission` now requires the candidate input-reference set.
+- `CardanoExecutionAdapter.submitEconomic(...)` carries that set into admission validation.
+- Mint, Reveal, Claim and Expire pass their concrete consumed UTxO references into the economic submission boundary.
+
+This closes the previously identified **provenance-to-candidate-input binding layer** as an implementation hardening step. It does **not** close RT-1.5 release-wide: fresh negative-test evidence and current-head Cardano ledger evidence are still required, including rejection of stale/double-counted observations and mismatched authenticated Pool UTxO valuation.
+
+No new economic valuation rule or haircut was introduced.
+
+## 2026-09-23 — RT-3 action-boundary reconciliation
+
+The current Green Closure implementation now routes all four identified economic state transitions — Issue, Reveal, Claim and Expire — through an explicit EconomicAdmission witness at the Cardano submission boundary. The remaining RT-3 work is therefore no longer the previously observed generic-submit side door for those four paths; it is the exhaustive mutator inventory, negative-twin coverage, and fresh CI/evidence proving that no additional economic mutator bypass exists.
+
