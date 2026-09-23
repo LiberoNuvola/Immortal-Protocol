@@ -3683,3 +3683,22 @@ Adversarial review of the Genesis admission mirror found an invalid threshold te
 Corrected in 37b2f2cdd733da94888bb7b415132eba9d348a3f: the boundary is now tested explicitly with 9,999,999 PRE rejected and 10,000,000 PRE admitted at the canonical 0.04 USDM/PRE oracle value. This is a test-fixture correction only; the admission implementation and threshold are unchanged.
 
 Cross-review lesson: Genesis admission tests must vary quantity around the economically derived threshold, not derive quantity by dividing the USDM threshold without accounting for the oracle price.
+
+
+## 2026-09-23 — C14 evidence-packet correlation hardened
+
+The Genesis workflow previously hashed generated validator artifacts before ledger execution, but the uploaded transition evidence did not itself carry those hashes. This left a provenance-correlation gap even though the workflow used fresh artifacts.
+
+Added `audit/pre-genesis-genesis/record-artifact-provenance.ts` and wired it after the real Yaci transition. The evidence packet now records:
+- current `GITHUB_SHA`;
+- SHA-256 of the exact generated `genesisRegimeCarrier.plutus.json`;
+- SHA-256 of the exact generated `genesisCarrierMintPolicy.plutus.json`;
+- the observed transition transaction reference;
+- presence of the transition transaction CBOR.
+
+Commits:
+- `5c9dff9a79932ca52cdbbefbb88a1da5f0de5ca0`
+- `83e479e5989fcb32ec497913288eda3f87257f90`
+- coordination record: `e47deef7ccece529c902e5ede7ed8278d49a394a`
+
+Status: **C14 HARDENED / NEEDS FRESH EXECUTION**. This is evidence-pipeline hardening only; it does not promote Genesis to ledger GREEN without a fresh successful Yaci run.
