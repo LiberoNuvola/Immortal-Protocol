@@ -3373,3 +3373,15 @@ Current Actions for this exact head:
 This is the first authoritative Actions view for the corrected B1 projection head. No Genesis GREEN claim is made while #6 is queued. The algorithmic-governability execution remains green. Reveal remains an active differential experiment; do not modify validator economics while it runs.
 
 No economic/normative rule changed in this status update.
+
+## 2026-09-23 — B1 projection signature regression repaired and test source normalized
+
+Current-head review after the Genesis pipeline unblock found two remaining integration issues caused by the newly profile-bound universal projection:
+
+- plutus/B1PrizePool.hs had one stale solvencyInvariant call still invoking legacyB1ToUniversalEconomicState without the required preRichEconomicProfileV1 argument. Fixed in 503e111f957aef3f0435fd747fda76773a3a63e5.
+- plutus/test/B1LegacyAdapterTest.hs had two stale projection call sites; both are now explicitly bound to preRichEconomicProfileV1 in 7436981fc4bfaf6fcbe4351da6699600f0b20009.
+- plutus/test/ProjectionBoundaryConformanceTest.hs contained a literal escaped newline in the import section. Normalized in 9c3dc4cc1623cf2f9c1b6f4705514809abd3457e.
+
+These are compile/integration hygiene fixes only. The canonical PRE-RICH profile remains the application-supplied source of the 500x bound; no universal economic rule changed.
+
+Status: B1 projection binding = implementation repaired; authoritative status remains dependent on fresh CI. Projection B4 representation evidence remains valid; no GREEN claim is made from source inspection alone.
