@@ -10,15 +10,15 @@ const artifacts = [
 const evidence = JSON.parse(readFileSync(evidencePath, 'utf8'))
 const carrierArtifact = JSON.parse(readFileSync(artifacts[0], 'utf8'))
 const carrierPolicyArtifact = JSON.parse(readFileSync(artifacts[1], 'utf8'))
-const scriptHash = Lucid.new({} as never, 'Preprod')
+const lucid = await Lucid.new(new Blockfrost('http://127.0.0.1:8080/api/v1', ''), 'Preprod')
 const sha256File = (path: string) =>
   createHash('sha256').update(readFileSync(path)).digest('hex')
 
-const carrierScriptHash = scriptHash.utils.validatorToScriptHash({
+const carrierScriptHash = lucid.utils.validatorToScriptHash({
   type: 'PlutusV2',
   script: carrierArtifact.cborHex,
 })
-const carrierPolicyId = scriptHash.utils.mintingPolicyToId({
+const carrierPolicyId = lucid.utils.mintingPolicyToId({
   type: 'PlutusV2',
   script: carrierPolicyArtifact.cborHex,
 })
