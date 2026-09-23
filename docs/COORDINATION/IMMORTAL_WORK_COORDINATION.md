@@ -4502,3 +4502,58 @@ Additional C15 observation: the FundTreasury trace currently has no explicit pos
 External Cardano documentation independently confirms that consumed EUTxOs cannot be reused and that reference inputs can read state without consuming it. citeturn0search0turn0search4
 
 Status: RT-1.5 CANONICAL VALIDATOR PATH CONFIRMED / C15 FUND-TREASURY DUPLICATE-SUBMISSION WITNESS OPEN / FRESH CI OPEN.
+
+## 2026-09-23 — Prior-art pass: stronger overlaps and new adaptations
+
+Further research found several additional high-signal overlaps.
+
+### 1. Transaction admission can be cryptographically bound to one exact transaction
+A 2026 admission framework explicitly binds current state, policy checks, replay control and proof material to the same accepted transaction instance. This reinforces the existing RT-1.5 direction.
+Adaptation:
+- make the CAES admission witness commit to the exact candidate action/transition identity;
+- add negative twins for stale state, replay, and valid proof components mixed across different transactions;
+- keep admission as a boundary check, not an economic authority.
+
+### 2. Event semantics are an independent correctness boundary
+ISSTA 2026 EventSpec identifies state-event mismatch, unauthorized emission, event collision and event-parameter mismatch as distinct blockchain defects. Events are therefore not safe evidence merely because the underlying transaction is valid.
+Adaptation:
+- C13/C14 experiment: require observed event identity and parameters to bind to the same canonical economic transition;
+- test: valid state transition + valid event + different transition identity => reject;
+- do not treat logs/events as substitutes for canonical state observation.
+
+### 3. State-diff assertions suggest a useful Cardano-agnostic oracle for the lab
+EIP-7906 proposes transaction-level assertions over state diffs and emitted events. It is Ethereum-specific and not suitable as IMMORTAL semantics, but the abstraction is useful for the audit lab: expected state delta, observed state delta, expected event, observed event, and exact correspondence check.
+Adaptation target is a test-only ObservedTransitionDelta witness, not a new protocol primitive.
+
+### 4. Semantic state translation is an active research problem
+HyperCross formalizes heterogeneous ledger state mapping with canonical state objects carrying identity, semantic value and provenance, and emphasizes invariant-preserving translation between UTXO/account-style state spaces.
+Adaptation:
+- B6 can use a canonical (identity, semantic state, provenance) tuple for comparison;
+- test that Cardano serialization preserves semantic identity/value/provenance;
+- classify semantic drift separately from ordinary encoding mismatch.
+
+### 5. Autonomous economic systems are now direct prior art
+AMOS describes itself as a bounded autonomous economic organism and combines proof-carrying bounties, verified outcomes, economic state and on-chain settlement. AEA/P separately defines accountable autonomous economic agents with identity, performance proof, liability escrow and governance.
+Implication:
+- autonomous economic system is not a safe novelty phrase by itself;
+- CAES must remain a proposed architectural class centered on economic transition preservation across normative/refinement/admission/execution/evidence boundaries, not merely autonomy + economics + proofs.
+
+### 6. New identity-transition precedent
+A 2026 paper on cryptographic individuality for autonomous blockchain agents re-checks an identity invariant at every state transition and anchors it into on-chain history.
+Adaptation:
+- the CAES lab can use the same pattern conceptually for transition identity: derive/commit identity once, then re-check it at each boundary;
+- this is prior art for persistent transition-time invariants, so it cannot be claimed as novel independently.
+
+### Current research conclusion
+The prior-art boundary is becoming clearer:
+- autonomous economic systems: prior art;
+- proof-carrying actions/transactions: prior art;
+- admission binding/replay protection: prior art;
+- event/state semantic consistency: prior art;
+- heterogeneous state translation with provenance: prior art;
+- transition-time identity invariants: prior art.
+
+The remaining candidate distinction is still the composition in which one canonical economic transition identity is preserved through:
+normative economic state -> refinement -> economic admission -> executable-liquidity binding -> adapter realization -> atomic revalidation -> observed ledger transition.
+
+No novelty claim is established by this pass. No economic semantics were changed.
