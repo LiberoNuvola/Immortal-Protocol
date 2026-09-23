@@ -3846,3 +3846,36 @@ Applied `84b1558077da3724d922d68f92f8df43572fd0de` so both trigger modes include
 This prevents a PR from modifying the provenance binder without executing the Genesis conformance workflow.
 
 **Status:** trigger coverage corrected for push + pull_request / fresh execution still required.
+
+
+## 2026-09-23 — External red-team attack pass mapped to current branch
+
+An external adversarial review was triangulated against the current branch. It does not change protocol semantics; it identifies attack surfaces where the implementation could remain formally conformant while relying on incomplete or optimistic world-state assumptions.
+
+Created docs/audits/REDTEAM-STATUS.md as the non-normative attack register.
+
+### Immediate findings
+
+1. RT-1 Valuation / EEV / executable liquidity is now the highest-value unresolved boundary. The key question is not whether RawSurplus = max(0, EEV-ProtectedCapital) is mathematically correct; it is whether EEV and executable liquidity are authenticated, fresh, non-double-counted and actually realizable. No new haircut or valuation rule is authorized by this review.
+2. RT-1.8 Treasury double-counting is substantially hardened by the Genesis carrier boundary: Genesis carrier rejects PrizePool I/O and preserves its complete carrier value. Fresh ledger evidence is still required.
+3. RT-1.6 reflexive PRE valuation is a design/source-of-truth question. The existing Genesis admission proves a verified mark 10,000,000 PRE × 0.04 USDM/PRE = 4,000 USDM; it does not by itself prove executable liquidation value. Do not invent a haircut. First determine what the canonical economic documents require.
+4. RT-2 Genesis observation/carrier is materially more advanced than the older red-team description: an executable carrier, authenticated Treasury/Oracle references, singleton lifecycle, replay rejection, value preservation and signed-CBOR provenance binding now exist. Remaining attacks are forged observation, wrong asset identity, conflicting observations, off-chain/on-chain revalidation mismatch and duplicate-authority/capture tests.
+5. RT-3 RF8 side-door inventory remains open: every economic state mutator must be enumerated and have a canonical authority path plus a negative twin.
+6. RT-4 B1 liveness remains open and must preserve the safety/liveness distinction.
+7. RT-5 Omega completeness remains open: an incomplete commitment perimeter can leave the formulas internally correct while the modeled obligations are incomplete.
+
+### Red-team status rule
+
+No red-team finding may be closed by weakening a normative economic rule. A failure is classified as REJECT, NEUTRALIZE, DETECT, or GAP. Model evidence, fixture evidence and ledger evidence remain separate.
+
+### Current execution order
+
+1. RT-2.13–2.15 against the real Genesis carrier.
+2. RT-1.3–1.5 and RT-1.8 against the Treasury/Oracle observation and liquidity boundary.
+3. RF8 complete economic-mutator inventory (RT-3.1–3.10).
+4. RT-1.6 source-of-truth determination for executable vs mark valuation.
+5. RT-4 publisher/liveness adversarial suite.
+6. RT-5 commitment-perimeter/Omega completeness suite.
+
+Status: RED-TEAM PASS IN PROGRESS / NO NEW ECONOMIC DECISIONS.
+Evidence register: docs/audits/REDTEAM-STATUS.md.
