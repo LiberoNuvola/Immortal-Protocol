@@ -3954,3 +3954,17 @@ Cross-review of the current B1/Cardano implementation identified an existing can
 This means the next RT-1.5 implementation should reuse the authenticated B1PrizePool UTxO/value path rather than inventing a new liquidity oracle or haircut. The remaining gap is specifically the off-chain admission boundary: EconomicAdmissionWitness does not yet bind its liquidity/EEV decision to the exact Pool UTxO reference and observed executable value consumed by the economic transaction.
 
 Required negative twins: wrong Pool UTxO, stale observation, double-counted Pool liquidity, unrelated/non-spendable value, and observed value differing from the authenticated Pool UTxO valuation. Status remains PROVENANCE BINDING OPEN.
+
+
+## 2026-09-23 — RT-3 concrete mutator hardening: TicketIssued now crosses Economic Admission
+
+Inventory found a concrete side door in `src/mint.ts`: the canonical TicketIssued economic transition was assembled correctly and protected by on-chain MintPolicy/B1PrizePool validators, but the final submission used the generic Cardano adapter path instead of the Economic Admission boundary.
+
+Hardening applied:
+- `MintSerialOptions.economicAdmission` is mandatory.
+- `mintSerialNFT` submits through `submitEconomic`.
+- `buyTickets` no longer supplies an implicit empty options object.
+
+Commits: `ff778c30d1c64b7692dac75877d007829fa59cfe`, `f7d48278888c572aca755d714ac81091d6326b8d`.
+
+Classification: RT-3 side-door **HARDENED FOR TICKET ISSUANCE / GLOBAL MUTATOR INVENTORY OPEN**. Fresh CI is required; no workflow run is currently associated with these commits. This change does not alter economic parameters or validator semantics.
