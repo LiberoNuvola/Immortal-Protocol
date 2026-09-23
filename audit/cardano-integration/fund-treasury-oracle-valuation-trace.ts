@@ -264,6 +264,22 @@ const txCbor = signed.toCBOR()
 const txHash = await signed.submit()
 await lucid.awaitTx(txHash)
 
+let duplicateSubmissionRejected = false
+let duplicateSubmissionError = ''
+try {
+  await signed.submit()
+} catch (error) {
+  duplicateSubmissionRejected = true
+  duplicateSubmissionError =
+    error instanceof Error ? error.message : String(error)
+}
+
+if (!duplicateSubmissionRejected) {
+  throw new Error(
+    'FundTreasury duplicate signed transaction was accepted; expected consumed-input rejection',
+  )
+}
+
 const postPoolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
   (xs) => xs.some((u) => u.txHash === txHash && u.assets[poolUnit] === 1n),
@@ -329,6 +345,11 @@ const evidence = {
     poolInputReference: poolRef,
     observedPoolUsdmValue: preLiquidity.toString(),
     authenticatedPoolValueMatchesObservation: true,
+  },
+  duplicateSubmission: {
+    attempted: true,
+    rejected: duplicateSubmissionRejected,
+    error: duplicateSubmissionError,
   },
   producedUtxos: [postPoolRef],
   yaciTransactionUtxos: txUtxos,
