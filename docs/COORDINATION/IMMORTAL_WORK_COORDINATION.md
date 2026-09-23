@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `730334654ac5b39ec504bbbd5c0d030f6ad463fe` — hysteresis binding now enforces historical-control invariants
+**Latest observed commit:** `84b1558077da3724d922d68f92f8df43572fd0de` — Genesis provenance binder included in PR trigger paths
 
 ---
 
@@ -3835,3 +3835,14 @@ Applied:
 This remains application-boundary hardening. It does not claim V3/Cardano atomic control binding.
 
 **Status:** controller witness strengthened / fresh CI evidence required / V3+Cardano binding still OPEN.
+
+
+### Genesis workflow PR-trigger completeness
+
+A second trigger audit found the C14 provenance binder was present in the `push.paths` list but missing from the corresponding `pull_request.paths` list.
+
+Applied `84b1558077da3724d922d68f92f8df43572fd0de` so both trigger modes include `audit/pre-genesis-genesis/record-artifact-provenance.ts`.
+
+This prevents a PR from modifying the provenance binder without executing the Genesis conformance workflow.
+
+**Status:** trigger coverage corrected for push + pull_request / fresh execution still required.
