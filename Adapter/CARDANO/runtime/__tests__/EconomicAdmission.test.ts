@@ -22,6 +22,8 @@ const admission: EconomicAdmissionWitness = {
     ],
     declaredUsdmLiquidity: 800n,
   },
+  authenticatedPoolInputReference: pool0,
+  authenticatedPoolUsdmValue: 800n,
   requiredImmediateLiquidity: 800n,
 }
 
