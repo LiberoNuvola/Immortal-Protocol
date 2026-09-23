@@ -4294,3 +4294,37 @@ Status:
 - **Gate 41 Genesis funding role: OPEN**
 - **Gate 41 Snek info.outputId mapping: OPEN**
 
+## 2026-09-23 — Research-novelty prior-art pass: composition boundary sharpened
+
+A targeted prior-art pass was run against the open RESEARCH-NOVELTY front. The result does **not** establish novelty; it sharpens the comparison set.
+
+### High-signal overlaps
+
+- Ethereum formal-verification guidance explicitly covers state-transition models, invariants, pre/postconditions, safety/liveness and admissible execution paths.
+- VeriSolid models smart contracts as transition systems and proves observational equivalence between an abstract transition model and an augmented executable model.
+- Chainlink OCR3 uses authenticated observations, quorum aggregation, signed reports, on-chain report validation and sequence numbers/high-water handling for stale reports.
+- Existing reserve/DeFi systems enforce local post-state solvency invariants and explicit reserve accounting; examples include invariant-first reserve tokens and formally verified DeFi pool solvency.
+- Recent formal work on authenticated cross-domain state combines safety/liveness with authenticated state-preservation and Merkle-based provenance.
+
+### Implication for IMMORTAL
+
+The following components are clearly **not individually novel** on the present evidence:
+state-transition modeling; invariant preservation; safety/liveness separation; observational/refinement equivalence; reserve/solvency invariants; oracle freshness/authentication; provenance commitments; on-chain revalidation.
+
+The research question therefore remains the **composition and boundary discipline**, specifically whether the complete chain
+
+`normative economic state → candidate transition → ProtectedCapital / solvency → viability / successor admissibility → permissionless execution boundary → authenticated executable-liquidity provenance → adapter realization → on-chain revalidation → atomic state transition → reproducible evidence`
+
+has a sufficiently close prior analogue.
+
+The closest comparison families now identified are:
+1. formal smart-contract transition/refinement systems;
+2. reserve/solvency-enforced DeFi protocols;
+3. authenticated oracle/reporting systems;
+4. authenticated cross-domain state/provenance systems;
+5. permissionless liveness / guarded convergence systems.
+
+**Research status: PRIOR-ART MAP ADVANCED / NOVELTY DETERMINATION STILL OPEN.**
+
+No novelty claim is made, and no protocol semantics were changed.
+
