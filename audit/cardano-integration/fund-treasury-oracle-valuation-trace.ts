@@ -126,7 +126,7 @@ const now = BigInt(Date.now())
 // OracleDatum:
 //   assetPolicy, assetName, price, timestamp, publisher
 const oracleDatum = c(0, [
-  '0000000000000000000000000000000000000000000000000000000000000000',
+  '',
   '',
   ADA_PRICE_USDM_SUBUNITS,
   now,
