@@ -54,7 +54,9 @@ export function verifiedTreasuryPreValueUsdmSubunits(
   if (observation.preQuantity < 0n || observation.verifiedPreUsdmPrice < 0n) return null
   if (observation.oraclePrecision <= 0n) return null
   const numerator = observation.preQuantity * observation.verifiedPreUsdmPrice
-  return (numerator + observation.oraclePrecision - 1n) / observation.oraclePrecision
+  // Genesis admission is a hard lower-bound predicate. Fractional subunits
+  // below the threshold must never be rounded upward into admissibility.
+  return numerator / observation.oraclePrecision
 }
 
 export function admitGenesisTreasury(
