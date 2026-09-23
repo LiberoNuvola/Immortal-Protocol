@@ -3459,3 +3459,19 @@ Commit: `2c4bcd534887c07e1c480d7262a0df75e76dc84f`.
 ## 2026-09-23 — Reveal pipeline distinction verified
 
 Run #177 of `PRE-RICH Cardano Emulator Reveal` still used the older lightweight workflow and therefore did not exercise the fresh-artifact rebuild. The corrected `PRE-RICH Emulator Reveal Conformance` run #38 is the authoritative fresh-artifact path and is currently compiling the pinned Haskell toolchain before export. This distinction is now explicit: do not classify #177 as evidence against `assetAmount`.
+
+## 2026-09-23 — Genesis Treasury admission mirror promoted into CI
+
+The Genesis carrier workflow was re-audited against the actual files it executes. The dedicated PRE-RICH/profile/GenesisTreasuryAdmission.test.ts was already included in the workflow path filters, but was not actually executed by the workflow. This created a false sense of CI coverage for the exact 10,000,000 PRE -> 4,000 USDM admission pin.
+
+The workflow now explicitly runs:
+
+node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+
+after Node 22 dependency installation and before the carrier ledger lab.
+
+This is CI plumbing only. The canonical relation remains exactly 10,000,000 PRE × 0.04 USDM/PRE = 4,000 USDM, with the existing >= 4,000 USDM threshold. No validator, Oracle rule, 500× parameter, maxTxSize, PrizePool accounting rule, or IMMORTAL economic invariant changed.
+
+Commit: 6f4ab4c5db0758c1d511f96d9819859ffe0b6b34.
+
+Evidence status: admission mirror is now explicitly executable in the Genesis workflow; actual GREEN status still requires a fresh Actions run on this commit.
