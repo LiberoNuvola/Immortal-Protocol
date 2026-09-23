@@ -1,5 +1,7 @@
 name: PRE-RICH Emulator Reveal Conformance
 
+# Keep a workflow-file change as an explicit current-head fresh-artifact trigger.
+
 on:
   push:
     branches:
