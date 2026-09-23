@@ -175,3 +175,15 @@ The current P2.8-B.1 emulator job still fails before producing a usable ledger-a
 with nonsensical negative residual Mem/CPU values.
 
 This remains classified as an **evaluator/harness diagnostic**, not as a validator-semantic verdict. The P2.8 acceptance criterion still requires exact Plutus V2 artifacts plus ledger-aligned transaction context and either measurable ExUnits or a ledger-originated script failure. No economic invariant was changed in response to this evaluator failure.
+
+
+## 2026-09-23 — RT-2 forged-observation mirror twins added
+
+The Genesis stress lab now explicitly models the authenticated observation fields already enforced by the current carrier predicate: canonical PRE policy identity, canonical PRE asset identity, and canonical Oracle publisher identity. Added negative twins reject:
+- wrong PRE asset;
+- forged Oracle publisher;
+- wrong PRE policy.
+
+This is a mirror/instrumentation hardening only. It demonstrates that the scenario harness does not silently treat those fields as irrelevant, but it does not prove that a real reference-input UTxO carrying the oracle state is itself authoritative or unforgeable. RT-2.13 therefore remains OPEN at ledger authority level until a real adversarial ledger trace proves that the authenticated Oracle/Treasury references cannot be replaced by attacker-controlled state while preserving the required token identities.
+
+Related implementation commits: 7896bb57f7f4bece265e4412324ec8bc0705ea20 and 8c372499f73e905d4801356685e5acf4984a2117.
