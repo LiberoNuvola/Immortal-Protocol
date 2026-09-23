@@ -151,3 +151,27 @@ No new economic valuation rule or haircut was introduced.
 
 The current Green Closure implementation now routes all four identified economic state transitions — Issue, Reveal, Claim and Expire — through an explicit EconomicAdmission witness at the Cardano submission boundary. The remaining RT-3 work is therefore no longer the previously observed generic-submit side door for those four paths; it is the exhaustive mutator inventory, negative-twin coverage, and fresh CI/evidence proving that no additional economic mutator bypass exists.
 
+
+
+## 2026-09-23 — RT-1.5 negative twins + source-set binding verified
+
+Fresh conformance coverage now exercises both layers of the binding:
+- a valid observation whose source UTxOs are consumed is accepted;
+- an observation/source UTxO absent from candidate inputs is rejected;
+- duplicated physical UTxOs are rejected;
+- declared liquidity different from observed spendable UTxOs is rejected;
+- a source set differing from the economic action source is rejected before signing.
+
+The adapter-level Vitest suite is green on the current Green Closure line. C13 semantic conformance was also corrected to use Vitest's `describe/it` API and its workflow is now green.
+
+Current classification:
+- **RT-1.5 provenance/input binding: GREEN at the implementation + negative-test layer.**
+- **RT-1.5 release-wide: OPEN**, pending the authenticated canonical Pool UTxO valuation equivalence and current-head ledger evidence.
+
+## 2026-09-23 — P2.8-B.1 evaluator rechecked on current Green Closure
+
+The current P2.8-B.1 emulator job still fails before producing a usable ledger-aligned ExUnits result. The observed failure is:
+`Spend[0] execution went over budget`
+with nonsensical negative residual Mem/CPU values.
+
+This remains classified as an **evaluator/harness diagnostic**, not as a validator-semantic verdict. The P2.8 acceptance criterion still requires exact Plutus V2 artifacts plus ledger-aligned transaction context and either measurable ExUnits or a ledger-originated script failure. No economic invariant was changed in response to this evaluator failure.
