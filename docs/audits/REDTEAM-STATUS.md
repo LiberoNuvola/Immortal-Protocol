@@ -122,3 +122,12 @@ Minimal hardening applied:
 Commits: `ff778c30d1c64b7692dac75877d007829fa59cfe`, `f7d48278888c572aca755d714ac81091d6326b8d`.
 
 This does not close RT-3 globally: Reveal/Claim/Expire already cross the economic adapter, while every remaining economic mutator still needs inventory and negative twins. Fresh CI is also required because the API was intentionally tightened and no workflow run is yet associated with these commits.
+
+
+## 2026-09-23 — RT-1.5 admission witness strengthened (provenance metadata, not yet binding)
+
+`EconomicAdmissionWitness` now requires two explicit fields: `executableLiquidity` and `executableLiquidityObservationReference`. The adapter rejects negative executable liquidity and an empty observation reference.
+
+This is deliberately classified as an interface hardening only. It does **not** claim that the adapter has proved the observation corresponds to the exact Pool UTxO consumed by the transaction. That correlation remains the next required step. No liquidity haircut, valuation rule, or new economic source was introduced.
+
+Commit: `8210d62a1029e6af85b4af8f127a469ce4eb8bb4`.
