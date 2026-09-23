@@ -3945,3 +3945,12 @@ Important boundary:
 this is **observation/runtime hardening, not yet ledger proof**. The observation is still supplied by the authoritative Cardano observation layer; the next evidence step is to bind these UTxO references to the actual transaction/input set and reject unrelated/double-counted/non-spendable value in a real-ledger trace.
 
 **Status:** RT-1.5 RUNTIME PROVENANCE WITNESS HARDENED / REAL-LEDGER BINDING OPEN.
+
+
+## 2026-09-23 — RT-1.5 canonical Cardano liquidity surface identified
+
+Cross-review of the current B1/Cardano implementation identified an existing canonical observation surface for executable PrizePool liquidity. plutus/B1PrizePool.hs recomputes the continuing Pool UTxO's USDM value through Economic.poolUsdmValue and requires ppTotalLiquidity to equal that value on FundTreasury; Claim also derives the consumed and continuing Pool UTxO values and checks the physical pool-value delta against the crystallized payout. The singleton Pool NFT and exactly-one-own-input constraints bind this accounting to the concrete Pool state UTxO.
+
+This means the next RT-1.5 implementation should reuse the authenticated B1PrizePool UTxO/value path rather than inventing a new liquidity oracle or haircut. The remaining gap is specifically the off-chain admission boundary: EconomicAdmissionWitness does not yet bind its liquidity/EEV decision to the exact Pool UTxO reference and observed executable value consumed by the economic transaction.
+
+Required negative twins: wrong Pool UTxO, stale observation, double-counted Pool liquidity, unrelated/non-spendable value, and observed value differing from the authenticated Pool UTxO valuation. Status remains PROVENANCE BINDING OPEN.
