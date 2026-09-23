@@ -107,7 +107,7 @@ const scenarios = [
 const output = {
   schema: 'pre-genesis-genesis-stress-v0.1', status: 'PASS',
   normativeParametersUsed: { genesisThresholdUsdm: GENESIS_THRESHOLD_USDM.toString(), genesisTicketPriceUsdm: GENESIS_TICKET_PRICE_USDM.toString() },
-  note: 'Scenario valuation is instrumentation only. The added asset/publisher checks mirror the authenticated observation fields required by the current carrier; they do not prove ledger-level authority of the reference inputs.', Real deployment must supply the verified Treasury valuation path; this harness does not define an oracle or a stability window.',
+  note: 'Scenario valuation is instrumentation only. The added asset/publisher checks mirror the authenticated observation fields required by the current carrier; they do not prove ledger-level authority of the reference inputs. Real deployment must supply the verified Treasury valuation path; this harness does not define an oracle or a stability window.',
   scenarios
 };
 
