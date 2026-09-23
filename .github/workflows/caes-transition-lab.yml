@@ -1,0 +1,29 @@
+name: CAES Transition Lab
+
+on:
+  push:
+    branches:
+      - audit/p2-8-b1-reference-scripts-2026-09-21
+    paths:
+      - "audit/caes-transition-lab/**"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    branches:
+      - audit/p2-8-b1-reference-scripts-2026-09-21
+    paths:
+      - "audit/caes-transition-lab/**"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  caes-transition-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run audit/caes-transition-lab/CertifiedEconomicTransition.test.ts
