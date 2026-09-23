@@ -279,8 +279,13 @@ const genesisCarrierUtxo = postCarrier.find(
 );
 if (!genesisCarrierUtxo) throw new Error("GENESIS carrier UTxO not found");
 
-const carrierValuePreserved =
-  JSON.stringify(carrierUtxo.assets) === JSON.stringify(genesisCarrierUtxo.assets);
+const carrierAssetKeys = new Set([
+  ...Object.keys(carrierUtxo.assets),
+  ...Object.keys(genesisCarrierUtxo.assets),
+]);
+const carrierValuePreserved = [...carrierAssetKeys].every(
+  (unit) => (carrierUtxo.assets[unit] ?? 0n) === (genesisCarrierUtxo.assets[unit] ?? 0n),
+);
 if (!carrierValuePreserved) {
   throw new Error("Genesis transition must preserve the carrier UTxO asset value");
 }
