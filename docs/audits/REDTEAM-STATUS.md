@@ -70,3 +70,21 @@ The first attack pass is derived from the 2026-09-23 external red-team review an
 - Workflow green ≠ universal proof.
 - A failed red-team test must not be “fixed” by weakening a normative rule.
 - No red-team PASS is promoted to release certification without current-head evidence.
+
+
+## 2026-09-23 — Concrete valuation attack found and closed at source
+
+Attack: Genesis valuation used ceiling division when converting oracle-priced value into USDM subunits. A valuation fractionally below the 4,000 USDM threshold could therefore round upward to exactly the threshold and be admitted.
+
+Concrete adversarial case:
+- preQuantity = 1
+- verifiedPreUsdmPrice = 3,999,999
+- oraclePrecision = 10
+- mathematical value = 399,999.9 USDM subunits
+- previous ceiling result = 400,000 subunits → false admission
+
+Fix: Genesis admission now uses conservative integer floor division. A hard lower-bound predicate may not round a sub-threshold value upward into eligibility.
+
+Added regression coverage in GenesisTreasuryAdmission.test.ts. No threshold, price, or economic policy changed; only arithmetic boundary behavior was corrected to preserve the existing >= 4,000 USDM predicate.
+
+Status: RT-1 valuation-boundary attack CLOSED at this arithmetic layer; broader executable-liquidity and oracle-surface attacks remain OPEN.
