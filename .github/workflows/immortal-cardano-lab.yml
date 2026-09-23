@@ -181,6 +181,9 @@ jobs:
       - name: Execute real economic Reveal transition trace
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
+      - name: Execute real FundTreasury canonical Oracle valuation trace
+        run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
+
       - name: Execute real economic Expire transition trace
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
