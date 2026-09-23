@@ -5166,3 +5166,53 @@ A valid certificate is not authority by itself; it is evidence whose claims must
 This aligns with the existing CAES removal of trusted producer validity assertions and with the economic stale-admission tests. It does not merge GovernanceSafety into EconomicSafety.
 
 No economic constants, validator semantics or current normative protocol rules changed.
+
+
+## 2026-09-23 — Governance research pass V: enforcement boundary, delivery reconciliation, and replay integrity
+
+A further fresh source pass found a useful convergence around a distinction already needed by IMMORTAL: **authorization/evidence is not execution**. A 2026 execution-time authorization framework models a canonical proposed action against versioned policy/decision state, requires deterministic fail-closed evaluation, freshness/release binding, non-bypassability, and replay integrity; it explicitly notes that provenance establishes origin but not admissibility. This is prior art for the boundary pattern, not a novelty claim. citeturn0search1
+
+An IETF draft on execution finality independently specifies a closely related enforcement boundary: the proposed operation remains non-effective until the enforcement function reconstructs the actual operation, checks exact-act binding and current protected state, prevents replay/stale authority, and couples authorization to the resulting effect atomically or crash-consistently. This is highly relevant as a **negative-twin generator** for the CAES lab. citeturn0search4
+
+A separate IETF evidence-reconciliation draft makes another distinction useful to IMMORTAL: issuer-side emission, target resolution, receiver-side observation, enforcement outcome, and observed resulting effect are separate facts. A control being decided or dispatched does not prove that every required enforcement point received or applied it. citeturn0search3
+
+### New research test pattern
+
+For any governed transition:
+
+`Proposal → Authorization → Exact-Act Reconstruction → Current-State Revalidation → Atomic Effect → Observed Effect`
+
+Do not collapse these into one certificate.
+
+Suggested negative twins:
+
+1. Authorization valid, reconstructed executable act differs → **REJECT**.
+2. Authorization valid, protected state is stale at effect time → **REJECT**.
+3. Authorization valid, execution bypasses the mandatory enforcement boundary → **REJECT**.
+4. Authorization emitted, but required target/enforcement point not observed → **UNRESOLVED / NOT PROVEN**, not success.
+5. Effect observed, but no matching authorization identity exists → **REJECT**.
+6. Correct authorization and effect, but replay under the authoritative historical rule set derives a different result → **REJECT**.
+7. Same act is replayed after its authorization freshness/effective window expires → **REJECT**, unless an explicit continuity rule permits it.
+
+### Governance evidence consequence
+
+The earlier governance packet can be refined operationally into distinct evidence roles:
+
+- **Decision evidence:** what was authorized and under which rule/authority context.
+- **Execution evidence:** what exact act was reconstructed and committed.
+- **Observation evidence:** what effect actually occurred.
+- **Replay evidence:** whether an independent reconstruction derives the same result.
+
+This is stronger than treating a governance receipt as proof of execution. The receipt remains evidence; authority comes from the applicable constitutional/rule system and the enforcement boundary.
+
+### Cross-plane consequence
+
+This strengthens the existing CAES composition without adding protocol semantics:
+
+`GovernanceSafety` and `EconomicSafety` remain separate, but both can use the same meta-property:
+
+**authorization identity must survive the boundary to the exact effect that becomes effective.**
+
+For the economic plane this maps directly to the existing transition-digest / stale-admission work. For governance it maps to rule-set digest + authority + scope + effective-window binding.
+
+No economic constants, validator semantics, or current normative governance rules changed.
