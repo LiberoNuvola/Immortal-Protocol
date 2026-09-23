@@ -1,0 +1,63 @@
+# IMMORTAL — Multi-Agent Front Rotation
+
+**Branch:** `work/immortal-green-closure`  
+**Purpose:** operational allocation and cross-review between concurrent sessions.  
+**Authority:** non-normative; canonical specifications, Decision Register and current implementation remain authoritative.
+
+## Operating rule
+
+Do not let each session stay locked to one front. Work is divided for throughput, then periodically exchanged for adversarial review. A reviewer must actively try to falsify the previous worker's conclusion, not merely restate it.
+
+## Current allocation
+
+| Front cluster | Primary pass | Mandatory cross-review |
+|---|---|---|
+| Reveal / P2.8-B.1 / evaluator differential | Session A | Session B reviews evaluator interpretation and artifact freshness |
+| Genesis / C7 Oracle provenance / C8 Snek UTxO | Session B | Session A reviews Treasury/value provenance and excluded liquidity |
+| C9 bootstrap accounting / C10 state semantics | Session A | Session B checks conservation and exclusion boundary |
+| C11 atomic Gate→Viability→Adapter→ledger | Session B | Session A checks economic authority and atomicity |
+| C12 lifecycle conformance | Session A | Session B reviews Issue/Reveal/Claim/Expire correspondence |
+| C13 datum/redeemer serialization | Session B | Session A performs semantic round-trip review |
+| C14 artifact provenance/reproducibility | Session A | Session B checks stale-artifact and hash-binding failure modes |
+| C15 replay/idempotency | Session B | Session A attacks duplicate-submission and consumed-state cases |
+| B4 ProtectedCapital | Session A | Session B reviews partition and lifecycle deltas |
+| B5 Economic Gate→Viability→Safe Action | Session B | Session A reviews candidate-post-state and immediate-liquidity semantics |
+| B6 V3↔Cardano equivalence | Shared | Each session reviews the other's refinement claims |
+| 3D certified persistent NFT | Shared | Cross-review authority separation vs presentation |
+| B2 hysteresis/control binding | Shared | Cross-review caller-selected state and canonical controller provenance |
+| Treasury/Protocol Revenue | Session B | Session A reviews universal/application boundary |
+| Materios finality/authority proof | Session A | Session B reviews cryptographic trust boundary |
+
+## Rotation protocol
+
+1. **Primary pass:** inspect current branch, canonical source, implementation, tests and current CI evidence.
+2. **Record only falsifiable claims:** distinguish implementation, test, simulation, emulator and real-ledger evidence.
+3. **Exchange:** after a meaningful change, the other session reviews the same front from a different angle.
+4. **Adversarial review:** search specifically for stale artifacts, caller-controlled observations, missing provenance, non-atomic transitions, replay paths, silent defaults and economic leakage.
+5. **Reconciliation:** if the reviewer finds a defect, fix it or record the exact unresolved boundary. Never hide disagreement by changing the coordination status.
+6. **Rotate:** move to another cluster after the review; do not monopolize a single front while unrelated fronts remain open.
+7. **Promotion rule:** GREEN only when current-head evidence supports the exact closure claim. A fixture, source inspection or emulator result cannot silently substitute for a real-ledger/proof requirement.
+
+## Current priority sweep
+
+- Reveal: wait for and classify fresh-artifact runs only; legacy failures are historical evidence.
+- Genesis: continue the real Yaci carrier trace and independently bind Treasury + Oracle observations.
+- C7/C8: trace actual Oracle/Snek UTxO identity and provenance; classify the 3 ADA/provider-offset observation without inventing semantics.
+- C9/C10: prove bootstrap PRE satisfies admission but is not automatically imported into Genesis PrizePool liquidity/state.
+- C11–C13: connect economic admission to concrete transaction/state serialization and observed post-state.
+- C14: bind source commit, toolchain, generated script bytes/hash and evidence packet.
+- C15: execute replay/idempotency cases for Genesis and lifecycle transitions.
+- B4/B5/B6: continue evidence work in parallel; do not wait for Reveal/Genesis to finish before advancing these.
+- Materios: continue boundary hardening while keeping the missing production cryptographic proof explicit.
+- Treasury/Revenue: finish representation mapping without inventing fee values or accounting classification.
+
+## Handoff record
+
+Every substantive handoff should state:
+- current commit;
+- files inspected/changed;
+- exact evidence observed;
+- what remains unproven;
+- the next adversarial question for the receiving session.
+
+**No economic constants or normative rules are changed by this file.**
