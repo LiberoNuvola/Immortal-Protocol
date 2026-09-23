@@ -88,3 +88,14 @@ Fix: Genesis admission now uses conservative integer floor division. A hard lowe
 Added regression coverage in GenesisTreasuryAdmission.test.ts. No threshold, price, or economic policy changed; only arithmetic boundary behavior was corrected to preserve the existing >= 4,000 USDM predicate.
 
 Status: RT-1 valuation-boundary attack CLOSED at this arithmetic layer; broader executable-liquidity and oracle-surface attacks remain OPEN.
+
+
+## 2026-09-23 — RT-1.5 executable-liquidity boundary audit
+
+Current branch inspection confirms that EconomicGate already distinguishes EEV from immediate executable liquidity through `egiAvailableExecutableLiquidity` and checks `requiredImmediateLiquidity <= availableExecutableLiquidity`.
+
+However, the gate input is an interface supplied by the authoritative observation/refinement layer; the universal kernel does not itself authenticate that available liquidity against a concrete spendable ledger surface. `EconomicAdmissionWitness` likewise carries EEV and an observation reference, but the adapter does not derive or independently bind executable liquidity.
+
+Therefore RT-1.5 is **NOT CLOSED**. The semantic distinction exists, but provenance/binding from observed spendable UTxOs to the gate input remains an evidence and adapter-conformance gap.
+
+No code change is made here because inventing a liquidity source or haircut would exceed the current normative sources.
