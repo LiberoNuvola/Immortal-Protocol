@@ -16,6 +16,8 @@ export type ExecutableLiquidityUtxo = {
 export type ExecutableLiquidityObservation = {
   observationReference: string
   observedAt: bigint
+  /** Exact candidate-transaction inputs that are the liquidity source. */
+  sourceInputReferences: string[]
   utxos: ExecutableLiquidityUtxo[]
   declaredUsdmLiquidity: bigint
 }
@@ -31,6 +33,12 @@ export function assertExecutableLiquidityObservation(
   }
 
   const seen = new Set<string>()
+  const declaredSourceRefs = new Set(
+    observation.sourceInputReferences.map((ref) => ref.toLowerCase()),
+  )
+  if (declaredSourceRefs.size === 0) {
+    throw new Error('at least one executable liquidity source input is required')
+  }
   let total = 0n
 
   for (const utxo of observation.utxos) {
@@ -55,11 +63,21 @@ export function assertExecutableLiquidityObservation(
       throw new Error('duplicate executable liquidity UTxO reference')
     }
     seen.add(ref)
+    if (!declaredSourceRefs.has(ref)) {
+      throw new Error(
+        'observed executable liquidity UTxO ' + ref + ' is not declared as a source input',
+      )
+    }
     total += utxo.usdmValue
   }
 
   if (observation.declaredUsdmLiquidity < 0n) {
     throw new Error('declared executable liquidity must be non-negative')
+  }
+  if (seen.size !== declaredSourceRefs.size) {
+    throw new Error(
+      'declared executable liquidity source inputs do not exactly match observed UTxOs',
+    )
   }
   if (total !== observation.declaredUsdmLiquidity) {
     throw new Error(
@@ -84,6 +102,14 @@ export function assertExecutableLiquidityBoundToInputs(
   const inputs = new Set(
     inputReferences.map((ref) => ref.toLowerCase()),
   )
+
+  for (const sourceRef of observation.sourceInputReferences) {
+    if (!inputs.has(sourceRef.toLowerCase())) {
+      throw new Error(
+        'executable liquidity source input ' + sourceRef + ' is not a consumed candidate input',
+      )
+    }
+  }
 
   for (const utxo of observation.utxos) {
     const ref = utxo.txHash.toLowerCase() + '#' + utxo.index
