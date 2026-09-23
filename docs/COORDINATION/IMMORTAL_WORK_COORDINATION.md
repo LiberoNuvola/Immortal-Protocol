@@ -4649,3 +4649,54 @@ T_proposed.digest == T_admitted.digest == T_reconstructed.digest == T_revalidate
 If any edge differs, the certificate must fail closed.
 
 No economic constants, valuation rules, validator semantics or protocol decisions changed.
+
+
+## 2026-09-23 — Prior-art pass: transition identity as chained state commitment
+
+A new 2026 Ethereum state-registry specification gives a particularly useful concrete precedent for the CAES lab: it defines a deterministic Transition ID from the exact transition fields, requires the transition to name the current predecessor state root, requires sequential state continuity, and atomically stores the Transition ID, next state root and sequence. The specification also explicitly distinguishes the guarantee enforced by deployed logic from merely passing published test vectors. citeturn1search2
+
+This is more directly useful than a generic hash-the-transition pattern.
+
+Adaptation target for the lab:
+- TransitionId should commit to canonical action identity plus predecessor and successor canonical identities;
+- the checker should require predecessor identity to equal the currently authenticated pre-state;
+- the successor identity should be derivable from the accepted transition witness rather than merely declared;
+- a sequence/generation witness should prevent accepting an otherwise valid transition against an obsolete predecessor;
+- the final evidence packet should bind the accepted transition ID to the observed ledger consequence.
+
+This yields a stronger continuity predicate:
+
+CurrentPreState == T.preState
+AcceptedTransitionId == H(canonical(T))
+ObservedPostState == T.postState
+ObservedTransitionId == AcceptedTransitionId
+
+and, where a monotonic state-generation exists:
+
+T.generation == CurrentGeneration + 1.
+
+The lab should not import the EIP's agent-memory semantics, cryptographic format, or Solidity/EVM assumptions. The reusable pattern is the separation of:
+1. exact transition identity;
+2. predecessor-state continuity;
+3. successor-state derivation/observation;
+4. atomic state commitment.
+
+A second 2026 IETF draft sharpens the same idea into a continuity predicate: exact-act binding alone is insufficient if the decision basis, resource generation, mapping revision, revocation state, or other protected state can change. The final enforcement boundary must establish that the basis remains current or re-evaluate. citeturn1search6
+
+This maps cleanly onto the CAES distinction already present in the project:
+- economic validity of T;
+- admission under an observed state;
+- executable-liquidity binding;
+- current protected-state revalidation;
+- atomic realization;
+- observed consequence.
+
+### New negative twin
+
+T1 is valid and admitted against state generation g. Before realization, the authoritative state advances to g+1. The finalizer still commits T1 using the old admission evidence.
+
+Expected result: REJECT, unless the protocol explicitly proves that the old basis remains valid under the new state. No economic rule is changed by this test.
+
+This is a stronger formulation of the existing stale-admission negative twin because it identifies the precise missing edge: decision-basis continuity.
+
+No protocol/economic semantics changed.
