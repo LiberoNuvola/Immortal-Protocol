@@ -336,6 +336,23 @@ This is a non-obvious anti-regression constraint for both sessions.
 
 ---
 
+## 11A. Research-novelty front — initial prior-art baseline
+
+A first source-grounded scan was performed to establish the baseline for the new research front. The scan confirms that the individual building blocks are established prior art: smart-contract state-transition modeling, invariants, Hoare-style pre/postconditions, safety/liveness, temporal logic, refinement, atomicity, formal verification, proof-carrying code/data, and protocol-level verification all have substantial literature and tooling.
+
+High-signal baseline sources reviewed include:
+- Tolmach et al., **A Survey of Smart Contract Formal Specification and Verification** (ACM): state-transition systems, invariants, safety/liveness, temporal logic, Hoare-style specifications, atomicity and financial invariants.
+- Ethereum formal-verification documentation: FSM/state-transition modeling, invariants, safety/liveness, Hoare-style specifications and model checking.
+- Gupta et al. (2026), **Formal Verification of Blockchain Consensus Mechanisms Using Event-B**: FSM abstraction, invariants, refinement and temporal-logic verification at protocol level.
+- Necula/Lee lineage on **Proof-Carrying Code**, plus Ben-Sasson et al. on **Proof-Carrying Data**: machine-checkable certificates/proofs carried with code or data and verified by recipients.
+
+Current research hypothesis remains deliberately narrower than a novelty claim: the potentially distinctive object is the **composition and boundary discipline** of IMMORTAL — normative economic constitution → certified economic state/transition model → ProtectedCapital/solvency → viability/successor admissibility → liveness/permissionless execution boundary → economic admission with authenticated executable-liquidity provenance → chain adapter → on-chain revalidation → atomic transition → canonical state → reproducible evidence/provenance.
+
+This is **NOT a novelty determination**. The next pass must compare this composition against the closest prior systems across formal-methods protocols, DeFi/economic safety, proof-carrying/admission systems, permissionless execution/liveness, and blockchain governance. Individual mechanisms must not be presented as novel merely because IMMORTAL combines them.
+
+Status: **RESEARCH-NOVELTY FRONT OPEN / PRIOR-ART BASELINE ESTABLISHED**.
+
+
 ## 12. Handoff
 
 ### HANDOFF
