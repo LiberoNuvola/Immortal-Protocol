@@ -36,8 +36,9 @@ export function createCardanoExecutionAdapter(
     async submitEconomic(
       tx: unknown,
       admission: EconomicAdmissionWitness | undefined,
+      inputReferences: readonly string[],
     ): Promise<CardanoSubmissionReceipt> {
-      assertEconomicAdmission(admission)
+      assertEconomicAdmission(admission, inputReferences)
       return this.submit(tx)
     },
   }
