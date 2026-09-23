@@ -3485,3 +3485,11 @@ This keeps the two evidence layers in the same execution path: exact application
 Commit: 5b2955829b6e744b6f5b502b2c44fd585e46bda7.
 
 No economic, validator, Oracle, jackpot, 500x, maxTxSize, or IMMORTAL invariant changed.
+
+## 2026-09-23 — Genesis workflow trigger symmetry cleanup
+
+The PRE-GENESIS -> GENESIS Cardano workflow was rechecked for push/PR trigger symmetry. The PR trigger was missing the B1 projection/profile paths and the dedicated Genesis Treasury admission mirror, while the push trigger contained duplicate entries. The workflow is now normalized so relevant Genesis, B1 projection, profile and admission changes trigger the same evidence path without duplicate filters.
+
+Commit: 6aa521b770df1d8168abe538202427a300cbe3e2.
+
+CI plumbing only; no validator or economic semantics changed.
