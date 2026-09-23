@@ -12,8 +12,8 @@ import Prelude
   , (==)
   , (&&)
   , not
-  , (++)
   , (-)
+  , (++)
   )
 
 import EconomicProfile
@@ -72,6 +72,38 @@ expireState =
     Just s -> s
     Nothing -> error "fixture: expire failed"
 
+protectedBaseState :: V3EconomicState
+protectedBaseState =
+  V3EconomicState
+    0 0 0 11 13 17
+    [TicketClassState 0 0 0 0 10 True]
+    (EconomicControlState 0 0)
+    (JackpotState 19 98 JackpotLocked 1)
+
+protectedIssuedState :: V3EconomicState
+protectedIssuedState =
+  case transition profile protectedBaseState (Issue 0 1) of
+    Just s -> s
+    Nothing -> error "fixture: protected issue failed"
+
+protectedRevealState :: V3EconomicState
+protectedRevealState =
+  case transition profile protectedIssuedState (Reveal 0 1) of
+    Just s -> s
+    Nothing -> error "fixture: protected reveal failed"
+
+protectedClaimState :: V3EconomicState
+protectedClaimState =
+  case transition profile protectedRevealState (Claim 1) of
+    Just s -> s
+    Nothing -> error "fixture: protected claim failed"
+
+protectedExpireState :: V3EconomicState
+protectedExpireState =
+  case transition profile protectedIssuedState (Expire 0) of
+    Just s -> s
+    Nothing -> error "fixture: protected expire failed"
+
 main :: IO ()
 main = do
   let pc0 = EconomicKernel.protectedCapital profile baseState
@@ -87,6 +119,19 @@ main = do
   assert (pcReveal1 - pcIssue == -499) "partial Reveal reduces ProtectedCapital by 499"
   assert (pcClaimOne - pcReveal1 == -1) "Claim reduces ProtectedCapital by claimed liability"
   assert (pcExpire - pcIssue == -500) "Expire releases exactly the unresolved 500xP exposure"
+
+  assert
+    (protectedCapitalComponentsPreserved protectedBaseState protectedIssuedState)
+    "Issue preserves SafetyCapital/ReserveProtection/FutureCosts/Jackpot protection state"
+  assert
+    (protectedCapitalComponentsPreserved protectedIssuedState protectedRevealState)
+    "Reveal preserves SafetyCapital/ReserveProtection/FutureCosts/Jackpot protection state"
+  assert
+    (protectedCapitalComponentsPreserved protectedRevealState protectedClaimState)
+    "Claim preserves non-liability protected components"
+  assert
+    (protectedCapitalComponentsPreserved protectedIssuedState protectedExpireState)
+    "Expire preserves SafetyCapital/ReserveProtection/FutureCosts/Jackpot protection state"
 
   assert
     (protectedCapitalLifecycleSafe profile (RevealWitness 1 0))
