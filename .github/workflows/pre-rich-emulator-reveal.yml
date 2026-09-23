@@ -1,7 +1,7 @@
 name: PRE-RICH Emulator Reveal Conformance
 
-# Keep a workflow-file change as an explicit current-head fresh-artifact trigger.
-# CI-only retrigger marker: fresh Plutus artifacts must be rebuilt before Reveal evidence.
+# Canonical fresh-artifact emulator evidence path.
+# This workflow must rebuild Plutus artifacts from the exact checkout before Reveal evidence.
 
 on:
   push:
@@ -84,7 +84,6 @@ jobs:
         run: cabal update
       - name: Build and export fresh Plutus artifacts
         run: cabal run exe:export-scripts
-        working-directory: plutus
       - name: Run isolated emulator smoke
         run: node src/__tests__/immortal-cardano-emulator-smoke.mjs
       - name: Run real PRE-RICH Reveal emulator conformance
