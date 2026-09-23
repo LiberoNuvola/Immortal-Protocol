@@ -4030,3 +4030,29 @@ Commits:
 No fresh workflow result is exposed yet for these commits.
 
 **Status:** B4 **FORMAL PRESERVATION WITNESS HARDENED / CI EVIDENCE OPEN**. RT-3 **MUTATOR INVENTORY ADVANCED / GLOBAL REAL-LEDGER COVERAGE OPEN**.
+
+
+## 2026-09-23 — RT-1.5 exact economic-source binding hardening
+
+The runtime witness was tightened one step further after cross-review: merely requiring observed liquidity UTxOs to be among transaction inputs was insufficient, because an admission could still nominate an unrelated input as its liquidity source.
+
+Implemented on `work/immortal-green-closure`:
+- `ExecutableLiquidityObservation.sourceInputReferences` is now mandatory and must exactly match the observed liquidity UTxO set.
+- `assertExecutableLiquidityBoundToInputs` requires every declared liquidity source to be a consumed candidate input.
+- `EconomicAdmissionWitness` validation now requires the declared liquidity source set to match the economic action's explicit liquidity-source input set.
+- `CardanoExecutionAdapter.submitEconomic` and `signAndSubmitEconomicTx` now carry the explicit liquidity-source references.
+- TicketIssued, Reveal, Claim and Expire explicitly nominate the concrete B1PrizePool UTxO as the liquidity source.
+- Added regression tests for: valid Pool source, source not consumed, observed UTxO differing from declared source, and source/observation set mismatch.
+
+Commits:
+- `801c9fb930ef278921cf979bc239736b47016875`
+- `9764280a3037ff2720a416abffc5a416897ac0d7`
+- `c2e7540c73a74769bbc476e6db1a01b4726d42ce`
+- `546c9457c3a4458975997fd1a948d66a03c88d6a`
+- `d27ed55d2f430e5f3cbbeed1359290bad826cdaa`
+- `cb5772d24131ed717ffeb38b2c94ab7efe8c65f2`
+- `451def3b6cf309b8d9bdfb5498488690b763d6f4`
+
+This is still **runtime provenance/source binding**, not production ledger proof of the observed USDM quantity. The remaining RT-1.5 evidence gap is to correlate the observation's declared value with the authenticated B1PrizePool UTxO/value path on a real ledger trace, including stale/wrong-Pool/double-count/value-mismatch negative twins.
+
+**Status:** RT-1.5 **EXACT ECONOMIC SOURCE BINDING HARDENED / REAL-LEDGER VALUE CORRELATION OPEN**.
