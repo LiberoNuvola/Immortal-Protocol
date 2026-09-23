@@ -354,13 +354,6 @@ const result = {
     thresholdUsdmSubunits: "400000",
     activated: true,
   },
-  economicBoundary: {
-    treasuryReferencePreserved: treasuryStillReferenced,
-    oracleReferencePreserved: oracleStillReferenced,
-    prizePoolTouched: false,
-    carrierOnlyStateTransition: true,
-    genesisLiquidityImportedFromBootstrap: false,
-  },
   replay: {
     rejected: true,
     error: replayError,
