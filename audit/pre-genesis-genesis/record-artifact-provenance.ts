@@ -23,6 +23,40 @@ const carrierPolicyId = lucid.utils.mintingPolicyToId({
   script: carrierPolicyArtifact.cborHex,
 })
 
+const transitionTxCbor = evidence.transitionTxCbor
+if (typeof transitionTxCbor !== 'string' || transitionTxCbor.length === 0) {
+  throw new Error('Genesis transition evidence must contain transaction CBOR')
+}
+
+// Parse the exact signed transaction CBOR with Lucid/CML and inspect the
+// witness set. This binds the generated validator bytes to the script bytes
+// actually carried by the submitted transaction, rather than only comparing
+// precomputed script-hash fields in the evidence packet.
+const parsedTx = lucid.fromTx(transitionTxCbor) as any
+const coreTx = parsedTx.txComplete
+const witnessSet = coreTx?.witness_set?.()
+const plutusV2Scripts = witnessSet?.plutus_v2_scripts?.()
+const observedScripts: string[] = []
+if (plutusV2Scripts) {
+  for (let i = 0; i < plutusV2Scripts.len(); i += 1) {
+    observedScripts.push(Buffer.from(plutusV2Scripts.get(i).to_bytes()).toString('hex'))
+  }
+}
+const generatedCarrierCbor = carrierArtifact.cborHex.toLowerCase()
+const witnessScriptPresent = observedScripts.includes(generatedCarrierCbor)
+const witnessScriptHashes = observedScripts.map((script) =>
+  lucid.utils.validatorToScriptHash({ type: 'PlutusV2', script }),
+)
+const witnessIdentityBound = witnessScriptPresent &&
+  witnessScriptHashes.includes(carrierScriptHash)
+
+if (!witnessScriptPresent) {
+  throw new Error('Signed Genesis transition does not carry the generated Genesis carrier PlutusV2 script bytes')
+}
+if (!witnessIdentityBound) {
+  throw new Error('Signed Genesis transition witness script does not resolve to the generated Genesis carrier script hash')
+}
+
 evidence.artifactProvenance = {
   sourceCommit: process.env.GITHUB_SHA ?? 'unknown',
   artifacts: Object.fromEntries(
@@ -30,8 +64,10 @@ evidence.artifactProvenance = {
   ),
   binding: {
     transitionTransactionRef: evidence.transitionTransactionRef,
-    transitionTxCborPresent: typeof evidence.transitionTxCbor === 'string' &&
-      evidence.transitionTxCbor.length > 0,
+    transitionTxCborPresent: true,
+    witnessScriptPresent,
+    witnessIdentityBound,
+    observedPlutusV2ScriptHashes: witnessScriptHashes,
   },
 }
 
@@ -48,9 +84,5 @@ if (carrierPolicyId !== evidence.carrier.policyId) {
     `Generated Genesis carrier mint policy mismatch: generated=${carrierPolicyId}, evidence=${evidence.carrier.policyId}`,
   )
 }
-if (!evidence.artifactProvenance.binding.transitionTxCborPresent) {
-  throw new Error('Genesis transition evidence must contain transaction CBOR')
-}
-
 writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n')
 console.log(JSON.stringify(evidence.artifactProvenance, null, 2))
