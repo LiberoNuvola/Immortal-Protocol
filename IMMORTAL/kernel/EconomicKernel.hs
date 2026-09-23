@@ -10,6 +10,7 @@ module EconomicKernel
   , protectedCapital
   , rawSurplus
   , classSaleable
+  , controlStateValid
   , reserveIssueDelta
   , reserveRevealDelta
   , reserveExpiryDelta
@@ -95,6 +96,17 @@ classSaleable s cid =
     findClass (c:cs) x
       | tcsClassId c == x = Just c
       | otherwise = findClass cs x
+
+{-# INLINABLE controlStateValid #-}
+controlStateValid :: EconomicProfile -> EconomicControlState -> Bool
+controlStateValid profile control =
+     containsClass (ecsCurrentActiveClass control)
+  && containsClass (ecsHighestClassEverActivated control)
+  where
+    containsClass cid = contains cid (profileClasses profile)
+
+    contains _ [] = False
+    contains x (y:ys) = x == y || contains x ys
 
 {-# INLINABLE reserveIssueDelta #-}
 reserveIssueDelta :: Integer -> Integer
