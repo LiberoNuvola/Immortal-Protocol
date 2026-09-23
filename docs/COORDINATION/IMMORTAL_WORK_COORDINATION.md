@@ -4356,3 +4356,34 @@ Commits:
 - `3913c8c1cb69f44fc69c84af756918777dded8ca` — workflow integration
 
 Status: RT-1.5 **REAL-LEDGER FUND-TREASURY VALUATION TRACE IMPLEMENTED / FRESH CI EXECUTION OPEN**. If the fresh lab run succeeds, the remaining RT-1.5 gap becomes primarily negative-twin coverage (wrong/stale Oracle, wrong Pool, double-count/value mismatch) and provenance review rather than absence of a canonical valuation path.
+
+## 2026-09-23 — Current-head re-triangulation after FundTreasury trace
+
+The operational branch has advanced beyond the earlier c0e68db snapshot.
+
+**Current Green Closure HEAD:** 31295198e0c1356292f4902c202f0aeb7d2a95b5  
+**Commit:** Record RT-1.5 FundTreasury Oracle valuation trace
+
+The latest implementation now contains the dedicated real-Yaci FundTreasury trace: audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts.
+
+Independent code inspection confirms the trace invokes the actual B1 FundTreasury redeemer and the B1 validator's canonical Economic.poolUsdmValue path, using an Oracle reference input and the continuing Pool output's actual value. The trace also correlates the executable-liquidity observation with the exact consumed Pool input/value.
+
+This is stronger than the earlier Reveal-only correlation witness because FundTreasury is the canonical B1 path that actually recomputes Pool USDM valuation through the Oracle.
+
+### Evidence classification
+
+- RT-1.5 real FundTreasury valuation path: IMPLEMENTED / NEEDS FRESH CI EXECUTION
+- Canonical Oracle valuation semantics: EXERCISED BY THE ACTUAL B1 VALIDATOR PATH in the trace design
+- Real-ledger negative twins: still needed for wrong/stale Oracle, wrong Pool, double-count and valuation mismatch at ledger level
+- Fresh CI: no workflow run is yet associated with HEAD 31295198...; therefore no green CI claim is made.
+- P2.8: remains evaluator/emulator-blocked until independently re-evaluated.
+- B6: remains partial; the FundTreasury trace does not establish universal V3↔Cardano equivalence.
+- Gate 41: first-curve transition remains closed on the latest Notion evidence; semantic/provenance questions remain open.
+
+### Prior-art cross-check
+
+The current research pass confirms that state-transition/invariant verification, safety/liveness, refinement, authenticated oracle inputs and transaction-level solvency are established techniques in the literature. citeturn0search0turn0search11turn0search10
+
+Therefore the research front should continue to test the composition of these boundaries rather than claiming novelty for any individual mechanism.
+
+Status: RT-1.5 ADVANCED / FRESH EXECUTION REQUIRED / NO OVERCLAIM.
