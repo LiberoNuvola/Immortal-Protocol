@@ -4616,3 +4616,36 @@ A stronger decomposition is now:
 Existing systems clearly cover items 2–4 individually. The research question remains whether IMMORTAL's complete economic transition chain can be independently checked as one composition.
 
 No protocol/economic semantics changed.
+
+## 2026-09-23 — Prior-art pass: exact-act binding, replay/freshness and evidence closure
+
+A current execution-finality protocol draft provides a particularly clean adversarial test vocabulary for the CAES lab: exact candidate-act reconstruction at the consequence boundary, stale-authorization/TOCTOU substitution, replay, finality-sink substitution, forged validation evidence, and fail-open degradation. It also requires outcome records to bind the candidate-act digest, protected-state generation, consumption record, sink identity and resulting consequence identifier. This is directly useful as a test-pattern analogue, not as IMMORTAL normative semantics. citeturn0search0turn0search1
+
+Adaptation for CAES:
+- define a test-only CanonicalTransitionDigest(T) over the already-existing canonical transition identity fields;
+- require the same digest to survive proposal, admission, reconstruction, revalidation and observation;
+- reject T1 proof + T2 committed effect even when both T1 and T2 are individually valid;
+- reject valid T1 evidence replayed against a newer protected-state generation;
+- record the final consequence identifier alongside the transition digest in the evidence packet;
+- classify indeterminate/retry states separately from committed exactly-once outcomes.
+
+This gives a sharper negative-twin family:
+1. TOCTOU substitution: proposed T1, reconstructed T2;
+2. stale admission: T1 admitted under state generation g, committed under g+1;
+3. sink substitution: T1 valid for sink S1, effect appears at S2;
+4. replay: already-consumed T1 submitted again;
+5. evidence forgery: certificate says T1 but recomputed canonical digest is T2;
+6. event/state mismatch: ledger state delta is valid but observed event identifies a different T.
+
+CIP-0190 supplies an independent Cardano-native pattern for exact-byte identity: the verifier recomputes/validates a cryptographic digest over the exact committed bytes and treats the ledger inclusion time as the chain witness. This supports the broader rule already used in C14: do not trust a declared identity when the verifier can recompute it from the artifact. It does not prove semantic equivalence by itself. citeturn0search3
+
+A 2026 ledger-authenticator line of work likewise separates authentication safety from ledger liveness and studies canonical transition freshness and finalized-transcript context. This reinforces keeping freshness/replay protection separate from the economic validity predicate. citeturn0academia6
+
+An additional economic-state protocol proposal models events as causally linked records with predecessor references and tamper-evident seals. It is not an authority source for IMMORTAL, but the causal-linking pattern is useful for evidence packets: every observed transition should identify the predecessor evidence/state it claims to follow. citeturn0search5
+
+### Implementation target
+The next CAES-lab hardening should therefore be transition-digest continuity, not a new economic rule:
+T_proposed.digest == T_admitted.digest == T_reconstructed.digest == T_revalidated.digest == T_observed.digest.
+If any edge differs, the certificate must fail closed.
+
+No economic constants, valuation rules, validator semantics or protocol decisions changed.
