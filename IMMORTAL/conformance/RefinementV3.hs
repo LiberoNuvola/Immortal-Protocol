@@ -45,6 +45,7 @@ refine c =
 refinementExact :: EconomicProfile -> ConcreteV3State -> Bool
 refinementExact profile c =
      EconomicKernel.conservationInvariant profile (refine c)
+  && EconomicKernel.controlStateValid profile (cvsControl c)
   && allNonNegative (refine c)
   where
     allNonNegative s =
