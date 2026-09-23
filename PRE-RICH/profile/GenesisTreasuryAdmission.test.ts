@@ -90,6 +90,10 @@ assert.equal(
   'ORACLE_UNVERIFIED',
 )
 assert.equal(
+  admit(observation({ preQuantity: 1n, verifiedPreUsdmPrice: 3999999n, oraclePrecision: 10n })).reason,
+  'BELOW_THRESHOLD',
+)
+assert.equal(
   admit(observation({ preQuantity: -1n })).reason,
   'INVALID_QUANTITY',
 )
