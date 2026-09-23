@@ -5276,3 +5276,22 @@ This yields a stronger CAES audit matrix:
 This pass reinforces the correction already recorded above: `finality/challenge lifecycle` must not be reported as PASS merely because authorization/evidence/ruleset gates pass. The lifecycle must have its own executable witness and observation.
 
 No economic constants, validator semantics, or current normative governance rules changed.
+
+
+## 2026-09-23 — P2.8 ledger API triangulation: exact evaluator contract confirmed
+
+A fresh official Cardano Ledger API pass confirms that the intended P2.8 boundary is directly supported by the pinned ledger stack. In `cardano-ledger-alonzo-1.16.0.0`, `evalTxExUnitsWithLogs` has the exact contract:
+
+`PParams era -> Tx TopTx era -> UTxO era -> EpochInfo (Either Text) -> SystemStart -> RedeemerReportWithLogs era`
+
+and the report is a map from `PlutusPurpose AsIx era` to either `TransactionScriptFailure era` or `([Text], ExUnits)`. The documented failure constructors include `MissingScript`, `MissingDatum`, `ValidationFailure`, `UnknownTxIn`, `InvalidTxIn`, `IncompatibleBudget`, `NoCostModelInLedgerState`, and `ContextError`.
+
+This independently confirms the existing runner handoff: the evaluator cannot legitimately be reduced to a byte-size check, emulator-only result, or guessed execution budget. The evidence packet must become typed ledger objects before evaluation. The official API also states that supplied transaction execution budgets are ignored when computing the required execution units; the result is intended to replace them.
+
+A separate current Cardano API exposes the same evaluation boundary through `evaluateTransactionExecutionUnits`, requiring `SystemStart`, `LedgerEpochInfo`, protocol parameters, UTxO and transaction body. Cardano documentation also confirms that EUTXO validation is deterministic for a fixed transaction and its inputs, while a concurrently consumed input can invalidate an otherwise valid transaction.
+
+**Implementation consequence:** the remaining P2.8 work is now narrowly an evidence-decoding/typed-construction problem, followed by one actual call to `evalTxExUnitsWithLogs` and persistence of the returned `RedeemerReportWithLogs`. No synthetic transaction, UTxO, PParams, epoch info or system start should be introduced.
+
+**Classification:** P2.8-B.1 **BLOCKED → EXACT LEDGER API CONTRACT CONFIRMED / IMPLEMENTATION GAP IS PACKET DECODING + EVALUATION**.
+
+No validator semantics, economic constants, or normative rules changed.
