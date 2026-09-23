@@ -3432,3 +3432,14 @@ No validator economics, 500× bound, maxTxSize, Genesis threshold, or IMMORTAL i
 **Evidence classification:** the Materios change is boundary/conformance evidence only; Genesis exact-value pin is application admission/fixture evidence only. Neither is a production cryptographic-finality proof nor production Treasury migration proof.
 
 **Workflow status:** fresh Actions execution for the post-change heads is required before any GREEN claim. The repository connector currently exposes no PR-triggered workflow runs for the active commit, so source changes are not promoted to CI GREEN by inspection alone.
+
+
+## 2026-09-23 — P2.8-B.1 Value lookup differential mitigation
+
+The Reveal evaluator failure was isolated further to the B1 PrizePool validator's direct use of the Ledger API `valueOf` helper on `Value`. The existing Pool-only diagnostic had already failed at the `Value Con(ProtoPair(...))` case boundary before reaching the intended semantic validator branch, so changing economic predicates would have been unjustified.
+
+The B1 validator has now been changed to use an explicit `assetAmount` helper that traverses `getValue` with `PlutusTx.AssocMap.lookup`, preserving the existing zero-on-missing semantics. All B1-local `valueOf` calls were replaced, including singleton Pool authority checks, ticket-owner lookup, and ticket mint binding. No economic formula, payout bound, transaction-size limit, or state transition rule changed.
+
+Commit: `c29dc9989a96b4494c6b0d7a23162e5b3ad38e62`.
+
+**Evidence boundary:** this is a targeted evaluator-compatibility experiment, not yet a proven fix. The next authoritative step is fresh CI/emulator execution against the exact unchanged Pool-only/Revealing contexts. If the evaluator reaches the semantic branch, this materially localizes the prior failure to the `valueOf` boundary; if it still fails at the same `Value` representation, revert this experiment and continue differential evaluation without touching economics.
