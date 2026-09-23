@@ -1234,6 +1234,8 @@ export async function mintSerialNFT(
       .submitEconomic(tx, opts.economicAdmission, [
         `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
+      ], [
+        `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ])
 
   const txHash =
