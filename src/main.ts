@@ -1,6 +1,5 @@
 import './style.css'
 import wallet from './wallet'
-import tickets from './tickets'
 import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
 import { mountCertifiedTicket3D } from './ticket3d'
@@ -118,28 +117,13 @@ connectBtn?.addEventListener('click', async () => {
 })
 
 document.getElementById('claim')?.addEventListener('click', async () => {
-  // The UI has no authoritative Economic Gate producer yet. Fail closed
-  // rather than manufacturing a witness just to satisfy the runtime boundary.
   status('Claim unavailable: authoritative Economic Gate admission is required.')
 })
 
 document.getElementById('buy')?.addEventListener('click', async () => {
-  try {
-    const purchases = await tickets.buyTickets(1)
-    const latest = purchases[purchases.length - 1]
-    if (latest) {
-      lastTicketAssetId = latest.assetId
-    }
-    status('Purchase submitted: ' + purchases.map((p) => p.txHash).join(', '))
-    if (lastTicketAssetId) {
-      await renderLastCertifiedTicket()
-    }
-    const bal = await ui.refreshBalance().catch(() => '—')
-    ui.updateWalletUI(true, await wallet.getAddress().catch(() => ''), bal)
-  } catch (e: any) {
-    status('Buy error: ' + (e.message || e))
-  }
+  // The UI has no authoritative Economic Gate producer yet. Do not synthesize
+  // a witness merely to make the Buy button executable.
+  status('Purchase unavailable: authoritative Economic Gate admission is required.')
 })
 
 export default adSlots
-
