@@ -3314,3 +3314,11 @@ Cross-checked the vendored Materios authority-selection implementation against t
 It still does not close the local Materios authority-proof front: the upstream tests are runtime unit/integration tests, not evidence from a finalized production Materios block with an authenticated authority-set transition and real GRANDPA justification. The local PoC therefore correctly remains open for real node/finality/cryptographic evidence.
 
 No IMMORTAL economics or authority semantics were changed.
+
+## 2026-09-23 — Genesis pipeline current-head audit
+
+Current branch head is `051a89fb582d640abe23503b56a99054fc81dd12`. Compared with the previously inspected `67b2687bbc9f4dabf9836f14a29861de755dca31`, the branch is 24 commits ahead and includes the Genesis CI native dependency repair, the dedicated Yaci transition workflow/trace, singleton emulator evidence, malformed-input coverage and Export.hs normalization.
+
+The repository-side Genesis evidence path is therefore materially complete as an executable chain, but no workflow result was available through the current GitHub connector for the new head. Accordingly **no CI/ledger GREEN claim is made**. The next authoritative evidence point is the actual Actions execution of the current head.
+
+No economic or normative parameter was changed in this audit.
