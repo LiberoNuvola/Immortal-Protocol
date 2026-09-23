@@ -4235,3 +4235,19 @@ Important boundary retained: the Reveal fixture's liquidity asset is a deliberat
 Commit: `7e6f3148f56445f12d65927b09cc60dba0b8b079`.
 
 **Status:** RT-1.5 **REAL-YACI POOL REFERENCE/VALUE CORRELATION WITNESSED / CANONICAL ORACLE VALUATION OPEN / FRESH CI OPEN**.
+
+
+## 2026-09-23 — RT-1.5 oracle triangulation finding
+
+Cross-check of `plutus/Economic.hs` and `plutus/B1PrizePool.hs` shows the canonical `Economic.poolUsdmValue` valuation is actively invoked by the B1 `FundTreasury` validator path. The existing real Yaci Reveal trace, by contrast, consumes the Pool UTxO but does not exercise the validator's canonical oracle valuation path for Reveal; Reveal accounting is driven by the authenticated Pool datum and payout/reserve transition rules.
+
+Therefore the correct next evidence target is **not** to inject an artificial oracle into the Reveal trace. It is a dedicated real-Yaci FundTreasury/Pool-funding trace that proves:
+1. actual Pool input/output values;
+2. actual Oracle reference input + singleton + datum;
+3. canonical `Economic.poolUsdmValue` valuation semantics;
+4. continuing `ppTotalLiquidity` equality to that valuation;
+5. executable-liquidity observation bound to the same authenticated Pool state.
+
+This preserves the separation between Reveal's accounting path and FundTreasury's physical-value recomputation path and avoids inventing a second valuation formula.
+
+**Status:** RT-1.5 **REVEAL UTxO CORRELATION GREEN / CANONICAL ORACLE VALUATION TARGET IDENTIFIED / FUND-TREASURY REAL-LEDGER EVIDENCE OPEN**.
