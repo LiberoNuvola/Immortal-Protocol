@@ -3443,3 +3443,14 @@ The B1 validator has now been changed to use an explicit `assetAmount` helper th
 Commit: `c29dc9989a96b4494c6b0d7a23162e5b3ad38e62`.
 
 **Evidence boundary:** this is a targeted evaluator-compatibility experiment, not yet a proven fix. The next authoritative step is fresh CI/emulator execution against the exact unchanged Pool-only/Revealing contexts. If the evaluator reaches the semantic branch, this materially localizes the prior failure to the `valueOf` boundary; if it still fails at the same `Value` representation, revert this experiment and continue differential evaluation without touching economics.
+
+
+## 2026-09-23 — P2.8-B.1 stale-artifact gap closed
+
+The first Reveal run after commit `c29dc9989a96b4494c6b0d7a23162e5b3ad38e62` still failed at the identical budget boundary. Repository inspection found an evidence-pipeline issue: `.github/workflows/pre-rich-emulator-reveal.yml` executed the emulator against the committed `src/plutusScripts` artifacts and did not rebuild them from the modified Haskell validator. Therefore that run did **not** test the new `assetAmount` implementation.
+
+The Reveal emulator workflow has now been hardened to install the pinned Plutus native dependencies, run `cabal update`, and execute `cabal run exe:export-scripts` before the emulator tests. This makes the evaluator experiment test the actual current `B1PrizePool.hs` source rather than stale committed artifacts.
+
+Commit: `2c4bcd534887c07e1c480d7262a0df75e76dc84f`.
+
+**Evidence boundary:** prior Reveal failures remain valid as reproduction of the old artifact/evaluator path, but they cannot classify the new `assetAmount` experiment. The next fresh run is the authoritative test. No economics, 500x bound, tx-size limit or validator semantic rule was changed.
