@@ -4328,3 +4328,31 @@ The closest comparison families now identified are:
 
 No novelty claim is made, and no protocol semantics were changed.
 
+
+
+## 2026-09-23 — RT-1.5 dedicated FundTreasury Oracle valuation trace
+
+The remaining RT-1.5 evidence target was implemented as a dedicated real-Yaci FundTreasury trace rather than modifying the existing Reveal trace.
+
+Added:
+- `audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts`;
+- real Yaci bootstrap of an authenticated Oracle State singleton + ADA price datum;
+- real B1 PrizePool input with singleton Pool NFT;
+- FundTreasury transaction consuming the Pool input and carrying the Oracle as a reference input;
+- continuing Pool output whose `ppTotalLiquidity` is checked by the on-chain B1 validator through canonical `Economic.poolUsdmValue`;
+- exact executable-liquidity observation bound to the same Pool input;
+- retained signed CBOR, transaction reference, pre/post Pool refs, Oracle ref, valuation parameters and Yaci UTxO response in `audit/yaci-evidence/fund-treasury-oracle-valuation.json`;
+- workflow execution in `.github/workflows/immortal-cardano-lab.yml`.
+
+Fixture is deliberately ADA-only apart from the Pool singleton, so the single Oracle reference prices ADA and `Economic.poolUsdmValue` removes the singleton before valuation. With the canonical 1.6M lovelace min-UTxO exclusion and oracle price 80, the fixture expects:
+- 5,000,000 lovelace -> 272 USDM sub-units;
+- 7,000,000 lovelace -> 432 USDM sub-units.
+
+This is an evidence harness addition, not a new economic rule. The TypeScript expected-value calculation is only an independent evidence cross-check; acceptance still comes from the actual B1 validator path invoking `Economic.poolUsdmValue`.
+
+Commits:
+- `d989ca4289d43e27143f7ea6d4729710e4765fe5` — initial trace
+- `2124518a64c077fc28bf371771d4af136ee572bc` — corrected ADA Oracle asset identity
+- `3913c8c1cb69f44fc69c84af756918777dded8ca` — workflow integration
+
+Status: RT-1.5 **REAL-LEDGER FUND-TREASURY VALUATION TRACE IMPLEMENTED / FRESH CI EXECUTION OPEN**. If the fresh lab run succeeds, the remaining RT-1.5 gap becomes primarily negative-twin coverage (wrong/stale Oracle, wrong Pool, double-count/value mismatch) and provenance review rather than absence of a canonical valuation path.
