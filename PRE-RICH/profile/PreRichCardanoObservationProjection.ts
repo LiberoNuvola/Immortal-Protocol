@@ -37,6 +37,14 @@ export type EconomicStateV3 = {
 }
 
 function validateEconomicStateV3(state: EconomicStateV3): void {
+  if (typeof state.control.currentActiveClass !== 'bigint' ||
+      typeof state.control.highestClassEverActivated !== 'bigint') {
+    throw new Error('V3 control state must be explicitly observed as bigint values')
+  }
+  if (state.control.currentActiveClass < 0n ||
+      state.control.highestClassEverActivated < 0n) {
+    throw new Error('V3 control state must be non-negative')
+  }
   const aggregateValues = [
     state.crystallizedLiabilities,
     state.unresolvedReserve,
