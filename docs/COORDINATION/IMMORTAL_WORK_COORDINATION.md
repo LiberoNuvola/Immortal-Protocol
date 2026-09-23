@@ -4949,3 +4949,117 @@ For IMMORTAL this should be treated as a design/research question, not a protoco
 - therefore “algorithmically determined” should not be conflated with “constitutionally complete”.
 
 No economic constants or current normative protocol rules changed.
+
+
+## 2026-09-23 — Governance deep pass II: commitment, mutation classes and constitutional testability
+
+The latest governance literature adds a useful economic-institutional dimension: a 2026 Journal of Institutional Economics paper argues that permissionless participation does not eliminate governance over rule change. Mutable blockchains face a commitment problem because a coalition may change rules after participants make chain-specific investments; the paper highlights base-layer fixedness, coalition concentration, coordination thresholds and identity-linked accountability as relevant governance variables. citeturn0search8
+
+For IMMORTAL this suggests a new audit distinction:
+
+permissionless execution != permissionless constitutional mutation.
+
+The economic execution path can be permissionless while constitutional/economic-rule mutation remains subject to an explicit authority transition.
+
+### Governance mutation classes
+
+A useful research model is to classify mutations before asking who may authorize them:
+
+1. Constitutional invariants.
+2. Economic-kernel rules.
+3. Application/profile policy.
+4. Adapter/serialization implementation.
+5. Operational/evidence configuration.
+
+For each class, the audit should answer:
+- who may propose;
+- who may approve;
+- what evidence is required;
+- whether the mutation is immediate or delayed;
+- whether an old approval expires;
+- what artifact must be deployed;
+- how the new rule is observed on-chain.
+
+This is a research model only; no IMMORTAL mutation policy is being frozen by it.
+
+### Cardano provides a particularly useful real-world comparator
+
+The current Cardano Constitution explicitly distinguishes mandatory and advisory guardrails. Some guardrails are automatically checked by a Guardrails Script or ledger rules, while others require further adjudication. It also states that the guardrails applicable to a governance action are those in force when that action is submitted. citeturn0search3
+
+This gives us three governance boundary patterns to test against IMMORTAL:
+- machine-checkable constitutional constraints;
+- human/adjudicative constraints that cannot be reduced to the checker;
+- temporal binding of a governance action to the rule set in force at submission.
+
+The third is especially valuable for the governance-replay negative twin.
+
+### New governance replay model
+
+Let:
+G = governance decision
+R_g = rule set in force when G is submitted
+R_c = rule set at execution/commit
+
+Test:
+
+valid(G, R_g) && R_g != R_c -> REJECT
+
+unless an explicit constitutional continuity rule proves that G remains valid under R_c.
+
+This is the governance analogue of the stale-admission test already developed for economic execution.
+
+### Proposal/code semantic correspondence
+
+A 2025/2026 DAO-security dataset covering 3,348 DAOs, 65,436 proposals and nine chains reports distinct risks in governance contracts, documentation and proposals, including proposal description/code inconsistency. citeturn0search4
+
+Adaptation:
+- bind proposal text/semantic intent to a canonical proposal identity;
+- bind the executable payload to that identity;
+- bind the approved rule revision to the exact payload;
+- reject any mismatch even if the executable governance transaction is otherwise valid.
+
+### Formal governance safety layer
+
+2026 work on formal verification of DAOs proposes modeling governance properties using Abstract State Machines. citeturn0search6
+
+This supports treating governance as its own state-transition layer:
+
+GovernanceState × GovernanceAction -> GovernanceState'
+
+with properties such as:
+- authority preservation;
+- protected-rule preservation;
+- proposal/execution binding;
+- upgrade continuity;
+- delegation bounds;
+- replay resistance;
+- constitutional guardrail preservation.
+
+This should remain separate from EconomicSafety rather than being folded into the economic kernel.
+
+### Accountability evidence pattern
+
+A recent 2026 framework for auditing algorithmic public authority identifies provenance tracking, decision logging, role attribution, contestability and post-deployment audit as auditable primitives. This is not blockchain-specific and should not be imported as protocol law, but the evidence pattern is useful for governance provenance. citeturn0search7
+
+Potential governance evidence packet:
+proposalId + decisionId + authorityIdentity + ruleRevisionId + artifactId + executionTxId + observedStateId + reviewEvidence.
+
+The important constraint is that these fields should be independently reconstructable wherever possible, rather than merely declared by the governance executor.
+
+### New CAES governance chain
+
+The combined research now suggests:
+
+Constitution
+→ Authority
+→ GovernanceDecision
+→ RuleRevision
+→ Artifact
+→ EconomicTransition
+→ AdapterTransition
+→ LedgerObservation
+→ ReviewEvidence
+
+Each arrow is a separate boundary with its own negative twin.
+
+No economic constants, validator semantics or current normative protocol rules changed.
