@@ -61,3 +61,13 @@ Every substantive handoff should state:
 - the next adversarial question for the receiving session.
 
 **No economic constants or normative rules are changed by this file.**
+
+## 2026-09-23 — Rotation execution update
+
+Concrete C14 progress landed on the working branch:
+- `7c1b60be884aec17103c3931f462f7c4508af90b`: IMMORTAL Cardano Integration Lab now records SHA-256 hashes of generated Plutus artifacts together with `GITHUB_SHA` before ledger execution.
+- `0b4b066b9f60c60697258c2960126864aa4978f8`: PRE-GENESIS → GENESIS workflow now records hashes of the generated Genesis carrier and one-shot mint-policy artifacts.
+
+These are provenance/evidence improvements only. They do not establish semantic equivalence or ledger success by themselves.
+
+Next cross-review question: verify that the evidence consumers actually upload and correlate these hash manifests with the transaction/evidence packets, and that no later step silently replaces the hashed artifacts with committed/stale `src/plutusScripts` copies.
