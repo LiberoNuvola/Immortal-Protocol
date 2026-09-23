@@ -3566,3 +3566,27 @@ These fronts are evidence/conformance fronts first. They must not be closed by w
 7. Start C15 from duplicate/replay cases already present in Genesis and lifecycle tests.
 
 No normative economic decision was changed by this sweep.
+
+
+## 2026-09-23 — Current-head re-alignment + class-control policy triangulation
+
+The working branch was re-aligned directly against its actual current head: `b77d2b16e312c0eb0f90a1719e7dfb4d635cf5f6` (`fix: bind Genesis carrier to canonical OracleTypes`). The previously inspected historical SHA was not the active branch state.
+
+Direct branch inspection confirms the live V3 transition is `IMMORTAL/kernel/EconomicTransitionV3.hs`, not `plutus/EconomicTransitionV3.hs`.
+
+Current transition audit reconfirms:
+- Issue / Reveal / Expire resolve class IDs through canonical profile prices and fail closed on unknown classes.
+- structural conservation/non-negative checks are present;
+- `EconomicControlState` is carried but not mutated or validated by the four generic actions;
+- no transition-level derivation/update of `CurrentActiveClass` or `HighestClassEverActivated` exists yet;
+- `tcsSaleable` is stored but saleability is enforced through `EconomicKernel.classSaleable`;
+- Jackpot lifecycle is not represented by the generic V3 actions.
+
+Normative triangulation against the current Notion A1/A2/A3 closure confirms the correct boundary:
+- Jackpot stability uses `StableLadder(S)` derived from `CurrentActiveClass`, `HighestClassEverActivated`, and the existing activation/suspension predicates;
+- the numerical hysteresis parameters are not invented by implementation;
+- KA=8, KC=4, KD=4 define the existing structural ordering but do not by themselves determine a unique numerical hysteresis margin.
+
+Therefore the remaining class-control work is implementation/conformance, not permission to invent constants. The safe next step is to implement the already-defined state-derived selector only after its authoritative predicate/parameter representation is mapped; until then the control/hysteresis front remains YELLOW by design.
+
+Actions evidence for exact current head `b77d2b16...` currently exposes no PR-triggered workflow runs, so no CI GREEN claim is made from source inspection.
