@@ -157,6 +157,8 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 
 ## 6. Active fronts
 
+| RESEARCH-NOVELTY | OPEN / RESEARCH | Establish a source-grounded prior-art map for the emergent IMMORTAL system architecture: distinguish known individual mechanisms from any potentially novel composition; document terminology, closest precedents, differentiators, and evidence gaps without making a novelty claim before the comparison is complete. |
+
 | ID | Front | Status | Objective |
 |---|---|---|---|
 | IMMORTAL-STATE-BOUNDARY-001 | Universal/application state boundary | **BRIDGE IMPLEMENTED / NEEDS-EVIDENCE** | Classify every relevant type/field in `IMMORTAL/state/EconomicStateV3.hs`, `IMMORTAL/kernel/EconomicKernel.hs`, profile code and PRE-RICH state as UNIVERSAL / PROFILE PARAMETER / APPLICATION STATE-RULE / ADAPTER REPRESENTATION / EVIDENCE / LEGACY before refactoring. |
