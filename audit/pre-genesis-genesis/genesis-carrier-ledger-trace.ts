@@ -279,6 +279,12 @@ const genesisCarrierUtxo = postCarrier.find(
 );
 if (!genesisCarrierUtxo) throw new Error("GENESIS carrier UTxO not found");
 
+const carrierValuePreserved =
+  JSON.stringify(carrierUtxo.assets) === JSON.stringify(genesisCarrierUtxo.assets);
+if (!carrierValuePreserved) {
+  throw new Error("Genesis transition must preserve the carrier UTxO asset value");
+}
+
 const treasuryStillReferenced = (await lucid.utxosAt(treasuryAddress)).some(
   (u) => u.txHash === treasuryUtxo.txHash && u.outputIndex === treasuryUtxo.outputIndex,
 );
@@ -316,6 +322,14 @@ const result = {
     price: ORACLE_PRICE.toString(),
     precision: ORACLE_PRECISION.toString(),
     ref: oracleUtxo.txHash + "#" + oracleUtxo.outputIndex,
+  },
+  economicBoundary: {
+    carrierValuePreserved,
+    treasuryReferencePreserved: treasuryStillReferenced,
+    oracleReferencePreserved: oracleStillReferenced,
+    prizePoolTouched: false,
+    carrierOnlyStateTransition: true,
+    genesisLiquidityImportedFromBootstrap: false,
   },
   carrier: {
     address: carrierAddress,
