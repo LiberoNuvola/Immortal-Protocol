@@ -3625,3 +3625,16 @@ Applied sequentially on `work/immortal-green-closure`:
 This is deliberately a boundary hardening, not a hysteresis implementation: it prevents malformed/non-canonical control identifiers from entering the V3 state machine, while preserving the existing control state across Issue/Reveal/Claim/Expire. Automatic state-derived class selection, contraction/recovery and monotonic historical advancement remain open implementation/conformance work because the authoritative activation/suspension predicates and numerical parameterization must not be invented here.
 
 CI evidence is still not available for the new commits from the GitHub connector; therefore no CI GREEN claim is made.
+
+
+## 2026-09-23 — Projection control-state optionality re-audit
+
+Direct current-branch inspection of `PRE-RICH/profile/PreRichCardanoObservationProjection.ts` found a residual fail-open type boundary: `currentActiveClass` and `highestClassEverActivated` were still declared optional in `ProjectionInput`, despite the runtime validator requiring explicit bigint values. This contradicted the intended side-door closure recorded earlier and allowed omission to survive the type boundary (with strict-nullability depending on compiler settings).
+
+Minimal correction: both control observations are now required fields, alongside the already-required SafetyCapital / ReserveProtection / MandatoryFutureCosts. No default, inferred class, hysteresis rule, or economic value was introduced.
+
+Commit: `10faa8c2d257ec5d521859d219072fa1b287f604`.
+
+This is representation-boundary hardening only. It does **not** establish canonical controller provenance for the observed control values; the authoritative PRE-RICH hysteresis/controller binding remains a separate open front.
+
+**Status:** control-state observation side-door CLOSED at the TypeScript input type; runtime/controller provenance evidence remains OPEN.
