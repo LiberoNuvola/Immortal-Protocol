@@ -3590,3 +3590,16 @@ Normative triangulation against the current Notion A1/A2/A3 closure confirms the
 Therefore the remaining class-control work is implementation/conformance, not permission to invent constants. The safe next step is to implement the already-defined state-derived selector only after its authoritative predicate/parameter representation is mapped; until then the control/hysteresis front remains YELLOW by design.
 
 Actions evidence for exact current head `b77d2b16...` currently exposes no PR-triggered workflow runs, so no CI GREEN claim is made from source inspection.
+
+
+## 2026-09-23 — V3 control-state boundary hardening
+
+Current transition audit found a concrete fail-closed gap that could be closed without inventing hysteresis values: `EconomicControlState` was carried through transitions but its class references were not validated against the canonical application profile.
+
+Applied sequentially on `work/immortal-green-closure`:
+- `bec17fd7dfb841f94d3fbb5e2e2e21c3f45bb3b1` — added `EconomicKernel.controlStateValid`, requiring both CurrentActiveClass and HighestClassEverActivated to refer to canonical profile classes.
+- `584a32e77da1978edbd662f76edadbb36cc69644` — `transitionValid` now requires that control-state validity for both pre- and post-state.
+
+This is deliberately a boundary hardening, not a hysteresis implementation: it prevents malformed/non-canonical control identifiers from entering the V3 state machine, while preserving the existing control state across Issue/Reveal/Claim/Expire. Automatic state-derived class selection, contraction/recovery and monotonic historical advancement remain open implementation/conformance work because the authoritative activation/suspension predicates and numerical parameterization must not be invented here.
+
+CI evidence is still not available for the new commits from the GitHub connector; therefore no CI GREEN claim is made.
