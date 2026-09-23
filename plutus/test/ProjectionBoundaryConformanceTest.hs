@@ -17,7 +17,8 @@ import EconomicProfile
 import EconomicStateV3
 import PreRichEconomicProfile
 import PreRichEconomicProjection
-import UniversalEconomicState (UniversalEconomicState (..))\nimport qualified UniversalEconomicKernel as UniversalKernel
+import UniversalEconomicState (UniversalEconomicState (..))
+import qualified UniversalEconomicKernel as UniversalKernel
 
 profile :: EconomicProfile
 profile = preRichEconomicProfileV1
