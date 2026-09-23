@@ -99,3 +99,12 @@ However, the gate input is an interface supplied by the authoritative observatio
 Therefore RT-1.5 is **NOT CLOSED**. The semantic distinction exists, but provenance/binding from observed spendable UTxOs to the gate input remains an evidence and adapter-conformance gap.
 
 No code change is made here because inventing a liquidity source or haircut would exceed the current normative sources.
+
+
+## 2026-09-23 — RT-1.5 concrete Cardano observation surface identified
+
+The current B1PrizePool validator provides the concrete ledger-side liquidity observation surface needed for the next binding step. For FundTreasury it recomputes PrizePool USDM liquidity from the actual continuing Pool UTxO value through Economic.poolUsdmValue and requires the datum ppTotalLiquidity to equal that recomputed value. The same validator preserves/updates the physical Pool UTxO atomically for Issue/Reveal/Claim/Expire, while Claim additionally computes the consumed Pool UTxO's actual USDM value and requires the observed pool-value delta to match settlement accounting.
+
+This establishes an existing canonical source that can be reused: the authenticated singleton B1PrizePool UTxO plus its validated USDM valuation, rather than inventing a new liquidity oracle. It does **not** yet close RT-1.5 because EconomicAdmissionWitness does not currently bind its EEV/liquidity decision to the exact Pool UTxO reference and observed value used by the adapter transaction.
+
+Next binding target: carry the exact Pool UTxO identity and observed executable USDM value through the economic-admission witness, and require the observation to correspond to the transaction's consumed Pool UTxO. Negative tests must reject a different Pool UTxO, stale/double-counted liquidity, and an observed value that differs from the authenticated Pool UTxO valuation. No new economic valuation rule is introduced.
