@@ -3511,3 +3511,14 @@ Still open at transition level:
 - The transition itself is deliberately structural; solvency is enforced downstream by PreRichEconomicAdmission / EconomicGate, not by transitionValid.
 
 Conclusion: B4/automatic class-control/hysteresis and jackpot transition closure must not be marked GREEN from representation-level conformance alone. This audit identifies the exact missing transition surface without inventing new economics.
+
+## 2026-09-23 — Class-control normative boundary resolved
+
+Cross-read of the canonical Economic Algorithm / Game Economy baseline confirms that the repository deliberately does NOT yet freeze numerical hysteresis thresholds. The normative algorithm specifies:
+- CurrentActiveClass = highest class whose verified post-sale state remains safe;
+- contraction order 100 -> 50 -> 25 -> 10 -> 5 -> 3 -> 2 -> 1 -> HALT;
+- HighestClassEverActivated is monotonic and distinct from CurrentActiveClass;
+- activation and suspension use separate thresholds;
+- exact numerical hysteresis remains an explicit policy/conformance item until frozen.
+
+Therefore the current implementation gap cannot be closed by inventing threshold constants. The correct remaining work is a policy-boundary/conformance task: freeze the numerical hysteresis rule at the authoritative normative layer first, then implement and test the state-derived selector, contraction, recovery and monotonic historical state. Until that happens, CurrentActiveClass / hysteresis / HighestClassEverActivated remain YELLOW by design, not because a missing arbitrary constant can be guessed.
