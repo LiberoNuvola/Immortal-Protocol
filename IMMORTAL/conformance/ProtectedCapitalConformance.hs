@@ -5,6 +5,7 @@ module ProtectedCapitalConformance
   , claimProtectedCapitalDelta
   , expireProtectedCapitalDelta
   , protectedCapitalLifecycleSafe
+  , protectedCapitalComponentsPreserved
   , protectedCapitalPartitionExact
   , V3ActionWitness (..)
   ) where
@@ -14,10 +15,6 @@ import EconomicProfile
 import EconomicStateV3
 import qualified EconomicKernel
 
--- | Exact delta in ProtectedCapital for a canonical PRE-RICH Reveal.
--- Given a valid unresolved ticket of price P and payout W:
---   ΔPC = W - M*P
--- where M is the profile payout multiplier.
 {-# INLINABLE revealProtectedCapitalDelta #-}
 revealProtectedCapitalDelta :: EconomicProfile -> Integer -> Integer -> Integer
 revealProtectedCapitalDelta profile price payout =
@@ -54,10 +51,21 @@ data V3ActionWitness
   | ClaimWitness Integer
   | ExpireWitness Integer
 
--- | Exact arithmetic partition used by the current universal bridge.
--- Each listed component is a distinct field/obligation category and appears
--- exactly once in the sum. This guards against accidental omission or double
--- counting when the aggregate state is refactored.
+-- | Protected-capital components that are not modified by the canonical
+-- Issue/Reveal/Claim/Expire transition set must remain byte-for-byte
+-- semantically identical across the transition boundary.
+-- This is a local state-preservation property, not a viability proof.
+{-# INLINABLE protectedCapitalComponentsPreserved #-}
+protectedCapitalComponentsPreserved :: V3EconomicState -> V3EconomicState -> Bool
+protectedCapitalComponentsPreserved before after =
+     v3SafetyCapital before == v3SafetyCapital after
+  && v3ReserveProtection before == v3ReserveProtection after
+  && v3MandatoryFutureCosts before == v3MandatoryFutureCosts after
+  && jsLockedAmount (v3Jackpot before) == jsLockedAmount (v3Jackpot after)
+  && jsThreshold (v3Jackpot before) == jsThreshold (v3Jackpot after)
+  && jsStatus (v3Jackpot before) == jsStatus (v3Jackpot after)
+  && jsCycle (v3Jackpot before) == jsCycle (v3Jackpot after)
+
 {-# INLINABLE protectedCapitalPartitionExact #-}
 protectedCapitalPartitionExact :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> Bool
 protectedCapitalPartitionExact liabilities exposure safety reserveProtection futureCosts additionalProtected actual =
