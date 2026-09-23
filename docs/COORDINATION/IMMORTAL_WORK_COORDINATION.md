@@ -4736,3 +4736,25 @@ Adaptation:
 - maintain an explicit “weakened checker” baseline so each security condition has a counterexample demonstrating why it is needed.
 
 No economic constants, validator rules or normative protocol semantics changed.
+
+
+## 2026-09-23 — P2.8 emulator workflow convergence correction
+
+Direct current-head Actions inspection exposed a concrete CI blind spot: two Reveal emulator workflows existed in parallel. The active `PRE-RICH Cardano Emulator Reveal` workflow executed only `npm ci` + the emulator against checked-in `src/plutusScripts` artifacts, while the intended fresh-artifact workflow `PRE-RICH Emulator Reveal Conformance` rebuilt Plutus artifacts but incorrectly invoked `cabal run exe:export-scripts` with `working-directory: plutus`, conflicting with the repository-root `cabal.project`/export path.
+
+The stale duplicate workflow was removed and the canonical fresh-artifact workflow was corrected to run `cabal run exe:export-scripts` from repository root.
+
+Commits:
+- `1689cc052be1ce4e1f8d1305ad1f118995803804` — fix fresh Plutus export working directory
+- `26954b0fe8bd8d729701db29fab834ab53e83908` — remove duplicate stale emulator workflow
+
+This is CI/evidence-pipeline hardening only. No validator, evaluator, economic parameter, transaction-size limit or protocol semantics changed.
+
+### Current evidence
+For the pre-fix head, the active emulator run failed at the known `Spend[1] execution went over budget` boundary using the stale-artifact workflow. That result is retained as evidence of the old path, but it is **not** evidence against the current `assetAmount` source change because the workflow did not rebuild the validator.
+
+The corrected fresh-artifact workflow is now executing on commit `1689cc052be1ce4e1f8d1305ad1f118995803804` (run #64). Its first step is still running; no evaluator/validator conclusion is available yet.
+
+The concurrent Adapter Sale and Algorithmic Governability workflows were triggered on the same head; both are active/success paths independent of this emulator classification. Kernel/Cardano integration runs on the same push may be cancelled/superseded by concurrency; they must be re-observed from the exact resulting head before promotion.
+
+**Status:** P2.8-B.1 **EVIDENCE PIPELINE CONVERGED / FRESH DIFFERENTIAL RUN IN PROGRESS**.
