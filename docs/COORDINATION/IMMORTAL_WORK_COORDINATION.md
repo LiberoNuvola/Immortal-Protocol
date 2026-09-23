@@ -3417,3 +3417,18 @@ Fresh run #165 fails with the same quantitative execution-budget boundary, now r
 This strengthens classification as the same evaluator/budget compatibility issue rather than a transaction-size regression. The correct next experiment remains a differential evaluation of the same validator bytes/datum/redeemer/context under a current/node-compatible/reference evaluator. No validator economics, 500x parameter, or maxTxSize is to be altered to make the emulator pass.
 
 Genesis run #8 remains active at the Plutus build/export stage; Haskell setup and native dependencies have completed successfully. No Genesis ledger evidence is available yet.
+
+
+## 2026-09-23 — Materios fail-closed boundary + Genesis valuation pin
+
+Current active head advanced through two evidence-only hardening changes:
+
+- `9ba01d689191478490a4470f65c37ab04264701c` — Materios authority-boundary integration test now explicitly verifies that a supplied transition proof verifier returning `false` is rejected with `AUTHORITY_TRANSITION_PROOF_NOT_VERIFIED`. This strengthens the untrusted → verified boundary; it does **not** provide the missing cryptographic verifier.
+- `8a203e6ca5f31b85056f3ebc451e01d37d7bf605` — corrected the Genesis Yaci fixture comment so the encoded oracle value is documented as `0.04 USDM/PRE`, not `0.0004`.
+- `e25ba45a0c07fddef7d2e182f0cc7227d09d2b85` — pinned the exact admission result for the canonical fixture: `10,000,000 PRE × 0.04 USDM/PRE = 4,000 USDM` (400,000 USDM subunits), while preserving the existing `>= 4,000 USDM` threshold.
+
+No validator economics, 500× bound, maxTxSize, Genesis threshold, or IMMORTAL invariant changed.
+
+**Evidence classification:** the Materios change is boundary/conformance evidence only; Genesis exact-value pin is application admission/fixture evidence only. Neither is a production cryptographic-finality proof nor production Treasury migration proof.
+
+**Workflow status:** fresh Actions execution for the post-change heads is required before any GREEN claim. The repository connector currently exposes no PR-triggered workflow runs for the active commit, so source changes are not promoted to CI GREEN by inspection alone.
