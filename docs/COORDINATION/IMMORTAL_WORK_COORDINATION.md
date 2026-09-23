@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `84b1558077da3724d922d68f92f8df43572fd0de` — Genesis provenance binder included in PR trigger paths
+**Latest observed commit:** `c0e68db47192f4aba0fa3d080f83b60c9005010e` — B1 Pool Reveal/Claim now require matching Prize inputs
 
 ---
 
@@ -3890,3 +3890,16 @@ Commits: 388eb97c2ea5d79b7a089336f9f9397593fdd7dd; 547d8f99f00473b3228ba691d576d
 No threshold, price, or economic policy changed. This is arithmetic hardening of the existing lower-bound predicate. Broader RT-1 valuation and executable-liquidity attacks remain open.
 
 Status: RT-1 ARITHMETIC HARDENED / BROADER VALUATION SURFACE OPEN.
+
+
+## 2026-09-23 — C15 Prize/Pool atomicity cross-review
+
+A separate cross-review found the same validator-boundary issue on the current branch: B1PrizePool Reveal/Claim accounting was coupled to the Prize output, but the Pool validator did not independently require consumption of the matching canonical Prize input. This meant the safety of the pair depended on the caller assembling the companion Prize spend.
+
+Commit `c0e68db47192f4aba0fa3d080f83b60c9005010e` closes that side door:
+- Reveal requires exactly one Prize input in Pending state, with matching ticket identity and price.
+- Claim requires exactly one Prize input in Revealed state, with matching ticket identity and frozen payout.
+
+The existing PrizeValidator and `src/gameFlow.ts` already perform the paired spends; the change makes the Pool side independently fail closed as well.
+
+**Status:** C12/C15 pairing boundary HARDENED / fresh compile + real-ledger lifecycle/replay evidence still OPEN.
