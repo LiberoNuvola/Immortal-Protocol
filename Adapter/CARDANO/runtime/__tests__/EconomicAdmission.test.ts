@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { createCardanoExecutionAdapter } from '../CardanoExecutionAdapter'
 import type { EconomicAdmissionWitness } from '../EconomicAdmission'
 
+const pool0 = '11'.repeat(32) + '#0'
+const pool1 = '22'.repeat(32) + '#1'
+
 const admission: EconomicAdmissionWitness = {
   gateVersion: 'economic-gate-v1',
   admitted: true,
@@ -12,120 +15,86 @@ const admission: EconomicAdmissionWitness = {
   executableLiquidityObservation: {
     observationReference: 'observation:test:1',
     observedAt: 100n,
+    sourceInputReferences: [pool0, pool1],
     utxos: [
-      {
-        txHash: '11'.repeat(32),
-        index: 0,
-        usdmValue: 800n,
-        spendable: true,
-        ringFenced: false,
-      },
-      {
-        txHash: '22'.repeat(32),
-        index: 1,
-        usdmValue: 200n,
-        spendable: true,
-        ringFenced: false,
-      },
+      { txHash: '11'.repeat(32), index: 0, usdmValue: 800n, spendable: true, ringFenced: false },
+      { txHash: '22'.repeat(32), index: 1, usdmValue: 200n, spendable: true, ringFenced: false },
     ],
     declaredUsdmLiquidity: 1000n,
   },
   requiredImmediateLiquidity: 900n,
 }
 
+const candidateInputs = [pool0, pool1]
+
 describe('economic Cardano submission boundary', () => {
   it('fails closed when no Economic Gate admission is supplied', async () => {
-    const lucid = {
-      signTx: vi.fn(),
-      submitTx: vi.fn(),
-    }
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
-
-    await expect(adapter.submitEconomic({}, undefined)).rejects.toThrow(
-      'Economic admission required',
-    )
+    await expect(adapter.submitEconomic({}, undefined, candidateInputs, [pool0, pool1])).rejects.toThrow('Economic admission required')
     expect(lucid.signTx).not.toHaveBeenCalled()
     expect(lucid.submitTx).not.toHaveBeenCalled()
   })
 
   it('consumes a valid admission before signing and submitting', async () => {
-    const lucid = {
-      signTx: vi.fn().mockResolvedValue('signed'),
-      submitTx: vi.fn().mockResolvedValue('tx-1'),
-    }
+    const lucid = { signTx: vi.fn().mockResolvedValue('signed'), submitTx: vi.fn().mockResolvedValue('tx-1') }
     const adapter = createCardanoExecutionAdapter(lucid)
-
-    await expect(adapter.submitEconomic({ candidate: true }, admission)).resolves.toEqual({
-      transactionRef: 'tx-1',
-    })
+    await expect(adapter.submitEconomic({ candidate: true }, admission, candidateInputs, [pool0, pool1])).resolves.toEqual({ transactionRef: 'tx-1' })
     expect(lucid.signTx).toHaveBeenCalledWith({ candidate: true })
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
   it('rejects malformed admission before signing', async () => {
-    const lucid = {
-      signTx: vi.fn(),
-      submitTx: vi.fn(),
-    }
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
-
-    await expect(
-      adapter.submitEconomic({}, {
-        ...admission,
-        stateHash: 'not-a-hash',
-      }),
-    ).rejects.toThrow('stateHash')
+    await expect(adapter.submitEconomic({}, { ...admission, stateHash: 'not-a-hash' }, candidateInputs, [pool0, pool1])).rejects.toThrow('stateHash')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 
   it('rejects liquidity that includes a ring-fenced UTxO', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
-
-    await expect(
-      adapter.submitEconomic({}, {
-        ...admission,
-        executableLiquidityObservation: {
-          ...admission.executableLiquidityObservation,
-          utxos: [
-            ...admission.executableLiquidityObservation.utxos.slice(0, 1),
-            {
-              ...admission.executableLiquidityObservation.utxos[1],
-              ringFenced: true,
-            },
-          ],
-        },
-      }),
-    ).rejects.toThrow('ring-fenced')
+    await expect(adapter.submitEconomic({}, {
+      ...admission,
+      executableLiquidityObservation: {
+        ...admission.executableLiquidityObservation,
+        utxos: [...admission.executableLiquidityObservation.utxos.slice(0, 1), { ...admission.executableLiquidityObservation.utxos[1], ringFenced: true }],
+      },
+    }, candidateInputs, [pool0, pool1])).rejects.toThrow('ring-fenced')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 
   it('rejects liquidity whose declared amount does not equal observed spendable UTxOs', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
-
-    await expect(
-      adapter.submitEconomic({}, {
-        ...admission,
-        executableLiquidityObservation: {
-          ...admission.executableLiquidityObservation,
-          declaredUsdmLiquidity: 1200n,
-        },
-      }),
-    ).rejects.toThrow('does not match observed spendable UTxOs')
+    await expect(adapter.submitEconomic({}, {
+      ...admission,
+      executableLiquidityObservation: { ...admission.executableLiquidityObservation, declaredUsdmLiquidity: 1200n },
+    }, candidateInputs, [pool0, pool1])).rejects.toThrow('does not match observed spendable UTxOs')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 
   it('rejects required liquidity above the observed spendable amount', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, { ...admission, requiredImmediateLiquidity: 1001n }, candidateInputs, [pool0, pool1])).rejects.toThrow('exceeds observed spendable liquidity')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
 
-    await expect(
-      adapter.submitEconomic({}, {
-        ...admission,
-        requiredImmediateLiquidity: 1001n,
-      }),
-    ).rejects.toThrow('exceeds observed spendable liquidity')
+  it('rejects an observed source that is not consumed by the candidate transaction', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, {
+      ...admission,
+      executableLiquidityObservation: { ...admission.executableLiquidityObservation, sourceInputReferences: ['33'.repeat(32) + '#0'] },
+    }, candidateInputs, [pool0, pool1])).rejects.toThrow('not declared as a source input')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
+  it('rejects a liquidity source set that differs from the economic action source', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, admission, candidateInputs, [pool0])).rejects.toThrow('source inputs do not match economic action source')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 })
