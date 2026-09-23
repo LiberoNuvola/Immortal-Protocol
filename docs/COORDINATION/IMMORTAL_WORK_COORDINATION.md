@@ -3322,3 +3322,14 @@ Current branch head is `051a89fb582d640abe23503b56a99054fc81dd12`. Compared with
 The repository-side Genesis evidence path is therefore materially complete as an executable chain, but no workflow result was available through the current GitHub connector for the new head. Accordingly **no CI/ledger GREEN claim is made**. The next authoritative evidence point is the actual Actions execution of the current head.
 
 No economic or normative parameter was changed in this audit.
+
+
+## 2026-09-23 — B4 projection boundary strengthened with jackpot protection case
+
+Added a focused conformance case to `plutus/test/ProjectionBoundaryConformanceTest.hs`: a valid V3 state with a locked Jackpot amount of 700 must project that amount into `uesAdditionalProtectedCapital`, and the resulting state must still satisfy the V3/Universal ProtectedCapital and RawSurplus boundary equivalence witness.
+
+This closes a previously unpinned **representation-level** B4 case: Jackpot liquidity is explicitly carried into the universal protected-capital boundary rather than disappearing during PRE-RICH projection. It does not yet prove lifecycle preservation across real transitions or Cardano ledger execution, so B4 remains open for those evidence layers.
+
+Commit: `c2743ffeec110156c5e88756bfb175a205170eb1`.
+
+No economic rule changed; the test only pins the existing projection semantics.
