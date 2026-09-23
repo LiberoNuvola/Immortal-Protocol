@@ -12,6 +12,7 @@ on:
       - "src/__tests__/immortal-cardano-emulator-smoke.mjs"
       - "src/plutusScripts/**"
       - "plutus/**"
+      - "PRE-RICH/profile/**"
       - "src/gameFlow.ts"
       - "package.json"
       - "package-lock.json"
@@ -25,16 +26,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-
       - name: Install dependencies
         run: npm ci
-
       - name: Normalize Lucid ESM entrypoint
         run: |
           node --input-type=module <<'NODE'
@@ -46,13 +44,11 @@ jobs:
           x.exports={".":{types:"./types/mod.d.ts",import:"./esm/mod.js"}}
           fs.writeFileSync(p, JSON.stringify(x,null,2)+"\n")
           NODE
-
       - name: Setup Haskell for fresh Plutus artifacts
         uses: haskell-actions/setup@v2
         with:
           ghc-version: "9.6.7"
           cabal-version: "3.12.1.0"
-
       - name: Install Plutus native dependencies
         run: |
           sudo apt-get update
@@ -84,16 +80,12 @@ jobs:
           EOF
           sudo install -m 0644 /tmp/libblst.pc /usr/local/lib/pkgconfig/libblst.pc
           sudo ldconfig
-
       - name: Update Cabal package index
         run: cabal update
-
       - name: Build and export fresh Plutus artifacts
         run: cabal run exe:export-scripts
         working-directory: plutus
-
       - name: Run isolated emulator smoke
         run: node src/__tests__/immortal-cardano-emulator-smoke.mjs
-
       - name: Run real PRE-RICH Reveal emulator conformance
         run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
