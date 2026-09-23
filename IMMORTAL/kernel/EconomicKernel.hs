@@ -24,7 +24,7 @@ module EconomicKernel
 import PlutusTx.Builtins.HasOpaque (stringToBuiltinString)
 import PlutusTx.Prelude
 import EconomicStateV3
-import EconomicProfile (EconomicProfile, profilePrice, epMaxNormalPayoutMultiplier)
+import EconomicProfile (EconomicProfile, profilePrice, profileClasses, epMaxNormalPayoutMultiplier)
 
 {-# INLINABLE ceilingDiv #-}
 ceilingDiv :: Integer -> Integer -> Integer
