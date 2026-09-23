@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createCardanoExecutionAdapter } from '../CardanoExecutionAdapter'
+import { assertExecutableLiquidityMatchesAuthenticatedPool } from '../../observation/ExecutableLiquidityObservation'
 import type { EconomicAdmissionWitness } from '../EconomicAdmission'
 
 const pool0 = '11'.repeat(32) + '#0'
@@ -96,5 +97,54 @@ describe('economic Cardano submission boundary', () => {
     const adapter = createCardanoExecutionAdapter(lucid)
     await expect(adapter.submitEconomic({}, admission, candidateInputs, [pool0])).rejects.toThrow('source inputs do not match economic action source')
     expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('authenticated B1 PrizePool liquidity correlation', () => {
+  it('accepts the exact authenticated Pool UTxO and valuation', () => {
+    assertExecutableLiquidityMatchesAuthenticatedPool(
+      admission.executableLiquidityObservation,
+      pool0,
+      800n,
+    )
+  })
+
+  it('rejects a wrong Pool UTxO', () => {
+    expect(() =>
+      assertExecutableLiquidityMatchesAuthenticatedPool(
+        admission.executableLiquidityObservation,
+        pool1,
+        800n,
+      ),
+    ).toThrow('exactly the authenticated B1 PrizePool input')
+  })
+
+  it('rejects double-counted Pool liquidity', () => {
+    expect(() =>
+      assertExecutableLiquidityMatchesAuthenticatedPool(
+        {
+          ...admission.executableLiquidityObservation,
+          sourceInputReferences: [pool0],
+          utxos: [
+            admission.executableLiquidityObservation.utxos[0],
+            { ...admission.executableLiquidityObservation.utxos[0] },
+          ],
+          declaredUsdmLiquidity: 1600n,
+        },
+        pool0,
+        800n,
+      ),
+    ).toThrow('duplicate executable liquidity UTxO reference')
+  })
+
+  it('rejects a valuation mismatch against the authenticated Pool state', () => {
+    expect(() =>
+      assertExecutableLiquidityMatchesAuthenticatedPool(
+        admission.executableLiquidityObservation,
+        pool0,
+        801n,
+      ),
+    ).toThrow('does not match authenticated B1 PrizePool USDM valuation')
   })
 })
