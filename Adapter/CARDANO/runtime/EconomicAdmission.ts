@@ -8,7 +8,7 @@
  * silently bypass the gate by calling the generic Cardano submitter.
  */
 import {
-  assertExecutableLiquidityObservation,
+  assertExecutableLiquidityBoundToInputs,
   type ExecutableLiquidityObservation,
 } from '../observation/ExecutableLiquidityObservation'
 
@@ -25,6 +25,7 @@ export type EconomicAdmissionWitness = {
 
 export function assertEconomicAdmission(
   witness: EconomicAdmissionWitness | undefined,
+  inputReferences: readonly string[],
 ): asserts witness is EconomicAdmissionWitness {
   if (!witness || witness.admitted !== true) {
     throw new Error(
@@ -50,7 +51,7 @@ export function assertEconomicAdmission(
     throw new Error('required immediate liquidity must be non-negative')
   }
 
-  assertExecutableLiquidityObservation(witness.executableLiquidityObservation)
+  assertExecutableLiquidityBoundToInputs(witness.executableLiquidityObservation, inputReferences)
 
   if (
     witness.executableLiquidityObservation.observationReference !==
