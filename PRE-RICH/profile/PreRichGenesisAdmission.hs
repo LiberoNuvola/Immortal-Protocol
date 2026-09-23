@@ -47,9 +47,9 @@ genesisTreasuryValueUsdm o
   | gtoOraclePrecision o <= 0 = Nothing
   | otherwise =
       Just
-        ceilingDiv
+        (ceilingDiv
           (gtoPreQuantity o * gtoVerifiedPreUsdmPrice o)
-          (gtoOraclePrecision o)
+          (gtoOraclePrecision o))
 
 {-# INLINABLE genesisPredicate #-}
 genesisPredicate :: GenesisTreasuryObservation -> Bool
