@@ -3781,3 +3781,22 @@ This strengthens the evidence chain to:
 `generated artifact bytes → witness bytes in signed CBOR → transaction hash → observed transition tx reference`.
 
 Status remains **HARDENED / NEEDS-FRESH-CI-EVIDENCE** because no fresh workflow result has yet been observed for the latest binder commits.
+
+
+## 2026-09-23 — C13 semantic action boundary witness
+
+Added a representation-level C13 witness for the canonical B1/Cardano action encoding used by PRE-RICH:
+- Issue maps to B1 TicketIssued(price);
+- Reveal maps to B1 TicketRevealed(price), with payout remaining datum-owned in PrizeDatum;
+- Claim maps to B1 TicketClaimed(amount);
+- Expire maps to B1 TicketExpired with no caller-selected amount.
+
+Added:
+- src/__tests__/cardano-v3-semantic-conformance.test.ts
+- .github/workflows/c13-cardano-semantic-conformance.yml
+
+The witness asserts constructor indices, field ownership/arity, and fail-closed semantic separation. It is explicitly representation-level: it does not substitute for Plutus/Yaci execution evidence, so C12 remains open until real-ledger lifecycle evidence exists.
+
+Commits: 9d080f34291c125147675dda805e8d920e63460f, efc9dfb1d6623e68c7af62eac66676029233afe6.
+
+Status: C13 REPRESENTATION WITNESS ADDED / NEEDS CI + LEDGER CORRELATION.
