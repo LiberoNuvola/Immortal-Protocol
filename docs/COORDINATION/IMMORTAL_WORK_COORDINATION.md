@@ -5385,3 +5385,40 @@ For each V3 transition/action (Issue, Reveal, Claim, Expire, FundTreasury and ap
 **Classification:** IMMORTAL-STATE-BOUNDARY-001 — **BRIDGE IMPLEMENTED / CONSUMER PRESERVATION EVIDENCE OPEN**.
 
 No economic constants, validator semantics, governance rules, or canonical policy were changed.
+
+
+## 2026-09-23 — Transition consumer matrix: first preservation pass
+
+The live src/gameFlow.ts and src/mint.ts paths were inspected after the universal bridge audit. The first matrix is now concrete enough to separate **economic aggregate inputs** from **application transition-control inputs**.
+
+| Transition | Universal economic quantities materially involved | Application/control data still required by the transition | Bridge implication |
+|---|---|---|---|
+| TicketIssued / Mint | price, unresolved reserve/count, worst-case exposure, protected capital, economic admission | counter identity, ticket nonce, class/price policy, expiry policy, beacon target, PrizeDatum identity, registry state | Universal bridge can represent the economic aggregate, but cannot replace application issuance state. |
+| Reveal | reserve release, crystallized payout/liability, ProtectedCapital/solvency, economic admission | ticket identity, beacon result, player commitment, Classic-6 rows, price, Prize/Pool input-output identity | Economic projection can witness aggregate boundary; transition identity must remain in application/Cardano layer. |
+| Claim | liability reduction, payout settlement, ProtectedCapital/solvency, economic admission | Prize status/expiry, ticket NFT ownership, exact settlement quote, payout amount, Prize/Pool/ticket input binding | Aggregate state is insufficient to reconstruct Claim; application transition must retain its control/effect evidence. |
+| Expire | unresolved reserve/count reduction, post-expiry economic state, economic admission | issued/expiry timestamps, Pending status, physical Prize collateral, permissionless executor, Prize/Pool binding | Expiry horizon/control are application state; universal layer should consume their resulting economic delta, not invent the horizon. |
+| FundTreasury | actual continuing Pool valuation, liquidity/protected-capital effect, oracle-backed economic admission | authenticated Pool UTxO, Oracle reference input, publisher/freshness, continuing datum/NFT identity | Universal economic semantics do not require the Oracle/UTxO representation; adapter/on-chain boundary must preserve provenance. |
+| Jackpot transitions | protected locked amount if economically material | Jackpot threshold/status/cycle and allocation/application policy | Universal bridge may carry the economically protected amount without making Jackpot lifecycle a universal primitive. |
+
+### Stronger result
+
+The matrix shows that the current additive bridge is **not** intended to be a complete replacement for V3EconomicState. Its correct role is narrower: provide an application-neutral economic projection for universal admissibility calculations while application/control state remains authoritative for application transitions.
+
+Therefore the next B6/state-boundary witness should be a **paired transition certificate**:
+
+Application pre-state + application action + economic projection(pre)
+→ canonical transition
+→ Application post-state + economic projection(post)
+
+with explicit checks that:
+1. the application action is valid in its own state domain;
+2. the universal economic delta is the same one represented by the canonical transition;
+3. ProtectedCapital/RawSurplus/solvency are preserved by the projection;
+4. adapter/on-chain identity fields remain bound even when absent from the universal aggregate;
+5. no application policy is inferred from the universal aggregate.
+
+This is the smallest useful next proof surface. It avoids both extremes: keeping every PRE-RICH field in the universal kernel, or prematurely deleting fields that are still required to reconstruct an application transition.
+
+**Classification:** IMMORTAL-STATE-BOUNDARY-001 / B5 / B6 — **CONCRETE CONSUMER MATRIX ESTABLISHED; TRANSITION-PRESERVATION WITNESS OPEN.**
+
+No protocol/economic constants, governance rules or validator semantics changed.
