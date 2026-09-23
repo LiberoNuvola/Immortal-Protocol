@@ -18,6 +18,7 @@ on:
       - "plutus/export/Export.hs"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
       - "audit/pre-genesis-genesis/record-artifact-provenance.ts"
+      - "audit/pre-genesis-genesis/stress-lab.mjs"
       - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
       - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
       - "audit/cardano-integration/create-test-wallet.mjs"
