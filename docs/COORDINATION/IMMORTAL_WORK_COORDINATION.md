@@ -3702,3 +3702,19 @@ Commits:
 - coordination record: `e47deef7ccece529c902e5ede7ed8278d49a394a`
 
 Status: **C14 HARDENED / NEEDS FRESH EXECUTION**. This is evidence-pipeline hardening only; it does not promote Genesis to ledger GREEN without a fresh successful Yaci run.
+
+
+## 2026-09-23 — PRE-RICH controller provenance witness
+
+The remaining class-control gap was narrowed without inventing economics. The canonical PRE-RICH controller already consumes an externally supplied exact-integer capacity cost X(P) and the frozen KA=8/KC=4/KD=4 policy. A new application-boundary witness now recomputes the controller result from verified capacity/classes and fails closed when observed CurrentActiveClass / HighestClassEverActivated disagree with that deterministic result.
+
+Added:
+- `PRE-RICH/profile/PreRichHysteresisBinding.ts` — derives the closed controller result and rejects observed-control mismatch; also checks monotonic historical control.
+- `PRE-RICH/profile/PreRichHysteresisBinding.test.ts` — activation acceptance, caller-selected mismatch rejection, direct contraction/history preservation, and history-shape rejection.
+- `.github/workflows/pre-rich-hysteresis-conformance.yml` — includes the new binding test in the existing conformance workflow and triggers on both binding files.
+
+Commits: `975d95d6ade0cad9e105934bc1c93beab726edca`, `a2993ec3c1776d9b1b33cfc78de8e11d79e27c5e`, `cf1b6b8b98c2e63f98761aea720d359a5f6034c7`.
+
+Boundary remains explicit: this is an application-level provenance witness, not yet V3/Cardano atomic integration. It deliberately does not choose or derive X(P) from unverified inputs; the caller must supply the canonical exact-integer class costs. The next closure step is to connect this witness to the authoritative PRE-RICH post-state/capacity computation and then to the V3/Cardano transition so the on-chain control cannot be caller-selected.
+
+**Status:** CONTROLLER PROVENANCE WITNESS IMPLEMENTED / CI PENDING / V3+CARDANO BINDING OPEN.
