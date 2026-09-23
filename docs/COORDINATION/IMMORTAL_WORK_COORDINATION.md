@@ -3493,3 +3493,21 @@ The PRE-GENESIS -> GENESIS Cardano workflow was rechecked for push/PR trigger sy
 Commit: 6aa521b770df1d8168abe538202427a300cbe3e2.
 
 CI plumbing only; no validator or economic semantics changed.
+
+## 2026-09-23 — V3 transition audit: concrete remaining boundary
+
+Audited the current IMMORTAL/kernel/EconomicTransitionV3.hs against the V3 state/kernel.
+
+Confirmed:
+- Issue/Reveal/Expire resolve class IDs through classPrice; unknown classes fail closed.
+- transitionValid enforces profile validity, conservation and non-negative structural state.
+- PRE-RICH admission subsequently projects the candidate state and applies the Economic/Viability gates.
+
+Still open at transition level:
+- EconomicTransitionV3 does not mutate or validate EconomicControlState (CurrentActiveClass / HighestClassEverActivated).
+- No V3 action currently performs the normative monotonic historical-state update.
+- Jackpot state is carried through unchanged by the four current actions; jackpot lifecycle transitions are therefore not represented in this generic V3 transition.
+- tcsSaleable is stored but not recomputed by the current Issue transition; saleability is instead checked through EconomicKernel.classSaleable.
+- The transition itself is deliberately structural; solvency is enforced downstream by PreRichEconomicAdmission / EconomicGate, not by transitionValid.
+
+Conclusion: B4/automatic class-control/hysteresis and jackpot transition closure must not be marked GREEN from representation-level conformance alone. This audit identifies the exact missing transition surface without inventing new economics.
