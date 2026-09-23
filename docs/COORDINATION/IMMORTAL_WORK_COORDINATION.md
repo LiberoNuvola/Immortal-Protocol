@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `126d041c39148741837f79f430c74f76fac71d20` — Genesis workflow trigger path correction
+**Latest observed commit:** `730334654ac5b39ec504bbbd5c0d030f6ad463fe` — hysteresis binding now enforces historical-control invariants
 
 ---
 
@@ -3822,3 +3822,16 @@ and therefore was malformed as a single path entry.
 Corrected in `126d041c39148741837f79f430c74f76fac71d20` to two real YAML list entries. This matters because the new C14 binder must itself trigger the Genesis workflow on source changes; otherwise provenance hardening can silently remain unexecuted.
 
 Status: **workflow trigger syntax corrected / fresh execution still required**.
+
+
+## 2026-09-23 — PRE-RICH controller-binding adversarial correction
+
+A cross-review of the application-level hysteresis witness found that `assertPreRichControlMatches` checked deterministic controller equality but did not invoke its own independent historical-control invariants. Thus a caller could satisfy the deterministic result comparison while bypassing the separately defined monotonic-history checks.
+
+Applied:
+- `fcf1574eb6f58d8b3f414b89407742b9362a75a3` — control binding now calls `assertPreRichControlHistory` before returning an admissible result.
+- `730334654ac5b39ec504bbbd5c0d030f6ad463fe` — added a conformance test for a matching-controller result whose historical maximum regresses.
+
+This remains application-boundary hardening. It does not claim V3/Cardano atomic control binding.
+
+**Status:** controller witness strengthened / fresh CI evidence required / V3+Cardano binding still OPEN.
