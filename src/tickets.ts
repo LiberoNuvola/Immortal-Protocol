@@ -16,7 +16,7 @@ import { COUNTER_SCRIPT_ADDRESS } from './config'
  */
 export async function buyTickets(
   qty: number = 1,
-  mintOptions: MintSerialOptions = {},
+  mintOptions: MintSerialOptions,
 ) {
   const lucid = wallet.getLucid()
 
