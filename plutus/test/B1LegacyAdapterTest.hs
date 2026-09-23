@@ -107,6 +107,7 @@ main = do
 
   let universalAggregate =
         legacyB1ToUniversalEconomicState
+          preRichEconomicProfileV1
           (B1PrizePoolDatum 1000 7 4 2 9 10 0 dummyHash)
   let aggregateComparableState =
         V3EconomicState
@@ -119,6 +120,7 @@ main = do
 
   let universalComparable =
         legacyB1ToUniversalEconomicState
+          preRichEconomicProfileV1
           (B1PrizePoolDatum 1000 7 5 3 9 10 0 dummyHash)
 
   assert
