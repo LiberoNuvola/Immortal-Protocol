@@ -1,6 +1,7 @@
 name: PRE-RICH Emulator Reveal Conformance
 
 # Canonical fresh-artifact emulator evidence path.
+# P2.8 gate: exercise the current EconomicKernel import fix on every workflow change.
 # This workflow must rebuild Plutus artifacts from the exact checkout before Reveal evidence.
 
 on:
