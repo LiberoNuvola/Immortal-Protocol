@@ -84,3 +84,18 @@ Session A review of the Genesis front found the carrier still used the Ledger AP
 Commit `a2364a00d40d8b149673397b3bc75a8a9c4d1c40` strengthens the real Yaci Genesis trace: after ActivateGenesis it now verifies that the exact Treasury and Oracle reference UTxOs remain unconsumed and records an explicit evidence boundary that the transition touches only the carrier state, not PrizePool/bootstrap liquidity.
 
 This does **not** prove the full Genesis economic state transition; it proves a narrower and important exclusion property when the lab succeeds: Treasury/Oracle references are observational inputs, not consumed funding, and the carrier transition itself does not import bootstrap PRE into PrizePool liquidity.
+
+
+## 2026-09-23 — C14 Genesis evidence packet binding
+
+C14 cross-review found that hashing generated Genesis artifacts in CI was necessary but not sufficient: the hashes were not yet correlated inside the actual ledger evidence packet containing the transition transaction CBOR.
+
+Added:
+- `5c9dff9a79932ca52cdbbefbb88a1da5f0de5ca0` — `audit/pre-genesis-genesis/record-artifact-provenance.ts`
+- `83e479e5989fcb32ec497913288eda3f87257f90` — Genesis workflow now runs the provenance binder after the real Yaci transition and before artifact upload.
+
+The binder records `GITHUB_SHA`, SHA-256 hashes of the exact generated Genesis carrier and mint-policy artifacts used by the workflow, and binds that manifest to the observed transition transaction reference + CBOR presence in `genesis-carrier-transition.json`.
+
+This closes a concrete stale-artifact correlation gap at the evidence-packet layer, but does not by itself prove semantic equivalence or successful ledger execution. Fresh workflow execution remains required.
+
+Next adversarial question for the receiving session: attack whether any generated artifact can be replaced between hash capture and transaction execution, and whether the recorded transition CBOR can be independently mapped to the same script bytes rather than merely co-existing in the same JSON packet.
