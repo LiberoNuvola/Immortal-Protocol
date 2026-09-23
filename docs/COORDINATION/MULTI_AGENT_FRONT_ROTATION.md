@@ -71,3 +71,10 @@ Concrete C14 progress landed on the working branch:
 These are provenance/evidence improvements only. They do not establish semantic equivalence or ledger success by themselves.
 
 Next cross-review question: verify that the evidence consumers actually upload and correlate these hash manifests with the transaction/evidence packets, and that no later step silently replaces the hashed artifacts with committed/stale `src/plutusScripts` copies.
+
+
+## 2026-09-23 — Cross-review: Genesis evaluator compatibility
+
+Session A review of the Genesis front found the carrier still used the Ledger API `valueOf` helper for every PRE/carrier/oracle singleton lookup. B1PrizePool had already replaced the same helper with explicit `AssocMap` traversal after the evaluator Value failure. To avoid carrying the same evaluator/compiler compatibility risk into the Genesis carrier, commit `2b589e44dbdc7b411fba8941a4f530f25d820101` applies the same semantics-preserving direct lookup pattern.
+
+**Review status:** targeted compatibility hardening only. Fresh Genesis compilation + Yaci execution must still validate it; no GREEN promotion from source inspection.
