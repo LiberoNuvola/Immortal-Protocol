@@ -5323,3 +5323,14 @@ This matters because commit `c0e68db47192f4aba0fa3d080f83b60c9005010e` changed B
 Cardano's EUTXO model independently supports this test boundary: script validity is determined from the transaction and referenced inputs, and a UTxO is consumed as an input only once. citeturn0search0turn0search4
 
 **Classification:** B6 / P2.8 — **POSITIVE REAL-EMULATOR PATH PRESENT; NEGATIVE INPUT-BINDING EVIDENCE OPEN.** No economic rule changed.
+
+
+## 2026-09-23 — P2.8 runner dependency gap: ledger API now declared explicitly
+
+The runner's Cabal file pinned `cardano-ledger-alonzo == 1.16.0.0` and `cardano-ledger-core == 1.21.0.0`, while the source-repository snapshot used by `cabal.project` contains `cardano-ledger-api` as a separate package. The pinned snapshot's package metadata identifies `cardano-ledger-api` as version `1.14.0.0` and exposes `Cardano.Ledger.Api.Tx`, including the required evaluator boundary.
+
+The runner now declares `cardano-ledger-api == 1.14.0.0` explicitly. This is necessary before importing the ledger API rather than relying on transitive dependency visibility.
+
+Commit: `c037434258d71e77ebd79a3d1aaa310911f1a2aa`.
+
+This is dependency/build preparation only; no evaluator call or semantic change has been made. Next step remains typed evidence decoding and an actual ledger-aligned evaluation.
