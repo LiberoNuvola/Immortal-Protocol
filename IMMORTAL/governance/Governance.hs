@@ -333,6 +333,25 @@ statusChangeAllowed p next =
       [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
       _ -> Left "gate update rejected outside evidence/community review"
 
+statusChangeAllowed :: Proposal -> ProposalStatus -> Bool
+statusChangeAllowed p next =
+  transition (proposalStatus p) next &&
+  case next of
+    Accepted ->
+      quorumReached
+        (proposalSnapshot p)
+        (proposalDelegations p)
+        (proposalVotes p) &&
+      approvalReached
+        (proposalClass p)
+        (proposalSnapshot p)
+        (proposalDelegations p)
+        (proposalVotes p) &&
+      gatesPassed (proposalClass p) (proposalGates p)
+    Adopted -> proposalStatus p == Accepted
+    Canonical -> proposalStatus p == Adopted
+    _ -> True
+
 recordTime :: Proposal -> ProposalStatus -> Timestamp -> Proposal
 recordTime p s at = case s of
   CommunityReview -> p { proposalStatus = s, communityReviewOpenedAt = Just at }
