@@ -6,8 +6,8 @@
 
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
-**Snapshot:** 2026-09-22  
-**Latest observed commit:** `a4e9ec8fa768674a054abe59d689f903d8f7663a` — B4 protected-capital omission boundary
+**Snapshot:** 2026-09-23  
+**Latest observed commit:** `81a7933c6845939c71430f34dd5de174521bd402` — V3 refinement now enforces canonical control-state validity
 
 ---
 
@@ -170,6 +170,18 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 | BOUNDARY-SEPARATION | Complete IMMORTAL / PRE-RICH separation | OPEN | Remove or isolate PRE-RICH-shaped concepts from the universal kernel where evidence requires it. |
 
 ---
+
+## 7A. V3 control-state hardening — current evidence
+
+The current V3 transition boundary now rejects malformed control state before and after `EconomicTransitionV3.transition` through `EconomicKernel.controlStateValid` (current/highest class IDs must both belong to the supplied `EconomicProfile`).
+
+`RefinementV3.refinementExact` now enforces the same control-state validity at the concrete→canonical refinement boundary.
+
+This is a **boundary-hardening / conformance improvement**, not closure of automatic class control. The PRE-RICH application-level hysteresis reference already implements the closed `KA=8 / KC=4 / KD=4` predicates and direct contraction/recovery semantics in `src/preRichHysteresis.ts`, with dedicated conformance tests/workflow. The remaining architectural gap is the explicit binding of that application policy to authoritative V3/on-chain control-state transitions without promoting PRE-RICH policy into the universal IMMORTAL kernel.
+
+No CI-green claim is made here unless a corresponding workflow run is observed.
+
+`81a7933c6845939c71430f34dd5de174521bd402` records the refinement-boundary hardening.
 
 ## 7. Current verified architectural concern
 
