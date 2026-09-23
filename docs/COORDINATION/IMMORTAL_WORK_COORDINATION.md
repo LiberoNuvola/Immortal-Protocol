@@ -4579,3 +4579,40 @@ Commit: 1dfb069ed8228b308b73c96b0a931f320f047662.
 Status: RT-1.5 POSITIVE FUND-TREASURY PATH + DUPLICATE-SUBMISSION WITNESS IMPLEMENTED / FRESH CI OPEN. C15 duplicate replay is now instrumented; green classification still requires fresh execution and the remaining negative twins.
 
 No economic constants, valuation semantics or normative rules changed.
+
+## 2026-09-23 — Prior-art pass: canonical state and state-proof boundaries
+
+New high-signal findings refine B6/C14.
+
+### Cardano CIP-0165: canonical ledger state
+CIP-0165 defines a stable, versioned, verifiable canonical interchange representation of Cardano ledger state, with deterministic CBOR, per-chunk commitments and a manifest. It explicitly separates canonical export/interchange from node-internal representation.
+Adaptation:
+- B6 should distinguish semantic canonical state from local representation;
+- a future evidence harness can compare a canonical state snapshot/commitment with the adapter-derived economic state;
+- C14 can treat canonical-state serialization as an evidence boundary, not as a new economic authority.
+
+### Algorand State Proofs: ledger-produced state-change evidence
+Algorand State Proofs provide cryptographic evidence of state changes over blocks, signed by consensus participants and verified without running the full ledger.
+Adaptation:
+- use the pattern to distinguish ledger-authenticated state evidence from transition semantic validity;
+- a state proof can establish that a ledger state/change was attested, but it does not by itself prove that the economic transition was the normative transition T.
+
+### Ethereum PBT migration: shadow commitments and dual-check
+EIP-8347 uses byte-canonical state snapshots, replayed updates, dual-check verification and a shadow commitment before switching the canonical state representation.
+Adaptation:
+- B6 can use an independent shadow/reference state and replay;
+- compare reference and Cardano-derived states without modifying the canonical protocol;
+- classify divergence as translation/evidence failure;
+- preserve the distinction between off-chain conversion evidence and consensus-critical state.
+
+### Current research implication
+A stronger decomposition is now:
+1. semantic transition validity;
+2. canonical-state representation;
+3. ledger-authenticated state evidence;
+4. artifact/provenance evidence;
+5. same-transition identity across the boundaries.
+
+Existing systems clearly cover items 2–4 individually. The research question remains whether IMMORTAL's complete economic transition chain can be independently checked as one composition.
+
+No protocol/economic semantics changed.
