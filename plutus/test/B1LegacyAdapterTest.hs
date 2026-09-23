@@ -129,6 +129,21 @@ main = do
        aggregateComparableState
        == UniversalEconomicKernel.protectedCapital universalComparable)
     "legacy aggregate preserves the representable ProtectedCapital boundary"
+  assert
+    (EconomicKernel.rawSurplus
+       preRichEconomicProfileV1
+       3000
+       aggregateComparableState
+       == UniversalEconomicKernel.rawSurplus 3000 universalComparable)
+    "legacy aggregate preserves the representable RawSurplus boundary"
+
+  assert
+    (EconomicKernel.solvencyInvariant
+       preRichEconomicProfileV1
+       3000
+       aggregateComparableState
+       == UniversalEconomicKernel.solvencyInvariant 3000 universalComparable)
+    "legacy aggregate preserves the representable solvency boundary"
 
   assert
     (UniversalEconomicState.uesCrystallizedLiabilities universalAggregate == 7)
