@@ -4135,3 +4135,20 @@ Commits:
 - `538558f9e7bdfc6a892c89345479ca4c217b13fe`
 
 This is stronger runtime/evidence binding, but **not yet real-ledger proof**. A fresh workflow run is still required for these commits, and the final RT-1.5 closure requires the helper to be exercised by a trace containing an actual authenticated B1 Pool UTxO/value observation (plus stale/wrong-Pool/value-mismatch twins). No economic semantics changed.
+
+## 2026-09-23 — RT-1.5 stale-observation hardening
+
+The remaining negative twin for observation freshness was addressed without introducing a protocol-wide time constant.
+
+Added `assertExecutableLiquidityObservationFresh`, which takes the authoritative current observation time and a caller-supplied freshness horizon, and rejects:
+- future observations;
+- observations older than the supplied horizon;
+- invalid negative time/horizon inputs.
+
+Added conformance tests for accepted fresh data, stale data and future data.
+
+Commits:
+- `d114d49ae7345996fa29483b5aba4f6974eac636`
+- `47f97cd249fbae9d1a152bbed1530f837ac8708d`
+
+This is observation-layer provenance hardening only. It does not choose a universal freshness window and does not yet constitute real-ledger evidence. RT-1.5 remains open for exercising freshness + authenticated Pool valuation against an actual Cardano/Yaci trace.
