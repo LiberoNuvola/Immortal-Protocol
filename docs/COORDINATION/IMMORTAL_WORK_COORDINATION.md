@@ -5216,3 +5216,16 @@ This strengthens the existing CAES composition without adding protocol semantics
 For the economic plane this maps directly to the existing transition-digest / stale-admission work. For governance it maps to rule-set digest + authority + scope + effective-window binding.
 
 No economic constants, validator semantics, or current normative governance rules changed.
+
+
+## 2026-09-23 — GOV-28 reference fail-closed wording correction
+
+Triangulation of the live governance reference exposed a documentation/test-output overclaim: `verification/gov28_reference.py` printed `negative authorization/evidence/ruleset/finality gates: PASS`, although the executable reference only checks authorization, evidence, ruleset/commitment, event uniqueness and predecessor continuity. It does not implement challenge/finality lifecycle semantics.
+
+The reference output was corrected to separate the demonstrated gates from the missing lifecycle layer:
+- `negative authorization/evidence/ruleset gates: PASS`
+- `finality/challenge lifecycle: NOT IMPLEMENTED IN THIS REFERENCE`
+
+Commit: `19b0161739df7e4eb8683b142c4894502812b21b`.
+
+This is a fail-closed documentation/conformance correction, not a governance-policy change. GOV-28 remains **reference conformance / integration open** until challenge/finality semantics and repository-level replay integration are independently exercised.
