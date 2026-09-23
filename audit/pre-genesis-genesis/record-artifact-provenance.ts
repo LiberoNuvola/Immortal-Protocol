@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { Blockfrost, Lucid } from 'lucid-cardano'
 
 const evidencePath = 'audit/yaci-evidence/genesis-carrier-transition.json'
 const artifacts = [
