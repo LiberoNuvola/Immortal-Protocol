@@ -18,6 +18,7 @@ import qualified Economic
 import qualified EconomicKernel
 import qualified UniversalEconomicKernel
 import qualified UniversalEconomicState
+import qualified PlutusTx.AssocMap as AssocMap
 import B1LegacyAdapter ( legacyB1ToUniversalEconomicState )
 import PreRichEconomicProfile ( preRichEconomicProfileV1 )
 import Types
@@ -112,6 +113,20 @@ countOwnInputs ctx =
   in
     go (txInfoInputs (scriptContextTxInfo ctx))
 
+-- | Direct Value lookup used instead of the Ledger API valueOf helper.
+--
+-- This preserves the same zero-on-missing semantics while traversing the
+-- underlying association maps explicitly.
+{-# INLINABLE assetAmount #-}
+assetAmount :: Value -> CurrencySymbol -> TokenName -> Integer
+assetAmount value cs tn =
+  case AssocMap.lookup cs (getValue value) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup tn tokens of
+        Nothing -> 0
+        Just amount -> amount
+
 -- | Protocol singleton token helpers.
 --
 -- A valid PrizePool transaction must carry exactly one unit of
@@ -130,7 +145,7 @@ tokenAmountInInputs info cs tn =
       0
 
     go (i:is) =
-      valueOf
+      assetAmount
         (txOutValue (txInInfoResolved i))
         cs
         tn
@@ -149,7 +164,7 @@ tokenAmountInOutputs info cs tn =
       0
 
     go (o:os) =
-      valueOf
+      assetAmount
         (txOutValue o)
         cs
         tn
@@ -185,13 +200,13 @@ singletonPoolTokenValid ctx poolPolicy poolName =
         tn
 
     ownInputAmount =
-      valueOf
+      assetAmount
         (txOutValue (ownInputResolved ctx))
         cs
         tn
 
     ownOutputAmount =
-      valueOf
+      assetAmount
         (ownOutputValue ctx)
         cs
         tn
@@ -371,7 +386,7 @@ ticketOwnerPkh cs bs (i:is) =
       TokenName bs
 
   in
-    if valueOf val cs' tn' == 1
+    if assetAmount val cs' tn' == 1
       then
         case addressCredential (txOutAddress resolved) of
           PubKeyCredential pkh ->
@@ -563,7 +578,7 @@ ticketMinted
   info
   policyBytes
   nameBytes =
-  valueOf
+  assetAmount
     (txInfoMint info)
     (CurrencySymbol policyBytes)
     (TokenName nameBytes)
