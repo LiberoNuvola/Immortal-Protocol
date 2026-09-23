@@ -53,6 +53,9 @@ function validateEconomicStateV3(state: EconomicStateV3): void {
   if (aggregateValues.some((value) => value < 0n)) {
     throw new Error('V3 state contains a negative economic value')
   }
+  if (state.control.currentActiveClass > state.control.highestClassEverActivated) {
+    throw new Error('V3 current active class cannot exceed highest-ever activated class')
+  }
   if (state.classes.length !== PRE_RICH_CANONICAL_PRICES.length) {
     throw new Error('V3 state must contain exactly 8 canonical ticket classes')
   }
@@ -277,8 +280,8 @@ export function projectCardanoToImmortalV3(
     mandatoryFutureCosts: input.mandatoryFutureCosts,
     classes,
     control: {
-      currentActiveClass: input.currentActiveClass ?? 0n,
-      highestClassEverActivated: input.highestClassEverActivated ?? 0n,
+      currentActiveClass: input.currentActiveClass,
+      highestClassEverActivated: input.highestClassEverActivated,
     },
     jackpot: {
       lockedAmount: usdmToReferenceAmount(
