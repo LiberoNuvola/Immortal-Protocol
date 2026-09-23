@@ -664,6 +664,8 @@ export async function revealPrize(opts: {
   const txHash = await signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
     `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
     `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+  ], [
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
   ])
 
   return {
