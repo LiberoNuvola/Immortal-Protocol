@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `81a7933c6845939c71430f34dd5de174521bd402` — V3 refinement now enforces canonical control-state validity
+**Latest observed commit:** `c20d4b45c4db2c693d76849e8d3777fb64140e89` — Genesis evidence trace cleanup after signed-witness provenance binding
 
 ---
 
@@ -3727,3 +3727,39 @@ The previous Genesis ledger run `35782577203` failed at fresh Plutus compilation
 A separate workflow hygiene defect was also found in `.github/workflows/pre-genesis-genesis-cardano.yml`: one path entry contained a literal escaped newline before the next path. Corrected in `05631ed2037f0c187f06ddb6b76b9ddb491340a7` so the Genesis ledger workflow has a clean trigger path for the carrier trace and artifact-provenance recorder.
 
 **Status:** previous build failure explained; fresh current-head compilation/ledger execution still required before Genesis/C14 can be promoted GREEN.
+
+
+---
+
+## 2026-09-23 — C14 signed-witness provenance hardening
+
+**Commits**
+- `35db1b4f6d4137732a6f9ac23c71f676d2661616` — `test: bind Genesis evidence to signed witness script`
+- `c20d4b45c4db2c693d76849e8d3777fb64140e89` — `test: remove duplicate Genesis evidence field`
+
+**Finding / fix**
+The previous C14 binder correlated generated Genesis artifact hashes and independently recomputed script identities with fields already recorded in the evidence packet, but did not inspect the exact signed transaction CBOR witness set.
+
+The binder now:
+1. parses the exact `transitionTxCbor` through Lucid/CML;
+2. extracts the transaction Plutus V2 witness scripts;
+3. compares the observed witness bytes against the generated `genesisRegimeCarrier.plutus.json` `cborHex`;
+4. independently derives witness script hashes and requires one to equal the generated carrier validator hash;
+5. records `witnessScriptPresent`, `witnessIdentityBound`, and the observed Plutus V2 script hashes in `artifactProvenance.binding`.
+
+This closes the previously identified **structural gap** between generated artifact bytes and the script bytes actually carried by the signed transition transaction.
+
+**Important limitation**
+This is still an evidence-binder check, not a fresh successful Yaci run. The branch currently has no workflow-run/status result exposed for these latest commits, so C14 must remain **NEEDS-FRESH-CI-EVIDENCE** until the Genesis workflow executes successfully with the new binder.
+
+**Secondary cleanup**
+`genesis-carrier-ledger-trace.ts` had a duplicate `economicBoundary` JSON property. The duplicate was removed without changing economic semantics.
+
+**Adversarial next question**
+If the Genesis workflow exposes a fresh successful run, inspect its uploaded evidence and verify that:
+- `witnessScriptPresent=true`;
+- `witnessIdentityBound=true`;
+- generated artifact hashes, source commit, transition tx reference and witness identity all coexist in the same evidence packet;
+- the signed CBOR is the exact CBOR submitted by the real Yaci transition, not a reconstructed or post-hoc transaction.
+
+**Status:** C14 **HARDENED / NEEDS-FRESH-CI-EVIDENCE**.
