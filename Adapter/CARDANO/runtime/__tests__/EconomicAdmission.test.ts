@@ -46,6 +46,26 @@ describe('economic Cardano submission boundary', () => {
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
+  it('rejects admission when authenticated Pool reference is wrong', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, {
+      ...admission,
+      authenticatedPoolInputReference: pool1,
+    }, candidateInputs, [pool0])).rejects.toThrow('exactly the authenticated B1 PrizePool input')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
+  it('rejects admission when authenticated Pool valuation differs', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, {
+      ...admission,
+      authenticatedPoolUsdmValue: 801n,
+    }, candidateInputs, [pool0])).rejects.toThrow('does not match authenticated B1 PrizePool USDM valuation')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
   it('rejects malformed admission before signing', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
