@@ -4059,3 +4059,18 @@ This is still **runtime provenance/source binding**, not production ledger proof
 
 
 CI coverage for the new source-binding tests was added to `.github/workflows/adapter-sale-conformance.yml` (commit `8b3d03cc7d53b968b8d8d053f36c96fdcfac6167`). The connector exposes no push-trigger run for this commit yet, so CI is **pending evidence**, not green.
+
+
+## 2026-09-23 — RT-1.5 source-binding test alignment
+
+Cross-review found that the new exact-source-binding API had advanced faster than one adapter test fixture: `EconomicAdmission.test.ts` still exercised the old two-argument `submitEconomic` shape and omitted the mandatory `sourceInputReferences`. This was a test/contract drift, not an economic defect.
+
+Fixed by aligning the fixture and all adapter calls with the current four-argument economic submission boundary, and by adding negative twins for:
+- source observed but not consumed;
+- economic action source set differing from the admission source set.
+
+Commit: `0e6bd370997d675895eabd47c3cd67ac633bdd54`.
+
+The adapter-sale workflow already includes `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`, but no workflow run is currently exposed for this commit. Therefore status remains **TEST CONTRACT ALIGNED / CI EVIDENCE OPEN**.
+
+RT-1.5 remains **EXACT ECONOMIC SOURCE BINDING HARDENED / REAL-LEDGER VALUE CORRELATION OPEN**: the next substantive step is not another runtime abstraction, but binding the declared source reference and USDM amount to the authenticated B1PrizePool UTxO/value calculation in a real-ledger trace, with stale/wrong-Pool/double-count/value-mismatch twins.
