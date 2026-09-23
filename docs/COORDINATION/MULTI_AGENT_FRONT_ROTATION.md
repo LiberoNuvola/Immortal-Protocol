@@ -138,3 +138,24 @@ It still does not parse the signed transaction CBOR to prove that every serializ
 **Commits:** `35db1b4f6d4137732a6f9ac23c71f676d2661616`, `c20d4b45c4db2c693d76849e8d3777fb64140e89`, coordination `d153370ce47fd94fcbd8ec5546cc52dca7a661ac`.
 
 **Next reviewer attack:** inspect a fresh Genesis workflow artifact packet and confirm the exact submitted CBOR, generated artifact hashes, source commit, observed witness bytes/identity and transition tx reference are all mutually consistent.
+
+
+## 2026-09-23 — C15 atomic pairing side-door found and closed
+
+**Primary pass:** C15 replay/idempotency + C12 lifecycle cross-review.
+
+A concrete independent-validator side door was found in `plutus/B1PrizePool.hs`: `TicketRevealed` and `TicketClaimed` previously inspected a Prize output but did not require the corresponding Prize input. The companion `PrizeValidator` enforces the lifecycle when its own input is spent, and the production `gameFlow.ts` already spends both inputs, but the Pool validator itself could otherwise be invoked with a fabricated economic Prize output and mutate Pool accounting without consuming the canonical ticket state.
+
+Hardened in:
+- `c0e68db47192f4aba0fa3d080f83b60c9005010e` — Pool Reveal now requires exactly one decodable Prize input, Pending status, matching ticket identity and matching price; Pool Claim now requires exactly one Prize input, Revealed status, matching ticket identity and frozen payout.
+
+This is a validator-boundary hardening, not a new economic rule. It makes the two economic transitions independently atomic across the Pool/Prize pair rather than relying on the caller to assemble the companion spend correctly.
+
+The existing lifecycle semantics remain:
+- Reveal consumes Pending Prize state and produces Revealed state;
+- Claim consumes Revealed Prize state and produces Claimed state;
+- Expire consumes Pending Prize state only after expiry.
+
+**Next adversarial question:** test whether any remaining Pool action can mutate economic accounting without consuming the exact canonical Prize state it claims to represent, and then exercise duplicate/concurrent submissions against the real ledger.
+
+**Status:** C12/C15 validator pairing hardened / fresh Plutus compilation + Yaci lifecycle evidence required.
