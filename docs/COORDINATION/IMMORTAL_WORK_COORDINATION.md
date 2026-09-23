@@ -5334,3 +5334,18 @@ The runner now declares `cardano-ledger-api == 1.14.0.0` explicitly. This is nec
 Commit: `c037434258d71e77ebd79a3d1aaa310911f1a2aa`.
 
 This is dependency/build preparation only; no evaluator call or semantic change has been made. Next step remains typed evidence decoding and an actual ledger-aligned evaluation.
+
+
+## 2026-09-23 — Reveal input-binding negative twins added
+
+The green-branch P2.8-B.1 Reveal emulator was extended after the c0e68db hardening. Before the canonical positive Reveal, the real parameterized Plutus V2 validators are now exercised against three negative transitions:
+
+1. Pool transition with **no Prize input** → must reject.
+2. Prize input consumed but continuing Prize output has a **substituted ticket identity** → must reject.
+3. Prize + Pool inputs present but Pool Reveal redeemer carries a **price mismatch** → must reject.
+
+The helper treats acceptance as a test failure and records the validator rejection path. The canonical positive Reveal remains unchanged and still follows the negative twins, using the original fixture UTxOs because rejected emulator transactions do not consume them.
+
+Commit: `e1682899c6fdd2bcbf2291135eed83fe4efd6206`.
+
+This closes the three highest-value Reveal input-binding negative cases at the emulator-fixture level, subject to CI execution. Claim negative twins remain open. No economic constants, validator semantics, or normative rules were changed; this is evidence/conformance hardening only.
