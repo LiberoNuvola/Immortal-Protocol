@@ -3638,3 +3638,26 @@ Commit: `10faa8c2d257ec5d521859d219072fa1b287f604`.
 This is representation-boundary hardening only. It does **not** establish canonical controller provenance for the observed control values; the authoritative PRE-RICH hysteresis/controller binding remains a separate open front.
 
 **Status:** control-state observation side-door CLOSED at the TypeScript input type; runtime/controller provenance evidence remains OPEN.
+
+
+## 2026-09-23 — Class-control policy correction: PRE-RICH hysteresis is frozen
+
+A source-of-truth re-audit resolves a stale coordination statement that described the numerical hysteresis parameters as not yet frozen. The current authoritative PRE-RICH application canon explicitly freezes:
+- KA = 8
+- KC = 4
+- KD = 4
+
+This is confirmed by `PRE-RICH/docs/CONSTITUTION.md`, `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`, and the executable application controller `src/preRichHysteresis.ts`.
+
+The architectural boundary remains unchanged: these parameters are **PRE-RICH application policy**, not IMMORTAL universal constants. Therefore the remaining class-control gap is no longer “freeze numerical hysteresis”; it is to bind the already-frozen PRE-RICH controller output to the canonical V3/Cardano transition so that CurrentActiveClass and HighestClassEverActivated cannot be caller-selected or merely observed without deterministic provenance.
+
+Required closure path:
+1. derive exact application capacity costs X(P) from the canonical post-state model;
+2. execute the closed 8/4/4 controller against the verified post-state;
+3. bind its result to the V3 control state atomically;
+4. fail closed on controller/result mismatch;
+5. prove contraction, upgrade, retain, HALT and monotonic HighestClassEverActivated at transition/ledger level.
+
+No new threshold was introduced. This note supersedes the stale “numerical hysteresis not frozen” wording above; historical entries remain audit history.
+
+**Status:** POLICY CLOSED / CONTROLLER IMPLEMENTED / V3 + CARDANO BINDING OPEN.
