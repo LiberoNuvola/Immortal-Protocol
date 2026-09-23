@@ -4074,3 +4074,20 @@ Commit: `0e6bd370997d675895eabd47c3cd67ac633bdd54`.
 The adapter-sale workflow already includes `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`, but no workflow run is currently exposed for this commit. Therefore status remains **TEST CONTRACT ALIGNED / CI EVIDENCE OPEN**.
 
 RT-1.5 remains **EXACT ECONOMIC SOURCE BINDING HARDENED / REAL-LEDGER VALUE CORRELATION OPEN**: the next substantive step is not another runtime abstraction, but binding the declared source reference and USDM amount to the authenticated B1PrizePool UTxO/value calculation in a real-ledger trace, with stale/wrong-Pool/double-count/value-mismatch twins.
+
+
+## 2026-09-23 — Multi-agent cross-check: source binding CI and liveness
+
+Fresh Green Closure CI now provides independent confirmation for the recent boundary work:
+- `C13 Cardano Semantic Conformance` — **SUCCESS**;
+- `Cardano Adapter Sale Conformance` — **SUCCESS**;
+- `Algorithmic Governability Adversarial Lab` — **SUCCESS**;
+- P2.8-B.1 emulator reveal remains **FAIL**, with the already-known evaluator symptom `Spend[0] execution went over budget` and nonsensical negative residual budget values.
+
+Therefore RT-1.5 exact economic-source binding is no longer merely test-authored: the adapter conformance workflow has executed the aligned `EconomicAdmission` fixtures successfully. The remaining release gap is specifically real-ledger correlation of the declared USDM amount with the authenticated B1PrizePool UTxO/value path.
+
+### RT-4 cross-review
+`src/livenessBoundary.ts` plus `src/__tests__/livenessBoundary.test.ts` cover the normative FM1–FM10 classifier and the permissionless execution sequence, including independent revalidation, atomicity, canonical-state observation and competing-submission rejection. The dedicated workflow is configured to run this suite on Green Closure. This supports **implementation/test closure of the classifier layer**, but does not by itself prove end-to-end network liveness.
+
+### Gate 41 cross-review
+Notion Gate 41 remains the authoritative evidence status for the PRE/Snek deployment lineage. The transaction-level funding boundary is closed (`19,081,941` lovelace inputs = `18,753,135` outputs + `328,806` fee), while the source explicitly keeps **GENESIS FUNDING ROLE**, **SEED / MIN-ADA SEMANTICS**, **3 ADA RECONCILIATION** and **FIRST CURVE REPLAY** open. No economic interpretation is added here. The next evidence pass must therefore continue from the six upstream output references and their provenance rather than inventing a seed rule.
