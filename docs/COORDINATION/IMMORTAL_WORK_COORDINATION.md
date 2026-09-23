@@ -5079,3 +5079,42 @@ Commit: `040d931b725f192f0331c5a8205159118bae44b5`.
 At the same head, Adapter Sale Conformance #897 and Algorithmic Governability Adversarial Lab #270 completed successfully. The Kernel Invalid-Class Fail-Closed Audit #905 is still running. A new Reveal workflow has not yet appeared for the corrected head at the observation point; therefore no evaluator conclusion is claimed yet.
 
 **Classification:** P2.8-B.1 remains **OPEN — fresh-artifact compile fixed; next differential Reveal run pending**.
+
+
+## 2026-09-23 — Governance research pass III: replayable governance provenance and exact artifact binding
+
+A fresh deep-research pass surfaced an additional pattern directly relevant to the existing CAES governance chain. A 2026 Governance Proof Model specification describes governance outcomes as an attested DAG with typed edges, deterministic replay, state-transition nodes carrying pre/post state hashes, on-chain anchors, and independent verification of the replay root/state hash. This is useful as prior art for governance provenance and replayability; it is not evidence that IMMORTAL's governance model is novel.
+
+The reusable pattern is narrower:
+- governance evidence should be reconstructable rather than merely declared;
+- replay should be deterministic against a specified historical rule/state boundary;
+- state-transition evidence should bind predecessor and successor identities;
+- an integrity result should be derived by the verifier, not trusted from a producer-supplied boolean.
+
+This reinforces the CAES lab decision already made for economic transitions: producer assertions such as `transitionValid` must not be trusted when the checker can recompute the relevant predicate.
+
+A second useful comparator is recent work on kernel-frozen constitutional amendment pipelines, where proposals are typed artifacts, admission is structural/deterministic, amendments are delayed to a clean cycle boundary, and replay uses logged artifacts rather than invoking a model. This is particularly relevant to the proposed governance negative twin in which an old approval is replayed after the governing rule set has changed.
+
+A practical governance certificate shape for future research is therefore:
+
+`G_proposed.digest == G_admitted.digest == G_artifact.digest == G_executed.digest == G_observed.digest`
+
+plus explicit binding of the rule-set identity under which the governance decision was authorized. This is a research/test pattern only. It does not add a new IMMORTAL governance primitive or freeze a mutation policy.
+
+### New negative twins from this pass
+
+1. Producer says governance proof is valid; verifier recomputation finds a divergent state hash → **REJECT**.
+2. Governance decision replays deterministically, but the executable artifact hash differs from the approved artifact → **REJECT**.
+3. Governance decision was valid under rule set R1, but commit occurs under R2 without a continuity rule → **REJECT**.
+4. Historical replay omits a governance transition that was in force at the requested timestamp → **REJECT**.
+5. On-chain anchor exists, but the reconstructed governance state does not match the anchored state identity → **REJECT**.
+
+### Architectural consequence
+
+The governance chain should remain decomposed rather than becoming a mega-certificate:
+
+`Constitution → Authority → GovernanceDecision → RuleRevision → Artifact → EconomicTransition → AdapterTransition → LedgerObservation → ReviewEvidence`
+
+Each edge gets its own witness/recomputation rule. The certificate composition can then be tested for identity continuity without making Governance a hidden economic authority.
+
+No economic constants, validator semantics or current normative protocol rules changed.
