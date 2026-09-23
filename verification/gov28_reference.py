@@ -73,4 +73,5 @@ if __name__ == "__main__":
     }
     print("GOV-28 reference conformance: PASS")
     print("positive replay: PASS")
-    print("negative authorization/evidence/ruleset/finality gates: PASS")
+    print("negative authorization/evidence/ruleset gates: PASS")
+    print("finality/challenge lifecycle: NOT IMPLEMENTED IN THIS REFERENCE")
