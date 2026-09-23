@@ -4557,3 +4557,13 @@ The remaining candidate distinction is still the composition in which one canoni
 normative economic state -> refinement -> economic admission -> executable-liquidity binding -> adapter realization -> atomic revalidation -> observed ledger transition.
 
 No novelty claim is established by this pass. No economic semantics were changed.
+
+## 2026-09-23 — RT-1.5 / Gate 41 triangulation update
+
+Fresh source inspection confirms the FundTreasury target is the correct canonical valuation boundary: B1PrizePool.FundTreasury computes recomputedLiquidity from the continuing output and requires ppTotalLiquidity == recomputedLiquidity; Economic.poolUsdmValue removes the Pool singleton, requires an authenticated Oracle reference input for every asset, validates publisher and timestamp freshness, excludes minUtxoLovelace from ADA economic quantity, and uses canonical precision/ceiling conversion. This independently reinforces the dedicated Yaci trace; no Oracle was injected into Reveal because Reveal does not invoke this valuation path.
+
+Prior-art pass (official Cardano developer material, 2025–2026) confirms the same boundary ingredients are established patterns: authenticated reference-input oracle state, explicit freshness checks, singleton/NFT authentication of protocol UTxOs, and transaction-level revalidation. This does not establish novelty for IMMORTAL. The remaining research question is the composition around one canonical economic transition/admission identity.
+
+Gate 41 remains semantically open on Genesis funding role, Snek info.outputId mapping, seed/min-ADA semantics and 3 ADA meaning. The 3 ADA coincidence with both physical/provider threshold deltas remains evidence only; no attribution is promoted.
+
+Status: RT-1.5 CANONICAL VALUATION PATH TRIANGULATED / FRESH CI + NEGATIVE LEDGER TWINS OPEN. RESEARCH PRIOR-ART MAP ADVANCED / NOVELTY OPEN. GATE 41 SEMANTIC RECONSTRUCTION CONTINUES.
