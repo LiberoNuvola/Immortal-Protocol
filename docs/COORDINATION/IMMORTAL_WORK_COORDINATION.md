@@ -4481,3 +4481,24 @@ Cardano's own ledger evaluation API and existing budget tooling demonstrate that
 **Status:** P2.8-B.1 **BLOCKED → CONCRETE IMPLEMENTATION TARGET IDENTIFIED**. Evidence acceptance remains open until the runner actually reconstructs the ledger context and records ExUnits or an exact `TransactionScriptFailure`.
 
 No economic constants, valuation rules, validator semantics or protocol decisions changed in this research pass.
+
+
+## 2026-09-23 — RT-1.5 validator-path audit / C15 next witness
+
+Re-inspected the current B1PrizePool and Economic implementation against the new FundTreasury trace.
+
+Confirmed directly in source:
+- FundTreasury obtains the continuing Pool output value with ownOutputValue;
+- it calls recomputedLiquidity;
+- recomputedLiquidity delegates directly to Economic.poolUsdmValue;
+- Economic.poolUsdmValue removes the Pool singleton and delegates to totalUsdmValue;
+- ADA valuation subtracts canonical minUtxoLovelace, requires the matching Oracle reference input, validates Oracle publisher/timestamp/price, and applies ceilingDiv;
+- ppTotalLiquidity must equal that canonical recomputation and must increase.
+
+This confirms the RT-1.5 trace is targeting the correct canonical validator path, not an off-chain approximation.
+
+Additional C15 observation: the FundTreasury trace currently has no explicit post-submit duplicate-submission assertion, unlike the existing Reveal trace. This is now the next minimal evidence hardening target: after a successful FundTreasury, resubmitting the identical signed transaction should be required to fail, and the rejection should be recorded in the evidence packet. No economic semantics change.
+
+External Cardano documentation independently confirms that consumed EUTxOs cannot be reused and that reference inputs can read state without consuming it. citeturn0search0turn0search4
+
+Status: RT-1.5 CANONICAL VALIDATOR PATH CONFIRMED / C15 FUND-TREASURY DUPLICATE-SUBMISSION WITNESS OPEN / FRESH CI OPEN.
