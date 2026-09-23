@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-23  
-**Latest observed commit:** `a209d032f71157d4a4f70a6dffbf0464fc088609` — Genesis provenance parser import correction
+**Latest observed commit:** `126d041c39148741837f79f430c74f76fac71d20` — Genesis workflow trigger path correction
 
 ---
 
@@ -3809,3 +3809,16 @@ A direct current-head source audit caught a concrete TypeScript compile defect i
 This is a tooling/compile correction only. No economic or validator semantics changed.
 
 Fresh workflow execution remains required.
+
+
+### Genesis workflow trigger re-audit
+
+Current-head inspection found the previously reported workflow-path repair had not actually removed a literal escaped newline from the Genesis trace path. The `paths` entry contained:
+
+`genesis-carrier-ledger-trace.ts\\n      - record-artifact-provenance.ts`
+
+and therefore was malformed as a single path entry.
+
+Corrected in `126d041c39148741837f79f430c74f76fac71d20` to two real YAML list entries. This matters because the new C14 binder must itself trigger the Genesis workflow on source changes; otherwise provenance hardening can silently remain unexecuted.
+
+Status: **workflow trigger syntax corrected / fresh execution still required**.
