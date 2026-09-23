@@ -35,6 +35,17 @@ describe('PRE-RICH hysteresis control binding', () => {
     )
   })
 
+  it('rejects a matching controller result with invalid historical ordering', () => {
+    expect(() =>
+      assertPreRichControlMatches(
+        80n,
+        classes,
+        { currentActiveClass: 2, highestClassEverActivated: 2 },
+        { currentActiveClass: 0, highestClassEverActivated: 1 },
+      ),
+    ).toThrow('PRE-RICH HighestClassEverActivated must be monotonic')
+  })
+
   it('accepts direct contraction while preserving historical maximum', () => {
     const result = assertPreRichControlMatches(
       80n,
