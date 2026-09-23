@@ -26,6 +26,7 @@ export type EconomicAdmissionWitness = {
 export function assertEconomicAdmission(
   witness: EconomicAdmissionWitness | undefined,
   inputReferences: readonly string[],
+  liquiditySourceReferences: readonly string[],
 ): asserts witness is EconomicAdmissionWitness {
   if (!witness || witness.admitted !== true) {
     throw new Error(
@@ -51,7 +52,23 @@ export function assertEconomicAdmission(
     throw new Error('required immediate liquidity must be non-negative')
   }
 
-  assertExecutableLiquidityBoundToInputs(witness.executableLiquidityObservation, inputReferences)
+  assertExecutableLiquidityBoundToInputs(
+    witness.executableLiquidityObservation,
+    inputReferences,
+  )
+
+  const observedSources = witness.executableLiquidityObservation.sourceInputReferences
+    .map((ref) => ref.toLowerCase())
+    .sort()
+  const expectedSources = liquiditySourceReferences
+    .map((ref) => ref.toLowerCase())
+    .sort()
+  if (
+    observedSources.length !== expectedSources.length ||
+    observedSources.some((ref, index) => ref !== expectedSources[index])
+  ) {
+    throw new Error('executable liquidity source inputs do not match economic action source')
+  }
 
   if (
     witness.executableLiquidityObservation.observationReference !==
