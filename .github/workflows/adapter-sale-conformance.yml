@@ -23,7 +23,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run src/__tests__/cardano-execution-adapter.test.ts src/__tests__/immortal-reveal-conformance.test.ts
+      - run: npx vitest run src/__tests__/cardano-execution-adapter.test.ts src/__tests__/immortal-reveal-conformance.test.ts Adapter/CARDANO/observation/ExecutableLiquidityObservation.test.ts Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts
       - run: npx tsx --test src/__tests__/immortal-cardano-adapter-conformance.test.ts
 
   frontend-build:
