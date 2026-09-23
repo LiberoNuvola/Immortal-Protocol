@@ -5229,3 +5229,50 @@ The reference output was corrected to separate the demonstrated gates from the m
 Commit: `19b0161739df7e4eb8683b142c4894502812b21b`.
 
 This is a fail-closed documentation/conformance correction, not a governance-policy change. GOV-28 remains **reference conformance / integration open** until challenge/finality semantics and repository-level replay integration are independently exercised.
+
+
+## 2026-09-23 — Governance research pass VI: determinability, stale authority, and evidence claim boundaries
+
+A further current-source pass sharpened the boundary model without introducing new protocol semantics.
+
+A recent IETF draft on **independent determinability of agent actions** explicitly separates authorization, enforcement, execution, and intended effect. Its central requirement is that a later independent evaluator must be able to determine the claimed transition from material bound at decision time, including the governing-artifact revision that was actually in force. This directly supports the existing IMMORTAL rule that evidence of one boundary must not silently prove a later boundary. citeturn0search0
+
+A separate September 2026 IETF draft on **state/policy continuity at the execution-finality boundary** identifies the stale-authority problem: an authorization can remain cryptographically authentic while becoming invalid because mutable state or policy changed between authorization and effectuation. It specifically considers stale-permit replay, revision substitution, rollback and alternate-path effectuation. citeturn0search8
+
+Another current IETF draft, **Claim Boundaries for Execution Evidence**, reinforces the epistemic side: a signature, receipt, registration or provenance record cannot establish a claim stronger than what the producing boundary actually observed or constituted. citeturn0search7
+
+### Research deduction
+
+We can now separate three questions for every governance/economic transition:
+
+1. **Authorization:** was this exact act authorized under the applicable rule/state context?
+2. **Effectuation:** did the enforcement boundary actually commit this exact act?
+3. **Observation:** is there independent evidence of the resulting state/effect?
+
+A fourth, orthogonal question is:
+
+4. **Determinability:** can an independent party later reconstruct questions 1–3 from retained/bound evidence?
+
+This yields a stronger CAES audit matrix:
+
+| Boundary | Required claim | Negative twin |
+|---|---|---|
+| Authorization | exact act + exact rule/state basis | valid credential, wrong act/rule |
+| Effectuation | committed act equals authorized act | valid authorization, altered commit |
+| Observation | observed effect matches committed act | valid commit, different observed effect |
+| Determinability | independent replay reconstructs same result | producer says VALID, replay diverges |
+
+### New negative twins
+
+- Authentic authorization under R1, but R1 is stale at commit under R2 → **REJECT**.
+- Correct authorization and commit, but observation cannot distinguish the claimed effect from an alternate effect → **NOT PROVEN**.
+- Correct authorization/commit/observation records, but required historical rule artifact is unavailable → **NOT DETERMINABLE**.
+- Evidence says execution succeeded, while the enforcement boundary only observed dispatch → **CLAIM BOUNDED / NOT PROVEN**.
+- Same authorization artifact is replayed through an alternate effectuation path → **REJECT** if that path bypasses the protected boundary.
+- Historical replay produces the same economic result but under a different rule-set identity → **REJECT** for exact governance provenance, unless an explicit continuity rule exists.
+
+### Important consequence for GOV-28
+
+This pass reinforces the correction already recorded above: `finality/challenge lifecycle` must not be reported as PASS merely because authorization/evidence/ruleset gates pass. The lifecycle must have its own executable witness and observation.
+
+No economic constants, validator semantics, or current normative governance rules changed.
