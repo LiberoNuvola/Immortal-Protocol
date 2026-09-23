@@ -3968,3 +3968,12 @@ Hardening applied:
 Commits: `ff778c30d1c64b7692dac75877d007829fa59cfe`, `f7d48278888c572aca755d714ac81091d6326b8d`.
 
 Classification: RT-3 side-door **HARDENED FOR TICKET ISSUANCE / GLOBAL MUTATOR INVENTORY OPEN**. Fresh CI is required; no workflow run is currently associated with these commits. This change does not alter economic parameters or validator semantics.
+
+
+## 2026-09-23 — RT-1.5 admission witness metadata hardening
+
+`EconomicAdmissionWitness` now explicitly carries `executableLiquidity` and `executableLiquidityObservationReference`, and `assertEconomicAdmission` rejects negative liquidity or an empty observation reference. This records the provenance surface required by the gate without inventing a new valuation rule.
+
+Commit: `8210d62a1029e6af85b4af8f127a469ce4eb8bb4`.
+
+Status remains **RT-1.5 PROVENANCE BINDING OPEN**: the next step must correlate this reference/value with the exact authenticated B1PrizePool UTxO consumed by the submitted transaction.
