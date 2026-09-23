@@ -3903,3 +3903,14 @@ Commit `c0e68db47192f4aba0fa3d080f83b60c9005010e` closes that side door:
 The existing PrizeValidator and `src/gameFlow.ts` already perform the paired spends; the change makes the Pool side independently fail closed as well.
 
 **Status:** C12/C15 pairing boundary HARDENED / fresh compile + real-ledger lifecycle/replay evidence still OPEN.
+
+
+## 2026-09-23 — RT-1.5 executable-liquidity audit
+
+Current branch inspection confirms that EconomicGate distinguishes EEV from immediate executable liquidity and checks required immediate liquidity against the supplied available amount. This is a useful semantic separation.
+
+Red-team finding: `egiAvailableExecutableLiquidity` remains an input asserted by the authoritative observation/refinement layer; the universal kernel does not authenticate it against concrete spendable UTxOs. The Cardano economic-admission witness likewise carries EEV and an observation reference but does not independently derive/bind executable liquidity.
+
+Classification: **SEMANTIC DISTINCTION PRESENT / PROVENANCE BINDING OPEN**.
+
+No economic rule or haircut was invented. Next step is to identify the authoritative Cardano observation surface for spendable liquidity and bind that observed value to the gate input with negative tests for locked, unrelated, double-counted and non-spendable assets.
