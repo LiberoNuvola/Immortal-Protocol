@@ -48,7 +48,11 @@ assert.equal(
 )
 // 10,000,000 PRE × 0.04 USDM/PRE = exactly 4,000 USDM.
 assert.equal(
-  admit(observation({ preQuantity: GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS / 100n + 1n })).admitted,
+  admit(observation({ preQuantity: 9_999_999n })).admitted,
+  false,
+)
+assert.equal(
+  admit(observation({ preQuantity: 10_000_000n })).admitted,
   true,
 )
 assert.equal(
