@@ -16,14 +16,13 @@ const admission: EconomicAdmissionWitness = {
   executableLiquidityObservation: {
     observationReference: 'observation:test:1',
     observedAt: 100n,
-    sourceInputReferences: [pool0, pool1],
+    sourceInputReferences: [pool0],
     utxos: [
       { txHash: '11'.repeat(32), index: 0, usdmValue: 800n, spendable: true, ringFenced: false },
-      { txHash: '22'.repeat(32), index: 1, usdmValue: 200n, spendable: true, ringFenced: false },
     ],
-    declaredUsdmLiquidity: 1000n,
+    declaredUsdmLiquidity: 800n,
   },
-  requiredImmediateLiquidity: 900n,
+  requiredImmediateLiquidity: 800n,
 }
 
 const candidateInputs = [pool0, pool1]
@@ -59,7 +58,7 @@ describe('economic Cardano submission boundary', () => {
       ...admission,
       executableLiquidityObservation: {
         ...admission.executableLiquidityObservation,
-        utxos: [...admission.executableLiquidityObservation.utxos.slice(0, 1), { ...admission.executableLiquidityObservation.utxos[1], ringFenced: true }],
+        utxos: [{ ...admission.executableLiquidityObservation.utxos[0], ringFenced: true }],
       },
     }, candidateInputs, [pool0, pool1])).rejects.toThrow('ring-fenced')
     expect(lucid.signTx).not.toHaveBeenCalled()
@@ -78,7 +77,7 @@ describe('economic Cardano submission boundary', () => {
   it('rejects required liquidity above the observed spendable amount', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
-    await expect(adapter.submitEconomic({}, { ...admission, requiredImmediateLiquidity: 1001n }, candidateInputs, [pool0, pool1])).rejects.toThrow('exceeds observed spendable liquidity')
+    await expect(adapter.submitEconomic({}, { ...admission, requiredImmediateLiquidity: 801n }, candidateInputs, [pool0, pool1])).rejects.toThrow('exceeds observed spendable liquidity')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 
