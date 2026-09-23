@@ -4567,3 +4567,15 @@ Prior-art pass (official Cardano developer material, 2025–2026) confirms the s
 Gate 41 remains semantically open on Genesis funding role, Snek info.outputId mapping, seed/min-ADA semantics and 3 ADA meaning. The 3 ADA coincidence with both physical/provider threshold deltas remains evidence only; no attribution is promoted.
 
 Status: RT-1.5 CANONICAL VALUATION PATH TRIANGULATED / FRESH CI + NEGATIVE LEDGER TWINS OPEN. RESEARCH PRIOR-ART MAP ADVANCED / NOVELTY OPEN. GATE 41 SEMANTIC RECONSTRUCTION CONTINUES.
+
+## 2026-09-23 — RT-1.5 / C15 FundTreasury duplicate-submission witness added
+
+The dedicated real-Yaci FundTreasury trace was hardened with a post-success replay check. After the signed FundTreasury transaction is accepted and awaited, the exact same signed transaction is submitted again; the trace now requires that resubmission to be rejected and records the rejection error in the evidence packet.
+
+This closes the previously identified positive-path evidence gap around consumed-input finality for FundTreasury at the harness level. It does not replace ledger-level negative twins for wrong/stale Oracle, wrong Pool, double-count and valuation mismatch.
+
+Commit: 1dfb069ed8228b308b73c96b0a931f320f047662.
+
+Status: RT-1.5 POSITIVE FUND-TREASURY PATH + DUPLICATE-SUBMISSION WITNESS IMPLEMENTED / FRESH CI OPEN. C15 duplicate replay is now instrumented; green classification still requires fresh execution and the remaining negative twins.
+
+No economic constants, valuation semantics or normative rules changed.
