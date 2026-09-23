@@ -9,6 +9,28 @@ const admission: EconomicAdmissionWitness = {
   authoritativeObservationReference: 'observation:test:1',
   stateHash: '00'.repeat(32),
   eev: 1000n,
+  executableLiquidityObservation: {
+    observationReference: 'observation:test:1',
+    observedAt: 100n,
+    utxos: [
+      {
+        txHash: '11'.repeat(32),
+        index: 0,
+        usdmValue: 800n,
+        spendable: true,
+        ringFenced: false,
+      },
+      {
+        txHash: '22'.repeat(32),
+        index: 1,
+        usdmValue: 200n,
+        spendable: true,
+        ringFenced: false,
+      },
+    ],
+    declaredUsdmLiquidity: 1000n,
+  },
+  requiredImmediateLiquidity: 900n,
 }
 
 describe('economic Cardano submission boundary', () => {
@@ -53,6 +75,57 @@ describe('economic Cardano submission boundary', () => {
         stateHash: 'not-a-hash',
       }),
     ).rejects.toThrow('stateHash')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
+  it('rejects liquidity that includes a ring-fenced UTxO', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic({}, {
+        ...admission,
+        executableLiquidityObservation: {
+          ...admission.executableLiquidityObservation,
+          utxos: [
+            ...admission.executableLiquidityObservation.utxos.slice(0, 1),
+            {
+              ...admission.executableLiquidityObservation.utxos[1],
+              ringFenced: true,
+            },
+          ],
+        },
+      }),
+    ).rejects.toThrow('ring-fenced')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
+  it('rejects liquidity whose declared amount does not equal observed spendable UTxOs', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic({}, {
+        ...admission,
+        executableLiquidityObservation: {
+          ...admission.executableLiquidityObservation,
+          declaredUsdmLiquidity: 1200n,
+        },
+      }),
+    ).rejects.toThrow('does not match observed spendable UTxOs')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
+  it('rejects required liquidity above the observed spendable amount', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic({}, {
+        ...admission,
+        requiredImmediateLiquidity: 1001n,
+      }),
+    ).rejects.toThrow('exceeds observed spendable liquidity')
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 })
