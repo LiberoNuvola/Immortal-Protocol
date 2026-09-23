@@ -4091,3 +4091,28 @@ Therefore RT-1.5 exact economic-source binding is no longer merely test-authored
 
 ### Gate 41 cross-review
 Notion Gate 41 remains the authoritative evidence status for the PRE/Snek deployment lineage. The transaction-level funding boundary is closed (`19,081,941` lovelace inputs = `18,753,135` outputs + `328,806` fee), while the source explicitly keeps **GENESIS FUNDING ROLE**, **SEED / MIN-ADA SEMANTICS**, **3 ADA RECONCILIATION** and **FIRST CURVE REPLAY** open. No economic interpretation is added here. The next evidence pass must therefore continue from the six upstream output references and their provenance rather than inventing a seed rule.
+
+## 2026-09-23 — RT-1.5 authenticated B1 Pool valuation correlation witness
+
+Advanced the remaining RT-1.5 boundary without introducing a new valuation rule or haircut.
+
+Added `assertExecutableLiquidityMatchesAuthenticatedPool` in `Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts`. The witness now requires:
+- exactly one liquidity source;
+- that source to equal the authenticated B1 PrizePool input reference;
+- exactly one observed UTxO;
+- observed UTxO reference to equal the authenticated Pool input;
+- declared executable USDM liquidity to equal the independently authenticated B1 PrizePool USDM valuation supplied by the Cardano/B1 observation path.
+
+The helper deliberately does not calculate prices or value UTxOs itself; it only correlates the already-authenticated `Economic.poolUsdmValue` result with the economic-admission observation.
+
+Added regression twins in `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` for:
+- valid exact Pool correlation;
+- wrong Pool UTxO;
+- duplicate/double-counted Pool liquidity;
+- valuation mismatch.
+
+Commits:
+- `0761a700efd149d1a0393533be1a096bde47c16a`
+- `538558f9e7bdfc6a892c89345479ca4c217b13fe`
+
+This is stronger runtime/evidence binding, but **not yet real-ledger proof**. A fresh workflow run is still required for these commits, and the final RT-1.5 closure requires the helper to be exercised by a trace containing an actual authenticated B1 Pool UTxO/value observation (plus stale/wrong-Pool/value-mismatch twins). No economic semantics changed.
