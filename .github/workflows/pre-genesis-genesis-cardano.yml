@@ -160,6 +160,9 @@ jobs:
       - name: Run Genesis Treasury admission mirror
         run: node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
 
+      - name: Run Genesis forged-observation stress lab
+        run: node audit/pre-genesis-genesis/stress-lab.mjs
+
       - name: Execute real PRE-GENESIS -> GENESIS transition
         run: node --import tsx/esm audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts
 
