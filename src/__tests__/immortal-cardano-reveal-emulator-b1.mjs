@@ -1087,6 +1087,123 @@ async function main() {
 
   /*
    * --------------------------------------------------------------
+   * 11. NEGATIVE INPUT-BINDING TWINS
+   * --------------------------------------------------------------
+   *
+   * The canonical Reveal is not sufficient after the B1 hardening:
+   * the validator now binds the transition to the actual Prize input.
+   * These three transactions deliberately violate that binding and
+   * must be rejected by the real parameterized validator.
+   */
+
+  async function expectRejected(label, txBuilder) {
+    let rejected = false;
+
+    try {
+      const tx = await txBuilder();
+      const signed = await tx.sign().complete();
+      const hash = await signed.submit();
+      await emulator.awaitTx(hash);
+    } catch (error) {
+      rejected = true;
+      console.log(label, "REJECTED", true);
+      console.log(label, "ERROR", String(error).split("\\n")[0]);
+    }
+
+    if (!rejected) {
+      throw new Error(label + " unexpectedly accepted");
+    }
+  }
+
+  /* No Prize input: the Pool transition cannot be authorized in isolation. */
+  await expectRejected(
+    "NEGATIVE_REVEAL_NO_PRIZE_INPUT",
+    async () => lucid
+      .newTx()
+      .collectFrom(
+        [poolUtxos[0]],
+        Data.to(constr(2, [BigInt(priceUsdm)])),
+      )
+      .readFrom([poolReferenceInput])
+      .payToContract(
+        poolAddress,
+        { inline: Data.to(postPoolDatum) },
+        poolUtxos[0].assets,
+      )
+      .addSigner(walletAddress)
+      .validTo(4_000_000_000_000)
+      .complete(),
+  );
+
+  /* Prize input/output ticket identity is deliberately substituted. */
+  const substitutedPrizeFields = [
+    ...postPrizeDatum.fields,
+  ];
+  substitutedPrizeFields[1] = "ff";
+  const substitutedPrizeDatum = constr(
+    0,
+    substitutedPrizeFields,
+  );
+
+  await expectRejected(
+    "NEGATIVE_REVEAL_TICKET_SUBSTITUTION",
+    async () => lucid
+      .newTx()
+      .collectFrom(
+        [prizeUtxos[0]],
+        Data.to(constr(1, [bytesData(toHex(playerSecret))])),
+      )
+      .collectFrom(
+        [poolUtxos[0]],
+        Data.to(constr(2, [BigInt(priceUsdm)])),
+      )
+      .readFrom([prizeReferenceInput, poolReferenceInput])
+      .payToContract(
+        prizeAddress,
+        { inline: Data.to(substitutedPrizeDatum) },
+        prizeUtxos[0].assets,
+      )
+      .payToContract(
+        poolAddress,
+        { inline: Data.to(postPoolDatum) },
+        poolUtxos[0].assets,
+      )
+      .addSigner(walletAddress)
+      .validTo(4_000_000_000_000)
+      .complete(),
+  );
+
+  /* Pool redeemer price is deliberately different from the Prize price. */
+  await expectRejected(
+    "NEGATIVE_REVEAL_PRICE_MISMATCH",
+    async () => lucid
+      .newTx()
+      .collectFrom(
+        [prizeUtxos[0]],
+        Data.to(constr(1, [bytesData(toHex(playerSecret))])),
+      )
+      .collectFrom(
+        [poolUtxos[0]],
+        Data.to(constr(2, [BigInt(priceUsdm + 1)])),
+      )
+      .readFrom([prizeReferenceInput, poolReferenceInput])
+      .payToContract(
+        prizeAddress,
+        { inline: Data.to(postPrizeDatum) },
+        prizeUtxos[0].assets,
+      )
+      .payToContract(
+        poolAddress,
+        { inline: Data.to(postPoolDatum) },
+        poolUtxos[0].assets,
+      )
+      .addSigner(walletAddress)
+      .validTo(4_000_000_000_000)
+      .complete(),
+  );
+
+  /*
+   * --------------------------------------------------------------
    * 12. REAL PRE-RICH REVEAL
    * --------------------------------------------------------------
    * --------------------------------------------------------------
