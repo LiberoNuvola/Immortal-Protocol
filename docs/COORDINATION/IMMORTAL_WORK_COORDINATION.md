@@ -3475,3 +3475,13 @@ This is CI plumbing only. The canonical relation remains exactly 10,000,000 PRE 
 Commit: 6f4ab4c5db0758c1d511f96d9819859ffe0b6b34.
 
 Evidence status: admission mirror is now explicitly executable in the Genesis workflow; actual GREEN status still requires a fresh Actions run on this commit.
+
+## 2026-09-23 — Genesis ledger workflow now carries admission mirror
+
+The dedicated PRE-GENESIS -> GENESIS Cardano/Yaci workflow now also executes the application-level Genesis Treasury admission mirror before the real ledger transition. Its path filters include GenesisTreasuryAdmission.ts and GenesisTreasuryAdmission.test.ts.
+
+This keeps the two evidence layers in the same execution path: exact application admission arithmetic and subsequent real-node carrier transition. It does not merge their authority: the mirror remains off-chain admission evidence, while Yaci remains ledger realization evidence.
+
+Commit: 5b2955829b6e744b6f5b502b2c44fd585e46bda7.
+
+No economic, validator, Oracle, jackpot, 500x, maxTxSize, or IMMORTAL invariant changed.
