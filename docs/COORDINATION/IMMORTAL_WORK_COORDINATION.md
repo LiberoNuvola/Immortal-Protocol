@@ -3355,3 +3355,21 @@ The Genesis Cardano workflow was inspected against its actual GitHub Actions fai
 **Evidence status:** previous Genesis workflow failure was build-time only; it is not ledger evidence. The corrected commits now need a fresh Genesis workflow execution before claiming ledger conformance.
 
 **Do not redo:** do not alter Genesis economics or weaken the validator to bypass the build blocker. The blocker was a type/signature integration regression in B1.
+
+
+---
+
+## 2026-09-23 — current-head Actions status after B1 projection fix
+
+Direct branch inspection now resolves the actual head as `e4240d90c83fd2f3c4c793aecf143c5f40ca95cb`, superseding the previously inspected `051a89fb...`.
+
+Current Actions for this exact head:
+- PRE-GENESIS Genesis Cardano Conformance #6: **queued** (ledger evidence not yet executed).
+- PRE-RICH Cardano Emulator Reveal #157: **in progress**; currently at dependency installation, so no new evaluator conclusion yet.
+- Algorithmic Governability Adversarial Lab #55: **success**.
+- IMMORTAL Cardano Integration Lab #341: **cancelled** because a newer/superseding run was triggered.
+- Cardano Adapter Sale Conformance #682 and Kernel Invalid-Class Fail-Closed Audit #690: **cancelled** on this push.
+
+This is the first authoritative Actions view for the corrected B1 projection head. No Genesis GREEN claim is made while #6 is queued. The algorithmic-governability execution remains green. Reveal remains an active differential experiment; do not modify validator economics while it runs.
+
+No economic/normative rule changed in this status update.
