@@ -6444,3 +6444,15 @@ Classificazione: **OPEN implementation/evidence gap, NON open normative decision
 Seconda verifica importante: GOV-01 ammette anche l'esito `REJECTED`, mentre l'attuale `DECISION_FINALIZED` witness/replay accetta solo `Accepted`. Questo va triangolato con GOV-07/GOV-17 e con la semantica di finalization prima di estendere il witness: non assumere che ogni rigetto richieda lo stesso percorso di finalizzazione.
 
 No code change in questa pass; nessuna semantica normativa inventata. Build/CI del nuovo HEAD resta da osservare.
+
+
+## 2026-09-24 — GOV-28 rejected-decision finality gap closed at implementation level
+Triangolazione GOV-01 + GOV-07 + GOV-10 + GOV-17 contro il replay live.
+- GOV-01 definisce VOTING → ACCEPTED / REJECTED e GOV-07 definisce ACCEPT ⇔ QUORUM ∧ APPROVAL ∧ GATES; GOV-17 stabilisce inoltre che un esito che non soddisfa l'acceptance predicate è REJECTED.
+- Il live GovernanceFinality.finalize proiettava invece sempre Accepted, e DecisionRecord accettava solo Accepted. Questo poteva trasformare un voto non approvato in un final outcome accettato.
+- Correzione minima e derivata dalle fonti: introdotto un finalOutcome deterministico basato su quorum/approval/gates; finalize ora produce Accepted oppure Rejected coerentemente con il predicate. Il witness valida lo stesso outcome atteso e il replay proietta decisionFinalOutcome invece di forzare Accepted.
+- Aggiunto test per un DECISION_FINALIZED con esito Rejected: finalization timestamp viene registrato ma non si crea una proiezione Accepted/Adopted. L'adoption path resta quindi riservato a Accepted.
+
+Commits: c77d6dac848bc3a72c4bd47206fc9d141f76eded, 6e0291f0c560bc8ce159981f2433eb9511c3ca07, 0531ec531edf02f304626decd3f220973971cd28, 33071710f3362224f75e0db7eb3b3abde003608c.
+
+La semantica del decisionCanonicalizationReference resta invece OPEN come evidence/identity gap: non è stata reinterpretata.
