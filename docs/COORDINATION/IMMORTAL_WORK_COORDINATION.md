@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-24
-**Latest observed commit:** `eeab436d2fdf1563cc64ce3f5bf97275bd6e01c7` — RF8 matcher/test consolidation plus P2.8 CI guard corrections
+**Latest observed commit:** `d0962d126e1bc3a1ad0a7140f69b1e6c4c16727f` — RF8 admission-to-transition evidence binding integrated into CI
 
 ---
 
@@ -5295,3 +5295,14 @@ Commit: `a3dbdf0959259979e7063ab44b9d0ace290eea6f`.
 This is acquisition/provenance hardening only. It does not interpret the historical PRE mint redeemer, seed, min-ADA, or 10 ADA residual.
 
 **Status:** GATE 41 PRE-NATIVE PACKET STRUCTURE HARDENED / HISTORICAL MINT WITNESS STILL OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — RF8 admission-to-transition evidence binding integrated on green branch
+
+A previously observed RF8 improvement existed only in a divergent snapshot. Fresh current-head reconciliation confirmed that `EconomicAdmissionWitness` and `CanonicalTransitionEvidence` are already compatible in the green branch. The additive bridge `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` is now integrated on `work/immortal-green-closure`, together with a dedicated four-case regression suite covering matching action/pre-state/post-state and rejection of each mismatch. The Adapter Sale Conformance workflow executes this regression.
+
+Commits: `34eff997d0b25f36bbe704b254f981e1a40bdeb0`, `5e92f84c5e90fedcf65c163c3c5527a61e3f8f34`, `d0962d126e1bc3a1ad0a7140f69b1e6c4c16727f`.
+
+Boundary remains explicit: the bridge does not calculate or validate the underlying canonical fingerprints. RF8 semantic hash provenance therefore remains OPEN; this change only prevents an already-issued admission witness from being silently paired with different canonical action/pre/post identifiers in the evidence layer.
+
+**Status:** RF8 STRUCTURAL WITNESS→TRANSITION BINDING **INTEGRATED + CI WIRED** / HASH PROVENANCE **OPEN** / NO NORMATIVE CHANGE.
