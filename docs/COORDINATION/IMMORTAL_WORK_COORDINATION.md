@@ -6081,3 +6081,17 @@ Exact-hash web searches for PRE `0235e186550383a53855a9727c02ceeb93d16956b3ae049
 The primary missing evidence is now explicitly the **PRE-native mint witness/redeemer**, not another semantic model. The acquisition packet should use a credentialed indexer/API or recover the historical raw artifact referenced by the manifest. Once acquired, compare the mint-purpose witness directly against the 3,928,019 PRE creator-side allocation and 10,000,000 lovelace residual.
 
 No closure is promoted from absence of search results. No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: provider triangulation confirms exact PRE witness packet
+
+Fresh Cardano API triangulation confirms that the exact PRE mint witness can be acquired as a first-class artifact: Blockfrost documents `GET /txs/{hash}` for transaction content, `GET /txs/{hash}/cbor` for serialized transaction CBOR, and `GET /txs/{hash}/redeemers` for transaction redeemers. The Cardano Developer Portal independently lists the transaction-info, transaction-CBOR and transaction-redeemer surfaces across Blockfrost, Maestro and Koios. citeturn0search0turn0search1turn0search4
+
+For PRE `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`, the required evidence packet is concretely defined as transaction info, transaction UTxOs, transaction CBOR, transaction redeemers and, if available, datum references/CBOR for the mint outputs.
+
+The historical manifest path remains the preferred archival source if recoverable. Otherwise a credentialed provider can reproduce the packet. Preserve raw provider responses and retrieval provenance before semantic decoding.
+
+### Gate 41 next test
+Once the redeemer artifact is acquired, filter specifically for `purpose=mint` and the PRE policy `1b29fda9...`; do not conflate mint-purpose data with later spend-purpose curve redeemers. Decode only the exact historical witness and test whether its fields/commitments explain the 3,928,019 PRE creator-side allocation and/or the 10,000,000 lovelace residual.
+
+No normative IMMORTAL/PRE-RICH economics changed.
