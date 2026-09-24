@@ -36,9 +36,9 @@ import {
   toHex,
 } from '../../src/beacon'
 import {
-  assertCanonicalTransitionBinding,
-  type CanonicalTransitionEvidence,
-} from '../../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
+  assertCardanoObservedTransitionBinding,
+  type CardanoObservedTransitionEvidence,
+} from '../../Adapter/CARDANO/observation/CardanoObservedTransitionEvidence'
 import {
   assertExecutableLiquidityMatchesAuthenticatedPool,
   type ExecutableLiquidityObservation,
@@ -455,7 +455,7 @@ const actionFingerprint = hashJson({
   resultHex: toHex(expectedResult),
 })
 
-const evidence: CanonicalTransitionEvidence = {
+const evidence: CardanoObservedTransitionEvidence = {
   evidenceId: hashJson({
     fixtureId: 'RF10-RF11-YACI-REVEAL-001',
     actionFingerprint,
@@ -465,21 +465,19 @@ const evidence: CanonicalTransitionEvidence = {
   }),
   fixtureId: 'RF10-RF11-YACI-REVEAL-001',
   actionClass: 'REVEAL',
-  protocolVersion: 'IMMORTAL-V3',
-  profileVersion: 'PRE-RICH',
-  adapterId: 'CARDANO-YACI',
-  adapterVersion: 'yaci-devkit-0.12.0-beta5',
   environment: 'local-yaci-devnet',
-  preStateFingerprint,
-  postStateFingerprint,
-  actionFingerprint,
+  preStateObservationFingerprint: preStateFingerprint,
+  postStateObservationFingerprint: postStateFingerprint,
+  actionObservationFingerprint: actionFingerprint,
   transactionRef: txHash,
 }
 
-assertCanonicalTransitionBinding(evidence, {
-  actionFingerprint,
-  preStateFingerprint,
-  postStateFingerprint,
+assertCardanoObservedTransitionBinding(evidence, {
+  actionClass: 'REVEAL',
+  environment: 'local-yaci-devnet',
+  preStateObservationFingerprint: preStateFingerprint,
+  postStateObservationFingerprint: postStateFingerprint,
+  actionObservationFingerprint: actionFingerprint,
   transactionRef: txHash,
 })
 
@@ -537,7 +535,7 @@ writeFileSync(
       valuationMode: 'fixture-1-to-1-test-asset',
       canonicalEconomicPoolUsdmValueEvaluated: false,
     },
-    canonicalEvidence: evidence,
+    observedCardanoTransitionEvidence: evidence,
     replay: {
       rejected: replayRejected,
       error: replayError,
