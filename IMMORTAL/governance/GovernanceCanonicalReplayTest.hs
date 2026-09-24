@@ -155,7 +155,7 @@ adoptionEvent =
     AcceptedEvent
 
 main :: IO ()
-  = do
+main = do
   assert (not (canonicalizationRequiresConformance DocumentationOnly))
     "Documentation canonicalization does not require implementation conformance"
   assert (not (canonicalizationRequiresConformance VerificationTooling))
@@ -170,7 +170,6 @@ main :: IO ()
     "Constitutional/kernel canonicalization requires conformance"
   assert (not (canonicalizationRequiresConformance Emergency))
     "Emergency canonicalization does not silently become permanent conformance"
-main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
   assert (eventSchemaValid event2) "status payload validates"
   assert (predecessorValid Nothing event1) "genesis predecessor"
