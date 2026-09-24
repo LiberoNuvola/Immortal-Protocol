@@ -111,5 +111,5 @@ assert.equal(
 )
 assert.equal(
   admit(observation({ oraclePrecision: -1n })).reason,
-  'ORACLE_UNVERIFIED',
+  'INVALID_ORACLE_PRECISION',
 )
