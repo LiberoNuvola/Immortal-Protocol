@@ -5700,3 +5700,14 @@ Correction committed in `audit/cardano-ledger-runner/Main.hs`: when the manifest
 Commit: `c6ac959190180c115dd947b6d42b2aa1d8d788a9`.
 
 Status: P2.8 RAW MATERIALIZATION = GREEN AS RAW PROVENANCE / TYPED LEDGER CONTEXT = OPEN / EVALUATOR = NOT YET INVOKED / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 raw packet identity hardening and explicit typed boundary
+
+The Yaci materializer now fails before packet publication if the Reveal transaction reference is malformed, consumed references are missing/duplicated, the exact consumed input set disagrees with Yaci Store `GET /txs/{hash}/utxos`, or the three required Yaci timing fields cannot be extracted. These are evidence integrity checks, not ledger evaluation.
+
+The Haskell runner now reads `manifest.json` explicitly: `raw-yaci-context-materialized` allows attempting the existing native Babbage Tx/PParams decode, but it **never** authorizes `evalTxExUnitsWithLogs`; even a successful decode ends with `SAFE_STALL: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED`. Other manifest statuses also fail closed until native typed-context verification is implemented.
+
+Commits: `e07658852f4964c917ff018dcd17fec545e564d5` (Yaci identity/timing checks), `5871855e04dece1fc7bd38912918ef15be62fecb` (manifest boundary), `c24bf2e7d2fec7cb0462c3f2918080af610deb0f` (preserve native decode path).
+
+Still OPEN: verified full pre-state UTxO including reference inputs, typed `EpochInfo` and `SystemStart`, exact protocol-parameter provenance at transaction evaluation point, ledger evaluation and persisted ExUnits/script failures. Fresh CI execution is required before claiming that the hardening passes on a real Yaci packet.
