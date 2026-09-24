@@ -5713,3 +5713,27 @@ Web search independently confirms the generic Cardano constraint that multi-asse
 info.outputId = 0235...#0 remains a separate provider-semantics question because the Pool NFT itself is demonstrably in 0235...#1. Seed semantics and provider output-id semantics must be closed independently.
 
 Status: 3 ADA seed = STRONG CROSS-VALIDATED LEAD; 10 ADA decomposition = OPEN; provider outputId mapping = OPEN. No normative IMMORTAL/PRE-RICH rule changed.
+
+## 2026-09-24 — Gate 41: 10 ADA now has a strong initial-buy correlation
+
+New cross-check from the historical PRE launch output split plus the exact Snek curve parameter `bNum = 2,545,182`:
+
+- PRE creator-side output #2 contains exactly `3,928,019 PRE`.
+- The pool output #1 retains `996,071,981 PRE`, so the launch split is exactly 1,000,000,000 PRE.
+- Pool output #1 contains 13,000,000 lovelace.
+- Independent Snek prior art identifies 3,000,000 lovelace as the curve seed.
+- Therefore the residual pool funding is exactly 10,000,000 lovelace.
+- `3,928,019 × 2,545,182 / 1,000,000 = 9,997,523.254458` lovelace, i.e. within ~0.025% of 10 ADA.
+- Equivalently, 10 ADA / 3,928,019 PRE = ~2.5458125 lovelace per PRE-million-equivalent, extremely close to the observed `bNum` scale of 2.545182 ADA per million.
+
+This is a materially stronger correlation than the prior bare 3+10 arithmetic: the exact creator token quantity and the exact Snek curve parameter independently point at the same ~10 ADA scale.
+
+### Interpretation status
+**3 ADA = curve seed — STRONG CROSS-VALIDATED LEAD**
+**10 ADA = launch-time creator/initial-buy funding component — STRONG LEAD, NOT YET HISTORICAL PROOF**
+**3,928,019 PRE = creator initial allocation associated with that component — STRONGLY SUPPORTED by output topology and quantity split**
+
+Do NOT close the 10 ADA semantic attribution yet. The remaining proof target is the historical launch implementation/formula or transaction witness semantics showing that the 3,928,019 PRE allocation was priced/funded by a 10 ADA initial buy (rather than merely correlating numerically with bNum).
+
+### Important negative control
+The 10 ADA is not the transaction fee: the actual tx fee is 328,806 lovelace. It is also not the pool NFT min-UTxO, previously disproved. The current ledger topology puts the residual 10 ADA inside the pool output, while the corresponding 3,928,019 PRE sits in the creator-side output.
