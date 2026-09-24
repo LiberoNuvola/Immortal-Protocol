@@ -5010,3 +5010,17 @@ Fresh exact-branch inspection confirms the workflow now triggers on both the aud
 **P2.8 status:** RUNNER WIRED / EVIDENCE-PACKET CHECK IMPLEMENTED / LEDGER EVALUATION NOT YET IMPLEMENTED / NO GREEN CLAIM. Next justified step is typed evidence parsing plus exact ledger-aligned evaluation, not another status document.
 
 No normative economics, validator semantics, or evaluator verdict changed.
+
+
+## 2026-09-24 — P2.8 evaluator API triangulation
+
+External primary documentation was triangulated against the exact dependency pin in `audit/cardano-ledger-runner/cabal.project`.
+
+- The project pins IntersectMBO/cardano-ledger at `f649f9751074d2ab3de033fc3912f29c9862c1f5`, with Alonzo implementation plus ledger API/core and related packages.
+- The corresponding `cardano-ledger-alonzo-1.16.0.0` documentation exposes `evalTxExUnitsWithLogs` through `Cardano.Ledger.Api.Tx` with the required shape: `PParams → Tx → UTxO → EpochInfo (Either Text) → SystemStart → RedeemerReportWithLogs`.
+- The same API explicitly states that supplied transaction execution budgets are ignored and the evaluator derives the required budgets from the supplied transaction and ledger context. This matches the project's fail-closed requirement to use the exact transaction plus authenticated UTxO/PParams/EpochInfo/SystemStart rather than synthetic context. citeturn0search0turn0search3
+- The exact project packet directory currently contains no evidence files; only the empty `evidence/` directory is present. Therefore there is still no real transaction/context packet that can legitimately be evaluated on this branch.
+
+**Engineering consequence:** the evaluator API is no longer an unknown. The remaining implementation task is packet decoding/binding into the exact ledger types, followed by `evalTxExUnitsWithLogs`. It is not justified to fabricate parsers for absent evidence or to mark P2.8 green before an actual packet is supplied and evaluated.
+
+**Status:** API CONFIRMED / PACKET ABSENT / EVALUATION OPEN / NO GREEN CLAIM.
