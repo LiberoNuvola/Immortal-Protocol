@@ -1,16 +1,9 @@
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-base
-  tag: 58a3814c049324578a1cbc7f8ab9e0edae42249a
-  subdir:
-    cardano-strict-containers
-
-
-source-repository-package
-  type: git
-  location: https://github.com/IntersectMBO/cardano-base
   tag: a02ed49194501620f03b2f868aabd5a48ebde937
   subdir:
+    cardano-strict-containers
     cardano-slotting
 
 packages: .
