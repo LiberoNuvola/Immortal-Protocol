@@ -5662,3 +5662,32 @@ Current branch head rechecked: `d861329e4ff85ed8255176717de9d54f93ad871f`. The d
 This recheck also confirms that the repository already preserves the raw Yaci timing provenance and Reveal evidence required to attempt typed-context materialization. No synthetic ledger context will be introduced merely to make CI green.
 
 Status: P2.8 CURRENT HEAD VERIFIED / WORKFLOW PRESENT / FRESH CI RUN ABSENT / NO GREEN CLAIM / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 raw Yaci context materialization stage added
+
+The next concrete P2.8 bridge is now committed on `work/immortal-green-closure`:
+
+- new `audit/cardano-integration/materialize-p28-ledger-context.mjs`;
+- it consumes only the real lab evidence already produced by the Yaci Reveal trace:
+  - `reveal-tx.cbor`;
+  - `reveal-protocol-parameters.json`;
+  - `reveal-transition.json`;
+  - `epoch-latest.json`;
+  - `yaci-devkit-info.txt`;
+- it re-fetches `GET /txs/{transactionRef}/utxos` directly from the running Yaci Store for the exact observed Reveal transaction;
+- it writes byte-preserving `tx.cbor` and `pparams.json`, plus provenance-preserving `utxo.json`, `epoch-info.json`, `system-start.json`;
+- it writes `manifest.json` with SHA-256 hashes and explicit materialization status;
+- it does **not** fabricate a UTxO, cost model, epoch mapping, or system start.
+
+The CI lab now runs this materialization step immediately before the P2.8 runner.
+
+Important boundary:
+the generated `utxo.json`, `epoch-info.json`, and `system-start.json` are still **raw Yaci evidence containers**, not typed `UTxO BabbageEra`, `EpochInfo (Either Text)`, or `SystemStart`. The runner therefore remains correctly fail-closed until the Haskell side reconstructs those exact ledger-native objects.
+
+Relevant commits:
+- `92d0edc4873c4ea4699818baaf7da2446440d3ae` — initial materialization script;
+- `db6f2bfd6ade4b9e758087a87877f9ef895a2140` — robust Yaci timing parsing;
+- `4c8a4e6b4d025f7fc18dc86ebecc00497e5d9f67` — CI integration.
+
+Status: P2.8 RAW YACI CONTEXT MATERIALIZATION **IMPLEMENTED** / TYPED UTxO + EpochInfo + SystemStart **OPEN** / evalTxExUnitsWithLogs **OPEN** / NO GREEN CLAIM / NO NORMATIVE CHANGE.
