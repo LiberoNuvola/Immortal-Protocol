@@ -4940,3 +4940,10 @@ Therefore the golden packet must preserve the exact serialized transaction and l
 Issue / Claim / Expire already have positive ticket-level refinement evidence recorded in this register. Reveal remains the principal action for which the same chain must now be populated with a real Cardano execution.
 
 **Status:** B6 Reveal evidence path concretely specified / REAL-LEDGER PACKET OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — Fresh multi-front evidence observation
+
+Exact-head CI lookup for reported HEAD `e6bafb58bb3987a87afc427a41c3fb680e25621d` returned **no workflow runs**. This is evidence absence, not a failure result; GOV-28 therefore remains CLOSING with no current-head GREEN claim. Gate 41 helper remains on `https://api.koios.rest/api/v1`, fail-closed, with raw-page/hash/provenance capture; no live redeemer/CBOR semantics are promoted. P2.8 remains tied to the exact ledger-aligned transaction/UTxO/PParams/EpochInfo/SystemStart evaluator path. B4 requires real-transition ProtectedCapital preservation; B5 requires Economic Admission witness bound to executed transaction and post-state; B6 requires action-by-action V3↔Cardano correspondence. Materios remains proof-gated with upstream selector authority and requires authenticated authority-set transition plus finalized GRANDPA ancestry/quorum evidence. Genesis/C10–C15 still require fresh Yaci/deployment/artifact/transaction/ledger correlation where not observed. No destructive V3 refactor or normative economic change is justified.
+
+**Status: MULTI-FRONT ACTIVE / NO NORMATIVE CHANGE / EXACT-HEAD CI EVIDENCE ABSENT / REAL-LEDGER EVIDENCE DECISIVE.**
