@@ -6262,3 +6262,29 @@ Library evidence preserves the original Koios `POST /tx_utxos` acquisition for `
 A targeted Library search for the same transaction plus `purpose=mint`, `script_hash`, and `redeemer` did not recover a historical PRE mint redeemer. Existing expanded transaction material instead shows no Plutus contracts on the Koios UTxO output listing; therefore it must not be treated as proof that the transaction had no mint redeemer. The missing artifact is specifically the dedicated redeemer/witness acquisition.
 
 The original Koios transcript also records a later `429 Too Many Requests` on the follow-up transaction query, so rate limiting is an acquisition limitation, not evidence about transaction semantics.
+
+
+## 2026-09-24 — Gate 41: Koios pagination hardening
+
+The public Koios acquisition helper was hardened after triangulating the provider CLI and Go client implementation.
+
+Evidence from the Cardano Community Koios CLI shows `script_redeemers` supports `--page` and `--page-size`; the Koios Go client implements those options by setting the HTTP `Range` header. The documented default page size is 1000. This means a single unpaged `script_redeemers` call must not be treated as exhaustive without checking pagination. citeturn1search0turn1search4
+
+Updated:
+- `scripts/acquire-pre-snek-koios-redeemer.ps1`
+- commit `2e65fb10c505fe50cda098d419f45d0fa18dd7ac`
+
+The helper now:
+- requests explicit 1000-record Range pages;
+- preserves every raw page response separately;
+- records page/range acquisition metadata;
+- flattens both current Koios response shapes;
+- scans all acquired pages for the exact PRE policy + historical tx hash + `purpose=mint`;
+- preserves SHA-256 hashes for every raw page;
+- remains fail-closed if the exact redeemer is not found.
+
+This removes the previous unverified assumption that the default first page was exhaustive.
+
+Classification remains unchanged: a positive `script_redeemers` result is provider-indexed redeemer evidence, not a serialized transaction witness-set/CBOR artifact. The historical PRE mint witness seam therefore remains OPEN until an actual response is acquired and preserved.
+
+No normative IMMORTAL/PRE-RICH economics changed.
