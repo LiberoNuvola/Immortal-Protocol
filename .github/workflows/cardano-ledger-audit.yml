@@ -7,6 +7,7 @@ on:
       - "audit/cardano-ledger-runner/**"
       - "src/plutusScripts/**"
       - ".github/workflows/cardano-ledger-audit.yml"
+      - ".github/workflows/cardano-ledger-audit.yml"
 
 jobs:
   build-and-safe-stall:
