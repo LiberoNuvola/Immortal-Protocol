@@ -68,9 +68,9 @@ main = do
   assert "decision recording does not set finalization time"
     (finalizationAt p0 == Nothing)
 
-  assert "finalize produces Canonical"
+  assert "finalize produces Accepted, not Canonical"
     (case finalize p [cr] (100 + finalitySeconds) of
-       Right x -> proposalStatus x == Canonical
+       Right x -> proposalStatus x == Accepted
        Left _ -> False)
 
   assert "ruleset immutable"
