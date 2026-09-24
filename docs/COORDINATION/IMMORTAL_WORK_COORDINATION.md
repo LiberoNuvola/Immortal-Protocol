@@ -5924,3 +5924,46 @@ Triangulation of GOV-10, GOV-11, GOV-12, GOV-17, GOV-18 and the Governance Speci
 Closed convergence: `VOTING → DECISION_FINALIZED → ADOPTION → CONFORMANCE → CANONICALIZATION`. Existing `DecisionRecorded/Accepted/Adopted/Canonical` can remain as implementation/projection states, but must not be treated as the canonical event vocabulary. `Accepted → Adopted` currently lacks a finalization predecessor check; `Adopted → Canonical` lacks a distinct conformance-record requirement; `GovernanceFinality.finalize` still jumps directly from `DecisionRecorded` to `Canonical` and therefore remains auxiliary/incompatible with the canonical path.
 
 This is now an implementation gap, not an open governance decision. The next code pass can safely introduce the missing canonical lifecycle representation without changing frozen parameters. Negative invariants are listed in the handoff.
+
+
+## 2026-09-24 — Gate 41: exact PRE mint witness retrieval route
+
+A further acquisition pass triangulated the missing-witness problem against the current evidence corpus and Cardano API capabilities.
+
+### Evidence state
+
+- The historical acquisition manifest records the original path `evidence/pre-snek/gate41-genesis/tx-info/0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4.raw.json`, but that raw artifact is not currently retrievable from the active green branch.
+- The Library corpus contains the manifest/path and transaction-level normalized evidence, but no verified copy of the original PRE mint witness/redeemer.
+- Searches for generic `redeemer` evidence return later State-0/curve-spend witnesses and must not be reused as the creation-mint witness.
+
+### API-level finding
+
+Cardano API documentation confirms that transaction-level redeemers can be retrieved as a distinct object in Blockfrost (`/txs/{hash}/redeemers`) and transaction CBOR is separately exposed. Cardano's developer documentation also distinguishes the transaction body from the witness set and places redeemers in that witness set.
+
+Therefore the missing historical witness is an **artifact-retrieval gap**, not a semantic reason to infer the witness from later transactions.
+
+### Deterministic acquisition packet
+
+1. Retrieve exact transaction body/CBOR for `0235...`.
+2. Retrieve transaction redeemers/witness information from an indexer that exposes it.
+3. Identify the mint-purpose redeemer belonging to PRE policy `1b29fda9...`.
+4. Preserve the raw response before decoding.
+5. Compare any encoded amount/parameter against the `3,928,019 PRE` creator-side allocation and `10,000,000` lovelace residual.
+6. Only then classify the 10 ADA historical role.
+
+### Negative rule
+
+Do **not** infer the PRE mint redeemer from later curve-spend redeemers, the current Snek v1 builder, or the numerical `bNum` correlation.
+
+### Status
+
+- PRE mint transaction: CLOSED
+- Pool-NFT-bearing output #1: CLOSED
+- 1B PRE split: CLOSED
+- 3 ADA seed correspondence: STRONG CROSS-VALIDATED LEAD
+- 10 ADA residual: FACT
+- 10 ADA = creator initial-buy funding: OPEN
+- historical PRE mint witness/redeemer: OPEN — artifact retrieval
+- historical Snek formula/version: OPEN
+
+No normative IMMORTAL/PRE-RICH economics changed.
