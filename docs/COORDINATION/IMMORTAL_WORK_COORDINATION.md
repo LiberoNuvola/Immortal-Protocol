@@ -6215,3 +6215,30 @@ Durante la verifica è riemerso un gap concreto in GovernanceFinality.validChall
 Replay hardening adoption: ADOPTION_RECORDED ora richiede Accepted, finalizationAt presente e eventTimestamp >= finalizationAt. Commit b1883b55ebdfecec60b0a79e2c709fe8291c32d6; test 55dce308703b4e92ff8550fb8a0a4c522b21c718.
 
 Triangolazione normativa GOV-10/GOV-11/GOV-18 conferma: conformance è una verifica indipendente, non un alias di approval; canonicalization richiede conformance evidence dove l'implementazione è coinvolta. Le fonti chiuse non definiscono ancora un payload minimo autonomo per CONFORMANCE_RECORDED; quindi non viene inventato in questa pass. Prossimo gate: derivare il minimo witness compatibile dalle strutture di conformance/gate/evidence già esistenti, poi introdurre l'evento.
+
+
+## 2026-09-24 — Gate 41: datum evidence found in Library; witness remains the gap
+
+A further Library triangulation recovered the historical datum associated with the PRE pool output of the creation transaction.
+
+Verified evidence:
+- creation transaction: `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`
+- Pool-NFT/PRE output: `#1`
+- datum hash: `04d5f46b3f17c4fc4161c3b3c6ee91d3aa33cb29c936ba2ffeb19be84c9c4b48`
+- decoded datum and serialized datum bytes are present in the Library corpus.
+- the datum contains the PRE policy `1b29fda9...` / asset `PRE-RICH` and the observed threshold value `18191400000` lovelace.
+
+This strengthens the historical state evidence and independently confirms the datum-side representation of the State-0 threshold. It still does **not** reveal the historical mint-purpose redeemer/witness.
+
+The acquisition helper was therefore extended (commit `bbb6617c53cc6321a4dee62eaa19f76bf4af2ed4`) to attempt recovery of CBOR datums referenced by transaction outputs, preserving each raw response and recording unavailable datums without weakening the fail-closed mint-witness rule.
+
+### Gate 41 classification after this pass
+- transaction/UTxO evidence: CLOSED
+- Pool-NFT/PRE output #1: CLOSED
+- output #1 datum hash + datum bytes: **CLOSED / LIBRARY-VERIFIED**
+- 1B PRE split: CLOSED
+- 3 ADA correspondence: STRONG LEAD; semantic cause OPEN
+- historical PRE mint redeemer/witness: **OPEN — sole primary artifact gap**
+- 10 ADA = creator initial-buy funding: OPEN
+
+No normative economics changed.
