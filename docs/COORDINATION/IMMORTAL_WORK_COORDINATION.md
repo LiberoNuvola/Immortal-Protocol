@@ -5121,3 +5121,14 @@ Fresh exact-branch triangulation of docs/treasury-distribution-spec.md, plutus/T
 No code was changed because replacing the worker's distribution arithmetic or inventing a Treasury admission witness would choose economic semantics not yet established for this surface.
 
 Status: RF8 TREASURY SIDE-DOOR CONFIRMED / ECONOMIC GATE MEMBERSHIP OPEN / LEGACY RELAYER PATH NOT EVIDENCE OF CANONICAL ADMISSION / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — Cardano audit workflow self-trigger corrected
+
+The current `.github/workflows/cardano-ledger-audit.yml` had a `paths` filter covering runner sources and Plutus artifacts, but not the workflow file itself. The preceding workflow-only correction commit therefore produced no push-triggered run. Added the workflow path to its own filter so future workflow-only wiring corrections can execute the audit.
+
+Commit: ec6ac111e595ed77ca2e143bef1d0c46df4013d2.
+
+Exact-commit workflow/status lookup immediately after the correction still returns no run/status. This remains evidence absence, not a failure.
+
+Status: CI TRIGGER FILTER CORRECTED / RUN EVIDENCE STILL PENDING / NO GREEN CLAIM.
