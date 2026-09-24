@@ -59,8 +59,8 @@ describe('RF8 application submission boundary', () => {
     const source = readFileSync(join(ROOT, 'txHelpers.ts'), 'utf8')
     expect(source).toMatch(/export async function signAndSubmitTx/)
     expect(source).toMatch(/export async function signAndSubmitEconomicTx/)
-    expect(source).toMatch(/adapter\\.submitInfrastructure\\(/)
-    expect(source).toMatch(/adapter\\.submitEconomic\\(/)
+    expect(source).toMatch(/adapter\.submitInfrastructure\(/)
+    expect(source).toMatch(/adapter\.submitEconomic\(/)
   })
 
 
