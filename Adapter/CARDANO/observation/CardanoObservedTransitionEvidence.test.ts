@@ -23,9 +23,12 @@ describe('Cardano observed transition evidence', () => {
   it('rejects an observed action mismatch', () => {
     expect(() =>
       assertCardanoObservedTransitionBinding(evidence, {
-        ...evidence,
         actionClass: 'CLAIM',
-        evidenceId: undefined as never,
+        environment: evidence.environment,
+        preStateObservationFingerprint: evidence.preStateObservationFingerprint,
+        postStateObservationFingerprint: evidence.postStateObservationFingerprint,
+        actionObservationFingerprint: evidence.actionObservationFingerprint,
+        transactionRef: evidence.transactionRef,
       }),
     ).toThrow('observed Cardano action class mismatch')
   })
@@ -33,9 +36,12 @@ describe('Cardano observed transition evidence', () => {
   it('rejects an observed pre-state mismatch', () => {
     expect(() =>
       assertCardanoObservedTransitionBinding(evidence, {
-        ...evidence,
+        actionClass: evidence.actionClass,
+        environment: evidence.environment,
         preStateObservationFingerprint: '44'.repeat(32),
-        evidenceId: undefined as never,
+        postStateObservationFingerprint: evidence.postStateObservationFingerprint,
+        actionObservationFingerprint: evidence.actionObservationFingerprint,
+        transactionRef: evidence.transactionRef,
       }),
     ).toThrow('observed Cardano pre-state fingerprint mismatch')
   })
@@ -43,9 +49,12 @@ describe('Cardano observed transition evidence', () => {
   it('rejects an observed post-state mismatch', () => {
     expect(() =>
       assertCardanoObservedTransitionBinding(evidence, {
-        ...evidence,
+        actionClass: evidence.actionClass,
+        environment: evidence.environment,
+        preStateObservationFingerprint: evidence.preStateObservationFingerprint,
         postStateObservationFingerprint: '55'.repeat(32),
-        evidenceId: undefined as never,
+        actionObservationFingerprint: evidence.actionObservationFingerprint,
+        transactionRef: evidence.transactionRef,
       }),
     ).toThrow('observed Cardano post-state fingerprint mismatch')
   })
@@ -53,9 +62,12 @@ describe('Cardano observed transition evidence', () => {
   it('rejects an observed transaction reference mismatch', () => {
     expect(() =>
       assertCardanoObservedTransitionBinding(evidence, {
-        ...evidence,
+        actionClass: evidence.actionClass,
+        environment: evidence.environment,
+        preStateObservationFingerprint: evidence.preStateObservationFingerprint,
+        postStateObservationFingerprint: evidence.postStateObservationFingerprint,
+        actionObservationFingerprint: evidence.actionObservationFingerprint,
         transactionRef: 'tx-2',
-        evidenceId: undefined as never,
       }),
     ).toThrow('observed Cardano transaction reference mismatch')
   })
