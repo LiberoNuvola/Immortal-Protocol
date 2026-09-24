@@ -143,7 +143,8 @@ adoptionEvent =
     (Just "evt-finalized")
     [EvidenceRef "adoption-evidence"]
     AcceptedEvent
-\nmain :: IO ()
+
+main :: IO ()
 main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
   assert (eventSchemaValid event2) "status payload validates"
