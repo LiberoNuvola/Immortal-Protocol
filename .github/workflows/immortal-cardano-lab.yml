@@ -190,6 +190,9 @@ jobs:
       - name: Execute real economic Expire transition trace
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
+      - name: Materialize raw Yaci ledger context for P2.8
+        run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
+
       - name: Run P2.8 ledger evidence gate against this lab packet
         working-directory: audit/cardano-ledger-runner
         run: |
