@@ -6166,3 +6166,15 @@ Test aggiunto per `ADOPTION_RECORDED`, con predecessor `DECISION_FINALIZED` e ve
 Commits: schema `67ae8975e045c9c406404854f033c6f6904d9c9b`; authorization `326af54ad4811567b0e2903f2eae01b710b5faea2`; replay `6603ca37208970b71eb644ecdd71bd6f38ceffd9` + `ddec34d8d3cf5ec0de2872096cf8d22d130333d6`; tests `b68eb772d03e4f3089a43fd7acf0db421d387798` + `ee58678d848f9d3efd0354f189b8957cc6048708`; schema repair `fdadf2ee5654a02cdff7e9eee853758a96a40624`.
 
 Boundary still open: `CONFORMANCE_RECORDED` and `CANONICALIZED`. No new timing, quorum, threshold or economic parameter. No build/CI success claim.
+
+## 2026-09-24 — Gate 41: execution attempt and provider boundary
+
+A live acquisition attempt was evaluated against the documented provider routes. Blockfrost requires a network-scoped project credential; no mainnet credential is present in the repository/workflow environment. Koios is documented as having a public mainnet tier and exposes transaction information through its API, but this execution environment cannot establish an outbound connection to `api.koios.rest`, so no live Koios witness response was obtained here.
+
+This is an environment/acquisition limitation, not evidence about transaction `0235...c6cf4`. No witness is inferred from absence of a response.
+
+The repository helper remains fail-closed. The next executable path is either:
+1. run `scripts/acquire-pre-snek-witness.ps1` in an environment with `BLOCKFROST_MAINNET_PROJECT_ID`; or
+2. acquire the same transaction through a reachable Koios/Maestro route and preserve the raw response.
+
+No normative IMMORTAL/PRE-RICH economics changed. Gate 41 remains OPEN only at the historical PRE mint witness/redeemer artifact layer.
