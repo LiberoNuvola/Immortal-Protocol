@@ -5600,3 +5600,27 @@ Disposition:
 This closes a false-positive avenue in the provenance audit without changing economic, governance, validator, or adapter semantics.
 
 Status: RF8 SEMANTIC FINGERPRINT PROVENANCE **CONFIRMED OPEN / EXISTING SHA-256 HELPER REJECTED AS IRRELEVANT PREIMAGE / NO NORMATIVE CHANGE**.
+
+## 2026-09-24 — P2.8 typed-transaction decoding boundary
+
+Triangulation against the pinned `cardano-ledger` source confirmed that the real Reveal trace uses inline datums, which are a Babbage-era feature. The dedicated runner previously depended only on the Alonzo package, so its typed transaction target was too narrow for the actual Reveal artifact.
+
+Evidence:
+- Cardano Developer Portal identifies Babbage as the era introducing inline datums/reference inputs; the current Reveal trace stores continuing outputs with inline datums. citeturn233642search0turn233642search1
+- pinned upstream `cardano-ledger` tag `f649f975...` defines `cardano-ledger-babbage` version `1.14.0.0` and explicitly describes the package as introducing inline datums.
+- the same pinned Ledger API exports `evalTxExUnitsWithLogs`, while Babbage `Tx` is decoded through `DecCBOR (Annotator (Tx ... BabbageEra))`, not a direct `DecCBOR Tx` instance.
+
+Implementation:
+- `audit/cardano-ledger-runner/cabal.project` now pins `eras/babbage/impl` from the same ledger commit.
+- `audit/cardano-ledger-runner/cardano-ledger-runner.cabal` now depends on `cardano-ledger-babbage == 1.14.0.0` and `cardano-ledger-binary == 1.9.0.0`.
+- new `audit/cardano-ledger-runner/TypedPacketDecode.hs` decodes `PParams BabbageEra` using the native `FromJSON` instance and decodes `Tx TopTx BabbageEra` through native `decodeFullAnnotator`, using the protocol-version major from the decoded PParams.
+- `Main.hs` invokes this native typed decode only after all required packet files are present; malformed PParams or transaction CBOR fail closed with explicit reasons.
+
+Important limitation:
+this is only the typed PParams/transaction stage. The runner still does not synthesize or bypass exact `UTxO`, `EpochInfo`, or `SystemStart`, and it still does not invoke `evalTxExUnitsWithLogs` until those authentic components are materialized.
+
+Commit: `e524ebc83a027c2914a22588007337adeca5ca16`.
+
+Status: P2.8 BABBAGE-TX / PPARAMS NATIVE-DECODE STAGE IMPLEMENTED / COMPILE-CI VERIFICATION PENDING / UTxO + EPOCHINFO + SYSTEMSTART + EVALUATION STILL OPEN.
+
+No normative economic change.
