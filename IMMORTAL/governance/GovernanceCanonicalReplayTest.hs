@@ -133,7 +133,17 @@ finalizedEvent =
     [EvidenceRef "finalization-evidence"]
     AcceptedEvent
 
-main :: IO ()
+
+adoptionEvent :: CanonicalEvent
+adoptionEvent =
+  CanonicalEvent
+    "evt-adopted" 7 1 EAdoptionRecorded System 259401
+    (PayloadAdoptionRecorded 7 259401)
+    "payload-adoption"
+    (Just "evt-finalized")
+    [EvidenceRef "adoption-evidence"]
+    AcceptedEvent
+\nmain :: IO ()
 main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
   assert (eventSchemaValid event2) "status payload validates"
@@ -166,4 +176,11 @@ main = do
         "DECISION_FINALIZED advances the compatible Accepted projection"
 
   putStrLn "GOV-28 DECISION FINALIZATION CHECKS PASSED"
+  let acceptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Just 259400 }] 1
+  case applyCanonicalEvent emptyState acceptedState (Just finalizedEvent) adoptionEvent of
+    Left err -> error ("FAIL: adoption rejected: " ++ err)
+    Right st -> assert (proposalStatus (head (proposals st)) == Adopted)
+      "ADOPTION_RECORDED follows finalized Accepted projection"
+  putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
+
 
