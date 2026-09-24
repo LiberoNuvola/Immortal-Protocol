@@ -5655,3 +5655,10 @@ After resolving the second dependency blocker (`cardano-slotting`), the runner w
 Current status: P2.8 TYPED TX/PPARAMS DECODE PATH IMPLEMENTED / BUILD + REAL PACKET DECODE PENDING / UTxO + EpochInfo + SystemStart + EXECUTION EVALUATION OPEN.
 
 No economic or validator semantics changed. No synthetic ledger context introduced.
+
+## 2026-09-24 — P2.8 current-HEAD CI boundary recheck
+Current branch head rechecked: `d861329e4ff85ed8255176717de9d54f93ad871f`. The dedicated P2.8 workflow is present on `work/immortal-green-closure`, but no workflow run is currently associated with this HEAD, so there is **no fresh CI compile/evaluator verdict** to promote. The runner source remains fail-closed and reaches only native Babbage Tx/PParams decoding when the complete typed evidence packet exists. The next legitimate advance is a fresh workflow execution followed by inspection of the actual build/evidence output; an absent run is not treated as failure or success.
+
+This recheck also confirms that the repository already preserves the raw Yaci timing provenance and Reveal evidence required to attempt typed-context materialization. No synthetic ledger context will be introduced merely to make CI green.
+
+Status: P2.8 CURRENT HEAD VERIFIED / WORKFLOW PRESENT / FRESH CI RUN ABSENT / NO GREEN CLAIM / NO NORMATIVE CHANGE.
