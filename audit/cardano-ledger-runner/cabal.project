@@ -13,6 +13,11 @@ source-repository-package
   location: https://github.com/IntersectMBO/cardano-ledger
   tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
   subdir:
+    eras/byron/crypto
+    eras/byron/ledger/impl
+    eras/shelley/impl
+    eras/allegra/impl
+    eras/mary/impl
     eras/alonzo/impl
     eras/babbage/impl
     libs/cardano-ledger-core
