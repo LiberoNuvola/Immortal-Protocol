@@ -5282,3 +5282,16 @@ Finding: `DecisionRecord.decisionCanonicalizationReference` is required to be no
 Therefore the remaining GOV-28 gap is confirmed as an identity/provenance binding gap, not a missing generic hash primitive. No new reference format, serializer, digest convention, or governance rule should be invented merely to close it.
 
 Status: **GOV-28 PROVENANCE/IDENTITY BINDING OPEN / LIFECYCLE HARDENING OTHERWISE IN PLACE / NO NORMATIVE CHANGE.**
+
+
+## 2026-09-24 — Gate 41 PRE-native CBOR payload preservation hardened
+
+Official Blockfrost API documentation confirms distinct transaction endpoints for transaction content, transaction redeemers, and serialized transaction CBOR. The `/txs/{hash}/cbor` response is an application/json object whose `cbor` field contains the serialized transaction payload. The Cardano Developer Portal independently confirms the current Blockfrost mainnet base endpoint as `https://cardano-mainnet.blockfrost.io/api/v0` and the current Koios mainnet endpoint as `https://api.koios.rest/api/v1`. citeturn217534search0turn718033search1turn966534search0
+
+The Gate 41 Blockfrost acquisition helper now preserves both forms without interpretation: the exact provider response envelope (`tx-cbor.raw.json`) and the exact `cbor` payload as normalized hex (`tx.cbor.hex`) plus decoded bytes (`tx.cbor`). It also records a SHA-256 hash of the extracted byte payload and fail-closes if the envelope has no non-empty even-length hexadecimal `cbor` field. The transaction `/txs/{hash}` response hash is now checked against the requested target before the packet is accepted.
+
+Commit: `a3dbdf0959259979e7063ab44b9d0ace290eea6f`.
+
+This is acquisition/provenance hardening only. It does not interpret the historical PRE mint redeemer, seed, min-ADA, or 10 ADA residual.
+
+**Status:** GATE 41 PRE-NATIVE PACKET STRUCTURE HARDENED / HISTORICAL MINT WITNESS STILL OPEN / NO NORMATIVE CHANGE.
