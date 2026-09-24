@@ -923,61 +923,62 @@ mkValidator
                        Just pd ->
                          let
                            ticketCs =
-                         pdTicketPolicy pd
+                           ticketCs =
+                             pdTicketPolicy pd
 
-                       ticketTn =
-                         pdTicketName pd
+                           ticketTn =
+                             pdTicketName pd
 
-                       maybeOwner =
-                         ticketOwnerPkh
-                           ticketCs
-                           ticketTn
-                           (txInfoInputs info)
+                           maybeOwner =
+                             ticketOwnerPkh
+                               ticketCs
+                               ticketTn
+                               (txInfoInputs info)
 
-                       ownerSigned =
-                         case maybeOwner of
-                           Just pkh ->
-                             pkElem
-                               pkh
-                               (txInfoSignatories info)
+                           ownerSigned =
+                             case maybeOwner of
+                               Just pkh ->
+                                 pkElem
+                                   pkh
+                                   (txInfoSignatories info)
 
-                           Nothing ->
-                             False
+                               Nothing ->
+                                 False
 
-                       payoutPaid =
-                         case maybeOwner of
-                           Just pkh ->
-                             payoutPaidUsdm
+                           payoutPaid =
+                             case maybeOwner of
+                               Just pkh ->
+                                 payoutPaidUsdm
+                                   info
+                                   oracleState
+                                   oraclePublisher
+                                   pkh
+                                   (pdPrizeAmount pd)
+                                   (txInfoOutputs info)
+
+                               Nothing ->
+                                 False
+
+                           poolInputUsdm =
+                             Economic.poolUsdmValue
                                info
                                oracleState
                                oraclePublisher
-                               pkh
-                               (pdPrizeAmount pd)
-                               (txInfoOutputs info)
+                               poolPolicy
+                               poolName
+                               (txOutValue
+                                 (ownInputResolved ctx))
 
-                           Nothing ->
-                             False
+                           poolOutputUsdm =
+                             Economic.poolUsdmValue
+                               info
+                               oracleState
+                               oraclePublisher
+                               poolPolicy
+                               poolName
+                               (ownOutputValue ctx)
 
-                       poolInputUsdm =
-                         Economic.poolUsdmValue
-                           info
-                           oracleState
-                           oraclePublisher
-                           poolPolicy
-                           poolName
-                           (txOutValue
-                             (ownInputResolved ctx))
-
-                       poolOutputUsdm =
-                         Economic.poolUsdmValue
-                           info
-                           oracleState
-                           oraclePublisher
-                           poolPolicy
-                           poolName
-                           (ownOutputValue ctx)
-
-                     in
+                         in
                            traceIfFalse
                              "B1PrizePool: claim prize input must be Revealed"
                              (pdStatus inPd == Revealed)
