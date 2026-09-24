@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - audit/p2-8-b1-cardano-ledger-runner
+      - work/immortal-green-closure
 
 jobs:
   ledger-runner:
