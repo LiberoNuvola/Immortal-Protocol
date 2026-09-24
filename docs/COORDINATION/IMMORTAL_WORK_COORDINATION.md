@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-24
-**Latest observed commit:** `d0962d126e1bc3a1ad0a7140f69b1e6c4c16727f` — RF8 admission-to-transition evidence binding integrated into CI
+**Latest observed commit:** `11e8bf4c19fb9f0d674c53dd71ff3b5dd5054a68` — current coordinated branch snapshot
 
 ---
 
