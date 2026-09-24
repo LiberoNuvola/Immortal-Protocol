@@ -5741,3 +5741,20 @@ Still OPEN: verified full pre-state UTxO including reference inputs, typed `Epoc
 
 ### Closure rule
 Materios is not GREEN from local tests alone. Closure requires upstream selector provenance + cryptographic GRANDPA verification + transition tuple binding + M6 composition + reproducible real-node evidence, with no selector reimplementation in IMMORTAL.
+
+
+## 2026-09-24 — MATERIOS M6 COMPOSITION BOUNDARY ADDED
+
+Fresh branch re-audit found the Materios trust boundary already separates untrusted transition evidence from branded verified authority state, and GRANDPA finality verification already binds chain/genesis/target/signatures/quorum/ancestry. The remaining integration hole was M6 composition: there was no dedicated fail-closed boundary composing independently verified transition + finality artifacts.
+
+Added:
+- `poc/materios-grandpa/src/m6-composition.ts` — composition statement + external composition-proof verifier + branded verified M6 certificate.
+- `poc/materios-grandpa/test/m6-composition.test.ts` — chain/genesis/source-set mismatch negatives, proof rejection, successful branded certificate, and explicit non-reimplementation guard.
+
+Important semantics: M6 **does not** derive `toAuthorities`, does not invent a selector, and does not infer that the finality target is the activation block. It only binds shared identity and `fromSetId == finality.setId`; the protocol-specific relationship remains an explicit external proof obligation.
+
+Primary-source triangulation also reinforces the architectural boundary: GRANDPA verification relies on the relevant authority set and finality justification, while authority-set handoffs are a separate concern; bridge designs re-verify finality evidence rather than trusting a relayer. citeturn0search2turn0search6
+
+Commits: `0981a1059d676b1a83f402980f6e235d40560214`, `0454b8a7178217a5ff14cf62ff7e07469d429e00`.
+
+Status: **M6 structural boundary advanced; cryptographic composition proof and real Materios node evidence remain OPEN.**
