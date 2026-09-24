@@ -17,6 +17,7 @@ authorizationValid e =
     (EProposalSubmitted, Proposer)   -> True
     (EProposalClassified, System)    -> True
     (EStatusChanged, System)         -> True
+    (EDecisionFinalized, System)      -> True
     (EVoteCast, Voter)               -> True
     (EDelegationSet, Delegate)       -> True
     (EGatesSet, Reviewer)            -> True
