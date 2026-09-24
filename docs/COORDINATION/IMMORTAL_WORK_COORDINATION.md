@@ -5915,3 +5915,12 @@ Triangulated closed GOV-18 + GOV-01 against the live green-branch governance clu
 The closed sources establish the semantic ordering `VOTING_CLOSED → CHALLENGE_OPENED / CHALLENGE_RESOLVED-or-EXPIRY → DECISION_FINALIZED → ADOPTION_RECORDED → CONFORMANCE_RECORDED → CANONICALIZED`. Current Haskell can represent only parts through generic `StatusChanged`; challenge/finality facts remain auxiliary. `DECISION_FINALIZED` and `CONFORMANCE_RECORDED` have no independent state/event representation, while adoption/canonicalization have states but not distinct GOV-18 event identities.
 
 No new governance parameter was introduced. Next gate: inspect consumers of `DecisionRecorded`, `Accepted`, `Adopted`, `Canonical`, `finalizationAt`, and `GovernanceFinality.finalize`; derive the smallest compatible authoritative mapping, then add lifecycle negative twins before changing replay semantics.
+
+
+## 2026-09-24 — GOV-28 lifecycle order closed from normative triangulation
+
+Triangulation of GOV-10, GOV-11, GOV-12, GOV-17, GOV-18 and the Governance Specification v0.1 Release Candidate removes the remaining semantic ambiguity around the canonical lifecycle. New handoff: `docs/COORDINATION/GOV-28_LIFECYCLE_ORDER_CLOSURE.md`, commit `f6e3d5a5bbded95815dfb375b85e3dfd8d06419b`.
+
+Closed convergence: `VOTING → DECISION_FINALIZED → ADOPTION → CONFORMANCE → CANONICALIZATION`. Existing `DecisionRecorded/Accepted/Adopted/Canonical` can remain as implementation/projection states, but must not be treated as the canonical event vocabulary. `Accepted → Adopted` currently lacks a finalization predecessor check; `Adopted → Canonical` lacks a distinct conformance-record requirement; `GovernanceFinality.finalize` still jumps directly from `DecisionRecorded` to `Canonical` and therefore remains auxiliary/incompatible with the canonical path.
+
+This is now an implementation gap, not an open governance decision. The next code pass can safely introduce the missing canonical lifecycle representation without changing frozen parameters. Negative invariants are listed in the handoff.
