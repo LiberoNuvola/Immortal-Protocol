@@ -29,7 +29,7 @@ This follows from the current upstream runtime implementation: Config::select_au
 
 The proof MUST establish which branch executed and authenticate the state used by that branch. IMMORTAL MUST NOT reproduce these runtime branches in TypeScript as a substitute for authenticated runtime execution.
 
-### Current runtime state witness set
+## Current runtime state witness set
 
 For the current upstream runtime, a canonical-state witness must cover the exact storage reads that can influence the result.
 
@@ -55,6 +55,47 @@ The normal path also reads the canonical execution block number and the authorit
 The proof format does not need to expose implementation-specific storage-key hashes as semantic fields if its authenticated state commitment unambiguously commits to the exact runtime state at the execution block. However, a proof implementation MUST provide a verifiable state witness for every runtime read that can affect the branch/result; an opaque claim that “the state was canonical” is insufficient.
 
 This gives B3 a concrete minimal target: **canonical runtime code identity + execution block/state commitment + branch witness + exact input witness + authenticated runtime execution + resulting committee**.
+
+## Runtime API finding: canonical target narrowed
+
+A direct inspection of the current upstream runtime and the session-validator-management pallet resolves an important ambiguity.
+
+Materios exposes:
+
+`SessionValidatorManagementApi::calculate_committee(authority_selection_inputs, sidechain_epoch)`
+
+through the runtime API. The runtime implementation delegates directly to:
+
+`SessionCommitteeManagement::calculate_committee(...)`
+
+and the pallet implementation of `calculate_committee` delegates directly to:
+
+`T::select_authorities(authority_selection_inputs, sidechain_epoch)`
+
+with no alternate committee algorithm in between.
+
+Therefore the runtime API is **not merely the vendor Ariadne selector**. Its execution enters the same authoritative `Config::select_authorities` implementation that contains the state-dependent Materios branches and post-selection guards described above. This is a materially stronger and more precise B3 target than treating `calculate_committee` as an isolated pure selector.
+
+This does **not** close B3. The remaining problem is provenance of the execution itself: the proof must establish that this runtime API call was executed by the canonical Materios runtime/code at the claimed canonical block/state, with the exact SCALE input bytes, and that its returned committee is the authenticated result. A locally invoked runtime API call without canonical state/finality/code binding remains an execution result, not a publisher-independent canonical-state proof.
+
+### Consequence for the proof architecture
+
+The preferred execution target can now be stated precisely:
+
+`SessionValidatorManagementApi::calculate_committee`
+
+with:
+
+- exact SCALE-encoded `AuthoritySelectionInputs`;
+- exact `sidechain_epoch`;
+- canonical execution block hash/number;
+- runtime version/code identity;
+- authenticated state commitment for all reads performed by `Config::select_authorities`;
+- returned committee bytes.
+
+This is preferable to reproducing `select_authorities` in TypeScript. It also avoids claiming that a vendor-only call proves the runtime's PinnedCommittee, liveness, slack, quorum, or break-glass branches.
+
+The remaining engineering question is transport: determine whether the Materios node exposes a verifiable execution-proof path for this runtime API (or whether a node-side proof service/RPC must be added). The proof boundary should not be weakened merely because ordinary JSON-RPC exposes the runtime API without exposing its execution witness.
 
 ## Bound statement
 
@@ -115,7 +156,8 @@ Still required for real Materios evidence:
 3. a real finalized-block/authority-set fixture;
 4. verification that the authenticated output becomes the repository's VerifiedAuthoritySetTransition;
 5. replay evidence tying the proof to the exact bound execution context;
-6. a real finalized Materios fixture containing the canonical runtime identity, execution block/state commitment, selection inputs, and storage values required to reproduce the selected branch.
+6. a real finalized Materios fixture containing the canonical runtime identity, execution block/state commitment, selection inputs, and storage values required to reproduce the selected branch;
+7. a node-side or otherwise independently verifiable execution-proof transport for `SessionValidatorManagementApi::calculate_committee`, if the canonical Materios node does not expose one directly.
 
 Until those artifacts exist, Materios authority-selection/finality provenance remains OPEN.
 
