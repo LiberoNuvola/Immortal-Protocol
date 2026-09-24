@@ -5624,3 +5624,14 @@ Commit: `e524ebc83a027c2914a22588007337adeca5ca16`.
 Status: P2.8 BABBAGE-TX / PPARAMS NATIVE-DECODE STAGE IMPLEMENTED / COMPILE-CI VERIFICATION PENDING / UTxO + EPOCHINFO + SYSTEMSTART + EVALUATION STILL OPEN.
 
 No normative economic change.
+## 2026-09-24 — Yaci timing provenance preserved for P2.8
+
+The real Cardano lab now persists the raw output of `yaci-devkit info` as `audit/yaci-evidence/yaci-devkit-info.txt` before the economic traces execute.
+
+The Yaci DevKit cluster-info surface exposes `Start Time`, `Slot Length` and `Epoch Length`; these are the concrete source fields needed later to construct authentic `SystemStart` and epoch/slot mapping rather than inventing timing parameters. citeturn717417search3
+
+Only evidence capture was added. The runner still must decode and validate these values against the ledger-required `SystemStart` and `EpochInfo`; raw CLI text is not itself a typed ledger object.
+
+Commit: `f015320132831e372386a90a8f18df9f966c7d1d`.
+
+Status: P2.8 TIMING PROVENANCE CAPTURE STRENGTHENED / TYPED SYSTEMSTART + EPOCHINFO MATERIALIZATION STILL OPEN / NO NORMATIVE CHANGE.
