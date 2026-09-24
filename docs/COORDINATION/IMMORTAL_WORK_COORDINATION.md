@@ -4860,3 +4860,40 @@ The Gate 41 helper has therefore been corrected back to `https://api.koios.rest/
 This correction is important: the earlier `516a9ca...` v0 change must not be treated as evidence that v0 is current. No historical witness response has been interpreted or claimed from either version. Direct provider retrieval remains an acquisition task, not a semantic conclusion.
 
 **Gate 41 status remains OPEN:** historical PRE mint redeemer/witness and serialized transaction CBOR remain the primary missing artifacts. No economic or validator semantics changed.
+
+
+## 2026-09-24 — Autonomous all-front sweep
+
+This operational update records direct current-branch verification at HEAD `e6bafb58bb3987a87afc427a41c3fb680e25621d`.
+
+### Gate 41 / PRE-Snek
+- The current branch has the Koios acquisition helper on `https://api.koios.rest/api/v1`, matching the latest provider triangulation already recorded in this register.
+- The exact target remains tx `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`, PRE policy `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c4`, purpose `mint`.
+- Direct acquisition was attempted from the execution environment but DNS/network access to `api.koios.rest` is unavailable; therefore **no redeemer response is claimed**. The helper remains the reproducible acquisition path.
+- The semantic status stays OPEN: no seed/min-ADA interpretation is promoted from the observed 3 ADA.
+
+### P2.8 / evaluator
+- Current Cardano documentation confirms deterministic validation and that exact transaction inputs/context determine script execution; redeemer indexing depends on canonical input ordering. This supports the existing requirement that P2.8 use the exact ledger-aligned transaction/UTxO/PParams/EpochInfo/SystemStart rather than synthetic context.
+- The closure target remains: evidence packet → typed ledger objects → `evalTxExUnitsWithLogs` → persisted ExUnits or exact script failure, with negative input-binding tests.
+- No evaluator green result is claimed from source inspection alone.
+
+### B4 / B5 / B6
+- Current project state remains: B4 preservation materially strengthened but real-ledger provenance open; B5 admission boundary hardened but authoritative witness production/real execution open; B6 partial with universal aggregate witnesses but not full V3↔Cardano action equivalence.
+- No new economic rule was introduced. The universal bridge remains additive/fail-closed.
+- The next concrete closure test is action-by-action: authenticated pre-state → candidate post-state → ProtectedCapital/RawSurplus → Economic Gate → admissible transition → observed Cardano state.
+
+### Materios / AG-01
+- Materios authority-selection authority remains in the upstream selector boundary; no TypeScript selector replacement is justified.
+- The remaining proof target is authenticated authority-set transition + finalized GRANDPA evidence + ancestry/quorum linkage.
+- AG-01 remains on the canonical replay/finality evidence path; governance implementation has the Accepted/Rejected final-outcome correction and lifecycle separation, while current-head CI remains the evidence gate.
+
+### Genesis / C10–C15
+- Genesis application semantics remain closed at the documented threshold and carrier boundary; fresh Yaci execution and production deployment/provenance correlation remain the decisive evidence gaps where not already observed.
+- C13/C14/C15 are implementation-hardened but not ledger-green merely from code inspection.
+
+### Universal boundary / research
+- The universal/application state bridge remains the correct non-destructive direction. No big-bang V3 refactor is justified before consumer/conformance mapping is complete.
+- Research novelty remains open: individual mechanisms are established prior art; only the composition/boundary discipline is under comparative study, with no novelty claim.
+
+### Current conclusion
+**MULTI-FRONT ACTIVE / NO NORMATIVE CHANGE.** The main remaining closure class across fronts is now evidence continuity: exact canonical transition identity → authenticated pre-state → generated artifact/transaction identity → observed ledger consequence. Tooling/network limitations must not be converted into semantic claims.
