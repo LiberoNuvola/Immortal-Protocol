@@ -5967,3 +5967,23 @@ Do **not** infer the PRE mint redeemer from later curve-spend redeemers, the cur
 - historical Snek formula/version: OPEN
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — GOV-28 canonical replay guard implemented
+
+After the lifecycle-order closure, the canonical replay boundary was tightened without introducing any new normative parameter. Commit sequence currently reaches `eee99fb8adad8b815fce6464f37a7b760b2e6420`.
+
+### Implemented
+- `GovernanceCanonicalReplay.canonicalLifecycleAdmission` is now the first state/event admission seam after envelope validation.
+- Canonical replay explicitly rejects legacy `EStatusChanged` payloads that collapse GOV-18 lifecycle acts into `Accepted`, `Adopted`, or `Canonical`.
+- Rejection occurs before `applyEvent`, preserving the no-mutation invariant.
+- `GovernanceCanonicalReplayTest.hs` adds a negative twin proving the collapsed `Accepted` shortcut is rejected.
+- Existing canonical replay fixture was repaired to include required evidence references.
+
+### Deliberately not implemented yet
+Distinct `DECISION_FINALIZED`, `ADOPTION_RECORDED`, `CONFORMANCE_RECORDED`, and `CANONICALIZED` event constructors/payloads are **not** invented in this pass. Their exact payload/witness representation still has to be derived from the already-closed GOV-18 record and existing finality/conformance structures. This keeps the patch fail-closed rather than manufacturing semantics.
+
+External event-sourcing guidance also supports the architectural direction: immutable ordered events are replayed to derive state, and event schema evolution needs an explicit compatibility/versioning strategy. citeturn0search0
+
+### Current classification
+**CLOSING / implementation evidence pending.** The repository change is committed; no claim is made here that the Haskell governance package has compiled or that CI passed.
