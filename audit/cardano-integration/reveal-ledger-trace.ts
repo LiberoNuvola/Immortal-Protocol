@@ -155,6 +155,8 @@ const wallet = JSON.parse(
 const provider = new Blockfrost(API, '')
 const lucid = await Lucid.new(provider, 'Preprod')
 const protocolParameters = await provider.getProtocolParameters()
+const jsonReplacer = (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? value.toString() : value
 console.log(JSON.stringify({
   protocolParametersCostModelLengths: Object.fromEntries(
     Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
@@ -404,6 +406,14 @@ const submission = await executionAdapter.submit(reveal)
 const txHash = submission.transactionRef
 if (!signedReveal) throw new Error('Adapter did not retain the signed Reveal for replay evidence')
 const txCbor = signedReveal.toCBOR()
+writeFileSync(
+  'audit/yaci-evidence/reveal-tx.cbor',
+  Buffer.from(txCbor, 'hex'),
+)
+writeFileSync(
+  'audit/yaci-evidence/reveal-protocol-parameters.json',
+  JSON.stringify(protocolParameters, jsonReplacer, 2),
+)
 await lucid.awaitTx(txHash)
 
 const postPrizeUtxos = await waitFor(
