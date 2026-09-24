@@ -19,6 +19,7 @@ authorizationValid e =
     (EStatusChanged, System)         -> True
     (EDecisionFinalized, System)      -> True
     (EAdoptionRecorded, System)       -> True
+    (EConformanceRecorded, Reviewer) -> True
     (EVoteCast, Voter)               -> True
     (EDelegationSet, Delegate)       -> True
     (EGatesSet, Reviewer)            -> True
