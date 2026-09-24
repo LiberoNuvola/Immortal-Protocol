@@ -5210,3 +5210,14 @@ Commits:
 This does not add a new threshold or oracle. It prevents witness-controlled precision from altering the frozen Genesis valuation.
 
 Status: PRE-GENESIS valuation precision boundary **HARDENED / TRANSITION STILL OPEN**.
+
+
+## 2026-09-24 — Genesis oracle-precision conformance mismatch fixed
+
+Current-head inspection of `PRE-RICH/profile/GenesisTreasuryAdmission.ts` found that the admission implementation already returned `INVALID_ORACLE_PRECISION`, while the declared `GenesisTreasuryAdmission.reason` union did not include that case. The new adversarial test added coverage for precision values outside the canonical `1_000_000` scale, so the mismatch would have surfaced as a TypeScript type/conformance failure.
+
+Added `INVALID_ORACLE_PRECISION` to the union without changing the Genesis threshold, valuation formula, or canonical precision.
+
+Commit: `023e10e2b2da5b0e1ebede519c7f2817e489e2d4`.
+
+**Status:** GENESIS ORACLE-BOUNDARY CONFORMANCE MISMATCH FIXED / NO NORMATIVE ECONOMIC CHANGE.
