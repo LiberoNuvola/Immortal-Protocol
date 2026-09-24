@@ -156,3 +156,29 @@ Before introducing a universal Treasury state field, the next artifact should be
 No implementation change is justified yet from this mapping alone.
 
 Status: REPRESENTATION MAP COMPLETE / NORMATIVE BOUNDARY STILL OPEN.
+
+## 2026-09-24 — Current-branch Treasury conformance re-triangulation
+
+Fresh inspection of the current closure branch at ref `046eb7ffd307dd84605087ddd5ae7f738af23453` confirms that `plutus/Treasury.hs` is still a four-destination percentage validator. It requires the datum percentages to sum to 10000 basis points and checks prize, stake, reserve and maintenance outputs.
+
+The current PRE-RICH normative specification, however, explicitly classifies the former `75 / 10 / 10 / 5` allocation as **HISTORICAL / NON-CANONICAL** and states that player payments enter protocol-controlled Treasury without a fixed current allocation rule. The same specification defines Treasury→PrizePool funding as protocol-controlled and subject to the economic invariants.
+
+Therefore the correct classification is **not** “Treasury semantics are closed by the existing validator”. The concrete validator is a **legacy/application Cardano realization whose conformance to the current PRE-RICH policy is OPEN** unless a current caller/transition proves that its percentage fields are no longer the canonical distribution authority.
+
+This finding does **not** justify changing the validator yet. First prove its live usage surface:
+
+1. all current callers/builders of `TreasuryAction = Distribute`;
+2. whether `src/treasuryPolicy.ts` is still used by an economically material flow;
+3. whether Treasury→PrizePool funding is now the canonical path;
+4. whether any deployed artifact derives its authority from the four percentage fields.
+
+If the four-way split is live in an economically material path, it is a concrete conformance blocker. If it is unreachable/legacy, quarantine it explicitly rather than refactoring economic semantics.
+
+### Non-regression
+
+- Do **not** restore or reinterpret `75/10/10/5`.
+- Do **not** introduce a replacement allocation percentage.
+- Do **not** promote the validator's four percentage fields into IMMORTAL economics.
+- Do **not** change ProtectedCapital/RawSurplus semantics to accommodate the legacy validator.
+
+**Status:** TREASURY FRONT OPEN / LEGACY VALIDATOR CONFORMANCE UNRESOLVED / USAGE-SURFACE AUDIT REQUIRED.
