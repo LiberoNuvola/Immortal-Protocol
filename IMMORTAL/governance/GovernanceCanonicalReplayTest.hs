@@ -205,6 +205,36 @@ main = do
         "DECISION_FINALIZED advances the compatible Accepted projection"
 
   putStrLn "GOV-28 DECISION FINALIZATION CHECKS PASSED"
+  let rejectedProposal = finalizationProposal
+        { proposalId = 8
+        , proposalVotes = [Vote 8 1 Against 150, Vote 8 2 Abstain 150]
+        , proposalStatus = DecisionRecorded
+        }
+      rejectedChallenge = Challenge "ch-8" 8 250 ChallengeRejected
+      rejectedRecord = finalizationRecord
+        { decisionProposalId = 8
+        , decisionYesWeight = 0
+        , decisionNoWeight = 60
+        , decisionAbstentionWeight = 40
+        , decisionApprovalReached = False
+        , decisionFinalOutcome = Rejected
+        , decisionChallenges = [rejectedChallenge]
+        , decisionCanonicalizationReference = "canon-ref-8"
+        }
+      rejectedEvent = finalizedEvent
+        { eventProposalId = 8
+        , eventPayload = PayloadDecisionFinalized rejectedRecord
+        }
+      rejectedState = GovernanceState 1 [rejectedProposal] 0
+  case applyCanonicalEvent ruleset emptyState rejectedState Nothing (withCommitment rejectedEvent) of
+    Left err -> error ("FAIL: rejected decision finalization rejected: " ++ err)
+    Right st -> do
+      assert (proposalStatus (head (proposals st)) == Rejected)
+        "DECISION_FINALIZED preserves a failed decision as Rejected"
+      assert (finalizationAt (head (proposals st)) == Just 259400)
+        "Rejected decision still records deterministic finalization time"
+
+  putStrLn "GOV-28 REJECTED DECISION FINALIZATION CHECK PASSED"
   let acceptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Just 259400 }] 1
   case applyCanonicalEvent ruleset emptyState acceptedState (Just (withCommitment finalizedEvent)) (withCommitment adoptionEvent) of
     Left err -> error ("FAIL: adoption rejected: " ++ err)
