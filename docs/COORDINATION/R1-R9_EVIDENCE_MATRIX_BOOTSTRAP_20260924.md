@@ -39,7 +39,7 @@ A front is not considered DISCHARGED merely because I or P is true.
 | R5 | Governance/upgrade material exists | Identify an executed upgrade/governance transition and its evidence; documentation alone is insufficient | OPEN |
 | R6 | Composition is documented as a later/secondary obligation | No reason to treat this as a mainnet prerequisite until the single-system evidence baseline is established | DEFERRED, NOT CLOSED |
 | R7 | Accounting/partitioning work exists | Verify one canonical treasury/partition model against implementation and evidence | NEEDS AUDIT |
-| R8 | Profile/accounting boundary work exists | Verify S0/accounting semantics and application partition without reopening closed economics | NEEDS AUDIT |
+| R8 | Economic submission boundary, admission witness and transition-evidence binding now have implementation/regression coverage | Verify canonical fingerprint provenance and concrete validator/ledger refinement; keep generic infrastructure submission distinct from economic mutation paths | PARTIAL / NEEDS EVIDENCE |
 | R9 | Oracle/evaluation completeness is an evidence front | Establish what constitutes complete Omega coverage and which outcomes remain unmodeled | NEEDS EVIDENCE |
 
 ## State-boundary finding
@@ -69,7 +69,7 @@ Instead, first complete this matrix with concrete artifacts and dependencies. On
 
 ## Next operational sequence
 
-1. Populate R2 RF1–RF11 evidence rows.
+1. Populate R2 RF1–RF11 evidence rows, including the new RF8 admission/fingerprint boundary.
 2. Audit state-boundary consumers before any extraction.
 3. Continue B4/B5/B6 in parallel.
 4. Run one bounded Gate 41 primary-witness recovery sweep.
