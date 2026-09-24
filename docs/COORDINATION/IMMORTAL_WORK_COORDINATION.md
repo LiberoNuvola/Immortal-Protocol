@@ -6204,3 +6204,14 @@ The public web environment still cannot execute the Koios API call itself, so no
 - 10 ADA = creator initial-buy funding — OPEN
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — GOV-28 negative twins + reconstructed challenge boundary
+
+Nuova pass fail-closed sul lifecycle canonico. Aggiunti negative twins per DECISION_FINALIZED prima della scadenza, challenge upheld, witness decisionale alterato, stato proposal errato, ADOPTION_RECORDED senza finalizzazione e adoption timestamp precedente alla finalizzazione. Aggiunto anche controllo diretto su challenge ricostruita esattamente alla boundary di expiry.
+
+Durante la verifica è riemerso un gap concreto in GovernanceFinality.validChallenges: la versione live non imponeva il limite superiore sulla challenge ricostruita e non rifiutava ID vuoti. Corretto fail-closed: votingClosedAt <= openedAt < votingClosedAt + finalitySeconds, ID non vuoto, proposal coerente. Commit 564c5a633b8fa614bf38e876a2dc84f886f8d811.
+
+Replay hardening adoption: ADOPTION_RECORDED ora richiede Accepted, finalizationAt presente e eventTimestamp >= finalizationAt. Commit b1883b55ebdfecec60b0a79e2c709fe8291c32d6; test 55dce308703b4e92ff8550fb8a0a4c522b21c718.
+
+Triangolazione normativa GOV-10/GOV-11/GOV-18 conferma: conformance è una verifica indipendente, non un alias di approval; canonicalization richiede conformance evidence dove l'implementazione è coinvolta. Le fonti chiuse non definiscono ancora un payload minimo autonomo per CONFORMANCE_RECORDED; quindi non viene inventato in questa pass. Prossimo gate: derivare il minimo witness compatibile dalle strutture di conformance/gate/evidence già esistenti, poi introdurre l'evento.
