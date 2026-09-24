@@ -5,6 +5,7 @@ import GovernanceEventSchema
 import GovernanceCanonicalReplay
 import GovernanceFinality
 import GovernanceDecisionWitness
+import GovernanceConformanceWitness
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -183,6 +184,33 @@ main = do
     Right st -> assert (proposalStatus (head (proposals st)) == Adopted)
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
+
+  let conformanceRecord = ConformanceRecord
+        { conformanceProposalId = 7
+        , conformanceImplementationCommit = "impl-commit-7"
+        , conformanceRulesetVersion = 1
+        , conformanceTestVectorVersion = "gov-v0.1-tests"
+        , conformanceEnvironmentToolchain = "ghc-test-env"
+        , conformanceTestResults = "all-mandatory-pass"
+        , conformanceFailedTestRecord = Nothing
+        , conformanceCanonicalInputFixtures = "fixtures-7"
+        , conformanceReplayOutput = "replay-7"
+        }
+      conformanceEvent = CanonicalEvent
+        "evt-conformance" 7 1 EConformanceRecorded Reviewer 259402
+        (PayloadConformanceRecorded conformanceRecord)
+        "payload-conformance" (Just "evt-adopted") [EvidenceRef "conformance-evidence"] AcceptedEvent
+      adoptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 2
+  case applyCanonicalEvent emptyState adoptedState (Just adoptionEvent) conformanceEvent of
+    Left err -> error ("FAIL: conformance rejected: " ++ err)
+    Right st -> assert (eventsApplied st == 3)
+      "CONFORMANCE_RECORDED follows Adopted projection"
+
+  let tamperedConformance = conformanceRecord { conformanceFailedTestRecord = Just "mandatory-failure" }
+      tamperedConformanceEvent = conformanceEvent { eventPayload = PayloadConformanceRecorded tamperedConformance }
+  case applyCanonicalEvent emptyState adoptedState (Just adoptionEvent) tamperedConformanceEvent of
+    Left _ -> putStrLn "PASS: failed conformance evidence blocks CONFORMANCE_RECORDED"
+    Right _ -> error "FAIL: failed conformance evidence accepted"
 
   let lateChallenge = finalizationChallenge { challengeOpenedAt = 259400 }
   assert (not (validChallenges finalizationProposal [lateChallenge]))
