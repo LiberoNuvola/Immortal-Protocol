@@ -5180,3 +5180,16 @@ Commit: `dc5479c95b9bf52e212754cb3c8f46d2acf4fe3d`.
 This makes the Treasury-relayer side-door closure executable as a CI guard rather than documentation-only evidence. The guard specifically covers the legacy `treasuryWorker` surface and rejects direct `lucid.signTx` / `lucid.submitTx` calls there.
 
 **Status:** RF8 TREASURY SIDE-DOOR CLOSED / REGRESSION IN CI / V3 TREASURY MIGRATION STILL OPEN / NO NORMATIVE ECONOMIC CHANGE.
+
+
+## 2026-09-24 — Cardano Ledger Audit workflow self-trigger fixed
+
+The previous Cardano Ledger Audit workflow failure was confirmed from the actual job log: Cabal was invoked from repository root while `audit/cardano-ledger-runner/cabal.project` declares `packages: .`, causing `The package directory '.' does not contain any .cabal file.`
+
+The workflow was corrected to run build/run commands from `audit/cardano-ledger-runner`. The workflow's own YAML was also added to its push path filters so future runner changes trigger the audit automatically.
+
+Commit: `7f24b056af19d93aa042472ac36f3713c93433cb`.
+
+This is CI/tooling correction only. It does not constitute ledger evaluation or a P2.8 green result. The actual evaluator remains open.
+
+**Status:** LEDGER AUDIT WORKFLOW INVOCATION FIXED / SELF-TRIGGER WIRED / LEDGER EVALUATION OPEN / NO NORMATIVE CHANGE.
