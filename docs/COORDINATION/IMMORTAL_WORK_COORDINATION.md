@@ -5169,3 +5169,14 @@ Commits:
 - `90ad52b4319e2896030bab0be46ceca95caecca1` — RF8 regression coverage.
 
 **Status:** RF8 TREASURY SIDE-DOOR CLOSED / V3 TREASURY MIGRATION STILL OPEN / NO NORMATIVE ECONOMIC CHANGE.
+
+
+## 2026-09-24 — RF8 regression promoted into CI
+
+The RF8 submission-boundary regression suite now runs in `.github/workflows/adapter-sale-conformance.yml` together with the existing Adapter/economic conformance tests.
+
+Commit: `dc5479c95b9bf52e212754cb3c8f46d2acf4fe3d`.
+
+This makes the Treasury-relayer side-door closure executable as a CI guard rather than documentation-only evidence. The guard specifically covers the legacy `treasuryWorker` surface and rejects direct `lucid.signTx` / `lucid.submitTx` calls there.
+
+**Status:** RF8 TREASURY SIDE-DOOR CLOSED / REGRESSION IN CI / V3 TREASURY MIGRATION STILL OPEN / NO NORMATIVE ECONOMIC CHANGE.
