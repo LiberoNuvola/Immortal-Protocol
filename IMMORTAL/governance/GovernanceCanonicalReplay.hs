@@ -9,6 +9,7 @@ import GovernanceAuthorization
 import RulesetRegistry
 import GovernanceDecisionWitness (DecisionRecord(..), decisionRecordValid, finalizationReady)
 import GovernanceConformanceWitness (ConformanceRecord(..), conformanceRecordValid)
+import GovernanceCanonicalizationWitness (CanonicalizationRecord(..), canonicalizationRecordValid, canonicalizationRequiresConformance, canonicalizationRequiresCompatibility)
 
 canonicalPayloadToGovernanceEvent :: CanonicalPayload -> GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
@@ -42,6 +43,7 @@ applyCanonicalEvent rs st prev ce
         PayloadDecisionFinalized r -> applyDecisionFinalized st r (eventTimestamp ce)
         PayloadAdoptionRecorded pid at -> applyAdoptionRecorded st pid at
         PayloadConformanceRecorded r -> applyConformanceRecorded st r (eventTimestamp ce)
+        PayloadCanonicalized r -> applyCanonicalized st prev r (eventTimestamp ce)
         _ -> applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
 
 applyDecisionFinalized :: GovernanceState -> DecisionRecord -> Timestamp -> Either String GovernanceState
@@ -101,3 +103,32 @@ applyConformanceRecorded st r _at = do
      else if not (conformanceRecordValid p r)
        then Left "conformance witness invalid"
        else Right st { eventsApplied = eventsApplied st + 1 }
+
+
+applyCanonicalized :: GovernanceState -> Maybe CanonicalEvent -> CanonicalizationRecord -> Timestamp -> Either String GovernanceState
+applyCanonicalized st prev r at = do
+  p <- case [p | p <- proposals st, proposalId p == canonicalizationProposalId r] of
+         [p] -> Right p
+         _ -> Left "canonicalization proposal not found"
+  if proposalStatus p /= Adopted
+     then Left "canonicalization requires Adopted projection state"
+     else if not (canonicalizationRecordValid p r)
+       then Left "canonicalization witness invalid"
+       else if not (canonicalizationPredecessorValid p prev)
+         then Left "canonicalization predecessor/gate sequence invalid"
+         else Right st { proposals = [ if proposalId p' == proposalId p
+                                      then p' { proposalStatus = Canonical }
+                                      else p'
+                                    | p' <- proposals st ]
+                       , eventsApplied = eventsApplied st + 1
+                       }
+  where
+    canonicalizationPredecessorValid p Nothing =
+      not (canonicalizationRequiresConformance (proposalClass p))
+    canonicalizationPredecessorValid p (Just ce) =
+      case eventPayload ce of
+        PayloadConformanceRecorded cr ->
+          not (canonicalizationRequiresConformance (proposalClass p)) ||
+          conformanceProposalId cr == proposalId p
+        _ -> not (canonicalizationRequiresConformance (proposalClass p))
+
