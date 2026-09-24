@@ -7,14 +7,12 @@ module GovernanceEventSchema
 
 import Governance
 import GovernanceDecisionWitness (DecisionRecord(..))
-  ( Proposal(..), ProposalId, ProposalClass(..), ProposalStatus(..)
-  , Timestamp, Vote(..), Delegation(..), GateResult(..), Snapshot(..)
-  )
 
 data ActorClass = System | Proposer | Voter | Delegate | Reviewer | Auditor | EmergencyAuthority
   deriving (Eq, Show)
 
 data EventType = EProposalSubmitted | EProposalClassified | EStatusChanged
+  | EDecisionFinalized
   | EVoteCast | EDelegationSet | EGatesSet
   deriving (Eq, Show)
 
@@ -106,7 +104,7 @@ eventSchemaValid e =
   eventTimestamp e >= 0 &&
   payloadProposalId (eventPayload e) == eventProposalId e &&
   eventTypeMatchesPayload (eventType e) (eventPayload e) &&
-  payloadTimestamp (eventPayload e) == eventTimestamp e &&
+  payloadTimestampCompatible e &&
   not (null (payloadCommitment e)) &&
   not (null (evidenceRefs e)) &&
   unique (evidenceRefs e)
