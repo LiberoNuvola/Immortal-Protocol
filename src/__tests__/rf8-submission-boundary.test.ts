@@ -46,6 +46,13 @@ describe('RF8 application submission boundary', () => {
     expect(gameFlowSource).not.toMatch(/revealPrize[\s\S]*?signAndSubmitTx\s*\(/)
     expect(gameFlowSource).not.toMatch(/claimPrize[\s\S]*?signAndSubmitTx\s*\(/)
     expect(gameFlowSource).not.toMatch(/expirePrize[\s\S]*?signAndSubmitTx\s*\(/)
+
+    const expectedActionBindings = gameFlowSource.match(/,\s*'(Reveal|Claim|Expire)'\)/g) ?? []
+    expect(expectedActionBindings.sort()).toEqual([
+      `, 'Claim')`,
+      `, 'Expire')`,
+      `, 'Reveal')`,
+    ])
   })
 
   it('keeps the generic submission helper distinct from economic submission', () => {
