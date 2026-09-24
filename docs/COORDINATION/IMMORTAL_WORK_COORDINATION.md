@@ -5375,3 +5375,14 @@ Commits:
 - 9ea69d1c02605dabcafc928f9821b8249557df74
 
 Status: RF8 ORCHESTRATOR→ACTION-CLASS BINDING IMPLEMENTED / FINGERPRINT PROVENANCE + CANONICAL TRANSITION BINDING EVIDENCE STILL OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — PRE-RICH action-refinement workflow second hygiene pass
+
+A second exact-list audit found six remaining duplicate entries inside the same `push.paths` list of `.github/workflows/pre-rich-action-refinement-conformance.yml`: `PreRichCertifiedTicket.ts`, `PreRichJackpotPolicy.ts`, `PreRichExpiryPolicy.ts`, `src/ticket3d.ts`, `src/gameFlow.ts`, and `src/txHelpers.ts`. They were distinct from the legitimate reuse of paths between `push` and `pull_request` sections.
+
+The duplicate entries were removed without changing the workflow's intended test commands or economic semantics.
+
+Commit: `53d938899c5dd55c5152ba0ca2117a5240f5ccbd`.
+
+**Status:** PRE-RICH ACTION-REFINEMENT `push.paths` DEDUPLICATED / FRESH WORKFLOW EXECUTION STILL REQUIRED.
