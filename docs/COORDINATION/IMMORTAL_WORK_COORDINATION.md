@@ -5454,3 +5454,30 @@ The successful Adapter Conformance run confirms the current RF8 submission-bound
 External ledger cross-check: the pinned upstream `evalTxExUnitsWithLogs` API takes typed protocol parameters, a top-level transaction, UTxO, epoch info and system start, and returns per-redeemer evaluation/failure information. This reinforces that the current P2.8 runner must materialize authentic typed context rather than substitute synthetic inputs. citeturn0search0
 
 **Status:** CURRENT HEAD ADAPTER CI GREEN / P2.8 EVALUATION IN PROGRESS / B4-B6-RF8 SEMANTIC CLOSURE STILL OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 evaluator implementation target re-triangulated
+
+Fresh current-head inspection plus official Cardano Ledger API documentation confirms the remaining P2.8 work is specifically the typed evidence materialization boundary, not another dependency/bootstrap issue.
+
+Current CI run 36040539155 on HEAD 86952a597af4b9092d4daf4f39fffadb956d85f9 remains in progress at GHC/Cabal installation; no evaluator result exists yet.
+
+The runner currently stops safely after checking for tx.cbor, utxo.json, pparams.json, epoch-info.json, system-start.json and manifest.json, and deliberately emits LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED when only the raw Yaci handoff is present.
+
+Official Ledger API confirms evalTxExUnitsWithLogs requires typed PParams, top-level Tx, UTxO, EpochInfo (Either Text), and SystemStart; it returns per-redeemer success/failure together with execution units and logs. The supplied execution budget is ignored by the evaluator. See the official Ledger API cross-check recorded for this iteration.
+
+Next implementation target:
+1. Decode the exact Reveal transaction CBOR into the pinned Ledger-era Tx type.
+2. Materialize the exact consumed UTxO entries into the pinned Ledger UTxO type.
+3. Decode the exact protocol parameters into the pinned PParams type rather than mapping arbitrary JSON fields.
+4. Construct authentic EpochInfo (Either Text) from recorded Yaci epoch/slot evidence.
+5. Materialize the exact SystemStart used by the devnet.
+6. Invoke evalTxExUnitsWithLogs.
+7. Persist the complete typed evaluation report, including per-redeemer logs/failures/exunits, as evidence.
+8. Keep any missing or ambiguous typed component fail-closed.
+
+The Ledger API exposes native CBOR/JSON decoding and protocol-parameter serialization machinery, so the implementation should use Ledger-native decoders rather than inventing a parallel schema.
+
+The raw Yaci packet contains reveal-tx.cbor and reveal-protocol-parameters.json, but the existing runner does not yet materialize all required typed context. The correct next step is a narrow decoding/materialization patch, not a synthetic fixture and not an economic change.
+
+Status: P2.8 BUILD/BOOTSTRAP UNDER CI / TYPED LEDGER MATERIALIZATION IS NEXT BLOCKER / evalTxExUnitsWithLogs STILL OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
