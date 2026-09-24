@@ -59,8 +59,8 @@ export function assertEconomicAdmission(
   if (!witness.actionClass.trim()) {
     throw new Error('Economic admission actionClass is required')
   }
-  if (!witness.actionFingerprint.trim()) {
-    throw new Error('Economic admission actionFingerprint is required')
+  if (!/^[0-9a-fA-F]{64}$/.test(witness.actionFingerprint)) {
+    throw new Error('Economic admission actionFingerprint must be a 32-byte hex digest')
   }
   if (!/^[0-9a-fA-F]{64}$/.test(witness.postStateHash)) {
     throw new Error('Economic admission postStateHash must be a 32-byte hex digest')
