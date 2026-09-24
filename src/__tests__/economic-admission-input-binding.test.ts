@@ -33,6 +33,9 @@ function witness(): EconomicAdmissionWitness {
     decisionReference: 'decision-1',
     authoritativeObservationReference: 'obs-1',
     stateHash: 'c'.repeat(64),
+    actionClass: 'Issue',
+    actionFingerprint: 'd'.repeat(64),
+    postStateHash: 'e'.repeat(64),
     eev: 100n,
     executableLiquidityObservation: observation(),
     requiredImmediateLiquidity: 100n,
@@ -95,6 +98,26 @@ describe('Economic admission provenance', () => {
         [TX_B + '#1'],
       ),
       /source inputs do not match economic action source/,
+    )
+  })
+
+  it('rejects an admission without canonical action binding', () => {
+    assert.throws(
+      () => assertEconomicAdmission(
+        { ...witness(), actionFingerprint: '' },
+        [TX_A + '#0'],
+        [TX_A + '#0'],
+      ),
+      /actionFingerprint is required/,
+    )
+
+    assert.throws(
+      () => assertEconomicAdmission(
+        { ...witness(), postStateHash: 'not-a-hash' },
+        [TX_A + '#0'],
+        [TX_A + '#0'],
+      ),
+      /postStateHash must be a 32-byte hex digest/,
     )
   })
 
