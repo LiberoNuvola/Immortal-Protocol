@@ -5639,3 +5639,42 @@ For the 3 ADA question, accept a semantic attribution only if all three converge
 Current tx3 reverse engineering alone is insufficient. 3 ADA = pool_seed_ada, 3 ADA = fee, 3 ADA = min-ADA, and 3 ADA = provider convention all remain hypotheses until the historical role is demonstrated.
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+## 2026-09-24 — Gate 41 launch-output role decomposition: new historical constraint
+
+Cross-validation against the pinned open-tx3 SnekFun launch model adds a useful semantic decomposition boundary, while explicitly NOT promoting the model to canonical historical PRE rules.
+
+### Independent launch-model semantics
+The pinned open-tx3 `snek-fun` model documents `launch_token` as one transaction containing: metadata output, launch-fee output, bonding-curve pool output, creator initial-token/dev-buy output, and change. Its pool output is the Pool NFT + remaining token supply + `pool_seed_ada`; the creator output is `creator_min_ada + initial_buy_tokens`. It explicitly distinguishes `pool_seed_ada`, `creator_min_ada`, launch fee, and the creator's initial token allocation.
+
+### PRE mint transaction maps to the same semantic topology in the acquired ledger evidence
+For PRE mint tx `0235e186...c6cf4`:
+- output #0 = `2,159,310` lovelace + Snek metadata NFT at the known metadata validator;
+- output #1 = `13,000,000` lovelace + `996,071,981 PRE` + exactly one Pool NFT at the known Snek bonding-curve validator;
+- output #2 = `1,374,890` lovelace + `3,928,019 PRE` + one StepBeyond asset, to the creator-side payment/stake address;
+- output #3 = `2,218,935` pure ADA to the same creator-side address as output #2;
+- total PRE in outputs #1+#2 = exactly `1,000,000,000`.
+
+This gives a strong ledger-level semantic classification of the major outputs: #0 metadata, #1 pool, #2 creator initial-token holding, #3 creator-side change. It also proves the pool started with 996,071,981 PRE while 3,928,019 PRE was already separated to the creator side in the launch transaction.
+
+### New constraint on the 13 ADA question
+The independent Snek decoder defines a 3,000,000-lovelace curve seed and states that the seed is included in the pool reserve/cap accounting while API progress excludes it. The PRE pool output nevertheless contains 13,000,000 lovelace. Therefore the correct historical decomposition target is now:
+`13 ADA pool output = 3 ADA Snek seed + 10 ADA launch-time pool funding component`
+where the `10 ADA` label is deliberately provisional. It may represent initial-buy liquidity, deployment bootstrap, or another launch-time component; the available evidence does not yet prove which.
+
+Importantly, this also rules out treating the 13 ADA as merely the 3 ADA seed: the ledger value is 10 ADA larger, and the current launch model itself treats pool seed funding as a separately supplied aggregate.
+
+### Historical-version warning
+The open-tx3 model is reverse-engineered and describes the current/v1 launch architecture, while PRE's mint is historical. Its value here is semantic cross-validation, not proof that PRE used the same fee/output implementation. In particular, PRE's four-output structure does not directly expose the current model's separate fee output, so current `launch_fee_ada` must not be retrofitted onto PRE.
+
+### Current Gate 41 status
+**Pool output semantic role — STRONGLY IDENTIFIED**
+**Creator initial-token output role — STRONGLY IDENTIFIED**
+**3 ADA seed correspondence — STRONG CROSS-VALIDATED LEAD**
+**13 ADA = 3 + 10 decomposition — ARITHMETIC CONSTRAINT, not yet semantic closure**
+**10 ADA historical role — OPEN**
+**Historical launch fee/output semantics — OPEN**
+**Genesis funding role — OPEN**
+
+### Next deterministic target
+Use the historical PRE launch transaction's mint-policy/redeemer data and contemporaneous implementation/version evidence to identify the origin and intended role of the extra 10 ADA. Do not import current v1 fee/seed constants into historical PRE.
