@@ -1,5 +1,6 @@
 import {
   assertEconomicAdmission,
+  type EconomicActionClass,
   type EconomicAdmissionWitness,
 } from './EconomicAdmission'
 
@@ -43,8 +44,14 @@ export function createCardanoExecutionAdapter(
       admission: EconomicAdmissionWitness | undefined,
       inputReferences: readonly string[],
       liquiditySourceReferences: readonly string[],
+      expectedActionClass?: EconomicActionClass,
     ): Promise<CardanoSubmissionReceipt> {
-      assertEconomicAdmission(admission, inputReferences, liquiditySourceReferences)
+      assertEconomicAdmission(
+        admission,
+        inputReferences,
+        liquiditySourceReferences,
+        expectedActionClass,
+      )
       return this.submitInfrastructure(tx)
     },
   }
