@@ -14,7 +14,28 @@ main :: IO ()
 main = do
   let s = Snapshot 1 0 [(1,60),(2,40)]
       g = GateResult True True True True
-      p0 = Proposal 1 DocumentationOnly s 0 Nothing Nothing (Just 100) Nothing Nothing [] [] g DecisionRecorded
+      pReview = Proposal 1 DocumentationOnly s 0 (Just 0) Nothing Nothing Nothing Nothing [] [] g CommunityReview
+      reviewState = GovernanceState 1 [pReview] 0
+
+  assert "voting cannot open before 7d community review"
+    (case applyEvent reviewState (StatusChanged 1 Voting (communityReviewSeconds - 1)) of
+       Left _ -> True
+       Right _ -> False)
+
+  let Right votingState = applyEvent reviewState (StatusChanged 1 Voting communityReviewSeconds)
+  assert "voting opens at 7d community-review boundary"
+    (case votingState of
+       GovernanceState _ [p] _ -> proposalStatus p == Voting && votingOpenedAt p == Just communityReviewSeconds
+       _ -> False)
+
+  assert "decision cannot be recorded before 5d voting window"
+    (case applyEvent votingState (StatusChanged 1 DecisionRecorded (communityReviewSeconds + votingSeconds - 1)) of
+       Left _ -> True
+       Right _ -> False)
+
+  let s2 = s
+      g2 = g
+      p0 = Proposal 1 DocumentationOnly s2 0 Nothing Nothing (Just 100) Nothing Nothing [] [] g2 DecisionRecorded
       p = p0 { votingClosedAt = Just 100 }
 
   assert "challenge opens inside 3d window"
