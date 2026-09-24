@@ -923,7 +923,6 @@ mkValidator
                        Just pd ->
                          let
                            ticketCs =
-                           ticketCs =
                              pdTicketPolicy pd
 
                            ticketTn =
