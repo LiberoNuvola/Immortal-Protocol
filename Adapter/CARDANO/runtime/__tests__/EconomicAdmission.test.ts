@@ -49,6 +49,16 @@ describe('economic Cardano submission boundary', () => {
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
+  it('rejects a witness whose action class differs from the economic orchestrator', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(
+      adapter.submitEconomic({}, admission, candidateInputs, [pool0], 'Claim'),
+    ).rejects.toThrow('actionClass mismatch')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
   it('rejects admission when authenticated Pool reference is wrong', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
