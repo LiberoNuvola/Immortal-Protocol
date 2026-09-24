@@ -4999,3 +4999,14 @@ Commit: `7b9f6856bcfe30ff8c96b7524d2c5c6646a97867`.
 Immediate exact-commit observation returned no workflow run yet. This is evidence absence, not failure. If a run appears, preserve the runner report before classifying P2.8.
 
 **Status:** P2.8 CI trigger wiring corrected / execution evidence still OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 runner implementation re-triangulation
+
+Fresh exact-branch inspection confirms the workflow now triggers on both the audit branch and `work/immortal-green-closure`. Exact-commit lookup for `1113c960d5267b7b58e0300d526814e59805aef6` still returns zero workflow runs: evidence absence, not failure.
+
+`audit/cardano-ledger-runner/Main.hs` is currently a fail-closed evidence-packet gate, not yet the promised ledger evaluator. It checks non-empty exact Plutus artifacts plus `tx.cbor`, `utxo.json`, `pparams.json`, `epoch-info.json`, `system-start.json`, and `manifest.json`; when complete it prints `COMPLETE_EVIDENCE_PACKET_PRESENT` and explicitly states that parsing/evaluation remains the next step. Although the Cabal file declares Cardano ledger/Plutus dependencies, Main.hs does not yet invoke `evalTxExUnitsWithLogs` or an equivalent ledger-aligned evaluator.
+
+**P2.8 status:** RUNNER WIRED / EVIDENCE-PACKET CHECK IMPLEMENTED / LEDGER EVALUATION NOT YET IMPLEMENTED / NO GREEN CLAIM. Next justified step is typed evidence parsing plus exact ledger-aligned evaluation, not another status document.
+
+No normative economics, validator semantics, or evaluator verdict changed.
