@@ -98,7 +98,7 @@ assert.equal(
   'INVALID_ORACLE_PRECISION',
 )
 assert.equal(
-  admit(observation({ preQuantity: 1n, verifiedPreUsdmPrice: 3999999n, oraclePrecision: 10n })).reason,
+  admit(observation({ preQuantity: 9_999_999n, verifiedPreUsdmPrice: 40_000n })).reason,
   'BELOW_THRESHOLD',
 )
 assert.equal(
