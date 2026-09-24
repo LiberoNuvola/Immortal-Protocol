@@ -10,11 +10,9 @@ source-repository-package
     libs/cardano-ledger-api
     libs/cardano-ledger-binary
     libs/cardano-data
-    libs/cardano-ledger-pretty
     libs/cardano-protocol-tpraos
     libs/small-steps
     libs/non-integral
-    libs/set-algebra
     libs/vector-map
 
 source-repository-package
