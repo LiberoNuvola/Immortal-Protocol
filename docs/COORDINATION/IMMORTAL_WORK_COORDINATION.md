@@ -6319,3 +6319,16 @@ Commits:
 Caveat ancora aperto: il test harness governance esistente presenta già una superficie da riallineare al RulesetRegistry/commitment validation introdotto nel ramo; quindi questa pass non dichiara compile/CI verde. La chiusura normativa di CANONICALIZED è derivata; la chiusura implementativa richiede ancora harness/build evidence.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — GOV-28 harness alignment after CANONICALIZED pass
+
+Riallineato il test harness al controllo già presente nel ramo su RulesetRegistry + commitment binding:
+- introdotto un ruleset v1 di test;
+- gli eventi di replay vengono normalizzati con il digest canonico prima dell'ingresso nel boundary;
+- aggiornate le chiamate al nuovo replay signature;
+- aggiunta la compatibilità temporale esplicita per witness senza timestamp proprio (CONFORMANCE_RECORDED e CANONICALIZED), mantenendo il timestamp dell'evento canonico come autorità temporale.
+
+Commit: 4bfe25d36f2e90dbeb3edf9f85cfc164a91596da, schema timestamp e8f01cad733b07f5cb9eafe71f591a9828f086cd.
+
+Questo elimina due mismatch strutturali individuati nel test harness, ma non equivale ancora a una prova di compile/CI: il runner Haskell non è disponibile nell'ambiente corrente.
