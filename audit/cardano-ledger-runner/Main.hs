@@ -2,6 +2,8 @@
 
 module Main (main) where
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
@@ -94,19 +96,23 @@ main = do
                       putStrLn "Manifest explicitly records raw Yaci materialization only; UTxO/EpochInfo/SystemStart are not typed ledger objects."
                       putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
                     else do
-                      txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
-                      ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
-                      case decodeBabbagePParams ppBytes of
-                        Left err -> do
+                      manifestBytes <- BS.readFile (evidenceDir <> "/manifest.json")
+                  case Aeson.eitherDecodeStrict' manifestBytes :: Either String Aeson.Value of
+                    Left err -> do
+                      putStrLn "RESULT: SAFE_STALL"
+                      putStrLn ("SAFE_STALL_REASON: INVALID_MANIFEST: " <> err)
+                    Right (Aeson.Object manifest) ->
+                      case KeyMap.lookup "status" manifest of
+                        Just (Aeson.String "raw-yaci-context-materialized") -> do
                           putStrLn "RESULT: SAFE_STALL"
-                          putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
-                        Right pp ->
-                          case decodeBabbageTx pp txBytes of
-                            Left err -> do
-                              putStrLn "RESULT: SAFE_STALL"
-                              putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
-                            Right _ -> do
-                              putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
-                              putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
+                          putStrLn "SAFE_STALL_REASON: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED"
+                          putStrLn "Verified raw evidence is not typed UTxO/EpochInfo/SystemStart."
+                        _ -> do
+                          putStrLn "RESULT: SAFE_STALL"
+                          putStrLn "SAFE_STALL_REASON: TYPED_CONTEXT_VERIFICATION_NOT_IMPLEMENTED"
+                          putStrLn "No manifest status can authorize evaluation until native context verification exists."
+                    Right _ -> do
+                      putStrLn "RESULT: SAFE_STALL"
+                      putStrLn "SAFE_STALL_REASON: INVALID_MANIFEST_SHAPE"
 
   putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
