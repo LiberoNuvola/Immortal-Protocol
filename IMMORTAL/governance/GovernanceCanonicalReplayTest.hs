@@ -6,6 +6,14 @@ import GovernanceCanonicalReplay
 import GovernanceFinality
 import GovernanceDecisionWitness
 import GovernanceConformanceWitness
+import GovernanceCommitment (commitmentDigestHex)
+import RulesetRegistry
+
+ruleset :: RulesetRegistry
+ruleset = [RulesetDefinition 1 "ruleset-v1" 0 Nothing]
+
+withCommitment :: CanonicalEvent -> CanonicalEvent
+withCommitment e = e { payloadCommitment = commitmentDigestHex e }
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -153,14 +161,14 @@ main = do
   assert (predecessorValid (Just event1) event2) "predecessor chain"
   assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
   assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
-  case replayCanonical emptyState [event1, event2] of
+  case replayCanonical ruleset emptyState [withCommitment event1, withCommitment event2] of
     Left err -> error ("FAIL: replay rejected: " ++ err)
     Right st -> do
       assert (eventsApplied st == 2) "two canonical events applied"
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"
-  case replayCanonical emptyState [event1, collapsedAcceptedEvent] of
+  case replayCanonical ruleset emptyState [withCommitment event1, withCommitment collapsedAcceptedEvent] of
     Left _ -> putStrLn "PASS: collapsed Accepted shortcut rejected before mutation"
     Right _ -> error "FAIL: collapsed Accepted shortcut mutated canonical state"
 
@@ -169,7 +177,7 @@ main = do
 
   putStrLn "GOV-28 CANONICAL LIFECYCLE ADMISSION CHECKS PASSED"
   let finalizationState = GovernanceState 1 [finalizationProposal] 0
-  case applyCanonicalEvent emptyState finalizationState Nothing finalizedEvent of
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment finalizedEvent) of
     Left err -> error ("FAIL: decision finalization rejected: " ++ err)
     Right st -> do
       assert (finalizationAt (head (proposals st)) == Just 259400)
@@ -179,7 +187,7 @@ main = do
 
   putStrLn "GOV-28 DECISION FINALIZATION CHECKS PASSED"
   let acceptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Just 259400 }] 1
-  case applyCanonicalEvent emptyState acceptedState (Just finalizedEvent) adoptionEvent of
+  case applyCanonicalEvent ruleset emptyState acceptedState (Just (withCommitment finalizedEvent)) (withCommitment adoptionEvent) of
     Left err -> error ("FAIL: adoption rejected: " ++ err)
     Right st -> assert (proposalStatus (head (proposals st)) == Adopted)
       "ADOPTION_RECORDED follows finalized Accepted projection"
@@ -201,7 +209,7 @@ main = do
         (PayloadConformanceRecorded conformanceRecord)
         "payload-conformance" (Just "evt-adopted") [EvidenceRef "conformance-evidence"] AcceptedEvent
       adoptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 2
-  case applyCanonicalEvent emptyState adoptedState (Just adoptionEvent) conformanceEvent of
+  case applyCanonicalEvent ruleset emptyState adoptedState (Just (withCommitment adoptionEvent)) (withCommitment conformanceEvent) of
     Left err -> error ("FAIL: conformance rejected: " ++ err)
     Right st -> assert (eventsApplied st == 3)
       "CONFORMANCE_RECORDED follows Adopted projection"
@@ -222,24 +230,24 @@ main = do
         (PayloadCanonicalized canonicalizationRecord)
         "payload-canonicalized" (Just "evt-conformance") [EvidenceRef "canonicalization-evidence"] AcceptedEvent
       canonicalizedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 3
-  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) canonicalizationEvent of
+  case applyCanonicalEvent ruleset emptyState canonicalizedState (Just (withCommitment conformanceEvent)) (withCommitment canonicalizationEvent) of
     Left err -> error ("FAIL: canonicalization rejected: " ++ err)
     Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
       "CANONICALIZED follows Adopted + conformance projection"
 
   let badCanonicalization = canonicalizationRecord { canonicalizationMandatoryGatesResolved = False }
       badCanonicalizationEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized badCanonicalization }
-  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) badCanonicalizationEvent of
+  case applyCanonicalEvent ruleset emptyState canonicalizedState (Just (withCommitment conformanceEvent)) (withCommitment badCanonicalizationEvent) of
     Left _ -> putStrLn "PASS: unresolved mandatory gate blocks CANONICALIZED"
     Right _ -> error "FAIL: CANONICALIZED accepted unresolved mandatory gate"
 
   let missingConformanceCanonicalization = canonicalizationEvent { predecessor = Just "evt-adopted" }
-  case applyCanonicalEvent emptyState canonicalizedState (Just adoptionEvent) missingConformanceCanonicalization of
+  case applyCanonicalEvent ruleset emptyState canonicalizedState (Just (withCommitment adoptionEvent)) (withCommitment missingConformanceCanonicalization) of
     Left _ -> putStrLn "PASS: missing conformance predecessor blocks CANONICALIZED"
     Right _ -> error "FAIL: CANONICALIZED bypassed conformance"
 
   let earlyCanonicalization = canonicalizationEvent { eventTimestamp = 259401 }
-  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) earlyCanonicalization of
+  case applyCanonicalEvent ruleset emptyState canonicalizedState (Just (withCommitment conformanceEvent)) (withCommitment earlyCanonicalization) of
     Left _ -> putStrLn "PASS: CANONICALIZED cannot precede conformance event"
     Right _ -> error "FAIL: CANONICALIZED preceded conformance"
 
@@ -254,33 +262,33 @@ main = do
     "reconstructed challenge at expiry boundary is invalid"
 
   let preExpiryFinalization = finalizedEvent { eventTimestamp = 259399 }
-  case applyCanonicalEvent emptyState finalizationState Nothing preExpiryFinalization of
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment preExpiryFinalization) of
     Left _ -> putStrLn "PASS: premature DECISION_FINALIZED rejected"
     Right _ -> error "FAIL: premature DECISION_FINALIZED mutated state"
 
   let upheldRecord = finalizationRecord { decisionChallenges = [finalizationChallenge { challengeStatus = ChallengeUpheld }] }
       upheldEvent = finalizedEvent { eventPayload = PayloadDecisionFinalized upheldRecord }
-  case applyCanonicalEvent emptyState finalizationState Nothing upheldEvent of
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment upheldEvent) of
     Left _ -> putStrLn "PASS: upheld challenge blocks DECISION_FINALIZED"
     Right _ -> error "FAIL: upheld challenge allowed finalization"
 
   let tamperedRecord = finalizationRecord { decisionYesWeight = 61 }
       tamperedEvent = finalizedEvent { eventPayload = PayloadDecisionFinalized tamperedRecord }
-  case applyCanonicalEvent emptyState finalizationState Nothing tamperedEvent of
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment tamperedEvent) of
     Left _ -> putStrLn "PASS: tampered decision witness rejected"
     Right _ -> error "FAIL: tampered decision witness accepted"
 
   let wrongState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Nothing }] 0
-  case applyCanonicalEvent emptyState wrongState Nothing finalizedEvent of
+  case applyCanonicalEvent ruleset emptyState wrongState Nothing (withCommitment finalizedEvent) of
     Left _ -> putStrLn "PASS: DECISION_FINALIZED requires DecisionRecorded projection"
     Right _ -> error "FAIL: DECISION_FINALIZED accepted wrong proposal state"
 
-  case applyCanonicalEvent emptyState finalizationState Nothing adoptionEvent of
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment adoptionEvent) of
     Left _ -> putStrLn "PASS: ADOPTION_RECORDED requires prior finalization"
     Right _ -> error "FAIL: ADOPTION_RECORDED bypassed finalization"
 
   let prematureAdoption = adoptionEvent { eventTimestamp = 259399, eventPayload = PayloadAdoptionRecorded 7 259399 }
-  case applyCanonicalEvent emptyState acceptedState (Just finalizedEvent) prematureAdoption of
+  case applyCanonicalEvent ruleset emptyState acceptedState (Just (withCommitment finalizedEvent)) (withCommitment prematureAdoption) of
     Left _ -> putStrLn "PASS: ADOPTION_RECORDED timestamp cannot precede finalization"
     Right _ -> error "FAIL: ADOPTION_RECORDED preceded finalization"
 
