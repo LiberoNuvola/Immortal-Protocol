@@ -10,6 +10,7 @@ import RulesetRegistry
 import GovernanceDecisionWitness (DecisionRecord(..), decisionRecordValid, finalizationReady)
 import GovernanceConformanceWitness (ConformanceRecord(..), conformanceRecordValid)
 import GovernanceCanonicalizationWitness (CanonicalizationRecord(..), canonicalizationRecordValid, canonicalizationRequiresConformance)
+import GovernanceConformance (lifecycleEventAdmissible)
 
 canonicalPayloadToGovernanceEvent :: CanonicalPayload -> Maybe GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
@@ -29,10 +30,11 @@ canonicalPayloadToGovernanceEvent p = case p of
 -- state chain. Until distinct canonical lifecycle constructors exist,
 -- those collapsed terminal states are inadmissible at this boundary.
 canonicalLifecycleAdmission :: GovernanceState -> CanonicalEvent -> Bool
-canonicalLifecycleAdmission _ ce =
+canonicalLifecycleAdmission st ce =
   case eventPayload ce of
-    PayloadStatusChanged _ st _ ->
-      not (st == Accepted || st == Adopted || st == Canonical)
+    PayloadStatusChanged pid next at ->
+      not (next == Accepted || next == Adopted || next == Canonical) &&
+      lifecycleEventAdmissible st pid next at
     _ -> True
 
 applyCanonicalEvent :: RulesetRegistry -> GovernanceState -> Maybe CanonicalEvent
