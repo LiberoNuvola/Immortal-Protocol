@@ -5795,3 +5795,28 @@ Required next evidence remains:
 4. mutation evidence showing the external proof rejects mismatched epoch/inputs/to-authorities/activation block.
 
 Status: M6 STRUCTURAL BOUNDARY = IMPLEMENTED; CRYPTOGRAPHIC/REAL-NODE CLOSURE = OPEN.
+
+
+## 2026-09-24 — MATERIOS M6 PROOF-BOUNDARY INPUT HARDENING
+
+Current branch head after the latest M6 test hardening: `ef4b0b481879834adf0fb1bc427518cf379d5e3f`.
+
+Added adversarial M6 coverage to ensure the external composition verifier receives the complete verified transition/finality artifacts rather than a reduced local surrogate. The test explicitly observes `sidechainEpoch`, `toSetId`, activation-block metadata and finality target metadata, and demonstrates that a mutated epoch is rejected only by the external proof boundary.
+
+This preserves the architectural rule: IMMORTAL does not implement Ariadne/authority-selection mathematics and does not invent a second proof preimage. The local M6 layer binds chain/genesis/source-set identity; the external proof remains responsible for authenticating the protocol-specific relationship between Cardano-derived selector inputs, selected committee, activation state and GRANDPA finality.
+
+External triangulation strengthened the provenance picture:
+- Partner Chains docs state that Ariadne reads committee candidates and parameters from Cardano and selects a new committee for each epoch; `genesisUtxo` is the immutable Partner Chain identifier and the Session Committee Management pallet consumes Cardano-derived selection inputs.
+- Partner Chains release v1.8.0 records an `ariadne_v2` path with guaranteed seats and candidate weights and updates the Polkadot SDK dependency. Therefore historical selector behavior cannot be promoted to current deployment semantics without version binding.
+- The Partner Chains repository is archived and directs continued development to Midnight; deployment-specific current selector/proof provenance therefore remains OPEN.
+
+Primary-source references: Partner Chains introduction, archived repository notice, and release v1.8.0. citeturn1search0turn1search1turn1search2
+
+Status:
+- M6 structural boundary: IMPLEMENTED
+- M6 adversarial input handoff: HARDENED
+- Selector architectural provenance: VERIFIED
+- Exact deployment/version + cryptographic selector/transition proof: OPEN
+- Cryptographic M6 composition proof: OPEN
+- Real finalized Materios node evidence: OPEN
+- No selector reimplementation / no synthetic proof bytes / no normative economic change.
