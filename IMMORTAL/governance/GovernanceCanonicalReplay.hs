@@ -67,9 +67,12 @@ applyAdoptionRecorded st pid at = do
          _ -> Left "adoption proposal not found"
   if proposalStatus p /= Accepted
      then Left "adoption requires Accepted projection state"
-     else if finalizationAt p == Nothing
-       then Left "adoption requires prior decision finalization"
-       else Right st { proposals = [ if proposalId p' == pid
+     else case finalizationAt p of
+       Nothing -> Left "adoption requires prior decision finalization"
+       Just finalizedAt ->
+         if at < finalizedAt
+           then Left "adoption timestamp precedes decision finalization"
+           else Right st { proposals = [ if proposalId p' == pid
                                       then p' { proposalStatus = Adopted }
                                       else p'
                                     | p' <- proposals st ]
