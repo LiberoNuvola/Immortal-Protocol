@@ -39,6 +39,7 @@ applyCanonicalEvent rs st prev ce
   | otherwise =
       case eventPayload ce of
         PayloadDecisionFinalized r -> applyDecisionFinalized st r (eventTimestamp ce)
+        PayloadAdoptionRecorded pid at -> applyAdoptionRecorded st pid at
         _ -> applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
 
 applyDecisionFinalized :: GovernanceState -> DecisionRecord -> Timestamp -> Either String GovernanceState
@@ -54,6 +55,22 @@ applyDecisionFinalized st r at = do
          then Left "decision finalization prerequisites not satisfied"
          else Right st { proposals = [ if proposalId p' == proposalId p
                                       then p' { finalizationAt = Just at }
+                                      else p'
+                                    | p' <- proposals st ]
+                       , eventsApplied = eventsApplied st + 1
+                       }
+
+applyAdoptionRecorded :: GovernanceState -> ProposalId -> Timestamp -> Either String GovernanceState
+applyAdoptionRecorded st pid at = do
+  p <- case [p | p <- proposals st, proposalId p == pid] of
+         [p] -> Right p
+         _ -> Left "adoption proposal not found"
+  if proposalStatus p /= Accepted
+     then Left "adoption requires Accepted projection state"
+     else if finalizationAt p == Nothing
+       then Left "adoption requires prior decision finalization"
+       else Right st { proposals = [ if proposalId p' == pid
+                                      then p' { proposalStatus = Adopted }
                                       else p'
                                     | p' <- proposals st ]
                        , eventsApplied = eventsApplied st + 1
