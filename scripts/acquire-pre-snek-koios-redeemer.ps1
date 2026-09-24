@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $txHash = "0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4"
 $prePolicy = "1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c4"
-$base = "https://api.koios.rest/api/v0"
+$base = "https://api.koios.rest/api/v1"
 $outDir = ".\evidence\pre-snek\gate41-koios-redeemer"
 $pageSize = 1000
 $maxPages = 100
