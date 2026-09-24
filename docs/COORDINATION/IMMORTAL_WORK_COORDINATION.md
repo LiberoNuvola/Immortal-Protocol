@@ -5642,3 +5642,16 @@ Fresh current-branch inspection of `audit/cardano-integration/reveal-ledger-trac
 The same Reveal lab computes `preStateFingerprint`, `postStateFingerprint`, and `actionFingerprint` with a local `hashJson(JSON.stringify(...))` helper. This is useful **observation evidence for RF10/RF11**, but it is not adopted as RF8 canonical identity because the repository has not established a normative canonical serialization/preimage for V3 economic state/action/post-state. No production semantic is changed.
 
 Status: P2.8 RAW EVIDENCE CONTINUITY CONFIRMED / LEDGER-NATIVE TYPED CONTEXT MATERIALIZATION OPEN / RF8 LAB HASH CLASSIFIED OBSERVATION-ONLY / NO NORMATIVE CHANGE.
+
+## 2026-09-24 — P2.8 native typed-packet step
+
+After resolving the second dependency blocker (`cardano-slotting`), the runner was advanced without synthesizing missing ledger context.
+
+- Added Babbage-era ledger dependency and native `cardano-ledger-binary` decoding surface.
+- Added `TypedPacketDecode.hs` to decode the supplied `pparams.json` as `PParams BabbageEra` and the supplied `tx.cbor` as `Tx TopTx BabbageEra`, using the protocol version carried by PParams and the upstream `decodeFullAnnotator`/`DecCBOR` path.
+- `Main.hs` remains fail-closed: the native decode path is reached only after the complete typed evidence packet exists; raw Yaci handoff still produces `SAFE_STALL`.
+- If native PParams/Tx decoding succeeds, the runner reports `TYPED_BABBAGE_TX_PPARAMS_DECODED` and explicitly requires exact UTxO, EpochInfo and SystemStart materialization before `evalTxExUnitsWithLogs`.
+
+Current status: P2.8 TYPED TX/PPARAMS DECODE PATH IMPLEMENTED / BUILD + REAL PACKET DECODE PENDING / UTxO + EpochInfo + SystemStart + EXECUTION EVALUATION OPEN.
+
+No economic or validator semantics changed. No synthetic ledger context introduced.
