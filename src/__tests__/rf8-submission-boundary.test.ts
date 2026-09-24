@@ -36,4 +36,31 @@ describe('RF8 application submission boundary', () => {
     expect(source).toMatch(/createCardanoExecutionAdapter\s*\(/)
     expect(source).toMatch(/adapter\.submit\s*\(/)
   })
+  it('requires current economic orchestrators to use the economic submission path', () => {
+    const economicFiles = [
+      'mint.ts',
+      'gameFlow.ts',
+    ]
+
+    const forbiddenGenericEconomicPatterns = [
+      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\\s\\S]*?signAndSubmitTx\\s*\\(/,
+      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\\s\\S]*?\\.submit\\s*\\(/,
+    ]
+
+    for (const relativePath of economicFiles) {
+      const source = readFileSync(join(ROOT, relativePath), 'utf8')
+      expect(source).toContain('submitEconomic')
+      expect(source).not.toMatch(forbiddenGenericEconomicPatterns[0])
+      expect(source).not.toMatch(forbiddenGenericEconomicPatterns[1])
+    }
+  })
+
+  it('keeps the generic submission helper distinct from economic submission', () => {
+    const source = readFileSync(join(ROOT, 'txHelpers.ts'), 'utf8')
+    expect(source).toMatch(/export async function signAndSubmitTx/)
+    expect(source).toMatch(/export async function signAndSubmitEconomicTx/)
+    expect(source).toMatch(/adapter\\.submit\\(/)
+    expect(source).toMatch(/adapter\\.submitEconomic\\(/)
+  })
+
 })
