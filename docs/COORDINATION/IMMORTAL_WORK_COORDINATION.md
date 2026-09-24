@@ -6242,3 +6242,14 @@ The acquisition helper was therefore extended (commit `bbb6617c53cc6321a4dee62ea
 - 10 ADA = creator initial-buy funding: OPEN
 
 No normative economics changed.
+
+
+## 2026-09-24 — GOV-28 CONFORMANCE_RECORDED witness derived
+
+Nuova triangolazione GOV-02 + Governance Conformance & Verification Specification + GOV-10/GOV-11/GOV-18. È stato trovato un witness minimo già supportato da fonti chiuse: implementation version/commit, governance ruleset version, test-vector version, environment/toolchain, test results, failed-test record if applicable, canonical input fixtures, replay output. GOV-02 conferma inoltre la separazione tra verifica/conformance e governance/canonicalization e assegna al reviewer/evidence role la funzione di dichiarazione di conformance secondo il processo.
+
+Implementazione sul green branch: `GovernanceConformanceWitness.hs` + `EConformanceRecorded` / `PayloadConformanceRecorded`, autorizzato come `Reviewer`; il replay richiede la proiezione `Adopted` e un witness valido, senza modificare la semantica canonica di adoption. Negative twin: un failed-test record impedisce `CONFORMANCE_RECORDED`.
+
+Commits: witness `28c9431b78a4057fad2af6eacaad766fd04a83d0`; schema `0afdd8d359cc6bc9ab1bcb48ec1b182ce307cb07`; replay `da67f4490a86ceb44f12590b202f761393ec1505`; authorization `733f13a6b6801cd3e33341d6a5febfc6733ffe72`; tests `169a3b0d10d6c1dfc4d38427ef31745a1d6dc716`.
+
+Resta aperto `CANONICALIZED`. La prossima derivazione deve usare i requisiti già chiusi di GOV-10: target artifact/specification, version transition, complete decision record, evidence refs, conformance evidence dove richiesto, compatibility/upgrade result, nessun mandatory gate unresolved e deterministic version identifier. Nessuna semantica nuova deve essere inventata.
