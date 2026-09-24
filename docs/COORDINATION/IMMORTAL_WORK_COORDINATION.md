@@ -6400,3 +6400,12 @@ Gap ancora aperti e non modificati:
 - Il significato di `decisionCanonicalizationReference` al momento della finalizzazione non viene reinterpretato senza una fonte normativa più precisa.
 
 No economic constants or closed GOV-01→GOV-18 semantics changed.
+
+## 2026-09-24 — State-aware lifecycle admission wired
+Nuovo delta minimo sul gap GOV-28 consumer/conformance:
+- `statusChangeAllowed` è ora esportato da `Governance.hs` senza modificarne la logica normativa esistente.
+- `GovernanceConformance.hs` espone `lifecycleEventAdmissible`, che risolve il Proposal corrente e applica il predicate state-aware esistente.
+- `GovernanceCanonicalReplay.canonicalLifecycleAdmission` ora usa realmente `lifecycleEventAdmissible` per i legacy `StatusChanged`, oltre a continuare a respingere i shortcut verso Accepted/Adopted/Canonical.
+- Aggiunti test per classificazione ammessa e Voting prematuro rifiutato.
+Commits: `aa4d26995d1b80e4a117aefd845522beece8186e`, `ebe4008750554ba9c127196b3f0e6ee03366ead1`, `56a882e26639497a23c40d2a9be6fef4741011ca`, `61dab8a71ce42a97a8100cbba1375f528409f0e6`.
+Questo non chiude ancora il lifecycle GOV-18 completo: gli atti dedicati DECISION_FINALIZED/ADOPTION/CONFORMANCE/CANONICALIZED mantengono i loro handler dedicati; `GovernanceFinality.finalize` resta legacy e non autorevole.
