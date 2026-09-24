@@ -5585,3 +5585,18 @@ Applied narrow source-package extension in `audit/cardano-ledger-runner/cabal.pr
 Fix commit: `9708619c8d9dc1f85a61e507358968e4d6cf6165`.
 
 No evaluator or economic code was changed. P2.8 remains dependency-resolution work; typed ledger context and `evalTxExUnitsWithLogs` are still unreached. No GREEN claim.
+
+## 2026-09-24 — RF8 fingerprint provenance re-audit: existing SHA-256 is not canonical V3 identity
+
+A direct current-branch inspection re-audited the remaining RF8 semantic fingerprint gap. The branch contains a deterministic SHA-256 commitment implementation in `poc/materios-checkpoint/src/checkpoint.ts`, but its preimage is explicitly limited to the GRANDPA authority list (count + public keys + weights) and it produces a Materios PoC authority commitment. It is therefore not a canonical serializer/hash for V3 economic state, economic action, or candidate post-state.
+
+The active RF8 evidence layer (`CanonicalTransitionEvidence.ts`) only validates the 64-hex digest shape, while `EconomicAdmissionTransitionBinding.ts` compares those identifiers without computing them. No authoritative current-branch function was found that defines the V3 state/action/post-state hash preimages required by RF8.
+
+Disposition:
+- do **not** reuse the Materios authority commitment for RF8;
+- do **not** invent a JSON/CBOR canonicalization or hash preimage;
+- keep RF8 semantic fingerprint provenance OPEN until the normative V3 identity/serialization source is identified or explicitly specified by an authorized decision.
+
+This closes a false-positive avenue in the provenance audit without changing economic, governance, validator, or adapter semantics.
+
+Status: RF8 SEMANTIC FINGERPRINT PROVENANCE **CONFIRMED OPEN / EXISTING SHA-256 HELPER REJECTED AS IRRELEVANT PREIMAGE / NO NORMATIVE CHANGE**.
