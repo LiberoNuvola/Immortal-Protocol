@@ -36,8 +36,12 @@ resolveChallenge c st =
 validChallenges :: Proposal -> [Challenge] -> Bool
 validChallenges p cs =
   uniqueIds cs &&
-  all (\c -> challengeProposalId c == proposalId p &&
-             challengeOpenedAt c >= maybe 0 id (votingClosedAt p)) cs
+  all (\c -> not (null (challengeId c)) &&
+             challengeProposalId c == proposalId p &&
+             challengeOpenedAt c >= maybe 0 id (votingClosedAt p) &&
+             case votingClosedAt p of
+               Just t -> challengeOpenedAt c < t + finalitySeconds
+               Nothing -> False) cs
   where
     uniqueIds xs =
       let ids = map challengeId xs
