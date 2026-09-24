@@ -184,3 +184,29 @@ Accordingly M6 remains **🟡 OPEN / NOT INTEGRATED**. The CAES material is quar
 - whether the evidence is accepted for closure.
 
 This prevents a repository-wide commit search from being mistaken for evidence on the branch under evaluation.
+
+## 10.3 Closure-branch dispersion audit — 2026-09-24
+
+A direct branch audit was performed against the live ref `work/immortal-green-closure`, currently at HEAD `3750bb4f8a936f78f3f97d86fd8d25c4ea4f5730`.
+
+Observed in `docs/COORDINATION/`:
+- 45 coordination markdown files total;
+- 5 Gate 41-specific documents;
+- 22 GOV-28-specific documents;
+- 3 R2/RF8 recovery/audit documents.
+
+These counts are inventory facts, not closure scores. The five Gate 41 documents form one historical acquisition/evidence-recovery workstream. The GOV-28 set contains distinct lifecycle, finality, replay, consumer-conformance and false-closure findings, including an explicit open integration blocker. Their presence does not by itself establish governance closure.
+
+The branch also contains the CAES handoff explicitly stating that the CAES Transition Lab remains on the isolated audit branch and must not yet be moved into `work/immortal-green-closure`. A direct lookup of `audit/caes-transition-lab/ComposedTransitionCertificate.ts` on the closure branch returns 404. Therefore CAES implementation remains **NOT INTEGRATED** on green.
+
+### Dispersion-control rule
+
+From this point, new coordination artifacts should be created only when they do at least one of the following:
+1. close or materially narrow an existing gate;
+2. preserve a raw acquisition/provenance artifact that cannot safely live elsewhere;
+3. record a distinct blocker/finding that changes the next executable action;
+4. consolidate prior findings into an authoritative matrix.
+
+A new document must identify its parent gate/front and evidence role. Duplicate status narratives should be consolidated rather than multiplied. This is an operational control only; it does not delete or invalidate existing evidence.
+
+**Current implication:** documentation volume is not treated as progress. Closure remains evidence-driven, branch-specific, and artifact-provenance-bound.
