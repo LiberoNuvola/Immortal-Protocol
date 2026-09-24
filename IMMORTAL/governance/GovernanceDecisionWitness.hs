@@ -34,7 +34,7 @@ decisionRecordValid p r =
   decisionSnapshotId r == snapshotId (proposalSnapshot p) &&
   decisionSnapshotAt r == snapshotAt (proposalSnapshot p) &&
   decisionEligibleWeight r == eligibleWeight (proposalSnapshot p) &&
-  decisionFinalOutcome r == Accepted &&
+  decisionFinalOutcome r == expectedFinalOutcome p &&
   decisionRequiredGates r == proposalGates p &&
   decisionYesWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == For] &&
   decisionNoWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == Against] &&
@@ -43,6 +43,14 @@ decisionRecordValid p r =
   decisionApprovalReached r == approvalReached (proposalClass p) (proposalSnapshot p) (proposalDelegations p) (proposalVotes p) &&
   decisionRulesetVersion r > 0 &&
   not (null (decisionCanonicalizationReference r))
+
+expectedFinalOutcome :: Proposal -> ProposalStatus
+expectedFinalOutcome p =
+  if quorumReached (proposalSnapshot p) (proposalDelegations p) (proposalVotes p) &&
+     approvalReached (proposalClass p) (proposalSnapshot p) (proposalDelegations p) (proposalVotes p) &&
+     gatesPassed (proposalClass p) (proposalGates p)
+    then Accepted
+    else Rejected
 
 finalizationReady :: Proposal -> [Challenge] -> Timestamp -> Bool
 finalizationReady p cs now =
