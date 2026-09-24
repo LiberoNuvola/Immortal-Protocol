@@ -5350,3 +5350,28 @@ Commit: `3990640a61ab11c9c7eff777a3948ee2ec4452ea`.
 No legacy percentage rule was reactivated, changed, or promoted; Treasury distribution remains fail-closed pending authoritative V3 EconomicAdmission semantics.
 
 **Status:** LEGACY TREASURY SURFACE EXPLICITLY QUARANTINED / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — RF8 economic action-class binding hardened at production submission boundary
+
+Fresh current-head inspection found that the EconomicAdmissionWitness already carries the intended action class, but the adapter previously only required a non-empty value. That allowed a caller to present an admission for one economic action while the orchestrator submitted a different action-shaped transaction.
+
+Safe correction:
+- introduced the closed action vocabulary already used by the V3 transition layer: Issue / Reveal / Claim / Expire;
+- EconomicAdmission can now optionally validate an expected action class;
+- CardanoExecutionAdapter forwards that expected class to the admission check;
+- production Mint path binds the admission to Issue;
+- production Reveal / Claim / Expire paths bind the admission to their respective actions;
+- added a negative adapter regression proving a mismatched action class is rejected before signing/submission.
+
+This binds an existing declared field to the concrete orchestrator; it does not define a new fingerprint algorithm or change economic semantics.
+
+Commits:
+- c209ed6d7b8c5f2056919c45664c4d633c340f43
+- 0d86c1454d66b3470347796393cf9593c7cc8d45
+- e23081512874f354a9d91f77e9dd91b622726e51
+- 7b45de2949306d28d17346a9a6d9a778b79c4a13
+- a8c89bb5486be3eb8bb2da245e968cbfd9b2f10a
+- 9ea69d1c02605dabcafc928f9821b8249557df74
+
+Status: RF8 ORCHESTRATOR→ACTION-CLASS BINDING IMPLEMENTED / FINGERPRINT PROVENANCE + CANONICAL TRANSITION BINDING EVIDENCE STILL OPEN / NO NORMATIVE CHANGE.
