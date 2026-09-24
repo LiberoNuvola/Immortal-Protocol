@@ -5078,3 +5078,17 @@ Commit: `5bc3a60445af1dd813ab190aa7db9760b75863ed`.
 This removes the previous CI continuity gap between evidence generation and the P2.8 packet presence gate. It does **not** make P2.8 green: the runner still stops safely until the required ledger-typed context (`UTxO`, exact `PParams`, `EpochInfo`, `SystemStart`) is present and `evalTxExUnitsWithLogs` is actually invoked.
 
 **Status:** HANDOFF WIRED / LEDGER EVALUATION OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 current-head re-observation
+
+Current closure branch HEAD is `4789859ead926259b082a461082b9c9183a0d747`.
+
+The P2.8 workflow handoff is now present and the runner explicitly distinguishes the real raw Yaci handoff from the canonical typed ledger packet. On the current HEAD, exact-commit workflow lookup still returns no workflow runs. This is evidence absence, not failure.
+
+Current P2.8 classification:
+**HANDOFF WIRED / RAW REAL-LEDGER EVIDENCE AVAILABLE AFTER LAB RUN / TYPED UTxO-PParams-EpochInfo-SystemStart MATERIALIZATION OPEN / evalTxExUnitsWithLogs OPEN / NO GREEN CLAIM.**
+
+The real Reveal lab remains valuable for transaction/post-state observation and B6 evidence continuity, but its generic adapter submission path does not by itself satisfy B5 Economic Admission execution.
+
+No normative economics, validator semantics, or governance rules changed.
