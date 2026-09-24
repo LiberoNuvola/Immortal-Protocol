@@ -296,6 +296,11 @@ main = do
   case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment tamperedEvent) of
     Left _ -> putStrLn "PASS: tampered decision witness rejected"
     Right _ -> error "FAIL: tampered decision witness accepted"
+  let wrongOutcomeRecord = finalizationRecord { decisionFinalOutcome = DecisionRecorded }
+      wrongOutcomeEvent = finalizedEvent { eventPayload = PayloadDecisionFinalized wrongOutcomeRecord }
+  case applyCanonicalEvent ruleset emptyState finalizationState Nothing (withCommitment wrongOutcomeEvent) of
+    Left _ -> putStrLn "PASS: finalized decision must record Accepted outcome"
+    Right _ -> error "FAIL: DecisionRecorded accepted as finalized outcome"
 
   let wrongState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Nothing }] 0
   case applyCanonicalEvent ruleset emptyState wrongState Nothing (withCommitment finalizedEvent) of
