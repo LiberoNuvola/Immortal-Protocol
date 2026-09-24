@@ -137,7 +137,7 @@ test-suite governance-tests
 
 test-suite governance-canonical-replay-tests
     type: exitcode-stdio-1.0
-    hs-source-dirs: test
+    hs-source-dirs: ../IMMORTAL/governance
     main-is: GovernanceCanonicalReplayTest.hs
     build-depends:
         base ^>=4.18.2,
