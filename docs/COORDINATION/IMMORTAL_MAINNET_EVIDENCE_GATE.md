@@ -165,3 +165,22 @@ The manifest is deliberately evidence-only: it does not create a new economic ru
 Current status: **YELLOW / REAL-LEDGER PACKET OPEN**.
 
 The next closure action is to populate this packet from one fresh target-environment Reveal execution and verify the reconstructed post-state against the canonical transition witness.
+## 10.2 Branch provenance correction
+
+An evidence item is not attributable to the closure branch merely because its commit exists in the repository. The matrix must record the ref/branch on which the artifact actually exists and whether it has been intentionally integrated.
+
+Current triangulation confirms a separate CAES audit branch exists: `audit/p2-8-b1-reference-scripts-2026-09-21`. Its current `audit/caes-transition-lab/` directory contains the CAES transition experiment artifacts. The previously cited `ComposedTransitionCertificate.ts` is therefore not evidence that `work/immortal-green-closure` has integrated composition.
+
+Accordingly M6 remains **🟡 OPEN / NOT INTEGRATED**. The CAES material is quarantined audit evidence until an explicit integration decision is made and the resulting artifact is present on the closure branch.
+
+### Mandatory provenance fields for future matrix rows
+
+- repository;
+- branch/ref;
+- commit SHA;
+- artifact path;
+- artifact role: normative / implementation / test / diagnostic / audit;
+- integration status;
+- whether the evidence is accepted for closure.
+
+This prevents a repository-wide commit search from being mistaken for evidence on the branch under evaluation.
