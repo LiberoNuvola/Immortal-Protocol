@@ -5622,3 +5622,20 @@ Reconstruct the historical launch transaction semantics/version sufficiently to 
 without assigning the `?` amount until the historical launch implementation or transaction semantics proves it.
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+## 2026-09-24 — Gate 41 Snek launch-model cross-check: historical layout must not be projected from current v1
+
+A deeper cross-check of the tx3 reverse-engineered Snek model was performed. The model explicitly defines launch-time quantities launch_fee_ada, metadata_min_ada, creator_min_ada, pool_seed_ada, initial_buy_tokens, and curve_tokens_remaining, and pins the pool-NFT mint redeemer to a seed UTxO/output reference. The model also exposes a per-pool ada_cap_thresh_for_pool rather than treating the threshold as a universal immutable number. This confirms a useful structural decomposition of launch funding, but the model is explicitly unofficial/preliminary and is a current v1 model, not proof of the historical PRE implementation.
+
+A critical non-equivalence was identified: the tx3 model's illustrative launch layout places metadata/fee/pool/dev-buy outputs in a different positional order from the reconstructed PRE mint transaction, where the Pool-NFT-bearing output is #1. Therefore current tx3 output indices and parameter semantics cannot be projected backward onto PRE merely because the stable Pool-NFT policy and general launch architecture match.
+
+The source does, however, provide an important historical-research target: reconstruct the exact launch transaction's output-role mapping and compare it against the contemporaneous Snek builder/API implementation or a same-era reference launch, rather than assuming today's v1 layout.
+
+### New closure rule for Gate 41
+For the 3 ADA question, accept a semantic attribution only if all three converge:
+1. historical PRE transaction output/value evidence;
+2. contemporaneous Snek implementation/builder/configuration evidence;
+3. provider info.outputId interpretation/evidence.
+
+Current tx3 reverse engineering alone is insufficient. 3 ADA = pool_seed_ada, 3 ADA = fee, 3 ADA = min-ADA, and 3 ADA = provider convention all remain hypotheses until the historical role is demonstrated.
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
