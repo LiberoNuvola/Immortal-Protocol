@@ -14,7 +14,7 @@ import Cardano.Ledger.Core (TopTx, pvMajor)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Cardano.Ledger.Binary.Decoding.DecCBOR (decCBOR)
+import Cardano.Ledger.Binary.Decoding (decCBOR)
 import Lens.Micro ((^.))
 
 decodeBabbagePParams :: BS.ByteString -> Either String (PParams BabbageEra)
