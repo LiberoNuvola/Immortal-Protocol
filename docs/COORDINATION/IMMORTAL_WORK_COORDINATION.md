@@ -5635,3 +5635,10 @@ Only evidence capture was added. The runner still must decode and validate these
 Commit: `f015320132831e372386a90a8f18df9f966c7d1d`.
 
 Status: P2.8 TIMING PROVENANCE CAPTURE STRENGTHENED / TYPED SYSTEMSTART + EPOCHINFO MATERIALIZATION STILL OPEN / NO NORMATIVE CHANGE.
+
+## 2026-09-24 — P2.8 raw-evidence continuity + RF8 lab-hash classification
+Fresh current-branch inspection of `audit/cardano-integration/reveal-ledger-trace.ts` shows the real Yaci Reveal lab already persists two critical raw components: the signed Reveal CBOR and the provider-returned protocol-parameters JSON; its `reveal-transition.json` also embeds the exact Yaci `/txs/{hash}/utxos` response. Therefore the P2.8 blocker is **not absence of raw transaction/UTxO evidence**. The missing layer is conversion of that raw evidence into the exact ledger-native `UTxO BabbageEra`, `EpochInfo`, and `SystemStart` objects required before `evalTxExUnitsWithLogs`. Official Ledger sources confirm that validity/time translation depends on `EpochInfo` + `SystemStart`, and script context lookup depends on typed `UTxO`. citeturn1search1turn1search2turn1search3
+
+The same Reveal lab computes `preStateFingerprint`, `postStateFingerprint`, and `actionFingerprint` with a local `hashJson(JSON.stringify(...))` helper. This is useful **observation evidence for RF10/RF11**, but it is not adopted as RF8 canonical identity because the repository has not established a normative canonical serialization/preimage for V3 economic state/action/post-state. No production semantic is changed.
+
+Status: P2.8 RAW EVIDENCE CONTINUITY CONFIRMED / LEDGER-NATIVE TYPED CONTEXT MATERIALIZATION OPEN / RF8 LAB HASH CLASSIFIED OBSERVATION-ONLY / NO NORMATIVE CHANGE.
