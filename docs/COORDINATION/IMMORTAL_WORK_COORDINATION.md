@@ -4841,3 +4841,12 @@ The strongest common closure object is not another abstraction layer. It is a **
 Do not reopen KA/KC/KD, ladder, 500×, Jackpot ownership/funding semantics, expiry mechanism, ProtectedCapital formula, or Genesis threshold to solve CI/evaluator/evidence failures. Fix fixtures/toolchains/evidence binding at the smallest boundary justified by the observed failure.
 
 **Status:** MULTI-FRONT RECONCILED / NO NORMATIVE CHANGE / FRESH CI + REAL-LEDGER EVIDENCE REMAIN DECISIVE.
+
+
+## 2026-09-24 — Gate 41: Koios API-version correction
+A further provider triangulation caught a concrete acquisition defect before any historical evidence was claimed: the helper was using `/api/v1`, while the current Koios client/documentation identifies `v0` as the default API version and the mainnet host as `api.koios.rest`. citeturn0search0turn0search1turn0search4
+
+Corrected `scripts/acquire-pre-snek-koios-redeemer.ps1` to `https://api.koios.rest/api/v0`.
+Commit: `516a9ca576aaeb9299e3cb999a9a17583c207f99`.
+
+This is exactly the kind of pre-acquisition correction required by Gate 41: no response was interpreted, and no evidence status was promoted. The helper remains fail-closed and paginated. Historical PRE mint redeemer remains OPEN until a real response is acquired and preserved.
