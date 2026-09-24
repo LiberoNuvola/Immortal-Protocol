@@ -5820,3 +5820,83 @@ Status:
 - Cryptographic M6 composition proof: OPEN
 - Real finalized Materios node evidence: OPEN
 - No selector reimplementation / no synthetic proof bytes / no normative economic change.
+
+
+## 2026-09-24 — MATERIOS VERSION-DRIFT / SELECTOR RUNTIME PROVENANCE
+
+A deeper triangulation of the public Materios source repository closes an important part of the previously open selector-version question, while exposing a concrete **runtime/tooling version split** that must not be silently collapsed.
+
+### Source-level fact: the Materios runtime source currently compiles Ariadne from IOG Partner Chains v1.5.1
+
+The current public `Flux-Point-Studios/materios` `partnerchain/Cargo.toml` pins the IOG Partner Chains crates — including:
+
+- `authority-selection-inherents`;
+- `pallet-session-validator-management`;
+- `sp-session-validator-management`;
+- `sidechain-domain`;
+- `session-manager`;
+
+to upstream tag **`v1.5.1`**.
+
+The repository also vendors `authority-selection-inherents` as version **1.5.1**, explicitly describing it as a fork of IOG v1.5.1 with Materios patches.
+
+The vendored `select_authorities.rs` is therefore currently the strongest source-level selector provenance we have for the Materios runtime source. It shows the canonical flow remains:
+
+`genesis_utxo + AuthoritySelectionInputs + sidechain_epoch -> candidate filtering -> weighted selection -> committee`.
+
+The local fork adds Materios-specific post-selection behavior (including duplicate collapse / safety floor and an early-launch timing change elsewhere in the fork). Those patches are **not** Ariadne reimplementation in IMMORTAL; they are part of the Materios runtime implementation and must be treated as deployment-specific semantics.
+
+### Critical distinction: CLI/tooling v1.8.0 != source-level runtime dependency v1.5.1
+
+Materios public operator documentation says the **`partner-chains-node` CLI binary is v1.8.0** and describes the current v6 network as using that binary.
+
+This does **not** prove that the on-chain runtime's selector implementation is v1.8.0.
+
+Current source evidence says the runtime workspace is built against the v1.5.1 IOG crates and a vendored v1.5.1 authority-selection fork. Therefore:
+
+- **CLI / operator tooling:** documented as v1.8.0;
+- **Materios runtime source dependency for Ariadne:** v1.5.1 + Materios fork patches;
+- **live deployed runtime spec:** not yet cryptographically pinned from a direct RPC/runtime-version observation in this audit;
+- **exact live WASM/source commit correspondence:** OPEN.
+
+This distinction is now a mandatory M6 provenance constraint. We must not use the v1.8.0 `ariadne_v2` release semantics as if they were the semantics of the currently compiled Materios runtime without a direct deployment/source correspondence.
+
+### Current runtime source snapshot
+
+The public Materios runtime source currently declares `spec_version = 238` in `partnerchain/runtime/src/lib.rs`.
+
+This is **repository-source evidence**, not yet direct live-node evidence. Public Materios documentation only states that v6 has live runtime upgrades and advises querying `state_getRuntimeVersion`; therefore the live spec/version must still be captured from the canonical node and bound to the deployed WASM artifact.
+
+### New M6 provenance matrix
+
+| Artifact / claim | Evidence | Status |
+|---|---|---|
+| Ariadne architectural role | IOG Partner Chains docs | VERIFIED |
+| Materios selector source dependency | Materios `Cargo.toml` | **VERIFIED: v1.5.1** |
+| Selector implementation | vendored `authority-selection-inherents/src/select_authorities.rs` | **VERIFIED: v1.5.1 + Materios patches** |
+| CLI / operator toolkit | Materios docs | **VERIFIED: v1.8.0 documented** |
+| Ariadne v2 semantics | IOG v1.8.0 release | VERIFIED as upstream v1.8.0 behavior, **NOT attributed to Materios runtime** |
+| Materios source runtime spec | `runtime/src/lib.rs` | **VERIFIED IN SOURCE: spec 238** |
+| Live deployed runtime spec | direct canonical RPC | **OPEN** |
+| Live WASM ↔ source commit | reproducible artifact hash/build correspondence | **OPEN** |
+| Cryptographic selector/transition proof artifact | deployment evidence | **OPEN** |
+| Cryptographic M6 composition proof | external proof verifier | **OPEN** |
+| Real finalized-node evidence | finalized header + GRANDPA justification + transition | **OPEN** |
+
+### Action
+
+Do **not** migrate IMMORTAL's selector assumptions to Ariadne v2 merely because v1.8.0 exists.
+
+The next concrete M6 step is to obtain, from the canonical Materios deployment:
+
+1. `state_getRuntimeVersion` at a finalized block;
+2. the exact deployed runtime/WASM identity or reproducible runtime artifact;
+3. the corresponding Materios source commit/tag;
+4. the exact selector proof/transition artifact, if one exists;
+5. a real finalized authority-set transition carrying epoch, `toSetId`, activation block and GRANDPA target.
+
+Only after that correspondence is established can the deployment-specific selector version be promoted from **source-provenance** to **live-runtime-provenance**.
+
+No selector mathematics has been added to IMMORTAL. No economic semantics changed.
+
+Status: **SELECTOR SOURCE VERSION IDENTIFIED (v1.5.1 + MATERIOS PATCHES) / CLI VERSION SEPARATED (v1.8.0) / LIVE RUNTIME + CRYPTOGRAPHIC PROVENANCE STILL OPEN.**
