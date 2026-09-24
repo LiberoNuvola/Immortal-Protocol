@@ -4962,3 +4962,27 @@ Consequence:
 This correction supersedes any earlier wording that treated repository-wide CAES commits as progress already present on `work/immortal-green-closure`.
 
 **No normative change.**
+
+## 2026-09-24 — Closure-branch dispersion audit / current-head correction
+
+Fresh direct branch verification establishes the current closure ref as `work/immortal-green-closure` at HEAD `3750bb4f8a936f78f3f97d86fd8d25c4ea4f5730`.
+
+Inventory of `docs/COORDINATION/` on this exact branch:
+- 45 markdown coordination files;
+- 5 Gate 41-specific documents;
+- 22 GOV-28-specific documents;
+- 3 R2/RF8 recovery/audit documents.
+
+These are inventory facts only. They are not gate scores. Gate 41 remains one historical acquisition workstream; GOV-28 documents represent multiple distinct lifecycle/finality/replay/conformance findings, including an explicit OPEN finality-to-acceptance integration blocker. Documentation presence is not equivalent to closure.
+
+The green branch contains `CAES_PRIOR_ART_HANDOFF_2026-09-23.md`, whose explicit instruction is still: do not move the CAES experiment into `work/immortal-green-closure`. Direct lookup of `audit/caes-transition-lab/ComposedTransitionCertificate.ts` on green returns 404. Therefore:
+
+- CAES experiment: isolated audit material;
+- M6 composition: **OPEN / NOT INTEGRATED**;
+- no repository-wide commit may be promoted to green-branch closure evidence without exact ref/path provenance.
+
+### Operational dispersion control
+
+No new coordination document should be created unless it closes/narrows an existing gate, preserves indispensable raw provenance, records a distinct actionable blocker, or consolidates existing findings. New documents must state their parent gate/front and evidence role. Duplicate status narratives should be consolidated rather than multiplied.
+
+This is an operational anti-dispersion rule only. No economics, validator semantics, governance rules or architecture authority changed.
