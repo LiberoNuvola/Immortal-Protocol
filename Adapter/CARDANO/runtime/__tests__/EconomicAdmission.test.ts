@@ -69,6 +69,14 @@ describe('economic Cardano submission boundary', () => {
     expect(lucid.signTx).not.toHaveBeenCalled()
   })
 
+  it('rejects a malformed action fingerprint before signing', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(adapter.submitEconomic({}, { ...admission, actionFingerprint: 'not-a-digest' }, candidateInputs, [pool0]))
+      .rejects.toThrow('actionFingerprint')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+  })
+
   it('rejects malformed admission before signing', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
