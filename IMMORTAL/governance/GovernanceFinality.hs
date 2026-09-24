@@ -65,5 +65,5 @@ canFinalize p cs now =
 finalize :: Proposal -> [Challenge] -> Timestamp -> Either String Proposal
 finalize p cs now
   | canFinalize p cs now =
-      Right p { proposalStatus = Canonical, finalizationAt = Just now }
+      Right p { proposalStatus = Accepted, finalizationAt = Just now }
   | otherwise = Left "proposal cannot be finalized"
