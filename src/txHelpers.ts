@@ -3,7 +3,10 @@ import { prizeValidator } from './loadValidator'
 import {
   createCardanoExecutionAdapter,
 } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
-import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
+import type {
+  EconomicActionClass,
+  EconomicAdmissionWitness,
+} from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 /**
  * Helper leggero per costruire una claim tx.
@@ -49,6 +52,7 @@ export async function signAndSubmitEconomicTx(
   admission: EconomicAdmissionWitness | undefined,
   inputReferences: readonly string[],
   liquiditySourceReferences: readonly string[],
+  expectedActionClass?: EconomicActionClass,
 ) {
   const adapter = createCardanoExecutionAdapter(lucid)
   const result = await adapter.submitEconomic(
@@ -56,6 +60,7 @@ export async function signAndSubmitEconomicTx(
     admission,
     inputReferences,
     liquiditySourceReferences,
+    expectedActionClass,
   )
   return result.transactionRef
 }
