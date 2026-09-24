@@ -5306,3 +5306,25 @@ Commits: `34eff997d0b25f36bbe704b254f981e1a40bdeb0`, `5e92f84c5e90fedcf65c163c3c
 Boundary remains explicit: the bridge does not calculate or validate the underlying canonical fingerprints. RF8 semantic hash provenance therefore remains OPEN; this change only prevents an already-issued admission witness from being silently paired with different canonical action/pre/post identifiers in the evidence layer.
 
 **Status:** RF8 STRUCTURAL WITNESS→TRANSITION BINDING **INTEGRATED + CI WIRED** / HASH PROVENANCE **OPEN** / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — RF10/RF11 evidence semantics corrected: observed Cardano hashes are not canonical V3 identity
+
+Fresh inspection of the real Yaci Reveal trace found a semantic over-labeling in the evidence layer. The trace was hashing concrete UTxO/datums before and after the transaction, while CanonicalTransitionEvidence names those fields as canonical V3 state fingerprints. The trace does not currently observe all authoritative inputs required by the PRE-RICH to V3 projection (notably protected-capital and control observations), so those hashes cannot be promoted to canonical V3 state identity.
+
+Safe correction:
+- added Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.ts;
+- added dedicated regression coverage for observed action/pre-state/post-state/transaction binding;
+- real Yaci trace now records observedCardanoTransitionEvidence and no longer calls its ledger-observation hashes canonical V3 fingerprints;
+- Adapter Sale Conformance workflow executes the new observed-evidence regression.
+
+This is a provenance/terminology correction only. No Economic Gate, V3 transition, validator, payout, ProtectedCapital or governance semantics changed.
+
+Commits:
+- 6984329f020fb1466d7860d377c028802c71b516
+- 0ac2ea1aeaaa4c5b4d5856ed9acfeac5e156c1e8
+- 70b8ae6a089609d0c532a200d65fc133c4feef5b
+- de6bb3728da146c3ac9bd2d3a002ba21aa029e50
+- 6c0ab4124ff149505630baf94764cf6c95e3d1c0
+
+Status: RF10/RF11 OBSERVED-LEDGER EVIDENCE SEMANTIC BOUNDARY CORRECTED / CANONICAL V3 IDENTITY + RF8 PROVENANCE STILL OPEN / NO NORMATIVE CHANGE.
