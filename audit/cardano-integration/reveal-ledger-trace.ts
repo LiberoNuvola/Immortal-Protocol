@@ -395,6 +395,11 @@ const reveal = await lucid
   .complete()
 
 let signedReveal: any = null
+/*
+ * Audit harness only: this trace measures a real Yaci ledger realization.
+ * It is not the production economic-admission path. Production economic
+ * orchestrators must use submitEconomic() with an authoritative witness.
+ */
 const executionAdapter = createCardanoExecutionAdapter({
   signTx: async (tx: unknown) => {
     signedReveal = await lucid.signTx(tx as any)
@@ -402,7 +407,7 @@ const executionAdapter = createCardanoExecutionAdapter({
   },
   submitTx: async (signedTx: unknown) => lucid.submitTx(signedTx as any),
 })
-const submission = await executionAdapter.submit(reveal)
+const submission = await executionAdapter.submitInfrastructure(reveal)
 const txHash = submission.transactionRef
 if (!signedReveal) throw new Error('Adapter did not retain the signed Reveal for replay evidence')
 const txCbor = signedReveal.toCBOR()
