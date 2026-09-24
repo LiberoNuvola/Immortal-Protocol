@@ -5132,3 +5132,25 @@ Commit: ec6ac111e595ed77ca2e143bef1d0c46df4013d2.
 Exact-commit workflow/status lookup immediately after the correction still returns no run/status. This remains evidence absence, not a failure.
 
 Status: CI TRIGGER FILTER CORRECTED / RUN EVIDENCE STILL PENDING / NO GREEN CLAIM.
+
+
+## 2026-09-24 — RF8 re-observation: Treasury fail-closed boundary
+
+Current exact-branch inspection of `relayer/relayer.js` shows the Treasury worker no longer signs or submits a `Distribute` transaction. When the configured threshold is reached, it stops at an explicit fail-closed migration boundary and requires an authoritative EconomicAdmission path.
+
+Therefore the earlier direct `lucid.submitTx` Treasury side-door is **removed in the current working tree**.
+
+The remaining issue is semantic, not a live bypass:
+
+- define the authoritative Treasury economic admission witness;
+- bind Treasury pre-state/action/candidate post-state to the canonical economic transition;
+- establish whether and how Treasury distribution participates in ProtectedCapital / RawSurplus / viability;
+- add ledger evidence once that admission contract exists.
+
+Do not restore the legacy percentage split or invent a replacement admission formula merely to make the worker operational.
+
+## 2026-09-24 — RF8 admission fingerprint hardening
+
+`EconomicAdmissionWitness.actionFingerprint` now requires a 32-byte hexadecimal digest and has a negative regression test. Current latest test-triggering commit: `85da4b681036f30d22a9f26676d0507046af6843`.
+
+No normative economic semantics changed.
