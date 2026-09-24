@@ -7,6 +7,7 @@ import Governance
 import GovernanceEventSchema
 import GovernanceAuthorization
 import RulesetRegistry
+import GovernanceDecisionWitness (DecisionRecord(..), decisionRecordValid, finalizationReady)
 
 canonicalPayloadToGovernanceEvent :: CanonicalPayload -> GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
