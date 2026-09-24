@@ -5571,3 +5571,18 @@ Compute the exact Alonzo `utxoEntrySize` for the relevant State-0 Pool-NFT outpu
 **Status:** 3 ADA semantics — OPEN; Alonzo formula — VERIFIED; 3 ADA = min-ADA — NOT PROVEN.
 
 No IMMORTAL economic constants, validator semantics or governance rules changed.
+
+## 2026-09-24 — Gate 41 historical Snek implementation cross-check
+
+A new external prior-art/source check found an explicitly **unofficial preliminary reverse-engineered** model of snek.fun launch transactions published by the tx3 team. It describes the launch transaction as carrying separate caller-supplied quantities including `metadata_min_ada`, `creator_min_ada`, `pool_seed_ada`, and `launch_fee_ada`, plus a `seed_utxo`; it also states that the launch transaction combines mint + pool seed + metadata + fee. The source explicitly warns that it is not endorsed by the original protocol authors and must not be treated as canonical Snek documentation.
+
+This is useful only as a **research lead**: it confirms that Snek's launch flow distinguishes pool seed, min-ADA-related outputs and launch fee as separate quantities. It does **not** establish that PRE's historical 3,000,000 lovelace discrepancy equals `pool_seed_ada`, `metadata_min_ada`, `creator_min_ada`, or any other field.
+
+The historical PRE evidence remains stronger at transaction level: Pool-NFT-bearing output `0235...#1` has 13,000,000 lovelace; the observed State-0 provider delta is 3,000,000 lovelace. The exact Alonzo calculation for the original Pool-NFT output is 1,999,956 lovelace, so the 3 ADA hypothesis is already rejected for that output.
+
+### Next deterministic Snek target
+Do not infer from the reverse-engineered model. Instead, identify the historical Snek implementation/version or contemporaneous launch configuration corresponding to the PRE mint transaction, then map its actual output roles against `0235...#0/#1/#2/#3` and the State-0 provider observation. In parallel, resolve the Snek `info.outputId = 0235...:0` versus actual Pool-NFT-bearing `#1` mismatch from provider implementation/evidence.
+
+**Status:** Snek launch-parameter prior art — RESEARCH LEAD; canonical historical role attribution — OPEN; 3 ADA semantics — OPEN; `info.outputId` mapping — OPEN.
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
