@@ -5271,3 +5271,14 @@ Commit: `4c6c40aaabfc75224df9a25fe246826d9d7dc130`.
 No ledger or economic semantics changed.
 
 **Status:** CARDANO AUDIT WORKFLOW PATH FILTER CLEAN / RUN EVIDENCE STILL REQUIRED.
+
+
+## 2026-09-24 — GOV-28 canonicalization-reference provenance re-triangulated
+
+Fresh exact-branch inspection compared `GovernanceDecisionWitness.hs`, `GovernanceCanonicalizationWitness.hs`, `GovernanceEventSchema.hs`, `GovernanceCanonicalReplay.hs`, `GovernanceCommitment.hs`, and `GovernanceCanonicalizationTest.hs`.
+
+Finding: `DecisionRecord.decisionCanonicalizationReference` is required to be non-empty, and `CanonicalizationRecord.canonicalizationDecisionRecordReference` is also required to be non-empty, but the replay layer does not currently prove that the two references identify the same finalized decision record. The existing SHA-256 commitment mechanism authenticates whole canonical events; it does not define a canonical serialization/identity for `CanonicalizationRecord` itself, and canonical replay currently receives only the immediate predecessor event.
+
+Therefore the remaining GOV-28 gap is confirmed as an identity/provenance binding gap, not a missing generic hash primitive. No new reference format, serializer, digest convention, or governance rule should be invented merely to close it.
+
+Status: **GOV-28 PROVENANCE/IDENTITY BINDING OPEN / LIFECYCLE HARDENING OTHERWISE IN PLACE / NO NORMATIVE CHANGE.**
