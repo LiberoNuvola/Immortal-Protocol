@@ -34,7 +34,7 @@ on:
       - "src/__tests__/canonical-transition-evidence.test.ts"
       - "PRE-RICH/profile/PreRichCertifiedSettlement.ts"
       - "PRE-RICH/profile/PreRichCardanoObservationProjection.ts"
-      - "PRE-RICH/profile/PreRichCardanoObservationProjection.test.ts"
+      - "PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts"
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
       - "src/__tests__/ticket3dSecurity.test.ts"
@@ -64,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/profile/PreRichCardanoObservationProjection.test.ts
+        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts
       
       - name: Run Genesis Treasury admission conformance
         run: node --import tsx/esm PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
