@@ -6288,3 +6288,34 @@ This removes the previous unverified assumption that the default first page was 
 Classification remains unchanged: a positive `script_redeemers` result is provider-indexed redeemer evidence, not a serialized transaction witness-set/CBOR artifact. The historical PRE mint witness seam therefore remains OPEN until an actual response is acquired and preserved.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+## 2026-09-24 — GOV-28 CANONICALIZED witness + replay boundary derived
+
+Triangolazione diretta GOV-10 + GOV-18 + Release Candidate: la chiusura di CANONICALIZED richiede un witness/proiezione composto esattamente dai requisiti già chiusi: target artifact/specification, applicable version transition, complete decision record reference, required evidence references, conformance evidence where implementation is affected, compatibility/upgrade result where applicable, no unresolved mandatory gate, deterministic version identifier.
+
+Implementazione sul green branch:
+- IMMORTAL/governance/GovernanceCanonicalizationWitness.hs
+- ECanonicalized / PayloadCanonicalized
+- authorization System
+- replay dedicato applyCanonicalized
+- CANONICALIZED richiede proiezione Adopted, witness valido e predecessor coerente con CONFORMANCE_RECORDED quando la classe richiede conformance;
+- timestamp di canonicalizzazione non può precedere il predecessor;
+- lo stato passa a Canonical solo tramite l'evento canonico dedicato, senza usare StatusChanged terminale.
+
+Per le classi già definite:
+- DocumentationOnly: conformance non obbligatoria;
+- Adapter, Specification, ConstitutionalKernel: compatibility/upgrade result obbligatorio;
+- le altre classi non ricevono automaticamente un compatibility gate inventato.
+
+Negative twins aggiunti: mandatory gate unresolved, conformance predecessor mancante, canonicalization temporalmente precedente.
+
+Commits:
+- witness 5cecb6b3f3908ab498e35850b30c1ae155e2541e
+- schema 3230ceaf0d040a5f196ddccd098b532990108129
+- authorization 687d01d6d6fcf31f972d43e633f903de21c65f73
+- replay a6a0d322e1770a1d42954d6dba4c1b61006d9e89 + 9bdd7aefdac199a62a648a785f76b3ae7f14386d
+- tests 788ba5d43b6028df198b025b234793f61d3d50f6
+
+Caveat ancora aperto: il test harness governance esistente presenta già una superficie da riallineare al RulesetRegistry/commitment validation introdotto nel ramo; quindi questa pass non dichiara compile/CI verde. La chiusura normativa di CANONICALIZED è derivata; la chiusura implementativa richiede ancora harness/build evidence.
+
+No normative IMMORTAL/PRE-RICH economics changed.
