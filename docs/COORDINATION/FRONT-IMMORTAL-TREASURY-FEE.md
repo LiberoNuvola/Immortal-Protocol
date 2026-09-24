@@ -182,3 +182,27 @@ If the four-way split is live in an economically material path, it is a concrete
 - Do **not** change ProtectedCapital/RawSurplus semantics to accommodate the legacy validator.
 
 **Status:** TREASURY FRONT OPEN / LEGACY VALIDATOR CONFORMANCE UNRESOLVED / USAGE-SURFACE AUDIT REQUIRED.
+
+
+## 2026-09-24 — Usage-surface pass on current economic flows
+
+Direct current-branch inspection of the principal economic flow files shows an important narrowing result:
+
+- `src/mint.ts` uses the Treasury as a concrete PRE-RICH sale settlement output and reads the Treasury datum, but the inspected sale path does **not** import or call `src/treasuryPolicy.ts` and does not invoke `TreasuryAction = Distribute`.
+- `src/gameFlow.ts`, `src/registryFlow.ts`, `src/createRound.ts` and `src/claimFlow.ts` showed no direct `TreasuryAction/Distribute` or `calculateTreasuryDistribution` references in the inspected current-branch content.
+- `src/treasuryPolicy.ts` nevertheless still contains a concrete distribution policy (relayer/prize/stake/reserve) and therefore remains a potential legacy side surface until repository-wide current-ref usage is exhaustively established.
+- `plutus/Treasury.hs` remains a four-destination percentage validator, but the currently inspected PRE-RICH sale path only pays the Treasury contract; it does not establish that the four-way distribution validator is the authority for current sale economics.
+
+This is **not** a closure claim. It changes the immediate classification from “known live four-way allocation path” to **“legacy distribution surface; live economic usage not yet proven.”**
+
+### Next smallest verification
+
+Search the exact closure ref for all imports/call sites of:
+
+- `TreasuryAction` / `Distribute`;
+- `treasuryPolicy` / `calculateTreasuryDistribution`;
+- the compiled `treasury.plutus.json` artifact and any builder that spends its UTxO.
+
+If no current economic caller exists, quarantine the validator/policy as legacy instead of modifying economics. If a caller exists, bind that caller to the current PRE-RICH Treasury/PrizePool semantics before any conformance promotion.
+
+**Status:** TREASURY FRONT NARROWED / FOUR-WAY DISTRIBUTION LIVE USAGE UNPROVEN / NO NORMATIVE CHANGE.
