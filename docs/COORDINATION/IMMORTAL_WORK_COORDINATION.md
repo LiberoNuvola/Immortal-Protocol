@@ -5711,3 +5711,33 @@ The Haskell runner now reads `manifest.json` explicitly: `raw-yaci-context-mater
 Commits: `e07658852f4964c917ff018dcd17fec545e564d5` (Yaci identity/timing checks), `5871855e04dece1fc7bd38912918ef15be62fecb` (manifest boundary), `c24bf2e7d2fec7cb0462c3f2918080af610deb0f` (preserve native decode path).
 
 Still OPEN: verified full pre-state UTxO including reference inputs, typed `EpochInfo` and `SystemStart`, exact protocol-parameter provenance at transaction evaluation point, ledger evaluation and persisted ExUnits/script failures. Fresh CI execution is required before claiming that the hardening passes on a real Yaci packet.
+
+
+## 2026-09-24 — MATERIOS ALL-FRONT PASS
+
+**Directive:** all active work is temporarily concentrated on Materios / GRANDPA / authority-selection provenance. Unrelated fronts pause unless they unblock Materios evidence.
+
+### Current snapshot
+- Branch: `work/immortal-green-closure`.
+- Snapshot observed before this coordination write: `6530a80c08cc2fb7c58db5ff56ee499699b7545d`.
+- Materios PoC currently contains dedicated authority transition, authority, GRANDPA, ancestry, header, crypto, SCALE, quorum and verifier modules.
+
+### Triangulated findings
+1. **Authority selection remains upstream-authoritative.** IMMORTAL must verify and bind the upstream selection/finality result; it must not replace the selector with a TypeScript reimplementation merely to make a proof executable.
+2. **GRANDPA trust boundary is materially advanced.** Historical repo work includes PoC-1 discovery/specification and later proof-boundary hardening/finalization. Current code separates parsing, ancestry, authority, crypto, quorum and transition verification.
+3. **PoC-0 commitment classification is fixed:** `poc/materios-checkpoint/src/checkpoint.ts` commits only the GRANDPA authority list (count + public keys + weights). It is **not** a V3 economic state/action/post-state commitment and must not be promoted to RF8 identity.
+4. **M6 composition is the principal open integration point:** compose upstream authority selection + GRANDPA finality + transition proof without duplicating the selector. Composition must bind chain/genesis identity, source authority set, selection inputs/epoch, selected authorities, finality target, activation block and proof references.
+5. **External-source triangulation** confirms the public Materios architecture uses Cardano anchoring/governance, stake-weighted committee selection via the Partner Chains/Ariadne path, and GRANDPA finality. Public material is corroboration, not permission to infer or replace upstream selector semantics.
+
+### All-agent workstreams
+- **A — Selector provenance:** identify exact upstream implementation/API/spec for `genesis_utxo + AuthoritySelectionInputs + sidechain_epoch`; capture exact input/output types and version.
+- **B — GRANDPA finality:** verify SCALE decoding, signing payload, authority-set binding, target block/ancestry, set-id and >2/3 weight against upstream code/test vectors.
+- **C — Transition proof:** audit every identity-bearing field in `AuthoritySetTransitionStatement`; mutation-test each field and proof reference.
+- **D — M6 composition:** compose only proven A/B/C artifacts; no new selector logic, synthetic proof bytes or invented hash preimages.
+- **E — Real-node evidence:** acquire reproducible finalized head, GRANDPA justification, authority set/set-id and selected committee/epoch transition; distinguish extraction from cryptographic verification.
+- **F — Version drift:** reconcile current Materios runtime/spec/toolkit provenance before treating historical vectors as current evidence.
+- **G — Adversarial matrix:** retain/add negatives for genesis, authority set, epoch, selection-input, set-id, target block, proof-kind, insufficient weight, duplicate/invalid authority and activation-state mutations.
+- **H — Documentation:** update Notion/coordination only with evidence-backed status; keep OPEN / VERIFIED / REAL-LEDGER evidence separate.
+
+### Closure rule
+Materios is not GREEN from local tests alone. Closure requires upstream selector provenance + cryptographic GRANDPA verification + transition tuple binding + M6 composition + reproducible real-node evidence, with no selector reimplementation in IMMORTAL.
