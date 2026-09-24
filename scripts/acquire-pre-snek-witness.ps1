@@ -27,13 +27,44 @@ function Save-RawJson([string]$url, [string]$path) {
 
 # 1. Transaction metadata record for cross-check.
 $tx = Save-RawJson "$base/txs/$txHash" "$outDir/tx.raw.json"
+if ($null -eq $tx.hash -or [string]$tx.hash -ne $txHash) {
+    throw "Blockfrost transaction response hash does not match the requested transaction."
+}
 
 # 2. Transaction UTxOs — explicit artifact; do not assume /txs/{hash} contains outputs.
 $utxos = Save-RawJson "$base/txs/$txHash/utxos" "$outDir/tx-utxos.raw.json"
 
-# 3. Transaction CBOR — distinct raw artifact from transaction/UTxO JSON.
+# 3. Transaction CBOR — preserve both the provider response envelope and the exact
+# serialized CBOR payload exposed in its cbor field.
 $cbor = Invoke-WebRequest -Uri "$base/txs/$txHash/cbor" -Headers $headers -Method Get
 $cbor.Content | Set-Content -Path "$outDir/tx-cbor.raw.json" -Encoding UTF8
+
+$cborEnvelope = $cbor.Content | ConvertFrom-Json
+$cborHex = [string]$cborEnvelope.cbor
+if ([string]::IsNullOrWhiteSpace($cborHex)) {
+    throw "Blockfrost transaction CBOR response has no non-empty cbor field."
+}
+if ($cborHex.StartsWith("0x")) {
+    $cborHex = $cborHex.Substring(2)
+}
+if (($cborHex.Length % 2) -ne 0 -or $cborHex -notmatch "^[0-9a-fA-F]+$") {
+    throw "Blockfrost transaction cbor field is not an even-length hexadecimal payload."
+}
+$cborHex = $cborHex.ToLowerInvariant()
+$cborHex | Set-Content -Path "$outDir/tx.cbor.hex" -Encoding ASCII
+
+$cborBytes = New-Object byte[] ($cborHex.Length / 2)
+for ($i = 0; $i -lt $cborBytes.Length; $i++) {
+    $cborBytes[$i] = [Convert]::ToByte($cborHex.Substring($i * 2, 2), 16)
+}
+[System.IO.File]::WriteAllBytes(
+    (Join-Path $outDir "tx.cbor"),
+    $cborBytes
+)
+
+Get-FileHash -Algorithm SHA256 (Join-Path $outDir "tx.cbor") |
+    ConvertTo-Json -Depth 10 |
+    Set-Content -Path "$outDir/tx-cbor-payload-sha256.json" -Encoding UTF8
 
 # 4. Transaction redeemers — witness-capable raw artifact.
 $redeemers = Save-RawJson "$base/txs/$txHash/redeemers" "$outDir/redeemers.raw.json"
