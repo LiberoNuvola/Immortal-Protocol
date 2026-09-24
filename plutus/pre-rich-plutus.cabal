@@ -51,6 +51,9 @@ library
         GovernanceCommitment
         RulesetRegistry
         GovernanceRuleset
+        GovernanceDecisionWitness
+        GovernanceConformanceWitness
+        GovernanceCanonicalizationWitness
         GovernanceFinality
 
     other-modules:
