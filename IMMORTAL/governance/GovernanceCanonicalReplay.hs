@@ -66,7 +66,7 @@ applyDecisionFinalized st r at = do
        else if not (finalizationReady p (decisionChallenges r) at)
          then Left "decision finalization prerequisites not satisfied"
          else Right st { proposals = [ if proposalId p' == proposalId p
-                                      then p' { finalizationAt = Just at, proposalStatus = Accepted }
+                                      then p' { finalizationAt = Just at, proposalStatus = decisionFinalOutcome r }
                                       else p'
                                     | p' <- proposals st ]
                        , eventsApplied = eventsApplied st + 1
