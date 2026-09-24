@@ -5875,3 +5875,15 @@ A direct external lookup of the exact transaction hash through the available web
 Obtain the raw/decoded transaction body for 87ed...5125 from a Cardano ledger/indexer source (or an already archived repository artifact), then extract inputs, outputs, mint, redeemers, datum and fee. Until that artifact is available, the SNIGGA reference can constrain the research direction but cannot close the PRE residual.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: legacy TX retrieval pass exhausted without transaction-body evidence
+
+A fresh retrieval pass searched the exact SNIGGA legacy transaction hash across web search and the Snek research repository, and attempted direct explorer retrieval paths. No accessible indexed transaction body or archived decoded outputs were returned. The Snek research source remains the only directly retrievable evidence for this legacy TX, and it supplies the hash/label but not the transaction's decoded value distribution. citeturn2view0turn2view1
+
+Therefore no new semantic claim is promoted. The correct state remains: legacy SNIGGA reference confirmed; raw transaction body unavailable in the current evidence channel; 10 ADA historical PRE attribution OPEN; provider outputId mapping OPEN.
+
+### Research pivot
+The next useful acquisition is not another generic web search. It is an artifact-level retrieval from a Cardano indexer/API or an archived local/repository evidence packet. Once obtained, extract: tx inputs, outputs, fee, mint assets, mint redeemers, datum/redeemers and addresses. Then compare directly with PRE 0235...c6cf4.
+
+No normative IMMORTAL/PRE-RICH economics changed.
