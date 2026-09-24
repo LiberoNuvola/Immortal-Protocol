@@ -9,16 +9,20 @@ import GovernanceAuthorization
 import RulesetRegistry
 import GovernanceDecisionWitness (DecisionRecord(..), decisionRecordValid, finalizationReady)
 import GovernanceConformanceWitness (ConformanceRecord(..), conformanceRecordValid)
-import GovernanceCanonicalizationWitness (CanonicalizationRecord(..), canonicalizationRecordValid, canonicalizationRequiresConformance, canonicalizationRequiresCompatibility)
+import GovernanceCanonicalizationWitness (CanonicalizationRecord(..), canonicalizationRecordValid, canonicalizationRequiresConformance)
 
-canonicalPayloadToGovernanceEvent :: CanonicalPayload -> GovernanceEvent
+canonicalPayloadToGovernanceEvent :: CanonicalPayload -> Maybe GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
-  PayloadProposalSubmitted x -> ProposalSubmitted x
-  PayloadProposalClassified pid cls _ -> ProposalClassified pid cls
-  PayloadStatusChanged pid st at -> StatusChanged pid st at
-  PayloadVoteCast v -> VoteCast v
-  PayloadDelegationSet pid d at -> DelegationSet pid d at
-  PayloadGatesSet pid g _ -> GatesSet pid g
+  PayloadProposalSubmitted x -> Just (ProposalSubmitted x)
+  PayloadProposalClassified pid cls _ -> Just (ProposalClassified pid cls)
+  PayloadStatusChanged pid st at -> Just (StatusChanged pid st at)
+  PayloadVoteCast v -> Just (VoteCast v)
+  PayloadDelegationSet pid d at -> Just (DelegationSet pid d at)
+  PayloadGatesSet pid g _ -> Just (GatesSet pid g)
+  PayloadDecisionFinalized _ -> Nothing
+  PayloadAdoptionRecorded _ _ -> Nothing
+  PayloadConformanceRecorded _ -> Nothing
+  PayloadCanonicalized _ -> Nothing
 
 -- Canonical replay must not silently collapse the GOV-18 lifecycle
 -- into the legacy DecisionRecorded -> Accepted -> Adopted -> Canonical
@@ -44,7 +48,9 @@ applyCanonicalEvent rs st prev ce
         PayloadAdoptionRecorded pid at -> applyAdoptionRecorded st pid at
         PayloadConformanceRecorded r -> applyConformanceRecorded st r (eventTimestamp ce)
         PayloadCanonicalized r -> applyCanonicalized st prev r (eventTimestamp ce)
-        _ -> applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
+        _ -> case canonicalPayloadToGovernanceEvent (eventPayload ce) of
+          Just ge -> applyEvent st ge
+          Nothing -> Left "canonical event requires a dedicated replay handler"
 
 applyDecisionFinalized :: GovernanceState -> DecisionRecord -> Timestamp -> Either String GovernanceState
 applyDecisionFinalized st r at = do
