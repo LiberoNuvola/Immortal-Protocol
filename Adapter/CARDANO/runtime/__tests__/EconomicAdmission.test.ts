@@ -12,6 +12,9 @@ const admission: EconomicAdmissionWitness = {
   decisionReference: 'decision:test:1',
   authoritativeObservationReference: 'observation:test:1',
   stateHash: '00'.repeat(32),
+  actionClass: 'Reveal',
+  actionFingerprint: 'aa'.repeat(32),
+  postStateHash: 'bb'.repeat(32),
   eev: 1000n,
   executableLiquidityObservation: {
     observationReference: 'observation:test:1',
