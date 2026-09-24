@@ -6,8 +6,8 @@
 
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
-**Snapshot:** 2026-09-23  
-**Latest observed commit:** `c0e68db47192f4aba0fa3d080f83b60c9005010e` — B1 Pool Reveal/Claim now require matching Prize inputs
+**Snapshot:** 2026-09-24
+**Latest observed commit:** `388623d886af4e1bb41082734389d06715f3c268` — B6/PC-05 monetary scale conformance test
 
 ---
 
@@ -5221,3 +5221,22 @@ Added `INVALID_ORACLE_PRECISION` to the union without changing the Genesis thres
 Commit: `023e10e2b2da5b0e1ebede519c7f2817e489e2d4`.
 
 **Status:** GENESIS ORACLE-BOUNDARY CONFORMANCE MISMATCH FIXED / NO NORMATIVE ECONOMIC CHANGE.
+
+
+## 2026-09-24 — B6/PC-05 scale-conformance test restored on active branch
+
+The active branch now contains `PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts`.
+
+It explicitly verifies the existing Cardano→V3 normalization contract:
+
+- B1 USDM sub-units → IMMORTAL reference units at 100:1;
+- liabilities, unresolved reserve, locked Jackpot and threshold normalize exactly;
+- class exposure remains in V3 reference units;
+- non-integral normalization (501 sub-units) fails closed;
+- canonical Reveal post-state preserves the normalized monetary scale.
+
+Commit: `388623d886af4e1bb41082734389d06715f3c268`.
+
+This is evidence hardening only. No economic constant or conversion rule was changed.
+
+B6/PC-05 status remains **OPEN for cross-boundary equivalence**, with explicit normalization evidence now stronger.
