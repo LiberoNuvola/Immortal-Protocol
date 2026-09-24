@@ -5835,3 +5835,24 @@ This is a research lead only: no assumption is made that SNIGGA and PRE used ide
 - Provider info.outputId mapping: **OPEN**
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: new independent pre-buy semantic evidence, but no historical closure
+
+A further triangulation of the pinned defrag-au/mitos source found a stronger semantic precedent than the parameter correlation alone.
+
+The independent SnekFun ledger walker explicitly describes a launch pattern in which the creator buys from the newly created bonding curve inside the mint transaction; for its observed PERP case it records 9,440 ADA for 70% of supply. The same source deliberately qualifies this as an inference from ledger topology rather than a proof that every launch uses the same semantics.
+
+This matters for PRE because its mint transaction has the same broad observable shape: a Pool-NFT-bearing curve output retains 996,071,981 PRE while a creator-side output receives exactly 3,928,019 PRE in the same transaction. Combined with the independent 3 ADA seed and the 10 ADA residual, this makes creator initial-buy / pre-buy a substantially better semantic hypothesis than min-UTxO or fee attribution.
+
+However, this is still not historical PRE proof. The mitos source is independent reverse engineering and its concrete PERP amount cannot be transferred to PRE. The exact PRE witness/launch implementation still does not expose a field saying 10 ADA -> 3,928,019 PRE.
+
+### New evidence classification
+
+- Independent Snek launch precedent: creator pre-buy can occur inside mint tx — CONFIRMED FOR OBSERVED MITOS LAUNCH CASES
+- PRE creator allocation topology: STRONGLY IDENTIFIED
+- PRE 10 ADA residual: FACT
+- PRE 10 ADA = creator pre-buy: STRONGER LEAD / STILL NOT HISTORICAL PROOF
+- Historical PRE formula/version: OPEN
+
+Next decisive step remains a historical PRE witness/implementation or enough consecutive early pool states to reconstruct the deployed pricing function. No normative IMMORTAL/PRE-RICH semantics changed.
