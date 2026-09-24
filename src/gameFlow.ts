@@ -666,7 +666,7 @@ export async function revealPrize(opts: {
     `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
   ], [
     `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
-  ])
+  ], 'Reveal')
 
   return {
     txHash,
@@ -959,7 +959,7 @@ export async function claimPrize(opts: {
     `${ticketUtxo.txHash}#${ticketUtxo.outputIndex}`,
   ], [
     `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
-  ])
+  ], 'Claim')
 }
 
 // ---------------------------------------------------------------------------
@@ -1094,7 +1094,7 @@ export async function expirePrize(opts: {
     `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
   ], [
     `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
-  ])
+  ], 'Expire')
 }
 
 // ---------------------------------------------------------------------------
