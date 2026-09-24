@@ -5067,3 +5067,14 @@ A direct comparison of the production Reveal path and the real Yaci Reveal trace
 **Consequence:** RF10/RF11 real Reveal evidence can support Cardano realization and B6 evidence continuity, but B5 still requires a real execution path whose EconomicAdmissionWitness is produced authoritatively and is bound to the exact transaction inputs/post-state.
 
 No normative economics or validator semantics changed.
+
+
+## 2026-09-24 — P2.8 lab handoff wired
+
+The Cardano integration lab workflow was minimally updated so its same-run real Yaci evidence is handed to the dedicated P2.8 runner via `--evidence-dir ../yaci-evidence` after the economic traces complete.
+
+Commit: `5bc3a60445af1dd813ab190aa7db9760b75863ed`.
+
+This removes the previous CI continuity gap between evidence generation and the P2.8 packet presence gate. It does **not** make P2.8 green: the runner still stops safely until the required ledger-typed context (`UTxO`, exact `PParams`, `EpochInfo`, `SystemStart`) is present and `evalTxExUnitsWithLogs` is actually invoked.
+
+**Status:** HANDOFF WIRED / LEDGER EVALUATION OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
