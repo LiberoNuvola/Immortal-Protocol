@@ -6430,3 +6430,17 @@ Seconda triangolazione del confine `DECISION_FINALIZED`.
 - Correzione minima: `decisionRecordValid` richiede ora `decisionFinalOutcome == Accepted`; il fixture canonico è stato aggiornato e aggiunto un negativo che rifiuta `DecisionRecorded` come final outcome.
 Commits: `e0172a73f00de50222dc3519fed0ef661e42050f`, `898ba1ea328398ebb80888eec90cb4a41c7d5eb3`, `c6370e7ab0f876994cbd1a36ce9596626125cb90`.
 Questo rende coerenti witness, finalization handler e stato GOV-01; non introduce nuovi parametri.
+
+
+## 2026-09-24 — Decision canonicalization reference remains an evidence-semantics gap
+Nuova triangolazione GOV-18 + GOV-10 + live witness/replay.
+- GOV-18 richiede che il finalized decision record preservi un `canonicalization reference`.
+- GOV-10 definisce invece la canonicalization come fase successiva e richiede, in quel momento, il `complete decision record` come input della canonicalization.
+- Il live implementation ha due campi distinti: `DecisionRecord.decisionCanonicalizationReference` e `CanonicalizationRecord.canonicalizationDecisionRecordReference`; il replay non conserva il DecisionRecord nello stato e non verifica oggi che i due riferimenti siano semanticamente lo stesso oggetto.
+- Il test usa `"canon-ref-7"` in entrambi i witness, ma questo è solo fixture evidence: non costituisce una definizione normativa del formato/provenienza del riferimento.
+
+Classificazione: **OPEN implementation/evidence gap, NON open normative decision**. Non è sicuro svuotare/rimuovere il campo, né inventare un nuovo identity/hash scheme. Prima di modificare il witness bisogna localizzare nel repository/Decision Register un'identità già definita per il canonicalization reference oppure dimostrare che il termine GOV-18 indica una reference stabile diversa dall'evento `CANONICALIZED`.
+
+Seconda verifica importante: GOV-01 ammette anche l'esito `REJECTED`, mentre l'attuale `DECISION_FINALIZED` witness/replay accetta solo `Accepted`. Questo va triangolato con GOV-07/GOV-17 e con la semantica di finalization prima di estendere il witness: non assumere che ogni rigetto richieda lo stesso percorso di finalizzazione.
+
+No code change in questa pass; nessuna semantica normativa inventata. Build/CI del nuovo HEAD resta da osservare.
