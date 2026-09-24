@@ -184,4 +184,30 @@ main = do
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
 
+  let preExpiryFinalization = finalizedEvent { eventTimestamp = 259399 }
+  case applyCanonicalEvent emptyState finalizationState Nothing preExpiryFinalization of
+    Left _ -> putStrLn "PASS: premature DECISION_FINALIZED rejected"
+    Right _ -> error "FAIL: premature DECISION_FINALIZED mutated state"
+
+  let upheldRecord = finalizationRecord { decisionChallenges = [finalizationChallenge { challengeStatus = ChallengeUpheld }] }
+      upheldEvent = finalizedEvent { eventPayload = PayloadDecisionFinalized upheldRecord }
+  case applyCanonicalEvent emptyState finalizationState Nothing upheldEvent of
+    Left _ -> putStrLn "PASS: upheld challenge blocks DECISION_FINALIZED"
+    Right _ -> error "FAIL: upheld challenge allowed finalization"
+
+  let tamperedRecord = finalizationRecord { decisionYesWeight = 61 }
+      tamperedEvent = finalizedEvent { eventPayload = PayloadDecisionFinalized tamperedRecord }
+  case applyCanonicalEvent emptyState finalizationState Nothing tamperedEvent of
+    Left _ -> putStrLn "PASS: tampered decision witness rejected"
+    Right _ -> error "FAIL: tampered decision witness accepted"
+
+  let wrongState = GovernanceState 1 [finalizationProposal { proposalStatus = Accepted, finalizationAt = Nothing }] 0
+  case applyCanonicalEvent emptyState wrongState Nothing finalizedEvent of
+    Left _ -> putStrLn "PASS: DECISION_FINALIZED requires DecisionRecorded projection"
+    Right _ -> error "FAIL: DECISION_FINALIZED accepted wrong proposal state"
+
+  case applyCanonicalEvent emptyState finalizationState Nothing adoptionEvent of
+    Left _ -> putStrLn "PASS: ADOPTION_RECORDED requires prior finalization"
+    Right _ -> error "FAIL: ADOPTION_RECORDED bypassed finalization"
+
 
