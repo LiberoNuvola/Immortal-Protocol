@@ -4947,3 +4947,18 @@ Issue / Claim / Expire already have positive ticket-level refinement evidence re
 Exact-head CI lookup for reported HEAD `e6bafb58bb3987a87afc427a41c3fb680e25621d` returned **no workflow runs**. This is evidence absence, not a failure result; GOV-28 therefore remains CLOSING with no current-head GREEN claim. Gate 41 helper remains on `https://api.koios.rest/api/v1`, fail-closed, with raw-page/hash/provenance capture; no live redeemer/CBOR semantics are promoted. P2.8 remains tied to the exact ledger-aligned transaction/UTxO/PParams/EpochInfo/SystemStart evaluator path. B4 requires real-transition ProtectedCapital preservation; B5 requires Economic Admission witness bound to executed transaction and post-state; B6 requires action-by-action V3↔Cardano correspondence. Materios remains proof-gated with upstream selector authority and requires authenticated authority-set transition plus finalized GRANDPA ancestry/quorum evidence. Genesis/C10–C15 still require fresh Yaci/deployment/artifact/transaction/ledger correlation where not observed. No destructive V3 refactor or normative economic change is justified.
 
 **Status: MULTI-FRONT ACTIVE / NO NORMATIVE CHANGE / EXACT-HEAD CI EVIDENCE ABSENT / REAL-LEDGER EVIDENCE DECISIVE.**
+
+## 2026-09-24 — Branch provenance correction / CAES quarantine
+
+External review identified an attribution error in the previous mainnet-evidence assessment: repository commits are not evidence on the closure branch unless the artifact is actually present/integrated there.
+
+Fresh branch triangulation confirms `audit/p2-8-b1-reference-scripts-2026-09-21` exists and contains `audit/caes-transition-lab/` as a separate audit experiment. The current directory listing does not contain the previously cited `ComposedTransitionCertificate.ts`; therefore no claim is made that this composition artifact is integrated into `work/immortal-green-closure`.
+
+Consequence:
+- M6 composition remains OPEN / NOT INTEGRATED on the closure branch.
+- CAES remains quarantined audit material until explicit integration.
+- The Mainnet Evidence Gate now requires repository + branch/ref + commit SHA + path + artifact role + integration status + closure acceptance for every evidence row.
+
+This correction supersedes any earlier wording that treated repository-wide CAES commits as progress already present on `work/immortal-green-closure`.
+
+**No normative change.**
