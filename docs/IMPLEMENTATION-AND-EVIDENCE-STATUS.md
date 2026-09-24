@@ -116,6 +116,39 @@ Relevant proof surfaces:
 
 Current status: the architecture and trust boundary are established, but publisher-independent B3 authority/finality provenance is not to be called complete until the full proof path is available and verified.
 
+
+### New upstream Materios provenance evidence surface (2026-09-24)
+
+A new Materios explorer/provenance surface is now relevant to the B3 evidence boundary. The upstream repository contains an end-to-end receipt verifier that checks, in order:
+
+```
+Receipt on-chain
+  → Availability Certificate
+  → context-bound checkpoint leaf
+  → checkpoint anchor
+  → Merkle inclusion
+  → manifest integrity
+  → AvailabilityCertified event
+```
+
+The verifier returns a structured report and distinguishes `FULLY_VERIFIED`, `PARTIALLY_VERIFIED` and `NOT_VERIFIED`. The explorer exposes the verification path and can surface a Cardano L1 anchor transaction hash when a verification-index record is available.
+
+This strengthens the upstream evidence available for the B3 stack: Receipt identity, certificate binding, checkpoint/Merkle inclusion and anchor lineage are concrete proof surfaces. It does **not** by itself prove the separate authority-selection and GRANDPA-finality obligations required by the B3 authority proof contract.
+
+| New Materios surface | B3 effect |
+| --- | --- |
+| Receipt identity / on-chain storage | **Evidence surface strengthened** |
+| Availability certificate binding | **Evidence surface strengthened** |
+| Checkpoint leaf / Merkle inclusion | **Evidence surface strengthened** |
+| Manifest / certification event cross-check | **Evidence surface strengthened** |
+| Cardano L1 anchor reference | **Potentially useful evidence input** |
+| AuthoritySelectionInputs provenance | **Not proven by this surface alone** |
+| Authoritative selector execution provenance | **OPEN** |
+| GRANDPA ancestry/finality proof | **OPEN** |
+| Publisher-independent B3 canonicality | **OPEN** |
+
+The repository should treat the new explorer lineage as an upstream evidence source, not as a substitute for the production-grade `VerifiedAuthoritySetTransition` boundary.
+
 ## Governance
 
 Recent governance hardening distinguishes Accepted / Rejected finalization using quorum, approval and gates.
