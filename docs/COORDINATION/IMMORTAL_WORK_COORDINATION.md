@@ -5193,3 +5193,20 @@ Commit: `7f24b056af19d93aa042472ac36f3713c93433cb`.
 This is CI/tooling correction only. It does not constitute ledger evaluation or a P2.8 green result. The actual evaluator remains open.
 
 **Status:** LEDGER AUDIT WORKFLOW INVOCATION FIXED / SELF-TRIGGER WIRED / LEDGER EVALUATION OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — PRE-GENESIS Oracle precision hardening
+
+Triangulation of the current PRE-GENESIS Treasury admission against the existing Cardano OracleTypes surface found that `GenesisTreasuryAdmission.ts` previously accepted `oraclePrecision` from the witness without checking the canonical precision.
+
+Canonical source: `Adapter/CARDANO/observation/OracleTypes.hs` defines `precision = 1_000_000`.
+
+The admission boundary now rejects any precision other than `1_000_000` before calculating the verified Treasury PRE value.
+
+Commits:
+- `3c6a496e23c097fae959075c3f46b7a454fc0896` — canonical precision binding;
+- `a3cb629597a59551ed88b8f38087fd2fa00fbb43` — negative regression tests for zero, 999999 and 1000001.
+
+This does not add a new threshold or oracle. It prevents witness-controlled precision from altering the frozen Genesis valuation.
+
+Status: PRE-GENESIS valuation precision boundary **HARDENED / TRANSITION STILL OPEN**.
