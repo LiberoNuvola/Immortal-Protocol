@@ -174,6 +174,10 @@ main = do
   assert (eventSchemaValid event2) "status payload validates"
   assert (predecessorValid Nothing event1) "genesis predecessor"
   assert (predecessorValid (Just event1) event2) "predecessor chain"
+  assert (lifecycleEventAdmissible (GovernanceState 1 [sampleProposal] 1) 1 Classified 1)
+    "state-aware lifecycle admits valid classification"
+  assert (not (lifecycleEventAdmissible (GovernanceState 1 [sampleProposal] 1) 1 Voting 1))
+    "state-aware lifecycle rejects premature voting"
   assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
   assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment event2] of
