@@ -59,6 +59,7 @@ main = do
         else do
           let paths = map (evidenceDir <> "/") canonicalEvidence
               rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
+              manifestPath = evidenceDir <> "/manifest.json"
           present <- mapM doesFileExist paths
           rawPresent <- mapM doesFileExist rawPaths
           mapM_ (\(p, ok) -> putStrLn (p <> if ok then " [present]" else " [missing]"))
@@ -85,19 +86,27 @@ main = do
                   putStrLn "RESULT: SAFE_STALL"
                   putStrLn "SAFE_STALL_REASON: EMPTY_LEDGER_EVIDENCE_FILE"
                 else do
-                  txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
-                  ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
-                  case decodeBabbagePParams ppBytes of
-                    Left err -> do
+                  manifest <- BS.readFile manifestPath
+                  if BS.isInfixOf "\"typed_context_ready\": false" manifest
+                    then do
                       putStrLn "RESULT: SAFE_STALL"
-                      putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
-                    Right pp ->
-                      case decodeBabbageTx pp txBytes of
+                      putStrLn "SAFE_STALL_REASON: LEDGER_TYPED_CONTEXT_NOT_READY"
+                      putStrLn "Manifest explicitly records raw Yaci materialization only; UTxO/EpochInfo/SystemStart are not typed ledger objects."
+                      putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+                    else do
+                      txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+                      ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+                      case decodeBabbagePParams ppBytes of
                         Left err -> do
                           putStrLn "RESULT: SAFE_STALL"
-                          putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
-                        Right _ -> do
-                          putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
-                          putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
+                          putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
+                        Right pp ->
+                          case decodeBabbageTx pp txBytes of
+                            Left err -> do
+                              putStrLn "RESULT: SAFE_STALL"
+                              putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
+                            Right _ -> do
+                              putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
+                              putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
 
   putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
