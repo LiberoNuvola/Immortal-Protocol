@@ -5154,3 +5154,18 @@ Do not restore the legacy percentage split or invent a replacement admission for
 `EconomicAdmissionWitness.actionFingerprint` now requires a 32-byte hexadecimal digest and has a negative regression test. Current latest test-triggering commit: `85da4b681036f30d22a9f26676d0507046af6843`.
 
 No normative economic semantics changed.
+
+
+## 2026-09-24 — RF8 Treasury relayer side-door closed fail-closed
+
+Current-ref triangulation against the PRE-RICH Treasury specification confirmed that the legacy `relayer/relayer.js::treasuryWorker` was an economically material side surface: it could read Treasury UTxOs, compute a four-way percentage distribution, construct `Distribute`, sign and submit directly with Lucid, without an EconomicAdmissionWitness.
+
+The current V3 Treasury specification requires economic Treasury operations to derive from verified economic state, pass the applicable Economic Gate, remain atomic, and keep relayer execution authority separate from economic authority. It also identifies the legacy percentage fields as migration debt rather than current V3 invariants.
+
+The worker has therefore been changed to **observation-only / fail-closed** once the threshold is reached. It no longer signs or submits a Treasury distribution. No replacement percentage rule was introduced. A dedicated RF8 regression test now asserts that the Treasury worker contains neither direct `lucid.signTx` nor `lucid.submitTx` and retains the explicit disabled state.
+
+Commits:
+- `0014b206769df894f6459012ae31405db4bbbedf` — fail-closed Treasury worker;
+- `90ad52b4319e2896030bab0be46ceca95caecca1` — RF8 regression coverage.
+
+**Status:** RF8 TREASURY SIDE-DOOR CLOSED / V3 TREASURY MIGRATION STILL OPEN / NO NORMATIVE ECONOMIC CHANGE.
