@@ -5107,3 +5107,17 @@ Commit: 21f3e9463e70123055c013d048a6490934f7bbc6.
 This is execution wiring only. It does not add synthetic evidence, does not evaluate transactions, and does not change any validator/economic/governance semantics.
 
 Status: P2.8 RUNNER PATH CORRECTED / RAW HANDOFF WIRED / TYPED LEDGER CONTEXT + evalTxExUnitsWithLogs STILL OPEN / NO GREEN CLAIM.
+
+
+## 2026-09-24 — RF8 Treasury side-door confirmed
+
+Fresh exact-branch triangulation of docs/treasury-distribution-spec.md, plutus/Treasury.hs, and relayer/relayer.js confirms a concrete economic-admission boundary gap.
+
+- The specification states that Treasury distribution must derive from verified economic state and must not bypass the canonical Economic Gate.
+- The current relayer.js Treasury worker reads Treasury UTxOs, applies an operational lovelace threshold, constructs Distribute, and calls lucid.submitTx(...) directly. It does not consume EconomicAdmissionWitness or the adapter submitEconomic boundary.
+- plutus/Treasury.hs enforces threshold/percentage/output predicates, but those checks are not equivalent to the universal Economic Gate and do not establish canonical admission provenance.
+- This makes Treasury a genuine potential economic side door until an authoritative admission path is defined and wired.
+
+No code was changed because replacing the worker's distribution arithmetic or inventing a Treasury admission witness would choose economic semantics not yet established for this surface.
+
+Status: RF8 TREASURY SIDE-DOOR CONFIRMED / ECONOMIC GATE MEMBERSHIP OPEN / LEGACY RELAYER PATH NOT EVIDENCE OF CANONICAL ADMISSION / NO NORMATIVE CHANGE.
