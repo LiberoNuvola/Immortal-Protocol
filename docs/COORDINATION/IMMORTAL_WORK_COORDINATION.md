@@ -5518,3 +5518,33 @@ Commits:
 Status: B6/PC-05 LOCAL SCALE CONFORMANCE **CI-WIRED / CROSS-BOUNDARY SEMANTIC EQUIVALENCE STILL OPEN**.
 
 No normative economic change.
+
+## 2026-09-24 — RF8 evidence fingerprint shape hardening
+
+Current-head inspection confirmed that RF8 already binds EconomicAdmissionWitness action/pre-state/post-state identifiers to CanonicalTransitionEvidence, but the evidence layer previously accepted arbitrary non-empty strings for those fingerprints. This was a representational weakness: the admission boundary already requires 32-byte hex digests, while the persisted evidence packet did not enforce the same shape.
+
+Implemented a narrow fail-closed hardening:
+- Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts now validates preStateFingerprint, postStateFingerprint, and actionFingerprint as 64-character hexadecimal digests;
+- Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts adds a negative regression for malformed action-fingerprint encoding;
+- no canonical serializer, hash preimage, or fingerprint computation was invented;
+- this hardens evidence shape only and does not close semantic fingerprint provenance.
+
+Commits:
+- 60192842cd81d6cf39bd1e42e2d72ba20a20f18f
+- b359cc5b03295d9bffe7c6b66b47e6432fa89081
+
+Status: RF8 REPRESENTATIONAL HARDENING COMPLETE / SEMANTIC FINGERPRINT PROVENANCE OPEN.
+
+## 2026-09-24 — Fresh CI observation after RF8 hardening
+
+The branch advanced again during concurrent work; current observed HEAD is b359cc5b03295d9bffe7c6b66b47e6432fa89081.
+
+Latest observed push runs on the preceding coordinated snapshot show:
+- Cardano Adapter Sale Conformance: success;
+- Algorithmic Governability Adversarial Lab: success;
+- P2.8-B.1 Cardano-ledger runner: still in progress at Install GHC and Cabal;
+- Kernel Invalid-Class audit: pending on the newest push.
+
+P2.8 has therefore not yet reached typed-context reconstruction or evalTxExUnitsWithLogs. Official Cardano Ledger API documentation continues to expose evalTxExUnitsWithLogs as the ledger-aligned evaluator requiring transaction/UTxO/protocol-parameter/epoch/system-start context. citeturn0search0
+
+No GREEN claim and no normative economic change.
