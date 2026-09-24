@@ -6178,3 +6178,29 @@ The repository helper remains fail-closed. The next executable path is either:
 2. acquire the same transaction through a reachable Koios/Maestro route and preserve the raw response.
 
 No normative IMMORTAL/PRE-RICH economics changed. Gate 41 remains OPEN only at the historical PRE mint witness/redeemer artifact layer.
+
+
+## 2026-09-24 — Gate 41: Koios script-redeemers second acquisition path
+
+Fresh provider-source triangulation found a materially stronger public route than `tx_info` alone: Koios exposes `GET /script_redeemers` for a specific script hash, and its documented redeemer model includes `tx_hash`, `purpose`, execution units and decoded `datum_value`. The documented model explicitly permits `purpose=mint`. citeturn5search0turn5search3
+
+Implemented on `work/immortal-green-closure`:
+- `scripts/acquire-pre-snek-koios-redeemer.ps1`
+- commit `829e25f132e2f0c7dd04ab73f610c470e011fe44`
+
+The helper queries the PRE policy hash `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c4`, preserves the raw provider response, and selects only the exact historical transaction `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4` with `purpose=mint`. It fails closed if no exact match is returned.
+
+Important evidence classification: this is **provider-indexed redeemer evidence**, not a serialized transaction witness-set/CBOR artifact. If the exact match is returned, it can close the historical **mint-redeemer acquisition** seam, but transaction CBOR/witness-set acquisition remains separately valuable for full provenance.
+
+The public web environment still cannot execute the Koios API call itself, so no historical redeemer result is claimed yet. The script is execution-ready and does not require a credential under the public Koios route documented by the provider ecosystem. citeturn5search1turn5search11
+
+### Gate 41 consequence
+- Historical PRE mint transaction — CLOSED
+- Pool-NFT-bearing output #1 — CLOSED
+- Exact 1B PRE split — CLOSED
+- 3 ADA seed correspondence — STRONG CROSS-VALIDATED LEAD
+- 10 ADA residual — FACT
+- **Historical PRE mint redeemer — EXECUTION-READY VIA PUBLIC KOIOS / OPEN UNTIL RAW RESPONSE IS ACQUIRED**
+- 10 ADA = creator initial-buy funding — OPEN
+
+No normative IMMORTAL/PRE-RICH economics changed.
