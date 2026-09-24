@@ -6122,3 +6122,19 @@ The helper deliberately fails closed when no matching mint redeemer is returned.
 - 10 ADA = creator initial-buy funding — OPEN
 
 Execution of the helper requires a mainnet Blockfrost credential in the execution environment; no credential is committed to the repository.
+
+## 2026-09-24 — GOV-28 DECISION_FINALIZED canonical act introduced
+
+Triangulated GOV-18 implementation contract against the live schema/authorization/replay boundary and introduced the smallest explicit representation for the already-closed DECISION_FINALIZED act.
+
+Implemented on work/immortal-green-closure:
+- GovernanceEventSchema.hs: added EDecisionFinalized + PayloadDecisionFinalized DecisionRecord; canonical payload serialization includes the GOV-18 witness fields.
+- GovernanceAuthorization.hs: authorizes this system-level governance act as System, consistent with the current canonical StatusChanged authority mapping. This is an implementation mapping, not a new normative role rule.
+- GovernanceCanonicalReplay.hs: DECISION_FINALIZED is handled directly at the canonical boundary, rather than being converted to legacy GovernanceEvent. It validates the GOV-18 witness and challenge/finality prerequisites, then records finalizationAt while deliberately preserving the existing DecisionRecorded projection state. It does not collapse finalization into Canonical.
+- GovernanceCanonicalReplayTest.hs: added expiry-boundary finalization evidence and the invariant that the resulting projection remains DecisionRecorded.
+
+Commits: schema 05c586285cff1206f68bc662e0734cdbc39f7f5e; serialization 2cc90a00aca365d1a81e8d26e5858efbd61a19c5; authorization 236168d1113a269c99637b8690551131a151f443; replay 976190c2c4168f22f78827e1f3988565c7828610, cecab233a121633779d696b293ca7a2c5fddf057, 7779649509f31d0597a92519e2aac9fa19d7496b; test 65414e3e082e0a732d061d885220eda14d9aeda2.
+
+Boundary: this is not GOV-18 closure. ADOPTION_RECORDED, CONFORMANCE_RECORDED and CANONICALIZED remain separate and are not represented by StatusChanged. No new governance timing/threshold parameter was introduced. No compile/CI success is claimed.
+
+External event-sourcing guidance independently supports the architectural separation of immutable events from projections and the need for explicit versioning/schema handling, but remains non-normative corroboration. citeturn0search0
