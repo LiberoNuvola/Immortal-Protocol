@@ -5501,3 +5501,33 @@ If the exact calculation yields 3,000,000 (or a ledger-mandated value that expla
 - 3 ADA ↔ Alonzo min-UTxO: **STRONG LEAD, NOT PROVEN**
 - Genesis funding role: **OPEN / historical reconstruction**
 - No normative IMMORTAL economics changed.
+
+## 2026-09-24 — Gate 41 exact Alonzo min-UTxO check: 3 ADA lead does NOT explain the Pool-NFT output
+
+The exact historical-output structure was triangulated against the Gate-41 evidence in Library. The Pool-NFT-bearing mint output `0235e186...:1` has 13,000,000 lovelace, 996,071,981 PRE, one Pool-NFT asset, a datum hash, and two policy IDs/two assets with asset-name lengths 8 bytes and 32 bytes.
+
+Cardano's Alonzo min-UTxO rule is `utxoEntrySize(txout) × coinsPerUTxOWord`; the documented fixed base is 27 words, the datum-hash contribution is 10 words, and the token-bundle size uses the Alonzo/Mary word-size function. citeturn0search1turn0search0
+
+For this exact value:
+`size(v) = 6 + floor(((2 × 12) + (8 + 32) + (2 × 28) + 7) / 8) = 21 words`.
+`utxoEntrySize = 27 + 21 + 10 = 58 words`.
+`58 × 34,482 = 1,999,956 lovelace` = 1.999956 ADA.
+
+This is materially below the observed 3,000,000 lovelace offset. Therefore the previous `87 × 34,482 ≈ 3 ADA` coincidence is **not** the min-UTxO requirement of the Pool-NFT-bearing mint output and must not be used as evidence for 3 ADA semantics.
+
+The 3 ADA semantics remain OPEN. The next target is historical Snek deployment/accounting implementation evidence: determine whether the 3 ADA was an explicit launch-time component (pool seed, accounting reserve, provider convention, or another technical amount), while keeping min-UTxO as a separately verified quantity.
+
+### Evidence basis
+- Gate-41 boundary evidence records output #1 as the Pool-NFT-bearing output with 13,000,000 lovelace and the two native assets. fileciteturn248file8L1-L58
+- The 3-ADA reconciliation evidence explicitly says the 3,000,000-lovelace correlation does not prove min-ADA, seed, fee, or another reserved component. fileciteturn248file7L1-L35
+
+### Gate 41 status after exact calculation
+- Historical epoch: **355 — CLOSED/CORRECTED**
+- Alonzo UTxO-cost regime: **CONFIRMED**
+- Pool-NFT output historical min-UTxO: **CALCULATED = 1,999,956 lovelace**
+- 3 ADA ↔ Pool-NFT min-UTxO: **DISPROVED for this output**
+- 3 ADA semantics: **OPEN**
+- `info.outputId` ↔ true NFT-bearing output: **OPEN**
+- Genesis funding role: **OPEN / historical reconstruction**
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
