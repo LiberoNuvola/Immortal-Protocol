@@ -5700,3 +5700,16 @@ The independent decoder supports the semantic interpretation of the 3 ADA offset
 Reconstruct the historical Snek launch/deployment rule around `0235...`: identify what the 10 ADA residual represented, and independently determine what provider `info.outputId` meant. Closure requires transaction evidence + contemporaneous/historical implementation evidence + provider interpretation evidence. Do not collapse these into one claim.
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+
+## 2026-09-24 — Gate 41: seed interpretation tightened, residual 10 ADA kept unresolved
+
+A second pass against the independent defrag-au/mitos Snek launchpad decoder confirms the seed finding is semantic, not merely numerical: its bonding-pool model explicitly carries CURVE_SEED_LOVELACE = 3_000_000, states that a newly created curve holds that amount before purchases, and treats the datum cap as seed-inclusive while the API cap is seed-exclusive. This matches both PRE observations (69,155,397 vs 66,155,397 and 18,191,400,000 vs 18,188,400,000).
+
+The historical PRE mint output remains 0235...#1 with 13 ADA and the Pool NFT. Therefore the current evidence supports a decomposition of the observed 13 ADA as 3 ADA seed + 10 ADA residual, but does not identify the residual 10 ADA. Do not label the residual as min-ADA, metadata, creator funding, launch fee, or another role without transaction/implementation evidence.
+
+Web search independently confirms the generic Cardano constraint that multi-asset outputs require a protocol-parameter-derived minimum ADA, but this does not identify the historical 10 ADA component and must not be used to retrofit the PRE launch semantics. The exact historical Alonzo calculation already disproves 3 ADA as the Pool-NFT output's min-UTxO (1,999,956 lovelace for the recorded value shape).
+
+info.outputId = 0235...#0 remains a separate provider-semantics question because the Pool NFT itself is demonstrably in 0235...#1. Seed semantics and provider output-id semantics must be closed independently.
+
+Status: 3 ADA seed = STRONG CROSS-VALIDATED LEAD; 10 ADA decomposition = OPEN; provider outputId mapping = OPEN. No normative IMMORTAL/PRE-RICH rule changed.
