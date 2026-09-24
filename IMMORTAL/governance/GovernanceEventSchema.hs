@@ -6,6 +6,7 @@ module GovernanceEventSchema
   ) where
 
 import Governance
+import GovernanceDecisionWitness (DecisionRecord(..))
   ( Proposal(..), ProposalId, ProposalClass(..), ProposalStatus(..)
   , Timestamp, Vote(..), Delegation(..), GateResult(..), Snapshot(..)
   )
@@ -26,6 +27,7 @@ data CanonicalPayload
   = PayloadProposalSubmitted Proposal
   | PayloadProposalClassified ProposalId ProposalClass Timestamp
   | PayloadStatusChanged ProposalId ProposalStatus Timestamp
+  | PayloadDecisionFinalized DecisionRecord
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
   | PayloadGatesSet ProposalId GateResult Timestamp
@@ -99,6 +101,7 @@ payloadProposalId p = case p of
   PayloadProposalSubmitted x -> proposalId x
   PayloadProposalClassified x _ _ -> x
   PayloadStatusChanged x _ _ -> x
+  PayloadDecisionFinalized r -> decisionProposalId r
   PayloadVoteCast x -> voteProposal x
   PayloadDelegationSet x _ _ -> x
   PayloadGatesSet x _ _ -> x
@@ -108,6 +111,7 @@ payloadTimestamp p = case p of
   PayloadProposalSubmitted x -> proposalCreatedAt x
   PayloadProposalClassified _ _ t -> t
   PayloadStatusChanged _ _ t -> t
+  PayloadDecisionFinalized r -> decisionSnapshotAt r
   PayloadVoteCast v -> castAt v
   PayloadDelegationSet _ _ t -> t
   PayloadGatesSet _ _ t -> t
@@ -117,6 +121,7 @@ eventTypeMatchesPayload t p = case (t,p) of
   (EProposalSubmitted, PayloadProposalSubmitted _) -> True
   (EProposalClassified, PayloadProposalClassified _ _ _) -> True
   (EStatusChanged, PayloadStatusChanged _ _ _) -> True
+  (EDecisionFinalized, PayloadDecisionFinalized _) -> True
   (EVoteCast, PayloadVoteCast _) -> True
   (EDelegationSet, PayloadDelegationSet _ _ _) -> True
   (EGatesSet, PayloadGatesSet _ _ _) -> True
