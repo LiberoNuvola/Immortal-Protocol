@@ -8,13 +8,14 @@ module GovernanceEventSchema
 import Governance
 import GovernanceDecisionWitness (DecisionRecord(..))
 import GovernanceConformanceWitness (ConformanceRecord(..))
+import GovernanceCanonicalizationWitness (CanonicalizationRecord(..))
 
 data ActorClass = System | Proposer | Voter | Delegate | Reviewer | Auditor | EmergencyAuthority
   deriving (Eq, Show)
 
 data EventType = EProposalSubmitted | EProposalClassified | EStatusChanged
   | EDecisionFinalized
-  | EAdoptionRecorded | EConformanceRecorded
+  | EAdoptionRecorded | EConformanceRecorded | ECanonicalized
   | EVoteCast | EDelegationSet | EGatesSet
   deriving (Eq, Show)
 
@@ -30,6 +31,7 @@ data CanonicalPayload
   | PayloadDecisionFinalized DecisionRecord
   | PayloadAdoptionRecorded ProposalId Timestamp
   | PayloadConformanceRecorded ConformanceRecord
+  | PayloadCanonicalized CanonicalizationRecord
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
   | PayloadGatesSet ProposalId GateResult Timestamp
@@ -89,6 +91,16 @@ canonicalPayloadText p = case p of
     ";failed_test_record=" ++ maybe "" id (conformanceFailedTestRecord r) ++
     ";canonical_input_fixtures=" ++ conformanceCanonicalInputFixtures r ++
     ";replay_output=" ++ conformanceReplayOutput r
+  PayloadCanonicalized r ->
+    "type=Canonicalized;proposal_id=" ++ show (canonicalizationProposalId r) ++
+    ";target_artifact=" ++ canonicalizationTargetArtifact r ++
+    ";version_transition=" ++ canonicalizationVersionTransition r ++
+    ";decision_record_reference=" ++ canonicalizationDecisionRecordReference r ++
+    ";evidence_references=" ++ show (canonicalizationEvidenceReferences r) ++
+    ";conformance_evidence=" ++ maybe "" id (canonicalizationConformanceEvidence r) ++
+    ";compatibility_upgrade_result=" ++ maybe "" id (canonicalizationCompatibilityUpgradeResult r) ++
+    ";mandatory_gates_resolved=" ++ show (canonicalizationMandatoryGatesResolved r) ++
+    ";version_identifier=" ++ canonicalizationVersionIdentifier r
   PayloadVoteCast v ->
     "type=VoteCast;proposal_id=" ++ show (voteProposal v) ++
     ";voter=" ++ show (voter v) ++ ";choice=" ++ show (choice v) ++ ";cast_at=" ++ show (castAt v)
@@ -133,6 +145,7 @@ payloadProposalId p = case p of
   PayloadDecisionFinalized r -> decisionProposalId r
   PayloadAdoptionRecorded pid _ -> pid
   PayloadConformanceRecorded r -> conformanceProposalId r
+  PayloadCanonicalized r -> canonicalizationProposalId r
   PayloadVoteCast x -> voteProposal x
   PayloadDelegationSet x _ _ -> x
   PayloadGatesSet x _ _ -> x
@@ -150,6 +163,7 @@ payloadTimestamp p = case p of
   PayloadDecisionFinalized r -> decisionSnapshotAt r
   PayloadAdoptionRecorded _ t -> t
   PayloadConformanceRecorded _ -> 0
+  PayloadCanonicalized _ -> 0
   PayloadVoteCast v -> castAt v
   PayloadDelegationSet _ _ t -> t
   PayloadGatesSet _ _ t -> t
@@ -162,6 +176,7 @@ eventTypeMatchesPayload t p = case (t,p) of
   (EDecisionFinalized, PayloadDecisionFinalized _) -> True
   (EAdoptionRecorded, PayloadAdoptionRecorded _ _) -> True
   (EConformanceRecorded, PayloadConformanceRecorded _) -> True
+  (ECanonicalized, PayloadCanonicalized _) -> True
   (EVoteCast, PayloadVoteCast _) -> True
   (EDelegationSet, PayloadDelegationSet _ _ _) -> True
   (EGatesSet, PayloadGatesSet _ _ _) -> True
