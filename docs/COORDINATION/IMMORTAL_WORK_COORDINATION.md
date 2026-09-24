@@ -5398,3 +5398,15 @@ Failure evidence: workflow 36037689673, job 107761768239.
 Fix commit: d1052f2e76902b7dabb164b86ebdaaadec90814a.
 
 Status: CI FIXTURE RECONCILIATION APPLIED / FRESH HEAD RUN PENDING / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — P2.8 dependency failure isolated and source-pinned
+
+P2.8-B.1 run 36037873961 reached the ledger-runner build but failed during Cabal dependency resolution: `cardano-data-1.3.0.0` required `cardano-strict-containers`, which was not resolvable from the runner's pinned project context. This was a build/dependency failure before any ledger evaluation, not a SAFE_STALL verdict and not an economic/validator failure.
+
+Upstream CHaP currently lists `cardano-strict-containers-0.1.6.0` from cardano-base commit `58a3814c049324578a1cbc7f8ab9e0edae42249a`; the current runner was consuming cardano-ledger sources at the corresponding dependency generation but did not explicitly materialize this package. The runner project now pins that exact cardano-base subdirectory as a source-repository-package.
+
+External cross-check: upstream Cardano ledger/plutus integration explicitly uses the ledger execution-unit evaluator (`evaluateTransactionExecutionUnitsWithLogs`), while the current runner still stops before evaluation. citeturn0search2
+
+Fix commit: ac799928e6bc759476d276ad8638998061a5ab91.
+Status: P2.8 BUILD BLOCKER ISOLATED / DEPENDENCY PIN APPLIED / FRESH CI REQUIRED / EVALUATION STILL OPEN.
