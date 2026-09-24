@@ -5,6 +5,7 @@ module Main (main) where
 import qualified Data.ByteString as BS
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
+import TypedPacketDecode (decodeBabbagePParams, decodeBabbageTx)
 
 artifactPaths :: [FilePath]
 artifactPaths =
@@ -84,7 +85,19 @@ main = do
                   putStrLn "RESULT: SAFE_STALL"
                   putStrLn "SAFE_STALL_REASON: EMPTY_LEDGER_EVIDENCE_FILE"
                 else do
-                  putStrLn "RESULT: COMPLETE_EVIDENCE_PACKET_PRESENT"
-                  putStrLn "NEXT: parse and validate the packet, then invoke ledger-aligned evalTxExUnitsWithLogs."
+                  txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+                  ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+                  case decodeBabbagePParams ppBytes of
+                    Left err -> do
+                      putStrLn "RESULT: SAFE_STALL"
+                      putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
+                    Right pp ->
+                      case decodeBabbageTx pp txBytes of
+                        Left err -> do
+                          putStrLn "RESULT: SAFE_STALL"
+                          putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
+                        Right _ -> do
+                          putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
+                          putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
 
   putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
