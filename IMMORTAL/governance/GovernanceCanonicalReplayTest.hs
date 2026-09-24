@@ -35,7 +35,7 @@ event1 =
     (PayloadProposalSubmitted sampleProposal)
     "payload-commitment-1"
     Nothing
-    []
+    [EvidenceRef "proposal-evidence"]
     AcceptedEvent
 
 collapsedAcceptedEvent :: CanonicalEvent
@@ -55,7 +55,7 @@ event2 =
     (PayloadStatusChanged 1 Classified 1)
     "payload-commitment-2"
     (Just "evt-1")
-    []
+    [EvidenceRef "classification-evidence"]
     AcceptedEvent
 
 
