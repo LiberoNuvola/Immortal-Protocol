@@ -36,7 +36,27 @@ applyCanonicalEvent rs st prev ce
   | not (canonicalLifecycleAdmission st ce) =
       Left "legacy collapsed lifecycle state is not a canonical event"
   | otherwise =
-      applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
+      case eventPayload ce of
+        PayloadDecisionFinalized r -> applyDecisionFinalized st r (eventTimestamp ce)
+        _ -> applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
+
+applyDecisionFinalized :: GovernanceState -> DecisionRecord -> Timestamp -> Either String GovernanceState
+applyDecisionFinalized st r at = do
+  p <- case [p | p <- proposals st, proposalId p == decisionProposalId r] of
+         [p] -> Right p
+         _ -> Left "decision finalization proposal not found"
+  if proposalStatus p /= DecisionRecorded
+     then Left "decision finalization requires DecisionRecorded state"
+     else if not (decisionRecordValid p r)
+       then Left "decision finalization witness invalid"
+       else if not (finalizationReady p (decisionChallenges r) at)
+         then Left "decision finalization prerequisites not satisfied"
+         else Right st { proposals = [ if proposalId p' == proposalId p
+                                      then p' { finalizationAt = Just at }
+                                      else p'
+                                    | p' <- proposals st ]
+                       , eventsApplied = eventsApplied st + 1
+                       }
 
 replayCanonical :: RulesetRegistry -> GovernanceState -> [CanonicalEvent]
                 -> Either String GovernanceState
