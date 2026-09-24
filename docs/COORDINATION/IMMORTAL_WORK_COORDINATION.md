@@ -6069,3 +6069,15 @@ Added a negative twin in `GovernanceDecisionWitnessTest.hs`, commit `bcbe100db8e
 This remains a **witness/projection**, not a canonical `DECISION_FINALIZED` event. No claim is made that the governance package compiles or CI passes.
 
 Next seam remains: derive the smallest non-invented representation for `DECISION_FINALIZED`, then bind adoption/conformance/canonicalization without collapsing them into `StatusChanged`.
+
+
+## 2026-09-24 — Gate 41: PRE-native witness acquisition remains the highest-value target
+
+Fresh web triangulation confirms the relevant API surface: Blockfrost documents separate transaction endpoints for `/txs/{hash}`, `/txs/{hash}/cbor`, and `/txs/{hash}/redeemers`, while requiring a project token; Koios documents its Mainnet API and OpenAPI surface at `https://api.koios.rest/`. citeturn0search0turn0search2
+
+Exact-hash web searches for PRE `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4` returned no indexed transaction body or redeemer artifact. This does not alter the historical transaction facts already established from the evidence corpus; it confirms only that generic web indexing is not an acquisition substitute.
+
+### Acquisition decision
+The primary missing evidence is now explicitly the **PRE-native mint witness/redeemer**, not another semantic model. The acquisition packet should use a credentialed indexer/API or recover the historical raw artifact referenced by the manifest. Once acquired, compare the mint-purpose witness directly against the 3,928,019 PRE creator-side allocation and 10,000,000 lovelace residual.
+
+No closure is promoted from absence of search results. No normative IMMORTAL/PRE-RICH economics changed.
