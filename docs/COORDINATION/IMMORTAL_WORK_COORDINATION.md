@@ -5758,3 +5758,40 @@ Primary-source triangulation also reinforces the architectural boundary: GRANDPA
 Commits: `0981a1059d676b1a83f402980f6e235d40560214`, `0454b8a7178217a5ff14cf62ff7e07469d429e00`.
 
 Status: **M6 structural boundary advanced; cryptographic composition proof and real Materios node evidence remain OPEN.**
+
+
+## 2026-09-24 — MATERIOS SELECTOR PROVENANCE DEEPENED
+
+A fresh external triangulation against the upstream Input Output HK Partner Chains sources tightened the selector boundary without reimplementing it in IMMORTAL.
+
+Evidence established:
+- The Partner Chains documentation identifies Ariadne as the committee-selection algorithm and states that it reads committee candidates and parameters from Cardano, selecting a new committee for each epoch.
+- The same source explicitly identifies the D-parameter and permissioned-candidate / registered-SPO inputs as selector inputs, and ties the Partner Chain identity to the immutable genesisUtxo.
+- The upstream release history records an Ariadne v2 selection path with guaranteed seats and candidate weights, confirming that selector semantics can evolve by toolkit version. Therefore historical selector behavior must not be treated as current merely because the POC compiles.
+- The public Partner Chains repository is now archived and states that development moved into Midnight; current-version provenance therefore needs to be pinned to the actual Materios/Partner-Chains runtime used by the target network rather than inferred from the archived documentation alone.
+
+Primary sources: Input Output HK Partner Chains documentation/repository and release notes.
+
+Implication for IMMORTAL:
+- Keep selectionInputs opaque at the proof boundary.
+- Require the external proof to authenticate that the supplied toAuthorities are the canonical selector output for the authenticated Cardano/Partner-Chain inputs and epoch.
+- Do not encode Ariadne/Ariadne-v2 selection mathematics in TypeScript.
+- Add version binding to the evidence/proof contract only when the upstream runtime/proof format supplies an authoritative version identifier; do not invent one locally.
+
+New concrete gap: exact current selector implementation + proof/verifier artifact + version for the Materios deployment remain OPEN. The external documentation proves the architectural provenance, not the cryptographic proof of a specific committee transition.
+
+Status: SELECTOR ARCHITECTURAL PROVENANCE VERIFIED; DEPLOYMENT-SPECIFIC CRYPTOGRAPHIC PROVENANCE OPEN.
+
+## 2026-09-24 — MATERIOS M6 ADVERSARIAL REVIEW
+
+Review of the new M6 boundary confirms that its local bindings are intentionally narrow: chain ID, genesis hash and source set ID are checked before composition. The M6 verifier receives both the verified transition and verified finality artifacts, so the external proof remains responsible for binding selection inputs/epoch, selected authorities, activation block and finality target.
+
+No selector semantics or local proof preimage were added. This is deliberate: adding a local hash of opaque selector inputs would create a second, potentially divergent protocol encoding.
+
+Required next evidence remains:
+1. exact upstream selector source/version;
+2. actual composition/transition proof verifier;
+3. real finalized Materios/Partner-Chain node evidence containing the authority-set transition and GRANDPA justification;
+4. mutation evidence showing the external proof rejects mismatched epoch/inputs/to-authorities/activation block.
+
+Status: M6 STRUCTURAL BOUNDARY = IMPLEMENTED; CRYPTOGRAPHIC/REAL-NODE CLOSURE = OPEN.
