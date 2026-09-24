@@ -6005,3 +6005,30 @@ commit `81fdf5368623c0fe3da0b8b80c5b284c03227082`.
 The witness is deliberately a **record/projection**, not a new canonical event and not a replacement for `GovernanceFinality`. It makes the GOV-18 final-decision data boundary explicit while preserving existing semantics. No new governance parameter was introduced.
 
 Current remaining gap: bind this witness to a distinct `DECISION_FINALIZED` canonical event and subsequently derive the exact adoption/conformance/canonicalization event payloads. Do not collapse these back into `StatusChanged`.
+
+
+## 2026-09-24 — Gate 41: pivot from SNIGGA to the stronger PRE-native witness target
+
+The evidence corpus exposes a stronger closure route than continued generic SNIGGA retrieval: the original acquisition manifest records the exact historical PRE mint raw-artifact path `evidence/pre-snek/gate41-genesis/tx-info/0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4.raw.json`. The active branch does not currently contain a retrievable copy, but this establishes a PRE-native artifact target.
+
+The deterministic order is therefore:
+1. recover exact PRE transaction CBOR/body for `0235...c6cf4`;
+2. recover its mint-purpose redeemer/witness for PRE policy `1b29fda9...`;
+3. preserve raw artifacts before decoding;
+4. inspect whether the historical witness encodes or commits to an initial-buy amount/parameter;
+5. only if the PRE-native witness is insufficient, return to same-family SNIGGA comparison.
+
+This is preferable to inferring historical PRE semantics from a later curve-spend witness or current Snek v1 parameters. The Cardano API documentation confirms transaction CBOR and transaction redeemer data are distinct retrievable artifacts, while Koios exposes detailed transaction information through `tx_info`. citeturn0search0turn0search3
+
+### Gate 41 classification
+- PRE mint transaction: CLOSED
+- Pool NFT-bearing output #1: CLOSED
+- 1B PRE split: CLOSED
+- 3 ADA seed correspondence: STRONG CROSS-VALIDATED LEAD
+- 10 ADA residual: FACT
+- PRE-native mint witness/redeemer: OPEN — primary acquisition target
+- 10 ADA = creator initial-buy funding: OPEN
+- historical Snek formula/version: OPEN
+- provider `info.outputId` semantics: OPEN
+
+No normative IMMORTAL/PRE-RICH economics changed.
