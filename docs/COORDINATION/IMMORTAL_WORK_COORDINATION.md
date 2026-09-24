@@ -5328,3 +5328,14 @@ Commits:
 - 6c0ab4124ff149505630baf94764cf6c95e3d1c0
 
 Status: RF10/RF11 OBSERVED-LEDGER EVIDENCE SEMANTIC BOUNDARY CORRECTED / CANONICAL V3 IDENTITY + RF8 PROVENANCE STILL OPEN / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — PRE-RICH action-refinement workflow path hygiene corrected
+
+Fresh current-branch audit found one real YAML defect in `.github/workflows/pre-rich-action-refinement-conformance.yml`: the `push.paths` list contained the same RF8 test path twice, while four test paths had been concatenated into a single YAML string. The path list was normalized into distinct entries and the duplicate RF8 entry removed.
+
+Commit: `41a5542c48c777b5f50e9bf8eff978f9f0234ded`.
+
+This is CI trigger hygiene only. No test selection semantics were broadened beyond the files already intended by the workflow, and no economic/validator/governance rule changed.
+
+**Status:** PRE-RICH ACTION-REFINEMENT WORKFLOW PATHS CLEAN / CONFORMANCE RESULT STILL DEPENDS ON FRESH RUN EVIDENCE.
