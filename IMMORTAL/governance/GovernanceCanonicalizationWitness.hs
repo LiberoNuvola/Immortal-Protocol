@@ -23,7 +23,10 @@ data CanonicalizationRecord = CanonicalizationRecord
 
 canonicalizationRequiresConformance :: ProposalClass -> Bool
 canonicalizationRequiresConformance cls =
-  cls /= DocumentationOnly
+  cls == Adapter ||
+  cls == Application ||
+  cls == Specification ||
+  cls == ConstitutionalKernel
 
 canonicalizationRequiresCompatibility :: ProposalClass -> Bool
 canonicalizationRequiresCompatibility cls =
