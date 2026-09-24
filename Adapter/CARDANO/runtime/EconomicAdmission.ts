@@ -13,6 +13,8 @@ import {
   type ExecutableLiquidityObservation,
 } from '../observation/ExecutableLiquidityObservation'
 
+export type EconomicActionClass = 'Issue' | 'Reveal' | 'Claim' | 'Expire'
+
 export type EconomicAdmissionWitness = {
   gateVersion: string
   admitted: true
@@ -21,7 +23,7 @@ export type EconomicAdmissionWitness = {
   /** Canonical V3 pre-state fingerprint. */
   stateHash: string
   /** Canonical economic action being admitted (Issue/Reveal/Claim/Expire). */
-  actionClass: string
+  actionClass: EconomicActionClass
   /** Canonical action fingerprint bound to the economic decision. */
   actionFingerprint: string
   /** Canonical V3 candidate post-state fingerprint. */
@@ -38,6 +40,7 @@ export function assertEconomicAdmission(
   witness: EconomicAdmissionWitness | undefined,
   inputReferences: readonly string[],
   liquiditySourceReferences: readonly string[],
+  expectedActionClass?: EconomicActionClass,
 ): asserts witness is EconomicAdmissionWitness {
   if (!witness || witness.admitted !== true) {
     throw new Error(
@@ -58,6 +61,11 @@ export function assertEconomicAdmission(
   }
   if (!witness.actionClass.trim()) {
     throw new Error('Economic admission actionClass is required')
+  }
+  if (expectedActionClass && witness.actionClass !== expectedActionClass) {
+    throw new Error(
+      `Economic admission actionClass mismatch: expected ${expectedActionClass}, got ${witness.actionClass}`,
+    )
   }
   if (!/^[0-9a-fA-F]{64}$/.test(witness.actionFingerprint)) {
     throw new Error('Economic admission actionFingerprint must be a 32-byte hex digest')
