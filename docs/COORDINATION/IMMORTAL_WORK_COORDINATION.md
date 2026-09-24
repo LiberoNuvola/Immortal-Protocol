@@ -5042,3 +5042,14 @@ The trace already persists the signed transaction reference, pre/post UTxO finge
 Exact-commit P2.8 workflow lookup remains empty; no CI execution result is inferred.
 
 **Status:** REAL REVEAL RAW-ARTIFACT HANDOFF STRENGTHENED / TYPED LEDGER EVALUATION STILL OPEN / NO GREEN CLAIM.
+
+
+## 2026-09-24 — P2.8 runner-to-lab handoff audit
+
+Fresh workflow triangulation found a second concrete wiring limitation. The dedicated P2.8 runner executes `cabal run cardano-ledger-runner` in isolation and its default evidence directory is `audit/cardano-ledger-runner/evidence`. That directory is empty on the closure branch. The real Cardano lab, by contrast, generates the Reveal artifacts under `audit/yaci-evidence/` in a separate workflow (`immortal-cardano-lab.yml`).
+
+Therefore the current runner does **not** automatically consume the real Reveal transaction/context produced by the Cardano lab. The two workflows have no artifact handoff in the inspected configuration. The runner's current Main.hs then stops at file-presence checks and does not invoke `evalTxExUnitsWithLogs`.
+
+This does not invalidate the real Reveal trace; it identifies a reproducibility/CI-continuity gap between generation and evaluation. The correct next implementation is an explicit evidence-packet handoff (or a single workflow that generates and evaluates the same packet), followed by typed decoding and ledger-aligned evaluation. No synthetic copy of provider JSON may be treated as a typed ledger `UTxO/PParams/EpochInfo/SystemStart`.
+
+**Status:** P2.8 HANDOFF GAP CONFIRMED / EVALUATION STILL OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
