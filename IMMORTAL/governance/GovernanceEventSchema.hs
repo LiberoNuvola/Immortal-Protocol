@@ -70,7 +70,10 @@ canonicalPayloadText p = case p of
     ";abstention=" ++ show (decisionAbstentionWeight r) ++
     ";quorum=" ++ show (decisionQuorumReached r) ++
     ";approval=" ++ show (decisionApprovalReached r) ++
+    ";required_gates=" ++ show (decisionRequiredGates r) ++
+    ";final_outcome=" ++ show (decisionFinalOutcome r) ++
     ";ruleset_version=" ++ show (decisionRulesetVersion r) ++
+    ";challenges=" ++ show (decisionChallenges r) ++
     ";canonicalization_reference=" ++ decisionCanonicalizationReference r
   PayloadVoteCast v ->
     "type=VoteCast;proposal_id=" ++ show (voteProposal v) ++
