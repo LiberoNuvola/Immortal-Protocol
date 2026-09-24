@@ -4897,3 +4897,11 @@ This operational update records direct current-branch verification at HEAD `e6ba
 
 ### Current conclusion
 **MULTI-FRONT ACTIVE / NO NORMATIVE CHANGE.** The main remaining closure class across fronts is now evidence continuity: exact canonical transition identity → authenticated pre-state → generated artifact/transaction identity → observed ledger consequence. Tooling/network limitations must not be converted into semantic claims.
+
+
+## 2026-09-24 — Mainnet evidence gate matrix
+Created `docs/COORDINATION/IMMORTAL_MAINNET_EVIDENCE_GATE.md` at commit `e578b2ee4aee231267b3cc960b48d545283f279f`.
+
+The matrix converts the current R1–R9/B4/B5/B6/Cardano/Governance/Materios fronts into an evidence-oriented mainnet gate. It explicitly separates implementation/test presence from closure evidence and identifies the common closure object as the complete canonical-transition → transaction → ledger-observation → post-state chain.
+
+No normative economics changed. Gate 41 remains historical provenance rather than a core economic blocker; the historical mint redeemer/CBOR acquisition remains open and fail-closed. Mainnet-critical evidence gaps remain M6 composition, M7 ProtectedCapital preservation, M8 Economic Gate/atomic transition, M9 V3↔Cardano equivalence, M10 Ω completeness, M11 oracle integrity, M14 Materios authority/finality provenance, and M16 independent security review.
