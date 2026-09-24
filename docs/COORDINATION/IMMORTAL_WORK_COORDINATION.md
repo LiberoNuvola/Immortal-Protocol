@@ -4850,3 +4850,13 @@ Corrected `scripts/acquire-pre-snek-koios-redeemer.ps1` to `https://api.koios.re
 Commit: `516a9ca576aaeb9299e3cb999a9a17583c207f99`.
 
 This is exactly the kind of pre-acquisition correction required by Gate 41: no response was interpreted, and no evidence status was promoted. The helper remains fail-closed and paginated. Historical PRE mint redeemer remains OPEN until a real response is acquired and preserved.
+
+
+## 2026-09-24 — Gate 41: Koios version re-correction
+A provider-documentation triangulation found that the previous `v0` correction was itself stale. Current Cardano Developer Portal documentation lists mainnet Koios as `https://api.koios.rest/api/v1`, and the current Koios Python client documents `/api/v1` as its default/custom API base. The Koios API's `script_redeemers` operation is confirmed as the provider surface for redeemers of a script. citeturn0search3turn1search0turn1search3
+
+The Gate 41 helper has therefore been corrected back to `https://api.koios.rest/api/v1` in commit `0b41fc53b9e21754d890b1a8ac80f72284170a22`.
+
+This correction is important: the earlier `516a9ca...` v0 change must not be treated as evidence that v0 is current. No historical witness response has been interpreted or claimed from either version. Direct provider retrieval remains an acquisition task, not a semantic conclusion.
+
+**Gate 41 status remains OPEN:** historical PRE mint redeemer/witness and serialized transaction CBOR remain the primary missing artifacts. No economic or validator semantics changed.
