@@ -5240,3 +5240,13 @@ Commit: `388623d886af4e1bb41082734389d06715f3c268`.
 This is evidence hardening only. No economic constant or conversion rule was changed.
 
 B6/PC-05 status remains **OPEN for cross-boundary equivalence**, with explicit normalization evidence now stronger.
+
+
+## 2026-09-24 — RF8 CI matcher/consolidation pass
+
+The RF8 regression added for the Treasury side-door initially failed at test parsing because two matcher literals were over-escaped. The suite was corrected and duplicate Treasury-relayer coverage was consolidated so the dedicated `rf8-treasury-relayer-boundary.test.ts` owns that specific assertion. The Adapter Conformance workflow now executes both the general RF8 submission-boundary test and the dedicated Treasury-relayer guard.
+
+Current verification chain:
+`relayer treasuryWorker` fail-closed → dedicated regression → Adapter CI.
+
+No economic semantics changed.
