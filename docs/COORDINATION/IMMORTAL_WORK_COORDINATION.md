@@ -6095,3 +6095,30 @@ The historical manifest path remains the preferred archival source if recoverabl
 Once the redeemer artifact is acquired, filter specifically for `purpose=mint` and the PRE policy `1b29fda9...`; do not conflate mint-purpose data with later spend-purpose curve redeemers. Decode only the exact historical witness and test whether its fields/commitments explain the 3,928,019 PRE creator-side allocation and/or the 10,000,000 lovelace residual.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: witness acquisition helper implemented
+
+The historical PRE witness gap is now operationally isolated in a fail-closed acquisition helper:
+
+- scripts/acquire-pre-snek-witness.ps1
+- commit: 381ed658a4713bb562e74b2960ae5d6144665ede
+
+The helper uses a mainnet Blockfrost project id supplied only through BLOCKFROST_MAINNET_PROJECT_ID and acquires three distinct artifacts for 0235...c6cf4:
+
+1. /txs/{hash} transaction record;
+2. /txs/{hash}/cbor transaction CBOR;
+3. /txs/{hash}/redeemers transaction redeemers.
+
+It then selects only entries satisfying both: purpose = mint and script_hash = 1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c4.
+
+The helper deliberately fails closed when no matching mint redeemer is returned. It does not infer a creation witness from later spend redeemers, Koios tx_utxos, current Snek v1 parameters, or numerical correlations.
+
+### Current Gate 41 state
+
+- Transaction/UTxO evidence — CLOSED
+- Pool NFT-bearing output #1 — CLOSED
+- Historical PRE mint witness/redeemer — ACQUISITION READY / OPEN
+- 10 ADA = creator initial-buy funding — OPEN
+
+Execution of the helper requires a mainnet Blockfrost credential in the execution environment; no credential is committed to the repository.
