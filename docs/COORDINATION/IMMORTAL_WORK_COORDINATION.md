@@ -5906,3 +5906,12 @@ For the historical SNIGGA transaction, the deterministic acquisition target is t
 The raw response should be archived before interpretation and must retain at least: transaction hash, block/slot, fee, all inputs, all outputs with addresses/values/assets, mint, datum/redeemer references or decoded forms, and any metadata/indexer fields used to interpret output roles. This packet becomes the primary artifact for the SNIGGA-vs-PRE comparison.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — GOV-28 GOV-18 Event → State compatibility matrix
+
+Triangulated closed GOV-18 + GOV-01 against the live green-branch governance cluster. Added `docs/COORDINATION/GOV-28_GOV18_EVENT_STATE_COMPATIBILITY_MATRIX.md` at commit `049c6ba89c47c87af3c9c1ce4e9e4b6ee52e1f5a`.
+
+The closed sources establish the semantic ordering `VOTING_CLOSED → CHALLENGE_OPENED / CHALLENGE_RESOLVED-or-EXPIRY → DECISION_FINALIZED → ADOPTION_RECORDED → CONFORMANCE_RECORDED → CANONICALIZED`. Current Haskell can represent only parts through generic `StatusChanged`; challenge/finality facts remain auxiliary. `DECISION_FINALIZED` and `CONFORMANCE_RECORDED` have no independent state/event representation, while adoption/canonicalization have states but not distinct GOV-18 event identities.
+
+No new governance parameter was introduced. Next gate: inspect consumers of `DecisionRecorded`, `Accepted`, `Adopted`, `Canonical`, `finalizationAt`, and `GovernanceFinality.finalize`; derive the smallest compatible authoritative mapping, then add lifecycle negative twins before changing replay semantics.
