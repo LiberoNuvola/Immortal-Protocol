@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { copyFile, readFile, writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 const EVIDENCE_DIR = process.argv[2] ?? 'audit/yaci-evidence'
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
@@ -27,7 +27,16 @@ function extractInfoValue(text, label) {
 
 const transition = await readJson(EVIDENCE_DIR + '/reveal-transition.json')
 const txHash = transition.transactionRef
-if (!txHash) throw new Error('Reveal transition packet has no transactionRef')
+if (typeof txHash !== 'string' || !/^[0-9a-f]{64}$/i.test(txHash)) {
+  throw new Error('Reveal transition packet has invalid transactionRef')
+}
+if (!Array.isArray(transition.consumedUtxos) || transition.consumedUtxos.length === 0) {
+  throw new Error('Reveal transition lacks consumed input references')
+}
+if (new Set(transition.consumedUtxos).size !== transition.consumedUtxos.length ||
+    transition.consumedUtxos.some((ref) => typeof ref !== 'string' || !/^[0-9a-f]{64}#[0-9]+$/i.test(ref))) {
+  throw new Error('Reveal consumed input references are malformed or duplicated')
+}
 
 const txCbor = await requireFile(EVIDENCE_DIR + '/reveal-tx.cbor')
 const pparams = await requireFile(EVIDENCE_DIR + '/reveal-protocol-parameters.json')
@@ -39,6 +48,29 @@ if (!utxoResponse.ok) {
   throw new Error('Yaci /txs/{hash}/utxos failed: HTTP ' + utxoResponse.status)
 }
 const utxos = await utxoResponse.json()
+if (!Array.isArray(utxos.inputs) || utxos.inputs.length === 0) {
+  throw new Error('Yaci transaction UTxO response lacks consumed inputs')
+}
+const observedRefs = utxos.inputs.map((input) => {
+  if (typeof input.tx_hash !== 'string' || !Number.isSafeInteger(input.output_index)) {
+    throw new Error('Yaci consumed input lacks tx_hash/output_index')
+  }
+  return input.tx_hash.toLowerCase() + '#' + input.output_index
+})
+const expectedRefs = transition.consumedUtxos.map((ref) => ref.toLowerCase())
+if (observedRefs.length !== expectedRefs.length ||
+    new Set(observedRefs).size !== observedRefs.length ||
+    expectedRefs.some((ref) => !observedRefs.includes(ref))) {
+  throw new Error('Yaci consumed input set does not match the exact Reveal transition')
+}
+const timing = {
+  startTimeRaw: extractInfoValue(yaciInfo, 'Start Time'),
+  slotLengthRaw: extractInfoValue(yaciInfo, 'Slot Length'),
+  epochLengthRaw: extractInfoValue(yaciInfo, 'Epoch Length'),
+}
+if (Object.values(timing).some((value) => value === null)) {
+  throw new Error('Yaci timing provenance is incomplete; refusing to materialize packet')
+}
 
 await writeFile(EVIDENCE_DIR + '/tx.cbor', txCbor)
 await writeFile(EVIDENCE_DIR + '/pparams.json', pparams)
@@ -69,9 +101,7 @@ await writeFile(
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     timingSource: {
-      startTimeRaw: extractInfoValue(yaciInfo, 'Start Time'),
-      slotLengthRaw: extractInfoValue(yaciInfo, 'Slot Length'),
-      epochLengthRaw: extractInfoValue(yaciInfo, 'Epoch Length'),
+      ...timing,
     },
   }, null, 2) + '\n',
 )
@@ -84,7 +114,7 @@ await writeFile(
       command: 'yaci-devkit info',
       file: 'yaci-devkit-info.txt',
     },
-    startTimeRaw: extractInfoValue(yaciInfo, 'Start Time'),
+    startTimeRaw: timing.startTimeRaw,
     rawInfo: yaciInfo,
   }, null, 2) + '\n',
 )
@@ -115,7 +145,7 @@ const manifest = {
   materialization: {
     transaction: 'copied byte-for-byte from reveal-tx.cbor',
     protocol_parameters: 'copied byte-for-byte from reveal-protocol-parameters.json',
-    utxo: 'fetched directly from Yaci Store for transactionRef',
+    utxo: 'fetched directly from Yaci Store for transactionRef; consumed input references cross-checked against Reveal trace',
     epoch_info: 'raw Yaci epoch/timing provenance only; not yet a typed EpochInfo',
     system_start: 'raw Yaci timing provenance only; not yet a typed SystemStart',
   },
