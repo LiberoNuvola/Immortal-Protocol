@@ -6409,3 +6409,14 @@ Nuovo delta minimo sul gap GOV-28 consumer/conformance:
 - Aggiunti test per classificazione ammessa e Voting prematuro rifiutato.
 Commits: `aa4d26995d1b80e4a117aefd845522beece8186e`, `ebe4008750554ba9c127196b3f0e6ee03366ead1`, `56a882e26639497a23c40d2a9be6fef4741011ca`, `61dab8a71ce42a97a8100cbba1375f528409f0e6`.
 Questo non chiude ancora il lifecycle GOV-18 completo: gli atti dedicati DECISION_FINALIZED/ADOPTION/CONFORMANCE/CANONICALIZED mantengono i loro handler dedicati; `GovernanceFinality.finalize` resta legacy e non autorevole.
+
+## 2026-09-24 — Finality helper de-collapsed from canonicalization
+Triangolazione diretta GOV-01 + GOV-18 + GOV-C-13 contro il consumer legacy `GovernanceFinality.finalize`.
+- GOV-18 richiede un atto distinto `DECISION_FINALIZED`, seguito da `ADOPTION_RECORDED`, `CONFORMANCE_RECORDED` e infine `CANONICALIZED`.
+- GOV-01 definisce `ACCEPTED` come decisione di governance passata ma non ancora canonical adoption; `ADOPTED` e `CANONICAL` restano stadi successivi.
+- Il helper legacy `finalize` faceva invece `DecisionRecorded → Canonical`, codificando la falsa chiusura già isolata nei documenti GOV-28.
+- Correzione minima: dopo finality/challenge valida, `finalize` produce ora la proiezione `Accepted` + `finalizationAt`; la canonicalizzazione resta esclusivamente nel percorso `CANONICALIZED` del replay dedicato.
+- Aggiornato `GovernancePhase6Test.hs`: il test ora verifica esplicitamente `Accepted`, non `Canonical`.
+Commits: `c5e36f71cfb5f6b23061e699a6500efa1bfa6d66`, `bcbc8c611fe5066d4ca1c3f64da44a69b43e7948`.
+Nessun parametro normativo/economico nuovo; il delta elimina una contraddizione implementativa già documentata.
+Build/CI del nuovo HEAD: ancora da osservare.
