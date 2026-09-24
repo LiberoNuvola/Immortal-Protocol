@@ -1,3 +1,10 @@
+/**
+ * @deprecated Legacy Treasury percentage policy retained for historical/migration compatibility only.
+ *
+ * It is not an authoritative V3 economic rule and must not be imported by
+ * production economic flows. Treasury distribution remains fail-closed until
+ * an authoritative EconomicAdmission path and current V3 semantics exist.
+ */
 export const TREASURY_POLICY = Object.freeze({
   thresholdLovelace: 25_000_000n,
   prizePct: 5_000n,
