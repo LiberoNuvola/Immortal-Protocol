@@ -6253,3 +6253,12 @@ Implementazione sul green branch: `GovernanceConformanceWitness.hs` + `EConforma
 Commits: witness `28c9431b78a4057fad2af6eacaad766fd04a83d0`; schema `0afdd8d359cc6bc9ab1bcb48ec1b182ce307cb07`; replay `da67f4490a86ceb44f12590b202f761393ec1505`; authorization `733f13a6b6801cd3e33341d6a5febfc6733ffe72`; tests `169a3b0d10d6c1dfc4d38427ef31745a1d6dc716`.
 
 Resta aperto `CANONICALIZED`. La prossima derivazione deve usare i requisiti già chiusi di GOV-10: target artifact/specification, version transition, complete decision record, evidence refs, conformance evidence dove richiesto, compatibility/upgrade result, nessun mandatory gate unresolved e deterministic version identifier. Nessuna semantica nuova deve essere inventata.
+
+
+### 2026-09-24 — Koios triangulation: UTxO packet is historical and complete, but no mint witness
+
+Library evidence preserves the original Koios `POST /tx_utxos` acquisition for `0235...c6cf4`, including all three inputs and four outputs. The Pool-NFT/PRE output #1 carries 13,000,000 lovelace + 996,071,981 PRE + Pool NFT; creator-side output #2 carries 3,928,019 PRE + the StepBeyond NFT. This independently reproduces the transaction-output facts already used by Gate 41.
+
+A targeted Library search for the same transaction plus `purpose=mint`, `script_hash`, and `redeemer` did not recover a historical PRE mint redeemer. Existing expanded transaction material instead shows no Plutus contracts on the Koios UTxO output listing; therefore it must not be treated as proof that the transaction had no mint redeemer. The missing artifact is specifically the dedicated redeemer/witness acquisition.
+
+The original Koios transcript also records a later `429 Too Many Requests` on the follow-up transaction query, so rate limiting is an acquisition limitation, not evidence about transaction semantics.
