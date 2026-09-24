@@ -5900,3 +5900,55 @@ Only after that correspondence is established can the deployment-specific select
 No selector mathematics has been added to IMMORTAL. No economic semantics changed.
 
 Status: **SELECTOR SOURCE VERSION IDENTIFIED (v1.5.1 + MATERIOS PATCHES) / CLI VERSION SEPARATED (v1.8.0) / LIVE RUNTIME + CRYPTOGRAPHIC PROVENANCE STILL OPEN.**
+
+
+## 2026-09-24 — MATERIOS SELECTOR SOURCE CONFIRMATION: DIRECT RUNTIME CALL + VENDOR LOCK
+
+A further source audit removes an ambiguity from the previous provenance note.
+
+The Materios runtime does not merely depend on the selector crate indirectly: `partnerchain/runtime/src/lib.rs` directly imports:
+
+`authority_selection_inherents::select_authorities::select_authorities`
+
+and the runtime source pins:
+
+`spec_name = materios`
+`spec_version = 238`
+`transaction_version = 4`
+
+The workspace `Cargo.toml` pins the IOG Partner Chains family to tag **v1.5.1**, including `authority-selection-inherents`, and applies a local Cargo patch replacing that upstream crate with the vendored Materios copy.
+
+The vendored selector source is therefore the concrete selector implementation in the current source tree. It explicitly takes:
+
+`genesis_utxo`
+`AuthoritySelectionInputs`
+`sidechain_epoch`
+
+and performs candidate filtering, weighting, deterministic candidate ordering, seed derivation from epoch nonce + sidechain epoch, committee-size selection, followed by Materios-specific post-processing.
+
+Two Materios-specific selector changes are directly visible in that source:
+
+1. **Ariadne output deduplication** with a minimum distinct-committee safety floor.
+2. **Force-include-when-fits**: when the number of eligible positive-weight candidates is no greater than the requested committee size, all eligible candidates are deterministically included instead of performing the weighted draw.
+
+Therefore the phrase "Ariadne v1.5.1 + Materios patches" is now source-verified, not inferred.
+
+### Important correction to previous wording
+
+The earlier note that "runtime source dependency v1.5.1" remains correct, but the workspace comment says the Polkadot SDK is pinned to `polkadot-stable2409-4` "to match Partner Chains v1.8.x". This describes the SDK compatibility baseline; it does **not** turn the Partner Chains selector crates into v1.8.0. The actual selector crate remains v1.5.1 and is locally patched.
+
+### Live-runtime check
+
+The official Materios documentation identifies `/chain-info` as the public chain-information surface and instructs operators to query `state_getRuntimeVersion` for the live runtime. The endpoint could not be retrieved from this environment, so **no live spec-version claim is promoted**.
+
+Consequently:
+
+- source runtime: **spec 238 — VERIFIED**;
+- selector source: **v1.5.1 + Materios patches — VERIFIED**;
+- operator CLI: **v1.8.0 — VERIFIED from Materios documentation**;
+- live runtime: **OPEN until direct RPC observation**;
+- deployed WASM ↔ source correspondence: **OPEN**.
+
+This is the exact point where the next evidence must come from the canonical Materios RPC, not more static-source triangulation.
+
+No selector logic was added to IMMORTAL. No economic semantics changed.
