@@ -155,3 +155,13 @@ Do not declare “mainnet ready” from aggregate test counts.
 The criterion is:
 
 **all mainnet-critical gates have reproducible evidence, the evidence chains are mutually consistent, unresolved findings are explicitly dispositioned, and the complete deployed transition path has been demonstrated on the target Cardano environment.**
+
+## 10.1 Golden Reveal packet
+
+Priority A now has a concrete packet manifest at `audit/transition-evidence/PRE-RICH-REVEAL-GOLDEN-PACKET.md`.
+
+The manifest is deliberately evidence-only: it does not create a new economic rule and it does not claim a real transaction. It binds the existing Reveal implementation, EconomicAdmission boundary and B1/PrizeValidator state updates to the minimum artifacts required for real-ledger closure.
+
+Current status: **YELLOW / REAL-LEDGER PACKET OPEN**.
+
+The next closure action is to populate this packet from one fresh target-environment Reveal execution and verify the reconstructed post-state against the canonical transition witness.
