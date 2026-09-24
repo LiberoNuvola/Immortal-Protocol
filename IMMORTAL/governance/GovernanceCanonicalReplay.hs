@@ -122,7 +122,9 @@ applyCanonicalized st prev r at = do
        then Left "canonicalization witness invalid"
        else if not (canonicalizationPredecessorValid p prev)
          then Left "canonicalization predecessor/gate sequence invalid"
-         else Right st { proposals = [ if proposalId p' == proposalId p
+         else if not (canonicalizationTimestampValid prev at)
+           then Left "canonicalization timestamp precedes predecessor event"
+           else Right st { proposals = [ if proposalId p' == proposalId p
                                       then p' { proposalStatus = Canonical }
                                       else p'
                                     | p' <- proposals st ]
@@ -137,4 +139,7 @@ applyCanonicalized st prev r at = do
           not (canonicalizationRequiresConformance (proposalClass p)) ||
           conformanceProposalId cr == proposalId p
         _ -> not (canonicalizationRequiresConformance (proposalClass p))
+
+    canonicalizationTimestampValid Nothing _ = True
+    canonicalizationTimestampValid (Just ce) t = t >= eventTimestamp ce
 
