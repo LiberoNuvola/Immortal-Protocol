@@ -253,7 +253,7 @@ main = do
 
   let tamperedConformance = conformanceRecord { conformanceFailedTestRecord = Just "mandatory-failure" }
       tamperedConformanceEvent = conformanceEvent { eventPayload = PayloadConformanceRecorded tamperedConformance }
-  case applyCanonicalEvent emptyState adoptedState (Just adoptionEvent) tamperedConformanceEvent of
+  case applyCanonicalEvent ruleset emptyState adoptedState (Just (withCommitment adoptionEvent)) (withCommitment tamperedConformanceEvent) of
     Left _ -> putStrLn "PASS: failed conformance evidence blocks CONFORMANCE_RECORDED"
     Right _ -> error "FAIL: failed conformance evidence accepted"
 
