@@ -5548,3 +5548,21 @@ Latest observed push runs on the preceding coordinated snapshot show:
 P2.8 has therefore not yet reached typed-context reconstruction or evalTxExUnitsWithLogs. Official Cardano Ledger API documentation continues to expose evalTxExUnitsWithLogs as the ledger-aligned evaluator requiring transaction/UTxO/protocol-parameter/epoch/system-start context. citeturn0search0
 
 No GREEN claim and no normative economic change.
+
+
+## 2026-09-24 — P2.8 dependency blocker #2 reproduced and source pin consolidated
+
+Fresh inspection of P2.8 run `36040539155` shows the previous bootstrap reached Cabal dependency resolution but failed before runner compilation:
+`unknown package: cardano-slotting` required by `cardano-ledger-alonzo-1.16.0.0`.
+
+The active `audit/cardano-ledger-runner/cabal.project` had two separate `source-repository-package` blocks for the same `cardano-base` repository at different commits. This was consolidated into one exact source pin at `a02ed49194501620f03b2f868aabd5a48ebde937`, exposing both:
+- `cardano-strict-containers`
+- `cardano-slotting`
+
+The pinned `cardano-slotting` package is version `0.2.1.0`, and the pinned `cardano-strict-containers` package remains available from the same source snapshot. The Alonzo package accepts `cardano-slotting` without a tighter version constraint.
+
+Fix commit on the active branch: `2e21fbc634ce62ea562e56a873d01d704944fb64`.
+
+This is still dependency/bootstrap work only. P2.8 has NOT yet reached typed transaction/UTxO/PParams/EpochInfo/SystemStart materialization or `evalTxExUnitsWithLogs`. No protocol/economic semantics were changed.
+
+Status: P2.8 DEPENDENCY BLOCKER #2 FIX COMMITTED / FRESH CI RUN REQUIRED / TYPED LEDGER EVALUATION STILL OPEN / NO GREEN CLAIM.
