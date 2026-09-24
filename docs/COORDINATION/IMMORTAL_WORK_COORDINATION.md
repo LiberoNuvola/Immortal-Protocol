@@ -5410,3 +5410,29 @@ External cross-check: upstream Cardano ledger/plutus integration explicitly uses
 
 Fix commit: ac799928e6bc759476d276ad8638998061a5ab91.
 Status: P2.8 BUILD BLOCKER ISOLATED / DEPENDENCY PIN APPLIED / FRESH CI REQUIRED / EVALUATION STILL OPEN.
+
+## 2026-09-24 — Concurrent-agent triangulation handoff
+
+A separate recent commit line was inspected because repository activity shows new B4/B6/RF8 work after the current coordinated branch snapshot. The line is **diverged** from `11e8bf4c19fb9f0d674c53dd71ff3b5dd5054a68`; it must not be treated as already integrated into this working branch.
+
+Verified artifacts on the concurrent line:
+
+- `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` — an evidence-layer check binds admission `actionClass`, pre-state hash and candidate post-state hash to a `CanonicalTransitionEvidence` record. It validates evidence first and does not compute economic truth.
+- `docs/COORDINATION/RF8_WITNESS_TRANSITION_BINDING_DELTA_20260924.md` — RF8-A submission boundary is recorded as strong implementation/regression; RF8-B structural witness binding is implemented/regressed; semantic hash provenance remains open.
+- `docs/COORDINATION/B4_RF5_PROTECTED_CAPITAL_EVIDENCE_DELTA_20260924.md` — B4/RF5 local projection/accounting is classified as substantial implementation + conformance, while adapter preservation, protected-component provenance, real-ledger preservation, and action-by-action correspondence remain open.
+- `docs/COORDINATION/B6_PC05_UNIT_SCALE_DELTA_20260924.md` — explicit 100× B1 sub-unit ↔ V3 reference-unit normalization is required before any raw UniversalEconomicState equality claim. Unit-contract evidence remains open.
+- `audit/caes-transition-lab/ComposedTransitionCertificate.ts` — experimental composition layer combines existing V3 transition validity, refinement exactness, semantic encoding validity and explicit liveness hypotheses; it explicitly does not replace canonical verification.
+
+Additional concurrent test evidence includes `PRE-RICH/profile/PreRichCardanoObservationProjection.test.ts`, covering exact monetary normalization and rejection of non-representable 501-subunit input.
+
+### Anti-regression disposition
+
+Do **not** duplicate this work blindly and do **not** claim it is present on the coordinated branch. The immediate integration question is whether/when the concurrent line can be reconciled with `work/immortal-green-closure` without importing unrelated history.
+
+For the coordinated branch, the next safe technical target remains:
+1. verify current CI after the Genesis precision fixture fix;
+2. inspect RF8 hash provenance rather than adding more witness fields;
+3. preserve the explicit B6 unit-conversion witness requirement;
+4. keep B4 closure classified as cross-layer OPEN until adapter/ledger evidence exists.
+
+No normative economic change is authorized by this handoff.
