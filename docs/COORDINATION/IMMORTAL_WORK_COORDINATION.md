@@ -5386,3 +5386,15 @@ The duplicate entries were removed without changing the workflow's intended test
 Commit: `53d938899c5dd55c5152ba0ca2117a5240f5ccbd`.
 
 **Status:** PRE-RICH ACTION-REFINEMENT `push.paths` DEDUPLICATED / FRESH WORKFLOW EXECUTION STILL REQUIRED.
+
+
+## 2026-09-24 — CI fixture reconciliation: Genesis Oracle precision precedence
+
+Observed CI run 36037689673 on commit bfd76ad061cc20433d525d1fe66a38d952873f4d completed with one failure in the Genesis Treasury admission conformance step. The 73-test PRE-RICH refinement suite was fully green; the failure was a single stale assertion in GenesisTreasuryAdmission.test.ts: an observation with oraclePrecision = -1 was expected to classify as ORACLE_UNVERIFIED, but the current fail-closed validator correctly rejects non-canonical precision first as INVALID_ORACLE_PRECISION.
+
+The fixture was corrected to assert INVALID_ORACLE_PRECISION. No validator or economic semantics were changed.
+
+Failure evidence: workflow 36037689673, job 107761768239.
+Fix commit: d1052f2e76902b7dabb164b86ebdaaadec90814a.
+
+Status: CI FIXTURE RECONCILIATION APPLIED / FRESH HEAD RUN PENDING / NO NORMATIVE CHANGE.
