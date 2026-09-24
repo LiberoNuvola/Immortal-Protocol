@@ -15,6 +15,7 @@ if ([string]::IsNullOrWhiteSpace($projectId)) {
 }
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+$acquiredUtc = (Get-Date).ToUniversalTime().ToString("o")
 
 $headers = @{ "project_id" = $projectId }
 
@@ -24,17 +25,20 @@ function Save-RawJson([string]$url, [string]$path) {
     return $response.Content | ConvertFrom-Json
 }
 
-# 1. Full transaction metadata/UTxO record for cross-check.
-$tx = Save-RawJson "$base/txs/$txHash" "$outDir/tx.json"
+# 1. Transaction metadata record for cross-check.
+$tx = Save-RawJson "$base/txs/$txHash" "$outDir/tx.raw.json"
 
-# 2. Transaction CBOR — distinct artifact from transaction/UTxO JSON.
+# 2. Transaction UTxOs — explicit artifact; do not assume /txs/{hash} contains outputs.
+$utxos = Save-RawJson "$base/txs/$txHash/utxos" "$outDir/tx-utxos.raw.json"
+
+# 3. Transaction CBOR — distinct raw artifact from transaction/UTxO JSON.
 $cbor = Invoke-WebRequest -Uri "$base/txs/$txHash/cbor" -Headers $headers -Method Get
-$cbor.Content | Set-Content -Path "$outDir/tx-cbor.json" -Encoding UTF8
+$cbor.Content | Set-Content -Path "$outDir/tx-cbor.raw.json" -Encoding UTF8
 
-# 3. Transaction redeemers — witness-capable artifact.
-$redeemers = Save-RawJson "$base/txs/$txHash/redeemers" "$outDir/redeemers.json"
+# 4. Transaction redeemers — witness-capable raw artifact.
+$redeemers = Save-RawJson "$base/txs/$txHash/redeemers" "$outDir/redeemers.raw.json"
 
-# 4. Preserve an exact mint-policy subset for deterministic review.
+# 5. Preserve an exact mint-policy subset for deterministic review.
 $mint = @($redeemers) | Where-Object {
     $_.purpose -eq "mint" -and $_.script_hash -eq $prePolicy
 }
@@ -44,9 +48,29 @@ $mint = @($redeemers) | Where-Object {
     pre_policy = $prePolicy
     mint_redeemer_count = @($mint).Count
     mint_redeemers = @($mint)
-    acquired_utc = (Get-Date).ToUniversalTime().ToString("o")
+    acquired_utc = $acquiredUtc
 } | ConvertTo-Json -Depth 100 |
     Set-Content -Path "$outDir/pre-mint-redeemer-selection.json" -Encoding UTF8
+
+# 6. Preserve cryptographic hashes of every raw provider response before interpretation.
+Get-ChildItem -Path $outDir -Filter "*.raw.json" | ForEach-Object {
+    Get-FileHash -Algorithm SHA256 $_.FullName | Select-Object Path, Hash
+} | ConvertTo-Json -Depth 10 | Set-Content -Path "$outDir/raw-artifact-sha256.json" -Encoding UTF8
+
+[PSCustomObject]@{
+    provider = "Blockfrost"
+    network = "Cardano Mainnet"
+    base_url = $base
+    tx_hash = $txHash
+    pre_policy = $prePolicy
+    acquired_utc = $acquiredUtc
+    endpoints = @(
+        "/txs/$txHash"
+        "/txs/$txHash/utxos"
+        "/txs/$txHash/cbor"
+        "/txs/$txHash/redeemers"
+    )
+} | ConvertTo-Json -Depth 20 | Set-Content -Path "$outDir/acquisition-provenance.json" -Encoding UTF8
 
 # Fail closed: absence of a mint-purpose redeemer is an acquisition/ledger finding,
 # not permission to infer one from later spend redeemers.
