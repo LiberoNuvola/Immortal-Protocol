@@ -39,7 +39,7 @@ export async function buildClaimTx(
 
 export async function signAndSubmitTx(lucid: any, tx: any) {
   const adapter = createCardanoExecutionAdapter(lucid)
-  const result = await adapter.submit(tx)
+  const result = await adapter.submitInfrastructure(tx)
   return result.transactionRef
 }
 
