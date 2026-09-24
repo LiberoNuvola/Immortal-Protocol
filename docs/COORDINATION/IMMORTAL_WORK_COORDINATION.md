@@ -4905,3 +4905,38 @@ Created `docs/COORDINATION/IMMORTAL_MAINNET_EVIDENCE_GATE.md` at commit `e578b2e
 The matrix converts the current R1–R9/B4/B5/B6/Cardano/Governance/Materios fronts into an evidence-oriented mainnet gate. It explicitly separates implementation/test presence from closure evidence and identifies the common closure object as the complete canonical-transition → transaction → ledger-observation → post-state chain.
 
 No normative economics changed. Gate 41 remains historical provenance rather than a core economic blocker; the historical mint redeemer/CBOR acquisition remains open and fail-closed. Mainnet-critical evidence gaps remain M6 composition, M7 ProtectedCapital preservation, M8 Economic Gate/atomic transition, M9 V3↔Cardano equivalence, M10 Ω completeness, M11 oracle integrity, M14 Materios authority/finality provenance, and M16 independent security review.
+
+## 2026-09-24 — Golden Reveal evidence packet / B6 concrete closure path
+
+This operational update advances Priority A of the Mainnet Evidence Gate without claiming a real-ledger closure.
+
+### Triangulated implementation boundary
+
+The current working branch shows that src/gameFlow.ts already makes Reveal an economic transition requiring an explicit EconomicAdmissionWitness and coordinates the PrizeValidator and B1PrizePool updates. The runtime submission boundary in Adapter/CARDANO/runtime/EconomicAdmission.ts checks the witness, state hash, EEV, authenticated Pool input/value, executable-liquidity source references and immediate-liquidity requirement before submitEconomic.
+
+The Reveal implementation also derives and freezes the two Classic-6 row tiers, the result, payout and summary tier, while updating the B1 pool reserve, unresolved-ticket count and pending liabilities.
+
+### New artifact
+
+Created:
+
+- audit/transition-evidence/PRE-RICH-REVEAL-GOLDEN-PACKET.md
+- Commit: 9e238db8feadc69ab8bf62a0c7e9b8b3daa69bcc
+
+The manifest binds the existing implementation boundaries to the evidence chain:
+
+canonical action → authenticated pre-state → economic admission → candidate post-state → exact transaction CBOR/witness/context → signed transaction → observed ledger result → reconstructed post-state → evaluator output.
+
+It deliberately contains no invented TxId, UTxO, ExUnits, datum hash or ledger result.
+
+### External protocol triangulation
+
+Current Cardano documentation confirms that a transaction consists of body, witness set, validity flag and auxiliary data; Plutus redeemers are part of the witness set and mint/spend redeemer indexing is tied to canonical transaction ordering. It also states that deterministic validation depends on the exact transaction/context presented to the ledger. citeturn0search1turn0search3turn0search4
+
+Therefore the golden packet must preserve the exact serialized transaction and ledger-aligned evaluation context rather than only an explorer/indexer summary.
+
+### Current B6 consequence
+
+Issue / Claim / Expire already have positive ticket-level refinement evidence recorded in this register. Reveal remains the principal action for which the same chain must now be populated with a real Cardano execution.
+
+**Status:** B6 Reveal evidence path concretely specified / REAL-LEDGER PACKET OPEN / NO NORMATIVE CHANGE.
