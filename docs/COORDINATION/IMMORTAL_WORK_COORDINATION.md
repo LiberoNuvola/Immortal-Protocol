@@ -5481,3 +5481,40 @@ The Ledger API exposes native CBOR/JSON decoding and protocol-parameter serializ
 The raw Yaci packet contains reveal-tx.cbor and reveal-protocol-parameters.json, but the existing runner does not yet materialize all required typed context. The correct next step is a narrow decoding/materialization patch, not a synthetic fixture and not an economic change.
 
 Status: P2.8 BUILD/BOOTSTRAP UNDER CI / TYPED LEDGER MATERIALIZATION IS NEXT BLOCKER / evalTxExUnitsWithLogs STILL OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
+
+## 2026-09-24 — P2.8 dependency reconciliation: second missing ledger package
+
+Run `36040539155` was inspected at job-log level. The runner successfully completed checkout of commit `86952a597af4b9092d4daf4f39fffadb956d85f9`, installed GHC 9.8.4 and Cabal 3.12.1.0, cloned the pinned `cardano-base`, `cardano-ledger` and `plutus` sources, then failed in Cabal dependency resolution before runner compilation/evaluation.
+
+Exact failure:
+- required package: `cardano-slotting`;
+- requested by `cardano-ledger-alonzo-1.16.0.0`;
+- failure class: dependency/toolchain resolution, not validator failure, not ledger evaluation, not SAFE_STALL.
+
+The current CHaP package index identifies `cardano-slotting-0.2.1.0` as a `cardano-base` subdirectory at commit `a02ed49194501620f03b2f868aabd5a48ebde937`. A dedicated source-repository-package pin for that exact subdirectory was added to `audit/cardano-ledger-runner/cabal.project`.
+
+Fix commit: `ce1159bb3c8d88b2b175f4f91f9b2b08335e209b`.
+
+The runner therefore has not yet reached the typed evidence packet, ledger-context reconstruction or execution-unit evaluator. Do not classify the failure as a protocol/economic failure.
+
+Status: P2.8 DEPENDENCY BLOCKER #2 IDENTIFIED + PINNED / FRESH RUN REQUIRED / LEDGER EVALUATION STILL OPEN.
+
+## 2026-09-24 — B6/PC-05 test surface deduplicated and CI-wired
+
+The active branch already contained the canonical B6 conformance test:
+`PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts`.
+
+A duplicate test file created during concurrent inspection was removed immediately after detecting the existing canonical surface. The existing test covers:
+- exact 100× B1-subunit → V3-reference-unit normalization;
+- rejection of non-representable `501` sub-units;
+- preservation of normalized scale through canonical Reveal post-state derivation.
+
+The PRE-RICH action-refinement workflow was updated to trigger on the existing B6 test/source and to execute the existing B6 conformance test. No second economic test surface was retained.
+
+Commits:
+- duplicate cleanup: `f58a119b53e51239114257ed04b95208c499e208`
+- CI wiring: `8339af91e75518301b4f263f1f0a35fa5b9deaba`
+
+Status: B6/PC-05 LOCAL SCALE CONFORMANCE **CI-WIRED / CROSS-BOUNDARY SEMANTIC EQUIVALENCE STILL OPEN**.
+
+No normative economic change.
