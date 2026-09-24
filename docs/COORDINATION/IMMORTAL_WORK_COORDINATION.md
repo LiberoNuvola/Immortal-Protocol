@@ -6377,3 +6377,26 @@ Fix fail-closed e semantica-preserving applicati:
 Questi fix non cambiano regole economiche o governance; ripristinano esclusivamente la compilabilità richiesta per poter raggiungere i test.
 
 Il nuovo HEAD è `16e71dde44ca377f11d811cdf3fd399d2126c918`. La nuova esecuzione CI deve ancora essere osservata prima di classificare il build come verde.
+
+
+## 2026-09-24 — Triangolazione governance + build blocker correction
+Verifica repo + GOV-18/GOV-10 Notion:
+- GOV-18 distingue esplicitamente Documentation, Verification/tooling, Adapter, PRE-RICH application, IMMORTAL specification e constitutional/kernel.
+- La canonicalizzazione richiede "conformance evidence where implementation is affected"; non è corretto dedurre automaticamente conformance per ogni classe diversa da Documentation.
+- Corretto `GovernanceCanonicalizationWitness.canonicalizationRequiresConformance` per richiedere conformance solo a Adapter, Application, Specification e ConstitutionalKernel. VerificationTooling, DocumentationOnly ed Emergency non ricevono una conformance gate inventata.
+- `canonicalizationRequiresCompatibility` resta Adapter | Specification | ConstitutionalKernel, coerente con GOV-18.
+- Aggiunti test espliciti per il boundary delle classi di canonicalizzazione nel lifecycle harness.
+
+Build triage:
+- Ricontrollando il tree del commit `16e71dde...` è emerso un residuo sintattico concreto in `B1PrizePool.hs`: duplicazione del binding `ticketCs =` nel blocco TicketClaimed.
+- Corretto sul branch `work/immortal-green-closure` con commit `6ec71cfe0705e82519cadea64b8fe957b316ed37`.
+- Correzione test harness canonicalization: `b6cae51ffdd5c96678b05912b11e533e41fc2d0c` + repair dell'entrypoint `4afc2911af909d20088960ae72787d8d4ae67c4f`.
+- Non risultano ancora workflow runs associati via GitHub connector ai nuovi SHA; quindi nessuna evidenza CI verde viene dichiarata.
+
+Gap ancora aperti e non modificati:
+- `GovernanceConformance.conformanceChecklist` non riceve ancora il GovernanceState corrente e quindi non integra materialmente `lifecycleTransitionValid` nella validazione dell'evento.
+- `GovernanceFinality.finalize` resta un helper legacy da auditare contro il replay canonico; non va usato come scorciatoia verso Canonical.
+- Il witness di canonicalizzazione verifica presenza/non-vuoto delle evidenze, non la loro provenienza crittografica: questo resta un gap di evidenza, non una nuova semantica.
+- Il significato di `decisionCanonicalizationReference` al momento della finalizzazione non viene reinterpretato senza una fonte normativa più precisa.
+
+No economic constants or closed GOV-01→GOV-18 semantics changed.
