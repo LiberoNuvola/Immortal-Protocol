@@ -5053,3 +5053,17 @@ Therefore the current runner does **not** automatically consume the real Reveal 
 This does not invalidate the real Reveal trace; it identifies a reproducibility/CI-continuity gap between generation and evaluation. The correct next implementation is an explicit evidence-packet handoff (or a single workflow that generates and evaluates the same packet), followed by typed decoding and ledger-aligned evaluation. No synthetic copy of provider JSON may be treated as a typed ledger `UTxO/PParams/EpochInfo/SystemStart`.
 
 **Status:** P2.8 HANDOFF GAP CONFIRMED / EVALUATION STILL OPEN / NO GREEN CLAIM / NO NORMATIVE CHANGE.
+
+
+## 2026-09-24 — B5 Reveal lab boundary re-triangulated
+
+A direct comparison of the production Reveal path and the real Yaci Reveal trace found a concrete evidence-boundary distinction.
+
+- Production `src/gameFlow.ts::revealPrize` correctly submits through `signAndSubmitEconomicTx(..., opts.economicAdmission, ...)`, which reaches `CardanoExecutionAdapter.submitEconomic` and `assertEconomicAdmission`.
+- The real Yaci laboratory `audit/cardano-integration/reveal-ledger-trace.ts` instead constructs a Reveal and calls the generic `executionAdapter.submit(reveal)`. Therefore its successful local-ledger execution demonstrates validator/transaction realization and post-state observation, but **does not by itself demonstrate the B5 Economic Admission boundary**.
+- The trace cannot safely be changed to fabricate an EconomicAdmissionWitness: the witness is explicitly an economic authority supplied by the authoritative economic/profile layer, and the lab itself currently marks its liquidity valuation as fixture-specific rather than canonical oracle valuation.
+- This distinction is therefore an evidence-classification issue, not a reason to weaken the adapter or invent fixture economics.
+
+**Consequence:** RF10/RF11 real Reveal evidence can support Cardano realization and B6 evidence continuity, but B5 still requires a real execution path whose EconomicAdmissionWitness is produced authoritatively and is bound to the exact transaction inputs/post-state.
+
+No normative economics or validator semantics changed.
