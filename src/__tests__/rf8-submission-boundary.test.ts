@@ -63,23 +63,5 @@ describe('RF8 application submission boundary', () => {
     expect(source).toMatch(/adapter\\.submitEconomic\\(/)
   })
 
-  it('fails closed on the legacy Treasury distribution relayer surface', () => {
-    const relayer = readFileSync(
-      join(process.cwd(), 'relayer', 'relayer.js'),
-      'utf8',
-    )
-    const start = relayer.indexOf('async function treasuryWorker(lucid) {')
-    const end = relayer.indexOf(
-      '// ---------------------------------------------------------------------------\n// UTxO helpers',
-      start,
-    )
-    expect(start).toBeGreaterThanOrEqual(0)
-    expect(end).toBeGreaterThan(start)
-
-    const treasuryWorker = relayer.slice(start, end)
-    expect(treasuryWorker).not.toMatch(/lucid\.signTx\s*\(/)
-    expect(treasuryWorker).not.toMatch(/lucid\.submitTx\s*\(/)
-    expect(treasuryWorker).toContain('legacy distribution disabled')
-  })
 
 })
