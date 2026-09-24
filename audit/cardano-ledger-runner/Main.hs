@@ -86,4 +86,5 @@ main = do
                 else do
                   putStrLn "RESULT: COMPLETE_EVIDENCE_PACKET_PRESENT"
                   putStrLn "NEXT: parse and validate the packet, then invoke ledger-aligned evalTxExUnitsWithLogs."
-                  putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
+
+  putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
