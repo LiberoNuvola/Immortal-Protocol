@@ -42,6 +42,7 @@ export type GenesisTreasuryAdmission =
         | 'WRONG_TREASURY'
         | 'INVALID_ASSET'
         | 'INVALID_QUANTITY'
+        | 'INVALID_ORACLE_PRECISION'
         | 'INVALID_PRICE'
         | 'WRONG_ORACLE_PUBLISHER'
         | 'ORACLE_UNVERIFIED'
