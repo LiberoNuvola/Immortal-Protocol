@@ -5024,3 +5024,21 @@ External primary documentation was triangulated against the exact dependency pin
 **Engineering consequence:** the evaluator API is no longer an unknown. The remaining implementation task is packet decoding/binding into the exact ledger types, followed by `evalTxExUnitsWithLogs`. It is not justified to fabricate parsers for absent evidence or to mark P2.8 green before an actual packet is supplied and evaluated.
 
 **Status:** API CONFIRMED / PACKET ABSENT / EVALUATION OPEN / NO GREEN CLAIM.
+
+
+## 2026-09-24 — P2.8 evidence handoff strengthened from real Reveal trace
+
+The existing real Yaci Reveal trace was re-triangulated against the P2.8 packet contract. A minimal additive change now persists two raw observations that the trace already obtains:
+
+- `audit/yaci-evidence/reveal-tx.cbor`: exact signed Reveal transaction serialized CBOR, written as binary from the Lucid-produced CBOR string;
+- `audit/yaci-evidence/reveal-protocol-parameters.json`: the protocol-parameter object returned by the Yaci/Blockfrost provider at trace time, serialized with BigInt values represented as decimal strings.
+
+Change commit: `463e319c886ba7643c866549568647fddfd03204`.
+
+This improves raw provenance and makes the real transaction/context handoff more concrete without pretending that provider JSON is already a decoded ledger `PParams` or that the transaction alone is sufficient for evaluation.
+
+The trace already persists the signed transaction reference, pre/post UTxO fingerprints, action fingerprint and Yaci `/txs/{hash}/utxos` observation. The unresolved P2.8 requirements remain a ledger-typed `UTxO`, exact `PParams`, `EpochInfo (Either Text)`, `SystemStart`, and the actual `evalTxExUnitsWithLogs` invocation.
+
+Exact-commit P2.8 workflow lookup remains empty; no CI execution result is inferred.
+
+**Status:** REAL REVEAL RAW-ARTIFACT HANDOFF STRENGTHENED / TYPED LEDGER EVALUATION STILL OPEN / NO GREEN CLAIM.
