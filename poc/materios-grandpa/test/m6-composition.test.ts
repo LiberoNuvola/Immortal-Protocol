@@ -121,6 +121,98 @@ describe("Materios M6 composition boundary", () => {
     expect(result.statement.kind).toBe("materios-m6-composition");
   });
 
+  it("passes the full verified transition and finality artifacts to the external proof boundary", async () => {
+    let receivedTransition: unknown;
+    let receivedFinality: unknown;
+
+    await verifyM6Composition(
+      transition(),
+      finality(),
+      {
+        verify: (_statement, receivedTransitionArg, receivedFinalityArg) => {
+          receivedTransition = receivedTransitionArg;
+          receivedFinality = receivedFinalityArg;
+          return true;
+        }
+      },
+      "external-composition-proof",
+      Uint8Array.from([0xcc])
+    );
+
+    expect(receivedTransition).toBeDefined();
+    expect(receivedFinality).toBeDefined();
+    expect(
+      (receivedTransition as ReturnType<typeof transition>).publicStatement.sidechainEpoch
+    ).toBe(42n);
+    expect(
+      (receivedTransition as ReturnType<typeof transition>).publicStatement.toSetId
+    ).toBe(8n);
+    expect(
+      (receivedFinality as ReturnType<typeof finality>).targetNumber
+    ).toBe(122n);
+  });
+
+  it("leaves epoch/committee/activation mismatch rejection to the external proof", async () => {
+    const transitionArtifact = transition();
+    const finalityArtifact = finality();
+    let rejected = false;
+
+    await expect(
+      verifyM6Composition(
+        transitionArtifact,
+        finalityArtifact,
+        {
+          verify: (_statement, receivedTransition) => {
+            const publicStatement =
+              receivedTransition.publicStatement;
+
+            if (
+              publicStatement.sidechainEpoch !== 43n ||
+              publicStatement.toSetId !== 8n ||
+              publicStatement.activationBlock.number !== 123n ||
+              publicStatement.toAuthorities.length !== 0
+            ) {
+              rejected = true;
+              return false;
+            }
+
+            return true;
+          }
+        },
+        "external-composition-proof",
+        Uint8Array.from([0xdd])
+      )
+    ).resolves.toBeDefined();
+
+    expect(rejected).toBe(false);
+
+    await expect(
+      verifyM6Composition(
+        {
+          ...transitionArtifact,
+          publicStatement: {
+            ...transitionArtifact.publicStatement,
+            sidechainEpoch: 43n
+          }
+        },
+        finalityArtifact,
+        {
+          verify: (_statement, receivedTransition) => {
+            if (
+              receivedTransition.publicStatement.sidechainEpoch !== 42n
+            ) {
+              return false;
+            }
+
+            return true;
+          }
+        },
+        "external-composition-proof",
+        Uint8Array.from([0xee])
+      )
+    ).rejects.toThrow("M6_COMPOSITION_PROOF_NOT_VERIFIED");
+  });
+
   it("does not invent selector semantics", async () => {
     let received: unknown;
     await verifyM6Composition(
