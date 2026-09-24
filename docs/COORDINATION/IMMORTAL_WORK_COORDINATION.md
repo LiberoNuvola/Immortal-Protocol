@@ -6420,3 +6420,13 @@ Triangolazione diretta GOV-01 + GOV-18 + GOV-C-13 contro il consumer legacy `Gov
 Commits: `c5e36f71cfb5f6b23061e699a6500efa1bfa6d66`, `bcbc8c611fe5066d4ca1c3f64da44a69b43e7948`.
 Nessun parametro normativo/economico nuovo; il delta elimina una contraddizione implementativa già documentata.
 Build/CI del nuovo HEAD: ancora da osservare.
+
+
+## 2026-09-24 — Finalized decision witness outcome bound to Accepted
+Seconda triangolazione del confine `DECISION_FINALIZED`.
+- GOV-18 richiede che il finalized decision record conservi il `final outcome`.
+- GOV-01 distingue `DecisionRecorded` come stato tecnico/proiezione pre-finalization da `ACCEPTED`, che è il risultato della decisione di governance passata.
+- Il witness precedente confrontava `decisionFinalOutcome` con `proposalStatus == DecisionRecorded`, pur facendo poi proiettare il replay a `Accepted`: era una incoerenza interna.
+- Correzione minima: `decisionRecordValid` richiede ora `decisionFinalOutcome == Accepted`; il fixture canonico è stato aggiornato e aggiunto un negativo che rifiuta `DecisionRecorded` come final outcome.
+Commits: `e0172a73f00de50222dc3519fed0ef661e42050f`, `898ba1ea328398ebb80888eec90cb4a41c7d5eb3`, `c6370e7ab0f876994cbd1a36ce9596626125cb90`.
+Questo rende coerenti witness, finalization handler e stato GOV-01; non introduce nuovi parametri.
