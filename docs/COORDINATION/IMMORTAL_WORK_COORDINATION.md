@@ -4986,3 +4986,16 @@ The green branch contains `CAES_PRIOR_ART_HANDOFF_2026-09-23.md`, whose explicit
 No new coordination document should be created unless it closes/narrows an existing gate, preserves indispensable raw provenance, records a distinct actionable blocker, or consolidates existing findings. New documents must state their parent gate/front and evidence role. Duplicate status narratives should be consolidated rather than multiplied.
 
 This is an operational anti-dispersion rule only. No economics, validator semantics, governance rules or architecture authority changed.
+
+
+## 2026-09-24 — P2.8 runner trigger alignment
+
+Fresh workflow triangulation found a concrete CI wiring gap: `.github/workflows/p2-8-b1-cardano-ledger-runner.yml` had `workflow_dispatch` plus a push trigger only for `audit/p2-8-b1-cardano-ledger-runner`, although the complete `audit/cardano-ledger-runner/` implementation is present on `work/immortal-green-closure`.
+
+The workflow was minimally corrected to add `work/immortal-green-closure` to its push branches, without changing runner semantics or evaluator inputs.
+
+Commit: `7b9f6856bcfe30ff8c96b7524d2c5c6646a97867`.
+
+Immediate exact-commit observation returned no workflow run yet. This is evidence absence, not failure. If a run appears, preserve the runner report before classifying P2.8.
+
+**Status:** P2.8 CI trigger wiring corrected / execution evidence still OPEN / NO NORMATIVE CHANGE.
