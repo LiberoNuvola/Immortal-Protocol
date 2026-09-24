@@ -20,8 +20,8 @@ describe('RF8 Treasury relayer boundary', () => {
 
     const treasuryWorker = source.slice(start, end)
 
-    expect(treasuryWorker).not.toMatch(/\\.signTx\\s*\\(/)
-    expect(treasuryWorker).not.toMatch(/\\.submitTx\\s*\\(/)
+    expect(treasuryWorker).not.toMatch(/\.signTx\s*\(/)
+    expect(treasuryWorker).not.toMatch(/\.submitTx\s*\(/)
     expect(treasuryWorker).toContain('FAIL-CLOSED MIGRATION BOUNDARY')
     expect(treasuryWorker).toContain('canonical EconomicAdmission')
   })
