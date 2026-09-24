@@ -5678,3 +5678,25 @@ The open-tx3 model is reverse-engineered and describes the current/v1 launch arc
 
 ### Next deterministic target
 Use the historical PRE launch transaction's mint-policy/redeemer data and contemporaneous implementation/version evidence to identify the origin and intended role of the extra 10 ADA. Do not import current v1 fee/seed constants into historical PRE.
+## 2026-09-24 — Gate 41: independent Snek decoder strengthens the 3 ADA seed interpretation
+
+Fresh triangulation against `defrag-au/mitos` commit `4ef962d48a6f97af7a7060f9ff1dcca9b8c8d42d` confirms an independent launchpad decoder defines `CURVE_SEED_LOVELACE = 3_000_000` and explicitly states that a freshly created curve holds this ADA before purchases. The same decoder states that the on-chain datum `ada_cap_threshold` includes the seed, while the Snek API reports the cap without it, and computes progress as `(lovelace - seed) / (cap - seed)`.
+
+This independently explains the two exact PRE offsets already observed:
+- State-0 physical reserve `69,155,397` minus provider value `66,155,397` = `3,000,000` lovelace;
+- on-chain threshold `18,191,400,000` minus provider/builder threshold `18,188,400,000` = `3,000,000` lovelace.
+
+### Evidence classification
+**3 ADA = Snek curve seed — STRONG CROSS-VALIDATED LEAD.** The independent decoder is not a canonical Snek specification and is not historical PRE deployment evidence, so this remains below CLOSED.
+
+**3 ADA = Pool-NFT min-UTxO — DISPROVED.** The exact historical Alonzo calculation for the original Pool-NFT-bearing output is `1,999,956` lovelace.
+
+**Historical PRE deployment proof — OPEN.** The mint transaction proves the initial Pool-NFT UTxO contained 13 ADA, so the remaining decomposition `13 ADA = 3 ADA seed + 10 ADA other component(s)` is the next precise question. No component is assigned the remaining 10 ADA without contemporaneous implementation/transaction evidence.
+
+### Important provider mapping distinction
+The independent decoder supports the semantic interpretation of the 3 ADA offset, but does not resolve the provider field `info.outputId = 0235...#0`. The ledger shows the Pool NFT in `0235...#1`. Therefore provider output-id semantics remain a separate open question.
+
+### Next deterministic target
+Reconstruct the historical Snek launch/deployment rule around `0235...`: identify what the 10 ADA residual represented, and independently determine what provider `info.outputId` meant. Closure requires transaction evidence + contemporaneous/historical implementation evidence + provider interpretation evidence. Do not collapse these into one claim.
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
