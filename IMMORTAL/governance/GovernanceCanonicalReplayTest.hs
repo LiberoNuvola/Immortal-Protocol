@@ -162,8 +162,8 @@ main = do
     Right st -> do
       assert (finalizationAt (head (proposals st)) == Just 259400)
         "DECISION_FINALIZED records finalization without collapsing to Canonical"
-      assert (proposalStatus (head (proposals st)) == DecisionRecorded)
-        "DECISION_FINALIZED preserves implementation projection state"
+      assert (proposalStatus (head (proposals st)) == Accepted)
+        "DECISION_FINALIZED advances the compatible Accepted projection"
 
   putStrLn "GOV-28 DECISION FINALIZATION CHECKS PASSED"
 
