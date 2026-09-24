@@ -25,19 +25,20 @@ jobs:
         run: cabal update
 
       - name: Build ledger runner
-        run: cabal --project-file=audit/cardano-ledger-runner/cabal.project build cardano-ledger-runner
+        working-directory: audit/cardano-ledger-runner
+        run: cabal build cardano-ledger-runner
 
       - name: Verify fail-closed behavior without synthetic evidence
         run: |
           set +e
-          cabal --project-file=audit/cardano-ledger-runner/cabal.project run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence
+          (cd audit/cardano-ledger-runner && cabal run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)
           rc=$?
           set -e
           test "$rc" -eq 0
 
       - name: Assert SAFE_STALL is explicit
         run: |
-          output="$(cabal --project-file=audit/cardano-ledger-runner/cabal.project run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)"
+          output="$(cd audit/cardano-ledger-runner && cabal run cardano-ledger-runner -- --evidence-dir /tmp/nonexistent-immortal-evidence)"
           printf '%s\n' "$output"
           grep -q "RESULT: SAFE_STALL" <<< "$output"
           grep -q "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE" <<< "$output"
