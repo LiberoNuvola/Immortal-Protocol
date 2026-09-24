@@ -13,6 +13,7 @@ data ActorClass = System | Proposer | Voter | Delegate | Reviewer | Auditor | Em
 
 data EventType = EProposalSubmitted | EProposalClassified | EStatusChanged
   | EDecisionFinalized
+  | EAdoptionRecorded
   | EVoteCast | EDelegationSet | EGatesSet
   deriving (Eq, Show)
 
@@ -26,6 +27,7 @@ data CanonicalPayload
   | PayloadProposalClassified ProposalId ProposalClass Timestamp
   | PayloadStatusChanged ProposalId ProposalStatus Timestamp
   | PayloadDecisionFinalized DecisionRecord
+  | PayloadAdoptionRecorded ProposalId Timestamp
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
   | PayloadGatesSet ProposalId GateResult Timestamp
@@ -73,6 +75,8 @@ canonicalPayloadText p = case p of
     ";ruleset_version=" ++ show (decisionRulesetVersion r) ++
     ";challenges=" ++ show (decisionChallenges r) ++
     ";canonicalization_reference=" ++ decisionCanonicalizationReference r
+  PayloadAdoptionRecorded pid at ->
+    "type=AdoptionRecorded;proposal_id=" ++ show pid ++ ";timestamp=" ++ show at
   PayloadVoteCast v ->
     "type=VoteCast;proposal_id=" ++ show (voteProposal v) ++
     ";voter=" ++ show (voter v) ++ ";choice=" ++ show (choice v) ++ ";cast_at=" ++ show (castAt v)
@@ -115,6 +119,7 @@ payloadProposalId p = case p of
   PayloadProposalClassified x _ _ -> x
   PayloadStatusChanged x _ _ -> x
   PayloadDecisionFinalized r -> decisionProposalId r
+  PayloadAdoptionRecorded pid _ -> pid
   PayloadVoteCast x -> voteProposal x
   PayloadDelegationSet x _ _ -> x
   PayloadGatesSet x _ _ -> x
@@ -130,6 +135,7 @@ payloadTimestamp p = case p of
   PayloadProposalClassified _ _ t -> t
   PayloadStatusChanged _ _ t -> t
   PayloadDecisionFinalized r -> decisionSnapshotAt r
+  PayloadAdoptionRecorded _ t -> t
   PayloadVoteCast v -> castAt v
   PayloadDelegationSet _ _ t -> t
   PayloadGatesSet _ _ t -> t
@@ -140,6 +146,7 @@ eventTypeMatchesPayload t p = case (t,p) of
   (EProposalClassified, PayloadProposalClassified _ _ _) -> True
   (EStatusChanged, PayloadStatusChanged _ _ _) -> True
   (EDecisionFinalized, PayloadDecisionFinalized _) -> True
+  (EAdoptionRecorded, PayloadAdoptionRecorded _ _) -> True
   (EVoteCast, PayloadVoteCast _) -> True
   (EDelegationSet, PayloadDelegationSet _ _ _) -> True
   (EGatesSet, PayloadGatesSet _ _ _) -> True
