@@ -8,6 +8,8 @@
 
 export const USDM_SUBUNITS_PER_USDM = 100n
 export const GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS = 4_000n * USDM_SUBUNITS_PER_USDM
+/** Mirrors Adapter/CARDANO/observation/OracleTypes.hs: precision = 1_000_000. */
+export const CANONICAL_ORACLE_PRECISION = 1_000_000n
 
 export type GenesisTreasuryObservation = {
   sourceRegime: 'PRE-GENESIS' | 'GENESIS'
@@ -52,7 +54,7 @@ export function verifiedTreasuryPreValueUsdmSubunits(
 ): bigint | null {
   if (!observation.valuationVerified || !observation.oracleFresh) return null
   if (observation.preQuantity < 0n || observation.verifiedPreUsdmPrice < 0n) return null
-  if (observation.oraclePrecision <= 0n) return null
+  if (observation.oraclePrecision !== CANONICAL_ORACLE_PRECISION) return null
   const numerator = observation.preQuantity * observation.verifiedPreUsdmPrice
   // Genesis admission is a hard lower-bound predicate. Fractional subunits
   // below the threshold must never be rounded upward into admissibility.
@@ -83,6 +85,9 @@ export function admitGenesisTreasury(
   }
   if (observation.verifiedPreUsdmPrice < 0n) {
     return { admitted: false, reason: 'INVALID_PRICE' }
+  }
+  if (observation.oraclePrecision !== CANONICAL_ORACLE_PRECISION) {
+    return { admitted: false, reason: 'INVALID_ORACLE_PRECISION' }
   }
   if (observation.oraclePublisher !== canonicalOraclePublisher) {
     return { admitted: false, reason: 'WRONG_ORACLE_PUBLISHER' }
