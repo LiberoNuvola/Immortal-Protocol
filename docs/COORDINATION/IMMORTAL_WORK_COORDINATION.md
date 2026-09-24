@@ -6154,3 +6154,15 @@ Repo audit found no reference to `BLOCKFROST_MAINNET_PROJECT_ID` and no existing
 - Do not close the historical PRE mint witness gap, and do not promote the 10 ADA = initial-buy interpretation, until the exact historical artifact is preserved.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+## 2026-09-24 — GOV-28 ADOPTION_RECORDED canonical act introduced
+
+Il passo successivo è stato triangolato senza riaprire GOV-01/GOV-18. Aggiunti `EAdoptionRecorded` e `PayloadAdoptionRecorded ProposalId Timestamp`. Il replay canonico gestisce l'atto direttamente: richiede la proiezione `Accepted` e un `finalizationAt` già presente, quindi l'adozione non può precedere la finalizzazione.
+
+Per mantenere la compatibilità con gli stati implementativi esistenti, `DECISION_FINALIZED` ora aggiorna la proiezione a `Accepted` insieme a `finalizationAt`; non usa più `StatusChanged` come evento canonico. Questo preserva la distinzione semantica: l'evento canonico è `DECISION_FINALIZED`, mentre `Accepted` resta una proiezione dello stato di decisione finalizzata.
+
+Test aggiunto per `ADOPTION_RECORDED`, con predecessor `DECISION_FINALIZED` e verifica che il risultato sia `Adopted`.
+
+Commits: schema `67ae8975e045c9c406404854f033c6f6904d9c9b`; authorization `326af54ad4811567b0e2903f2eae01b710b5faea2`; replay `6603ca37208970b71eb644ecdd71bd6f38ceffd9` + `ddec34d8d3cf5ec0de2872096cf8d22d130333d6`; tests `b68eb772d03e4f3089a43fd7acf0db421d387798` + `ee58678d848f9d3efd0354f189b8957cc6048708`; schema repair `fdadf2ee5654a02cdff7e9eee853758a96a40624`.
+
+Boundary still open: `CONFORMANCE_RECORDED` and `CANONICALIZED`. No new timing, quorum, threshold or economic parameter. No build/CI success claim.
