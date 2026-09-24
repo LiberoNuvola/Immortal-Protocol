@@ -30,7 +30,10 @@ Required evidence:
 - gateVersion
 - decisionReference
 - authoritativeObservationReference
-- stateHash
+- stateHash (canonical V3 pre-state fingerprint)
+- actionClass
+- actionFingerprint
+- postStateHash (canonical V3 candidate post-state fingerprint)
 - eev
 - executableLiquidityObservation
 - authenticatedPoolInputReference
