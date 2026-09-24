@@ -21,7 +21,7 @@ function sha256(bytes) {
 }
 
 function extractInfoValue(text, label) {
-  const match = text.match(new RegExp('^\\s*[^\\S\\r\\n]*\\[?[^\\S\\r\\n]*' + label + '\\]?\\s*[:=]?\\s*(.+?)\\s*$', 'mi'))
+  const match = text.match(new RegExp(label + '\\]?[^0-9]*([0-9]+(?:\\.[0-9]+)?)', 'i'))
   return match?.[1]?.trim() ?? null
 }
 
