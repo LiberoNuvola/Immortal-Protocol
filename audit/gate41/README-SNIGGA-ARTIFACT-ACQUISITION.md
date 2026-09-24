@@ -51,3 +51,17 @@ The SNIGGA artifact can strengthen the interpretation of PRE's 10 ADA residual o
 - provider info.outputId semantics: OPEN
 
 No normative IMMORTAL/PRE-RICH economics are changed by this acquisition procedure.
+
+## 2026-09-24 — Fallback acquisition providers triangulated
+
+The Cardano Developer Portal currently documents three hosted query providers for Mainnet: Blockfrost, Koios and Maestro. Koios Mainnet is https://api.koios.rest/api/v1 and its public tier requires no key; Blockfrost Mainnet is https://cardano-mainnet.blockfrost.io/api/v0 and Maestro Mainnet is https://mainnet.gomaestro-api.org/v1, with their respective credentials. The Koios documentation and client libraries explicitly expose tx_info for detailed transaction information. This confirms that the artifact acquisition problem is provider-access, not an ambiguity in the transaction query itself.
+
+Fallback order for the SNIGGA packet:
+1. Koios public tx_info.
+2. Blockfrost Mainnet transaction endpoint, if a project key is available.
+3. Maestro Mainnet transaction endpoint, if an API key is available.
+4. Existing archived repository/Notion artifact, if one is discovered.
+
+Do not synthesize or manually reconstruct the SNIGGA transaction when an API call fails. Preserve whichever provider response is actually obtained and record provider + retrieval timestamp in the evidence packet.
+
+Current closure remains unchanged: raw SNIGGA artifact OPEN; output topology OPEN; PRE 10 ADA attribution OPEN; provider info.outputId semantics OPEN.
