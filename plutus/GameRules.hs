@@ -10,7 +10,11 @@
 
 module GameRules
   ( PrizeTable (..)
+  , classifyRowTier
   , classifyTier
+  , rowOutcomeIndex
+  , rowTierFromIndex
+  , rowPayoutTotal
   , prizeAmountForTier
   , defaultPrizeTable
   , generateSymbols
@@ -23,36 +27,6 @@ import PlutusTx.Prelude
 -- Prize table
 -- ============================================================
 
--- | PrizeTable defines base multipliers for each winning tier.
---
--- The payout for a ticket is: baseForTier(tier) * priceUsdm / 2
---
--- USDM SUB-UNITS: 1 USDM = 100 integer units.
--- pdPriceUsdm is stored in sub-units (e.g. Genesis = 100, Class 1 = 200).
--- The formula produces sub-unit results directly:
---   payout_subunits = base * priceUsdm / 2
---   payout_USDM = payout_subunits / 100
---
--- Relationship between ticket CLASS, TIER, and PAYOUT:
---
---   Ticket CLASS = pdPriceUsdm (100, 200, 300, 500, 1000, 2500, 5000, 10000 sub-units)
---   Winning TIER = classifyTier(symbols) (1..5, or 0 for loss)
---   PAYOUT (sub-units) = base * priceUsdm / 2
---
--- Example for Genesis (priceUsdm = 100 sub-units):
---   Tier 1: 2 * 100 / 2 = 100 sub-units = 1.00 USDM   (3+ of symbol 1)
---   Tier 2: 5 * 100 / 2 = 250 sub-units = 2.50 USDM  (3+ of symbol 2)
---   Tier 3: 10 * 100 / 2 = 500 sub-units = 5.00 USDM   (3+ of symbol 3)
---   Tier 4: 200 * 100 / 2 = 10000 sub-units = 100.00 USDM (3+ of symbol 4)
---   Tier 5: 1000 * 100 / 2 = 50000 sub-units = 500.00 USDM (3+ of symbol 5)
---
--- Example for Class 1 (priceUsdm = 200 sub-units):
---   Tier 1: 2 * 200 / 2 = 200 sub-units = 2.00 USDM
---   Tier 2: 5 * 200 / 2 = 500 sub-units = 5.00 USDM
---   etc.
---
--- This is NOT the same as "ticket class = tier". A 1 USDM ticket
--- can win tier 5 (500 USDM). A 100 USDM ticket can win tier 1 (100 USDM).
 data PrizeTable = PrizeTable
   { ptTier1 :: Integer
   , ptTier2 :: Integer
@@ -93,64 +67,144 @@ prizeAmountForTier table tier priceUsdm =
     else (baseForTier table tier * priceUsdm) `divide` 2
 
 -- ============================================================
--- Symbol generation
+-- Canonical Classic-6 row distribution
 -- ============================================================
 
-{-# INLINABLE countSym #-}
-countSym :: BuiltinByteString -> Integer -> Integer -> Integer
-countSym bs sym i =
-  if i >= 6
+-- A row is sampled uniformly from 20,000 canonical outcome slots:
+--
+--   0..17499  -> loss
+--   17500..19199 -> tier 1
+--   19200..19799 -> tier 2
+--   19800..19979 -> tier 3
+--   19980..19998 -> tier 4
+--   19999 -> tier 5
+--
+-- A 16-bit draw is accepted only when < 60,000 and then reduced modulo
+-- 20,000. Because 60,000 = 3 * 20,000, the reduction is unbiased.
+{-# INLINABLE rowTierFromIndex #-}
+rowTierFromIndex :: Integer -> Integer
+rowTierFromIndex r =
+  if r < 0 || r >= 20000 then
+    traceError "GameRules: row outcome index out of range"
+  else if r < 17500 then 0
+  else if r < 19200 then 1
+  else if r < 19800 then 2
+  else if r < 19980 then 3
+  else if r < 19999 then 4
+  else 5
+
+{-# INLINABLE rowOutcomeIndex #-}
+rowOutcomeIndex :: BuiltinByteString -> Integer -> Integer
+rowOutcomeIndex seed row =
+  draw 0
+  where
+    draw attempt =
+      if attempt >= 256 then
+        traceError "GameRules: row randomness exhausted"
+      else
+        let h =
+              sha2_256
+                (appendByteString
+                  (consByteString row (consByteString attempt emptyByteString))
+                  seed)
+            u =
+              indexByteString h 0 * 256
+              + indexByteString h 1
+        in
+          if u < 60000
+            then remainder u 20000
+            else draw (attempt + 1)
+
+{-# INLINABLE tripleBytes #-}
+tripleBytes :: Integer -> BuiltinByteString
+tripleBytes sym =
+  consByteString sym
+    (consByteString sym
+      (consByteString sym emptyByteString))
+
+-- For a loss row, deterministically select one of the 120 ordered
+-- three-symbol combinations over symbols 1..5 that is not a triple.
+{-# INLINABLE lossTriple #-}
+lossTriple :: Integer -> BuiltinByteString
+lossTriple outcome =
+  let
+    rank = remainder outcome 120
+    first = divide rank 24 + 1
+    pairRank = remainder rank 24
+    excluded = (first - 1) * 6
+    pairIndex =
+      if pairRank < excluded
+        then pairRank
+        else pairRank + 1
+    second = divide pairIndex 5 + 1
+    third = remainder pairIndex 5 + 1
+  in
+    consByteString first
+      (consByteString second
+        (consByteString third emptyByteString))
+
+{-# INLINABLE rowSymbolsFromIndex #-}
+rowSymbolsFromIndex :: Integer -> BuiltinByteString
+rowSymbolsFromIndex outcome =
+  let tier = rowTierFromIndex outcome
+  in
+    if tier == 0
+      then lossTriple outcome
+      else tripleBytes tier
+
+{-# INLINABLE classifyRowTier #-}
+classifyRowTier :: BuiltinByteString -> Integer
+classifyRowTier row =
+  if lengthOfByteString row < 3
     then 0
     else
-      let c = indexByteString bs i
-          n = if c == sym then 1 else 0
-      in n + countSym bs sym (i + 1)
+      let
+        a = indexByteString row 0
+        b = indexByteString row 1
+        c = indexByteString row 2
+      in
+        if a == b && b == c && a >= 1 && a <= 5
+          then a
+          else 0
 
--- | Returns the highest symbol (5..1) appearing at least three times.
---   Returns 0 when there is no winning tier.
+-- | Classic-6 summary tier for a full six-symbol board.
+-- Both rows are independently evaluated; this returns the maximum row
+-- tier only as a legacy summary. The canonical two-row information is
+-- carried separately by pdRow1Tier and pdRow2Tier.
 {-# INLINABLE classifyTier #-}
 classifyTier :: BuiltinByteString -> Integer
 classifyTier bs =
   if lengthOfByteString bs < 6
     then 0
-    else go 5
-  where
-    go sym =
-      if sym <= 0
-        then 0
-        else if countSym bs sym 0 >= 3
-          then sym
-          else go (sym - 1)
+    else
+      let
+        row1 =
+          consByteString (indexByteString bs 0)
+            (consByteString (indexByteString bs 1)
+              (consByteString (indexByteString bs 2) emptyByteString))
+        row2 =
+          consByteString (indexByteString bs 3)
+            (consByteString (indexByteString bs 4)
+              (consByteString (indexByteString bs 5) emptyByteString))
+        t1 = classifyRowTier row1
+        t2 = classifyRowTier row2
+      in
+        if t1 >= t2 then t1 else t2
 
--- | Generates exactly six symbols in the range 1..5 using rejection sampling.
---
--- Each position hashes: sha2_256( byte(position) || symbolsSeed )
--- and consumes bytes sequentially from the 32-byte hash.
--- Bytes with value 255 are rejected (skipped) because 256 is not
--- evenly divisible by 5.
---
--- FAILS if more than 32 bytes are needed for a single position
--- (extremely unlikely: probability < (1/256)^32).
--- This bounds all hash reads within the SHA-256 output.
---
--- The result is completely deterministic from symbolsSeed.
+{-# INLINABLE rowPayoutTotal #-}
+rowPayoutTotal :: PrizeTable -> Integer -> Integer -> Integer -> Integer
+rowPayoutTotal table row1Tier row2Tier priceUsdm =
+  min
+    (prizeAmountForTier table row1Tier priceUsdm
+      + prizeAmountForTier table row2Tier priceUsdm)
+    (500 * priceUsdm)
+
+-- | Deterministically constructs two independent Classic-6 rows from the
+-- verified reveal seed. The row outcome distribution, not the old global
+-- six-cell classifier, is the economic source of truth.
 {-# INLINABLE generateSymbols #-}
 generateSymbols :: BuiltinByteString -> BuiltinByteString
-generateSymbols symbolsSeed = collect 0 0 emptyByteString
-  where
-    nextByte pos hashPos =
-      indexByteString
-        (sha2_256 (appendByteString (consByteString pos emptyByteString) symbolsSeed))
-        hashPos
-
-    collect count _ acc
-      | count >= 6 = acc
-    collect count hashPos acc =
-      if hashPos >= 32
-        then traceError "generateSymbols: hash exhausted for position"
-        else
-          let byte = nextByte count hashPos
-          in if byte == 255
-               then collect count (hashPos + 1) acc
-               else collect (count + 1) 0
-                      (appendByteString acc (consByteString (remainder byte 5 + 1) emptyByteString))
+generateSymbols symbolsSeed =
+  appendByteString
+    (rowSymbolsFromIndex (rowOutcomeIndex symbolsSeed 1))
+    (rowSymbolsFromIndex (rowOutcomeIndex symbolsSeed 2))

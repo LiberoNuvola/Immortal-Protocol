@@ -97,8 +97,7 @@ function sameCbor(a, b, label) {
   const aa = loadJson(a)
   const bb = loadJson(b)
   if (
-    aa &&
-    bb &&
+    aa && bb &&
     typeof aa.cborHex === 'string' &&
     typeof bb.cborHex === 'string' &&
     aa.cborHex.toLowerCase() === bb.cborHex.toLowerCase()
@@ -154,9 +153,7 @@ const requiredFiles = [
   ['relayer/registryPublisher.js', 'relayer/registryPublisher.js'],
 ]
 
-for (const [file, label] of requiredFiles) {
-  exists(file, label)
-}
+for (const [file, label] of requiredFiles) exists(file, label)
 
 for (const [file, label] of [
   ['plutus/out/treasury.plutus.json', 'Treasury'],
@@ -165,33 +162,21 @@ for (const [file, label] of [
   ['plutus/out/mintPolicyFactory.plutus.json', 'MintPolicy factory'],
   ['plutus/out/prizeValidatorFactory.plutus.json', 'PrizeValidator factory'],
   ['plutus/out/beaconRegistry.plutus.json', 'BeaconRegistry'],
-]) {
-  validPlutusV2Envelope(file, label)
-}
+]) validPlutusV2Envelope(file, label)
 
 // ---------------------------------------------------------------------------
 // 2. Plutus build
 // ---------------------------------------------------------------------------
 
 section('2/8  PLUTUS BUILD')
-
-run(
-  'cabal',
-  ['build', 'all', '-j1'],
-  'cabal build all -j1'
-)
+run('cabal', ['build', 'all', '-j1'], 'cabal build all -j1')
 
 // ---------------------------------------------------------------------------
 // 3. Script export
 // ---------------------------------------------------------------------------
 
 section('3/8  SCRIPT EXPORT')
-
-run(
-  'cabal',
-  ['run', 'exe:export-scripts'],
-  'cabal run exe:export-scripts'
-)
+run('cabal', ['run', 'exe:export-scripts'], 'cabal run exe:export-scripts')
 
 for (const [file, label] of [
   ['plutus/out/treasury.plutus.json', 'Treasury post-export'],
@@ -200,9 +185,7 @@ for (const [file, label] of [
   ['plutus/out/mintPolicyFactory.plutus.json', 'MintPolicy factory post-export'],
   ['plutus/out/prizeValidatorFactory.plutus.json', 'PrizeValidator factory post-export'],
   ['plutus/out/beaconRegistry.plutus.json', 'BeaconRegistry post-export'],
-]) {
-  validPlutusV2Envelope(file, label)
-}
+]) validPlutusV2Envelope(file, label)
 
 // ---------------------------------------------------------------------------
 // 4. B1 on-chain architecture
@@ -218,275 +201,63 @@ const beaconHs = read('plutus/Beacon.hs')
 const typesHs = read('plutus/Types.hs')
 const rulesHs = read('plutus/GameRules.hs')
 
-contains(
-  mintHs,
-  /mkPolicy\s*::[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?Bool/s,
-  'MintPolicy exposes five B1 ScriptHash configuration parameters'
-)
+contains(mintHs, /mkPolicy\s*::[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?ScriptHash[\s\S]*?Bool/s,
+  'MintPolicy exposes five B1 ScriptHash configuration parameters')
 
-contains(
-  mintHs,
-  /counterHash[\s\S]*?prizeHash[\s\S]*?regHash[\s\S]*?treasuryHash[\s\S]*?b1PrizePoolHash/s,
-  'MintPolicy binds counter, prize, registry, Treasury and B1PrizePool'
-)
+contains(mintHs, /counterHash[\s\S]*?prizeHash[\s\S]*?regHash[\s\S]*?treasuryHash[\s\S]*?b1PrizePoolHash/s,
+  'MintPolicy binds counter, prize, registry, Treasury and B1PrizePool')
 
-contains(
-  mintHs,
-  /atomicTreasuryPaymentValid/,
-  'MintPolicy enforces atomic Treasury payment'
-)
+contains(mintHs, /atomicTreasuryPaymentValid/, 'MintPolicy enforces atomic Treasury payment')
+contains(mintHs, /atomicPoolReservationValid/, 'MintPolicy enforces atomic Pool reservation')
+contains(mintHs, /mintedExactlyOneSerial/, 'MintPolicy enforces exactly one ticket NFT')
+contains(mintHs, /pdPrizePoolHash/, 'MintPolicy binds PrizeDatum to B1PrizePool')
+contains(mintHs, /atomicTreasuryPaymentValid/, 'B1 sale settlement is verified on-chain by oracle value')
 
-contains(
-  mintHs,
-  /atomicPoolReservationValid/,
-  'MintPolicy enforces atomic Pool reservation'
-)
+contains(poolHs, /TicketIssued/, 'B1PrizePool supports TicketIssued')
+contains(poolHs, /TicketRevealed/, 'B1PrizePool supports TicketRevealed')
+contains(poolHs, /TicketClaimed/, 'B1PrizePool supports TicketClaimed')
+contains(poolHs, /TicketExpired/, 'B1PrizePool supports TicketExpired')
+contains(poolHs, /singletonPoolTokenValid/, 'B1PrizePool enforces singleton pool authority token')
+contains(poolHs, /ticketMinted/, 'B1PrizePool binds TicketIssued to the ticket mint')
+contains(poolHs, /ppUnresolvedReserve/, 'B1PrizePool tracks unresolved reserve')
+contains(poolHs, /ppUnresolvedTicketCount/, 'B1PrizePool tracks unresolved ticket count')
+contains(poolHs, /solvencyInvariant/, 'B1PrizePool enforces solvency invariant')
+contains(poolHs, /effectivePool/, 'B1PrizePool computes EffectivePool')
+contains(poolHs, /oracle|Oracle/i, 'B1PrizePool contains oracle valuation logic')
 
-contains(
-  mintHs,
-  /mintedExactlyOneSerial/,
-  'MintPolicy enforces exactly one ticket NFT'
-)
+contains(prizeHs, /compiledValidatorFactory/, 'PrizeValidator factory exists')
+contains(prizeHs, /txInfoReferenceInputs/, 'PrizeValidator uses BeaconRegistry reference input')
+contains(prizeHs, /BeaconReady/, 'PrizeValidator requires Registry Ready state')
+contains(prizeHs, /sameTarget/, 'PrizeValidator checks Registry target equality')
+contains(prizeHs, /ownerSigned/, 'PrizeValidator binds Claim to ticket owner signature')
+contains(prizeHs, /valuePreserved/, 'PrizeValidator enforces value conservation')
 
-contains(
-  mintHs,
-  /pdPrizePoolHash/,
-  'MintPolicy binds PrizeDatum to B1PrizePool'
-)
+contains(registryHs, /RegistryPublish/, 'BeaconRegistry publish action exists')
+contains(registryHs, /brRelayerPkh/, 'BeaconRegistry has explicit relayer identity')
+contains(registryHs, /relayerSigned/, 'BeaconRegistry requires relayer signature')
+contains(registryHs, /deriveBeacon/, 'BeaconRegistry derives/verifies Beacon')
+contains(registryHs, /BeaconPending/, 'BeaconRegistry supports Pending state')
+contains(registryHs, /BeaconReady/, 'BeaconRegistry supports Ready state')
 
-contains(
-  mintHs,
-  /ticketPaymentLovelace\s*::\s*Integer/,
-  'B1 sale settlement constant exists on-chain'
-)
-
-contains(
-  poolHs,
-  /TicketIssued/,
-  'B1PrizePool supports TicketIssued'
-)
-
-contains(
-  poolHs,
-  /TicketRevealed/,
-  'B1PrizePool supports TicketRevealed'
-)
-
-contains(
-  poolHs,
-  /TicketClaimed/,
-  'B1PrizePool supports TicketClaimed'
-)
-
-contains(
-  poolHs,
-  /TicketExpired/,
-  'B1PrizePool supports TicketExpired'
-)
-
-contains(
-  poolHs,
-  /singletonPoolTokenValid/,
-  'B1PrizePool enforces singleton pool authority token'
-)
-
-contains(
-  poolHs,
-  /ticketMinted/,
-  'B1PrizePool binds TicketIssued to the ticket mint'
-)
-
-contains(
-  poolHs,
-  /ppUnresolvedReserve/,
-  'B1PrizePool tracks unresolved reserve'
-)
-
-contains(
-  poolHs,
-  /ppUnresolvedTicketCount/,
-  'B1PrizePool tracks unresolved ticket count'
-)
-
-contains(
-  poolHs,
-  /solvencyInvariant/,
-  'B1PrizePool enforces solvency invariant'
-)
-
-contains(
-  poolHs,
-  /effectivePool/,
-  'B1PrizePool computes EffectivePool'
-)
-
-contains(
-  poolHs,
-  /oracle|Oracle/i,
-  'B1PrizePool contains oracle valuation logic'
-)
-
-contains(
-  prizeHs,
-  /compiledValidatorFactory/,
-  'PrizeValidator factory exists'
-)
-
-contains(
-  prizeHs,
-  /txInfoReferenceInputs/,
-  'PrizeValidator uses BeaconRegistry reference input'
-)
-
-contains(
-  prizeHs,
-  /BeaconReady/,
-  'PrizeValidator requires Registry Ready state'
-)
-
-contains(
-  prizeHs,
-  /sameTarget/,
-  'PrizeValidator checks Registry target equality'
-)
-
-contains(
-  prizeHs,
-  /ownerSigned/,
-  'PrizeValidator binds Claim to ticket owner signature'
-)
-
-contains(
-  prizeHs,
-  /valuePreserved/,
-  'PrizeValidator enforces value conservation'
-)
-
-contains(
-  registryHs,
-  /RegistryPublish/,
-  'BeaconRegistry publish action exists'
-)
-
-contains(
-  registryHs,
-  /brRelayerPkh/,
-  'BeaconRegistry has explicit relayer identity'
-)
-
-contains(
-  registryHs,
-  /relayerSigned/,
-  'BeaconRegistry requires relayer signature'
-)
-
-contains(
-  registryHs,
-  /deriveBeacon/,
-  'BeaconRegistry derives/verifies Beacon'
-)
-
-contains(
-  registryHs,
-  /BeaconPending/,
-  'BeaconRegistry supports Pending state'
-)
-
-contains(
-  registryHs,
-  /BeaconReady/,
-  'BeaconRegistry supports Ready state'
-)
-
-contains(
-  beaconHs,
-  /deriveBeacon/,
-  'Beacon derivation exists'
-)
-
-contains(
-  beaconHs,
-  /playerCommitment/,
-  'Player commitment exists'
-)
-
-contains(
-  beaconHs,
-  /deriveTicketSeed/,
-  'Ticket seed derivation exists'
-)
-
-contains(
-  beaconHs,
-  /deriveSymbolsSeed/,
-  'Symbols seed derivation exists'
-)
+contains(beaconHs, /deriveBeacon/, 'Beacon derivation exists')
+contains(beaconHs, /playerCommitment/, 'Player commitment exists')
+contains(beaconHs, /deriveTicketSeed/, 'Ticket seed derivation exists')
+contains(beaconHs, /deriveSymbolsSeed/, 'Symbols seed derivation exists')
 
 for (const field of [
-  'pdTicketPolicy',
-  'pdTicketName',
-  'pdPlayerCommitment',
-  'pdPriceUsdm',
-  'pdCommitment',
-  'pdGameVersion',
-  'pdTicketNonce',
-  'pdPrizeAmount',
-  'pdPaymentPolicy',
-  'pdPaymentName',
-  'pdStatus',
-  'pdResult',
-  'pdPrizeTier',
-  'pdBeaconTarget',
-  'pdBeaconStatus',
-  'pdBeaconValue',
-  'pdMcHash',
-  'pdMateriosContext',
-  'pdPrizePoolHash',
-  'pdIssuedAt',
-  'pdExpiresAt',
-]) {
-  contains(
-    typesHs,
-    new RegExp(`\\b${field}\\b`),
-    `PrizeDatum contains ${field}`
-  )
-}
+  'pdTicketPolicy', 'pdTicketName', 'pdPlayerCommitment', 'pdPriceUsdm',
+  'pdCommitment', 'pdGameVersion', 'pdTicketNonce', 'pdPrizeAmount',
+  'pdPaymentPolicy', 'pdPaymentName', 'pdStatus', 'pdResult', 'pdPrizeTier',
+  'pdBeaconTarget', 'pdBeaconStatus', 'pdBeaconValue', 'pdMcHash',
+  'pdMateriosContext', 'pdPrizePoolHash', 'pdIssuedAt', 'pdExpiresAt',
+]) contains(typesHs, new RegExp(`\\b${field}\\b`), `PrizeDatum contains ${field}`)
 
-contains(
-  typesHs,
-  /B1PrizePoolDatum/,
-  'B1PrizePoolDatum type exists'
-)
-
-contains(
-  typesHs,
-  /B1PrizePoolAction/,
-  'B1PrizePoolAction type exists'
-)
-
-contains(
-  rulesHs,
-  /PrizeTable/,
-  'GameRules contains PrizeTable'
-)
-
-contains(
-  rulesHs,
-  /classifyTier/,
-  'GameRules contains classifyTier'
-)
-
-contains(
-  rulesHs,
-  /prizeAmountForTier/,
-  'GameRules contains prizeAmountForTier'
-)
-
-contains(
-  rulesHs,
-  /generateSymbols/,
-  'GameRules contains generateSymbols'
-)
+contains(typesHs, /B1PrizePoolDatum/, 'B1PrizePoolDatum type exists')
+contains(typesHs, /B1PrizePoolAction/, 'B1PrizePoolAction type exists')
+contains(rulesHs, /PrizeTable/, 'GameRules contains PrizeTable')
+contains(rulesHs, /classifyTier/, 'GameRules contains classifyTier')
+contains(rulesHs, /prizeAmountForTier/, 'GameRules contains prizeAmountForTier')
+contains(rulesHs, /generateSymbols/, 'GameRules contains generateSymbols')
 
 // ---------------------------------------------------------------------------
 // 5. TypeScript ↔ Plutus compatibility
@@ -499,149 +270,42 @@ const mintTs = read('src/mint.ts')
 const flowTs = read('src/gameFlow.ts')
 const configTs = read('src/config.ts')
 
-contains(
-  loadTs,
-  /b1PrizePoolFactory\.plutus\.json/,
-  'loadValidator imports B1PrizePool factory'
-)
+contains(loadTs, /b1PrizePoolFactory\.plutus\.json/, 'loadValidator imports B1PrizePool factory')
+contains(loadTs, /buildB1PrizePool/, 'loadValidator exposes buildB1PrizePool')
+contains(loadTs, /applyScriptParams/, 'loadValidator uses the Cardano script-parameter adapter')
 
-contains(
-  loadTs,
-  /buildB1PrizePool/,
-  'loadValidator exposes buildB1PrizePool'
-)
-
-contains(
-  loadTs,
-  /applyParamsToScript/,
-  'loadValidator uses applyParamsToScript'
-)
-
-contains(
-  loadTs,
+contains(loadTs,
   /buildMintPolicy\s*\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
-  'TypeScript MintPolicy builder accepts all five B1 hashes'
-)
+  'TypeScript MintPolicy builder accepts all five B1 hashes')
 
-contains(
-  loadTs,
-  /applyParamsToScript\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
-  'TypeScript applies MintPolicy parameters in B1 order'
-)
+contains(loadTs,
+  /applyScriptParams\([\s\S]*?counterScriptHashHex[\s\S]*?prizeScriptHashHex[\s\S]*?registryScriptHashHex[\s\S]*?treasuryScriptHashHex[\s\S]*?b1PrizePoolScriptHashHex/s,
+  'TypeScript applies MintPolicy parameters in B1 order')
 
-contains(
-  loadTs,
-  /b1PrizePoolHash/,
-  'TypeScript wiring exposes B1PrizePool hash'
-)
+contains(loadTs, /b1PrizePoolHash/, 'TypeScript wiring exposes B1PrizePool hash')
+contains(loadTs, /mintPolicy[\s\S]*?b1PrizePoolHash/s, 'MintPolicy is wired with the B1PrizePool dependency')
 
-contains(
-  loadTs,
-  /mintPolicy[\s\S]*?b1PrizePoolHash/s,
-  'MintPolicy is wired with the B1PrizePool dependency'
-)
+contains(mintTs, /TICKET_PAYMENT_LOVELACE/, 'Mint uses canonical settlement constant')
+contains(mintTs, /b1PrizePool/i, 'Mint flow references B1PrizePool')
+contains(mintTs, /payToContract/, 'Mint constructs protocol outputs')
+contains(mintTs, /pdPrizePoolHash/, 'Mint binds PrizeDatum to B1PrizePool')
+contains(mintTs, /playerCommitment/, 'Mint creates player commitment')
+contains(mintTs, /ticketCommitment/, 'Mint creates ticket commitment')
+contains(mintTs, /TICKET_PAYMENT_LOVELACE[\s\S]*?payToContract|payToContract[\s\S]*?TICKET_PAYMENT_LOVELACE/s,
+  'Mint settlement uses the canonical Treasury payment amount')
+contains(mintTs, /b1PrizePool[\s\S]*?payToContract|payToContract[\s\S]*?b1PrizePool/s,
+  'Mint updates the B1PrizePool in the sale flow')
 
-contains(
-  mintTs,
-  /TICKET_PAYMENT_LOVELACE/,
-  'Mint uses canonical settlement constant'
-)
+contains(flowTs, /syncBeacon|syncTicketBeacon/, 'SyncBeacon flow exists')
+contains(flowTs, /revealPrize|revealTicket/, 'Reveal flow exists')
+contains(flowTs, /claimPrize/, 'Claim flow exists')
+contains(flowTs, /playerSecretHex|playerSecret/, 'Reveal is bound to player secret')
+contains(flowTs, /deriveBeacon/, 'Client re-derives Beacon')
+contains(flowTs, /deriveTicketSeed/, 'Client derives ticket seed')
+contains(flowTs, /b1PrizePool/i, 'Reveal/Claim coordinates B1PrizePool')
 
-contains(
-  mintTs,
-  /b1PrizePool/i,
-  'Mint flow references B1PrizePool'
-)
-
-contains(
-  mintTs,
-  /payToContract/,
-  'Mint constructs protocol outputs'
-)
-
-contains(
-  mintTs,
-  /pdPrizePoolHash/,
-  'Mint binds PrizeDatum to B1PrizePool'
-)
-
-contains(
-  mintTs,
-  /playerCommitment/,
-  'Mint creates player commitment'
-)
-
-contains(
-  mintTs,
-  /ticketCommitment/,
-  'Mint creates ticket commitment'
-)
-
-contains(
-  mintTs,
-  /TICKET_PAYMENT_LOVELACE[\s\S]*?payToContract|payToContract[\s\S]*?TICKET_PAYMENT_LOVELACE/s,
-  'Mint settlement uses the canonical Treasury payment amount'
-)
-
-contains(
-  mintTs,
-  /b1PrizePool[\s\S]*?payToContract|payToContract[\s\S]*?b1PrizePool/s,
-  'Mint updates the B1PrizePool in the sale flow'
-)
-
-contains(
-  flowTs,
-  /syncBeacon|syncTicketBeacon/,
-  'SyncBeacon flow exists'
-)
-
-contains(
-  flowTs,
-  /revealPrize|revealTicket/,
-  'Reveal flow exists'
-)
-
-contains(
-  flowTs,
-  /claimPrize/,
-  'Claim flow exists'
-)
-
-contains(
-  flowTs,
-  /playerSecretHex|playerSecret/,
-  'Reveal is bound to player secret'
-)
-
-contains(
-  flowTs,
-  /deriveBeacon/,
-  'Client re-derives Beacon'
-)
-
-contains(
-  flowTs,
-  /deriveTicketSeed/,
-  'Client derives ticket seed'
-)
-
-contains(
-  flowTs,
-  /b1PrizePool/i,
-  'Reveal/Claim coordinates B1PrizePool'
-)
-
-contains(
-  configTs,
-  /GENESIS_TICKET_PRICE_USDM\s*=\s*100/,
-  'Genesis price = 1 USDM'
-)
-
-contains(
-  configTs,
-  /TICKET_PAYMENT_LOVELACE\s*=\s*1_000_000/,
-  'Preprod settlement baseline = 1 ADA'
-)
+contains(configTs, /GENESIS_TICKET_PRICE_USDM\s*=\s*100/, 'Genesis price = 1 USDM')
+contains(configTs, /TICKET_PAYMENT_LOVELACE\s*=\s*1_000_000/, 'Preprod settlement baseline = 1 ADA')
 
 // ---------------------------------------------------------------------------
 // 6. Relayer & B1 scope
@@ -653,61 +317,17 @@ const relayerJs = read('relayer/relayer.js')
 const providerJs = read('relayer/beaconProvider.js')
 const publisherJs = read('relayer/registryPublisher.js')
 
-contains(
-  relayerJs,
-  /BEACON_REGISTRY_SCRIPT/,
-  'Relayer loads BeaconRegistry'
-)
+contains(relayerJs, /BEACON_REGISTRY_SCRIPT/, 'Relayer loads BeaconRegistry')
+contains(relayerJs, /RELAYER_PRIVATE_KEY/, 'Relayer requires dedicated private key')
+contains(relayerJs, /BLOCKFROST_PROJECT_ID/, 'Relayer requires Blockfrost configuration')
+contains(publisherJs, /RegistryPublish/, 'Registry publisher uses RegistryPublish')
+contains(publisherJs, /mcHash[\s\S]*materiosContext/s, 'Registry publisher carries mcHash + materiosContext')
+contains(providerJs, /Materios|materios/i, 'Beacon provider has Materios adapter surface')
+contains(providerJs, /mcHash/, 'Beacon provider produces mcHash')
+contains(providerJs, /materiosContext/, 'Beacon provider produces materiosContext')
 
-contains(
-  relayerJs,
-  /RELAYER_PRIVATE_KEY/,
-  'Relayer requires dedicated private key'
-)
-
-contains(
-  relayerJs,
-  /BLOCKFROST_PROJECT_ID/,
-  'Relayer requires Blockfrost configuration'
-)
-
-contains(
-  publisherJs,
-  /RegistryPublish/,
-  'Registry publisher uses RegistryPublish'
-)
-
-contains(
-  publisherJs,
-  /mcHash[\s\S]*materiosContext/s,
-  'Registry publisher carries mcHash + materiosContext'
-)
-
-contains(
-  providerJs,
-  /Materios|materios/i,
-  'Beacon provider has Materios adapter surface'
-)
-
-contains(
-  providerJs,
-  /mcHash/,
-  'Beacon provider produces mcHash'
-)
-
-contains(
-  providerJs,
-  /materiosContext/,
-  'Beacon provider produces materiosContext'
-)
-
-warn(
-  'B1 external-data boundary remains the authorized relayer / BeaconRegistry publication path.'
-)
-
-warn(
-  'B3 pure trustless external-data verification is NOT enabled and is NOT claimed.'
-)
+warn('B1 external-data boundary remains the authorized relayer / BeaconRegistry publication path.')
+warn('B3 pure trustless external-data verification is NOT enabled and is NOT claimed.')
 
 // ---------------------------------------------------------------------------
 // 7. Constitutional / economic invariants
@@ -715,80 +335,36 @@ warn(
 
 section('7/8  CONSTITUTION & ECONOMIC SAFETY')
 
-contains(
-  mintTs,
-  /priceUsdm|GENESIS_TICKET_PRICE_USDM/,
-  'Mint carries explicit economic ticket price'
-)
-
-contains(
-  mintHs,
-  /pdPriceUsdm/,
-  'MintPolicy validates price inside PrizeDatum'
-)
-
-contains(
-  poolHs,
-  /ppLockedJackpot/,
-  'Locked jackpot liquidity is accounted for'
-)
-
-contains(
-  poolHs,
-  /ppJackpotThreshold/,
-  'Jackpot threshold is on-chain state'
-)
-
-contains(
-  poolHs,
-  /TicketExpired/,
-  'Expiry has explicit economic state transition'
-)
-
-contains(
-  typesHs,
-  /pdExpiresAt/,
-  'PrizeDatum contains expiry'
-)
-
-contains(
-  typesHs,
-  /pdIssuedAt/,
-  'PrizeDatum contains issuance time'
-)
-
-contains(
-  flowTs,
-  /claimRedeemer/,
-  'Claim has explicit protocol redeemer'
-)
-
-contains(
-  flowTs,
-  /payToAddress\(buyer,\s*\{\s*\[[^\]]+\]:\s*1n\s*\}\)/s,
-  'Claim returns the ticket NFT to the claimant'
-)
+contains(mintTs, /priceUsdm|GENESIS_TICKET_PRICE_USDM/, 'Mint carries explicit economic ticket price')
+contains(mintHs, /pdPriceUsdm/, 'MintPolicy validates price inside PrizeDatum')
+contains(poolHs, /ppLockedJackpot/, 'Locked jackpot liquidity is accounted for')
+contains(poolHs, /ppJackpotThreshold/, 'Jackpot threshold is on-chain state')
+contains(poolHs, /TicketExpired/, 'Expiry has explicit economic state transition')
+contains(poolHs, /findPrizeInput/, 'Expiry derives release from consumed PrizeDatum input')
+contains(prizeHs, /validateExpire/, 'PrizeValidator has explicit EXPIRE entrypoint')
+contains(prizeHs, /countOwnScriptOutputs\(ctx\) == 0/, 'EXPIRE forbids a continuing PrizeDatum output')
+contains(typesHs, /\| Expire/, 'PrizeAction exposes EXPIRE without changing existing constructors')
+contains(typesHs, /pdExpiresAt/, 'PrizeDatum contains expiry')
+contains(typesHs, /pdIssuedAt/, 'PrizeDatum contains issuance time')
+contains(flowTs, /expireRedeemer/, 'Expire has explicit protocol redeemer')
+contains(flowTs, /expirePrize/, 'Client exposes permissionless expiry path')
+contains(flowTs, /validFrom\(expiresAt\)/, 'Expire client binds transaction lower bound to ticket expiry')
+contains(flowTs, /claimRedeemer/, 'Claim has explicit protocol redeemer')
+contains(flowTs, /payToAddress\(buyer,\s*\{\s*\[[^\]]+\]:\s*1n\s*\}\)/s,
+  'Claim returns the ticket NFT to the claimant')
 
 // The ticket is intentionally NOT required to be burned by B1.
-if (
-  /attachMintingPolicy[\s\S]*?mintAssets[\s\S]*?-1n/s.test(flowTs)
-) {
-  warn(
-    'Claim flow contains an explicit burn path; verify it remains optional and is never required by B1.'
-  )
+if (/attachMintingPolicy[\s\S]*?mintAssets[\s\S]*?-1n/s.test(flowTs)) {
+  warn('Claim flow contains an explicit burn path; verify it remains optional and is never required by B1.')
 } else {
   ok('B1 does not require NFT burn on claim')
 }
 
 // Reject the old sale architecture explicitly.
 if (/salePkh/.test(mintHs) || /priceLovelace/.test(mintHs)) {
-  fail(
-    'Legacy MintPolicy salePkh/priceLovelace architecture is still present'
-  )
+  fail('Legacy MintPolicy salePkh/priceLovelace architecture is still present')
 } else {
-  ok(
-    'Legacy MintPolicy salePkh/priceLovelace architecture absent'
-  )
+  ok('Legacy MintPolicy salePkh/priceLovelace architecture absent')
 }
 
 // ---------------------------------------------------------------------------
@@ -798,86 +374,33 @@ if (/salePkh/.test(mintHs) || /priceLovelace/.test(mintHs)) {
 section('8/8  DEPLOYMENT HYGIENE')
 
 const gitignore = read('.gitignore')
-
-if (/\.env/.test(gitignore)) {
-  ok('.gitignore protects environment configuration')
-} else {
-  fail('.gitignore does not clearly protect .env')
-}
+if (/\.env/.test(gitignore)) ok('.gitignore protects environment configuration')
+else fail('.gitignore does not clearly protect .env')
 
 if (
   !/RELAYER_PRIVATE_KEY\s*[:=]/.test(configTs) &&
   !/BLOCKFROST_PROJECT_ID\s*[:=]/.test(configTs)
-) {
-  ok(
-    'No relayer private key / Blockfrost project assignment found in src/config.ts'
-  )
-} else {
-  fail(
-    'Sensitive relayer configuration appears in src/config.ts'
-  )
-}
+) ok('No relayer private key / Blockfrost project assignment found in src/config.ts')
+else fail('Sensitive relayer configuration appears in src/config.ts')
 
-if (
-  fs.existsSync(
-    path.resolve(ROOT, 'src/plutusScripts/mintPolicy.plutus.json')
-  )
-) {
-  warn(
-    'Legacy src/plutusScripts/mintPolicy.plutus.json exists; it must not be used for real minting.'
-  )
+if (fs.existsSync(path.resolve(ROOT, 'src/plutusScripts/mintPolicy.plutus.json'))) {
+  warn('Legacy src/plutusScripts/mintPolicy.plutus.json exists; it must not be used for real minting.')
 } else {
   ok('Legacy MintPolicy artifact absent')
 }
 
 for (const [generated, frontend, label] of [
-  [
-    'plutus/out/treasury.plutus.json',
-    'src/plutusScripts/treasury.plutus.json',
-    'Treasury',
-  ],
-  [
-    'plutus/out/counterValidator.plutus.json',
-    'src/plutusScripts/counterValidator.plutus.json',
-    'CounterValidator',
-  ],
-  [
-    'plutus/out/b1PrizePoolFactory.plutus.json',
-    'src/plutusScripts/b1PrizePoolFactory.plutus.json',
-    'B1PrizePool factory',
-  ],
-  [
-    'plutus/out/mintPolicyFactory.plutus.json',
-    'src/plutusScripts/mintPolicyFactory.plutus.json',
-    'MintPolicy factory',
-  ],
-  [
-    'plutus/out/prizeValidatorFactory.plutus.json',
-    'src/plutusScripts/prizeValidatorFactory.plutus.json',
-    'PrizeValidator factory',
-  ],
-  [
-    'plutus/out/beaconRegistry.plutus.json',
-    'src/plutusScripts/beaconRegistry.plutus.json',
-    'BeaconRegistry',
-  ],
-]) {
-  sameCbor(generated, frontend, label)
-}
+  ['plutus/out/treasury.plutus.json', 'src/plutusScripts/treasury.plutus.json', 'Treasury'],
+  ['plutus/out/counterValidator.plutus.json', 'src/plutusScripts/counterValidator.plutus.json', 'CounterValidator'],
+  ['plutus/out/b1PrizePoolFactory.plutus.json', 'src/plutusScripts/b1PrizePoolFactory.plutus.json', 'B1PrizePool factory'],
+  ['plutus/out/mintPolicyFactory.plutus.json', 'src/plutusScripts/mintPolicyFactory.plutus.json', 'MintPolicy factory'],
+  ['plutus/out/prizeValidatorFactory.plutus.json', 'src/plutusScripts/prizeValidatorFactory.plutus.json', 'PrizeValidator factory'],
+  ['plutus/out/beaconRegistry.plutus.json', 'src/plutusScripts/beaconRegistry.plutus.json', 'BeaconRegistry'],
+]) sameCbor(generated, frontend, label)
 
 section('FINAL COMPILE GATE')
-
-run(
-  'npx',
-  ['tsc', '--noEmit'],
-  'TypeScript typecheck'
-)
-
-run(
-  'git',
-  ['diff', '--check'],
-  'git diff --check'
-)
+run('npx', ['tsc', '--noEmit'], 'TypeScript typecheck')
+run('git', ['diff', '--check'], 'git diff --check')
 
 console.log(`
 ========================================
@@ -891,13 +414,7 @@ B1 PREDEPLOY_CHECK: PASS
 B1 scope is verified by this gate.
 B3 external-data trustlessness is NOT claimed.
 `)
-
-  if (warnings.length > 0) {
-    console.log(
-      'Review the B1 scope warnings above before deployment.'
-    )
-  }
-
+  if (warnings.length > 0) console.log('Review the B1 scope warnings above before deployment.')
   process.exit(0)
 }
 
@@ -905,5 +422,4 @@ console.log(`
 B1 PREDEPLOY_CHECK: BLOCKED
 Deployment must NOT proceed.
 `)
-
 process.exit(1)

@@ -1,0 +1,35 @@
+name: P2.8-B.1 Cardano-ledger runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - audit/p2-8-b1-cardano-ledger-runner
+      - work/immortal-green-closure
+
+jobs:
+  ledger-runner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+
+      - name: Install GHC and Cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.8.4'
+          cabal-version: '3.12'
+
+      - name: Run ledger-aligned bootstrap
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal update
+          cabal run cardano-ledger-runner
+
+      - name: Upload runner report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p2-8-b1-cardano-ledger-runner-report
+          path: audit/cardano-ledger-runner/

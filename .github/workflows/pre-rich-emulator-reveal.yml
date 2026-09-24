@@ -1,0 +1,91 @@
+name: PRE-RICH Emulator Reveal Conformance
+
+# Canonical fresh-artifact emulator evidence path.
+# P2.8 gate: exercise the current EconomicKernel import fix on every workflow change.
+# This workflow must rebuild Plutus artifacts from the exact checkout before Reveal evidence.
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/__tests__/immortal-cardano-reveal-emulator-b1.mjs"
+      - "src/__tests__/immortal-cardano-emulator-smoke.mjs"
+      - "src/plutusScripts/**"
+      - "plutus/**"
+      - "PRE-RICH/profile/**"
+      - "src/gameFlow.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pre-rich-emulator-reveal.yml"
+  workflow_dispatch:
+
+jobs:
+  emulator-reveal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Normalize Lucid ESM entrypoint
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs"
+          const p="node_modules/lucid-cardano/package.json"
+          const x=JSON.parse(fs.readFileSync(p,"utf8"))
+          if (!fs.existsSync("node_modules/lucid-cardano/esm/mod.js")) throw new Error("lucid-cardano ESM entrypoint missing")
+          x.type="module"
+          x.exports={".":{types:"./types/mod.d.ts",import:"./esm/mod.js"}}
+          fs.writeFileSync(p, JSON.stringify(x,null,2)+"\n")
+          NODE
+      - name: Setup Haskell for fresh Plutus artifacts
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+      - name: Install Plutus native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (cd /tmp/blst && ./build.sh)
+          rc=$?
+          set -e
+          test -s /tmp/blst/libblst.a
+          if [ "$rc" -ne 0 ]; then echo "blst build returned $rc after producing the verified archive; continuing."; fi
+          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          cat > /tmp/libblst.pc <<'EOF'
+          prefix=/usr/local
+          exec_prefix=/usr/local
+          libdir=/usr/local/lib
+          includedir=/usr/local/include
+          Name: libblst
+          Description: Multilingual BLS12-381 signature library
+          Version: 0.3.14
+          Cflags: -I/usr/local/include
+          Libs: -L/usr/local/lib -lblst
+          EOF
+          sudo install -m 0644 /tmp/libblst.pc /usr/local/lib/pkgconfig/libblst.pc
+          sudo ldconfig
+      - name: Update Cabal package index
+        run: cabal update
+      - name: Build and export fresh Plutus artifacts
+        run: cabal run exe:export-scripts
+      - name: Run isolated emulator smoke
+        run: node src/__tests__/immortal-cardano-emulator-smoke.mjs
+      - name: Run real PRE-RICH Reveal emulator conformance
+        run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs

@@ -44,6 +44,8 @@ import {
 } from 'lucid-cardano'
 
 import wallet from './wallet'
+import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 
 import {
   buildScriptsFromLucid,
@@ -72,9 +74,14 @@ import {
   type PrizeTable,
 } from './gameRules'
 
+import {
+  crystallizeTicketExpiry,
+  type PreRichExpiryIssuanceState,
+  type PreRichExpiryPolicy,
+} from '../PRE-RICH/profile/PreRichExpiryPolicy'
+
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
-const MS_PER_DAY = 86_400_000n
 
 const DEFAULT_NETWORK_ID = 0
 const DEFAULT_ROUND_ID = 0
@@ -495,7 +502,7 @@ async function getTreasuryDatum(
 // ============================================================
 
 /**
- * PrizeDatum fields 0..20 (Types.hs):
+ * PrizeDatum fields 0..22 (Types.hs):
  *
  *  0 pdTicketPolicy
  *  1 pdTicketName
@@ -518,6 +525,8 @@ async function getTreasuryDatum(
  * 18 pdPrizePoolHash
  * 19 pdIssuedAt
  * 20 pdExpiresAt
+ * 21 pdRow1Tier
+ * 22 pdRow2Tier
  */
 function buildPrizeDatumConstr(
   fields: {
@@ -582,6 +591,10 @@ function buildPrizeDatumConstr(
 
     // expiresAt
     fields.expiresAt,
+
+    // Classic-6 row results: both are zero before reveal.
+    0n,
+    0n,
   ])
 }
 
@@ -606,6 +619,8 @@ export type MintSerialResult = {
 }
 
 export type MintSerialOptions = {
+  /** Authoritative Economic Gate admission for the ticket-issuance transition. */
+  economicAdmission: EconomicAdmissionWitness
   priceUsdm?: number
   networkId?: number
   roundId?: number
@@ -616,6 +631,17 @@ export type MintSerialOptions = {
   table?: PrizeTable
   playerSecret?: Uint8Array
   ticketNonce?: number
+  /**
+   * The DApp/profile-declared expiry policy. It is evaluated against the
+   * verified issuance-state snapshot below and crystallized into the ticket.
+   * No universal duration is supplied here.
+   */
+  expiryPolicy?: PreRichExpiryPolicy
+  /**
+   * Authoritative issuance-state snapshot used to derive this ticket's
+   * expiry horizon. The caller is responsible for sourcing/verifying it.
+   */
+  expiryIssuanceState?: PreRichExpiryIssuanceState
 }
 
 // ============================================================
@@ -623,7 +649,7 @@ export type MintSerialOptions = {
 // ============================================================
 
 export async function mintSerialNFT(
-  opts: MintSerialOptions = {},
+  opts: MintSerialOptions,
 ): Promise<MintSerialResult> {
   const lucid =
     wallet.getLucid()
@@ -915,9 +941,19 @@ export async function mintSerialNFT(
   const issuedAtMs =
     BigInt(Date.now())
 
-  const expiresAtMs =
-    issuedAtMs +
-    365n * MS_PER_DAY
+  if (!opts.expiryPolicy || !opts.expiryIssuanceState) {
+    throw new Error(
+      'verified expiry policy and issuance state are required; no fixed expiry duration is available',
+    )
+  }
+
+  const expiry = crystallizeTicketExpiry(
+    opts.expiryPolicy,
+    opts.expiryIssuanceState,
+    issuedAtMs,
+  )
+
+  const expiresAtMs = expiry.expiresAt
 
   // ----------------------------------------------------------
   // PrizeDatum
@@ -1193,15 +1229,17 @@ export async function mintSerialNFT(
   // Sign + submit
   // ----------------------------------------------------------
 
-  const signed =
-    await lucid.signTx(
-      tx,
-    )
+  const submission =
+    await createCardanoExecutionAdapter(lucid)
+      .submitEconomic(tx, opts.economicAdmission, [
+        `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
+        `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
+      ], [
+        `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
+      ], 'Issue')
 
   const txHash =
-    await lucid.submitTx(
-      signed,
-    )
+    submission.transactionRef
 
   // ----------------------------------------------------------
   // Result

@@ -19,12 +19,16 @@ import PlutusLedgerApi.V2.Contexts
 import PlutusTx.Prelude
 import qualified PlutusTx.AssocMap as AssocMap
 
-import Types
+import OracleTypes
   ( OracleStateId (..)
   , OracleDatum (..)
   , precision
   , minUtxoLovelace
   , maxOracleAge
+  )
+
+import EconomicKernel
+  ( ceilingDiv
   )
 
 {-# INLINABLE usdmPrecision #-}
@@ -39,23 +43,6 @@ adaMinUtxo = minUtxoLovelace
 oracleMaxAge :: Integer
 oracleMaxAge = maxOracleAge
 
--- | Ceiling division.
--- Positive economic quantities are rounded upward so a settlement
--- can never be accepted below its required USDM value.
-{-# INLINABLE ceilingDiv #-}
-ceilingDiv :: Integer -> Integer -> Integer
-ceilingDiv a b
-  | b == 0 =
-      traceError "Economic: division by zero"
-
-  | a <= 0 =
-      0
-
-  | b < 0 =
-      traceError "Economic: invalid divisor"
-
-  | otherwise =
-      (a + b - 1) `divide` b
 
 -- | Oracle timestamp validation against the transaction validity
 -- upper bound.
@@ -77,6 +64,7 @@ validOracleTimestamp timestamp info =
     _ ->
       False
 
+
 {-# INLINABLE decodeOracleDatum #-}
 decodeOracleDatum
   :: TxInfo
@@ -97,6 +85,7 @@ decodeOracleDatum info out =
 
     NoOutputDatum ->
       Nothing
+
 
 -- | Resolve an oracle price from the authorized Oracle State reference input.
 --
@@ -153,6 +142,7 @@ oraclePriceFor
         info
         csBytes
         tnBytes
+
 
 -- | Canonical conversion from Value to USDM sub-units.
 --
@@ -221,6 +211,7 @@ totalUsdmValue info oracleState publisher val =
               refs
               csBytes
               rest
+
 
 -- | Canonical Pool valuation excluding the protocol singleton NFT.
 {-# INLINABLE poolUsdmValue #-}

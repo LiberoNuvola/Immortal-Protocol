@@ -49,10 +49,11 @@ export interface AuthoritySetTransitionStatement {
   readonly sidechainEpoch: bigint;
   readonly selectionInputs: Uint8Array;
   readonly selectionInputsHash: Uint8Array;
+  /** Identifies the proof system that authenticated the transition. */
+  readonly proofSystem: string;
   readonly toAuthorities: readonly GrandpaAuthority[];
   readonly activationBlock: AuthorityActivationBlock;
   readonly toSetId: bigint;
-  readonly proofSystem: string;
   readonly proofBytes: Uint8Array;
 }
 
@@ -96,6 +97,8 @@ export interface AuthoritySetTransitionPublicStatement {
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
   readonly selectionInputsHash: Uint8Array;
+  /** Identifies the proof system that authenticated the transition. */
+  readonly proofSystem: string;
   readonly toAuthorities: readonly GrandpaAuthority[];
   readonly activationBlock: AuthorityActivationBlock;
   readonly toSetId: bigint;
@@ -149,6 +152,7 @@ export function authoritySetTransitionPublicStatement(
     selectionInputsHash: new Uint8Array(
       statement.selectionInputsHash
     ),
+    proofSystem: statement.proofSystem,
     toAuthorities: statement.toAuthorities,
     activationBlock: {
       hash: new Uint8Array(statement.activationBlock.hash),
@@ -188,6 +192,7 @@ export function encodeAuthoritySetTransitionStatement(
     encodeAuthoritySet(publicStatement.fromAuthorities),
     encodeU64(publicStatement.sidechainEpoch),
     encodeBytes(publicStatement.selectionInputsHash),
+    encodeString(publicStatement.proofSystem),
     encodeAuthoritySet(publicStatement.toAuthorities),
     encodeBytes(publicStatement.activationBlock.hash),
     encodeU32(publicStatement.activationBlock.number),
@@ -368,6 +373,9 @@ export function validateAuthoritySetTransitionPublicStatement(
     statement.selectionInputsHash,
     "INVALID_SELECTION_INPUTS_HASH"
   );
+  if (statement.proofSystem.length === 0) {
+    throw new Error("INVALID_PROOF_SYSTEM");
+  }
   validateActivationBlock(
     statement.activationBlock
   );

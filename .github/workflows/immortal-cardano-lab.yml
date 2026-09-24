@@ -1,0 +1,228 @@
+name: IMMORTAL Cardano Integration Lab
+
+concurrency:
+  group: -github-workflows-immortal-cardano-lab-yml-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/**"
+      - "src/**"
+      - "plutus/**"
+      - "Adapter/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+jobs:
+  devnet-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout green
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install isolated lab dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Setup Haskell for fresh validator artifacts
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+          cabal-version: '3.12.1.0'
+
+      - name: Install Plutus native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (
+            cd /tmp/blst
+            ./build.sh
+          )
+          BLST_BUILD_RC=$?
+          set -e
+          BLST_LIB="/tmp/blst/libblst.a"
+          test -s "$BLST_LIB"
+          if [ "$BLST_BUILD_RC" -ne 0 ]; then
+            echo "blst build.sh returned $BLST_BUILD_RC after producing libblst.a; continuing with the verified archive."
+          fi
+          sudo install -m 0644 "$BLST_LIB" /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          printf '%s\n' \
+            'prefix=/usr/local' \
+            'exec_prefix=\${prefix}' \
+            'libdir=\${exec_prefix}/lib' \
+            'includedir=\${prefix}/include' \
+            'Name: libblst' \
+            'Description: Multilingual BLS12-381 signature library' \
+            'Version: 0.3.14' \
+            'Cflags: -I\${includedir}' \
+            'Libs: -L\${libdir} -lblst' \
+            | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          sudo ldconfig
+          pkg-config --modversion libblst
+
+      # Cost-model diagnostic run: preserve the real Reveal path while recording the Yaci protocol-model shape.
+      # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
+      # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
+      - name: Generate fresh Plutus validator artifacts
+        run: cabal run exe:export-scripts
+
+      - name: Record generated artifact hashes
+        run: |
+          mkdir -p audit/yaci-evidence
+          {
+            echo "artifact_commit=$GITHUB_SHA"
+            for f in plutus/out/*.plutus.json; do
+              sha256sum "$f"
+            done
+          } | tee audit/yaci-evidence/artifact-hashes.txt
+
+      - name: Bind generated artifacts to trace consumers
+        run: |
+          cp plutus/out/treasury.plutus.json src/plutusScripts/treasury.plutus.json
+          cp plutus/out/counterValidator.plutus.json src/plutusScripts/counterValidator.plutus.json
+          cp plutus/out/b1PrizePoolFactory.plutus.json src/plutusScripts/b1PrizePoolFactory.plutus.json
+          cp plutus/out/mintPolicyFactory.plutus.json src/plutusScripts/mintPolicyFactory.plutus.json
+          cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
+          cp plutus/out/beaconRegistry.plutus.json src/plutusScripts/beaconRegistry.plutus.json
+
+
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          package_path = Path("node_modules/lucid-cardano/package.json")
+          package = json.loads(package_path.read_text())
+          if not (package_path.parent / "esm" / "mod.js").is_file():
+              raise SystemExit("lucid-cardano ESM entrypoint missing")
+          package["type"] = "module"
+          package["exports"] = {
+              ".": {
+                  "types": "./types/mod.d.ts",
+                  "import": "./esm/mod.js",
+              }
+          }
+          package_path.write_text(json.dumps(package, indent=2) + "\n")
+          print("Normalized lucid-cardano ESM export for CI runtime")
+          for directory in ("src", "Adapter"):
+              scoped = Path(directory) / "package.json"
+              if scoped.exists():
+                  raise SystemExit(f"Unexpected existing scoped package boundary: {scoped}")
+              scoped.write_text(json.dumps({"type": "module"}) + "\n")
+          print("Scoped repository TS modules to ESM for Cardano trace runner")
+
+      - name: Install pinned Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
+
+      - name: Start isolated Cardano devnet
+        run: |
+          mkdir -p audit/yaci-evidence
+          nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
+          echo $! > audit/yaci-evidence/yaci.pid
+
+      - name: Wait for Yaci Store
+        run: |
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest.json; then
+              echo "YACI_STORE_READY=1" | tee audit/yaci-evidence/bootstrap.txt
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
+          tail -300 audit/yaci-evidence/yaci.log || true
+          exit 1
+
+      - name: Derive funded CI test wallet
+        id: wallet
+        run: |
+          address="$(node audit/cardano-integration/create-test-wallet.mjs)"
+          echo "address=$address" >> "$GITHUB_OUTPUT"
+
+      - name: Record devnet information
+        run: |
+          {
+            echo "branch=work/immortal-green-closure"
+            echo "commit=$GITHUB_SHA"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "yaci=0.12.0-beta5"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "test_address=${{ steps.wallet.outputs.address }}"
+          } | tee audit/yaci-evidence/manifest.txt
+      - name: Record Yaci cluster timing/configuration
+        run: |
+          yaci-devkit info | tee audit/yaci-evidence/yaci-devkit-info.txt
+
+      - name: Execute real Cardano ledger smoke transaction
+        run: node audit/cardano-integration/ledger-smoke.mjs
+
+      - name: Probe current Yaci cost models with Lucid Evolution
+        run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
+
+      - name: Execute real economic Reveal transition trace
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+
+      - name: Execute real FundTreasury canonical Oracle valuation trace
+        run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
+
+      - name: Execute real economic Expire transition trace
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Materialize raw Yaci ledger context for P2.8
+        run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
+
+      - name: Run P2.8 ledger evidence gate against this lab packet
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal update
+          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence
+
+      - name: Measure script and transaction resource footprint
+        run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
+
+      - name: Run existing pure invariant suite
+        run: npx tsx src/__tests__/b1-invariants.test.ts
+      - name: Run economic admission provenance negative twins
+        run: npx tsx src/__tests__/economic-admission-input-binding.test.ts
+
+      - name: Run predeploy structural gate
+        run: npm run test:predeploy
+
+      - name: Print resource audit summary
+        if: always()
+        run: cat audit/yaci-evidence/resource-audit.json 2>/dev/null || true
+
+      - name: Preserve devnet evidence and logs
+        if: always()
+        run: |
+          curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
+          tail -500 audit/yaci-evidence/yaci.log || true
+
+      - name: Upload laboratory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-lab-evidence
+          path: audit/yaci-evidence/

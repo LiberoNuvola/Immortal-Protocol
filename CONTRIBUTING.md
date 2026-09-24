@@ -1,98 +1,58 @@
-# Contributing to PRE-RICH
+# Contributing to IMMORTAL
 
-Thank you for contributing to PRE-RICH.
+Thank you for contributing to IMMORTAL.
 
-PRE-RICH is an open protocol/framework. **Scratch & Win is its first concrete implementation, not the whole protocol.** Contributions are welcome when they improve the protocol, its implementations, documentation, verification, tooling, or research without obscuring the current state of the project.
+IMMORTAL is an experimental open-source protocol. The repository contains universal protocol material, adapters, applications, implementations, proofs, tests and historical research. Contributions must preserve those boundaries.
 
 ## Before contributing
 
-Read these documents first:
+Start with:
 
-1. [`README.md`](README.md) — project orientation and current status
-2. [`ROADMAP.md`](ROADMAP.md) — release horizons and project direction
-3. [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md) — constitutional principles and invariants
-4. [`docs/Game-Economy.md`](docs/Game-Economy.md) — normative economic policy
-5. [`docs/Game-Economy-Specification.md`](docs/Game-Economy-Specification.md) — implementation-facing economic specification
-6. [`docs/ECONOMIC-ALGORITHM.md`](docs/ECONOMIC-ALGORITHM.md) — execution baseline
-7. [`docs/ECONOMIC-ALGORITHM-CONFORMANCE-MATRIX.md`](docs/ECONOMIC-ALGORITHM-CONFORMANCE-MATRIX.md) — implementation/conformance evidence status
-8. [`docs/CONSTITUTION-GAP-MATRIX.md`](docs/CONSTITUTION-GAP-MATRIX.md) — broader conformance status
-
-The repository deliberately distinguishes **documented**, **implemented**, **verified**, **experimental**, and **target** states. A reference-model result or TypeScript test must not be presented as validator/on-chain proof.
+1. `README.md`
+2. `docs/EXECUTIVE-SUMMARY.md`
+3. `docs/README.md`
+4. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+5. the relevant adapter/application documentation
+6. the relevant conformance and audit records
 
 ## Contribution principles
 
-- Prefer extending PRE-RICH itself over creating disconnected reimplementations.
-- Preserve the authority hierarchy: **Constitution → Specifications → Implementation → Tests / Proofs**.
-- Do not silently change normative economic policy in implementation code.
-- Do not promote a candidate, simulation parameter, or experimental result to normative status without an explicit decision.
-- Preserve the distinction between B1 (Authorized Publisher) and the B3 publisher-independent target.
-- Keep changes reviewable and reproducible.
+- Do not silently promote application policy into universal protocol semantics.
+- Do not silently promote experimental code into normative authority.
+- Do not claim implementation conformance without evidence.
+- Keep proofs, tests, implementation and policy distinguishable.
+- Update cross-references when moving documentation.
+- Preserve historical material under the archive when it remains useful for traceability.
+- Prefer small, reviewable changes.
 
-## Economic and protocol changes
+## Protocol changes
 
-Changes affecting normative economic rules require extra care. Before opening a pull request that changes such rules:
+Changes to the universal layer require explicit classification and stronger review.
 
-- identify the affected normative source;
-- identify the relevant decision-register entry, if one exists;
-- explain whether the change is normative, implementation-only, experimental, or documentation-only;
-- update affected specifications and conformance documentation together when appropriate;
-- do not use implementation changes to implicitly settle an OPEN policy choice.
+A useful change description should state:
 
-## Development
+- affected layer;
+- normative or non-normative status;
+- affected definitions/invariants;
+- required proof or evidence changes;
+- compatibility/migration implications.
 
-Install dependencies:
+## Adapter changes
 
-```bash
-npm install
-```
+Adapter changes must explain how the concrete environment continues to preserve the applicable IMMORTAL predicates.
 
-Run the development application:
+## Application changes
 
-```bash
-npm run dev
-```
+Application changes belong in the application layer unless they reveal a genuine missing universal abstraction.
 
-Build the application:
+## Evidence
 
-```bash
-npm run build
-```
+When reporting a result, state exactly what was executed or proved. Do not turn a reference-model result into a validator claim.
 
-Run the repository's current pre-deployment structural check:
+## Governance
 
-```bash
-npm run test:predeploy
-```
-
-These commands do **not** constitute complete protocol conformance or validator-level verification.
-
-## Pull requests
-
-A useful pull request should contain:
-
-- a concise explanation of the change;
-- the motivation and affected protocol area;
-- relevant documentation updates;
-- the commands/tests actually run;
-- known limitations or remaining evidence gaps;
-- explicit disclosure when a change is experimental or target-only.
-
-Keep unrelated refactors out of focused protocol changes where practical.
-
-## Documentation changes
-
-Documentation is part of protocol auditability. When changing public documentation:
-
-- preserve the normative source hierarchy;
-- update cross-references and relative links;
-- avoid duplicate competing sources of truth;
-- distinguish historical material from current policy;
-- do not claim implementation conformance without evidence.
-
-## Security
-
-Please do **not** disclose a suspected vulnerability in a public issue. Follow [`SECURITY.md`](SECURITY.md) for private reporting guidance.
+Governance is an evolution process. It does not replace proof, testing, conformance review or independent audit.
 
 ## License
 
-The project license is finalized separately from this contribution guide. Contributions will be subject to the repository license in force when they are accepted.
+See the repository licensing inventory and applicable license/NOTICE files. Third-party dependencies remain subject to their upstream licenses.

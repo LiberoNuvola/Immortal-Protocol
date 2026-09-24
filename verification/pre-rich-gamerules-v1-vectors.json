@@ -1,0 +1,168 @@
+{
+  "version": "PRE-RICH-GAMERULES-V1",
+  "outcomeDomain": 20000,
+  "accepted16BitUpperBound": 60000,
+  "reduction": "modulo-20000",
+  "payoutSubunitsPerUSDM": 100,
+  "cases": [
+    {
+      "symbolsSeed": "0000000000000000000000000000000000000000000000000000000000000000",
+      "rows": [
+        {
+          "row": 1,
+          "attempt": 0,
+          "u": 33157,
+          "outcome": 13157,
+          "tier": 0,
+          "symbols": [
+            4,
+            2,
+            1
+          ]
+        },
+        {
+          "row": 2,
+          "attempt": 0,
+          "u": 43492,
+          "outcome": 3492,
+          "tier": 0,
+          "symbols": [
+            1,
+            3,
+            4
+          ]
+        }
+      ],
+      "symbols": [
+        4,
+        2,
+        1,
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "symbolsSeed": "0101010101010101010101010101010101010101010101010101010101010101",
+      "rows": [
+        {
+          "row": 1,
+          "attempt": 0,
+          "u": 1337,
+          "outcome": 1337,
+          "tier": 0,
+          "symbols": [
+            1,
+            4,
+            4
+          ]
+        },
+        {
+          "row": 2,
+          "attempt": 0,
+          "u": 24035,
+          "outcome": 4035,
+          "tier": 0,
+          "symbols": [
+            4,
+            1,
+            4
+          ]
+        }
+      ],
+      "symbols": [
+        1,
+        4,
+        4,
+        4,
+        1,
+        4
+      ]
+    },
+    {
+      "symbolsSeed": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+      "rows": [
+        {
+          "row": 1,
+          "attempt": 0,
+          "u": 6018,
+          "outcome": 6018,
+          "tier": 0,
+          "symbols": [
+            1,
+            4,
+            5
+          ]
+        },
+        {
+          "row": 2,
+          "attempt": 0,
+          "u": 26980,
+          "outcome": 6980,
+          "tier": 0,
+          "symbols": [
+            1,
+            5,
+            2
+          ]
+        }
+      ],
+      "symbols": [
+        1,
+        4,
+        5,
+        1,
+        5,
+        2
+      ]
+    },
+    {
+      "boundaryOutcomeCases": [
+        {
+          "outcome": 0,
+          "tier": 0
+        },
+        {
+          "outcome": 17499,
+          "tier": 0
+        },
+        {
+          "outcome": 17500,
+          "tier": 1
+        },
+        {
+          "outcome": 19199,
+          "tier": 1
+        },
+        {
+          "outcome": 19200,
+          "tier": 2
+        },
+        {
+          "outcome": 19799,
+          "tier": 2
+        },
+        {
+          "outcome": 19800,
+          "tier": 3
+        },
+        {
+          "outcome": 19979,
+          "tier": 3
+        },
+        {
+          "outcome": 19980,
+          "tier": 4
+        },
+        {
+          "outcome": 19998,
+          "tier": 4
+        },
+        {
+          "outcome": 19999,
+          "tier": 5
+        }
+      ]
+    }
+  ]
+}

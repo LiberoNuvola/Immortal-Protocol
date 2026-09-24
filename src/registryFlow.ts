@@ -19,6 +19,8 @@
  * BeaconRegistry validator.
  */
 
+import { signAndSubmitTx } from './txHelpers'
+
 import {
   deriveBeacon,
   deriveGameRoundCommitment,
@@ -310,10 +312,7 @@ export async function publishRoundBeacon(
    * The wallet/provider used here must be the authorized relayer wallet.
    * The on-chain validator checks its PubKeyHash in txInfoSignatories.
    */
-  const signed = await p.lucid.signTx(tx)
-  const hash = await p.lucid.submitTx(signed)
-
-  return hash
+  return signAndSubmitTx(p.lucid, tx)
 }
 
 export async function previewBeacon(

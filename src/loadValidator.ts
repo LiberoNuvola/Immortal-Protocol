@@ -39,11 +39,16 @@
  */
 
 import {
-  applyParamsToScript,
   Constr,
   Data,
   type Script,
 } from 'lucid-cardano'
+
+import {
+  applyScriptParams,
+  toLucidScript,
+  type ScriptEnvelope,
+} from '../Adapter/CARDANO/serialization/ScriptSerialization'
 
 import treasuryJson from './plutusScripts/treasury.plutus.json'
 import prizeValidatorFactoryJson from './plutusScripts/prizeValidatorFactory.plutus.json'
@@ -60,19 +65,6 @@ import {
   ORACLE_STATE_POLICY_ID,
   ORACLE_STATE_TOKEN_NAME_HEX,
 } from './config'
-
-type ScriptEnvelope = {
-  type: string
-  description?: string
-  cborHex: string
-}
-
-function toLucidScript(env: ScriptEnvelope): Script {
-  return {
-    type: 'PlutusV2',
-    script: env.cborHex,
-  }
-}
 
 const treasuryEnv =
   treasuryJson as ScriptEnvelope
@@ -199,7 +191,7 @@ export function buildMintPolicy(
   }
 
   const applied =
-    applyParamsToScript(
+    applyScriptParams(
       mintFactoryEnv.cborHex,
       [
         counterScriptHashHex,
@@ -247,7 +239,7 @@ export function buildPrizeValidator(
   }
 
   const applied =
-    applyParamsToScript(
+    applyScriptParams(
       prizeFactoryEnv.cborHex,
       [
         registryScriptHashHex,
@@ -300,7 +292,7 @@ export function buildB1PrizePool(
   }
 
   const applied =
-    applyParamsToScript(
+    applyScriptParams(
       b1PrizePoolFactoryEnv.cborHex,
       [
         prizeScriptHashHex,

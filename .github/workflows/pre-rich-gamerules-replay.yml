@@ -1,0 +1,37 @@
+name: PRE-RICH GameRules Replay Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/gameRules.ts"
+      - "src/beacon.ts"
+      - "verification/pre-rich-gamerules-v1-vectors.json"
+      - "src/__tests__/preRich-gamerules-replay.test.ts"
+      - ".github/workflows/pre-rich-gamerules-replay.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/gameRules.ts"
+      - "src/beacon.ts"
+      - "verification/pre-rich-gamerules-v1-vectors.json"
+      - "src/__tests__/preRich-gamerules-replay.test.ts"
+      - ".github/workflows/pre-rich-gamerules-replay.yml"
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run canonical replay vectors
+        run: npx vitest run src/__tests__/preRich-gamerules-replay.test.ts

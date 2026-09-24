@@ -1,24 +1,17 @@
 // relayer/loadValidator.js
-const fs = require('fs')
 const path = require('path')
+const {
+  loadScript: loadScriptFile,
+} = require('../Adapter/CARDANO/serialization/loadScript')
 
 function loadScript(relativePath) {
   const fullPath = path.resolve(__dirname, relativePath)
-  const raw = fs.readFileSync(fullPath, 'utf8')
-  const env = JSON.parse(raw)
-
-  if (!env || typeof env.cborHex !== 'string') {
-    throw new Error(`Invalid script envelope at ${fullPath}`)
-  }
-
-  return {
-    type: 'PlutusV2',
-    script: env.cborHex,
-  }
+  return loadScriptFile(fullPath)
 }
 
 module.exports = {
   loadScript,
   TREASURY_SCRIPT_PATH:
-    process.env.TREASURY_SCRIPT_PATH || '../plutus/out/treasury.plutus.json',
+    process.env.TREASURY_SCRIPT_PATH ||
+    '../plutus/out/treasury.plutus.json',
 }

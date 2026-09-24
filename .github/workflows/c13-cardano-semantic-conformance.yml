@@ -1,0 +1,38 @@
+name: C13 Cardano Semantic Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/__tests__/cardano-v3-semantic-conformance.test.ts"
+      - "src/gameFlow.ts"
+      - "plutus/Types.hs"
+      - ".github/workflows/c13-cardano-semantic-conformance.yml"
+  pull_request:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/__tests__/cardano-v3-semantic-conformance.test.ts"
+      - "src/gameFlow.ts"
+      - "plutus/Types.hs"
+      - ".github/workflows/c13-cardano-semantic-conformance.yml"
+
+jobs:
+  semantic-conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Run C13 semantic conformance
+        run: npx vitest run src/__tests__/cardano-v3-semantic-conformance.test.ts

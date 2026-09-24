@@ -8,10 +8,14 @@ describe('RF8 Treasury relayer boundary', () => {
       join(process.cwd(), 'relayer', 'relayer.js'),
       'utf8',
     )
+
     const start = source.indexOf('async function treasuryWorker')
     expect(start).toBeGreaterThanOrEqual(0)
 
-    const end = source.indexOf('// ---------------------------------------------------------------------------\n// UTxO helpers', start)
+    const end = source.indexOf(
+      '// ---------------------------------------------------------------------------\n// UTxO helpers',
+      start,
+    )
     expect(end).toBeGreaterThan(start)
 
     const treasuryWorker = source.slice(start, end)
@@ -19,6 +23,6 @@ describe('RF8 Treasury relayer boundary', () => {
     expect(treasuryWorker).not.toMatch(/\.signTx\s*\(/)
     expect(treasuryWorker).not.toMatch(/\.submitTx\s*\(/)
     expect(treasuryWorker).toContain('FAIL-CLOSED MIGRATION BOUNDARY')
-    expect(treasuryWorker).toContain('authoritative Economic')
+    expect(treasuryWorker).toContain('canonical EconomicAdmission')
   })
 })

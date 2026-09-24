@@ -169,3 +169,40 @@ ANCESTRY_NOT_VERIFIED
 ```
 
 Until the remaining finality obligations are implemented and independently tested, `verifyAncestry: true` must remain fail-closed.
+
+## Materios source triangulation — authority selection
+
+The authority-transition boundary has now been triangulated against the current Materios implementation at commit `0c57e2da6a6d5dbd63ee6e535eebcb0735e7699d` (Flux-Point-Studios/materios).
+
+Relevant upstream implementation surfaces:
+
+- `partnerchain/vendor/authority-selection-inherents/src/authority_selection_inputs.rs` defines the selection input tuple: D-parameter, permissioned candidates, registered candidates, and Cardano epoch nonce.
+- `partnerchain/vendor/authority-selection-inherents/src/select_authorities.rs` defines the committee-selection path: candidate filtering, deterministic account-id sorting, the seed derived from epoch nonce + sidechain epoch, committee size from the D-parameter, weighted selection, and the Materios duplicate-output safety patch.
+- The current Materios implementation explicitly deduplicates weighted-selection output and refuses a rotation when the resulting distinct committee is below `MIN_DISTINCT_COMMITTEE = 2`.
+
+This triangulation changes the implementation target of the open proof boundary: the verifier must establish the canonical Materios authority-selection result from these inputs (or verify an equivalent proof), rather than merely accepting an advertised `toAuthorities` set. The IMMORTAL PoC does **not** reimplement that algorithm in TypeScript and does not treat these source observations as cryptographic proof.
+
+### Consequence for the open proof boundary
+
+The existing `AuthoritySetTransitionStatement` already binds:
+
+- genesis hash and genesis UTxO;
+- current and next set IDs;
+- sidechain epoch;
+- raw selection-input bytes and their Blake2b hash;
+- advertised `toAuthorities`;
+- activation block.
+
+What remains to be proven is the semantic relation:
+
+```
+canonical Materios selection inputs
+        + sidechain epoch
+        + genesis context
+        -> Materios committee-selection result
+        -> advertised toAuthorities
+```
+
+The next implementation should therefore be a real proof/verifier integration at this boundary, preferably backed by the upstream Rust/WASM implementation or a cryptographic proof produced by it. A test double returning `true` remains test-only evidence.
+
+Source provenance is recorded here only to pin the external implementation reference; it does not change the trust model or promote the PoC to production-grade finality.

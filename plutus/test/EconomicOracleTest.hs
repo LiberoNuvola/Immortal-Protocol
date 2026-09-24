@@ -1,3 +1,4 @@
+{-# LANGUAGE NumericUnderscores #-}
 module Main where
 
 import Control.Exception (SomeException, evaluate, try)
@@ -8,8 +9,10 @@ import System.Exit (exitFailure)
 import PlutusLedgerApi.V1.Address (Address (..))
 import PlutusLedgerApi.V1.Credential (Credential (..))
 import PlutusLedgerApi.V1.Crypto (PubKeyHash (..))
-import PlutusLedgerApi.V1.Scripts (Datum (..), TxId (..), TxOutRef (..))
-import PlutusLedgerApi.V1.Time (POSIXTime (..), interval)
+import PlutusLedgerApi.V1.Scripts (Datum (..))
+import PlutusLedgerApi.V1.Tx (TxId (..), TxOutRef (..))
+import PlutusLedgerApi.V1.Time (POSIXTime (..))
+import PlutusLedgerApi.V1.Interval (interval)
 import PlutusLedgerApi.V1.Value (CurrencySymbol (..), TokenName (..), singleton)
 import PlutusLedgerApi.V2.Contexts (TxInInfo (..), TxInfo (..))
 import PlutusLedgerApi.V2.Tx (OutputDatum (..), TxOut (..))
@@ -18,8 +21,14 @@ import qualified PlutusTx.AssocMap as AssocMap
 import PlutusTx.Builtins (toBuiltin)
 import PlutusTx.Prelude (BuiltinByteString)
 
-import Economic (oraclePriceFor)
-import Types (OracleDatum (..), OracleStateId (..))
+import Economic
+  ( oraclePriceFor
+  )
+
+import OracleTypes
+  ( OracleDatum (..)
+  , OracleStateId (..)
+  )
 
 data Case = Case
   { caseName :: String
@@ -35,11 +44,16 @@ main = do
 runCase :: Case -> IO Bool
 runCase testCase = do
   result <- try evaluatePrice :: IO (Either SomeException Integer)
-  let passed = case caseExpectedPrice testCase of
-        Just expected -> result == Right expected
-        Nothing -> case result of
-          Left _ -> True
-          Right _ -> False
+  let passed =
+        case caseExpectedPrice testCase of
+          Just expected ->
+            case result of
+              Right actual -> actual == expected
+              Left _ -> False
+          Nothing ->
+            case result of
+              Left _ -> True
+              Right _ -> False
   putStrLn (prefix passed <> caseName testCase)
   pure passed
   where
@@ -89,15 +103,10 @@ bytes = toBuiltin . ByteString.pack
 transactionInfo :: [TxInInfo] -> TxInfo
 transactionInfo references =
   TxInfo
-    []
-    references
-    []
-    mempty
-    mempty
-    []
-    AssocMap.empty
+    [] references [] mempty mempty [] AssocMap.empty
     (interval (POSIXTime now) (POSIXTime now))
     []
+    AssocMap.empty
     AssocMap.empty
     (TxId (bytes "test-transaction"))
 

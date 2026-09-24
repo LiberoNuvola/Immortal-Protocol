@@ -15,13 +15,21 @@ import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), unless)
 import qualified Economic
-
+import qualified EconomicKernel
+import qualified UniversalEconomicKernel
+import qualified UniversalEconomicState
+import qualified PlutusTx.AssocMap as AssocMap
+import B1LegacyAdapter ( legacyB1ToUniversalEconomicState )
+import PreRichEconomicProfile ( preRichEconomicProfileV1 )
 import Types
   ( B1PrizePoolDatum (..)
   , B1PrizePoolAction (..)
-  , OracleStateId
   , PrizeDatum (..)
   , PrizeStatus (..)
+  )
+
+import OracleTypes
+  ( OracleStateId
   )
 
 -- ============================================================
@@ -46,55 +54,26 @@ effectivePool d =
 
 -- | Worst-case payout exposure of all unresolved tickets.
 --
---   Every unresolved ticket can legally resolve to the canonical
---   maximum payout of 500x its economic ticket price.
---
---   Therefore:
---
---     WorstCaseExposure = 500 * unresolvedReserve
---
---   No additional datum field is required because the exposure is
---   deterministically derivable from the already canonical
---   unresolved reserve.
+--   The legacy B1 datum does not encode per-class composition. We therefore
+--   project directly to IMMORTAL's application-neutral aggregate state rather
+--   than inventing a synthetic V3 class. The aggregate unresolved reserve is
+--   already the exact sum of class ticket prices, so the PRE-RICH 500x bound
+--   derives the exact aggregate worst-case exposure.
 {-# INLINABLE worstCaseExposure #-}
 worstCaseExposure :: B1PrizePoolDatum -> Integer
 worstCaseExposure d =
-  500 * ppUnresolvedReserve d
+  UniversalEconomicState.uesWorstCaseExposure (legacyB1ToUniversalEconomicState preRichEconomicProfileV1 d)
 
 -- | Deterministic worst-case solvency invariant.
 --
---   The PrizePool must be able to cover simultaneously:
---
---     1. crystallized pending liabilities;
---     2. the maximum possible payout of every unresolved ticket;
---     3. locked jackpot capital.
---
---   Hence:
---
---     totalLiquidity >=
---       pendingLiabilities
---       + 500 * unresolvedReserve
---       + lockedJackpot
---
---   This is deliberately stronger than merely requiring
---   effectivePool >= 0.
+--   The legacy B1 accounting unit is passed consistently as the EEV input and
+--   as the universal economic state's monetary fields.
 {-# INLINABLE solvencyInvariant #-}
 solvencyInvariant :: B1PrizePoolDatum -> Bool
 solvencyInvariant d =
-     ppTotalLiquidity d >= 0
-  && ppPendingLiabilities d >= 0
-  && ppUnresolvedReserve d >= 0
-  && ppUnresolvedTicketCount d >= 0
-  && ppLockedJackpot d >= 0
-  && ppTotalLiquidity d
-       >= ppPendingLiabilities d
-          + worstCaseExposure d
-          + ppLockedJackpot d
-
-{-# INLINABLE jackpotActive #-}
-jackpotActive :: B1PrizePoolDatum -> Bool
-jackpotActive d =
-  effectivePool d >= ppJackpotThreshold d
+  UniversalEconomicKernel.solvencyInvariant
+    (ppTotalLiquidity d)
+    (legacyB1ToUniversalEconomicState preRichEconomicProfileV1 d)
 
 {-# INLINABLE ownInputResolved #-}
 ownInputResolved :: ScriptContext -> TxOut
@@ -134,6 +113,20 @@ countOwnInputs ctx =
   in
     go (txInfoInputs (scriptContextTxInfo ctx))
 
+-- | Direct Value lookup used instead of the Ledger API valueOf helper.
+--
+-- This preserves the same zero-on-missing semantics while traversing the
+-- underlying association maps explicitly.
+{-# INLINABLE assetAmount #-}
+assetAmount :: Value -> CurrencySymbol -> TokenName -> Integer
+assetAmount value cs tn =
+  case AssocMap.lookup cs (getValue value) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup tn tokens of
+        Nothing -> 0
+        Just amount -> amount
+
 -- | Protocol singleton token helpers.
 --
 -- A valid PrizePool transaction must carry exactly one unit of
@@ -152,7 +145,7 @@ tokenAmountInInputs info cs tn =
       0
 
     go (i:is) =
-      valueOf
+      assetAmount
         (txOutValue (txInInfoResolved i))
         cs
         tn
@@ -171,7 +164,7 @@ tokenAmountInOutputs info cs tn =
       0
 
     go (o:os) =
-      valueOf
+      assetAmount
         (txOutValue o)
         cs
         tn
@@ -207,13 +200,13 @@ singletonPoolTokenValid ctx poolPolicy poolName =
         tn
 
     ownInputAmount =
-      valueOf
+      assetAmount
         (txOutValue (ownInputResolved ctx))
         cs
         tn
 
     ownOutputAmount =
-      valueOf
+      assetAmount
         (ownOutputValue ctx)
         cs
         tn
@@ -393,7 +386,7 @@ ticketOwnerPkh cs bs (i:is) =
       TokenName bs
 
   in
-    if valueOf val cs' tn' == 1
+    if assetAmount val cs' tn' == 1
       then
         case addressCredential (txOutAddress resolved) of
           PubKeyCredential pkh ->
@@ -469,7 +462,7 @@ payoutPaidUsdm
               outValue
 
         in
-          usdmValue >= requiredUsdm
+          usdmValue == requiredUsdm
             || payoutPaidUsdm
                  info
                  oracleState
@@ -585,7 +578,7 @@ ticketMinted
   info
   policyBytes
   nameBytes =
-  valueOf
+  assetAmount
     (txInfoMint info)
     (CurrencySymbol policyBytes)
     (TokenName nameBytes)
@@ -726,10 +719,10 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
                    Just pd ->
                         pdStatus pd == Pending
@@ -782,8 +775,7 @@ mkValidator
                      -- Reserve increases by the exact
                      -- ticket economic price.
                      && ppUnresolvedReserve n
-                          == ppUnresolvedReserve datum + priceUsdm
-
+                           == ppUnresolvedReserve datum + EconomicKernel.reserveIssueDelta priceUsdm
                      -- G2:
                      -- The resulting state must remain solvent
                      -- even if every unresolved ticket later pays
@@ -819,23 +811,42 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
-                   Just outPd ->
-                     let
-                       payout =
-                         pdPrizeAmount outPd
+                   Just inPd ->
+                     case findPrizeOutput info prizeHash of
+                       Nothing ->
+                         traceError
+                           "B1PrizePool: no prize output"
 
-                       reserveRelease =
-                         priceUsdm
+                       Just outPd ->
+                         let
+                           payout =
+                             pdPrizeAmount outPd
 
-                     in
-                           traceIfFalse
-                             "B1PrizePool: payout exceeds effective pool"
-                             (payout <= effectivePool datum)
+                           reserveRelease =
+                             priceUsdm
+
+                         in
+                              traceIfFalse
+                                "B1PrizePool: reveal prize input must be Pending"
+                                (pdStatus inPd == Pending)
+
+                           && traceIfFalse
+                                "B1PrizePool: reveal ticket identity changed"
+                                (pdTicketPolicy inPd == pdTicketPolicy outPd
+                                  && pdTicketName inPd == pdTicketName outPd)
+
+                           && traceIfFalse
+                                "B1PrizePool: reveal input price mismatch"
+                                (pdPriceUsdm inPd == priceUsdm)
+
+                           && traceIfFalse
+                                "B1PrizePool: payout exceeds effective pool"
+                                (payout <= effectivePool datum)
 
                        && traceIfFalse
                             "B1PrizePool: payout must be non-negative"
@@ -868,12 +879,11 @@ mkValidator
                             == ppUnresolvedTicketCount datum - 1
 
                        && ppUnresolvedReserve n
-                            == ppUnresolvedReserve datum
-                                 - reserveRelease
-
+                             == ppUnresolvedReserve datum
+                                  + EconomicKernel.reserveRevealDelta reserveRelease
                        && ppPendingLiabilities n
-                            == ppPendingLiabilities datum + payout
-
+                            == ppPendingLiabilities datum
+                                 + EconomicKernel.liabilityRevealDelta payout
                        && solvencyInvariant n
 
         -- ==================================================
@@ -899,71 +909,89 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
-                   Just pd ->
-                     let
-                       ticketCs =
-                         pdTicketPolicy pd
+                   Just inPd ->
+                     case findPrizeOutput info prizeHash of
+                       Nothing ->
+                         traceError
+                           "B1PrizePool: no prize output"
 
-                       ticketTn =
-                         pdTicketName pd
+                       Just pd ->
+                         let
+                           ticketCs =
+                             pdTicketPolicy pd
 
-                       maybeOwner =
-                         ticketOwnerPkh
-                           ticketCs
-                           ticketTn
-                           (txInfoInputs info)
+                           ticketTn =
+                             pdTicketName pd
 
-                       ownerSigned =
-                         case maybeOwner of
-                           Just pkh ->
-                             pkElem
-                               pkh
-                               (txInfoSignatories info)
+                           maybeOwner =
+                             ticketOwnerPkh
+                               ticketCs
+                               ticketTn
+                               (txInfoInputs info)
 
-                           Nothing ->
-                             False
+                           ownerSigned =
+                             case maybeOwner of
+                               Just pkh ->
+                                 pkElem
+                                   pkh
+                                   (txInfoSignatories info)
 
-                       payoutPaid =
-                         case maybeOwner of
-                           Just pkh ->
-                             payoutPaidUsdm
+                               Nothing ->
+                                 False
+
+                           payoutPaid =
+                             case maybeOwner of
+                               Just pkh ->
+                                 payoutPaidUsdm
+                                   info
+                                   oracleState
+                                   oraclePublisher
+                                   pkh
+                                   (pdPrizeAmount pd)
+                                   (txInfoOutputs info)
+
+                               Nothing ->
+                                 False
+
+                           poolInputUsdm =
+                             Economic.poolUsdmValue
                                info
                                oracleState
                                oraclePublisher
-                               pkh
-                               (pdPrizeAmount pd)
-                               (txInfoOutputs info)
+                               poolPolicy
+                               poolName
+                               (txOutValue
+                                 (ownInputResolved ctx))
 
-                           Nothing ->
-                             False
+                           poolOutputUsdm =
+                             Economic.poolUsdmValue
+                               info
+                               oracleState
+                               oraclePublisher
+                               poolPolicy
+                               poolName
+                               (ownOutputValue ctx)
 
-                       poolInputUsdm =
-                         Economic.poolUsdmValue
-                           info
-                           oracleState
-                           oraclePublisher
-                           poolPolicy
-                           poolName
-                           (txOutValue
-                             (ownInputResolved ctx))
-
-                       poolOutputUsdm =
-                         Economic.poolUsdmValue
-                           info
-                           oracleState
-                           oraclePublisher
-                           poolPolicy
-                           poolName
-                           (txOutValue
-                             (ownOutputValue ctx))
-
-                     in
+                         in
                            traceIfFalse
+                             "B1PrizePool: claim prize input must be Revealed"
+                             (pdStatus inPd == Revealed)
+
+                       && traceIfFalse
+                            "B1PrizePool: claim ticket identity changed"
+                            (pdTicketPolicy inPd == pdTicketPolicy pd
+                              && pdTicketName inPd == pdTicketName pd)
+
+                       && traceIfFalse
+                            "B1PrizePool: claim payout changed"
+                            (pdPrizeAmount inPd == pdPrizeAmount pd)
+
+                       && traceIfFalse
                              "B1PrizePool: owner not signed"
                              ownerSigned
 
@@ -1005,8 +1033,8 @@ mkValidator
                             == ppTotalLiquidity datum - claimedAmount
 
                        && ppPendingLiabilities n
-                            == ppPendingLiabilities datum - claimedAmount
-
+                             == ppPendingLiabilities datum
+                                  + EconomicKernel.liabilityClaimDelta claimedAmount
                        && solvencyInvariant n
 
         -- ==================================================
@@ -1028,10 +1056,10 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeOutput info prizeHash of
+                 case findPrizeInput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: no prize output"
+                       "B1PrizePool: exactly one decodable prize input required"
 
                    Just pd ->
                      let
@@ -1055,12 +1083,22 @@ mkValidator
                                info)
 
                        && traceIfFalse
+                            "B1PrizePool: prize pool binding mismatch"
+                            (case ownScriptHash ctx of
+                               ScriptHash h ->
+                                 pdPrizePoolHash pd == h)
+
+                       && traceIfFalse
                             "B1PrizePool: payout must be zero for unrevealed"
                             (payout == 0)
 
                        && traceIfFalse
                             "B1PrizePool: status must be Pending"
                             (pdStatus pd == Pending)
+
+                       && traceIfFalse
+                            "B1PrizePool: price must be positive"
+                            (reservePerTicket > 0)
 
                        && ppTotalLiquidity n
                             == ppTotalLiquidity datum
@@ -1082,8 +1120,7 @@ mkValidator
 
                        && ppUnresolvedReserve n
                             == ppUnresolvedReserve datum
-                                 - reservePerTicket
-
+                                 + EconomicKernel.reserveExpiryDelta reservePerTicket
                        && ppPendingLiabilities n
                             == ppPendingLiabilities datum
 

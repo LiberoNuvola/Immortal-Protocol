@@ -1,0 +1,22 @@
+[
+  {
+    "name": "wrong predecessor",
+    "mutation": {"events.1.predecessor": "not-evt-001"},
+    "expected": "invalid predecessor"
+  },
+  {
+    "name": "payload proposal mismatch",
+    "mutation": {"events.1.payload.proposal_id": 99},
+    "expected": "payload/proposal proposal_id mismatch"
+  },
+  {
+    "name": "rejected canonical event",
+    "mutation": {"events.1.status": "RejectedEvent"},
+    "expected": "replay accepts only AcceptedEvent"
+  },
+  {
+    "name": "duplicate evidence",
+    "mutation": {"events.1.evidence_refs": ["ev-002", "ev-002"]},
+    "expected": "duplicate evidence reference"
+  }
+]

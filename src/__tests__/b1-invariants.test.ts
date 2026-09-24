@@ -17,10 +17,13 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  classifyRowTier,
   classifyTier,
   defaultPrizeTable,
   generateSymbols,
   prizeAmountForTier,
+  rowPayoutTotal,
+  rowTierFromIndex,
 } from '../gameRules'
 import { sha256, concatBytes } from '../beacon'
 import {
@@ -259,35 +262,53 @@ describe('Symbol Generation', () => {
 // 4. Tier Classification
 // ============================================================
 
-describe('Tier Classification', () => {
-  it('3+ of symbol 5 produces tier 5', () => {
-    const symbols = new Uint8Array([5, 5, 5, 1, 2, 3])
-    assert.equal(classifyTier(symbols), 5)
+describe('Classic-6 Row Classification', () => {
+  it('classifies a winning row from its own three cells', () => {
+    assert.equal(classifyRowTier(new Uint8Array([5, 5, 5])), 5)
+    assert.equal(classifyRowTier(new Uint8Array([1, 1, 1])), 1)
   })
 
-  it('3+ of symbol 4 produces tier 4', () => {
-    const symbols = new Uint8Array([4, 4, 4, 1, 2, 3])
-    assert.equal(classifyTier(symbols), 4)
-  })
-
-  it('3+ of symbol 3 produces tier 3', () => {
-    const symbols = new Uint8Array([3, 3, 3, 1, 2, 4])
-    assert.equal(classifyTier(symbols), 3)
-  })
-
-  it('no 3+ matching produces tier 0 (loss)', () => {
-    const symbols = new Uint8Array([1, 2, 3, 4, 5, 1])
+  it('rejects a distributed triple across the two rows', () => {
+    const symbols = new Uint8Array([5, 5, 1, 5, 2, 3])
+    assert.equal(classifyRowTier(symbols.slice(0, 3)), 0)
+    assert.equal(classifyRowTier(symbols.slice(3, 6)), 0)
     assert.equal(classifyTier(symbols), 0)
   })
 
-  it('highest tier wins when multiple qualify', () => {
+  it('preserves independent wins on both rows', () => {
     const symbols = new Uint8Array([5, 5, 5, 4, 4, 4])
+    assert.equal(classifyRowTier(symbols.slice(0, 3)), 5)
+    assert.equal(classifyRowTier(symbols.slice(3, 6)), 4)
     assert.equal(classifyTier(symbols), 5)
   })
 
-  it('less than 6 symbols produces tier 0', () => {
-    const symbols = new Uint8Array([5, 5, 5])
-    assert.equal(classifyTier(symbols), 0)
+  it('payout sums two row wins and applies the 500x cap', () => {
+    assert.equal(rowPayoutTotal(defaultPrizeTable, 4, 0, 100), 10_000)
+    assert.equal(rowPayoutTotal(defaultPrizeTable, 5, 5, 100), 50_000)
+  })
+})
+
+describe('Canonical 20,000-row distribution', () => {
+  it('maps the exact boundary slots', () => {
+    assert.equal(rowTierFromIndex(0), 0)
+    assert.equal(rowTierFromIndex(17_499), 0)
+    assert.equal(rowTierFromIndex(17_500), 1)
+    assert.equal(rowTierFromIndex(19_199), 1)
+    assert.equal(rowTierFromIndex(19_200), 2)
+    assert.equal(rowTierFromIndex(19_799), 2)
+    assert.equal(rowTierFromIndex(19_800), 3)
+    assert.equal(rowTierFromIndex(19_979), 3)
+    assert.equal(rowTierFromIndex(19_980), 4)
+    assert.equal(rowTierFromIndex(19_998), 4)
+    assert.equal(rowTierFromIndex(19_999), 5)
+  })
+
+  it('has exactly the frozen slot counts', () => {
+    const counts = [0, 0, 0, 0, 0, 0]
+    for (let i = 0; i < 20_000; i++) {
+      counts[rowTierFromIndex(i)]++
+    }
+    assert.deepEqual(counts, [17_500, 1_700, 600, 180, 19, 1])
   })
 })
 
@@ -332,30 +353,8 @@ describe('Effective Pool Formula', () => {
 // 6. Jackpot Activation
 // ============================================================
 
-describe('Jackpot Activation', () => {
-  it('jackpot active when effectivePool >= threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 20_000,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(jackpotActive(d))
-  })
-
-  it('jackpot inactive when effectivePool < threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 9_999,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(!jackpotActive(d))
-  })
-
-  it('locked jackpot reduces effectivePool for threshold check', () => {
+describe('Jackpot accounting boundary', () => {
+  it('locked jackpot reduces effectivePool', () => {
     const d = makeState({
       ppTotalLiquidity: 15_000,
       ppPendingLiabilities: 0,
@@ -363,19 +362,8 @@ describe('Jackpot Activation', () => {
       ppLockedJackpot: 6_000,
       ppJackpotThreshold: 10_000,
     })
-    // effectivePool = 15000 - 0 - 0 - 6000 = 9000 < 10000
-    assert.ok(!jackpotActive(d))
-  })
-
-  it('jackpot active at exact threshold', () => {
-    const d = makeState({
-      ppTotalLiquidity: 10_000,
-      ppPendingLiabilities: 0,
-      ppUnresolvedReserve: 0,
-      ppLockedJackpot: 0,
-      ppJackpotThreshold: 10_000,
-    })
-    assert.ok(jackpotActive(d))
+    // effectivePool = 15000 - 0 - 0 - 6000 = 9000
+    assert.equal(effectivePool(d), 9_000)
   })
 })
 
@@ -472,7 +460,7 @@ describe('TicketIssued', () => {
 
   it('solvency preserved when underlying state is solvent', () => {
     const d = makeState({
-      ppTotalLiquidity: 10_000,
+      ppTotalLiquidity: 50_000,
       ppPendingLiabilities: 0,
       ppUnresolvedReserve: 0,
       ppLockedJackpot: 0,
@@ -843,16 +831,16 @@ describe('Solvency Invariant', () => {
 
   it('payout within effectivePool preserves solvency', () => {
     const d = makeState({
-      ppTotalLiquidity: 1000,
+      ppTotalLiquidity: 200_250,
       ppPendingLiabilities: 0,
       ppUnresolvedReserve: 500,
       ppUnresolvedTicketCount: 5,
       ppLockedJackpot: 0,
     })
-    // effectivePool = 1000 - 0 - 500 - 0 = 500
+    // effectivePool = 200250 - 0 - 500 - 0 = 199750
     const n = applyTicketRevealed(d, 100, 250)
     // n.pendingLiabilities = 250, n.reserve = 400
-    // n.effectivePool = 1000 - 250 - 400 - 0 = 350 >= 0
+    // n.effectivePool = 200250 - 250 - 400 - 0 = 199600 >= 0
     assert.ok(solvencyOk(n))
   })
 
@@ -1026,29 +1014,31 @@ describe('Edge Cases', () => {
 // On-chain enforcement requires a Plutus emulator.
 // ============================================================
 
-describe('21-field PrizeDatum Schema', () => {
-  it('PrizeDatum has 21 fields (indices 0..20)', () => {
+describe('23-field PrizeDatum Schema', () => {
+  it('PrizeDatum has 23 fields (indices 0..22)', () => {
     // Canonical field count from Types.hs PrizeDatum
-    const FIELD_COUNT = 21
-    // Build a mock 21-field datum to verify round-trip
+    const FIELD_COUNT = 23
+    // Build a mock 23-field datum to verify round-trip
     const fields: unknown[] = new Array(FIELD_COUNT).fill(null).map((_, i) => {
       if (i === 10) return { index: 0, fields: [] } // Pending status
       if (i === 13) return { index: 0, fields: [0, 0, '', ''] } // BeaconTarget
       if (i === 14) return { index: 0, fields: [] } // BeaconPending
-      if (i === 3 || i === 6 || i === 7 || i === 12 || i === 19 || i === 20) return BigInt(0)
+      if (i === 3 || i === 6 || i === 7 || i === 12 || i === 19 || i === 20 || i === 21 || i === 22) return BigInt(0)
       return '' // bytes fields
     })
     assert.equal(fields.length, FIELD_COUNT)
     assert.equal(fields[18], '', 'index 18 = pdPrizePoolHash')
     assert.equal(fields[19], BigInt(0), 'index 19 = pdIssuedAt')
     assert.equal(fields[20], BigInt(0), 'index 20 = pdExpiresAt')
+    assert.equal(fields[21], BigInt(0), 'index 21 = pdRow1Tier')
+    assert.equal(fields[22], BigInt(0), 'index 22 = pdRow2Tier')
   })
 
   it('field 18 is pdPrizePoolHash (not pdIssuedAt)', () => {
     const poolHashHex = '0'.repeat(56)
     const issuedAt = BigInt(Date.now())
     const expiresAt = issuedAt + 365n * 86_400_000n
-    // Simulate 21-field array
+    // Simulate the legacy prefix used by the field-order test
     const fields: unknown[] = new Array(21).fill('')
     fields[18] = poolHashHex  // pdPrizePoolHash
     fields[19] = issuedAt      // pdIssuedAt
@@ -1304,7 +1294,7 @@ describe('C-02: Atomic Ticket Sale', () => {
 
   it('an issued ticket must be economically reserved', () => {
     const before = makeState({
-      ppTotalLiquidity: 10_000,
+      ppTotalLiquidity: 50_000,
       ppUnresolvedTicketCount: 0,
       ppUnresolvedReserve: 0,
     })

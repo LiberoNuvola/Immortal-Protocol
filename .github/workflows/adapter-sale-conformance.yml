@@ -1,0 +1,38 @@
+name: Cardano Adapter Sale Conformance
+
+concurrency:
+  group: -github-workflows-adapter-sale-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - audit/adapter-sale-conformance
+      - work/immortal-green-closure
+  pull_request:
+    branches:
+      - b1-hardening
+
+jobs:
+  economic-conformance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run src/__tests__/cardano-execution-adapter.test.ts src/__tests__/immortal-reveal-conformance.test.ts src/__tests__/rf8-submission-boundary.test.ts src/__tests__/rf8-treasury-relayer-boundary.test.ts Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.test.ts Adapter/CARDANO/observation/ExecutableLiquidityObservation.test.ts Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts
+      - run: npx tsx --test src/__tests__/immortal-cardano-adapter-conformance.test.ts
+
+  frontend-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build

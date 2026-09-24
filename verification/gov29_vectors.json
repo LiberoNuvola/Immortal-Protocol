@@ -1,0 +1,17 @@
+{
+  "version": "GOV-29",
+  "objective": "Executable canonical replay and commitment binding",
+  "positive": [
+    "payload carried by CanonicalEvent",
+    "payload/type/id/timestamp binding",
+    "predecessor continuity",
+    "replay from canonical events only"
+  ],
+  "negative": [
+    "wrong actor",
+    "wrong ruleset commitment",
+    "missing evidence",
+    "wrong predecessor"
+  ],
+  "hash_boundary": "UTF-8 canonical representation -> SHA-256 -> lowercase hex"
+}

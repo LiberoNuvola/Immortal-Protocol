@@ -1,0 +1,40 @@
+{
+  "schema": "IMMORTAL-GOV-25/1",
+  "hash_algorithm": "SHA-256",
+  "input_encoding": "UTF-8",
+  "digest_encoding": "lowercase hexadecimal",
+  "commitment_scope": "exact canonical event bytes defined by GOV-24",
+  "canonical_event": {
+    "event_id": "evt-001",
+    "proposal_id": 1,
+    "ruleset_version": 1,
+    "event_type": "ProposalSubmitted",
+    "actor_class": "Proposer",
+    "timestamp": 100,
+    "payload": {
+      "proposal_class": "Ordinary",
+      "proposal_id": 1,
+      "status": "Submitted"
+    },
+    "payload_commitment": "placeholder-gov24-001",
+    "predecessor": null,
+    "evidence_refs": [
+      "ev-001"
+    ],
+    "status": "AcceptedEvent"
+  },
+  "canonical_bytes": "event_id=evt-001;proposal_id=1;ruleset_version=1;event_type=ProposalSubmitted;actor_class=Proposer;timestamp=100;payload={\"proposal_class\":\"Ordinary\",\"proposal_id\":1,\"status\":\"Submitted\"};payload_commitment=placeholder-gov24-001;predecessor=;evidence_refs=[ev-001];status=AcceptedEvent",
+  "sha256": "0315274d2891b4d28e31dde0ed6d977ff9353cfea2d6b2d3dbb3414face92d7f",
+  "mutation_digests": {
+    "event_id": "478fdcd8700d0982bf8b3ff0f9a1ebcaa3bbba35ba1ff5bdef3d520d208bf806",
+    "proposal_id": "3f097d7aff4d2621300e02467f17ac79d7d53d68dff9b6476cd5f90cb21fbcc9",
+    "ruleset_version": "8e14793242fa379b2725f71c4fa5ec12e08cbf29598e056983d91d5b85d19171",
+    "event_type": "740f7df65412eab7ae8a3e74fe95b9d7aa18f15930da5bb921a0862051a17d16",
+    "actor_class": "af97ecec1e1c25a9a88fde1b43649e1545c7e6dacf491675a4e7f99eff939c41",
+    "timestamp": "6d265100eeddf395cd577d082f5f87265fedf48895f765f6dae21848351e75b1",
+    "payload": "3c4a7adb3230a92454a234909d5db6cedd199fa005deca5eca28f9ba6c5c497c",
+    "predecessor": "1cfe1bb580388465fafd7f7cb5583db9f7d8bc4ba1d5aeb946f9251b29cb8715",
+    "evidence_refs": "95b5f0118b99a9a5fc2c63138776270c83cd7afedfae4a00ea24ad1e110b7689",
+    "status": "3193a531d58efa5362bf6af05e8bb82b19617e187b0686d35305246ac588be07"
+  }
+}

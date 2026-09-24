@@ -160,6 +160,18 @@ describe("authority trust boundary integration", () => {
     ).not.toThrow();
   });
 
+  it("fails closed when the supplied transition proof verifier rejects", async () => {
+    const statement = baseStatement();
+
+    await expect(
+      verifyAuthoritySetTransition(statement, {
+        verify() {
+          return false;
+        }
+      })
+    ).rejects.toThrow("AUTHORITY_TRANSITION_PROOF_NOT_VERIFIED");
+  });
+
   it("requires the proof boundary before producing trusted state", async () => {
     const statement = baseStatement();
 

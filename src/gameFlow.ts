@@ -2,13 +2,12 @@
  * PRE-RICH prize flow:
  *
  *   Mint → Pending / BeaconPending
- *     → Pay Treasury (separate tx)
  *     → SyncBeacon → Pending / BeaconReady
  *     → Reveal → Revealed (payout frozen, reserve released, liability created)
  *     → Claim → Claimed (NFT kept, no mandatory burn, liability reduced)
  *
  * PrizeStatus: Pending=0, Revealed=1, Claimed=2
- * PrizeDatum fields 0..20 (18 prizePoolHash, 19 issuedAt, 20 expiresAt)
+ * PrizeDatum fields 0..22 (18 prizePoolHash, 19 issuedAt, 20 expiresAt, 21 row1Tier, 22 row2Tier)
  *
  * B1: reveal/claim transactions coordinate PrizeValidator + B1PrizePool.
  */
@@ -33,12 +32,21 @@ import {
 } from './beacon'
 
 import {
-  classifyTier,
+  classifyRowTier,
   defaultPrizeTable,
   generateSymbols,
-  prizeAmountForTier,
+  rowPayoutTotal,
   type PrizeTable,
 } from './gameRules'
+
+import { signAndSubmitTx, signAndSubmitEconomicTx } from './txHelpers'
+import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
+import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
+
+import {
+  assertSettlementQuoteMatchesPrize,
+  type CertifiedSettlementQuote,
+} from '../PRE-RICH/profile/PreRichCertifiedSettlement'
 
 // ---------------------------------------------------------------------------
 // Plutus Data helpers
@@ -180,6 +188,10 @@ function claimRedeemer(): Data {
   return emptyConstr(2)
 }
 
+function expireRedeemer(): Data {
+  return emptyConstr(3)
+}
+
 /** B1PrizePool actions: FundTreasury=0, TicketIssued=1, TicketRevealed=2, TicketClaimed=3, TicketExpired=4 */
 
 function b1ppTicketRevealedRedeemer(priceUsdm: bigint): Data {
@@ -188,6 +200,10 @@ function b1ppTicketRevealedRedeemer(priceUsdm: bigint): Data {
 
 function b1ppTicketClaimedRedeemer(claimedAmount: bigint): Data {
   return constr(3, [claimedAmount])
+}
+
+function b1ppTicketExpiredRedeemer(): Data {
+  return emptyConstr(4)
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +242,7 @@ function decodePrizeDatum(utxo: UTxO): PrizeState | null {
     if (raw == null) return null
     const parsed = parseData(raw)
     const fields = asFields(parsed)
-    if (!fields || fields.length !== 21) return null
+    if (!fields || fields.length !== 23) return null
     return { fields }
   } catch {
     return null
@@ -400,7 +416,6 @@ export async function syncBeacon(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
-
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     opts.prizeAddress,
@@ -450,13 +465,28 @@ export async function syncBeacon(opts: {
     .addSigner(owner)
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  return lucid.submitTx(signed)
+  return signAndSubmitTx(lucid, tx)
 }
 
 // ---------------------------------------------------------------------------
 // Reveal — coordinates PrizeValidator + B1PrizePool
 // ---------------------------------------------------------------------------
+
+/**
+ * Canonical Classic-6 ticket-level Reveal result.
+ *
+ * G7 requires both independent row results to remain observable. `tier` is
+ * only the legacy summary max(row1Tier,row2Tier); `prizeAmount` is the
+ * already-capped ticket payout in the established USDM sub-unit encoding.
+ */
+export type Classic6RevealResult = {
+  txHash: string
+  tier: number
+  prizeAmount: number
+  row1Tier: number
+  row2Tier: number
+  resultHex: string
+}
 
 export async function revealPrize(opts: {
   prizeAddress: string
@@ -465,12 +495,9 @@ export async function revealPrize(opts: {
   playerSecretHex: string
   b1PrizePoolAddress: string
   table?: PrizeTable
-}): Promise<{
-  txHash: string
-  tier: number
-  prizeAmount: number
-  resultHex: string
-}> {
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
+}): Promise<Classic6RevealResult> {
   const lucid = wallet.getLucid()
   if (!lucid) throw new Error('Wallet not connected')
 
@@ -485,6 +512,8 @@ export async function revealPrize(opts: {
   const playerSecret = fromHex(secretHex)
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const b1PrizePoolAddress = opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) throw new Error('B1PrizePool address cannot be resolved')
 
   const prizeUtxo = await findPrizeUtxo(
     lucid,
@@ -577,8 +606,10 @@ export async function revealPrize(opts: {
   const expectedResult = await sha256(
     new Uint8Array([...field(digest), ...field(symbols)]),
   )
-  const tier = classifyTier(symbols)
-  const prizeAmount = prizeAmountForTier(table, tier, priceUsdm)
+  const row1Tier = classifyRowTier(symbols.slice(0, 3))
+  const row2Tier = classifyRowTier(symbols.slice(3, 6))
+  const tier = Math.max(row1Tier, row2Tier)
+  const prizeAmount = rowPayoutTotal(table, row1Tier, row2Tier, priceUsdm)
 
   // Update PrizeDatum
   const nextFields = [...datum.fields]
@@ -586,12 +617,14 @@ export async function revealPrize(opts: {
   nextFields[10] = emptyConstr(1) // Revealed
   nextFields[11] = toHex(expectedResult)
   nextFields[12] = BigInt(tier)
+  nextFields[21] = BigInt(row1Tier)
+  nextFields[22] = BigInt(row2Tier)
 
   const nextDatum = datumFromFields(nextFields)
   const owner = await lucid.wallet.address()
 
   // B1PrizePool: deterministic reserve derivation from PrizeDatum's pdPriceUsdm
-  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, opts.b1PrizePoolAddress)
+  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
 
   const b1ppDatum = decodeB1PrizePoolDatum(b1ppUtxo)
@@ -621,33 +654,191 @@ export async function revealPrize(opts: {
     )
     // Output: updated B1PrizePool datum
     .payToContract(
-      opts.b1PrizePoolAddress,
+      b1PrizePoolAddress,
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
     .addSigner(owner)
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  const txHash = await lucid.submitTx(signed)
+  const txHash = await signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+  ], [
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+  ], 'Reveal')
 
   return {
     txHash,
     tier,
     prizeAmount,
+    row1Tier,
+    row2Tier,
     resultHex: toHex(expectedResult),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Certified ticket observation — read-only UI boundary
+// ---------------------------------------------------------------------------
+
+export async function loadCertifiedTicketState(opts: {
+  assetId: string
+}): Promise<CertifiedTicketState> {
+  const lucid = wallet.getLucid()
+  if (!lucid) throw new Error('Wallet not connected')
+
+  const assetId = opts.assetId.replace(/^0x/i, '').toLowerCase()
+  if (assetId.length < 57 || !/^[0-9a-f]+$/.test(assetId)) {
+    throw new Error('assetId must contain a policy id followed by a token name')
+  }
+
+  const ticketPolicyId = assetId.slice(0, 56)
+  const ticketAssetNameHex = assetId.slice(56)
+  if (!ticketAssetNameHex) {
+    throw new Error('assetId is missing ticket asset name')
+  }
+
+  const scripts = buildScriptsFromLucid(
+    lucid,
+    defaultPrizeTable,
+    ORACLE_PUBLISHER_PKH,
+  )
+  if (!scripts.prizeAddress) {
+    throw new Error('Prize address cannot be resolved')
+  }
+
+  const ticketUtxo = await findTicketUtxoInWallet(
+    lucid,
+    ticketPolicyId,
+    ticketAssetNameHex,
+  )
+  if (!ticketUtxo) {
+    throw new Error('Certified ticket NFT is not currently held by the connected wallet')
+  }
+
+  assertObservedTicketNft(ticketUtxo.assets, ticketPolicyId, ticketAssetNameHex)
+
+  const prizeUtxo = await findPrizeUtxo(
+    lucid,
+    scripts.prizeAddress,
+    ticketPolicyId,
+    ticketAssetNameHex,
+  )
+  if (!prizeUtxo) {
+    throw new Error('Certified ticket PrizeDatum not found')
+  }
+
+  const datum = decodePrizeDatum(prizeUtxo)
+  if (!datum) {
+    throw new Error('Certified ticket PrizeDatum not decodable')
+  }
+
+  const statusIndex = constrIndex(datum.fields[10])
+  const status =
+    statusIndex === 0 ? 'Pending'
+    : statusIndex === 1 ? 'Revealed'
+    : statusIndex === 2 ? 'Claimed'
+    : null
+  if (!status) {
+    throw new Error('Certified ticket has unknown PrizeStatus')
+  }
+
+  const target = parseBeaconTarget(datum.fields[13])
+  const priceUsdm = integerField(datum.fields[3])
+  const ticketNonce = integerField(datum.fields[6])
+  const prizeAmount = integerField(datum.fields[7])
+  const prizeTier = integerField(datum.fields[12])
+  const issuedAt = integerField(datum.fields[19])
+  const expiresAt = integerField(datum.fields[20])
+  const row1Tier = integerField(datum.fields[21])
+  const row2Tier = integerField(datum.fields[22])
+
+  const commitment = bytesField(datum.fields[4])
+  const gameVersion = bytesField(datum.fields[5])
+  const result = bytesField(datum.fields[11])
+
+  if (
+    priceUsdm === null ||
+    ticketNonce === null ||
+    prizeAmount === null ||
+    prizeTier === null ||
+    issuedAt === null ||
+    expiresAt === null ||
+    row1Tier === null ||
+    row2Tier === null ||
+    commitment === null ||
+    gameVersion === null ||
+    result === null
+  ) {
+    throw new Error('Certified ticket PrizeDatum has incomplete state')
+  }
+
+  const purchaseTxHash =
+    typeof prizeUtxo.txHash === 'string' ? prizeUtxo.txHash : undefined
+
+  return certifyTicketBinding({
+    walletAssetPolicyId: ticketPolicyId,
+    walletAssetNameHex: ticketAssetNameHex,
+    datum: {
+      ticketPolicy: bytesField(datum.fields[0]) ?? '',
+      ticketName: bytesField(datum.fields[1]) ?? '',
+      priceUsdm: BigInt(priceUsdm),
+      commitment,
+      gameVersion,
+      ticketNonce: BigInt(ticketNonce),
+      status,
+      result,
+      prizeTier: BigInt(prizeTier),
+      prizeAmount: BigInt(prizeAmount),
+      issuedAt: BigInt(issuedAt),
+      expiresAt: BigInt(expiresAt),
+      row1Tier: BigInt(row1Tier),
+      row2Tier: BigInt(row2Tier),
+      beaconTarget: JSON.stringify(target),
+    },
+    purchaseTxHash,
+    verificationReference: purchaseTxHash
+      ? purchaseTxHash + '#' + String(prizeUtxo.outputIndex)
+      : undefined,
+  })
 }
 
 // ---------------------------------------------------------------------------
 // Claim — coordinates PrizeValidator + B1PrizePool
 // ---------------------------------------------------------------------------
 
+export type ExactSettlementValue = Record<string, bigint>
+
+function validateSettlementValue(
+  settlementValue: ExactSettlementValue | undefined,
+): ExactSettlementValue {
+  if (!settlementValue || Object.keys(settlementValue).length === 0) {
+    throw new Error(
+      'Exact settlement quote required: provide a settlement asset quantity whose verified USDM value equals pdPrizeAmount',
+    )
+  }
+
+  for (const [unit, quantity] of Object.entries(settlementValue)) {
+    if (!unit || quantity <= 0n) {
+      throw new Error(
+        'Invalid settlement value: asset quantities must be positive',
+      )
+    }
+  }
+
+  return settlementValue
+}
+
 export async function claimPrize(opts: {
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
   prizeAddress: string
   ticketPolicyId: string
   ticketAssetNameHex: string
-  b1PrizePoolAddress: string
+  b1PrizePoolAddress?: string
+  settlementValue?: ExactSettlementValue
+  settlementQuote?: CertifiedSettlementQuote
   table?: PrizeTable
 }): Promise<string> {
   const lucid = wallet.getLucid()
@@ -655,7 +846,11 @@ export async function claimPrize(opts: {
 
   const table = opts.table ?? defaultPrizeTable
   const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
-
+  const b1PrizePoolAddress =
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) {
+    throw new Error('B1PrizePool address cannot be resolved')
+  }
   const prizeUtxo = await findPrizeUtxo(
     lucid,
     opts.prizeAddress,
@@ -693,6 +888,16 @@ export async function claimPrize(opts: {
     )
   }
 
+  const settlementValue = opts.settlementQuote
+    ? (() => {
+        assertSettlementQuoteMatchesPrize(
+          opts.settlementQuote,
+          BigInt(prizeAmount),
+        )
+        return opts.settlementQuote.assetMap
+      })()
+    : validateSettlementValue(opts.settlementValue)
+
   const buyer = await lucid.wallet.address()
 
   const nextFields = [...datum.fields]
@@ -700,7 +905,7 @@ export async function claimPrize(opts: {
   const nextDatum = datumFromFields(nextFields)
 
   // B1PrizePool: find and update
-  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, opts.b1PrizePoolAddress)
+  const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
 
   const b1ppDatum = decodeB1PrizePoolDatum(b1ppUtxo)
@@ -735,20 +940,161 @@ export async function claimPrize(opts: {
     )
     // Output: updated B1PrizePool datum
     .payToContract(
-      opts.b1PrizePoolAddress,
+      b1PrizePoolAddress,
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
-    // Payout to claimant
-    .payToAddress(buyer, { lovelace: BigInt(prizeAmount) })
+    // Payout to claimant: caller supplies the concrete settlement asset.
+    // On-chain PrizeValidator verifies exact USDM equivalence.
+    .payToAddress(buyer, settlementValue)
     // Ticket NFT back to buyer
     .payToAddress(buyer, { [opts.ticketPolicyId + opts.ticketAssetNameHex]: 1n })
     .addSigner(buyer)
     .validTo(expiresAt)
     .complete()
 
-  const signed = await lucid.signTx(tx)
-  return lucid.submitTx(signed)
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+    `${ticketUtxo.txHash}#${ticketUtxo.outputIndex}`,
+  ], [
+    `${b1ppUtxo.txHash}#${b1ppUtxo.outputIndex}`,
+  ], 'Claim')
+}
+
+// ---------------------------------------------------------------------------
+// Expire — permissionless post-expiry dissolution
+// ---------------------------------------------------------------------------
+
+export async function expirePrize(opts: {
+  /** Authoritative Economic Gate admission for this economic transition. */
+  economicAdmission: EconomicAdmissionWitness
+  prizeAddress: string
+  ticketPolicyId: string
+  ticketAssetNameHex: string
+  b1PrizePoolAddress?: string
+  table?: PrizeTable
+}): Promise<string> {
+  const lucid = wallet.getLucid()
+  if (!lucid) throw new Error('Wallet not connected')
+
+  const table = opts.table ?? defaultPrizeTable
+  const scripts = buildScriptsFromLucid(lucid, table, ORACLE_PUBLISHER_PKH)
+  const b1PrizePoolAddress =
+    opts.b1PrizePoolAddress ?? scripts.b1PrizePoolAddress
+  if (!b1PrizePoolAddress) {
+    throw new Error('B1PrizePool address cannot be resolved')
+  }
+
+  const prizeUtxo = await findPrizeUtxo(
+    lucid,
+    opts.prizeAddress,
+    opts.ticketPolicyId,
+    opts.ticketAssetNameHex,
+  )
+  if (!prizeUtxo) throw new Error('Prize UTxO not found')
+
+  const datum = decodePrizeDatum(prizeUtxo)
+  if (!datum) throw new Error('PrizeDatum not decodable')
+
+  if (constrIndex(datum.fields[10]) !== 0) {
+    throw new Error('EXPIRE requires a Pending PrizeDatum')
+  }
+
+  const priceUsdm = integerField(datum.fields[3])
+  const expiresAt = integerField(datum.fields[20])
+  if (priceUsdm === null || priceUsdm <= 0) {
+    throw new Error('EXPIRE requires a positive ticket price')
+  }
+  if (expiresAt === null || !Number.isSafeInteger(expiresAt) || expiresAt < 0) {
+    throw new Error('EXPIRE requires a valid expiresAt')
+  }
+
+  const poolUtxo =
+    await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
+  if (!poolUtxo) throw new Error('B1PrizePool UTxO not found')
+
+  const poolDatum = decodeB1PrizePoolDatum(poolUtxo)
+  if (!poolDatum) throw new Error('B1PrizePool datum not decodable')
+
+  const poolFields = [...poolDatum.fields]
+  const unresolvedReserve = b1ppInt(poolDatum, 2)
+  // B1 field layout:
+  //   0 totalLiquidity
+  //   1 pendingLiabilities
+  //   2 unresolvedReserve
+  //   3 unresolvedTicketCount
+  if (unresolvedReserve === null) {
+    throw new Error('B1PrizePool datum has incomplete expiry accounting')
+  }
+
+  const currentCount = b1ppInt(poolDatum, 3)
+  if (currentCount === null || currentCount <= 0) {
+    throw new Error('B1PrizePool has no unresolved ticket to expire')
+  }
+  if (unresolvedReserve < priceUsdm) {
+    throw new Error('B1PrizePool unresolved reserve is insufficient for ticket expiry')
+  }
+
+  poolFields[2] = BigInt(unresolvedReserve - priceUsdm)
+  poolFields[3] = BigInt(currentCount - 1)
+
+  const nextPoolDatum = datumFromFields(poolFields)
+  const executor = await lucid.wallet.address()
+  const prizeAssets = utxoAssets(prizeUtxo)
+  const nonLovelaceAssets = Object.entries(prizeAssets).filter(
+    ([unit, quantity]) => unit !== 'lovelace' && quantity !== 0n,
+  )
+  if (nonLovelaceAssets.length > 0) {
+    throw new Error(
+      'EXPIRE Prize UTxO must contain only execution-collateral ADA',
+    )
+  }
+  const prizeCollateral = {
+    lovelace: prizeAssets.lovelace ?? 0n,
+  }
+
+  const tx = await lucid
+    .newTx()
+    .collectFrom(
+      [prizeUtxo],
+      expireRedeemer(),
+    )
+    .attachSpendingValidator(
+      scripts.prizeValidator as Script,
+    )
+    .collectFrom(
+      [poolUtxo],
+      b1ppTicketExpiredRedeemer(),
+    )
+    .attachSpendingValidator(
+      scripts.b1PrizePool as Script,
+    )
+    // The Prize UTxO carries execution/min-UTxO ADA, while the ticket NFT
+    // remains independently held by its owner. Returning this physical
+    // collateral to the permissionless executor does not alter USDM
+    // economic accounting.
+    .payToAddress(
+      executor,
+      prizeCollateral,
+    )
+    .payToContract(
+      b1PrizePoolAddress,
+      {
+        inline: Data.to(nextPoolDatum),
+      },
+      poolUtxo.assets,
+    )
+    .addSigner(executor)
+    .validFrom(expiresAt)
+    .complete()
+
+  return signAndSubmitEconomicTx(lucid, tx, opts.economicAdmission, [
+    `${prizeUtxo.txHash}#${prizeUtxo.outputIndex}`,
+    `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
+  ], [
+    `${poolUtxo.txHash}#${poolUtxo.outputIndex}`,
+  ], 'Expire')
 }
 
 // ---------------------------------------------------------------------------
@@ -770,5 +1116,6 @@ export default {
   syncBeacon,
   revealPrize,
   claimPrize,
+  expirePrize,
   validatePlayerSecretHex,
 }

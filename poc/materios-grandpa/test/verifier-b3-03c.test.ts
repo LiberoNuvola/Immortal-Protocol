@@ -26,7 +26,7 @@ import {
 } from "../src/scale.js";
 
 /*
- * B3-03C — real GRANDPA Ed25519 vector.
+ * B3-03C — deterministic Ed25519 verification vector.
  *
  * The vector uses the canonical GRANDPA localized payload layout
  * confirmed against sp_consensus_grandpa:
@@ -37,15 +37,17 @@ import {
  *
  *   target_hash || target_number
  *
- * The signatures below are real Ed25519 signatures over that exact
- * 56-byte payload. No test crypto stub is used.
+ * The signatures below are deterministic Ed25519 signatures over that exact
+ * 53-byte payload. No test crypto stub is used.
+ *
+ * The key identities are RFC 8032 Ed25519 test-vector public keys. The
+ * signatures in this fixture are freshly generated over the canonical
+ * GRANDPA localized payload and are therefore a synthetic cryptographic
+ * conformance vector, not a claim of real Materios ledger provenance.
  *
  * IMPORTANT:
- * The current PRE-RICH poc1-spec additionally states a Blake2-256
- * step before Ed25519. This file deliberately records the raw
- * GRANDPA/Substrate vector first; the spec-vs-upstream hashing
- * discrepancy is handled as a separate decision and does not get
- * silently resolved here.
+ * A real Materios signed GRANDPA justification remains a separate evidence
+ * obligation. This fixture proves the local payload/signature verifier only.
  */
 
 const targetHash = Uint8Array.from(
@@ -57,9 +59,10 @@ const round = 7n;
 const setId = 3n;
 
 const expectedPayloadHex =
+  "01" +
   "000102030405060708090a0b0c0d0e0f" +
   "101112131415161718191a1b1c1d1e1f" +
-  "2a00000000000000" +
+  "2a000000" +
   "0700000000000000" +
   "0300000000000000";
 
@@ -78,7 +81,7 @@ const authorities = [
   },
   {
     publicKey: hexToBytes(
-      "1838e47a13cef82402b9f642b0b6b3bebf5f46feea1f5f34abc17a002f62470e"
+      "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025"
     ),
     weight: 1n
   }
@@ -86,13 +89,13 @@ const authorities = [
 
 const signatures = [
   hexToBytes(
-    "bd6d344fb6f8b833469a458d3409fadbcc1e111b624766dd56566d894254342ce08662a1c38a1e4808be2704fc455264bc9f6a580735a86c96463cc4a00c6100"
+    "471aa58dbf8733dca0b0d3bf1d542f59bfc540b1ae40e99cd94373a95bbe02d954a6076303f0fde13c98291d7be12461a55bb9d6ce8cfdb67c6d9f752ddd180e"
   ),
   hexToBytes(
-    "d4e331b96d2c6cda1f385d7a5de15c6c749575e8d798497f2e4b3d9ab8c3d4e85036c081450756033ee50ffbe302957cb772a2d630f02feefadca55aac252e0f"
+    "ff5004c2f0b5e73c843e80720cf36ebe586a0f5b97d7d528c21b3e5f42ec34cb3a2519bc7e0e90aaadc6a2778a5a144c3a54c7762f60331da1d07a2cf400410e"
   ),
   hexToBytes(
-    "f0d9026eac3a57b1e962b6904f7d299914bf7e80e7a0da8943de5c7840328f57317bfa73e00c19ee8e625ae3efd2f0238adb4c7f15ccfa0a7eb1944abbd88c05"
+    "0d83f33330d39a1dc452fab8201d92bf3b54d373f2b732f0664a4473e141b527e009c8fcfd22818a3297a418fd3a428fc651d91f2647d01eb32c259dd5ec030b"
   )
 ];
 
@@ -153,7 +156,7 @@ describe("B3-03C — real GRANDPA Ed25519 vector", () => {
       setId
     );
 
-    expect(payload.length).toBe(56);
+    expect(payload.length).toBe(53);
     expect(bytesToHex(payload)).toBe(
       expectedPayloadHex
     );

@@ -93,23 +93,6 @@ if (!RELAYER_PRIVATE_KEY) {
 // Script loading
 // ---------------------------------------------------------------------------
 
-function loadJsonScript(relativePath) {
-  const fullPath = path.resolve(__dirname, relativePath)
-  const raw = fs.readFileSync(fullPath, 'utf8')
-  const env = JSON.parse(raw)
-
-  if (!env || typeof env.cborHex !== 'string') {
-    throw new Error(
-      `Invalid script envelope at ${fullPath}`,
-    )
-  }
-
-  return {
-    type: 'PlutusV2',
-    script: env.cborHex,
-  }
-}
-
 const TREASURY_SCRIPT =
   loadScript(TREASURY_SCRIPT_PATH)
 
@@ -118,8 +101,7 @@ const BEACON_REGISTRY_SCRIPT_PATH =
   '../plutus/out/beaconRegistry.plutus.json'
 
 const BEACON_REGISTRY_SCRIPT =
-  loadJsonScript(BEACON_REGISTRY_SCRIPT_PATH)
-
+  loadScript(BEACON_REGISTRY_SCRIPT_PATH)
 // ---------------------------------------------------------------------------
 // Treasury configuration
 // ---------------------------------------------------------------------------
@@ -925,101 +907,19 @@ async function treasuryWorker(lucid) {
     return
   }
 
-  const prizeAddr =
-    process.env.PRIZE_ADDRESS
-
-  const stakeAddr =
-    process.env.STAKE_ADDRESS
-
-  const reserveAddr =
-    process.env.RESERVE_ADDRESS
-
-  const missing = []
-
-  if (!prizeAddr) {
-    missing.push('PRIZE_ADDRESS')
-  }
-
-  if (!stakeAddr) {
-    missing.push('STAKE_ADDRESS')
-  }
-
-  if (!reserveAddr) {
-    missing.push('RESERVE_ADDRESS')
-  }
-
-  if (missing.length > 0) {
-    console.error(
-      '[treasury] refusing distribution; missing:',
-      missing.join(', '),
-    )
-    return
-  }
-
-  const distribution =
-    calculateDistribution(total)
-
-  const relayerAddr =
-    await lucid.wallet.address()
-
-  const tx =
-    lucid.newTx()
-
-  for (const u of utxos) {
-    tx.collectFrom(
-      [u],
-      DISTRIBUTE_REDEEMER,
-    )
-  }
-
-  tx.attachSpendingValidator(
-    TREASURY_SCRIPT,
-  )
-
-  tx.payToAddress(
-    prizeAddr,
-    {
-      lovelace:
-        distribution.prize,
-    },
-  )
-
-  tx.payToAddress(
-    stakeAddr,
-    {
-      lovelace:
-        distribution.stake,
-    },
-  )
-
-  tx.payToAddress(
-    reserveAddr,
-    {
-      lovelace:
-        distribution.reserve,
-    },
-  )
-
-  tx.payToAddress(
-    relayerAddr,
-    {
-      lovelace:
-        distribution.relayerReward,
-    },
-  )
-
-  const built =
-    await tx.complete()
-
-  const signed =
-    await lucid.signTx(built)
-
-  const txHash =
-    await lucid.submitTx(signed)
-
-  console.log(
-    '[treasury] distribution submitted:',
-    txHash,
+  /*
+   * FAIL-CLOSED MIGRATION BOUNDARY
+   *
+   * Treasury distribution affects economic state and therefore MUST NOT
+   * be emitted by this legacy worker until an authoritative Economic
+   * Admission path is defined and bound to the exact transition.
+   *
+   * Do not re-enable direct sign/submit here and do not add a replacement
+   * percentage split. This worker is intentionally observation-only during
+   * V3 conformance migration.
+   */
+  console.error(
+    '[treasury] legacy distribution disabled: canonical EconomicAdmission path required',
   )
 }
 

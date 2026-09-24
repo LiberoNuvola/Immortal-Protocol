@@ -1,0 +1,33 @@
+name: IMMORTAL Liveness Boundary Conformance
+
+concurrency:
+  group: -github-workflows-immortal-liveness-conformance-yml-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/livenessBoundary.ts"
+      - "src/__tests__/livenessBoundary.test.ts"
+      - ".github/workflows/immortal-liveness-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "src/livenessBoundary.ts"
+      - "src/__tests__/livenessBoundary.test.ts"
+      - ".github/workflows/immortal-liveness-conformance.yml"
+
+jobs:
+  liveness-boundary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run src/__tests__/livenessBoundary.test.ts

@@ -29,20 +29,24 @@ import Beacon
 
 import GameRules
   ( PrizeTable
+  , classifyRowTier
   , classifyTier
-  , prizeAmountForTier
   , generateSymbols
+  , rowPayoutTotal
   )
 
 import Types
   ( PrizeAction (..)
-  , OracleStateId
   , PrizeDatum (..)
   , PrizeStatus (..)
   , BeaconStatus (..)
   , BeaconTarget (..)
   , BeaconRegistryDatum (..)
   , B1PrizePoolDatum (..)
+  )
+
+import OracleTypes
+  ( OracleStateId
   )
 
 -- ============================================================
@@ -90,6 +94,21 @@ countOwnScriptInputs ctx =
               1 + go is
         _ ->
           go is
+
+{-# INLINABLE countOwnScriptOutputs #-}
+countOwnScriptOutputs :: ScriptContext -> Integer
+countOwnScriptOutputs ctx =
+  go (txInfoOutputs (scriptContextTxInfo ctx))
+  where
+    thisHash = ownScriptHash ctx
+    go [] = 0
+    go (o:os) =
+      case addressCredential (txOutAddress o) of
+        ScriptCredential h
+          | h == thisHash ->
+              1 + go os
+        _ ->
+          go os
 
 {-# INLINABLE pkElem #-}
 pkElem :: PubKeyHash -> [PubKeyHash] -> Bool
@@ -232,18 +251,24 @@ decodeB1PrizePoolDatum info out =
 
 {-# INLINABLE findB1PrizePoolOutput #-}
 findB1PrizePoolOutput :: TxInfo -> BuiltinByteString -> Maybe B1PrizePoolDatum
-findB1PrizePoolOutput info poolHashB = go (txInfoOutputs info)
+findB1PrizePoolOutput info poolHashB = go (txInfoOutputs info) Nothing
   where
     poolHash = ScriptHash poolHashB
-    go [] = Nothing
-    go (o:os) =
+    go [] found = found
+    go (o:os) found =
       case addressCredential (txOutAddress o) of
         ScriptCredential h
           | h == poolHash ->
-              case decodeB1PrizePoolDatum info o of
-                Just d  -> Just d
-                Nothing -> go os
-        _ -> go os
+              case found of
+                Just _ ->
+                  -- More than one continuing pool output is ambiguous and
+                  -- must fail closed rather than selecting the first one.
+                  Nothing
+                Nothing ->
+                  case decodeB1PrizePoolDatum info o of
+                    Just d  -> go os (Just d)
+                    Nothing -> Nothing
+        _ -> go os found
 
 {-# INLINABLE readPoolInput #-}
 readPoolInput :: TxInfo -> BuiltinByteString -> B1PrizePoolDatum
@@ -284,6 +309,17 @@ claimBeforeExpiry expiresAt info =
     _ ->
       False
 
+-- | EXPIRE is valid only when the validity interval lower bound is at/after
+-- the ticket's crystallized expiry boundary.
+{-# INLINABLE expireAtOrAfter #-}
+expireAtOrAfter :: Integer -> TxInfo -> Bool
+expireAtOrAfter expiresAt info =
+  case ivFrom (txInfoValidRange info) of
+    LowerBound (Finite t) _ ->
+      getPOSIXTime t >= expiresAt
+    _ ->
+      False
+
 {-# INLINABLE identityFieldsEq #-}
 identityFieldsEq :: PrizeDatum -> PrizeDatum -> Bool
 identityFieldsEq a b =
@@ -300,6 +336,8 @@ identityFieldsEq a b =
   && pdPrizePoolHash a == pdPrizePoolHash b
   && pdIssuedAt a == pdIssuedAt b
   && pdExpiresAt a == pdExpiresAt b
+  && pdRow1Tier a == pdRow1Tier b
+  && pdRow2Tier a == pdRow2Tier b
 
 -- ============================================================
 -- Registry reference
@@ -444,9 +482,19 @@ validateReveal table datum playerSecret ctx =
     expectedSymbols = generateSymbols symbolsSeed
     expectedResult =
       resultBinding (sha2_256 symbolsSeed) expectedSymbols
+    row1 =
+      consByteString (indexByteString expectedSymbols 0)
+        (consByteString (indexByteString expectedSymbols 1)
+          (consByteString (indexByteString expectedSymbols 2) emptyByteString))
+    row2 =
+      consByteString (indexByteString expectedSymbols 3)
+        (consByteString (indexByteString expectedSymbols 4)
+          (consByteString (indexByteString expectedSymbols 5) emptyByteString))
+    row1Tier = classifyRowTier row1
+    row2Tier = classifyRowTier row2
     tier = classifyTier expectedSymbols
     amountUsdm =
-      prizeAmountForTier table tier (pdPriceUsdm datum)
+      rowPayoutTotal table row1Tier row2Tier (pdPriceUsdm datum)
 
     nextOk =
       case findSingleContinuing ctx of
@@ -461,6 +509,8 @@ validateReveal table datum playerSecret ctx =
           && pdStatus n == Revealed
           && pdResult n == expectedResult
           && pdPrizeTier n == tier
+          && pdRow1Tier n == row1Tier
+          && pdRow2Tier n == row2Tier
           && pdPrizeAmount n == amountUsdm
 
     -- B1PrizePool cross-validation: pool accounting must be consistent
@@ -514,6 +564,78 @@ validateReveal table datum playerSecret ctx =
     && traceIfFalse "Prize: pool accounting wrong" poolOk
 
 -- ============================================================
+-- Expire
+-- Canonical semantics: consume the Pending PrizeDatum at/after expiry.
+-- No continuing PrizeDatum is produced. The ticket NFT is independent and
+-- remains transferable; EXPIRE only closes the economic promise and releases
+-- its unresolved reserve from the PrizePool.
+-- ============================================================
+
+{-# INLINABLE validateExpire #-}
+validateExpire
+  :: PrizeDatum
+  -> ScriptContext
+  -> Bool
+validateExpire datum ctx =
+  let
+    info = scriptContextTxInfo ctx
+    prizePoolBs = pdPrizePoolHash datum
+    ownPrizeHash = ownScriptHash ctx
+
+    poolOk =
+      case findB1PrizePoolOutput info prizePoolBs of
+        Nothing ->
+          traceIfFalse "Prize: B1PrizePool output missing" False
+        Just poolOut ->
+          let
+            poolIn = readPoolInput info prizePoolBs
+            expectedReserve =
+              ppUnresolvedReserve poolIn
+                - pdPriceUsdm datum
+            expectedCount =
+              ppUnresolvedTicketCount poolIn - 1
+          in
+               traceIfFalse "Prize: pool prize hash mismatch"
+                 (ppPrizeHash poolOut == ownPrizeHash)
+            && traceIfFalse "Prize: input pool prize hash mismatch"
+                 (ppPrizeHash poolIn == ownPrizeHash)
+            && traceIfFalse "Prize: pool prize hash changed on expire"
+                 (ppPrizeHash poolOut == ppPrizeHash poolIn)
+            && traceIfFalse "Prize: pool liquidity changed on expire"
+                 (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
+            && traceIfFalse "Prize: pool liabilities changed on expire"
+                 (ppPendingLiabilities poolOut == ppPendingLiabilities poolIn)
+            && traceIfFalse "Prize: pool reserve release"
+                 (ppUnresolvedReserve poolOut == expectedReserve)
+            && traceIfFalse "Prize: pool reserve non-negative"
+                 (expectedReserve >= 0)
+            && traceIfFalse "Prize: pool count release"
+                 (ppUnresolvedTicketCount poolOut == expectedCount)
+            && traceIfFalse "Prize: pool locked Jackpot changed"
+                 (ppLockedJackpot poolOut == ppLockedJackpot poolIn)
+            && traceIfFalse "Prize: pool Jackpot floor changed"
+                 (ppJackpotThreshold poolOut == ppJackpotThreshold poolIn)
+            && traceIfFalse "Prize: pool suspended classes changed"
+                 (ppSuspendedClasses poolOut == ppSuspendedClasses poolIn)
+            && traceIfFalse "Prize: pool prize hash changed"
+                 (ppPrizeHash poolOut == ppPrizeHash poolIn)
+
+  in
+       traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
+    && traceIfFalse "Prize: no continuing PrizeDatum on expire"
+         (countOwnScriptOutputs ctx == 0)
+    && traceIfFalse "Prize: not pending" (pdStatus datum == Pending)
+    && traceIfFalse "Prize: beacon state invalid"
+         (pdBeaconStatus datum == BeaconPending
+            || pdBeaconStatus datum == BeaconReady)
+    && traceIfFalse "Prize: invalid ticket price" (pdPriceUsdm datum > 0)
+    && traceIfFalse "Prize: prize amount must be zero" (pdPrizeAmount datum == 0)
+    && traceIfFalse "Prize: expiry not reached"
+         (expireAtOrAfter (pdExpiresAt datum) info)
+    && traceIfFalse "Prize: pool input count" (countPoolInputs info prizePoolBs == 1)
+    && traceIfFalse "Prize: pool accounting wrong" poolOk
+
+-- ============================================================
 -- Claim
 -- Constitution: pay once, keep NFT (no mandatory burn), status → Claimed
 -- ============================================================
@@ -560,7 +682,7 @@ validateClaim oracleState oraclePublisher datum ctx =
         oracleState
         oraclePublisher
         claimantValue
-    paid = paidUsdm >= pdPrizeAmount datum
+    paid = paidUsdm == pdPrizeAmount datum
 
     -- Continuing UTxO marked Claimed; frozen economic fields immutable.
     nextOk =
@@ -641,6 +763,8 @@ mkValidator regHash table oracleState oraclePublisher datum action ctx =
       validateReveal table datum playerSecret ctx
     Claim ->
       validateClaim oracleState oraclePublisher datum ctx
+    Expire ->
+      validateExpire datum ctx
 
 {-# INLINABLE wrap #-}
 wrap

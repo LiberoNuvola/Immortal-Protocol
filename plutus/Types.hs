@@ -18,11 +18,6 @@ module Types
   , B1PrizePoolAction (..)
   , TreasuryDatum (..)
   , TreasuryAction (..)
-  , OracleStateId (..)
-  , OracleDatum (..)
-  , precision
-  , minUtxoLovelace
-  , maxOracleAge
   ) where
 
 import PlutusLedgerApi.V2
@@ -91,7 +86,7 @@ data BeaconRegistryDatum = BeaconRegistryDatum
   , brTarget          :: BeaconTarget
   , brStatus          :: BeaconStatus
   , brBeaconValue     :: BuiltinByteString
-  , brMcHash          :: BuiltinByteString
+  , brMcHash           :: BuiltinByteString
   , brMateriosContext :: BuiltinByteString
   , brRelayerPkh      :: PubKeyHash
   }
@@ -103,64 +98,6 @@ data BeaconRegistryAction
   = RegistryPublish BuiltinByteString BuiltinByteString
 
 PlutusTx.unstableMakeIsData ''BeaconRegistryAction
-
-
--- | Precision for integer arithmetic. Oracle prices are scaled by this factor.
--- 1_000_000 ensures sufficient precision for sub-unit calculations.
-{-# INLINABLE precision #-}
-precision :: Integer
-precision = 1000000
-
-
--- | Minimum UTxO ADA (1.6 ADA = 1_600_000 lovelace).
--- This ADA is NOT economic liquidity; it is a protocol requirement.
-{-# INLINABLE minUtxoLovelace #-}
-minUtxoLovelace :: Integer
-minUtxoLovelace = 1600000
-
-
--- | Maximum oracle age in milliseconds (1 hour).
-{-# INLINABLE maxOracleAge #-}
-maxOracleAge :: Integer
-maxOracleAge = 3600000
-
-
--- | Canonical identity of the Oracle State UTxO.
---
--- The identified UTxO must carry exactly one unit of the singleton NFT
--- identified by this policy/name pair. The identity authenticates the
--- state container; the OracleDatum below remains the price payload.
-data OracleStateId = OracleStateId
-  { osiPolicy :: BuiltinByteString
-  , osiName   :: BuiltinByteString
-  }
-
-PlutusTx.unstableMakeIsData ''OracleStateId
-
-
--- | Oracle price datum.
---
--- Published by an authorized publisher. Contains the price of an asset
--- in USDM sub-units, scaled by PRECISION (1_000_000).
---
--- The B1PrizePool validator reads this from a reference input and uses it
--- to compute the USDM-denominated value of assets in the PrizePool UTxO.
-data OracleDatum = OracleDatum
-  { odAssetPolicy :: BuiltinByteString
-  -- ^ CurrencySymbol of the asset (raw bytes).
-  , odAssetName   :: BuiltinByteString
-  -- ^ TokenName of the asset (raw bytes).
-  , odPrice       :: Integer
-  -- ^ Price of 1 unit of asset in USDM sub-units, scaled by PRECISION.
-  --   For ADA: price of 1 lovelace in USDM sub-units * PRECISION.
-  --   For USDM: PRECISION (identity: 1 USDM sub-unit = 1 USDM sub-unit).
-  , odTimestamp   :: Integer
-  -- ^ POSIX time (ms) when the price was published.
-  , odPublisher   :: PubKeyHash
-  -- ^ Public key hash of the authorized publisher.
-  }
-
-PlutusTx.unstableMakeIsData ''OracleDatum
 
 
 -- | Prize / ticket economic datum.
@@ -197,6 +134,12 @@ data PrizeDatum = PrizeDatum
   , pdIssuedAt         :: Integer
   -- | POSIX time (ms). Immutable. Claim window ends here.
   , pdExpiresAt        :: Integer
+  -- | Canonical Classic-6 row 1 result tier (0 = loss).
+  --   Appended to preserve the existing 0..20 field numbering.
+  , pdRow1Tier         :: Integer
+  -- | Canonical Classic-6 row 2 result tier (0 = loss).
+  , pdRow2Tier         :: Integer
+  -- The legacy pdPrizeTier remains the summary max(row1,row2).
   }
 
 PlutusTx.unstableMakeIsData ''PrizeDatum
@@ -205,10 +148,17 @@ PlutusTx.unstableMakeIsData ''PrizeDatum
 -- | SyncBeacon: copy R from registry ref input.
 --   Reveal playerSecret
 --   Claim: pay once, keep NFT, status → Claimed (no mandatory burn)
+--   Expire: consume the Pending PrizeDatum at/after pdExpiresAt.
+--     No continuing PrizeDatum is produced; the ticket NFT itself is not
+--     required to be burned and may remain with its holder.
+--
+-- Constructor indices are compatibility API: SyncBeacon=0, Reveal=1,
+-- Claim=2, Expire=3.
 data PrizeAction
   = SyncBeacon
   | Reveal BuiltinByteString
   | Claim
+  | Expire
 
 PlutusTx.unstableMakeIsData ''PrizeAction
 
@@ -219,7 +169,9 @@ PlutusTx.unstableMakeIsData ''PrizeAction
 --   pendingLiabilities + unresolvedReserve + lockedJackpot <= totalLiquidity
 --   i.e. effectivePool >= 0
 --
--- JackpotActive is derived: effectivePool >= jackpotThreshold.
+-- Jackpot activation is PRE-RICH application policy. This datum may carry
+-- a state-derived floor/target value for accounting compatibility, but that
+-- scalar is NOT a standalone activation authority.
 --
 -- Accounting unit: ALL monetary fields are in USDM sub-units (1 USDM = 100).
 -- The actual PrizePool UTxO may contain USDM tokens plus ADA required for
@@ -249,7 +201,8 @@ data B1PrizePoolDatum = B1PrizePoolDatum
   -- ^ Liquidity locked for jackpot in USDM sub-units (subtracted only
   --   when separately reserved). Not double-counted with liabilities.
   , ppJackpotThreshold   :: Integer
-  -- ^ Effective pool level (USDM sub-units) above which jackpot is active.
+  -- ^ State-derived PRE-RICH Jackpot floor/target in USDM sub-units.
+  --   This field is not, by itself, an activation authorization.
   , ppSuspendedClasses   :: Integer
   -- ^ Bitmask of suspended ticket classes.
   --   Bit 0 = Genesis (1 USDM), bit 1 = Class 1 (2 USDM), ..., bit 7 = 100 USDM.

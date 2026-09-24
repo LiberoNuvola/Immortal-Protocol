@@ -1,15 +1,14 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- | Explicit compatibility boundary between legacy B1 and canonical V3.
---
--- This module is intentionally Cardano-facing because B1 contains ScriptHash.
--- The Kernel never imports this module.
 module B1LegacyAdapter
   ( LegacyProjectionError (..)
   , legacyB1ToV3
+  , legacyB1ToAggregateV3View
+  , legacyB1ToUniversalEconomicState
   , v3ToLegacyB1
   , legacyAggregateMatchesV3
   , legacyProjectionIsLossless
@@ -20,10 +19,12 @@ import PlutusLedgerApi.V2
 import PlutusTx
 import PlutusTx.Prelude
 
-import Types
-  ( B1PrizePoolDatum (..)
-  )
+import Types (B1PrizePoolDatum (..))
 import EconomicStateV3
+import UniversalEconomicState
+import EconomicProfile (EconomicProfile, epMaxNormalPayoutMultiplier)
+import qualified EconomicKernel
+import PreRichEconomicProfile (preRichEconomicProfileV1)
 
 data LegacyProjectionError
   = LegacyHasUnresolvedTickets
@@ -35,42 +36,75 @@ data LegacyProjectionError
   | LegacyMissingJackpotLifecycle
   | LegacyAggregateMismatch
   | V3ContainsUnsupportedProtectedCapital
+  | V3ContainsUnsupportedClassComposition
   | V3ContainsUnsupportedJackpotState
   deriving ()
 
 PlutusTx.unstableMakeIsData ''LegacyProjectionError
 
--- | Safe direction: legacy B1 can only become a full V3 state when no
--- information absent from B1 is required. In particular, unresolved
--- class composition cannot be guessed from aggregate reserve/count.
 {-# INLINABLE legacyB1ToV3 #-}
-legacyB1ToV3
-  :: B1PrizePoolDatum
-  -> Either LegacyProjectionError V3EconomicState
+legacyB1ToV3 :: B1PrizePoolDatum -> Either LegacyProjectionError V3EconomicState
 legacyB1ToV3 d
-  | ppUnresolvedTicketCount d /= 0 =
-      Left LegacyHasUnresolvedTickets
-  | ppUnresolvedReserve d /= 0 =
-      Left LegacyAggregateMismatch
-  | ppLockedJackpot d /= 0 =
-      Left LegacyMissingJackpotLifecycle
+  | ppUnresolvedTicketCount d /= 0 = Left LegacyHasUnresolvedTickets
+  | ppUnresolvedReserve d /= 0 = Left LegacyAggregateMismatch
+  | ppLockedJackpot d /= 0 = Left LegacyMissingJackpotLifecycle
   | otherwise =
       Right
         (V3EconomicState
-          (ppPendingLiabilities d)
-          0
-          0
-          0
-          0
-          0
-          []
+          (ppPendingLiabilities d) 0 0 0 0 0 []
           (EconomicControlState 0 0)
           (JackpotState 0 (ppJackpotThreshold d) JackpotInactive 0)
         )
 
--- | Project a V3 state to legacy B1 only when the fields that B1 cannot
--- represent are neutral. Total liquidity and prize hash remain explicit
--- chain-facing inputs.
+{-# INLINABLE legacyB1ToAggregateV3View #-}
+legacyB1ToAggregateV3View :: B1PrizePoolDatum -> V3EconomicState
+legacyB1ToAggregateV3View d =
+  V3EconomicState
+    (ppPendingLiabilities d)
+    (ppUnresolvedReserve d)
+    (ppUnresolvedTicketCount d)
+    0 0 0
+    [ TicketClassState
+        0 0
+        (ppUnresolvedReserve d)
+        (ppUnresolvedReserve d)
+        0 False
+    ]
+    (EconomicControlState 0 0)
+    (JackpotState
+      (ppLockedJackpot d)
+      (ppJackpotThreshold d)
+      (if ppLockedJackpot d > 0
+         then JackpotLocked
+         else JackpotInactive)
+      0)
+
+
+-- | Direct legacy B1 -> application-neutral universal economic state.
+--
+-- Unlike the compatibility V3 view above, this function does not invent
+-- per-class V3 records. It lifts only quantities that the legacy B1 datum
+-- actually observes and derives the PRE-RICH worst-case exposure from the
+-- application payout bound. The universal kernel receives EEV in the same
+-- accounting unit as this datum.
+{-# INLINABLE legacyB1ToUniversalEconomicState #-}
+legacyB1ToUniversalEconomicState :: EconomicProfile -> B1PrizePoolDatum -> UniversalEconomicState
+legacyB1ToUniversalEconomicState profile d =
+  UniversalEconomicState
+    (ppPendingLiabilities d)
+    (ppUnresolvedReserve d)
+    (ppUnresolvedTicketCount d)
+    (epMaxNormalPayoutMultiplier profile * ppUnresolvedReserve d)
+    0
+    0
+    0
+    (ppLockedJackpot d)
+
+{-# INLINABLE hasClassComposition #-}
+hasClassComposition :: [TicketClassState] -> Bool
+hasClassComposition [] = False
+hasClassComposition _ = True
+
 {-# INLINABLE v3ToLegacyB1 #-}
 v3ToLegacyB1
   :: Integer
@@ -78,18 +112,15 @@ v3ToLegacyB1
   -> V3EconomicState
   -> Either LegacyProjectionError B1PrizePoolDatum
 v3ToLegacyB1 totalLiquidity prizeHash s
-  | v3SafetyCapital s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | v3ReserveProtection s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | v3MandatoryFutureCosts s /= 0 =
-      Left V3ContainsUnsupportedProtectedCapital
-  | jsLockedAmount (v3Jackpot s) /= 0 =
-      Left V3ContainsUnsupportedJackpotState
+  | hasClassComposition (v3Classes s) = Left V3ContainsUnsupportedClassComposition
+  | v3SafetyCapital s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | v3ReserveProtection s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | v3MandatoryFutureCosts s /= 0 = Left V3ContainsUnsupportedProtectedCapital
+  | jsLockedAmount (v3Jackpot s) /= 0 = Left V3ContainsUnsupportedJackpotState
   | ecsHighestClassEverActivated (v3Control s)
       /= ecsCurrentActiveClass (v3Control s) =
       Left LegacyMissingHistoricalControl
-  | not (conservationInvariant s) =
+  | not (EconomicKernel.conservationInvariant preRichEconomicProfileV1 s) =
       Left LegacyAggregateMismatch
   | otherwise =
       Right
@@ -101,10 +132,8 @@ v3ToLegacyB1 totalLiquidity prizeHash s
           0
           (jsThreshold (v3Jackpot s))
           (legacySuspendedMask (v3Control s))
-          prizeHash
-        )
+          prizeHash)
 
--- | Explicitly document the lossy boundary.
 {-# INLINABLE legacyAggregateMatchesV3 #-}
 legacyAggregateMatchesV3 :: B1PrizePoolDatum -> V3EconomicState -> Bool
 legacyAggregateMatchesV3 d s =
@@ -116,15 +145,15 @@ legacyAggregateMatchesV3 d s =
 {-# INLINABLE legacyProjectionIsLossless #-}
 legacyProjectionIsLossless :: V3EconomicState -> Bool
 legacyProjectionIsLossless s =
-     v3SafetyCapital s == 0
+     case v3Classes s of [] -> True; _ -> False
+  && v3SafetyCapital s == 0
   && v3ReserveProtection s == 0
   && v3MandatoryFutureCosts s == 0
   && jsLockedAmount (v3Jackpot s) == 0
-  && ecsHighestClassEverActivated (v3Control s)
-       == ecsCurrentActiveClass (v3Control s)
-  && conservationInvariant s
+  && ecsCurrentActiveClass (v3Control s) == 0
+  && ecsHighestClassEverActivated (v3Control s) == 0
+  && EconomicKernel.conservationInvariant preRichEconomicProfileV1 s
 
--- | Legacy bitmask encoding of classes above currentActiveClass.
 {-# INLINABLE legacySuspendedMask #-}
 legacySuspendedMask :: EconomicControlState -> Integer
 legacySuspendedMask c =
@@ -133,5 +162,5 @@ legacySuspendedMask c =
     active = ecsCurrentActiveClass c
     maskFrom i
       | i > 7 = 0
-      | i > active = (2 `multiply` maskFrom (i + 1)) + 1
-      | otherwise = 2 `multiply` maskFrom (i + 1)
+      | i > active = 2 * maskFrom (i + 1) + 1
+      | otherwise = 2 * maskFrom (i + 1)

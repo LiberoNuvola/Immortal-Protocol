@@ -1,0 +1,46 @@
+IMMORTAL finite-model mechanical verification
+seed=20260917  trials=400
+SCOPE: abstract model only. Not implementation evidence. Not a proof for
+       infinite state spaces (see 03_ECONOMIC_KERNEL_FINAL.md for those).
+==============================================================================
+
+-- randomised checks over 400 finite systems --
+  T1       pass=400   fail=0
+  T3       pass=400   fail=0
+  T4       pass=400   fail=0
+  T6       pass=271   fail=0
+  T9mono   pass=400   fail=0
+  T4 was checked EXHAUSTIVELY over all subsets; certificates examined: 1588
+  T6 vacuous (no non-empty certificate existed): 129 systems
+  systems where some certificate was a STRICT subset of K* (conservatism real): 196
+  systems where NARROWING Omega certified a non-viable state (unsoundness witnessed): 138
+
+-- composition: shared-reserve counterexample (15 section 3) --
+  F1_shared_content_breaks_product_state_space     True
+  F2_product_of_local_gates_admits_unsafe_joint_action True
+  F3_product_state_set_still_inductive_via_idle    True
+  joint_kstar_contains_start                       True
+  a_sound_joint_certificate_exists                 True
+  conclusion                                       naive composition fails at the GATE, not necessarily at the SET
+
+-- composition: T-COMP-INDEP under strict independence --
+  product-certificate failures: 0 (vacuous trials: 72)
+
+-- upgrade: K*_new need not contain K*_old --
+  K_old                    [0, 1, 2]
+  K_new                    [2]
+  stranded_states          [0, 1]
+  old_subset_new           False
+
+-- expiry finality (absorbing-class reachability) --
+  reachable_from_expired   [2]
+  can_return_to_live       False
+  can_reach_settled        False
+
+-- conservation algebra over disjoint exhaustive partition --
+  violations in 2000 random admissible delta vectors: 0
+
+==============================================================================
+RESULT: 0 failures across randomised checks.
+Interpretation: MECHANICAL EVIDENCE for the abstract model on finite instances.
+It does NOT discharge R1, R2, R3, R5, R6, R7, R8 or R9 for any deployment.

@@ -1,20 +1,23 @@
 // src/tickets.ts
 import wallet from './wallet'
-import { mintSerialNFT } from './mint'
+import { mintSerialNFT, type MintSerialOptions } from './mint'
 import { COUNTER_SCRIPT_ADDRESS } from './config'
 
 /**
  * B1 buy flow: each ticket requires a separate mint transaction.
  *
- * The mint transaction creates the NFT and PrizeDatum.
- * The buyer MUST separately pay the Treasury in another transaction.
+ * The mint transaction creates the NFT and PrizeDatum and pays the
+ * Treasury in the same transaction (C-02 atomic sale invariant).
  *
- * Atomicity limitation: mint + Treasury payment are NOT atomic.
- * See Game-Economy.md §9, §10.
+ * The mint path crosses the Cardano execution boundary through the
+ * Cardano Adapter for signing/submission.
  *
  * qty > 1 = multiple sequential transactions (one per ticket).
  */
-export async function buyTickets(qty: number = 1) {
+export async function buyTickets(
+  qty: number = 1,
+  mintOptions: MintSerialOptions,
+) {
   const lucid = wallet.getLucid()
 
   if (!lucid) {
@@ -38,7 +41,7 @@ export async function buyTickets(qty: number = 1) {
   }> = []
 
   for (let i = 0; i < qty; i++) {
-    const r = await mintSerialNFT({})
+    const r = await mintSerialNFT(mintOptions)
     results.push(r)
   }
 
