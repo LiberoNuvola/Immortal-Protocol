@@ -104,9 +104,23 @@ main = do
                     Right (Aeson.Object manifest) ->
                       case KeyMap.lookup "status" manifest of
                         Just (Aeson.String "raw-yaci-context-materialized") -> do
+                          putStrLn "PACKET_STATUS: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED"
+                    txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+                    ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+                    case decodeBabbagePParams ppBytes of
+                      Left err -> do
+                        putStrLn "RESULT: SAFE_STALL"
+                        putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
+                      Right pp ->
+                        case decodeBabbageTx pp txBytes of
+                          Left err -> do
+                            putStrLn "RESULT: SAFE_STALL"
+                            putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
+                          Right _ -> do
+                            putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
+                            putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
                           putStrLn "RESULT: SAFE_STALL"
                           putStrLn "SAFE_STALL_REASON: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED"
-                          putStrLn "Verified raw evidence is not typed UTxO/EpochInfo/SystemStart."
                         _ -> do
                           putStrLn "RESULT: SAFE_STALL"
                           putStrLn "SAFE_STALL_REASON: TYPED_CONTEXT_VERIFICATION_NOT_IMPLEMENTED"
