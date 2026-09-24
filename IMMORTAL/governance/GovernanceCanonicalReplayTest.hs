@@ -206,6 +206,43 @@ main = do
     Right st -> assert (eventsApplied st == 3)
       "CONFORMANCE_RECORDED follows Adopted projection"
 
+  let canonicalizationRecord = CanonicalizationRecord
+        { canonicalizationProposalId = 7
+        , canonicalizationTargetArtifact = "governance-spec-v0.1"
+        , canonicalizationVersionTransition = "v0.1-rc-to-v0.1"
+        , canonicalizationDecisionRecordReference = "canon-ref-7"
+        , canonicalizationEvidenceReferences = ["decision-evidence-7","conformance-evidence"]
+        , canonicalizationConformanceEvidence = Just "conformance-evidence"
+        , canonicalizationCompatibilityUpgradeResult = Nothing
+        , canonicalizationMandatoryGatesResolved = True
+        , canonicalizationVersionIdentifier = "governance-v0.1"
+        }
+      canonicalizationEvent = CanonicalEvent
+        "evt-canonicalized" 7 1 ECanonicalized System 259403
+        (PayloadCanonicalized canonicalizationRecord)
+        "payload-canonicalized" (Just "evt-conformance") [EvidenceRef "canonicalization-evidence"] AcceptedEvent
+      canonicalizedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 3
+  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) canonicalizationEvent of
+    Left err -> error ("FAIL: canonicalization rejected: " ++ err)
+    Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
+      "CANONICALIZED follows Adopted + conformance projection"
+
+  let badCanonicalization = canonicalizationRecord { canonicalizationMandatoryGatesResolved = False }
+      badCanonicalizationEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized badCanonicalization }
+  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) badCanonicalizationEvent of
+    Left _ -> putStrLn "PASS: unresolved mandatory gate blocks CANONICALIZED"
+    Right _ -> error "FAIL: CANONICALIZED accepted unresolved mandatory gate"
+
+  let missingConformanceCanonicalization = canonicalizationEvent { predecessor = Just "evt-adopted" }
+  case applyCanonicalEvent emptyState canonicalizedState (Just adoptionEvent) missingConformanceCanonicalization of
+    Left _ -> putStrLn "PASS: missing conformance predecessor blocks CANONICALIZED"
+    Right _ -> error "FAIL: CANONICALIZED bypassed conformance"
+
+  let earlyCanonicalization = canonicalizationEvent { eventTimestamp = 259401 }
+  case applyCanonicalEvent emptyState canonicalizedState (Just conformanceEvent) earlyCanonicalization of
+    Left _ -> putStrLn "PASS: CANONICALIZED cannot precede conformance event"
+    Right _ -> error "FAIL: CANONICALIZED preceded conformance"
+
   let tamperedConformance = conformanceRecord { conformanceFailedTestRecord = Just "mandatory-failure" }
       tamperedConformanceEvent = conformanceEvent { eventPayload = PayloadConformanceRecorded tamperedConformance }
   case applyCanonicalEvent emptyState adoptedState (Just adoptionEvent) tamperedConformanceEvent of
