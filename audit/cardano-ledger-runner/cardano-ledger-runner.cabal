@@ -19,5 +19,6 @@ executable cardano-ledger-runner
     , plutus-ledger-api ==1.67.0.0
     , aeson
     , microlens
+    , lens
   default-language: Haskell2010
   ghc-options: -Wall
