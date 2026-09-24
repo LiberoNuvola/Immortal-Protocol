@@ -52,7 +52,23 @@ $mint = @($redeemers) | Where-Object {
 } | ConvertTo-Json -Depth 100 |
     Set-Content -Path "$outDir/pre-mint-redeemer-selection.json" -Encoding UTF8
 
-# 6. Preserve cryptographic hashes of every raw provider response before interpretation.
+# 6. Optional datum recovery for transaction outputs carrying datum hashes.
+# This is supplementary: the historical PRE mint witness remains the only fail-closed target.
+$datumDir = Join-Path $outDir "datums"
+New-Item -ItemType Directory -Force -Path $datumDir | Out-Null
+$datumHashes = @($utxos.outputs | Where-Object { $_.data_hash } | ForEach-Object { $_.data_hash } | Sort-Object -Unique)
+$datumResults = @()
+foreach ($datumHash in $datumHashes) {
+    try {
+        $datum = Save-RawJson "$base/scripts/datum/$datumHash/cbor" "$datumDir/$datumHash.raw.json"
+        $datumResults += [PSCustomObject]@{ datum_hash = $datumHash; status = "retrieved" }
+    } catch {
+        $datumResults += [PSCustomObject]@{ datum_hash = $datumHash; status = "unavailable"; error = $_.Exception.Message }
+    }
+}
+$datumResults | ConvertTo-Json -Depth 20 | Set-Content -Path "$datumDir/acquisition-index.json" -Encoding UTF8
+
+# 7. Preserve cryptographic hashes of every raw provider response before interpretation.
 Get-ChildItem -Path $outDir -Filter "*.raw.json" | ForEach-Object {
     Get-FileHash -Algorithm SHA256 $_.FullName | Select-Object Path, Hash
 } | ConvertTo-Json -Depth 10 | Set-Content -Path "$outDir/raw-artifact-sha256.json" -Encoding UTF8
