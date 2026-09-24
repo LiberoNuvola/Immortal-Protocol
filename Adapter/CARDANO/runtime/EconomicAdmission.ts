@@ -18,7 +18,14 @@ export type EconomicAdmissionWitness = {
   admitted: true
   decisionReference: string
   authoritativeObservationReference: string
+  /** Canonical V3 pre-state fingerprint. */
   stateHash: string
+  /** Canonical economic action being admitted (Issue/Reveal/Claim/Expire). */
+  actionClass: string
+  /** Canonical action fingerprint bound to the economic decision. */
+  actionFingerprint: string
+  /** Canonical V3 candidate post-state fingerprint. */
+  postStateHash: string
   eev: bigint
   executableLiquidityObservation: ExecutableLiquidityObservation
   /** Independently authenticated B1 PrizePool state used for value correlation. */
@@ -48,6 +55,15 @@ export function assertEconomicAdmission(
   }
   if (!/^[0-9a-fA-F]{64}$/.test(witness.stateHash)) {
     throw new Error('Economic admission stateHash must be a 32-byte hex digest')
+  }
+  if (!witness.actionClass.trim()) {
+    throw new Error('Economic admission actionClass is required')
+  }
+  if (!witness.actionFingerprint.trim()) {
+    throw new Error('Economic admission actionFingerprint is required')
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(witness.postStateHash)) {
+    throw new Error('Economic admission postStateHash must be a 32-byte hex digest')
   }
   if (witness.eev < 0n) {
     throw new Error('Economic admission EEV must be non-negative')
