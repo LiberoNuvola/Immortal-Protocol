@@ -24,6 +24,12 @@ function nonEmpty(value: string, name: string): void {
   if (!value.trim()) throw new Error(name + ' must be non-empty')
 }
 
+function sha256Hex(value: string, name: string): void {
+  if (!/^[0-9a-fA-F]{64}$/.test(value)) {
+    throw new Error(name + ' must be a 32-byte hex digest')
+  }
+}
+
 export function validateCanonicalTransitionEvidence(
   evidence: CanonicalTransitionEvidence,
 ): void {
@@ -35,9 +41,9 @@ export function validateCanonicalTransitionEvidence(
   nonEmpty(evidence.adapterId, 'adapterId')
   nonEmpty(evidence.adapterVersion, 'adapterVersion')
   nonEmpty(evidence.environment, 'environment')
-  nonEmpty(evidence.preStateFingerprint, 'preStateFingerprint')
-  nonEmpty(evidence.postStateFingerprint, 'postStateFingerprint')
-  nonEmpty(evidence.actionFingerprint, 'actionFingerprint')
+  sha256Hex(evidence.preStateFingerprint, 'preStateFingerprint')
+  sha256Hex(evidence.postStateFingerprint, 'postStateFingerprint')
+  sha256Hex(evidence.actionFingerprint, 'actionFingerprint')
   nonEmpty(evidence.transactionRef, 'transactionRef')
 }
 
