@@ -5691,3 +5691,12 @@ Relevant commits:
 - `4c8a4e6b4d025f7fc18dc86ebecc00497e5d9f67` — CI integration.
 
 Status: P2.8 RAW YACI CONTEXT MATERIALIZATION **IMPLEMENTED** / TYPED UTxO + EpochInfo + SystemStart **OPEN** / evalTxExUnitsWithLogs **OPEN** / NO GREEN CLAIM / NO NORMATIVE CHANGE.
+
+## 2026-09-24 — P2.8 fail-closed correction: raw packet is not typed context
+Inspection of `audit/cardano-integration/materialize-p28-ledger-context.mjs` exposed an important boundary: the materializer deliberately writes `utxo.json`, `epoch-info.json`, and `system-start.json` as **raw Yaci provenance**, and its manifest explicitly sets `typed_context_ready: false`. The ledger runner previously checked only file presence/non-emptiness and could therefore proceed to native Tx/PParams decoding while the surrounding packet was still raw-only.
+
+Correction committed in `audit/cardano-ledger-runner/Main.hs`: when the manifest explicitly records `typed_context_ready: false`, the runner now stops with `LEDGER_TYPED_CONTEXT_NOT_READY` and refuses to imply that the complete ledger context exists. This is a fail-closed evidence correction, not a synthetic conversion and not an economic change.
+
+Commit: `c6ac959190180c115dd947b6d42b2aa1d8d788a9`.
+
+Status: P2.8 RAW MATERIALIZATION = GREEN AS RAW PROVENANCE / TYPED LEDGER CONTEXT = OPEN / EVALUATOR = NOT YET INVOKED / NO NORMATIVE CHANGE.
