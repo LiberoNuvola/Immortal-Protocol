@@ -5737,3 +5737,13 @@ Do NOT close the 10 ADA semantic attribution yet. The remaining proof target is 
 
 ### Important negative control
 The 10 ADA is not the transaction fee: the actual tx fee is 328,806 lovelace. It is also not the pool NFT min-UTxO, previously disproved. The current ledger topology puts the residual 10 ADA inside the pool output, while the corresponding 3,928,019 PRE sits in the creator-side output.
+
+## 2026-09-24 — Gate 41: current Snek launch model gives a concrete 13-ADA decomposition target
+
+Fresh external triangulation of the current reverse-engineered Snek launch model confirms that a launch transaction carries separate pre-summed quantities for `metadata_min_ada`, `creator_min_ada`, and `pool_seed_ada`, plus a separate `launch_fee_ada`; the model describes `launch_token` as mint + seed + metadata + fee in one transaction. It also states that the pool graduation threshold is per-pool and close to 18,188,400,000 lovelace, and that the caller supplies the pool seed and output-role amounts separately. This is explicitly unofficial/preliminary reverse engineering, not historical PRE proof. citeturn0search1
+
+This narrows the historical PRE question: the 13 ADA in `0235...#1` should be decomposed against the contemporaneous launch output roles rather than treated as a single `min-ADA` number. The already cross-validated 3 ADA seed explains one component; the remaining 10 ADA must be mapped to the historical output role(s) using the actual PRE transaction and historical builder/config evidence.
+
+The current model also reinforces that `launch_fee_ada` is a separate quantity from `pool_seed_ada`, so a future attribution of the 3 ADA directly to a fee would contradict this model's role separation. This is still not historical closure because the PRE transaction predates the current model and must be checked against contemporaneous evidence.
+
+No normative IMMORTAL/PRE-RICH rule changed. Gate 41 remains open for the 10 ADA decomposition and provider `info.outputId` semantics.
