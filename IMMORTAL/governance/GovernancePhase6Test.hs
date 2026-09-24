@@ -50,6 +50,18 @@ main = do
   assert "cannot finalize before expiry"
     (not (canFinalize p [cr] (100 + finalitySeconds - 1)))
 
+  let upheld = c { challengeStatus = ChallengeUpheld }
+  assert "upheld challenge blocks finalization"
+    (not (canFinalize p [upheld] (100 + finalitySeconds)))
+
+  let lateRejected = Challenge "late" 1 (100 + finalitySeconds) ChallengeRejected
+  assert "challenge opened at expiry boundary is invalid"
+    (not (validChallenges p [lateRejected]))
+
+  let emptyId = Challenge "" 1 100 ChallengeRejected
+  assert "empty challenge id is invalid"
+    (not (validChallenges p [emptyId]))
+
   assert "finalize after rejected challenge and expiry"
     (canFinalize p [cr] (100 + finalitySeconds))
 
