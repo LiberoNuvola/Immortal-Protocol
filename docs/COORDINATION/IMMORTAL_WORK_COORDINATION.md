@@ -6456,3 +6456,17 @@ Triangolazione GOV-01 + GOV-07 + GOV-10 + GOV-17 contro il replay live.
 Commits: c77d6dac848bc3a72c4bd47206fc9d141f76eded, 6e0291f0c560bc8ce159981f2433eb9511c3ca07, 0531ec531edf02f304626decd3f220973971cd28, 33071710f3362224f75e0db7eb3b3abde003608c.
 
 La semantica del decisionCanonicalizationReference resta invece OPEN come evidence/identity gap: non è stata reinterpretata.
+
+
+## 2026-09-24 — GOV-28 cabal exposure repair + canonicalization identity boundary
+
+Triangolazione finale del gap governance sul green branch:
+
+- GOV-18 richiede nel finalized decision record una **canonicalization reference**; GOV-10 richiede nel successivo canonicalization record un **complete decision record reference**.
+- Le fonti chiuse non definiscono un formato/algoritmo di identità comune, né autorizzano a introdurre ora un nuovo hash/URI/storage identity model.
+- Il codice corrente mantiene correttamente entrambi i riferimenti come stringhe non vuote, ma il replay non conserva il DecisionRecord e non può quindi dimostrare oggi la loro equivalenza/provenienza. **Questo resta un evidence/identity gap, non una nuova decisione normativa.**
+- È emerso inoltre un gap di build concreto: plutus/test/GovernanceCanonicalReplayTest.hs importa GovernanceDecisionWitness, GovernanceConformanceWitness e GovernanceCanonicalizationWitness, ma il plutus/pre-rich-plutus.cabal del branch non li esponeva nella library. Correzione minima applicata senza cambiare semantica.
+
+Commit: 620358e1704e2c6c969c9d2f283830f1c2d7a406 — expose lifecycle witness modules.
+
+Stato: **CLOSING / build evidence pending**. Non è stata inventata alcuna identity format per la canonicalization reference.
