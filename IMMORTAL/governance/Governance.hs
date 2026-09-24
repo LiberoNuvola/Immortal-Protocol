@@ -9,7 +9,7 @@ module Governance
   , approvalReached, gatesPassed, delegationValid, delegatedWeight
   , delegationConserves, transition, communityReviewOpen, voteWindowOpen
   , finalityWindowOpen, emergencyActive, emergencyExpired
-  , applyEvent, replay
+  , applyEvent, replay, statusChangeAllowed
   ) where
 
 type EntityId = Integer
