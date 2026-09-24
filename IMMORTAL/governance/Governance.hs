@@ -340,7 +340,7 @@ recordTime p s at = case s of
   DecisionRecorded ->
     p { proposalStatus = s
       , votingClosedAt = Just at
-      , finalizationAt = Just (at + finalitySeconds) }
+      , finalizationAt = Nothing }
   EmergencyReview -> p { proposalStatus = s, emergencyActivatedAt = Just at }
   _ -> p { proposalStatus = s }
 
