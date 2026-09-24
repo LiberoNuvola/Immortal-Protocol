@@ -5436,3 +5436,21 @@ For the coordinated branch, the next safe technical target remains:
 4. keep B4 closure classified as cross-layer OPEN until adapter/ledger evidence exists.
 
 No normative economic change is authorized by this handoff.
+
+## 2026-09-24 — Fresh HEAD CI observation after Genesis fixture reconciliation
+
+Current branch HEAD is `86952a597af4b9092d4daf4f39fffadb956d85f9`.
+
+Fresh push-triggered workflow inspection for this exact HEAD shows:
+- **Cardano Adapter Sale Conformance**: completed / success (run `36040538840`);
+- **Algorithmic Governability Adversarial Lab**: completed / success (run `36040539137`);
+- **Kernel Invalid-Class Fail-Closed Audit**: pending (run `36040538984`);
+- **P2.8-B.1 Cardano-ledger runner**: in progress (run `36040539155`).
+
+The P2.8 job has completed checkout and is currently at **Install GHC and Cabal**; ledger bootstrap and evaluator invocation have not yet run. Therefore this is not a ledger-evaluation result and no P2.8 GREEN claim is made.
+
+The successful Adapter Conformance run confirms the current RF8 submission-boundary/regression suite is passing on the exact current HEAD, but it does not close RF8 semantic fingerprint provenance, B4 cross-layer preservation, or B6 unit-contract evidence.
+
+External ledger cross-check: the pinned upstream `evalTxExUnitsWithLogs` API takes typed protocol parameters, a top-level transaction, UTxO, epoch info and system start, and returns per-redeemer evaluation/failure information. This reinforces that the current P2.8 runner must materialize authentic typed context rather than substitute synthetic inputs. citeturn0search0
+
+**Status:** CURRENT HEAD ADAPTER CI GREEN / P2.8 EVALUATION IN PROGRESS / B4-B6-RF8 SEMANTIC CLOSURE STILL OPEN / NO NORMATIVE CHANGE.
