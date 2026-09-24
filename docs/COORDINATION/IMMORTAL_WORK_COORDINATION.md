@@ -5887,3 +5887,22 @@ Therefore no new semantic claim is promoted. The correct state remains: legacy S
 The next useful acquisition is not another generic web search. It is an artifact-level retrieval from a Cardano indexer/API or an archived local/repository evidence packet. Once obtained, extract: tx inputs, outputs, fee, mint assets, mint redeemers, datum/redeemers and addresses. Then compare directly with PRE 0235...c6cf4.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: artifact acquisition route identified (Koios tx_info)
+
+A fresh source check identified Koios as an appropriate artifact-level acquisition route: Koios exposes a public Cardano Mainnet API and documents its API at `api.koios.rest`; the service is backed by Cardano db-sync data and exposes normalized transaction data through REST endpoints. citeturn1search0turn1search13
+
+For the historical SNIGGA transaction, the deterministic acquisition target is the Koios `tx_info` endpoint with the exact hash `87edffc1405348824bbe75adeb9df21d19e460fd13ed47da1072018bc0665125`. The current tool environment cannot POST to that API endpoint, so the transaction body was not fabricated or inferred. The endpoint itself is now documented as the next acquisition path.
+
+### Evidence boundary
+- Koios availability/API route: **VERIFIED**
+- Exact SNIGGA transaction body retrieved through current tools: **NO**
+- SNIGGA outputs/fee/mint/redeemers: **OPEN**
+- PRE 10 ADA attribution: **OPEN**
+- Provider `info.outputId`: **OPEN**
+
+### Acquisition packet to preserve when obtained
+The raw response should be archived before interpretation and must retain at least: transaction hash, block/slot, fee, all inputs, all outputs with addresses/values/assets, mint, datum/redeemer references or decoded forms, and any metadata/indexer fields used to interpret output roles. This packet becomes the primary artifact for the SNIGGA-vs-PRE comparison.
+
+No normative IMMORTAL/PRE-RICH economics changed.
