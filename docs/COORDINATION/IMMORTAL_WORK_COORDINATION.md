@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-24
-**Latest observed commit:** `388623d886af4e1bb41082734389d06715f3c268` — B6/PC-05 monetary scale conformance test
+**Latest observed commit:** `eeab436d2fdf1563cc64ce3f5bf97275bd6e01c7` — RF8 matcher/test consolidation plus P2.8 CI guard corrections
 
 ---
 
@@ -5250,3 +5250,24 @@ Current verification chain:
 `relayer treasuryWorker` fail-closed → dedicated regression → Adapter CI.
 
 No economic semantics changed.
+
+
+## 2026-09-24 — P2.8 SAFE_STALL CI contract aligned
+
+Fresh exact-branch execution inspection found that the Cardano Ledger Audit workflow asserted `NO NORMATIVE A/B VERDICT` for the explicit SAFE_STALL path, while `audit/cardano-ledger-runner/Main.hs` emitted that line only after a complete evidence packet. The runner now emits the non-verdict line unconditionally after classification, preserving fail-closed behavior and making the existing workflow assertion internally consistent.
+
+Commit: `c41686d8cedaa38806513f3d0488216b83d35ecf`.
+
+No synthetic transaction/context, evaluator verdict, or normative protocol semantics were added.
+
+**Status:** P2.8 FAIL-CLOSED CI CONTRACT ALIGNED / TYPED LEDGER EVALUATION STILL OPEN / NO GREEN CLAIM.
+
+## 2026-09-24 — Cardano Ledger Audit workflow filter normalized
+
+The active `cardano-ledger-audit.yml` contained the workflow file itself twice in `push.paths`. The duplicate was removed; the runner path, Plutus-artifact path, and workflow self-trigger remain covered.
+
+Commit: `4c6c40aaabfc75224df9a25fe246826d9d7dc130`.
+
+No ledger or economic semantics changed.
+
+**Status:** CARDANO AUDIT WORKFLOW PATH FILTER CLEAN / RUN EVIDENCE STILL REQUIRED.
