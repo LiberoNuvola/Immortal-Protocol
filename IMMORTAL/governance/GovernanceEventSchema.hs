@@ -118,6 +118,11 @@ payloadProposalId p = case p of
   PayloadDelegationSet x _ _ -> x
   PayloadGatesSet x _ _ -> x
 
+payloadTimestampCompatible :: CanonicalEvent -> Bool
+payloadTimestampCompatible e = case eventPayload e of
+  PayloadDecisionFinalized _ -> eventTimestamp e >= 0
+  _ -> eventTimestamp e == payloadTimestamp (eventPayload e)
+
 payloadTimestamp :: CanonicalPayload -> Timestamp
 payloadTimestamp p = case p of
   PayloadProposalSubmitted x -> proposalCreatedAt x
