@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertEconomicAdmissionMatchesCanonicalEvidence,
 } from './EconomicAdmissionTransitionBinding'
+import { validateCanonicalTransitionEvidence } from './CanonicalTransitionEvidence'
 import type { EconomicAdmissionWitness } from '../runtime/EconomicAdmission'
 import type { CanonicalTransitionEvidence } from './CanonicalTransitionEvidence'
 
@@ -47,6 +48,15 @@ describe('Economic admission ↔ canonical transition evidence', () => {
     expect(() =>
       assertEconomicAdmissionMatchesCanonicalEvidence(admission, evidence),
     ).not.toThrow()
+  })
+
+  it('rejects malformed fingerprint encoding', () => {
+    expect(() =>
+      validateCanonicalTransitionEvidence({
+        ...evidence,
+        actionFingerprint: 'not-a-digest',
+      }),
+    ).toThrow('actionFingerprint must be a 32-byte hex digest')
   })
 
   it('rejects an action mismatch', () => {
