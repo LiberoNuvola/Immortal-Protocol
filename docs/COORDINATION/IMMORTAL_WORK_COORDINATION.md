@@ -6356,3 +6356,24 @@ GitHub Actions ha ora avviato automaticamente 5 workflow sul nuovo HEAD: PRE-RIC
 Questo pass riduce il gap GOV-28 da “harness non collegato al test-suite” a “harness collegato; attendere evidenza build/CI”.
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — CI failure triage after harness wiring
+La prima esecuzione completa sul nuovo harness ha prodotto un risultato utile: il blocco non è nel nuovo lifecycle governance, perché la pipeline fallisce prima di arrivare ai test governance durante la build del package `pre-rich-plutus`.
+
+Errori osservati nei workflow sul precedente HEAD:
+- `PRE-RICH Emulator Reveal Conformance`: build/export Plutus fallita;
+- `IMMORTAL Cardano Integration Lab`: generazione fresh validator artifacts fallita;
+- `Kernel Invalid-Class Fail-Closed Audit`: regression suite fallita.
+
+Gli errori di compilazione comuni individuati sono:
+1. `PRE-RICH/profile/GenesisRegimeCarrier.hs:51`: il TH `PlutusTx.unstableMakeIsData` genera view patterns, ma il modulo non dichiarava `ViewPatterns`;
+2. `plutus/B1PrizePool.hs:926`: binding `ticketCs`/blocco `let` con indentazione sintatticamente invalida.
+
+Fix fail-closed e semantica-preserving applicati:
+- `5b8d73213a235a0676b93a85ce9165a363b0f2bd` — ripristino indentazione del `let` in `B1PrizePool.hs`;
+- `16e71dde44ca377f11d811cdf3fd399d2126c918` — aggiunta `ViewPatterns` a `GenesisRegimeCarrier.hs`.
+
+Questi fix non cambiano regole economiche o governance; ripristinano esclusivamente la compilabilità richiesta per poter raggiungere i test.
+
+Il nuovo HEAD è `16e71dde44ca377f11d811cdf3fd399d2126c918`. La nuova esecuzione CI deve ancora essere osservata prima di classificare il build come verde.
