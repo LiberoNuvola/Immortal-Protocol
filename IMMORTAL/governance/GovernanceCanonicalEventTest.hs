@@ -67,6 +67,12 @@ main = do
     (case replayCanonical rs st1 [bad] of Left _ -> True; Right _ -> False)
 
   let Right st2 = replayCanonical rs st1 [e2c]
+      directCanonical = committed (e2 { eventId = "evt-canonical-direct"
+                                      , eventTimestamp = 2
+                                      , eventPayload = PayloadStatusChanged 1 Canonical 2
+                                      , payloadCommitment = "" })
+  assert "canonical replay rejects direct lifecycle jump to Canonical"
+    (case replayCanonical rs st1 [directCanonical] of Left _ -> True; Right _ -> False)
       Right st2' = replayCanonical rs emptyState [e1c, e2c]
   assert "canonical-only replay is deterministic" (st2 == st2')
 
