@@ -5566,3 +5566,22 @@ Fix commit on the active branch: `2e21fbc634ce62ea562e56a873d01d704944fb64`.
 This is still dependency/bootstrap work only. P2.8 has NOT yet reached typed transaction/UTxO/PParams/EpochInfo/SystemStart materialization or `evalTxExUnitsWithLogs`. No protocol/economic semantics were changed.
 
 Status: P2.8 DEPENDENCY BLOCKER #2 FIX COMMITTED / FRESH CI RUN REQUIRED / TYPED LEDGER EVALUATION STILL OPEN / NO GREEN CLAIM.
+
+
+## 2026-09-24 — P2.8 dependency blocker #3 triage
+
+Fresh run `36041228970` reproduced the previous fix and advanced one dependency level: `cardano-slotting` is now resolved from the consolidated `cardano-base` pin, but Cabal next reports `unknown package: cardano-ledger-shelley`, required by `cardano-ledger-alonzo-1.16.0.0`.
+
+Triangulation against the exact pinned `cardano-ledger` commit confirms Alonzo depends on the Shelley, Allegra and Mary era packages, while Shelley in turn depends on the Byron ledger/crypto layer. The runner source package list therefore needs the relevant released era packages materialized from the same exact ledger commit rather than relying on the CHaP package index to discover them.
+
+Applied narrow source-package extension in `audit/cardano-ledger-runner/cabal.project`:
+- `eras/byron/crypto`
+- `eras/byron/ledger/impl`
+- `eras/shelley/impl`
+- `eras/allegra/impl`
+- `eras/mary/impl`
+- existing Alonzo/API/Core/Binary/Data/etc. pins remain unchanged.
+
+Fix commit: `9708619c8d9dc1f85a61e507358968e4d6cf6165`.
+
+No evaluator or economic code was changed. P2.8 remains dependency-resolution work; typed ledger context and `evalTxExUnitsWithLogs` are still unreached. No GREEN claim.
