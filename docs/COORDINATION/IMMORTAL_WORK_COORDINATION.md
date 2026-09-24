@@ -5747,3 +5747,51 @@ This narrows the historical PRE question: the 13 ADA in `0235...#1` should be de
 The current model also reinforces that `launch_fee_ada` is a separate quantity from `pool_seed_ada`, so a future attribution of the 3 ADA directly to a fee would contradict this model's role separation. This is still not historical closure because the PRE transaction predates the current model and must be checked against contemporaneous evidence.
 
 No normative IMMORTAL/PRE-RICH rule changed. Gate 41 remains open for the 10 ADA decomposition and provider `info.outputId` semantics.
+
+
+## 2026-09-24 — Gate 41: historical formula remains OPEN; launch-role decomposition materially narrowed
+
+A new triangulation was completed across Gate 41/Notion 26, the current reverse-engineered Snek v1 launch model, and independent mitos evidence.
+
+### What is now established by cross-source evidence
+
+1. The reverse-engineered Snek v1 launch topology explicitly separates:
+   - `pool_seed_ada` → bonding-curve pool output;
+   - `initial_buy_tokens` → creator "dev buy" allocation;
+   - `creator_min_ada` → creator-side output ADA;
+   - `metadata_min_ada` → metadata output;
+   - `launch_fee_ada` → separate fee output.
+   It also requires `initial_buy_tokens + curve_tokens_remaining = token_emission`.
+2. The same model exposes `a_num = 122,525,779,519` and `b_num = 2,545,182`, but explicitly says the caller precomputes launch quantities and that the actual pool-spend pricing logic is outside the tx3 model.
+3. The independent mitos decoder confirms the 3 ADA curve seed and explicitly warns that the curve parameters are carried but the exact curve they describe is unresolved. Its own documentation says a generic formula must not be substituted for the deployed Snek formula.
+4. Notion Gate 26 independently has the same closure boundary: exact PRE deployment formula/version remains OPEN and generic curve formulas are prohibited as historical evidence.
+
+### Consequence for PRE 0235...
+
+The historical PRE mint output `0235...#1` contains 13 ADA + 996,071,981 PRE + Pool NFT; creator-side output #2 contains 3,928,019 PRE. Therefore the 1B PRE split is exact and the 13 ADA can be decomposed arithmetically as 3 ADA seed + 10 ADA residual.
+
+The 10 ADA residual remains a **strong initial-buy/creator-funding lead**, because its scale is independently close to `3,928,019 × bNum / 1e6` (~9.9975 ADA). However, the newly inspected launch model does **not** provide the historical pricing equation needed to turn that correlation into proof. The public/reverse-engineered source describes `initial_buy_tokens` as a distinct creator allocation but does not prove that PRE's 3,928,019 tokens were bought for exactly 10 ADA under the historical implementation.
+
+### Required next proof
+
+Do not close the 10 ADA role yet. The decisive target is now one of:
+
+- historical PRE launch builder/request payload or contemporaneous implementation;
+- exact mint transaction redeemer/datum fields that encode the initial-buy amount or its derivation;
+- a sufficiently complete sequence of early PRE pool states from which the deployed pricing function can be reconstructed and independently checked against 3,928,019 PRE and 10,000,000 lovelace;
+- historical Snek implementation/version evidence that binds `aNum/bNum` to the creator allocation formula.
+
+A current v1 launch model is **semantic corroboration only** and must not be retrofitted onto the historical PRE transaction.
+
+### Current Gate 41 status
+
+- 3 ADA curve seed: **STRONG CROSS-VALIDATED LEAD**
+- Pool NFT-bearing output: **CLOSED (#1, not provider #0)**
+- 1B PRE launch split: **CLOSED**
+- 10 ADA residual: **FACT**
+- 10 ADA = creator initial-buy funding: **STRONG LEAD / NOT PROVEN**
+- historical Snek formula/version: **OPEN**
+- provider `info.outputId` semantics: **OPEN**
+- Genesis funding role: **OPEN**
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
