@@ -8,6 +8,7 @@ import GovernanceEventSchema
 import GovernanceAuthorization
 import RulesetRegistry
 import GovernanceDecisionWitness (DecisionRecord(..), decisionRecordValid, finalizationReady)
+import GovernanceConformanceWitness (ConformanceRecord(..), conformanceRecordValid)
 
 canonicalPayloadToGovernanceEvent :: CanonicalPayload -> GovernanceEvent
 canonicalPayloadToGovernanceEvent p = case p of
@@ -40,6 +41,7 @@ applyCanonicalEvent rs st prev ce
       case eventPayload ce of
         PayloadDecisionFinalized r -> applyDecisionFinalized st r (eventTimestamp ce)
         PayloadAdoptionRecorded pid at -> applyAdoptionRecorded st pid at
+        PayloadConformanceRecorded r -> applyConformanceRecorded st r (eventTimestamp ce)
         _ -> applyEvent st (canonicalPayloadToGovernanceEvent (eventPayload ce))
 
 applyDecisionFinalized :: GovernanceState -> DecisionRecord -> Timestamp -> Either String GovernanceState
@@ -87,3 +89,15 @@ replayCanonical rs = go Nothing
     go prev st (ce:rest) = do
       st' <- applyCanonicalEvent rs st prev ce
       go (Just ce) st' rest
+
+
+applyConformanceRecorded :: GovernanceState -> ConformanceRecord -> Timestamp -> Either String GovernanceState
+applyConformanceRecorded st r _at = do
+  p <- case [p | p <- proposals st, proposalId p == conformanceProposalId r] of
+         [p] -> Right p
+         _ -> Left "conformance proposal not found"
+  if proposalStatus p /= Adopted
+     then Left "conformance requires Adopted projection state"
+     else if not (conformanceRecordValid p r)
+       then Left "conformance witness invalid"
+       else Right st { eventsApplied = eventsApplied st + 1 }
