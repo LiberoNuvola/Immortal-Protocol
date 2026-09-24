@@ -6,6 +6,7 @@ import GovernanceCanonicalReplay
 import GovernanceFinality
 import GovernanceDecisionWitness
 import GovernanceConformanceWitness
+import GovernanceCanonicalizationWitness
 import GovernanceCommitment (commitmentDigestHex)
 import RulesetRegistry
 
@@ -154,6 +155,21 @@ adoptionEvent =
     AcceptedEvent
 
 main :: IO ()
+  = do
+  assert (not (canonicalizationRequiresConformance DocumentationOnly))
+    "Documentation canonicalization does not require implementation conformance"
+  assert (not (canonicalizationRequiresConformance VerificationTooling))
+    "Verification/tooling canonicalization does not invent implementation conformance gate"
+  assert (canonicalizationRequiresConformance Adapter)
+    "Adapter canonicalization requires conformance"
+  assert (canonicalizationRequiresConformance Application)
+    "Application canonicalization requires conformance"
+  assert (canonicalizationRequiresConformance Specification)
+    "Specification canonicalization requires conformance"
+  assert (canonicalizationRequiresConformance ConstitutionalKernel)
+    "Constitutional/kernel canonicalization requires conformance"
+  assert (not (canonicalizationRequiresConformance Emergency))
+    "Emergency canonicalization does not silently become permanent conformance"
 main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
   assert (eventSchemaValid event2) "status payload validates"
