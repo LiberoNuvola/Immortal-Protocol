@@ -153,6 +153,8 @@ payloadProposalId p = case p of
 payloadTimestampCompatible :: CanonicalEvent -> Bool
 payloadTimestampCompatible e = case eventPayload e of
   PayloadDecisionFinalized _ -> eventTimestamp e >= 0
+  PayloadConformanceRecorded _ -> eventTimestamp e >= 0
+  PayloadCanonicalized _ -> eventTimestamp e >= 0
   _ -> eventTimestamp e == payloadTimestamp (eventPayload e)
 
 payloadTimestamp :: CanonicalPayload -> Timestamp
