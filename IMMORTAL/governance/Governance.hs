@@ -267,7 +267,7 @@ applyEvent st ev = case ev of
 
   StatusChanged pid next at -> do
     ps <- updateProposal pid
-      (\p -> if statusChangeAllowed p next
+      (\p -> if statusChangeAllowed p next at
              then recordTime p next at
              else p)
       (proposals st)
@@ -314,10 +314,19 @@ applyEvent st ev = case ev of
       [_] -> Right st { proposals = ps, eventsApplied = eventsApplied st + 1 }
       _ -> Left "gate update rejected outside evidence/community review"
 
-statusChangeAllowed :: Proposal -> ProposalStatus -> Bool
-statusChangeAllowed p next =
+statusChangeAllowed :: Proposal -> ProposalStatus -> Timestamp -> Bool
+statusChangeAllowed p next at =
+  at >= 0 &&
   transition (proposalStatus p) next &&
   case next of
+    Voting ->
+      case communityReviewOpenedAt p of
+        Just openedAt -> at >= openedAt + communityReviewSeconds
+        Nothing -> False
+    DecisionRecorded ->
+      case votingOpenedAt p of
+        Just openedAt -> at >= openedAt + votingSeconds
+        Nothing -> False
     Accepted ->
       quorumReached
         (proposalSnapshot p)
