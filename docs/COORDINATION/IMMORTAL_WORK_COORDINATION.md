@@ -6138,3 +6138,19 @@ Commits: schema 05c586285cff1206f68bc662e0734cdbc39f7f5e; serialization 2cc90a00
 Boundary: this is not GOV-18 closure. ADOPTION_RECORDED, CONFORMANCE_RECORDED and CANONICALIZED remain separate and are not represented by StatusChanged. No new governance timing/threshold parameter was introduced. No compile/CI success is claimed.
 
 External event-sourcing guidance independently supports the architectural separation of immutable events from projections and the need for explicit versioning/schema handling, but remains non-normative corroboration. citeturn0search0
+
+## 2026-09-24 — Gate 41: second-provider triangulation and CI credential audit
+
+A second provider path was checked before treating Blockfrost as the only acquisition route. The Cardano Developer Portal identifies Blockfrost, Koios and Maestro as hosted query APIs; Koios has a public mainnet tier without a key, while Blockfrost and Maestro require network-scoped credentials. The Cardano API comparison also lists transaction-info, transaction-CBOR and transaction-redeemer capabilities across providers. citeturn0search0turn0search2turn0search6
+
+Maestro independently documents a mainnet transaction-CBOR endpoint, but its API requires a project key. Therefore it does not remove the credential dependency for direct acquisition. citeturn1search1
+
+Repo audit found no reference to `BLOCKFROST_MAINNET_PROJECT_ID` and no existing workflow path that exposes a mainnet Blockfrost credential. Existing Cardano workflows are devnet/Yaci oriented and do not provide a safe historical-mainnet evidence runner. No secret was inspected or exposed.
+
+### Gate 41 consequence
+- No new historical witness evidence acquired in this environment.
+- The acquisition helper remains the correct fail-closed path.
+- A public-provider alternative is still worth testing at execution time, but only if its endpoint actually returns the historical mint redeemer/witness artifact; provider documentation alone is not evidence for transaction `0235...`.
+- Do not close the historical PRE mint witness gap, and do not promote the 10 ADA = initial-buy interpretation, until the exact historical artifact is preserved.
+
+No normative IMMORTAL/PRE-RICH economics changed.
