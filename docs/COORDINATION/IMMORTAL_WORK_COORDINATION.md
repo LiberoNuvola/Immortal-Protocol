@@ -6332,3 +6332,27 @@ Riallineato il test harness al controllo già presente nel ramo su RulesetRegist
 Commit: 4bfe25d36f2e90dbeb3edf9f85cfc164a91596da, schema timestamp e8f01cad733b07f5cb9eafe71f591a9828f086cd.
 
 Questo elimina due mismatch strutturali individuati nel test harness, ma non equivale ancora a una prova di compile/CI: il runner Haskell non è disponibile nell'ambiente corrente.
+
+
+## 2026-09-24 — GOV-28: harness was present but not actually wired to the expanded lifecycle test
+
+Nuova triangolazione repo/Cabal ha isolato un gap concreto di prova esecutiva:
+- plutus/pre-rich-plutus.cabal contiene già governance-canonical-replay-tests, ma il test suite punta a plutus/test/GovernanceCanonicalReplayTest.hs.
+- quel file era ancora il vecchio harness GOV-29, limitato a schema/authorization/predecessor/basic replay;
+- il nuovo harness esteso con DECISION_FINALIZED, ADOPTION_RECORDED, CONFORMANCE_RECORDED e CANONICALIZED viveva invece in IMMORTAL/governance/GovernanceCanonicalReplayTest.hs e quindi non veniva eseguito dal test-suite Cabal;
+- GovernanceCanonicalReplay.hs importa inoltre i tre witness (GovernanceDecisionWitness, GovernanceConformanceWitness, GovernanceCanonicalizationWitness), ora esposti dal package Cabal.
+
+Fix implementativo, senza modificare la semantica normativa:
+- plutus/pre-rich-plutus.cabal — witness modules inclusi negli exposed-modules;
+- plutus/test/GovernanceCanonicalReplayTest.hs — riallineato al harness esteso già presente nel ramo.
+
+Commits:
+- 4252cc4f38384082cd6d071301d9cb567165e36d — Cabal witness modules;
+- 1151afd5b19ef3f2658712a25089d0b7a7e8af13 — test-suite harness riallineato.
+
+HEAD corrente: 1151afd5b19ef3f2658712a25089d0b7a7e8af13.
+GitHub Actions ha ora avviato automaticamente 5 workflow sul nuovo HEAD: PRE-RICH Emulator Reveal Conformance, Algorithmic Governability Adversarial Lab, IMMORTAL Cardano Integration Lab, Kernel Invalid-Class Fail-Closed Audit e Cardano Adapter Sale Conformance. Al momento della verifica risultano ancora in_progress/queued, quindi nessuna chiusura CI è dichiarata.
+
+Questo pass riduce il gap GOV-28 da “harness non collegato al test-suite” a “harness collegato; attendere evidenza build/CI”.
+
+No normative IMMORTAL/PRE-RICH economics changed.
