@@ -32,6 +32,9 @@ main = do
   assert "finalize after rejected challenge and expiry"
     (canFinalize p [cr] (100 + finalitySeconds))
 
+  assert "decision recording does not set finalization time"
+    (finalizationAt p0 == Nothing)
+
   assert "finalize produces Canonical"
     (case finalize p [cr] (100 + finalitySeconds) of
        Right x -> proposalStatus x == Canonical
