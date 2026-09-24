@@ -184,6 +184,10 @@ main = do
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
 
+  let lateChallenge = finalizationChallenge { challengeOpenedAt = 259400 }
+  assert (not (validChallenges finalizationProposal [lateChallenge]))
+    "reconstructed challenge at expiry boundary is invalid"
+
   let preExpiryFinalization = finalizedEvent { eventTimestamp = 259399 }
   case applyCanonicalEvent emptyState finalizationState Nothing preExpiryFinalization of
     Left _ -> putStrLn "PASS: premature DECISION_FINALIZED rejected"
