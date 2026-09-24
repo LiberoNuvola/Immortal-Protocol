@@ -5,18 +5,39 @@
 
 ## Purpose
 
-The proof boundary must establish that an advertised Materios authority set is the result of the authoritative Materios authority-selection procedure for one exact selection context.
+The proof boundary must establish that an advertised Materios authority set is the result of the authoritative Materios runtime authority-selection procedure for one exact execution context. The selection function alone is insufficient because the runtime has state-dependent branches before and after the vendor selector.
 
 IMMORTAL authenticates the resulting transition; it does not independently recompute the Materios committee-selection algorithm.
+
+## Canonical execution-context requirement
+
+The proof MUST bind the execution context in which the runtime made the authority-selection decision, not merely the serialized selector inputs.
+
+For the current Materios runtime, the context MUST distinguish at least:
+
+- runtime identity/version, including the runtime profile/code identity required by the proof system;
+- canonical execution block hash/number at which the selection decision was made;
+- a canonical state commitment covering runtime storage reads that can affect the decision;
+- genesis_utxo;
+- exact serialized AuthoritySelectionInputs bytes, or an unambiguous commitment to those bytes;
+- Cardano epoch nonce and sidechain epoch;
+- the selection path taken by the runtime, including whether an active PinnedCommittee override was used or the normal Ariadne path was executed;
+- relevant runtime liveness/current-committee state when the normal path is used;
+- resulting authority set and its identity.
+
+This follows from the current upstream runtime implementation: Config::select_authorities first checks the committed PinnedCommittee override; otherwise it sanitizes inputs, reads candidate liveness and the current block number, applies ContributionWindowEnabled / CoreEvictionEnabled / BreakGlassAuraKeys / current-committee / SlackInvariantEnabled state, then invokes the vendor selector and finally applies live-quorum and growth-slack guards. Therefore genesis_utxo + AuthoritySelectionInputs + sidechain_epoch -> committee is not, by itself, a complete canonicality statement.
+
+The proof MUST establish which branch executed and authenticate the state used by that branch. IMMORTAL MUST NOT reproduce these runtime branches in TypeScript as a substitute for authenticated runtime execution.
 
 ## Bound statement
 
 A valid authority-selection proof MUST bind, at minimum:
 
 - the proof-system identity/version;
-- the chain/runtime identity;
+- the chain/runtime identity and execution runtime identity/version;
 - the exact genesis_utxo context used by the authoritative selector;
 - the exact serialized AuthoritySelectionInputs bytes, or an unambiguous commitment to those bytes;
+- the canonical execution block and state commitment required to establish that those inputs were actually consumed by the authoritative runtime;
 - the Cardano epoch nonce used by the selector;
 - the sidechain epoch;
 - the resulting authority set;
@@ -62,11 +83,12 @@ This contract closes the specification of the proof boundary, not the proof itse
 
 Still required for real Materios evidence:
 
-1. authoritative selector execution from the canonical Rust/WASM/runtime implementation;
+1. authoritative selector execution from the canonical Rust/WASM/runtime implementation, including the state-dependent branch taken by Config::select_authorities;
 2. an authenticated proof or independently verifiable attestation;
 3. a real finalized-block/authority-set fixture;
 4. verification that the authenticated output becomes the repository's VerifiedAuthoritySetTransition;
-5. replay evidence tying the proof to the exact bound selection context.
+5. replay evidence tying the proof to the exact bound execution context;
+6. a real finalized Materios fixture containing the canonical runtime identity, execution block/state commitment, selection inputs, and storage values required to reproduce the selected branch.
 
 Until those artifacts exist, Materios authority-selection/finality provenance remains OPEN.
 
