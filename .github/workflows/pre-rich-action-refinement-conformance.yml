@@ -36,7 +36,6 @@ on:
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
       - "src/__tests__/ticket3dSecurity.test.ts"
-      - "src/__tests__/rf8-submission-boundary.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
       - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
       - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
