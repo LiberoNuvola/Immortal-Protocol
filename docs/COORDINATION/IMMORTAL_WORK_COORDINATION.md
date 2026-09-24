@@ -5531,3 +5531,43 @@ The 3 ADA semantics remain OPEN. The next target is historical Snek deployment/a
 - Genesis funding role: **OPEN / historical reconstruction**
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+## 2026-09-24 — Gate 41: Alonzo min-UTxO calculation narrows the 3 ADA hypothesis
+
+A source-grounded historical check was added after correcting the mint transaction to epoch 355.
+
+### Ledger formula verified
+At the exact pinned Cardano ledger revision used by the P2.8 work, the Alonzo implementation defines:
+
+`minAda(txOut) = utxoEntrySize(txOut) × coinsPerUTxOWord`
+
+with
+
+`utxoEntrySize = 27 + size(value) + dataHashSize(datumHash)`.
+
+The upstream ledger documentation states that an absent datum hash contributes 0 words and a present datum hash contributes 10 words; the fixed base is 27 words. CIP-28 records the historical `lovelacePerUTxOWord = 34,482` parameter.
+
+### Application to the Pool-NFT creation output
+The reconstructed deployment transaction `0235...c6cf4` creates the Pool-NFT-bearing output #1 with:
+- 13,000,000 lovelace;
+- 996,071,981 PRE;
+- one Pool NFT;
+- the application script datum.
+
+The evidence therefore does **not** justify treating the observed 3,000,000-lovelace State-0 discrepancy as the minimum ADA of the original Pool-NFT output. The historical min-UTxO calculation must be performed against the exact serialized value/policy/asset-name structure and the exact historical datum representation, but the ledger formula itself is now fixed and auditable.
+
+### Important distinction
+The observed 3 ADA discrepancy is at State-0:
+`69,155,397 - 66,155,397 = 3,000,000 lovelace`.
+
+That is not the same quantity as the initial 13 ADA physically present in the Pool-NFT output at deployment. Therefore the investigation must not collapse:
+1. deployment-output min-ADA;
+2. later State-0 provider-vs-ledger reconciliation;
+3. any Snek provider accounting transformation.
+
+### Next deterministic target
+Compute the exact Alonzo `utxoEntrySize` for the relevant State-0 Pool-NFT output(s), using the exact historical serialized Value and datum presence, then compare the ledger-mandated minimum with the 3,000,000 discrepancy. If the exact ledger minimum does not explain 3 ADA, the min-ADA hypothesis is rejected for that output and the investigation moves to the historical Snek provider/accounting semantics.
+
+**Status:** 3 ADA semantics — OPEN; Alonzo formula — VERIFIED; 3 ADA = min-ADA — NOT PROVEN.
+
+No IMMORTAL economic constants, validator semantics or governance rules changed.
