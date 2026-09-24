@@ -171,6 +171,9 @@ jobs:
             echo "run_id=$GITHUB_RUN_ID"
             echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
+      - name: Record Yaci cluster timing/configuration
+        run: |
+          yaci-devkit info | tee audit/yaci-evidence/yaci-devkit-info.txt
 
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
