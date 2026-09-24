@@ -87,7 +87,15 @@ assert.equal(
 )
 assert.equal(
   admit(observation({ oraclePrecision: 0n })).reason,
-  'ORACLE_UNVERIFIED',
+  'INVALID_ORACLE_PRECISION',
+)
+assert.equal(
+  admit(observation({ oraclePrecision: 999_999n })).reason,
+  'INVALID_ORACLE_PRECISION',
+)
+assert.equal(
+  admit(observation({ oraclePrecision: 1_000_001n })).reason,
+  'INVALID_ORACLE_PRECISION',
 )
 assert.equal(
   admit(observation({ preQuantity: 1n, verifiedPreUsdmPrice: 3999999n, oraclePrecision: 10n })).reason,
