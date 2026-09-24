@@ -6,7 +6,7 @@ import {
 } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 
 describe('CardanoExecutionAdapter', () => {
-  it('owns signing and submission', async () => {
+  it('owns signing and infrastructure submission', async () => {
     const calls: string[] = []
     const adapter = createCardanoExecutionAdapter({
       signTx: async (tx) => {
@@ -21,7 +21,7 @@ describe('CardanoExecutionAdapter', () => {
       },
     })
 
-    await expect(adapter.submit('built')).resolves.toEqual({
+    await expect(adapter.submitInfrastructure('built')).resolves.toEqual({
       transactionRef: 'tx-001',
     })
     expect(calls).toEqual(['sign', 'submit'])
@@ -33,7 +33,7 @@ describe('CardanoExecutionAdapter', () => {
       submitTx: async () => '   ',
     })
 
-    await expect(adapter.submit('built')).rejects.toThrow(
+    await expect(adapter.submitInfrastructure('built')).rejects.toThrow(
       'empty transaction reference',
     )
   })
