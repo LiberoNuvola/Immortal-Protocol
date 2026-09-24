@@ -38,6 +38,16 @@ event1 =
     []
     AcceptedEvent
 
+collapsedAcceptedEvent :: CanonicalEvent
+collapsedAcceptedEvent =
+  CanonicalEvent
+    "evt-accepted-shortcut" 1 1 EStatusChanged System 10
+    (PayloadStatusChanged 1 Accepted 10)
+    "payload-commitment-accepted-shortcut"
+    (Just "evt-1")
+    [EvidenceRef "shortcut-evidence"]
+    AcceptedEvent
+
 event2 :: CanonicalEvent
 event2 =
   CanonicalEvent
@@ -84,4 +94,11 @@ main = do
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"
-  putStrLn "GOV-22 CANONICAL EVENT STATE WIRING CHECKS PASSED"
+  case replayCanonical emptyState [event1, collapsedAcceptedEvent] of
+    Left _ -> putStrLn "PASS: collapsed Accepted shortcut rejected before mutation"
+    Right _ -> error "FAIL: collapsed Accepted shortcut mutated canonical state"
+
+  assert (not (canonicalLifecycleAdmission emptyState collapsedAcceptedEvent))
+    "canonical lifecycle admission rejects legacy terminal-state shortcut"
+
+  putStrLn "GOV-28 CANONICAL LIFECYCLE ADMISSION CHECKS PASSED"
