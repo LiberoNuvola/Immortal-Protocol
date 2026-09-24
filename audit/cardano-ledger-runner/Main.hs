@@ -8,8 +8,8 @@ import System.Environment (getArgs)
 
 artifactPaths :: [FilePath]
 artifactPaths =
-  [ "src/plutusScripts/prizeValidatorFactory.plutus.json"
-  , "src/plutusScripts/b1PrizePoolFactory.plutus.json"
+  [ "../../src/plutusScripts/prizeValidatorFactory.plutus.json"
+  , "../../src/plutusScripts/b1PrizePoolFactory.plutus.json"
   ]
 
 canonicalEvidence :: [FilePath]
