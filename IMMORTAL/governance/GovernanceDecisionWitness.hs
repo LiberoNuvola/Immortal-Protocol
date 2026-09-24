@@ -36,6 +36,11 @@ decisionRecordValid p r =
   decisionEligibleWeight r == eligibleWeight (proposalSnapshot p) &&
   decisionFinalOutcome r == proposalStatus p &&
   decisionRequiredGates r == proposalGates p &&
+  decisionYesWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == For] &&
+  decisionNoWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == Against] &&
+  decisionAbstentionWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == Abstain] &&
+  decisionQuorumReached r == quorumReached (proposalSnapshot p) (proposalDelegations p) (proposalVotes p) &&
+  decisionApprovalReached r == approvalReached (proposalClass p) (proposalSnapshot p) (proposalDelegations p) (proposalVotes p) &&
   decisionRulesetVersion r > 0 &&
   not (null (decisionCanonicalizationReference r))
 
