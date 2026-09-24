@@ -12,14 +12,23 @@ artifactPaths =
   , "src/plutusScripts/b1PrizePoolFactory.plutus.json"
   ]
 
-requiredEvidence :: [FilePath]
-requiredEvidence =
+canonicalEvidence :: [FilePath]
+canonicalEvidence =
   [ "tx.cbor"
   , "utxo.json"
   , "pparams.json"
   , "epoch-info.json"
   , "system-start.json"
   , "manifest.json"
+  ]
+
+rawHandoffEvidence :: [FilePath]
+rawHandoffEvidence =
+  [ "reveal-tx.cbor"
+  , "reveal-transition.json"
+  , "reveal-protocol-parameters.json"
+  , "epoch-latest.json"
+  , "manifest.txt"
   ]
 
 main :: IO ()
@@ -47,16 +56,27 @@ main = do
           putStrLn "RESULT: SAFE_STALL"
           putStrLn "SAFE_STALL_REASON: EMPTY_EXACT_PLUTUS_ARTIFACT"
         else do
-          let paths = map (evidenceDir <> "/") requiredEvidence
+          let paths = map (evidenceDir <> "/") canonicalEvidence
+              rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
           present <- mapM doesFileExist paths
+          rawPresent <- mapM doesFileExist rawPaths
           mapM_ (\(p, ok) -> putStrLn (p <> if ok then " [present]" else " [missing]"))
                 (zip paths present)
+          mapM_ (\(p, ok) -> putStrLn ("raw/" <> p <> if ok then " [present]" else " [missing]"))
+                (zip rawPaths rawPresent)
 
           if not (and present)
             then do
-              putStrLn "RESULT: SAFE_STALL"
-              putStrLn "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE"
-              putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+              if and rawPresent
+                then do
+                  putStrLn "RESULT: SAFE_STALL"
+                  putStrLn "SAFE_STALL_REASON: LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED"
+                  putStrLn "Raw Yaci handoff is present, but typed UTxO/PParams/EpochInfo/SystemStart packet files are not materialized."
+                  putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+                else do
+                  putStrLn "RESULT: SAFE_STALL"
+                  putStrLn "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE"
+                  putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
             else do
               nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
               if not (and nonEmpty)
