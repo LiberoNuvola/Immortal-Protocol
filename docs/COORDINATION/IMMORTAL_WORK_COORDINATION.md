@@ -5814,3 +5814,24 @@ Therefore the previously recorded numerical correlation `3,928,019 × 2,545,182 
 This correction is important: we must not let a parameter-scale coincidence become an invented economic formula. The next closure target is the historical builder/config/redeemer semantics or another same-era launch whose transaction can establish the actual initial-buy pricing relationship.
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+
+## 2026-09-24 — Gate 41: historical Snek reference launch discovered in same research corpus
+
+The open-tx3 SnekFun research file contains a concrete **legacy launch reference from September 2024**: transaction 87edffc1405348824bbe75adeb9df21d19e460fd13ed47da1072018bc0665125, token SNIGGA. The same research corpus separately lists current v1 launch 7e7161f3d5906ff39c83b71be97bce31324d611208287bffd21947e323ffc4d. This is valuable because the historical PRE launch can now be compared against a same-family, explicitly labelled legacy launch rather than only against current v1 abstractions. citeturn8view0
+
+The research file also records that the launch mint redeemer is structurally parameterized by a seed outref and that the pool NFT mint redeemer is a constructor carrying the seed transaction hash and seed index; the launch implementation is delegated to a builder API. It further states that the bonding-curve formula itself is not published and the exact quote is computed off-chain by the batcher. Therefore bNum cannot by itself be treated as a historical initial-buy pricing formula. citeturn8view0
+
+### New deterministic target
+Retrieve and decode the **legacy SNIGGA launch transaction** 87ed...5125, then compare its output topology, pool ADA, creator token allocation, metadata output, fee/change and pool datum/redeemer against PRE 0235...c6cf4. If the legacy transaction exposes the relationship between creator allocation and pool ADA, it becomes the strongest available same-era-family evidence for interpreting PRE's residual 10 ADA. If it does not, the 10 ADA remains open.
+
+This is a research lead only: no assumption is made that SNIGGA and PRE used identical launch parameters or builder versions.
+
+### Updated classification
+- Same-family historical launch reference: **NEW RESEARCH LEAD**
+- 3 ADA seed: **STRONG CROSS-VALIDATED LEAD**
+- 10 ADA creator/initial-buy semantics: **OPEN**
+- Historical PRE builder formula: **OPEN**
+- Provider info.outputId mapping: **OPEN**
+
+No normative IMMORTAL/PRE-RICH economics changed.
