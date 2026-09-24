@@ -5339,3 +5339,14 @@ Commit: `41a5542c48c777b5f50e9bf8eff978f9f0234ded`.
 This is CI trigger hygiene only. No test selection semantics were broadened beyond the files already intended by the workflow, and no economic/validator/governance rule changed.
 
 **Status:** PRE-RICH ACTION-REFINEMENT WORKFLOW PATHS CLEAN / CONFORMANCE RESULT STILL DEPENDS ON FRESH RUN EVIDENCE.
+
+
+## 2026-09-24 — Legacy Treasury policy module quarantined
+
+Current-branch search found `src/treasuryPolicy.ts` still containing the historical percentage distribution constants and arithmetic, while no repository code-search result showed an active import of that module. The file is retained for migration/history compatibility, but now carries an explicit `@deprecated` boundary stating that it is not an authoritative V3 economic rule and must not be used by production economic flows.
+
+Commit: `3990640a61ab11c9c7eff777a3948ee2ec4452ea`.
+
+No legacy percentage rule was reactivated, changed, or promoted; Treasury distribution remains fail-closed pending authoritative V3 EconomicAdmission semantics.
+
+**Status:** LEGACY TREASURY SURFACE EXPLICITLY QUARANTINED / NO NORMATIVE CHANGE.
