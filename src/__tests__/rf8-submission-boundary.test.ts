@@ -43,8 +43,8 @@ describe('RF8 application submission boundary', () => {
     ]
 
     const forbiddenGenericEconomicPatterns = [
-      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\\s\\S]*?signAndSubmitTx\\s*\\(/,
-      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\\s\\S]*?\\.submit\\s*\\(/,
+      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\s\S]*?signAndSubmitTx\s*\(/,
+      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\s\S]*?\.submit\s*\(/,
     ]
 
     for (const relativePath of economicFiles) {
