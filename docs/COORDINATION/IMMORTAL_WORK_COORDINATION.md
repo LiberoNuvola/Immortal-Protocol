@@ -6032,3 +6032,24 @@ This is preferable to inferring historical PRE semantics from a later curve-spen
 - provider `info.outputId` semantics: OPEN
 
 No normative IMMORTAL/PRE-RICH economics changed.
+
+
+## 2026-09-24 — Gate 41: acquisition artifact classified more precisely
+
+A Library triangulation of the original acquisition transcript changes the interpretation of the missing `raw.json` artifact.
+
+The historical acquisition record shows that the PRE creation transaction was obtained through Koios `tx_utxos`-style transaction/output retrieval. The transcript preserves the complete input/output topology for `0235...`, including the 13 ADA Pool-NFT output and the 3,928,019 PRE creator-side output. The acquisition manifest separately lists the `gate41-genesis/tx-info/0235....raw.json` path.
+
+Crucially, the transcript does **not** contain a mint-purpose redeemer/witness for `0235...`. Therefore the filename `raw.json` must not be treated as proof that a witness artifact was ever acquired. It is raw **transaction/UTxO evidence**, not demonstrated raw **transaction-witness evidence**.
+
+This narrows the retrieval gap:
+
+- historical transaction body/UTxO evidence: **AVAILABLE / VERIFIED in Library**
+- historical mint witness/redeemer: **NOT PRESENT in the verified acquisition transcript**
+- current green-branch raw file: **NOT RETRIEVABLE**
+- conclusion: the missing witness is a genuine acquisition gap, not merely a misplaced copy of an already-known witness.
+
+The appropriate next acquisition remains a transaction-CBOR/witness-capable indexer. Blockfrost documents both `GET /txs/{hash}/cbor` and `GET /txs/{hash}/redeemers`; the Cardano transaction model separately identifies redeemers as part of the witness set. citeturn0search0turn3search10
+
+No economic interpretation was promoted. In particular, 10 ADA = creator initial-buy remains OPEN.
+
