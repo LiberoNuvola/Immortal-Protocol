@@ -126,7 +126,7 @@ finalizationRecord =
 finalizedEvent :: CanonicalEvent
 finalizedEvent =
   CanonicalEvent
-    "evt-finalized" 7 1 EDecisionFinalized System 259200
+    "evt-finalized" 7 1 EDecisionFinalized System 259400
     (PayloadDecisionFinalized finalizationRecord)
     "payload-finalized"
     Nothing
@@ -160,7 +160,7 @@ main = do
   case applyCanonicalEvent emptyState finalizationState Nothing finalizedEvent of
     Left err -> error ("FAIL: decision finalization rejected: " ++ err)
     Right st -> do
-      assert (finalizationAt (head (proposals st)) == Just 259200)
+      assert (finalizationAt (head (proposals st)) == Just 259400)
         "DECISION_FINALIZED records finalization without collapsing to Canonical"
       assert (proposalStatus (head (proposals st)) == DecisionRecorded)
         "DECISION_FINALIZED preserves implementation projection state"
