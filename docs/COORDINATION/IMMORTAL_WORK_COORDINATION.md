@@ -5795,3 +5795,22 @@ A current v1 launch model is **semantic corroboration only** and must not be ret
 - Genesis funding role: **OPEN**
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+
+## 2026-09-24 — Gate 41: current Tx3 model does NOT provide the historical initial-buy pricing formula
+
+A deeper source check was performed against the published open-tx3 SnekFun model. It confirms the current/v1 launch transaction has explicit parameters `initial_buy_tokens`, `curve_tokens_remaining`, `pool_seed_ada`, `creator_min_ada`, `metadata_min_ada`, and `launch_fee_ada`. It also exposes current v1 `a_num = 122,525,779,519`, `b_num = 2,545,182`, and `ada_cap_threshold ≈ 18,188,400,000`. However, the published model does NOT expose a formula that maps `initial_buy_tokens` to the ADA amount funding the pool; it explicitly says these aggregate ADA quantities are pre-computed by the caller. citeturn1view0turn2view0
+
+Therefore the previously recorded numerical correlation `3,928,019 × 2,545,182 / 1,000,000 ≈ 9,997,523` must remain a **numerical correlation only**, not evidence that the historical 3,928,019 PRE allocation was purchased for exactly 10 ADA. The current source does not establish that pricing equation, and it is v1/current rather than contemporaneous evidence for the historical PRE mint.
+
+### Corrected Gate-41 classification
+- 3 ADA = Snek curve seed: **STRONG CROSS-VALIDATED LEAD**, not historical closure.
+- 10 ADA = creator initial-buy funding: **NUMERICAL CORRELATION / OPEN**, not strong semantic attribution.
+- 3,928,019 PRE = creator-side initial allocation: **STRONGLY SUPPORTED by the historical transaction topology**.
+- Historical formula linking the allocation to ADA: **OPEN**.
+- Historical Snek builder/version evidence: **OPEN**.
+- Provider `info.outputId` mapping (#0 vs Pool NFT #1): **OPEN**.
+
+This correction is important: we must not let a parameter-scale coincidence become an invented economic formula. The next closure target is the historical builder/config/redeemer semantics or another same-era launch whose transaction can establish the actual initial-buy pricing relationship.
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
