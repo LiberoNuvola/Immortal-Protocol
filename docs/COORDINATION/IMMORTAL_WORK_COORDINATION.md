@@ -6053,3 +6053,19 @@ The appropriate next acquisition remains a transaction-CBOR/witness-capable inde
 
 No economic interpretation was promoted. In particular, 10 ADA = creator initial-buy remains OPEN.
 
+
+
+## 2026-09-24 — GOV-28 decision witness strengthened
+
+The GOV-18 finalized-decision witness was tightened without changing any normative parameter.
+
+Updated `IMMORTAL/governance/GovernanceDecisionWitness.hs` at commit `dcd1f34efb8b5041054ccbb38f135b19aa81ec87`:
+- Yes/No/Abstention weights are now validated against the existing `effectiveVoteWeight` calculation over the authoritative proposal votes/delegations.
+- quorum and approval booleans are now validated against the existing `quorumReached` / `approvalReached` predicates.
+- existing snapshot/class/gate/ruleset/reference checks remain intact.
+
+Added a negative twin in `GovernanceDecisionWitnessTest.hs`, commit `bcbe100db8ef28f50091891f776d0066f83dc82d`, proving that a tampered Yes weight is rejected.
+
+This remains a **witness/projection**, not a canonical `DECISION_FINALIZED` event. No claim is made that the governance package compiles or CI passes.
+
+Next seam remains: derive the smallest non-invented representation for `DECISION_FINALIZED`, then bind adoption/conformance/canonicalization without collapsing them into `StatusChanged`.
