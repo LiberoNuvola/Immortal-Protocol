@@ -5471,3 +5471,33 @@ A present-day rule must not be applied retroactively merely because the transact
 - Genesis funding role — OPEN / HISTORICAL-RULE RECONSTRUCTION
 
 No economic constants, validator semantics or normative rules changed.
+
+
+## 2026-09-24 — Gate 41 historical parameter correction + strong 3 ADA lead
+
+### Correction to previous pass
+The earlier note stating that slot 153,584,200 was epoch 553 was incorrect. Cardano's Shelley-era epoch length is 432,000 slots, so the historical mint transaction at absolute slot 153,584,200 is in **epoch 355** (`floor(153584200 / 432000) = 355`). This matters materially: epoch 355 predates the Babbage hard fork, so the relevant UTxO-cost regime is the Alonzo-era `coinsPerUTxOWord`, not the Babbage `coinsPerUTxOByte` formula. Cardano CIP-9 records the 432,000-slot epoch length; CIP-28 records the Alonzo `lovelacePerUTxOWord` parameter, and CIP-55 documents the later Babbage transition to byte-based accounting.
+
+### Historical parameter lead
+The Alonzo-era parameter is documented as `lovelacePerUTxOWord = 34,482` in CIP-28 and in historical transaction-builder material. A direct numerical check gives:
+
+`87 × 34,482 = 2,999,934 lovelace`
+
+which is only **66 lovelace below 3,000,000**.
+
+Therefore the 3 ADA discrepancy is now a materially stronger historical-min-UTxO lead than before. It is NOT yet proof that the observed 3 ADA is a min-ADA component: the exact Alonzo-era minimum-ADA calculation depends on the serialized output/value structure and the ledger's sizing rule. We must compute the actual required minimum for the relevant historical output(s) from the exact transaction body and historical parameters before closing the semantics.
+
+### Why this changes the investigation
+The Pool-NFT mint transaction is not a Babbage-era transaction. Any attempt to explain the 3 ADA using today's `coinsPerUTxOByte` formula would be historically wrong. The correct reconstruction target is now:
+
+`epoch 355 parameters → Alonzo min-UTxO calculation → exact mint/deployment output serialization → compare required/actual ADA → compare both observed 3 ADA deltas`
+
+If the exact calculation yields 3,000,000 (or a ledger-mandated value that explains the provider transformation), this can close the semantic question. If it does not, the 3 ADA remains unresolved and we continue into historical Snek implementation semantics.
+
+### Current status
+- Historical epoch: **CORRECTED → 355**
+- Alonzo UTxO-cost regime: **CONFIRMED**
+- `coinsPerUTxOWord = 34,482`: **DOCUMENTED HISTORICAL VALUE / candidate parameter**
+- 3 ADA ↔ Alonzo min-UTxO: **STRONG LEAD, NOT PROVEN**
+- Genesis funding role: **OPEN / historical reconstruction**
+- No normative IMMORTAL economics changed.
