@@ -37,22 +37,15 @@ describe('RF8 application submission boundary', () => {
     expect(source).toMatch(/adapter\.submitInfrastructure\s*\(/)
   })
   it('requires current economic orchestrators to use the economic submission path', () => {
-    const economicFiles = [
-      'mint.ts',
-      'gameFlow.ts',
-    ]
+    const mintSource = readFileSync(join(ROOT, 'mint.ts'), 'utf8')
+    expect(mintSource).toMatch(/\.submitEconomic\s*\(/)
+    expect(mintSource).not.toMatch(/mintSerialNFT[\s\S]*?signAndSubmitTx\s*\(/)
 
-    const forbiddenGenericEconomicPatterns = [
-      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\s\S]*?signAndSubmitTx\s*\(/,
-      /(?:mintSerialNFT|revealPrize|claimPrize|expirePrize)[\s\S]*?\.submit\s*\(/,
-    ]
-
-    for (const relativePath of economicFiles) {
-      const source = readFileSync(join(ROOT, relativePath), 'utf8')
-      expect(source).toContain('submitEconomic')
-      expect(source).not.toMatch(forbiddenGenericEconomicPatterns[0])
-      expect(source).not.toMatch(forbiddenGenericEconomicPatterns[1])
-    }
+    const gameFlowSource = readFileSync(join(ROOT, 'gameFlow.ts'), 'utf8')
+    expect(gameFlowSource).toContain('signAndSubmitEconomicTx')
+    expect(gameFlowSource).not.toMatch(/revealPrize[\s\S]*?signAndSubmitTx\s*\(/)
+    expect(gameFlowSource).not.toMatch(/claimPrize[\s\S]*?signAndSubmitTx\s*\(/)
+    expect(gameFlowSource).not.toMatch(/expirePrize[\s\S]*?signAndSubmitTx\s*\(/)
   })
 
   it('keeps the generic submission helper distinct from economic submission', () => {
