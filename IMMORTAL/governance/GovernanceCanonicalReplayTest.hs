@@ -3,6 +3,8 @@ module Main where
 import Governance
 import GovernanceEventSchema
 import GovernanceCanonicalReplay
+import GovernanceFinality
+import GovernanceDecisionWitness
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -79,6 +81,58 @@ gatesEvent =
     [EvidenceRef "gate-evidence"]
     AcceptedEvent
 
+
+finalizationProposal :: Proposal
+finalizationProposal =
+  Proposal
+    { proposalId = 7
+    , proposalClass = DocumentationOnly
+    , proposalSnapshot = Snapshot 11 100 [(1,60),(2,40)]
+    , proposalCreatedAt = 100
+    , communityReviewOpenedAt = Nothing
+    , votingOpenedAt = Nothing
+    , votingClosedAt = Just 200
+    , finalizationAt = Nothing
+    , emergencyActivatedAt = Nothing
+    , proposalVotes = [Vote 7 1 For 150, Vote 7 2 Abstain 150]
+    , proposalDelegations = []
+    , proposalGates = GateResult True True True True
+    , proposalStatus = DecisionRecorded
+    }
+
+finalizationChallenge :: Challenge
+finalizationChallenge = Challenge "ch-7" 7 250 ChallengeRejected
+
+finalizationRecord :: DecisionRecord
+finalizationRecord =
+  DecisionRecord
+    { decisionProposalId = 7
+    , decisionProposalClass = DocumentationOnly
+    , decisionSnapshotId = 11
+    , decisionSnapshotAt = 100
+    , decisionEligibleWeight = 100
+    , decisionYesWeight = 60
+    , decisionNoWeight = 0
+    , decisionAbstentionWeight = 40
+    , decisionQuorumReached = True
+    , decisionApprovalReached = True
+    , decisionRequiredGates = GateResult True True True True
+    , decisionFinalOutcome = DecisionRecorded
+    , decisionRulesetVersion = 1
+    , decisionChallenges = [finalizationChallenge]
+    , decisionCanonicalizationReference = "canon-ref-7"
+    }
+
+finalizedEvent :: CanonicalEvent
+finalizedEvent =
+  CanonicalEvent
+    "evt-finalized" 7 1 EDecisionFinalized System 259200
+    (PayloadDecisionFinalized finalizationRecord)
+    "payload-finalized"
+    Nothing
+    [EvidenceRef "finalization-evidence"]
+    AcceptedEvent
+
 main :: IO ()
 main = do
   assert (eventSchemaValid event1) "canonical payload matches event type"
@@ -102,3 +156,14 @@ main = do
     "canonical lifecycle admission rejects legacy terminal-state shortcut"
 
   putStrLn "GOV-28 CANONICAL LIFECYCLE ADMISSION CHECKS PASSED"
+  let finalizationState = GovernanceState 1 [finalizationProposal] 0
+  case applyCanonicalEvent emptyState finalizationState Nothing finalizedEvent of
+    Left err -> error ("FAIL: decision finalization rejected: " ++ err)
+    Right st -> do
+      assert (finalizationAt (head (proposals st)) == Just 259200)
+        "DECISION_FINALIZED records finalization without collapsing to Canonical"
+      assert (proposalStatus (head (proposals st)) == DecisionRecorded)
+        "DECISION_FINALIZED preserves implementation projection state"
+
+  putStrLn "GOV-28 DECISION FINALIZATION CHECKS PASSED"
+
