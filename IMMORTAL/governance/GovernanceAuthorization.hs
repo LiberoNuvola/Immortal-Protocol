@@ -18,6 +18,7 @@ authorizationValid e =
     (EProposalClassified, System)    -> True
     (EStatusChanged, System)         -> True
     (EDecisionFinalized, System)      -> True
+    (EAdoptionRecorded, System)       -> True
     (EVoteCast, Voter)               -> True
     (EDelegationSet, Delegate)       -> True
     (EGatesSet, Reviewer)            -> True
