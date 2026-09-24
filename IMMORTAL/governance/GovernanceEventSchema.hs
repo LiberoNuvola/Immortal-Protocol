@@ -7,13 +7,14 @@ module GovernanceEventSchema
 
 import Governance
 import GovernanceDecisionWitness (DecisionRecord(..))
+import GovernanceConformanceWitness (ConformanceRecord(..))
 
 data ActorClass = System | Proposer | Voter | Delegate | Reviewer | Auditor | EmergencyAuthority
   deriving (Eq, Show)
 
 data EventType = EProposalSubmitted | EProposalClassified | EStatusChanged
   | EDecisionFinalized
-  | EAdoptionRecorded
+  | EAdoptionRecorded | EConformanceRecorded
   | EVoteCast | EDelegationSet | EGatesSet
   deriving (Eq, Show)
 
@@ -28,6 +29,7 @@ data CanonicalPayload
   | PayloadStatusChanged ProposalId ProposalStatus Timestamp
   | PayloadDecisionFinalized DecisionRecord
   | PayloadAdoptionRecorded ProposalId Timestamp
+  | PayloadConformanceRecorded ConformanceRecord
   | PayloadVoteCast Vote
   | PayloadDelegationSet ProposalId Delegation Timestamp
   | PayloadGatesSet ProposalId GateResult Timestamp
@@ -77,6 +79,16 @@ canonicalPayloadText p = case p of
     ";canonicalization_reference=" ++ decisionCanonicalizationReference r
   PayloadAdoptionRecorded pid at ->
     "type=AdoptionRecorded;proposal_id=" ++ show pid ++ ";timestamp=" ++ show at
+  PayloadConformanceRecorded r ->
+    "type=ConformanceRecorded;proposal_id=" ++ show (conformanceProposalId r) ++
+    ";implementation_commit=" ++ conformanceImplementationCommit r ++
+    ";ruleset_version=" ++ show (conformanceRulesetVersion r) ++
+    ";test_vector_version=" ++ conformanceTestVectorVersion r ++
+    ";environment_toolchain=" ++ conformanceEnvironmentToolchain r ++
+    ";test_results=" ++ conformanceTestResults r ++
+    ";failed_test_record=" ++ maybe "" id (conformanceFailedTestRecord r) ++
+    ";canonical_input_fixtures=" ++ conformanceCanonicalInputFixtures r ++
+    ";replay_output=" ++ conformanceReplayOutput r
   PayloadVoteCast v ->
     "type=VoteCast;proposal_id=" ++ show (voteProposal v) ++
     ";voter=" ++ show (voter v) ++ ";choice=" ++ show (choice v) ++ ";cast_at=" ++ show (castAt v)
@@ -120,6 +132,7 @@ payloadProposalId p = case p of
   PayloadStatusChanged x _ _ -> x
   PayloadDecisionFinalized r -> decisionProposalId r
   PayloadAdoptionRecorded pid _ -> pid
+  PayloadConformanceRecorded r -> conformanceProposalId r
   PayloadVoteCast x -> voteProposal x
   PayloadDelegationSet x _ _ -> x
   PayloadGatesSet x _ _ -> x
@@ -136,6 +149,7 @@ payloadTimestamp p = case p of
   PayloadStatusChanged _ _ t -> t
   PayloadDecisionFinalized r -> decisionSnapshotAt r
   PayloadAdoptionRecorded _ t -> t
+  PayloadConformanceRecorded _ -> 0
   PayloadVoteCast v -> castAt v
   PayloadDelegationSet _ _ t -> t
   PayloadGatesSet _ _ t -> t
@@ -147,6 +161,7 @@ eventTypeMatchesPayload t p = case (t,p) of
   (EStatusChanged, PayloadStatusChanged _ _ _) -> True
   (EDecisionFinalized, PayloadDecisionFinalized _) -> True
   (EAdoptionRecorded, PayloadAdoptionRecorded _ _) -> True
+  (EConformanceRecorded, PayloadConformanceRecorded _) -> True
   (EVoteCast, PayloadVoteCast _) -> True
   (EDelegationSet, PayloadDelegationSet _ _ _) -> True
   (EGatesSet, PayloadGatesSet _ _ _) -> True
