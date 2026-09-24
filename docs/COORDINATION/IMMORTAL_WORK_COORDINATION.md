@@ -5987,3 +5987,21 @@ External event-sourcing guidance also supports the architectural direction: immu
 
 ### Current classification
 **CLOSING / implementation evidence pending.** The repository change is committed; no claim is made here that the Haskell governance package has compiled or that CI passed.
+
+
+## 2026-09-24 — GOV-18 decision/finality witness extracted
+
+Triangulation against the full GOV-18 record identified an exact, non-invented minimum finalized-decision witness: proposal id/class, snapshot id/time, eligible weight, Yes/No/Abstention weights, quorum result, approval result, required gate results, final outcome, ruleset version, challenge result and canonicalization reference.
+
+Added chain-neutral witness type:
+`IMMORTAL/governance/GovernanceDecisionWitness.hs`
+
+Commit: `c92cbb45f6b58a84246ab1be1411ea9a8f199369`.
+
+Added focused checks:
+`IMMORTAL/governance/GovernanceDecisionWitnessTest.hs`
+commit `81fdf5368623c0fe3da0b8b80c5b284c03227082`.
+
+The witness is deliberately a **record/projection**, not a new canonical event and not a replacement for `GovernanceFinality`. It makes the GOV-18 final-decision data boundary explicit while preserving existing semantics. No new governance parameter was introduced.
+
+Current remaining gap: bind this witness to a distinct `DECISION_FINALIZED` canonical event and subsequently derive the exact adoption/conformance/canonicalization event payloads. Do not collapse these back into `StatusChanged`.
