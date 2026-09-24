@@ -5586,3 +5586,39 @@ Do not infer from the reverse-engineered model. Instead, identify the historical
 **Status:** Snek launch-parameter prior art — RESEARCH LEAD; canonical historical role attribution — OPEN; 3 ADA semantics — OPEN; `info.outputId` mapping — OPEN.
 
 No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
+
+## 2026-09-24 — Gate 41 3 ADA semantic cross-validation: strong seed interpretation, deployment proof still open
+
+New triangulation against independent SnekFun decoder prior-art materially strengthens the 3 ADA interpretation.
+
+### Independent decoder evidence
+The pinned `defrag-au/mitos` SnekFun decoder defines `CURVE_SEED_LOVELACE = 3_000_000` and documents that a freshly created curve holds this 3 ADA seed before trading. It also states that the datum `ada_cap_threshold` includes the seed while the Snek API reports the cap excluding it, with bonding progress calculated as `(lovelace - SEED) / (cap - SEED)`. The same decoder identifies the exact Snek curve validator and Pool-NFT policy used by the PRE evidence.
+
+This is a substantially stronger correspondence than the previous numeric coincidence: the external decoder independently assigns the exact same 3,000,000-lovelace quantity to a named Snek curve-seed component and independently documents the exact threshold transformation observed in PRE.
+
+### PRE-specific correspondence
+The PRE evidence has exactly the same structure:
+- State-0 physical ADA = 69,155,397 lovelace;
+- Snek/provider ADA = 66,155,397 lovelace;
+- physical minus provider = 3,000,000 lovelace;
+- on-chain datum threshold = 18,191,400,000 lovelace;
+- provider/builder threshold = 18,188,400,000 lovelace;
+- datum threshold minus provider threshold = 3,000,000 lovelace.
+
+Therefore the strongest current interpretation is: **the provider/API representation appears to exclude the Snek curve seed of 3 ADA, while the on-chain reserve and datum threshold include it.**
+
+### Important remaining qualification
+This still does NOT by itself prove that the historical PRE deployment used exactly the same seed rule. The independent decoder is secondary empirical/reverse-engineered evidence, not a contemporaneous Snek specification. More importantly, the PRE Pool-NFT mint output contains 13 ADA, so `3 ADA seed` does not explain the entire initial 13 ADA balance. The remaining 10 ADA must not be labelled without transaction/implementation evidence.
+
+Thus the correct status is not CLOSED but **STRONG CROSS-VALIDATED LEAD**:
+`3 ADA = Snek curve seed` is now supported by independent protocol-family evidence + exact PRE threshold/reserve correspondence, while `Genesis funding role` and the decomposition of the initial 13 ADA remain open.
+
+### Exact min-UTxO result remains separate
+The exact Alonzo calculation already performed for the Pool-NFT-bearing mint output gives 1,999,956 lovelace, so the 3 ADA component should not be explained as that output's min-UTxO.
+
+### Next closure target
+Reconstruct the historical launch transaction semantics/version sufficiently to show the PRE mint's 13 ADA decomposition. Target decomposition:
+`13 ADA = 3 ADA seed + ? ADA deployment/creator/other component`
+without assigning the `?` amount until the historical launch implementation or transaction semantics proves it.
+
+No IMMORTAL economic constants, validator semantics, governance rules or normative policy changed.
