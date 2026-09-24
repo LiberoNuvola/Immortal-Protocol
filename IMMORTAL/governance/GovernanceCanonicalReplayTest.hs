@@ -214,4 +214,9 @@ main = do
     Left _ -> putStrLn "PASS: ADOPTION_RECORDED requires prior finalization"
     Right _ -> error "FAIL: ADOPTION_RECORDED bypassed finalization"
 
+  let prematureAdoption = adoptionEvent { eventTimestamp = 259399, eventPayload = PayloadAdoptionRecorded 7 259399 }
+  case applyCanonicalEvent emptyState acceptedState (Just finalizedEvent) prematureAdoption of
+    Left _ -> putStrLn "PASS: ADOPTION_RECORDED timestamp cannot precede finalization"
+    Right _ -> error "FAIL: ADOPTION_RECORDED preceded finalization"
+
 
