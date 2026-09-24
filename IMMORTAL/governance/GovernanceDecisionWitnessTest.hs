@@ -58,10 +58,15 @@ record =
     , decisionCanonicalizationReference = "canonical-ref-1"
     }
 
+tamperedRecord :: DecisionRecord
+tamperedRecord = record { decisionYesWeight = 59 }
+
 main :: IO ()
 main = do
   assert "GOV-18 decision record preserves minimum fields"
     (decisionRecordValid proposal record)
+  assert "decision witness rejects non-derived vote weights"
+    (not (decisionRecordValid proposal tamperedRecord))
   assert "finalization witness waits for challenge expiry"
     (not (finalizationReady proposal [rejectedChallenge] 200))
   assert "finalization witness becomes ready at expiry"
