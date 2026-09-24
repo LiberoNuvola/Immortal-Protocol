@@ -13,6 +13,13 @@ benchmarks: False
 
 source-repository-package
   type: git
+  location: https://github.com/IntersectMBO/cardano-prelude
+  tag: cfb3e0784f0d483f4d5c4f047f324b7dc8091475
+  subdir:
+    cardano-prelude-test
+
+source-repository-package
+  type: git
   location: https://github.com/IntersectMBO/cardano-ledger
   tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
   subdir:
