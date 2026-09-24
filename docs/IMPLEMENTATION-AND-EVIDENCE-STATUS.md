@@ -116,6 +116,26 @@ Relevant proof surfaces:
 
 Current status: the architecture and trust boundary are established, but publisher-independent B3 authority/finality provenance is not to be called complete until the full proof path is available and verified.
 
+### New upstream Materios provenance evidence surface (2026-09-24)
+
+A newly verified Materios explorer/provenance surface strengthens the upstream evidence available to the B3 boundary. The upstream receipt verifier establishes an evidence chain of receipt identity, availability certification, context-bound checkpoint leaf, checkpoint anchoring, Merkle inclusion, manifest integrity and the `AvailabilityCertified` event cross-check.
+
+This is useful for B3 because it adds a concrete provenance surface for receipt/anchor lineage. It does **not** prove the separate authority-selection or GRANDPA-finality obligations in `MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md`.
+
+| New Materios surface | B3 effect |
+| --- | --- |
+| Receipt identity / on-chain storage | **Evidence surface strengthened** |
+| Availability certificate binding | **Evidence surface strengthened** |
+| Checkpoint leaf / Merkle inclusion | **Evidence surface strengthened** |
+| Manifest / certification-event cross-check | **Evidence surface strengthened** |
+| Cardano L1 anchor reference | **Potentially useful evidence input** |
+| AuthoritySelectionInputs provenance | **Not proven by this surface alone** |
+| Authoritative selector execution provenance | **OPEN** |
+| GRANDPA ancestry/finality proof | **OPEN** |
+| Publisher-independent B3 canonicality | **OPEN** |
+
+The explorer lineage is an upstream evidence source, not a replacement for the production `VerifiedAuthoritySetTransition` trust boundary or for cryptographically verified GRANDPA evidence.
+
 ## Governance
 
 Recent governance hardening distinguishes Accepted / Rejected finalization using quorum, approval and gates.
