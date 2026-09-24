@@ -5092,3 +5092,18 @@ Current P2.8 classification:
 The real Reveal lab remains valuable for transaction/post-state observation and B6 evidence continuity, but its generic adapter submission path does not by itself satisfy B5 Economic Admission execution.
 
 No normative economics, validator semantics, or governance rules changed.
+
+
+## 2026-09-24 — P2.8 artifact-path execution bug corrected
+
+After the Yaci → P2.8 handoff was wired, exact workflow execution context was rechecked. The workflow invokes the runner with working-directory: audit/cardano-ledger-runner, while Main.hs previously referenced src/plutusScripts/... as if launched from repository root. That would make the runner report EXACT_PLUTUS_ARTIFACT_MISSING even when the generated artifacts were present.
+
+Minimal correction applied:
+- artifactPaths now resolves ../../src/plutusScripts/prizeValidatorFactory.plutus.json
+- artifactPaths now resolves ../../src/plutusScripts/b1PrizePoolFactory.plutus.json
+
+Commit: 21f3e9463e70123055c013d048a6490934f7bbc6.
+
+This is execution wiring only. It does not add synthetic evidence, does not evaluate transactions, and does not change any validator/economic/governance semantics.
+
+Status: P2.8 RUNNER PATH CORRECTED / RAW HANDOFF WIRED / TYPED LEDGER CONTEXT + evalTxExUnitsWithLogs STILL OPEN / NO GREEN CLAIM.
