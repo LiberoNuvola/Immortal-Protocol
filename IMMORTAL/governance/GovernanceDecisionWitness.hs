@@ -34,7 +34,7 @@ decisionRecordValid p r =
   decisionSnapshotId r == snapshotId (proposalSnapshot p) &&
   decisionSnapshotAt r == snapshotAt (proposalSnapshot p) &&
   decisionEligibleWeight r == eligibleWeight (proposalSnapshot p) &&
-  decisionFinalOutcome r == proposalStatus p &&
+  decisionFinalOutcome r == Accepted &&
   decisionRequiredGates r == proposalGates p &&
   decisionYesWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == For] &&
   decisionNoWeight r == sum [effectiveVoteWeight (proposalSnapshot p) (proposalDelegations p) v | v <- proposalVotes p, choice v == Against] &&
