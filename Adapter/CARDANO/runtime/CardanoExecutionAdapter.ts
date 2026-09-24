@@ -17,7 +17,12 @@ export function createCardanoExecutionAdapter(
   lucid: CardanoLucidExecutionPort,
 ) {
   return {
-    async submit(tx: unknown): Promise<CardanoSubmissionReceipt> {
+    /**
+     * Generic infrastructure submission. This path is reserved for
+     * non-economic infrastructure transitions (for example BeaconRegistry).
+     * Economically material transitions must use submitEconomic().
+     */
+    async submitInfrastructure(tx: unknown): Promise<CardanoSubmissionReceipt> {
       const signedTx = await lucid.signTx(tx)
       const transactionRef = await lucid.submitTx(signedTx)
       if (!transactionRef.trim()) {
@@ -40,7 +45,7 @@ export function createCardanoExecutionAdapter(
       liquiditySourceReferences: readonly string[],
     ): Promise<CardanoSubmissionReceipt> {
       assertEconomicAdmission(admission, inputReferences, liquiditySourceReferences)
-      return this.submit(tx)
+      return this.submitInfrastructure(tx)
     },
   }
 }
