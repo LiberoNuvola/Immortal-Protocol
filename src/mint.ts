@@ -1236,7 +1236,7 @@ export async function mintSerialNFT(
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ], [
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
-      ])
+      ], 'Issue')
 
   const txHash =
     submission.transactionRef
