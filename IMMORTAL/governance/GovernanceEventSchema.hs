@@ -60,6 +60,18 @@ canonicalPayloadText p = case p of
     "type=ProposalClassified;proposal_id=" ++ show pid ++ ";class=" ++ show cls ++ ";timestamp=" ++ show at
   PayloadStatusChanged pid st at ->
     "type=StatusChanged;proposal_id=" ++ show pid ++ ";status=" ++ show st ++ ";timestamp=" ++ show at
+  PayloadDecisionFinalized r ->
+    "type=DecisionFinalized;proposal_id=" ++ show (decisionProposalId r) ++
+    ";snapshot_id=" ++ show (decisionSnapshotId r) ++
+    ";snapshot_at=" ++ show (decisionSnapshotAt r) ++
+    ";eligible_weight=" ++ show (decisionEligibleWeight r) ++
+    ";yes=" ++ show (decisionYesWeight r) ++
+    ";no=" ++ show (decisionNoWeight r) ++
+    ";abstention=" ++ show (decisionAbstentionWeight r) ++
+    ";quorum=" ++ show (decisionQuorumReached r) ++
+    ";approval=" ++ show (decisionApprovalReached r) ++
+    ";ruleset_version=" ++ show (decisionRulesetVersion r) ++
+    ";canonicalization_reference=" ++ decisionCanonicalizationReference r
   PayloadVoteCast v ->
     "type=VoteCast;proposal_id=" ++ show (voteProposal v) ++
     ";voter=" ++ show (voter v) ++ ";choice=" ++ show (choice v) ++ ";cast_at=" ++ show (castAt v)
