@@ -29,6 +29,33 @@ This follows from the current upstream runtime implementation: Config::select_au
 
 The proof MUST establish which branch executed and authenticate the state used by that branch. IMMORTAL MUST NOT reproduce these runtime branches in TypeScript as a substitute for authenticated runtime execution.
 
+### Current runtime state witness set
+
+For the current upstream runtime, a canonical-state witness must cover the exact storage reads that can influence the result.
+
+For the **PinnedCommittee** branch this includes, at minimum:
+
+- `OrinqReceipts::PinnedCommittee`, including member keys and `until_epoch`;
+- the queried `sidechain_epoch`;
+- runtime identity/version and execution block/state commitment.
+
+When the pin is inactive and the **normal Ariadne path** executes, the witness additionally includes:
+
+- `OrinqReceipts::ContributionWindowEnabled`;
+- `OrinqReceipts::CoreEvictionEnabled`;
+- `OrinqReceipts::BreakGlassFloorEnabled`;
+- `OrinqReceipts::BreakGlassAuraKeys`;
+- `OrinqReceipts::SlackInvariantEnabled`;
+- `SessionValidatorManagement::CurrentCommittee`;
+- `OrinqReceipts::CandidateFirstSelected` for the candidate accounts consulted by the liveness filter;
+- `OrinqReceipts::LastAuthoredBlock` for the candidate accounts consulted by the liveness filter.
+
+The normal path also reads the canonical execution block number and the authoritative selector's input bytes, then invokes the vendor selector with `Sidechain::genesis_utxo()`, the sanitized inputs and the sidechain epoch. The post-selection guards can therefore depend on both the pre-selection state and the selected committee.
+
+The proof format does not need to expose implementation-specific storage-key hashes as semantic fields if its authenticated state commitment unambiguously commits to the exact runtime state at the execution block. However, a proof implementation MUST provide a verifiable state witness for every runtime read that can affect the branch/result; an opaque claim that “the state was canonical” is insufficient.
+
+This gives B3 a concrete minimal target: **canonical runtime code identity + execution block/state commitment + branch witness + exact input witness + authenticated runtime execution + resulting committee**.
+
 ## Bound statement
 
 A valid authority-selection proof MUST bind, at minimum:
