@@ -5856,3 +5856,22 @@ However, this is still not historical PRE proof. The mitos source is independent
 - Historical PRE formula/version: OPEN
 
 Next decisive step remains a historical PRE witness/implementation or enough consecutive early pool states to reconstruct the deployed pricing function. No normative IMMORTAL/PRE-RICH semantics changed.
+
+
+## 2026-09-24 — Gate 41: legacy SNIGGA reference validated, transaction body not yet retrievable
+
+The same-family legacy reference is confirmed in the open-tx3 research corpus: 87edffc1405348824bbe75adeb9df21d19e460fd13ed47da1072018bc0665125 is explicitly labelled “Legacy launch (sep 2024)” for SNIGGA. The corpus also confirms the launch architecture: pool NFT mint redeemer carries the seed outref, token/metadata mint uses the shared launch policy, and launch itself is delegated to the builder API. However, the research file does not contain the decoded inputs/outputs/ADA amounts of the SNIGGA transaction. citeturn5view0
+
+A direct external lookup of the exact transaction hash through the available web retrieval paths did not return the transaction body, so no output-role or ADA amount has been invented. This is a retrieval limitation, not evidence that the transaction lacks those fields.
+
+### Gate 41 status
+- Legacy same-family launch reference: CONFIRMED AS RESEARCH REFERENCE
+- Legacy SNIGGA output topology: NOT YET VERIFIED
+- Legacy creator-allocation to pool-ADA relationship: OPEN
+- PRE 10 ADA attribution: OPEN
+- Provider info.outputId mapping: OPEN
+
+### Next deterministic acquisition target
+Obtain the raw/decoded transaction body for 87ed...5125 from a Cardano ledger/indexer source (or an already archived repository artifact), then extract inputs, outputs, mint, redeemers, datum and fee. Until that artifact is available, the SNIGGA reference can constrain the research direction but cannot close the PRE residual.
+
+No normative IMMORTAL/PRE-RICH economics changed.
