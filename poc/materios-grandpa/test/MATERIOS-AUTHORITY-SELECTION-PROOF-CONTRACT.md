@@ -200,3 +200,10 @@ This document does not:
 - authorize IMMORTAL to select authorities;
 - treat verify(){ return true; } test doubles as production verification;
 - promote synthetic GRANDPA evidence to real Materios evidence.
+
+
+### SDK revision check
+
+The Materios `partnerchain/Cargo.lock` resolves `sc-client-api` to version `37.0.0` from Polkadot SDK tag `polkadot-stable2409-4` at commit `c455194a2ae2f613c1c671e00dbf397b83ed8171`. The exact upstream `substrate/client/api/src/proof_provider.rs` at that commit contains `ProofProvider::execution_proof(hash, method, call_data) -> (Vec<u8>, StorageProof)`. This removes the remaining version-drift concern for the native proof primitive: the capability is present in the exact SDK revision Materios locks, not only in current SDK documentation. citeturn390818search0
+
+This still does not establish that the Materios node exposes the primitive through its public RPC interface, nor does it establish B3 canonicality. Those remain separate transport and verification obligations.
