@@ -26,288 +26,90 @@ const TRANSITION_DOMAIN =
   "PRE-RICH/MATERIOS/AUTHORITY-TRANSITION/V1";
 
 export interface OnChainSelectionInputsCommitment {
-  readonly blockHash: Uint8Array;
-  readonly blockNumber: bigint;
-  readonly selectionInputsHash: Uint8Array;
-}
-
-/**
- * Binds the raw AuthoritySelectionInputs to the hash committed by the
- * canonical SessionValidatorManagement::set inherent.
- *
- * This does not parse or recreate Materios' selector. It only authenticates
- * that the bytes supplied to the proof boundary are the bytes committed by
- * the enacted runtime call.
- */
-export function verifySelectionInputsCommitment(
-  statement: AuthoritySetTransitionStatement | AuthoritySetTransitionPublicStatement,
-  commitment: OnChainSelectionInputsCommitment
-): void {
-  const publicStatement =
-    "proofBytes" in statement
-      ? authoritySetTransitionPublicStatement(statement)
-      : statement;
-
-  validateAuthoritySetTransitionPublicStatement(publicStatement);
-
-  if (commitment.blockHash.length !== HASH_LENGTH) {
-    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
-  }
-  if (
-    commitment.blockNumber < 0n ||
-    commitment.blockNumber > U32_MAX
-  ) {
-    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
-  }
-  if (commitment.selectionInputsHash.length !== HASH_LENGTH) {
-    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH");
-  }
-  if (
-    !equalBytes(
-      commitment.selectionInputsHash,
-      publicStatement.selectionInputsHash
-    )
-  ) {
-    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
-  }
-}
-
-export interface AuthorityActivationBlock {
-  readonly hash: Uint8Array;
-  readonly number: bigint;
-}
-
-export type AuthoritySelectionRegime =
-  | {
-      readonly kind: "l1-ariadne";
-      readonly evidenceHash: Uint8Array;
-    }
-  | {
-      readonly kind: "pinned-committee";
-      readonly evidenceHash: Uint8Array;
-      readonly untilEpoch: bigint;
-    };
-
-/**
- * Untrusted evidence supplied by the Materios adapter/proof boundary.
- *
- * The raw selection-input bytes are intentionally opaque here. PRE-RICH must
- * not reimplement Materios' authority-selection algorithm in TypeScript: the
- * proof system must establish that these inputs deterministically derive the
- * advertised `toAuthorities` committee.
- */
-export interface AuthoritySetTransitionStatement {
-  readonly kind: "materios-authority-set-transition";
-  readonly protocolVersion: 1;
-  readonly chainId: string;
-  readonly genesisHash: Uint8Array;
-  readonly genesisUtxo: Uint8Array;
-  readonly fromSetId: bigint;
-  readonly fromAuthorities: readonly GrandpaAuthority[];
-  readonly sidechainEpoch: bigint;
-  readonly authoritySelectionRegime: AuthoritySelectionRegime;
-  readonly selectionInputs: Uint8Array;
-  readonly selectionInputsHash: Uint8Array;
-  /** Identifies the proof system that authenticated the transition. */
-  readonly proofSystem: string;
-  readonly toAuthorities: readonly GrandpaAuthority[];
-  readonly activationBlock: AuthorityActivationBlock;
-  readonly toSetId: bigint;
-  readonly proofBytes: Uint8Array;
-}
-
-/**
- * A proof verifier is the only component allowed to cross the
- * untrusted -> verified authority-transition boundary.
- *
- * Implementations MUST cryptographically establish the Materios claims
- * described by the public statement. The current repository does not yet
- * provide such an implementation; callers must therefore supply one
- * explicitly rather than receiving trust by construction.
- */
-export interface AuthoritySetTransitionProofVerifier {
-  verify(
-    statement: AuthoritySetTransitionStatement,
-    publicStatement: AuthoritySetTransitionPublicStatement
-  ): Promise<boolean> | boolean;
-}
-
-/**
- * Authority transition after the proof boundary has been crossed.
- *
- * The nominal brand prevents accidental construction from an ordinary
- * AuthoritySetTransitionStatement in typed code. The runtime constructor is
- * intentionally private to this module: only verifyAuthoritySetTransition
- * can create this value.
- */
-export interface VerifiedAuthoritySetTransition {
-  readonly kind: "verified-materios-authority-set-transition";
-  readonly publicStatement: AuthoritySetTransitionPublicStatement;
-  readonly statementHash: Uint8Array;
-  readonly __verifiedAuthoritySetTransition: "verified";
-}
-
-export interface AuthoritySetTransitionPublicStatement {
-  readonly protocolVersion: 1;
-  readonly chainId: string;
-  readonly genesisHash: Uint8Array;
-  readonly genesisUtxo: Uint8Array;
-  readonly fromSetId: bigint;
-  readonly fromAuthorities: readonly GrandpaAuthority[];
-  readonly sidechainEpoch: bigint;
-  readonly authoritySelectionRegime: AuthoritySelectionRegime;
-  readonly selectionInputsHash: Uint8Array;
-  /** Identifies the proof system that authenticated the transition. */
-  readonly proofSystem: string;
-  readonly toAuthorities: readonly GrandpaAuthority[];
-  readonly activationBlock: AuthorityActivationBlock;
-  readonly toSetId: bigint;
-}
-
-export async function verifyAuthoritySetTransition(
-  statement: AuthoritySetTransitionStatement,
-  proofVerifier: AuthoritySetTransitionProofVerifier
-): Promise<VerifiedAuthoritySetTransition> {
-  validateAuthoritySetTransitionStatement(statement);
-
-  const publicStatement =
-    authoritySetTransitionPublicStatement(statement);
-
-  const verified =
-    await proofVerifier.verify(
-      statement,
-      publicStatement
-    );
-
-  if (!verified) {
-    throw new Error(
-      "AUTHORITY_TRANSITION_PROOF_NOT_VERIFIED"
-    );
-  }
-
-  return {
-    kind: "verified-materios-authority-set-transition",
-    publicStatement,
-    statementHash:
-      hashAuthoritySetTransitionStatement(
-        publicStatement
-      ),
-    __verifiedAuthoritySetTransition: "verified"
-  };
-}
-
-export function authoritySetTransitionPublicStatement(
-  statement: AuthoritySetTransitionStatement
-): AuthoritySetTransitionPublicStatement {
-  validateAuthoritySetTransitionStatement(statement);
-
-  return {
-    protocolVersion: statement.protocolVersion,
-    chainId: statement.chainId,
-    genesisHash: new Uint8Array(statement.genesisHash),
-    genesisUtxo: new Uint8Array(statement.genesisUtxo),
-    fromSetId: statement.fromSetId,
-    fromAuthorities: statement.fromAuthorities,
-    sidechainEpoch: statement.sidechainEpoch,
-    authoritySelectionRegime: cloneAuthoritySelectionRegime(
-      statement.authoritySelectionRegime
-    ),
-    selectionInputsHash: new Uint8Array(
-      statement.selectionInputsHash
-    ),
-    proofSystem: statement.proofSystem,
-    toAuthorities: statement.toAuthorities,
-    activationBlock: {
-      hash: new Uint8Array(statement.activationBlock.hash),
-      number: statement.activationBlock.number
-    },
-    toSetId: statement.toSetId
-  };
-}
-
-/**
- * Canonical PRE-RICH encoding of the public transition statement.
- *
- * This is a PRE-RICH proof-boundary encoding. It is NOT claimed to be the
- * SCALE encoding of any Materios runtime structure.
- */
-export function encodeAuthoritySetTransitionStatement(
-  statement:
-    | AuthoritySetTransitionStatement
-    | AuthoritySetTransitionPublicStatement
-): Uint8Array {
-  const publicStatement =
-    "proofBytes" in statement
-      ? authoritySetTransitionPublicStatement(statement)
-      : statement;
-
-  validateAuthoritySetTransitionPublicStatement(
-    publicStatement
-  );
-
-  return concatBytes(
-    encodeString(TRANSITION_DOMAIN),
-    Uint8Array.of(publicStatement.protocolVersion),
-    encodeString(publicStatement.chainId),
-    encodeBytes(publicStatement.genesisHash),
-    encodeBytes(publicStatement.genesisUtxo),
-    encodeU64(publicStatement.fromSetId),
-    encodeAuthoritySet(publicStatement.fromAuthorities),
-    encodeU64(publicStatement.sidechainEpoch),
-    encodeAuthoritySelectionRegime(
-      publicStatement.authoritySelectionRegime
-    ),
-    encodeBytes(publicStatement.selectionInputsHash),
-    encodeString(publicStatement.proofSystem),
-    encodeAuthoritySet(publicStatement.toAuthorities),
-    encodeBytes(publicStatement.activationBlock.hash),
-    encodeU32(publicStatement.activationBlock.number),
-    encodeU64(publicStatement.toSetId)
-  );
-}
-
-export function hashAuthoritySetTransitionStatement(
-  statement:
-    | AuthoritySetTransitionStatement
-    | AuthoritySetTransitionPublicStatement
-): Uint8Array {
-  return blake2b(
-    encodeAuthoritySetTransitionStatement(statement),
-    { dkLen: HASH_LENGTH }
-  );
-}
-
-export interface OnChainSelectionInputsCommitment {
   /** Canonical finalized block containing the SessionValidatorManagement::set call. */
   readonly blockHash: Uint8Array;
+  /** Optional block number when the statement form is used. */
+  readonly blockNumber?: bigint;
   /** Exact 32-byte selection_inputs_hash emitted by that call. */
   readonly selectionInputsHash: Uint8Array;
 }
 
 /**
- * Binds externally recovered AuthoritySelectionInputs to the commitment
- * emitted by Materios' SessionValidatorManagement::set inherent.
+ * Binds recovered AuthoritySelectionInputs to the commitment emitted by
+ * Materios' SessionValidatorManagement::set inherent.
  *
- * This does not parse or trust a relayer's claimed call: the caller must
- * supply the hash extracted from the finalized block's canonical extrinsic.
- * The extraction/proof of that call is a separate evidence obligation.
+ * Two proof-boundary forms are supported:
+ *  - raw selection-input bytes + on-chain commitment: hashes the exact bytes;
+ *  - transition statement + on-chain commitment: checks the statement's
+ *    canonical activation block and selection-input hash against the commitment.
+ *
+ * This helper does not reproduce Materios' selector.
  */
 export function verifySelectionInputsCommitment(
   selectionInputs: Uint8Array,
   commitment: OnChainSelectionInputsCommitment
+): void;
+export function verifySelectionInputsCommitment(
+  statement:
+    | AuthoritySetTransitionStatement
+    | AuthoritySetTransitionPublicStatement,
+  commitment: OnChainSelectionInputsCommitment & { readonly blockNumber: bigint }
+): void;
+export function verifySelectionInputsCommitment(
+  subject:
+    | Uint8Array
+    | AuthoritySetTransitionStatement
+    | AuthoritySetTransitionPublicStatement,
+  commitment: OnChainSelectionInputsCommitment
 ): void {
   if (commitment.blockHash.length !== HASH_LENGTH) {
-    throw new Error("INVALID_SELECTION_COMMITMENT_BLOCK_HASH");
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
   }
 
   if (commitment.selectionInputsHash.length !== HASH_LENGTH) {
-    throw new Error("INVALID_SELECTION_INPUTS_HASH");
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH");
   }
 
-  const expected = hashSelectionInputs(selectionInputs);
+  if (commitment.blockNumber !== undefined &&
+      (commitment.blockNumber < 0n || commitment.blockNumber > U32_MAX)) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
+  }
 
-  if (!equalBytes(expected, commitment.selectionInputsHash)) {
-    throw new Error("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+  if (subject instanceof Uint8Array) {
+    const expected = hashSelectionInputs(subject);
+    if (!equalBytes(expected, commitment.selectionInputsHash)) {
+      throw new Error("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+    }
+    return;
+  }
+
+  const publicStatement =
+    "proofBytes" in subject
+      ? authoritySetTransitionPublicStatement(subject)
+      : subject;
+
+  validateAuthoritySetTransitionPublicStatement(publicStatement);
+
+  if (commitment.blockNumber === undefined) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
+  }
+
+  if (!equalBytes(
+    commitment.blockHash,
+    publicStatement.activationBlock.hash
+  )) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH_MISMATCH");
+  }
+
+  if (commitment.blockNumber !== publicStatement.activationBlock.number) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER_MISMATCH");
+  }
+
+  if (!equalBytes(
+    commitment.selectionInputsHash,
+    publicStatement.selectionInputsHash
+  )) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
   }
 }
 
