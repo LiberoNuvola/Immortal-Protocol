@@ -23,7 +23,8 @@ function makePacket(): MateriosExecutionProofPacket {
     runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
     callDataHex: '0xaabb',
     resultHex: '0xccdd',
-    proofNodesHex: ['0x0102', '0x0304'],
+    // SCALE-encoded StorageProof transport placeholder.
+    proofScaleHex: '0x040801020304',
     sidechainEpoch: 88n,
     cardanoEpochNonceHex: '0x' + '44'.repeat(32),
     genesisUtxoHex: '0xdeadbeef',
@@ -79,7 +80,7 @@ test('runtime identity fields fail closed', () => {
   )
 })
 
-test('execution payload and proof nodes must be valid hex', () => {
+test('execution payload and SCALE proof bytes must be valid hex', () => {
   const packet = makePacket()
 
   assert.throws(
@@ -95,9 +96,18 @@ test('execution payload and proof nodes must be valid hex', () => {
     () =>
       validateMateriosExecutionProofPacket({
         ...packet,
-        proofNodesHex: [],
+        proofScaleHex: 'not-hex',
       }),
-    /proofNodesHex must contain at least one node/,
+    /proofScaleHex must be 0x-prefixed hex/,
+  )
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        proofScaleHex: '0x',
+      }),
+    /proofScaleHex must not be empty/,
   )
 })
 
@@ -140,6 +150,10 @@ test('mutating bound execution material changes packet identity', () => {
     ...packet,
     resultHex: '0xeeff',
   })
+  const changedProof = executionProofPacketId({
+    ...packet,
+    proofScaleHex: '0x06010203040506',
+  })
   const changedBlock = executionProofPacketId({
     ...packet,
     blockNumber: packet.blockNumber + 1n,
@@ -150,6 +164,7 @@ test('mutating bound execution material changes packet identity', () => {
   })
 
   assert.notEqual(id, changedResult)
+  assert.notEqual(id, changedProof)
   assert.notEqual(id, changedBlock)
   assert.notEqual(id, changedEpoch)
 })
