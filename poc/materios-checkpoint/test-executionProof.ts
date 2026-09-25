@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import {
   executionProofPacketId,
   validateMateriosExecutionProofPacket,
+  verifyRuntimeCodeBinding,
   type MateriosExecutionProofPacket,
 } from './src/executionProof.ts'
 
@@ -268,4 +269,24 @@ test('mutating bound execution material changes packet identity', () => {
   assert.notEqual(id, changedProof)
   assert.notEqual(id, changedBlock)
   assert.notEqual(id, changedEpoch)
+})
+
+
+test('declared runtime code hash binds to the exact captured WASM bytes', async () => {
+  const packet = makePacket()
+  const { blake2b } = await import('@noble/hashes/blake2.js')
+  const code = new Uint8Array([0x00, 0x61, 0x73, 0x6d])
+  const codeHash = Buffer.from(blake2b(code, { dkLen: 32 })).toString('hex')
+
+  const bound = {
+    ...packet,
+    runtime: { ...packet.runtime, codeHash },
+  }
+  assert.doesNotThrow(() =>
+    verifyRuntimeCodeBinding(bound, '0x0061736d'),
+  )
+  assert.throws(
+    () => verifyRuntimeCodeBinding(bound, '0x0061736e'),
+    /runtime.codeHash does not match captured runtime WASM/,
+  )
 })
