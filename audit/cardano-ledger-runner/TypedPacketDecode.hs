@@ -7,6 +7,7 @@ module TypedPacketDecode
   , decodeBabbageUTxO
   , decodeYaciEpochInfo
   , decodeYaciSystemStart
+  , evaluateBabbageTx
   ) where
 
 import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
@@ -15,6 +16,7 @@ import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator, decCBOR)
 import Cardano.Ledger.Binary.Version (Version, mkVersion)
 import Cardano.Ledger.Core (TopTx, pvMajor)
 import Cardano.Ledger.State (UTxO)
+import Cardano.Ledger.Api.Scripts.ExUnits (RedeemerReportWithLogs, evalTxExUnitsWithLogs)
 import Cardano.Slotting.EpochInfo.API (EpochInfo)
 import Cardano.Slotting.EpochInfo.Impl (fixedEpochInfo)
 import Cardano.Slotting.Slot (EpochSize (..))
@@ -25,6 +27,8 @@ import Cardano.Slotting.Time
 import Data.Aeson
   ( Value (..)
   , eitherDecodeStrict'
+  , fromJSON
+  , Result (..)
   )
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as Key
@@ -33,7 +37,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as Text
 import qualified Data.Text.Read as TR
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Clock (UTCTime)
 import Lens.Micro ((^.))
 import YaciUTxO (decodeYaciUTxO)
 
@@ -54,10 +58,9 @@ decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
   root <- eitherDecodeStrict' bytes
   raw <- textAt root ["startTimeRaw"]
-  seconds <- parseInteger "startTimeRaw" raw
-  if seconds < 0
-    then Left "INVALID_SYSTEM_START"
-    else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
+  case fromJSON (String raw) of
+    Error err -> Left ("INVALID_SYSTEM_START:" <> err)
+    Success utc -> Right (SystemStart (utc :: UTCTime))
 
 decodeYaciEpochInfo :: BS.ByteString -> Either String (EpochInfo (Either Text.Text))
 decodeYaciEpochInfo bytes = do
@@ -135,3 +138,12 @@ parseMilliseconds field value =
                       Right (whole * 1000 + n)
                     _ -> Left ("INVALID_" <> field)
                 else Left ("INVALID_" <> field)
+
+evaluateBabbageTx ::
+  PParams BabbageEra ->
+  Tx TopTx BabbageEra ->
+  UTxO BabbageEra ->
+  EpochInfo (Either Text.Text) ->
+  SystemStart ->
+  RedeemerReportWithLogs BabbageEra
+evaluateBabbageTx = evalTxExUnitsWithLogs
