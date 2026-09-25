@@ -3,6 +3,10 @@ import { createHash } from 'node:crypto'
 /**
  * B3 transport envelope for a native Substrate ProofProvider::execution_proof result.
  *
+ * The proof returned by the SDK is a SCALE-encodable StorageProof. The packet
+ * preserves that exact proof as SCALE bytes rather than inventing a second
+ * transport representation of its trie-node set.
+ *
  * This type is intentionally an evidence envelope, not a proof verifier. The
  * RPC transport is untrusted; cryptographic execution/state/finality checks
  * remain an independent verifier responsibility.
@@ -25,7 +29,7 @@ export type MateriosExecutionProofPacket = {
   runtimeApiMethod: string
   callDataHex: string
   resultHex: string
-  proofNodesHex: string[]
+  proofScaleHex: string
 
   sidechainEpoch: bigint
   cardanoEpochNonceHex: string
@@ -67,13 +71,6 @@ function requireSafeNonNegativeInteger(value: number, field: string): void {
   }
 }
 
-function requireNodeHexList(nodes: string[]): void {
-  if (!Array.isArray(nodes) || nodes.length === 0) {
-    throw new Error('proofNodesHex must contain at least one node')
-  }
-  nodes.forEach((node, i) => requireHex(node, `proofNodesHex[${i}]`))
-}
-
 /**
  * Validate the transport envelope and all semantic bindings that can be
  * checked without executing the Substrate trie/runtime verifier.
@@ -101,7 +98,7 @@ export function validateMateriosExecutionProofPacket(
   requirePositiveName(packet.runtimeApiMethod, 'runtimeApiMethod')
   requireHex(packet.callDataHex, 'callDataHex', true)
   requireHex(packet.resultHex, 'resultHex', true)
-  requireNodeHexList(packet.proofNodesHex)
+  requireHex(packet.proofScaleHex, 'proofScaleHex')
 
   requireNonNegativeBigInt(packet.sidechainEpoch, 'sidechainEpoch')
   requireHex(packet.cardanoEpochNonceHex, 'cardanoEpochNonceHex')
@@ -112,9 +109,7 @@ export function validateMateriosExecutionProofPacket(
   }
 
   requirePositiveName(packet.authorityCommitment, 'authorityCommitment')
-  if (!/^[0-9a-f]{64}$/i.test(packet.authorityCommitment.replace(/^0x/i, ''))) {
-    throw new Error('authorityCommitment must be 32-byte hex')
-  }
+  requireHash(packet.authorityCommitment, 'authorityCommitment')
 
   // Binding invariant: execution must be evaluated at the same block whose
   // stateRoot is being authenticated. We do not infer or repair either value.
@@ -158,10 +153,8 @@ export function executionProofPacketId(
   hash.update('|')
   hash.update(packet.resultHex.toLowerCase())
   hash.update('|')
-  for (const node of packet.proofNodesHex) {
-    hash.update(node.toLowerCase())
-    hash.update('|')
-  }
+  hash.update(packet.proofScaleHex.toLowerCase())
+  hash.update('|')
   hash.update(packet.sidechainEpoch.toString())
   hash.update('|')
   hash.update(packet.cardanoEpochNonceHex.toLowerCase())
@@ -170,7 +163,7 @@ export function executionProofPacketId(
   hash.update('|')
   hash.update(packet.selectionPath)
   hash.update('|')
-  hash.update(packet.authorityCommitment.toLowerCase())
+  hash.update(requireHash(packet.authorityCommitment, 'authorityCommitment'))
 
   return '0x' + hash.digest('hex')
 }
