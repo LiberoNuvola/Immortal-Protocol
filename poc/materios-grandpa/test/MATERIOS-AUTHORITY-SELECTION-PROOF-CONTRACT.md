@@ -359,3 +359,14 @@ and stores the result as `SizedByteString<32>`.
 
 The B3 transport MUST treat this as the canonical selection-input hash formula. A packet carrying a different hash is invalid even if the surrounding transport envelope is otherwise well-formed.
 
+
+
+## Activation-block / finality binding
+
+The authority transition's `activationBlock` is not merely metadata. The independently verified GRANDPA checkpoint used to advance the authority state MUST have exactly the same block hash and block number.
+
+Equality of height alone is insufficient: a different block at the same height is not the activation block.
+
+The PoC now exposes `verifyActivationBlockBinding()`, which fails closed on either hash or number drift. This check sits outside the generic GRANDPA verifier so the latter remains reusable for ordinary finality checks while the authority-transition boundary explicitly binds the transition to its activation checkpoint.
+
+This closes a concrete trust gap in the previous integration test, where the transition activation height matched the finality checkpoint but the block hashes differed.
