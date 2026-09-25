@@ -56,10 +56,6 @@ export function extractSelectionInputsCommitment(
     const extrinsicHex = requireHex(extrinsics[index], `block extrinsic[${index}]`)
     const bytes = Buffer.from(extrinsicHex.slice(2), 'hex')
 
-    if (bytes.length < 3 + HASH_BYTES) {
-      continue
-    }
-
     // Unsigned/inherent SCALE extrinsic: version=4, followed by pallet/call.
     if (
       bytes[0] !== EXTRINSIC_VERSION_UNSIGNED ||
@@ -67,6 +63,12 @@ export function extractSelectionInputsCommitment(
       bytes[2] !== SET_CALL_INDEX
     ) {
       continue
+    }
+
+    if (bytes.length < 3 + HASH_BYTES) {
+      throw new Error(
+        `SessionCommitteeManagement::set inherent extrinsic[${index}] is truncated`,
+      )
     }
 
     const selectionInputsHash = `0x${bytes
