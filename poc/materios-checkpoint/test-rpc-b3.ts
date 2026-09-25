@@ -78,6 +78,13 @@ test('extractSelectionInputsCommitment fails closed on missing or duplicate set 
   )
 })
 
+test('extractSelectionInputsCommitment rejects a truncated set inherent', () => {
+  assert.throws(
+    () => extractSelectionInputsCommitment(['0x040e00aabbcc']),
+    /SessionCommitteeManagement::set inherent extrinsic\[0\] is truncated/,
+  )
+})
+
 test('getSelectionInputsCommitment reads the exact requested block', async () => {
   const target = `0x${'23'.repeat(32)}`
   const hash = `0x${'ef'.repeat(32)}`
