@@ -17,7 +17,10 @@ import Data.Aeson ((.=), object, toJSON)
 import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
 import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.State (UTxO)
-import Cardano.Ledger.Api.Scripts.ExUnits (RedeemerReportWithLogs)
+import Cardano.Ledger.Api.Scripts.ExUnits
+  ( RedeemerReportWithLogs
+  , TransactionScriptFailure (..)
+  )
 import Cardano.Slotting.EpochInfo.API (EpochInfo)
 import Cardano.Slotting.Time (SystemStart)
 import System.Directory (doesFileExist)
@@ -164,6 +167,17 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       reportPath = evidenceDir <> "/ledger-evaluation-report.json"
       failures = length [ () | Left _ <- Map.elems report ]
       successes = length [ () | Right _ <- Map.elems report ]
+      executionFailures =
+        length
+          [ ()
+          | Left (ValidationFailure {}) <- Map.elems report
+          ]
+      contextFailures =
+        length
+          [ ()
+          | Left (ContextError {}) <- Map.elems report
+          ]
+      ledgerFailures = failures - executionFailures - contextFailures
 
       contextDigest bytes =
         BSC.unpack (B16.encode (SHA256.hash bytes))
@@ -193,6 +207,9 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   putStrLn ("REDEEMER_ENTRIES: " <> show (Map.size report))
   putStrLn ("REDEEMER_SUCCESSES: " <> show successes)
   putStrLn ("REDEEMER_FAILURES: " <> show failures)
+  putStrLn ("PLUTUS_EXECUTION_FAILURES: " <> show executionFailures)
+  putStrLn ("LEDGER_CONTEXT_FAILURES: " <> show contextFailures)
+  putStrLn ("OTHER_LEDGER_FAILURES: " <> show ledgerFailures)
   if Map.null report
     then do
       safeStall "NO_REDEEMERS_FOUND"
@@ -204,8 +221,9 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
           putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
           putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
         else do
-          putStrLn "RESULT: LEDGER_ALIGNED_SCRIPT_FAILURE"
-          putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
+          putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_FAILURE"
+          putStrLn
+            "ACCEPTANCE: B — Cardano-ledger produced a typed failure report; failure class is recorded above and in the per-redeemer JSON."
 
 
 inspectManifest :: FilePath -> FilePath -> Bool -> IO ()
