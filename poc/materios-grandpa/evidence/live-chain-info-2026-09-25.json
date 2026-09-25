@@ -1,0 +1,41 @@
+{
+  "evidence_type": "live-chain-info-observation",
+  "network": "Materios Preprod v6",
+  "chain_id": "materios_preprod_v6",
+  "genesis": "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
+  "spec_version": 238,
+  "best_block": 2004818,
+  "finalized_block": 2004815,
+  "bootnodes": [
+    "/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM"
+  ],
+  "chain_spec_url": "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
+  "observed_at": "2026-09-25T04:28:07.578Z",
+  "observation_url": "https://materios.fluxpointstudios.com/chain-info",
+  "provenance": {
+    "surface": "public Materios chain-info endpoint",
+    "server_side_rationale": "The public gateway route polls the configured Materios RPC with chain_getBlockHash(0), state_getRuntimeVersion, chain_getHeader, chain_getFinalizedHead, and chain_getHeader(finalized_hash).",
+    "gateway_source_commit": "841322ea31a0ac4334e0a82b40ef82a5659812c1",
+    "gateway_source_repository": "Flux-Point-Studios/orynq-sdk",
+    "gateway_route": "services/blob-gateway/src/routes/chain-info.ts"
+  },
+  "scope": {
+    "verified": [
+      "live chain genesis identity at the observation surface",
+      "live spec_version reported by the surface",
+      "live best_block height reported by the surface",
+      "live finalized_block height reported by the surface"
+    ],
+    "open": [
+      "finalized block hash",
+      "direct state_getRuntimeVersion transcript at finalized hash",
+      "deployed runtime WASM/code hash",
+      "WASM to source commit reproducibility",
+      "real authority-set transition artifact",
+      "GRANDPA justification",
+      "cryptographic selector/transition proof",
+      "cryptographic M6 composition proof"
+    ]
+  },
+  "important_note": "This packet is deployment observation evidence, not an independent cryptographic finality proof. The chain-info response does not expose the finalized block hash, and the observer service source is not itself a substitute for direct RPC evidence."
+}
