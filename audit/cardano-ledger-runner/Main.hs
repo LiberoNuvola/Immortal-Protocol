@@ -145,9 +145,9 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
     else do
       putStrLn "EVALUATION_STATUS: COMPLETED"
       if failures == 0
-    then do
-      putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
-      putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
+        then do
+          putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
+          putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
         else do
           putStrLn "RESULT: LEDGER_ALIGNED_SCRIPT_FAILURE"
           putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
