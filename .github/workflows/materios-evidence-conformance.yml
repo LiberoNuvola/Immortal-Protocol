@@ -10,7 +10,14 @@ on:
       - work/immortal-green-closure
     paths:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
+      - "poc/materios-checkpoint/src/capture-finalized.ts"
+      - "poc/materios-checkpoint/src/executionProof.ts"
+      - "poc/materios-checkpoint/src/rpc.ts"
       - "poc/materios-checkpoint/test-canonicalEvidence.ts"
+      - "poc/materios-checkpoint/test-executionProof.ts"
+      - "poc/materios-checkpoint/test-rpc-b3.ts"
+      - "poc/materios-checkpoint/package.json"
+      - "poc/materios-checkpoint/package-lock.json"
       - "poc/materios-grandpa/**"
       - ".github/workflows/materios-evidence-conformance.yml"
   pull_request:
@@ -18,7 +25,14 @@ on:
       - b1-hardening
     paths:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
+      - "poc/materios-checkpoint/src/capture-finalized.ts"
+      - "poc/materios-checkpoint/src/executionProof.ts"
+      - "poc/materios-checkpoint/src/rpc.ts"
       - "poc/materios-checkpoint/test-canonicalEvidence.ts"
+      - "poc/materios-checkpoint/test-executionProof.ts"
+      - "poc/materios-checkpoint/test-rpc-b3.ts"
+      - "poc/materios-checkpoint/package.json"
+      - "poc/materios-checkpoint/package-lock.json"
       - "poc/materios-grandpa/**"
       - ".github/workflows/materios-evidence-conformance.yml"
 
@@ -32,6 +46,8 @@ jobs:
           node-version: 22
       - run: npm ci --prefix poc/materios-checkpoint
       - run: npx --prefix poc/materios-checkpoint tsx --test poc/materios-checkpoint/test-canonicalEvidence.ts
+      - run: npm run test:execution-proof --prefix poc/materios-checkpoint
+      - run: npm run test:rpc-b3 --prefix poc/materios-checkpoint
       - run: npm run typecheck --prefix poc/materios-checkpoint
       - run: npm ci --prefix poc/materios-grandpa
       - run: npm test --prefix poc/materios-grandpa
