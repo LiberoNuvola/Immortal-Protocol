@@ -48,7 +48,7 @@ The existing repository state still requires integration of the semantic payload
 
 ## Remaining integration boundary
 
-The repository's older `GovernanceCanonicalReplay` API accepts a parallel semantic `GovernanceEvent`. GOV-28 deliberately removes that model from the replay API. A concrete payload decoder must be implemented before the Haskell replay can be declared executable-conformant.
+The repository's older `GovernanceCanonicalReplay` API accepts a parallel semantic `GovernanceEvent`. GOV-28 deliberately removes that model from the replay API. The canonical replay path now also retains the canonical event history needed to compare `CanonicalizationRecord.canonicalizationDecisionRecordReference` with the exact `DecisionRecord.decisionCanonicalizationReference` for the same proposal; a mismatch fails closed. A concrete payload decoder and a real Cabal build/test run are still required before the Haskell replay can be declared fully executable-conformant.
 
 This is an explicit implementation boundary, not a hidden gap. The current reference verifier also confirms that finality/challenge lifecycle is not yet implemented in that verifier.
 
@@ -79,7 +79,7 @@ Not claimed:
 
 - full Haskell compilation;
 - full repository integration;
-- cryptographic identity authentication;
+- cryptographic identity authentication beyond the exact reference equality enforced in canonical replay;
 - real evidence authenticity;
 - semantic authorization of every governance transition;
 - production deployment certification.
