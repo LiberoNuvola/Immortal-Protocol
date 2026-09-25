@@ -5,6 +5,15 @@ module Main (main) where
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
+import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TE
+import Cardano.Ledger.Alonzo.Plutus.Evaluate (evalTxExUnitsWithLogs)
+import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
+import Cardano.Ledger.Core (TopTx)
+import Cardano.Ledger.State (UTxO)
+import Cardano.Slotting.EpochInfo.API (EpochInfo)
+import Cardano.Slotting.Time (SystemStart)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import TypedPacketDecode
@@ -63,7 +72,7 @@ main = do
         then safeStall "EMPTY_EXACT_PLUTUS_ARTIFACT"
         else inspectEvidence evidenceDir
 
-  putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
+  putStrLn "NO SYNTHETIC CONTEXT: evaluation only runs after exact typed-context decoding."
 
 safeStall :: String -> IO ()
 safeStall reason = do
@@ -110,11 +119,11 @@ inspectEvidence evidenceDir = do
 
 
 evaluateLedger ::
-  Cardano.Ledger.Api.Tx Cardano.Ledger.Core.TopTx Cardano.Ledger.Api.BabbageEra ->
-  Cardano.Ledger.Api.PParams Cardano.Ledger.Api.BabbageEra ->
-  Cardano.Ledger.State.UTxO Cardano.Ledger.Api.BabbageEra ->
-  Cardano.Slotting.EpochInfo.EpochInfo (Either Data.Text.Text) ->
-  Cardano.Slotting.Time.SystemStart ->
+  Tx TopTx BabbageEra ->
+  PParams BabbageEra ->
+  UTxO BabbageEra ->
+  EpochInfo (Either Text.Text) ->
+  SystemStart ->
   FilePath ->
   IO ()
 evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
@@ -124,7 +133,7 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       failures = length [ () | Left _ <- Map.elems report ]
       successes = length [ () | Right _ <- Map.elems report ]
 
-  BS.writeFile reportPath (Text.encodeUtf8 (Text.pack rendered))
+  BS.writeFile reportPath (TE.encodeUtf8 (Text.pack rendered))
   putStrLn ("EVALUATION_REPORT: " <> reportPath)
   putStrLn ("REDEEMER_ENTRIES: " <> show (Map.size report))
   putStrLn ("REDEEMER_SUCCESSES: " <> show successes)
