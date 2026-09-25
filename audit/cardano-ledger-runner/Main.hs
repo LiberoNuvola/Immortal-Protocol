@@ -108,6 +108,37 @@ inspectEvidence evidenceDir = do
         then safeStall "EMPTY_LEDGER_EVIDENCE_FILE"
         else inspectManifest evidenceDir manifestPath
 
+
+evaluateLedger ::
+  Cardano.Ledger.Api.Tx Cardano.Ledger.Core.TopTx Cardano.Ledger.Api.BabbageEra ->
+  Cardano.Ledger.Api.PParams Cardano.Ledger.Api.BabbageEra ->
+  Cardano.Ledger.State.UTxO Cardano.Ledger.Api.BabbageEra ->
+  Cardano.Slotting.EpochInfo.EpochInfo (Either Data.Text.Text) ->
+  Cardano.Slotting.Time.SystemStart ->
+  FilePath ->
+  IO ()
+evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
+  let report = evalTxExUnitsWithLogs pp tx utxo epochInfo systemStart
+      rendered = show report
+      reportPath = evidenceDir <> "/ledger-evaluation-report.txt"
+      failures = length [ () | Left _ <- Map.elems report ]
+      successes = length [ () | Right _ <- Map.elems report ]
+
+  BS.writeFile reportPath (Text.encodeUtf8 (Text.pack rendered))
+  putStrLn ("EVALUATION_REPORT: " <> reportPath)
+  putStrLn ("REDEEMER_ENTRIES: " <> show (Map.size report))
+  putStrLn ("REDEEMER_SUCCESSES: " <> show successes)
+  putStrLn ("REDEEMER_FAILURES: " <> show failures)
+  putStrLn "EVALUATION_STATUS: COMPLETED"
+  if failures == 0
+    then do
+      putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
+      putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
+    else do
+      putStrLn "RESULT: LEDGER_ALIGNED_SCRIPT_FAILURE"
+      putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
+
+
 inspectManifest :: FilePath -> FilePath -> IO ()
 inspectManifest evidenceDir manifestPath = do
   manifestBytes <- BS.readFile manifestPath
@@ -167,11 +198,9 @@ decodeTypedArtifacts evidenceDir = do
                       safeStall "YACI_SYSTEM_START_DECODE_FAILED"
                       putStrLn ("SYSTEM_START_ERROR: " <> err)
 
-                    Right _systemStart -> do
+                    Right systemStart -> do
                       putStrLn "RESULT: TYPED_BABBAGE_CONTEXT_DECODED"
                       putStrLn
                         "PParams, transaction, consumed UTxO, EpochInfo and SystemStart decoded with native Ledger types."
-                      putStrLn
-                        "EVALUATION_STATUS: NOT_RUN"
-                      putStrLn
-                        "NEXT: invoke ledger-aligned evalTxExUnitsWithLogs only after exact typed context provenance is independently bound."
+                      evaluateLedger tx pp utxo epochInfo systemStart evidenceDir
+
