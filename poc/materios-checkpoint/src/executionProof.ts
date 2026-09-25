@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { blake2b } from '@noble/hashes/blake2.js'
+import { buildCalculateCommitteeCallData } from './runtimeApi.js'
 
 /**
  * B3 transport envelope for a native Substrate ProofProvider::execution_proof result.
@@ -136,6 +137,13 @@ export function validateMateriosExecutionProofPacket(
     throw new Error('selectionInputsHash does not match authoritySelectionInputsHex')
   }
   requireHex(packet.callDataHex, 'callDataHex', true)
+  const expectedCallData = buildCalculateCommitteeCallData(
+    authoritySelectionInputsHex,
+    packet.sidechainEpoch,
+  )
+  if (packet.callDataHex.toLowerCase() !== expectedCallData) {
+    throw new Error('callDataHex does not match authoritySelectionInputsHex + sidechainEpoch')
+  }
   requireHex(packet.resultHex, 'resultHex', true)
   requireHex(packet.proofScaleHex, 'proofScaleHex')
 
