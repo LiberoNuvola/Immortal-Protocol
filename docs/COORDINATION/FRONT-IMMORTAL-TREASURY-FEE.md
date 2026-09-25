@@ -248,3 +248,33 @@ Direct current-branch inspection still finds no canonical universal ProtocolUsag
 5. Keep any reward-budget model downstream of revenue classification and independently authorized.
 
 **Status:** FEE SEMANTICS OPEN / FEE CAPTURE & ACCOUNTING OPEN / CARDANO NATIVE FEE DISTINCTION VERIFIED EXTERNALLY / NO NORMATIVE CHANGE.
+## 2026-09-25 — Current-tree Treasury / distribution usage census
+
+Direct current-tree enumeration confirms the following concrete surfaces:
+
+| Surface | Current evidence | Classification |
+|---|---|---|
+| `src/mint.ts` → `TREASURY_ADDRESS` | sale transaction pays the configured Treasury output | LIVE PRE-RICH application settlement; not a Protocol Usage Fee by itself |
+| `src/treasuryPolicy.ts` → `calculateTreasuryDistribution` | legacy percentage split with relayer minimum; file is explicitly marked deprecated | LEGACY / non-authoritative |
+| `relayer/relayer.js` → `calculateDistribution` + `DISTRIBUTE_REDEEMER` | standalone relayer still contains the same historical percentage distribution logic | LEGACY OPERATIONAL SURFACE; current deployment use not proven |
+| `plutus/Treasury.hs` → `TreasuryAction = Distribute` | concrete four-destination percentage validator | LEGACY/APPLICATION CARDANO SURFACE; current economically material usage not proven |
+| `PRE-RICH/profile/GenesisRegimeCarrier.hs` | decodes Treasury reference input and Oracle reference input for Genesis admission; does not call `TreasuryAction = Distribute` | GENESIS OBSERVATION SURFACE, separate from distribution |
+| `plutus/out/treasury.plutus.json` / frontend copy | generated/consumed artifact exists | DEPLOYMENT ARTIFACT; artifact existence is not proof of live economic use |
+
+### Important narrowing
+
+The census establishes a real split between **Treasury as a destination for application settlement** and **Treasury.Distribute as a historical distribution mechanism**. The presence of the latter in the repository/relayer does not prove that it remains the current economic authority.
+
+Therefore the safe next step is not to modify `Treasury.hs` or remove the relayer logic blindly. It is to trace every current builder/spender and deployment artifact that consumes the `treasury.plutus.json` script and to determine whether the four-way distribution can actually be reached on the current supported path.
+
+### Fee implication
+
+The current tree still has no canonical universal `ProtocolUsageFee` field/type. The live PRE-RICH sale payment into `TREASURY_ADDRESS` is therefore **not evidence that an IMMORTAL Protocol Usage Fee already exists**. It is an application settlement flow whose economic meaning remains governed by the PRE-RICH application/profile layer.
+
+The universal fee front remains:
+
+`FeeObligation → SettlementAmount → ProtocolRevenueReceived → AccountingClassification`
+
+with no automatic inference from destination address to ProtectedCapital, RawSurplus, reward budget or distributable value.
+
+**Status:** TREASURY / FEE CAPTURE OPEN / CURRENT-TREE USAGE CENSUS COMPLETED / LEGACY DISTRIBUTION AUTHORITY STILL UNPROVEN / NO NORMATIVE CHANGE.
