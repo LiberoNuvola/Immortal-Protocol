@@ -166,6 +166,7 @@ Only steps 1–4 should never be presented as proof of real on-chain execution w
 | Residual | Layer | Status | Closure condition |
 | --- | --- | --- | --- |
 | B3 publisher-independent authority provenance | PRE-RICH / Materios | OPEN | Verified finality + authority-selection proof chain |
+| Authority-regime provenance | PRE-RICH / Materios | OPEN | Verified proof binds normal L1/Ariadne regime vs explicit pinned-committee regime |
 | GRANDPA ancestry production proof | Evidence | OPEN | Complete cryptographic/finality verification path |
 | P2.8 typed Ledger Reveal evaluation | Adapter / Evidence | IN PROGRESS | Complete typed report from exact evidence |
 | IMMORTAL↔Cardano semantic equivalence | Adapter / Conformance | OPEN by item | Action-by-action equivalence or explicit justified boundary |
