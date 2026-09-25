@@ -7120,3 +7120,71 @@ State-boundary work remains **IMPLEMENTATION/EVIDENCE GAP**: the conceptual univ
 **Next autonomous actions:** observe the exact-head P2.8 and Kernel runs; if they finish, classify only from actual logs/artifacts. In parallel, continue source-grounded fee capture/beneficiary/accounting analysis without freezing numerical fee parameters or PRE policy into IMMORTAL.
 
 **USER QUESTION:** NONE.
+
+
+## 2026-09-25 — Autonomous multi-front cycle: exact HEAD revalidation + CI/evidence sweep
+
+**Current canonical branch HEAD observed:** `bc519996ee2447578543376124d7a51002e117e7` on `work/immortal-green-closure`.
+
+The older `6545bdc...` and `83c12df...` markers in prior handoffs are superseded by this exact branch ref. The current HEAD commit is `docs: align coordination head marker`.
+
+### Exact-head CI observed
+
+- **P2.8-B.1 Cardano-ledger runner** — run `36187719234`, job `ledger-runner`: **IN PROGRESS**. Checkout + GHC/Cabal setup completed; `Run ledger-aligned bootstrap` is executing. No evaluator result/artifact is yet observable.
+- **Kernel Invalid-Class Fail-Closed Audit** — run `36187719357`, job `kernel-fail-closed`: **IN PROGRESS**. Haskell setup/toolchain completed; native dependency installation is executing. Regression suite has not yet run.
+- **Cardano Adapter Sale Conformance** — run `36187719215`: **SUCCESS** on this exact HEAD.
+- **Algorithmic Governability Adversarial Lab** — run `36187719203`: **SUCCESS** on this exact HEAD.
+
+P2.8 remains **EVIDENCE GAP**, not GREEN, until `evalTxExUnitsWithLogs` completes against the exact current HEAD and the expected report/binding artifact is observed. Kernel remains **EVIDENCE GAP / IN PROGRESS** until the actual regression-suite result is observed.
+
+### P2.8 workflow verification
+
+Current workflow `.github/workflows/p2-8-b1-cardano-ledger-runner.yml` is correctly configured on `work/immortal-green-closure` and executes:
+
+`PParams + Babbage Tx + UTxO + EpochInfo + SystemStart → cabal run cardano-ledger-runner -- --evaluate`
+
+with `if: always()` artifact upload from `audit/cardano-ledger-runner/evidence/`.
+
+No semantic evaluator change is justified while the real runner is already executing. **Action: observe and capture the exact-head artifact; do not reuse superseded failures/runs as current evidence.**
+
+### Fee boundary — Notion triangulation
+
+The current Notion Fee Ownership Matrix confirms:
+
+- IMMORTAL owns the economic meaning/existence of Protocol Usage Fee and the `EconomicFeeTarget → SettlementAmount` semantics;
+- Cardano Adapter owns concrete representation/valuation transport/settlement mechanics;
+- `ProtocolUsageFee` remains distinct from `ChainExecutionCost`;
+- no numerical fee, PRE-RICH fee policy, price source, rounding bound or affordability parameter is currently frozen.
+
+Classification: **ARCHITECTURAL BOUNDARY CLOSED/STABLE; PARAMETERS OPEN DECISION/RESEARCH; IMPLEMENTATION GAP contingent on normative specification.** No fee code is introduced.
+
+### Materios / Beacon 3
+
+Repository workflows confirm Materios evidence/conformance and B3 execution verification are path-scoped and are not triggered by this documentation-only HEAD. Existing source-level hardening therefore remains separate from decisive live evidence.
+
+External prior-art triangulation also confirms that independent GRANDPA verification requires the finalized target plus authority-set/finality proof material; a receipt/provenance surface alone is not equivalent to cryptographic finality proof. This reinforces the existing rule: do not close B3 from explorer provenance alone and do not reimplement the upstream selector.
+
+Classification: **EVIDENCE GAP** for the decisive finalized-block → authority-set transition → GRANDPA finality → runtime/storage authentication chain.
+
+### Governance / GOV-28
+
+Notion current-state material continues to identify the remaining gap as canonicalization-reference provenance/identity binding plus fresh CI evidence. Existing implementation already separates `DECISION_FINALIZED`, `ADOPTION_RECORDED`, `CONFORMANCE_RECORDED` and `CANONICALIZED`; no new reference/digest convention is authorized by current sources.
+
+Classification: **IMPLEMENTATION/EVIDENCE GAP**; no new normative decision.
+
+### Cross-front decision
+
+No user decision boundary exists in this cycle.
+
+**USER QUESTION:** NONE.
+
+### Next autonomous actions
+
+1. Capture exact-head P2.8 `--evaluate` result and artifact when the current run completes.
+2. Capture exact-head Kernel regression result when native dependencies finish.
+3. Continue Materios/B3 evidence work on finalized fixtures and upstream authority-selection provenance without changing selector semantics.
+4. Continue GOV-28 provenance analysis without inventing an identity format.
+5. Continue Protocol Usage Fee adversarial specification work without selecting numerical parameters.
+6. Re-run the full active-front sweep after the current CI transitions, always anchoring claims to exact commit + run + artifact.
+
+**Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / NO USER INPUT REQUIRED.
