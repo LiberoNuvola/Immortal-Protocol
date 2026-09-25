@@ -3,8 +3,11 @@
 module Main (main) where
 
 import qualified Data.Aeson as Aeson
+import qualified Crypto.Hash.SHA256 as SHA256
+import qualified Data.ByteString.Base16 as B16
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
@@ -133,19 +136,22 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       failures = length [ () | Left _ <- Map.elems report ]
       successes = length [ () | Right _ <- Map.elems report ]
 
+      contextDigest bytes =
+        BSC.unpack (B16.encode (SHA256.hash bytes))
+
   BS.writeFile reportPath (TE.encodeUtf8 (Text.pack rendered))
   reportBytes <- BS.readFile reportPath
-  let reportDigest = show (BS.length reportBytes)
+  let reportDigest = BSC.unpack (B16.encode (SHA256.hash reportBytes))
   BS.writeFile
     (evidenceDir <> "/ledger-evaluation-binding.txt")
     (TE.encodeUtf8
       (Text.unlines
-        [ "transaction_cbor_bytes=" <> show (BS.length txBytes)
-        , "pparams_bytes=" <> show (BS.length ppBytes)
-        , "utxo_bytes=" <> show (BS.length utxoBytes)
-        , "epoch_info_bytes=" <> show (BS.length epochBytes)
-        , "system_start_bytes=" <> show (BS.length systemStartBytes)
-        , "evaluation_report_bytes=" <> reportDigest
+        [ "transaction_cbor_sha256=" <> contextDigest txBytes
+        , "pparams_sha256=" <> contextDigest ppBytes
+        , "utxo_sha256=" <> contextDigest utxoBytes
+        , "epoch_info_sha256=" <> contextDigest epochBytes
+        , "system_start_sha256=" <> contextDigest systemStartBytes
+        , "evaluation_report_sha256=" <> reportDigest
         ]))
   putStrLn ("EVALUATION_REPORT: " <> reportPath)
   putStrLn ("EVALUATION_BINDING: " <> evidenceDir <> "/ledger-evaluation-binding.txt")
