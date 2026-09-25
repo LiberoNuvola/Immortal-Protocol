@@ -6,7 +6,7 @@
 
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
-**Snapshot:** 2026-09-24
+**Snapshot:** 2026-09-25
 **Latest observed commit by this session:** `ef784cd74390a98562a28903d136e2194f55b6d3` — current observed branch snapshot at handoff
 
 ---
