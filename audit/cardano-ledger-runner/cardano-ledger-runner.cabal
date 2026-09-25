@@ -39,7 +39,6 @@ executable yaci-utxo-test
     , cardano-ledger-babbage ==1.14.0.0
     , cardano-ledger-core ==1.21.0.0
     , cardano-ledger-mary ==1.11.0.0
-    , ledger-state ==9.9.9.9
     , cardano-ledger-binary ==1.9.0.0
     , base16-bytestring
     , containers
