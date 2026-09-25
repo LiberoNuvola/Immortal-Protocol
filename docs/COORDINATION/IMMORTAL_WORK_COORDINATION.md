@@ -6816,3 +6816,16 @@ The observed P2.8 failure was therefore a build-system dependency-resolution fai
 - GRANDPA proof transport: implemented/tested as an untrusted transport surface; real-chain proof verification remains OPEN.
 - Materios finalized hash/state-root/runtime-at-hash: OPEN.
 - No economic constants or validator semantics were changed by these repairs.
+
+
+---
+
+## 2026-09-25 — B3 test failure diagnosed and corrected
+
+The Materios Canonical Evidence & Finality Boundary workflow reached the execution-proof suite and produced a concrete failure: 15/16 tests passed; the single failing case mutated sidechainEpoch without regenerating its canonically bound callDataHex. The validator correctly rejected that packet because callDataHex is now required to equal the SCALE encoding of authoritySelectionInputsHex plus sidechainEpoch.
+
+This was a test-fixture inconsistency, not a protocol defect. The test now regenerates callDataHex with buildCalculateCommitteeCallData when it mutates sidechainEpoch, preserving the intended assertion that the packet identity changes while remaining internally valid.
+
+The same workflow had already passed the canonical-evidence suite (7/7). The next Materios workflow is queued on the corrected commit. No real-chain proof is promoted from this test; the production GRANDPA and execution-proof obligations remain OPEN.
+
+**Fix commit:** 1ec64b856934060b78d3a87ffb537808e15ecea0
