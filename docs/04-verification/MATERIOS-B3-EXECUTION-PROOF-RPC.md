@@ -52,6 +52,29 @@ The handler must not:
 - reconstruct Materios authority-selection logic outside the runtime;
 - accept a different method than the canonical committee runtime API on the B3 endpoint.
 
+
+## Input-commitment binding
+
+The B3 evidence packet MUST distinguish the exact SCALE bytes of the authority-selection input from the full Runtime API call bytes.
+
+- `authoritySelectionInputsHex` = exact `AuthoritySelectionInputs.encode()` bytes.
+- `selectionInputsHash` = `blake2_256(authoritySelectionInputsHex)`.
+- `callDataHex` = exact SCALE bytes supplied to `SessionValidatorManagementApi_calculate_committee`.
+
+Materios' `pallet-session-validator-management` computes `selection_inputs_hash = blake2_256(decoded_data.encode())` inside `create_inherent` and includes that hash in the mandatory `Call::set` written into the block. The hash is not a standalone storage item, so B3 must recover it from the canonical block's encoded `Call::set` and compare it against the externally obtained exact input bytes.
+
+This prevents a relayer from substituting a different `AuthoritySelectionInputs` value while presenting a valid execution proof.
+
+The binding is:
+
+`canonical block -> SessionValidatorManagement::set.selection_inputs_hash -> exact AuthoritySelectionInputs bytes -> blake2_256 match -> Runtime API call -> StorageProof`
+
+The extraction of `Call::set` remains a separate transport/decoding task. A normal `state_call` result does not establish that the supplied inputs were the inputs carried by the canonical inherent.
+
+## Schema update
+
+The current IMMORTAL transport envelope is `materios-execution-proof-v2`. Version 2 adds the explicit `authoritySelectionInputsHex` and `selectionInputsHash` fields so the on-chain commitment can be checked without conflating input bytes with the complete Runtime API call payload.
+
 ## Independent verifier
 
 The receiving verifier must independently bind:
