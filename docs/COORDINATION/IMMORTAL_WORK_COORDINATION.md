@@ -6898,3 +6898,14 @@ Current CI observation on that commit:
 - GitGuardian: IN PROGRESS.
 
 No production governance semantics changed. The timestamp invariant remains exact equality between canonical event timestamp and Classified/GatesSet payload timestamp.
+
+
+## 2026-09-25 — Coordination pulse: current HEAD recheck
+
+Current PR #10 HEAD is `8f289d57bbc2c930d1c102cfeb4c84a032e43fad`. The P2.8 evaluator capability is already implemented and the coordination priority remains evidence capture, not further semantic changes.
+
+**P2.8:** `--evaluate` → native `evalTxExUnitsWithLogs` → persisted report/binding. No workflow run is exposed for this exact HEAD through the current GitHub Actions connector, so the real Reveal evaluation remains **OPEN**. The visible historical run must not be reused as current evidence.
+
+**Materios/B3:** continue in parallel with real finalized-block/proof provenance. Existing source-level hardening is not equivalent to live proof/finality. Do not reimplement the selector or promote explorer/receipt provenance to B3 closure.
+
+**Cross-session instruction:** first inspect current HEAD/run/artifact state; only then make changes. Any GREEN claim must name exact commit + observable evidence.
