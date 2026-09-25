@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `b0faf0b2fe1c2aa3f80676aa5efa6961e21c5b3e` — exact current branch HEAD
+**Latest observed commit by this session:** `608a8cf965760a65b4e18399048c44eabe250cef` — exact current branch HEAD
 
 ---
 
@@ -7394,3 +7394,53 @@ A direct local `git clone` was attempted for independent test execution but DNS/
 - **Remaining blockers:** P2.8 = EVIDENCE GAP; Governance provenance = EVIDENCE/DESIGN GAP; Materios/B3 = live proof/finality EVIDENCE GAP; B4/B5/B6 = conformance/evidence OPEN; independent assurance = OPEN.
 - **Next autonomous actions:** continue source-grounded dependency/evidence closure on P2.8; triangulate fee/settlement implementation against canonical boundaries; advance independent B4/B5/B6 and Materios evidence without changing frozen economics.
 - **USER QUESTION:** NONE.
+
+
+## 2026-09-25 — Autonomous cycle: current CI + B3/fee triangulation
+
+**Current HEAD:** `608a8cf965760a65b4e18399048c44eabe250cef` on `work/immortal-green-closure`.
+
+### Exact-head CI observation
+
+The branch advanced after the P2.8 dependency repair to commit `608a8cf...` (message: `test: align canonical evidence fixtures with digest contract`). At observation time the exact-head workflows were still running:
+
+- **P2.8-B.1 Cardano-ledger runner** — `in_progress`; checkout completed and the job was installing GHC/Cabal. No evaluator result is claimed yet.
+- **Kernel Invalid-Class Fail-Closed Audit** — `in_progress`; checkout completed and Haskell setup was in progress. No regression result is claimed yet.
+
+The latest P2.8 run is therefore still an observation point, not closure. Continue to classify the next failure only from its exact job log/artifact; do not preemptively modify ledger/evaluator semantics.
+
+### Canonical evidence fixture delta
+
+Commit `608a8cf...` changes only `src/__tests__/canonical-transition-evidence.test.ts`, replacing placeholder fingerprint strings with 64-hex-character values matching the digest contract. This is test-fixture alignment and does not alter economic, validator or protocol semantics.
+
+### B3 / Beacon 3 triangulation — Notion + current branch
+
+The current Notion End-to-End System Map and Multi-Front Checkpoint confirm the intended B3 pipeline:
+
+`Materios finalized evidence → GRANDPA finality/authority provenance → StateRoot → authenticated storage value → succinct proof target → canonical Beacon → deterministic PRE-RICH result`.
+
+The current branch's `PRE-RICH/docs/B3-BEACON-CONFORMANCE-INVESTIGATION.md` independently confirms that B1 beacon derivation is deterministic but explicitly does **not** authenticate the external Materios context/hash; the current registry boundary remains authorized publication rather than publisher-independent authenticity. It also confirms that the 20,000-slot GameRules mapping and 60,000 rejection construction are present in both Plutus and TypeScript, while byte-for-byte executable parity and publisher-independent canonical randomness remain open.
+
+**Classification:** B3-A/B canonicality = **EVIDENCE GAP**; B3-D mapping = **IMPLEMENTED / SOURCE-LEVEL CONFORMANCE**, with executable parity still open. No selector reimplementation and no economic change.
+
+### Protocol Usage Fee — current triangulation
+
+Fresh Notion search still resolves the Fee Ownership Matrix, target/settlement formalization, and DApp→Adapter operational bridge. The architecture remains:
+
+`ProtocolUsageFee != ChainExecutionCost`
+
+`TotalCost = ProtocolUsageFee + ChainExecutionCost`
+
+No numerical fee, source, rounding, affordability parameter, PRE-RICH fee policy, or beneficiary allocation is promoted to canon. Continue adversarial/conformance work without freezing those parameters.
+
+### Autonomous next actions
+
+1. Observe exact-head P2.8 and Kernel runs and capture logs/artifacts.
+2. Continue B3/Materios evidence toward publisher-independent verification without replacing the upstream authority selector.
+3. Preserve the already-closed payout-unit interpretation and pursue executable Plutus/TypeScript replay parity.
+4. Continue fee/settlement boundary work without selecting open parameters.
+5. Continue GOV-28 provenance, B4/B5/B6 and independent-assurance fronts.
+
+**USER QUESTION:** NONE.
+
+**Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / NO USER INPUT REQUIRED.
