@@ -174,3 +174,64 @@ The existing verifier's current trust boundary still requires a verified authori
 - Independent GRANDPA decode/verification: **IN PROGRESS**
 - Canonical authority-set provenance: **OPEN**
 - Real finalized Materios proof fixture: **OPEN**
+
+## Exact current-node integration point
+
+A fresh inspection of Materios `partnerchain/node/src/service.rs` shows that the node already constructs:
+
+- `grandpa_block_import`;
+- `grandpa_link`;
+- the GRANDPA network protocol;
+- the GRANDPA voter.
+
+The RPC builder currently captures only `client` and `transaction_pool`, then calls `crate::rpc::create_full(deps)`. It does not pass the GRANDPA link into RPC construction.
+
+Therefore the missing wiring is narrower than adding GRANDPA consensus itself.
+
+The service-side integration must retain/derive, before `grandpa_link` is moved into the voter:
+
+```rust
+let justification_stream = grandpa_link.justification_stream();
+let shared_authority_set = grandpa_link.shared_authority_set().clone();
+let shared_voter_state = SharedVoterState::empty();
+
+let finality_proof_provider =
+    sc_consensus_grandpa::FinalityProofProvider::new_for_service(
+        backend.clone(),
+        Some(shared_authority_set.clone()),
+    );
+```
+
+and place those values into `FullDeps` for the RPC builder.
+
+The existing voter setup must continue to receive the original `grandpa_link`; the RPC integration must not replace or duplicate the consensus link.
+
+The node RPC module should then instantiate the SDK GRANDPA handler with:
+
+```rust
+sc_consensus_grandpa_rpc::Grandpa::new(
+    subscription_executor,
+    shared_authority_set,
+    shared_voter_state,
+    justification_stream,
+    finality_proof_provider,
+).into_rpc()
+```
+
+The exact `SubscriptionTaskExecutor` value comes from the RPC builder closure supplied by `spawn_tasks`.
+
+### Important correction
+
+The current Materios `node/Cargo.toml` **already contains**:
+
+`sc-consensus-grandpa-rpc = { workspace = true }`
+
+so no new dependency is required in the node crate. The blocker is registration/wiring, not dependency availability.
+
+### B3 consequence
+
+Once this wiring exists in an upstream build, the standard RPC can produce the SDK-native `FinalityProof` bytes. That still does not close B3: the IMMORTAL side must independently decode the outer proof, bind its target block/hash, decode and verify the inner GRANDPA justification against the authenticated authority-set state, and connect that finality result to the selection/enactment transition.
+
+Status remains:
+
+**standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; real proof fixture OPEN.**
