@@ -7683,3 +7683,38 @@ The same official documentation exposes `state_call` for `SessionCommitteeManage
 **Classification:** Materios/B3 live anchor = **CURRENT NETWORK DATA CONFIRMED / FINALIZED-HASH + CRYPTOGRAPHIC PROOF OPEN**.
 
 No selector reimplementation, no authority shortcut, and no economic change.
+
+## 2026-09-25 — PHASE FINALIZATION RECORD
+
+### Scope
+This cycle finalizes the current implementation/conformance phase without converting evidence gaps or unresolved normative parameters into false CLOSED claims.
+
+### Finalized implementation boundaries
+- Economic submission boundary is fail-closed and separated from generic infrastructure submission.
+- RF8 economic mutation inventory and TypeScript submission-boundary coverage are present.
+- Issue and Expire refinement witnesses are present.
+- Protected-capital / RawSurplus / liability-first semantics remain frozen.
+- GOV-28 canonicalization now requires exact equality between the finalized DecisionRecord reference and the CanonicalizationRecord reference for the same proposal.
+- Materios Beacon-3 local commitment boundaries are hardened for selection-input bytes, commitment hash, activation block hash and activation block number.
+- P2.8 uses the native Cardano-ledger evaluator path and source-grounded dependency pins; no synthetic Ledger context is accepted.
+
+### Evidence boundary — deliberately not overstated
+The following remain release-certification gates rather than implementation TODOs:
+1. native P2.8 evaluator artifact from the exact current head;
+2. fresh-source Reveal Plutus execution-budget classification;
+3. publisher-independent Materios finality/runtime/selection-proof composition;
+4. B4/B5/B6 end-to-end ledger conformance evidence;
+5. independent specialist Plutus/UPLC security review and second-human review;
+6. any universal Protocol Usage Fee parameters that have not been normatively selected.
+
+### Frozen economics
+No new economic constant, payout rule, expiry duration, oracle haircut, fee amount, allocation split, authority shortcut, or validator weakening is introduced by this finalization cycle.
+
+### Release posture
+**Implementation phase: FINALIZED.**  
+**Evidence/certification phase: OPEN BY DESIGN.**
+
+A future certification pass may close the remaining gates only from concrete artifacts, exact-head CI, live ledger observations, cryptographic proofs, or an explicit normative decision where one is actually required. No source hierarchy is bypassed.
+
+**USER QUESTION:** NONE.
+**Next action:** certification/evidence closure only; do not reopen frozen implementation semantics without new authoritative evidence.
