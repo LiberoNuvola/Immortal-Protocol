@@ -5822,6 +5822,28 @@ Status:
 - No selector reimplementation / no synthetic proof bytes / no normative economic change.
 
 
+## 2026-09-25 — MATERIOS SELECTION / ENACTMENT / FINALITY SEPARATION
+
+Upstream `pallet-session-validator-management` confirms that the authority transition has three distinct runtime stages:
+
+```
+select_authorities(...)
+    -> Call::set
+    -> NextCommittee persisted
+    -> session rotation
+    -> CurrentCommittee
+    -> GRANDPA/session authority context
+```
+
+The `set` inherent carries `for_epoch_number` and `selection_inputs_hash`; when selection returns `None`, the pallet can retain the current committee. Therefore an observed committee, an enacted committee and the GRANDPA SetId used for finality are not interchangeable evidence.
+
+B3/M6 must therefore prove the complete relation:
+`selection regime + selection context -> selected committee -> enacted committee -> effective authority SetId -> finalized target`.
+
+Local IMMORTAL code only binds the typed transition statement and remains deliberately unable to infer this relationship from local hashes or from committee bytes alone.
+
+Status: **SELECTION / ENACTMENT / FINALITY DISTINCTION VERIFIED AT SOURCE LEVEL; CRYPTOGRAPHIC COMPOSITION + LIVE-NODE EVIDENCE OPEN.**
+
 ## 2026-09-25 — MATERIOS RECEIPT PROVENANCE VS AUTHORITY-SELECTION BOUNDARY
 
 A direct source audit of the upstream Materios `orinq-receipts` runtime adds an important B3 constraint that the new Receipt Explorer lineage does not resolve.
