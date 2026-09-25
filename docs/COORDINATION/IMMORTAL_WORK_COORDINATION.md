@@ -6829,3 +6829,22 @@ This was a test-fixture inconsistency, not a protocol defect. The test now regen
 The same workflow had already passed the canonical-evidence suite (7/7). The next Materios workflow is queued on the corrected commit. No real-chain proof is promoted from this test; the production GRANDPA and execution-proof obligations remain OPEN.
 
 **Fix commit:** 1ec64b856934060b78d3a87ffb537808e15ecea0
+
+## 2026-09-25 — Materios evidence workflow deduplication
+
+The active Materios Canonical Evidence & Finality Boundary workflow contained duplicated path filters and executed both `test:execution-proof` and `test:rpc-b3` twice in the same job. This created redundant CI work and made the evidence signal harder to interpret.
+
+Surgical correction on `work/immortal-green-closure`:
+- removed duplicate workflow path entries;
+- retained exactly one canonical-evidence test run;
+- retained exactly one execution-proof test run;
+- retained exactly one RPC/B3 test run;
+- retained typecheck, Materios GRANDPA tests and build unchanged.
+
+No proof semantics, runtime binding, selector semantics, authority boundary or economic rule changed.
+
+Commit: `ab863698158219382f0913ce3f592065266c7f6c`
+
+Status: **CI WORKFLOW CLEANUP APPLIED / FRESH WORKFLOW RESULT REQUIRED**.
+
+Next action: observe the corrected Materios workflow and classify any failure from its actual execution. Real-chain execution proof, runtime-at-finalized-hash, authority-selection execution and GRANDPA finality remain OPEN until corresponding evidence is produced.
