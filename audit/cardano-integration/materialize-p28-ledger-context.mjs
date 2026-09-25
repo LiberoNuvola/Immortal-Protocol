@@ -151,6 +151,17 @@ const pparams = await requireFile(EVIDENCE_DIR + '/reveal-protocol-parameters.js
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
 
+const genesisResponse = await fetch(API + '/genesis')
+if (!genesisResponse.ok) {
+  throw new Error('Yaci /genesis failed: HTTP ' + genesisResponse.status)
+}
+const genesis = await genesisResponse.json()
+for (const field of ['system_start', 'epoch_length', 'slot_length']) {
+  if (!Number.isSafeInteger(genesis[field]) || genesis[field] <= 0) {
+    throw new Error('Yaci /genesis has invalid ' + field)
+  }
+}
+
 const utxoResponse = await fetch(API + '/txs/' + txHash + '/utxos')
 if (!utxoResponse.ok) {
   throw new Error('Yaci /txs/{hash}/utxos failed: HTTP ' + utxoResponse.status)
@@ -227,6 +238,7 @@ await writeFile(
       yaciDevkitInfo: 'yaci-devkit-info.txt',
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
+    genesisResponse: genesis,
     timingSource: {
       ...timing,
     },
@@ -241,7 +253,8 @@ await writeFile(
       command: 'yaci-devkit info',
       file: 'yaci-devkit-info.txt',
     },
-    startTimeRaw: timing.startTimeRaw,
+    startTimeRaw: String(genesis.system_start),
+    genesisSystemStart: genesis.system_start,
     rawInfo: yaciInfo,
   }, null, 2) + '\n',
 )
