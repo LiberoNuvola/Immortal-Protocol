@@ -331,3 +331,17 @@ Standard chain RPC still does not directly hand us decoded `AuthoritySelectionIn
 - a narrow upstream proof/evidence RPC that returns both the execution proof and the canonical `selection_inputs_hash` extracted from the target block.
 
 The second option is preferable for a minimal deployment surface only if the independent verifier still verifies the returned block/extrinsic binding itself.
+
+## Runtime inherent verification semantics
+
+The upstream Materios `pallet-session-validator-management` source shows that `check_inherent()` recomputes the expected validator set with the authoritative `T::select_authorities(...)` path (or the documented current/next-committee fallback) and compares that set with the proposed `validators`.
+
+The `selection_inputs_hash` is **not a standalone proof of correct selection**:
+- when the proposed validator set differs, the runtime distinguishes a matching-vs-mismatching selection-input hash and rejects both mismatch cases;
+- when the validator set itself matches, the inherent check does not independently reject solely because the hash differs.
+
+Therefore B3/M6 MUST bind the actual authoritative selection execution result (or an independently verifiable execution proof of that result) and MUST NOT treat `selection_inputs_hash` alone as sufficient evidence that the committee was selected from the claimed inputs.
+
+This also reinforces the distinction between:
+`selection inputs / hash` → `authoritative selector result` → `enactment` → `GRANDPA authority`.
+
