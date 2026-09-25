@@ -172,6 +172,32 @@ async getCommitteeExecutionProof(
   return validateCommitteeExecutionProofResponse(value);
 }
 
+/**
+ * Request the standard Substrate GRANDPA finality proof for a block number.
+ *
+ * The node may return null when it cannot construct the proof. Returned bytes
+ * are the SCALE-encoded FinalityProof/GrandpaJustification transport object.
+ * They remain untrusted evidence until independently decoded and verified.
+ */
+async getGrandpaFinalityProof(
+blockNumber: number
+): Promise<string | null> {
+if (!Number.isSafeInteger(blockNumber) || blockNumber < 0) {
+throw new Error("grandpa_proveFinality: invalid block number");
+}
+
+const value = await this.call<unknown>(
+"grandpa_proveFinality",
+[blockNumber]
+);
+
+if (value === null) {
+return null;
+}
+
+return requireHex(value, "grandpa_proveFinality");
+}
+
 async getRuntimeVersion(
 hash?: string
 ): Promise<RuntimeVersion> {
