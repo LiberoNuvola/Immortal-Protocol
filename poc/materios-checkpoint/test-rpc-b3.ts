@@ -27,6 +27,75 @@ async function readBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString('utf8')
 }
 
+test('getGrandpaFinalityProof requests the standard finality RPC', async () => {
+  const targetBlock = 1234
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: '0xaabbccdd',
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const proof = await rpc.getGrandpaFinalityProof(targetBlock)
+    assert.equal(proof, '0xaabbccdd')
+    assert.equal(seenMethod, 'grandpa_proveFinality')
+    assert.deepEqual(seenParams, [targetBlock])
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaFinalityProof accepts an unavailable proof as null', async () => {
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: null,
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    assert.equal(await rpc.getGrandpaFinalityProof(0), null)
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaFinalityProof rejects malformed proof transport', async () => {
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: 'not-hex',
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => rpc.getGrandpaFinalityProof(1),
+      /grandpa_proveFinality: expected hex string/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
 test('getRuntimeCode requests state_getCode at the exact block', async () => {
   const target = `0x${'11'.repeat(32)}`
   let seenMethod = ''
