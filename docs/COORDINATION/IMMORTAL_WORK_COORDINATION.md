@@ -6753,3 +6753,30 @@ The live Materios observation remains current only as deployment observation:
 The Materios explorer source route `GET /api/block/{block_id}` is verified in source and can theoretically recover an exact block hash by height, but its production endpoint was not independently reachable during this session, so no explorer-derived hash is promoted.
 
 **Handoff rule:** next session should first inspect this HEAD and the queued run results before making further semantic changes. Do not reopen selector semantics or validator economics merely to move a status indicator.
+
+## 2026-09-25 — MATERIOS SELECTION-INPUT HASH FORMULA VERIFIED
+
+Direct inspection of the upstream Materios implementation at commit `011473c88ef82fad3d4877af8d89a5b52abf235f` establishes the exact formula used by `pallet-session-validator-management`:
+
+```
+decoded AuthoritySelectionInputs
+    -> SCALE Encode
+    -> blake2_256
+    -> SizedByteString<32> selection_inputs_hash
+```
+
+The IMMORTAL B3 transport computes `selectionInputsHash` over the exact supplied `authoritySelectionInputsHex` using Blake2-256. This is therefore source-level semantically aligned with the runtime, rather than merely a local convention.
+
+What this closes:
+- exact hash algorithm;
+- exact hash preimage boundary (SCALE-encoded AuthoritySelectionInputs);
+- deterministic binding between transported input bytes and the runtime's `selection_inputs_hash`.
+
+What remains open:
+- authenticated retrieval of the exact on-chain/inherent input bytes;
+- authoritative runtime execution proving the committee result;
+- selection/enactment relation;
+- GRANDPA finality and M6 composition.
+
+Status: **SELECTION-INPUT HASH FORMULA VERIFIED / DEPLOYED EXECUTION + FINALITY OPEN.**
+
