@@ -345,3 +345,17 @@ Therefore B3/M6 MUST bind the actual authoritative selection execution result (o
 This also reinforces the distinction between:
 `selection inputs / hash` → `authoritative selector result` → `enactment` → `GRANDPA authority`.
 
+
+
+## Canonical selection-input hash formula
+
+The exact upstream Materios implementation computes:
+
+```
+blake2_256(SCALE.encode(AuthoritySelectionInputs))
+```
+
+and stores the result as `SizedByteString<32>`.
+
+The B3 transport MUST treat this as the canonical selection-input hash formula. A packet carrying a different hash is invalid even if the surrounding transport envelope is otherwise well-formed.
+
