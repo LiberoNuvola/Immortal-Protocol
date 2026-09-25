@@ -6314,3 +6314,55 @@ Commit:
 - `d0f8ce1fe5dc072ccd41c2fbae68ec450239c15a` — verifier README.
 
 Status: **execution-proof verifier boundary IMPLEMENTED; real finalized Materios proof fixture and canonical runtime/deployment composition OPEN.**
+
+
+## 2026-09-25 — MATERIOS CHAIN-INFO OBSERVER SOURCE-MATCH CLOSED
+
+A further triangulation resolved the previous provenance qualifier around the live `/chain-info` observer.
+
+### Source match
+
+A dedicated public repository, `Flux-Point-Studios/materios-gateway`, contains `src/routes/chain-info.ts`. The current file defines the same payload schema observed live:
+
+`genesis`, `spec_version`, `best_block`, `finalized_block`, `bootnodes`, `chain_spec_url`, `updated_at`.
+
+Its implementation directly polls the configured Materios RPC with:
+
+- `chain_getBlockHash(0)` → genesis;
+- `state_getRuntimeVersion` → `spec_version`;
+- `chain_getHeader()` → best block;
+- `chain_getFinalizedHead` → finalized hash internally;
+- `chain_getHeader(finalized_hash)` → finalized height.
+
+The current gateway source is present on public main at commit `883d9278c04bfdd8e7de97852ae3ab8bb16265dc` (2026-09-24), and its chain-info route was subsequently hardened with canonical DNS bootnode handling in commit `2ece7318cf74a12b152d08024e6a534aaabd5839`.
+
+### Important consequence
+
+The earlier statement that the live `/chain-info` payload schema was not source-matched is now obsolete and must not be carried forward as an open item. The observer implementation is source-matched to the dedicated gateway repository and its current public service lineage.
+
+This closes:
+- **chain-info observer implementation provenance → VERIFIED**
+- **live payload schema ↔ public gateway source → VERIFIED**
+
+It does NOT close the underlying consensus proof, because the endpoint deliberately returns the finalized **height** rather than the internally obtained finalized **hash**.
+
+### Current exact evidence boundary
+
+The gateway source itself gives us an important fact for the next step: the deployed service already obtains `finHash = chain_getFinalizedHead()` and then reads `chain_getHeader(finHash)`. The hash is therefore present transiently inside the observer but is not serialized into its public response.
+
+The remaining question is no longer whether the infrastructure can obtain the finalized hash. It is whether another public surface or a direct RPC path can expose/capture that exact `finHash` at the same observation time.
+
+M6 status:
+- LIVE SPEC 238: **VERIFIED**
+- LIVE FINALIZED HEIGHT 2004815: **VERIFIED**
+- CHAIN-INFO OBSERVER SOURCE PROVENANCE: **VERIFIED**
+- FINALIZED BLOCK HASH: **OPEN**
+- DIRECT RPC TRANSCRIPT AT FINALIZED HASH: **OPEN**
+- DEPLOYED WASM/CODE HASH: **OPEN**
+- WASM ↔ SOURCE COMMIT: **OPEN**
+- REAL AUTHORITY-SET TRANSITION: **OPEN**
+- GRANDPA JUSTIFICATION: **OPEN**
+- CRYPTOGRAPHIC SELECTOR/TRANSITION PROOF: **OPEN**
+- CRYPTOGRAPHIC M6 COMPOSITION PROOF: **OPEN**
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
