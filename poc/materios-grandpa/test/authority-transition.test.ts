@@ -55,6 +55,13 @@ function baseStatement() {
       authority(2)
     ],
     sidechainEpoch: 42n,
+    authoritySelectionRegime: {
+      kind: "l1-ariadne" as const,
+      evidenceHash: Uint8Array.from(
+        { length: 32 },
+        () => 0xcc
+      )
+    },
     selectionInputs,
     selectionInputsHash:
       hashSelectionInputs(selectionInputs),
@@ -289,6 +296,50 @@ describe("authority transition boundary", () => {
     expect(() =>
       validateAuthoritySetTransitionStatement(mutated)
     ).toThrow("SELECTION_INPUTS_HASH_MISMATCH");
+  });
+
+  it("binds the authority-selection regime into the public statement", () => {
+    const statement = baseStatement();
+
+    const changed = {
+      ...statement,
+      authoritySelectionRegime: {
+        kind: "pinned-committee" as const,
+        evidenceHash: Uint8Array.from(
+          { length: 32 },
+          () => 0xdd
+        ),
+        untilEpoch: 99n
+      }
+    };
+
+    expect(
+      Array.from(
+        hashAuthoritySetTransitionStatement(statement)
+      )
+    ).not.toEqual(
+      Array.from(
+        hashAuthoritySetTransitionStatement(changed)
+      )
+    );
+  });
+
+  it("rejects a pinned-committee regime that is already expired", () => {
+    const statement = {
+      ...baseStatement(),
+      authoritySelectionRegime: {
+        kind: "pinned-committee" as const,
+        evidenceHash: Uint8Array.from(
+          { length: 32 },
+          () => 0xdd
+        ),
+        untilEpoch: 41n
+      }
+    };
+
+    expect(() =>
+      validateAuthoritySetTransitionStatement(statement)
+    ).toThrow("PINNED_COMMITTEE_EXPIRED");
   });
 
   it("binds the proof-system identity into the public statement", () => {
