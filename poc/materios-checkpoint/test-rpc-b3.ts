@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { test } from 'node:test'
 import { MateriosRpc } from './src/rpc.ts'
+import { extractSelectionInputsCommitment } from './src/selectionCommitment.ts'
 
 async function withServer(
   handler: (req: IncomingMessage, res: ServerResponse) => void,
@@ -43,6 +44,67 @@ test('getRuntimeCode requests state_getCode at the exact block', async () => {
     const code = await rpc.getRuntimeCode(target)
     assert.equal(code, '0x6000')
     assert.equal(seenMethod, 'state_getCode')
+    assert.deepEqual(seenParams, [target])
+  } finally {
+    await server.close()
+  }
+})
+
+test('extractSelectionInputsCommitment recovers the unique on-chain set hash', () => {
+  const selectionInputsHash = `0x${'ab'.repeat(32)}`
+  const irrelevant = `0x040100${'11'.repeat(40)}`
+  const target = `0x040e00aabbccdd${selectionInputsHash.slice(2)}`
+
+  const commitment = extractSelectionInputsCommitment([irrelevant, target])
+
+  assert.equal(commitment.extrinsicIndex, 1)
+  assert.equal(commitment.extrinsicHex, target)
+  assert.equal(commitment.selectionInputsHash, selectionInputsHash)
+})
+
+test('extractSelectionInputsCommitment fails closed on missing or duplicate set inherents', () => {
+  const hash = `0x${'cd'.repeat(32)}`
+  const target = `0x040e00aabb${hash.slice(2)}`
+
+  assert.throws(
+    () => extractSelectionInputsCommitment([`0x040100${'11'.repeat(40)}`]),
+    /SessionCommitteeManagement::set inherent extrinsic not found/,
+  )
+
+  assert.throws(
+    () => extractSelectionInputsCommitment([target, target]),
+    /multiple SessionCommitteeManagement::set inherent extrinsics/,
+  )
+})
+
+test('getSelectionInputsCommitment reads the exact requested block', async () => {
+  const target = `0x${'23'.repeat(32)}`
+  const hash = `0x${'ef'.repeat(32)}`
+  const setExtrinsic = `0x040e00aabb${hash.slice(2)}`
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        block: {
+          extrinsics: [setExtrinsic],
+        },
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const commitment = await rpc.getSelectionInputsCommitment(target)
+    assert.equal(commitment.selectionInputsHash, hash)
+    assert.equal(seenMethod, 'chain_getBlock')
     assert.deepEqual(seenParams, [target])
   } finally {
     await server.close()
