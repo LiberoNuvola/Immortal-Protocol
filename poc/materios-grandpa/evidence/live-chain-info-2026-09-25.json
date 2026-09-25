@@ -14,17 +14,18 @@
   "observation_url": "https://materios.fluxpointstudios.com/chain-info",
   "provenance": {
     "surface": "public Materios chain-info endpoint",
-    "server_side_rationale": "The public gateway route polls the configured Materios RPC with chain_getBlockHash(0), state_getRuntimeVersion, chain_getHeader, chain_getFinalizedHead, and chain_getHeader(finalized_hash).",
-    "gateway_source_commit": "841322ea31a0ac4334e0a82b40ef82a5659812c1",
-    "gateway_source_repository": "Flux-Point-Studios/orynq-sdk",
-    "gateway_route": "services/blob-gateway/src/routes/chain-info.ts"
+    "server_side_rationale": "The deployed gateway route polls the configured Materios RPC with chain_getBlockHash(0), state_getRuntimeVersion, chain_getHeader, chain_getFinalizedHead, and chain_getHeader(finalized_hash).",
+    "gateway_source_commit": "883d9278c04bfdd8e7de97852ae3ab8bb16265dc",
+    "gateway_source_repository": "Flux-Point-Studios/materios-gateway",
+    "gateway_route": "src/routes/chain-info.ts"
   },
   "scope": {
     "verified": [
       "live chain genesis identity at the observation surface",
       "live spec_version reported by the surface",
       "live best_block height reported by the surface",
-      "live finalized_block height reported by the surface"
+      "live finalized_block height reported by the surface",
+      "observer route implementation provenance matched to Flux-Point-Studios/materios-gateway"
     ],
     "open": [
       "finalized block hash",
@@ -37,5 +38,5 @@
       "cryptographic M6 composition proof"
     ]
   },
-  "important_note": "This packet is deployment observation evidence, not an independent cryptographic finality proof. The chain-info response does not expose the finalized block hash, and the observer service source is not itself a substitute for direct RPC evidence."
+  "important_note": "This packet is deployment observation evidence, not an independent cryptographic finality proof. The chain-info response does not expose the finalized block hash, although its server-side route obtains the finalized hash internally and then reads the finalized header."
 }
