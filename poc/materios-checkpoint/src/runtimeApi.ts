@@ -28,7 +28,10 @@ function requireHex(value: string, field: string, allowEmpty = false): string {
 }
 
 export function encodeScEpochNumber(epoch: bigint): string {
-  if (epoch < 0n || epoch > 0xffffffffffffffffn) {
+  if (epoch < 0n) {
+    throw new Error('sidechainEpoch must be non-negative')
+  }
+  if (epoch > 0xffffffffffffffffn) {
     throw new Error('sidechainEpoch must fit u64')
   }
 
