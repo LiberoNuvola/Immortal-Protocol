@@ -13,6 +13,7 @@ import {
 
 import {
   hashSelectionInputs,
+  verifyActivationBlockBinding,
   verifyAuthoritySetTransition,
   type AuthoritySetTransitionStatement
 } from "../src/authority-transition.js";
@@ -247,6 +248,19 @@ describe("authority trust boundary integration", () => {
       );
 
     const checkpoint = finalizedCheckpoint();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, checkpoint)
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+
+    const matchingCheckpoint = {
+      ...checkpoint,
+      blockHash: new Uint8Array(statement.activationBlock.hash)
+    };
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, matchingCheckpoint)
+    ).not.toThrow();
 
     const result = await verifyFinality(
       checkpoint,
