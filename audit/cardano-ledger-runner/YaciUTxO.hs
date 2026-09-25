@@ -53,7 +53,7 @@ decodeYaciUTxO bytes = do
 parseInput :: Aeson.Value -> Either String (TxIn, BabbageTxOut BabbageEra)
 parseInput value = do
   txHash <- textField value "tx_hash"
-  outputIndex <- integerField value "output_index"
+  outputIndex <- integerValueField value "output_index"
   if outputIndex < 0 || outputIndex > 65535
     then Left "INVALID_YACI_OUTPUT_INDEX"
     else pure ()
@@ -105,7 +105,7 @@ parseMaryValue items = do
   where
     step item (mLov, policies) = do
       unit <- textField item "unit"
-      quantity <- integerField item "quantity"
+      quantity <- integerValueField item "quantity"
 
       if quantity < 0
         then Left "NEGATIVE_UTXO_QUANTITY"
@@ -211,6 +211,17 @@ optionalTextField value key = do
     Just Null -> Right Nothing
     Just (String t) -> Right (Just t)
     Just _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
+
+integerValueField :: Aeson.Value -> Text -> Either String Integer
+integerValueField value key = do
+  v <- objectField value key
+  case v of
+    String t -> parseInteger (Text.unpack key) t
+    Number _ ->
+      case Aeson.fromJSON v of
+        Error err -> Left ("INVALID_INTEGER:" <> err)
+        Success n -> Right n
+    _ -> Left ("FIELD_NOT_INTEGER:" <> Text.unpack key)
 
 integerField :: Aeson.Value -> Text -> Either String Integer
 integerField value key = do
