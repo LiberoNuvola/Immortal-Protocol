@@ -1,0 +1,54 @@
+{
+  "evidence_type": "live-chain-info-observation",
+  "network": "Materios Preprod v6",
+  "chain_id": "materios_preprod_v6",
+  "observed_at": "2026-09-25T05:05:24.031Z",
+  "observation_url": "https://materios.fluxpointstudios.com/chain-info",
+  "payload": {
+    "genesis": "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
+    "spec_version": 238,
+    "best_block": 2005190,
+    "finalized_block": 2005188,
+    "bootnodes": [
+      "/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxARirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM"
+    ],
+    "chain_spec_url": "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
+    "updated_at": "2026-09-25T05:05:24.031Z"
+  },
+  "validators_observation": {
+    "url": "https://materios.fluxpointstudios.com/preprod-explorer/api/validators",
+    "head": 2005190,
+    "asOf": "2026-09-25T05:05:24.057Z",
+    "scEpoch": 3590,
+    "committee_size": 5,
+    "current_and_next_committee_match": true
+  },
+  "provenance": {
+    "surface": "public Materios chain-info endpoint",
+    "gateway_source_repository": "Flux-Point-Studios/materios-gateway",
+    "gateway_source_commit": "883d9278c04bfdd8e7de97852ae3ab8bb16265dc",
+    "gateway_route": "src/routes/chain-info.ts",
+    "retrieval": "external HTTPS fetch"
+  },
+  "scope": {
+    "verified": [
+      "live genesis identity at the observation surface",
+      "live spec_version at the observation surface",
+      "live best_block height",
+      "live finalized_block height",
+      "gateway observer provenance"
+    ],
+    "open": [
+      "finalized block hash",
+      "header/state_root at exact finalized hash",
+      "runtime version at exact finalized hash",
+      "deployed runtime WASM/code identity",
+      "WASM to source reproducibility",
+      "real authority-set transition artifact",
+      "GRANDPA justification and set binding",
+      "cryptographic execution/storage proof",
+      "M6 composition"
+    ]
+  },
+  "important_note": "The public response exposes the finalized height but not the finalized hash. The server-side route obtains the finalized hash internally, so this observation cannot substitute for a direct same-hash RPC capture."
+}
