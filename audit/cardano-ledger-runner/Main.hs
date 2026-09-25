@@ -8,13 +8,16 @@ import qualified Data.ByteString.Base16 as B16
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
+import Data.Aeson ((.=), object, toJSON)
 import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
 import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.State (UTxO)
+import Cardano.Ledger.Api.Scripts.ExUnits (RedeemerReportWithLogs)
 import Cardano.Slotting.EpochInfo.API (EpochInfo)
 import Cardano.Slotting.Time (SystemStart)
 import System.Directory (doesFileExist)
@@ -128,6 +131,31 @@ inspectEvidence evidenceDir runEvaluation = do
         else inspectManifest evidenceDir manifestPath runEvaluation
 
 
+renderRedeemerReport :: RedeemerReportWithLogs BabbageEra -> Aeson.Value
+renderRedeemerReport report =
+  Aeson.Array
+    (foldMap
+      (\(purpose, result) ->
+        Aeson.Array
+          (Aeson.fromList
+            [ case result of
+                Left failure ->
+                  object
+                    [ "redeemer" .= toJSON purpose
+                    , "status" .= ("failure" :: String)
+                    , "failure" .= show failure
+                    ]
+                Right (logs, exUnits) ->
+                  object
+                    [ "redeemer" .= toJSON purpose
+                    , "status" .= ("success" :: String)
+                    , "logs" .= logs
+                    , "ex_units" .= toJSON exUnits
+                    ]
+            ])
+      )
+      (Map.toAscList report))
+
 evaluateLedger ::
   Tx TopTx BabbageEra ->
   PParams BabbageEra ->
@@ -138,8 +166,8 @@ evaluateLedger ::
   IO ()
 evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   let report = evaluateBabbageTx pp tx utxo epochInfo systemStart
-      rendered = show report
-      reportPath = evidenceDir <> "/ledger-evaluation-report.txt"
+      renderedJson = renderRedeemerReport report
+      reportPath = evidenceDir <> "/ledger-evaluation-report.json"
       failures = length [ () | Left _ <- Map.elems report ]
       successes = length [ () | Right _ <- Map.elems report ]
 
@@ -152,7 +180,7 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   epochBytes <- BS.readFile (evidenceDir <> "/epoch-info.json")
   systemStartBytes <- BS.readFile (evidenceDir <> "/system-start.json")
 
-  BS.writeFile reportPath (TE.encodeUtf8 (Text.pack rendered))
+  BS.writeFile reportPath (BSL.toStrict (Aeson.encode renderedJson))
   reportBytes <- BS.readFile reportPath
   let reportDigest = BSC.unpack (B16.encode (SHA256.hash reportBytes))
   BS.writeFile
