@@ -35,7 +35,6 @@ source-repository-package
     libs/cardano-ledger-binary
     libs/cardano-data
     libs/cardano-protocol-tpraos
-    libs/ledger-state
     libs/small-steps
     libs/non-integral
     libs/vector-map
