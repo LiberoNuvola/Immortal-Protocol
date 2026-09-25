@@ -9,6 +9,12 @@ import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.BaseTypes (StrictMaybe (..))
 import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.Mary.Value
+  ( AssetName (..)
+  , MaryValue (..)
+  , MultiAsset (..)
+  , PolicyID
+  )
 import Cardano.Ledger.Plutus.Data
   ( DataHash
   , Datum (..)
@@ -16,7 +22,6 @@ import Cardano.Ledger.Plutus.Data
   , hashBinaryData
   , makeBinaryData
   )
-import Cardano.Ledger.Core (Value)
 import Cardano.Ledger.State (UTxO (..))
 import Cardano.Ledger.TxIn (TxIn)
 import Data.Aeson
@@ -83,9 +88,10 @@ parseInput value = do
         SNothing
     )
 
-parseMaryValue :: [Aeson.Value] -> Either String (Value BabbageEra)
+parseMaryValue :: [Aeson.Value] -> Either String MaryValue
 parseMaryValue items = do
-  (mLovelace, policies) <- foldM step (Nothing, KeyMap.empty) items
+  (mLovelace, assets) <- foldM step (Nothing, Map.empty) items
+
   lovelace <- case mLovelace of
     Nothing -> Left "MISSING_LOVELACE"
     Just n
@@ -93,29 +99,23 @@ parseMaryValue items = do
       | n > 18446744073709551615 -> Left "LOVELACE_OUT_OF_RANGE"
       | otherwise -> Right n
 
-  let json =
-        Object
-          ( KeyMap.fromList
-              [ (Key.fromText "lovelace", Number (fromInteger lovelace))
-              , (Key.fromText "policies", Object policies)
-              ]
-          )
-
-  parseNative "MaryValue" json
+  Right (MaryValue (Coin lovelace) (MultiAsset assets))
   where
-    step item (mLov, policies) = do
+    step item (mLov, assets) = do
       unit <- textField item "unit"
       quantity <- integerValueField item "quantity"
 
       if quantity < 0
         then Left "NEGATIVE_UTXO_QUANTITY"
-        else pure ()
+        else if quantity > 9223372036854775807
+          then Left "ASSET_QUANTITY_OUT_OF_RANGE"
+          else pure ()
 
       case unit of
         "lovelace" ->
           case mLov of
             Just _ -> Left "DUPLICATE_LOVELACE"
-            Nothing -> Right (Just quantity, policies)
+            Nothing -> Right (Just quantity, assets)
 
         _ -> do
           let clean = strip0x unit
@@ -127,29 +127,26 @@ parseMaryValue items = do
               if Text.length assetHex > 64
                 then Left "ASSET_NAME_TOO_LONG"
                 else do
-                  validateHexText "asset_name" assetHex
-                  if quantity < -9223372036854775808 || quantity > 9223372036854775807
-                    then Left "INVALID_ASSET_QUANTITY_RANGE"
-                    else do
-                      let policyKey = Key.fromText (Text.toLower policyHex)
-                          assetKey = Key.fromText (Text.toLower assetHex)
-                      case KeyMap.lookup policyKey policies of
-                        Nothing ->
-                          let newAsset =
-                                Object
-                                  (KeyMap.singleton assetKey (Number (fromInteger quantity)))
-                          in Right (mLov, KeyMap.insert policyKey newAsset policies)
-
-                        Just (Object existing)
-                          | KeyMap.member assetKey existing ->
-                              Left "DUPLICATE_ASSET_UNIT"
-                          | otherwise ->
-                              let next =
-                                    Object
-                                      (KeyMap.insert assetKey (Number (fromInteger quantity)) existing)
-                              in Right (mLov, KeyMap.insert policyKey next policies)
-
-                        Just _ -> Left "INVALID_POLICY_OBJECT"
+                  policyId <- parseNative "PolicyID" (String (Text.toLower policyHex))
+                  assetBytes <- decodeHexText "asset_name" assetHex
+                  let assetName = AssetName (toShort assetBytes)
+                  case Map.lookup policyId assets of
+                    Nothing ->
+                      Right
+                        ( mLov
+                        , Map.insert policyId (Map.singleton assetName quantity) assets
+                        )
+                    Just existing
+                      | Map.member assetName existing ->
+                          Left "DUPLICATE_ASSET_UNIT"
+                      | otherwise ->
+                          Right
+                            ( mLov
+                            , Map.insert
+                                policyId
+                                (Map.insert assetName quantity existing)
+                                assets
+                            )
 
 parseDatum :: Aeson.Value -> Either String (Datum BabbageEra)
 parseDatum value = do
