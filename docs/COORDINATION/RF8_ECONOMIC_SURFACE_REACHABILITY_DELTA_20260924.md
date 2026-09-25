@@ -170,3 +170,46 @@ If the intended architecture deliberately permits multiple local validator predi
 - No claim of ledger evidence from source inspection.
 
 **Status: RF8 OPEN / SURFACE REACHABILITY SHARPENED / NO NORMATIVE CHANGE.**
+
+## 2026-09-25 — Current-tree validator surface census
+
+Current Git tree at the closure HEAD was enumerated directly. The Plutus module set currently contains seven validator/policy entrypoint files:
+
+`MintPolicy.hs`, `B1PrizePool.hs`, `PrizePool.hs`, `PrizeValidator.hs`, `Treasury.hs`, `BeaconRegistry.hs`, `CounterValidator.hs`.
+
+Source inspection at the same HEAD shows:
+
+| Surface | Entry | Economic role | Named EconomicGate reference | Universal kernel reference | Classification |
+|---|---|---|---:|---:|---|
+| SALE | `MintPolicy.mkPolicy` | ticket mint + sale atomicity | No | No | economic mutation surface / local refinement |
+| POOL | `B1PrizePool.mkValidator` | pool accounting + lifecycle | No | Yes | economic mutation surface / universal solvency integration |
+| LEGACY POOL | `PrizePool.mkValidator` | legacy pool validator | No | No | requires caller/use classification |
+| LIFECYCLE | `PrizeValidator.mkValidator` | Reveal / Claim / Expire | No | No | economic mutation surface / local refinement |
+| TREASURY | `Treasury.mkValidator` | legacy distribution | No | No | legacy/application economic surface |
+| BEACON | `BeaconRegistry.mkValidator` | beacon registry state | No | No | protocol/application state surface; economic role must stay bounded |
+| COUNTER | `CounterValidator.mkValidator` | monotonic issuance counter | No | No | supporting state surface; not independently classified as universal economic authority |
+
+This census confirms that RF8 cannot be discharged by checking only for a single symbol reference. The current implementation deliberately has multiple validator-level enforcement surfaces.
+
+### Consequence for RF8
+
+The proof target is now more precise:
+
+`canonical economic admissibility relation`
+→ `profile/refinement witness`
+→ `each economically material concrete validator predicate`
+→ `paired state consumption / atomicity`
+→ `ledger evidence`
+
+where every economic surface must either:
+
+1. invoke the canonical admissibility relation directly; or
+2. be proved a semantics-preserving refinement of the same relation, including negative bypass coverage.
+
+The current census therefore strengthens the **evidence requirement** without forcing an architectural rewrite.
+
+### Immediate follow-up
+
+Next autonomous pass should inspect every current caller/reference of `PrizePool.mkValidator`, `Treasury.mkValidator` and `CounterValidator.mkValidator`, then classify each as live economic path, supporting state path, or legacy/unreachable surface. No validator should be modified merely to make the census homogeneous.
+
+**Status:** RF8 OPEN / CURRENT-TREE CENSUS COMPLETED / NO NORMATIVE CHANGE.
