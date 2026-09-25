@@ -10,11 +10,11 @@ path = "src/lib.rs"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3", features = ["derive", "std"] }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2409-4", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
-sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2409-4", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2409-4", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
-sp-state-machine = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2409-4", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
-sc-executor = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-stable2409-4", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
+sp-state-machine = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
+sc-executor = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
 
 [dev-dependencies]
 hex = "0.4"
