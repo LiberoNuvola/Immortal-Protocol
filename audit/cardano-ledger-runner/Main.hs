@@ -138,14 +138,19 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   putStrLn ("REDEEMER_ENTRIES: " <> show (Map.size report))
   putStrLn ("REDEEMER_SUCCESSES: " <> show successes)
   putStrLn ("REDEEMER_FAILURES: " <> show failures)
-  putStrLn "EVALUATION_STATUS: COMPLETED"
-  if failures == 0
+  if Map.null report
+    then do
+      safeStall "NO_REDEEMERS_FOUND"
+      putStrLn "EVALUATION_STATUS: NOT_EVIDENT"
+    else do
+      putStrLn "EVALUATION_STATUS: COMPLETED"
+      if failures == 0
     then do
       putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
       putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
-    else do
-      putStrLn "RESULT: LEDGER_ALIGNED_SCRIPT_FAILURE"
-      putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
+        else do
+          putStrLn "RESULT: LEDGER_ALIGNED_SCRIPT_FAILURE"
+          putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
 
 
 inspectManifest :: FilePath -> FilePath -> IO ()
