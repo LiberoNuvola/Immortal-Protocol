@@ -84,8 +84,8 @@ function cardanoAddressToLedgerHex(address) {
     return clean
   }
 
-  if (clean.length > 90) {
-    throw new Error('Yaci input address exceeds Bech32 length limit')
+  if (clean.length > 200) {
+    throw new Error('Yaci input address exceeds supported Cardano Bech32 envelope size')
   }
 
   const separator = clean.lastIndexOf('1')
