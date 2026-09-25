@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { blake2b } from '@noble/hashes/blake2.js'
 import { test } from 'node:test'
+import { buildCalculateCommitteeCallData } from './src/runtimeApi.ts'
 import {
   executionProofPacketId,
   validateMateriosExecutionProofPacket,
@@ -283,6 +284,10 @@ test('mutating bound execution material changes packet identity', () => {
   const changedEpoch = executionProofPacketId({
     ...packet,
     sidechainEpoch: packet.sidechainEpoch + 1n,
+    callDataHex: buildCalculateCommitteeCallData(
+      packet.authoritySelectionInputsHex,
+      packet.sidechainEpoch + 1n,
+    ),
   })
 
   assert.notEqual(id, changedResult)
