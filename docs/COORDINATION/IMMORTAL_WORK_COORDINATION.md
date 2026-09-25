@@ -6658,3 +6658,42 @@ This changes the **implementation capability** of P2.8, not its evidence status.
 The dedicated audit workflow's SAFE_STALL assertion was updated accordingly.
 
 **Commits:** `3d3c42e`, `dde4046`, `957a2b0`, `758d5a1`, `7db2ae3`.
+
+
+---
+
+## 2026-09-25 — Materios live observation refresh + explorer block-route triangulation
+
+**Front:** Materios / GRANDPA / B3 / M6
+
+Fresh first-party live observation at `2026-09-25T05:05:24.031Z` reports:
+- genesis: `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`;
+- live `spec_version = 238`;
+- best block `2005190`;
+- finalized block height `2005188`.
+
+A separate public explorer snapshot at `2026-09-25T05:05:24.057Z` reports head `2005190`, sidechain epoch `3590`, current committee size 5, and the same 5-member set as `nextCommittee`. This is observation/liveness evidence only; it does **not** prove a finalized authority transition or GRANDPA justification.
+
+### New source-level finding
+
+The current `Flux-Point-Studios/materios` explorer source contains:
+- `GET /api/blocks`;
+- `GET /api/block/{block_id}`.
+
+The latter accepts a block number and internally calls `substrate.get_block_hash(num)`, then returns the exact block hash and header. This is a potentially useful **secondary** route for recovering a block hash.
+
+However, production deployment of that endpoint at the currently advertised explorer URL was not independently reachable/verified from this session. Therefore:
+- explorer block-route existence in source: **VERIFIED**;
+- deployed explorer endpoint availability/response: **OPEN**;
+- any explorer-derived hash: **must remain secondary evidence until cross-checked against `chain_getFinalizedHead()` on the canonical Materios RPC**.
+
+### M6 unchanged
+
+The exact proof chain remains:
+`canonical RPC → finalized hash → exact finalized header/state root → runtime @ hash → runtime/source binding → real committee execution → native execution proof → independent verification → real authority transition → GRANDPA justification/set binding → M6 composition`.
+
+The new live snapshot is stored at:
+`poc/materios-grandpa/evidence/live-chain-info-2026-09-25-050524Z.json`.
+
+**Current branch HEAD observed before this coordination update:** `b4f4f26fd05d6866e53b423db107ea501a7a6895`.
+
