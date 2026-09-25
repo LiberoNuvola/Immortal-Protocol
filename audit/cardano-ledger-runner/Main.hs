@@ -7,7 +7,13 @@ import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
-import TypedPacketDecode (decodeBabbagePParams, decodeBabbageTx)
+import TypedPacketDecode
+  ( decodeBabbagePParams
+  , decodeBabbageTx
+  , decodeBabbageUTxO
+  , decodeYaciEpochInfo
+  , decodeYaciSystemStart
+  )
 
 artifactPaths :: [FilePath]
 artifactPaths =
@@ -115,13 +121,7 @@ inspectManifest evidenceDir manifestPath = do
       case KeyMap.lookup "policy" manifest of
         Just (Aeson.Object policy) ->
           case KeyMap.lookup "typed_context_ready" policy of
-            Just (Aeson.Bool False) -> do
-              safeStall "LEDGER_TYPED_CONTEXT_NOT_READY"
-              putStrLn
-                "Manifest explicitly records raw Yaci materialization only; UTxO/EpochInfo/SystemStart are not typed ledger objects."
-              putStrLn
-                "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
-
+            Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir
             Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir
 
             _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
@@ -134,6 +134,9 @@ decodeTypedArtifacts :: FilePath -> IO ()
 decodeTypedArtifacts evidenceDir = do
   txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
   ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+  utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
+  epochBytes <- BS.readFile (evidenceDir <> "/epoch-info.json")
+  systemStartBytes <- BS.readFile (evidenceDir <> "/system-start.json")
 
   case decodeBabbagePParams ppBytes of
     Left err -> do
@@ -146,7 +149,29 @@ decodeTypedArtifacts evidenceDir = do
           safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
           putStrLn ("TX_ERROR: " <> err)
 
-        Right _ -> do
-          putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
-          putStrLn
-            "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
+        Right tx ->
+          case decodeBabbageUTxO utxoBytes of
+            Left err -> do
+              safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
+              putStrLn ("UTXO_ERROR: " <> err)
+
+            Right _utxo ->
+              case decodeYaciEpochInfo epochBytes of
+                Left err -> do
+                  safeStall "YACI_EPOCH_INFO_DECODE_FAILED"
+                  putStrLn ("EPOCH_INFO_ERROR: " <> err)
+
+                Right _epochInfo ->
+                  case decodeYaciSystemStart systemStartBytes of
+                    Left err -> do
+                      safeStall "YACI_SYSTEM_START_DECODE_FAILED"
+                      putStrLn ("SYSTEM_START_ERROR: " <> err)
+
+                    Right _systemStart -> do
+                      putStrLn "RESULT: TYPED_BABBAGE_CONTEXT_DECODED"
+                      putStrLn
+                        "PParams, transaction, consumed UTxO, EpochInfo and SystemStart decoded with native Ledger types."
+                      putStrLn
+                        "EVALUATION_STATUS: NOT_RUN"
+                      putStrLn
+                        "NEXT: invoke ledger-aligned evalTxExUnitsWithLogs only after exact typed context provenance is independently bound."
