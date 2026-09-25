@@ -6263,3 +6263,19 @@ M6 status:
 - CRYPTOGRAPHIC M6 COMPOSITION PROOF: **OPEN**
 
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+## 2026-09-25 — B3 EXECUTION-PROOF SELECTION-PATH BINDING
+
+The execution-proof transport envelope now carries the authority-selection regime as structured evidence rather than a bare `normal|pinned` flag.
+
+Bound fields:
+- regime kind: `normal` or `pinned`;
+- regime evidence commitment;
+- `untilEpoch` when pinned;
+- sidechain epoch must not exceed the pinned expiry;
+- the regime fields participate in the deterministic packet identifier.
+
+This keeps the B3 execution-proof transport aligned with `AuthoritySelectionRegime` in `poc/materios-grandpa/src/authority-transition.ts`.
+
+This remains transport/conformance hardening only. It does not verify the StorageProof trie, runtime execution, authority transition, or GRANDPA finality.
+
