@@ -35,6 +35,7 @@ export type MateriosExecutionProofPacket = {
     implName: string
     specVersion: number
     implVersion: number
+    codeHash: string
   }
 
   runtimeApiMethod: string
@@ -105,6 +106,7 @@ export function validateMateriosExecutionProofPacket(
   requirePositiveName(packet.runtime.implName, 'runtime.implName')
   requireSafeNonNegativeInteger(packet.runtime.specVersion, 'runtime.specVersion')
   requireSafeNonNegativeInteger(packet.runtime.implVersion, 'runtime.implVersion')
+  requireHash(packet.runtime.codeHash, 'runtime.codeHash')
 
   requirePositiveName(packet.runtimeApiMethod, 'runtimeApiMethod')
   requireHex(packet.callDataHex, 'callDataHex', true)
@@ -166,6 +168,8 @@ export function executionProofPacketId(
   hash.update(String(packet.runtime.specVersion))
   hash.update('|')
   hash.update(String(packet.runtime.implVersion))
+  hash.update('|')
+  hash.update(requireHash(packet.runtime.codeHash, 'runtime.codeHash'))
   hash.update('|')
   hash.update(packet.runtimeApiMethod)
   hash.update('|')
