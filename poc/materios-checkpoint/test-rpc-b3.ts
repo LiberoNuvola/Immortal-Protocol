@@ -26,7 +26,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
 }
 
 test('getRuntimeCode requests state_getCode at the exact block', async () => {
-  const target = '11'.repeat(32)
+  const target = `0x${'11'.repeat(32)}`
   let seenMethod = ''
   let seenParams: unknown[] = []
 
@@ -43,14 +43,14 @@ test('getRuntimeCode requests state_getCode at the exact block', async () => {
     const code = await rpc.getRuntimeCode(target)
     assert.equal(code, '0x6000')
     assert.equal(seenMethod, 'state_getCode')
-    assert.deepEqual(seenParams, [`0x${target}`])
+    assert.deepEqual(seenParams, [target])
   } finally {
     await server.close()
   }
 })
 
 test('getCommitteeExecutionProof preserves exact transport fields', async () => {
-  const target = '22'.repeat(32)
+  const target = `0x${'22'.repeat(32)}`
 
   const server = await withServer(async (req, res) => {
     const body = JSON.parse(await readBody(req))
@@ -60,7 +60,7 @@ test('getCommitteeExecutionProof preserves exact transport fields', async () => 
         jsonrpc: '2.0',
         id: body.id,
         result: {
-          blockHash: `0x${target}`,
+          blockHash: target,
           runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
           callDataHex: '0xaabb',
           resultHex: '0xccdd',
@@ -93,7 +93,7 @@ test('getCommitteeExecutionProof preserves exact transport fields', async () => 
 })
 
 test('getCommitteeExecutionProof fails closed on malformed proof bytes', async () => {
-  const target = '33'.repeat(32)
+  const target = `0x${'33'.repeat(32)}`
 
   const server = await withServer(async (req, res) => {
     const body = JSON.parse(await readBody(req))
@@ -103,7 +103,7 @@ test('getCommitteeExecutionProof fails closed on malformed proof bytes', async (
         jsonrpc: '2.0',
         id: body.id,
         result: {
-          blockHash: `0x${target}`,
+          blockHash: target,
           runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
           callDataHex: '0xaabb',
           resultHex: '0xccdd',
@@ -134,7 +134,7 @@ test('getCommitteeExecutionProof fails closed on malformed proof bytes', async (
 
 
 test('collectCommitteeExecutionEvidence rejects runtime identity drift', async () => {
-  const target = '44'.repeat(32)
+  const target = `0x${'44'.repeat(32)}`
   const runtime = {
     specName: 'materios',
     implName: 'materios',
@@ -193,7 +193,7 @@ test('collectCommitteeExecutionEvidence rejects runtime identity drift', async (
         jsonrpc: '2.0',
         id: body.id,
         result: {
-          blockHash: `0x${target}`,
+          blockHash: target,
           runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
           callDataHex: '0xaabb',
           resultHex: '0xccdd',
@@ -224,7 +224,7 @@ test('collectCommitteeExecutionEvidence rejects runtime identity drift', async (
 
 
 test('collector rejects proof call-data drift', async () => {
-  const target = '88'.repeat(32)
+  const target = `0x${'88'.repeat(32)}`
 
   const server = await withServer(async (req, res) => {
     const body = JSON.parse(await readBody(req))
@@ -271,7 +271,7 @@ test('collector rejects proof call-data drift', async () => {
         jsonrpc: '2.0',
         id: body.id,
         result: {
-          blockHash: `0x${target}`,
+          blockHash: target,
           runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
           callDataHex: '0xaacc',
           resultHex: '0xccdd',
