@@ -100,7 +100,7 @@ exact Reveal CBOR
   → persisted typed report
 ```
 
-Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. The P2.8 runner now has a native-context decoding path for the exact transaction, protocol parameters, consumed Yaci UTxO, `EpochInfo` and `SystemStart`; the Yaci→Ledger UTxO path is fail-closed on malformed addresses, values, datum hashes and unsupported reference-script evidence. A dedicated decoder conformance executable is included in the lab workflow. This is an implementation milestone only: the runner still reports `EVALUATION_STATUS: NOT_RUN`. Closure requires the actual Ledger-native evaluation evidence itself, not only successful compilation or context decoding.
+Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. The P2.8 runner now has a native-context decoding path for the exact transaction, protocol parameters, consumed Yaci UTxO, `EpochInfo` and `SystemStart`; the Yaci→Ledger UTxO path is fail-closed on malformed addresses, values, datum hashes and unsupported reference-script evidence. A dedicated decoder conformance executable is included in the lab workflow. The runner now invokes Cardano-ledger `evalTxExUnitsWithLogs` once the complete typed context is decoded and persists the `RedeemerReportWithLogs`; with missing context it remains explicitly `SAFE_STALL`. This is an implementation milestone only: no successful ledger evaluation result or ledger-originated failure is claimed until a real evidence packet is observed through the workflow. Closure requires that actual evidence, not only successful compilation or context decoding.
 
 ## Beacon / Materios / GRANDPA
 
