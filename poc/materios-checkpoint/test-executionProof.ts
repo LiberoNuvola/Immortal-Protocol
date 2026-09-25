@@ -30,7 +30,7 @@ function makePacket(): MateriosExecutionProofPacket {
     runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
     authoritySelectionInputsHex,
     selectionInputsHash,
-    callDataHex: '0xaabb',
+    callDataHex: '0x010203045800000000000000',
     resultHex: '0xccdd',
     // SCALE-encoded StorageProof transport placeholder.
     proofScaleHex: '0x040801020304',
@@ -278,6 +278,20 @@ test('mutating bound execution material changes packet identity', () => {
   assert.notEqual(id, changedEpoch)
 })
 
+
+test('call data is exactly bound to selection inputs and sidechain epoch', () => {
+  const packet = makePacket()
+  assert.doesNotThrow(() => validateMateriosExecutionProofPacket(packet))
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        callDataHex: '0x010203045900000000000000',
+      }),
+    /callDataHex does not match authoritySelectionInputsHex \+ sidechainEpoch/,
+  )
+})
 
 test('selection inputs are cryptographically bound to the declared on-chain hash', () => {
   const packet = makePacket()
