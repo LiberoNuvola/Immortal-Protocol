@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `54968dac07112af6e6567777ff9d907df200f9f3` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `601b028ca3fce10ce95ab4eb7c221d71925b90cf` — current observed branch snapshot at handoff
 
 ---
 
@@ -6588,3 +6588,23 @@ This closes a real representational gap: before this change, `runtime.codeHash` 
 The workflow already exercises the execution-proof test suite. No CI-green result is claimed until a corresponding workflow run is observed.
 
 **Commits:** `08632ce9`, `54968dac`.
+
+
+---
+
+## 2026-09-25 — Materios runtime 238 source-head triangulation
+
+The live deployment observation was triangulated against the current Materios `main` head:
+
+- live chain-info reports `spec_version = 238`;
+- GitHub `Flux-Point-Studios/materios` `main` resolves to commit `011473c88ef82fad3d4877af8d89a5b52abf235f`;
+- that same commit directly declares runtime `spec_name = materios`, `impl_name = materios-node`, `spec_version = 238`, `impl_version = 1`;
+- the commit timestamp is `2026-09-23T23:37:58Z` and GitHub reports its commit signature as verified.
+
+This upgrades the provenance classification from “identified candidate source” to **current source-head candidate matching the live runtime identity**.
+
+It is still **not** binary reproducibility: no claim is made that the deployed WASM at the exact finalized block is byte-for-byte the output of this source commit. That requires exact-finalized `state_getCode`, native runtime hash binding and a reproducible build artifact/procedure.
+
+**Evidence packet:** `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json`
+
+**Commit:** `601b028ca3fce10ce95ab4eb7c221d71925b90cf`
