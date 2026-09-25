@@ -224,6 +224,46 @@ logs: string[];
 };
 
 
+
+/**
+ * Assemble the transport fields needed by the B3 packet from one exact block.
+ * This function does not verify finality or the execution proof.
+ */
+export async function collectCommitteeExecutionEvidence(
+  rpc: MateriosRpc,
+  params: {
+    finalizedBlockHash: string
+    callDataHex: string
+  },
+): Promise<{
+  blockHash: string
+  header: SubstrateHeader
+  runtimeCodeHex: string
+  execution: CommitteeExecutionProofResponse
+}> {
+  const blockHash = requireHash(params.finalizedBlockHash, 'finalized block hash')
+  const [header, runtimeCodeHex, execution] = await Promise.all([
+    rpc.getHeader(blockHash),
+    rpc.getRuntimeCode(blockHash),
+    rpc.getCommitteeExecutionProof(params.callDataHex, blockHash),
+  ])
+
+  const proofBlockHash = requireHash(execution.blockHash, 'B3 proof blockHash')
+  if (proofBlockHash !== blockHash) {
+    throw new Error('B3 execution-proof blockHash does not match requested finalized block')
+  }
+
+  if (execution.callDataHex.toLowerCase() !== params.callDataHex.toLowerCase()) {
+    throw new Error('B3 execution-proof callDataHex does not match requested call data')
+  }
+
+  if (execution.runtime.specName !== (await rpc.getRuntimeVersion(blockHash)).specName) {
+    throw new Error('B3 execution-proof runtime specName does not match block runtime')
+  }
+
+  return { blockHash, header, runtimeCodeHex, execution }
+}
+
 export type CommitteeExecutionProofResponse = {
   blockHash: string;
   runtimeApiMethod: string;
