@@ -13,8 +13,10 @@ function preInput() {
     safetyCapital: 0n,
     reserveProtection: 0n,
     mandatoryFutureCosts: 0n,
+    currentActiveClass: 0n,
+    highestClassEverActivated: 0n,
 
-    pool: {
+    pool:
       pendingLiabilitiesUsdm: 500n,
       unresolvedReserveUsdm: 600n,
       unresolvedTicketCount: 3n,
@@ -136,7 +138,9 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
-      pool: {
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
+      pool:
         pendingLiabilitiesUsdm: 1500n,
         unresolvedReserveUsdm: 400n,
         unresolvedTicketCount: 2n,
@@ -161,6 +165,11 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
         { classId: 0n, issued: 1n, cap: 1n, saleable: true },
         { classId: 1n, issued: 1n, cap: 1n, saleable: true },
         { classId: 2n, issued: 1n, cap: 1n, saleable: true },
+        { classId: 3n, issued: 0n, cap: 0n, saleable: true },
+        { classId: 4n, issued: 0n, cap: 0n, saleable: true },
+        { classId: 5n, issued: 0n, cap: 0n, saleable: true },
+        { classId: 6n, issued: 0n, cap: 0n, saleable: true },
+        { classId: 7n, issued: 0n, cap: 0n, saleable: true },
       ],
     }
 
