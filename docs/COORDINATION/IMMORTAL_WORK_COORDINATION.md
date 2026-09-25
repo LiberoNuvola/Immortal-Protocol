@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `83c12df3ae3b06644174d28edb0accd8de499ed4` — current autonomous-cycle snapshot
+**Latest observed commit by this session:** `bc519996ee2447578543376124d7a51002e117e7` — exact current branch HEAD
 
 ---
 
@@ -7186,5 +7186,62 @@ No user decision boundary exists in this cycle.
 4. Continue GOV-28 provenance analysis without inventing an identity format.
 5. Continue Protocol Usage Fee adversarial specification work without selecting numerical parameters.
 6. Re-run the full active-front sweep after the current CI transitions, always anchoring claims to exact commit + run + artifact.
+
+**Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / NO USER INPUT REQUIRED.
+
+
+## 2026-09-25 — Autonomous multi-front cycle: current-head execution
+
+**Current HEAD:** `bc519996ee2447578543376124d7a51002e117e7` on `work/immortal-green-closure`.
+
+### Mandatory first-step revalidation
+- Coordination prompt executed from the current document.
+- Exact branch HEAD revalidated directly from GitHub: `bc519996ee2447578543376124d7a51002e117e7` (`docs: align coordination head marker`).
+- The coordination header was stale and has been corrected to the exact HEAD by this cycle.
+- No workflow runs are exposed by the commit-workflow-run connector for this documentation-only HEAD; therefore no current-head CI GREEN claim is made. Existing CI observations in earlier handoffs remain historical until re-observed on the applicable code commit.
+
+### Front sweep
+
+**P2.8 / native Ledger:** the current workflow remains correctly wired to `cabal run cardano-ledger-runner -- --evaluate` with `if: always()` evidence upload. Current exact-head evidence is unavailable, so classification remains **EVIDENCE GAP**. No evaluator semantics changed.
+
+**Economic Gate / executable liquidity / RT-1.5 perimeter:** current branch `EconomicAdmissionWitness` explicitly binds the action, pre/post state hashes, observation reference, source inputs, authenticated B1 PrizePool reference/value, and immediate-liquidity requirement. The remaining question is evidence/conformance of the end-to-end authenticated observation path, not invention of a second liquidity oracle. Classification: **EVIDENCE/CONFORMANCE GAP**.
+
+**Protocol Usage Fee:** Notion fee corpus was rechecked. The architectural boundary remains stable: `ProtocolUsageFee != ChainExecutionCost` and `TotalCost = ProtocolUsageFee + ChainExecutionCost`. No universal numerical fee, price source, rounding bound, affordability parameter, PRE-RICH fee rule, or beneficiary allocation is frozen. Classification: **OPEN DECISION / RESEARCH** for parameters, **CLOSED/STABLE** for ownership boundary. No fee code added.
+
+**Materios / Beacon 3:** current branch preserves the intended proof boundary: `VerifiedAuthoritySetTransition` is created only by the verifier boundary; activation-block hash/number and selection-input commitments are locally bindable; the source explicitly states that the repository does not yet implement the cryptographic proof verifier and must not reimplement the Materios selector. Classification: **EVIDENCE GAP / TARGET**, not closure.
+
+**Governance / GOV-28:** current branch contains canonicalization-reference material in the decision witness and replay tests, including rejection of tampered vote weights and challenge-expiry gating. This is implementation evidence only; canonicalization-reference identity/provenance and current-head CI remain open. Classification: **IMPLEMENTATION/EVIDENCE GAP**.
+
+**Universal/application boundary:** prior triangulation remains valid: conceptual separation is supported, but the exact V3 consumer map still precedes any destructive refactor. Classification: **IMPLEMENTATION/EVIDENCE GAP**.
+
+**Research novelty / socioeconomic experiment / Algorithmic Governability:** continue as research tracks; no research hypothesis is promoted to protocol canon. Existing adaptive fee/incentive candidates remain non-canonical.
+
+### Changes made
+- Updated only the coordination document's stale HEAD marker.
+- No economic semantics, validator, protocol limit, or application policy changed.
+
+### Evidence actually observed this cycle
+- Exact current branch commit metadata from GitHub.
+- Current-branch P2.8 workflow source.
+- Current-branch EconomicAdmission witness source.
+- Current-branch Materios authority-transition proof-boundary source.
+- Current-branch GOV-28 decision-witness test.
+- Current Notion fee-workflow search results.
+
+### Remaining blockers
+- **EVIDENCE GAP:** exact-head P2.8 evaluator artifact.
+- **EVIDENCE GAP:** live Materios finalized-block → authority-set → GRANDPA cryptographic chain.
+- **IMPLEMENTATION/EVIDENCE GAP:** GOV-28 canonicalization-reference provenance and fresh CI.
+- **IMPLEMENTATION/EVIDENCE GAP:** complete universal/application V3 consumer mapping.
+- **OPEN DECISION / RESEARCH:** Protocol Usage Fee numerical target/settlement parameters and beneficiary/allocation policy.
+
+### Next autonomous actions
+1. Re-observe exact applicable code-head CI and capture artifacts when exposed.
+2. Continue Materios proof/finality evidence without selector reimplementation.
+3. Continue RT-1.5 executable-liquidity binding and B4/B5/B6 conformance mapping.
+4. Continue GOV-28 canonicalization provenance analysis without inventing a digest/reference convention.
+5. Continue fee adversarial specification and prior-art work without freezing parameters.
+
+**USER QUESTION:** NONE.
 
 **Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / NO USER INPUT REQUIRED.
