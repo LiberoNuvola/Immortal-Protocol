@@ -73,6 +73,10 @@ function baseStatement(): AuthoritySetTransitionStatement {
       authority(4)
     ],
     sidechainEpoch: 42n,
+    authoritySelectionRegime: {
+      kind: "l1-ariadne" as const,
+      evidenceHash: new Uint8Array(32).fill(0xdd)
+    },
     selectionInputs: Uint8Array.from([9, 8, 7, 6]),
     selectionInputsHash: hashSelectionInputs(
       Uint8Array.from([9, 8, 7, 6])
