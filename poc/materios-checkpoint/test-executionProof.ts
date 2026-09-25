@@ -45,6 +45,19 @@ function makePacket(): MateriosExecutionProofPacket {
   }
 }
 
+test('selection-input hash uses exact Blake2-256 bytes', () => {
+  const packet = makePacket()
+  const tampered = {
+    ...packet,
+    selectionInputsHash: '0x' + '11'.repeat(32),
+  }
+
+  assert.throws(
+    () => validateMateriosExecutionProofPacket(tampered),
+    /selectionInputsHash does not match authoritySelectionInputsHex/,
+  )
+})
+
 test('valid native execution-proof transport envelope passes', () => {
   assert.doesNotThrow(() =>
     validateMateriosExecutionProofPacket(makePacket()),
