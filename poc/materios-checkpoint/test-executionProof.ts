@@ -139,9 +139,29 @@ test('selection context fails closed on malformed epoch/genesis data', () => {
     () =>
       validateMateriosExecutionProofPacket({
         ...packet,
-        selectionPath: 'other' as 'normal',
+        selectionPath: {
+          kind: 'other' as 'normal',
+          evidenceHash: '66'.repeat(32),
+        },
       }),
     /selectionPath must be pinned or normal/,
+  )
+})
+
+test('pinned authority-selection regime cannot be expired', () => {
+  const packet = makePacket()
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        selectionPath: {
+          kind: 'pinned',
+          evidenceHash: '66'.repeat(32),
+          untilEpoch: packet.sidechainEpoch - 1n,
+        },
+      }),
+    /selectionPath pinned regime expired/,
   )
 })
 
