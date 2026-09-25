@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use codec::Decode;
 use sc_executor::WasmExecutor;
 use sp_core::{
     hashing::blake2_256,
@@ -65,7 +65,7 @@ pub fn verify_execution_proof(
         heap_pages: None,
         // RuntimeCode::hash is an executor cache identity. The verifier has
         // already bound the same runtime-code hash above.
-        hash: input.expected_runtime_code_hash.to_vec().encode(),
+        hash: input.expected_runtime_code_hash.to_vec(),
     };
 
     let mut overlay = OverlayedChanges::default();
