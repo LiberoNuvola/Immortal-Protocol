@@ -292,6 +292,27 @@ main = do
     Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
       "CANONICALIZED follows Adopted + conformance projection"
 
+  case replayCanonical ruleset finalizationState
+         [ withCommitment finalizedEvent
+         , withCommitment adoptionEvent
+         , withCommitment conformanceEvent
+         , withCommitment canonicalizationEvent
+         ] of
+    Left err -> error ("FAIL: canonical replay rejected valid decision reference: " ++ err)
+    Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
+      "canonical replay binds CANONICALIZED to the finalized DecisionRecord reference"
+
+  let mismatchedReference = canonicalizationRecord { canonicalizationDecisionRecordReference = "canon-ref-tampered" }
+      mismatchedReferenceEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized mismatchedReference }
+  case replayCanonical ruleset finalizationState
+         [ withCommitment finalizedEvent
+         , withCommitment adoptionEvent
+         , withCommitment conformanceEvent
+         , withCommitment mismatchedReferenceEvent
+         ] of
+    Left _ -> putStrLn "PASS: canonicalization reference mismatch blocks canonical replay"
+    Right _ -> error "FAIL: canonical replay accepted mismatched DecisionRecord reference"
+
   let badCanonicalization = canonicalizationRecord { canonicalizationMandatoryGatesResolved = False }
       badCanonicalizationEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized badCanonicalization }
   case applyCanonicalEvent ruleset emptyState canonicalizedState (Just (withCommitment conformanceEvent)) (withCommitment badCanonicalizationEvent) of
