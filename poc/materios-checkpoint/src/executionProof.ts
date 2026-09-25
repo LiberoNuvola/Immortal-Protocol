@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { blake2b } from '@noble/hashes/blake2.js'
 
 /**
  * B3 transport envelope for a native Substrate ProofProvider::execution_proof result.
@@ -152,6 +153,37 @@ export function validateMateriosExecutionProofPacket(
   // stateRoot is being authenticated. We do not infer or repair either value.
   // The caller must independently establish blockHash -> stateRoot from the
   // canonical finalized header.
+}
+
+/**
+ * Bind the proof packet's declared runtime code identity to the exact WASM
+ * bytes captured at the same block. Substrate's runtime-code identity uses
+ * Blake2-256; SHA-256 remains a diagnostic checksum only.
+ *
+ * This establishes a local byte-to-declared-hash binding. It does NOT prove
+ * that the WASM is canonical for the chain unless the caller separately
+ * establishes block/state/runtime provenance and source correspondence.
+ */
+export function verifyRuntimeCodeBinding(
+  packet: MateriosExecutionProofPacket,
+  runtimeCodeHex: string,
+): void {
+  validateMateriosExecutionProofPacket(packet)
+
+  if (typeof runtimeCodeHex !== 'string' || !/^0x[0-9a-f]*$/i.test(runtimeCodeHex)) {
+    throw new Error('runtimeCodeHex must be 0x-prefixed hex')
+  }
+  if ((runtimeCodeHex.length - 2) % 2 !== 0) {
+    throw new Error('runtimeCodeHex must contain whole bytes')
+  }
+
+  const bytes = Buffer.from(runtimeCodeHex.slice(2), 'hex')
+  const actual = Buffer.from(blake2b(bytes, { dkLen: 32 })).toString('hex')
+  const expected = packet.runtime.codeHash.replace(/^0x/i, '').toLowerCase()
+
+  if (actual !== expected) {
+    throw new Error('runtime.codeHash does not match captured runtime WASM')
+  }
 }
 
 /**
