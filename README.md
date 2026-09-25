@@ -1,84 +1,169 @@
 # IMMORTAL Protocol
 
-**IMMORTAL** is a universal, chain-neutral, application-neutral economic protocol for systems that need explicit economic state, protected obligations, deterministic transitions, safety constraints and auditable evidence.
+**Chain-neutral economic protocol** with explicit obligations, protected capital, deterministic transitions, and auditable evidence.
 
-> **IMMORTAL is the protocol. Cardano is an adapter. PRE-RICH is an application.**
+> **IMMORTAL = protocol · Cardano = adapter · PRE-RICH = first application**
 
-IMMORTAL is an experimental open-source protocol. It is not presented as a company, custodial service, financial product, or finished production system. There is no claim here of a permanent team, privileged operator, or unilateral authority.
+**Status:** experimental open source — not a finished product, not certified mainnet, and not a custodial service.
 
+```text
+IMMORTAL
+  universal economic rules
+      ↓
+Cardano Adapter
+  realize / observe / evidence
+      ↓
+PRE-RICH
+  Scratch & Win application
+      ↓
+Cardano ledger
+```
 
-## Why IMMORTAL exists
+## Read first — 2 minutes
 
-> **What would happen if humanity's guiding light were a shared ethical code rather than the individual pursuit of profit?**
+| Role | Start here |
+|---|---|
+| Whole stack | [System Map](docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md) |
+| Protocol | [IMMORTAL Complete System Specification](IMMORTAL/docs/IMMORTAL-COMPLETE-SYSTEM-SPECIFICATION.md) |
+| Application | [PRE-RICH Complete System Specification](PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md) |
+| Adapter | [Cardano Adapter Complete System Specification](Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md) |
 
-IMMORTAL is an experiment built around that question.
+Normative authority remains with the Constitution and applicable normative/economic specifications; these guides are navigation aids.
 
-It is designed from principles first: open source, no privileged economic authority outside the protocol's principles, no central owner whose role is to extract value from the protocol itself, and explicit rules that can be inspected, challenged and verified.
+## What PRE-RICH is
 
-IMMORTAL is **blockchain-agnostic because it was not born from blockchain**.
+PRE-RICH is the current application built on IMMORTAL:
 
-Blockchain is one possible realization environment, not the purpose of the protocol. Other environments may be connected through adapters when they can preserve the applicable IMMORTAL semantics and authority boundaries.
+- NFT tickets with a class ladder from **1 to 100 USDM**.
+- **Commit → reveal → derived result**; the client does not choose the tier or payout.
+- Classic-6 normal-game table with expected payout approximately **0.65 × P**.
+- Liability-first accounting, protected capital, class gating, crystallization, and claim ≠ burn.
+- Beacon model: **B1 is the current authorized-publisher path; B3 is the stronger publisher-independent target and remains evidence-tracked/open.**
 
-> **Many environments, one economic constitution.**
+These are application-level facts, not universal IMMORTAL semantics.
 
-See [IMMORTAL — Socioeconomic Experimental Premise](IMMORTAL/docs/SOCIOECONOMIC-PREMISE.md) for the full public rationale and experimental hypothesis.
+## What this is not
 
-## Start here
+- Not a meme-token sales page.
+- Not a guarantee of production readiness or certification.
+- Not a claim that B3, Genesis, or full ledger conformance are closed.
+- Not a claim of being the first commit–reveal system on Cardano.
+- Not a promise that experimental code or CI status alone constitutes economic certification.
 
-If you are new:
+## Architecture
 
-1. Read the [Executive Summary](docs/EXECUTIVE-SUMMARY.md).
-2. Read the [White Paper](WHITEPAPER.md).
-3. Read the [Glossary](docs/GLOSSARY.md).
-4. See the [architecture](docs/README.md).
+The universal layer defines what must be true. The adapter realizes and observes those requirements in a concrete execution environment. The application specializes them for a concrete economic system.
 
-If you want the formal model:
+Application- or chain-specific parameters must not silently become IMMORTAL semantics.
+
+```text
+IMMORTAL
+  ↓
+economic rules / obligations / invariants
+  ↓
+Adapter
+  ↓
+execution + observation + evidence
+  ↓
+PRE-RICH
+  ↓
+application state / game rules
+  ↓
+Cardano ledger
+```
+
+## Verification boundary
+
+IMMORTAL distinguishes:
+
+```text
+specification
+    ↓
+formal / model result
+    ↓
+implementation
+    ↓
+conformance evidence
+    ↓
+deployment evidence
+```
+
+**Green CI is evidence about a run, not a universal certification claim.**
+
+For Beacon B3, the evidence chain being developed is:
+
+```text
+Materios canonical block
+    ↓
+GRANDPA finality
+    ↓
+authority history / transition
+    ↓
+runtime execution proof
+    ↓
+StateRoot / storage proof
+    ↓
+canonical Beacon
+```
+
+B3 is intentionally not described as closed until the required cryptographic and provenance obligations are actually evidenced.
+
+## Open edges
+
+Current major evidence gaps remain explicit:
+
+- **B3 / Materios:** publisher-independent finality and authority-selection provenance.
+- **Genesis:** carrier / transition evidence.
+- **Cardano adapter:** full ledger-native conformance.
+- **Deployment:** production environment evidence.
+
+See [Verification Status](docs/03-audit/VERIFICATION_STATUS.md) and [Residual Obligations](docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md).
+
+## Code entry points
+
+For builders who want to inspect the implementation:
+
+- `poc/materios-grandpa/` — GRANDPA and authority-transition proof boundary.
+- `poc/materios-checkpoint/` — Materios checkpoint/evidence extraction.
+- `poc/materios-execution-verifier/` — independent native execution-proof verifier.
+- `Adapter/CARDANO/` — Cardano adapter implementation and conformance work.
+
+## Why IMMORTAL
+
+IMMORTAL is not based on a claim of inventing a new cryptographic primitive. The thesis is **composition under explicit constraints**: economic obligations, authority boundaries, deterministic transitions, solvency rules, and evidence must remain consistent rather than becoming independent feature silos.
+
+The deeper socioeconomic premise is documented separately in [SOCIOECONOMIC-PREMISE.md](IMMORTAL/docs/SOCIOECONOMIC-PREMISE.md).
+
+## Deeper documentation
+
+**Protocol**
 
 - [Constitution](docs/00-normative/01_CONSTITUTION_FINAL.md)
-- [Universal Economic Model](docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md)
 - [Economic Kernel](docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md)
 - [State Transition Specification](docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md)
 - [Invariants and Conservation](docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md)
 - [Conformance Specification](docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md)
 
-If you want evidence and audit status:
+**Application**
+
+- [PRE-RICH Complete Specification](PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md)
+- [Game Economy](PRE-RICH/docs/GAME-ECONOMY.md)
+
+**Evidence / audit**
 
 - [Proof Register](docs/01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md)
 - [Audit Closure Matrix](docs/01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md)
 - [Verification Status](docs/03-audit/VERIFICATION_STATUS.md)
 - [Residual Obligations](docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md)
 
-## Architecture
+**Process**
 
-```text
-                 IMMORTAL
-        universal protocol semantics
-                    │
-                    ▼
-             ADAPTER LAYER
-          Cardano (current)
-                    │
-                    ▼
-          APPLICATION LAYER
-            PRE-RICH (current)
-```
+- [CONTRIBUTING](CONTRIBUTING.md)
+- [ROADMAP](ROADMAP.md)
+- [SECURITY](SECURITY.md)
 
-The universal layer defines what must be true. The adapter maps those requirements into an execution environment. The application specializes the protocol for a concrete economic system.
+## License
 
-Application or chain-specific parameters must not silently become IMMORTAL semantics.
-
-## Verification boundary
-
-A mathematical theorem about the abstract model is not, by itself, a proof that a concrete implementation conforms.
-
-IMMORTAL therefore separates:
-
-**specification → formal result → certification requirement → implementation evidence → deployment evidence**
-
-The repository may contain experimental implementations and proofs-of-concept. Their presence does not automatically make them normative or production-ready.
-
-## Project status
-
-The project is experimental and open source. The current documentation baseline is intended to make the protocol, its assumptions, its evidence boundary and its remaining implementation work inspectable.
+See the repository license files for the applicable terms.
 
 **Do your own verification before relying on any implementation.**
