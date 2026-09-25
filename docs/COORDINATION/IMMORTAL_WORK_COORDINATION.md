@@ -6025,3 +6025,46 @@ Status:
 - cryptographic selector/transition proof: **OPEN**
 - cryptographic M6 composition proof: **OPEN**
 - real finalized-node evidence: **OPEN**
+
+
+## 2026-09-25 — MATERIOS LIVE-VS-SOURCE DEPLOYMENT BOUNDARY TIGHTENED
+
+Another triangulation pass found a materially stronger distinction between the current Materios source tree, the public documentation repository, and the last explicitly documented live-runtime observation.
+
+### Evidence chain
+
+1. The current public Materios source line is post-spec-238 and `partnerchain/runtime/src/lib.rs` declares `spec_version = 238`.
+2. The spec-238 change itself states **NOT DEPLOYED** at the time it was introduced, and the subsequent security-review/test commits continue to discuss the spec-238 source/test line without providing a deployment ceremony or live RPC observation.
+3. The public Materios documentation source (`Flux-Point-Studios/docs`, current `main`) identifies the network as `Materios Preprod v6`, keeps the live runtime field intentionally open as `211+`, and tells operators to query `state_getRuntimeVersion` rather than hard-code a version.
+4. The same documentation repository records a concrete live verification from **2026-09-03** with **chain spec_version 237**, including on-chain WASM/API evidence and live Koios cross-checks. This is the strongest explicitly dated live-runtime evidence found in the available sources.
+5. A separate rendered GitBook fetch currently exposes a conflicting generic node page showing `spec_version 109` and a different node image/tag. This does not match the GitHub source-of-truth page for the v6 preprod network and is therefore classified as a **published-surface inconsistency**, not as live network evidence.
+
+### Consequence for M6
+
+The correct status is now more precise:
+
+- **Source implementation:** spec 238 — VERIFIED.
+- **Last explicitly corroborated live preprod runtime:** spec 237 on 2026-09-03 — VERIFIED AS HISTORICAL LIVE EVIDENCE.
+- **Spec 238 deployed live after that observation:** OPEN / no deployment evidence found.
+- **Current live runtime today:** OPEN; must be read directly from canonical RPC.
+- **GitBook rendered `spec_version 109`:** NOT TRUSTED as current v6 runtime evidence because it conflicts with the repository-backed v6 documentation and network identity.
+
+This prevents an especially dangerous provenance collapse: `source HEAD 238` must not be treated as `live 238`, while the old `237 live` observation must not be silently treated as today's state either.
+
+### Exact next proof target
+
+The minimal decisive packet is now:
+
+`canonical preprod endpoint`
+→ `system_health`
+→ `chain_getFinalizedHead`
+→ `state_getRuntimeVersion { at: finalized_hash }`
+→ `state_getCode { at: finalized_hash }` (or equivalent deployed runtime identity)
+→ match runtime identity to a source commit/build artifact
+→ retrieve the real authority-set transition + GRANDPA justification
+→ verify the external selector/transition proof
+→ compose M6.
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+Status: **LIVE 237 = last dated observation / LIVE CURRENT VERSION = OPEN / SOURCE 238 = VERIFIED / DEPLOYMENT CORRESPONDENCE = OPEN.**
