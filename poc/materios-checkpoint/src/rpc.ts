@@ -6,6 +6,8 @@ RPC responses are evidence supplied by a node; they are not themselves
 a source of canonicality or independently verified finality.
 */
 
+import { extractSelectionInputsCommitment, type SelectionInputsCommitment } from "./selectionCommitment.js";
+
 export type JsonRpcId = number | string;
 
 type JsonRpcError = {
