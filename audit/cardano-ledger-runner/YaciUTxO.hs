@@ -4,6 +4,7 @@ module YaciUTxO
   ( decodeYaciUTxO
   ) where
 
+import Cardano.Ledger.Address (decodeAddrEither)
 import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.BaseTypes (StrictMaybe (..))
@@ -66,7 +67,11 @@ parseInput value = do
   txIn <- parseNative "TxIn" refText
 
   addressHex <- textField value "ledger_address_hex"
-  addr <- parseNative "Addr" addressHex
+  addressBytes <- decodeHexText "ledger_address_hex" addressHex
+  addr <-
+    case decodeAddrEither addressBytes of
+      Left err -> Left ("INVALID_LEDGER_ADDRESS:" <> err)
+      Right decoded -> Right decoded
 
   amounts <- arrayField value "amount"
   maryValue <- parseMaryValue amounts
