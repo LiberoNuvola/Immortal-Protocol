@@ -230,6 +230,40 @@ export function hashAuthoritySetTransitionStatement(
   );
 }
 
+export interface FinalityCheckpointBinding {
+  readonly blockHash: Uint8Array;
+  readonly blockNumber: bigint;
+}
+
+/**
+ * Binds the authority-set transition activation block to the independently
+ * verified GRANDPA checkpoint. Equality is required for both hash and number;
+ * matching the number alone is insufficient.
+ */
+export function verifyActivationBlockBinding(
+  statement: AuthoritySetTransitionStatement | AuthoritySetTransitionPublicStatement,
+  checkpoint: FinalityCheckpointBinding
+): void {
+  const publicStatement =
+    "proofBytes" in statement
+      ? authoritySetTransitionPublicStatement(statement)
+      : statement;
+
+  validateAuthoritySetTransitionPublicStatement(publicStatement);
+
+  if (checkpoint.blockHash.length !== HASH_LENGTH) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+  }
+
+  if (checkpoint.blockNumber !== publicStatement.activationBlock.number) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_NUMBER_MISMATCH");
+  }
+
+  if (!equalBytes(checkpoint.blockHash, publicStatement.activationBlock.hash)) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+  }
+}
+
 export function hashSelectionInputs(
   selectionInputs: Uint8Array
 ): Uint8Array {
