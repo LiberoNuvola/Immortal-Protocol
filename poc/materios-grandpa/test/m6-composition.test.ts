@@ -158,7 +158,7 @@ describe("Materios M6 composition boundary", () => {
 
   it("leaves epoch/committee/activation mismatch rejection to the external proof", async () => {
     const transitionArtifact = transition();
-    const finalityArtifact = finalityArtifact();
+    const finalityArtifact = finality();
     const seen: {
       sidechainEpoch: bigint;
       toSetId: bigint;
