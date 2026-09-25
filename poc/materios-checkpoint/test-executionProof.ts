@@ -19,6 +19,7 @@ function makePacket(): MateriosExecutionProofPacket {
       implName: 'materios',
       specVersion: 42,
       implVersion: 7,
+      codeHash: '66'.repeat(32),
     },
     runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
     callDataHex: '0xaabb',
@@ -80,6 +81,15 @@ test('runtime identity fields fail closed', () => {
         runtime: { ...packet.runtime, specVersion: -1 },
       }),
     /runtime.specVersion must be a safe non-negative integer/,
+  )
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        runtime: { ...packet.runtime, codeHash: 'aa' },
+      }),
+    /runtime.codeHash must be 32-byte hex/,
   )
 })
 
