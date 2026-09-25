@@ -1,8 +1,8 @@
 # IMMORTAL — Implementation & Conformance Closure Status
 
-**Snapshot branch:** `aa2cf1d2eda2977e11e7328e9f235079a836b72c`
+**Snapshot branch:** `work/immortal-green-closure`
 **Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-09-21
+**Date:** 2026-09-25
 
 ## 1. Closed policy boundaries
 
@@ -30,7 +30,7 @@
 | R4 liveness classifier | GREEN | FM1–FM10 classifier passes dedicated CI after precedence correction. |
 | 3D certified ticket boundary | IMPLEMENTED | NFT identity/state binding separated from presentation renderer; renderer has no economic authority. |
 | Frontend build | GREEN | Vite build passes after separating browser/runtime boundary. |
-| Governance replay/registry | INTEGRATED INTO HASKELL GATE | Core governance suites registered; current final Haskell result pending in latest run. |
+| Governance replay/registry | IMPLEMENTED / BUILD EVIDENCE PENDING | Canonical replay now binds CANONICALIZED to the exact finalized DecisionRecord reference; current Haskell build evidence remains pending. |
 | Materios evidence packet | IMPLEMENTED / bounded | Deterministic anchor tuple binding; finality/storage proof authenticity remains external verifier work. |
 
 ## 3. Explicit remaining certification gaps
@@ -47,7 +47,7 @@
 | Jackpot activation on-chain | Application policy is implemented; direct on-chain activation remains open because current B1 datum lacks current/highest class state. |
 | 3D production UI wiring | IMPLEMENTED on current branch; visual/UX conformance remains evidence-only. |
 | P2.8 full lifecycle | Yaci lab remains the final real-ledger evidence gate for the whole Issue→Reveal→Claim/Expire path. |
-| Haskell final regression | Pending current-head runner completion; toolchain pin and native dependencies are now aligned with `cabal.project`. |
+| Haskell final regression | Pending current-head runner completion; toolchain pins and required native dependency siblings are aligned with `cabal.project`. |
 
 ## 4. Anti-regression decisions
 
@@ -99,6 +99,14 @@ The remaining items in this document are therefore certification/conformance obl
 - B6 full V3↔Cardano semantic equivalence remains partial despite Issue/Reveal/Claim/Expire refinement evidence.
 - RF6/Kc/Ω deployment certification and RF8 whole-program proof remain open.
 - Exact numeric expiry remains an application/deployment parameter; no universal number is fixed.
+- GOV-28 DecisionRecord → CanonicalizationRecord reference provenance has been implemented in canonical replay; only executable Haskell/build evidence remains open.
 
 ### Non-reopening statement
 The current work does not reopen closed economic policy decisions. In particular, Classic-6, the PRE-RICH ladder, 500× cap, Jackpot semantics and expiry mechanism remain governed by their current decision records. Historical/legacy distributions are provenance only.
+
+## Current closure delta — 2026-09-25
+
+- GOV-28 canonicalization provenance is now enforced during full canonical replay: the canonicalization reference must equal the finalized DecisionRecord reference for the same proposal; tampered references are rejected by regression tests.
+- The current Cardano Integration Lab generates fresh Haskell/Plutus validator artifacts before copying them into src/plutusScripts and then executes the real Reveal trace. This materially narrows the interpretation of the external audit's earlier budget finding: a future lab run can distinguish stale committed artifacts from a fresh-source execution-budget failure.
+- P2.8 raw Yaci materialization is now fail-closed and sources transaction inputs, timing and protocol context directly from Yaci Store; the native Cardano-ledger evaluator remains the final evidence step.
+- No frozen economic constant or validator safety condition was relaxed in this closure cycle.
