@@ -237,6 +237,9 @@ await writeFile(
     timingSource: {
       ...timing,
     },
+    genesisResponse: genesis,
+    sourceOfTruth: 'Yaci /genesis structured response',
+
   }, null, 2) + '\n',
 )
 
@@ -518,7 +521,8 @@ await writeFile(
       command: 'yaci-devkit info',
       file: 'yaci-devkit-info.txt',
     },
-    startTimeRaw: timing.startTimeRaw,
+    startTimeRaw: String(genesis.system_start),
+    genesisSystemStart: genesis.system_start,
     rawInfo: yaciInfo,
   }, null, 2) + '\n',
 )
