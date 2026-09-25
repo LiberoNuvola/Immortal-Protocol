@@ -133,7 +133,7 @@ PoC-0 PASSED (extraction only — not B3)
 ### Key Properties
 
 - **chain_id**: Network identifier (configurable via `MATERIOS_CHAIN_ID` env var)
-- **runtime_spec_version**: From `state_getRuntimeVersion` (Materios currently: 235)
+- **runtime_spec_version**: From `state_getRuntimeVersion`; the live Materios Preprod v6 observation on 2026-09-25 reported spec version 238. This field is runtime-upgrade-sensitive and must be re-observed rather than treated as a permanent constant.
 - **block_number**: Finalized block height (as decimal string for precision)
 - **block_hash**: Finalized block hash (32-byte, 0x-prefixed hex)
 - **state_root**: State trie root at finalized block
