@@ -244,7 +244,9 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
-      pool: {
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
+      pool:
         pendingLiabilitiesUsdm: 500n,
         unresolvedReserveUsdm: 600n,
         unresolvedTicketCount: 3n,
@@ -282,7 +284,9 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
-      pool: {
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
+      pool:
         pendingLiabilitiesUsdm:
           (fixture.produced.b1PrizePool.datum as B1PrizePoolDatumFixture)
             .pendingLiabilitiesUsdm,
