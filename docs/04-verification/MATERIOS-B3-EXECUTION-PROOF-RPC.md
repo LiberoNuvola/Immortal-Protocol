@@ -69,7 +69,11 @@ The binding is:
 
 `canonical block -> SessionValidatorManagement::set.selection_inputs_hash -> exact AuthoritySelectionInputs bytes -> blake2_256 match -> Runtime API call -> StorageProof`
 
-The extraction of `Call::set` remains a separate transport/decoding task. A normal `state_call` result does not establish that the supplied inputs were the inputs carried by the canonical inherent.
+The extraction of `Call::set` is now specified as a narrow raw-block decoding step. In the currently vendored Materios runtime, `SessionCommitteeManagement` is pallet index `14` and `set` is call index `0`. The inherent is an unsigned SCALE extrinsic (version byte `0x04`), so the decoder identifies `0x04 0x0e 0x00` and takes the final 32 bytes of that call as the fixed `SizedByteString<32>` hash field. The decoder must find exactly one matching inherent and fail closed on malformed, missing, or duplicate matches.
+
+This pallet/call index is a runtime-bound constant, not a generic Substrate assumption. The B3 packet already binds the execution to the exact deployed runtime code hash/spec version; if a runtime upgrade changes the call layout or index, the extraction must be treated as OPEN until the new runtime metadata/source is independently re-triangulated.
+
+A normal `state_call` result does not establish that the supplied inputs were the inputs carried by the canonical inherent.
 
 ## Schema update
 
@@ -82,6 +86,18 @@ The receiving verifier must independently bind:
 `finalized header → stateRoot → deployed runtime identity → exact call bytes → execution proof → execution result`
 
 before composing the result into the IMMORTAL verified authority-transition boundary.
+
+## On-chain commitment extraction implementation
+
+`poc/materios-checkpoint/src/selectionCommitment.ts` implements the narrow extraction above, and `MateriosRpc.getSelectionInputsCommitment(blockHash)` obtains the raw extrinsics through `chain_getBlock` at the exact requested block before decoding them.
+
+The implementation deliberately does not:
+- execute or reimplement authority selection;
+- infer finality;
+- validate committee semantics;
+- treat an RPC response as canonical without the independent finality/state/proof layers.
+
+The extracted hash is the exact on-chain commitment that must equal `blake2_256(AuthoritySelectionInputs.encode())` before the execution proof can be composed into B3.
 
 ## Current evidence
 
