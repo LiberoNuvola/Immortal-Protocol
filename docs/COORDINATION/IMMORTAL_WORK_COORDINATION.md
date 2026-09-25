@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `7db2ae3b20915b1924fd1fd192dd723bcf3a467a` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `9f9fb485772116726643f0f0d969d83b2f0d2a72` — autonomous multi-front sweep head
 
 ---
 
