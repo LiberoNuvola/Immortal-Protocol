@@ -100,7 +100,7 @@ exact Reveal CBOR
   → persisted typed report
 ```
 
-Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. The P2.8 runner now has a native-context decoding path for the exact transaction, protocol parameters, consumed Yaci UTxO, `EpochInfo` and `SystemStart`; the Yaci→Ledger UTxO path is fail-closed on malformed addresses, values, datum hashes and unsupported reference-script evidence. A dedicated decoder conformance executable is included in the lab workflow. The runner now invokes Cardano-ledger `evalTxExUnitsWithLogs` once the complete typed context is decoded and persists the `RedeemerReportWithLogs`; with missing context it remains explicitly `SAFE_STALL`. This is an implementation milestone only: no successful ledger evaluation result or ledger-originated failure is claimed until a real evidence packet is observed through the workflow. Closure requires that actual evidence, not only successful compilation or context decoding.
+Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. The P2.8 runner now has a native-context decoding path for the exact transaction, protocol parameters, consumed Yaci UTxO, `EpochInfo` and `SystemStart`; the Yaci→Ledger UTxO path is fail-closed on malformed addresses, values, datum hashes and unsupported reference-script evidence. A dedicated decoder conformance executable is included in the lab workflow. The runner now has an explicit `--evaluate` mode and, when enabled, invokes Cardano-ledger `evalTxExUnitsWithLogs` once the complete typed context is decoded, persisting the `RedeemerReportWithLogs`. Before decoding, the runner now verifies the five canonical context artifacts against the SHA-256 values already declared by the exact materialization manifest; any missing, malformed or mismatched digest is fail-closed. The runner also emits a byte-binding manifest for the evaluator report. With missing context it remains explicitly `SAFE_STALL`. This is an implementation milestone only: no successful ledger evaluation result or ledger-originated failure is claimed until a real evidence packet is observed through the workflow. Closure requires actual evidence, not only successful compilation or context decoding.
 
 ## Beacon / Materios / GRANDPA
 
@@ -193,3 +193,7 @@ The primary entry documents are:
 5. this status/evidence one-pager
 
 Together they provide orientation, layer-specific detail and implementation/evidence status without replacing the normative sources.
+
+### P2.8 native decoding hardening — 2026-09-25
+
+The Yaci UTxO adapter now decodes the serialized Cardano address through the native Ledger `decodeAddrEither` path instead of treating `ledger_address_hex` as an already-decoded Ledger value. Invalid addresses therefore fail before evaluation rather than being normalized by a local substitute parser. This remains adapter/evidence infrastructure only; it does not change validator economics.
