@@ -25,6 +25,94 @@ function extractInfoValue(text, label) {
   return match?.[1]?.trim() ?? null
 }
 
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+const BECH32_INDEX = new Map([...BECH32_CHARSET].map((char, index) => [char, index]))
+
+function bech32Polymod(values) {
+  const generators = [0x3b6a57b2n, 0x26508e6dn, 0x1ea119fan, 0x3d4233ddn, 0x2a1462b3n]
+  let chk = 1n
+  for (const value of values) {
+    const top = chk >> 25n
+    chk = ((chk & 0x1ffffffn) << 5n) ^ BigInt(value)
+    for (let bit = 0n; bit < 5n; bit += 1n) {
+      if ((top & (1n << bit)) !== 0n) chk ^= generators[Number(bit)]
+    }
+  }
+  return chk
+}
+
+function convertBits(values, fromBits, toBits, pad) {
+  let acc = 0
+  let bits = 0
+  const maxv = (1 << toBits) - 1
+  const maxAccBits = fromBits + toBits - 1
+  const maxAcc = (1 << maxAccBits) - 1
+  const result = []
+
+  for (const value of values) {
+    if (value < 0 || value >> fromBits !== 0) throw new Error('invalid bech32 data value')
+    acc = ((acc << fromBits) | value) & maxAcc
+    bits += fromBits
+    while (bits >= toBits) {
+      bits -= toBits
+      result.push((acc >> bits) & maxv)
+    }
+  }
+
+  if (pad) {
+    if (bits > 0) result.push((acc << (toBits - bits)) & maxv)
+  } else {
+    if (bits >= fromBits) throw new Error('invalid bech32 padding')
+    if (((acc << (toBits - bits)) & maxv) !== 0) throw new Error('non-zero bech32 padding')
+  }
+
+  return result
+}
+
+function cardanoAddressToLedgerHex(address) {
+  if (typeof address !== 'string' || address.length === 0) {
+    throw new Error('Yaci input address is missing')
+  }
+
+  const clean = address.toLowerCase()
+
+  if (/^[0-9a-f]+$/.test(clean) && clean.length % 2 === 0) {
+    return clean
+  }
+
+  const separator = clean.lastIndexOf('1')
+  if (separator <= 0 || separator + 7 > clean.length) {
+    throw new Error('Yaci input address is not valid Bech32')
+  }
+
+  const hrp = clean.slice(0, separator)
+  const encoded = clean.slice(separator + 1)
+  const values = []
+  for (const char of encoded) {
+    const value = BECH32_INDEX.get(char)
+    if (value === undefined) throw new Error('Yaci input address contains invalid Bech32 character')
+    values.push(value)
+  }
+
+  if (bech32Polymod([
+    ...new TextEncoder().encode(hrp).flatMap(byte => [byte >> 5, byte & 31]),
+    0,
+    ...values,
+  ]) !== 1n) {
+    throw new Error('Yaci input address has invalid Bech32 checksum')
+  }
+
+  if (hrp !== 'addr' && hrp !== 'addr_test') {
+    throw new Error('Yaci input address has unsupported Cardano address HRP')
+  }
+
+  const payload = values.slice(0, -6)
+  const bytes = convertBits(payload, 5, 8, false)
+  if (bytes.length === 0) throw new Error('Yaci input address decodes to empty bytes')
+
+  return Buffer.from(bytes).toString('hex')
+}
+
 const transition = await readJson(EVIDENCE_DIR + '/reveal-transition.json')
 const txHash = transition.transactionRef
 if (typeof txHash !== 'string' || !/^[0-9a-f]{64}$/i.test(txHash)) {
@@ -63,6 +151,19 @@ if (observedRefs.length !== expectedRefs.length ||
     expectedRefs.some((ref) => !observedRefs.includes(ref))) {
   throw new Error('Yaci consumed input set does not match the exact Reveal transition')
 }
+
+const observedWithLedgerAddresses = {
+  ...utxos,
+  inputs: utxos.inputs.map((input) => {
+    if (typeof input.address !== 'string') {
+      throw new Error('Yaci consumed input lacks address')
+    }
+    return {
+      ...input,
+      ledger_address_hex: cardanoAddressToLedgerHex(input.address),
+    }
+  }),
+}
 const timing = {
   startTimeRaw: extractInfoValue(yaciInfo, 'Start Time'),
   slotLengthRaw: extractInfoValue(yaciInfo, 'Slot Length'),
@@ -86,7 +187,7 @@ await writeFile(
       kind: 'Yaci Store Blockfrost-compatible transaction UTxO response',
     },
     consumedUtxos: transition.consumedUtxos ?? [],
-    observed: utxos,
+    observed: observedWithLedgerAddresses,
   }, null, 2) + '\n',
 )
 
