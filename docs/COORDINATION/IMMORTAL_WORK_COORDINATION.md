@@ -6201,3 +6201,38 @@ The preferred narrow node-side API shape is now:
 Response should transport the exact block hash, runtime API identifier, call bytes, runtime result bytes, SCALE-encoded `StorageProof`, and runtime version. The response remains untrusted transport. It must not assert finality or canonicality.
 
 IMMORTAL has implemented only the envelope/validation and mutation tests; no trie verifier or selector reimplementation was added. This keeps the next boundary clean: real node evidence first, then Rust-side independent `StorageProof` verification against the finalized state root.
+
+
+## 2026-09-25 — MATERIOS CHAIN-INFO PROVENANCE QUALIFIER
+
+The live `https://materios.fluxpointstudios.com/chain-info` response has been re-fetched and remains:
+
+`genesis = 0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+`spec_version = 238`
+`best_block = 2004818`
+`finalized_block = 2004815`
+`updated_at = 2026-09-25T04:28:07.578Z`
+
+This is sufficient to record **current live-chain-info evidence for spec 238**.
+
+However, a provenance qualifier is required: the payload shape returned by the deployed `/chain-info` endpoint (`genesis`, `spec_version`, `best_block`, `finalized_block`) is not identical to the `tools/explorer/app.py` implementation at the current public Materios source commit, whose `/api/chain-info` implementation derives genesis/best/finalized/committee data but does not expose `spec_version` in that returned object. Therefore the live endpoint's server-side implementation/version is not yet source-matched.
+
+This does not invalidate the live observation; it means the observation is **deployment evidence**, while the implementation provenance of the observer endpoint itself remains separate evidence.
+
+### M6 status adjustment
+
+Promote only:
+- **LIVE SPEC VERSION 238 → VERIFIED (deployment observation)**
+- **LIVE FINALIZED HEIGHT 2004815 → VERIFIED (deployment observation)**
+
+Keep open:
+- **finalized block hash → OPEN**
+- **state_getRuntimeVersion(at finalized hash) transcript → OPEN**
+- **deployed WASM/code hash → OPEN**
+- **WASM ↔ source commit → OPEN**
+- **real authority transition → OPEN**
+- **GRANDPA justification → OPEN**
+- **cryptographic selector proof → OPEN**
+- **cryptographic M6 composition proof → OPEN**
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
