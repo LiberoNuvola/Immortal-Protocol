@@ -370,3 +370,14 @@ Equality of height alone is insufficient: a different block at the same height i
 The PoC now exposes `verifyActivationBlockBinding()`, which fails closed on either hash or number drift. This check sits outside the generic GRANDPA verifier so the latter remains reusable for ordinary finality checks while the authority-transition boundary explicitly binds the transition to its activation checkpoint.
 
 This closes a concrete trust gap in the previous integration test, where the transition activation height matched the finality checkpoint but the block hashes differed.
+
+
+## On-chain selection-input commitment
+
+The raw `AuthoritySelectionInputs` are now required to cross an explicit commitment boundary: the extracted hash from the canonical `SessionValidatorManagement::set` inherent must equal the transition's `selectionInputsHash`.
+
+The verifier helper intentionally does not inspect or reproduce the Materios selector. It authenticates only:
+
+`blake2_256(exact AuthoritySelectionInputs bytes) = committed selectionInputsHash`
+
+and binds that commitment to a canonical block location. Extraction of the actual runtime call and the independent execution/finality proof remain separate obligations.
