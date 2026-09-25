@@ -282,7 +282,7 @@ test('getCommitteeExecutionProof fails closed on malformed proof bytes', async (
     const rpc = new MateriosRpc(server.endpoint)
     await assert.rejects(
       () => rpc.getCommitteeExecutionProof('0xaabb', target),
-      /\/B3 proof proofScaleHex: expected hex string//,
+      /B3 proof proofScaleHex: expected hex string/,
     )
   } finally {
     await server.close()
