@@ -7584,3 +7584,54 @@ Run `36189897638` on `352b4b2...` completed the Materios Canonical Evidence & Fi
 **USER QUESTION:** NONE.
 
 **Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / EXACT CI EVIDENCE ANCHORED.
+
+
+## 2026-09-25 — Autonomous cycle: evidence gate recheck + B4/B3 boundary audit
+
+### P2.8 exact-head evidence
+The current `audit/cardano-ledger-runner/cabal.project` exposes the two dependency siblings identified by the previous exact-head failures:
+- `cardano-prelude` at the pinned `cardano-prelude` revision;
+- `cardano-crypto-class` at the pinned `cardano-base` revision.
+
+The workflow itself still invokes the native evaluator through:
+`cabal run cardano-ledger-runner -- --evaluate`.
+The available workflow-run connector currently returns no run for the recent repair commits. This is an observation limitation, not evidence that GitHub did not execute the workflow. GitHub's documented push-branch filtering is consistent with the configured trigger. citeturn0search5turn0search6turn0search7
+
+**Classification:** P2.8 = **EVIDENCE GAP / DEPENDENCY CLOSURE**. No Ledger/Plutus/economic conclusion is promoted until the native evaluator reaches execution and emits its evidence artifact.
+
+### B4/B5 — protected-capital boundary audit
+Direct inspection of the current universal kernel confirms the semantic chain remains explicit:
+- `protectedCapital = crystallized liabilities + worst-case exposure + SafetyCapital + ReserveProtection + locked Jackpot + MandatoryFutureCosts`;
+- `rawSurplus = max 0 (EEV - protectedCapital)`;
+- solvency requires non-negative economic components and `EEV >= protectedCapital`;
+- conservation ties unresolved reserve/count to the class-state representation.
+
+This is useful conformance evidence, but it also confirms the architectural boundary still needs work: `worstCaseExposure`, `classSaleable`, `EconomicControlState` and `JackpotState` are still represented through PRE-RICH-shaped state structures inside V3. No destructive refactor is justified yet because the consumer/projection map is not complete.
+
+**Classification:** B4 = **SEMANTIC BASELINE PRESENT / CONFORMANCE EVIDENCE OPEN**. BOUNDARY-SEPARATION remains open.
+
+### B3 / Beacon
+The current B3 investigation already distinguishes:
+- deterministic Beacon derivation;
+- authorized publisher integrity;
+- publisher-independent external-source authenticity.
+
+The remaining B3 target is therefore not another deterministic mapping test. It is the live provenance composition from canonical Materios evidence through finality, exact selection inputs, runtime/storage proof and canonical Beacon consumption.
+
+The local GRANDPA verifier remains deliberately scoped to checkpoint, authority-state, signatures, quorum and ancestry; it does not claim to prove the authority-selection derivation. This separation is preserved.
+
+**Classification:** B3 = **LIVE-PROOF / PROVENANCE EVIDENCE GAP**.
+
+### Governance
+GOV-28 remains localized at the canonicalization-reference provenance boundary. No reference/hash convention has been invented merely to make the test green.
+
+### Autonomous status
+- P2.8: evidence-open.
+- B4/B5/B6: conformance/evidence-open; no new economic rule.
+- BOUNDARY-SEPARATION: audit confirms conceptual split but not yet safe destructive refactor.
+- B3/Materios: live proof composition open.
+- GOV-28: provenance/design gap.
+- Fee/settlement: research/open; no numerical parameter selected.
+- Independent assurance: open.
+
+**USER QUESTION:** NONE.
