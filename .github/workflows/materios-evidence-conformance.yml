@@ -19,10 +19,6 @@ on:
       - "poc/materios-checkpoint/package.json"
       - "poc/materios-checkpoint/package-lock.json"
       - "poc/materios-grandpa/**"
-      - "poc/materios-checkpoint/src/executionProof.ts"
-      - "poc/materios-checkpoint/src/rpc.ts"
-      - "poc/materios-checkpoint/test-executionProof.ts"
-      - "poc/materios-checkpoint/test-rpc-b3.ts"
       - ".github/workflows/materios-evidence-conformance.yml"
   pull_request:
     branches:
@@ -38,10 +34,6 @@ on:
       - "poc/materios-checkpoint/package.json"
       - "poc/materios-checkpoint/package-lock.json"
       - "poc/materios-grandpa/**"
-      - "poc/materios-checkpoint/src/executionProof.ts"
-      - "poc/materios-checkpoint/src/rpc.ts"
-      - "poc/materios-checkpoint/test-executionProof.ts"
-      - "poc/materios-checkpoint/test-rpc-b3.ts"
       - ".github/workflows/materios-evidence-conformance.yml"
 
 jobs:
@@ -54,8 +46,6 @@ jobs:
           node-version: 22
       - run: npm ci --prefix poc/materios-checkpoint
       - run: npx --prefix poc/materios-checkpoint tsx --test poc/materios-checkpoint/test-canonicalEvidence.ts
-      - run: npm run test:execution-proof --prefix poc/materios-checkpoint
-      - run: npm run test:rpc-b3 --prefix poc/materios-checkpoint
       - run: npm run test:execution-proof --prefix poc/materios-checkpoint
       - run: npm run test:rpc-b3 --prefix poc/materios-checkpoint
       - run: npm run typecheck --prefix poc/materios-checkpoint
