@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `191f71e0876770a66132507933ec81155053a92b` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `54968dac07112af6e6567777ff9d907df200f9f3` — current observed branch snapshot at handoff
 
 ---
 
@@ -6571,3 +6571,20 @@ This makes the new evidence boundary observable in CI rather than relying only o
 **Commit:** `191f71e0876770a66132507933ec81155053a92b`
 
 **CI note:** no workflow run is asserted for this commit from the connector surface available to this session; push-triggered runs are not exposed by the current GitHub workflow-run action. Local `git clone`/npm validation was also blocked by DNS resolution in this environment. The source/lockfile alignment was checked structurally.
+
+
+---
+
+## 2026-09-25 — B3 runtime-code binding hardened
+
+The execution-proof envelope now has an explicit byte-level binding between the declared `runtime.codeHash` and the exact captured runtime WASM:
+
+`Blake2-256(captured WASM) == runtime.codeHash`
+
+The check is implemented in `poc/materios-checkpoint/src/executionProof.ts` and covered by `test-executionProof.ts`. A mismatch is fail-closed.
+
+This closes a real representational gap: before this change, `runtime.codeHash` was structurally validated but could still be supplied independently of the captured WASM. The new check still does **not** establish chain canonicality or source reproducibility; those remain separate evidence obligations.
+
+The workflow already exercises the execution-proof test suite. No CI-green result is claimed until a corresponding workflow run is observed.
+
+**Commits:** `08632ce9`, `54968dac`.
