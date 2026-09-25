@@ -138,6 +138,38 @@ return validateHeader(value);
 
 }
 
+
+/**
+ * Fetch deployed runtime WASM at an exact block.
+ * The returned bytes remain untrusted evidence until their hash is bound
+ * to an independently trusted runtime identity.
+ */
+async getRuntimeCode(at: string): Promise<string> {
+  const hash = requireHash(at, "state_getCode block hash");
+  const value = await this.call<unknown>("state_getCode", [hash]);
+  return requireHex(value, "state_getCode");
+}
+
+/**
+ * Fetch the planned narrow Materios B3 execution-proof response.
+ * This RPC is transport only; it must not be treated as canonicality.
+ */
+async getCommitteeExecutionProof(
+  callDataHex: string,
+  at: string,
+): Promise<CommitteeExecutionProofResponse> {
+  const hash = requireHash(at, "B3 execution-proof block hash");
+  if (!/^0x[0-9a-fA-F]*$/.test(callDataHex)) {
+    throw new Error(`B3 execution-proof call data is invalid hex: ${callDataHex}`);
+  }
+
+  const value = await this.call<unknown>(
+    "materios_b3_calculateCommitteeProof",
+    [hash, callDataHex],
+  );
+  return validateCommitteeExecutionProofResponse(value);
+}
+
 async getRuntimeVersion(
 hash?: string
 ): Promise<RuntimeVersion> {
@@ -191,7 +223,35 @@ logs: string[];
 };
 };
 
-export type RuntimeVersion = {
+
+export type CommitteeExecutionProofResponse = {
+  blockHash: string;
+  runtimeApiMethod: string;
+  callDataHex: string;
+  resultHex: string;
+  proofScaleHex: string;
+  runtime: RuntimeVersion;
+};
+
+function validateCommitteeExecutionProofResponse(
+  value: unknown,
+): CommitteeExecutionProofResponse {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("B3 execution-proof response: invalid object");
+  }
+  const v = value as Record<string, unknown>;
+  const blockHash = requireHash(v.blockHash, "B3 proof blockHash");
+  if (typeof v.runtimeApiMethod !== "string" || !v.runtimeApiMethod.trim()) {
+    throw new Error("B3 proof runtimeApiMethod is required");
+  }
+  const callDataHex = requireHex(v.callDataHex, "B3 proof callDataHex", true);
+  const resultHex = requireHex(v.resultHex, "B3 proof resultHex", true);
+  const proofScaleHex = requireHex(v.proofScaleHex, "B3 proof proofScaleHex");
+  const runtime = validateRuntimeVersion(v.runtime);
+
+  return { blockHash, runtimeApiMethod: v.runtimeApiMethod, callDataHex, resultHex, proofScaleHex, runtime };
+}
+\nexport type RuntimeVersion = {
 specName: string;
 implName: string;
 authoringVersion: number;
