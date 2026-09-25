@@ -180,6 +180,14 @@ main = do
     "state-aware lifecycle rejects premature voting"
   assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
   assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
+  let classifiedTimestampMismatch =
+        classifiedEvent { eventTimestamp = 8 }
+  assert (not (eventSchemaValid classifiedTimestampMismatch))
+    "classified payload/event timestamp mismatch rejected"
+  let gatesTimestampMismatch =
+        gatesEvent { eventTimestamp = 10 }
+  assert (not (eventSchemaValid gatesTimestampMismatch))
+    "gates payload/event timestamp mismatch rejected"
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment event2] of
     Left err -> error ("FAIL: replay rejected: " ++ err)
     Right st -> do
