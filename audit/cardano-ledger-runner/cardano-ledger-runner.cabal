@@ -22,6 +22,7 @@ executable cardano-ledger-runner
     , microlens
     , lens
     , cardano-slotting ==0.2.1.0
+    , cryptohash-sha256
     , base16-bytestring
     , containers
     , time
