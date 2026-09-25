@@ -25,6 +25,7 @@ import Cardano.Slotting.EpochInfo.API (EpochInfo)
 import Cardano.Slotting.Time (SystemStart)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
+import System.Exit (exitFailure)
 import TypedPacketDecode
   ( decodeBabbagePParams
   , decodeBabbageTx
@@ -103,6 +104,7 @@ safeStall :: String -> IO ()
 safeStall reason = do
   putStrLn "RESULT: SAFE_STALL"
   putStrLn ("SAFE_STALL_REASON: " <> reason)
+  exitFailure
 
 inspectEvidence :: FilePath -> Bool -> IO ()
 inspectEvidence evidenceDir runEvaluation = do
