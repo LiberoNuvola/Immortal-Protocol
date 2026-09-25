@@ -5822,6 +5822,32 @@ Status:
 - No selector reimplementation / no synthetic proof bytes / no normative economic change.
 
 
+## 2026-09-25 — MATERIOS RECEIPT PROVENANCE VS AUTHORITY-SELECTION BOUNDARY
+
+A direct source audit of the upstream Materios `orinq-receipts` runtime adds an important B3 constraint that the new Receipt Explorer lineage does not resolve.
+
+The upstream runtime contains an explicit **L1-independent emergency pinned committee** mechanism:
+- `PinnedCommittee` is committed runtime storage;
+- while `sidechain_epoch <= until_epoch`, `select_authorities` returns the pinned committee verbatim;
+- this bypasses the normal Ariadne/Cardano-driven selection and liveness filters;
+- the pin is set by a Root-only dispatchable and emits `PinnedCommitteeSet`;
+- expiry returns selection to the L1-driven path;
+- the source documents operational coupling with `Grandpa::note_stalled` for the SetId handoff.
+
+Therefore the B3 proof obligation is not merely “prove the receipt lineage”. A production verifier must establish **which authority-selection regime produced the authority set for the exact transition**:
+1. normal L1/Ariadne-driven selection, with exact selector inputs and runtime provenance; or
+2. the explicit pinned-committee regime, with authenticated committed-storage state, expiry bound, event/transition evidence and the corresponding GRANDPA SetId/finality relationship.
+
+The Receipt Explorer provenance chain strengthens receipt/certificate/checkpoint/Merkle/Cardano-anchor evidence, but it does not by itself prove this authority-regime distinction.
+
+### B3 consequence
+
+**New OPEN item:** authority-regime provenance.
+
+Closure requires the verified transition proof to bind the exact selection regime, not merely the resulting authority set. A verifier must reject an evidence packet that silently treats a pinned committee as an Ariadne output, or vice versa.
+
+No selector mathematics is added to IMMORTAL. No economic semantics change.
+
 ## 2026-09-24 — MATERIOS VERSION-DRIFT / SELECTOR RUNTIME PROVENANCE
 
 A deeper triangulation of the public Materios source repository closes an important part of the previously open selector-version question, while exposing a concrete **runtime/tooling version split** that must not be silently collapsed.
