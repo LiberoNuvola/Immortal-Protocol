@@ -5,6 +5,7 @@ import {
   executionProofPacketId,
   validateMateriosExecutionProofPacket,
   verifyRuntimeCodeBinding,
+  verifyOnChainSelectionInputsCommitment,
   type MateriosExecutionProofPacket,
 } from './src/executionProof.ts'
 
@@ -290,6 +291,23 @@ test('selection inputs are cryptographically bound to the declared on-chain hash
   assert.throws(
     () => validateMateriosExecutionProofPacket(changedInput),
     /selectionInputsHash does not match authoritySelectionInputsHex/,
+  )
+})
+
+test('packet selection-input hash must equal the extracted on-chain commitment', () => {
+  const packet = makePacket()
+
+  assert.doesNotThrow(() =>
+    verifyOnChainSelectionInputsCommitment(packet, packet.selectionInputsHash),
+  )
+
+  assert.throws(
+    () =>
+      verifyOnChainSelectionInputsCommitment(
+        packet,
+        '77'.repeat(32),
+      ),
+    /selectionInputsHash does not match on-chain commitment/,
   )
 })
 
