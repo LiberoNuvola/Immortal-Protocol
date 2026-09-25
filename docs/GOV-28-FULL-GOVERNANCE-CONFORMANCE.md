@@ -50,7 +50,7 @@ The existing repository state still requires integration of the semantic payload
 
 The repository's older `GovernanceCanonicalReplay` API accepts a parallel semantic `GovernanceEvent`. GOV-28 deliberately removes that model from the replay API. A concrete payload decoder must be implemented before the Haskell replay can be declared executable-conformant.
 
-This is an explicit implementation boundary, not a hidden gap.
+This is an explicit implementation boundary, not a hidden gap. The current reference verifier also confirms that finality/challenge lifecycle is not yet implemented in that verifier.
 
 ## Reference verification
 
@@ -60,13 +60,16 @@ Run:
 python verification/gov28_reference.py
 ```
 
-Expected:
+Observed from `verification/gov28_reference.py`:
 
 ```text
 GOV-28 reference conformance: PASS
 positive replay: PASS
-negative authorization/evidence/ruleset/finality gates: PASS
+negative authorization/evidence/ruleset gates: PASS
+finality/challenge lifecycle: NOT IMPLEMENTED IN THIS REFERENCE
 ```
+
+The finality/challenge lifecycle therefore remains an explicit implementation gap and must not be represented as closed by the reference script.
 
 ## Status
 
