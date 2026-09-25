@@ -33,7 +33,7 @@ describe('RF10/RF11 — canonical transition evidence binding', () => {
 
   it('requires both canonical state endpoints and the action fingerprint', () => {
     for (const field of ['preStateFingerprint', 'postStateFingerprint', 'actionFingerprint'] as const) {
-      expect(() => validateCanonicalTransitionEvidence({ ...valid, [field]: '' })).toThrow(field + ' must be non-empty')
+      expect(() => validateCanonicalTransitionEvidence({ ...valid, [field]: '' })).toThrow(field + ' must be a 32-byte hex digest')
     }
   })
 
