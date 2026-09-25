@@ -21,7 +21,16 @@ function sha256(bytes) {
 }
 
 function extractInfoValue(text, label) {
-  const match = text.match(new RegExp('^\\s*' + label + '\\s*:\\s*(.+)
+  const match = text.match(new RegExp('^\\s*' + label + '\\s*:\\s*(.+)$', 'im'))
+  return match?.[1]?.trim() ?? null
+}
+
+function extractInfoNumber(text, label) {
+  const raw = extractInfoValue(text, label)
+  if (raw === null || !/^-?\\d+(?:\\.\\d+)?$/.test(raw)) return null
+  return raw
+}
+
 const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
 const BECH32_INDEX = new Map([...BECH32_CHARSET].map((char, index) => [char, index]))
 
