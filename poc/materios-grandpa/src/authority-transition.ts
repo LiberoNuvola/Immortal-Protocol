@@ -25,6 +25,53 @@ const MAX_AUTHORITIES = 1024;
 const TRANSITION_DOMAIN =
   "PRE-RICH/MATERIOS/AUTHORITY-TRANSITION/V1";
 
+export interface OnChainSelectionInputsCommitment {
+  readonly blockHash: Uint8Array;
+  readonly blockNumber: bigint;
+  readonly selectionInputsHash: Uint8Array;
+}
+
+/**
+ * Binds the raw AuthoritySelectionInputs to the hash committed by the
+ * canonical SessionValidatorManagement::set inherent.
+ *
+ * This does not parse or recreate Materios' selector. It only authenticates
+ * that the bytes supplied to the proof boundary are the bytes committed by
+ * the enacted runtime call.
+ */
+export function verifySelectionInputsCommitment(
+  statement: AuthoritySetTransitionStatement | AuthoritySetTransitionPublicStatement,
+  commitment: OnChainSelectionInputsCommitment
+): void {
+  const publicStatement =
+    "proofBytes" in statement
+      ? authoritySetTransitionPublicStatement(statement)
+      : statement;
+
+  validateAuthoritySetTransitionPublicStatement(publicStatement);
+
+  if (commitment.blockHash.length !== HASH_LENGTH) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
+  }
+  if (
+    commitment.blockNumber < 0n ||
+    commitment.blockNumber > U32_MAX
+  ) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
+  }
+  if (commitment.selectionInputsHash.length !== HASH_LENGTH) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH");
+  }
+  if (
+    !equalBytes(
+      commitment.selectionInputsHash,
+      publicStatement.selectionInputsHash
+    )
+  ) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
+  }
+}
+
 export interface AuthorityActivationBlock {
   readonly hash: Uint8Array;
   readonly number: bigint;
