@@ -6429,3 +6429,44 @@ Commits:
 - `79b4c1b5ffa71f90d9ef2b4b1fbc1de5c80458b2` / `aa3cf105f791f18ebe579bc0c2b2047a8a78408c` — strict runtime binding/tests.
 
 Status: **live RPC evidence unavailable from current environment; collector READY; execution-proof verifier READY; canonical Materios proof composition OPEN.**
+
+
+## 2026-09-25 — FINALIZED-STATE CAPTURE TOOL ADDED
+
+The remaining live-evidence capture is now executable from the repository without introducing protocol semantics:
+
+`poc/materios-checkpoint/src/capture-finalized.ts`
+
+Package command:
+
+`npm run capture:finalized`
+
+The capturer uses the canonical Materios RPC and performs all critical reads against the **same finalized block hash** obtained from `chain_getFinalizedHead()`:
+
+`chain_getFinalizedHead`
+→ `chain_getHeader(hash)`
+→ `state_getRuntimeVersion(hash)`
+→ `state_getCode(hash)`
+→ `GrandpaApi_grandpa_authorities(hash)`
+→ `GrandpaApi_current_set_id(hash)`
+
+It writes `MateriosFinalizedStateCapture.json` containing the finalized hash, block number, state root, runtime identity/version, local SHA-256 of the deployed runtime bytes, and decoded GRANDPA authority/set-id data. It intentionally does not claim GRANDPA cryptographic validity, runtime execution proof validity, or selector correctness.
+
+Commits:
+- `2b8119b514440d2ea472a42c0bad7cb27487d774` — capture tool
+- `b10576bfb06723d4a7979b5e5e09bf945eed9858` — package command
+
+This is a tooling/evidence step only. No Ariadne implementation and no economic semantics were added.
+
+### Current M6 handoff
+
+The public live chain-info observation already establishes current live spec 238 and finalized height 2004815. The new capture tool removes ambiguity about how the missing exact block-bound evidence must be collected once a network-reachable environment runs it.
+
+Remaining evidence is therefore:
+- finalized hash: **OPEN / capturable directly by the new tool**
+- finalized-state runtime version: **OPEN / same-hash capture**
+- deployed runtime code identity: **OPEN / same-hash capture**
+- real authority transition: **OPEN**
+- GRANDPA justification: **OPEN**
+- cryptographic execution/storage proof: **OPEN**
+- M6 composition proof: **OPEN**
