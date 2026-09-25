@@ -66,7 +66,22 @@ function requireHex(value: string, field: string, allowEmpty = false): string {
   if (!allowEmpty && value.length === 2) {
     throw new Error(`${field} must not be empty`)
   }
+  if ((value.length - 2) % 2 !== 0) {
+    throw new Error(`${field} must contain whole bytes`)
+  }
   return value.toLowerCase()
+}
+
+function requireHexMaxBytes(
+  value: string,
+  field: string,
+  maximumBytes: number,
+): string {
+  const clean = requireHex(value, field)
+  if ((clean.length - 2) / 2 > maximumBytes) {
+    throw new Error(`${field} exceeds ${maximumBytes}-byte maximum`)
+  }
+  return clean
 }
 
 function requirePositiveName(value: string, field: string): void {
@@ -114,7 +129,7 @@ export function validateMateriosExecutionProofPacket(
   requireHex(packet.proofScaleHex, 'proofScaleHex')
 
   requireNonNegativeBigInt(packet.sidechainEpoch, 'sidechainEpoch')
-  requireHex(packet.cardanoEpochNonceHex, 'cardanoEpochNonceHex')
+  requireHexMaxBytes(packet.cardanoEpochNonceHex, 'cardanoEpochNonceHex', 64)
   requireHex(packet.genesisUtxoHex, 'genesisUtxoHex')
 
   if (packet.selectionPath.kind !== 'pinned' && packet.selectionPath.kind !== 'normal') {
