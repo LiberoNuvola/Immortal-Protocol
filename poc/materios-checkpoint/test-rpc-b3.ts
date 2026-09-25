@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { test } from 'node:test'
 import { MateriosRpc } from './src/rpc.ts'
 import { extractSelectionInputsCommitment } from './src/selectionCommitment.ts'
+import { buildCalculateCommitteeCallData, encodeScEpochNumber, MATERIOS_COMMITTEE_RUNTIME_API } from './src/runtimeApi.ts'
 
 async function withServer(
   handler: (req: IncomingMessage, res: ServerResponse) => void,
@@ -109,6 +110,24 @@ test('getSelectionInputsCommitment reads the exact requested block', async () =>
   } finally {
     await server.close()
   }
+})
+
+test('Materios committee Runtime API call data appends SCALE u64 epoch', () => {
+  assert.equal(MATERIOS_COMMITTEE_RUNTIME_API, 'SessionValidatorManagementApi_calculate_committee')
+  assert.equal(encodeScEpochNumber(0n), '0x0000000000000000')
+  assert.equal(encodeScEpochNumber(88n), '0x5800000000000000')
+  assert.equal(
+    buildCalculateCommitteeCallData('0x01020304', 88n),
+    '0x010203045800000000000000',
+  )
+  assert.throws(
+    () => encodeScEpochNumber(-1n),
+    /sidechainEpoch must fit u64/,
+  )
+  assert.throws(
+    () => buildCalculateCommitteeCallData('0102', 1n),
+    /authoritySelectionInputsHex must be 0x-prefixed hex/,
+  )
 })
 
 test('getCommitteeExecutionProof preserves exact transport fields', async () => {
