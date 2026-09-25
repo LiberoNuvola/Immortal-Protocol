@@ -158,8 +158,18 @@ describe("Materios M6 composition boundary", () => {
 
   it("leaves epoch/committee/activation mismatch rejection to the external proof", async () => {
     const transitionArtifact = transition();
-    const finalityArtifact = finality();
-    let rejected = false;
+    const finalityArtifact = finalityArtifact();
+    const seen: {
+      sidechainEpoch: bigint;
+      toSetId: bigint;
+      activationBlockNumber: bigint;
+      committeeSize: number;
+    } = {
+      sidechainEpoch: -1n,
+      toSetId: -1n,
+      activationBlockNumber: -1n,
+      committeeSize: -1,
+    };
 
     await expect(
       verifyM6Composition(
@@ -170,17 +180,17 @@ describe("Materios M6 composition boundary", () => {
             const publicStatement =
               receivedTransition.publicStatement;
 
-            if (
-              publicStatement.sidechainEpoch !== 43n ||
-              publicStatement.toSetId !== 8n ||
-              publicStatement.activationBlock.number !== 123n ||
-              publicStatement.toAuthorities.length !== 0
-            ) {
-              rejected = true;
-              return false;
-            }
+            seen.sidechainEpoch = publicStatement.sidechainEpoch;
+            seen.toSetId = publicStatement.toSetId;
+            seen.activationBlockNumber = publicStatement.activationBlock.number;
+            seen.committeeSize = publicStatement.toAuthorities.length;
 
-            return true;
+            return (
+              publicStatement.sidechainEpoch === 42n &&
+              publicStatement.toSetId === 8n &&
+              publicStatement.activationBlock.number === 123n &&
+              publicStatement.toAuthorities.length === 0
+            );
           }
         },
         "external-composition-proof",
@@ -188,7 +198,12 @@ describe("Materios M6 composition boundary", () => {
       )
     ).resolves.toBeDefined();
 
-    expect(rejected).toBe(false);
+    expect(seen).toEqual({
+      sidechainEpoch: 42n,
+      toSetId: 8n,
+      activationBlockNumber: 123n,
+      committeeSize: 0,
+    });
 
     await expect(
       verifyM6Composition(
@@ -201,15 +216,8 @@ describe("Materios M6 composition boundary", () => {
         },
         finalityArtifact,
         {
-          verify: (_statement, receivedTransition) => {
-            if (
-              receivedTransition.publicStatement.sidechainEpoch !== 42n
-            ) {
-              return false;
-            }
-
-            return true;
-          }
+          verify: (_statement, receivedTransition) =>
+            receivedTransition.publicStatement.sidechainEpoch === 42n,
         },
         "external-composition-proof",
         Uint8Array.from([0xee])
