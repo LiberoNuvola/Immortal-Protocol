@@ -6780,3 +6780,17 @@ What remains open:
 
 Status: **SELECTION-INPUT HASH FORMULA VERIFIED / DEPLOYED EXECUTION + FINALITY OPEN.**
 
+
+## 2026-09-25 — M6 VERIFIED-TRANSITION RUNTIME REVALIDATION
+
+The trusted authority-state consumer now revalidates every claimed `VerifiedAuthoritySetTransition` at runtime:
+
+1. validates the public transition statement shape;
+2. recomputes the canonical transition statement hash;
+3. compares the recomputed hash with the certificate's `statementHash`;
+4. only then checks current chain/genesis/set/authority continuity and promotes the `to` set.
+
+This closes the gap where a TypeScript brand/marker could otherwise be copied into a forged object without preserving the canonical statement hash.
+
+Status: **RUNTIME TRANSITION CERTIFICATE REVALIDATION IMPLEMENTED / EXTERNAL PROOF AUTHENTICATION STILL REQUIRED.**
+
