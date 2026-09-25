@@ -1,4 +1,5 @@
-use codec::Decode;
+use codec::{Decode, Encode};
+use sc_executor::WasmExecutor;
 use sp_core::{
     hashing::blake2_256,
     traits::{RuntimeCode, WrappedRuntimeCode},
@@ -6,7 +7,6 @@ use sp_core::{
 };
 use sp_io::SubstrateHostFunctions;
 use sp_state_machine::{execution_proof_check, OverlayedChanges, StorageProof};
-use sc_executor::WasmExecutor;
 
 /// Inputs required to independently check one native Substrate execution proof.
 ///
@@ -20,6 +20,7 @@ pub struct ExecutionProofInput<'a> {
     pub expected_runtime_code_hash: [u8; 32],
     pub method: &'a str,
     pub call_data: &'a [u8],
+    pub expected_result: &'a [u8],
 }
 
 /// Verify the native execution-proof artifact against an expected state root
@@ -62,12 +63,14 @@ pub fn verify_execution_proof(
     let runtime_code = RuntimeCode {
         code_fetcher: &code_fetcher,
         heap_pages: None,
+        // RuntimeCode::hash is an executor cache identity. The verifier has
+        // already bound the same runtime-code hash above.
         hash: input.expected_runtime_code_hash.to_vec().encode(),
     };
 
     let mut overlay = OverlayedChanges::default();
 
-    execution_proof_check::<Blake2Hasher, _>(
+    let result = execution_proof_check::<Blake2Hasher, _>(
         input.state_root.into(),
         proof,
         &mut overlay,
@@ -76,5 +79,11 @@ pub fn verify_execution_proof(
         input.call_data,
         &runtime_code,
     )
-    .map_err(|e| format!("execution proof verification failed: {e}"))
+    .map_err(|e| format!("execution proof verification failed: {e}"))?;
+
+    if result != input.expected_result {
+        return Err("authenticated execution result does not match expected result".into());
+    }
+
+    Ok(result)
 }
