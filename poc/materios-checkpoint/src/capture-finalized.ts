@@ -17,6 +17,8 @@ import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { blake2b } from "@noble/hashes/blake2.js";
+
 import { MateriosRpc } from "./rpc.js";
 import { decodeAuthorityList, decodeSetId, parseHeaderNumber } from "./scale.js";
 
@@ -30,14 +32,20 @@ const CHAIN_ID =
   process.env.MATERIOS_CHAIN_ID ??
   "materios_preprod_v6";
 
-function sha256Hex(hex: string): string {
+function bytesFromHex(hex: string): Uint8Array {
   const clean = hex.replace(/^0x/i, "");
-  return (
-    "0x" +
-    createHash("sha256")
-      .update(Buffer.from(clean, "hex"))
-      .digest("hex")
-  );
+  if (clean.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(clean)) {
+    throw new Error("runtime code is not valid even-length hex");
+  }
+  return Uint8Array.from(Buffer.from(clean, "hex"));
+}
+
+function sha256Hex(hex: string): string {
+  return "0x" + createHash("sha256").update(bytesFromHex(hex)).digest("hex");
+}
+
+function blake2_256Hex(hex: string): string {
+  return "0x" + Buffer.from(blake2b(bytesFromHex(hex), { dkLen: 32 })).toString("hex");
 }
 
 async function main(): Promise<void> {
@@ -85,6 +93,8 @@ async function main(): Promise<void> {
       encoding: "hex",
       byte_length: (runtimeCodeHex.length - 2) / 2,
       sha256: codeSha256,
+      blake2_256: blake2_256Hex(runtimeCodeHex),
+      native_substrate_hash: "blake2_256",
     },
     grandpa: {
       set_id: setId.toString(),
@@ -124,6 +134,7 @@ async function main(): Promise<void> {
   console.log("specVersion:", runtime.specVersion);
   console.log("runtime code bytes:", packet.runtime_code.byte_length);
   console.log("runtime code sha256:", codeSha256);
+  console.log("runtime code blake2_256:", packet.runtime_code.blake2_256);
   console.log("GRANDPA set_id:", setId.toString());
   console.log("authorities:", authorities.length);
   console.log("wrote:", outPath);
