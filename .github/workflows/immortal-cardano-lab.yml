@@ -202,7 +202,7 @@ jobs:
       - name: Run P2.8 ledger evidence gate against this lab packet
         working-directory: audit/cardano-ledger-runner
         run: |
-          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence
+          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence --evaluate
 
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
