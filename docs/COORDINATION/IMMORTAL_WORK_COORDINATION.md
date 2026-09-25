@@ -7670,3 +7670,16 @@ Current release blockers that cannot be honestly marked CLOSED by repository-onl
 
 **USER QUESTION:** NONE.
 **Status:** AUTONOMOUS CLOSURE CYCLE ACTIVE / FROZEN ECONOMICS PRESERVED.
+
+
+## 2026-09-25 — Autonomous cycle: current Materios network anchor triangulated
+
+Official Materios sources currently expose a public `chain-info` endpoint and a preprod RPC documented as `wss://materios.fluxpointstudios.com/preprod-rpc`. The current `chain-info` response observed externally reports runtime `spec_version=238`, `best_block=2014912`, and `finalized_block=2014910`.
+
+The official operator guidance defines the intended canonicality check as: obtain the network finalized height/hash, query `chain_getBlockHash(height)` locally, and require equality before treating the node as being in the canonical finalized room. The live `chain-info` payload observed in this cycle did not contain the expected finalized hash field, so the actual finalized block hash remains an evidence gap. No hash has been invented.
+
+The same official documentation exposes `state_call` for `SessionCommitteeManagementApi_get_current_committee`; this can support committee-state observation once the finalized block/runtime binding is available. It does not by itself provide publisher-independent finality proof.
+
+**Classification:** Materios/B3 live anchor = **CURRENT NETWORK DATA CONFIRMED / FINALIZED-HASH + CRYPTOGRAPHIC PROOF OPEN**.
+
+No selector reimplementation, no authority shortcut, and no economic change.
