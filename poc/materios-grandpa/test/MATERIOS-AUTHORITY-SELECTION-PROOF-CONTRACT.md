@@ -136,8 +136,13 @@ A valid authority-selection proof MUST bind, at minimum:
 - the exact genesis_utxo context used by the authoritative selector;
 - the exact serialized AuthoritySelectionInputs bytes, or an unambiguous commitment to those bytes;
 - the canonical execution block and state commitment required to establish that those inputs were actually consumed by the authoritative runtime;
-- the Cardano epoch nonce used by the selector;
+- the Cardano epoch nonce used by the selector, when the L1/Ariadne regime is active;
 - the sidechain epoch;
+- the exact authority-selection regime:
+  - normal L1/Ariadne-driven selection; or
+  - the explicit pinned-committee regime;
+- a commitment to the evidence establishing that regime;
+- the pinned committee expiry epoch, when the pinned-committee regime is active;
 - the resulting authority set;
 - the predecessor authority set, when the proof represents an authority-set transition;
 - the activation block/height and set identifiers required by the surrounding transition protocol.
@@ -157,6 +162,8 @@ IMMORTAL MUST NOT replace the selector with a TypeScript implementation merely t
 A structural proof object or test double is evidence of the boundary shape only. It is not evidence that the real Materios selector produced the advertised authority set.
 
 ## Exact-input requirement
+
+The proof producer must establish the exact authority-selection regime before relating inputs to the resulting set. A pinned-committee transition is not an Ariadne selection result, even when the resulting authority bytes are identical.
 
 The proof producer must execute against the same semantic input domain used by the authoritative Materios runtime. In particular, the proof must not silently substitute:
 
