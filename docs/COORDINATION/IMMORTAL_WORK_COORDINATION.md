@@ -6848,3 +6848,28 @@ Commit: `ab863698158219382f0913ce3f592065266c7f6c`
 Status: **CI WORKFLOW CLEANUP APPLIED / FRESH WORKFLOW RESULT REQUIRED**.
 
 Next action: observe the corrected Materios workflow and classify any failure from its actual execution. Real-chain execution proof, runtime-at-finalized-hash, authority-selection execution and GRANDPA finality remain OPEN until corresponding evidence is produced.
+
+
+## 2026-09-25 — Cross-session coordination refresh: P2.8 capture / Materios B3
+
+**Coordination checkpoint:** current PR #10 head observed as `ab863698158219382f0913ce3f592065266c7f6c`. This supersedes the older handoff snapshots in this document.
+
+### P2.8 — capture is the next shared action
+
+Implementation is already at the real Ledger evaluator:
+`PParams + Babbage Tx + UTxO + EpochInfo + SystemStart → evalTxExUnitsWithLogs → persisted report/binding`.
+
+The remaining gate is **runtime evidence only**. The next agent/session must first inspect the newest Actions result/artifact on the current HEAD before changing evaluator semantics. Required evidence chain:
+`current HEAD → workflow run → --evaluate → evalTxExUnitsWithLogs → ledger-evaluation-report.txt + ledger-evaluation-binding.txt → artifact`.
+
+Do not reuse superseded run #368 as evidence for current evaluator code. Do not declare green from static code inspection. If the connector does not expose the push-triggered run, record that limitation and preserve the evidence-open state.
+
+### Materios / B3 — parallel lane
+
+B3 remains **OPEN**. Current hardening already covers selection-input hash semantics, block-carried commitment extraction, runtime-code/WASM binding and trusted transition revalidation. Remaining decisive evidence is the real finalized fixture, exact on-chain selection inputs/commitment, native execution/storage proof, deployed runtime identity at the finalized hash, authority-set enactment and GRANDPA finality composition.
+
+Do not reimplement the Materios selector in TypeScript and do not close B3 from explorer/receipt provenance alone.
+
+### Coordination rule for all sessions
+
+Advance independent fronts in parallel, but before any semantic/code change check this handoff and current HEAD. Prefer evidence capture over further hardening when implementation capability is already present. Any claimed GREEN state must identify the exact commit and observable artifact/run supporting it.
