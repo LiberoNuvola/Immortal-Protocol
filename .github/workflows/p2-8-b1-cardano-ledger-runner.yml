@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
+      # Non-functional touch: ensure the evaluator is exercised on the current green-closure HEAD.
       - name: Checkout audit branch
         uses: actions/checkout@v4
 
