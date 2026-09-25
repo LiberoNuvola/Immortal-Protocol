@@ -6794,3 +6794,25 @@ This closes the gap where a TypeScript brand/marker could otherwise be copied in
 
 Status: **RUNTIME TRANSITION CERTIFICATE REVALIDATION IMPLEMENTED / EXTERNAL PROOF AUTHENTICATION STILL REQUIRED.**
 
+
+
+---
+
+## 2026-09-25 — Compiler blockers observed and corrected on Green Closure
+
+A real GitHub Actions run exposed two independent compile blockers:
+
+1. The isolated P2.8 runner could not resolve cardano-binary through the existing cardano-base source package declaration. The project file now explicitly exposes both cardano-base and cardano-binary at the pinned upstream commit.
+2. The Kernel Invalid-Class build exposed a missing TemplateHaskell language pragma in PRE-RICH/profile/PreRichRegimeState.hs, at the existing PlutusTx.unstableMakeIsData declarations. The pragma was added.
+3. The same historical Kernel build exposed scope errors in plutus/B1PrizePool.hs. The current file was byte-for-byte identical to main before this repair; the correction is layout-only, preserving the existing expressions and economics. Both the Reveal nested let expression and the TicketClaimed nested let expression now keep their continuation predicates inside the binding scope.
+
+The observed P2.8 failure was therefore a build-system dependency-resolution failure, not a ledger A/B result. The observed Kernel failure was compiler/layout failure, not an economic conformance failure.
+
+### Current proof posture
+
+- P2.8 evaluator capability: implemented.
+- P2.8 exact real Reveal A/B result: OPEN.
+- B3 execution-proof bindings: hardened.
+- GRANDPA proof transport: implemented/tested as an untrusted transport surface; real-chain proof verification remains OPEN.
+- Materios finalized hash/state-root/runtime-at-hash: OPEN.
+- No economic constants or validator semantics were changed by these repairs.
