@@ -278,3 +278,56 @@ This is the correct cryptographic boundary for the execution proof itself. The S
 The verifier deliberately does **not** decide the outer canonicality predicates. A successful execution-proof check still needs an independently established finalized block/header, state-root binding, runtime-code deployment/source correspondence, exact method/input binding, and the surrounding GRANDPA authority-set/finality transition proof. This prevents the verifier from treating a valid proof over an arbitrary block or arbitrary runtime as canonical Materios state.
 
 The Rust PoC is at `poc/materios-execution-verifier/`. It is a verification component, not a selector implementation and not yet a complete M6 verifier.
+
+
+## On-chain selection-input commitment
+
+A further upstream inspection closes an important provenance ambiguity without closing B3 itself.
+
+In the current Materios session-validator-management pallet:
+
+- `create_inherent` extracts `AuthoritySelectionInputs` from the Ariadne inherent data;
+- it computes `selection_inputs_hash = blake2_256(decoded_data.encode())`;
+- the resulting `selection_inputs_hash` is included in the mandatory `Call::set` that stores `NextCommittee`;
+- therefore the commitment is part of the block's encoded inherent call even though the hash is not persisted as a separate storage item.
+
+This gives the B3 path an on-chain input-commitment anchor.
+
+The proof packet SHOULD therefore carry two distinct byte domains:
+
+1. `authoritySelectionInputsHex`: the exact SCALE encoding of `AuthoritySelectionInputs`;
+2. `callDataHex`: the exact SCALE call bytes supplied to `SessionValidatorManagementApi_calculate_committee`.
+
+The verifier MUST require:
+
+`blake2_256(authoritySelectionInputsBytes) == selection_inputs_hash`
+
+where `selection_inputs_hash` is extracted from the canonical block's `SessionValidatorManagement::set` inherent call.
+
+This establishes that the externally supplied authority-selection input bytes correspond to the input commitment embedded in the canonical block. It does not by itself prove that the block was finalized, that the runtime code is canonical, or that the resulting committee was validly enacted/finalized by GRANDPA.
+
+### Resulting B3 provenance chain
+
+The concrete normal-path target becomes:
+
+`canonical finalized block`
+→ extract `SessionValidatorManagement::set`
+→ extract `selection_inputs_hash`
+→ obtain exact `AuthoritySelectionInputs` bytes from the authoritative Ariadne data source
+→ verify `blake2_256(inputs) == selection_inputs_hash`
+→ construct exact `SessionValidatorManagementApi_calculate_committee` call data
+→ native `ProofProvider::execution_proof`
+→ independent `sp_state_machine::execution_proof_check`
+→ bind returned committee to the block's enacted `NextCommittee`
+→ compose with GRANDPA finality evidence.
+
+This is materially stronger than accepting a relayer-provided selector input without an on-chain commitment.
+
+### Remaining transport blocker
+
+Standard chain RPC still does not directly hand us decoded `AuthoritySelectionInputs` bytes from the inherent call. The evidence collector therefore needs either:
+
+- runtime-metadata-aware decoding of the block extrinsics to recover the `Call::set` payload; and an authoritative source for the corresponding raw `AuthoritySelectionInputs`; or
+- a narrow upstream proof/evidence RPC that returns both the execution proof and the canonical `selection_inputs_hash` extracted from the target block.
+
+The second option is preferable for a minimal deployment surface only if the independent verifier still verifies the returned block/extrinsic binding itself.
