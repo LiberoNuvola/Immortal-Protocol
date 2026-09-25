@@ -5,9 +5,9 @@
 
 ## The question
 
-> **What would happen if humanity's guiding light were a shared ethical code rather than the individual pursuit of profit?**
+> **What happens when economic coordination is designed from explicit shared principles rather than from a single proprietary objective?**
 
-IMMORTAL is an experiment built around that question.
+IMMORTAL is an experiment built around that question. The philosophical premise is deliberately left open for further development; the socioeconomic experiment is already more concrete: the project defines observable rules, incentives, participation mechanisms and economic constraints that can be tested in an operating system.
 
 This question is not presented as a theorem, a prediction, or a claim that one economic order is inherently superior to another. It is the starting hypothesis for a system designed from explicit principles and open to observation, criticism and revision.
 
