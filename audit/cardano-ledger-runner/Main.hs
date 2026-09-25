@@ -8,7 +8,6 @@ import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
-import Cardano.Ledger.Alonzo.Plutus.Evaluate (evalTxExUnitsWithLogs)
 import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
 import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.State (UTxO)
@@ -22,6 +21,7 @@ import TypedPacketDecode
   , decodeBabbageUTxO
   , decodeYaciEpochInfo
   , decodeYaciSystemStart
+  , evaluateBabbageTx
   )
 
 artifactPaths :: [FilePath]
@@ -127,7 +127,7 @@ evaluateLedger ::
   FilePath ->
   IO ()
 evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
-  let report = evalTxExUnitsWithLogs pp tx utxo epochInfo systemStart
+  let report = evaluateBabbageTx pp tx utxo epochInfo systemStart
       rendered = show report
       reportPath = evidenceDir <> "/ledger-evaluation-report.txt"
       failures = length [ () | Left _ <- Map.elems report ]
