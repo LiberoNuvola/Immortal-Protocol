@@ -133,29 +133,23 @@ inspectEvidence evidenceDir runEvaluation = do
 
 renderRedeemerReport :: RedeemerReportWithLogs BabbageEra -> Aeson.Value
 renderRedeemerReport report =
-  Aeson.Array
-    (foldMap
-      (\(purpose, result) ->
-        Aeson.Array
-          (Aeson.fromList
-            [ case result of
-                Left failure ->
-                  object
-                    [ "redeemer" .= toJSON purpose
-                    , "status" .= ("failure" :: String)
-                    , "failure" .= show failure
-                    ]
-                Right (logs, exUnits) ->
-                  object
-                    [ "redeemer" .= toJSON purpose
-                    , "status" .= ("success" :: String)
-                    , "logs" .= logs
-                    , "ex_units" .= toJSON exUnits
-                    ]
-            ])
-      )
-      (Map.toAscList report))
-
+  Aeson.toJSON
+    [ case result of
+        Left failure ->
+          object
+            [ "redeemer" .= toJSON purpose
+            , "status" .= ("failure" :: String)
+            , "failure" .= show failure
+            ]
+        Right (logs, exUnits) ->
+          object
+            [ "redeemer" .= toJSON purpose
+            , "status" .= ("success" :: String)
+            , "logs" .= logs
+            , "ex_units" .= toJSON exUnits
+            ]
+    | (purpose, result) <- Map.toAscList report
+    ]
 evaluateLedger ::
   Tx TopTx BabbageEra ->
   PParams BabbageEra ->
