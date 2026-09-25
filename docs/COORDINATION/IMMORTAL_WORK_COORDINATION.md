@@ -6697,3 +6697,25 @@ The new live snapshot is stored at:
 
 **Current branch HEAD observed before this coordination update:** `b4f4f26fd05d6866e53b423db107ea501a7a6895`.
 
+
+## 2026-09-25 — P2.8 NATIVE LEDGER EVALUATION CAPABILITY
+
+P2.8 now reaches the actual pinned Cardano-ledger evaluator:
+
+`evalTxExUnitsWithLogs pp tx utxo epochInfo systemStart`.
+
+The runner first decodes:
+- exact Babbage transaction CBOR;
+- exact protocol parameters;
+- Yaci transaction UTxO, including regular/collateral/reference inputs;
+- Yaci-derived `SystemStart`;
+- Yaci-derived fixed `EpochInfo`.
+
+Only then, and only when `--evaluate` is explicitly requested by the CI workflow, it evaluates the transaction and persists:
+- `ledger-evaluation-report.txt`;
+- `ledger-evaluation-binding.txt`, containing SHA-256 digests of the exact context artifacts and the evaluation report.
+
+A zero-redeemer result is fail-closed and cannot be promoted to acceptance.
+
+Status: **EVALUATION CAPABILITY IMPLEMENTED / REAL PACKET CI RESULT NOT YET OBSERVED / END-TO-END EVIDENCE OPEN.**
+
