@@ -6873,3 +6873,13 @@ Do not reimplement the Materios selector in TypeScript and do not close B3 from 
 ### Coordination rule for all sessions
 
 Advance independent fronts in parallel, but before any semantic/code change check this handoff and current HEAD. Prefer evidence capture over further hardening when implementation capability is already present. Any claimed GREEN state must identify the exact commit and observable artifact/run supporting it.
+
+## 2026-09-25 — Governance timestamp regression guard
+
+Re-observation of `IMMORTAL/governance/GovernanceEventSchema.hs` shows the previously suspected timestamp/schema gap is already resolved in the current tree: `PayloadProposalClassified` and `PayloadGatesSet` carry explicit timestamps, and `payloadTimestampCompatible` requires exact equality with `eventTimestamp`.
+
+No production governance code was changed. A small conformance hardening was added to `GovernanceCanonicalEventTest.hs` with explicit negative cases proving that non-zero timestamp mismatches are rejected for both Classified and GatesSet events.
+
+Commit: `eddecf75069b0bf1b2511d2413b40134ef458524`
+
+Status: **REGRESSION TEST ADDED / CI EVIDENCE PENDING**.
