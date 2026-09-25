@@ -110,3 +110,26 @@ The current work does not reopen closed economic policy decisions. In particular
 - The current Cardano Integration Lab generates fresh Haskell/Plutus validator artifacts before copying them into src/plutusScripts and then executes the real Reveal trace. This materially narrows the interpretation of the external audit's earlier budget finding: a future lab run can distinguish stale committed artifacts from a fresh-source execution-budget failure.
 - P2.8 raw Yaci materialization is now fail-closed and sources transaction inputs, timing and protocol context directly from Yaci Store; the native Cardano-ledger evaluator remains the final evidence step.
 - No frozen economic constant or validator safety condition was relaxed in this closure cycle.
+
+
+## 2026-09-25 — Phase finalization
+
+**Implementation phase:** FINALIZED  
+**Certification/evidence phase:** OPEN BY DESIGN
+
+The implementation phase is frozen at the current semantics. The remaining gates are evidence gates or explicit normative decisions, not invitations to alter economics or validators.
+
+### Final certification gates
+- P2.8 native Cardano-ledger evaluator artifact on the exact current head.
+- Fresh Haskell/Plutus Reveal artifact execution and definitive budget classification.
+- Materios/B3 publisher-independent finality, runtime-state and selection-input proof composition.
+- B4/B5/B6 end-to-end ledger conformance evidence.
+- Independent specialist Plutus/UPLC audit plus second-human review.
+- Protocol Usage Fee parameters only where an authoritative normative source explicitly selects them.
+
+### Freeze rule
+Do not alter KA/KC/KD, payout bounds, price ladder, Genesis semantics, ProtectedCapital/RawSurplus accounting, expiry semantics, oracle rules, validator safety checks, authority selection, or protocol limits merely to obtain green CI or satisfy an audit observation.
+
+### Certification rule
+A gate may be marked CLOSED only with an exact commit, exact workflow/test, exact artifact or observation, and an explicit scope statement. Simulation, unit tests, schemas, or source claims must not be promoted to live-ledger or cryptographic proof.
+
