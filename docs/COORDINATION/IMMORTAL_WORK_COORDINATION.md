@@ -6366,3 +6366,44 @@ M6 status:
 - CRYPTOGRAPHIC M6 COMPOSITION PROOF: **OPEN**
 
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+
+## 2026-09-25 — LIVE RUNTIME VERSION VS FINALIZED-BLOCK VERSION BOUNDARY
+
+The dedicated `Flux-Point-Studios/materios-gateway` source closes the observer-provenance question, but exposes an important temporal boundary that must remain explicit in M6 evidence.
+
+`src/routes/chain-info.ts` obtains:
+- `state_getRuntimeVersion()` with no `at` parameter, therefore reporting the runtime version at the node's current state/tip;
+- `chain_getFinalizedHead()` and then `chain_getHeader(finHash)` separately, therefore reporting only the finalized height in the public payload.
+
+Consequently the observed `spec_version = 238` is **verified as the current live runtime version**, while `finalized_block = 2004815` is **verified as the current finalized height**. We must NOT silently strengthen this into `state_getRuntimeVersion(at=finalized_hash) = 238` until that exact RPC result is observed.
+
+This is a temporal binding issue, not a contradiction: the live tip and finalized head are only 3 blocks apart in the observed payload, but M6 requires the exact finalized-state binding.
+
+### New exact target
+
+The remaining packet should capture, from the same observation window:
+
+`H = chain_getFinalizedHead()`
+→ `chain_getHeader(H)` = finalized header + stateRoot
+→ `state_getRuntimeVersion(H)`
+→ `state_getCode(H)` / deployed runtime hash
+
+Only after this packet exists should the version be promoted from **current-live 238** to **finalized-state 238**.
+
+### Related public-doc inconsistency
+
+The published Materios bootstrap/self-check currently documents `HNET=$(echo "$NET" | jq -r .finalized)` while the actual chain-info schema is `finalized_block`. Therefore that published check cannot currently recover the network finalized hash from the JSON it fetches. This is recorded as an operational documentation/schema mismatch, not as consensus evidence.
+
+Status:
+- current live runtime version: **VERIFIED = 238**
+- current finalized height: **VERIFIED = 2004815**
+- runtime version at finalized hash: **OPEN**
+- finalized block hash: **OPEN**
+- finalized state root: **OPEN**
+- deployed runtime code hash: **OPEN**
+- source/WASM correspondence: **OPEN**
+- authority transition + GRANDPA: **OPEN**
+- M6 composition proof: **OPEN**
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
