@@ -77,7 +77,7 @@ main = do
         replace "\"quantity\": \"2000000\"" "\"quantity\": \"-1\""
       missingAddress =
         replace
-          ("\\"ledger_address_hex\\": \\\"" <> addressHex <> "\\",")
+          ("\"ledger_address_hex\": \"" <> addressHex <> "\",")
           ""
           packet 
       badRefScript =
