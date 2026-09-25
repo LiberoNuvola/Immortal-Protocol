@@ -6407,3 +6407,25 @@ Status:
 - M6 composition proof: **OPEN**
 
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+
+## 2026-09-25 — B3 LIVE RPC ATTEMPT + EXACT-BLOCK COLLECTOR
+
+A direct attempt was made against the currently documented Materios preprod RPC surface to obtain `chain_getFinalizedHead`, `system_chain`, and `system_health`. The environment could not resolve `materios.fluxpointstudios.com` (DNS failure), so no live runtime/version/block claim is promoted from this attempt.
+
+The IMMORTAL checkpoint client was nevertheless advanced for the moment the endpoint is reachable:
+
+- `getRuntimeCode(at)` now retrieves `state_getCode` at the exact block;
+- `getCommitteeExecutionProof(callDataHex, at)` consumes the planned narrow `materios_b3_calculateCommitteeProof` response and validates the transport envelope;
+- `collectCommitteeExecutionEvidence(...)` fetches header, runtime code, runtime version and execution proof for one exact block and rejects block-hash, call-data, runtime-method, or runtime-identity drift.
+- `test-rpc-b3.ts` covers malformed proof transport and runtime identity drift.
+
+This collector still does not decide GRANDPA finality or verify the execution proof; those remain separate B3 layers.
+
+Commits:
+- `e2e0164ee65ff62afb361b9fe0fad4f9f70bbe6c` — runtime code + B3 proof RPC client.
+- `301e85beaa42187b343b61f8c04f1cdbc8dc9382` — exact-block evidence collector.
+- `9dca3e71918c75702fc076b61aa8b68864305f71` — RPC transport tests.
+- `79b4c1b5ffa71f90d9ef2b4b1fbc1de5c80458b2` / `aa3cf105f791f18ebe579bc0c2b2047a8a78408c` — strict runtime binding/tests.
+
+Status: **live RPC evidence unavailable from current environment; collector READY; execution-proof verifier READY; canonical Materios proof composition OPEN.**
