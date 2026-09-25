@@ -197,3 +197,8 @@ Together they provide orientation, layer-specific detail and implementation/evid
 ### P2.8 native decoding hardening — 2026-09-25
 
 The Yaci UTxO adapter now decodes the serialized Cardano address through the native Ledger `decodeAddrEither` path instead of treating `ledger_address_hex` as an already-decoded Ledger value. Invalid addresses therefore fail before evaluation rather than being normalized by a local substitute parser. This remains adapter/evidence infrastructure only; it does not change validator economics.
+
+
+### P2.8 evaluation gate hardening (2026-09-25)
+
+The runner now invokes the pinned Ledger `evalTxExUnitsWithLogs` path when called with `--evaluate`, and the CI workflow invokes that mode after native PParams/Tx/UTxO/EpochInfo/SystemStart decoding. `SAFE_STALL` now exits non-zero so missing or invalid evidence cannot produce a green CI result. A/B remain typed evaluation outcomes and are persisted with a hash-bound evidence report.
