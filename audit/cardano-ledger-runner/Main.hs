@@ -195,13 +195,13 @@ decodeTypedArtifacts evidenceDir = do
               safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
               putStrLn ("UTXO_ERROR: " <> err)
 
-            Right _utxo ->
+            Right utxo ->
               case decodeYaciEpochInfo epochBytes of
                 Left err -> do
                   safeStall "YACI_EPOCH_INFO_DECODE_FAILED"
                   putStrLn ("EPOCH_INFO_ERROR: " <> err)
 
-                Right _epochInfo ->
+                Right epochInfo ->
                   case decodeYaciSystemStart systemStartBytes of
                     Left err -> do
                       safeStall "YACI_SYSTEM_START_DECODE_FAILED"
