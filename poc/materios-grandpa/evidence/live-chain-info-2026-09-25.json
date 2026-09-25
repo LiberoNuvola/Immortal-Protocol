@@ -52,6 +52,8 @@
     },
     "git_commit_signature_verified": true,
     "basis": "source commit directly declares the same runtime spec identity observed by live chain-info",
-    "limitation": "this does not prove the deployed WASM bytes were built from this commit; binary reproducibility/byte binding remains open"
+    "limitation": "this does not prove the deployed WASM bytes were built from this commit; binary reproducibility/byte binding remains open",
+    "is_current_main_head": true,
+    "head_evidence": "GitHub /commits/main resolves to the same commit 011473c88ef82fad3d4877af8d89a5b52abf235f"
   }
 }
