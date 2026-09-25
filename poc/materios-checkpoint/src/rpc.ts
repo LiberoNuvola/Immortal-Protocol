@@ -156,6 +156,43 @@ async getRuntimeCode(at: string): Promise<string> {
  * Fetch the planned narrow Materios B3 execution-proof response.
  * This RPC is transport only; it must not be treated as canonicality.
  */
+  /**
+   * Read the exact block at the requested hash and recover the unique on-chain
+   * SessionCommitteeManagement::set selection-input commitment.
+   *
+   * This is extraction only. The returned commitment is still untrusted
+   * evidence until the caller binds the block to an independently verified
+   * finalized checkpoint.
+   */
+  async getSelectionInputsCommitment(
+    at: string,
+  ): Promise<SelectionInputsCommitment> {
+    const hash = requireHash(at, "selection commitment block hash");
+    const value = await this.call<unknown>("chain_getBlock", [hash]);
+
+    if (typeof value !== "object" || value === null) {
+      throw new Error("chain_getBlock: invalid block object");
+    }
+
+    const block = value as Record<string, unknown>;
+    const rawBlock = block.block;
+    if (typeof rawBlock !== "object" || rawBlock === null) {
+      throw new Error("chain_getBlock: missing block payload");
+    }
+
+    const payload = rawBlock as Record<string, unknown>;
+    if (
+      !Array.isArray(payload.extrinsics) ||
+      !payload.extrinsics.every((x) => typeof x === "string")
+    ) {
+      throw new Error("chain_getBlock: extrinsics must be string array");
+    }
+
+    return extractSelectionInputsCommitment(
+      payload.extrinsics as readonly string[],
+    );
+  }
+
 async getCommitteeExecutionProof(
   callDataHex: string,
   at: string,
