@@ -6138,3 +6138,53 @@ Commits:
 **OPEN — proof transport and independent verification remain required.**
 
 The next evidence target is a real finalized Materios block plus the native `execution_proof` result for `SessionValidatorManagementApi::calculate_committee`, followed by independent verification of the returned `StorageProof` against the finalized state root and binding of the runtime/code identity. No TypeScript reimplementation of the selector is authorized.
+
+
+## 2026-09-25 — MATERIOS LIVE RUNTIME OBSERVATION ACQUIRED
+
+A decisive live-runtime observation is now available through the public Materios `chain-info` surface. The returned payload reports:
+
+- `genesis = 0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`;
+- `spec_version = 238`;
+- `best_block = 2004818`;
+- `finalized_block = 2004815`;
+- `updated_at = 2026-09-25T04:28:07.578Z`;
+- canonical chain-spec URL points to `releases/chain-spec-v6-raw.json`.
+
+This materially changes the version-drift status. **Spec 238 is no longer source-only:** the public live chain-information endpoint currently reports spec 238 for the v6 genesis identity.
+
+### What this closes
+
+- Current live runtime version: **VERIFIED BY LIVE CHAIN-INFO OBSERVATION = 238**.
+- Source runtime version: **VERIFIED = 238**.
+- Source/live version agreement: **VERIFIED at the version-number / genesis-identity level**.
+- The previously strongest dated live evidence (spec 237 on 2026-09-03) is now superseded by the 2026-09-25 chain-info observation; it remains useful only as historical evidence.
+
+### What it does NOT close
+
+`chain-info` does not expose the deployed WASM/code hash or the exact source commit that produced the deployed runtime. Therefore:
+
+- deployed WASM ↔ source commit/build reproducibility: **OPEN**;
+- exact selector runtime binary provenance: **OPEN beyond version identity**;
+- real authority-set transition artifact: **OPEN**;
+- cryptographic selector/transition proof: **OPEN**;
+- cryptographic M6 composition proof: **OPEN**.
+
+The canonical RPC endpoint itself remains inaccessible from this execution environment for direct POST JSON-RPC calls, so this observation must be recorded as **live chain-info evidence**, not as a locally replayed `state_getRuntimeVersion` RPC transcript. The chain-info payload nevertheless provides both the current spec version and a finalized block number, which sharply reduces the remaining evidence gap.
+
+### Immediate M6 next target
+
+Use the reported finalized block `2004815` and canonical genesis identity to bind:
+
+`finalized block 2004815`
+→ `state_getRuntimeVersion(at block)`
+→ `state_getCode(at block)` / runtime code hash
+→ source commit/build artifact
+→ exact selector implementation + Materios patches
+→ actual authority transition
+→ GRANDPA justification
+→ external M6 proof.
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+Status: **LIVE SPEC 238 VERIFIED / VERSION NUMBER BOUND / WASM-SOURCE + CRYPTOGRAPHIC M6 EVIDENCE OPEN.**
