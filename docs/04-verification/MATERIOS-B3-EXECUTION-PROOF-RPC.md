@@ -79,6 +79,16 @@ A normal `state_call` result does not establish that the supplied inputs were th
 
 The current IMMORTAL transport envelope is `materios-execution-proof-v2`. Version 2 adds the explicit `authoritySelectionInputsHex` and `selectionInputsHash` fields so the on-chain commitment can be checked without conflating input bytes with the complete Runtime API call payload.
 
+## Runtime API call-data binding
+
+For the locked Materios runtime, `ScEpochNumber` is the sidechain-domain newtype over `u64`. Therefore the canonical Runtime API argument encoding is:
+
+`callDataHex = authoritySelectionInputsHex || SCALE_LE64(sidechainEpoch)`
+
+where `authoritySelectionInputsHex` is already the exact SCALE encoding of the four-field `AuthoritySelectionInputs` struct.
+
+The PoC builder in `poc/materios-checkpoint/src/runtimeApi.ts` does not construct or mutate the candidate data. It appends only the exact 8-byte SCALE encoding of the already-bound epoch. The execution-proof packet validator requires this exact equality, preventing a proof response from being associated with a different input set or epoch.
+
 ## Independent verifier
 
 The receiving verifier must independently bind:
