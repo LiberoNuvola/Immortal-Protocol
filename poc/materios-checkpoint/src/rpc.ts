@@ -305,7 +305,8 @@ function validateCommitteeExecutionProofResponse(
 
   return { blockHash, runtimeApiMethod: v.runtimeApiMethod, callDataHex, resultHex, proofScaleHex, runtime };
 }
-\nexport type RuntimeVersion = {
+
+export type RuntimeVersion = {
 specName: string;
 implName: string;
 authoringVersion: number;
