@@ -10,7 +10,8 @@
     "test:execution-proof": "node --import tsx --test test-executionProof.ts",
     "test:rpc-b3": "node --import tsx --test test-rpc-b3.ts",
     "mock": "MOCK_PORT=9955 tsx src/test-mock.ts",
-    "test": "MOCK_PORT=9955 tsx src/test-mock.ts > /tmp/mock.log 2>&1 & MOCK_PID=$!; sleep 2; MATERIOS_RPC=http://127.0.0.1:9955 MATERIOS_CHAIN_ID=materios_dev tsx src/index.ts; kill $MOCK_PID 2>/dev/null || true"
+    "test": "MOCK_PORT=9955 tsx src/test-mock.ts > /tmp/mock.log 2>&1 & MOCK_PID=$!; sleep 2; MATERIOS_RPC=http://127.0.0.1:9955 MATERIOS_CHAIN_ID=materios_dev tsx src/index.ts; kill $MOCK_PID 2>/dev/null || true",
+    "capture:finalized": "tsx src/capture-finalized.ts"
   },
   "dependencies": {
     "tsx": "^4.19.0",
