@@ -199,15 +199,10 @@ const observedWithLedgerAddresses = {
   }),
 }
 const timing = {
-  startTimeRaw: extractInfoValue(yaciInfo, 'Start Time'),
-  slotLengthRaw: extractInfoNumber(yaciInfo, 'Slot Length'),
-  epochLengthRaw: extractInfoNumber(yaciInfo, 'Epoch Length'),
-}
-if (Object.values(timing).some((value) => value === null)) {
-  throw new Error('Yaci timing provenance is incomplete; refusing to materialize packet')
-}
-if (Number.isNaN(Date.parse(timing.startTimeRaw))) {
-  throw new Error('Yaci Start Time is not a parseable ISO-8601 timestamp')
+  startTimeRaw: String(genesis.system_start),
+  slotLengthRaw: String(genesis.slot_length),
+  epochLengthRaw: String(genesis.epoch_length),
+  source: 'Yaci /genesis structured response',
 }
 
 await writeFile(EVIDENCE_DIR + '/tx.cbor', txCbor)
