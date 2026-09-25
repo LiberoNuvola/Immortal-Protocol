@@ -16,7 +16,7 @@ import Cardano.Ledger.Plutus.Data
   , hashBinaryData
   , makeBinaryData
   )
-import Cardano.Ledger.Mary.Value (MaryValue)
+import Cardano.Ledger.Core (Value)
 import Cardano.Ledger.State (UTxO (..))
 import Cardano.Ledger.TxIn (TxIn)
 import Data.Aeson
@@ -50,7 +50,7 @@ decodeYaciUTxO bytes = do
     then Left "DUPLICATE_YACI_UTXO_INPUT"
     else Right (UTxO (Map.fromList parsed))
 
-parseInput :: Value -> Either String (TxIn, BabbageTxOut BabbageEra)
+parseInput :: Aeson.Value -> Either String (TxIn, BabbageTxOut BabbageEra)
 parseInput value = do
   txHash <- textField value "tx_hash"
   outputIndex <- integerField value "output_index"
@@ -83,7 +83,7 @@ parseInput value = do
         SNothing
     )
 
-parseMaryValue :: [Value] -> Either String MaryValue
+parseMaryValue :: [Aeson.Value] -> Either String (Value BabbageEra)
 parseMaryValue items = do
   (mLovelace, policies) <- foldM step (Nothing, KeyMap.empty) items
   lovelace <- case mLovelace of
@@ -106,6 +106,10 @@ parseMaryValue items = do
     step item (mLov, policies) = do
       unit <- textField item "unit"
       quantity <- integerField item "quantity"
+
+      if quantity < 0
+        then Left "NEGATIVE_UTXO_QUANTITY"
+        else pure ()
 
       case unit of
         "lovelace" ->
@@ -147,7 +151,7 @@ parseMaryValue items = do
 
                         Just _ -> Left "INVALID_POLICY_OBJECT"
 
-parseDatum :: Value -> Either String (Datum BabbageEra)
+parseDatum :: Aeson.Value -> Either String (Datum BabbageEra)
 parseDatum value = do
   mHash <- optionalTextField value "data_hash"
   mInline <- optionalTextField value "inline_datum"
@@ -178,28 +182,28 @@ inlineDatum textHash expected = do
         then Right (Datum datumData)
         else Left "INLINE_DATUM_HASH_MISMATCH"
 
-objectField :: Value -> Text -> Either String Value
+objectField :: Aeson.Value -> Text -> Either String Aeson.Value
 objectField value key = do
   object <- asObject value
   case KeyMap.lookup (Key.fromText key) object of
     Nothing -> Left ("MISSING_FIELD:" <> Text.unpack key)
     Just v -> Right v
 
-arrayField :: Value -> Text -> Either String [Value]
+arrayField :: Aeson.Value -> Text -> Either String [Aeson.Value]
 arrayField value key = do
   v <- objectField value key
   case v of
     Array arr -> Right (toList arr)
     _ -> Left ("FIELD_NOT_ARRAY:" <> Text.unpack key)
 
-textField :: Value -> Text -> Either String Text
+textField :: Aeson.Value -> Text -> Either String Text
 textField value key = do
   v <- objectField value key
   case v of
     String t -> Right t
     _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
 
-optionalTextField :: Value -> Text -> Either String (Maybe Text)
+optionalTextField :: Aeson.Value -> Text -> Either String (Maybe Text)
 optionalTextField value key = do
   object <- asObject value
   case KeyMap.lookup (Key.fromText key) object of
@@ -208,7 +212,7 @@ optionalTextField value key = do
     Just (String t) -> Right (Just t)
     Just _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
 
-integerField :: Value -> Text -> Either String Integer
+integerField :: Aeson.Value -> Text -> Either String Integer
 integerField value key = do
   t <- textField value key
   case TR.decimal t of
@@ -221,11 +225,11 @@ integerField value key = do
             _ -> Left ("INVALID_INTEGER:" <> Text.unpack key)
         Nothing -> Left ("INVALID_INTEGER:" <> Text.unpack key)
 
-asObject :: Value -> Either String (KeyMap.KeyMap Value)
+asObject :: Aeson.Value -> Either String (KeyMap.KeyMap Aeson.Value)
 asObject (Object o) = Right o
 asObject _ = Left "EXPECTED_OBJECT"
 
-parseNative :: Aeson.FromJSON a => String -> Value -> Either String a
+parseNative :: Aeson.FromJSON a => String -> Aeson.Value -> Either String a
 parseNative label value =
   case fromJSON value of
     Error err -> Left (label <> ": " <> err)
