@@ -74,7 +74,7 @@ and the pallet implementation of `calculate_committee` delegates directly to:
 
 with no alternate committee algorithm in between.
 
-Therefore the runtime API is **not merely the vendor Ariadne selector**. Its execution enters the same authoritative `Config::select_authorities` implementation that contains the state-dependent Materios branches and post-selection guards described above. This is a materially stronger and more precise B3 target than treating `calculate_committee` as an isolated pure selector.
+Therefore the runtime API is **not merely the vendor Ariadne selector**. Its execution enters the same authoritative `Config::select_authorities` implementation that contains the state-dependent Materios branches and post-selection guards described above.
 
 This does **not** close B3. The remaining problem is provenance of the execution itself: the proof must establish that this runtime API call was executed by the canonical Materios runtime/code at the claimed canonical block/state, with the exact SCALE input bytes, and that its returned committee is the authenticated result. A locally invoked runtime API call without canonical state/finality/code binding remains an execution result, not a publisher-independent canonical-state proof.
 
@@ -95,7 +95,37 @@ with:
 
 This is preferable to reproducing `select_authorities` in TypeScript. It also avoids claiming that a vendor-only call proves the runtime's PinnedCommittee, liveness, slack, quorum, or break-glass branches.
 
-The remaining engineering question is transport: determine whether the Materios node exposes a verifiable execution-proof path for this runtime API (or whether a node-side proof service/RPC must be added). The proof boundary should not be weakened merely because ordinary JSON-RPC exposes the runtime API without exposing its execution witness.
+## Execution-proof transport finding
+
+A second triangulation against the current Polkadot SDK and the Materios node narrows the transport problem.
+
+The Substrate/Polkadot SDK client exposes `ProofProvider::execution_proof(hash, method, call_data)`, which executes a runtime call against the state at a specified block hash and returns both the runtime result and a `StorageProof`. The same client also exposes `read_proof` for ordinary state reads. This is a native client capability, not a TypeScript reconstruction of execution. citeturn0search0turn0search1
+
+The Materios node already depends on `sc-client-api`, and its RPC layer receives the concrete client instance through `FullDeps`. Its current `create_full` implementation exposes system, Orinq Receipts and MOTRA RPCs, but does not currently expose a generic execution-proof RPC. Therefore the remaining gap is now concrete: **the node has the underlying client-side proof primitive available through its Substrate dependency, but the current public Materios RPC surface does not expose that primitive.**
+
+This is materially better than treating execution proof as an unknown capability. The implementation question is now whether to add a narrowly scoped Materios B3 proof RPC that:
+
+1. accepts a canonical block hash, runtime API method and SCALE call bytes;
+2. obtains the result plus execution proof from the node's `ProofProvider`;
+3. returns the proof packet without asserting canonicality by itself;
+4. lets the independent verifier validate the proof against the finalized block/state root and the bound runtime identity.
+
+The RPC itself MUST remain an untrusted transport boundary. Adding an endpoint does not make its response canonical; the independent verifier must still verify finality, state-root binding, runtime identity and execution proof semantics.
+
+The SDK documentation also establishes that runtime identity is exposed through `sp_api::Core::version` and that runtime execution is tied to the runtime/code associated with the relevant state. citeturn0search9turn0search10
+
+### Transport status
+
+**FOUND / NARROWED:**
+
+- native `ProofProvider::execution_proof`: available;
+- Materios node `sc-client-api` dependency: present;
+- Materios custom RPC surface: present;
+- existing generic execution-proof RPC: not found in the inspected current node RPC;
+- independent proof verification: still to implement;
+- finality + state-root + runtime-code binding: still to implement.
+
+No claim of B3 closure is made.
 
 ## Bound statement
 
