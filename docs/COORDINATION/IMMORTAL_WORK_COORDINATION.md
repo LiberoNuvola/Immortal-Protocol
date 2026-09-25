@@ -7540,3 +7540,47 @@ GitHub's workflow syntax confirms that the configured `push.branches` filter is 
 **USER QUESTION:** NONE.
 
 **Next autonomous action:** continue with B3 live-proof composition, P2.8 exact-head evidence acquisition, and B4/B5/B6 conformance without reopening frozen economics.
+
+
+## 2026-09-25 — Autonomous cycle: conformance repair from exact CI evidence
+
+### PRE-RICH Action Refinement
+
+Run `36189913603` on `2369de0...` confirmed the previous digest-contract assertion repair: **76/76 refinement tests passed** and Genesis Treasury admission conformance passed. The workflow then failed only at TypeScript typecheck, exposing pre-existing callers that had not yet been migrated to the hardened explicit-boundary types.
+
+The typecheck failures were concrete and bounded:
+
+- `EconomicAdmissionWitness` now requires authenticated B1 PrizePool input reference/value;
+- Cardano projection requires explicit `currentActiveClass` and `highestClassEverActivated`;
+- the legacy ticket UI still called `buyTickets(1)` although issuance now requires an authoritative `economicAdmission` witness.
+
+### Repairs made
+
+1. `src/__tests__/economic-admission-input-binding.test.ts` — fixture now supplies the authenticated pool input reference/value already required by the admission contract.
+2. `src/__tests__/immortal-cardano-replay.test.ts` — replay fixtures now carry explicit V3 control state and the post-state fixture covers the full canonical class set.
+3. `src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts` — Reveal boundary fixtures now carry explicit V3 control state.
+4. `src/legacyBindings.ts` — legacy purchase UI now fails closed instead of attempting ticket issuance without an Economic Gate witness. This avoids inventing or fabricating an admission witness in legacy presentation code.
+
+Commits: `3859478...`, `69dbf1b...`, `78b4963...`, `7c9820e...`.
+
+No economic rule, validator semantics, protocol limit, or admission requirement was weakened. The changes make existing hardened requirements explicit at their remaining consumers.
+
+### Current CI observation
+
+The newest code-head workflows are now running on `78b49632ad88c311137b9c190971ef1cd9d0e560`:
+
+- P2.8-B.1 Cardano-ledger runner — queued;
+- Kernel Invalid-Class — pending;
+- IMMORTAL Cardano Integration Lab — pending;
+- Algorithmic Governability — queued;
+- Cardano Adapter Sale — queued.
+
+No current-head GREEN claim is made until the jobs complete.
+
+### Materios evidence status
+
+Run `36189897638` on `352b4b2...` completed the Materios Canonical Evidence & Finality Boundary workflow **SUCCESS**, including canonical-evidence tests, execution-proof tests, RPC-B3 tests, typecheck, GRANDPA tests and build. This is meaningful conformance evidence for the proof-boundary machinery, but it does not prove live cryptographic finality or publisher-independent Beacon canonicality. The latter remains open.
+
+**USER QUESTION:** NONE.
+
+**Status:** AUTONOMOUS CYCLE ACTIVE / NO NORMATIVE CHANGE / EXACT CI EVIDENCE ANCHORED.
