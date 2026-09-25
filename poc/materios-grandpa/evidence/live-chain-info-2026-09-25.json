@@ -38,5 +38,20 @@
       "cryptographic M6 composition proof"
     ]
   },
-  "important_note": "This packet is deployment observation evidence, not an independent cryptographic finality proof. The chain-info response does not expose the finalized block hash, although its server-side route obtains the finalized hash internally and then reads the finalized header."
+  "important_note": "This packet is deployment observation evidence, not an independent cryptographic finality proof. The chain-info response does not expose the finalized block hash, although its server-side route obtains the finalized hash internally and then reads the finalized header.",
+  "runtime_source_candidate": {
+    "repository": "Flux-Point-Studios/materios",
+    "commit": "011473c88ef82fad3d4877af8d89a5b52abf235f",
+    "commit_date": "2026-09-23T23:37:58Z",
+    "commit_message": "Merge pull request #49 from Flux-Point-Studios/ci/woodpecker",
+    "runtime_source_identity": {
+      "spec_name": "materios",
+      "impl_name": "materios-node",
+      "spec_version": 238,
+      "impl_version": 1
+    },
+    "git_commit_signature_verified": true,
+    "basis": "source commit directly declares the same runtime spec identity observed by live chain-info",
+    "limitation": "this does not prove the deployed WASM bytes were built from this commit; binary reproducibility/byte binding remains open"
+  }
 }
