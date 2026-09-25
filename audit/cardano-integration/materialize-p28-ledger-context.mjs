@@ -159,7 +159,10 @@ const utxos = await utxoResponse.json()
 if (!Array.isArray(utxos.inputs) || utxos.inputs.length === 0) {
   throw new Error('Yaci transaction UTxO response lacks consumed inputs')
 }
-const observedRefs = utxos.inputs.map((input) => {
+const economicInputs = utxos.inputs.filter(
+  (input) => input.collateral !== true && input.reference !== true,
+)
+const observedRefs = economicInputs.map((input) => {
   if (typeof input.tx_hash !== 'string' || !Number.isSafeInteger(input.output_index)) {
     throw new Error('Yaci consumed input lacks tx_hash/output_index')
   }
@@ -256,6 +259,12 @@ const manifest = {
   era: 'Babbage',
   transaction_hash: txHash,
   inputs: transition.consumedUtxos ?? [],
+  input_classification: {
+    total_inputs: utxos.inputs.length,
+    economic_inputs: economicInputs.length,
+    collateral_inputs: utxos.inputs.filter((input) => input.collateral === true).length,
+    reference_inputs: utxos.inputs.filter((input) => input.reference === true).length,
+  },
   acquisition_source: {
     yaci_store_api: API,
     transaction_utxos_endpoint: API + '/txs/' + txHash + '/utxos',
