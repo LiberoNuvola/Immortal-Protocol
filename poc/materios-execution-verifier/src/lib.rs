@@ -31,9 +31,7 @@ pub struct ExecutionProofInput<'a> {
 /// by itself prove that the block is finalized or that the supplied runtime
 /// WASM is the network canonical runtime; those bindings belong to the outer
 /// B3 verifier.
-pub fn verify_execution_proof(
-    input: ExecutionProofInput<'_>,
-) -> Result<Vec<u8>, String> {
+pub fn verify_execution_proof(input: ExecutionProofInput<'_>) -> Result<Vec<u8>, String> {
     if input.method.is_empty() {
         return Err("runtime method is empty".into());
     }
@@ -56,8 +54,7 @@ pub fn verify_execution_proof(
         return Err("trailing bytes after SCALE StorageProof".into());
     }
 
-    let executor: WasmExecutor<SubstrateHostFunctions> =
-        WasmExecutor::builder().build();
+    let executor: WasmExecutor<SubstrateHostFunctions> = WasmExecutor::builder().build();
 
     let code_fetcher = WrappedRuntimeCode(input.runtime_wasm.into());
     let runtime_code = RuntimeCode {
@@ -88,7 +85,6 @@ pub fn verify_execution_proof(
     Ok(result)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,11 +109,7 @@ mod tests {
     #[test]
     fn rejects_runtime_code_hash_mismatch_before_execution() {
         let wasm = b"not-a-runtime";
-        let result = verify_execution_proof(input(
-            &[0x00],
-            wasm,
-            [0x22; 32],
-        ));
+        let result = verify_execution_proof(input(&[0x00], wasm, [0x22; 32]));
 
         assert_eq!(
             result,
@@ -131,10 +123,7 @@ mod tests {
         let hash = blake2_256(wasm);
         let result = verify_execution_proof(input(&[], wasm, hash));
 
-        assert_eq!(
-            result,
-            Err("SCALE StorageProof is empty".into())
-        );
+        assert_eq!(result, Err("SCALE StorageProof is empty".into()));
     }
 
     #[test]
