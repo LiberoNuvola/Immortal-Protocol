@@ -69,8 +69,7 @@ decodeYaciEpochInfo bytes = do
   genesis <- objectAt root ["genesisResponse"]
   slotValue <- integerValueAt genesis "slot_length"
   epochSize <- integerValueAt genesis "epoch_length"
-  slotMillis <- Right (slotValue * 1000)
-  if slotMillis <= 0
+  if slotValue <= 0
     then Left "INVALID_SLOT_LENGTH"
     else if epochSize <= 0 || epochSize > 18446744073709551615
       then Left "INVALID_EPOCH_LENGTH"
@@ -78,7 +77,16 @@ decodeYaciEpochInfo bytes = do
         Right $
           fixedEpochInfo
             (EpochSize (fromInteger epochSize))
-            (slotLengthFromMillisec slotMillis)
+            (slotLengthFromMillisec (slotValue * 1000))
+
+decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
+decodeYaciSystemStart bytes = do
+  root <- eitherDecodeStrict' bytes
+  raw <- textAt root ["startTimeRaw"]
+  seconds <- parseInteger "startTimeRaw" raw
+  if seconds < 0
+    then Left "INVALID_SYSTEM_START"
+    else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
 
 protocolVersionToBinaryVersion :: PParams BabbageEra -> Either String Version
 protocolVersionToBinaryVersion pp =
