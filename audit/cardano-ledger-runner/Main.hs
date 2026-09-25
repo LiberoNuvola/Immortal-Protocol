@@ -140,11 +140,11 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
     (evidenceDir <> "/ledger-evaluation-binding.txt")
     (TE.encodeUtf8
       (Text.unlines
-        [ "transaction_cbor=" <> sha256Hex txBytes
-        , "pparams=" <> sha256Hex ppBytes
-        , "utxo=" <> sha256Hex utxoBytes
-        , "epoch_info=" <> sha256Hex epochBytes
-        , "system_start=" <> sha256Hex systemStartBytes
+        [ "transaction_cbor_bytes=" <> show (BS.length txBytes)
+        , "pparams_bytes=" <> show (BS.length ppBytes)
+        , "utxo_bytes=" <> show (BS.length utxoBytes)
+        , "epoch_info_bytes=" <> show (BS.length epochBytes)
+        , "system_start_bytes=" <> show (BS.length systemStartBytes)
         , "evaluation_report_bytes=" <> reportDigest
         ]))
   putStrLn ("EVALUATION_REPORT: " <> reportPath)
@@ -234,6 +234,3 @@ decodeTypedArtifacts evidenceDir = do
 
 
 
-sha256Hex :: BS.ByteString -> String
-sha256Hex bytes =
-  "sha256:" <> show (BS.length bytes) <> ":" <> take 16 (show bytes)
