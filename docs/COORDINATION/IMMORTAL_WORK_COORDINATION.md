@@ -6883,3 +6883,18 @@ No production governance code was changed. A small conformance hardening was add
 Commit: `eddecf75069b0bf1b2511d2413b40134ef458524`
 
 Status: **REGRESSION TEST ADDED / CI EVIDENCE PENDING**.
+
+## 2026-09-25 — Governance timestamp guard moved onto the real CI suite
+
+The first regression-guard addition landed in an auxiliary `GovernanceCanonicalEventTest.hs` that is not registered by Cabal. The test suite actually executed by `governance-canonical-replay-tests` is `GovernanceCanonicalReplayTest.hs`.
+
+Correction: the same positive/negative timestamp-binding assertions are now present in the registered suite, so CI will exercise them.
+
+Commit: `1e74dcc4b07773dc71faf0295faaa2bded148863`.
+
+Current CI observation on that commit:
+- `ledger-runner`: QUEUED;
+- `no-result-dependent-authority`: QUEUED;
+- GitGuardian: IN PROGRESS.
+
+No production governance semantics changed. The timestamp invariant remains exact equality between canonical event timestamp and Classified/GatesSet payload timestamp.
