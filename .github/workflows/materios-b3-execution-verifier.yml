@@ -1,0 +1,43 @@
+name: Materios B3 execution-proof verifier
+
+concurrency:
+  group: materios-b3-execution-verifier-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "poc/materios-execution-verifier/**"
+      - ".github/workflows/materios-b3-execution-verifier.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "poc/materios-execution-verifier/**"
+      - ".github/workflows/materios-b3-execution-verifier.yml"
+
+jobs:
+  verifier:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: poc/materios-execution-verifier
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run verifier tests
+        run: cargo test
