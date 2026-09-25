@@ -30,6 +30,17 @@ export interface AuthorityActivationBlock {
   readonly number: bigint;
 }
 
+export type AuthoritySelectionRegime =
+  | {
+      readonly kind: "l1-ariadne";
+      readonly evidenceHash: Uint8Array;
+    }
+  | {
+      readonly kind: "pinned-committee";
+      readonly evidenceHash: Uint8Array;
+      readonly untilEpoch: bigint;
+    };
+
 /**
  * Untrusted evidence supplied by the Materios adapter/proof boundary.
  *
@@ -47,6 +58,7 @@ export interface AuthoritySetTransitionStatement {
   readonly fromSetId: bigint;
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
+  readonly authoritySelectionRegime: AuthoritySelectionRegime;
   readonly selectionInputs: Uint8Array;
   readonly selectionInputsHash: Uint8Array;
   /** Identifies the proof system that authenticated the transition. */
@@ -96,6 +108,7 @@ export interface AuthoritySetTransitionPublicStatement {
   readonly fromSetId: bigint;
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
+  readonly authoritySelectionRegime: AuthoritySelectionRegime;
   readonly selectionInputsHash: Uint8Array;
   /** Identifies the proof system that authenticated the transition. */
   readonly proofSystem: string;
@@ -149,6 +162,9 @@ export function authoritySetTransitionPublicStatement(
     fromSetId: statement.fromSetId,
     fromAuthorities: statement.fromAuthorities,
     sidechainEpoch: statement.sidechainEpoch,
+    authoritySelectionRegime: cloneAuthoritySelectionRegime(
+      statement.authoritySelectionRegime
+    ),
     selectionInputsHash: new Uint8Array(
       statement.selectionInputsHash
     ),
@@ -191,6 +207,9 @@ export function encodeAuthoritySetTransitionStatement(
     encodeU64(publicStatement.fromSetId),
     encodeAuthoritySet(publicStatement.fromAuthorities),
     encodeU64(publicStatement.sidechainEpoch),
+    encodeAuthoritySelectionRegime(
+      publicStatement.authoritySelectionRegime
+    ),
     encodeBytes(publicStatement.selectionInputsHash),
     encodeString(publicStatement.proofSystem),
     encodeAuthoritySet(publicStatement.toAuthorities),
@@ -291,6 +310,11 @@ export function validateAuthoritySetTransitionStatement(
     "INVALID_SIDECHAIN_EPOCH"
   );
 
+  validateAuthoritySelectionRegime(
+    statement.authoritySelectionRegime,
+    statement.sidechainEpoch
+  );
+
   const expectedInputsHash =
     hashSelectionInputs(
       statement.selectionInputs
@@ -369,6 +393,10 @@ export function validateAuthoritySetTransitionPublicStatement(
     statement.sidechainEpoch,
     "INVALID_SIDECHAIN_EPOCH"
   );
+  validateAuthoritySelectionRegime(
+    statement.authoritySelectionRegime,
+    statement.sidechainEpoch
+  );
   validateHash(
     statement.selectionInputsHash,
     "INVALID_SELECTION_INPUTS_HASH"
@@ -394,6 +422,65 @@ export function authoritySetIdentity(
       encodeAuthoritySet(authorities),
       { dkLen: HASH_LENGTH }
     )
+  );
+}
+
+function validateAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime,
+  sidechainEpoch: bigint
+): void {
+  if (regime.kind !== "l1-ariadne" && regime.kind !== "pinned-committee") {
+    throw new Error("INVALID_AUTHORITY_SELECTION_REGIME");
+  }
+
+  validateHash(
+    regime.evidenceHash,
+    "INVALID_AUTHORITY_SELECTION_REGIME_EVIDENCE_HASH"
+  );
+
+  if (regime.kind === "pinned-committee") {
+    validateU64(
+      regime.untilEpoch,
+      "INVALID_PINNED_COMMITTEE_UNTIL_EPOCH"
+    );
+
+    if (sidechainEpoch > regime.untilEpoch) {
+      throw new Error("PINNED_COMMITTEE_EXPIRED");
+    }
+  }
+}
+
+function cloneAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime
+): AuthoritySelectionRegime {
+  if (regime.kind === "pinned-committee") {
+    return {
+      kind: regime.kind,
+      evidenceHash: new Uint8Array(regime.evidenceHash),
+      untilEpoch: regime.untilEpoch
+    };
+  }
+
+  return {
+    kind: regime.kind,
+    evidenceHash: new Uint8Array(regime.evidenceHash)
+  };
+}
+
+function encodeAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime
+): Uint8Array {
+  if (regime.kind === "pinned-committee") {
+    return concatBytes(
+      Uint8Array.of(1),
+      encodeBytes(regime.evidenceHash),
+      encodeU64(regime.untilEpoch)
+    );
+  }
+
+  return concatBytes(
+    Uint8Array.of(0),
+    encodeBytes(regime.evidenceHash)
   );
 }
 
