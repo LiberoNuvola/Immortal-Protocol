@@ -28,7 +28,10 @@ function makePacket(): MateriosExecutionProofPacket {
     sidechainEpoch: 88n,
     cardanoEpochNonceHex: '0x' + '44'.repeat(32),
     genesisUtxoHex: '0xdeadbeef',
-    selectionPath: 'normal',
+    selectionPath: {
+      kind: 'normal',
+      evidenceHash: '66'.repeat(32),
+    },
     authorityCommitment: '55'.repeat(32),
   }
 }
@@ -140,6 +143,31 @@ test('selection context fails closed on malformed epoch/genesis data', () => {
       }),
     /selectionPath must be pinned or normal/,
   )
+})
+
+test('authority-selection regime is part of packet identity', () => {
+  const packet = makePacket()
+  const id = executionProofPacketId(packet)
+
+  const changedKind = executionProofPacketId({
+    ...packet,
+    selectionPath: {
+      kind: 'pinned',
+      evidenceHash: '66'.repeat(32),
+      untilEpoch: packet.sidechainEpoch + 10n,
+    },
+  })
+
+  const changedEvidence = executionProofPacketId({
+    ...packet,
+    selectionPath: {
+      kind: 'normal',
+      evidenceHash: '77'.repeat(32),
+    },
+  })
+
+  assert.notEqual(id, changedKind)
+  assert.notEqual(id, changedEvidence)
 })
 
 test('mutating bound execution material changes packet identity', () => {
