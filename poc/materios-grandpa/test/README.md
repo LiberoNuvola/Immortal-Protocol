@@ -189,6 +189,8 @@ The existing `AuthoritySetTransitionStatement` already binds:
 - genesis hash and genesis UTxO;
 - current and next set IDs;
 - sidechain epoch;
+- the exact authority-selection regime (`l1-ariadne` or `pinned-committee`);
+- a commitment to the evidence establishing that regime;
 - raw selection-input bytes and their Blake2b hash;
 - advertised `toAuthorities`;
 - activation block.
