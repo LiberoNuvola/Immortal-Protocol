@@ -20,6 +20,7 @@ import {
   hashSelectionInputs,
   validateAuthoritySetTransitionStatement,
   verifyActivationBlockBinding,
+  verifySelectionInputsCommitment,
   verifyAuthoritySetTransition
 } from "../src/authority-transition.js";
 
@@ -323,6 +324,40 @@ describe("authority transition boundary", () => {
         hashAuthoritySetTransitionStatement(changed)
       )
     );
+  });
+
+  it("binds recovered selection inputs to the on-chain commitment", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        statement.selectionInputs,
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+        }
+      )
+    ).not.toThrow();
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        Uint8Array.from([0x10, 0x20, 0x30, 0x41]),
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+        }
+      )
+    ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        statement.selectionInputs,
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(32).fill(0xff)
+        }
+      )
+    ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
   });
 
   it("requires the finality checkpoint to equal the activation block hash and number", () => {
