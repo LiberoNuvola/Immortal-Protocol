@@ -6909,3 +6909,122 @@ Current PR #10 HEAD is `8f289d57bbc2c930d1c102cfeb4c84a032e43fad`. The P2.8 eval
 **Materios/B3:** continue in parallel with real finalized-block/proof provenance. Existing source-level hardening is not equivalent to live proof/finality. Do not reimplement the selector or promote explorer/receipt provenance to B3 closure.
 
 **Cross-session instruction:** first inspect current HEAD/run/artifact state; only then make changes. Any GREEN claim must name exact commit + observable evidence.
+
+
+## 2026-09-25 — AUTONOMOUS MULTI-FRONT COORDINATION PROMPT
+
+### Mission
+
+Work continuously and autonomously across **all active, open, research, evidence, implementation, conformance and release fronts** of IMMORTAL / PRE-RICH. Do not wait for a chat instruction to switch fronts. Use the repository, current branch, canonical specifications, Decision Register, Notion, CI artifacts and authoritative external sources as the evidence graph.
+
+### Operating rule
+
+> **Advance every independent front in parallel; interrogate the user only when a genuinely normative, ambiguous or irreversible decision is required that cannot be derived from an authoritative source.**
+
+Do not ask the user for permission to perform ordinary investigation, coding, testing, documentation, CI inspection, evidence capture, triangulation, refactoring that is already authorized by existing specifications, or closure work. If a front is blocked, continue useful work on another independent front.
+
+### Mandatory first step on every session / agent handoff
+
+1. Read this coordination document completely enough to recover the latest handoff.
+2. Identify the exact current HEAD of `work/immortal-green-closure`.
+3. Inspect current CI/workflow/artifact status for that HEAD before changing semantics.
+4. Triangulate the relevant source-of-truth chain: canonical docs → Decision Register → Notion → current implementation → tests/proofs → CI/evidence → external authoritative sources where required.
+5. Classify every finding as one of: **CLOSED**, **OPEN DECISION**, **IMPLEMENTATION GAP**, **CONFORMANCE GAP**, **EVIDENCE GAP**, **RESEARCH**, **TARGET**, **HISTORICAL**.
+6. Never turn an implementation/evidence gap into a new economic decision unless an authoritative source explicitly requires a new decision.
+
+### Active-front sweep
+
+At each autonomous cycle, inspect and advance as many independent fronts as evidence permits, including at minimum:
+
+- Genesis / PRE-GENESIS and Gate 41;
+- Issue / Sale / Reveal / Expire / Claim;
+- B2 hysteresis and authoritative control-state binding;
+- B4 ProtectedCapital;
+- B5 Economic Gate → Viability → Safe Action → Atomic Transition;
+- B6 V3 ↔ Cardano semantic equivalence;
+- P2.8 native Cardano-ledger evaluation;
+- full Cardano/Yaci integration lifecycle;
+- RF8 no-side-door / exhaustive economic-mutator inventory;
+- RF6 / Ω perimeter / Kc / non-vacuity;
+- EEV / Oracle / executable-liquidity provenance / liquidation semantics;
+- PRE PriceReference / Snek / multi-source oracle evidence;
+- Materios / GRANDPA / authority-selection provenance / state authentication;
+- Beacon 3 and B1→B3 migration boundary;
+- Governance / GOV-28 lifecycle and canonicalization-reference provenance;
+- Algorithmic Governability and adaptive incentive research;
+- **Protocol Usage Fee** at IMMORTAL level;
+- **Fee Capture / Treasury / Allocation** as a distinct front from fee semantics;
+- IMMORTAL / PRE-RICH semantic and state boundary;
+- licensing / provenance / open-source release;
+- socioeconomic-experiment research;
+- future adapters / settlement gateway only where they do not distract from current closure.
+
+### Fee-specific instruction
+
+Treat these as two separate questions:
+
+1. **Protocol Usage Fee:** what economic obligation does IMMORTAL define, under what state-dependent semantics, reference unit, affordability and fail-closed rules?
+2. **Fee Capture / Treasury / Allocation:** once a fee is due, where can it be settled, who/what owns the resulting economic value, what accounting/liability constraints apply, and how may it subsequently be used or distributed?
+
+Do **not** assume that Cardano native transaction fees are IMMORTAL fees. Preserve:
+
+`ProtocolUsageFee != ChainExecutionCost`
+
+and:
+
+`TotalCost = ProtocolUsageFee + ChainExecutionCost`.
+
+Do not introduce a PRE-RICH-specific fee into universal IMMORTAL semantics without an explicit decision.
+
+### Research and design discipline
+
+For research fronts, first establish prior art and source-grounded facts; then identify the actual unresolved question; only then propose candidate models. Never silently promote a research hypothesis to canon.
+
+For Beacon 3 / Materios, never replace the upstream authority selector with a local TypeScript reimplementation merely to obtain a green test. For P2.8, prefer exact real ledger context and the native evaluator over emulation. For Oracle/EEV, never invent a haircut, price source, freshness bound or manipulation bound merely to close a gate.
+
+### Evidence discipline
+
+A green unit test is not automatically a protocol proof. A simulation is not automatically a real-ledger result. A schema is not cryptographic authenticity. A source-level statement is not deployed-runtime evidence.
+
+Every closure claim must identify:
+
+`exact commit → exact test/workflow → exact artifact/observation → exact scope of claim`.
+
+If evidence is unavailable, record **EVIDENCE GAP** rather than manufacturing certainty.
+
+### Change discipline
+
+- Never alter frozen economic constants or closed policy merely to make tests pass.
+- Never resurrect `75/10/10/5`, historical Jackpot ladders, V25 or other non-canonical material.
+- Never move PRE-RICH policy into IMMORTAL merely because current code uses it.
+- Never weaken validators/invariants, enlarge protocol limits, or introduce authority side doors to obtain green CI.
+- Prefer minimal, source-grounded changes.
+- Run the narrowest relevant tests after each change and then inspect the resulting CI/evidence.
+- Update this coordination file after substantive cross-front discoveries, blockers, closures or evidence captures; do not spam it with trivial activity.
+
+### Coordination / user-interaction rule
+
+The user should be interrupted **only** for a true decision boundary such as:
+
+- a new normative economic rule not derivable from existing authority;
+- an architectural choice with multiple materially different valid interpretations and no source resolving it;
+- an irreversible external action requiring explicit human authorization;
+- missing information that only the user can provide.
+
+Otherwise, decide the workflow autonomously, document the reasoning, continue on other fronts, and return a concise status summary only after useful work has been performed.
+
+### Required handoff output
+
+At the end of every autonomous cycle, append a compact handoff containing:
+
+- current HEAD;
+- fronts advanced;
+- concrete changes/commits;
+- tests/CI/evidence actually observed;
+- remaining blockers classified by type;
+- next autonomous actions;
+- **USER QUESTION: only if a genuine decision boundary exists; otherwise `NONE`.**
+
+### Prime directive
+
+> **Do not wait for the user to tell you what to work on next. Work the entire evidence graph, in parallel, without inventing semantics. Ask only when the protocol itself reaches a decision that the existing sources cannot answer.**
