@@ -122,7 +122,7 @@ test('Materios committee Runtime API call data appends SCALE u64 epoch', () => {
   )
   assert.throws(
     () => encodeScEpochNumber(-1n),
-    /sidechainEpoch must fit u64/,
+    /sidechainEpoch must be non-negative/,
   )
   assert.throws(
     () => buildCalculateCommitteeCallData('0102', 1n),
@@ -206,7 +206,7 @@ test('getCommitteeExecutionProof fails closed on malformed proof bytes', async (
     const rpc = new MateriosRpc(server.endpoint)
     await assert.rejects(
       () => rpc.getCommitteeExecutionProof('0xaabb', target),
-      /\/B3 proof proofScaleHex: expected hex string\//,
+      /\/B3 proof proofScaleHex: expected hex string//,
     )
   } finally {
     await server.close()
