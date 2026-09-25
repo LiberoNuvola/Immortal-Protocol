@@ -17,6 +17,10 @@ function transition() {
       fromSetId: 7n,
       fromAuthorities: [],
       sidechainEpoch: 42n,
+      authoritySelectionRegime: {
+        kind: "l1-ariadne" as const,
+        evidenceHash: new Uint8Array(32).fill(10)
+      },
       selectionInputsHash: new Uint8Array(32).fill(2),
       proofSystem: "upstream-proof",
       toAuthorities: [],
