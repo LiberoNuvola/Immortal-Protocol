@@ -232,3 +232,25 @@ This document does not:
 The Materios `partnerchain/Cargo.lock` resolves `sc-client-api` to version `37.0.0` from Polkadot SDK tag `polkadot-stable2409-4` at commit `c455194a2ae2f613c1c671e00dbf397b83ed8171`. The exact upstream `substrate/client/api/src/proof_provider.rs` at that commit contains `ProofProvider::execution_proof(hash, method, call_data) -> (Vec<u8>, StorageProof)`. This removes the remaining version-drift concern for the native proof primitive: the capability is present in the exact SDK revision Materios locks, not only in current SDK documentation. citeturn390818search0
 
 This still does not establish that the Materios node exposes the primitive through its public RPC interface, nor does it establish B3 canonicality. Those remain separate transport and verification obligations.
+
+
+### Exact transport shape recommended
+
+Because `StorageProof` implements SCALE `Encode`/`Decode` in the locked SDK, the B3 transport should carry the proof as one exact SCALE-encoded byte string (for example `0x`-prefixed hex), not as a JSON interpretation of individual trie nodes. This preserves the native proof object across the untrusted RPC boundary and lets the independent verifier decode the exact SDK type before proof checking. citeturn390818search0
+
+For the first production-shaped Materios endpoint, prefer a narrowly scoped RPC contract over a generic arbitrary runtime-call prover:
+
+`materios_b3_calculateCommitteeProof(block_hash, call_data_hex)`
+
+with a response containing at minimum:
+
+- the exact `block_hash` used;
+- the exact runtime API method identifier `SessionValidatorManagementApi_calculate_committee`;
+- the exact SCALE `call_data_hex` supplied to the runtime;
+- the exact runtime `result_hex` returned by execution;
+- the exact SCALE-encoded `StorageProof` bytes;
+- the runtime version observed at that block.
+
+The endpoint is transport only. It MUST NOT label its response `canonical`, `finalized`, `verified`, or equivalent. Finality, header/state-root binding, runtime identity/code correspondence, proof verification, and semantic decoding of the committee remain independent verifier responsibilities.
+
+A generic endpoint can be considered later for tooling, but the B3 path should initially expose only the single runtime API required for authority-selection provenance. This keeps the proof surface narrow and makes accidental proofing of unrelated runtime calls impossible.
