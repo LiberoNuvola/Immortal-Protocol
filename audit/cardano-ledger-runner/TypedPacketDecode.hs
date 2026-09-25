@@ -37,7 +37,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as Text
 import qualified Data.Text.Read as TR
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Lens.Micro ((^.))
 import YaciUTxO (decodeYaciUTxO)
 
@@ -58,18 +58,18 @@ decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
   root <- eitherDecodeStrict' bytes
   raw <- textAt root ["startTimeRaw"]
-  case fromJSON (String raw) of
-    Error err -> Left ("INVALID_SYSTEM_START:" <> err)
-    Success utc -> Right (SystemStart (utc :: UTCTime))
+  seconds <- parseInteger "startTimeRaw" raw
+  if seconds < 0
+    then Left "INVALID_SYSTEM_START"
+    else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
 
 decodeYaciEpochInfo :: BS.ByteString -> Either String (EpochInfo (Either Text.Text))
 decodeYaciEpochInfo bytes = do
   root <- eitherDecodeStrict' bytes
-  timing <- objectAt root ["timingSource"]
-  slotRaw <- textAt timing ["slotLengthRaw"]
-  epochRaw <- textAt timing ["epochLengthRaw"]
-  slotMillis <- parseMilliseconds "slotLengthRaw" slotRaw
-  epochSize <- parseInteger "epochLengthRaw" epochRaw
+  genesis <- objectAt root ["genesisResponse"]
+  slotValue <- integerValueAt genesis "slot_length"
+  epochSize <- integerValueAt genesis "epoch_length"
+  slotMillis <- Right (slotValue * 1000)
   if slotMillis <= 0
     then Left "INVALID_SLOT_LENGTH"
     else if epochSize <= 0 || epochSize > 18446744073709551615
@@ -101,6 +101,17 @@ textAt value path = do
   case v of
     String t -> Right t
     _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack (last path))
+
+integerValueAt :: Value -> Text.Text -> Either String Integer
+integerValueAt value key = do
+  v <- objectAt value [key]
+  case v of
+    Number _ ->
+      case fromJSON v of
+        Error err -> Left ("INVALID_INTEGER:" <> Text.unpack key <> ":" <> err)
+        Success n -> Right n
+    String t -> parseInteger (Text.unpack key) t
+    _ -> Left ("FIELD_NOT_INTEGER:" <> Text.unpack key)
 
 parseInteger :: String -> Text.Text -> Either String Integer
 parseInteger field value =
