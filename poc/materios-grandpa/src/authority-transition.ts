@@ -230,6 +230,40 @@ export function hashAuthoritySetTransitionStatement(
   );
 }
 
+export interface OnChainSelectionInputsCommitment {
+  /** Canonical finalized block containing the SessionValidatorManagement::set call. */
+  readonly blockHash: Uint8Array;
+  /** Exact 32-byte selection_inputs_hash emitted by that call. */
+  readonly selectionInputsHash: Uint8Array;
+}
+
+/**
+ * Binds externally recovered AuthoritySelectionInputs to the commitment
+ * emitted by Materios' SessionValidatorManagement::set inherent.
+ *
+ * This does not parse or trust a relayer's claimed call: the caller must
+ * supply the hash extracted from the finalized block's canonical extrinsic.
+ * The extraction/proof of that call is a separate evidence obligation.
+ */
+export function verifySelectionInputsCommitment(
+  selectionInputs: Uint8Array,
+  commitment: OnChainSelectionInputsCommitment
+): void {
+  if (commitment.blockHash.length !== HASH_LENGTH) {
+    throw new Error("INVALID_SELECTION_COMMITMENT_BLOCK_HASH");
+  }
+
+  if (commitment.selectionInputsHash.length !== HASH_LENGTH) {
+    throw new Error("INVALID_SELECTION_INPUTS_HASH");
+  }
+
+  const expected = hashSelectionInputs(selectionInputs);
+
+  if (!equalBytes(expected, commitment.selectionInputsHash)) {
+    throw new Error("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+  }
+}
+
 export interface FinalityCheckpointBinding {
   readonly blockHash: Uint8Array;
   readonly blockNumber: bigint;
