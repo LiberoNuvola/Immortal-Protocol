@@ -5,6 +5,7 @@ module Main (main) where
 import qualified Data.Aeson as Aeson
 import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as B16
+import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
@@ -195,17 +196,43 @@ inspectManifest evidenceDir manifestPath runEvaluation = do
       putStrLn ("MANIFEST_ERROR: " <> err)
 
     Right (Aeson.Object manifest) ->
-      case KeyMap.lookup "policy" manifest of
-        Just (Aeson.Object policy) ->
-          case KeyMap.lookup "typed_context_ready" policy of
-            Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir runEvaluation
-            Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir runEvaluation
+      case verifyManifestFileHashes evidenceDir manifest of
+        Left err -> safeStall err
+        Right () -> do
+          putStrLn "RESULT: MANIFEST_SHA256_BINDING_VERIFIED"
+          case KeyMap.lookup "policy" manifest of
+            Just (Aeson.Object policy) ->
+              case KeyMap.lookup "typed_context_ready" policy of
+                Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir runEvaluation
+                Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir runEvaluation
 
-            _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
+                _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
 
-        _ -> safeStall "INVALID_MANIFEST_POLICY"
+            _ -> safeStall "INVALID_MANIFEST_POLICY"
 
     Right _ -> safeStall "INVALID_MANIFEST_SHAPE"
+
+verifyManifestFileHashes :: FilePath -> Aeson.Object -> IO (Either String ())
+verifyManifestFileHashes evidenceDir manifest = do
+  case KeyMap.lookup "sha256" manifest of
+    Just (Aeson.Object hashes) -> do
+      results <- mapM (verifyOne hashes) canonicalEvidence
+      case [err | Left err <- results] of
+        [] -> pure (Right ())
+        err : _ -> pure (Left err)
+    _ -> pure (Left "MANIFEST_SHA256_MISSING_OR_INVALID")
+  where
+    verifyOne hashes file =
+      case KeyMap.lookup (Key.fromString file) hashes of
+        Nothing -> pure (Left ("MANIFEST_SHA256_MISSING:" <> file))
+        Just (Aeson.String expectedText) -> do
+          bytes <- BS.readFile (evidenceDir <> "/" <> file)
+          let expected = Text.unpack (Text.toLower expectedText)
+              actual = BSC.unpack (B16.encode (SHA256.hash bytes))
+          if expected == actual
+            then pure (Right ())
+            else pure (Left ("MANIFEST_SHA256_MISMATCH:" <> file))
+        _ -> pure (Left ("MANIFEST_SHA256_INVALID:" <> file))
 
 decodeTypedArtifacts :: FilePath -> Bool -> IO ()
 decodeTypedArtifacts evidenceDir runEvaluation = do
