@@ -592,6 +592,53 @@ describe("authority transition boundary", () => {
     ).toBe(0x03);
   });
 
+  it("rejects a verified transition with a forged statement hash", async () => {
+    const statement = baseStatement();
+    const verified = await verifyAuthoritySetTransition(
+      statement,
+      { verify: () => true }
+    );
+
+    const forged = {
+      ...verified,
+      statementHash: new Uint8Array(32).fill(0xee)
+    };
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        forged
+      )
+    ).toThrow(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+    );
+  });
+
+  it("revalidates the public transition statement before trusting it", async () => {
+    const statement = baseStatement();
+    const verified = await verifyAuthoritySetTransition(
+      statement,
+      { verify: () => true }
+    );
+
+    const forged = {
+      ...verified,
+      publicStatement: {
+        ...verified.publicStatement,
+        sidechainEpoch: verified.publicStatement.sidechainEpoch + 1n
+      }
+    };
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        forged
+      )
+    ).toThrow(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+    );
+  });
+
   it("rejects a forged verified-transition marker", () => {
     const forged = {
       kind:
