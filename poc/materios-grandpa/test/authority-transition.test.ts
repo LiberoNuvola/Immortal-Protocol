@@ -19,6 +19,7 @@ import {
   hashAuthoritySetTransitionStatement,
   hashSelectionInputs,
   validateAuthoritySetTransitionStatement,
+  verifyActivationBlockBinding,
   verifyAuthoritySetTransition
 } from "../src/authority-transition.js";
 
@@ -322,6 +323,31 @@ describe("authority transition boundary", () => {
         hashAuthoritySetTransitionStatement(changed)
       )
     );
+  });
+
+  it("requires the finality checkpoint to equal the activation block hash and number", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(32).fill(0xcc),
+        blockNumber: statement.activationBlock.number
+      })
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number + 1n
+      })
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_NUMBER_MISMATCH");
   });
 
   it("rejects a pinned-committee regime that is already expired", () => {
