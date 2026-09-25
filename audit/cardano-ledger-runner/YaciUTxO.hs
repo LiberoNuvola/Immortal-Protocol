@@ -4,7 +4,6 @@ module YaciUTxO
   ( decodeYaciUTxO
   ) where
 
-import Cardano.Ledger.Address (Addr)
 import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.BaseTypes (StrictMaybe (..))
@@ -219,19 +218,6 @@ integerValueField value key = do
         Error err -> Left ("INVALID_INTEGER:" <> err)
         Success n -> Right n
     _ -> Left ("FIELD_NOT_INTEGER:" <> Text.unpack key)
-
-integerField :: Aeson.Value -> Text -> Either String Integer
-integerField value key = do
-  t <- textField value key
-  case TR.decimal t of
-    Right (n, rest) | Text.null rest -> Right n
-    _ ->
-      case Text.stripPrefix "-" t of
-        Just rest ->
-          case TR.decimal rest of
-            Right (n, trailing) | Text.null trailing -> Right (-n)
-            _ -> Left ("INVALID_INTEGER:" <> Text.unpack key)
-        Nothing -> Left ("INVALID_INTEGER:" <> Text.unpack key)
 
 asObject :: Aeson.Value -> Either String (KeyMap.KeyMap Aeson.Value)
 asObject (Object o) = Right o
