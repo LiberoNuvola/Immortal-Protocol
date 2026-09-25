@@ -139,6 +139,12 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       contextDigest bytes =
         BSC.unpack (B16.encode (SHA256.hash bytes))
 
+  txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+  ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+  utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
+  epochBytes <- BS.readFile (evidenceDir <> "/epoch-info.json")
+  systemStartBytes <- BS.readFile (evidenceDir <> "/system-start.json")
+
   BS.writeFile reportPath (TE.encodeUtf8 (Text.pack rendered))
   reportBytes <- BS.readFile reportPath
   let reportDigest = BSC.unpack (B16.encode (SHA256.hash reportBytes))
