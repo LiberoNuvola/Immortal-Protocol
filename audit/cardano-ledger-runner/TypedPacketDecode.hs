@@ -11,7 +11,7 @@ module TypedPacketDecode
 
 import Cardano.Ledger.Api (BabbageEra, PParams, Tx)
 import Cardano.Ledger.Api.PParams (ppProtocolVersionL)
-import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator)
+import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator, decCBOR)
 import Cardano.Ledger.Binary.Version (Version, mkVersion)
 import Cardano.Ledger.Core (TopTx, pvMajor)
 import Cardano.Ledger.State (UTxO)
@@ -43,7 +43,7 @@ decodeBabbagePParams = eitherDecodeStrict'
 decodeBabbageTx :: PParams BabbageEra -> BS.ByteString -> Either String (Tx TopTx BabbageEra)
 decodeBabbageTx pp bytes = do
   version <- protocolVersionToBinaryVersion pp
-  case decodeFullAnnotator version "Babbage Tx" Aeson.decCBOR (BSL.fromStrict bytes) of
+  case decodeFullAnnotator version "Babbage Tx" decCBOR (BSL.fromStrict bytes) of
     Left err -> Left (show err)
     Right tx -> Right tx
 
