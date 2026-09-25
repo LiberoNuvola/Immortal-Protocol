@@ -79,15 +79,6 @@ decodeYaciEpochInfo bytes = do
             (EpochSize (fromInteger epochSize))
             (slotLengthFromMillisec (slotValue * 1000))
 
-decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
-decodeYaciSystemStart bytes = do
-  root <- eitherDecodeStrict' bytes
-  raw <- textAt root ["startTimeRaw"]
-  seconds <- parseInteger "startTimeRaw" raw
-  if seconds < 0
-    then Left "INVALID_SYSTEM_START"
-    else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
-
 protocolVersionToBinaryVersion :: PParams BabbageEra -> Either String Version
 protocolVersionToBinaryVersion pp =
   mkVersion (pvMajor (pp ^. ppProtocolVersionL))
