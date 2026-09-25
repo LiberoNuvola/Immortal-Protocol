@@ -133,3 +133,7 @@ Do not alter KA/KC/KD, payout bounds, price ladder, Genesis semantics, Protected
 ### Certification rule
 A gate may be marked CLOSED only with an exact commit, exact workflow/test, exact artifact or observation, and an explicit scope statement. Simulation, unit tests, schemas, or source claims must not be promoted to live-ledger or cryptographic proof.
 
+
+## Finalization manifest — 2026-09-25
+
+The implementation-to-certification transition is now recorded explicitly in `docs/COORDINATION/FINALIZATION-CERTIFICATION-MANIFEST-20260925.md` (commit `c16c2d30c791458fa99744aa200c5f03f55d6918`). The manifest freezes the implementation boundary and enumerates the remaining certification gates without treating them as permission to alter protocol semantics.
