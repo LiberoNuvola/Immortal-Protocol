@@ -128,6 +128,9 @@ export function validateMateriosExecutionProofPacket(
   requireHash(packet.runtime.codeHash, 'runtime.codeHash')
 
   requirePositiveName(packet.runtimeApiMethod, 'runtimeApiMethod')
+  if (packet.runtimeApiMethod !== 'SessionValidatorManagementApi_calculate_committee') {
+    throw new Error('runtimeApiMethod is not the canonical committee API')
+  }
   const authoritySelectionInputsHex = requireHex(packet.authoritySelectionInputsHex, 'authoritySelectionInputsHex')
   const selectionInputsHash = requireHash(packet.selectionInputsHash, 'selectionInputsHash')
   const actualSelectionInputsHash = Buffer.from(
