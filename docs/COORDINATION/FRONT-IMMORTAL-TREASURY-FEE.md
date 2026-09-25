@@ -206,3 +206,45 @@ Search the exact closure ref for all imports/call sites of:
 If no current economic caller exists, quarantine the validator/policy as legacy instead of modifying economics. If a caller exists, bind that caller to the current PRE-RICH Treasury/PrizePool semantics before any conformance promotion.
 
 **Status:** TREASURY FRONT NARROWED / FOUR-WAY DISTRIBUTION LIVE USAGE UNPROVEN / NO NORMATIVE CHANGE.
+
+## 2026-09-25 — Fee front re-triangulation against current Cardano fee model
+
+Fresh external verification against current Cardano documentation confirms that native Cardano transaction fees are a chain-level mechanism computed from protocol parameters, including the per-byte and fixed components. Cardano documentation also distinguishes transaction fees from the protocol's treasury/reward mechanism. Therefore native Cardano fees cannot be treated as IMMORTAL Protocol Usage Revenue merely because an IMMORTAL transaction incurs them.
+
+Current external evidence:
+- Cardano minimum transaction fee is parameterized from transaction size and protocol parameters (minFeeA / minFeeB).
+- Transaction fees are collected at the chain level and participate in Cardano's epoch reward/treasury accounting.
+- The Adapter therefore has a chain-specific execution-cost observation surface, while IMMORTAL must separately define any Protocol Usage Fee.
+
+This reinforces the existing invariant:
+
+ProtocolUsageFee != ChainExecutionCost
+
+and:
+
+TotalCost = ProtocolUsageFee + ChainExecutionCost.
+
+### New accounting boundary clarified
+
+The Treasury/Capture problem must be split into four distinct states:
+
+FeeObligation
+→ SettlementAmount
+→ ProtocolRevenueReceived
+→ AccountingClassification
+
+Only the first two belong to the fee-bearing transition contract itself. Receipt of value at a protocol-controlled destination is a separate observation/accounting event. Destination control alone does not determine whether the received value is ProtectedCapital, reserved value, available revenue, or RawSurplus.
+
+### Current implementation finding
+
+Direct current-branch inspection still finds no canonical universal ProtocolUsageFee type/field in the inspected IMMORTAL kernel/adapter artifacts. The concrete PRE-RICH Treasury mechanisms remain application/deployment representations. This is an OPEN representation gap, not a reason to add a fee field to universal economic state immediately.
+
+### Next autonomous work
+
+1. Build a repository-wide current-ref usage map for all Treasury/distribution surfaces and distinguish live economic callers from legacy code.
+2. Derive the minimal abstract fee/revenue interface from the existing Notion fee workflow without choosing numeric values.
+3. Determine whether protocol revenue is a neutral custody balance, an accounting category, or an economic state input, using the canonical economics rather than destination identity.
+4. Trace the existing PRE settlement candidate only as a deployment case; do not promote PRE or PRE-RICH Treasury rules into IMMORTAL.
+5. Keep any reward-budget model downstream of revenue classification and independently authorized.
+
+**Status:** FEE SEMANTICS OPEN / FEE CAPTURE & ACCOUNTING OPEN / CARDANO NATIVE FEE DISTINCTION VERIFIED EXTERNALLY / NO NORMATIVE CHANGE.
