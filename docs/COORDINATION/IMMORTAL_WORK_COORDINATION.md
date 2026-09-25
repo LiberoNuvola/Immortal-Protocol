@@ -6297,3 +6297,20 @@ Files/commits:
 - `c855f9baaba8f2feb144ad53c2f143b40760a589` — B3 contract records the independent verifier boundary.
 
 Status: **execution-proof verification component PRESENT; canonical finality/runtime deployment composition STILL OPEN.**
+
+
+## 2026-09-25 — B3 EXECUTION VERIFIER SEMANTIC BOUNDARY
+
+The execution-proof verifier PoC is now explicit about what its success means and does not mean.
+
+It uses the same pinned SDK revision as Materios and calls `sp_state_machine::execution_proof_check`. The verifier authenticates the execution result over the supplied `StorageProof`/state root and the supplied runtime WASM, after checking the WASM Blake2-256 identity and exact method/call bytes. It then compares the reproduced result with the expected result.
+
+This is an execution-proof check, not a canonicality decision. Finality, canonical block selection, deployed-runtime/source correspondence, and the authority-set transition remain outer proof layers. The PoC README records this composition boundary.
+
+Commit:
+- `6aee889b73d5ef6933ac2a32791a2ed0ed73a429` — initial verifier implementation.
+- `51ae4e3ac88b33b363e54999ddf839829afa6713` — result binding and direct runtime-code hash identity.
+- `8627003f8e12faef8d5a6e303058c4d911bb5056` — fail-closed tests.
+- `d0f8ce1fe5dc072ccd41c2fbae68ec450239c15a` — verifier README.
+
+Status: **execution-proof verifier boundary IMPLEMENTED; real finalized Materios proof fixture and canonical runtime/deployment composition OPEN.**
