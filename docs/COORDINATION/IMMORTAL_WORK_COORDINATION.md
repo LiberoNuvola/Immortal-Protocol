@@ -7028,3 +7028,47 @@ At the end of every autonomous cycle, append a compact handoff containing:
 ### Prime directive
 
 > **Do not wait for the user to tell you what to work on next. Work the entire evidence graph, in parallel, without inventing semantics. Ask only when the protocol itself reaches a decision that the existing sources cannot answer.**
+
+
+## 2026-09-25 — Autonomous multi-front cycle: fee boundary + evidence sweep
+
+**Current HEAD observed:** `6545bdcd1f4e031fe5e25c198cdcd32fde095525`.
+
+### P2.8
+- **IMPLEMENTATION:** native Ledger evaluator path confirmed in current workflow: `--evaluate` → `evalTxExUnitsWithLogs`.
+- **WORKFLOW:** push + workflow_dispatch configured; artifact `p2-8-b1-cardano-ledger-runner-report` configured with `if: always()`.
+- **EVIDENCE:** no run is exposed for the current HEAD by the available workflow-run connector. Classification: **EVIDENCE GAP**. Do not reuse superseded run #368.
+
+### Protocol Usage Fee / Fee Capture
+Triangulation against the Notion fee workflow and current branch Adapter shows:
+- Notion master workflow is **OPEN / design & verification** and explicitly keeps `ProtocolUsageFee != ChainExecutionCost` and `TotalCost = ProtocolUsageFee + ChainExecutionCost`.
+- The Fee Ownership Matrix classifies economic fee semantics as IMMORTAL-owned, settlement/valuation mechanics as Adapter-owned, and ProtectedCapital/liabilities as IMMORTAL authority.
+- The current Cardano `EconomicAdmissionWitness` contains no Protocol Usage Fee field or settlement obligation. This is **not yet a defect requiring code**, because the canonical fee semantics are not frozen; it is an **IMPLEMENTATION GAP contingent on a future normative specification**.
+- Therefore no fee code is added now. The next legitimate step is adversarial/specification work on `EconomicFeeTarget → SettlementAmount`, price-reference validity, conservative rounding, affordability and failure semantics.
+
+### B4/B5
+Notion surgical conformance confirms the existing semantic chain remains:
+`candidate state → authoritative inputs → protection requirement → ProtectedCapital → RawSurplus → Economic Gate → Viability`.
+No new ProtectedCapital formula is justified by the current sources. Classification: **CONFORMANCE/EVIDENCE GAP**, not OPEN DECISION.
+
+### Materios / B3 / Beacon
+Current coordination remains aligned with the source-verified upstream selector boundary. Existing proof-envelope and transition hardening do not establish live finalized execution/finality. Classification: **EVIDENCE GAP** for the decisive live proof chain.
+
+### Governance
+GOV-28 current state still contains an implementation/spec reconciliation gap around canonical lifecycle replay and canonicalization-reference provenance. Timestamp compatibility is now represented by exact payload/event timestamp equality. Classification remains **IMPLEMENTATION/CONFORMANCE GAP** until current-head CI evidence and lifecycle mapping are observed.
+
+### Gate 41 / PRE-Snek
+Current Notion evidence continues to leave seed/min-ADA/3 ADA semantics and Genesis funding role unresolved where direct provider evidence is unavailable. Classification: **EVIDENCE GAP**, not a new semantic decision.
+
+### Research / Algorithmic Governability
+Notion master document remains **RESEARCH**. Candidate adaptive functions (fee, thresholds, rewards) are not canonical. The key boundary remains Constitution → limits/invariants → Governance approves derivation functions → Algorithm derives → Adapter realizes. No parameter was promoted.
+
+### USER QUESTION
+NONE.
+
+### Next autonomous actions
+1. Capture the first current-head P2.8 workflow artifact when exposed.
+2. Continue fee adversarial/specification triangulation without choosing numerical fee parameters.
+3. Continue Materios finalized-hash / execution-proof / GRANDPA evidence capture.
+4. Continue B4/B5/B6 conformance mapping using existing semantics.
+5. Recheck Governance lifecycle/reference evidence on the current head before semantic changes.
