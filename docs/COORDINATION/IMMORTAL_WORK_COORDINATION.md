@@ -6470,3 +6470,18 @@ Remaining evidence is therefore:
 - GRANDPA justification: **OPEN**
 - cryptographic execution/storage proof: **OPEN**
 - M6 composition proof: **OPEN**
+
+
+## 2026-09-25 — B3 NODE TRANSPORT REFERENCE LOCKED
+
+Upstream SDK inspection now resolves the node implementation detail: the concrete client implementation of `ProofProvider::execution_proof` delegates directly to `self.executor.prove_execution(block_hash, method, call_data)`. `CallExecutor::prove_execution` is the native no-state-changing execution proof primitive returning `(Vec<u8>, StorageProof)`.
+
+This means the planned Materios RPC requires no selector reimplementation and no manual trie-node collection. A thin custom RPC can forward the exact block/method/call-data tuple into the native executor proof path and SCALE-encode the returned `StorageProof` for transport.
+
+Added reference document:
+- `docs/04-verification/MATERIOS-B3-EXECUTION-PROOF-RPC.md`
+- commit `9d3ca8d35e4be74e2bec66d5e79ec616c9bb7238`
+
+The IMMORTAL client now also has exact-block evidence collection (`rpc.ts`) and transport tests. The current environment still cannot resolve the documented Materios host, so the decisive real packet remains OPEN.
+
+Status: **native proof generation path VERIFIED in pinned SDK / node transport reference LOCKED / real live proof fixture OPEN / finality + runtime deployment composition OPEN.**
