@@ -9,7 +9,6 @@ import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.BaseTypes (StrictMaybe (..))
 import Cardano.Ledger.Coin (Coin (..))
-import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.Plutus.Data
   ( DataHash
   , Datum (..)
@@ -34,6 +33,8 @@ import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Short (toShort)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Data.Text.Encoding as TextEnc
+import Control.Monad (foldM)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as TR
@@ -84,40 +85,27 @@ parseInput value = do
 
 parseMaryValue :: [Value] -> Either String MaryValue
 parseMaryValue items = do
-  (lovelace, policies) <- foldr step (Right (Nothing, Map.empty)) items
-  coin <- case lovelace of
+  (mLovelace, policies) <- foldM step (Nothing, KeyMap.empty) items
+  lovelace <- case mLovelace of
     Nothing -> Left "MISSING_LOVELACE"
-    Just n | n < 0 -> Left "NEGATIVE_LOVELACE"
-    Just n -> Right (Coin n)
+    Just n
+      | n < 0 -> Left "NEGATIVE_LOVELACE"
+      | n > 18446744073709551615 -> Left "LOVELACE_OUT_OF_RANGE"
+      | otherwise -> Right n
 
   let json =
         Object
           ( KeyMap.fromList
-              [ (Key.fromText "lovelace", Number (fromInteger coinValue))
-              , (Key.fromText "policies", policiesJson policies)
+              [ (Key.fromText "lovelace", Number (fromInteger lovelace))
+              , (Key.fromText "policies", Object policies)
               ]
           )
 
   parseNative "MaryValue" json
   where
-    coinValue =
-      case lovelaceValue items of
-        Just n -> n
-        Nothing -> 0
-
-    lovelaceValue [] = Nothing
-    lovelaceValue (x : xs) =
-      case textField x "unit" of
-        Right "lovelace" -> either (const Nothing) Just (integerField x "quantity")
-        _ -> lovelaceValue xs
-
-    step item acc = do
-      (mLov, policies) <- acc
+    step item (mLov, policies) = do
       unit <- textField item "unit"
       quantity <- integerField item "quantity"
-      if quantity < -9223372036854775808 || quantity > 9223372036854775807
-        then Left "INVALID_ASSET_QUANTITY_RANGE"
-        else pure ()
 
       case unit of
         "lovelace" ->
@@ -136,24 +124,28 @@ parseMaryValue items = do
                 then Left "ASSET_NAME_TOO_LONG"
                 else do
                   validateHexText "asset_name" assetHex
-                  let policyKey = Key.fromText (Text.toLower policyHex)
-                      assetKey = Key.fromText (Text.toLower assetHex)
-                      newAsset = Object (KeyMap.singleton assetKey (Number (fromInteger quantity)))
-                      nextPolicies =
-                        case KeyMap.lookup policyKey policies of
-                          Nothing -> KeyMap.insert policyKey newAsset policies
-                          Just (Object existing) ->
-                            if KeyMap.member assetKey existing
-                              then errorLeft "DUPLICATE_ASSET_UNIT"
-                              else
-                                KeyMap.insert
-                                  policyKey
-                                  (Object (KeyMap.insert assetKey (Number (fromInteger quantity)) existing))
-                                  policies
-                          Just _ -> errorLeft "INVALID_POLICY_OBJECT"
-                  pure (mLov, nextPolicies)
+                  if quantity < -9223372036854775808 || quantity > 9223372036854775807
+                    then Left "INVALID_ASSET_QUANTITY_RANGE"
+                    else do
+                      let policyKey = Key.fromText (Text.toLower policyHex)
+                          assetKey = Key.fromText (Text.toLower assetHex)
+                      case KeyMap.lookup policyKey policies of
+                        Nothing ->
+                          let newAsset =
+                                Object
+                                  (KeyMap.singleton assetKey (Number (fromInteger quantity)))
+                          in Right (mLov, KeyMap.insert policyKey newAsset policies)
 
-    policiesJson = Object
+                        Just (Object existing)
+                          | KeyMap.member assetKey existing ->
+                              Left "DUPLICATE_ASSET_UNIT"
+                          | otherwise ->
+                              let next =
+                                    Object
+                                      (KeyMap.insert assetKey (Number (fromInteger quantity)) existing)
+                              in Right (mLov, KeyMap.insert policyKey next policies)
+
+                        Just _ -> Left "INVALID_POLICY_OBJECT"
 
 parseDatum :: Value -> Either String (Datum BabbageEra)
 parseDatum value = do
@@ -247,7 +239,7 @@ strip0x value =
 
 validateHexText :: String -> Text -> Either String ()
 validateHexText field value =
-  case B16.decode (Text.encodeUtf8 value) of
+  case B16.decode (TextEnc.encodeUtf8 value) of
     Left _ -> Left ("INVALID_HEX:" <> field)
     Right _ -> Right ()
 
@@ -257,12 +249,10 @@ decodeHexText field value = do
   if Text.null clean || odd (Text.length clean)
     then Left ("INVALID_HEX:" <> field)
     else
-      case B16.decode (Text.encodeUtf8 clean) of
+      case B16.decode (TextEnc.encodeUtf8 clean) of
         Left _ -> Left ("INVALID_HEX:" <> field)
         Right bytes -> Right bytes
 
-errorLeft :: String -> a
-errorLeft message = error message
 
 toList :: Foldable f => f a -> [a]
 toList = foldr (:) []
