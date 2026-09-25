@@ -76,6 +76,36 @@ async function main(): Promise<void> {
   const blockNumber = parseHeaderNumber(header.number);
   const codeSha256 = sha256Hex(runtimeCodeHex);
 
+  let grandpaFinalityProof: {
+    status: "captured" | "unavailable";
+    proof_hex: string | null;
+    error?: string;
+  } = {
+    status: "unavailable",
+    proof_hex: null,
+  };
+
+  try {
+    const proof = await rpc.getGrandpaFinalityProof(Number(blockNumber));
+    if (proof === null) {
+      grandpaFinalityProof = {
+        status: "unavailable",
+        proof_hex: null,
+      };
+    } else {
+      grandpaFinalityProof = {
+        status: "captured",
+        proof_hex: proof,
+      };
+    }
+  } catch (error) {
+    grandpaFinalityProof = {
+      status: "unavailable",
+      proof_hex: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
   const packet = {
     schema_version: "materios-finalized-state-capture-v1",
     chain_id: CHAIN_ID,
@@ -102,6 +132,7 @@ async function main(): Promise<void> {
         public_key: a.public_key,
         weight: a.weight.toString(),
       })),
+      finality_proof: grandpaFinalityProof,
     },
     scope: {
       verified: [
@@ -111,9 +142,10 @@ async function main(): Promise<void> {
         "runtime code read at the exact finalized hash",
         "GRANDPA authority list read at the exact finalized hash",
         "GRANDPA set id read at the exact finalized hash",
+        "standard grandpa_proveFinality transport queried for the finalized block number; raw bytes are untrusted evidence",
       ],
       open: [
-        "independent GRANDPA justification verification",
+        "independent decoding and GRANDPA FinalityProof verification",
         "authority-set transition proof",
         "cryptographic runtime execution proof",
         "WASM source reproducibility proof",
@@ -137,6 +169,7 @@ async function main(): Promise<void> {
   console.log("runtime code blake2_256:", packet.runtime_code.blake2_256);
   console.log("GRANDPA set_id:", setId.toString());
   console.log("authorities:", authorities.length);
+  console.log("GRANDPA finality proof status:", grandpaFinalityProof.status);
   console.log("wrote:", outPath);
 }
 
