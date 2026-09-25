@@ -27,6 +27,15 @@ import TypedPacketDecode
   , evaluateBabbageTx
   )
 
+parseArgs :: [String] -> (FilePath, Bool)
+parseArgs args =
+  case args of
+    ["--evidence-dir", dir] -> (dir, False)
+    ["--evidence-dir", dir, "--evaluate"] -> (dir, True)
+    ["--evaluate", "--evidence-dir", dir] -> (dir, True)
+    ["--evaluate"] -> ("evidence", True)
+    _ -> ("evidence", False)
+
 artifactPaths :: [FilePath]
 artifactPaths =
   [ "../../src/plutusScripts/prizeValidatorFactory.plutus.json"
@@ -55,10 +64,7 @@ rawHandoffEvidence =
 main :: IO ()
 main = do
   args <- getArgs
-  let evidenceDir =
-        case args of
-          ["--evidence-dir", dir] -> dir
-          _ -> "evidence"
+  let (evidenceDir, runEvaluation) = parseArgs args
 
   putStrLn "P2.8-B.1 Cardano-ledger runner"
   putStrLn "mode: ledger-aligned / fail-closed"
@@ -73,7 +79,7 @@ main = do
 
       if any (== 0) sizes
         then safeStall "EMPTY_EXACT_PLUTUS_ARTIFACT"
-        else inspectEvidence evidenceDir
+        else inspectEvidence evidenceDir runEvaluation
 
   putStrLn "NO SYNTHETIC CONTEXT: evaluation only runs after exact typed-context decoding."
 
@@ -82,8 +88,8 @@ safeStall reason = do
   putStrLn "RESULT: SAFE_STALL"
   putStrLn ("SAFE_STALL_REASON: " <> reason)
 
-inspectEvidence :: FilePath -> IO ()
-inspectEvidence evidenceDir = do
+inspectEvidence :: FilePath -> Bool -> IO ()
+inspectEvidence evidenceDir runEvaluation = do
   let paths = map (evidenceDir <> "/") canonicalEvidence
       rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
       manifestPath = evidenceDir <> "/manifest.json"
@@ -118,7 +124,7 @@ inspectEvidence evidenceDir = do
       nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
       if not (and nonEmpty)
         then safeStall "EMPTY_LEDGER_EVIDENCE_FILE"
-        else inspectManifest evidenceDir manifestPath
+        else inspectManifest evidenceDir manifestPath runEvaluation
 
 
 evaluateLedger ::
@@ -179,8 +185,8 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
           putStrLn "ACCEPTANCE: B — exact artifact produced ledger-originated failure report(s)."
 
 
-inspectManifest :: FilePath -> FilePath -> IO ()
-inspectManifest evidenceDir manifestPath = do
+inspectManifest :: FilePath -> FilePath -> Bool -> IO ()
+inspectManifest evidenceDir manifestPath runEvaluation = do
   manifestBytes <- BS.readFile manifestPath
 
   case Aeson.eitherDecodeStrict' manifestBytes :: Either String Aeson.Value of
@@ -192,8 +198,8 @@ inspectManifest evidenceDir manifestPath = do
       case KeyMap.lookup "policy" manifest of
         Just (Aeson.Object policy) ->
           case KeyMap.lookup "typed_context_ready" policy of
-            Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir
-            Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir
+            Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir runEvaluation
+            Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir runEvaluation
 
             _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
 
@@ -201,8 +207,8 @@ inspectManifest evidenceDir manifestPath = do
 
     Right _ -> safeStall "INVALID_MANIFEST_SHAPE"
 
-decodeTypedArtifacts :: FilePath -> IO ()
-decodeTypedArtifacts evidenceDir = do
+decodeTypedArtifacts :: FilePath -> Bool -> IO ()
+decodeTypedArtifacts evidenceDir runEvaluation = do
   txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
   ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
   utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
@@ -242,7 +248,9 @@ decodeTypedArtifacts evidenceDir = do
                       putStrLn "RESULT: TYPED_BABBAGE_CONTEXT_DECODED"
                       putStrLn
                         "PParams, transaction, consumed UTxO, EpochInfo and SystemStart decoded with native Ledger types."
-                      evaluateLedger tx pp utxo epochInfo systemStart evidenceDir
+                      if runEvaluation
+                        then evaluateLedger tx pp utxo epochInfo systemStart evidenceDir
+                        else putStrLn "EVALUATION_STATUS: NOT_REQUESTED"
 
 
 
