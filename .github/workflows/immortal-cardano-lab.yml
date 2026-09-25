@@ -193,10 +193,15 @@ jobs:
       - name: Materialize raw Yaci ledger context for P2.8
         run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
 
-      - name: Run P2.8 ledger evidence gate against this lab packet
+      - name: Run native Yaci UTxO decoder conformance
         working-directory: audit/cardano-ledger-runner
         run: |
           cabal update
+          cabal run yaci-utxo-test
+
+      - name: Run P2.8 ledger evidence gate against this lab packet
+        working-directory: audit/cardano-ledger-runner
+        run: |
           cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence
 
       - name: Measure script and transaction resource footprint
