@@ -7635,3 +7635,38 @@ GOV-28 remains localized at the canonicalization-reference provenance boundary. 
 - Independent assurance: open.
 
 **USER QUESTION:** NONE.
+
+
+## 2026-09-25 — Autonomous cycle: GOV-28 provenance closure + release-blocker sweep
+
+### GOV-28
+Commit `4a912e85677c25a3e93a5ad5e3113d73be275f2b` hardens `replayCanonical` so a `CANONICALIZED` event can be admitted only when its `canonicalizationDecisionRecordReference` exactly matches the finalized `DecisionRecord.decisionCanonicalizationReference` for the same proposal. The complete replay history is used only as an evidence/provenance witness; no new hash/preimage convention is introduced.
+
+Commit `543f1de1257c6c396b5fe276c08f4ab0ba6cd6f9` adds positive and negative replay tests: a valid reference reaches `Canonical`; a tampered reference fails closed.
+
+Commit `d618e567c5cb244e0e553fa84790232c96c192ed` updates the GOV-28 conformance register to record the provenance boundary as implemented while keeping Haskell build/evidence and broader cryptographic authenticity explicitly open.
+
+**Classification:** GOV-28 decision-reference provenance = **IMPLEMENTATION GAP → REPAIRED / BUILD-EVIDENCE PENDING**.
+
+### B6 / B5
+The current branch already contains ticket-level Issue and Expire refinement witnesses and explicit Economic Admission / executable-liquidity provenance. The remaining B5/B6 gaps are not missing local predicates but end-to-end evidence: authenticated EEV/Oracle provenance, exact execution-liquidity realization, per-ticket lifecycle binding at the committed transaction, and complete RF8/no-side-door coverage.
+
+No validator weakening, new economic formula, or new expiry duration introduced.
+
+### P2.8
+`cabal.project` now exposes the source-grounded dependency siblings `cardano-prelude` and `cardano-crypto-class` required by the pinned Cardano stack. The native evaluator remains the closure target. The available connector cannot presently expose push-triggered workflow runs for the branch, so no evaluator result is promoted without an artifact.
+
+### Reveal budget finding
+The external audit's observed `Spend[1] execution went over budget` remains classified as an open build/artifact-alignment finding until the fresh Haskell-compiled `.plutus.json` artifacts are executed. No protocol budget or validator logic is being altered merely to silence the finding.
+
+### Closure boundary
+Current release blockers that cannot be honestly marked CLOSED by repository-only changes:
+- live P2.8 native evaluator artifact;
+- fresh-compile Reveal execution-budget classification;
+- publisher-independent Materios/B3 cryptographic proof/finality composition;
+- B4/B5/B6 end-to-end conformance evidence;
+- independent specialist Plutus/UPLC security audit and second-human review;
+- any still-open universal Protocol Usage Fee parameters (no values selected by implementation fiat).
+
+**USER QUESTION:** NONE.
+**Status:** AUTONOMOUS CLOSURE CYCLE ACTIVE / FROZEN ECONOMICS PRESERVED.
