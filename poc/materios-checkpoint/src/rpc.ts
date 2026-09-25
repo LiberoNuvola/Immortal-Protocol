@@ -179,6 +179,17 @@ async getCommitteeExecutionProof(
  * are the SCALE-encoded FinalityProof/GrandpaJustification transport object.
  * They remain untrusted evidence until independently decoded and verified.
  */
+/**
+ * IMPORTANT: grandpa_proveFinality returns a SCALE-encoded FinalityProof
+ * whose justification may target the last block of the authority set rather
+ * than the requested block itself. The opaque transport bytes therefore must
+ * not be fed directly to verifyFinality(), which currently models a
+ * GrandpaJustification whose commit target must equal the checkpoint.
+ *
+ * Callers must decode FinalityProof, bind proof.block to the requested block,
+ * verify the supplied unknown_headers path, and then verify the embedded
+ * justification against the authority set before treating the proof as finality.
+ */
 async getGrandpaFinalityProof(
 blockNumber: number
 ): Promise<string | null> {
