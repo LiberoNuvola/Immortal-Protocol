@@ -172,6 +172,9 @@ evaluateLedger ::
   SystemStart ->
   FilePath ->
   IO ()
+prefixOf :: String -> String -> Bool
+prefixOf needle value = take (length needle) value == needle
+
 evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   let report = evaluateBabbageTx pp tx utxo epochInfo systemStart
       renderedJson = renderRedeemerReport report
@@ -181,12 +184,14 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       executionFailures =
         length
           [ ()
-          | Left (ValidationFailure _ _ _ _) <- Map.elems report
+          | Left failure <- Map.elems report
+          , prefixOf "ValidationFailure" (show failure)
           ]
       contextFailures =
         length
           [ ()
-          | Left (ContextError _) <- Map.elems report
+          | Left failure <- Map.elems report
+          , prefixOf "ContextError" (show failure)
           ]
       ledgerFailures = failures - executionFailures - contextFailures
 
