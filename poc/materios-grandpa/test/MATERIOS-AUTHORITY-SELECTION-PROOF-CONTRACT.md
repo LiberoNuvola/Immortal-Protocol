@@ -161,6 +161,24 @@ IMMORTAL MUST NOT replace the selector with a TypeScript implementation merely t
 
 A structural proof object or test double is evidence of the boundary shape only. It is not evidence that the real Materios selector produced the advertised authority set.
 
+## Selection, enactment and finality are distinct facts
+
+The proof boundary MUST distinguish three separate claims:
+
+1. **Selection:** the Materios runtime produced the advertised committee candidate for the target sidechain epoch (or explicitly used the pinned-committee regime).
+2. **Enactment:** that committee was stored/enacted as the next/current committee by the session-validator-management path for the exact epoch.
+3. **Finality:** a GRANDPA justification was produced under the authority set that was actually authoritative for the finalized target.
+
+A valid proof MUST NOT infer (2) merely from (1), nor (3) merely from observing the selected committee. In the upstream runtime, `select_authorities` feeds `Call::set`, `NextCommittee` is persisted, and rotation later promotes it to `CurrentCommittee`; the session/GRANDPA layer supplies the effective `SetId` context.
+
+In particular, a B3/M6 composition proof must establish the relationship between:
+- `fromSetId` and the authority set that finalized the relevant target;
+- `toAuthorities` and the committee enacted for the stated epoch;
+- `toSetId` and the resulting GRANDPA/session authority context;
+- the stated activation block and the finalized evidence supporting the transition.
+
+The local IMMORTAL verifier may bind these identifiers and hashes, but the protocol-specific proof of the selection-to-enactment-to-finality relationship remains external.
+
 ## Exact-input requirement
 
 The proof producer must establish the exact authority-selection regime before relating inputs to the resulting set. A pinned-committee transition is not an Ariadne selection result, even when the resulting authority bytes are identical.
