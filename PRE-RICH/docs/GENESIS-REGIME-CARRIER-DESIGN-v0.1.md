@@ -1,6 +1,6 @@
 # PRE-RICH Genesis Regime Carrier — Minimal On-Chain Design v0.1
 
-**Status:** DESIGN / CONFORMANCE TARGET — PHASE-1 APPLICATION CARRIER IMPLEMENTED; CARDANO CARRIER NOT YET IMPLEMENTED  
+**Status:** IMPLEMENTED / CONFORMANCE TARGET — APPLICATION CARRIER + CARDANO/Yaci EVIDENCE PATH IMPLEMENTED; FRESH LEDGER EVIDENCE STILL REQUIRED  
 **Branch:** `work/immortal-green-closure`  
 **Date:** 2026-09-22
 
@@ -20,7 +20,7 @@ The missing implementation surface is narrower:
 
 > a canonical application state carrier that can be consumed exactly once and transitioned atomically from PRE_GENESIS to GENESIS.
 
-Phase 1 now exists as a pure PRE-RICH profile carrier (`PreRichRegimeState`) and fail-closed transition seam. It is intentionally not the final Cardano datum: the singleton identity, transition nonce/version, Treasury binding and transaction-reference binding described below remain open for the ledger implementation.
+The application carrier and the Cardano-facing carrier validator now exist. The singleton identity, transition nonce/version, Treasury/Oracle bindings and signed-transaction evidence path are implemented; deployment-specific Treasury semantics and fresh ledger evidence remain separate closure requirements.
 
 No new economic predicate is introduced by this document.
 
