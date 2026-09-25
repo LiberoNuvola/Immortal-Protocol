@@ -93,12 +93,27 @@ applyAdoptionRecorded st pid at = do
 
 replayCanonical :: RulesetRegistry -> GovernanceState -> [CanonicalEvent]
                 -> Either String GovernanceState
-replayCanonical rs = go Nothing
+replayCanonical rs = go [] Nothing
   where
-    go _ st [] = Right st
-    go prev st (ce:rest) = do
+    go _ _ st [] = Right st
+    go history prev st (ce:rest) = do
       st' <- applyCanonicalEvent rs st prev ce
-      go (Just ce) st' rest
+      case eventPayload ce of
+        PayloadCanonicalized r ->
+          if canonicalizationDecisionReferenceMatches history r
+            then go (ce : history) (Just ce) st' rest
+            else Left "canonicalization decision-record reference does not match finalized DecisionRecord"
+        _ -> go (ce : history) (Just ce) st' rest
+
+canonicalizationDecisionReferenceMatches :: [CanonicalEvent] -> CanonicalizationRecord -> Bool
+canonicalizationDecisionReferenceMatches history r =
+  case [ d
+       | ce <- history
+       , PayloadDecisionFinalized d <- [eventPayload ce]
+       , decisionProposalId d == canonicalizationProposalId r
+       ] of
+    [d] -> decisionCanonicalizationReference d == canonicalizationDecisionRecordReference r
+    _ -> False
 
 
 applyConformanceRecorded :: GovernanceState -> ConformanceRecord -> Timestamp -> Either String GovernanceState
