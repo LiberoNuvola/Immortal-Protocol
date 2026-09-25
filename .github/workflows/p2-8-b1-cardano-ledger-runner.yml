@@ -25,12 +25,15 @@ jobs:
       - name: Run ledger-aligned bootstrap
         working-directory: audit/cardano-ledger-runner
         run: |
+          set -o pipefail
+          mkdir -p evidence
           cabal update
-          cabal run cardano-ledger-runner -- --evaluate
+          cabal run cardano-ledger-runner -- --evaluate 2>&1 | tee evidence/runner.log
 
-      - name: Upload runner report
+      - name: Upload runner evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p2-8-b1-cardano-ledger-runner-report
-          path: audit/cardano-ledger-runner/
+          name: p2-8-b1-cardano-ledger-runner-evidence
+          path: audit/cardano-ledger-runner/evidence/
+          if-no-files-found: error
