@@ -24,7 +24,7 @@ export type MateriosAuthoritySelectionPath =
     }
 
 export type MateriosExecutionProofPacket = {
-  schemaVersion: 'materios-execution-proof-v1'
+  schemaVersion: 'materios-execution-proof-v2'
   chainId: string
   genesisHash: string
   blockHash: string
@@ -40,6 +40,8 @@ export type MateriosExecutionProofPacket = {
   }
 
   runtimeApiMethod: string
+  authoritySelectionInputsHex: string
+  selectionInputsHash: string
   callDataHex: string
   resultHex: string
   proofScaleHex: string
@@ -108,7 +110,7 @@ function requireSafeNonNegativeInteger(value: number, field: string): void {
 export function validateMateriosExecutionProofPacket(
   packet: MateriosExecutionProofPacket,
 ): void {
-  if (packet.schemaVersion !== 'materios-execution-proof-v1') {
+  if (packet.schemaVersion !== 'materios-execution-proof-v2') {
     throw new Error('unsupported execution proof schema')
   }
 
@@ -125,6 +127,14 @@ export function validateMateriosExecutionProofPacket(
   requireHash(packet.runtime.codeHash, 'runtime.codeHash')
 
   requirePositiveName(packet.runtimeApiMethod, 'runtimeApiMethod')
+  const authoritySelectionInputsHex = requireHex(packet.authoritySelectionInputsHex, 'authoritySelectionInputsHex')
+  const selectionInputsHash = requireHash(packet.selectionInputsHash, 'selectionInputsHash')
+  const actualSelectionInputsHash = Buffer.from(
+    blake2b(Buffer.from(authoritySelectionInputsHex.slice(2), 'hex'), { dkLen: 32 }),
+  ).toString('hex')
+  if (actualSelectionInputsHash !== selectionInputsHash) {
+    throw new Error('selectionInputsHash does not match authoritySelectionInputsHex')
+  }
   requireHex(packet.callDataHex, 'callDataHex', true)
   requireHex(packet.resultHex, 'resultHex', true)
   requireHex(packet.proofScaleHex, 'proofScaleHex')
@@ -219,6 +229,10 @@ export function executionProofPacketId(
   hash.update(requireHash(packet.runtime.codeHash, 'runtime.codeHash'))
   hash.update('|')
   hash.update(packet.runtimeApiMethod)
+  hash.update('|')
+  hash.update(packet.authoritySelectionInputsHex.toLowerCase())
+  hash.update('|')
+  hash.update(requireHash(packet.selectionInputsHash, 'selectionInputsHash'))
   hash.update('|')
   hash.update(packet.callDataHex.toLowerCase())
   hash.update('|')
