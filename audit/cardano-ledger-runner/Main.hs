@@ -68,6 +68,15 @@ rawHandoffEvidence =
   , "manifest.txt"
   ]
 
+hashedEvidence :: [FilePath]
+hashedEvidence =
+  [ "tx.cbor"
+  , "utxo.json"
+  , "pparams.json"
+  , "epoch-info.json"
+  , "system-start.json"
+  ]
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -170,12 +179,12 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       executionFailures =
         length
           [ ()
-          | Left (ValidationFailure {}) <- Map.elems report
+          | Left (ValidationFailure _ _ _ _) <- Map.elems report
           ]
       contextFailures =
         length
           [ ()
-          | Left (ContextError {}) <- Map.elems report
+          | Left (ContextError _) <- Map.elems report
           ]
       ledgerFailures = failures - executionFailures - contextFailures
 
@@ -256,7 +265,7 @@ verifyManifestFileHashes :: FilePath -> Aeson.Object -> IO (Either String ())
 verifyManifestFileHashes evidenceDir manifest = do
   case KeyMap.lookup "sha256" manifest of
     Just (Aeson.Object hashes) -> do
-      results <- mapM (verifyOne hashes) canonicalEvidence
+      results <- mapM (verifyOne hashes) hashedEvidence
       case [err | Left err <- results] of
         [] -> pure (Right ())
         err : _ -> pure (Left err)
