@@ -254,3 +254,10 @@ with a response containing at minimum:
 The endpoint is transport only. It MUST NOT label its response `canonical`, `finalized`, `verified`, or equivalent. Finality, header/state-root binding, runtime identity/code correspondence, proof verification, and semantic decoding of the committee remain independent verifier responsibilities.
 
 A generic endpoint can be considered later for tooling, but the B3 path should initially expose only the single runtime API required for authority-selection provenance. This keeps the proof surface narrow and makes accidental proofing of unrelated runtime calls impossible.
+
+
+### StorageProof representation correction
+
+The transport contract is now byte-exact with the locked SDK representation. `StorageProof` is a SCALE `Encode`/`Decode` type whose payload is a set of serialized trie nodes; the SDK explicitly provides conversion to a memory DB and compact-proof forms. Therefore `proofScaleHex` is the canonical transport field for the raw native proof bytes. A JSON array of independently interpreted trie nodes is not the normative wire representation. citeturn841891search6
+
+This distinction matters for B3: transport may preserve the proof exactly, but proof verification still requires reconstructing/verifying the trie against the expected state root; the transport validator must never treat syntactically valid proof bytes as verified state. citeturn841891search6turn841891search8
