@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `6e002c36a1a0aa788cb7aeeb34c8dc4533af951d` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `7db2ae3b20915b1924fd1fd192dd723bcf3a467a` — current observed branch snapshot at handoff
 
 ---
 
@@ -6636,3 +6636,25 @@ Current source support:
 - live chain-info observes spec 238.
 
 This narrows the remaining work to the real deployed proof artifact and independent verification rather than further static selector analysis.
+
+
+---
+
+## 2026-09-25 — P2.8 runner crosses into real Cardano-ledger evaluation
+
+The P2.8-B.1 runner now invokes the actual Cardano-ledger evaluator once all exact typed context artifacts have decoded successfully:
+
+`PParams + exact Babbage Tx + exact UTxO + EpochInfo + SystemStart`
+→ `evalTxExUnitsWithLogs`
+→ persisted `RedeemerReportWithLogs`.
+
+The evaluator path is fail-closed:
+- incomplete/malformed context → `SAFE_STALL`;
+- complete context + all redeemers succeed → `LEDGER_ALIGNED_EVALUATION_SUCCESS`;
+- complete context + one or more ledger failures → `LEDGER_ALIGNED_SCRIPT_FAILURE`.
+
+This changes the **implementation capability** of P2.8, not its evidence status. No A/B result is declared until the runner is executed over the exact real Reveal evidence packet in the integration workflow.
+
+The dedicated audit workflow's SAFE_STALL assertion was updated accordingly.
+
+**Commits:** `3d3c42e`, `dde4046`, `957a2b0`, `758d5a1`, `7db2ae3`.
