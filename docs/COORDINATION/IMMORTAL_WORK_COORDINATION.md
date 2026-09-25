@@ -6188,3 +6188,16 @@ Use the reported finalized block `2004815` and canonical genesis identity to bin
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
 
 Status: **LIVE SPEC 238 VERIFIED / VERSION NUMBER BOUND / WASM-SOURCE + CRYPTOGRAPHIC M6 EVIDENCE OPEN.**
+
+
+## 2026-09-25 — B3 PROOF BYTES TRANSPORT NORMALIZED
+
+The SDK-level inspection exposed one implementation detail that matters for interoperability: `StorageProof` is itself SCALE `Encode`/`Decode` and contains the serialized trie-node set. Therefore the IMMORTAL-side B3 envelope now carries `proofScaleHex`, preserving the native proof object as bytes rather than defining a new JSON node-list representation.
+
+The preferred narrow node-side API shape is now:
+
+`materios_b3_calculateCommitteeProof(block_hash, call_data_hex)`
+
+Response should transport the exact block hash, runtime API identifier, call bytes, runtime result bytes, SCALE-encoded `StorageProof`, and runtime version. The response remains untrusted transport. It must not assert finality or canonicality.
+
+IMMORTAL has implemented only the envelope/validation and mutation tests; no trie verifier or selector reimplementation was added. This keeps the next boundary clean: real node evidence first, then Rust-side independent `StorageProof` verification against the finalized state root.
