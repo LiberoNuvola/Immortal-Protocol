@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-24
-**Latest observed commit by this session:** `6530a80c08cc2fb7c58db5ff56ee499699b7545d` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `ef784cd74390a98562a28903d136e2194f55b6d3` — current observed branch snapshot at handoff
 
 ---
 
@@ -6529,3 +6529,25 @@ Current status is therefore intentionally:
 Do not reimplement the Materios/Ariadne selector in TypeScript. The selector source path is already source-verified through the Materios runtime boundary and the pinned IOG Partner Chains implementation. The remaining work is evidence/proof of **the real deployed execution and its bindings**, not a second selector implementation.
 
 **Commit:** `4d29baeeb1960c2cf5c221297df1bc2b2852ce08`
+
+
+---
+
+## 2026-09-25 — Runtime-code identity hardening
+
+The Materios finalized-state capturer was hardened so runtime code evidence records both:
+
+- SHA-256 as a diagnostic checksum;
+- **Blake2-256** as the native Substrate runtime-code hash convention.
+
+The full WASM remains external evidence fetched at the exact finalized hash; no hash is promoted to a canonical runtime identity merely because it was computed locally.
+
+Changed:
+- `poc/materios-checkpoint/package.json`
+- `poc/materios-checkpoint/src/capture-finalized.ts`
+
+Commits:
+- `3905b2d62373ece77bd680ae5ec41651f1044a07`
+- `ef784cd74390a98562a28903d136e2194f55b6d3`
+
+M6 status unchanged: direct exact-finalized-hash capture, independent execution-proof verification, authority-set transition proof and GRANDPA finality binding remain open.
