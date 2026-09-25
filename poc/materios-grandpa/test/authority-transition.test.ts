@@ -360,6 +360,34 @@ describe("authority transition boundary", () => {
     ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
   });
 
+  it("requires the selection-input hash to equal the on-chain commitment", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(32).fill(0xee)
+      })
+    ).toThrow("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(31),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+      })
+    ).toThrow("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
+  });
+
   it("requires the finality checkpoint to equal the activation block hash and number", () => {
     const statement = baseStatement();
 
