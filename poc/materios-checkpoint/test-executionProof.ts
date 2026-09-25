@@ -175,6 +175,49 @@ test('pinned authority-selection regime cannot be expired', () => {
   )
 })
 
+test('epoch nonce accepts the upstream 64-byte bound', () => {
+  const packet = makePacket()
+  const nonce = '0x' + 'aa'.repeat(64)
+
+  assert.doesNotThrow(() =>
+    validateMateriosExecutionProofPacket({
+      ...packet,
+      cardanoEpochNonceHex: nonce,
+    }),
+  )
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        cardanoEpochNonceHex: '0x' + 'aa'.repeat(65),
+      }),
+    /cardanoEpochNonceHex exceeds 64-byte maximum/,
+  )
+})
+
+test('byte-oriented hex fields reject odd-length payloads', () => {
+  const packet = makePacket()
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        resultHex: '0xabc',
+      }),
+    /resultHex must contain whole bytes/,
+  )
+
+  assert.throws(
+    () =>
+      validateMateriosExecutionProofPacket({
+        ...packet,
+        proofScaleHex: '0xabc',
+      }),
+    /proofScaleHex must contain whole bytes/,
+  )
+})
+
 test('authority-selection regime is part of packet identity', () => {
   const packet = makePacket()
   const id = executionProofPacketId(packet)
