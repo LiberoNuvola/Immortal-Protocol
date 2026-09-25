@@ -74,10 +74,18 @@ function cardanoAddressToLedgerHex(address) {
     throw new Error('Yaci input address is missing')
   }
 
+  if (address !== address.toLowerCase() && address !== address.toUpperCase()) {
+    throw new Error('Yaci input address has mixed Bech32 case')
+  }
+
   const clean = address.toLowerCase()
 
   if (/^[0-9a-f]+$/.test(clean) && clean.length % 2 === 0) {
     return clean
+  }
+
+  if (clean.length > 90) {
+    throw new Error('Yaci input address exceeds Bech32 length limit')
   }
 
   const separator = clean.lastIndexOf('1')
@@ -94,9 +102,15 @@ function cardanoAddressToLedgerHex(address) {
     values.push(value)
   }
 
-  if (bech32Polymod([
-    ...new TextEncoder().encode(hrp).flatMap(byte => [byte >> 5, byte & 31]),
+  const hrpBytes = [...new TextEncoder().encode(hrp)]
+  const hrpExpanded = [
+    ...hrpBytes.map(byte => byte >> 5),
     0,
+    ...hrpBytes.map(byte => byte & 31),
+  ]
+
+  if (bech32Polymod([
+    ...hrpExpanded,
     ...values,
   ]) !== 1n) {
     throw new Error('Yaci input address has invalid Bech32 checksum')
