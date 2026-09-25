@@ -6485,3 +6485,47 @@ Added reference document:
 The IMMORTAL client now also has exact-block evidence collection (`rpc.ts`) and transport tests. The current environment still cannot resolve the documented Materios host, so the decisive real packet remains OPEN.
 
 Status: **native proof generation path VERIFIED in pinned SDK / node transport reference LOCKED / real live proof fixture OPEN / finality + runtime deployment composition OPEN.**
+
+
+---
+
+## 2026-09-25 — Materios chain-info provenance correction and M6 boundary
+
+**Front:** Materios / GRANDPA / B3 / M6
+
+A current live observation was rechecked against the public Materios gateway. The deployment surface currently reports:
+
+- chain/genesis: `materios_preprod_v6` / `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`;
+- live runtime `spec_version = 238`;
+- best block `2004818`;
+- finalized block height `2004815`;
+- chain-spec URL `https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json`.
+
+The provenance packet `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json` was corrected: its observer provenance now points to **Flux-Point-Studios/materios-gateway**, route `src/routes/chain-info.ts`, commit `883d9278c04bfdd8e7de97852ae3ab8bb16265dc`. This route directly polls the configured Materios RPC and obtains `chain_getFinalizedHead`, then reads `chain_getHeader(finalized_hash)`.
+
+**Interpretation:** chain-info observer provenance is now **VERIFIED**. The public surface still does not expose the finalized block hash, so the hash/state/runtime-at-exact-finalized-hash remain a direct-RPC evidence obligation.
+
+### M6 — exact remaining chain
+
+`canonical RPC → finalized hash → exact finalized header/state root → runtime version/code at that hash → runtime/source identity → real SessionValidatorManagementApi::calculate_committee execution → native StorageProof/execution proof → independent verification → real authority-set transition → GRANDPA justification/set binding → M6 composition`
+
+Current status is therefore intentionally:
+
+- live spec 238: **VERIFIED**
+- live finalized height 2004815: **VERIFIED**
+- chain-info observer provenance: **VERIFIED**
+- finalized hash: **OPEN**
+- runtime version at finalized hash: **OPEN**
+- finalized state root: **OPEN**
+- deployed runtime code identity / source reproducibility: **OPEN**
+- real authority-set transition artifact: **OPEN**
+- GRANDPA justification: **OPEN**
+- execution/storage proof: **OPEN**
+- cryptographic selector proof: **OPEN**
+- M6 composition: **OPEN**
+
+### Architectural rule reaffirmed
+
+Do not reimplement the Materios/Ariadne selector in TypeScript. The selector source path is already source-verified through the Materios runtime boundary and the pinned IOG Partner Chains implementation. The remaining work is evidence/proof of **the real deployed execution and its bindings**, not a second selector implementation.
+
+**Commit:** `4d29baeeb1960c2cf5c221297df1bc2b2852ce08`
