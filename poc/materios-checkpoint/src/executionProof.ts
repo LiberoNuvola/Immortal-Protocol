@@ -11,6 +11,17 @@ import { createHash } from 'node:crypto'
  * RPC transport is untrusted; cryptographic execution/state/finality checks
  * remain an independent verifier responsibility.
  */
+export type MateriosAuthoritySelectionPath =
+  | {
+      kind: 'normal'
+      evidenceHash: string
+    }
+  | {
+      kind: 'pinned'
+      evidenceHash: string
+      untilEpoch: bigint
+    }
+
 export type MateriosExecutionProofPacket = {
   schemaVersion: 'materios-execution-proof-v1'
   chainId: string
@@ -35,7 +46,7 @@ export type MateriosExecutionProofPacket = {
   cardanoEpochNonceHex: string
   genesisUtxoHex: string
 
-  selectionPath: 'pinned' | 'normal'
+  selectionPath: MateriosAuthoritySelectionPath
   authorityCommitment: string
 }
 
@@ -104,8 +115,17 @@ export function validateMateriosExecutionProofPacket(
   requireHex(packet.cardanoEpochNonceHex, 'cardanoEpochNonceHex')
   requireHex(packet.genesisUtxoHex, 'genesisUtxoHex')
 
-  if (packet.selectionPath !== 'pinned' && packet.selectionPath !== 'normal') {
+  if (packet.selectionPath.kind !== 'pinned' && packet.selectionPath.kind !== 'normal') {
     throw new Error('selectionPath must be pinned or normal')
+  }
+
+  requireHash(packet.selectionPath.evidenceHash, 'selectionPath.evidenceHash')
+
+  if (packet.selectionPath.kind === 'pinned') {
+    requireNonNegativeBigInt(packet.selectionPath.untilEpoch, 'selectionPath.untilEpoch')
+    if (packet.sidechainEpoch > packet.selectionPath.untilEpoch) {
+      throw new Error('selectionPath pinned regime expired')
+    }
   }
 
   requirePositiveName(packet.authorityCommitment, 'authorityCommitment')
@@ -161,8 +181,14 @@ export function executionProofPacketId(
   hash.update('|')
   hash.update(packet.genesisUtxoHex.toLowerCase())
   hash.update('|')
-  hash.update(packet.selectionPath)
+  hash.update(packet.selectionPath.kind)
   hash.update('|')
+  hash.update(requireHash(packet.selectionPath.evidenceHash, 'selectionPath.evidenceHash'))
+  hash.update('|')
+  if (packet.selectionPath.kind === 'pinned') {
+    hash.update(packet.selectionPath.untilEpoch.toString())
+    hash.update('|')
+  }
   hash.update(requireHash(packet.authorityCommitment, 'authorityCommitment'))
 
   return '0x' + hash.digest('hex')
