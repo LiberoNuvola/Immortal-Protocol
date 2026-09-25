@@ -7072,3 +7072,51 @@ NONE.
 3. Continue Materios finalized-hash / execution-proof / GRANDPA evidence capture.
 4. Continue B4/B5/B6 conformance mapping using existing semantics.
 5. Recheck Governance lifecycle/reference evidence on the current head before semantic changes.
+
+
+## 2026-09-25 — Autonomous multi-front cycle: exact HEAD / CI / fee-boundary triangulation
+
+**Current HEAD:** `6545bdcd1f4e031fe5e25c198cdcd32fde095525` — `docs: add autonomous multi-front coordination prompt`.
+
+### CI observed on this exact HEAD
+
+- **P2.8-B.1 Cardano-ledger runner** — run `36186767928`, job `108241902049`: **IN PROGRESS**. Toolchain installation completed; `Run ledger-aligned bootstrap` is executing. No evaluator A/B result yet.
+- **Kernel Invalid-Class Fail-Closed Audit** — run `36186767944`, job `108242072244`: **IN PROGRESS**. Haskell setup completed; native dependency installation is executing. No regression-suite result yet.
+- **Cardano Adapter Sale Conformance** — run `36186768034`: **SUCCESS** on this exact HEAD.
+- **Algorithmic Governability Adversarial Lab** — run `36186768014`: **SUCCESS** on this exact HEAD.
+
+No P2.8 GREEN claim is made. No current Kernel GREEN claim is made.
+
+### Fee front — cross-source classification
+
+Triangulation against the Notion fee workflow and current coordination prompt confirms that **Protocol Usage Fee** and **Fee Capture / Treasury / Allocation** must remain separate fronts.
+
+Established architecture:
+- `ProtocolUsageFee != ChainExecutionCost`;
+- `TotalCost = ProtocolUsageFee + ChainExecutionCost`;
+- IMMORTAL defines the economic fee contract and safety/affordability constraints;
+- Deployment/Profile may select fee-bearing uses, settlement asset and beneficiary policy;
+- Cardano Adapter performs valuation evidence, conversion, representation and settlement;
+- fee proceeds must not acquire economic authority and must not reduce crystallized liabilities or bypass ProtectedCapital.
+
+Current fee corpus supports a **deployment candidate**, not universal canon:
+- PRE may be a concrete settlement asset for the intended deployment;
+- PRE is not the universal economic denomination;
+- the candidate flow is `EconomicFeeTarget(F*) → verified PriceReference → SettlementAmount(PRE)`;
+- `USDM` is recorded in the later deployment clarification as the PRE-RICH reference unit, while this remains outside universal IMMORTAL law;
+- the intended PRE deployment direction routes fee proceeds toward the PRE staking reward mechanism, but the beneficiary/distribution policy is still explicitly a deployment/project candidate, not frozen universal IMMORTAL semantics;
+- exact `F*`, reference/price admissibility parameters, conversion bounds, affordability limits and reward distribution remain OPEN.
+
+**Classification:** fee protocol/adapter boundary = **CLOSED/STABLE**; fee target/settlement parameters = **OPEN DECISION / RESEARCH**; fee beneficiary/allocation = **OPEN DECISION / DEPLOYMENT POLICY**. No code change is authorized by the current Notion workflow during its design/specification phase.
+
+### Other active fronts
+
+Materios/B3 remains an **EVIDENCE GAP**: source-level selector/hash/runtime hardening exists, but finalized-hash/runtime-at-hash, deployed WASM identity, native execution/storage proof, authority-set enactment and GRANDPA/M6 cryptographic evidence remain open.
+
+Governance/GOV-28 remains **EVIDENCE/IDENTITY GAP** at canonicalization-reference provenance; no new reference format or digest convention is justified by current sources.
+
+State-boundary work remains **IMPLEMENTATION/EVIDENCE GAP**: the conceptual universal/profile/application split is supported, but no destructive V3 refactor is justified before consumer/conformance mapping is complete.
+
+**Next autonomous actions:** observe the exact-head P2.8 and Kernel runs; if they finish, classify only from actual logs/artifacts. In parallel, continue source-grounded fee capture/beneficiary/accounting analysis without freezing numerical fee parameters or PRE policy into IMMORTAL.
+
+**USER QUESTION:** NONE.
