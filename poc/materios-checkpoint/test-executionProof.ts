@@ -1,4 +1,5 @@
 import { strict as assert } from 'node:assert'
+import { blake2b } from '@noble/hashes/blake2.js'
 import { test } from 'node:test'
 import {
   executionProofPacketId,
@@ -8,8 +9,11 @@ import {
 } from './src/executionProof.ts'
 
 function makePacket(): MateriosExecutionProofPacket {
+  const authoritySelectionInputsHex = '0x01020304'
+  const selectionInputsHash = Buffer.from(blake2b(Buffer.from(authoritySelectionInputsHex.slice(2), 'hex'), { dkLen: 32 })).toString('hex')
+
   return {
-    schemaVersion: 'materios-execution-proof-v1',
+    schemaVersion: 'materios-execution-proof-v2',
     chainId: 'materios_preprod_v6',
     genesisHash: '11'.repeat(32),
     blockHash: '22'.repeat(32),
@@ -23,6 +27,8 @@ function makePacket(): MateriosExecutionProofPacket {
       codeHash: '66'.repeat(32),
     },
     runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
+    authoritySelectionInputsHex,
+    selectionInputsHash,
     callDataHex: '0xaabb',
     resultHex: '0xccdd',
     // SCALE-encoded StorageProof transport placeholder.
@@ -271,6 +277,21 @@ test('mutating bound execution material changes packet identity', () => {
   assert.notEqual(id, changedEpoch)
 })
 
+
+test('selection inputs are cryptographically bound to the declared on-chain hash', () => {
+  const packet = makePacket()
+  assert.doesNotThrow(() => validateMateriosExecutionProofPacket(packet))
+  assert.throws(
+    () => validateMateriosExecutionProofPacket({ ...packet, selectionInputsHash: '77'.repeat(32) }),
+    /selectionInputsHash does not match authoritySelectionInputsHex/,
+  )
+
+  const changedInput = { ...packet, authoritySelectionInputsHex: '0x01020305' }
+  assert.throws(
+    () => validateMateriosExecutionProofPacket(changedInput),
+    /selectionInputsHash does not match authoritySelectionInputsHex/,
+  )
+})
 
 test('declared runtime code hash binds to the exact captured WASM bytes', async () => {
   const packet = makePacket()
