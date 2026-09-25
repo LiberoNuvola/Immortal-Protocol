@@ -48,85 +48,105 @@ main = do
 
   artifactPresent <- mapM doesFileExist artifactPaths
   if not (and artifactPresent)
-    then do
-      putStrLn "RESULT: SAFE_STALL"
-      putStrLn "SAFE_STALL_REASON: EXACT_PLUTUS_ARTIFACT_MISSING"
+    then safeStall "EXACT_PLUTUS_ARTIFACT_MISSING"
     else do
       sizes <- mapM (fmap BS.length . BS.readFile) artifactPaths
       putStrLn ("artifact bytes: " <> show sizes)
-      if any (== 0) sizes
-        then do
-          putStrLn "RESULT: SAFE_STALL"
-          putStrLn "SAFE_STALL_REASON: EMPTY_EXACT_PLUTUS_ARTIFACT"
-        else do
-          let paths = map (evidenceDir <> "/") canonicalEvidence
-              rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
-              manifestPath = evidenceDir <> "/manifest.json"
-          present <- mapM doesFileExist paths
-          rawPresent <- mapM doesFileExist rawPaths
-          mapM_ (\(p, ok) -> putStrLn (p <> if ok then " [present]" else " [missing]"))
-                (zip paths present)
-          mapM_ (\(p, ok) -> putStrLn ("raw/" <> p <> if ok then " [present]" else " [missing]"))
-                (zip rawPaths rawPresent)
 
-          if not (and present)
-            then do
-              if and rawPresent
-                then do
-                  putStrLn "RESULT: SAFE_STALL"
-                  putStrLn "SAFE_STALL_REASON: LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED"
-                  putStrLn "Raw Yaci handoff is present, but typed UTxO/PParams/EpochInfo/SystemStart packet files are not materialized."
-                  putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
-                else do
-                  putStrLn "RESULT: SAFE_STALL"
-                  putStrLn "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE"
-                  putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
-            else do
-              nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
-              if not (and nonEmpty)
-                then do
-                  putStrLn "RESULT: SAFE_STALL"
-                  putStrLn "SAFE_STALL_REASON: EMPTY_LEDGER_EVIDENCE_FILE"
-                else do
-                  manifest <- BS.readFile manifestPath
-                  if BS.isInfixOf "\"typed_context_ready\": false" manifest
-                    then do
-                      putStrLn "RESULT: SAFE_STALL"
-                      putStrLn "SAFE_STALL_REASON: LEDGER_TYPED_CONTEXT_NOT_READY"
-                      putStrLn "Manifest explicitly records raw Yaci materialization only; UTxO/EpochInfo/SystemStart are not typed ledger objects."
-                      putStrLn "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
-                    else do
-                      manifestBytes <- BS.readFile (evidenceDir <> "/manifest.json")
-                  case Aeson.eitherDecodeStrict' manifestBytes :: Either String Aeson.Value of
-                    Left err -> do
-                      putStrLn "RESULT: SAFE_STALL"
-                      putStrLn ("SAFE_STALL_REASON: INVALID_MANIFEST: " <> err)
-                    Right (Aeson.Object manifest) ->
-                      case KeyMap.lookup "status" manifest of
-                        Just (Aeson.String "raw-yaci-context-materialized") -> do
-                          putStrLn "PACKET_STATUS: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED"
-                    txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
-                    ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
-                    case decodeBabbagePParams ppBytes of
-                      Left err -> do
-                        putStrLn "RESULT: SAFE_STALL"
-                        putStrLn ("SAFE_STALL_REASON: PPARAMS_NATIVE_DECODE_FAILED: " <> err)
-                      Right pp ->
-                        case decodeBabbageTx pp txBytes of
-                          Left err -> do
-                            putStrLn "RESULT: SAFE_STALL"
-                            putStrLn ("SAFE_STALL_REASON: BABBAGE_TX_NATIVE_DECODE_FAILED: " <> err)
-                          Right _ -> do
-                            putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
-                            putStrLn "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
-                          putStrLn "RESULT: SAFE_STALL"
-                          putStrLn "SAFE_STALL_REASON: RAW_YACI_CONTEXT_NOT_LEDGER_TYPED"
-                        _ -> do
-                          putStrLn "RESULT: SAFE_STALL"
-                          putStrLn "SAFE_STALL_REASON: TYPED_CONTEXT_VERIFICATION_NOT_IMPLEMENTED"
-                          putStrLn "No manifest status can authorize evaluation until native context verification exists."
-                    Right _ -> do
-                      putStrLn "RESULT: SAFE_STALL"
-                      putStrLn "SAFE_STALL_REASON: INVALID_MANIFEST_SHAPE"
+      if any (== 0) sizes
+        then safeStall "EMPTY_EXACT_PLUTUS_ARTIFACT"
+        else inspectEvidence evidenceDir
 
   putStrLn "NO NORMATIVE A/B VERDICT: parsing/evaluation is intentionally not bypassed."
+
+safeStall :: String -> IO ()
+safeStall reason = do
+  putStrLn "RESULT: SAFE_STALL"
+  putStrLn ("SAFE_STALL_REASON: " <> reason)
+
+inspectEvidence :: FilePath -> IO ()
+inspectEvidence evidenceDir = do
+  let paths = map (evidenceDir <> "/") canonicalEvidence
+      rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
+      manifestPath = evidenceDir <> "/manifest.json"
+
+  present <- mapM doesFileExist paths
+  rawPresent <- mapM doesFileExist rawPaths
+
+  mapM_
+    (\(path, ok) ->
+      putStrLn (path <> if ok then " [present]" else " [missing]"))
+    (zip paths present)
+
+  mapM_
+    (\(path, ok) ->
+      putStrLn ("raw/" <> path <> if ok then " [present]" else " [missing]"))
+    (zip rawPaths rawPresent)
+
+  if not (and present)
+    then
+      if and rawPresent
+        then do
+          safeStall "LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED"
+          putStrLn
+            "Raw Yaci handoff is present, but typed UTxO/PParams/EpochInfo/SystemStart packet files are not materialized."
+          putStrLn
+            "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+        else do
+          safeStall "INCOMPLETE_LEDGER_EVIDENCE"
+          putStrLn
+            "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+    else do
+      nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
+      if not (and nonEmpty)
+        then safeStall "EMPTY_LEDGER_EVIDENCE_FILE"
+        else inspectManifest evidenceDir manifestPath
+
+inspectManifest :: FilePath -> FilePath -> IO ()
+inspectManifest evidenceDir manifestPath = do
+  manifestBytes <- BS.readFile manifestPath
+
+  case Aeson.eitherDecodeStrict' manifestBytes :: Either String Aeson.Value of
+    Left err -> do
+      safeStall "INVALID_MANIFEST"
+      putStrLn ("MANIFEST_ERROR: " <> err)
+
+    Right (Aeson.Object manifest) ->
+      case KeyMap.lookup "policy" manifest of
+        Just (Aeson.Object policy) ->
+          case KeyMap.lookup "typed_context_ready" policy of
+            Just (Aeson.Bool False) -> do
+              safeStall "LEDGER_TYPED_CONTEXT_NOT_READY"
+              putStrLn
+                "Manifest explicitly records raw Yaci materialization only; UTxO/EpochInfo/SystemStart are not typed ledger objects."
+              putStrLn
+                "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+
+            Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir
+
+            _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
+
+        _ -> safeStall "INVALID_MANIFEST_POLICY"
+
+    Right _ -> safeStall "INVALID_MANIFEST_SHAPE"
+
+decodeTypedArtifacts :: FilePath -> IO ()
+decodeTypedArtifacts evidenceDir = do
+  txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+  ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
+
+  case decodeBabbagePParams ppBytes of
+    Left err -> do
+      safeStall "PPARAMS_NATIVE_DECODE_FAILED"
+      putStrLn ("PPARAMS_ERROR: " <> err)
+
+    Right pp ->
+      case decodeBabbageTx pp txBytes of
+        Left err -> do
+          safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
+          putStrLn ("TX_ERROR: " <> err)
+
+        Right _ -> do
+          putStrLn "RESULT: TYPED_BABBAGE_TX_PPARAMS_DECODED"
+          putStrLn
+            "NEXT: materialize exact UTxO, EpochInfo and SystemStart, then invoke ledger-aligned evalTxExUnitsWithLogs."
