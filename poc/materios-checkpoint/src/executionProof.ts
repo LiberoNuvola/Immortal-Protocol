@@ -166,6 +166,25 @@ export function validateMateriosExecutionProofPacket(
 }
 
 /**
+ * Bind the packet's selection-input hash to the commitment extracted from
+ * the exact canonical block's SessionCommitteeManagement::set inherent.
+ *
+ * The block-side hash is still evidence until the enclosing finalized-block
+ * verifier establishes canonicality and finality.
+ */
+export function verifyOnChainSelectionInputsCommitment(
+  packet: MateriosExecutionProofPacket,
+  onChainSelectionInputsHash: string,
+): void {
+  validateMateriosExecutionProofPacket(packet)
+  const expected = requireHash(packet.selectionInputsHash, 'selectionInputsHash')
+  const actual = requireHash(onChainSelectionInputsHash, 'onChainSelectionInputsHash')
+  if (expected !== actual) {
+    throw new Error('selectionInputsHash does not match on-chain commitment')
+  }
+}
+
+/**
  * Bind the proof packet's declared runtime code identity to the exact WASM
  * bytes captured at the same block. Substrate's runtime-code identity uses
  * Blake2-256; SHA-256 remains a diagnostic checksum only.
