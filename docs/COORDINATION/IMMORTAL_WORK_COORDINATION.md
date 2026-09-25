@@ -6068,3 +6068,51 @@ The minimal decisive packet is now:
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
 
 Status: **LIVE 237 = last dated observation / LIVE CURRENT VERSION = OPEN / SOURCE 238 = VERIFIED / DEPLOYMENT CORRESPONDENCE = OPEN.**
+
+
+## 2026-09-25 — B3 EXECUTION-PROOF TRANSPORT NARROWED
+
+A fresh upstream triangulation resolves the next B3 engineering boundary.
+
+### Runtime execution target confirmed
+
+Materios exposes `SessionValidatorManagementApi::calculate_committee(authority_selection_inputs, sidechain_epoch)` from the runtime. The runtime implementation delegates to `SessionCommitteeManagement::calculate_committee`, and the pallet implementation delegates directly to `T::select_authorities(...)`. Therefore this API enters the same authoritative runtime path that contains the PinnedCommittee, sanitization, liveness, eviction, slack, quorum and break-glass branches. It must not be reduced conceptually to the vendor Ariadne selector.
+
+### Native proof primitive confirmed
+
+Current Polkadot SDK documentation confirms that `ProofProvider::execution_proof(hash, method, call_data)` executes a runtime call against the state at the specified block hash and returns the runtime result together with a `StorageProof`. `sp_state_machine` also exposes the corresponding execution-proof checking primitives. The proof represents the storage nodes touched by execution and therefore gives the independent verifier material to authenticate runtime state access against a known state root. citeturn113675search2turn113675search0turn113675search1
+
+### Materios transport gap identified
+
+The Materios node already carries a concrete `FullClient` and depends on `sc-client-api`, while `node/src/rpc.rs` builds custom JSON-RPC extensions. The inspected current RPC surface exposes System, Orinq Receipts and MOTRA, but no generic execution-proof RPC. Therefore the missing piece is no longer the underlying proof capability; it is an independently verifiable transport surface for the native client proof primitive.
+
+This transport must remain untrusted. An RPC response does not establish canonicality. The independent verifier must still bind finalized block, state root, runtime identity/code, exact SCALE call bytes, execution result and proof material, then authenticate the result before creating `VerifiedAuthoritySetTransition`.
+
+### IMMORTAL implementation status
+
+Added `poc/materios-checkpoint/src/executionProof.ts` with a typed B3 transport envelope and fail-closed validation for:
+
+- finalized block/state binding fields;
+- runtime identity/version;
+- runtime API method and exact call/result hex;
+- non-empty execution proof nodes;
+- sidechain epoch and Cardano epoch nonce;
+- genesis UTxO context;
+- pinned vs normal selection path;
+- authority commitment.
+
+Added `poc/materios-checkpoint/test-executionProof.ts` covering valid construction, malformed binding rejection and mutation of bound execution material. Added the `test:execution-proof` package script.
+
+These are transport/conformance checks only. They do **not** verify Substrate trie proofs or runtime execution cryptographically.
+
+Commits:
+- `1bc4b184bb0419c7410145c03d6fc5781a2100da` — execution-proof envelope.
+- `129f9a2b2dcf3afc387df31e6031995760892254` — envelope tests.
+- `7c250b0513e6bde2947988f1ddfa14891d95bb75` — test command.
+- `01cb6262370720bd3ab4690a6a7f5214880f22c5` — B3 contract transport finding.
+
+### Current B3 status
+
+**OPEN — proof transport and independent verification remain required.**
+
+The next evidence target is a real finalized Materios block plus the native `execution_proof` result for `SessionValidatorManagementApi::calculate_committee`, followed by independent verification of the returned `StorageProof` against the finalized state root and binding of the runtime/code identity. No TypeScript reimplementation of the selector is authorized.
