@@ -6719,3 +6719,37 @@ A zero-redeemer result is fail-closed and cannot be promoted to acceptance.
 
 Status: **EVALUATION CAPABILITY IMPLEMENTED / REAL PACKET CI RESULT NOT YET OBSERVED / END-TO-END EVIDENCE OPEN.**
 
+
+
+---
+
+## 2026-09-25 — Latest handoff: P2.8 evaluator binding + CI activation
+
+Current branch HEAD at handoff: `0d88a35bcb1142ae85f1294e709040a2c2deca19`.
+
+P2.8 changes now present on the branch:
+- explicit evaluator mode: `cabal run cardano-ledger-runner -- --evaluate`;
+- real integration lab already invokes `--evaluate`;
+- five canonical context artifacts are fail-closed against the SHA-256 values recorded by `manifest.json`;
+- `ledger-evaluation-binding.txt` records exact context/report digests;
+- Yaci Cardano addresses are decoded through native Ledger `decodeAddrEither`;
+- economic/collateral/reference input classification remains explicit;
+- B3 execution-proof envelope binds `callDataHex` to the exact authority-selection inputs and `sidechainEpoch`, and binds declared runtime code hash to captured WASM bytes.
+
+Current GitHub Actions observation:
+- P2.8-B.1 runner on `0d88a35b`: **QUEUED**;
+- Kernel Invalid-Class on `0d88a35b`: **PENDING**;
+- Cardano Adapter Sale on `0d88a35b`: **QUEUED**;
+- Algorithmic Governability on `0d88a35b`: **QUEUED**.
+Previous runs on superseded commits were cancelled as newer pushes entered the queue. No current A/B result or CI-green claim is made.
+
+### M6 / Materios boundary
+
+The live Materios observation remains current only as deployment observation:
+- live `spec_version = 238`;
+- finalized height observed from public chain-info remains an observation, not a finalized-hash transcript;
+- finalized hash, exact state root/runtime-at-hash, deployed WASM identity, execution proof, real authority-set transition, GRANDPA justification/set binding and M6 composition remain **OPEN**.
+
+The Materios explorer source route `GET /api/block/{block_id}` is verified in source and can theoretically recover an exact block hash by height, but its production endpoint was not independently reachable during this session, so no explorer-derived hash is promoted.
+
+**Handoff rule:** next session should first inspect this HEAD and the queued run results before making further semantic changes. Do not reopen selector semantics or validator economics merely to move a status indicator.
