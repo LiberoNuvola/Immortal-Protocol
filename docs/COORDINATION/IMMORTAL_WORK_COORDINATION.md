@@ -6236,3 +6236,30 @@ Keep open:
 - **cryptographic M6 composition proof → OPEN**
 
 No selector mathematics was added to IMMORTAL. No economic semantics changed.
+
+
+## 2026-09-25 — MATERIOS LIVE CHAIN-INFO EVIDENCE PACKET FROZEN
+
+The live observation is now frozen as a repository evidence artifact:
+
+`poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json`
+
+Evidence commit: `93d6749e61361c57b4aebcb791a81d4fbb0c99bd`.
+
+The packet records the exact public `/chain-info` payload observed at `2026-09-25T04:28:07.578Z`, including genesis identity, spec 238, best block 2004818 and finalized height 2004815. It also records the server-side provenance discovered in `Flux-Point-Studios/orynq-sdk` commit `841322ea31a0ac4334e0a82b40ef82a5659812c1`: the gateway obtains these values by polling the configured Materios RPC, including `state_getRuntimeVersion`, `chain_getFinalizedHead`, and the finalized header.
+
+This strengthens live-version evidence from a transient observation into a reproducible handoff artifact while preserving the cryptographic boundary: the packet does not claim a GRANDPA proof and does not contain a finalized block hash because the public surface does not expose it.
+
+M6 status:
+- LIVE SPEC 238: **VERIFIED**
+- LIVE FINALIZED HEIGHT 2004815: **VERIFIED**
+- FINALIZED BLOCK HASH: **OPEN**
+- DIRECT RPC TRANSCRIPT AT FINALIZED HASH: **OPEN**
+- DEPLOYED WASM/CODE HASH: **OPEN**
+- WASM ↔ SOURCE COMMIT: **OPEN**
+- REAL AUTHORITY-SET TRANSITION: **OPEN**
+- GRANDPA JUSTIFICATION: **OPEN**
+- CRYPTOGRAPHIC SELECTOR/TRANSITION PROOF: **OPEN**
+- CRYPTOGRAPHIC M6 COMPOSITION PROOF: **OPEN**
+
+No selector mathematics was added to IMMORTAL. No economic semantics changed.
