@@ -5952,3 +5952,50 @@ Consequently:
 This is the exact point where the next evidence must come from the canonical Materios RPC, not more static-source triangulation.
 
 No selector logic was added to IMMORTAL. No economic semantics changed.
+
+
+## 2026-09-25 — MATERIOS UPSTREAM HEAD / SPEC-238 LINEAGE PASS
+
+A fresh audit against the current public Materios repository advances the version-drift front beyond the earlier source snapshot.
+
+### New upstream evidence
+
+The current Materios main history reaches merge commit `011473c88ef82fad3d4877af8d89a5b52abf235f` (2026-09-23 23:37 UTC). The immediately preceding work includes the **spec-238** runtime line and subsequent hardening/tests. In particular, commit `0c57e2da6a6d5dbd63ee6e535eebcb0735e7699d` merges the spec-238 break-glass documentation/test correction, while `ff67a9f21b038e3d7221602b9dc9d61b12b89bd6` records the shipped last-holder scope and reports the runtime/pallet test counts for that change.
+
+This gives us a stronger source-lineage statement:
+
+- current public Materios source tree: **post-spec-238 main lineage**;
+- runtime source declares **spec_version 238**;
+- spec-238 was not merely an isolated local source edit: it has a subsequent merge/test lineage in the public repository;
+- the current public source still directly imports `authority_selection_inherents::select_authorities::select_authorities`;
+- the selector dependency remains **Partner Chains v1.5.1 + Materios vendored patches**, despite the workspace's Polkadot SDK compatibility comment referring to Partner Chains v1.8.x.
+
+### Important boundary
+
+This still does **not** prove that the canonical live Materios endpoint currently runs spec 238. The source repository and its commit history prove what the public source line contains; deployment state requires a direct `state_getRuntimeVersion` observation at a known finalized block, followed by WASM/source correspondence.
+
+### New M6 implication
+
+The next evidence target is now narrower than before. We should not keep searching the static source tree for a selector version unless a new source change appears. The unresolved chain is:
+
+`canonical RPC`
+→ `finalized block hash`
+→ `state_getRuntimeVersion(at finalized block)`
+→ `deployed runtime/WASM identity`
+→ `source commit correspondence`
+→ `selector transition artifact`
+→ `GRANDPA justification / authority-set binding`
+→ `external M6 composition proof`.
+
+If the live runtime resolves to spec 238, the source-side selector provenance can be tied to the current public source line much more tightly. If it resolves to another spec, the source correspondence must branch accordingly; **do not assume 238**.
+
+No Ariadne mathematics was added to IMMORTAL. No economic semantics changed.
+
+Status:
+- current Materios public source lineage: **VERIFIED / post-spec-238**
+- selector source/version: **VERIFIED / v1.5.1 + Materios patches**
+- live runtime version: **OPEN**
+- deployed WASM ↔ source: **OPEN**
+- cryptographic selector/transition proof: **OPEN**
+- cryptographic M6 composition proof: **OPEN**
+- real finalized-node evidence: **OPEN**
