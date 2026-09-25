@@ -6279,3 +6279,21 @@ This keeps the B3 execution-proof transport aligned with `AuthoritySelectionRegi
 
 This remains transport/conformance hardening only. It does not verify the StorageProof trie, runtime execution, authority transition, or GRANDPA finality.
 
+
+
+## 2026-09-25 — B3 INDEPENDENT EXECUTION VERIFIER ADDED
+
+The B3 execution-proof boundary is now implemented as a small Rust verifier PoC under `poc/materios-execution-verifier/`, pinned to the same Polkadot SDK tag/revision resolved by Materios (`polkadot-stable2409-4` / `c455194a2ae2f613c1c671e00dbf397b83ed8171`).
+
+The verifier uses the SDK-native `sp_state_machine::execution_proof_check` rather than reproducing Materios selector logic. It decodes the exact SCALE `StorageProof`, checks the supplied runtime WASM against an expected Blake2-256 code identity, reconstructs the proof backend against the supplied state root, executes the exact runtime method/call bytes, and rejects any result mismatch.
+
+This still has an intentionally narrow trust boundary: the verifier does not decide finality, does not discover the canonical block, and does not establish source/build/deployment correspondence by itself. Those remain outer B3 obligations.
+
+Files/commits:
+- `5454fdfef24c9b7ef607901bd0dcd83096d556f3` — pinned verifier Cargo manifest.
+- `51ae4e3ac88b33b363e54999ddf839829afa6713` — native execution-proof verifier.
+- `8627003f8e12faef8d5a6e303058c4d911bb5056` — fail-closed verifier tests.
+- `0a69d64026cefd5f605a21a2032a384af39fbbd0` / `45e2ec3ab4890e869e71f1e5b0fbf8818ab21ba9` — runtime code identity binding in transport/tests.
+- `c855f9baaba8f2feb144ad53c2f143b40760a589` — B3 contract records the independent verifier boundary.
+
+Status: **execution-proof verification component PRESENT; canonical finality/runtime deployment composition STILL OPEN.**
