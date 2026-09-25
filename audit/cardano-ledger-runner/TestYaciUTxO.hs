@@ -77,8 +77,9 @@ main = do
         replace "\"quantity\": \"2000000\"" "\"quantity\": \"-1\""
       missingAddress =
         replace
-          "\"ledger_address_hex\": \"" 
-          "\"ledger_address_hex\": \"" 
+          ("\\"ledger_address_hex\\": \\\"" <> addressHex <> "\\",")
+          ""
+          packet 
       badRefScript =
         replace
           "\"reference_script_hash\": null"
@@ -91,7 +92,7 @@ main = do
 
   assertLeft
     "missing Ledger address bytes are rejected"
-    "FIELD_NOT_TEXT:ledger_address_hex"
+    "MISSING_FIELD:ledger_address_hex"
     (decodeYaciUTxO (B8.pack missingAddress))
 
   assertLeft
