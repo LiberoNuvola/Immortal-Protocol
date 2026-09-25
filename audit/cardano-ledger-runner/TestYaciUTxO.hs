@@ -11,7 +11,7 @@ txHash :: String
 txHash = replicate 64 '0'
 
 addressHex :: String
-addressHex = '6' : '0' : replicate 56 '0'
+addressHex = "007290ea8fa9433c1045a4c8473959ad608e6c03a58c7de33bdbd3ce6f295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062"
 
 packet :: String
 packet =
