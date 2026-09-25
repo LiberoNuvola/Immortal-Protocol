@@ -242,10 +242,11 @@ export async function collectCommitteeExecutionEvidence(
   execution: CommitteeExecutionProofResponse
 }> {
   const blockHash = requireHash(params.finalizedBlockHash, 'finalized block hash')
-  const [header, runtimeCodeHex, execution] = await Promise.all([
+  const [header, runtimeCodeHex, execution, blockRuntime] = await Promise.all([
     rpc.getHeader(blockHash),
     rpc.getRuntimeCode(blockHash),
     rpc.getCommitteeExecutionProof(params.callDataHex, blockHash),
+    rpc.getRuntimeVersion(blockHash),
   ])
 
   const proofBlockHash = requireHash(execution.blockHash, 'B3 proof blockHash')
@@ -257,8 +258,21 @@ export async function collectCommitteeExecutionEvidence(
     throw new Error('B3 execution-proof callDataHex does not match requested call data')
   }
 
-  if (execution.runtime.specName !== (await rpc.getRuntimeVersion(blockHash)).specName) {
-    throw new Error('B3 execution-proof runtime specName does not match block runtime')
+  if (execution.runtimeApiMethod !== 'SessionValidatorManagementApi_calculate_committee') {
+    throw new Error('B3 execution-proof runtimeApiMethod is not the canonical committee API')
+  }
+
+  if (
+    execution.runtime.specName !== blockRuntime.specName ||
+    execution.runtime.implName !== blockRuntime.implName ||
+    execution.runtime.specVersion !== blockRuntime.specVersion ||
+    execution.runtime.implVersion !== blockRuntime.implVersion
+  ) {
+    throw new Error('B3 execution-proof runtime identity does not match block runtime')
+  }
+
+  if (header.stateRoot.length !== 66) {
+    throw new Error('B3 finalized header stateRoot is malformed')
   }
 
   return { blockHash, header, runtimeCodeHex, execution }
