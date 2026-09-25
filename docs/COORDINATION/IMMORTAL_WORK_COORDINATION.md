@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-25
-**Latest observed commit by this session:** `ef784cd74390a98562a28903d136e2194f55b6d3` — current observed branch snapshot at handoff
+**Latest observed commit by this session:** `191f71e0876770a66132507933ec81155053a92b` — current observed branch snapshot at handoff
 
 ---
 
@@ -6551,3 +6551,23 @@ Commits:
 - `ef784cd74390a98562a28903d136e2194f55b6d3`
 
 M6 status unchanged: direct exact-finalized-hash capture, independent execution-proof verification, authority-set transition proof and GRANDPA finality binding remain open.
+
+
+---
+
+## 2026-09-25 — Materios CI activation for execution-proof boundary
+
+The Materios evidence workflow was expanded so changes to the finalized-state capturer, B3 execution-proof transport, RPC binding code, tests, package metadata and lockfile activate the dedicated conformance workflow.
+
+The workflow now runs:
+- canonical evidence tests;
+- native execution-proof transport tests;
+- B3 RPC binding tests;
+- checkpoint TypeScript typecheck;
+- existing GRANDPA test/build suite.
+
+This makes the new evidence boundary observable in CI rather than relying only on static inspection.
+
+**Commit:** `191f71e0876770a66132507933ec81155053a92b`
+
+**CI note:** no workflow run is asserted for this commit from the connector surface available to this session; push-triggered runs are not exposed by the current GitHub workflow-run action. Local `git clone`/npm validation was also blocked by DNS resolution in this environment. The source/lockfile alignment was checked structurally.
