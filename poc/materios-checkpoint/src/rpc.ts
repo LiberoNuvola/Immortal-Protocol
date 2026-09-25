@@ -374,8 +374,8 @@ function validateCommitteeExecutionProofResponse(
   if (typeof v.runtimeApiMethod !== "string" || !v.runtimeApiMethod.trim()) {
     throw new Error("B3 proof runtimeApiMethod is required");
   }
-  const callDataHex = requireHex(v.callDataHex, "B3 proof callDataHex", true);
-  const resultHex = requireHex(v.resultHex, "B3 proof resultHex", true);
+  const callDataHex = requireHex(v.callDataHex, "B3 proof callDataHex");
+  const resultHex = requireHex(v.resultHex, "B3 proof resultHex");
   const proofScaleHex = requireHex(v.proofScaleHex, "B3 proof proofScaleHex");
   const runtime = validateRuntimeVersion(v.runtime);
 
