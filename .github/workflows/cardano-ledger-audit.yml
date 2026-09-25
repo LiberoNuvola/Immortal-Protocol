@@ -43,4 +43,4 @@ jobs:
           printf '%s\n' "$output"
           grep -q "RESULT: SAFE_STALL" <<< "$output"
           grep -q "SAFE_STALL_REASON: INCOMPLETE_LEDGER_EVIDENCE" <<< "$output"
-          grep -q "NO NORMATIVE A/B VERDICT" <<< "$output"
+          grep -q "NO SYNTHETIC CONTEXT: evaluation only runs after exact typed-context decoding." <<< "$output"
