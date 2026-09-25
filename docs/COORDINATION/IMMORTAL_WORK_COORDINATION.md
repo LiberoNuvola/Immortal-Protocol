@@ -6608,3 +6608,31 @@ It is still **not** binary reproducibility: no claim is made that the deployed W
 **Evidence packet:** `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json`
 
 **Commit:** `601b028ca3fce10ce95ab4eb7c221d71925b90cf`
+
+
+---
+
+## 2026-09-25 — Standard RPC check: custom B3 proof surface is justified
+
+Upstream Substrate/Polkadot SDK exposes `ProofProvider::execution_proof(hash, method, call_data)` as a client-side proving primitive and `sp_state_machine::execution_proof_check(root, proof, ..., method, call_data, runtime_code)` as the corresponding checking primitive. The standard public `state_*` RPC surface exposes storage read proofs, but not a generic execution-proof RPC.
+
+Therefore the existing planned Materios method:
+
+`materios_b3_calculateCommitteeProof(block_hash, call_data_hex)`
+
+is not redundant with a standard public RPC. It is the appropriate narrow transport boundary for exporting the result/proof generated from the node's own `ProofProvider` implementation.
+
+**Required future server-side binding:**
+`requested block hash → node client ProofProvider → exact runtime API method → exact SCALE call data → (result, StorageProof) → proof transport`.
+
+**Required independent verifier binding:**
+`finalized header.stateRoot + StorageProof + trusted runtime WASM + exact method + exact call data → execution_proof_check`.
+
+The verifier must not accept a proof solely because the transport envelope parses. It must establish the state-root/runtime/method/call-data bindings independently.
+
+Current source support:
+- current Materios main head: `011473c88ef82fad3d4877af8d89a5b52abf235f`;
+- runtime declares spec 238;
+- live chain-info observes spec 238.
+
+This narrows the remaining work to the real deployed proof artifact and independent verification rather than further static selector analysis.
