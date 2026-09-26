@@ -11,6 +11,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/**"
+      - "audit/cardano-integration/preprod-conformance-binding.mjs"
       - "audit/cardano-ledger-runner/**"
       - "PRE-RICH/**"
       - "Adapter/**"
