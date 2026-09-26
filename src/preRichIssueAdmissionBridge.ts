@@ -90,4 +90,7 @@ export function assertIssueAdmissionMatchesCanonicalEvidence(
   if (admission.actionClass !== 'Issue') {
     throw new Error('Issue admission evidence binding requires actionClass=Issue')
   }
+  if (admission.actionFingerprint !== evidence.actionFingerprint) {
+    throw new Error('economic admission action fingerprint does not match canonical evidence')
+  }
 }
