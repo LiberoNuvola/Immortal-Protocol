@@ -40,6 +40,7 @@ on:
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
       - "src/__tests__/ticket3dSecurity.test.ts"
+      - "src/__tests__/referenceScriptSpendingBoundary.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
       - "src/*.ts"
   pull_request:
