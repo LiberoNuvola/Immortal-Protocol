@@ -56,17 +56,33 @@ export function validateAuthoritativeIssueAdmissionDecision(
     )
   }
 
+  // The observation schema exposes its exact candidate inputs as
+  // sourceInputReferences; bind the authoritative Pool reference to that
+  // canonical source list rather than reading a non-existent shadow field.
+  const sourceReferences = observation.sourceInputReferences.map((ref) =>
+    ref.toLowerCase(),
+  )
   if (
-    observation.authenticatedPoolInputReference !==
-    decision.authenticatedPoolInputReference
+    sourceReferences.length !== 1 ||
+    sourceReferences[0] !== decision.authenticatedPoolInputReference.toLowerCase()
   ) {
     throw new Error(
       'decision Pool input reference does not match executable-liquidity observation',
     )
   }
 
+  const poolRef = decision.authenticatedPoolInputReference.toLowerCase()
+  const observedPoolUtxo = observation.utxos.find(
+    (utxo) => (utxo.txHash.toLowerCase() + '#' + utxo.index) === poolRef,
+  )
+  if (!observedPoolUtxo) {
+    throw new Error(
+      'decision Pool input reference does not match observed executable-liquidity UTxO',
+    )
+  }
+
   if (
-    observation.authenticatedPoolUsdmValue !==
+    observation.declaredUsdmLiquidity !==
     decision.authenticatedPoolUsdmValue
   ) {
     throw new Error(
