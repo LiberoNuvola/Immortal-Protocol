@@ -8274,3 +8274,22 @@ No protocol, validator or economic semantics changed.
 
 **USER QUESTION:** NONE.
 
+
+
+## 2026-09-26 — Preprod Ogmios authentication fallback repaired
+
+The live Preprod run proved GitHub Environment secret injection and wallet-address validation, then received HTTP 401 from the Demeter Ogmios handshake. The client already used the documented `dmtr-api-key` header. Current Demeter documentation also provides an authenticated endpoint form in which the API key is carried by the hostname.
+
+Commit `d6d63fee2bcb596767018cd78ea53c2716bb2797` adds a runtime fallback: when the header-authenticated endpoint returns HTTP 401, the probe retries the configured Demeter authenticated-endpoint form. An optional `DEMETER_OGMIOS_AUTHENTICATED_URL` environment value can supply an explicitly provisioned authenticated endpoint; otherwise the client derives the hostname form locally from the configured Demeter endpoint and the in-memory key. The key is never written to evidence.
+
+A follow-up cleanup commit `0108082bb1e82a3a47127e0ff0fc5f2e2b01b478` removed an intermediate patch artifact; `7c80ef9a54c1e4909eea14bed30744ef7d03c134` hardens socket cleanup with optional chaining.
+
+### Classification
+- Demeter secret injection: **CONFIRMED PRESENT**.
+- Header authentication: **401 OBSERVED**.
+- Authenticated-endpoint fallback: **IMPLEMENTED / FRESH RUN REQUIRED**.
+- Live Preprod context: **OPEN until fresh successful artifact**.
+- Live wallet UTxO: **OPEN until context probe succeeds**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+- No economic, validator, authority-selection, oracle, or evaluator-semantic change.
