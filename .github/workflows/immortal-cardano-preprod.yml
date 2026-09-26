@@ -26,6 +26,9 @@ jobs:
     env:
       DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
       DEMETER_API_KEY: ${{ secrets.DEMETER_API_KEY || secrets.DEMETER }}
+      DEMETER_API_KEY_PRIMARY: ${{ secrets.DEMETER_API_KEY }}
+      DEMETER_API_KEY_ALIAS: ${{ secrets.DEMETER }}
+      DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ secrets.DEMETER_OGMIOS_AUTHENTICATED_URL }}
       PREPROD_WALLET_ADDRESS: addr_test1qpsd5v0jln37h5g7pl2w6j7fhczu2cs4245welp0cn7xajjuy72qvweu0f5nckwtugmlnhfte2kv2a958fdxf9rt53nsdgmheq
       PREPROD_EVIDENCE_DIR: audit/preprod-evidence
 
