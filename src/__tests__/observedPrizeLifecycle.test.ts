@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Constr, type UTxO } from 'lucid-cardano'
+import { Constr, Data, type UTxO } from 'lucid-cardano'
 import { observePrizeLifecycle } from '../gameFlow'
 
 function prizeUtxo(status: number, beaconStatus: number): UTxO {
@@ -12,7 +12,7 @@ function prizeUtxo(status: number, beaconStatus: number): UTxO {
     outputIndex: 0,
     address: 'addr_test1vr',
     assets: { lovelace: 2_000_000n },
-    datum,
+    datum: Data.to(datum),
     datumHash: undefined,
     scriptRef: undefined,
   } as UTxO
