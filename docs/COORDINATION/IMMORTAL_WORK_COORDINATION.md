@@ -1657,3 +1657,14 @@ CI for the latest wallet commits is not yet observed; no green status is claimed
 - No economic constant or Genesis/Treasury authority was changed.
 - Latest branch HEAD: `98e420cd3aa41e6615ba671b65dd36f9406ad820`.
 - GitHub Actions triggered by this HEAD are currently pending; no CI-green claim is made yet.
+
+
+## 35. V3 PREPROD DEPLOYMENT HELPER — 2026-09-26
+
+- Added `scripts/deployV3Carrier.ts` and `npm run deploy:v3-carrier`.
+- The one-shot V3 carrier policy is parameterized from the explicitly selected real seed UTxO; policy ID and carrier address are deployment-derived.
+- Initial V3 datum is mandatory explicit CBOR input; the helper never synthesizes a default economic state.
+- Deployment requires local/admin `DEPLOYER_MNEMONIC`; browser/CIP-30 never receives or handles this secret.
+- After submission the helper queries the derived carrier address and fails unless exactly one singleton UTxO is observed.
+- Public deployment evidence is written to `audit/preprod-issue/v3-carrier-deployment.json`.
+- This helper does not authorize Issue, Genesis, Treasury or economic transitions; it only establishes the V3 state carrier singleton.
