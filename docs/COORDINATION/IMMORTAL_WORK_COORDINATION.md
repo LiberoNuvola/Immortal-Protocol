@@ -7943,3 +7943,44 @@ Latest Preprod workflow run `36218591993` reached the dedicated secret-presence 
 - B3/Materios, B4/B5/B6, GOV-28: unchanged from prior certification state.
 
 No economic constant, validator rule, authority-selection shortcut, expiry rule, or fee parameter changed in this pulse.
+
+## 2026-09-26 — Preprod UTxO acquisition path added
+
+Ogmios v7 supports `queryLedgerState/utxo` filtered by address, and its transaction-submission protocol accepts serialized CBOR through `submitTransaction`. The repository now uses the first capability to establish a live wallet-readiness/evidence boundary before attempting transaction construction/submission.
+
+Sources consulted:
+- https://ogmios.dev/mini-protocols/local-state-query/
+- https://ogmios.dev/mini-protocols/local-tx-submission/
+
+Commit `c96e23357303e2be17b5f1cf948e8ca7cd2f5bbe` adds:
+`audit/cardano-integration/preprod-wallet-utxo.mjs`
+
+The probe:
+- connects to the existing Demeter Ogmios v7 Preprod resource;
+- queries the current network tip;
+- queries the wallet address UTxO set directly from Ogmios;
+- records exact UTxO references, values and raw Ogmios result;
+- computes and records the ADA balance;
+- binds the packet with SHA-256;
+- returns `FUNDED` only when the observed wallet UTxO set contains positive lovelace.
+
+Commit `f3bfd41f6ebbd077deada60689247971f6703c96` exposes the probe as:
+`npm run preprod:wallet`
+
+### Deliberate boundary
+
+The probe does **not** sign, submit, or manufacture a transaction. It establishes a real Preprod input packet first. This avoids conflating:
+`provider connectivity -> funded wallet -> transaction construction -> submission -> observed transaction -> P2.8 evaluation`.
+
+A funded Preprod wallet address must be supplied through the runtime environment as `PREPROD_WALLET_ADDRESS`; no wallet credential is committed to the repository.
+
+### Classification
+
+- Demeter/Ogmios Preprod: **PROVISIONED**.
+- Live Preprod UTxO acquisition path: **IMPLEMENTED / EXECUTION PENDING**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+- No protocol, validator or economic semantics changed.
+
+**USER QUESTION:** NONE.
+
