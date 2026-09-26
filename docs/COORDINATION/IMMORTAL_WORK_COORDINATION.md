@@ -8702,3 +8702,17 @@ Commit 338daa4344cf19616f073fab05f16c6bcc7c8ba4 keeps the f649f975 ledger source
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — P2.8 Byron package isolation refined
+
+Run 36221067906 confirmed the crypto stack is now resolved, but Cabal still reported byron-spec-ledger as unknown even though the f649f975 ledger source contains the package. The runner project had both Byron executable-spec paths embedded in the main multi-subdir ledger source block.
+
+Commit 87778f4d4db6f58acd4c1812bf2397fb98375863 removes those two paths from the main ledger source block and declares eras/byron/ledger/executable-spec and eras/byron/chain/executable-spec as independent source-repository-package entries at the exact same f649f975 commit. This changes only Cabal package materialization and does not alter ledger source revision or semantics.
+
+### Classification
+- Crypto resolver matrix: RESOLVED TO NEXT PACKAGE STAGE.
+- Byron spec materialization: REFINED / FRESH RUN REQUIRED.
+- Typed ledger context: OPEN.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
