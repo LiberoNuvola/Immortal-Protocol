@@ -2504,6 +2504,18 @@ This is treated only as the **candidate deployment signer address**. Its balance
 
 **STATUS: 🟡 SIGNER ADDRESS SUPPLIED / 🔴 FUNDED UTxO + SIGNED V3 DEPLOYMENT OPEN**
 
+### 44.15.2 V3 carrier token identity — deployment decision
+
+No prior canonical V3 carrier token name exists in the repository. The existing `GENESIS` carrier token name `47454e4e45534953` belongs to the separate Genesis-regime carrier and MUST NOT be reused for V3 Economic State.
+
+For the V3 deployment identity, use the explicit technical token name:
+
+`565345434f4e4f4d49435354415445` (`VSECONOMICSTATE`)
+
+This is a deployment singleton identifier only. It carries no economic semantics and does not modify IMMORTAL rules or PRE-RICH economic policy. The one-shot V3 mint policy parameterizes this token name together with the real seed UTxO.
+
+**STATUS: 🟢 TOKEN NAME FIXED / 🔴 REAL SEED UTxO + SIGNED DEPLOYMENT OPEN**
+
 ## 44.14 AUTHORITATIVE ISSUE REFINEMENT ENVELOPE — 2026-09-26
 
 The remaining Issue input seam has been hardened with a dedicated fail-closed transport contract:
