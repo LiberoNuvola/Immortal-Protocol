@@ -59,3 +59,45 @@ Until this gate is closed, do not:
 ## Status
 
 **OPEN — verification evidence required.**
+
+
+## 2026-09-26 — Candidate parameter cross-check
+
+The candidate 32-byte value is not merely an arbitrary substring.
+
+The exact value:
+
+`f6874f42a880915f7d79d6b23ecc55eb378b5fd8847c4004ed1c98a2eba70509`
+
+matches the transaction hash of the historical PRE mint transaction input:
+
+`f6874f42...aeba70509#4`
+
+Gate 41's transaction-level reconciliation independently identifies that UTxO as one of the three exact inputs consumed by transaction `0235...`, with `7,389,731` lovelace.
+
+This substantially strengthens the one-shot hypothesis: the historical policy witness contains a 32-byte value equal to a concrete UTxO transaction hash that was actually consumed by the historical mint transaction.
+
+However, this is still **not a formal decompilation proof** that the value is used as an `OutputReference` predicate. The remaining verification task is to decode the Flat/UPLC term and establish the semantic use of the constant.
+
+### Current evidence classification
+
+- exact byte match to historical consumed input hash: **OBSERVED**
+- candidate embedded 32-byte constant: **OBSERVED**
+- parameter is semantically an OutputReference: **NOT YET PROVEN**
+- mint branch requires that exact UTxO: **NOT YET PROVEN**
+- direct canonical-policy reuse on Preprod: **NOT PROVEN**
+
+Cardano's current developer documentation confirms that a one-shot policy can be parameterized by a specific UTxO and that the parameter becomes part of the policy configuration; changing the parameter yields a different policy identity. citeturn0search0turn0search1
+
+## Next decisive action
+
+Use a pinned Plutus/UPLC toolchain compatible with the historical PlutusV2 witness to:
+
+1. decode the exact 381-byte witness;
+2. inspect the constant and its surrounding term;
+3. identify the transaction-input predicate;
+4. evaluate the positive historical context;
+5. evaluate a negative context with a different UTxO;
+6. record toolchain versions, script hash, context hashes and outputs.
+
+No bridge implementation should be promoted to canonical materialization until this evidence packet is complete.
