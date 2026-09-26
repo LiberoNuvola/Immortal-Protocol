@@ -25,7 +25,7 @@ on:
 jobs:
   haskell-conformance:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - name: Checkout exact head
         uses: actions/checkout@v4
@@ -39,18 +39,53 @@ jobs:
       - name: Install native Plutus dependencies
         run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
 
-      - name: Run Oracle, Golden Vector, Governance and economic conformance suites
-        run: |
-          cabal update
-          cabal test economic-oracle-tests
-          cabal test v3-golden-vector-tests
-          cabal test governance-tests
-          cabal test governance-canonical-replay-tests
-          cabal test economic-admission-tests
-          cabal test protected-capital-conformance-tests
-          cabal test governance-ruleset-tests
-          cabal test governance-phase6-tests
-          cabal test legacy-adapter-tests
-          cabal test projection-boundary-tests
-          cabal test genesis-admission-tests
-          cabal test genesis-regime-carrier-tests
+      - name: Update Cabal index
+        run: cabal update
+
+      - name: Oracle conformance
+        working-directory: plutus
+        run: cabal test economic-oracle-tests
+
+      - name: Golden vector conformance
+        working-directory: plutus
+        run: cabal test v3-golden-vector-tests
+
+      - name: Governance conformance
+        working-directory: plutus
+        run: cabal test governance-tests
+
+      - name: Governance canonical replay conformance
+        working-directory: plutus
+        run: cabal test governance-canonical-replay-tests
+
+      - name: Economic Admission conformance
+        working-directory: plutus
+        run: cabal test economic-admission-tests
+
+      - name: Protected Capital conformance
+        working-directory: plutus
+        run: cabal test protected-capital-conformance-tests
+
+      - name: Governance ruleset conformance
+        working-directory: plutus
+        run: cabal test governance-ruleset-tests
+
+      - name: Governance phase-6 conformance
+        working-directory: plutus
+        run: cabal test governance-phase6-tests
+
+      - name: Legacy adapter conformance
+        working-directory: plutus
+        run: cabal test legacy-adapter-tests
+
+      - name: Projection boundary conformance
+        working-directory: plutus
+        run: cabal test projection-boundary-tests
+
+      - name: Genesis admission conformance
+        working-directory: plutus
+        run: cabal test genesis-admission-tests
+
+      - name: Genesis regime carrier conformance
+        working-directory: plutus
+        run: cabal test genesis-regime-carrier-tests

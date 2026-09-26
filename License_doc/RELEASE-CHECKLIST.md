@@ -1,21 +1,18 @@
-# IMMORTAL Protocol --- Licensing Release Checklist
+# IMMORTAL Protocol — Licensing Release Checklist
 
-Before declaring the licensing package released on `b1-hardening`:
+This checklist tracks the repository licensing package. Final legal/provenance certification remains a separate release activity.
 
--   [ ] Copy the existing MPL-2.0 license text from `Licence/Licence` to
-    root `LICENSE`.
--   [ ] Add `LICENSE-DOCS.md` for CC BY 4.0 documentation.
--   [ ] Add `Licence/LICENSING-MATRIX.md`.
--   [ ] Add `Licence/NOTICE-THIRDPARTY.md`.
--   [ ] Add `Licence/BRAND-AND-TRADEMARKS.md`.
--   [ ] Update README license section to point to the above files.
--   [ ] Confirm third-party notices/licenses remain intact.
--   [ ] Confirm `blockfrost-proxy` remains separately ISC-licensed.
--   [ ] Confirm no semantic or implementation changes were introduced by
-    the licensing pass.
--   [ ] Run a final repository-wide license/provenance consistency
-    check.
--   [ ] Commit the licensing-only changes on `b1-hardening`.
+- [x] Root `LICENSE` contains the MPL-2.0 license text.
+- [x] `LICENSE-DOCS.md` declares CC BY 4.0 documentation licensing.
+- [x] `License_doc/LICENSING-MATRIX.md` exists.
+- [x] `License_doc/NOTICE-THIRDPARTY.md` exists.
+- [x] `License_doc/BRAND-AND-TRADEMARKS.md` exists.
+- [x] README license section points readers to the repository license files.
+- [ ] Confirm third-party notices/licenses remain intact under upstream terms through final provenance audit.
+- [ ] Confirm `blockfrost-proxy` component-specific licensing against its package metadata.
+- [x] Confirm the licensing package itself introduces no semantic implementation rule.
+- [x] Run the structural licensing-package consistency check.
+- [ ] Complete contributor/copyright provenance review for release publication.
+- [ ] Complete the licensing-only release commit on the designated release branch.
 
-Trademark work is intentionally separate: `IMMORTAL PROTOCOL` remains at
-the pre-filing checkpoint documented in Notion.
+Trademark work is intentionally separate and remains governed by the project trademark/brand checkpoint.
