@@ -7718,3 +7718,24 @@ A future certification pass may close the remaining gates only from concrete art
 
 **USER QUESTION:** NONE.
 **Next action:** certification/evidence closure only; do not reopen frozen implementation semantics without new authoritative evidence.
+
+
+## 2026-09-26 — Certification pulse: exact-head anchor
+
+### Exact branch anchor
+The active certification branch currently resolves to commit `b2ff13f4ab4e66e26bbcac51031de25e88293c3b`. This commit only links the finalization manifest into the closure-status document; it does not modify economic or validator semantics.
+
+### Workflow observability
+The available commit-workflow-run interface exposes only pull-request-triggered runs and returns no run for this exact documentation head. Therefore no current-head workflow result is inferred from that absence. The P2.8 workflow is configured for both `workflow_dispatch` and push on `work/immortal-green-closure`, so the repository configuration remains capable of producing exact-head evidence; the artifact itself is still required before closure.
+
+### Certification classification
+- Implementation phase: **FINALIZED**.
+- P2.8 native evaluator: **OPEN — artifact not observed at exact head**.
+- Reveal budget: **OPEN — fresh-source execution artifact required**.
+- Materios/B3: **OPEN — publisher-independent cryptographic composition required**.
+- B4/B5/B6: **OPEN — end-to-end ledger evidence required**.
+- Independent assurance: **OPEN**.
+- Protocol Usage Fee universal parameters: **OPEN POLICY — no value selected by implementation fiat**.
+
+### Non-regression
+No semantic change is justified by this pulse. No economic constant, validator safety condition, authority-selection rule, oracle rule, or protocol limit is altered.
