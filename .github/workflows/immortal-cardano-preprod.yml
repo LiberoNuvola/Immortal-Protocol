@@ -69,8 +69,12 @@ jobs:
       - name: Probe Demeter Ogmios Preprod context
         run: node audit/cardano-integration/preprod-ogmios-context.mjs
 
-      - name: Probe live Preprod wallet UTxO set
-        run: node audit/cardano-integration/preprod-wallet-utxo.mjs
+      - name: Verify live Preprod wallet UTxO evidence
+        run: |
+          test -s audit/preprod-evidence/preprod-wallet-utxo.json
+          test -s audit/preprod-evidence/preprod-wallet-utxo.sha256
+          test -s audit/preprod-evidence/preprod-wallet-summary.txt
+          cat audit/preprod-evidence/preprod-wallet-summary.txt
 
       - name: Run IMMORTAL to PRE-RICH Reveal boundary conformance
         run: |
