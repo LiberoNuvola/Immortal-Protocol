@@ -159,3 +159,13 @@ The Reveal redesign is **implemented but not yet GREEN**: it still requires a de
 - Commit `902a7b592f9537e73f506a3498aafe4dff3e7c58` carries the resolver fix; fresh P2.8 run `36222605699` is queued on that exact head.
 - Therefore P2.8 remains **OPEN**, but the known resolver frontier has advanced from native prerequisites through Cardano/Plutus source materialization to the next executable stage.
 - No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
+
+## 2026-09-26 — P2.8 microlens compatibility frontier
+
+- Cardano Ledger Audit Runner run `36222605693` reached compilation after the `plutus-tx` resolver fix and failed concretely in `cardano-prelude-0.2.0.0`: its `Cardano.Prelude.Microlens` imports `Field1..Field5` from `Lens.Micro.Internal`, while microlens `0.5.x` moved those definitions to `Lens.Micro`.
+- This is a dependency/API compatibility issue, not an IMMORTAL economic or validator defect.
+- The P2.8 runner now constrains `microlens == 0.4.14.0`, the compatible API surface for the pinned `cardano-prelude` source.
+- The fix is committed as `9ec325e1ca7be43d573ce71560824d9134e1bea1` and the audit branch was advanced to the same exact head for the next native run.
+- Native dependencies and GHC/Cabal setup have already completed successfully on P2.8 run `36223012451`; that run predates the microlens pin, so it is not the closure run. It remains useful only as evidence that the P2.8 setup/bootstrap path is progressing beyond the prior resolver stop.
+- P2.8 remains **OPEN** until a run containing the microlens pin reaches typed-context evaluation and produces the required native-ledger evidence packet.
+- No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
