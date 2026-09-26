@@ -7922,3 +7922,24 @@ The change addresses the observed bootstrap error without changing the pinned Ca
 **Classification:** P2.8 bootstrap = **REPAIRED / FRESH RUN REQUIRED**; no evaluator, validator, or economic conclusion inferred.
 
 **USER QUESTION:** NONE.
+
+
+## 2026-09-26 — Certification pulse: current P2.8 bootstrap + Preprod secret boundary
+
+### P2.8 native runner
+Current branch head at observation time is `9e1a6affc6c4179caa84242c8bb121f6fe4019e9`. Run `36218689829` reached the P2.8 job and passed both:
+- native Cardano crypto dependency installation;
+- explicit `libsodium-any` pkg-config contract verification.
+
+The second step succeeds by accepting the Ubuntu-provided `libsodium` pkg-config definition and creating the runner-local compatibility alias `libsodium-any.pc` when needed. This directly addresses the previously observed bootstrap failure without changing Cardano ledger semantics. The job remains **IN PROGRESS** at GHC/Cabal installation; no native evaluator result is yet claimed.
+
+### Preprod / Ogmios authentication
+Latest Preprod workflow run `36218591993` reached the dedicated secret-presence gate and failed because `DEMETER_API_KEY` is not available to the workflow. The Ogmios probe therefore did not execute. This is an infrastructure credential boundary, not a ledger/economic failure. Demeter documentation states that Ogmios access uses an API key/header for authentication; the repository must keep that credential in GitHub Secrets and must never place it in committed files or evidence artifacts. 
+
+### Certification classification
+- P2.8 dependency bootstrap: **REPAIRED / CURRENT RUN PENDING EVALUATOR**.
+- P2.8 native evaluator evidence: **OPEN**.
+- Preprod Ogmios context: **BLOCKED BY MISSING SECRET**.
+- B3/Materios, B4/B5/B6, GOV-28: unchanged from prior certification state.
+
+No economic constant, validator rule, authority-selection shortcut, expiry rule, or fee parameter changed in this pulse.
