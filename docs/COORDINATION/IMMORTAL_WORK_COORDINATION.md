@@ -8419,3 +8419,16 @@ Classification:
 - Fail-closed SAFE_STALL semantics: **UNCHANGED**.
 - Fresh build/audit evidence: **PENDING**.
 - No ledger/economic/validator semantics changed.
+
+
+## 2026-09-26 — Economic Mutator Surface audit topology corrected
+
+Run `36220195129` failed in the mechanical inventory because the checker incorrectly required `export async function issueTicket` in `src/gameFlow.ts`. Direct inspection shows the Issue path is implemented in `src/mint.ts` as `mintSerialNFT`, and it crosses the same economic boundary through `CardanoExecutionAdapter.submitEconomic(..., 'Issue')`. Reveal/Claim/Expire remain in `src/gameFlow.ts`.
+
+Commit `c0eab1fc8591828b7231d711d62a9883d8040431` corrects the audit to inspect the actual production topology: `mintSerialNFT` + `submitEconomic` for Issue, and the canonical game-flow exports for Reveal/Claim/Expire.
+
+Classification:
+- Economic mutator implementation: **UNCHANGED / PRESENT**.
+- Audit false assumption: **REPAIRED**.
+- Fresh mutator-surface CI: **PENDING**.
+- No economic or validator semantics changed.
