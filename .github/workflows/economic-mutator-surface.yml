@@ -1,0 +1,44 @@
+name: IMMORTAL Economic Mutator Surface Audit
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "IMMORTAL/kernel/EconomicTransitionV3.hs"
+      - "src/gameFlow.ts"
+      - "Adapter/CARDANO/runtime/EconomicAdmission.ts"
+      - "Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts"
+      - "src/__tests__/rf8-submission-boundary.test.ts"
+      - "src/__tests__/preRichIssueRefinement.test.ts"
+      - "src/__tests__/preRichRevealRefinement.test.ts"
+      - "src/__tests__/preRichClaimRefinement.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
+      - "scripts/check-economic-mutator-surface.mjs"
+      - ".github/workflows/economic-mutator-surface.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "IMMORTAL/kernel/EconomicTransitionV3.hs"
+      - "src/gameFlow.ts"
+      - "Adapter/CARDANO/runtime/EconomicAdmission.ts"
+      - "Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts"
+      - "src/__tests__/rf8-submission-boundary.test.ts"
+      - "src/__tests__/preRichIssueRefinement.test.ts"
+      - "src/__tests__/preRichRevealRefinement.test.ts"
+      - "src/__tests__/preRichClaimRefinement.test.ts"
+      - "src/__tests__/preRichExpireRefinement.test.ts"
+      - "scripts/check-economic-mutator-surface.mjs"
+      - ".github/workflows/economic-mutator-surface.yml"
+
+jobs:
+  mutator-surface:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit economic mutator inventory
+        run: node scripts/check-economic-mutator-surface.mjs
