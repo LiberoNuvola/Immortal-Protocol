@@ -2474,3 +2474,21 @@ The next Preprod execution sequence is:
 
 **STATUS: 🟢 ROLE SEPARATION CLOSED / 🔴 LIVE TREASURY + V3 DEPLOYMENT IDENTITIES AND RUNTIME WITNESS OPEN**
 
+## 44.15 PREPROD DEPLOYMENT SIGNER GAP — 2026-09-26
+
+Repository inspection found no committed/certified production Preprod deployment signer, V3 carrier token identity, or live V3 carrier evidence. This is intentional and must not be filled with invented values.
+
+The V3 carrier deployment helper requires a local/admin signing wallet only because the one-shot mint policy is parameterized by an explicit seed UTxO. The signer is **not** the Treasury script and is **not** the DEMETER first-user wallet.
+
+Therefore the operational roles are now explicit:
+
+- Treasury: protocol-controlled script address derived from the unparameterized Treasury validator.
+- Deployment signer: dedicated local/admin Preprod wallet, used only for the one-time V3 carrier materialization.
+- DEMETER: first real user CIP-30 wallet.
+
+No deployment transaction should be attempted until the dedicated signer exists, has tADA, and its seed UTxO is explicitly selected. The signer mnemonic must remain local and must never be committed, placed in frontend configuration, or pasted into chat.
+
+The live Treasury address and V3 carrier identity remain runtime evidence, not source constants.
+
+**STATUS: 🟢 ARCHITECTURAL ROLES CLOSED / 🔴 DEPLOYMENT SIGNER + LIVE PREPROD EVIDENCE OPEN**
+
