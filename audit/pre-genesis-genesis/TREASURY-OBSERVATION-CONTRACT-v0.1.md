@@ -1,12 +1,12 @@
 # PRE-GENESIS → GENESIS Treasury Observation Contract v0.1
 
-**Status:** implementation/evidence gap — contract extraction only; not a new economic rule.
+**Status:** implementation/evidence gap — regime carrier/predicate implemented; production/on-chain transition evidence remains open.
 
 ## Finding
 
-Direct inspection of the current closure branch found no executable PRE-GENESIS → GENESIS transition, no `PreGenesis`/`GenesisState` type, and no runtime action that consumes a verified Treasury valuation and changes the economic regime.
+The implementation boundary has advanced since this contract was first recorded. The current PRE-RICH profile now contains an explicit `PreRichRegimeState`, canonical `preGenesisState`/`genesisState` carriers, and a fail-closed `preGenesisToGenesis` transition predicate over a `GenesisTreasuryObservation`. Dedicated GenesisRegimeCarrier tests cover acceptance, below-threshold rejection, conservative fractional valuation, wrong-source rejection, and replay rejection.
 
-The current Treasury implementation is a legacy distribution mechanism (`TreasuryAction = Distribute`) with percentage fields and a nominal `tdThreshold`. It is not a valid Genesis activation authority. Reusing it would conflate legacy Treasury distribution with the frozen Genesis bootstrap condition.
+The remaining gap is the **production/on-chain transition path**: a verified real Treasury observation must still be connected to canonical identity/state evidence, on-chain revalidation, atomic committed GENESIS state, and a reproducible accounting delta. The legacy Treasury distribution mechanism must not be reused as Genesis authority.
 
 ## Minimum boundary
 
