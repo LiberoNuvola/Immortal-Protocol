@@ -324,7 +324,10 @@ main = do
           }
   assert "conformance witness ruleset must match event ruleset"
     (not (eventSchemaValid mismatchedConformanceEvent))
-      adoptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 2
+  let adoptedState =
+        GovernanceState 1
+          [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }]
+          2
   case applyCanonicalEvent ruleset emptyState adoptedState (Just (withCommitment adoptionEvent)) (withCommitment conformanceEvent) of
     Left err -> error ("FAIL: conformance rejected: " ++ err)
     Right st -> assert (eventsApplied st == 3)
