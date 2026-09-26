@@ -1471,3 +1471,43 @@ The derivation is reproducible through `audit/pre-genesis-genesis/derive-preprod
 
 **IMPORTANT:** this closes the derivation part, not the deployment/ledger part. The address is not promoted to canonical live Treasury until a Preprod ledger query observes the expected Treasury UTxO at exactly this address and the UTxO is bound into the Genesis/Issue evidence packet.
 
+
+
+# 30. ISSUE DECISION CANONICAL INTEGRITY BOUNDARY — 2026-09-26
+
+Progressed beyond the bridge: the injected authoritative Issue producer now has an explicit integrity gate before an EconomicAdmissionWitness can enter the Cardano adapter.
+
+### Implemented
+
+Added:
+- `Adapter/CARDANO/observation/AuthoritativeIssueAdmissionDecision.ts`
+- validation of canonical decision hashes (`stateHash`, `actionFingerprint`, `postStateHash`);
+- non-negative EEV/liquidity constraints;
+- exact binding between the decision's observation reference and `ExecutableLiquidityObservation`;
+- exact binding between authenticated Pool input/value and the liquidity observation;
+- fail-closed check that required immediate liquidity does not exceed the observed executable liquidity.
+
+Updated:
+- `Adapter/CARDANO/observation/AuthoritativeIssueAdmission.ts` now validates the decision before constructing the runtime witness.
+- adversarial tests cover mismatched observation identity and malformed state hashes.
+
+Commits:
+- `e83cfb42ef54574a07f66bfefa096b6eb05ec5f9` — canonical Issue decision integrity boundary
+- `f5b0fd7dc1d8117a12dc3357b9a6b14c2a922008` — provider validation
+- `2e0f01c82461041492b52de4fccae77b75240b3e` — adversarial tests
+
+### What this closes
+
+The runtime bridge can no longer accept a merely shape-valid object whose internal observation/value bindings contradict each other.
+
+### What remains OPEN
+
+This is still **not** the authoritative economic producer.
+
+The remaining source-of-truth gap is precise:
+
+`authoritative decision artifact -> canonical PRE-RICH V3 observation/refinement -> existing Haskell PreRichEconomicAdmission -> decision artifact -> Cardano adapter`
+
+The missing component must obtain the real current PRE-RICH V3 pre-state and authoritative EEV/liquidity/truth evidence, invoke the existing economic admission path, and emit the resulting replayable decision. It must not reimplement the economics in frontend TypeScript.
+
+**NEXT CONCRETE WITNESS:** a real authoritative Issue decision produced from the current Preprod state, then consumed by the existing bridge, followed by the first DEMETER/CIP-30 Issue transaction.
