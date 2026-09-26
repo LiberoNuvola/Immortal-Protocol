@@ -62,7 +62,7 @@ async function waitFor(fn, predicate, label) {
 
 const provider = new Koios(KOIOS)
 const lucid = await Lucid(provider, 'Preprod')
-lucid.selectWalletFromSeed(SEED)
+lucid.selectWallet.fromSeed(SEED)
 
 const address = await lucid.wallet().address()
 if (address !== EXPECTED_ADDRESS) {
