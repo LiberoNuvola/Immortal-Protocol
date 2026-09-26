@@ -1617,3 +1617,16 @@ No GoldenVector/test state has been promoted to live authority.
 
 The carrier validator currently provides the state/concurrency boundary. It does not yet authorize arbitrary economic transitions by itself. Issue/Reveal/Claim/Expire must be bound to the consumed/reference V3 state through their respective application validators before the carrier can be treated as the complete canonical transition authority.
 
+
+
+## 33. V3 ECONOMIC STATE CARRIER HARDENING — 2026-09-26
+
+Commit `a9a5fab9829cdbbfee19cd9846acd39eaf17734a` hardens the V3 application-owned economic state carrier without changing any economic constant or Genesis semantics.
+
+- The carrier now validates the consumed V3 state as well as the successor state.
+- The configured singleton token is counted across **all** transaction inputs and outputs, so an additional copy cannot coexist with the authenticated carrier input/output.
+- The existing one-input/one-output/state-version increment rule remains unchanged.
+- This closes a validator-level integrity gap; it does **not** close deployment, production singleton identity, initial-state provenance, or first Preprod Issue evidence.
+- CI status for this commit is not yet observed; no workflow run is claimed green.
+
+The next deployment blocker remains the same: a real seed UTxO plus an explicitly sourced canonical initial V3 state, followed by production singleton observation and binding to Issue.
