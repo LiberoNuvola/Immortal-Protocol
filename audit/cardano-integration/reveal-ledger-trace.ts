@@ -374,12 +374,55 @@ const preStateFingerprint = hashJson({
   poolDatum: poolUtxo.datum,
 })
 
+// Publish the two validator scripts as reference-script UTxOs before building Reveal.
+const prizeReferenceTx = await lucid
+  .newTx()
+  .payToAddressWithData(
+    address,
+    { scriptRef: scripts.prizeValidator as Script },
+    { lovelace: 2_000_000n },
+  )
+  .complete()
+const prizeReferenceSigned = await prizeReferenceTx.sign().complete()
+const prizeReferenceHash = await prizeReferenceSigned.submit()
+await lucid.awaitTx(prizeReferenceHash)
+
+const poolReferenceTx = await lucid
+  .newTx()
+  .payToAddressWithData(
+    address,
+    { scriptRef: scripts.b1PrizePool as Script },
+    { lovelace: 2_000_000n },
+  )
+  .complete()
+const poolReferenceSigned = await poolReferenceTx.sign().complete()
+const poolReferenceHash = await poolReferenceSigned.submit()
+await lucid.awaitTx(poolReferenceHash)
+
+const referenceUtxos = await lucid.utxosAt(address)
+const prizeReferenceUtxo = referenceUtxos.find((u) => u.txHash === prizeReferenceHash)
+const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceHash)
+if (!prizeReferenceUtxo || !poolReferenceUtxo) {
+  throw new Error('reference-script UTxOs were not materialized on Yaci')
+}
+if (!(prizeReferenceUtxo as any).scriptRef || !(poolReferenceUtxo as any).scriptRef) {
+  throw new Error('reference-script UTxOs are present but scriptRef is not decoded')
+}
+
+const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
+const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
+if (lucid.utils.validatorToScriptHash((prizeReferenceUtxo as any).scriptRef) !== expectedPrizeHash) {
+  throw new Error('PrizeValidator reference script hash mismatch')
+}
+if (lucid.utils.validatorToScriptHash((poolReferenceUtxo as any).scriptRef) !== expectedPoolHash) {
+  throw new Error('B1PrizePool reference script hash mismatch')
+}
+
 const reveal = await lucid
   .newTx()
+  .readFrom([prizeReferenceUtxo, poolReferenceUtxo])
   .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
-  .attachSpendingValidator(scripts.prizeValidator as Script)
   .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
-  .attachSpendingValidator(scripts.b1PrizePool as Script)
   .payToContract(
     scripts.prizeAddress as string,
     { inline: Data.to(postPrizeDatum) },
@@ -411,6 +454,19 @@ const submission = await executionAdapter.submitInfrastructure(reveal)
 const txHash = submission.transactionRef
 if (!signedReveal) throw new Error('Adapter did not retain the signed Reveal for replay evidence')
 const txCbor = signedReveal.toCBOR()
+const txBytes = Buffer.from(txCbor, 'hex').length
+console.log(JSON.stringify({
+  revealSerializedBytes: txBytes,
+  maxTxSize: protocolParameters.maxTxSize ?? null,
+  belowMaxTxSize: typeof protocolParameters.maxTxSize === 'number'
+    ? txBytes <= protocolParameters.maxTxSize
+    : null,
+  prizeReference: prizeReferenceHash + '#0',
+  poolReference: poolReferenceHash + '#0',
+}, null, 2))
+if (typeof protocolParameters.maxTxSize === 'number' && txBytes > protocolParameters.maxTxSize) {
+  throw new Error(`Reveal transaction remains over maxTxSize: ${txBytes} > ${protocolParameters.maxTxSize}`)
+}
 writeFileSync(
   'audit/yaci-evidence/reveal-tx.cbor',
   Buffer.from(txCbor, 'hex'),
