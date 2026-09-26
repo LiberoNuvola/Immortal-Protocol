@@ -17,6 +17,7 @@ function fail(message){
 
 const kernel=mustFile('IMMORTAL/kernel/EconomicTransitionV3.hs')
 const game=mustFile('src/gameFlow.ts')
+const mint=mustFile('src/mint.ts')
 const adapter=mustFile('Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts')
 const admission=mustFile('Adapter/CARDANO/runtime/EconomicAdmission.ts')
 const negative=mustFile('src/__tests__/rf8-submission-boundary.test.ts')
@@ -26,7 +27,9 @@ const claim=mustFile('src/__tests__/preRichClaimRefinement.test.ts')
 const expire=mustFile('src/__tests__/preRichExpireRefinement.test.ts')
 
 for(const action of ['Issue','Reveal','Claim','Expire']) mustContain(kernel,'IMMORTAL/kernel/EconomicTransitionV3.hs',action)
-for(const fn of ['issueTicket','revealPrize','claimPrize','expirePrize']) mustContain(game,'src/gameFlow.ts',`export async function ${fn}`)
+for(const fn of ['revealPrize','claimPrize','expirePrize']) mustContain(game,'src/gameFlow.ts',`export async function ${fn}`)
+mustContain(mint,'src/mint.ts','export async function mintSerialNFT')
+mustContain(mint,'src/mint.ts','.submitEconomic')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Reveal'/,'Reveal economic submission path')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Claim'/,'Claim economic submission path')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Expire'/,'Expire economic submission path')
@@ -49,4 +52,4 @@ for(const [path,source,pattern,label] of [
 
 console.log('ECONOMIC MUTATOR SURFACE: PASS')
 console.log('Covered economic actions: Issue, Reveal, Claim, Expire')
-console.log('Each action has a kernel definition, current game-flow execution path, EconomicAdmission boundary, refinement test and negative evidence surface.')
+console.log('Each action has a kernel definition, current production execution path, EconomicAdmission boundary, refinement test and negative evidence surface.')
