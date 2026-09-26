@@ -8665,3 +8665,25 @@ Observed wallet packet: status FUNDED; 28 UTxOs; 9,986,228,222 lovelace (9.98622
 - Exact source/observation binding: GREEN.
 - Real Preprod transaction submission: OPEN.
 - P2.8 native evaluator: OPEN.
+
+## 2026-09-26 — Triangulation: residual proof fronts and concrete B6 boundary
+
+### Residual proof fronts after repository + Notion triangulation
+The current branch was re-triangulated against the residual formal/certification register and the end-to-end Notion system map. The remaining fronts split into two categories.
+
+Repository-closable/evidence-closable fronts:
+- B6 V3 to Cardano correspondence now has a dedicated field-correspondence test. It verifies preservation of every field supplied by the projection boundary, including all eight class records, monetary scale, SafetyCapital, ReserveProtection, MandatoryFutureCosts and externally supplied control state. It also makes explicit that the legacy B1PrizePoolDatum does not itself contain V3 CurrentActiveClass, HighestClassEverActivated, JackpotStatus or JackpotCycle; the projection therefore remains a correspondence boundary, not full authentication/equivalence of those fields.
+- Economic Gate now has a dedicated fail-closed Haskell test suite covering authoritative truth, freshness, obligation completeness, executable liquidity bounds, EEV >= ProtectedCapital, viability and certified-successor inputs.
+- Provider credential hygiene now has an executable repository scan; the first observed run passed after removal of a real hardcoded Blockfrost credential from blockfrost-proxy/proxy.js.
+
+Externally/instance-dependent fronts that must not be fabricated:
+- RF6 / Omega completeness: the formal contract requires deployment-specific perimeter evidence P1-P8; no current S0/Omega deployment certificate exists in the repository.
+- R5 upgrade/migration: UC1-UC10 and the mathematical theorems exist, but no concrete M_new, migration map mu, new certificate K_c,new or activation package exists from which a real upgrade certificate can be honestly produced.
+- B3-C succinct proof: no proof system is canonically fixed; research boundaries exist, but choosing a concrete system requires verifier/script-size/execution-budget feasibility evidence rather than speculative selection.
+- Gate 41: the Pool NFT mint transaction and direct NFT lineage/funding boundaries are already evidenced in Notion, but the primary historical PRE mint witness remains dependent on authenticated provider acquisition; sandbox external DNS failure is not evidence that the witness does not exist.
+
+### Current CI anchor
+Current branch head remains subject to concurrent advancement by other sessions. No certification state is promoted from a previous head without an exact-head run/artifact. P2.8 native evalTxExUnitsWithLogs remains OPEN until the exact current head produces the evaluator result and evidence packet.
+
+### Non-regression
+No economic constant, validator semantics, oracle rule, expiry duration, fee value, authority-selection algorithm or protocol limit was changed by this triangulation.
