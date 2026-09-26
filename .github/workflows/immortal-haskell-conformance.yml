@@ -121,3 +121,7 @@ jobs:
       - name: Genesis regime carrier conformance
         working-directory: plutus
         run: cabal test genesis-regime-carrier-tests
+
+      - name: Historical PRE policy UPLC decode
+        working-directory: plutus
+        run: cabal run inspect-historical-pre-policy
