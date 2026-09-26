@@ -143,6 +143,13 @@ finalizedEvent =
     [EvidenceRef "finalization-evidence"]
     AcceptedEvent
 
+mismatchedDecisionRulesetEvent :: CanonicalEvent
+mismatchedDecisionRulesetEvent =
+  finalizedEvent
+    { eventPayload =
+        PayloadDecisionFinalized
+          (finalizationRecord { decisionRulesetVersion = 2 })
+    }
 
 adoptionEvent :: CanonicalEvent
 adoptionEvent =
@@ -195,6 +202,24 @@ main = do
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"
+
+  let rulesetV2 =
+        [ RulesetDefinition 1 "ruleset-v1" 0 Nothing
+        , RulesetDefinition 2 "ruleset-v2" 100 (Just 1) ]
+      futureRulesetEvent =
+        withCommitment
+          (event2 { rulesetVersion = 2
+                  , eventTimestamp = 50
+                  , eventPayload = PayloadStatusChanged 1 Proposed 50 })
+      activeRulesetEvent =
+        withCommitment
+          (event2 { rulesetVersion = 2
+                  , eventTimestamp = 100
+                  , eventPayload = PayloadStatusChanged 1 Proposed 100 })
+  assert "future ruleset rejected before effective timestamp"
+    (not (canonicalGovernanceEventValid rulesetV2 Nothing futureRulesetEvent))
+  assert "ruleset accepted at effective timestamp"
+    (canonicalGovernanceEventValid rulesetV2 Nothing activeRulesetEvent)
 
   let duplicateIdEvent =
         withCommitment (event2 { eventId = eventId event1 })
@@ -272,6 +297,9 @@ main = do
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
 
+  assert "decision witness ruleset must match event ruleset"
+    (not (eventSchemaValid mismatchedDecisionRulesetEvent))
+
   let conformanceRecord = ConformanceRecord
         { conformanceProposalId = 7
         , conformanceImplementationCommit = "impl-commit-7"
@@ -287,6 +315,15 @@ main = do
         "evt-conformance" 7 1 EConformanceRecorded Reviewer 259402
         (PayloadConformanceRecorded conformanceRecord)
         "payload-conformance" (Just "evt-adopted") [EvidenceRef "conformance-evidence"] AcceptedEvent
+
+  let mismatchedConformanceEvent =
+        conformanceEvent
+          { eventPayload =
+              PayloadConformanceRecorded
+                (conformanceRecord { conformanceRulesetVersion = 2 })
+          }
+  assert "conformance witness ruleset must match event ruleset"
+    (not (eventSchemaValid mismatchedConformanceEvent))
       adoptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 2
   case applyCanonicalEvent ruleset emptyState adoptedState (Just (withCommitment adoptionEvent)) (withCommitment conformanceEvent) of
     Left err -> error ("FAIL: conformance rejected: " ++ err)
