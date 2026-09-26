@@ -8344,3 +8344,19 @@ Classification:
 - Exact post-Conway resolver result: **PENDING FRESH RUN**.
 - Native typed-context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
+
+
+## 2026-09-26 — Autonomous cycle: Genesis valuation boundary correction
+
+### Critical cross-language finding
+The current PRE-GENESIS → GENESIS path had a real arithmetic discrepancy: TypeScript floor division versus Haskell `ceilingDiv`. Because Genesis admission is a hard lower-bound predicate, upward rounding is not admissible.
+
+The boundary is now corrected to floor division in `PreRichGenesisAdmission.hs`, with a Haskell regression witness for `9,999,999 × 40,000 / 1,000,000 = 399,999.96` that must remain below the 4,000 USDM threshold. The TypeScript mirror already rejects the same case.
+
+### Current certification
+- Genesis arithmetic source correction: **APPLIED**.
+- Cross-language boundary: **RESTORED TO FLOOR**.
+- Regression evidence: **PENDING CURRENT-HEAD HASKELL CI**.
+- RT-1.1 current status: **OPEN UNTIL FRESH CI EVIDENCE**.
+
+No economic threshold or policy parameter changed.

@@ -187,3 +187,15 @@ The Genesis stress lab now explicitly models the authenticated observation field
 This is a mirror/instrumentation hardening only. It demonstrates that the scenario harness does not silently treat those fields as irrelevant, but it does not prove that a real reference-input UTxO carrying the oracle state is itself authoritative or unforgeable. RT-2.13 therefore remains OPEN at ledger authority level until a real adversarial ledger trace proves that the authenticated Oracle/Treasury references cannot be replaced by attacker-controlled state while preserving the required token identities.
 
 Related implementation commits: 7896bb57f7f4bece265e4412324ec8bc0705ea20 and 8c372499f73e905d4801356685e5acf4984a2117.
+
+
+## 2026-09-26 — RT-1.1 current-head arithmetic discrepancy corrected
+
+A current cross-language inspection found that the PRE-GENESIS → GENESIS arithmetic was inconsistent: the TypeScript admission mirror used conservative integer floor division, while the on-chain/reference Haskell path used `ceilingDiv`. A fractional value just below the 4,000 USDM threshold could therefore round upward in the Haskell predicate.
+
+Concrete witness:
+`9,999,999 PRE × 40,000 / 1,000,000 = 399,999.96`.
+
+The Haskell implementation has now been changed to integer floor division, and a regression vector asserts both the floored value and rejection of the fractional-below-threshold transition.
+
+**Classification:** arithmetic discrepancy = **CORRECTED IN SOURCE; CURRENT-HEAD CI EVIDENCE PENDING**. The previous historical RT-1 closure entry is retained as history; it is not used to infer present conformance.

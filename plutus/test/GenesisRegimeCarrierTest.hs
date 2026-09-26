@@ -5,6 +5,7 @@ module Main where
 import Prelude (Bool(..), IO, String, error, putStrLn, (==), (++))
 import PreRichGenesisAdmission
   ( GenesisTreasuryObservation (..)
+  , genesisTreasuryValueUsdm
   )
 import PreRichRegimeState
   ( PreRichRegime (..)
@@ -38,6 +39,12 @@ wrongSourceObservation =
     True False True True True True
     400000 1 1
 
+fractionalBelowThresholdObservation :: GenesisTreasuryObservation
+fractionalBelowThresholdObservation =
+  GenesisTreasuryObservation
+    True True True True True True
+    9999999 40000 1000000
+
 main :: IO ()
 main = do
   let accepted = preGenesisToGenesis preGenesisState validObservation
@@ -58,6 +65,14 @@ main = do
   assert
     (rejectedBelow == Nothing)
     "below-threshold observation fails closed"
+
+  assert
+    (genesisTreasuryValueUsdm fractionalBelowThresholdObservation == Just 399999)
+    "fractional below-threshold valuation floors conservatively"
+
+  assert
+    (preGenesisToGenesis preGenesisState fractionalBelowThresholdObservation == Nothing)
+    "fractional below-threshold Genesis admission fails closed"
 
   assert
     (rejectedSource == Nothing)
