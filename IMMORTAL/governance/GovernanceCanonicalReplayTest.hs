@@ -207,8 +207,16 @@ main = do
         withCommitment (event2 { eventTimestamp = 5
                                , eventPayload = PayloadStatusChanged 1 Classified 5 })
       regressedEvent =
-        withCommitment (StatusEvent 1 4)
-      StatusEvent _ _ = event2
+        withCommitment
+          (event2 { eventId = "evt-3"
+                  , eventTimestamp = 4
+                  , eventPayload = PayloadStatusChanged 1 ImpactReview 4
+                  , predecessor = Just "evt-2"
+                  , evidenceRefs = [EvidenceRef "regression-evidence"] })
+  case replayCanonical ruleset emptyState
+         [withCommitment event1, lateEvent, regressedEvent] of
+    Left _ -> putStrLn "PASS: canonical event timestamp regression rejected"
+    Right _ -> error "FAIL: canonical event timestamp regression accepted"
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment collapsedAcceptedEvent] of
     Left _ -> putStrLn "PASS: collapsed Accepted shortcut rejected before mutation"
     Right _ -> error "FAIL: collapsed Accepted shortcut mutated canonical state"
