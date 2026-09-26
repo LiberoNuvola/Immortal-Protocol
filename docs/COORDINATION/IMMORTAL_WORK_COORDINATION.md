@@ -8080,3 +8080,28 @@ The economic-conformance workflow at the current head has successfully completed
 - No economics, validator semantics, authority selection, oracle rules, or protocol limits changed.
 
 **USER QUESTION:** NONE.
+
+## 2026-09-26 — Preprod validation failure isolated
+
+A real push-triggered Preprod workflow run was observed at run `36219051187`, head `fb67673fb5886103db65b2e33392855a96f4dc34`. The job reached checkout and dependency installation, then failed in the combined **Preprod probe input validation** step. The Ogmios context probe and live wallet UTxO probe were therefore not executed in that run.
+
+This is not evidence of an Ogmios, wallet-funding, transaction, or P2.8 evaluator failure.
+
+Commit `db8c144675eb4f7b78dc361eb1c40ee41c31a440` splits the validation into two independent fail-closed steps:
+- `DEMETER_API_KEY` presence;
+- Preprod wallet address shape.
+
+The secret value is never printed. The wallet address is checked only for the expected `addr_test...` form.
+
+### Classification
+
+- Previous Preprod run: **INPUT-VALIDATION FAILURE BEFORE NETWORK PROBE**.
+- Demeter/Ogmios connectivity: **UNVERIFIED BY THAT RUN**.
+- Wallet funding: **UNVERIFIED**.
+- Live Preprod UTxO observation: **OPEN — next workflow run will isolate the failing input if any**.
+- P2.8 native evaluator: **OPEN**.
+
+No economic, validator, authority-selection or protocol semantics changed.
+
+**USER QUESTION:** NONE.
+
