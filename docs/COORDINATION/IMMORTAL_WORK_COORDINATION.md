@@ -1202,3 +1202,62 @@ BLOCKER: P2.8, Preprod Reveal, B3, Genesis, GOV-28 and deployment evidence
 NEXT CONCRETE WITNESS: exact runtime evidence packets above
 FILES/COMMITS: see commits listed above
 ```
+
+---
+
+# 24. EXECUTION PASS — PUBLIC BOUNDARY + REVEAL EVIDENCE SEPARATION — 2026-09-26
+
+## Public state boundary
+
+The PRE-RICH public projection now requires the authoritative Active Class status explicitly: `ACTIVE | INACTIVE | TRANSITIONING | BLOCKED`.
+
+It no longer infers `ACTIVE` merely because an economic observation contains a CurrentActiveClass.
+
+Public validation additionally rejects:
+- invalid Active Class identifiers;
+- missing Active Class evidence;
+- invalid Active Class observation timestamps.
+
+Commits:
+- `7946bce8b5d74945de6cb0e8261cb73545d313cb`
+- `76f0ca63d14e510ca21fdfaff65844ed6903e824`
+- `e7e4d6ae29c5cea7e2d54f6d90f48793eace6c5a`
+- `c22cc059db5b370c93b0d99383044bfc017ab1ad`
+
+## Reveal evidence separation
+
+Repository inspection confirms that `audit/cardano-integration/reveal-ledger-trace.ts` is a real local Yaci/Cardano-devnet execution trace, not a Preprod witness.
+
+It creates and submits a real Yaci transaction and persists:
+- Reveal CBOR;
+- protocol parameters;
+- transition evidence;
+- consumed/produced UTxOs;
+- replay rejection evidence.
+
+However its evidence explicitly carries `environment: local-yaci-devnet`.
+
+Therefore:
+- it is valid runtime evidence for the local Yaci execution path;
+- it is not promoted to Preprod evidence;
+- it cannot close PREPROD-REVEAL or the Preprod portion of F3.
+
+## Current CI observation
+
+New push-triggered runs were observed for the latest implementation commits, including:
+- Protocol Declaration Conformance — queued;
+- Algorithmic Governability Adversarial Lab — queued.
+
+A queued run is not promoted to PASS.
+
+## Current closure state
+
+**IMPLEMENTATION:** public boundary strengthened and tested.
+
+**LOCAL RUNTIME:** Reveal path has an explicit real-Yaci evidence-producing trace.
+
+**PREPROD:** still OPEN pending a real Preprod transaction/evaluator packet.
+
+**P2.8:** still OPEN pending exact-head native ledger evaluation artifact.
+
+**No gate is closed by this pass.** The pass closes an ambiguity: local-Yaci evidence and Preprod evidence are separate evidence classes.
