@@ -7833,3 +7833,17 @@ ProtectedCapital/RawSurplus semantics remain frozen and the universal/applicatio
 
 **USER QUESTION:** NONE.
 **Next autonomous action:** continue non-P2.8 evidence closure and observe the repaired native CI path; do not convert bootstrap success into evaluator success without the actual artifact.
+
+
+## 2026-09-26 — Certification pulse: P2.8 timing provenance hardened
+
+The P2.8 context audit found a concrete timing-provenance hazard: Yaci Store's Blockfrost-compatible `/genesis` representation can round a fractional slot length (the upstream Yaci Store test explicitly expects `0.1` seconds to serialize as `1`). The devkit's `info` output, by contrast, exposes the cluster's exact `Slot Length`, `Start Time`, and `Epoch Length` values.
+
+The runner was therefore hardened without changing the native evaluation target:
+- `materialize-p28-ledger-context.mjs` now embeds the exact `yaci-devkit info` text into `epoch-info.json`, which is covered by the packet's SHA-256 manifest binding;
+- `decodeYaciEpochInfo` now derives the slot duration from the exact `Slot Length` in that captured devkit record and cross-checks `Epoch Length` against `/genesis`;
+- `decodeYaciSystemStart` cross-checks the recorded `Start Time` against `/genesis.system_start`.
+
+**Classification:** the previously identified EpochInfo provenance gap is **IMPLEMENTATION GAP → HARDENED / EVIDENCE PENDING**. A real packet evaluation is still required to demonstrate the resulting context on an exact workflow head.
+
+No protocol economics, validator semantics, or synthetic ledger context was introduced. The native `evalTxExUnitsWithLogs` boundary remains unchanged.
