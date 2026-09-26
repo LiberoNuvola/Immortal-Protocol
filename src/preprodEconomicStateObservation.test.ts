@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { createRequire } from 'node:module'\n\nconst require = createRequire(import.meta.url)\nconst { Constr, Data } = require('lucid-cardano')
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+const { Constr, Data } = require('lucid-cardano')
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 
 function stateDatum() {
@@ -19,7 +22,9 @@ function stateDatum() {
 
 function lucidWith(utxos: any[]) {
   return { utxosAt: async () => utxos }
-}\n\nconst decodeDatum = (raw: string) => Data.from(raw)
+}
+
+const decodeDatum = (raw: string) => Data.from(raw)
 
 const baseUtxo = {
   txHash: '11'.repeat(32),
