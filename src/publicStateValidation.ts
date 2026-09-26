@@ -54,8 +54,16 @@ export function validatePublicStateSnapshot(
   }
 
   const activeClass = snapshot.publicState.activeClass
-  if (activeClass && !activeClass.evidenceRef) {
-    return { valid: false, reason: 'active class is missing evidence reference' }
+  if (activeClass) {
+    if (!Number.isSafeInteger(activeClass.classId) || activeClass.classId < 0) {
+      return { valid: false, reason: 'active class id is outside public integer range' }
+    }
+    if (!activeClass.evidenceRef.trim()) {
+      return { valid: false, reason: 'active class is missing evidence reference' }
+    }
+    if (!activeClass.observedAt || !Number.isFinite(Date.parse(activeClass.observedAt))) {
+      return { valid: false, reason: 'active class has invalid observation time' }
+    }
   }
 
   return { valid: true }
