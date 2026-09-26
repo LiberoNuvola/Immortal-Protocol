@@ -8470,3 +8470,19 @@ Classification:
 - Preprod conformance binding packet: **WRITER BUG REPAIRED / FRESH RUN REQUIRED**.
 - Real submitted Preprod transaction: **OPEN**.
 - P2.8 native evaluator: **OPEN**.
+
+
+## 2026-09-26 — P2.8 cardano-crypto-praos alignment repaired
+
+Run `36220138683` / run 521 reached the real Cabal resolver after native bootstrap and failed on the exact dependency `cardano-crypto-praos` required by `cardano-ledger-binary-1.9.0.0`.
+
+Upstream `cardano-ledger-binary.cabal` at snapshot `f649f9751074d2ab3de033fc3912f29c9862c1f5` requires `cardano-crypto-praos >=2.2.2`. CHaP traces `cardano-crypto-praos-2.2.4.0` to IntersectMBO/cardano-base commit `060819b59c184b951a54e3c563304983c53a3eac`, subdirectory `cardano-crypto-praos`. That same source revision provides `cardano-binary-1.9.1.0` and `cardano-crypto-class-2.5.1.0`, matching the already observed ledger bounds.
+
+Commit `60ccdc82d8c89f28d865cced163ea884c6730510` adds the exact `cardano-crypto-praos` source pin to the P2.8 runner.
+
+Classification:
+- P2.8 cardano-crypto-praos dependency: **REPAIRED**.
+- Fresh exact-head resolver/evaluator run: **PENDING**.
+- Typed context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
