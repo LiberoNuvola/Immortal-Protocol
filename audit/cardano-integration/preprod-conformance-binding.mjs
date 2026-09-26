@@ -81,7 +81,7 @@ const packet = {
 
 await writeFile(
   evidenceDir + '/preprod-conformance-binding.json',
-  JSON.stringify(packet, null, 2) + '\\n',
+  JSON.stringify(packet, null, 2) + '\n',
 )
 
 const digest = createHash('sha256')
@@ -90,7 +90,7 @@ const digest = createHash('sha256')
 
 await writeFile(
   evidenceDir + '/preprod-conformance-binding.sha256',
-  digest + '  preprod-conformance-binding.json\\n',
+  digest + '  preprod-conformance-binding.json\n',
 )
 
 console.log(JSON.stringify({
