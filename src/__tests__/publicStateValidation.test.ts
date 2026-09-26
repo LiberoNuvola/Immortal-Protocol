@@ -54,6 +54,35 @@ describe('public state validation', () => {
     expect(validatePublicStateSnapshot(snapshot).valid).toBe(false)
   })
 
+  it('rejects an active class with invalid public identity or observation time', () => {
+    const base = {
+      publicState: {
+        activeClass: {
+          classId: -1,
+          status: 'ACTIVE',
+          evidenceRef: 'evidence:class',
+          observedAt: '2026-09-26T07:00:00Z',
+        },
+        modes: [],
+        actions: [],
+      },
+    } as unknown as PublicStateSnapshot
+    expect(validatePublicStateSnapshot(base).valid).toBe(false)
+
+    const invalidTime = {
+      ...base,
+      publicState: {
+        ...base.publicState,
+        activeClass: {
+          ...base.publicState.activeClass!,
+          classId: 1,
+          observedAt: 'not-a-date',
+        },
+      },
+    } as unknown as PublicStateSnapshot
+    expect(validatePublicStateSnapshot(invalidTime).valid).toBe(false)
+  })
+
   it('checks freshness without defining a protocol-wide freshness policy', () => {
     const now = new Date('2026-09-26T08:00:00Z')
     expect(isObservationFresh('2026-09-26T07:59:00Z', now, 120_000)).toBe(true)
