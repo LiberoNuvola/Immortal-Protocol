@@ -1,0 +1,201 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+module V3EconomicStateCarrier
+  ( V3EconomicStateDatum (..)
+  , V3EconomicStateAction (..)
+  , mkValidator
+  , compiledValidator
+  ) where
+
+import PlutusLedgerApi.V2
+import PlutusLedgerApi.V2.Contexts
+import PlutusTx
+import PlutusTx.Prelude
+import qualified PlutusTx.AssocMap as AssocMap
+
+import EconomicStateV3
+  ( V3EconomicState (..)
+  , TicketClassState (..)
+  , EconomicControlState (..)
+  , JackpotState (..)
+  , JackpotStatus (..)
+  )
+
+data V3EconomicStateDatum = V3EconomicStateDatum
+  { vesdStateVersion :: Integer
+  , vesdState        :: V3EconomicState
+  }
+
+PlutusTx.unstableMakeIsData ''V3EconomicStateDatum
+
+data V3EconomicStateAction
+  = AdvanceV3State
+  | HoldV3State
+
+PlutusTx.unstableMakeIsData ''V3EconomicStateAction
+
+{-# INLINABLE singletonAmount #-}
+singletonAmount :: Value -> BuiltinByteString -> BuiltinByteString -> Integer
+singletonAmount value policy name =
+  case AssocMap.lookup (CurrencySymbol policy) (getValue value) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup (TokenName name) tokens of
+        Nothing -> 0
+        Just amount -> amount
+
+{-# INLINABLE ownInput #-}
+ownInput :: ScriptContext -> TxOut
+ownInput ctx =
+  case findOwnInput ctx of
+    Just i -> txInInfoResolved i
+    Nothing -> traceError "V3Carrier: missing own input"
+
+{-# INLINABLE ownHash #-}
+ownHash :: ScriptContext -> ScriptHash
+ownHash ctx =
+  case addressCredential (txOutAddress (ownInput ctx)) of
+    ScriptCredential h -> h
+    _ -> traceError "V3Carrier: own input is not script"
+
+{-# INLINABLE continuingOutput #-}
+continuingOutput :: ScriptContext -> TxOut
+continuingOutput ctx =
+  let
+    go [] = traceError "V3Carrier: missing continuing output"
+    go (o:os) =
+      case addressCredential (txOutAddress o) of
+        ScriptCredential h | h == ownHash ctx -> o
+        _ -> go os
+  in go (txInfoOutputs (scriptContextTxInfo ctx))
+
+{-# INLINABLE decodeDatum #-}
+decodeDatum :: TxInfo -> TxOut -> Maybe V3EconomicStateDatum
+decodeDatum info out =
+  case txOutDatum out of
+    OutputDatum d -> fromBuiltinData (getDatum d)
+    OutputDatumHash h ->
+      case findDatum h info of
+        Just d -> fromBuiltinData (getDatum d)
+        Nothing -> Nothing
+    NoOutputDatum -> Nothing
+
+{-# INLINABLE classValid #-}
+classValid :: TicketClassState -> Bool
+classValid c =
+     tcsClassId c >= 0
+  && tcsClassId c < 8
+  && tcsIssued c >= 0
+  && tcsUnresolved c >= 0
+  && tcsUnresolved c <= tcsIssued c
+  && tcsExposure c >= 0
+  && tcsCap c >= 0
+  && tcsExposure c == tcsUnresolved c * classPrice c
+  where
+    classPrice c =
+      case tcsClassId c of
+        0 -> 1
+        1 -> 2
+        2 -> 3
+        3 -> 5
+        4 -> 10
+        5 -> 25
+        6 -> 50
+        7 -> 100
+        _ -> 0
+
+{-# INLINABLE stateValid #-}
+stateValid :: V3EconomicState -> Bool
+stateValid s =
+     v3CrystallizedLiabilities s >= 0
+  && v3UnresolvedReserve s >= 0
+  && v3UnresolvedTicketCount s >= 0
+  && v3SafetyCapital s >= 0
+  && v3ReserveProtection s >= 0
+  && v3MandatoryFutureCosts s >= 0
+  && all classValid (v3Classes s)
+  && v3UnresolvedReserve s == sumExposure (v3Classes s)
+  && v3UnresolvedTicketCount s == sumUnresolved (v3Classes s)
+  && ecsCurrentActiveClass (v3Control s) >= 0
+  && ecsCurrentActiveClass (v3Control s) < 8
+  && ecsHighestClassEverActivated (v3Control s) >= ecsCurrentActiveClass (v3Control s)
+  && ecsHighestClassEverActivated (v3Control s) < 8
+  && jsLockedAmount (v3Jackpot s) >= 0
+  && jsThreshold (v3Jackpot s) >= 0
+  && jsCycle (v3Jackpot s) >= 0
+  where
+    sumExposure [] = 0
+    sumExposure (x:xs) = tcsExposure x + sumExposure xs
+    sumUnresolved [] = 0
+    sumUnresolved (x:xs) = tcsUnresolved x + sumUnresolved xs
+
+{-# INLINABLE datumStateVersion #-}
+datumStateVersion :: V3EconomicStateDatum -> Integer
+datumStateVersion = vesdStateVersion
+
+{-# INLINABLE sameStateIdentity #-}
+sameStateIdentity :: V3EconomicStateDatum -> V3EconomicStateDatum -> Bool
+sameStateIdentity before after =
+     vesdStateVersion after == vesdStateVersion before + 1
+  && stateValid (vesdState after)
+
+{-# INLINABLE mkValidator #-}
+mkValidator
+  :: BuiltinByteString
+  -> BuiltinByteString
+  -> V3EconomicStateDatum
+  -> V3EconomicStateAction
+  -> ScriptContext
+  -> Bool
+mkValidator carrierPolicy carrierName datum action ctx =
+  let
+    info = scriptContextTxInfo ctx
+    inputValue = txOutValue (ownInput ctx)
+    output = continuingOutput ctx
+    outputDatum = decodeDatum info output
+    inputToken = singletonAmount inputValue carrierPolicy carrierName
+    outputToken = singletonAmount (txOutValue output) carrierPolicy carrierName
+  in
+       inputToken == 1
+    && outputToken == 1
+    && txOutValue output == inputValue
+    && case outputDatum of
+         Nothing -> False
+         Just after ->
+           case action of
+             HoldV3State ->
+               vesdStateVersion after == datumStateVersion datum
+               && vesdState after == vesdState datum
+             AdvanceV3State ->
+               sameStateIdentity datum after
+
+{-# INLINABLE wrap #-}
+wrap
+  :: BuiltinByteString
+  -> BuiltinByteString
+  -> BuiltinData
+  -> BuiltinData
+  -> BuiltinData
+  -> BuiltinUnit
+wrap policy name datum action ctx =
+  check
+    (mkValidator
+      policy
+      name
+      (unsafeFromBuiltinData datum)
+      (unsafeFromBuiltinData action)
+      (unsafeFromBuiltinData ctx))
+
+compiledValidator
+  :: CompiledCode
+       (BuiltinByteString
+        -> BuiltinByteString
+        -> BuiltinData
+        -> BuiltinData
+        -> BuiltinData
+        -> BuiltinUnit)
+compiledValidator = $$(compile [|| wrap ||])
