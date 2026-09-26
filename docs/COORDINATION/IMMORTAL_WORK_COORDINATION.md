@@ -2492,7 +2492,17 @@ The live Treasury address and V3 carrier identity remain runtime evidence, not s
 
 **STATUS: 🟢 ARCHITECTURAL ROLES CLOSED / 🔴 DEPLOYMENT SIGNER + LIVE PREPROD EVIDENCE OPEN**
 
+### 44.15.1 Dedicated signer address supplied — 2026-09-26
 
+A dedicated Preprod deployment-wallet address has now been supplied for the one-time V3 carrier materialization:
+
+`addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4`
+
+This is treated only as the **candidate deployment signer address**. Its balance, UTxOs and signing authority are not claimed until observed against Preprod. No mnemonic/private key is recorded.
+
+**NEXT RUNTIME WITNESS:** fund this address with Preprod tADA, then select exactly one concrete seed UTxO for the V3 one-shot mint. The seed reference, policy ID and carrier address must be produced by the deployment helper and persisted as runtime evidence.
+
+**STATUS: 🟡 SIGNER ADDRESS SUPPLIED / 🔴 FUNDED UTxO + SIGNED V3 DEPLOYMENT OPEN**
 
 ## 44.14 AUTHORITATIVE ISSUE REFINEMENT ENVELOPE — 2026-09-26
 
