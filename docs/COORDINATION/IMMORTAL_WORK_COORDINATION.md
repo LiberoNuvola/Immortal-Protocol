@@ -7,7 +7,7 @@
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
 **Snapshot:** 2026-09-26
-**Latest observed code commit by this session:** `608a8cf965760a65b4e18399048c44eabe250cef` — documentation handoff follows in commit `5ce9629c78fdd2c8dc6a1170df739bb491e1ea90`
+**Latest observed code commit by this session:** `c598b9abf2a8ec931c0128d226584c699d6dfcae` — protocol transparency declaration frontier added
 
 ---
 
@@ -8915,3 +8915,33 @@ No economic constants, validator semantics, beacon trust rules, or authority bou
 - P2.8 remains **OPEN / fresh native run required**. The existing run `36223012451` predates this pin and therefore cannot certify the repaired head.
 - Required closure evidence remains unchanged: exact typed UTxO/PParams/EpochInfo/SystemStart decode, native Babbage evaluation, redeemer/ex-unit report, and binding evidence.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — Protocol declaration fronts implemented
+
+The transparency concept is now represented as four explicit work fronts:
+
+| ID | Front | Status | Boundary |
+|---|---|---|---|
+| DECLARATION-LAYER-001 | Protocol Declaration Layer | **DESIGN / IMPLEMENTED DOMAIN MODEL** | Public declaration projection only; no economic authority. |
+| LIFE-STATE-001 | Turritopsis-inspired Life State | **DESIGN / OPEN** | International biological vocabulary; presentation semantics only. |
+| ACTIVITY-DECL-001 | Canonical Current Activity | **DESIGN / IMPLEMENTED DOMAIN MODEL** | Explicitly declares the operation being observed; `IDLE` is required when no activity is declared. |
+| OBSERVABILITY-001 | Public Operational & Evidence Surface | **DESIGN / OPEN** | Operational status, beacon trust mode, observation age/staleness and evidence binding. |
+
+### Implemented artifacts
+
+- `src/protocolDeclaration.ts`
+- `src/__tests__/protocolDeclaration.test.ts`
+- `.github/workflows/protocol-declaration-conformance.yml`
+- `docs/04-guides/13_PROTOCOL_DECLARATION_LAYER_v0.1.md`
+- `PRE-RICH/docs/V5-PUBLIC-LIFE-ACTIVITY-DESIGN-v0.1.md`
+
+### Architectural rule
+
+The existing R4 `src/livenessBoundary.ts` remains the technical liveness boundary. The declaration layer consumes authoritative observations but does not replace liveness classification, Economic Gate admission, validator checks, authenticated control, beacon verification, or canonical state.
+
+### Current evidence status
+
+The TypeScript model and dedicated conformance workflow are present. A successful workflow run for the newest declaration commits has not yet been observed through the available workflow-run connector, so no CI-green claim is made.
+
+No economic constants, payout rules, expiry semantics, validator safety conditions, authority-selection rules, beacon trust assumptions or Cardano protocol limits were changed.
+
