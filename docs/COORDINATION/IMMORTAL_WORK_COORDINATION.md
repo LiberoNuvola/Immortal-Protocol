@@ -2191,3 +2191,14 @@ The historical PRE decoder is now isolated as the first semantic step of the Has
 Reason: the decoder must not be masked by an unrelated failure in a later economic/governance conformance suite. A failing downstream test must not erase the evidence that the historical witness itself did or did not deserialize.
 
 **STATUS: 🟡 DECODER EXECUTION ISOLATED / 🔴 DECODE RESULT + UPLC SEMANTICS OPEN**
+
+
+## 44.6 Preprod Issue observation boundary — 2026-09-26
+
+Implemented `relayer/preprodIssueObservationProvider.js` as a strict observation/refinement adapter. It does not calculate economics. It validates exact Counter/Pool references, Pool valuation provenance, observation reference/time, and completeness of the canonical IssueDecisionInput before handing it to the existing Haskell producer through the existing relayer bridge.
+
+Tests added in `relayer/preprodIssueObservationProvider.test.js`: successful pass-through, Counter mismatch, Pool valuation mismatch, observation binding mismatch, and incomplete decision input.
+
+Commits: `26c80229cba8191c86086aa67cbf66bb17375490` and `4d32632c0fa49633ba9b8d0628ef7ca2b558da1c`.
+
+This closes the **adapter contract gap**, not the real Preprod observation itself. The remaining witness is an actual Preprod reader supplying the deployed Counter, B1 PrizePool, V3 carrier/state and authenticated Oracle observation.
