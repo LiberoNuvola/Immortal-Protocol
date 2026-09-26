@@ -42,7 +42,7 @@ for(const [path,source,needle] of [
   ['src/__tests__/preRichIssueRefinement.test.ts',issue,'refinement'],
   ['src/__tests__/preRichRevealRefinement.test.ts',reveal,'reveal payout'],
   ['src/__tests__/preRichClaimRefinement.test.ts',claim,'exact claim'],
-  ['src/__tests__/preRichExpireRefinement.test.ts',expire,'expire'],
+  ['src/__tests__/preRichExpireRefinement.test.ts',expire,'refinesAggregateExpire'],
 ]) mustContain(source,path,needle)
 for(const [path,source,pattern,label] of [
   ['src/__tests__/preRichIssueRefinement.test.ts',issue,/reject|Throw/i,'negative twin'],
