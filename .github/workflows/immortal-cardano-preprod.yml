@@ -1,5 +1,9 @@
 name: IMMORTAL Cardano Preprod Context
 
+concurrency:
+  group: immortal-cardano-preprod-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
@@ -33,6 +37,11 @@ jobs:
 
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
+
+      - name: Validate Demeter secret presence
+        run: |
+          test -n "$DEMETER_API_KEY"
+          echo "DEMETER_API_KEY=present"
 
       - name: Probe Demeter Ogmios Preprod context
         run: node audit/cardano-integration/preprod-ogmios-context.mjs
