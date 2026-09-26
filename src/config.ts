@@ -24,3 +24,6 @@ export const B1_POOL_TOKEN_NAME_HEX = env('VITE_B1_POOL_TOKEN_NAME_HEX')
 // Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
 export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')
 export const B1_PRIZE_POOL_REFERENCE_ADDRESS = env('VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS')
+
+export const BLOCKFROST_PREPROD_URL = env('VITE_BLOCKFROST_PREPROD_URL') || 'https://cardano-preprod.blockfrost.io/api/v0'
+export const BLOCKFROST_PROJECT_ID = env('VITE_BLOCKFROST_PROJECT_ID')
