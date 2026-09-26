@@ -1261,3 +1261,17 @@ A queued run is not promoted to PASS.
 **P2.8:** still OPEN pending exact-head native ledger evaluation artifact.
 
 **No gate is closed by this pass.** The pass closes an ambiguity: local-Yaci evidence and Preprod evidence are separate evidence classes.
+
+
+# 25. CI EXECUTION CONFIRMATION — 2026-09-26
+
+Two push-triggered validation runs previously observed as queued have now completed successfully on the public-boundary head `e7e4d6ae29c5cea7e2d54f6d90f48793eace6c5a`:
+
+- Protocol Declaration Conformance — run `36227168706`: **PASS** (`declaration-conformance`). Protocol declaration tests and TypeScript typecheck completed successfully.
+- Algorithmic Governability Adversarial Lab — run `36227168703`: **PASS** (`no-result-dependent-authority`). The no-result-dependent-authority adversarial check completed successfully.
+
+This is bounded CI evidence only. It does not close P2.8, PREPROD-REVEAL, B3, Genesis, or deployment certification. In particular, the real Yaci Reveal trace remains local-devnet evidence and must not be promoted to Preprod.
+
+**Validation result:** the public declaration boundary changes have passed their targeted conformance/typecheck CI, and the algorithmic governability adversarial guard has passed.
+
+**Next concrete witnesses:** exact-head native ledger evaluation packet and real Preprod Reveal packet.
