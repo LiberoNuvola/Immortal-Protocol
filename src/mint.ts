@@ -47,11 +47,6 @@ import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import {
-  obtainAuthoritativeIssueAdmission,
-  type AuthoritativeIssueAdmissionProvider,
-} from './preRichIssueAdmissionBridge'
-
-import {
   buildScriptsFromLucid,
   counterValidator,
 } from './loadValidator'
