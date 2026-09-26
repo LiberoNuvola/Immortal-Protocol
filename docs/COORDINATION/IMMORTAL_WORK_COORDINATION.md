@@ -8502,3 +8502,18 @@ Classification:
 - Typed context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — Preprod conformance binding VERIFIED
+
+Fresh run `36220479492` / run 26 completed **SUCCESS** on head `f87ac155f1cd4b45aed7a3ed7521ef487d0a72f3`. The run verified Demeter credential presence, live Ogmios v7 Preprod context, live funded-wallet UTxOs, IMMORTAL→PRE-RICH Reveal boundary conformance (4/4 tests), and the final `preprod-conformance-binding.mjs` packet generation.
+
+The prior JSON writer defect is therefore resolved by observed execution, not just code inspection. The packet binds one source snapshot to one live Preprod observation and executable boundary-conformance result. It still does **not** claim a submitted Preprod transaction or native P2.8 evaluator result.
+
+Classification:
+- Demeter/Ogmios context: **VERIFIED**.
+- Live wallet UTxOs/funding: **VERIFIED**.
+- Reveal boundary conformance: **VERIFIED**.
+- Preprod conformance binding: **VERIFIED**.
+- Real submitted Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
