@@ -1731,3 +1731,54 @@ No Genesis, Treasury, Issue, or economic authority is inferred from the deployme
 ## CI observation rule
 
 As of this coordination update, the latest profile/datum commits have no workflow run/status observable through the GitHub integration. No green CI state is claimed until a real run is observed.
+
+
+# 30. ISSUE ADMISSION PRODUCER — EXECUTABLE PATH FOUND — 2026-09-26
+
+The previously identified "authoritative producer" gap is narrower than initially stated.
+
+## Existing canonical producer
+
+The repository already contains:
+
+- `PRE-RICH/profile/PreRichIssueDecision.hs` — authoritative PRE-RICH Issue decision path;
+- `produceIssueDecision` — calls `preRichEconomicAdmission` using the canonical PRE-RICH profile;
+- `plutus/export/IssueAdmission.hs` — executable JSON boundary (`cabal run issue-admission`) which parses the complete IssueDecisionInput and returns an admitted decision or fails closed;
+- `src/preRichIssueAdmissionBridge.ts` — runtime boundary that refuses any witness not produced by an injected authoritative provider and binds it to exact Counter/Pool/liquidity inputs;
+- `src/mint.ts::mintSerialNFTWithAuthoritativeAdmission` — actual Issue entry point already wired to that bridge.
+
+This means we must **not create a second economic implementation in TypeScript**. The Haskell executable is the intended economic authority; TypeScript must only transport observed/refinement inputs and consume its result.
+
+## Exact remaining blocker
+
+The missing piece is now **transport/runtime integration**, not economic decision logic:
+
+`Preprod observation/refinement → canonical IssueDecisionInput JSON → cabal run issue-admission → authoritative IssueDecision → EconomicAdmissionWitness → mintSerialNFTWithAuthoritativeAdmission → CIP-30 signing`
+
+The producer must receive complete authoritative inputs:
+
+- exact V3 pre-state;
+- Issue class/price;
+- pre-state EEV;
+- candidate EEV;
+- immediately executable liquidity;
+- required immediate liquidity;
+- truth verification;
+- EEV freshness;
+- obligations completeness;
+- certified Ω successor condition;
+- decision reference;
+- observation reference.
+
+No field may be synthesized from browser UI state, legacy B1 aggregation, or a conformance fixture.
+
+## Non-regression
+
+- Do not duplicate `preRichEconomicAdmission` in TypeScript.
+- Do not turn `PreRichCardanoObservationProjection.ts` into an economic authority; it remains an observation/refinement projection.
+- Do not expose `DEPLOYER_MNEMONIC` or any wallet seed to the browser.
+- Do not claim that the executable producer itself is Preprod evidence until its inputs are sourced from the actual observed singleton state and the resulting Issue is executed on Preprod.
+
+**STATUS: 🟡 IMPLEMENTATION PATH IDENTIFIED / RUNTIME TRANSPORT OPEN**
+
+**NEXT CONCRETE IMPLEMENTATION:** wire a non-browser runtime (relayer/service) to invoke the existing `issue-admission` executable from authoritative observed inputs, then adapt its output into `EconomicAdmissionWitness` with exact Pool/liquidity binding.
