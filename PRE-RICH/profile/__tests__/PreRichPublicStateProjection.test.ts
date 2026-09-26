@@ -34,6 +34,7 @@ describe('PRE-RICH public state projection', () => {
       state,
       {
         activeClassEvidenceRef: 'cardano:tx/abc#0',
+        activeClassStatus: 'ACTIVE',
         observedAt: '2026-09-26T08:00:00Z',
         roundId: '185',
       },
@@ -63,7 +64,7 @@ describe('PRE-RICH public state projection', () => {
   it('fails closed when class evidence is absent', () => {
     expect(() => projectObservedPreRichPublicState(
       state,
-      { activeClassEvidenceRef: '', observedAt: '2026-09-26T08:00:00Z' },
+      { activeClassEvidenceRef: '', activeClassStatus: 'ACTIVE', observedAt: '2026-09-26T08:00:00Z' },
       [],
       [],
     )).toThrow('active class evidence reference is required')
