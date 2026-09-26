@@ -12,32 +12,29 @@ import type {
  * Helper leggero per costruire una claim tx.
  * La validazione on-chain resta responsabilità di PrizeValidator.
  */
+/**
+ * @deprecated Legacy claim builder intentionally disabled.
+ *
+ * A transaction assembled here could otherwise be handed to the generic
+ * infrastructure submitter and bypass the canonical EconomicAdmission path.
+ * The supported Claim flow is src/gameFlow.ts/claim.ts with exact settlement
+ * evidence and an explicit EconomicAdmission witness.
+ */
 export async function buildClaimTx(
   lucid: any,
   ticketPolicyId: string,
   ticketAssetName: string,
   prizeUtxo: any,
-  recipientAddr: string
+  recipientAddr: string,
 ) {
-  const assetId = ticketPolicyId + ticketAssetName
-
-  // Nota: per un claim completo (con burn del ticket) usa claimFlow.ts.
-  // Questa funzione è un helper minimo e deve comunque attaccare il validator.
-  const tx = await lucid
-    .newTx()
-    .collectFrom([prizeUtxo], lucid.Data.void())
-    .attachSpendingValidator(prizeValidator)
-    .attachMetadata(721, {
-      note: 'claim',
-      ticket: assetId,
-    })
-    .addSigner(await lucid.wallet.address())
-    .payToAddress(recipientAddr, {
-      lovelace: prizeUtxo?.value?.lovelace ?? prizeUtxo?.assets?.lovelace ?? 0n,
-    })
-    .complete()
-
-  return tx
+  void lucid
+  void ticketPolicyId
+  void ticketAssetName
+  void prizeUtxo
+  void recipientAddr
+  throw new Error(
+    'Legacy buildClaimTx disabled: use the canonical Claim flow with EconomicAdmission',
+  )
 }
 
 export async function signAndSubmitTx(lucid: any, tx: any) {
