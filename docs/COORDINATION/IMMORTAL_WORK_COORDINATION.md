@@ -8252,3 +8252,25 @@ No protocol, validator, economic, authority-selection or ledger semantics change
 
 **USER QUESTION:** NONE.
 
+## 2026-09-26 — Persisted sanitized Preprod Ogmios diagnostics
+
+Run `36219543565` again passed both credential and wallet-address validation, then failed in the live Ogmios context probe. The wallet UTxO query was not reached.
+
+Commit `619b9d3e0accbe94dcea3e5ba926c7318001cb69` makes the probe persist a sanitized diagnostic file `ogmios-preprod-diagnostic.json` on failure. The diagnostic records the endpoint and failure class/message while redacting the configured credential value.
+
+This closes the observability gap between:
+`credential injection -> WebSocket/query failure -> evidence artifact`.
+
+### Classification
+
+- Environment secret resolution: **CONFIRMED WORKING**.
+- Wallet address validation: **CONFIRMED WORKING**.
+- Ogmios Preprod probe: **OPEN — failure artifact now persisted**.
+- Live Preprod UTxO packet: **NOT YET OBSERVED**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+
+No protocol, validator or economic semantics changed.
+
+**USER QUESTION:** NONE.
+
