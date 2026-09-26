@@ -8824,3 +8824,22 @@ Commit `bac73a7e38661347993eac412bfa8299e9e989a7` changes only the P2.8 runner's
 - Typed Cardano context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, or evaluator semantics changed.
+
+
+## 2026-09-26 — GOV-28 canonical event history hardening
+
+The canonical governance replay boundary was hardened without changing governance policy:
+
+- canonical event timestamps are now monotone non-decreasing relative to the immediate predecessor;
+- a canonical event cannot reuse the predecessor's event identifier;
+- replay rejects any duplicate event identifier already present in the replay history;
+- dedicated GOV-28 regression vectors cover duplicate IDs and timestamp regression, including CONFORMANCE_RECORDED.
+
+The existing SHA-256 commitment algorithm and commitment preimage format were left unchanged; serialization migration remains a separate versioned design question.
+
+### Classification
+- GOV-28 event identity: **HARDENED / TESTED**.
+- GOV-28 event temporal ordering: **HARDENED / TESTED**.
+- GOV-28 canonical serialization ambiguity: **OPEN / VERSIONING QUESTION**.
+- Haskell current-head evidence: **FRESH RUN REQUIRED**.
+- No economic, validator, oracle, expiry, fee, authority-selection or protocol-limit semantics changed.
