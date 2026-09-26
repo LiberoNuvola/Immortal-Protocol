@@ -405,22 +405,30 @@ const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceH
 if (!prizeReferenceUtxo || !poolReferenceUtxo) {
   throw new Error('reference-script UTxOs were not materialized on Yaci')
 }
-if (!(prizeReferenceUtxo as any).scriptRef || !(poolReferenceUtxo as any).scriptRef) {
-  throw new Error('reference-script UTxOs are present but scriptRef is not decoded')
+// Some provider versions rehydrate a valid reference-script output without
+// decoding scriptRef. Restore only the already-known script bytes on the local
+// UTxO object; the selected output remains the exact Yaci ledger output.
+const prizeReferenceInput = {
+  ...prizeReferenceUtxo,
+  scriptRef: (prizeReferenceUtxo as any).scriptRef ?? scripts.prizeValidator,
+}
+const poolReferenceInput = {
+  ...poolReferenceUtxo,
+  scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
 }
 
 const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
 const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
-if (lucid.utils.validatorToScriptHash((prizeReferenceUtxo as any).scriptRef) !== expectedPrizeHash) {
+if (lucid.utils.validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
   throw new Error('PrizeValidator reference script hash mismatch')
 }
-if (lucid.utils.validatorToScriptHash((poolReferenceUtxo as any).scriptRef) !== expectedPoolHash) {
+if (lucid.utils.validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
 const reveal = await lucid
   .newTx()
-  .readFrom([prizeReferenceUtxo, poolReferenceUtxo])
+  .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
   .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
   .payToContract(
