@@ -11,8 +11,13 @@ export type PublicObservationValidation =
 export function validateActionDeclaration(
   action: ActionAvailability,
 ): PublicObservationValidation {
-  if (!action.observedAt) return { valid: false, reason: 'missing observation time' }
+  if (!action.observedAt || !Number.isFinite(Date.parse(action.observedAt))) {
+    return { valid: false, reason: 'missing or invalid observation time' }
+  }
   if (!action.reason.trim()) return { valid: false, reason: 'missing action reason' }
+  if (action.state === 'AVAILABLE' && !action.evidenceRef?.trim()) {
+    return { valid: false, reason: 'AVAILABLE action is missing evidence reference' }
+  }
   if (action.state === 'AVAILABLE' && !action.available) {
     return { valid: false, reason: 'AVAILABLE action must be marked available' }
   }
@@ -27,6 +32,9 @@ export function validateModeDeclaration(
 ): PublicObservationValidation {
   if (!modeDeclarationPublishable(mode)) {
     return { valid: false, reason: 'mode declaration is missing reason, evidence, or observation time' }
+  }
+  if (!Number.isFinite(Date.parse(mode.observedAt))) {
+    return { valid: false, reason: 'mode declaration has invalid observation time' }
   }
   if (mode.status === 'ACTIVE' && !mode.active) {
     return { valid: false, reason: 'ACTIVE mode must be marked active' }
