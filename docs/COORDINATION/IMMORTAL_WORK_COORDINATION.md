@@ -2160,3 +2160,25 @@ The verification artifact has been updated accordingly:
 If the UPLC proof confirms the expected one-shot predicate, direct canonical-policy reuse on Preprod is ruled out: the historical parameter UTxO cannot be consumed on Preprod, and replacing it would produce a different parameterized script/policy identity. Cardano documentation independently confirms this one-shot/parameterization property. citeturn0search0turn0search1
 
 **STATUS: 🟢 CANDIDATE PARAMETER MATCH OBSERVED / 🔴 UPLC SEMANTIC PROOF OPEN**
+
+
+# 44.4 UPLC DECODER MATERIALIZED — 2026-09-26
+
+The historical-policy verification path is now executable in the repository rather than remaining a manual inspection task.
+
+Added:
+- `plutus/export/InspectHistoricalPrePolicy.hs`
+- `inspect-historical-pre-policy` executable in `plutus/pre-rich-plutus.cabal`
+- CI execution step in `.github/workflows/immortal-haskell-conformance.yml`
+
+The decoder:
+1. checks the exact 381-byte serialized witness;
+2. strips the 3-byte CBOR bytestring wrapper;
+3. checks the 378-byte Flat payload;
+4. checks that the candidate historical input hash is present in the payload;
+5. invokes the pinned repository Plutus `uncheckedDeserialiseUPLC` path;
+6. prints the decoded UPLC program.
+
+This is intentionally an **inspection/evidence tool**, not a new economic implementation.
+
+**STATUS: 🟡 UPLC DECODER IMPLEMENTED / 🔴 CI EXECUTION + SEMANTIC INTERPRETATION OPEN**
