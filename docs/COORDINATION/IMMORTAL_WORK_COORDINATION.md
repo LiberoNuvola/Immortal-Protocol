@@ -8604,3 +8604,18 @@ Commit 0053c019aef14c550715cec1e92808a1ac9f4e82 pins cardano-crypto-class 2.6.0.
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — Preprod context PROVEN; wallet probe credential normalization repaired
+
+Run 36220839706 reached the live Demeter Ogmios resource and produced a successful Preprod context artifact: status CONNECTED, network tip slot 134717338, ledger epoch 315, context SHA-256 cccaba9d56276b5731d6f7c3d96eb830c4d661397d53e0178d7c1699ea2a945a. The probe selected DEMETER_API_KEY_ALIAS and connected using the documented dmtr-api-key header. This closes the previous provider-connectivity blocker.
+
+The following wallet UTxO step then failed with HTTP 401 despite using the same environment secret. Inspection showed the context probe trims its endpoint/key values while preprod-wallet-utxo.mjs did not. Commit d6ed54aea69a537e4e7e3347e704b9f6f3fce5ea trims the Demeter endpoint, credential and wallet address before opening the UTxO probe.
+
+### Classification
+- Demeter Ogmios Preprod context: PROVEN by successful live artifact.
+- Selected credential alias: DEMETER_API_KEY_ALIAS.
+- Wallet UTxO live observation: OPEN — fresh run after credential normalization required.
+- Wallet funding: OPEN until live UTxO artifact is observed.
+- Real Preprod transaction: OPEN.
+- P2.8 native evaluator: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
