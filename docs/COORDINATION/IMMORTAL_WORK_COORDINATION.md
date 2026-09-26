@@ -2270,3 +2270,15 @@ This moves the runtime target from abstract design to:
 `real Preprod Counter + B1 Pool + V3 carrier -> authenticated IssueDecisionInput -> existing Haskell producer -> canonical evidence binding -> CIP-30 Issue`
 
 **STATUS: 🟡 REAL PREPROD OBSERVATION READER IMPLEMENTED / 🔴 ACTUAL PREPROD UTxO OBSERVATION OPEN**
+
+
+### 44.9 DEPLOYMENT IDENTITY SEAM — 2026-09-26
+
+The browser/runtime configuration now exposes the V3 carrier deployment identity through:
+- `VITE_V3_CARRIER_ADDRESS`
+- `VITE_V3_CARRIER_POLICY_ID`
+- `VITE_V3_CARRIER_TOKEN_NAME_HEX`
+
+No carrier address, policy or token identity is hard-coded. This is intentional: the reader can only become a live Preprod observer once the deployment actually supplies these identities.
+
+The existing Preprod topology already externalizes Counter, B1 Pool and Oracle identities through deployment configuration. The remaining missing deployment witness is therefore the actual V3 carrier singleton plus the authoritative EEV/refinement source. The reader must fail closed when either is absent.
