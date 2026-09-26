@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { Constr, Data } from 'lucid-cardano'
+import { Constr, Data } from 'lucid-cardano/web/mod.js'
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 
 function stateDatum() {
