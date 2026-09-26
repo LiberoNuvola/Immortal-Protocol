@@ -67,17 +67,43 @@ decodeYaciEpochInfo :: BS.ByteString -> Either String (EpochInfo (Either Text.Te
 decodeYaciEpochInfo bytes = do
   root <- eitherDecodeStrict' bytes
   genesis <- objectAt root ["genesisResponse"]
-  slotValue <- integerValueAt genesis "slot_length"
-  epochSize <- integerValueAt genesis "epoch_length"
-  if slotValue <= 0
-    then Left "INVALID_SLOT_LENGTH"
-    else if epochSize <= 0 || epochSize > 18446744073709551615
-      then Left "INVALID_EPOCH_LENGTH"
-      else
-        Right $
-          fixedEpochInfo
-            (EpochSize (fromInteger epochSize))
-            (slotLengthFromMillisec (slotValue * 1000))
+  yaciInfo <- textAt root ["yaciDevkitInfo"]
+  genesisEpochSize <- integerValueAt genesis "epoch_length"
+  exactEpochSize <- parseLabeledInteger "Epoch Length" yaciInfo
+  if genesisEpochSize <= 0 || genesisEpochSize > 18446744073709551615
+    then Left "INVALID_EPOCH_LENGTH"
+    else if exactEpochSize /= genesisEpochSize
+      then Left "YACI_EPOCH_LENGTH_MISMATCH"
+      else do
+        slotSeconds <- parseLabeledDecimal "Slot Length" yaciInfo
+        slotMillis <- parseMilliseconds "Slot Length" slotSeconds
+        if slotMillis <= 0
+          then Left "INVALID_SLOT_LENGTH"
+          else
+            Right $
+              fixedEpochInfo
+                (EpochSize (fromInteger genesisEpochSize))
+                (slotLengthFromMillisec slotMillis)
+
+parseLabeledInteger :: Text.Text -> Text.Text -> Either String Integer
+parseLabeledInteger label content = do
+  value <- parseLabeledDecimal label content
+  parseInteger (Text.unpack label) value
+
+parseLabeledDecimal :: Text.Text -> Text.Text -> Either String Text.Text
+parseLabeledDecimal label content =
+  case [ extracted
+       | line <- Text.lines content
+       , let marker = label <> "] "
+       , let (_, suffix) = Text.breakOn marker line
+       , Text.isPrefixOf marker suffix
+       , let afterMarker = Text.drop (Text.length marker) suffix
+       , let extracted = Text.takeWhile (/= ' ') afterMarker
+       ] of
+    value : _ -> if Text.null value
+      then Left ("MISSING_YACI_INFO:" <> Text.unpack label)
+      else Right value
+    [] -> Left ("MISSING_YACI_INFO:" <> Text.unpack label)
 
 protocolVersionToBinaryVersion :: PParams BabbageEra -> Either String Version
 protocolVersionToBinaryVersion pp =
