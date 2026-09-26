@@ -7912,3 +7912,13 @@ The active PR head is now `da1fafea9876afde59f83e9b401b671dec11f400`. The availa
 
 **USER QUESTION:** NONE.
 
+
+## 2026-09-26 — P2.8 bootstrap repair: pkg-config compatibility
+
+Following the native dependency repair recorded above, the current P2.8 workflow now also verifies the pkg-config naming contract before Cabal resolution. If `libsodium-any` is absent but the real `libsodium` package is present, CI creates a local `libsodium-any.pc` compatibility alias from the verified `libsodium.pc`; otherwise it fails closed.
+
+The change addresses the observed bootstrap error without changing the pinned Cardano sources or evaluator. A fresh exact-head workflow run is still required to establish whether native Ledger evaluation is reached.
+
+**Classification:** P2.8 bootstrap = **REPAIRED / FRESH RUN REQUIRED**; no evaluator, validator, or economic conclusion inferred.
+
+**USER QUESTION:** NONE.
