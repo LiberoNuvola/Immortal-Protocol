@@ -8632,3 +8632,21 @@ To eliminate the second-handshake boundary, commit c4309e8513795c7ebe86dbdcdd437
 - Wallet funding: OPEN until live UTxO packet reports the observed balance.
 - Real Preprod transaction: OPEN.
 - P2.8 native evaluator: OPEN.
+
+## 2026-09-26 — P2.8 crypto stack aligned to ledger-binary 1.9
+
+Run 36220839722 (P2.8 run 527) resolved all native bootstrap steps and then failed at Cabal resolution because cardano-ledger-binary-1.9.0.0 explicitly requires cardano-crypto-class <2.6, while the runner had been forced to 2.6.0.0.
+
+Upstream CHaP shows the f649f975 Cardano-ledger stack with cardano-ledger-binary-1.9.0.0 and cardano-crypto-class-2.5.1.0, while cardano-node 11.1.x uses cardano-crypto-1.3.0 with that same class line. The exact published cardano-crypto-1.3.0 source is commit a74150162e87a6d783b50a0ee7bdd95abe483bff and its Cabal file permits crypton <1.1, matching cardano-crypto-class-2.5.1.0.
+
+Commit f81266fc2181453982058feda1ad0f3f27dfd0f8 removes the separate cardano-crypto-class-2.6 pin and changes the cardano-crypto source to the published 1.3.0 commit. The existing cardano-base 60827ef pin again supplies cardano-crypto-class-2.5.1.0, matching ledger-binary-1.9.0.0 without any allow-newer override.
+
+### Classification
+- Native bootstrap: TRAVERSED.
+- Ledger source stack: UNCHANGED at f649f975.
+- Crypto dependency matrix: REPAIRED to ledger-compatible published versions.
+- Cabal resolver: FRESH RUN REQUIRED.
+- Typed ledger context: OPEN.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
