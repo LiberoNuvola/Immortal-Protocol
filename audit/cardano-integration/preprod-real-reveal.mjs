@@ -10,8 +10,6 @@ import {
 } from '../../src/beacon'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
-const OGMIOS = process.env.DEMETER_OGMIOS_URL?.trim()
-const API_KEY = process.env.DEMETER_API_KEY?.trim()
 const SEED = process.env.PREPROD_REVEAL_SEED?.trim()
 const EXPECTED_ADDRESS = process.env.PREPROD_WALLET_ADDRESS?.trim()
 const EVIDENCE_DIR = process.env.PREPROD_REVEAL_EVIDENCE_DIR ?? 'audit/preprod-evidence'
@@ -66,11 +64,11 @@ const provider = new Koios(KOIOS)
 const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWalletFromSeed(SEED)
 
-const address = await lucid.wallet.address()
+const address = await lucid.wallet().address()
 if (address !== EXPECTED_ADDRESS) {
   throw new Error('PREPROD_REVEAL_SEED resolves to unexpected wallet address')
 }
-const details = getAddressDetails(address)
+const details = lucid.utils.getAddressDetails(address)
 const keyHash = details.paymentCredential?.hash
 if (!keyHash) throw new Error('Preprod wallet has no payment credential')
 
