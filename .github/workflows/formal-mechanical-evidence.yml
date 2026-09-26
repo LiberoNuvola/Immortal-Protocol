@@ -1,0 +1,47 @@
+name: IMMORTAL Formal Mechanical Evidence
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "verification/**"
+      - "docs/01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md"
+      - "docs/02-certification/COMPOSITIONALITY_PROOF_AND_CERTIFICATION.md"
+      - "docs/02-certification/UPGRADE_MIGRATION_PROOF_AND_CERTIFICATION.md"
+      - ".github/workflows/formal-mechanical-evidence.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "verification/**"
+      - "docs/01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md"
+      - "docs/02-certification/COMPOSITIONALITY_PROOF_AND_CERTIFICATION.md"
+      - "docs/02-certification/UPGRADE_MIGRATION_PROOF_AND_CERTIFICATION.md"
+      - ".github/workflows/formal-mechanical-evidence.yml"
+
+jobs:
+  mechanical-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Finite abstract-model checks
+        run: python3 verification/finite_model_checks.py
+      - name: GOV-23 replay reference
+        run: python3 verification/gov23_reference_replay.py
+      - name: GOV-24 representation reference
+        run: python3 verification/gov24_reference.py
+      - name: GOV-25 commitment reference
+        run: python3 verification/gov25_reference.py
+      - name: GOV-26 validity boundary reference
+        run: python3 verification/gov26_reference.py
+      - name: GOV-27 authorization/evidence/ruleset reference
+        run: python3 verification/gov27_reference.py
+      - name: GOV-28 canonical replay reference
+        run: python3 verification/gov28_reference.py
+      - name: GOV-29 UTF-8 boundary reference
+        run: python3 verification/gov29_reference.py
