@@ -65,6 +65,14 @@ jobs:
       - name: Probe live Preprod wallet UTxO set
         run: node audit/cardano-integration/preprod-wallet-utxo.mjs
 
+      - name: Run IMMORTAL to PRE-RICH Reveal boundary conformance
+        run: |
+          set -o pipefail
+          npx vitest run src/__tests__/immortal-reveal-conformance.test.ts --reporter=verbose | tee audit/preprod-evidence/immortal-pre-rich-reveal-conformance.txt
+
+      - name: Bind Preprod observation to exact conformance snapshot
+        run: node audit/cardano-integration/preprod-conformance-binding.mjs
+
       - name: Record workflow provenance
         if: always()
         run: |
