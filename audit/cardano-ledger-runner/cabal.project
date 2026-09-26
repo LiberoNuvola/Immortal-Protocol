@@ -92,4 +92,7 @@ source-repository-package
     plutus-core
     plutus-ledger-api
 
+allow-newer:
+  cardano-crypto-class:crypton
+
 index-state: 2026-08-07T15:03:01Z
