@@ -11,7 +11,6 @@ module PreRichGenesisAdmission
 import PlutusTx.Prelude
 import qualified PlutusTx
 import PlutusTx.Prelude (divide)
-import qualified PlutusTx
 
 -- | PRE-RICH application bootstrap predicate. This is deliberately kept
 -- | outside IMMORTAL's universal economic kernel.
