@@ -8871,3 +8871,12 @@ The pinned f649f975 Cardano-ledger source does contain `libs/cardano-protocol`. 
 - Typed ledger context: OPEN.
 - Native `evalTxExUnitsWithLogs`: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — P2.8 exact-head resolver frontier
+
+- Cardano Ledger Audit Runner run `36222342384` reached the native Cardano/Plutus dependency resolver and failed on the concrete missing package `plutus-tx`, required by `plutus-ledger-api-1.67.0.0`.
+- Upstream Plutus release `2334b4e98f21653e3cdaf7ec25878e781ce7d5dc` contains the `plutus-tx` package. The P2.8 runner now materializes that exact subdirectory.
+- Fix commit: `902a7b592f9537e73f506a3498aafe4dff3e7c58`; exact-head P2.8 run `36222605699` is queued.
+- Classification: resolver frontier **REPAIRED — fresh run required**; typed-context decode and native `evalTxExUnitsWithLogs` remain **OPEN**.
+- No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
