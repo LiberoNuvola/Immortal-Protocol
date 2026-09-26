@@ -1,0 +1,146 @@
+name: IMMORTAL Preprod Ledger Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      preprod_tx_hash:
+        description: "Already-submitted Cardano Preprod transaction hash to evaluate"
+        required: true
+        type: string
+
+concurrency:
+  group: immortal-preprod-ledger-evidence
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: DEMETER
+    env:
+      PREPROD_TX_HASH: ${{ inputs.preprod_tx_hash }}
+      PREPROD_LEDGER_EVIDENCE_DIR: audit/cardano-ledger-runner/evidence
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
+      DEMETER_API_KEY: ${{ secrets.DEMETER_API_KEY || secrets.DEMETER }}
+      DEMETER_API_KEY_PRIMARY: ${{ secrets.DEMETER_API_KEY }}
+      DEMETER_API_KEY_ALIAS: ${{ secrets.DEMETER }}
+      DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ secrets.DEMETER_OGMIOS_AUTHENTICATED_URL }}
+      PREPROD_WALLET_ADDRESS: addr_test1qpsd5v0jln37h5g7pl2w6j7fhczu2cs4245welp0cn7xajjuy72qvweu0f5nckwtugmlnhfte2kv2a958fdxf9rt53nsdgmheq
+
+    steps:
+      - name: Checkout exact evidence target
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Install isolated Cardano probe dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Validate transaction hash
+        run: |
+          echo "$PREPROD_TX_HASH" | grep -Eq '^[0-9a-fA-F]{64}$'
+
+      - name: Validate Demeter credential
+        run: |
+          test -n "$DEMETER_API_KEY"
+          echo "DEMETER_API_KEY=present"
+
+      - name: Materialize exact Preprod transaction context
+        run: node audit/cardano-integration/materialize-preprod-p28-context.mjs
+
+      - name: Install native Cardano crypto dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
+
+      - name: Verify libsodium pkg-config contract
+        run: |
+          set -euo pipefail
+          if pkg-config --exists libsodium-any; then
+            echo "pkg-config libsodium-any already available"
+          elif pkg-config --exists libsodium; then
+            pcdir="$(pkg-config --variable=pcfiledir libsodium)"
+            test -f "$pcdir/libsodium.pc"
+            sudo ln -sf "$pcdir/libsodium.pc" "$pcdir/libsodium-any.pc"
+            pkg-config --exists libsodium-any
+          else
+            exit 1
+          fi
+          pkg-config --modversion libsodium
+          pkg-config --modversion libsodium-any
+          pkg-config --exists libsecp256k1
+          pkg-config --modversion libsecp256k1
+
+      - name: Install and register pinned blst
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (cd /tmp/blst && ./build.sh)
+          rc=$?
+          set -e
+          test -s /tmp/blst/libblst.a
+          test "$rc" -eq 0 || echo "blst build.sh returned $rc after producing the required archive"
+          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          prefix=/usr/local
+          exec_prefix=${prefix}
+          libdir=${exec_prefix}/lib
+          includedir=${prefix}/include
+          Name: libblst
+          Description: Multilingual BLS12-381 signature library
+          Version: 0.3.14
+          Cflags: -I${includedir}
+          Libs: -L${libdir} -lblst
+          EOF
+          sudo ldconfig
+          pkg-config --exists 'libblst >= 0.3.14'
+          pkg-config --modversion libblst
+
+      - name: Setup GHC and Cabal
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.8.4"
+          cabal-version: "3.12"
+
+      - name: Native typed-context decode and ledger evaluation
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          set -euo pipefail
+          cabal update
+          cabal run cardano-ledger-runner -- --evaluate 2>&1 | tee evidence/preprod-runner.log
+
+      - name: Record evidence provenance
+        if: always()
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          {
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "preprod_tx_hash=$PREPROD_TX_HASH"
+            echo "provider_tx=Koios"
+            echo "provider_context=Demeter/Ogmios"
+            echo "network=cardano-preprod"
+            echo "runner=cardano-ledger-native"
+          } | tee evidence/preprod-evidence-provenance.txt
+
+      - name: Upload complete Preprod ledger evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-ledger-evidence
+          path: audit/cardano-ledger-runner/evidence/
+          if-no-files-found: error
