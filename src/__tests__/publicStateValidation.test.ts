@@ -26,6 +26,26 @@ describe('public state validation', () => {
     }).valid).toBe(false)
   })
 
+  it('rejects an AVAILABLE action without evidence', () => {
+    expect(validateActionDeclaration({
+      action: 'BUY_TICKET',
+      state: 'AVAILABLE',
+      available: true,
+      reason: 'Sale is open.',
+      observedAt: '2026-09-26T07:00:00Z',
+    }).valid).toBe(false)
+  })
+
+  it('rejects an action with an invalid observation time', () => {
+    expect(validateActionDeclaration({
+      action: 'BUY_TICKET',
+      state: 'BLOCKED',
+      available: false,
+      reason: 'Prerequisite pending.',
+      observedAt: 'not-a-date',
+    }).valid).toBe(false)
+  })
+
   it('rejects contradictory mode activity', () => {
     expect(validateModeDeclaration({
       mode: 'RECOVERY_MODE',
