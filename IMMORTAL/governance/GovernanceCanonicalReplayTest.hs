@@ -447,3 +447,5 @@ main = do
     Right _ -> error "FAIL: ADOPTION_RECORDED preceded finalization"
 
 
+
+-- Exact-head conformance trigger: GOV-28 replay hardening current-head evidence 2026-09-26.
