@@ -218,3 +218,13 @@ test-suite genesis-regime-carrier-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
+
+
+test-suite economic-gate-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: EconomicGateTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
