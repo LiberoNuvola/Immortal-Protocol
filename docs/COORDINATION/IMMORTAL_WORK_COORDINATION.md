@@ -6,8 +6,8 @@
 >
 > **Working branch:** `work/immortal-green-closure`
 > **Snapshot:** 2026-09-26
-> **Observed HEAD:** `2505e2ec5bbbc2b79d34e2009b7eb90bd14cce5d`
-> **HEAD change:** `audit: formalize Preprod PRE materialization gate`
+> **Observed HEAD:** `dee5ecd7592ed948b5d8e9bf05d145cdb5700656`
+> **HEAD change:** `docs: reconcile coordination head and PRE materialization blocker`
 
 ---
 
@@ -1868,3 +1868,27 @@ No new token policy, synthetic Yaci asset, or guessed minting script may be intr
 ## Parallel execution rule
 
 While this gate is open, all independent fronts may continue. No front may silently reinterpret the canonical PRE identity or weaken Genesis admission to bypass the materialization gate.
+
+
+# 42. OPERATOR UNLOCK PACKET — HISTORICAL PRE POLICY RECOVERY — 2026-09-26
+
+The PRE materialization blocker has been narrowed to the historical mint-policy witness.
+
+## Operator action
+
+The repository already contains `scripts/acquire-pre-snek-witness.ps1`. Run locally on a machine with Blockfrost Mainnet access:
+
+```powershell
+$env:BLOCKFROST_MAINNET_PROJECT_ID = "<YOUR_BLOCKFROST_MAINNET_PROJECT_ID>"
+powershell -ExecutionPolicy Bypass -File .\scripts\acquire-pre-snek-witness.ps1
+```
+
+Do not commit the credential. The script preserves `evidence/pre-snek/gate41-witness/tx.cbor`, `tx.cbor.hex`, `redeemers.raw.json`, the filtered PRE mint redeemer selection, raw responses and SHA-256 hashes.
+
+The decisive next step is to inspect the transaction witness set and extract candidate minting scripts, then compute their policy IDs. A candidate is accepted only if the resulting policy ID is exactly `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c`. A redeemer alone is insufficient.
+
+This can unlock the blocker because Gate 41 already establishes the exact historical mint transaction `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`, canonical policy, asset name `5052452d52494348`, and exact 1B PRE bootstrap. The missing deterministic artifact is the historical mint-policy witness/script.
+
+Fail-closed: do not send PRE from Lace, create a second policy, or promote Yaci synthetic PRE.
+
+**STATUS: OPERATOR INPUT AVAILABLE — HISTORICAL PRE WITNESS ACQUISITION READY**
