@@ -82,10 +82,10 @@ instance A.ToJSON IssueDecision where
       , "actionFingerprint" A..= idActionFingerprint d
       , "decisionReference" A..= idDecisionReference d
       , "authoritativeObservationReference" A..= idObservationReference d
-      , "preEEV" A..= idPreEEV d
-      , "candidateEEV" A..= idCandidateEEV d
-      , "availableExecutableLiquidity" A..= idAvailableExecutableLiquidity d
-      , "requiredImmediateLiquidity" A..= idRequiredImmediateLiquidity d
+      , "preEEV" A..= show (idPreEEV d)
+      , "candidateEEV" A..= show (idCandidateEEV d)
+      , "availableExecutableLiquidity" A..= show (idAvailableExecutableLiquidity d)
+      , "requiredImmediateLiquidity" A..= show (idRequiredImmediateLiquidity d)
       ]
 
 actionText :: V3Action -> String
