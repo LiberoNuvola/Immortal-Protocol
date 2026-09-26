@@ -37,6 +37,7 @@ library
         PreRichEconomicProfile
         PreRichEconomicProjection
         PreRichEconomicAdmission
+        PreRichIssueDecision
         PreRichGenesisAdmission
         PreRichRegimeState
         GenesisRegimeCarrier
