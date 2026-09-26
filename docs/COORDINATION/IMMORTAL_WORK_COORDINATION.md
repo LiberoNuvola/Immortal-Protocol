@@ -1371,3 +1371,28 @@ The first-user path remains fail-closed until this bridge exists.
 The submitted-transaction Preprod ledger evidence workflow now also preserves an in-flight evidence run (`cancel-in-progress: false`).
 
 Commit: `2882a9a2b824682f7ad7619f2da8c3cbf3e0bc1e`.
+
+
+# 28. PROGRESSION RULE + ISSUE ADMISSION BRIDGE — 2026-09-26
+
+Closed targeted CI checks are now treated as **PASS/DO NOT REPEAT** unless their inputs or implementation change. Subsequent sessions must spend effort on open gates and their next concrete witness, not re-run or re-report already-closed bounded checks as if they were blockers.
+
+## New implementation
+
+Added `src/preRichIssueAdmissionBridge.ts` and its adversarial tests.
+
+The bridge now defines the missing boundary between an authoritative PRE-RICH admission producer and the Cardano Issue runtime:
+- the provider is injected; the browser cannot calculate or synthesize EEV, liquidity, state hashes or gate decisions;
+- exact Counter and B1 PrizePool input references are required;
+- the exact liquidity-source set is required;
+- the authoritative witness must pass the existing EconomicAdmission checks with action class `Issue`;
+- the witness's authenticated Pool reference and USDM valuation must equal the exact runtime-observed Pool input;
+- PRE-RICH class saleability is checked before the authority provider is invoked.
+
+This is an implementation boundary, not live authority and not deployment evidence. The remaining blocker is to supply the authoritative producer and wire this bridge into the first-user DApp/relayer path. No synthetic witness is allowed.
+
+Commits:
+- `6fc0bc6dd77349688f9386f08ba9480c5c2f38ef` — Issue admission bridge
+- `5b7a28a6c4f00867bd04fd04c712dc23fd7a172b` — bridge tests
+
+**NEXT:** implement the authoritative producer/refinement runtime and connect it to this bridge; then execute the first real DEMETER/CIP-30 Preprod Issue. Do not revisit the already-green declaration/governability CI unless changed by this work.
