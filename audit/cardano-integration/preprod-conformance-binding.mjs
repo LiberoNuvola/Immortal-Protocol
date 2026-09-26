@@ -15,6 +15,7 @@ const files = [
 
 const contextPath = evidenceDir + '/ogmios-preprod-context.json'
 const walletPath = evidenceDir + '/preprod-wallet-utxo.json'
+const conformancePath = evidenceDir + '/immortal-pre-rich-reveal-conformance.txt'
 
 async function fileSha256(path) {
   const bytes = await readFile(path)
@@ -29,6 +30,10 @@ function requireEqual(actual, expected, label) {
 
 const context = JSON.parse(await readFile(contextPath, 'utf8'))
 const wallet = JSON.parse(await readFile(walletPath, 'utf8'))
+const conformanceOutput = await readFile(conformancePath, 'utf8')
+if (!conformanceOutput.includes('Test Files  1 passed') && !conformanceOutput.includes('Tests  ')) {
+  throw new Error('IMMORTAL/PRE-RICH conformance output does not contain an expected Vitest success summary')
+}
 requireEqual(context.schema, 'IMMORTAL-PREPROD-OGMIOS-CONTEXT-v0.1', 'context schema')
 requireEqual(context.source?.provider, 'Demeter', 'context provider')
 requireEqual(context.source?.network, 'cardano-preprod', 'context network')
@@ -57,6 +62,7 @@ const packet = {
   observations: {
     ogmiosContextSha256: await fileSha256(contextPath),
     walletUtxoSha256: await fileSha256(walletPath),
+    conformanceOutputSha256: await fileSha256(conformancePath),
     networkTip: context.network_tip ?? null,
     ledgerEpoch: context.ledger_epoch ?? null,
     walletStatus: wallet.wallet?.status ?? null,
