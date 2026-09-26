@@ -39,6 +39,38 @@ jobs:
       - name: Install native Plutus dependencies
         run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
 
+      - name: Install and register pinned blst
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (cd /tmp/blst && ./build.sh)
+          rc=$?
+          set -e
+          test -s /tmp/blst/libblst.a
+          if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a; continuing with verified archive."; fi
+          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          prefix=/usr/local
+          exec_prefix=${prefix}
+          libdir=${exec_prefix}/lib
+          includedir=${prefix}/include
+          Name: libblst
+          Description: Multilingual BLS12-381 signature library
+          Version: 0.3.14
+          Cflags: -I${includedir}
+          Libs: -L${libdir} -lblst
+          EOF
+          sudo ldconfig
+          pkg-config --exists 'libblst >= 0.3.14'
+          pkg-config --modversion libblst
+
       - name: Update Cabal index
         run: cabal update
 
