@@ -1668,3 +1668,14 @@ CI for the latest wallet commits is not yet observed; no green status is claimed
 - After submission the helper queries the derived carrier address and fails unless exactly one singleton UTxO is observed.
 - Public deployment evidence is written to `audit/preprod-issue/v3-carrier-deployment.json`.
 - This helper does not authorize Issue, Genesis, Treasury or economic transitions; it only establishes the V3 state carrier singleton.
+
+
+## 36. V3 INITIAL STATE ADMISSION — 2026-09-26
+
+- The live V3 carrier cannot use `IMMORTAL/conformance/GoldenVectors.hs::baseState`: that is a one-class conformance fixture, while the production carrier requires exactly classes 0..7.
+- `tcsCap` and `tcsSaleable` are classified as PRE-RICH/application state, not universal IMMORTAL constants; the hysteresis layer also requires externally supplied exact capacity costs.
+- Therefore no production initial datum is being invented from fixture values.
+- Added: `audit/preprod-issue/V3-INITIAL-STATE-ADMISSION-GAP.md`.
+- Deployment helper remains fail-closed and requires explicit `V3_CARRIER_INITIAL_DATUM_CBOR`.
+- Closure requires an explicit deployment profile covering all eight classes, caps, control, protected-capital fields, Jackpot state, version and reproducible datum encoding.
+- Once declared, proceed directly to singleton deployment → exact observation → Issue-state binding → first DEMETER/CIP-30 Issue.
