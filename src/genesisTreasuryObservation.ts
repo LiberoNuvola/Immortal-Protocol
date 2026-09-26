@@ -1,4 +1,4 @@
-import { Constr, type UTxO } from 'lucid-cardano'
+import { Data, type UTxO } from 'lucid-cardano'
 
 import {
   GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS,
@@ -24,7 +24,7 @@ type ObservationInput = {
 function parseDatum(raw: unknown): any {
   if (raw == null) return null
   if (typeof raw === 'string') {
-    try { return (requireData as any)(raw) } catch { return null }
+    try { return Data.from(raw) } catch { return null }
   }
   return raw
 }
@@ -44,11 +44,6 @@ function bytesOf(value: any): string | null {
   if (typeof value === 'string') return value
   if (value && typeof value.bytes === 'string') return value.bytes
   return null
-}
-
-function requireData(hex: string): unknown {
-  const { Data } = require('lucid-cardano') as any
-  return Data.from(hex)
 }
 
 function singletonUtxo(utxos: UTxO[], unit: string, label: string): UTxO {
