@@ -145,3 +145,21 @@ No economic constants or Genesis semantics are changed by this refinement.
 - Genesis real Preprod transition evidence: OPEN.
 - Authoritative Issue admission producer: OPEN.
 - Cardano Issue submission: BLOCKED only at the authoritative admission producer boundary once canonical Preprod Treasury/Pool inputs are available.
+
+## 2026-09-26 Issue admission producer implementation
+
+`Adapter/CARDANO/observation/AuthoritativeIssueAdmission.ts` now provides the production-side bridge that converts an already-authoritative Issue decision into `EconomicAdmissionWitness`. It fail-closes on action class, exact Pool input, exact authenticated Pool USDM value, and exact executable-liquidity source set.
+
+`src/mint.ts` now accepts `authoritativeIssueAdmissionProvider` as the runtime path and requires `authoritativePoolUsdmValue` when that path is used. The browser therefore cannot silently substitute a local EEV/liquidity calculation.
+
+CI coverage was added through `Adapter/CARDANO/observation/AuthoritativeIssueAdmission.test.ts` in the Cardano Adapter Sale conformance workflow.
+
+### Remaining boundary
+
+The runtime producer/bridge is now IMPLEMENTED. What remains OPEN is the upstream authoritative decision source itself: the service/relayer path that obtains the canonical V3 pre-state, evaluates the existing `PreRichEconomicAdmission` gate, and emits the signed/canonical decision artifact consumed by the producer. This must not be reimplemented as frontend economics.
+
+Updated classification:
+- Issue admission runtime producer: IMPLEMENTED.
+- Authoritative economic decision source: OPEN.
+- Exact Pool valuation source: existing canonical `Economic.poolUsdmValue` surface; runtime binding implemented.
+- First real Preprod Issue: OPEN pending canonical decision artifact + live Pool/Treasury state.
