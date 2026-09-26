@@ -1511,3 +1511,45 @@ The remaining source-of-truth gap is precise:
 The missing component must obtain the real current PRE-RICH V3 pre-state and authoritative EEV/liquidity/truth evidence, invoke the existing economic admission path, and emit the resulting replayable decision. It must not reimplement the economics in frontend TypeScript.
 
 **NEXT CONCRETE WITNESS:** a real authoritative Issue decision produced from the current Preprod state, then consumed by the existing bridge, followed by the first DEMETER/CIP-30 Issue transaction.
+
+
+# 31. AUTHORITATIVE ISSUE PRODUCER — 2026-09-26
+
+The previous blocker has progressed from an interface-only bridge to an actual economic producer in the authoritative layer.
+
+### Implemented
+
+- `PRE-RICH/profile/PreRichIssueDecision.hs` calls the existing `preRichEconomicAdmission` directly.
+- It produces canonical pre-state, post-state and action SHA-256 fingerprints from explicit serialization.
+- It carries the authoritative EEV, executable liquidity and required immediate liquidity returned by the admission result.
+- `plutus/export/IssueAdmission.hs` exposes the producer as a JSON stdin/stdout executable.
+- Economic integers cross JSON as decimal strings to avoid JavaScript precision loss.
+- `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` connects that producer to the existing Cardano witness boundary and binds the result to the exact observed Pool input/value and observation reference.
+
+### Architectural result
+
+The economic decision is now made by the existing Haskell PRE-RICH/IMMORTAL admission path. The Node/adapter layer does not reimplement the gate; it only transports, verifies and binds its result to concrete Cardano UTxOs.
+
+This matches the eUTXO boundary: transactions explicitly name the concrete inputs and outputs, while validators receive the transaction context rather than querying arbitrary mutable state. citeturn0search0turn0search1
+
+### Remaining OPEN — live observation only
+
+The implementation gap is now reduced to the real-world observation source:
+
+1. obtain the exact current Preprod Counter + B1 PrizePool state;
+2. obtain the authoritative V3 class/protection/Jackpot state and verified EEV/truth/freshness evidence;
+3. feed that exact observation into `issue-admission`;
+4. consume the returned decision through `HaskellIssueAdmissionProvider`;
+5. execute the DEMETER/CIP-30 Issue transaction;
+6. persist the exact transaction/UTxO evidence.
+
+No synthetic witness or fixture is being promoted to live authority.
+
+Commits:
+- `a597d472a314749918782f9ebf4e83f0b15ede89` — authoritative Haskell Issue producer
+- `aec29952961a024d95e56b417d4a424c36661c10` — exposed producer module
+- `7d906cf8cac6b6a768a89cfe10567ea0c0bb50b7` — producer tests
+- `635890b2efdc08804eb3815baa52a5ca4366fb47` — JSON producer executable
+- `e7342592d5bdd7bfd7de8400c2cd402faf72de97` — executable registration
+- `cbf6df40198d224f47f86228101d1501a8a27ac6` — Node runtime bridge
+- `23e248577f9ef0546eb31131195446c778b2ec8d` — lossless integer transport
