@@ -2182,3 +2182,12 @@ The decoder:
 This is intentionally an **inspection/evidence tool**, not a new economic implementation.
 
 **STATUS: 🟡 UPLC DECODER IMPLEMENTED / 🔴 CI EXECUTION + SEMANTIC INTERPRETATION OPEN**
+
+
+# 44.5 UPLC CI ISOLATION — 2026-09-26
+
+The historical PRE decoder is now isolated as the first semantic step of the Haskell conformance workflow and the workflow also exposes `workflow_dispatch`.
+
+Reason: the decoder must not be masked by an unrelated failure in a later economic/governance conformance suite. A failing downstream test must not erase the evidence that the historical witness itself did or did not deserialize.
+
+**STATUS: 🟡 DECODER EXECUTION ISOLATED / 🔴 DECODE RESULT + UPLC SEMANTICS OPEN**
