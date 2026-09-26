@@ -194,7 +194,7 @@ async function readPreprodIssueObservation({
   classId,
   price,
   authoritativeInputs,
-  observedAt = BigInt(Date.now()),
+  observedAt,
 }) {
   if (!lucid) throw new Error('lucid is required')
   required(counterAddress, 'counterAddress')
@@ -211,6 +211,9 @@ async function readPreprodIssueObservation({
   }
   if (!authoritativeInputs || typeof authoritativeInputs !== 'object') {
     throw new Error('authoritativeInputs are required')
+  }
+  if (observedAt === undefined || observedAt === null) {
+    throw new Error('observedAt is required from the authenticated observation source')
   }
 
   const counterUtxos = await lucid.utxosAt(counterAddress)
@@ -274,23 +277,6 @@ async function readPreprodIssueObservation({
     throw new Error('observed V3 carrier does not make the requested Issue class saleable')
   }
 
-  const candidateClasses = carrier.state.classes.map((entry) =>
-    entry.classId === BigInt(classId)
-      ? { ...entry, issued: entry.issued + 1n }
-      : entry,
-  )
-
-  const candidateState = {
-    ...carrier.state,
-    unresolvedReserve: carrier.state.unresolvedReserve + BigInt(price),
-    unresolvedTicketCount: carrier.state.unresolvedTicketCount + 1n,
-    classes: candidateClasses.map((entry) =>
-      entry.classId === BigInt(classId)
-        ? { ...entry, unresolved: entry.unresolved + 1n, exposure: entry.exposure + BigInt(price) }
-        : entry,
-    ),
-  }
-
   return {
     observationReference,
     observedAt: BigInt(observedAt),
@@ -315,9 +301,6 @@ async function readPreprodIssueObservation({
       allOmegaSuccessorsCertified: Boolean(authoritativeInputs.allOmegaSuccessorsCertified),
       decisionReference: required(authoritativeInputs.decisionReference, 'decisionReference'),
       observationReference,
-      candidateState,
-      currentActiveClass: active,
-      highestClassEverActivated: highest,
     },
   }
 }
