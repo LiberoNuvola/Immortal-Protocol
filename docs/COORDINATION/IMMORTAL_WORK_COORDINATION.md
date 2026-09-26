@@ -2133,3 +2133,30 @@ real Preprod V3 carrier observation + real B1 PrizePool observation
 STATUS: 🟡 BRIDGE IMPLEMENTATION HARDENED / 🔴 REAL PREPROD OBSERVATION-TO-ISSUE WITNESS OPEN
 
 NEXT CONCRETE WITNESS: exact Preprod carrier UTxO + exact Pool UTxO + authoritative observation payload sufficient to execute issue-admission without fixture/synthetic values.
+
+
+# 44.3 HISTORICAL POLICY PARAMETER CROSS-CHECK — 2026-09-26
+
+Agent D evidence has advanced one step.
+
+The exact 32-byte value embedded in the recovered 381-byte historical PRE policy witness:
+
+`f6874f42a880915f7d79d6b23ecc55eb378b5fd8847c4004ed1c98a2eba70509`
+
+matches the transaction hash of the historical mint transaction's consumed input:
+
+`f687...aeba70509#4`.
+
+Gate 41 independently records that input as one of the three exact inputs of `0235...`, with `7,389,731` lovelace.
+
+This is now classified as **strong one-shot evidence**, but not yet a formal semantic proof. The remaining task is decoding the PlutusV2 Flat/UPLC term and proving that the constant is used as an OutputReference/input predicate.
+
+The verification artifact has been updated accordingly:
+
+`audit/pre-genesis-genesis/PREPROD-PRE-BRIDGE-VERIFICATION-GATE-v0.1.md`
+
+### Consequence
+
+If the UPLC proof confirms the expected one-shot predicate, direct canonical-policy reuse on Preprod is ruled out: the historical parameter UTxO cannot be consumed on Preprod, and replacing it would produce a different parameterized script/policy identity. Cardano documentation independently confirms this one-shot/parameterization property. citeturn0search0turn0search1
+
+**STATUS: 🟢 CANDIDATE PARAMETER MATCH OBSERVED / 🔴 UPLC SEMANTIC PROOF OPEN**
