@@ -2202,3 +2202,17 @@ Tests added in `relayer/preprodIssueObservationProvider.test.js`: successful pas
 Commits: `26c80229cba8191c86086aa67cbf66bb17375490` and `4d32632c0fa49633ba9b8d0628ef7ca2b558da1c`.
 
 This closes the **adapter contract gap**, not the real Preprod observation itself. The remaining witness is an actual Preprod reader supplying the deployed Counter, B1 PrizePool, V3 carrier/state and authenticated Oracle observation.
+
+
+## 44.7 V3 INITIAL STATE DECLARATION — 2026-09-26
+
+The former initial-state design gap is now closed at the deployment-profile layer.
+
+`PRE-RICH/profile/PreRichPreprodDeploymentProfile.ts` explicitly declares the eight-class initial V3 state: class cap 10, class 0 active/saleable, classes 1..7 non-saleable, zero liabilities/reserves/protected-capital components, and inactive/empty Jackpot.
+
+The corresponding audit gap document was reconciled so it no longer claims that the initial state is undefined:
+`audit/preprod-issue/V3-INITIAL-STATE-ADMISSION-GAP.md`.
+
+This does **not** create live authority. The remaining witness is materialization of that exact state into a real Preprod V3 singleton and its binding to the Issue transaction.
+
+**STATUS: 🟢 INITIAL V3 DEPLOYMENT PROFILE DECLARED / 🔴 LIVE CARRIER MATERIALIZATION OPEN**
