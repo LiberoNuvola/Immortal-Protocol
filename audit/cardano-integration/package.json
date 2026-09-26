@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@lucid-evolution/lucid": "0.6.2"
+    "@lucid-evolution/lucid": "0.6.2",
+    "ws": "8.18.3"
   }
 }
