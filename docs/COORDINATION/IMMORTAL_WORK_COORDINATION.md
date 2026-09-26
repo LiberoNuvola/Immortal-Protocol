@@ -1782,3 +1782,12 @@ No field may be synthesized from browser UI state, legacy B1 aggregation, or a c
 **STATUS: 🟡 IMPLEMENTATION PATH IDENTIFIED / RUNTIME TRANSPORT OPEN**
 
 **NEXT CONCRETE IMPLEMENTATION:** wire a non-browser runtime (relayer/service) to invoke the existing `issue-admission` executable from authoritative observed inputs, then adapt its output into `EconomicAdmissionWitness` with exact Pool/liquidity binding.
+
+
+## 30.1 CURRENT HEAD RECONCILIATION — 2026-09-26
+
+- `src/mint.ts` now actually exports `mintSerialNFTWithAuthoritativeAdmission` as a thin fail-closed wrapper over `mintSerialNFT`.
+- The wrapper requires an injected `AuthoritativeIssueAdmissionProvider` and authenticated Pool USDM valuation; it does not compute EEV, liquidity, hashes, or gate decisions.
+- Final Counter/Pool observation and EconomicAdmission input binding remain inside the existing Issue transaction path.
+- Current HEAD: `a8361c518aa08a097113e707a537f3a1aaa9365d`.
+- This is implementation progress only; it does not constitute Preprod execution or an authoritative producer witness.
