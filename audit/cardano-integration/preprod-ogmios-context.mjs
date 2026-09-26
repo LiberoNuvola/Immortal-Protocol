@@ -135,5 +135,5 @@ try {
   console.error(diagnostic.failure)
   process.exitCode = 1
 } finally {
-  client.close()
+  client?.close()
 }
