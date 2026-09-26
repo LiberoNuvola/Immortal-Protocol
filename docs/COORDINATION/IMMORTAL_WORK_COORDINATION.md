@@ -1046,3 +1046,138 @@ Rules:
 **Current implementation witness:** commit `8f6f0650de4f96d060d10128ac2574aff1e74b3f`.
 
 **Frontend integration target:** consume `ProtocolDeclaration`, `PublicProtocolState`, `ActionAvailability`, `ProtocolModeDeclaration`, and `ActiveClassDeclaration`; do not duplicate the underlying transition algorithms.
+
+
+---
+
+# 23. CROSS-FRONT EXECUTION PASS — 2026-09-26
+
+This pass started from the coordination register and advanced every front that can be progressed without fabricating runtime evidence or changing normative economics.
+
+## F0/F1/F2 — Economic/state boundary
+
+**FACT:** PRE-RICH Cardano observation already requires authoritative class state, explicit ProtectedCapital components, and explicit Current/Highest class control.
+
+**IMPLEMENTATION:** added `PRE-RICH/profile/PreRichPublicStateProjection.ts`.
+
+Boundary rule:
+- observed CurrentActiveClass may be projected to the public Active Class declaration;
+- economic modes and action availability are **not** derived from balances;
+- those declarations remain separate authoritative inputs.
+
+**STATUS:** 🟡 boundary strengthened; runtime conformance remains open.
+
+## F3 — Cardano / real execution
+
+No fake closure was introduced.
+
+**BLOCKER:** P2.8 native ledger packet and real Preprod Reveal remain external/runtime witnesses:
+`tx.cbor + utxo.json + pparams.json + epoch-info.json + system-start.json + manifest.json`.
+
+The public layer now has no path that can convert implementation availability into execution confirmation.
+
+**STATUS:** 🔴 runtime gate remains open.
+
+## F4/F5 — Beacon / Materios
+
+No B2/B3 operational claim was introduced.
+
+Public state continues to require observed evidence for Beacon mode, and the trust ladder remains:
+`B3 VERIFIED → B2 ATTESTED → B1 AUTHORIZED → HALT`.
+
+**BLOCKERS:** publisher-independent B3 proof, StateRoot/storage authentication, authority/ancestry provenance, and deployment enforcement.
+
+**STATUS:** 🔴 certification open.
+
+## F6 — Genesis / Treasury / Gate 41
+
+No Treasury identity, Oracle value, Snek output mapping, seed semantics, or 3-ADA meaning was inferred.
+
+**BLOCKERS:** live Treasury/Oracle/carrier witness and remaining Gate-41 reconciliation.
+
+**STATUS:** 🟡/🔴 deployment evidence open.
+
+## F7/F8 — Public observability / V5
+
+Added:
+- `src/publicStateValidation.ts`
+- `src/__tests__/publicStateValidation.test.ts`
+- `PRE-RICH/profile/PreRichPublicStateProjection.ts`
+- `PRE-RICH/profile/__tests__/PreRichPublicStateProjection.test.ts`
+- lifecycle matrix `docs/04-guides/17_PUBLIC_TRANSPARENCY_LIFECYCLE_MATRIX_v0.1.md`
+
+The public boundary now validates:
+- AVAILABLE ↔ available consistency;
+- mode ACTIVE ↔ active consistency;
+- required reasons/evidence/observation time;
+- configurable freshness without inventing a protocol-wide freshness threshold.
+
+**STATUS:** 🟡 implementation advanced; live frontend/evidence wiring remains open.
+
+## F9 — Governance
+
+No semantic shortcut was taken.
+
+**BLOCKER:** current-head Haskell/build/execution evidence required for GOV-28.
+
+**STATUS:** 🟡 implementation; execution evidence open.
+
+## F10 — Liveness / operations
+
+Public state validation now supports freshness checks without choosing an arbitrary universal freshness window.
+
+**BLOCKER:** complete deployment-specific stale → state → recovery/liquidation trace.
+
+**STATUS:** 🟡 closing.
+
+## F11 — Evidence / certification
+
+Public declarations now enforce evidence references for active class and protocol modes.
+
+This is an evidence-binding safeguard, **not** certification.
+
+**BLOCKERS:** exact artifact/run/transaction/UTxO binding for closure packets and negative/adversarial evidence.
+
+**STATUS:** 🔴 continuous certification work.
+
+## F12 — Prior art / novelty
+
+No novelty claim was added.
+
+**BLOCKER:** complete source-grounded prior-art matrix.
+
+**STATUS:** 🟡 research.
+
+### Commits from this pass
+
+- `051c12e7e7a2f6a75c32d97fa34db42928944256` — public declaration validation/freshness
+- `50f021e329c9a3343f66c1707b3919aee2c81b24` — validation tests
+- `6d56f9cd6af317c84f14e60c3acbe4ab405c51c5` — PRE-RICH public state projection
+- `df9d7544db32dc4ca0aa176edbca680f06752c57` — projection tests
+
+### Required next concrete witnesses
+
+1. **P2.8:** exact-head native evaluation packet.
+2. **Preprod Reveal:** real signed reference-script Reveal and ledger evaluation.
+3. **B3:** publisher-independent finality + StateRoot/storage + authority/ancestry evidence.
+4. **Genesis:** live Treasury/Oracle/carrier admission witness.
+5. **Governance:** current-head Haskell execution artifact.
+6. **Observability:** live declaration feed + stale/unavailable UI rendering.
+7. **Certification:** frozen-input evidence packets with negative/adversarial coverage.
+
+### Session report
+
+```
+FRONT: F0–F12 cross-front pass
+SUBFRONT: state/public boundary, observability, evidence safeguards
+HEAD: 2026-09-26 branch work/immortal-green-closure
+SOURCE SET: coordination register + current repository implementation/specification
+IMPLEMENTATION: advanced; no economic/validator semantics changed
+TEST/CI: new bounded tests added; CI/runtime execution still required
+RUNTIME: no new runtime witness fabricated
+CERTIFICATION: unchanged; hard gates remain open
+STATUS: IN PROGRESS
+BLOCKER: P2.8, Preprod Reveal, B3, Genesis, GOV-28 and deployment evidence
+NEXT CONCRETE WITNESS: exact runtime evidence packets above
+FILES/COMMITS: see commits listed above
+```
