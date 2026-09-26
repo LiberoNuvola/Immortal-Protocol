@@ -46,12 +46,6 @@ source-repository-package
   subdir:
     cardano-crypto-leios
 
-source-repository-package
-  type: git
-  location: https://github.com/input-output-hk/iohk-monitoring-framework
-  tag: 1c097a1cafb066b264432e6df27bbc959f3dc715
-  subdir:
-    contra-tracer
 
 source-repository-package
   type: git
