@@ -282,13 +282,18 @@ function decodeTransition(
     "INVALID_ACTIVATION_BLOCK"
   );
 
+  const protocolVersion = requireNumber(
+    object.protocolVersion,
+    "INVALID_TRANSITION_PROTOCOL"
+  );
+  if (protocolVersion !== 1) {
+    throw new Error("INVALID_TRANSITION_PROTOCOL");
+  }
+
   return {
     kind: requireString(object.kind, "INVALID_TRANSITION_KIND") as
       "materios-authority-set-transition",
-    protocolVersion: requireNumber(
-      object.protocolVersion,
-      "INVALID_TRANSITION_PROTOCOL"
-    ),
+    protocolVersion: 1,
     chainId: requireString(
       object.chainId,
       "INVALID_TRANSITION_CHAIN_ID"
