@@ -61,6 +61,7 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     carrierTokenNameHex: 'carriername',
     classId: 0,
     price: 1,
+    observedAt: 123n,
     authoritativeInputs: {
       poolUsdmValue: 1_000n,
       preEEV: 1_000n,
@@ -102,6 +103,7 @@ test('fails closed when the carrier singleton is ambiguous', async () => {
       carrierTokenNameHex: 'carriername',
       classId: 0,
       price: 1,
+      observedAt: 123n,
       authoritativeInputs: {
         poolUsdmValue: 1n,
         preEEV: 1n,
@@ -115,5 +117,34 @@ test('fails closed when the carrier singleton is ambiguous', async () => {
       },
     }),
     /ambiguous/,
+  )
+})
+
+
+test('fails closed when observation time is not authenticated', async () => {
+  await assert.rejects(
+    () => readPreprodIssueObservation({
+      lucid: fakeLucid(),
+      counterAddress: 'counter',
+      b1PrizePoolAddress: 'pool',
+      poolTokenUnit: 'poolpolicy' + 'poolname',
+      carrierAddress: 'carrier',
+      carrierPolicyId: 'carrierpolicy',
+      carrierTokenNameHex: 'carriername',
+      classId: 0,
+      price: 1,
+      authoritativeInputs: {
+        poolUsdmValue: 1n,
+        preEEV: 1n,
+        candidateEEV: 1n,
+        requiredImmediateLiquidity: 1n,
+        truthVerified: true,
+        eevFresh: true,
+        obligationsComplete: true,
+        allOmegaSuccessorsCertified: true,
+        decisionReference: 'decision-1',
+      },
+    }),
+    /observedAt is required/,
   )
 })
