@@ -18,7 +18,7 @@ jobs:
       - name: Install native Cardano crypto dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsodium-dev pkg-config build-essential
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
 
       - name: Verify libsodium pkg-config contract
         run: |
@@ -38,6 +38,8 @@ jobs:
           fi
           pkg-config --modversion libsodium
           pkg-config --modversion libsodium-any
+          pkg-config --exists libsecp256k1
+          pkg-config --modversion libsecp256k1
 
       - name: Install and register pinned blst
         run: |
