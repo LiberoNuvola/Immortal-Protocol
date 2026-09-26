@@ -2078,3 +2078,17 @@ The front is closed only when all are satisfied:
 Until then:
 
 **STATUS: 🟡 PREPROD PRE BRIDGE INVESTIGATION OPEN / PREPROD CANONICAL MATERIALIZATION OPEN**
+
+
+## 44.1 BRIDGE GATES MATERIALIZED — 2026-09-26
+
+Two auditable artifacts now anchor the parallel bridge work:
+
+- `audit/pre-genesis-genesis/PREPROD-PRE-BRIDGE-IDENTITY-ADR-v0.1.md`
+- `audit/pre-genesis-genesis/PREPROD-PRE-BRIDGE-VERIFICATION-GATE-v0.1.md`
+
+The identity ADR fixes the non-negotiable boundary: a different PolicyID is a different Cardano asset and cannot be relabelled canonical PRE.
+
+The verification gate isolates the remaining technical question: whether the historical 381-byte policy witness can actually be reused on Preprod. The embedded 32-byte value `f6874f42...aeba70509` is recorded as a candidate historical UTxO parameter; this remains an evidence question, not yet a certified one-shot conclusion.
+
+**STATUS: 🟡 BRIDGE IDENTITY BOUNDARY CLOSED / 🔴 HISTORICAL POLICY REUSE VERIFICATION OPEN**
