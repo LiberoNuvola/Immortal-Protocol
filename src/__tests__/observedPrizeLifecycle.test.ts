@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { Constr, Data, type UTxO } from 'lucid-cardano'
+import { Constr, type UTxO } from 'lucid-cardano'
 import { observePrizeLifecycle } from '../gameFlow'
 
 function prizeUtxo(status: number, beaconStatus: number): UTxO {
   const fields: unknown[] = Array.from({ length: 23 }, () => 0n)
   fields[10] = new Constr(status, [])
   fields[14] = new Constr(beaconStatus, [])
-  const datum = Data.to(new Constr<Data>(0, fields as Data[]))
+  const datum = new Constr(0, fields as any)
   return {
     txHash: 'a'.repeat(64),
     outputIndex: 0,
