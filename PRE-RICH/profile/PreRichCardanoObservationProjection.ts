@@ -31,7 +31,7 @@ export type EconomicStateV3 = {
   jackpot: {
     lockedAmount: bigint
     threshold: bigint
-    status: 'inactive' | 'locked'
+    status: 'inactive' | 'locked' | 'payable' | 'closed'
     cycle: bigint
   }
 }
