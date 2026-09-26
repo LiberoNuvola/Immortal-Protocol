@@ -6,8 +6,8 @@
 >
 > **Working branch:** `work/immortal-green-closure`
 > **Snapshot:** 2026-09-26
-> **Observed HEAD:** `98e420cd3aa41e6615ba671b65dd36f9406ad820`
-> **HEAD change:** `docs: reorganize cross-session coordination by triangulated fronts`
+> **Observed HEAD:** `2505e2ec5bbbc2b79d34e2009b7eb90bd14cce5d`
+> **HEAD change:** `audit: formalize Preprod PRE materialization gate`
 
 ---
 
@@ -1831,3 +1831,40 @@ This is classified as a **deployment/materialization gate**, not a new IMMORTAL 
 Any Preprod-specific token used solely for local/Yaci testing must be explicitly labelled fixture/test deployment and must never be substituted for the canonical PRE identity in Genesis certification.
 
 **STATUS: 🟡 TRIANGULATED / PREPROD MATERIALIZATION WITNESS OPEN**
+
+
+# 41. CURRENT HEAD / PRE MATERIALIZATION RECONCILIATION — 2026-09-26
+
+The branch reference above is now reconciled with the actual Git ref.
+
+## Verified repository state
+
+- Branch: `work/immortal-green-closure`
+- Observed HEAD: `2505e2ec5bbbc2b79d34e2009b7eb90bd14cce5d`
+- Parent: `f3a3a1b6c76c21ae28e250ac867998ea8e564fa3`
+- Latest commit: `audit: formalize Preprod PRE materialization gate`
+- `audit/pre-genesis-genesis/PREPROD-PRE-MATERIALIZATION-GATE-v0.1.md` is now part of the current branch.
+
+## Historical PRE evidence re-check
+
+The repository contains the historical acquisition procedures for:
+
+- transaction `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`;
+- canonical PRE policy `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c`;
+- PRE asset name `5052452d52494348`;
+- Blockfrost transaction CBOR/redeemer acquisition;
+- Koios provider-indexed mint-redeemer acquisition.
+
+These scripts acquire transaction/redeemer evidence, but **they do not contain the historical minting-policy source/script needed to deterministically reproduce the policy**.
+
+## Current classification
+
+`PREPROD PRE MATERIALIZATION = OPEN`
+
+The exact missing artifact is now narrowed to an authoritative Preprod materialization witness compatible with the canonical PRE identity. Historical Mainnet transaction evidence alone does not establish Preprod existence.
+
+No new token policy, synthetic Yaci asset, or guessed minting script may be introduced as a substitute.
+
+## Parallel execution rule
+
+While this gate is open, all independent fronts may continue. No front may silently reinterpret the canonical PRE identity or weaken Genesis admission to bypass the materialization gate.
