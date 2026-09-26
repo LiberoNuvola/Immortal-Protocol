@@ -2327,3 +2327,39 @@ The browser/runtime configuration now exposes the V3 carrier deployment identity
 No carrier address, policy or token identity is hard-coded. This is intentional: the reader can only become a live Preprod observer once the deployment actually supplies these identities.
 
 The existing Preprod topology already externalizes Counter, B1 Pool and Oracle identities through deployment configuration. The remaining missing deployment witness is therefore the actual V3 carrier singleton plus the authoritative EEV/refinement source. The reader must fail closed when either is absent.
+
+
+# 44.10 CONCRETE PREPROD ISSUE PRODUCER COMPOSITION — 2026-09-26
+
+The concrete Cardano observation reader is now composable with the existing strict Issue observation-provider contract.
+
+Added:
+- `relayer/preprodIssueAdmissionProvider.js`
+- `relayer/preprodIssueAdmissionProvider.test.mjs`
+
+The new composition:
+`Lucid Preprod observations + deployment identities + authenticated runtime refinement inputs -> createPreprodIssueObservationProducer -> canonical IssueDecisionInput`
+
+It does not introduce an economic producer. The existing Haskell `issue-admission` executable remains the sole economic decision authority.
+
+The adapter requires, at runtime:
+- Counter address;
+- B1 PrizePool address and singleton unit;
+- V3 carrier address/policy/token identity;
+- requested class and price;
+- authenticated `poolUsdmValue`, `preEEV`, `candidateEEV`, `requiredImmediateLiquidity`;
+- truth/freshness/obligation/Ω certificates;
+- decision reference.
+
+A wiring defect discovered during this integration was fixed immediately: the existing observation-provider now forwards the complete `runtimeInputs` object to its concrete reader. This is necessary for the reader to obtain the authoritative refinement inputs without inventing defaults.
+
+Commits:
+- `abee5d6efcc75c3959963ee5ec14de8b5cacc23b` — concrete producer composition
+- `c45f3e270fb2a6044fa1cfb9b927612ca42f96e8` — composition test
+- `ce8b6330e4296c1982d52a98b33386408a8efb6a` — runtime-input forwarding fix
+
+Evidence classification: implementation/test path only. No live Preprod claim.
+
+**STATUS: 🟡 CONCRETE OBSERVATION→DECISION INPUT COMPOSITION IMPLEMENTED / 🔴 LIVE PREPROD UTxO + AUTHENTICATED EEV/REFINEMENT WITNESS OPEN**
+
+**NEXT CONCRETE WITNESS:** run the composition against the actual deployed Counter/Pool/V3 carrier and authenticated Oracle/EEV source, then execute the existing Haskell `issue-admission` and bind its decision to the real Issue transaction.
