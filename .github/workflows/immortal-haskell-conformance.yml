@@ -1,6 +1,7 @@
 name: IMMORTAL Haskell Semantic Conformance
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/immortal-green-closure
@@ -73,6 +74,10 @@ jobs:
 
       - name: Update Cabal index
         run: cabal update
+
+      - name: Historical PRE policy UPLC decode
+        working-directory: plutus
+        run: cabal run inspect-historical-pre-policy
 
       - name: Oracle conformance
         working-directory: plutus
