@@ -1,0 +1,32 @@
+name: IMMORTAL Layer Boundary Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "IMMORTAL/kernel/**"
+      - "IMMORTAL/state/**"
+      - "Adapter/CARDANO/**"
+      - "scripts/check-layer-boundaries.mjs"
+      - ".github/workflows/layer-boundary-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "IMMORTAL/kernel/**"
+      - "IMMORTAL/state/**"
+      - "Adapter/CARDANO/**"
+      - "scripts/check-layer-boundaries.mjs"
+      - ".github/workflows/layer-boundary-conformance.yml"
+
+jobs:
+  layer-boundaries:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run mechanical architecture boundary audit
+        run: node scripts/check-layer-boundaries.mjs
