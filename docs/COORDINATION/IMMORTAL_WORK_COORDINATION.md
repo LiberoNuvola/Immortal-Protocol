@@ -8744,3 +8744,20 @@ Commit 87778f4d4db6f58acd4c1812bf2397fb98375863 removes those two paths from the
 - END-TO-END-EVIDENCE-DOSSIER.md: dossier structure **READY**; final A/B gate **OPEN**.
 
 No normative economic or governance change in this cycle.
+
+
+## 2026-09-26 — P2.8 measures dependency pinned
+
+Run 36221378584 (P2.8 run 533) crossed native bootstrap, crypto compatibility and Byron package materialization, then Cabal stopped on unknown package measures required by cardano-ledger-core-1.21.0.0.
+
+Current CHaP publishes measures-0.1.0.3 from IntersectMBO/cardano-base commit 58a3814c049324578a1cbc7f8ab9e0edae42249a, subdir measures. Commit 6344f58f010e56a1c80b4b09d42674bef25ff8c5 pins that exact upstream package in the runner project.
+
+### Classification
+- Native bootstrap: TRAVERSED.
+- Crypto matrix: RESOLVED TO CARDANO-LEDGER CORE.
+- Byron spec packages: RESOLVED TO NEXT STAGE.
+- measures dependency: PINNED TO PUBLISHED UPSTREAM SOURCE.
+- Typed ledger context: OPEN.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
