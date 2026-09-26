@@ -8797,3 +8797,14 @@ Upstream IntersectMBO/cardano-base commit 60827efde9e1790895039a8891f4bd06bf9964
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — PRE-RICH Action Refinement typecheck restored
+
+Run 36222048568 (Action Refinement 118) completed successfully after repairing malformed pool object literals in the replay/reveal fixtures, adding the newly required authenticated Pool fields to the EconomicAdmission witness fixture, completing the V3 ProjectionInput fields, and making the legacy ticket mint wrapper fail closed when mint options are absent.
+
+The gate now reports 11 Vitest files / 76 tests passed, Genesis Treasury admission passed, and the full TypeScript typecheck passed. The workflow was also updated to watch the two nested replay fixture files explicitly.
+
+### Classification
+- PRE-RICH Action Refinement conformance: GREEN.
+- TypeScript repository typecheck: GREEN for this gate.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
