@@ -21,6 +21,7 @@ jobs:
     env:
       DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
       DEMETER_API_KEY: ${{ secrets.DEMETER_API_KEY }}
+      PREPROD_WALLET_ADDRESS: addr_test1qpsd5v0jln37h5g7pl2w6j7fhczu2cs4245welp0cn7xajjuy72qvweu0f5nckwtugmlnhfte2kv2a958fdxf9rt53nsdgmheq
       PREPROD_EVIDENCE_DIR: audit/preprod-evidence
 
     steps:
@@ -38,13 +39,18 @@ jobs:
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
 
-      - name: Validate Demeter secret presence
+      - name: Validate Preprod probe inputs
         run: |
           test -n "$DEMETER_API_KEY"
+          test -n "$PREPROD_WALLET_ADDRESS"
           echo "DEMETER_API_KEY=present"
+          echo "PREPROD_WALLET_ADDRESS=$PREPROD_WALLET_ADDRESS"
 
       - name: Probe Demeter Ogmios Preprod context
         run: node audit/cardano-integration/preprod-ogmios-context.mjs
+
+      - name: Probe live Preprod wallet UTxO set
+        run: node audit/cardano-integration/preprod-wallet-utxo.mjs
 
       - name: Record workflow provenance
         if: always()
