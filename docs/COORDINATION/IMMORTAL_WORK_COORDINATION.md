@@ -8227,3 +8227,28 @@ Demeter's current public Ogmios documentation specifies that API keys are suppli
 - Real Preprod transaction: **OPEN**.
 - P2.8 native evaluator: **OPEN**.
 - No economic, validator, authority-selection, oracle, or evaluator-semantic change.
+
+## 2026-09-26 — Demeter Ogmios handshake diagnostics hardened
+
+Run `36219461711` confirmed that the Environment `DEMETER` credential is now resolving successfully and the supplied Preprod wallet address also passes validation. The remaining failure occurs in the live `Probe Demeter Ogmios Preprod context` step, before the wallet UTxO probe.
+
+Commit `e2bfe3d2667c792dd8fdda3bc75077183c4d403b` hardens the Ogmios client by:
+- trimming endpoint and credential environment values;
+- explicitly reporting WebSocket HTTP-upgrade failures without exposing the credential;
+- logging successful WebSocket connection before issuing ledger queries.
+
+The authentication header remains the documented `dmtr-api-key` header. No authenticated endpoint or credential value is written to evidence.
+
+### Classification
+
+- GitHub Environment credential injection: **CONFIRMED WORKING**.
+- Preprod wallet address validation: **CONFIRMED WORKING**.
+- Demeter/Ogmios WebSocket handshake/query: **OPEN — precise failure reason pending fresh run**.
+- Live Preprod UTxO observation: **NOT YET EXECUTED**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+
+No protocol, validator, economic, authority-selection or ledger semantics changed.
+
+**USER QUESTION:** NONE.
+
