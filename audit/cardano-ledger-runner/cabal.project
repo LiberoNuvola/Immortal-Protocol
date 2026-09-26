@@ -4,7 +4,6 @@ source-repository-package
   tag: 60827efde9e1790895039a8891f4bd06bf996401
   subdir:
     cardano-base
-    cardano-crypto-class
     cardano-strict-containers
     cardano-slotting
     heapwords
@@ -13,6 +12,13 @@ packages: .
 
 tests: False
 benchmarks: False
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-base
+  tag: 12168e4b32b44d30dd401010ccd969accaf2add7
+  subdir:
+    cardano-crypto-class
 
 source-repository-package
   type: git
