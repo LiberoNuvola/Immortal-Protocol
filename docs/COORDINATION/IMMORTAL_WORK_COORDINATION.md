@@ -7739,3 +7739,18 @@ The available commit-workflow-run interface exposes only pull-request-triggered 
 
 ### Non-regression
 No semantic change is justified by this pulse. No economic constant, validator safety condition, authority-selection rule, oracle rule, or protocol limit is altered.
+
+
+## 2026-09-26 — Certification pulse: audit-failure freshness check
+
+The independent audit's empirical snapshot reported 14 test failures, including failures attributed to older fixture contracts. A current-branch inspection was performed before treating those failures as present certification debt.
+
+Findings:
+- the current working branch does not expose the previously cited `src/__tests__/PreRichCardanoObservationProjection.test.ts` path;
+- the current `PRE-RICH/profile/PreRichHysteresisBinding.test.ts` already uses the hardened bigint/control-state contract and its current error expectations;
+- the current `src/__tests__/canonical-transition-evidence.test.ts` already expects the stricter 32-byte hexadecimal digest validation rather than the older `non-empty` assertion;
+- GitHub code search is known to surface stale/default-branch paths, so those search hits are not treated as current-branch evidence.
+
+**Classification:** the audit failure snapshot remains valid as historical independent-assurance evidence, but its fixture-drift findings are **NOT promoted as current open test debt without a fresh exact-head test run**. This preserves the distinction between historical audit observation and present certification evidence.
+
+No runtime, validator, economic, or protocol semantics were changed by this pulse.
