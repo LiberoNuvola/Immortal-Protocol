@@ -223,7 +223,7 @@ async function readPreprodIssueObservation({
   const poolUtxo = singletonByUnit(poolUtxos, poolTokenUnit, 'B1PrizePool')
   const poolState = decodePoolDatum(poolUtxo)
 
-  const carrier = await observeEconomicStateCarrier({
+  const carrier = await observeCarrier({
     lucid,
     carrierAddress,
     carrierPolicyId,
