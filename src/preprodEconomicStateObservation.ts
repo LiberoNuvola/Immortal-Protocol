@@ -1,4 +1,4 @@
-import { Data, type UTxO } from 'lucid-cardano'
+import { Data, type UTxO } from 'lucid-cardano/web/mod.js'
 
 import {
   PRE_RICH_CANONICAL_PRICES,
