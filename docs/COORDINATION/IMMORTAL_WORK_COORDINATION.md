@@ -1418,3 +1418,42 @@ This closes another **implementation-layer** gap: the admission bridge is no lon
 This does **not** claim an authoritative producer exists, nor does it claim Preprod execution. The caller must still provide a real producer and authenticated Pool valuation. The next concrete proof is therefore a real producer backed by authoritative observation/refinement, followed by an actual DEMETER/CIP-30 Preprod Issue.
 
 Commit: `01ce8e96903c6c341ab3fc78d8f399470bfd8115`.
+
+
+# 29. TREASURY ADDRESS — FIRST REAL PREPROD USER GATE — 2026-09-26
+
+The concrete Treasury address is an explicit deployment witness required for the first real PRE-RICH user.
+
+## FACT
+
+- The application configuration uses `VITE_TREASURY_ADDRESS`.
+- The Preprod Pages workflow already requires `VITE_TREASURY_ADDRESS` and fails closed if it is absent.
+- The repository deliberately does **not** hard-code the deployment Treasury address.
+- The Treasury is a protocol script address, not the DEMETER user wallet.
+- The exact address must correspond to the actually deployed Plutus V2 Treasury validator and then be independently verified against the Preprod ledger.
+
+## REQUIRED WITNESS
+
+Before the first DEMETER Issue:
+
+1. obtain the exact deployed Treasury validator artifact;
+2. derive its Plutus V2 script hash and Preprod script address;
+3. set that exact value as the deployment `VITE_TREASURY_ADDRESS` secret;
+4. observe the address on Preprod;
+5. identify the canonical Treasury UTxO(s) used by the current Genesis/Issue path;
+6. bind the observed Treasury reference into the admission/evidence packet;
+7. verify that the Issue transaction pays the same canonical Treasury address;
+8. verify that no user wallet address is substituted for Treasury.
+
+## NON-REGRESSION
+
+- Never invent or guess the Treasury address.
+- Never use DEMETER as Treasury.
+- Never derive Genesis activation merely from Treasury UTxO existence.
+- Never use legacy `tdThreshold` as the Genesis authority.
+- Never expose wallet seed/private keys in repository configuration.
+- Do not silently substitute a different Treasury address to make CI or frontend execution pass.
+
+**STATUS: 🔴 OPEN — exact deployed Preprod Treasury address + ledger witness required**
+
+**NEXT CONCRETE WITNESS:** deployed Treasury script hash/address pair + exact Preprod Treasury UTxO observation.
