@@ -150,7 +150,7 @@ try {
     schema: 'IMMORTAL-PREPROD-OGMIOS-DIAGNOSTIC-v0.1',
     observed_at: new Date().toISOString(),
     endpoint: endpoint,
-    failure: message.replace(apiKey ?? '', '[REDACTED]'),
+    failure: message,
   }
   await writeFile(
     `${evidenceDir}/ogmios-preprod-diagnostic.json`,
