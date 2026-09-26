@@ -19,5 +19,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'esnext',
+    rollupOptions: {
+      input: {
+        home: 'index.html',
+        protocol: 'protocol.html',
+        algorithm: 'algorithm.html',
+        mathematics: 'mathematics.html',
+        code: 'code.html',
+        adapters: 'adapters.html',
+        ecosystem: 'ecosystem.html',
+        governance: 'governance.html',
+        documentation: 'documentation.html',
+        community: 'community.html',
+        dapp: 'dapp.html',
+        treasury: 'preprod-treasury.html',
+      },
+    },
   },
 })
