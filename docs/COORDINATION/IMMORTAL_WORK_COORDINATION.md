@@ -8004,3 +8004,31 @@ This is CI/environment hardening only. No Cardano source revision, Plutus artifa
 **Classification:** P2.8 dependency/bootstrap = **REPAIRED / FRESH RUN REQUIRED**.
 
 **USER QUESTION:** NONE.
+
+## 2026-09-26 — Real Preprod wallet bound to Ogmios probe
+
+A real Cardano Preprod address has now been supplied for the wallet-readiness path. The address uses the `addr_test` form expected for Cardano test networks and is treated strictly as public on-chain data; no signing credential or seed is added to the repository.
+
+Commit `fb67673fb5886103db65b2e33392855a96f4dc34` binds that address to `.github/workflows/immortal-cardano-preprod.yml` and invokes the live UTxO probe after the general Demeter/Ogmios context probe.
+
+Current probe boundary:
+`Demeter credential -> Ogmios connection -> live Preprod tip/context -> live wallet UTxO set`.
+
+Ogmios documents `queryLedgerState/utxo` with address filtering, so the repository-side query shape is source-aligned. The workflow does not yet claim a funded wallet or transaction until the actual CI artifact is observed.
+
+### Important distinction
+
+A supplied Preprod address is **not** evidence that the address is funded. Funding status must come from the live Ogmios response. Likewise, wallet UTxOs alone do not prove a valid IMMORTAL transaction, script deployment, transaction submission, or P2.8 evaluation.
+
+### Classification
+
+- Preprod wallet address: **BOUND TO WORKFLOW**.
+- Live wallet UTxO observation: **EXECUTION PENDING**.
+- Funding: **UNVERIFIED UNTIL LIVE ARTIFACT**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+
+No economic, validator, authority-selection, oracle, or protocol-limit semantics changed.
+
+**USER QUESTION:** NONE.
+
