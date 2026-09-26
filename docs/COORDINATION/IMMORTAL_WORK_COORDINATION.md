@@ -425,6 +425,23 @@ A/B are not parallel production acceptance paths. D must advance only from verif
 
 **Status: 🟡 IMPLEMENTATION TASK OPEN / REAL FIXTURE + VERIFICATION OPEN**
 
+## F5.5a — Real Materios fixture contract
+
+Added `poc/materios-grandpa/test/MATERIOS-B3-REAL-FIXTURE-CONTRACT-v1.md`.
+
+The contract now fixes the evidence packet before a real fixture exists:
+- exact finalized checkpoint/header;
+- real GRANDPA justification and set id;
+- exact genesis/selection context;
+- native Materios execution-proof witness;
+- StateRoot/storage proof where applicable;
+- separate verification outputs;
+- final crossing into `VerifiedAuthoritySetTransition`.
+
+This is deliberately a **fixture/evidence contract**, not proof and not a selector implementation.
+
+**Status: 🟡 CONTRACT FIXED / REAL WITNESS OPEN**
+
 ## F5.5 Adversarial closure
 
 Need publisher-independent, stale/replay/conflicting-root and ancestry/perimeter rejection evidence.
