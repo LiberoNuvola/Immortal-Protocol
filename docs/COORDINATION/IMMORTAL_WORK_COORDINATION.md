@@ -7723,7 +7723,7 @@ A future certification pass may close the remaining gates only from concrete art
 ## 2026-09-26 — Certification pulse: exact-head anchor
 
 ### Exact branch anchor
-The active certification branch currently resolves to commit `b2ff13f4ab4e66e26bbcac51031de25e88293c3b`. This commit only links the finalization manifest into the closure-status document; it does not modify economic or validator semantics.
+The active certification branch currently resolves to commit `03a2393095b6bd6937a3b91cec12999bfd62aef5`. This commit only anchors the certification pulse in the coordination register; it does not modify economic or validator semantics.
 
 ### Workflow observability
 The available commit-workflow-run interface exposes only pull-request-triggered runs and returns no run for this exact documentation head. Therefore no current-head workflow result is inferred from that absence. The P2.8 workflow is configured for both `workflow_dispatch` and push on `work/immortal-green-closure`, so the repository configuration remains capable of producing exact-head evidence; the artifact itself is still required before closure.
