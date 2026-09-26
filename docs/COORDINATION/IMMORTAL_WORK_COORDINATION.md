@@ -2092,3 +2092,44 @@ The identity ADR fixes the non-negotiable boundary: a different PolicyID is a di
 The verification gate isolates the remaining technical question: whether the historical 381-byte policy witness can actually be reused on Preprod. The embedded 32-byte value `f6874f42...aeba70509` is recorded as a candidate historical UTxO parameter; this remains an evidence question, not yet a certified one-shot conclusion.
 
 **STATUS: 🟡 BRIDGE IDENTITY BOUNDARY CLOSED / 🔴 HISTORICAL POLICY REUSE VERIFICATION OPEN**
+
+
+# 44.2 BRIDGE AGENT RECONCILIATION — 2026-09-26
+
+The coordination register has been re-read and reconciled with the current branch before further bridge work.
+
+## Confirmed cross-agent state
+
+- The canonical economic producer already exists in Haskell: PRE-RICH/profile/PreRichIssueDecision.hs via produceIssueDecision and the executable plutus/export/IssueAdmission.hs.
+- relayer/issueAdmissionProvider.js already provides the intended non-browser transport boundary. No second TypeScript economic producer is to be created.
+- The remaining operational blocker is exactly the one identified in §44: bind the existing producer to real Preprod V3 carrier + B1 PrizePool observations, then execute the resulting Issue through the existing CIP-30 path.
+- PRE materialization remains a separate deployment gate and must not be bypassed by relabelling a representation as canonical PRE.
+
+## Bridge work completed in this session
+
+- src/preRichIssueAdmissionBridge.ts now exposes assertIssueAdmissionMatchesCanonicalEvidence(...).
+- The binding requires the admission action, canonical pre-state hash, candidate post-state hash and action fingerprint to match the CanonicalTransitionEvidence packet.
+- Negative coverage was added for pre-state mismatch, non-Issue action and action-fingerprint mismatch.
+
+Commits:
+- 314187eaca195eb322b0df1e2ca4397c32b91599 — Issue admission action-fingerprint binding.
+- 3e5760b7f60acfbbcb20a0f704f80e6771653309 — executable Issue bridge coverage.
+
+These are implementation/test evidence only. They do not close the Preprod runtime gate.
+
+## Coordination decision
+
+Do not duplicate the producer. Next bridge execution target:
+
+real Preprod V3 carrier observation + real B1 PrizePool observation
+→ canonical IssueDecisionInput
+→ existing Haskell issue-admission producer
+→ existing relayer/issueAdmissionProvider.js
+→ canonical evidence binding
+→ mintSerialNFTWithAuthoritativeAdmission
+→ CIP-30 signature
+→ real Preprod transaction/evidence packet
+
+STATUS: 🟡 BRIDGE IMPLEMENTATION HARDENED / 🔴 REAL PREPROD OBSERVATION-TO-ISSUE WITNESS OPEN
+
+NEXT CONCRETE WITNESS: exact Preprod carrier UTxO + exact Pool UTxO + authoritative observation payload sufficient to execute issue-admission without fixture/synthetic values.
