@@ -1339,6 +1339,27 @@ export async function mintSerialNFT(
   }
 }
 
+/**
+ * First-user Issue entry point.
+ *
+ * The caller supplies the authoritative/refinement producer. This function
+ * deliberately does not calculate economic values or manufacture a witness.
+ * mintSerialNFT performs the exact Counter/Pool observation and final input
+ * binding immediately before signing.
+ */
+export async function mintSerialNFTWithAuthoritativeAdmission(
+  opts: Omit<MintSerialOptions, 'economicAdmission'> & {
+    authoritativeIssueAdmissionProvider: AuthoritativeIssueAdmissionProvider
+    authoritativePoolUsdmValue: bigint
+  },
+): Promise<MintSerialResult> {
+  return mintSerialNFT({
+    ...opts,
+    economicAdmission: undefined,
+  })
+}
+
 export default {
   mintSerialNFT,
+  mintSerialNFTWithAuthoritativeAdmission,
 }
