@@ -8377,3 +8377,17 @@ Fresh read-only Preprod run `36219611300` on head `7c80ef9a54c1e4909eea14bed3074
 ## 2026-09-26 — P2.8 Conway dependency repair under verification
 
 Run `36219617090` failed during Cabal resolution with the exact blocker `unknown package: cardano-ledger-conway (dependency of cardano-ledger-api)`. Commit `592905e9161fbbcab8a25fcd5a8d333369bb21df` adds `eras/conway/impl` to the pinned cardano-ledger source package. Run `36219781384` is the post-fix verification and has reached the ledger-aligned bootstrap; its native crypto prerequisites and GHC/Cabal setup are green, while the real ledger resolver/evaluator evidence is still pending.
+
+
+## 2026-09-26 — P2.8 cardano-base alignment repaired
+
+Run `36219781384` reached the real Cardano resolver after the Conway repair and failed on a concrete version conflict: the runner pinned `cardano-base-0.1.2.0`, while `cardano-ledger-babbage-1.14.0.0` requires `cardano-base >=0.1.4`; the same pinned ledger snapshot's `cardano-ledger-core` further requires `cardano-base >=0.1.6` and `cardano-crypto-class >=2.4 && <2.6`.
+
+The exact CHaP release `cardano-base-0.1.6.0` was traced to IntersectMBO/cardano-base commit `60827efde9e1790895039a8891f4bd06bf996401`. That snapshot contains `cardano-base-0.1.6.0` and `cardano-crypto-class-2.5.1.0`, satisfying the observed ledger bounds. Commit `35b949162a429a8b70d72154dd7806c70921a9ca` updates the P2.8 runner to that exact source pin.
+
+Classification:
+- P2.8 cardano-base dependency mismatch: **REPAIRED**.
+- Fresh exact-head resolver/evaluator run: **PENDING**.
+- Typed context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
