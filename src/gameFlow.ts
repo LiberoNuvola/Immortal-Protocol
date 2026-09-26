@@ -987,6 +987,22 @@ export async function claimPrize(opts: {
 
   const buyer = await lucid.wallet.address()
 
+  // Both Claim validators use deployed reference scripts. Keeping the two
+  // large validator programs out of the transaction body preserves the same
+  // Cardano transaction-size boundary already enforced for Reveal.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   const nextFields = [...datum.fields]
   nextFields[10] = emptyConstr(2) // Claimed
   const nextDatum = datumFromFields(nextFields)
@@ -1011,12 +1027,10 @@ export async function claimPrize(opts: {
 
   const tx = await lucid
     .newTx()
-    // PrizeValidator: spend and update to Claimed
+    // PrizeValidator + B1PrizePool are supplied as reference scripts.
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     .collectFrom([prizeUtxo], claimRedeemer())
-    .attachSpendingValidator(scripts.prizeValidator as Script)
-    // B1PrizePool: spend and update
     .collectFrom([b1ppUtxo], b1ppTicketClaimedRedeemer(BigInt(prizeAmount)))
-    .attachSpendingValidator(scripts.b1PrizePool as Script)
     // Ticket NFT: spend to prove ownership (NFT returns to buyer, not burned)
     .collectFrom([ticketUtxo])
     // Output: updated PrizeDatum (Claimed)
@@ -1128,6 +1142,22 @@ export async function expirePrize(opts: {
 
   const nextPoolDatum = datumFromFields(poolFields)
   const executor = await lucid.wallet.address()
+
+  // Expire uses the same reference-script realization as Reveal/Claim; no
+  // inline validator fallback is permitted because both scripts are large.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   const prizeAssets = utxoAssets(prizeUtxo)
   const nonLovelaceAssets = Object.entries(prizeAssets).filter(
     ([unit, quantity]) => unit !== 'lovelace' && quantity !== 0n,
@@ -1143,19 +1173,14 @@ export async function expirePrize(opts: {
 
   const tx = await lucid
     .newTx()
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     .collectFrom(
       [prizeUtxo],
       expireRedeemer(),
     )
-    .attachSpendingValidator(
-      scripts.prizeValidator as Script,
-    )
     .collectFrom(
       [poolUtxo],
       b1ppTicketExpiredRedeemer(),
-    )
-    .attachSpendingValidator(
-      scripts.b1PrizePool as Script,
     )
     // The Prize UTxO carries execution/min-UTxO ADA, while the ticket NFT
     // remains independently held by its owner. Returning this physical
