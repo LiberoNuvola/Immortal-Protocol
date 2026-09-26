@@ -84,6 +84,17 @@ jobs:
       - name: Bind Preprod observation to exact conformance snapshot
         run: node audit/cardano-integration/preprod-conformance-binding.mjs
 
+      - name: Execute real Preprod Reveal
+        env:
+          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+          DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
+          PREPROD_WALLET_ADDRESS: ${{ env.PREPROD_WALLET_ADDRESS }}
+          PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
+          DEMETER_API_KEY: ${{ env.DEMETER_API_KEY }}
+          DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ env.DEMETER_OGMIOS_AUTHENTICATED_URL }}
+          PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
+        run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
+
       - name: Record workflow provenance
         if: always()
         run: |
