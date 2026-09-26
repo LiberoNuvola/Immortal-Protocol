@@ -77,6 +77,7 @@ export type ProtocolDeclaration = {
   readonly beacon?: BeaconDeclaration
   readonly observedAt: string
   readonly evidence: readonly DeclarationEvidence[]
+  readonly publicState?: PublicProtocolState
 }
 
 
