@@ -210,12 +210,14 @@ main = do
         withCommitment
           (event2 { rulesetVersion = 2
                   , eventTimestamp = 50
-                  , eventPayload = PayloadStatusChanged 1 Proposed 50 })
+                  , eventPayload = PayloadStatusChanged 1 Proposed 50
+                  , predecessor = Nothing })
       activeRulesetEvent =
         withCommitment
           (event2 { rulesetVersion = 2
                   , eventTimestamp = 100
-                  , eventPayload = PayloadStatusChanged 1 Proposed 100 })
+                  , eventPayload = PayloadStatusChanged 1 Proposed 100
+                  , predecessor = Nothing })
   assert "future ruleset rejected before effective timestamp"
     (not (canonicalGovernanceEventValid rulesetV2 Nothing futureRulesetEvent))
   assert "ruleset accepted at effective timestamp"
