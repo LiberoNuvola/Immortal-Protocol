@@ -354,6 +354,8 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
         safetyCapital: 0n,
         reserveProtection: 0n,
         mandatoryFutureCosts: 0n,
+        currentActiveClass: 0n,
+        highestClassEverActivated: 0n,
         pool: {
           pendingLiabilitiesUsdm: postPool.pendingLiabilitiesUsdm,
           unresolvedReserveUsdm: 500n,
