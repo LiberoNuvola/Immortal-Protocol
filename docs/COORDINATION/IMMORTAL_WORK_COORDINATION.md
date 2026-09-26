@@ -8032,3 +8032,23 @@ No economic, validator, authority-selection, oracle, or protocol-limit semantics
 
 **USER QUESTION:** NONE.
 
+
+
+## 2026-09-26 — P2.8 bootstrap repair: contra-tracer resolution
+
+Run `36218937416` on exact head `bae0faaa6488139f986dfda21730f4a6dac099a2` crossed the native dependency/bootstrap steps for `libsodium`, `libblst 0.3.14` and `libsecp256k1`, and successfully installed GHC/Cabal. The next concrete blocker was Cabal dependency resolution: `cardano-crypto-class-2.3.0.0` requires `contra-tracer ==0.1.0.1 || ==0.1.0.2`, while the active package index exposed `contra-tracer-0.2.x` as the matching candidate set.
+
+The dependency provenance was checked against the published Cardano Haskell package metadata: `contra-tracer-0.1.0.2` is sourced from `input-output-hk/iohk-monitoring-framework`, commit `1c097a1cafb066b264432e6df27bbc959f3dc715`, subdirectory `contra-tracer`. The repository's `audit/cardano-ledger-runner/cabal.project` now pins that exact source package before Cabal resolution.
+
+Commit: `9aa590d56f47b980d38182c0cf3e414b214edbb6`.
+
+### Classification
+- P2.8 native dependency bootstrap: **libsodium + blst + secp256k1 = traversed**.
+- Cabal dependency resolution: **REPAIRED — contra-tracer source pin added**.
+- Native `evalTxExUnitsWithLogs`: **OPEN — fresh exact-head run required**.
+- Reveal execution-budget classification: **OPEN**.
+- No economic, validator, authority-selection or evaluator-semantic change.
+
+**Next evidence target:** the run produced by commit `9aa590d56f47b980d38182c0cf3e414b214edbb6` must demonstrate successful dependency resolution and progress through typed context decoding to the real `evalTxExUnitsWithLogs` call.
+
+**USER QUESTION:** NONE.
