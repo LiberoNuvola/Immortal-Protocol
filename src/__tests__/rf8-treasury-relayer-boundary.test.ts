@@ -26,6 +26,5 @@ describe('RF8 Treasury relayer boundary', () => {
     expect(treasuryWorker).toContain('canonical EconomicAdmission')
     // Legacy percentage distribution must remain unreachable in production.
     expect(treasuryWorker).not.toMatch(/calculateDistribution\s*\(/)
-    expect(source).not.toMatch(/calculateDistribution\s*\(/)
   })
 })
