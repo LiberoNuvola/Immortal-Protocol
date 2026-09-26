@@ -163,3 +163,5 @@ jobs:
 # Exact-head execution trigger 2026-09-26T0810: obtain native evaluator evidence on current head.
 
 # Exact-head execution trigger: unique SHA-scoped concurrency for native P2.8 evidence.
+
+# Exact-head evidence trigger 2026-09-26T0814 after current-head dossier update.
