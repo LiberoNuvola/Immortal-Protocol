@@ -1791,3 +1791,43 @@ No field may be synthesized from browser UI state, legacy B1 aggregation, or a c
 - Final Counter/Pool observation and EconomicAdmission input binding remain inside the existing Issue transaction path.
 - Current HEAD: `a8361c518aa08a097113e707a537f3a1aaa9365d`.
 - This is implementation progress only; it does not constitute Preprod execution or an authoritative producer witness.
+
+
+# 40. PREPROD PRE BOOTSTRAP TRIANGULATION — 2026-09-26
+
+The PRE bootstrap question was re-triangulated against current GitHub implementation and Notion provenance before any new token/policy work.
+
+## Confirmed
+
+- The application currently identifies PRE-RICH as policy `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c` with asset name `5052452d52494348`.
+- Genesis admission requires an observed, canonical Treasury PRE quantity whose independently verified value is >= 4,000 USDM.
+- The Treasury observation/admission path does not mint PRE; it validates observed PRE identity, quantity, Oracle price, freshness and publisher.
+- The existing Yaci Genesis trace is explicitly a **non-production fixture** and uses synthetic test identities. It must not be promoted to the real Preprod token.
+- Gate 37 defines the canonical PRE identity as the Mainnet PRE/Snek asset and deliberately refuses synthetic State-0 evidence.
+- Notion's bootstrap/liveness closure treats the Genesis threshold as already canonical and separates the PRE Treasury bootstrap from PrizePool liquidity.
+
+## Critical deployment conclusion
+
+The current corpus contains **no verified evidence of the canonical PRE asset already existing on Preprod**, and contains no authoritative Preprod mint/distribution transaction for that asset.
+
+Therefore:
+
+- do **not** create a second guessed PRE policy and call it canonical PRE;
+- do **not** ask the first user/Lace wallet to supply PRE it does not have;
+- do **not** promote the Yaci synthetic PRE mint fixture to production;
+- do **not** infer that the Mainnet PRE asset exists on Preprod merely because the application configuration references its Mainnet policy ID;
+- do **not** block the first-user CIP-30 boundary by requiring PRE in the user's wallet.
+
+## Exact remaining operational gate
+
+The deployment owner must provide or establish an authoritative Preprod PRE materialization path that is compatible with the canonical PRE identity/deployment policy. Once a real PRE-bearing Preprod UTxO exists, the already-implemented path is:
+
+`canonical PRE UTxO → protocol Treasury → verified Oracle → Genesis admission → V3 state → Lace/CIP-30 first user`.
+
+This is classified as a **deployment/materialization gate**, not a new IMMORTAL economic decision.
+
+## Non-regression rule
+
+Any Preprod-specific token used solely for local/Yaci testing must be explicitly labelled fixture/test deployment and must never be substituted for the canonical PRE identity in Genesis certification.
+
+**STATUS: 🟡 TRIANGULATED / PREPROD MATERIALIZATION WITNESS OPEN**
