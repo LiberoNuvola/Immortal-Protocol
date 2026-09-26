@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { assertIssueAdmissionMatchesCanonicalEvidence } from '../preRichIssueAdmissionBridge'
 import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from '../preRichIssueAdmissionBridge'
 import type { EconomicAdmissionWitness } from '../../Adapter/CARDANO/runtime/EconomicAdmission'
 
@@ -38,6 +39,22 @@ const classEvidence = {
   cap: 10n,
 }
 
+
+const canonicalEvidence = {
+  evidenceId: 'evidence:issue:1',
+  fixtureId: 'fixture:issue:1',
+  actionClass: 'Issue',
+  protocolVersion: 'v3',
+  profileVersion: 'pre-rich-v1',
+  adapterId: 'cardano',
+  adapterVersion: 'b1',
+  environment: 'preprod',
+  preStateFingerprint: '1'.repeat(64),
+  postStateFingerprint: '3'.repeat(64),
+  actionFingerprint: '2'.repeat(64),
+  transactionRef: 'tx:issue:1',
+}
+
 const inputs = {
   counterInputReference: counter,
   poolInputReference: pool,
@@ -62,4 +79,42 @@ describe('PRE-RICH Issue admission bridge', () => {
     await expect(obtainAuthoritativeIssueAdmission(provider, inputs, { ...classEvidence, issued: 10n, cap: 10n })).rejects.toThrow('class is not saleable')
     expect(called).toBe(false)
   })
+
+  it('binds the admitted Issue to the same canonical pre/post transition evidence', async () => {
+    const admission = await obtainAuthoritativeIssueAdmission(
+      async () => witness(),
+      inputs,
+      classEvidence,
+    )
+    expect(() => assertIssueAdmissionMatchesCanonicalEvidence(admission, canonicalEvidence)).not.toThrow()
+  })
+
+  it('rejects canonical evidence whose pre-state differs from the admission', async () => {
+    const admission = await obtainAuthoritativeIssueAdmission(
+      async () => witness(),
+      inputs,
+      classEvidence,
+    )
+    expect(() =>
+      assertIssueAdmissionMatchesCanonicalEvidence(
+        admission,
+        { ...canonicalEvidence, preStateFingerprint: '9'.repeat(64) },
+      ),
+    ).toThrow('pre-state hash does not match canonical evidence')
+  })
+
+  it('rejects canonical evidence for a non-Issue action', async () => {
+    const admission = await obtainAuthoritativeIssueAdmission(
+      async () => witness(),
+      inputs,
+      classEvidence,
+    )
+    expect(() =>
+      assertIssueAdmissionMatchesCanonicalEvidence(
+        admission,
+        { ...canonicalEvidence, actionClass: 'Reveal' },
+      ),
+    ).toThrow('economic admission action does not match canonical evidence')
+  })
+
 })
