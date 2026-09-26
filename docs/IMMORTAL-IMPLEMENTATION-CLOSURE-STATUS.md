@@ -2,7 +2,7 @@
 
 **Snapshot branch:** `work/immortal-green-closure`
 **Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-09-25
+**Date:** 2026-09-26
 
 ## 1. Closed policy boundaries
 
@@ -43,10 +43,10 @@
 | RF8 no-side-door | Whole-program proof requires enumeration of every economic-state-mutating path, not only current tests. |
 | RF6 Ω completeness | Real environment perimeter and over-approximation certificate require deployment-specific evidence. |
 | Non-vacuity / Kc | Concrete S0/QNE/certificate E1–E10 are deployment/profile evidence, not universal math. |
-| B2 live/on-chain control integration | Hysteresis reference is implemented, but live PRE-RICH control datum/on-chain enforcement is separate. |
+| B2 live/on-chain control integration | DESIGN CANDIDATE | Dedicated authenticated PRE-RICH control singleton is now specified in `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md`; deployment singleton identity and ledger enforcement remain open. |
 | Jackpot activation on-chain | Application policy is implemented; direct on-chain activation remains open because current B1 datum lacks current/highest class state. |
 | 3D production UI wiring | IMPLEMENTED on current branch; visual/UX conformance remains evidence-only. |
-| P2.8 full lifecycle | Yaci lab remains the final real-ledger evidence gate for the whole Issue→Reveal→Claim/Expire path. |
+| P2.8 full lifecycle | Yaci/native-ledger lab remains the final real-ledger evidence gate; Reveal now has a reference-script remediation path that must be measured on ledger. |
 | Haskell final regression | Pending current-head runner completion; toolchain pins and required native dependency siblings are aligned with `cabal.project`. |
 
 ## 4. Anti-regression decisions
@@ -137,3 +137,14 @@ A gate may be marked CLOSED only with an exact commit, exact workflow/test, exac
 ## Finalization manifest — 2026-09-25
 
 The implementation-to-certification transition is now recorded explicitly in `docs/COORDINATION/FINALIZATION-CERTIFICATION-MANIFEST-20260925.md` (commit `c16c2d30c791458fa99744aa200c5f03f55d6918`). The manifest freezes the implementation boundary and enumerates the remaining certification gates without treating them as permission to alter protocol semantics.
+
+
+## 2026-09-26 — Structural closure pass
+
+- **Lucid toolchain:** `lucid-cardano` is now pinned exactly to `0.10.11` in `package.json`; the lockfile already resolves that exact package version.
+- **Reveal size blocker:** canonical `revealPrize` no longer embeds PrizeValidator and B1PrizePool validator scripts. It requires configured reference-script holders, verifies the reference-script hashes against the locally constructed validator hashes, and fails closed if either holder is missing, ambiguous, or mismatched.
+- **Reveal remediation design:** `docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md` records the selected architecture and closure criterion.
+- **B2:** `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md` defines the minimum authenticated control boundary while explicitly leaving the deployment-specific singleton identity open.
+- **No economic semantics changed:** no KA/KC/KD, payout bound, ladder, expiry, Treasury semantics, or protocol size limit was changed.
+
+The Reveal redesign is **implemented but not yet GREEN**: it still requires a deployed reference-script pair, a serialized-size measurement, and native Cardano-ledger evaluation of the exact transaction.
