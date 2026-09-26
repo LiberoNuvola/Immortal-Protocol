@@ -5,6 +5,7 @@ import type { EconomicStateV3 } from './PreRichCardanoObservationProjection'
 
 export type PreRichPublicStateEvidence = {
   readonly activeClassEvidenceRef: string
+  readonly activeClassStatus: 'ACTIVE' | 'INACTIVE' | 'TRANSITIONING' | 'BLOCKED'
   readonly observedAt: string
   readonly roundId?: string
 }
@@ -34,7 +35,7 @@ export function projectObservedPreRichPublicState(
   return {
     activeClass: {
       classId,
-      status: 'ACTIVE',
+      status: evidence.activeClassStatus,
       ...(evidence.roundId ? { roundId: evidence.roundId } : {}),
       evidenceRef: evidence.activeClassEvidenceRef,
       observedAt: evidence.observedAt,
