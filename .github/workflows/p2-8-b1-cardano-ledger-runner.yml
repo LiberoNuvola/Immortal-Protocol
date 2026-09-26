@@ -155,3 +155,6 @@ jobs:
 
 
 # Exact-head closure trigger 2026-09-26: rerun after plutus-tx materialization.
+
+
+# Exact-head closure trigger 2026-09-26T0608: run after latest resolver frontier.
