@@ -8558,3 +8558,32 @@ Demeter documentation was rechecked: the Ogmios port documents both the dmtr-api
 - P2.8 native evaluator: OPEN.
 
 No protocol, economic, validator, authority-selection, oracle, or ledger semantics changed.
+
+## 2026-09-26 — Triangulation closure map: residual fronts classified
+
+### Residual front classification after repository + Notion triangulation
+The current survey confirms that the remaining work is not one homogeneous backlog.
+
+**Implementation/evidence fronts now strengthened:**
+- Genesis arithmetic conservative-floor correction is on the active line; fresh CI evidence remains required before promoting RT-1.1 to current PASS.
+- RF8/L15 production-side inventory now has a repository-wide direct-sign/submit audit plus an explicit economic-mutator inventory for Issue/Reveal/Claim/Expire.
+- Certified Ticket/3D, Licensing structural hygiene, Layer Boundary, Snek State-0, Formal Mechanical Evidence and Jackpot policy now have dedicated evidence gates.
+- The Haskell semantic gate is split by suite so an individual Oracle/Governance/ProtectedCapital/Genesis failure cannot be hidden inside a single aggregate command.
+- Preprod now has real Ogmios v7 context and live wallet UTxO evidence; the remaining step is binding a clean exact packet and, later, a real submitted/observed transaction.
+
+**Research/design fronts intentionally left open:**
+- B3-C succinct proof system: no proof system selected. Current external research shows Plutus V3 exposes BLS12-381 primitives relevant to ZK verification, while Mithril documents non-recursive and recursive SNARK aggregation. Neither establishes the Materios `stateRoot -> storage key/value -> canonical root` relation by itself. See `docs/research/B3-C-SUCCINCT-PROOF-RESEARCH-2026-09-26.md`.
+- R9 EEV conversion/rounding: `ceilingDiv` remains under source review because settlement rounding and conservative EEV/liquidity valuation are different semantic questions. No implementation change is made without a source-grounded decision.
+- R5 upgrade/migration: specification and formal obligations exist, but no concrete upgrade instance exists from which to manufacture a deployment certificate.
+- Settlement Gateway / Bitcoin adapter: architecture/capability audit remains open; no Bitcoin/BitVM dependency is inferred for the Cardano baseline.
+- Gate 41 historical PRE witness and B3 Materios publisher-independent canonicality remain primary-artifact problems, not problems solvable by another synthetic fixture.
+
+### Certification rule
+No new gate, replay vector, research note or mirror fixture is treated as proof of a stronger claim than its scope. In particular:
+- model evidence ≠ deployment evidence;
+- source parity ≠ independently executed parity;
+- Preprod context/UTxO evidence ≠ observed economic transaction evidence;
+- B1 authorized publication ≠ B3 publisher-independent canonicality;
+- mechanical license hygiene ≠ legal provenance opinion.
+
+**No normative economic or governance parameter changed in this cycle.**
