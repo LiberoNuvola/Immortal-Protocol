@@ -1457,3 +1457,17 @@ Before the first DEMETER Issue:
 **STATUS: 🔴 OPEN — exact deployed Preprod Treasury address + ledger witness required**
 
 **NEXT CONCRETE WITNESS:** deployed Treasury script hash/address pair + exact Preprod Treasury UTxO observation.
+
+
+### 29.1 Deterministic derivation completed — 2026-09-26
+
+From the exact current `plutus/out/treasury.plutus.json` artifact:
+
+- Plutus version: **V2**
+- Treasury script hash: `7a2a58b992e29d10eae279ae8fa93bb44d854ff832f0823b09b19708`
+- Derived Preprod script address: `addr_test1w9az5k9ejt3f6y82ufu6araf8w6ymp20lqe0pq3mpxcewzq4f8jsf`
+
+The derivation is reproducible through `audit/pre-genesis-genesis/derive-preprod-treasury-address.mts` and the associated CI workflow.
+
+**IMPORTANT:** this closes the derivation part, not the deployment/ledger part. The address is not promoted to canonical live Treasury until a Preprod ledger query observes the expected Treasury UTxO at exactly this address and the UTxO is bound into the Genesis/Issue evidence packet.
+
