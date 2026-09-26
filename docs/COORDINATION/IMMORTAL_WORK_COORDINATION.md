@@ -8854,3 +8854,20 @@ Additional canonical-governance hardening completed:
 - regression vectors cover future-effective rulesets and witness/event version mismatch.
 
 This closes a version-confusion side-door without changing any governance thresholds, lifecycle durations, actor roles or canonical economic policy. SHA-256 commitment semantics remain unchanged.
+
+
+## 2026-09-26 — P2.8 cardano-protocol package isolation
+
+Fresh P2.8 run 537 crossed the native prerequisite, crypto, Byron, measures, base-deriving-via, GHC and Cabal setup stages, then the runner failed at dependency resolution with:
+
+`unknown package: cardano-protocol (dependency of cardano-protocol-tpraos)`
+
+The pinned f649f975 Cardano-ledger source does contain `libs/cardano-protocol`. The runner had it inside the multi-subdir ledger source block; following the same package-materialization isolation used for the Byron executable-spec siblings, `libs/cardano-protocol` is now declared as an independent source-repository-package entry at the exact same ledger commit.
+
+### Classification
+- Native prerequisites: TRAVERSED.
+- Crypto / Byron / measures / base-deriving-via: RESOLVED to resolver.
+- `cardano-protocol` package materialization: **REPAIRED — FRESH RUN REQUIRED**.
+- Typed ledger context: OPEN.
+- Native `evalTxExUnitsWithLogs`: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
