@@ -8325,3 +8325,22 @@ The release checklist was corrected to the actual current `License_doc/` paths a
 - Materios/B3 publisher-independent canonicality: open at cryptographic/provenance composition.
 
 **No normative economic or governance change in this cycle.**
+
+
+## 2026-09-26 — Preprod evidence corrected to VERIFIED
+
+Fresh read-only Preprod run `36219611300` on head `7c80ef9a54c1e4909eea14bed30744ef7d03c134` completed **SUCCESS** through both the Demeter/Ogmios context probe and the live wallet UTxO probe. Artifact `10899026461` contains real Preprod context plus the wallet packet.
+
+Observed wallet evidence: `utxoCount=28`, `status=FUNDED`, `lovelaceBalance=9986228222`. Context packet SHA-256: `fa7c636f7be1c987fbe0259a3e012f27b460476bc7862ebf04b4bde5a14bbc04`.
+
+This supersedes the older "fresh run required" classification for provider connectivity and wallet readiness. A real Preprod transaction remains **OPEN** because this workflow is intentionally read-only and does not sign/submit.
+
+## 2026-09-26 — P2.8 dependency completeness: Conway
+
+Commit `592905e9161fbbcab8a25fcd5a8d333369bb21df` adds `eras/conway/impl` to the pinned `cardano-ledger` source package in the P2.8 runner. Direct inspection of the same upstream snapshot shows `cardano-ledger-api-1.14.0.0` depends on `cardano-ledger-conway >=1.22`, while the Dijkstra package also depends on Conway. The runner now includes the missing local package path without changing any ledger/economic semantics.
+
+Classification:
+- P2.8 dependency bootstrap: **CONWAY PACKAGE PATH REPAIRED**.
+- Exact post-Conway resolver result: **PENDING FRESH RUN**.
+- Native typed-context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
