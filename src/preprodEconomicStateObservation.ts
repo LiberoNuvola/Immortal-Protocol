@@ -177,7 +177,7 @@ export async function observeEconomicStateCarrier(
   if (
     lockedAmount === null || threshold === null || cycle === null ||
     lockedAmount < 0n || threshold < 0n || cycle < 0n ||
-    statusIndex === null || statusIndex < 0 || statusIndex > 1
+    statusIndex === null || statusIndex < 0 || statusIndex > 3
   ) {
     throw new Error('V3 jackpot state is invalid')
   }
@@ -197,7 +197,7 @@ export async function observeEconomicStateCarrier(
     jackpot: {
       lockedAmount,
       threshold,
-      status: statusIndex === 0 ? 'inactive' : 'locked',
+      status: statusIndex === 0 ? 'inactive' : statusIndex === 1 ? 'locked' : statusIndex === 2 ? 'payable' : 'closed',
       cycle,
     },
   }
