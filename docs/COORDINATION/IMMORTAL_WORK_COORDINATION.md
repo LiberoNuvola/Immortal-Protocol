@@ -8531,3 +8531,10 @@ Classification:
 - Typed context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — Preprod transient provider-auth failure separated from verified packet
+
+Run `36220572808` / run 27 on head `220be99e2a35305f55e971e2d6999babd6758aaa` reached the Preprod probe with credential and address validation green, but the Demeter Ogmios handshake returned HTTP 401 for both the documented header attempt and the authenticated-endpoint fallback. This is a provider-auth availability failure, not a regression of the JSON binding writer.
+
+The immediately preceding run `36220479492` / run 26 on the same functional Preprod path completed **SUCCESS** through context, funded-wallet UTxO, Reveal boundary conformance, and final binding. Therefore the binding fix remains **VERIFIED** by observed execution. The later 401 is recorded as transient provider execution state and does not invalidate the previously produced evidence packet.
