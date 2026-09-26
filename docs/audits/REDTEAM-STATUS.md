@@ -35,9 +35,9 @@ The first attack pass is derived from the 2026-09-23 external red-team review an
 | RT-2.6 | Unverified valuation | IMPLEMENTED |
 | RT-2.7 | Conflicting observations | OPEN |
 | RT-2.8 | Duplicate transition | IMPLEMENTED in carrier/Yaci trace |
-| RT-2.9 | Legacy Treasury distribute as Genesis authority | OPEN |
+| RT-2.9 | Legacy Treasury distribute as Genesis authority | RELAYER FAIL-CLOSED / ON-CHAIN LEGACY SURFACE REMAINS |
 | RT-2.10 | Silent PrizePool inflation | HARDENED / NEEDS FRESH LEDGER EVIDENCE |
-| RT-2.11 | UI Genesis while chain remains PRE-GENESIS | OPEN |
+| RT-2.11 | UI Genesis while chain remains PRE-GENESIS | NO CURRENT UI CLASSIFIER IDENTIFIED / LIVE INTEGRATION EVIDENCE OPEN |
 | RT-2.12 | Missing executable Genesis path | NO LONGER APPLICABLE — executable carrier exists |
 | RT-2.13 | Forged observation authentication | OPEN |
 | RT-2.14 | Off-chain/on-chain revalidation mismatch | OPEN |
@@ -211,3 +211,12 @@ Therefore the earlier **RT-1.5 OPEN** table entry is stale at the implementation
 - **RT-1.5 release-wide: OPEN**, pending current-head Cardano ledger evidence and independent authenticated valuation/source evidence.
 
 No new valuation formula, haircut or oracle source was introduced.
+
+
+## 2026-09-26 — RT-2.9 / RT-2.11 status reconciliation
+
+The current branch was rechecked against the runtime and on-chain surfaces.
+
+**RT-2.9:** the active relayer Treasury worker is fail-closed and no longer invokes the legacy percentage distribution path. However, `plutus/Treasury.hs` still exposes the historical `TreasuryAction = Distribute` validator and percentage fields in `TreasuryDatum`. The repository contains no current production JavaScript call-site for `TreasuryAction/Distribute`, and the Genesis carrier explicitly does not use this mechanism. Classification is therefore **relayer path closed; on-chain legacy surface remains and must be release-isolated/deactivated before a final release certification**. No script hash or legacy deployment behavior is changed by this reconciliation.
+
+**RT-2.11:** current UI inspection did not identify a local Genesis classifier capable of overriding the carrier state; current Buy/Mint flows are gated by canonical admission. The remaining question is live product integration, not a demonstrated current UI side-door. Classification is **no current UI classifier identified; live integration evidence remains open**.
