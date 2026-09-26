@@ -42,3 +42,5 @@ constraints:
 
 package *
   ghc-options: -Wall
+
+-- Exact-head Haskell conformance trigger: no dependency or semantic change.
