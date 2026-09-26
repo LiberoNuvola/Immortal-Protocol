@@ -17,6 +17,13 @@ benchmarks: False
 
 source-repository-package
   type: git
+  location: https://github.com/input-output-hk/iohk-monitoring-framework
+  tag: 1c097a1cafb066b264432e6df27bbc959f3dc715
+  subdir:
+    contra-tracer
+
+source-repository-package
+  type: git
   location: https://github.com/IntersectMBO/cardano-prelude
   tag: cfb3e0784f0d483f4d5c4f047f324b7dc8091475
   subdir:
