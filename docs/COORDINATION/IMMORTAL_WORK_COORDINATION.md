@@ -8164,3 +8164,28 @@ This is an execution-scope repair only. No credential value is committed or logg
 
 **USER QUESTION:** NONE.
 
+## 2026-09-26 — Demeter credential alias compatibility
+
+Run `36219405020` reached the `Validate Demeter credential` step and failed there. The wallet address validation was therefore not executed, and neither the Ogmios context probe nor the live wallet UTxO probe ran.
+
+The job already declared Environment `DEMETER`, so the remaining observed failure is that `secrets.DEMETER_API_KEY` is not resolving to a non-empty value in that environment.
+
+Commit `b8aa3772278582753dcf6defb2a07e6f4c30dc54` makes the workflow accept either of these environment-secret names:
+- `DEMETER_API_KEY`;
+- `DEMETER`.
+
+The selected value is assigned only to the in-memory workflow environment variable and is never logged.
+
+### Classification
+
+- GitHub Environment binding: **PRESENT**.
+- Demeter credential resolution: **OPEN — alias compatibility added**.
+- Ogmios Preprod probe: **NOT YET EXECUTED**.
+- Live wallet UTxO observation: **NOT YET EXECUTED**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+
+No protocol, validator, economic, authority-selection or ledger semantics changed.
+
+**USER QUESTION:** NONE.
+
