@@ -1,5 +1,3 @@
-import { Data, type UTxO } from 'lucid-cardano/web/mod.js'
-
 import {
   PRE_RICH_CANONICAL_PRICES,
   type EconomicStateV3,
@@ -17,15 +15,17 @@ export type EconomicStateCarrierObservation = {
 
 type CarrierInput = {
   lucid: any
+  decodeDatum?: (raw: string) => unknown
   carrierAddress: string
   carrierPolicyId: string
   carrierTokenNameHex: string
 }
 
-function parseDatum(raw: unknown): any {
+function parseDatum(raw: unknown, decodeDatum?: (raw: string) => unknown): any {
   if (raw == null) return null
   if (typeof raw === 'string') {
-    try { return Data.from(raw) } catch { return null }
+    if (!decodeDatum) return null
+    try { return decodeDatum(raw) } catch { return null }
   }
   return raw
 }
@@ -99,7 +99,7 @@ export async function observeEconomicStateCarrier(
   const utxos: UTxO[] = await input.lucid.utxosAt(input.carrierAddress)
   const carrier = singletonCarrierUtxo(utxos, unit)
 
-  const root = fieldsOf(parseDatum(carrier.datum))
+  const root = fieldsOf(parseDatum(carrier.datum, input.decodeDatum))
   if (!root || root.length !== 2) {
     throw new Error('V3 economic state carrier datum is missing or malformed')
   }
