@@ -1,5 +1,4 @@
 // src/txHelpers.ts
-import { prizeValidator } from './loadValidator'
 import {
   createCardanoExecutionAdapter,
 } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
