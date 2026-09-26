@@ -4,5 +4,8 @@
   "dependencies": {
     "@lucid-evolution/lucid": "0.6.2",
     "ws": "8.18.3"
+  },
+  "scripts": {
+    "preprod:wallet": "node preprod-wallet-utxo.mjs"
   }
 }
