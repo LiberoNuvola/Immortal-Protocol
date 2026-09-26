@@ -18,10 +18,10 @@ The entry point separates:
 
 | Surface | Role |
 |---|---|
-| `/` | IMMORTAL Ecosystem launcher |
-| `/dapp.html` | PRE-RICH application entry point |
+| `/` | IMMORTAL V5 home |
+| `/ecosystem.html` | DApp Ecosystem |\n| `/dapp.html` | PRE-RICH application entry point |
 
-The ecosystem launcher is intentionally lightweight and must not become an economic authority.
+The DApp Ecosystem surface is intentionally lightweight and must not become an economic authority.
 
 ## Launch contract
 
