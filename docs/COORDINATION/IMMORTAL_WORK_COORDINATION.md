@@ -8971,3 +8971,44 @@ Life State and Economic Vitality remain profile-level OPEN work: no threshold or
 - The adapter does not infer UI intent, economic health, liveness, or beacon trust mode. `LifeState` and `OperationalStatus` remain explicit deployment inputs until their authoritative observation sources are closed.
 - Added executable lifecycle tests and included them in Protocol Declaration CI.
 - This closes the implementation step “public activity from observed PRE-RICH lifecycle”; it does **not** close Life State/Economic Vitality, B3, or deployment-wide operational status.
+
+
+## 2026-09-26 — Master front reorganization and execution start
+
+The detailed execution matrix is now tracked in:
+`docs/COORDINATION/IMMORTAL_MASTER_FRONT_MATRIX_v0.1.md`.
+
+Immediate execution has started on F6 (PRE-GENESIS / GENESIS / TREASURY).
+
+### F6 concrete work started
+
+- `src/genesisTreasuryObservation.ts` now provides a fail-closed observation adapter for the canonical Treasury PRE-bearing UTxO and authenticated Oracle State.
+- The observer binds:
+  - Treasury address;
+  - exact Treasury UTxO reference;
+  - PRE policy/name;
+  - PRE quantity;
+  - Oracle singleton reference;
+  - Oracle asset identity;
+  - Oracle publisher;
+  - Oracle timestamp/freshness;
+  - canonical oracle precision;
+  - source transaction hash.
+- Ambiguous PRE-bearing Treasury UTxOs are rejected.
+- Ambiguous Oracle singleton state is rejected.
+- The observer does not move funds or mutate economic state.
+- `src/__tests__/genesisTreasuryObservation.test.ts` covers ambiguity rejection and a fresh threshold-reaching observation.
+- Protocol Declaration CI now includes the Genesis Treasury observation test.
+
+### Boundary
+
+This closes only the **observation seam**, not Genesis authority itself.
+
+Still required:
+1. bind the observation into the existing `admitGenesisTreasury` predicate;
+2. negative conformance cases for wrong Treasury, wrong asset, wrong publisher, stale Oracle, below threshold;
+3. on-chain revalidation in the Genesis carrier path;
+4. real Preprod Treasury + Oracle evidence;
+5. one-shot Genesis carrier witness.
+
+No frontend, Treasury or observer code may claim Genesis eligibility merely from Treasury funding.
