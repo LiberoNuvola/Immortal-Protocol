@@ -16,7 +16,7 @@ The first attack pass is derived from the 2026-09-23 external red-team review an
 | RT-1.2 | Deliberately low valuation | OPEN | Safe-direction monotonicity: lower valuation cannot create extra admissibility |
 | RT-1.3 | Stale oracle | PARTIAL | Freshness checks exist in Genesis path; general EEV path still requires end-to-end evidence |
 | RT-1.4 | Malformed valuation | PARTIAL | Genesis admission validates valuation fields; complete economic-input boundary inventory remains open |
-| RT-1.5 | Non-executable liquidity | OPEN | Locked/wrong-policy/non-spendable value excluded from executable liquidity |
+| RT-1.5 | Non-executable liquidity | CLOSED at implementation binding / OPEN release-wide | Locked/wrong-policy/non-spendable value excluded; authenticated Pool input/value is bound to candidate inputs; fresh ledger evidence still required |
 | RT-1.6 | Reflexive PRE valuation | OPEN / DESIGN QUESTION | Determine whether Genesis admission is mark-to-market or executable liquidation value; do not invent a haircut |
 | RT-1.7 | Mid vs settlement price | OPEN | Settlement cannot silently consume protected capital because valuation convention differs |
 | RT-1.8 | Treasury double-count | HARDENED / NEEDS EVIDENCE | Genesis carrier excludes PrizePool I/O and preserves carrier value; fresh ledger evidence still required |
@@ -199,3 +199,15 @@ Concrete witness:
 The Haskell implementation has now been changed to integer floor division, and a regression vector asserts both the floored value and rejection of the fractional-below-threshold transition.
 
 **Classification:** arithmetic discrepancy = **CORRECTED IN SOURCE; CURRENT-HEAD CI EVIDENCE PENDING**. The previous historical RT-1 closure entry is retained as history; it is not used to infer present conformance.
+
+
+## 2026-09-26 — RT-1.5 status reconciliation
+
+The current implementation has progressed beyond the older RT-1.5 table entry. The EconomicAdmission boundary now binds executable-liquidity evidence to: (1) the candidate transaction inputs, (2) the exact authenticated B1 PrizePool input reference, and (3) the authenticated Pool USDM valuation. The existing negative twins cover missing source inputs, duplicated physical UTxOs, mismatched declared liquidity and source-set mismatch.
+
+Therefore the earlier **RT-1.5 OPEN** table entry is stale at the implementation layer. The current classification is:
+
+- **RT-1.5 implementation/provenance binding: CLOSED / GREEN by code + negative tests**.
+- **RT-1.5 release-wide: OPEN**, pending current-head Cardano ledger evidence and independent authenticated valuation/source evidence.
+
+No new valuation formula, haircut or oracle source was introduced.
