@@ -1,0 +1,34 @@
+name: IMMORTAL Licensing Package Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "LICENSE"
+      - "LICENSE-DOCS.md"
+      - "License_doc/**"
+      - "README.md"
+      - "scripts/check-license-package.mjs"
+      - ".github/workflows/license-package-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "LICENSE"
+      - "LICENSE-DOCS.md"
+      - "License_doc/**"
+      - "README.md"
+      - "scripts/check-license-package.mjs"
+      - ".github/workflows/license-package-conformance.yml"
+
+jobs:
+  licensing:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check licensing package
+        run: node scripts/check-license-package.mjs

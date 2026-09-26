@@ -8293,3 +8293,35 @@ A follow-up cleanup commit `0108082bb1e82a3a47127e0ff0fc5f2e2b01b478` removed an
 - Real Preprod transaction: **OPEN**.
 - P2.8 native evaluator: **OPEN**.
 - No economic, validator, authority-selection, oracle, or evaluator-semantic change.
+
+
+## 2026-09-26 — Autonomous triangulation: release hygiene + exhaustive boundary coverage
+
+### New fronts attacked
+The latest triangulation identified several fronts not represented in the short CI summary: formal proof obligations, Treasury/Fee accounting, Settlement Gateway/Bitcoin adapter design, licensing release hygiene, Gate 41 historical PRE witness recovery, and repository-wide RF8/L15 execution-boundary coverage.
+
+Only evidence-producing technical fronts were changed in this cycle. Fee/Settlement/Bitcoin remain design-open; licensing legal interpretation remains open; no normative economic value or governance rule was selected.
+
+### Concrete evidence additions
+- `7c6ef3fb6729dbc3925ad4d2b08b2e31a78e205c`: Gate 41/Snek State-0 decoder conformance workflow; run `36219541881` = SUCCESS.
+- `01c97a8b7316246fd59a2d19e4dbe9d3ccb3caa3`: mechanical IMMORTAL/Adapter layer-boundary workflow; run `36219553371` = SUCCESS.
+- `0b07a3a323cc9000737fc682b0f7661096fb0691`: Certified Ticket + 3D security workflow; run `36219274887` = SUCCESS.
+- `a9e938b82c95aaf56163cc7427369058cbe44714`: Jackpot activation/policy workflow; run `36219304232` = SUCCESS.
+
+### Haskell gate diagnostic repair
+The first aggregated Haskell gate (`36219283731`) failed in a single combined test step whose connector-visible output did not identify the first failing suite. The workflow is being split into independently named suite steps so the next failure is attributable without ambiguity. The native dependency bootstrap remains separate from suite semantics.
+
+### Repository-wide RF8/L15 check
+A new mechanical audit scans the production surfaces `src/`, `Adapter/CARDANO/` and `relayer/` for direct `.signTx(...)` / `.submitTx(...)` calls. Only the declared adapter/infrastructure boundaries are allowed; economic mint/game paths must retain the EconomicAdmission submission route. This complements the existing targeted RF8 tests and does not treat audit-only trace scripts as production execution surfaces.
+
+### Licensing package check
+The release checklist was corrected to the actual current `License_doc/` paths and now distinguishes present repository artifacts from the remaining legal/provenance audit. A dedicated structural CI check verifies the root software license marker, documentation license marker, required licensing documents, README license pointer and absence of stale `Licence/` path references. This is a mechanical hygiene check, not a legal opinion.
+
+### Current open non-technical fronts
+- Protocol Usage Fee / Treasury revenue: design-open; keep `ProtocolUsageFee != ChainExecutionCost`.
+- Settlement Gateway / Bitcoin Adapter: architecture/capability audit open; no L2/BitVM requirement inferred.
+- Formal universal theorem: still UNPROVEN; implementation tests cannot be promoted to theorem proof.
+- Gate 41 historical PRE mint witness: primary artifact gap remains open; State-0 decoder conformance is not a substitute.
+- Materios/B3 publisher-independent canonicality: open at cryptographic/provenance composition.
+
+**No normative economic or governance change in this cycle.**
