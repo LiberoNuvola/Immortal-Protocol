@@ -152,3 +152,6 @@ jobs:
           if-no-files-found: error
 
 # Exact-head execution trigger: no runner, dependency, or semantic change.
+
+
+# Exact-head closure trigger 2026-09-26: rerun after plutus-tx materialization.
