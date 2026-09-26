@@ -20,6 +20,8 @@ on:
       - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
       - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
+      - "src/__tests__/immortal-cardano-replay.test.ts"
+      - "src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts"
       - "src/__tests__/preRichIssueRefinement.test.ts"
       - "src/__tests__/preRichClaimRefinement.test.ts"
       - "src/__tests__/preRichRevealRefinement.test.ts"
