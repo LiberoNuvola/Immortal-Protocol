@@ -8538,3 +8538,23 @@ Classification:
 Run `36220572808` / run 27 on head `220be99e2a35305f55e971e2d6999babd6758aaa` reached the Preprod probe with credential and address validation green, but the Demeter Ogmios handshake returned HTTP 401 for both the documented header attempt and the authenticated-endpoint fallback. This is a provider-auth availability failure, not a regression of the JSON binding writer.
 
 The immediately preceding run `36220479492` / run 26 on the same functional Preprod path completed **SUCCESS** through context, funded-wallet UTxO, Reveal boundary conformance, and final binding. Therefore the binding fix remains **VERIFIED** by observed execution. The later 401 is recorded as transient provider execution state and does not invalidate the previously produced evidence packet.
+
+
+## 2026-09-26 — Preprod credential discrimination hardened
+
+Run 36220572808 (head 220be99e2a35305f55e971e2d6999babd6758aaa) proved again that the GitHub Environment credential is present and the supplied Preprod address is syntactically valid, but both the direct authenticated header path and the Demeter authenticated-host fallback returned HTTP 401. No wallet UTxO request was reached.
+
+Commit ab195f5c574d added independent Environment inputs for DEMETER_API_KEY_PRIMARY, DEMETER_API_KEY_ALIAS and optional DEMETER_OGMIOS_AUTHENTICATED_URL. Commit 6f47bdf31a1c67feb20f07995f9885988e2e701c makes the probe try each distinct configured credential against the documented header path and then the authenticated-host path, recording only credential labels and HTTP status codes. Commit 1dc552b4c62866cb07a4bc037685444d474f6edf removes the stale diagnostic reference to the former single-key variable.
+
+Demeter documentation was rechecked: the Ogmios port documents both the dmtr-api-key header and the authenticated endpoint form KEY.NETWORK-VERSION....
+
+### Classification
+- Credential injection: CONFIRMED.
+- Address validation: CONFIRMED.
+- Demeter authentication: 401 ON BOTH DOCUMENTED FORMS — REQUIRES FRESH CURRENT-HEAD RUN.
+- Live Preprod context: OPEN.
+- Live wallet UTxO: OPEN.
+- Real Preprod transaction: OPEN.
+- P2.8 native evaluator: OPEN.
+
+No protocol, economic, validator, authority-selection, oracle, or ledger semantics changed.
