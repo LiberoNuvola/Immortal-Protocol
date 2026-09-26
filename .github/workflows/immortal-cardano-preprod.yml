@@ -1,0 +1,61 @@
+name: IMMORTAL Cardano Preprod Context
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/preprod-ogmios-context.mjs"
+      - "audit/cardano-integration/package.json"
+      - ".github/workflows/immortal-cardano-preprod.yml"
+
+jobs:
+  preprod-context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
+      DEMETER_API_KEY: ${{ secrets.DEMETER_API_KEY }}
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install isolated Preprod probe dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Probe Demeter Ogmios Preprod context
+        run: node audit/cardano-integration/preprod-ogmios-context.mjs
+
+      - name: Record workflow provenance
+        if: always()
+        run: |
+          mkdir -p audit/preprod-evidence
+          {
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "runner_os=$RUNNER_OS"
+            echo "node=$(node --version)"
+            echo "provider=Demeter"
+            echo "network=cardano-preprod"
+            echo "interface=Ogmios-v7"
+          } | tee audit/preprod-evidence/workflow-provenance.txt
+
+      - name: Upload Preprod evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-preprod-context
+          path: audit/preprod-evidence/
+          if-no-files-found: error
