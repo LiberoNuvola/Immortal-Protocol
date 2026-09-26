@@ -1553,3 +1553,67 @@ Commits:
 - `e7342592d5bdd7bfd7de8400c2cd402faf72de97` — executable registration
 - `cbf6df40198d224f47f86228101d1501a8a27ac6` — Node runtime bridge
 - `23e248577f9ef0546eb31131195446c778b2ec8d` — lossless integer transport
+
+# 32. V3 ECONOMIC STATE CARRIER — 2026-09-26
+
+The first-user Issue producer is no longer blocked by a missing economic decision producer. The remaining state-authority gap has been isolated and the on-chain carrier implementation has begun.
+
+## Implemented
+
+- `PRE-RICH/profile/V3EconomicStateCarrier.hs`
+  - application-owned singleton state carrier;
+  - explicit `V3EconomicStateDatum`;
+  - monotonic state version;
+  - exactly one carrier input and continuing output;
+  - singleton authority-token preservation;
+  - full V3 state structural validation;
+  - class exposure/unresolved consistency checks;
+  - protected-capital fields carried explicitly;
+  - control and Jackpot state carried explicitly.
+- `PRE-RICH/profile/V3EconomicStateCarrierMintPolicy.hs`
+  - deployment-parameterized one-shot authority token;
+  - concrete seed `TxOutRef`;
+  - exactly one configured carrier token.
+- `src/preprodEconomicStateObservation.ts`
+  - fail-closed singleton discovery and V3 datum decoding;
+  - no defaults;
+  - no derivation from B1/Treasury;
+  - exact carrier UTxO reference returned.
+- `src/preprodEconomicStateObservation.test.ts`
+  - singleton ambiguity rejection;
+  - malformed/unsupported Jackpot rejection;
+  - canonical class/state decoding.
+- Plutus export/Cabal wiring added.
+- Genesis carrier workflow now watches, builds and exports the V3 carrier artifacts.
+
+## Boundary
+
+This carrier is deliberately separate from:
+
+- Treasury;
+- B1PrizePool;
+- GenesisRegimeCarrier;
+- BeaconRegistry.
+
+B1 remains the executable-liquidity/accounting surface. The V3 carrier is the canonical economic-state observation surface.
+
+## Still OPEN
+
+The implementation is **not** deployment evidence.
+
+A concrete deployment still requires:
+
+1. a real seed UTxO;
+2. deployment of the one-shot carrier token;
+3. creation of the canonical initial V3 state by an explicitly authorized Genesis/deployment transition;
+4. exact Preprod carrier UTxO observation;
+5. binding of that state to the Haskell Issue decision;
+6. first DEMETER/CIP-30 Issue;
+7. persisted post-state evidence.
+
+No GoldenVector/test state has been promoted to live authority.
+
+## Important next engineering step
+
+The carrier validator currently provides the state/concurrency boundary. It does not yet authorize arbitrary economic transitions by itself. Issue/Reveal/Claim/Expire must be bound to the consumed/reference V3 state through their respective application validators before the carrier can be treated as the complete canonical transition authority.
+
