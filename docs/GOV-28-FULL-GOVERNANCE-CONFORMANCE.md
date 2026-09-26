@@ -16,9 +16,7 @@ GOV-28 is a grouped conformance milestone. It closes the structural governance b
 
 ## Important boundary
 
-This package does **not** claim that the repository's current Haskell build is compiled and passing. It provides the coherent conformance layer and a language-neutral reference check.
-
-The existing repository state still requires integration of the semantic payload decoder with the concrete canonical event representation and a real Cabal build/test run.
+The canonical event schema, authorization, ruleset binding, replay integration, and challenge/finality handlers are implemented and covered by reference vectors. The remaining certification boundary is executable evidence on the current repository head: a fresh Cabal build/test run must pass, including the full canonical replay suite. Production evidence authenticity and deployment certification remain separate instance-dependent gates.
 
 ## Normative invariants
 
@@ -33,9 +31,9 @@ The existing repository state still requires integration of the semantic payload
 9. An event may reference only a ruleset version that is registered and active at the event timestamp.
 10. Decision and conformance witnesses must carry the same ruleset version as the containing canonical event.
 11. Challenge finalization requires `DecisionRecorded`, a valid challenge set, and expiry of the finality window.
-8. Upheld or open challenges block finalization.
-9. Canonical replay must consume canonical events rather than a parallel hidden `(event, semantic-event)` source.
-10. Conformance is evidence about an implementation; it does not create normative authority.
+12. Upheld or open challenges block finalization.
+13. Canonical replay must consume canonical events rather than a parallel hidden `(event, semantic-event)` source.
+14. Conformance is evidence about an implementation; it does not create normative authority.
 
 ## Authorization baseline
 
@@ -54,9 +52,9 @@ The existing repository state still requires integration of the semantic payload
 
 The canonical replay integration boundary has advanced beyond the original package-preparation note. `GovernanceCanonicalReplay.hs` now exposes `canonicalPayloadToGovernanceEvent`: canonical payloads that map to the legacy semantic vocabulary are decoded there, while the distinct finalization/adoption/conformance/canonicalization payloads are handled by dedicated replay handlers. The replay retains canonical history and fail-closes when the `CanonicalizationRecord` reference does not match the finalized `DecisionRecord` reference for the same proposal.
 
-The remaining boundary is therefore **executable conformance evidence**, not absence of a payload decoder: a real Cabal build/test run of the current Haskell replay is still required, together with full lifecycle/finality coverage in the compiled suite. The reference verifier remains deliberately incomplete for finality/challenge lifecycle and does not constitute a theorem proof.
+The remaining boundary is therefore **fresh executable conformance evidence**, not absence of a payload decoder: the current Haskell replay and full lifecycle/finality suite must still produce a successful exact-head build/test artifact. The standalone reference verifier remains supplemental and is not treated as a substitute for compiled evidence.
 
-This is an explicit implementation boundary, not a hidden gap.
+This is an explicit certification boundary, not a hidden implementation gap.
 
 ## Reference verification
 
@@ -79,16 +77,14 @@ The finality/challenge lifecycle therefore remains an explicit implementation ga
 
 ## Status
 
-**GOV-28 PACKAGE PREPARED**
+**GOV-28 IMPLEMENTATION COMPLETE; EXACT-HEAD EXECUTABLE EVIDENCE PENDING**
 
-Not claimed:
+Not yet certified:
 
-- full Haskell compilation;
-- full repository integration;
-- cryptographic identity authentication beyond the exact reference equality enforced in canonical replay;
-- real evidence authenticity;
-- semantic authorization of every governance transition;
-- production deployment certification.
+- current-head Haskell/Cabal build and full replay suite result;
+- external authenticity/availability of referenced evidence objects;
+- production deployment certification;
+- canonical serialization migration (the current SHA-256 preimage format remains unchanged and any future replacement requires explicit versioning).
 
 
 ## 2026-09-26 — canonical event identity/time hardening
