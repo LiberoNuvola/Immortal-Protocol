@@ -23,6 +23,7 @@ import qualified Treasury
 import qualified GenesisRegimeCarrier
 import qualified GenesisCarrierMintPolicy
 import qualified V3EconomicStateCarrier
+import qualified V3EconomicStateCarrierMintPolicy
 
 -- ============================================================
 -- Compiled code -> CBOR
@@ -186,6 +187,10 @@ main = do
     "plutus/out/v3EconomicStateCarrier.plutus.json"
     "PreRich V3 economic state carrier validator"
     (compiledCborHex V3EconomicStateCarrier.compiledValidator)
+  writeScriptJson
+    "plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json"
+    "PreRich V3 economic state carrier one-shot mint policy factory"
+    (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
   writeScriptJson
     "plutus/out/b1PrizePoolFactory.plutus.json"
     "PreRich B1 PrizePool factory (apply PrizeValidator ScriptHash, Oracle State singleton identity, oracle publisher, pool singleton token off-chain)"
