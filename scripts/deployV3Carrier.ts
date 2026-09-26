@@ -6,10 +6,10 @@
  * The initial datum is supplied explicitly; this helper never invents state.
  *
  * Required:
- *   BLOCKFROST_PROJECT_ID
- *   DEPLOYER_MNEMONIC
- *   V3_CARRIER_TOKEN_NAME_HEX
- *   V3_CARRIER_INITIAL_DATUM_CBOR
+ *   VITE_BLOCKFROST_PROJECT_ID
+ *   VITE_DEPLOYER_MNEMONIC
+ *   VITE_V3_CARRIER_TOKEN_NAME_HEX
+ *   VITE_V3_CARRIER_INITIAL_DATUM_CBOR
  *
  * Optional:
  *   V3_CARRIER_SEED_TX_HASH
@@ -60,7 +60,7 @@ function selectedSeed(
   if (matches.length !== 1) {
     throw new Error(
       'V3 carrier deployment requires exactly one explicit seed UTxO; ' +
-      'set V3_CARRIER_SEED_TX_HASH and V3_CARRIER_SEED_OUTPUT_INDEX',
+      'set VITE_V3_CARRIER_SEED_TX_HASH and VITE_V3_CARRIER_SEED_OUTPUT_INDEX',
     )
   }
   return matches[0]
@@ -69,9 +69,9 @@ function selectedSeed(
 async function main() {
   const projectId = (process.env.BLOCKFROST_PROJECT_ID ?? process.env.VITE_BLOCKFROST_PROJECT_ID ?? '').trim()
   if (!projectId) throw new Error('BLOCKFROST_PROJECT_ID (or VITE_BLOCKFROST_PROJECT_ID) is required')
-  const mnemonic = required('DEPLOYER_MNEMONIC')
-  const tokenNameHex = required('V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
-  const initialDatumCbor = required('V3_CARRIER_INITIAL_DATUM_CBOR')
+  const mnemonic = required('VITE_DEPLOYER_MNEMONIC')
+  const tokenNameHex = required('VITE_V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
+  const initialDatumCbor = required('VITE_V3_CARRIER_INITIAL_DATUM_CBOR')
 
   if (!/^[0-9a-f]+$/i.test(tokenNameHex)) {
     throw new Error('V3_CARRIER_TOKEN_NAME_HEX must be hexadecimal')
