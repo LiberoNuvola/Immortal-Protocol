@@ -85,7 +85,6 @@ client.on('message', raw => {
 
 try {
   console.log('Ogmios WebSocket connected')
-onsole.log('Ogmios WebSocket connected')
   const observations = {
     schema: 'IMMORTAL-PREPROD-OGMIOS-CONTEXT-v0.1',
     source: {
