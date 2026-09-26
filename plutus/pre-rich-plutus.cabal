@@ -80,6 +80,18 @@ library
         -fno-unbox-strict-fields
         -fno-unbox-small-strict-fields
 
+executable issue-admission
+    hs-source-dirs: export
+    main-is: IssueAdmission.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
+    ghc-options:
+        -Wall
+
 executable export-scripts
     hs-source-dirs:
         export
