@@ -113,3 +113,35 @@ A second targeted search was run across the current repository branch for a pre-
 The current P0/T2 text likewise specifies that at most one transition may consume the canonical state and that stale/conflicting submissions must be rejected, but it does not itself define a concrete Cardano asset identity for PRE-GENESIS/GENESIS. Therefore the correct closure state remains **Genesis Cardano singleton identity OPEN**. No validator identity or policy ID is being fabricated from deployment guesses.
 
 This search result is now treated as a hard implementation boundary: the next Genesis implementation step must come from an existing canonical deployment/decision source or an explicit new application decision, not from inference from the B1 Pool NFT, Oracle singleton, Treasury address, or historical Snek Pool NFT.
+
+
+## 2026-09-26 carrier/proof refinement
+
+A targeted implementation inspection closed an earlier ambiguity about the Genesis carrier seam.
+
+- `PRE-RICH/profile/GenesisRegimeCarrier.hs` is confirmed as the application-owned singleton lifecycle validator. It enforces PRE-GENESIS -> GENESIS, monotonic transition/state versions, exact carrier-token conservation, authenticated Treasury/Oracle reference inputs, fresh Oracle evidence, the Genesis predicate, and no PrizePool input/output in the transition.
+- `PRE-RICH/profile/GenesisCarrierMintPolicy.hs` is confirmed as a one-shot mint authority parameterized by one concrete seed `TxOutRef`. Therefore the carrier policy ID is deployment-derived and must be recorded from the actual seed UTxO; it must not be guessed or copied from a test fixture.
+- `audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts` is explicitly marked non-production and uses test identities/native policies. Its successful trace, when executed, is conformance evidence only and does not establish production identities.
+
+This changes the closure classification from “carrier implementation absent” to “carrier implementation present; production deployment identity/evidence open”. The remaining Genesis gap is therefore deployment identity + real Preprod transition evidence, not invention of another validator.
+
+## 2026-09-26 Issue admission refinement
+
+The Issue runtime boundary was also inspected end-to-end.
+
+- `src/preRichIssueAdmissionBridge.ts` requires an injected `AuthoritativeIssueAdmissionProvider` and fail-closes if the provider does not return a valid `EconomicAdmissionWitness`.
+- `Adapter/CARDANO/runtime/EconomicAdmission.ts` independently binds the witness to the exact Counter/PrizePool inputs, the authenticated Pool USDM valuation, and the concrete executable-liquidity observation.
+- `Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts` requires the observed spendable liquidity to be the exact authenticated B1 PrizePool UTxO and value; no second liquidity oracle is introduced.
+- Repository search found no production implementation of `AuthoritativeIssueAdmissionProvider`. The missing piece is therefore the authoritative producer/bridge from the existing PRE-RICH economic admission result to the runtime witness. Test-only witness constructors are not sufficient for the first real Preprod Issue.
+
+No economic constants or Genesis semantics are changed by this refinement.
+
+## Updated closure classification — 2026-09-26
+
+- Genesis admission predicate: GREEN.
+- Genesis carrier validator: IMPLEMENTED.
+- Genesis carrier mint policy: IMPLEMENTED, deployment-parameterized.
+- Genesis production singleton identity: OPEN — must be established from an actual deployment seed UTxO.
+- Genesis real Preprod transition evidence: OPEN.
+- Authoritative Issue admission producer: OPEN.
+- Cardano Issue submission: BLOCKED only at the authoritative admission producer boundary once canonical Preprod Treasury/Pool inputs are available.
