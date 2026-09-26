@@ -129,6 +129,20 @@ classValid c =
         7 -> 100
         _ -> 0
 
+{-# INLINABLE canonicalClassesValid #-}
+canonicalClassesValid :: [TicketClassState] -> Integer -> Bool
+canonicalClassesValid [] expected = expected == 8
+canonicalClassesValid (c:cs) expected =
+     tcsClassId c == expected
+  && classValid c
+  && canonicalClassesValid cs (expected + 1)
+
+{-# INLINABLE activeClassExists #-}
+activeClassExists :: TicketClass -> [TicketClassState] -> Bool
+activeClassExists _ [] = False
+activeClassExists target (c:cs) =
+  tcsClassId c == target || activeClassExists target cs
+
 {-# INLINABLE stateValid #-}
 stateValid :: V3EconomicState -> Bool
 stateValid s =
@@ -138,11 +152,12 @@ stateValid s =
   && v3SafetyCapital s >= 0
   && v3ReserveProtection s >= 0
   && v3MandatoryFutureCosts s >= 0
-  && all classValid (v3Classes s)
+  && canonicalClassesValid (v3Classes s) 0
   && v3UnresolvedReserve s == sumExposure (v3Classes s)
   && v3UnresolvedTicketCount s == sumUnresolved (v3Classes s)
   && ecsCurrentActiveClass (v3Control s) >= 0
   && ecsCurrentActiveClass (v3Control s) < 8
+  && activeClassExists (ecsCurrentActiveClass (v3Control s)) (v3Classes s)
   && ecsHighestClassEverActivated (v3Control s) >= ecsCurrentActiveClass (v3Control s)
   && ecsHighestClassEverActivated (v3Control s) < 8
   && jsLockedAmount (v3Jackpot s) >= 0
