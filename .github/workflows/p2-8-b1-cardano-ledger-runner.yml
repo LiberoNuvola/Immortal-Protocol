@@ -6,6 +6,15 @@ on:
     branches:
       - audit/p2-8-b1-cardano-ledger-runner
       - work/immortal-green-closure
+    paths:
+      - ".github/workflows/p2-8-b1-cardano-ledger-runner.yml"
+      - "audit/cardano-ledger-runner/**"
+      - "src/plutusScripts/prizeValidatorFactory.plutus.json"
+      - "src/plutusScripts/b1PrizePoolFactory.plutus.json"
+
+concurrency:
+  group: p2-8-b1-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ledger-runner:
