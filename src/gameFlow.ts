@@ -257,6 +257,33 @@ function datumFromFields(fields: unknown[]): Data {
   return constr(0, fields as Data[])
 }
 
+/**
+ * Public observation boundary for the canonical PRE-RICH prize lifecycle.
+ *
+ * The mapping is deliberately derived only from on-chain PrizeDatum status and
+ * BeaconStatus. It does not inspect wallet/UI intent or infer economic state.
+ */
+export type ObservedPrizeLifecycle =
+  | 'ISSUING'
+  | 'AWAITING_FINALITY'
+  | 'SETTLING'
+  | 'IDLE'
+
+export function observePrizeLifecycle(utxo: UTxO): ObservedPrizeLifecycle {
+  const datum = decodePrizeDatum(utxo)
+  if (!datum) throw new Error('PrizeDatum not decodable')
+
+  const status = constrIndex(datum.fields[10])
+  const beaconStatus = constrIndex(datum.fields[14])
+
+  if (status === 0 && beaconStatus === 0) return 'ISSUING'
+  if (status === 0 && beaconStatus === 1) return 'AWAITING_FINALITY'
+  if (status === 1) return 'SETTLING'
+  if (status === 2) return 'IDLE'
+
+  throw new Error('Unsupported or inconsistent PRE-RICH PrizeDatum lifecycle')
+}
+
 // ---------------------------------------------------------------------------
 // Prize UTxO lookup
 // ---------------------------------------------------------------------------
