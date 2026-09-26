@@ -2216,3 +2216,35 @@ The corresponding audit gap document was reconciled so it no longer claims that 
 This does **not** create live authority. The remaining witness is materialization of that exact state into a real Preprod V3 singleton and its binding to the Issue transaction.
 
 **STATUS: 🟢 INITIAL V3 DEPLOYMENT PROFILE DECLARED / 🔴 LIVE CARRIER MATERIALIZATION OPEN**
+
+
+# 44.8 CONCRETE PREPROD ISSUE OBSERVATION READER — 2026-09-26
+
+The runtime observation seam has advanced from an abstract adapter contract to a concrete Cardano observation reader.
+
+Added:
+- `relayer/preprodIssueObservationReader.js`
+- `relayer/preprodIssueObservationReader.test.js`
+
+The reader now observes, fail-closed:
+1. exactly one Counter UTxO;
+2. exactly one B1 PrizePool singleton UTxO by its authority NFT;
+3. the complete B1 accounting datum shape;
+4. exactly one V3 Economic State Carrier singleton UTxO;
+5. the complete V3 state datum, including all 8 classes, control and Jackpot state;
+6. exact Cardano references for Counter, Pool and V3 carrier.
+
+It constructs the canonical IssueDecisionInput pre-state from the observed V3 carrier and binds one observation reference across the three concrete state surfaces. It does **not** calculate EEV, Pool valuation, ProtectedCapital, viability or the Economic Gate. Those values remain explicit authoritative inputs, preserving the existing Haskell economic authority.
+
+Tests cover successful binding and ambiguous carrier rejection.
+
+Commits:
+- `d99ad05526612cb804fd048322e1ff2ca6970f3b` — initial reader
+- `20977806431165202ce40599891e5f12ef618e6b` — self-contained runtime decoder
+- `9088a51a14a663a0dbd698c2cd91f5f92c3d631a` — reader tests
+
+This is **implementation/test evidence**, not live Preprod evidence. The remaining runtime dependency is now sharply isolated to supplying the authoritative valuation/EEV/refinement inputs and the deployed singleton identities. No synthetic values are introduced.
+
+**STATUS: 🟡 CONCRETE PREPROD OBSERVATION READER IMPLEMENTED / 🔴 AUTHORITATIVE ECONOMIC INPUT SOURCE + LIVE PREPROD WITNESS OPEN**
+
+**NEXT CONCRETE WITNESS:** configure the actual Preprod Counter/Pool/V3-carrier singleton identities and an authenticated valuation/EEV source, then execute the existing Haskell `issue-admission` path against the exact observed UTxOs.
