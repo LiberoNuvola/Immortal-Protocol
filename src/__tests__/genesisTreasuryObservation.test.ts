@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Constr, Data } from 'lucid-cardano'
+import { Constr } from 'lucid-cardano'
 import { genesisTreasuryThresholdReached, observeGenesisTreasuryState } from '../genesisTreasuryObservation'
 
 function utxo(txHash:string, outputIndex:number, assets:Record<string,bigint>, datum:any): any {
@@ -13,13 +13,13 @@ describe('Genesis Treasury observation', () => {
       : [] }
     await expect(observeGenesisTreasuryState({
       lucid, treasuryAddress:'treasury', oracleStateAddress:'oracle',
-      prePolicyId:'PRE', preAssetNameHex:'', oracleStatePolicyId:'O', oracleStateTokenNameHex:'S',
+      prePolicyId:'PRE', preAssetNameHex:'NAME', oracleStatePolicyId:'O', oracleStateTokenNameHex:'S',
       oraclePublisherPkh:'PUB', nowMs:1000n,
     })).rejects.toThrow(/ambiguous/)
   })
 
   it('accepts a fresh authenticated 4000 USDM observation', async () => {
-    const oracleDatum = Data.to(new Constr(0,['PRE','',40000n,1000n,'PUB'] as any))
+    const oracleDatum = new Constr(0,['PRE','NAME',40000n,1000n,'PUB'] as any)
     const lucid = { utxosAt: async (address:string) => address === 'treasury'
       ? [utxo('treasuryTx',0,{PRE:100000000n},null)]
       : [utxo('oracleTx',0,{OS:1n},oracleDatum)] }
