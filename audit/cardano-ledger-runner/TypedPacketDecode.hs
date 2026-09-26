@@ -58,10 +58,14 @@ decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
   root <- eitherDecodeStrict' bytes
   raw <- textAt root ["startTimeRaw"]
+  yaciInfo <- textAt root ["rawInfo"]
   seconds <- parseInteger "startTimeRaw" raw
+  yaciStart <- parseLabeledInteger "Start Time" yaciInfo
   if seconds < 0
     then Left "INVALID_SYSTEM_START"
-    else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
+    else if yaciStart /= seconds
+      then Left "YACI_SYSTEM_START_MISMATCH"
+      else Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
 
 decodeYaciEpochInfo :: BS.ByteString -> Either String (EpochInfo (Either Text.Text))
 decodeYaciEpochInfo bytes = do
