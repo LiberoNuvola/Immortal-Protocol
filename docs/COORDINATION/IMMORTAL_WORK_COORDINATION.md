@@ -2490,7 +2490,7 @@ No deployment transaction should be attempted until the dedicated signer exists,
 
 The live Treasury address and V3 carrier identity remain runtime evidence, not source constants.
 
-**STATUS: 🟢 ARCHITECTURAL ROLES CLOSED / 🔴 DEPLOYMENT SIGNER + LIVE PREPROD EVIDENCE OPEN**
+**STATUS: 🟢 ARCHITECTURAL ROLES CLOSED / 🟡 LOCAL DEPLOYMENT CONFIGURATION MUST MATCH ACTUAL .env NAMES / 🔴 SIGNED PREPROD DEPLOYMENT OPEN**
 
 ### 44.15.1 Dedicated signer address supplied — 2026-09-26
 
