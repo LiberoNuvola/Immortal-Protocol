@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import WebSocket from 'ws'
 
-const endpoint = process.env.DEMETER_OGMIOS_URL
-const apiKey = process.env.DEMETER_API_KEY
+const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
+const apiKey = process.env.DEMETER_API_KEY?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 if (!endpoint) throw new Error('DEMETER_OGMIOS_URL is required')
 if (!apiKey) throw new Error('DEMETER_API_KEY is required')
@@ -40,10 +40,18 @@ const opened = new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error('Ogmios WebSocket open timeout')), 30000)
   client.once('open', () => { clearTimeout(timer); resolve() })
   client.once('error', reject)
+  client.once('unexpected-response', (_request, response) => {
+    clearTimeout(timer)
+    reject(new Error(`Ogmios WebSocket HTTP upgrade failed: status=${response.statusCode} headers=${JSON.stringify({
+      'www-authenticate': response.headers['www-authenticate'] ?? null,
+      'content-type': response.headers['content-type'] ?? null,
+    })}`))
+  })
 })
 
 try {
   await opened
+  console.log('Ogmios WebSocket connected')
   const observations = {
     schema: 'IMMORTAL-PREPROD-OGMIOS-CONTEXT-v0.1',
     source: {
