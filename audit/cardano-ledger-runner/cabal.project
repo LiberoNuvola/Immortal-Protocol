@@ -61,8 +61,6 @@ source-repository-package
   tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
   subdir:
     eras/byron/crypto
-    eras/byron/chain/executable-spec
-    eras/byron/ledger/executable-spec
     eras/byron/ledger/impl
     eras/shelley/impl
     eras/allegra/impl
@@ -80,6 +78,18 @@ source-repository-package
     libs/non-integral
     libs/vector-map
 
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-ledger
+  tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
+  subdir: eras/byron/ledger/executable-spec
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-ledger
+  tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
+  subdir: eras/byron/chain/executable-spec
 
 source-repository-package
   type: git
