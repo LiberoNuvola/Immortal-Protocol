@@ -30,6 +30,13 @@ source-repository-package
 
 source-repository-package
   type: git
+  location: https://github.com/IntersectMBO/cardano-base
+  tag: 8c9ca80ce9b57e5e1f4f9509042245187f4ba5e9
+  subdir:
+    cardano-crypto-leios
+
+source-repository-package
+  type: git
   location: https://github.com/input-output-hk/iohk-monitoring-framework
   tag: 1c097a1cafb066b264432e6df27bbc959f3dc715
   subdir:
