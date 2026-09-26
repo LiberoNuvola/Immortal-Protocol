@@ -83,22 +83,9 @@ client.on('message', raw => {
   else item.resolve(response.result)
 })
 
-const opened = new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error('Ogmios WebSocket open timeout')), 30000)
-  client.once('open', () => { clearTimeout(timer); resolve() })
-  client.once('error', reject)
-  client.once('unexpected-response', (_request, response) => {
-    clearTimeout(timer)
-    reject(new Error(`Ogmios WebSocket HTTP upgrade failed: status=${response.statusCode} headers=${JSON.stringify({
-      'www-authenticate': response.headers['www-authenticate'] ?? null,
-      'content-type': response.headers['content-type'] ?? null,
-    })}`))
-  })
-})
-
 try {
-  await opened
   console.log('Ogmios WebSocket connected')
+onsole.log('Ogmios WebSocket connected')
   const observations = {
     schema: 'IMMORTAL-PREPROD-OGMIOS-CONTEXT-v0.1',
     source: {
