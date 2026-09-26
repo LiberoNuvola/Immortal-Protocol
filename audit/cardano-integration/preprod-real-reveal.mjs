@@ -1,4 +1,4 @@
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, nativeScriptFromJson } from 'lucid-cardano'
+import { Constr, Data, Lucid, Koios, getAddressDetails, nativeScriptFromJson } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 
@@ -25,8 +25,6 @@ const MAINCHAIN_REF = new Uint8Array(32)
 const MATERIOS_CONTEXT = new Uint8Array(32)
 const GAME_VERSION = new TextEncoder().encode('V1')
 
-if (!OGMIOS) throw new Error('DEMETER_OGMIOS_URL is required')
-if (!API_KEY) throw new Error('DEMETER_API_KEY is required')
 if (!SEED) throw new Error('PREPROD_REVEAL_SEED is required')
 if (!EXPECTED_ADDRESS) throw new Error('PREPROD_WALLET_ADDRESS is required')
 
@@ -65,8 +63,8 @@ async function waitFor(fn, predicate, label) {
   throw new Error('Timed out waiting for ' + label)
 }
 
-const provider = new KoiosOgmiosProvider(KOIOS, OGMIOS, API_KEY)
-const lucid = await Lucid.new(provider, 'Preprod')
+const provider = new Koios(KOIOS)
+const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
@@ -255,7 +253,7 @@ const evidence = {
     resultHex: toHex(expectedResult),
   },
   replay: { rejected: replayRejected, error: replayError },
-  provider: { query: 'Koios Preprod', submission: 'Demeter Ogmios v7' },
+  provider: { query: 'Koios Preprod', submission: 'Koios Preprod' },
 }
 await writeFile(EVIDENCE_DIR + '/real-preprod-reveal.json', JSON.stringify(evidence, null, 2) + '\n')
 await writeFile(EVIDENCE_DIR + '/reveal-tx.cbor', Buffer.from(revealCbor, 'hex'))
