@@ -87,6 +87,20 @@ try {
   ].join('\n') + '\n'
   await writeFile(`${evidenceDir}/summary.txt`, summary)
   console.log(summary)
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  const diagnostic = {
+    schema: 'IMMORTAL-PREPROD-OGMIOS-DIAGNOSTIC-v0.1',
+    observed_at: new Date().toISOString(),
+    endpoint: endpoint,
+    failure: message.replace(apiKey ?? '', '[REDACTED]'),
+  }
+  await writeFile(
+    `${evidenceDir}/ogmios-preprod-diagnostic.json`,
+    JSON.stringify(diagnostic, null, 2) + '\\n',
+  )
+  console.error(diagnostic.failure)
+  process.exitCode = 1
 } finally {
   client.close()
 }
