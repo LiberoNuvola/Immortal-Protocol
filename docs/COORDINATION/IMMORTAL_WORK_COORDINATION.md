@@ -8779,3 +8779,21 @@ A repository + CI + Notion sweep was used to identify fronts that were not visib
 The exact current head is subject to concurrent advancement. The latest observed exact-head runs continue to show Adapter Sale and Algorithmic Governability succeeding while Kernel/Cardano integration remain in progress. P2.8 has moved past libsodium/blst and Byron-spec dependency blockers on its recent runs; the current native evaluator result is still not observed.
 
 **Non-regression:** no economic constant, validator semantics, fee value, expiry duration, authority-selection rule or oracle convention was changed by this sweep.
+
+
+## 2026-09-26 — P2.8 base-deriving-via dependency pinned
+
+Run 36221764766 (P2.8 run 535) crossed native bootstrap, crypto compatibility, Byron specs and measures, then Cabal stopped on unknown package base-deriving-via required by cardano-ledger-core-1.21.0.0.
+
+Upstream IntersectMBO/cardano-base commit 60827efde9e1790895039a8891f4bd06bf996401 contains base-deriving-via-0.1.0.2. Commit 464e71464aa691d4d52b5c247cfc33ed64f3d6bb pins subdir base-deriving-via at that exact upstream commit.
+
+### Classification
+- Native bootstrap: TRAVERSED.
+- Crypto stack: RESOLVED.
+- Byron package materialization: RESOLVED.
+- measures: RESOLVED.
+- base-deriving-via: PINNED TO PUBLISHED UPSTREAM SOURCE — FRESH RUN REQUIRED.
+- Typed ledger context: OPEN.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
