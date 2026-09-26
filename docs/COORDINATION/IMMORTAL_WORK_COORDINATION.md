@@ -8121,3 +8121,21 @@ An attempted duplicate GameRules vector test was immediately removed after confi
 These additions promote existing implementation/test assets into independently named CI evidence. They do not promote tests into mathematical proofs, do not alter frozen PRE-RICH economics, and do not close B3 publisher-independent canonicality or P2.8 native evaluator evidence by implication.
 
 **Classification:** parallel evidence coverage = **EXPANDED**; semantic scope unchanged.
+
+
+## 2026-09-26 — Certification pulse: parallel front coverage expansion
+
+### Current parallel coverage
+The working branch has expanded certification coverage beyond the P2.8 dependency path:
+
+- `PRE-RICH Certified Ticket & 3D Conformance` completed **SUCCESS** on its first run (`36219274887`), covering immutable NFT identity/binding and renderer security escaping.
+- `IMMORTAL Haskell Semantic Conformance` is running the existing Oracle, Golden Vector, Governance, canonical replay, Economic Admission, ProtectedCapital, Projection, Genesis and legacy test suites as one evidence gate.
+- `PRE-RICH Jackpot Activation & Policy Conformance` has now been added as a dedicated gate for stable-ladder activation, exact funding shortfall and Economic Gate acceptance.
+
+The canonical GameRules replay already had its own dedicated workflow and executable vector test, so no duplicate runner is retained.
+
+### P2.8 current observation
+A fresh P2.8 run exists on the current branch and is still in progress. The prior `libsodium-any` blocker has already been passed by the repaired compatibility step; subsequent bootstrap work now includes pinned `blst` registration before the native evaluator. No P2.8 evaluator closure is claimed until the native `evalTxExUnitsWithLogs` result and evidence packet are produced.
+
+### Non-regression
+No economic constants, validator predicates, expiry values, fee values, authority-selection rules or oracle semantics were changed by this coverage expansion. Tests are being promoted to CI evidence, not promoted to mathematical proof by implication.
