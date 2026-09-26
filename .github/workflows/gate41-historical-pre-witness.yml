@@ -1,0 +1,34 @@
+name: Gate 41 Historical PRE Witness Acquisition
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      BLOCKFROST_MAINNET_PROJECT_ID: ${{ secrets.BLOCKFROST_MAINNET_PROJECT_ID }}
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+      - name: Validate read-only provider credential
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:BLOCKFROST_MAINNET_PROJECT_ID)) {
+            throw 'BLOCKFROST_MAINNET_PROJECT_ID secret is required for Gate 41 acquisition.'
+          }
+          Write-Host 'Blockfrost mainnet project credential: present'
+      - name: Acquire historical PRE mint witness artifacts
+        shell: pwsh
+        run: ./scripts/acquire-pre-snek-witness.ps1
+      - name: Upload Gate 41 read-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate41-historical-pre-witness
+          path: evidence/pre-snek/gate41-witness/
+          if-no-files-found: error
