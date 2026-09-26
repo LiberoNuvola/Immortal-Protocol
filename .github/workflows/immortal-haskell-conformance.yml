@@ -1,0 +1,56 @@
+name: IMMORTAL Haskell Semantic Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "plutus/**"
+      - "IMMORTAL/**"
+      - "PRE-RICH/profile/**"
+      - "Adapter/CARDANO/observation/**"
+      - "cabal.project"
+      - ".github/workflows/immortal-haskell-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "plutus/**"
+      - "IMMORTAL/**"
+      - "PRE-RICH/profile/**"
+      - "Adapter/CARDANO/observation/**"
+      - "cabal.project"
+      - ".github/workflows/immortal-haskell-conformance.yml"
+
+jobs:
+  haskell-conformance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+          cabal-version: '3.12.1.0'
+
+      - name: Install native Plutus dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
+
+      - name: Run Oracle, Golden Vector, Governance and economic conformance suites
+        run: |
+          cabal update
+          cabal test economic-oracle-tests
+          cabal test v3-golden-vector-tests
+          cabal test governance-tests
+          cabal test governance-canonical-replay-tests
+          cabal test economic-admission-tests
+          cabal test protected-capital-conformance-tests
+          cabal test governance-ruleset-tests
+          cabal test governance-phase6-tests
+          cabal test legacy-adapter-tests
+          cabal test projection-boundary-tests
+          cabal test genesis-admission-tests
+          cabal test genesis-regime-carrier-tests
