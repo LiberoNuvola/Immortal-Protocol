@@ -16,7 +16,7 @@ function preInput() {
     currentActiveClass: 0n,
     highestClassEverActivated: 0n,
 
-    pool:
+    pool: {
       pendingLiabilitiesUsdm: 500n,
       unresolvedReserveUsdm: 600n,
       unresolvedTicketCount: 3n,
@@ -140,7 +140,7 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
       mandatoryFutureCosts: 0n,
       currentActiveClass: 0n,
       highestClassEverActivated: 0n,
-      pool:
+      pool: {
         pendingLiabilitiesUsdm: 1500n,
         unresolvedReserveUsdm: 400n,
         unresolvedTicketCount: 2n,
