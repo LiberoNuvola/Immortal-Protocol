@@ -34,7 +34,6 @@ PlutusTx.unstableMakeIsData ''V3EconomicStateDatum
 
 data V3EconomicStateAction
   = AdvanceV3State
-  | HoldV3State
 
 PlutusTx.unstableMakeIsData ''V3EconomicStateAction
 
@@ -61,6 +60,28 @@ ownHash ctx =
   case addressCredential (txOutAddress (ownInput ctx)) of
     ScriptCredential h -> h
     _ -> traceError "V3Carrier: own input is not script"
+
+{-# INLINABLE ownInputCount #-}
+ownInputCount :: ScriptContext -> Integer
+ownInputCount ctx =
+  let sh = ownHash ctx
+      go [] = 0
+      go (i:is) =
+        case addressCredential (txOutAddress (txInInfoResolved i)) of
+          ScriptCredential h | h == sh -> 1 + go is
+          _ -> go is
+  in go (txInfoInputs (scriptContextTxInfo ctx))
+
+{-# INLINABLE ownOutputCount #-}
+ownOutputCount :: ScriptContext -> Integer
+ownOutputCount ctx =
+  let sh = ownHash ctx
+      go [] = 0
+      go (o:os) =
+        case addressCredential (txOutAddress o) of
+          ScriptCredential h | h == sh -> 1 + go os
+          _ -> go os
+  in go (txInfoOutputs (scriptContextTxInfo ctx))
 
 {-# INLINABLE continuingOutput #-}
 continuingOutput :: ScriptContext -> TxOut
@@ -160,16 +181,15 @@ mkValidator carrierPolicy carrierName datum action ctx =
     inputToken = singletonAmount inputValue carrierPolicy carrierName
     outputToken = singletonAmount (txOutValue output) carrierPolicy carrierName
   in
-       inputToken == 1
+       ownInputCount ctx == 1
+    && ownOutputCount ctx == 1
+    && inputToken == 1
     && outputToken == 1
     && txOutValue output == inputValue
     && case outputDatum of
          Nothing -> False
          Just after ->
            case action of
-             HoldV3State ->
-               vesdStateVersion after == datumStateVersion datum
-               && vesdState after == vesdState datum
              AdvanceV3State ->
                sameStateIdentity datum after
 
