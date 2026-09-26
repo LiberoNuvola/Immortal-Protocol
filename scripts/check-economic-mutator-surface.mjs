@@ -31,6 +31,7 @@ for(const fn of ['revealPrize','claimPrize','expirePrize']) mustContain(game,'sr
 mustContain(mint,'src/mint.ts','export async function mintSerialNFT')
 mustContain(mint,'src/mint.ts','.submitEconomic')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Reveal'/,'Reveal economic submission path')
+mustRegex(mint,'src/mint.ts',/\.submitEconomic\([\s\S]*?'Issue'/,'Issue economic submission path')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Claim'/,'Claim economic submission path')
 mustRegex(game,'src/gameFlow.ts',/signAndSubmitEconomicTx[\s\S]*?'Expire'/,'Expire economic submission path')
 mustContain(adapter,'Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts','submitEconomic')
