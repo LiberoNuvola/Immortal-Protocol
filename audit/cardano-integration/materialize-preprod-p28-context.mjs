@@ -213,23 +213,22 @@ const [startTime, eraSummaries, tip] = await Promise.all([
 ])
 ogmios.close()
 
-function findEra(summary, slot) {
+function findEraByEpoch(summary, epoch) {
   const eras = Array.isArray(summary) ? summary : []
   for (const item of eras) {
-    const start = BigInt(String(item.start?.slot ?? item.start?.absoluteSlot ?? item.start?.time?.slot ?? 0))
-    const endRaw = item.end?.slot ?? item.end?.absoluteSlot ?? item.end?.time?.slot
-    const end = endRaw == null ? null : BigInt(String(endRaw))
-    if (slot >= start && (end == null || slot < end)) return item
+    const startEpoch = Number(item.start?.epoch ?? 0)
+    const endEpoch = item.end?.epoch == null ? null : Number(item.end.epoch)
+    if (epoch >= startEpoch && (endEpoch == null || epoch < endEpoch)) return item
   }
   return null
 }
-const targetEra = findEra(eraSummaries, absoluteSlot)
-if (!targetEra) throw new Error('OGMIOS_ERA_FOR_TX_SLOT_NOT_FOUND')
-const targetEraName = String(targetEra.era ?? targetEra.name ?? epochParams.era)
-if (targetEraName !== 'babbage' && targetEraName !== 'Babbage') throw new Error('OGMIOS_TX_ERA_MISMATCH:' + targetEraName)
+const targetEra = findEraByEpoch(eraSummaries, txEpoch)
+if (!targetEra) throw new Error('OGMIOS_ERA_FOR_TX_EPOCH_NOT_FOUND')
+const targetEraName = String(epochParams.era)
+if (targetEraName.toLowerCase() !== 'babbage') throw new Error('PREPROD_TX_NOT_IN_BABBAGE_ERA:' + targetEraName)
 
-const epochLength = Number(targetEra.epochLength ?? targetEra.epoch_size ?? targetEra.slotsPerEpoch)
-const slotLength = Number(targetEra.slotLength ?? targetEra.slotLengthSeconds ?? targetEra.slot_length ?? 0)
+const epochLength = Number(targetEra.parameters?.epochLength)
+const slotLength = Number(targetEra.parameters?.slotLength?.milliseconds ?? 0) / 1000
 if (!Number.isSafeInteger(epochLength) || epochLength <= 0) throw new Error('OGMIOS_EPOCH_LENGTH_INVALID')
 if (!Number.isFinite(slotLength) || slotLength <= 0) throw new Error('OGMIOS_SLOT_LENGTH_INVALID')
 
