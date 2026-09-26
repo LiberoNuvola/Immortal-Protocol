@@ -8716,3 +8716,31 @@ Commit 87778f4d4db6f58acd4c1812bf2397fb98375863 removes those two paths from the
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — End-to-end evidence closure pass
+
+### Closed in code / CI
+- Live Demeter/Ogmios Preprod observation remains **VERIFIED**; latest successful run is #44 (`36221378619`) on head `ae4fcc020dff326e8a3ea75c0e07e380a5451bc6`.
+- IMMORTAL → PRE-RICH Reveal executable boundary remains **4/4 VERIFIED**.
+- Preprod conformance binding remains **VERIFIED**.
+- P2.8 runner now includes Byron executable-spec dependencies and accepts Ogmios-derived typed timing packets in addition to the legacy Yaci packet format.
+- A dedicated non-signing Preprod ledger evidence workflow is now present at `.github/workflows/immortal-preprod-ledger-evidence.yml`.
+- A dedicated Preprod P2.8 context materializer is present at `audit/cardano-integration/materialize-preprod-p28-context.mjs`.
+- Three certification dossiers are now present under `docs/02-certification/`.
+
+### P2.8 current state
+- Latest relevant native runner verification is still **OPEN** pending a fresh successful build/evaluation after the dependency repairs.
+- The last observed resolver blocker was `byron-spec-ledger`; the pinned ledger source now includes `eras/byron/chain/executable-spec` and `eras/byron/ledger/executable-spec`.
+
+### Final external witness
+- **REAL PREPROD TRANSACTION HASH: OPEN.**
+- The new workflow deliberately does not sign or hold a private wallet key.
+- Once an already-submitted production Reveal transaction hash is supplied, the workflow fetches the exact transaction CBOR and consumed UTxOs from Koios Preprod, historical epoch protocol parameters, and live Demeter/Ogmios timing provenance, then invokes the native Cardano-ledger evaluator.
+- No emulator/Yaci fixture, synthetic CBOR, inferred credential, or current-tip parameter set for an older transaction may be substituted.
+
+### Dossier status
+- IMMORTAL-PREPROD-CONFORMANCE-DOSSIER.md: live observation + boundary conformance **VERIFIED**; end-to-end ledger witness **OPEN**.
+- P2.8-LEDGER-EVALUATION-DOSSIER.md: infrastructure/packet path **READY**; native evaluation **OPEN**.
+- END-TO-END-EVIDENCE-DOSSIER.md: dossier structure **READY**; final A/B gate **OPEN**.
+
+No normative economic or governance change in this cycle.
