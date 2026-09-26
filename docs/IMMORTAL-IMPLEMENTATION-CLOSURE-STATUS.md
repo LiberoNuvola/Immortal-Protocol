@@ -145,6 +145,7 @@ The implementation-to-certification transition is now recorded explicitly in `do
 - **Reveal size blocker:** canonical `revealPrize` no longer embeds PrizeValidator and B1PrizePool validator scripts. It requires configured reference-script holders, verifies the reference-script hashes against the locally constructed validator hashes, and fails closed if either holder is missing, ambiguous, or mismatched.
 - **Reveal remediation design:** `docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md` records the selected architecture and closure criterion.
 - **B2:** `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md` defines the minimum authenticated control boundary while explicitly leaving the deployment-specific singleton identity open.
+- **Issue/class-saleability boundary:** `src/mint.ts` now requires and validates `IssueRefinementEvidence` before constructing the atomic sale, so the application Issue path fails closed instead of silently relying on UI/relayer intent. This is application-boundary evidence only; authenticated on-chain control remains the B2 gate.
 - **No economic semantics changed:** no KA/KC/KD, payout bound, ladder, expiry, Treasury semantics, or protocol size limit was changed.
 
 The Reveal redesign is **implemented but not yet GREEN**: it still requires a deployed reference-script pair, a serialized-size measurement, and native Cardano-ledger evaluation of the exact transaction.
