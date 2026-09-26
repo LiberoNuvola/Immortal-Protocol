@@ -8052,3 +8052,31 @@ Commit: `9aa590d56f47b980d38182c0cf3e414b214edbb6`.
 **Next evidence target:** the run produced by commit `9aa590d56f47b980d38182c0cf3e414b214edbb6` must demonstrate successful dependency resolution and progress through typed context decoding to the real `evalTxExUnitsWithLogs` call.
 
 **USER QUESTION:** NONE.
+
+
+## 2026-09-26 — Autonomous cycle: P2.8 dependency pin + canonical GameRules CI
+
+### P2.8 exact-head progression
+The P2.8 runner has crossed the previously observed native prerequisites on successive runs: `libsodium`, `libsodium-any`, `libblst 0.3.14`, `libsecp256k1`, and GHC/Cabal setup. Run `36218937416` then exposed the next concrete resolver failure: `cardano-crypto-class-2.3.0.0` requires `contra-tracer ==0.1.0.1 || ==0.1.0.2`, while the package index candidate set was `0.2.x`.
+
+The runner now pins `contra-tracer 0.1.0.2` directly from `input-output-hk/iohk-monitoring-framework` at commit `1c097a1cafb066b264432e6df27bbc959f3dc715`, subdirectory `contra-tracer`.
+
+Commit: `9aa590d56f47b980d38182c0cf3e414b214edbb6`.
+
+At the current branch head `a18811a55b82360cf12ff6e344a96970fa80d17b`, P2.8 run `36219212978` is active and has already passed native crypto verification; the current observed step is pinned `blst` installation. No native evaluator result is inferred until the run reaches and records `evalTxExUnitsWithLogs`.
+
+### GameRules canonical replay
+Commits `44a4fd6c5d2b8c7fb31416c249f4d3514f34955c` and `a18811a55b82360cf12ff6e344a96970fa80d17b` add and wire the canonical PRE-RICH GameRules vector replay test into the economic-conformance CI. The test checks the declared V1 vector contract, deterministic symbol reproduction, modulo-20000 outcome mapping, row-tier boundaries, and the 60,000 accepted-output upper bound contract.
+
+The economic-conformance workflow at the current head has successfully completed `npm ci`; the canonical vector/conformance test stage is the remaining active step at observation time. The change is test/conformance coverage only and does not alter economic constants or validator semantics.
+
+### Classification
+- P2.8 native evaluator: **OPEN — exact-head evaluator artifact pending**.
+- P2.8 dependency resolution: **contra-tracer pin implemented; fresh exact-head resolution evidence pending**.
+- GameRules canonical replay: **IMPLEMENTED / CI EVIDENCE PENDING**.
+- Adapter Sale: **latest observed run success**.
+- Algorithmic Governability: **latest observed run success**.
+- Kernel Invalid-Class / Cardano Lab: **awaiting current-head completion**.
+- No economics, validator semantics, authority selection, oracle rules, or protocol limits changed.
+
+**USER QUESTION:** NONE.
