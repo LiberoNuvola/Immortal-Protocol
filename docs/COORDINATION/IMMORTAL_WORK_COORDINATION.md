@@ -6,8 +6,8 @@
 >
 > **Working branch:** `work/immortal-green-closure`
 > **Snapshot:** 2026-09-26
-> **Observed HEAD:** `dee5ecd7592ed948b5d8e9bf05d145cdb5700656`
-> **HEAD change:** `docs: reconcile coordination head and PRE materialization blocker`
+> **Observed HEAD:** `f8326567803bbbcc1a6f9eec1803f324246dbc25`
+> **HEAD change:** `test: add executable Issue admission bridge coverage`
 
 ---
 
@@ -1924,3 +1924,38 @@ The remaining deployment gate is still:
 The first-user wallet must not be required to already hold PRE.
 
 **STATUS: 🟢 HISTORICAL PRE POLICY WITNESS CLOSED / 🟡 PREPROD MATERIALIZATION OPEN**
+
+
+# 44. ISSUE ADMISSION EXECUTABLE BRIDGE — 2026-09-26
+
+## Triangulated implementation result
+
+The runtime transport blocker identified in §30 is now partially implemented without moving economic authority into TypeScript.
+
+Added:
+- `relayer/issueAdmissionProvider.js` — non-browser bridge that invokes the existing `cabal run issue-admission` producer and adapts only its returned decision metadata into an `EconomicAdmissionWitness`;
+- `relayer/issueAdmissionProvider.test.js` — fail-closed coverage for observation-reference mismatch and Pool-liquidity mismatch.
+
+The bridge requires the caller to supply authoritative observed inputs: exact Counter/Pool references, liquidity sources, Pool USDM valuation, observation reference/time, and the complete canonical `IssueDecisionInput`. It does not calculate EEV, ProtectedCapital, viability, class activation, or economic admission.
+
+## Security / authority boundary
+
+The Haskell path remains authoritative:
+
+`observed/refined inputs → PreRichIssueDecision.produceIssueDecision → cabal issue-admission → decision → bridge witness → existing mintSerialNFTWithAuthoritativeAdmission → CIP-30 signing`
+
+The bridge fails closed if:
+- the observation reference changes;
+- authoritative executable liquidity differs from the authenticated Pool valuation;
+- the Pool is not an authenticated liquidity source;
+- the producer does not return an admitted Issue decision.
+
+No browser wallet seed, deployer mnemonic, or private key crosses this boundary.
+
+## Evidence classification
+
+This is **implementation/test evidence only**. It is not Preprod execution evidence. The bridge still depends on a real authoritative observation/refinement producer for the complete IssueDecisionInput. No fixture, UI value, or synthetic Yaci state may be promoted into that role.
+
+**STATUS: 🟡 BRIDGE IMPLEMENTED / AUTHORITATIVE OBSERVATION PRODUCER OPEN**
+
+**NEXT CONCRETE WITNESS:** bind the bridge to the real Preprod V3 carrier + Pool observation path, execute the Haskell producer on those exact observations, then obtain a real first-user CIP-30 Issue transaction.
