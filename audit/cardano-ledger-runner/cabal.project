@@ -1,7 +1,7 @@
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-base
-  tag: a02ed49194501620f03b2f868aabd5a48ebde937
+  tag: 60827efde9e1790895039a8891f4bd06bf996401
   subdir:
     cardano-base
     cardano-crypto-class
