@@ -2248,3 +2248,25 @@ This is **implementation/test evidence**, not live Preprod evidence. The remaini
 **STATUS: 🟡 CONCRETE PREPROD OBSERVATION READER IMPLEMENTED / 🔴 AUTHORITATIVE ECONOMIC INPUT SOURCE + LIVE PREPROD WITNESS OPEN**
 
 **NEXT CONCRETE WITNESS:** configure the actual Preprod Counter/Pool/V3-carrier singleton identities and an authenticated valuation/EEV source, then execute the existing Haskell `issue-admission` path against the exact observed UTxOs.
+
+
+# 44.5 REAL PREPROD OBSERVATION PATH ADVANCED — 2026-09-26
+
+The parallel runtime work has advanced independently of the historical-policy investigation.
+
+A concrete `relayer/preprodIssueObservationReader.js` now reads the exact singleton:
+- Counter UTxO;
+- B1 PrizePool singleton and datum;
+- V3 economic-state carrier singleton and decoded state.
+
+The reader deliberately does **not** calculate EEV, ProtectedCapital, viability, or Pool valuation. Those remain authenticated external inputs and are bound to the exact observed references.
+
+A concrete implementation defect was found during review: the reader called an undefined `observeEconomicStateCarrier`. It has been corrected to the implemented `observeCarrier` function in commit `3f6f17a944a406399ecedb81dddc367fdd467752`.
+
+Current CI for that commit is running; observed checks include `credentials`, `declaration-conformance`, and `no-result-dependent-authority`. No green claim is made yet.
+
+This moves the runtime target from abstract design to:
+
+`real Preprod Counter + B1 Pool + V3 carrier -> authenticated IssueDecisionInput -> existing Haskell producer -> canonical evidence binding -> CIP-30 Issue`
+
+**STATUS: 🟡 REAL PREPROD OBSERVATION READER IMPLEMENTED / 🔴 ACTUAL PREPROD UTxO OBSERVATION OPEN**
