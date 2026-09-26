@@ -7801,3 +7801,35 @@ This is **Preprod connectivity/context evidence**, not yet P2.8 evaluator closur
 - No economic or validator semantics changed.
 
 **USER QUESTION:** NONE.
+
+
+## 2026-09-26 — Autonomous cycle: current-head multi-front continuation
+
+### Exact branch anchor
+The working branch currently resolves to `734445f15f0c3b8ac6d3e834dbd28d52b57cc8c4` (`docs: record Demeter Preprod evidence path`). This refresh supersedes the stale snapshot header above for operational purposes; the historical sections are retained unchanged.
+
+### P2.8 — current CI classification
+The latest observed P2.8-B.1 Cardano-ledger runner failed before native ledger evaluation, in the native dependency/bootstrap phase. The first concrete blocker is `cardano-crypto-class-2.3.0.0` rejecting because `libsodium-any` is not present in the runner's pkg-config database. Therefore the failure is classified as **environment/dependency bootstrap**, not as an economic, Plutus, or evaluator-semantic failure.
+
+The workflow still must reach `evalTxExUnitsWithLogs` and emit the exact-head evidence packet before P2.8 can close. No evaluator conclusion is inferred from the failed bootstrap.
+
+### Preprod evidence path
+The new `.github/workflows/immortal-cardano-preprod.yml` provides a separate real-network context probe using Demeter/Ogmios v7 on Cardano Preprod. It records network tip, block height, network start, genesis configuration, epoch, ledger tip, era summaries, protocol parameters, workflow provenance and a SHA-256-bound context packet. This is **real Preprod connectivity/context evidence**, not yet P2.8 evaluator closure; a real transaction/UTxO packet must still be captured and evaluated by the native ledger runner.
+
+### Materios / Beacon 3
+The current authority-transition boundary remains correctly scoped: it binds raw selection inputs to the on-chain `selection_inputs_hash`, binds activation block hash and number, and independently binds the activation block to a finality checkpoint. The proof verifier remains an explicit external boundary and the repository still does **not** reimplement the Materios authority-selection algorithm. The remaining B3 gap is therefore live cryptographic/provenance composition, not another local commitment check.
+
+### B4/B5/B6 and governance
+ProtectedCapital/RawSurplus semantics remain frozen and the universal/application boundary remains an evidence/refactoring front rather than a license for destructive changes. GOV-28 reference binding remains implemented with broader build/authenticity evidence still required. No new economic constant, fee value, expiry duration, validator weakening, authority shortcut or oracle rule is introduced by this cycle.
+
+### Certification posture
+- Implementation phase: **FINALIZED**.
+- P2.8 native evaluator: **OPEN — current failure is dependency/bootstrap before evaluation**.
+- Preprod context: **PROVISIONED / evidence path active**.
+- Materios/B3: **OPEN — live proof/finality composition**.
+- B4/B5/B6: **OPEN — end-to-end evidence**.
+- GOV-28: **implementation repaired; build/authenticity evidence open**.
+- Protocol Usage Fee: **OPEN POLICY — no value selected by implementation fiat**.
+
+**USER QUESTION:** NONE.
+**Next autonomous action:** continue non-P2.8 evidence closure and observe the repaired native CI path; do not convert bootstrap success into evaluator success without the actual artifact.
