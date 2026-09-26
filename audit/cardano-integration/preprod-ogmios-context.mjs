@@ -4,6 +4,7 @@ import WebSocket from 'ws'
 
 const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
+const walletAddress = process.env.PREPROD_WALLET_ADDRESS?.trim()
 const explicitAuthenticatedEndpoint = process.env.DEMETER_OGMIOS_AUTHENTICATED_URL?.trim()
 const credentials = [
   ['DEMETER_API_KEY_PRIMARY', process.env.DEMETER_API_KEY_PRIMARY?.trim()],
@@ -12,6 +13,7 @@ const credentials = [
 ].filter(([, value], index, all) => value && all.findIndex(([, candidate]) => candidate === value) === index)
 
 if (!endpoint) throw new Error('DEMETER_OGMIOS_URL is required')
+if (!walletAddress) throw new Error('PREPROD_WALLET_ADDRESS is required')
 if (!credentials.length) throw new Error('No Demeter credential is configured')
 await mkdir(evidenceDir, { recursive: true })
 
@@ -131,6 +133,64 @@ try {
   }
   const body = JSON.stringify(observations, null, 2) + '\n'
   await writeFile(`${evidenceDir}/ogmios-preprod-context.json`, body)
+
+  const walletRaw = await rpc('queryLedgerState/utxo', { addresses: [walletAddress] })
+  const walletUtxos = Array.isArray(walletRaw) ? walletRaw.map(entry => {
+    const transaction = entry.outputReference?.transaction ?? entry.transaction ?? {}
+    const index = entry.outputReference?.index ?? entry.index
+    const value = entry.value ?? entry.amount ?? {}
+    return {
+      txHash: transaction.id ?? entry.txHash ?? null,
+      index,
+      address: entry.address ?? walletAddress,
+      value,
+      datum: entry.datum ?? null,
+      datumHash: entry.datumHash ?? entry.datumhash ?? null,
+      script: entry.script ?? entry.referenceScript ?? null,
+    }
+  }) : []
+  const lovelaceBalance = walletUtxos.reduce((sum, u) => {
+    const raw = u.value?.ada?.lovelace ?? u.value?.lovelace ?? 0
+    return sum + BigInt(raw)
+  }, 0n)
+  const walletStatus = lovelaceBalance > 0n ? 'FUNDED' : 'UNFUNDED'
+  const walletObservations = {
+    schema: 'IMMORTAL-PREPROD-WALLET-UTXO-v0.1',
+    source: {
+      provider: 'Demeter',
+      network: 'cardano-preprod',
+      interface: 'Ogmios v7 JSON-RPC',
+      endpoint,
+      authentication: 'GitHub Actions secret',
+      query: 'queryLedgerState/utxo by address',
+      session: 'same-websocket-as-preprod-context',
+    },
+    observedAt: new Date().toISOString(),
+    wallet: { address: walletAddress, status: walletStatus },
+    networkTip: observations.network_tip,
+    utxoCount: walletUtxos.length,
+    lovelaceBalance: lovelaceBalance.toString(),
+    utxos: walletUtxos,
+    rawOgmiosUtxoResult: walletRaw,
+  }
+  const walletBody = JSON.stringify(walletObservations, null, 2) + '\n'
+  await writeFile(`${evidenceDir}/preprod-wallet-utxo.json`, walletBody)
+  const walletDigest = createHash('sha256').update(walletBody).digest('hex')
+  await writeFile(`${evidenceDir}/preprod-wallet-utxo.sha256`, `${walletDigest}  preprod-wallet-utxo.json\n`)
+  const walletSummary = [
+    `status=${walletStatus}`,
+    'provider=Demeter',
+    'network=cardano-preprod',
+    'interface=Ogmios-v7',
+    `wallet_address=${walletAddress}`,
+    `utxo_count=${walletUtxos.length}`,
+    `lovelace_balance=${lovelaceBalance}`,
+    `network_tip=${JSON.stringify(observations.network_tip)}`,
+    `utxo_packet_sha256=${walletDigest}`,
+    'session=same-websocket-as-preprod-context',
+  ].join('\n') + '\n'
+  await writeFile(`${evidenceDir}/preprod-wallet-summary.txt`, walletSummary)
+  console.log(walletSummary)
   const digest = createHash('sha256').update(body).digest('hex')
   await writeFile(`${evidenceDir}/ogmios-preprod-context.sha256`, `${digest}  ogmios-preprod-context.json\n`)
   const summary = [
