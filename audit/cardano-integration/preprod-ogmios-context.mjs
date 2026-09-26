@@ -10,7 +10,54 @@ if (!apiKey) throw new Error('DEMETER_API_KEY is required')
 await mkdir(evidenceDir, { recursive: true })
 
 const headerName = ['dmtr', 'api', 'key'].join('-')
-const client = new WebSocket(endpoint, { headers: { [headerName]: apiKey } })
+const explicitAuthenticatedEndpoint = process.env.DEMETER_OGMIOS_AUTHENTICATED_URL?.trim()
+
+function authenticatedEndpoint(base) {
+  if (explicitAuthenticatedEndpoint) return explicitAuthenticatedEndpoint
+  const url = new URL(base)
+  if (!url.hostname.endsWith('.dmtr.host') && !url.hostname.endsWith('.demeter.run')) {
+    throw new Error('authenticated endpoint fallback requires a Demeter hostname')
+  }
+  url.hostname = `${apiKey}.${url.hostname}`
+  return url.toString()
+}
+
+function openClient(target, useHeader) {
+  return new Promise((resolve, reject) => {
+    const options = useHeader ? { headers: { [headerName]: apiKey } } : {}
+    const socket = new WebSocket(target, options)
+    const timer = setTimeout(() => {
+      socket.close()
+      reject(new Error('Ogmios WebSocket open timeout'))
+    }, 30000)
+    socket.once('open', () => {
+      clearTimeout(timer)
+      resolve(socket)
+    })
+    socket.once('error', error => {
+      clearTimeout(timer)
+      reject(error)
+    })
+    socket.once('unexpected-response', (_request, response) => {
+      clearTimeout(timer)
+      reject(new Error(`Ogmios WebSocket HTTP upgrade failed: status=${response.statusCode} headers=${JSON.stringify({
+        'www-authenticate': response.headers['www-authenticate'] ?? null,
+        'content-type': response.headers['content-type'] ?? null,
+      })}`))
+    })
+  })
+}
+
+let client
+try {
+  client = await openClient(endpoint, true)
+} catch (firstError) {
+  const firstMessage = firstError instanceof Error ? firstError.message : String(firstError)
+  if (!/status=401\b/.test(firstMessage)) throw firstError
+  const fallback = authenticatedEndpoint(endpoint)
+  console.log('Ogmios header authentication returned 401; retrying the configured Demeter authenticated endpoint form')
+  client = await openClient(fallback, false)
+}
 let nextId = 1
 const pending = new Map()
 
