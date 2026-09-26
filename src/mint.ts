@@ -46,6 +46,7 @@ import {
 import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
+import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from './preRichIssueAdmissionBridge'
 import {
   buildScriptsFromLucid,
   counterValidator,
@@ -623,7 +624,9 @@ export type MintSerialResult = {
 
 export type MintSerialOptions = {
   /** Authoritative Economic Gate admission for the ticket-issuance transition. */
-  economicAdmission: EconomicAdmissionWitness
+  economicAdmission?: EconomicAdmissionWitness
+  /** Server/relayer-side producer for the authoritative Issue admission. */
+  authoritativeIssueAdmissionProvider?: AuthoritativeIssueAdmissionProvider
   /**
    * Verified PRE-RICH class-saleability witness for this Issue transition.
    * The application path fails closed when it is absent or inconsistent;
@@ -1072,8 +1075,32 @@ export async function mintSerialNFT(
     )
 
   // ----------------------------------------------------------
-  // C-02 atomic sale transaction
+  // Authoritative Issue admission
   // ----------------------------------------------------------
+
+  let economicAdmission = opts.economicAdmission
+
+  if (!economicAdmission && opts.authoritativeIssueAdmissionProvider) {
+    economicAdmission = await obtainAuthoritativeIssueAdmission(
+      opts.authoritativeIssueAdmissionProvider,
+      {
+        counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
+        poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
+        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
+        poolUsdmValue: 0n,
+      },
+      opts.issueClassEvidence,
+    )
+  }
+
+  if (!economicAdmission) {
+    throw new Error(
+      'Authoritative Issue admission is required: provide economicAdmission or authoritativeIssueAdmissionProvider',
+    )
+  }
+
+  // ----------------------------------------------------------
+  // C-02 atomic sale transaction  // ----------------------------------------------------------
 
   /*
    * The SAME transaction contains:
@@ -1253,7 +1280,7 @@ export async function mintSerialNFT(
 
   const submission =
     await createCardanoExecutionAdapter(lucid)
-      .submitEconomic(tx, opts.economicAdmission, [
+      .submitEconomic(tx, economicAdmission, [
         `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ], [
