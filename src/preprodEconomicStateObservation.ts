@@ -177,7 +177,7 @@ export async function observeEconomicStateCarrier(
   if (
     lockedAmount === null || threshold === null || cycle === null ||
     lockedAmount < 0n || threshold < 0n || cycle < 0n ||
-    statusIndex === null || statusIndex < 0 || statusIndex > 3
+    statusIndex === null || statusIndex < 0 || statusIndex > 1
   ) {
     throw new Error('V3 jackpot state is invalid')
   }
@@ -202,10 +202,13 @@ export async function observeEconomicStateCarrier(
     },
   }
 
-  const currentClass = classes.find((c) => c.classId === currentActiveClass)
-  if (!currentClass) throw new Error('V3 current active class is not represented')
-  if (!currentClass.saleable || currentClass.issued >= currentClass.cap) {
-    throw new Error('V3 current active class is not saleable')
+  const derivedReserve = classes.reduce((sum, c) => sum + c.exposure, 0n)
+  const derivedUnresolved = classes.reduce((sum, c) => sum + c.unresolved, 0n)
+  if (derivedReserve !== state.unresolvedReserve) {
+    throw new Error('V3 unresolved reserve does not equal class exposure')
+  }
+  if (derivedUnresolved !== state.unresolvedTicketCount) {
+    throw new Error('V3 unresolved ticket count does not equal class state')
   }
 
   return {
