@@ -1699,3 +1699,35 @@ CI for the latest wallet commits is not yet observed; no green status is claimed
 - Added deterministic/shape test: `src/preprodV3InitialDatum.test.ts`, wired into Adapter conformance CI.
 - Deployment helper still requires the operator to supply the generated CBOR explicitly; no hidden state synthesis.
 - Next execution gate is now operational: generate datum → select explicit seed UTxO → deploy singleton → observe exact carrier UTxO → bind Issue admission.
+
+
+# 39. V3 PREPROD EXECUTION BLOCKER — 2026-09-26
+
+The design/encoding gate for the first V3 Preprod singleton is now closed. The remaining blocker is purely operational and is intentionally fail-closed.
+
+Observed on the current branch:
+- the explicit PRE-RICH Preprod profile exists;
+- deterministic initial V3 datum generation exists;
+- structural validation exists in the deployment helper;
+- no repository file contains a real deployment seed UTxO;
+- the latest commit has no observed GitHub Actions workflow run/status yet.
+
+Therefore the next execution cannot be fabricated from a fixture, a Yaci wallet, or a guessed transaction reference.
+
+## Required operator witness
+
+Provide/select:
+1. a real Preprod deployer UTxO reference: `<txHash>#<outputIndex>`;
+2. the corresponding local/admin signer path for `npm run deploy:v3-carrier`;
+3. the generated output of `npm run v3:initial-datum`.
+
+The helper will derive the one-shot policy ID and carrier address from that exact seed, submit the singleton, and require exactly one observed carrier UTxO.
+
+After deployment, the evidence gate is:
+`seed UTxO -> derived policy ID -> derived carrier address -> submitted tx -> exact singleton UTxO -> V3 observation -> Issue admission binding`.
+
+No Genesis, Treasury, Issue, or economic authority is inferred from the deployment helper itself.
+
+## CI observation rule
+
+As of this coordination update, the latest profile/datum commits have no workflow run/status observable through the GitHub integration. No green CI state is claimed until a real run is observed.
