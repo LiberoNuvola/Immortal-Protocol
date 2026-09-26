@@ -8293,3 +8293,26 @@ A follow-up cleanup commit `0108082bb1e82a3a47127e0ff0fc5f2e2b01b478` removed an
 - Real Preprod transaction: **OPEN**.
 - P2.8 native evaluator: **OPEN**.
 - No economic, validator, authority-selection, oracle, or evaluator-semantic change.
+
+
+## 2026-09-26 — Preprod live context + funded wallet verified
+
+Run `36219611300` on head `7c80ef9a54c1e4909eea14bed30744ef7d03c134` completed **SUCCESS**. The Demeter/Ogmios v7 context probe succeeded and the subsequent live wallet UTxO probe also succeeded.
+
+Observed artifact `immortal-cardano-preprod-context` contains:
+- real Cardano Preprod network tip and ledger context;
+- 28 wallet UTxOs;
+- wallet status `FUNDED`;
+- observed lovelace balance `9986228222` (approx. 9,986.228222 ADA);
+- context SHA-256 `fa7c636f7be1c987fbe0259a3e012f27b460476bc7862ebf04b4bde5a14bbc04`.
+
+The supplied address therefore no longer remains merely syntactically bound: its live funding state is now directly observed from Ogmios. This closes the provider-connectivity and wallet-readiness blockers for the Preprod evidence path.
+
+### Classification
+- Demeter/Ogmios authentication + context: **VERIFIED**.
+- Live Preprod wallet UTxO observation: **VERIFIED**.
+- Wallet funding: **VERIFIED**.
+- Real Preprod transaction: **OPEN** — no transaction was submitted by this read-only evidence workflow.
+- P2.8 native evaluator: **OPEN**.
+
+No economic, validator, authority-selection, oracle, expiry, fee, or evaluator semantics changed.
