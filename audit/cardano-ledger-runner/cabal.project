@@ -23,6 +23,12 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-base
+  tag: 60827efde9e1790895039a8891f4bd06bf996401
+  subdir: base-deriving-via
+
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-base
   tag: 060819b59c184b951a54e3c563304983c53a3eac
   subdir:
     cardano-binary
