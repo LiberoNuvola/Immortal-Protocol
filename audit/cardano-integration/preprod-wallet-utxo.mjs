@@ -46,9 +46,11 @@ const opened = new Promise((resolve, reject) => {
   client.once('error', reject)
 })
 
-function quantityOf(value, key) {
-  const raw = value?.[key]
-  if (raw === undefined || raw === null) return 0n
+function lovelaceOf(value) {
+  const raw =
+    value?.ada?.lovelace ??
+    value?.lovelace ??
+    0
   return BigInt(raw)
 }
 
@@ -77,7 +79,7 @@ try {
   const utxoRaw = await rpc('queryLedgerState/utxo', { addresses: [address] })
   const utxos = normalizeUtxos(utxoRaw)
 
-  const lovelace = utxos.reduce((sum, u) => sum + quantityOf(u.value, 'ada'), 0n)
+  const lovelace = utxos.reduce((sum, u) => sum + lovelaceOf(u.value), 0n)
   const status = lovelace > 0n ? 'FUNDED' : 'UNFUNDED'
 
   const observations = {
