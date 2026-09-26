@@ -96,14 +96,17 @@ replayCanonical :: RulesetRegistry -> GovernanceState -> [CanonicalEvent]
 replayCanonical rs = go [] Nothing
   where
     go _ _ st [] = Right st
-    go history prev st (ce:rest) = do
-      st' <- applyCanonicalEvent rs st prev ce
-      case eventPayload ce of
-        PayloadCanonicalized r ->
-          if canonicalizationDecisionReferenceMatches history r
-            then go (ce : history) (Just ce) st' rest
-            else Left "canonicalization decision-record reference does not match finalized DecisionRecord"
-        _ -> go (ce : history) (Just ce) st' rest
+    go history prev st (ce:rest)
+      | elem (eventId ce) (map eventId history) =
+          Left "duplicate canonical event id"
+      | otherwise = do
+          st' <- applyCanonicalEvent rs st prev ce
+          case eventPayload ce of
+            PayloadCanonicalized r ->
+              if canonicalizationDecisionReferenceMatches history r
+                then go (ce : history) (Just ce) st' rest
+                else Left "canonicalization decision-record reference does not match finalized DecisionRecord"
+            _ -> go (ce : history) (Just ce) st' rest
 
 canonicalizationDecisionReferenceMatches :: [CanonicalEvent] -> CanonicalizationRecord -> Bool
 canonicalizationDecisionReferenceMatches history r =
