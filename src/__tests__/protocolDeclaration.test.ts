@@ -23,6 +23,7 @@ const evidence = {
 const base: ProtocolDeclaration = {
   protocolId: 'PRE-RICH',
   lifeState: 'MEDUSA',
+  currentActivity: { kind: 'IDLE' },
   operationalStatus: 'ONLINE',
   observedAt: '2026-09-26T07:00:00Z',
   evidence: [evidence],
@@ -32,6 +33,7 @@ describe('Protocol Declaration Layer', () => {
   it('exposes the international vocabulary as closed sets', () => {
     expect(LIFE_STATES).toContain('MEDUSA')
     expect(PROTOCOL_ACTIVITIES).toContain('SELLING_ASSET')
+    expect(PROTOCOL_ACTIVITIES).toContain('IDLE')
     expect(OPERATIONAL_STATUSES).toContain('ONLINE')
     expect(BEACON_TRUST_MODES).toContain('B3_VERIFIED')
   })
@@ -50,15 +52,18 @@ describe('Protocol Declaration Layer', () => {
     expect(isBeaconTrustMode('B4_UNKNOWN')).toBe(false)
   })
 
-  it('requires evidence before a declaration can be published', () => {
+  it('requires an explicit activity and evidence before publication', () => {
     expect(declarationPublishable(base)).toBe(true)
     expect(declarationPublishable({ ...base, evidence: [] })).toBe(false)
   })
 
-  it('does not make activity part of economic authority', () => {
-    const declaration = {
+  it('can declare an actual activity without giving it economic authority', () => {
+    const declaration: ProtocolDeclaration = {
       ...base,
-      currentActivity: { kind: 'SELLING_ASSET' as const },
+      currentActivity: {
+        kind: 'SELLING_ASSET',
+        subject: { kind: 'ASSET', assetRef: 'asset:abc' },
+      },
     }
     expect(declarationPublishable(declaration)).toBe(true)
   })
