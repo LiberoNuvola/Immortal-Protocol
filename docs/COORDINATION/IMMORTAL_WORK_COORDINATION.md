@@ -8956,3 +8956,18 @@ This permits the public layer to expose lifecycle activity only from already-obs
 No frontend intent, wallet click, relayer request, or economic inference is accepted as the source of activity.
 
 Life State and Economic Vitality remain profile-level OPEN work: no threshold or mapping has been invented in this pass.
+
+
+### 2026-09-26 — Public activity bound to live Cardano Prize observation
+
+- Added `src/gameFlow.ts::observePrizeLifecycle` as the canonical observation boundary for PRE-RICH PrizeDatum lifecycle.
+- Added `src/protocolDeclarationObservation.ts` to build a public Protocol Declaration from an observed Prize UTxO.
+- Public activity is derived only from observed on-chain lifecycle:
+  - Pending + BeaconPending → `ISSUING`
+  - Pending + BeaconReady → `AWAITING_FINALITY`
+  - Revealed → `SETTLING`
+  - Claimed → `IDLE`
+- Evidence is bound to the observed Cardano transaction output (`txHash#outputIndex`).
+- The adapter does not infer UI intent, economic health, liveness, or beacon trust mode. `LifeState` and `OperationalStatus` remain explicit deployment inputs until their authoritative observation sources are closed.
+- Added executable lifecycle tests and included them in Protocol Declaration CI.
+- This closes the implementation step “public activity from observed PRE-RICH lifecycle”; it does **not** close Life State/Economic Vitality, B3, or deployment-wide operational status.
