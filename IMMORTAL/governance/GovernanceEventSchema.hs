@@ -198,9 +198,14 @@ eventTimestampValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 eventTimestampValid Nothing _ = True
 eventTimestampValid (Just p) e = eventTimestamp e >= eventTimestamp p
 
+eventIdentityValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
+eventIdentityValid Nothing _ = True
+eventIdentityValid (Just p) e = eventId e /= eventId p
+
 canonicalEventValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 canonicalEventValid prev e =
   eventSchemaValid e &&
   predecessorValid prev e &&
   eventTimestampValid prev e &&
+  eventIdentityValid prev e &&
   eventStatus e == AcceptedEvent
