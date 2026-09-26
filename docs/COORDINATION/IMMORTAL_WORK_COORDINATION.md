@@ -7878,3 +7878,37 @@ The next decisive P2.8 artifact remains a real Preprod transaction/UTxO/context 
 
 **USER QUESTION:** NONE.
 
+## 2026-09-26 — P2.8 bootstrap repair: native crypto dependency
+
+The current P2.8-B.1 runner was inspected after the latest dependency/bootstrap classification. Its pinned Cardano stack includes `cardano-crypto-class`, while the runner image did not explicitly install the native libsodium development package required by the Cardano crypto dependency chain.
+
+Commit `da1fafea9876afde59f83e9b401b671dec11f400` therefore adds an explicit bootstrap step before GHC/Cabal setup:
+
+```text
+sudo apt-get update
+sudo apt-get install -y libsodium-dev pkg-config build-essential
+```
+
+This is an infrastructure repair only. It does not alter:
+- the pinned Cardano source revisions;
+- the native `evalTxExUnitsWithLogs` evaluator path;
+- validator logic;
+- economic semantics;
+- transaction-size limits.
+
+### Freshness / observability
+
+The active PR head is now `da1fafea9876afde59f83e9b401b671dec11f400`. The available workflow-run connector currently exposes no run for this exact commit; therefore no success/failure result is inferred from that absence.
+
+### Classification
+
+- P2.8 dependency/bootstrap blocker: **REPAIRED IN WORKFLOW**.
+- P2.8 native evaluator execution: **OPEN — exact-head artifact still required**.
+- Preprod context path: **PROVISIONED / serial probe hardening complete**.
+- Real Preprod transaction/UTxO packet: **OPEN**.
+- No economic or validator semantic change.
+
+**Next evidence target:** exact-head P2.8 workflow must progress beyond native dependency resolution to the real `evalTxExUnitsWithLogs` call and emit the bound evidence artifact.
+
+**USER QUESTION:** NONE.
+
