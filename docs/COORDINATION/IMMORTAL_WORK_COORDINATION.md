@@ -397,6 +397,34 @@ Proof system is not canonically fixed.
 
 **Status: 🔴 OPEN**
 
+## F5.5 Materios execution-proof transport — B3 medley step
+
+The external Materios node repository was inspected directly.
+
+Confirmed node boundary:
+- `Flux-Point-Studios/materios/partnerchain/node/src/rpc.rs` is the node RPC aggregation point.
+- The node already owns `FullClient`.
+- The workspace is pinned to `polkadot-stable2409-4`.
+- Existing RPCs are System, Orinq Receipts and MOTRA.
+- The intended proof path is the existing Substrate `sc_client_api::ProofProvider::execution_proof(...)` / `CallExecutor::prove_execution` path.
+
+A dedicated implementation task has been opened in the Materios repository:
+- Issue #50: `materios_b3_calculateCommitteeProof`
+- Scope: thin RPC transport only; exact block + runtime method + call-data binding; deterministic proof envelope; no selector reimplementation.
+- Required later witness: a real finalized Materios block plus separate GRANDPA finality evidence.
+
+This is **not** B3 certification. It is implementation transport infrastructure.
+
+Medley boundary remains:
+`A = native/reference verification` (reference/differential path)
+`B = succinct proof production` (future production proof path)
+`C = proof technology choice` (implementation technique inside B)
+`D = canonical Beacon/UTxO registry` (verified state publication)
+
+A/B are not parallel production acceptance paths. D must advance only from verified proof/evidence, not a publisher signature alone.
+
+**Status: 🟡 IMPLEMENTATION TASK OPEN / REAL FIXTURE + VERIFICATION OPEN**
+
 ## F5.5 Adversarial closure
 
 Need publisher-independent, stale/replay/conflicting-root and ancestry/perimeter rejection evidence.
