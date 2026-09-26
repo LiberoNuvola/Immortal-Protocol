@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { Constr, Data } from 'lucid-cardano/web/mod.js'
+import { createRequire } from 'node:module'\n\nconst require = createRequire(import.meta.url)\nconst { Constr, Data } = require('lucid-cardano')
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 
 function stateDatum() {
@@ -19,7 +19,7 @@ function stateDatum() {
 
 function lucidWith(utxos: any[]) {
   return { utxosAt: async () => utxos }
-}
+}\n\nconst decodeDatum = (raw: string) => Data.from(raw)
 
 const baseUtxo = {
   txHash: '11'.repeat(32),
@@ -32,6 +32,7 @@ describe('Preprod V3 economic state carrier observer', () => {
   it('decodes one authenticated singleton state', async () => {
     const observed = await observeEconomicStateCarrier({
       lucid: lucidWith([baseUtxo]),
+      decodeDatum,
       carrierAddress: 'addr_test1carrier',
       carrierPolicyId: 'aa'.repeat(28),
       carrierTokenNameHex: '5354415445',
@@ -46,6 +47,7 @@ describe('Preprod V3 economic state carrier observer', () => {
     await assert.rejects(
       observeEconomicStateCarrier({
         lucid: lucidWith([baseUtxo, { ...baseUtxo, outputIndex: 1 }]),
+        decodeDatum,
         carrierAddress: 'addr_test1carrier',
         carrierPolicyId: 'aa'.repeat(28),
         carrierTokenNameHex: '5354415445',
@@ -66,6 +68,7 @@ describe('Preprod V3 economic state carrier observer', () => {
     const utxo = { ...baseUtxo, datum: Data.to(new Constr(0, [0n, fields])) }
     const observed = await observeEconomicStateCarrier({
       lucid: lucidWith([utxo]),
+      decodeDatum,
       carrierAddress: 'addr_test1carrier',
       carrierPolicyId: 'aa'.repeat(28),
       carrierTokenNameHex: '5354415445',
