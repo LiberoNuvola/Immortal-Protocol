@@ -16,12 +16,16 @@ import { COUNTER_SCRIPT_ADDRESS } from './config'
  */
 export async function buyTickets(
   qty: number = 1,
-  mintOptions: MintSerialOptions,
+  mintOptions?: MintSerialOptions,
 ) {
   const lucid = wallet.getLucid()
 
   if (!lucid) {
     throw new Error('Wallet not connected')
+  }
+
+  if (!mintOptions) {
+    throw new Error('Mint options required: legacy UI cannot infer ticket mint parameters')
   }
 
   if (!COUNTER_SCRIPT_ADDRESS) {
