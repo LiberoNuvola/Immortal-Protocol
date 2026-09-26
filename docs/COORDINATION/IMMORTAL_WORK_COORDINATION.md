@@ -8843,3 +8843,14 @@ The existing SHA-256 commitment algorithm and commitment preimage format were le
 - GOV-28 canonical serialization ambiguity: **OPEN / VERSIONING QUESTION**.
 - Haskell current-head evidence: **FRESH RUN REQUIRED**.
 - No economic, validator, oracle, expiry, fee, authority-selection or protocol-limit semantics changed.
+
+
+## 2026-09-26 — GOV-28 ruleset/event binding hardening
+
+Additional canonical-governance hardening completed:
+
+- `ruleset_version` is now required to be registered and active at the event timestamp;
+- embedded `DecisionRecord` and `ConformanceRecord` ruleset versions must equal the containing event's `ruleset_version`;
+- regression vectors cover future-effective rulesets and witness/event version mismatch.
+
+This closes a version-confusion side-door without changing any governance thresholds, lifecycle durations, actor roles or canonical economic policy. SHA-256 commitment semantics remain unchanged.
