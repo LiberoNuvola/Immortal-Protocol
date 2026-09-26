@@ -64,6 +64,13 @@ function validateEconomicStateV3(state: EconomicStateV3): void {
   if (state.control.currentActiveClass > state.control.highestClassEverActivated) {
     throw new Error('V3 current active class cannot exceed highest-ever activated class')
   }
+  const currentClass = state.classes.find((entry) => entry.classId === state.control.currentActiveClass)
+  if (!currentClass) {
+    throw new Error('V3 current active class must identify a canonical class')
+  }
+  if (!currentClass.saleable || currentClass.issued >= currentClass.cap) {
+    throw new Error('V3 current active class must remain saleable and below cap')
+  }
   if (state.classes.length !== PRE_RICH_CANONICAL_PRICES.length) {
     throw new Error('V3 state must contain exactly 8 canonical ticket classes')
   }
