@@ -1687,3 +1687,15 @@ CI for the latest wallet commits is not yet observed; no green status is claimed
 - The gate requires: 8 canonical classes 0..7; non-negative fields; unresolved <= issued; exact class exposure; reserve/count sums; valid control bounds; active class present, saleable and below cap; valid Jackpot state/status.
 - This is structural validation only. It does not invent or certify deployment-specific caps/protected-capital values.
 - The deployment remains blocked until an explicit PRE-RICH deployment profile supplies those values and their authority/derivation.
+
+
+## 38. EXPLICIT PREPROD INITIAL V3 PROFILE — 2026-09-26
+
+- Declared `PRE-RICH/profile/PreRichPreprodDeploymentProfile.ts` as the explicit deployment/application profile for the first real Preprod V3 carrier.
+- Initial state is empty of tickets/liabilities/reserves; class 0 (1 USDM) is active; HighestClassEverActivated=0; only class 0 is initially saleable.
+- All eight classes have explicit cap=10. This is a deployment parameter, not an IMMORTAL universal constant.
+- Protected-capital components start at zero because the initial state contains no obligations; Jackpot starts inactive with zero locked amount.
+- Added deterministic Plutus datum encoder: `src/preprodV3InitialDatum.ts` and printer `npm run v3:initial-datum`.
+- Added deterministic/shape test: `src/preprodV3InitialDatum.test.ts`, wired into Adapter conformance CI.
+- Deployment helper still requires the operator to supply the generated CBOR explicitly; no hidden state synthesis.
+- Next execution gate is now operational: generate datum → select explicit seed UTxO → deploy singleton → observe exact carrier UTxO → bind Issue admission.
