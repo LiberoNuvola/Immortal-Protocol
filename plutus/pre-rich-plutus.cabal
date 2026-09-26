@@ -252,3 +252,18 @@ test-suite economic-gate-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
+
+
+executable inspect-historical-pre-policy
+    hs-source-dirs: export
+    main-is: InspectHistoricalPrePolicy.hs
+    build-depends:
+        base ^>=4.18.2,
+        bytestring,
+        base16-bytestring,
+        text,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0
+    default-language: Haskell2010
+    ghc-options:
+        -Wall
