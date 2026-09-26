@@ -8139,3 +8139,28 @@ A fresh P2.8 run exists on the current branch and is still in progress. The prio
 
 ### Non-regression
 No economic constants, validator predicates, expiry values, fee values, authority-selection rules or oracle semantics were changed by this coverage expansion. Tests are being promoted to CI evidence, not promoted to mathematical proof by implication.
+
+## 2026-09-26 — Preprod secret scope repaired
+
+The supplied Demeter credential is stored under the GitHub Actions Environment named `DEMETER`. The Preprod workflow previously referenced `secrets.DEMETER_API_KEY` without declaring that environment, so the credential was unavailable to the job.
+
+Commit `67e18b22ed47cdc32e3eb85fc0b879b37a86a819` adds:
+
+```yaml
+environment: DEMETER
+```
+
+to the `preprod-context` job.
+
+This is an execution-scope repair only. No credential value is committed or logged.
+
+### Classification
+
+- Demeter secret scope: **BOUND TO WORKFLOW ENVIRONMENT**.
+- Preprod workflow network probe: **PENDING FRESH RUN**.
+- Live wallet UTxO observation: **PENDING FRESH RUN**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+
+**USER QUESTION:** NONE.
+
