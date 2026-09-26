@@ -42,6 +42,7 @@ library
         PreRichRegimeState
         GenesisRegimeCarrier
         GenesisCarrierMintPolicy
+        V3EconomicStateCarrier
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
