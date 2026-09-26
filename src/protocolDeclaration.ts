@@ -99,6 +99,22 @@ export function isBeaconTrustMode(value: string): value is BeaconTrustMode {
  * A public declaration with no evidence is not publishable.
  * This check intentionally does not validate economic admissibility.
  */
+export type ObservedLifecycle =
+  | 'ISSUING'
+  | 'AWAITING_FINALITY'
+  | 'SETTLING'
+  | 'IDLE'
+
+/**
+ * Maps an already-observed canonical lifecycle event to public activity.
+ * It deliberately does not inspect wallet/UI intent or infer economic state.
+ */
+export function activityFromObservedLifecycle(
+  lifecycle: ObservedLifecycle,
+): ProtocolActivityDeclaration {
+  return { kind: lifecycle }
+}
+
 export function declarationPublishable(declaration: ProtocolDeclaration): boolean {
   return (
     declaration.protocolId.length > 0 &&
