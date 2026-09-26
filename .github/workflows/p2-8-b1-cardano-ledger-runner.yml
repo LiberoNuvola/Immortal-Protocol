@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      # Non-functional touch: ensure the evaluator is exercised on the current green-closure HEAD.
       - name: Checkout audit branch
         uses: actions/checkout@v4
 
@@ -21,6 +20,18 @@ jobs:
         with:
           ghc-version: '9.8.4'
           cabal-version: '3.12'
+
+      - name: Capture runner provenance
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          printf 'workflow_sha=%s\n' "$GITHUB_SHA" > evidence/workflow-provenance.txt
+          printf 'workflow_ref=%s\n' "$GITHUB_REF" >> evidence/workflow-provenance.txt
+          printf 'runner_os=%s\n' "$RUNNER_OS" >> evidence/workflow-provenance.txt
+          cabal --version >> evidence/workflow-provenance.txt
+          ghc --version >> evidence/workflow-provenance.txt
+          cabal list --simple-output all | grep -E '^(cardano-prelude|cardano-prelude-test|cardano-crypto-class|cardano-crypto-wrapper)' > evidence/pinned-dependency-resolution.txt || true
 
       - name: Run ledger-aligned bootstrap
         working-directory: audit/cardano-ledger-runner
