@@ -1630,3 +1630,19 @@ Commit `a9a5fab9829cdbbfee19cd9846acd39eaf17734a` hardens the V3 application-own
 - CI status for this commit is not yet observed; no workflow run is claimed green.
 
 The next deployment blocker remains the same: a real seed UTxO plus an explicitly sourced canonical initial V3 state, followed by production singleton observation and binding to Issue.
+
+
+## 34. MODERN CIP-30 WALLET BOUNDARY — 2026-09-26
+
+The Preprod DApp wallet layer was refactored without changing economic authority or protocol semantics.
+
+- `src/wallet.ts` now exposes explicit CIP-30 discovery and wallet selection instead of probing providers sequentially and silently taking the first wallet.
+- The session records wallet ID/name, API version, address and network.
+- The preferred wallet ID is persisted locally only for UX; private keys and seed phrases remain in the wallet.
+- CIP-30 account/network change events are observed. The application remains Preprod-only and fails closed on a mainnet network event.
+- `src/main.ts` now presents a wallet picker, wallet identity, address, balance and Change Wallet flow.
+- `src/wallet.test.ts` covers provider discovery and verifies that discovery does not auto-enable wallets.
+- Adapter CI now executes the wallet discovery test and the existing frontend build.
+- This is a frontend/application boundary improvement only. It does not grant the wallet economic authority and does not alter IMMORTAL, Genesis, Treasury, Oracle, or V3 carrier semantics.
+
+CI for the latest wallet commits is not yet observed; no green status is claimed until the workflow run is available.
