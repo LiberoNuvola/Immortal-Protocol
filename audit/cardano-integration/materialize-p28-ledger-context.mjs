@@ -170,7 +170,8 @@ await writeFile(
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     genesisResponse,
-    sourceOfTruth: 'Yaci /genesis structured response',
+    yaciDevkitInfo,
+    sourceOfTruth: 'Yaci /genesis structured response + exact Slot Length from yaci-devkit info',
   }, null, 2) + '\n',
 )
 
