@@ -8105,3 +8105,19 @@ No economic, validator, authority-selection or protocol semantics changed.
 
 **USER QUESTION:** NONE.
 
+
+
+## 2026-09-26 — Autonomous cycle: parallel semantic gates expanded
+
+### Parallel evidence expansion
+Two non-P2.8 certification gates were expanded without changing protocol semantics:
+
+- Commit `0b07a3a323cc9000737fc682b0f7661096fb0691` adds `.github/workflows/pre-rich-certified-ticket-conformance.yml`, executing the existing CertifiedTicket identity/NFT-binding tests together with the 3D renderer security boundary tests. The renderer remains presentation-only and cannot authorize Reveal/Claim/Expire.
+- Commit `5eac445eb7a13973bd9f13668cc791ba3267218f` adds `.github/workflows/immortal-haskell-conformance.yml`, aggregating the existing Haskell suites for EconomicOracle, V3 golden vectors, Governance, canonical replay, Economic Admission, ProtectedCapital, rulesets, phase-6 governance, legacy adapter, projection boundary, Genesis admission and Genesis regime carrier.
+
+An attempted duplicate GameRules vector test was immediately removed after confirming the repository already has `src/__tests__/preRich-gamerules-replay.test.ts` plus a dedicated replay workflow. No duplicate source of truth was retained.
+
+### Certification principle
+These additions promote existing implementation/test assets into independently named CI evidence. They do not promote tests into mathematical proofs, do not alter frozen PRE-RICH economics, and do not close B3 publisher-independent canonicality or P2.8 native evaluator evidence by implication.
+
+**Classification:** parallel evidence coverage = **EXPANDED**; semantic scope unchanged.
