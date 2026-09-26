@@ -8486,3 +8486,19 @@ Classification:
 - Typed context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — P2.8 cardano-crypto-leios alignment repaired
+
+Run `36220138683` / run 521 exposed the next exact dependency after cardano-binary: `cardano-ledger-binary-1.9.0.0` requires `cardano-crypto-leios >=0.2.0`, which was absent from the runner package set.
+
+CHaP records `cardano-crypto-leios-0.2.0.0` at IntersectMBO/cardano-base commit `8c9ca80ce9b57e5e1f4f9509042245187f4ba5e9`, subdirectory `cardano-crypto-leios`. Direct inspection of that package shows `cardano-crypto-class >=2.5.1`, compatible with the already pinned cardano-base/cardano-crypto-class and cardano-binary releases.
+
+Commit `f87ac155f1cd4b45aed7a3ed7521ef487d0a72f3` adds this exact source pin to the P2.8 runner.
+
+Classification:
+- P2.8 cardano-crypto-leios dependency: **REPAIRED**.
+- Fresh resolver/evaluator run: **PENDING**.
+- Typed context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
