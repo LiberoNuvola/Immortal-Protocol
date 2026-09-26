@@ -7994,3 +7994,13 @@ The P2.8 workflow now builds the pinned upstream `blst` release `v0.3.14`, insta
 **Classification:** P2.8 dependency/bootstrap = **REPAIRED / FRESH RUN REQUIRED**. The prior artifact proves the failure was before Ledger evaluation; this repair must first demonstrate successful dependency resolution, then native decoding/evaluation. No protocol semantics changed.
 
 **USER QUESTION:** NONE.
+
+## 2026-09-26 — P2.8 bootstrap repair: secp256k1
+
+Upstream `cardano-crypto-class-2.3.0.0` also declares `libsecp256k1` as a pkg-config dependency under its enabled secp256k1 support flag. The P2.8 workflow now installs `libsecp256k1-dev` alongside the existing native crypto prerequisites and verifies the resolved pkg-config version before Cabal dependency resolution.
+
+This is CI/environment hardening only. No Cardano source revision, Plutus artifact, validator, economic rule, or evaluator API changed.
+
+**Classification:** P2.8 dependency/bootstrap = **REPAIRED / FRESH RUN REQUIRED**.
+
+**USER QUESTION:** NONE.
