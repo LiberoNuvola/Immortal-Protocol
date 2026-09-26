@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  createMateriosEvidenceAdapter,
   decodeMateriosEvidence,
   assertMateriosEvidenceJsonSize
 } from "../src/materios-evidence-adapter.js";
+import { hashSelectionInputs } from "../src/authority-transition.js";
 
 const H = "11".repeat(32);
 const UTXO = "22".repeat(32);
@@ -101,6 +103,66 @@ describe("Materios evidence adapter", () => {
     expect(() => decodeMateriosEvidence(value)).toThrow(
       "INVALID_CHECKPOINT_BLOCK_NUMBER"
     );
+  });
+
+  it("fails closed when the injected execution proof verifier rejects", async () => {
+    const adapter = createMateriosEvidenceAdapter();
+    const decoded = decodeMateriosEvidence(evidence());
+    const selectionHash = hashSelectionInputs(decoded.authorityTransition.selectionInputs);
+    const bound = {
+      ...decoded,
+      authorityTransition: {
+        ...decoded.authorityTransition,
+        selectionInputsHash: selectionHash
+      },
+      selectionCommitment: {
+        ...decoded.selectionCommitment,
+        selectionInputsHash: selectionHash
+      }
+    };
+
+    let executionVerifierCalled = false;
+
+    await expect(
+      adapter.verifyTransition(
+        bound,
+        { verify: () => true },
+        {
+          verify: () => {
+            executionVerifierCalled = true;
+            return false;
+          }
+        }
+      )
+    ).rejects.toThrow("EXECUTION_PROOF_NOT_VERIFIED");
+
+    expect(executionVerifierCalled).toBe(true);
+  });
+
+  it("crosses both explicit proof boundaries only when both verifiers accept", async () => {
+    const adapter = createMateriosEvidenceAdapter();
+    const decoded = decodeMateriosEvidence(evidence());
+    const selectionHash = hashSelectionInputs(decoded.authorityTransition.selectionInputs);
+    const bound = {
+      ...decoded,
+      authorityTransition: {
+        ...decoded.authorityTransition,
+        selectionInputsHash: selectionHash
+      },
+      selectionCommitment: {
+        ...decoded.selectionCommitment,
+        selectionInputsHash: selectionHash
+      }
+    };
+
+    const verified = await adapter.verifyTransition(
+      bound,
+      { verify: () => true },
+      { verify: () => true }
+    );
+
+    expect(verified.kind).toBe("verified-materios-authority-set-transition");
+    expect(verified.__verifiedAuthoritySetTransition).toBe("verified");
   });
 
   it("has an explicit raw-input size guard", () => {
