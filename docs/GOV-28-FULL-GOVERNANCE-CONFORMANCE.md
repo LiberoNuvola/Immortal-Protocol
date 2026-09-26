@@ -30,7 +30,9 @@ The existing repository state still requires integration of the semantic payload
 6. The first event has no predecessor; every subsequent event names the immediately previous event.
 7. Canonical event identifiers are unique within a replay history, and an event cannot reuse the predecessor's identifier.
 8. Canonical event timestamps are monotone non-decreasing along the predecessor chain.
-9. Challenge finalization requires `DecisionRecorded`, a valid challenge set, and expiry of the finality window.
+9. An event may reference only a ruleset version that is registered and active at the event timestamp.
+10. Decision and conformance witnesses must carry the same ruleset version as the containing canonical event.
+11. Challenge finalization requires `DecisionRecorded`, a valid challenge set, and expiry of the finality window.
 8. Upheld or open challenges block finalization.
 9. Canonical replay must consume canonical events rather than a parallel hidden `(event, semantic-event)` source.
 10. Conformance is evidence about an implementation; it does not create normative authority.
@@ -99,3 +101,8 @@ The executable replay boundary now fail-closes on two previously unbound history
 The immediate predecessor identifier is also required to differ from the current event identifier, preventing a self-referential predecessor edge.
 
 Existing SHA-256 commitment semantics and serialized commitment bytes are unchanged by this hardening; no commitment migration is introduced.
+
+
+## 2026-09-26 — GOV-28 ruleset binding hardening
+
+The canonical event boundary now binds `ruleset_version` in three places: registry registration, timestamp-effective activation, and embedded Decision/Conformance witness records. A future-effective ruleset cannot be used before its registry effective timestamp, and a witness cannot silently carry a different ruleset version from the canonical event.
