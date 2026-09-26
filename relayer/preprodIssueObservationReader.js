@@ -13,7 +13,109 @@
  * introduced in the relayer.
  */
 
-const { observeEconomicStateCarrier } = require('../dist/preprodEconomicStateObservation')
+function decodeCarrierDatum(utxo) {
+  if (!utxo?.datum || typeof utxo.datum === 'string' || !Array.isArray(utxo.datum.fields) ||
+      utxo.datum.fields.length !== 2) {
+    throw new Error('V3 carrier datum is missing or malformed')
+  }
+  const asInt = (v, field) => {
+    try {
+      const n = typeof v === 'bigint' ? v : BigInt(v?.int ?? v)
+      if (n < 0n) throw new Error()
+      return n
+    } catch {
+      throw new Error('V3 carrier ' + field + ' is not a non-negative integer')
+    }
+  }
+  const root = utxo.datum.fields
+  const stateVersion = asInt(root[0], 'stateVersion')
+  const state = root[1]
+  if (!state || !Array.isArray(state.fields) || state.fields.length !== 9) {
+    throw new Error('V3 carrier state is missing or malformed')
+  }
+  const ints = state.fields.slice(0, 6).map((v, i) => asInt(v, 'state field ' + i))
+  const classesRaw = state.fields[6]
+  if (!Array.isArray(classesRaw) || classesRaw.length !== 8) {
+    throw new Error('V3 carrier must contain exactly 8 classes')
+  }
+  const prices = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n]
+  const classes = classesRaw.map((entry, index) => {
+    if (!entry || !Array.isArray(entry.fields) || entry.fields.length !== 6) {
+      throw new Error('V3 class ' + index + ' is malformed')
+    }
+    const classId = asInt(entry.fields[0], 'classId')
+    const issued = asInt(entry.fields[1], 'issued')
+    const unresolved = asInt(entry.fields[2], 'unresolved')
+    const exposure = asInt(entry.fields[3], 'exposure')
+    const cap = asInt(entry.fields[4], 'cap')
+    const saleable = entry.fields[5]?.index
+    if (classId !== BigInt(index) || unresolved > issued ||
+        exposure !== prices[index] * unresolved ||
+        (saleable !== 0 && saleable !== 1)) {
+      throw new Error('V3 class ' + index + ' violates canonical constraints')
+    }
+    return { classId, issued, unresolved, exposure, cap, saleable: saleable === 1 }
+  })
+  const control = state.fields[7]
+  if (!control || !Array.isArray(control.fields) || control.fields.length !== 2) {
+    throw new Error('V3 control state is malformed')
+  }
+  const currentActiveClass = asInt(control.fields[0], 'currentActiveClass')
+  const highestClassEverActivated = asInt(control.fields[1], 'highestClassEverActivated')
+  if (currentActiveClass > highestClassEverActivated || highestClassEverActivated > 7n) {
+    throw new Error('V3 control state is invalid')
+  }
+  const jackpot = state.fields[8]
+  if (!jackpot || !Array.isArray(jackpot.fields) || jackpot.fields.length !== 4) {
+    throw new Error('V3 jackpot state is malformed')
+  }
+  const lockedAmount = asInt(jackpot.fields[0], 'jackpot.lockedAmount')
+  const threshold = asInt(jackpot.fields[1], 'jackpot.threshold')
+  const cycle = asInt(jackpot.fields[3], 'jackpot.cycle')
+  const status = jackpot.fields[2]?.index
+  if (![0, 1, 2, 3].includes(status)) throw new Error('V3 jackpot status is invalid')
+  const derivedReserve = classes.reduce((sum, c) => sum + c.exposure, 0n)
+  const derivedCount = classes.reduce((sum, c) => sum + c.unresolved, 0n)
+  if (derivedReserve !== ints[1] || derivedCount !== ints[2]) {
+    throw new Error('V3 carrier aggregates do not match class state')
+  }
+  return {
+    stateVersion,
+    state: {
+      crystallizedLiabilities: ints[0],
+      unresolvedReserve: ints[1],
+      unresolvedTicketCount: ints[2],
+      safetyCapital: ints[3],
+      reserveProtection: ints[4],
+      mandatoryFutureCosts: ints[5],
+      classes,
+      control: { currentActiveClass, highestClassEverActivated },
+      jackpot: {
+        lockedAmount,
+        threshold,
+        status: ['inactive', 'locked', 'payable', 'closed'][status],
+        cycle,
+      },
+    },
+  }
+}
+
+async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierTokenNameHex }) {
+  const unit = required(carrierPolicyId, 'carrierPolicyId') + required(carrierTokenNameHex, 'carrierTokenNameHex')
+  const utxos = await lucid.utxosAt(required(carrierAddress, 'carrierAddress'))
+  const matches = utxos.filter((u) => (u.assets?.[unit] ?? 0n) === 1n)
+  if (matches.length !== 1) {
+    throw new Error('V3 economic state carrier is ambiguous: expected exactly one singleton UTxO, found ' + matches.length)
+  }
+  const decoded = decodeCarrierDatum(matches[0])
+  const carrierStateReference = 'cardano:tx/' + exactRef(matches[0], 'V3 carrier')
+  return {
+    ...decoded,
+    carrierStateReference,
+    carrierPolicyId,
+    carrierTokenNameHex,
+  }
+}
 
 function required(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
