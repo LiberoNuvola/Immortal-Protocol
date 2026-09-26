@@ -443,7 +443,7 @@ function decodeU64(
   value: unknown,
   error: string
 ): bigint {
-  if (typeof value !== "string" || !/^\\d+$/.test(value)) {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
     throw new Error(error);
   }
 
