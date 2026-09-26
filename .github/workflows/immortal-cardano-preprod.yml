@@ -16,6 +16,7 @@ on:
       - "PRE-RICH/**"
       - "Adapter/**"
       - "plutus/test/ProjectionBoundaryConformanceTest.hs"
+      - "audit/cardano-integration/preprod-v3-carrier-observation.mjs"
       - ".github/workflows/immortal-cardano-preprod.yml"
 
 jobs:
@@ -104,6 +105,44 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: immortal-cardano-preprod-context
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+
+  preprod-v3-carrier-observation:
+    # Manual only: live deployment witness once V3 identities are configured.
+    # Proves singleton materialization only; it does not assert economics.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 15
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
+      VITE_V3_CARRIER_ADDRESS: ${{ secrets.VITE_V3_CARRIER_ADDRESS }}
+      VITE_V3_CARRIER_POLICY_ID: ${{ secrets.VITE_V3_CARRIER_POLICY_ID }}
+      VITE_V3_CARRIER_TOKEN_NAME_HEX: ${{ secrets.VITE_V3_CARRIER_TOKEN_NAME_HEX }}
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install repository dependencies
+        run: npm ci
+      - name: Validate V3 deployment configuration
+        run: |
+          test -n "$BLOCKFROST_PROJECT_ID"
+          test -n "$VITE_V3_CARRIER_ADDRESS"
+          test -n "$VITE_V3_CARRIER_POLICY_ID"
+          test -n "$VITE_V3_CARRIER_TOKEN_NAME_HEX"
+      - name: Observe exact live Preprod V3 singleton
+        run: node --import tsx/esm audit/cardano-integration/preprod-v3-carrier-observation.mjs
+      - name: Upload V3 carrier evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-v3-carrier-evidence
           path: audit/preprod-evidence/
           if-no-files-found: error
 
