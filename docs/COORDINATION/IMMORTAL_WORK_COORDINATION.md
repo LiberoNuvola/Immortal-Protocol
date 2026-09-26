@@ -8650,3 +8650,18 @@ Commit f81266fc2181453982058feda1ad0f3f27dfd0f8 removes the separate cardano-cry
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — Preprod live evidence GREEN through boundary binding
+
+Run 36221022253 completed successfully on the single-session Preprod pipeline. The live Demeter/Ogmios context probe, wallet UTxO evidence verification, IMMORTAL-to-PRE-RICH Reveal boundary conformance, exact-source binding and evidence upload all passed.
+
+Observed wallet packet: status FUNDED; 28 UTxOs; 9,986,228,222 lovelace (9.986228222 ADA). The packet was bound with SHA-256 e10a4320f6b5ff89427a1930965e8e68a7118d926c33602160ec2bfd3183fd30. The observed context packet also reported the live Preprod tip/epoch at collection time.
+
+### Classification
+- Demeter/Ogmios Preprod context: GREEN / LIVE EVIDENCE.
+- Wallet UTxO acquisition: GREEN / LIVE EVIDENCE.
+- Wallet funding: VERIFIED at observation time.
+- IMMORTAL -> PRE-RICH Reveal boundary conformance: GREEN for the executable boundary suite.
+- Exact source/observation binding: GREEN.
+- Real Preprod transaction submission: OPEN.
+- P2.8 native evaluator: OPEN.
