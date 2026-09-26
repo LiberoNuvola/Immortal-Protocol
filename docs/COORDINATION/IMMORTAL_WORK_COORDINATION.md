@@ -1679,3 +1679,11 @@ CI for the latest wallet commits is not yet observed; no green status is claimed
 - Deployment helper remains fail-closed and requires explicit `V3_CARRIER_INITIAL_DATUM_CBOR`.
 - Closure requires an explicit deployment profile covering all eight classes, caps, control, protected-capital fields, Jackpot state, version and reproducible datum encoding.
 - Once declared, proceed directly to singleton deployment → exact observation → Issue-state binding → first DEMETER/CIP-30 Issue.
+
+
+## 37. V3 INITIAL DATUM STRUCTURAL HARDENING — 2026-09-26
+
+- `scripts/deployV3Carrier.ts` now validates the supplied initial CBOR as the complete `V3EconomicStateDatum` shape before constructing any transaction.
+- The gate requires: 8 canonical classes 0..7; non-negative fields; unresolved <= issued; exact class exposure; reserve/count sums; valid control bounds; active class present, saleable and below cap; valid Jackpot state/status.
+- This is structural validation only. It does not invent or certify deployment-specific caps/protected-capital values.
+- The deployment remains blocked until an explicit PRE-RICH deployment profile supplies those values and their authority/derivation.
