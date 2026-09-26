@@ -8687,3 +8687,18 @@ Current branch head remains subject to concurrent advancement by other sessions.
 
 ### Non-regression
 No economic constant, validator semantics, oracle rule, expiry duration, fee value, authority-selection algorithm or protocol limit was changed by this triangulation.
+
+## 2026-09-26 — P2.8 Byron spec package materialization repaired
+
+Run 36221067906 (P2.8 run 528) crossed native bootstrap and the crypto compatibility matrix, then Cabal failed at cardano-ledger-byron-1.3.0.0 because byron-spec-ledger was reported as an unknown package. The exact f649f975 ledger source contains byron-spec-ledger-1.1.0.2 and byron-spec-chain-1.0.1.2, and cardano-ledger-byron explicitly depends on both.
+
+Commit 338daa4344cf19616f073fab05f16c6bcc7c8ba4 keeps the f649f975 ledger source unchanged but exposes the two Byron executable-spec subdirectories as explicit source-repository-package entries, removing ambiguity in Cabal 3.12 package materialization. No allow-newer or source-semantic override is introduced.
+
+### Classification
+- Native bootstrap: TRAVERSED.
+- Crypto matrix: TRAVERSED TO RESOLVER.
+- Byron spec package materialization: REPAIRED — FRESH RUN REQUIRED.
+- Typed ledger context: OPEN.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
