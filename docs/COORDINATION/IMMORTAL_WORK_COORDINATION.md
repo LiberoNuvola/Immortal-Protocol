@@ -8189,3 +8189,22 @@ No protocol, validator, economic, authority-selection or ledger semantics change
 
 **USER QUESTION:** NONE.
 
+
+
+## 2026-09-26 — P2.8 bootstrap repair: Dijkstra ledger package
+
+Run `36219274851` reached the full native bootstrap and failed during Cabal resolution with:
+`cardano-ledger-api-1.14.0.0 -> unknown package: cardano-ledger-dijkstra`.
+
+Direct inspection of the pinned upstream `cardano-ledger` snapshot `f649f9751074d2ab3de033fc3912f29c9862c1f5` confirms that `cardano-ledger-api-1.14.0.0` depends on `cardano-ledger-dijkstra >=0.3`, and the upstream project includes `eras/dijkstra/impl`. The runner's source package list had omitted that subdirectory.
+
+The runner now includes `eras/dijkstra/impl` under the existing pinned `IntersectMBO/cardano-ledger` source package. Commit: `4ed319172f32e2b16fe15e210a04d4710e1d6503`.
+
+### Classification
+- Native crypto bootstrap: **TRAVERSED**.
+- GHC/Cabal setup: **TRAVERSED** on the failing run.
+- Cabal dependency resolution: **Dijkstra package omission identified and repaired**.
+- Typed context decode: **NOT YET OBSERVED on an exact post-fix run**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- Preprod live context: **OPEN — DEMETER_API_KEY still absent in observed runner environment**.
+- No economic, validator, authority-selection, oracle, or evaluator-semantic changes.
