@@ -6,8 +6,8 @@
 >
 > **Working branch:** `work/immortal-green-closure`
 > **Snapshot:** 2026-09-26
-> **Observed HEAD:** `c598b9abf2a8ec931c0128d226584c699d6dfcae`
-> **HEAD change:** `docs: refine explicit protocol activity declaration`
+> **Observed HEAD:** `2f99e940b2342a41dfa73a03d0aa96fa40365dd3`
+> **HEAD change:** `docs: reorganize cross-session coordination by triangulated fronts`
 
 ---
 
