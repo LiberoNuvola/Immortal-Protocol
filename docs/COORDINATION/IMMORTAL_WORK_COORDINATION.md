@@ -8880,3 +8880,12 @@ The pinned f649f975 Cardano-ledger source does contain `libs/cardano-protocol`. 
 - Fix commit: `902a7b592f9537e73f506a3498aafe4dff3e7c58`; exact-head P2.8 run `36222605699` is queued.
 - Classification: resolver frontier **REPAIRED — fresh run required**; typed-context decode and native `evalTxExUnitsWithLogs` remain **OPEN**.
 - No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
+
+## 2026-09-26 — P2.8 microlens compatibility frontier
+
+- Cardano Ledger Audit Runner run `36222605693` reached compilation after the `plutus-tx` resolver repair and exposed the next concrete dependency mismatch in `cardano-prelude-0.2.0.0`: `Field1..Field5` are imported from `Lens.Micro.Internal`, but microlens `0.5.x` moved those definitions to `Lens.Micro`.
+- The runner `cabal.project` now pins `microlens == 0.4.14.0` for the pinned Cardano prelude source.
+- Repair commit: `9ec325e1ca7be43d573ce71560824d9134e1bea1`; audit branch advanced to the same exact head.
+- P2.8 remains **OPEN / fresh native run required**. The existing run `36223012451` predates this pin and therefore cannot certify the repaired head.
+- Required closure evidence remains unchanged: exact typed UTxO/PParams/EpochInfo/SystemStart decode, native Babbage evaluation, redeemer/ex-unit report, and binding evidence.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
