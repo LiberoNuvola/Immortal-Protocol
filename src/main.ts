@@ -17,11 +17,32 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <div class="toolbar">
       <button id="connect">Connect Wallet</button>
+      <button id="change-wallet" hidden>Change Wallet</button>
       <button id="buy">Buy Tickets</button>
       <button id="claim">Claim Prize</button>
     </div>
 
-    <div id="wallet-info"><span id="wallet-balance">Balance: Not connected</span></div>
+    <div id="wallet-info" class="wallet-panel">
+      <div class="wallet-panel__identity">
+        <span id="wallet-icon" class="wallet-icon" aria-hidden="true">◌</span>
+        <span>
+          <strong id="wallet-name">Wallet not connected</strong>
+          <small id="wallet-address">Connect a CIP-30 wallet to continue.</small>
+        </span>
+      </div>
+      <span id="wallet-balance">Balance: —</span>
+    </div>
+    <div id="wallet-picker" class="wallet-picker" hidden>
+      <div class="wallet-picker__backdrop"></div>
+      <section class="wallet-picker__dialog" role="dialog" aria-modal="true" aria-labelledby="wallet-picker-title">
+        <button id="wallet-picker-close" class="wallet-picker__close" aria-label="Close">×</button>
+        <span class="eyebrow">CIP-30</span>
+        <h2 id="wallet-picker-title">Choose your wallet</h2>
+        <p>Connect an injected Cardano wallet. Your wallet keeps custody of your keys and approves every transaction.</p>
+        <div id="wallet-options" class="wallet-options"></div>
+        <small class="wallet-picker__hint">Preprod only · no seed phrase or private key is requested.</small>
+      </section>
+    </div>
 
     <section class="card">
       <h2>Your certified ticket</h2>
@@ -95,25 +116,116 @@ const renderLastCertifiedTicket = async () => {
 }
 
 const connectBtn = document.getElementById('connect') as HTMLButtonElement | null
+const changeWalletBtn = document.getElementById('change-wallet') as HTMLButtonElement | null
+const walletPicker = document.getElementById('wallet-picker') as HTMLElement | null
+const walletOptions = document.getElementById('wallet-options') as HTMLElement | null
+const walletPickerClose = document.getElementById('wallet-picker-close') as HTMLButtonElement | null
+const walletNameEl = document.getElementById('wallet-name') as HTMLElement | null
+const walletAddressEl = document.getElementById('wallet-address') as HTMLElement | null
+const walletIconEl = document.getElementById('wallet-icon') as HTMLElement | null
 let connected = false
+
+function shortAddress(address: string) {
+  return address.length > 18 ? address.slice(0, 10) + '…' + address.slice(-8) : address
+}
+
+function openWalletPicker() {
+  if (!walletPicker || !walletOptions) return
+  const options = wallet.discover()
+  walletOptions.innerHTML = ''
+  if (!options.length) {
+    walletOptions.innerHTML = '<div class="wallet-empty">No CIP-30 wallet detected. Install a Cardano wallet extension and reload this page.</div>'
+  } else {
+    for (const option of options) {
+      const button = document.createElement('button')
+      button.className = 'wallet-option'
+      button.type = 'button'
+      const icon = document.createElement('img')
+      icon.className = 'wallet-option__icon'
+      icon.alt = ''
+      icon.src = option.icon || ''
+      icon.hidden = !option.icon
+      const fallback = document.createElement('span')
+      fallback.className = 'wallet-option__fallback'
+      fallback.textContent = '◌'
+      fallback.hidden = !!option.icon
+      const label = document.createElement('span')
+      label.className = 'wallet-option__label'
+      label.textContent = option.name
+      const meta = document.createElement('small')
+      meta.textContent = option.apiVersion ? 'CIP-30 · API ' + option.apiVersion : 'CIP-30 wallet'
+      button.append(icon, fallback, label, meta)
+      button.addEventListener('click', async () => {
+        try {
+          closeWalletPicker()
+          const res = await wallet.connect(option.id)
+          connected = true
+          connectBtn!.textContent = 'Disconnect'
+          if (changeWalletBtn) changeWalletBtn.hidden = false
+          if (walletNameEl) walletNameEl.textContent = res.walletName
+          if (walletAddressEl) walletAddressEl.textContent = shortAddress(res.address)
+          if (walletIconEl) {
+            walletIconEl.textContent = ''
+            if (option.icon) {
+              const img = document.createElement('img')
+              img.src = option.icon
+              img.alt = ''
+              walletIconEl.appendChild(img)
+            } else walletIconEl.textContent = '◌'
+          }
+          const bal = await ui.refreshBalance().catch(() => '—')
+          ui.updateWalletUI(true, res.address, bal)
+          status('Connected to ' + res.walletName)
+        } catch (e: any) {
+          status('Wallet connection error: ' + (e.message || e))
+        }
+      })
+      walletOptions.appendChild(button)
+    }
+  }
+  walletPicker.hidden = false
+}
+
+function closeWalletPicker() {
+  if (walletPicker) walletPicker.hidden = true
+}
+
 connectBtn?.addEventListener('click', async () => {
   if (connected) {
     await wallet.disconnect()
     connected = false
     connectBtn.textContent = 'Connect Wallet'
+    if (changeWalletBtn) changeWalletBtn.hidden = true
+    if (walletNameEl) walletNameEl.textContent = 'Wallet not connected'
+    if (walletAddressEl) walletAddressEl.textContent = 'Connect a CIP-30 wallet to continue.'
+    if (walletIconEl) walletIconEl.textContent = '◌'
     status('Disconnected')
     return
   }
-  try {
-    const res = await wallet.connect()
-    connected = true
-    connectBtn.textContent = 'Disconnect'
-    const bal = await ui.refreshBalance().catch(() => '—')
-    ui.updateWalletUI(true, res.address, bal)
-    status('Connected: ' + res.address)
-  } catch (e: any) {
-    status('Connect error: ' + (e.message || e))
-  }
+  openWalletPicker()
+})
+
+changeWalletBtn?.addEventListener('click', openWalletPicker)
+walletPickerClose?.addEventListener('click', closeWalletPicker)
+walletPicker?.querySelector('.wallet-picker__backdrop')?.addEventListener('click', closeWalletPicker)
+
+wallet.on('accountChanged', async (session) => {
+  if (!session) return
+  connected = true
+  if (walletAddressEl) walletAddressEl.textContent = shortAddress(session.address)
+  const bal = await ui.refreshBalance().catch(() => '—')
+  ui.updateWalletUI(true, session.address, bal)
+  status('Wallet account changed')
+})
+
+wallet.on('networkChanged', () => {
+  status('Wallet network changed. PRE-RICH remains locked to Preprod.')
+})
+
+wallet.on('disconnect', () => {
+  connected = false
+  if (connectBtn) connectBtn.textContent = 'Connect Wallet'
+  if (changeWalletBtn) changeWalletBtn.hidden = true
 })
 
 document.getElementById('claim')?.addEventListener('click', async () => {
