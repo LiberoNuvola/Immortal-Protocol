@@ -18,7 +18,10 @@
  */
 import 'dotenv/config'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { applyParamsToScript, Data, Lucid, type Script, type UTxO } from 'lucid-cardano'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const { applyParamsToScript, Data, Lucid } = require('lucid-cardano') as typeof import('lucid-cardano')
+import type { Script, UTxO } from 'lucid-cardano'
 import { buildPreRichPreprodInitialDatum } from '../src/preprodV3InitialDatum'
 
 type ScriptEnvelope = { type: string; cborHex: string }
