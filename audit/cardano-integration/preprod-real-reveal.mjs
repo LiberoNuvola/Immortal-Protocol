@@ -62,7 +62,18 @@ async function waitFor(fn, predicate, label) {
 
 const provider = new Koios(KOIOS)
 const lucid = await Lucid(provider, 'Preprod')
-lucid.selectWallet.fromSeed(SEED)
+
+let walletMode = 'mnemonic'
+try {
+  lucid.selectWallet.fromSeed(SEED)
+} catch (mnemonicError) {
+  try {
+    lucid.selectWallet.fromPrivateKey(SEED)
+    walletMode = 'private-key'
+  } catch {
+    throw mnemonicError
+  }
+}
 
 const address = await lucid.wallet().address()
 if (address !== EXPECTED_ADDRESS) {
@@ -74,6 +85,7 @@ if (!keyHash) throw new Error('Preprod wallet has no payment credential')
 
 const walletBefore = await provider.getUtxos(address)
 const balanceBefore = walletBefore.reduce((s, u) => s + (u.assets.lovelace ?? 0n), 0n)
+console.log(JSON.stringify({ walletMode, walletAddressVerified: address === EXPECTED_ADDRESS, utxoCount: walletBefore.length, lovelaceBalance: balanceBefore.toString() }, null, 2))
 if (balanceBefore < 20_000_000n) {
   throw new Error('Preprod wallet needs at least 20 ADA for the complete Reveal evidence sequence')
 }
