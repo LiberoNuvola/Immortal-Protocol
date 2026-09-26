@@ -8432,3 +8432,16 @@ Classification:
 - Audit false assumption: **REPAIRED**.
 - Fresh mutator-surface CI: **PENDING**.
 - No economic or validator semantics changed.
+
+
+## 2026-09-26 — Economic Mutator Surface expiry audit aligned
+
+Run `36220246965` reached the corrected Issue topology but failed on the expiry test inventory because the checker required the literal token `expire`. The actual test API is `refinesAggregateExpire` in `src/__tests__/preRichExpireRefinement.test.ts`, with multiple explicit rejection cases.
+
+Commit `a1d02ad2b403e8d554b52aaf15410de299af0038` changes the checker to require the real refinement function name while retaining the negative-twin regex requirement.
+
+Classification:
+- Economic mutator implementation: **PRESENT** for Issue/Reveal/Claim/Expire.
+- Economic mutator audit: **CORRECTED**.
+- Fresh surface CI: **PENDING**.
+- No economic or validator semantics changed.
