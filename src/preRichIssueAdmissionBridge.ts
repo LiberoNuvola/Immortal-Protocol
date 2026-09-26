@@ -13,6 +13,11 @@ import {
   assertEconomicAdmission,
   type EconomicAdmissionWitness,
 } from '../Adapter/CARDANO/runtime/EconomicAdmission'
+
+import {
+  assertEconomicAdmissionMatchesCanonicalEvidence,
+} from '../Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding'
+import type { CanonicalTransitionEvidence } from '../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
 import {
   validateIssueRefinementEvidence,
   issueClassSaleable,
@@ -69,4 +74,20 @@ export async function obtainAuthoritativeIssueAdmission(
   }
 
   return witness
+}
+
+/**
+ * Binds the Issue admission witness to the canonical transition-evidence
+ * packet that records the same action, pre-state and candidate post-state.
+ * This is evidence binding only: it does not manufacture the fingerprints
+ * or certify the authoritative observation that produced the witness.
+ */
+export function assertIssueAdmissionMatchesCanonicalEvidence(
+  admission: EconomicAdmissionWitness,
+  evidence: CanonicalTransitionEvidence,
+): void {
+  assertEconomicAdmissionMatchesCanonicalEvidence(admission, evidence)
+  if (admission.actionClass !== 'Issue') {
+    throw new Error('Issue admission evidence binding requires actionClass=Issue')
+  }
 }
