@@ -38,6 +38,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as Text
 import qualified Data.Text.Read as TR
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Lens.Micro ((^.))
 import YaciUTxO (decodeYaciUTxO)
 
@@ -57,16 +58,19 @@ decodeBabbageUTxO = decodeYaciUTxO
 decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
   root <- eitherDecodeStrict' bytes
-  raw <- textAt root ["startTimeRaw"]
-  seconds <- parseInteger "startTimeRaw" raw
-  if seconds < 0
-    then Left "INVALID_SYSTEM_START"
-    else
-      case objectField root "schema" of
-        Right (String schema)
-          | schema == "IMMORTAL-P2.8-OGMIOS-SYSTEM-START-v0.1" ->
-              Right (SystemStart (posixSecondsToUTCTime (fromInteger seconds)))
-        _ -> do
+  case objectField root "schema" of
+    Right (String schema)
+      | schema == "IMMORTAL-P2.8-OGMIOS-SYSTEM-START-v0.1" -> do
+          raw <- textAt root ["startTimeRaw"]
+          case parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%QZ" (Text.unpack raw) of
+            Just startTime -> Right (SystemStart startTime)
+            Nothing -> Left "INVALID_OGMIOS_SYSTEM_START"
+    _ -> do
+      raw <- textAt root ["startTimeRaw"]
+      seconds <- parseInteger "startTimeRaw" raw
+      if seconds < 0
+        then Left "INVALID_SYSTEM_START"
+        else do
           yaciInfo <- textAt root ["rawInfo"]
           yaciStart <- parseLabeledInteger "Start Time" yaciInfo
           if yaciStart /= seconds
