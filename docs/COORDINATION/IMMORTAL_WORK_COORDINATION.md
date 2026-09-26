@@ -425,6 +425,25 @@ A/B are not parallel production acceptance paths. D must advance only from verif
 
 **Status: 🟡 IMPLEMENTATION TASK OPEN / REAL FIXTURE + VERIFICATION OPEN**
 
+## F5.5b — IMMORTAL-side execution-proof consumer boundary
+
+The IMMORTAL-side adapter now requires an explicit MateriosExecutionProofVerifier before an external-runtime evidence envelope can cross into VerifiedAuthoritySetTransition.
+
+The adapter enforces:
+- explicit external-runtime evidence class;
+- execution-proof chain binding to the canonical checkpoint;
+- execution-proof block binding to the finalized checkpoint;
+- proof-system agreement with the authority-transition statement;
+- injected execution-proof verification before authority-transition verification.
+
+The adapter does not implement Materios execution-proof cryptography, authority selection, GRANDPA verification, or runtime execution.
+
+Two bounded tests cover:
+- rejection when the execution-proof verifier returns false;
+- crossing the boundary only when both execution-proof and authority-transition verifiers accept.
+
+**Status: 🟡 IMMORTAL CONSUMER BOUNDARY CLOSED / REAL CRYPTOGRAPHIC VERIFIER + REAL MATERIOS WITNESS OPEN**
+
 ## F5.5a — Real Materios fixture contract
 
 Added `poc/materios-grandpa/test/MATERIOS-B3-REAL-FIXTURE-CONTRACT-v1.md`.
