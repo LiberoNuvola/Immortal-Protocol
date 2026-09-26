@@ -1,4 +1,4 @@
-name: IMMORTAL Preprod DApp Pages
+name: IMMORTAL Public Pages
 
 on:
   workflow_dispatch:
@@ -37,21 +37,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    environment: DEMETER
-    env:
-      VITE_BLOCKFROST_PREPROD_URL: https://cardano-preprod.blockfrost.io/api/v0
-      VITE_BLOCKFROST_PROJECT_ID: ${{ secrets.VITE_BLOCKFROST_PROJECT_ID }}
-      VITE_COUNTER_SCRIPT_ADDRESS: ${{ secrets.VITE_COUNTER_SCRIPT_ADDRESS }}
-      VITE_TREASURY_ADDRESS: ${{ secrets.VITE_TREASURY_ADDRESS }}
-      VITE_TICKET_POLICY_ID: ${{ secrets.VITE_TICKET_POLICY_ID }}
-      VITE_RELAYER_PKH: ${{ secrets.VITE_RELAYER_PKH }}
-      VITE_ORACLE_PUBLISHER_PKH: ${{ secrets.VITE_ORACLE_PUBLISHER_PKH }}
-      VITE_ORACLE_STATE_POLICY_ID: ${{ secrets.VITE_ORACLE_STATE_POLICY_ID }}
-      VITE_ORACLE_STATE_TOKEN_NAME_HEX: ${{ secrets.VITE_ORACLE_STATE_TOKEN_NAME_HEX }}
-      VITE_B1_POOL_TOKEN_POLICY_ID: ${{ secrets.VITE_B1_POOL_TOKEN_POLICY_ID }}
-      VITE_B1_POOL_TOKEN_NAME_HEX: ${{ secrets.VITE_B1_POOL_TOKEN_NAME_HEX }}
-      VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS: ${{ secrets.VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS }}
-      VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS: ${{ secrets.VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS }}
+    # Public protocol pages do not require DEMETER/Preprod secrets at build time.
+    # PRE-RICH runtime actions remain fail-closed when authoritative evidence is absent.
     steps:
       - name: Checkout exact Green Closure head
         uses: actions/checkout@v4
@@ -64,35 +51,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Validate required Preprod DApp configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-          missing=0
-          for name in \
-            VITE_BLOCKFROST_PROJECT_ID \
-            VITE_COUNTER_SCRIPT_ADDRESS \
-            VITE_TREASURY_ADDRESS \
-            VITE_TICKET_POLICY_ID \
-            VITE_RELAYER_PKH \
-            VITE_ORACLE_PUBLISHER_PKH \
-            VITE_ORACLE_STATE_POLICY_ID \
-            VITE_ORACLE_STATE_TOKEN_NAME_HEX \
-            VITE_B1_POOL_TOKEN_POLICY_ID \
-            VITE_B1_POOL_TOKEN_NAME_HEX \
-            VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS \
-            VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS
-          do
-            if [ -z "${!name:-}" ]; then
-              echo "missing required Pages environment secret: $name"
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            echo "Preprod Pages build is intentionally blocked until all required configuration is supplied."
-            exit 1
-          fi
 
       - name: Build V5 + PRE-RICH DApp
         run: npm run build
