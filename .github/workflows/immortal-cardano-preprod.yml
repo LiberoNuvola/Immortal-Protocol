@@ -10,8 +10,11 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "audit/cardano-integration/preprod-ogmios-context.mjs"
-      - "audit/cardano-integration/package.json"
+      - "audit/cardano-integration/**"
+      - "audit/cardano-ledger-runner/**"
+      - "PRE-RICH/**"
+      - "Adapter/**"
+      - "plutus/test/ProjectionBoundaryConformanceTest.hs"
       - ".github/workflows/immortal-cardano-preprod.yml"
 
 jobs:
