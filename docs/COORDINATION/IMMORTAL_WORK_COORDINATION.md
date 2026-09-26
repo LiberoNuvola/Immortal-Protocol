@@ -1892,3 +1892,35 @@ This can unlock the blocker because Gate 41 already establishes the exact histor
 Fail-closed: do not send PRE from Lace, create a second policy, or promote Yaci synthetic PRE.
 
 **STATUS: OPERATOR INPUT AVAILABLE — HISTORICAL PRE WITNESS ACQUISITION READY**
+
+
+# 43. HISTORICAL PRE MINTING POLICY WITNESS — CLOSED — 2026-09-26
+
+The historical PRE minting-policy witness has now been recovered from the supplied transaction evidence for `0235e186550383a53855a9727c02ceeb93d16956b3ae049ac367d85d291c6cf4`.
+
+## Closed evidence chain
+
+- Historical PRE policy: `1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c4`
+- Asset: `PRE-RICH` / `5052452d52494348`
+- Mint quantity: `1,000,000,000`
+- Script type: PlutusV2
+- Script witness length: 381 bytes
+- Mint redeemer index: 0
+- Mint redeemer: `{"int":1}`
+- Transaction validity: valid
+- Witness set: 3 Plutus scripts, 0 native scripts
+- Exact script witness recorded in `audit/gate41/HISTORICAL-PRE-MINTING-POLICY-WITNESS-v0.1.md`.
+
+This closes the previously OPEN historical-policy acquisition gap. The acceptance criterion is now satisfied by an observed witness whose declared script hash is exactly the canonical PRE policy ID; no synthetic or reconstructed policy was introduced.
+
+## Boundary that remains open
+
+This does **not** close canonical PRE materialization on Preprod.
+
+The remaining deployment gate is still:
+
+`historical canonical PRE identity + policy witness -> authoritative Preprod materialization -> observed PRE-bearing Treasury UTxO -> Genesis admission -> V3 state -> first CIP-30 user`.
+
+The first-user wallet must not be required to already hold PRE.
+
+**STATUS: 🟢 HISTORICAL PRE POLICY WITNESS CLOSED / 🟡 PREPROD MATERIALIZATION OPEN**
