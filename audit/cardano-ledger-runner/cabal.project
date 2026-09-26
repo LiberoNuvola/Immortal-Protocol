@@ -42,6 +42,7 @@ source-repository-package
     eras/mary/impl
     eras/alonzo/impl
     eras/babbage/impl
+    eras/conway/impl
     eras/dijkstra/impl
     libs/cardano-ledger-core
     libs/cardano-ledger-api
