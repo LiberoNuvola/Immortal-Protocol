@@ -8619,3 +8619,16 @@ The following wallet UTxO step then failed with HTTP 401 despite using the same 
 - Real Preprod transaction: OPEN.
 - P2.8 native evaluator: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — Preprod UTxO observation made single-session
+
+Run 36220953002 proved live Demeter connectivity and produced a fresh Preprod context, but the second WebSocket used by preprod-wallet-utxo.mjs immediately returned HTTP 401. The same Demeter credential had already connected successfully in the preceding context step.
+
+To eliminate the second-handshake boundary, commit c4309e8513795c7ebe86dbdcdd4379ad142a7c32 makes preprod-ogmios-context.mjs query queryLedgerState/utxo for PREPROD_WALLET_ADDRESS on the same authenticated WebSocket session and emit the canonical preprod-wallet-utxo.json, checksum and summary. Commit a9e29dd94b6dd5f0ab25c202a68418124262dc0e changes the workflow to verify those files rather than opening a second Ogmios connection. The standalone wallet probe remains available and now trims its inputs.
+
+### Classification
+- Demeter Ogmios context: PROVEN by live artifact.
+- Preprod wallet UTxO acquisition path: REPAIRED TO SINGLE SESSION — FRESH RUN REQUIRED.
+- Wallet funding: OPEN until live UTxO packet reports the observed balance.
+- Real Preprod transaction: OPEN.
+- P2.8 native evaluator: OPEN.
