@@ -1349,3 +1349,25 @@ STATUS: IN PROGRESS
 BLOCKER: authoritative EconomicAdmissionWitness producer for Issue
 NEXT CONCRETE WITNESS: executable Issue-admission bridge, then real DEMETER-signed Preprod Issue
 FILES/COMMITS: d6ea9d7, 43ccd28, f05f1ab
+
+
+# 27. ISSUE ADMISSION BRIDGE — TRIANGULATED STATUS — 2026-09-26
+
+Repository + Notion triangulation confirms the first-user blocker is an implementation/conformance gap, not an unresolved economic-policy decision.
+
+- The Haskell `PreRichEconomicAdmission` path already composes transition validity, PRE-RICH projection, explicit EEV, executable liquidity, truth/freshness/obligation checks and the IMMORTAL Economic Gate.
+- The Cardano Adapter correctly refuses economic submission without `EconomicAdmissionWitness`.
+- `mintSerialNFT` already binds `Issue`, the canonical ticket refinement evidence, the authenticated B1 PrizePool input and the liquidity source inputs before signing.
+- The current frontend has no authoritative producer for that witness.
+- The legacy B1 pool datum can expose aggregate quantities, but `B1LegacyAdapter` explicitly marks the lossless V3 projection unavailable when unresolved tickets, protected-capital fields, class composition or full Jackpot lifecycle are required. Therefore it cannot be silently promoted to canonical V3 admission for a live Issue.
+- Notion's current Control Center independently confirms that the remaining gap is implementation/conformance/evidence and that the relayer is not economic authority.
+
+Consequently, the next valid implementation is an observation/refinement bridge that obtains the complete authoritative PRE-RICH economic state required by `PreRichEconomicAdmission`, binds it to the exact Preprod singleton inputs, and emits a replayable witness. A frontend-generated witness, a synthetic zero protected-capital state, or reuse of a Haskell fixture as live authority is prohibited.
+
+The first-user path remains fail-closed until this bridge exists.
+
+## Additional CI hardening
+
+The submitted-transaction Preprod ledger evidence workflow now also preserves an in-flight evidence run (`cancel-in-progress: false`).
+
+Commit: `2882a9a2b824682f7ad7619f2da8c3cbf3e0bc1e`.
