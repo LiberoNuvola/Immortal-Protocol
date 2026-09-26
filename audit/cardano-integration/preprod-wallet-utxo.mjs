@@ -104,12 +104,12 @@ try {
     rawOgmiosUtxoResult: utxoRaw,
   }
 
-  const body = JSON.stringify(observations, null, 2) + '\\n'
+  const body = JSON.stringify(observations, null, 2) + '\n'
   await writeFile(`${evidenceDir}/preprod-wallet-utxo.json`, body)
   const digest = createHash('sha256').update(body).digest('hex')
   await writeFile(
     `${evidenceDir}/preprod-wallet-utxo.sha256`,
-    `${digest}  preprod-wallet-utxo.json\\n`,
+    `${digest}  preprod-wallet-utxo.json\n`,
   )
 
   const summary = [
@@ -122,7 +122,7 @@ try {
     `lovelace_balance=${lovelace}`,
     `network_tip=${JSON.stringify(tip)}`,
     `utxo_packet_sha256=${digest}`,
-  ].join('\\n') + '\\n'
+  ].join('\n') + '\n'
 
   await writeFile(`${evidenceDir}/preprod-wallet-summary.txt`, summary)
   console.log(summary)
