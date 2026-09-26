@@ -18,6 +18,7 @@
     "admin:treasury": "node scripts/admin-treasury.js",
     "test:predeploy": "node --experimental-strip-types scripts/predeploy-check.mjs",
     "deploy:counter": "tsx scripts/deployCounter.ts",
-    "deploy:v3-carrier": "tsx scripts/deployV3Carrier.ts"
+    "deploy:v3-carrier": "tsx scripts/deployV3Carrier.ts",
+    "v3:initial-datum": "tsx scripts/printV3InitialDatum.ts"
   }
 }
