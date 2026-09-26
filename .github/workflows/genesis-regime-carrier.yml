@@ -7,6 +7,8 @@ on:
     paths:
       - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
       - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/profile/V3EconomicStateCarrierMintPolicy.hs"
+      - "PRE-RICH/profile/V3EconomicStateCarrier.hs"
       - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
       - "PRE-RICH/profile/PreRichRegimeState.hs"
       - "plutus/Types.hs"
@@ -96,6 +98,8 @@ jobs:
         run: |
           test -s plutus/out/genesisRegimeCarrier.plutus.json
           test -s plutus/out/genesisCarrierMintPolicy.plutus.json
+          test -s plutus/out/v3EconomicStateCarrier.plutus.json
+          test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
