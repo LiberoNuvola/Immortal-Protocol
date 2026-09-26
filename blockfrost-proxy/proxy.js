@@ -1,7 +1,10 @@
 const express = require('express');
 const app = express();
 
-const BLOCKFROST_API_KEY = 'preprod3FmQltcPTAbSPrSohDoMXkuNAm6uCmE3';
+const BLOCKFROST_API_KEY = process.env.BLOCKFROST_API_KEY;
+if (!BLOCKFROST_API_KEY) {
+  throw new Error('BLOCKFROST_API_KEY is required; do not commit provider credentials.');
+}
 
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
