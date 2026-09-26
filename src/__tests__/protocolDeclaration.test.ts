@@ -4,6 +4,7 @@ import {
   LIFE_STATES,
   OPERATIONAL_STATUSES,
   PROTOCOL_ACTIVITIES,
+  activityFromObservedLifecycle,
   declarationPublishable,
   isBeaconTrustMode,
   isLifeState,
@@ -43,6 +44,15 @@ describe('Protocol Declaration Layer', () => {
     expect(isProtocolActivity('SELLING_ASSET')).toBe(true)
     expect(isOperationalStatus('DEGRADED')).toBe(true)
     expect(isBeaconTrustMode('B2_ATTESTED')).toBe(true)
+  })
+
+  it('maps only observed lifecycle values into public activity', () => {
+    expect(activityFromObservedLifecycle('ISSUING')).toEqual({ kind: 'ISSUING' })
+    expect(activityFromObservedLifecycle('AWAITING_FINALITY')).toEqual({
+      kind: 'AWAITING_FINALITY',
+    })
+    expect(activityFromObservedLifecycle('SETTLING')).toEqual({ kind: 'SETTLING' })
+    expect(activityFromObservedLifecycle('IDLE')).toEqual({ kind: 'IDLE' })
   })
 
   it('rejects unknown public vocabulary values', () => {
