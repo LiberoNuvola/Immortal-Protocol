@@ -8455,3 +8455,18 @@ Classification:
 - Economic mutator surface inventory: **VERIFIED**.
 - This is structural/conformance evidence, not a theorem proof or external on-chain execution proof.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — Preprod conformance binding JSON writer repaired
+
+Run `36220283933` proved that Demeter/Ogmios context, live wallet UTxO acquisition, and the IMMORTAL/PRE-RICH Reveal boundary conformance all succeeded. The run then failed only in `preprod-conformance-binding.mjs`: `JSON.parse` reported a non-whitespace character after the final JSON object.
+
+Root cause: the binding writer appended the two-character literal sequence `\\n` instead of a real newline to both the JSON packet and its SHA sidecar. Commit `2a613ca5a835c9c15da450c8ea18f2af5f01772d` writes real newlines.
+
+Classification:
+- Demeter/Ogmios context: **VERIFIED**.
+- Live wallet funding: **VERIFIED**.
+- Reveal boundary conformance: **VERIFIED** in run `36220283933`.
+- Preprod conformance binding packet: **WRITER BUG REPAIRED / FRESH RUN REQUIRED**.
+- Real submitted Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
