@@ -54,7 +54,7 @@ describe('Preprod V3 economic state carrier observer', () => {
     )
   })
 
-  it('rejects unsupported Jackpot lifecycle states instead of collapsing them', async () => {
+  it('decodes payable Jackpot lifecycle state without collapsing it', async () => {
     const fields = new Constr(0, [
       0n, 0n, 0n, 0n, 0n, 0n,
       Array.from({ length: 8 }, (_, i) =>
@@ -64,14 +64,12 @@ describe('Preprod V3 economic state carrier observer', () => {
       new Constr(0, [0n, 0n, new Constr(2, []), 0n]),
     ])
     const utxo = { ...baseUtxo, datum: Data.to(new Constr(0, [0n, fields])) }
-    await assert.rejects(
-      observeEconomicStateCarrier({
-        lucid: lucidWith([utxo]),
-        carrierAddress: 'addr_test1carrier',
-        carrierPolicyId: 'aa'.repeat(28),
-        carrierTokenNameHex: '5354415445',
-      }),
-      /Jackpot state is invalid/,
-    )
+    const observed = await observeEconomicStateCarrier({
+      lucid: lucidWith([utxo]),
+      carrierAddress: 'addr_test1carrier',
+      carrierPolicyId: 'aa'.repeat(28),
+      carrierTokenNameHex: '5354415445',
+    })
+    assert.equal(observed.state.jackpot.status, 'payable')
   })
 })
