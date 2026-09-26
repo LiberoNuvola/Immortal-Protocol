@@ -3,7 +3,9 @@ import {
   isObservationFresh,
   validateActionDeclaration,
   validateModeDeclaration,
+  validatePublicStateSnapshot,
 } from '../publicStateValidation'
+import type { PublicStateSnapshot } from '../publicStateSnapshot'
 
 describe('public state validation', () => {
   it('rejects contradictory action availability', () => {
@@ -33,6 +35,23 @@ describe('public state validation', () => {
       evidenceRef: 'evidence:1',
       observedAt: '2026-09-26T07:00:00Z',
     }).valid).toBe(false)
+  })
+
+  it('rejects a public snapshot with an evidence-less active class', () => {
+    const snapshot = {
+      publicState: {
+        activeClass: {
+          classId: 1,
+          status: 'ACTIVE',
+          evidenceRef: '',
+          observedAt: '2026-09-26T07:00:00Z',
+        },
+        modes: [],
+        actions: [],
+      },
+    } as unknown as PublicStateSnapshot
+
+    expect(validatePublicStateSnapshot(snapshot).valid).toBe(false)
   })
 
   it('checks freshness without defining a protocol-wide freshness policy', () => {
