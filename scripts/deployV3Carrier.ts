@@ -67,7 +67,8 @@ function selectedSeed(
 }
 
 async function main() {
-  const projectId = required('BLOCKFROST_PROJECT_ID')
+  const projectId = (process.env.BLOCKFROST_PROJECT_ID ?? process.env.VITE_BLOCKFROST_PROJECT_ID ?? '').trim()
+  if (!projectId) throw new Error('BLOCKFROST_PROJECT_ID (or VITE_BLOCKFROST_PROJECT_ID) is required')
   const mnemonic = required('DEPLOYER_MNEMONIC')
   const tokenNameHex = required('V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
   const initialDatumCbor = required('V3_CARRIER_INITIAL_DATUM_CBOR')
