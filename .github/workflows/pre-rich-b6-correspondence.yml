@@ -1,0 +1,35 @@
+name: PRE-RICH B6 V3 Cardano Correspondence
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/PreRichCardanoObservationProjection.ts"
+      - "PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts"
+      - "src/__tests__/b6-v3-cardano-correspondence.test.ts"
+      - ".github/workflows/pre-rich-b6-correspondence.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "PRE-RICH/profile/PreRichCardanoObservationProjection.ts"
+      - "PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts"
+      - "src/__tests__/b6-v3-cardano-correspondence.test.ts"
+      - ".github/workflows/pre-rich-b6-correspondence.yml"
+
+jobs:
+  correspondence:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run B6 monetary scale and field correspondence tests
+        run: npx vitest run PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts src/__tests__/b6-v3-cardano-correspondence.test.ts
