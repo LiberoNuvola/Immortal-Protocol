@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Protocol declaration tests
-        run: npx vitest run src/__tests__/protocolDeclaration.test.ts src/__tests__/observedPrizeLifecycle.test.ts
+        run: npx vitest run src/__tests__/protocolDeclaration.test.ts src/__tests__/observedPrizeLifecycle.test.ts src/__tests__/genesisTreasuryObservation.test.ts
 
       - name: Typecheck
         run: npx tsc --noEmit
