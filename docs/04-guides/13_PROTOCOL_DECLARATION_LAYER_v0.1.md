@@ -56,10 +56,11 @@ The exact mapping from verified observations to a Life State is a separate profi
 
 ## 2. CURRENT ACTIVITY
 
-Activity is dynamic and must describe what the protocol is doing now, not what it could do.
+The protocol must always expose one explicit activity value. When no state-changing or operational action is being reported, use `IDLE` rather than omitting the field.
 
 Initial international vocabulary:
 
+- `IDLE`
 - `ACTIVATING_CLASS`
 - `SELLING_ASSET`
 - `ISSUING`
@@ -158,7 +159,7 @@ observation: ...
 A declaration is publishable only when:
 
 1. its state is derived from an authoritative observation;
-2. its activity is tied to a concrete state/transition condition;
+2. its activity is tied to a concrete state/transition condition or explicitly declares `IDLE`;
 3. its operational status has an explicit observation scope;
 4. beacon mode is bound to the actual round/protocol context where applicable;
 5. material claims carry reproducible evidence;
