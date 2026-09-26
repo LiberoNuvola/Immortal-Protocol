@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { Data } from 'lucid-cardano'
 import {
   assertPreRichPreprodInitialProfile,
   buildPreRichPreprodInitialClasses,
 } from '../PRE-RICH/profile/PreRichPreprodDeploymentProfile'
 import { buildPreRichPreprodInitialDatum } from './preprodV3InitialDatum'
+
+const EXPECTED_INITIAL_V3_DATUM_CBOR =
+  '7982007989000000000000887986000000000a7a807986010000000a79807986020000000a79807986030000000a79807986040000000a79807986050000000a79807986060000000a79807986070000000a79807982000079840000798000'
 
 describe('PRE-RICH Preprod V3 initial deployment profile', () => {
   it('declares exactly eight classes with only class 0 saleable', () => {
@@ -16,11 +18,12 @@ describe('PRE-RICH Preprod V3 initial deployment profile', () => {
     expect(classes.every((entry) => entry.issued === 0n && entry.unresolved === 0n)).toBe(true)
   })
 
-  it('produces deterministic Plutus datum CBOR', () => {
+  it('produces the canonical deterministic Plutus datum CBOR', () => {
     const a = buildPreRichPreprodInitialDatum()
     const b = buildPreRichPreprodInitialDatum()
     expect(a).toMatch(/^[0-9a-f]+$/)
     expect(a).toBe(b)
-    expect(() => Data.from(a)).not.toThrow()
+    expect(a).toBe(EXPECTED_INITIAL_V3_DATUM_CBOR)
+    expect(a.length / 2).toBe(95)
   })
 })
