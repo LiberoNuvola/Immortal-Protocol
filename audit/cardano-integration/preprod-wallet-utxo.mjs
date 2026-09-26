@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import WebSocket from 'ws'
 
-const endpoint = process.env.DEMETER_OGMIOS_URL
-const apiKey = process.env.DEMETER_API_KEY
-const address = process.env.PREPROD_WALLET_ADDRESS
+const endpoint = process.env.DEMETER_OGMIOS_URL?.trim()
+const apiKey = process.env.DEMETER_API_KEY?.trim()
+const address = process.env.PREPROD_WALLET_ADDRESS?.trim()
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 
 if (!endpoint) throw new Error('DEMETER_OGMIOS_URL is required')
