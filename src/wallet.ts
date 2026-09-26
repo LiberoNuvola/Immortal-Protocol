@@ -1,4 +1,4 @@
-import { Blockfrost, Lucid } from 'lucid-cardano'
+import { Blockfrost, Lucid, type Network } from 'lucid-cardano'
 import { BLOCKFROST_PREPROD_URL, BLOCKFROST_PROJECT_ID } from './config'
 
 declare const window: any
@@ -8,7 +8,7 @@ let connectedWallet: string | null = null
 
 export type ConnectResult = { lucid: any; address: string; walletName: string }
 
-export async function connect(network = 'Preprod'): Promise<ConnectResult> {
+export async function connect(network: Network = 'Preprod'): Promise<ConnectResult> {
   const providers = window.cardano
   if (!providers) throw new Error('No Cardano wallet extension found.')
   if (!BLOCKFROST_PROJECT_ID) {
