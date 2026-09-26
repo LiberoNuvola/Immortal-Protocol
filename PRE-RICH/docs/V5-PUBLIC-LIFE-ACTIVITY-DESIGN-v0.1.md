@@ -10,7 +10,7 @@ PRE-RICH V5 should behave like a transparent window into the protocol rather tha
 The page should continuously expose:
 
 - **Life State** — the current biological presentation state;
-- **Current Activity** — the concrete operation being performed;
+- **Current Activity** — the concrete operation being performed, or `IDLE`;
 - **Operational Status** — whether the execution path is currently observed as available;
 - **Beacon** — the selected trust mode;
 - **Evidence** — the references supporting those statements.
@@ -72,6 +72,13 @@ Awaiting finality
 PROTECTING CAPITAL
 ProtectedCapital
 [authoritative observation]
+```
+
+When no activity is currently declared, display:
+
+```
+CURRENT ACTIVITY
+IDLE
 ```
 
 The page must not display an operation merely because a user clicked a button or because a relayer requested it.
