@@ -79,6 +79,10 @@ import {
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
 } from '../PRE-RICH/profile/PreRichExpiryPolicy'
+import {
+  issueClassSaleable,
+  type IssueRefinementEvidence,
+} from '../PRE-RICH/profile/PreRichIssueEvidence'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
@@ -621,6 +625,12 @@ export type MintSerialResult = {
 export type MintSerialOptions = {
   /** Authoritative Economic Gate admission for the ticket-issuance transition. */
   economicAdmission: EconomicAdmissionWitness
+  /**
+   * Verified PRE-RICH class-saleability witness for this Issue transition.
+   * The application path fails closed when it is absent or inconsistent;
+   * on-chain singleton authentication remains the separate B2 obligation.
+   */
+  issueClassEvidence: IssueRefinementEvidence
   priceUsdm?: number
   networkId?: number
   roundId?: number
@@ -663,6 +673,19 @@ export async function mintSerialNFT(
   const priceUsdm =
     opts.priceUsdm ??
     DEFAULT_PRICE_USDM
+
+  if (!issueClassSaleable(opts.issueClassEvidence)) {
+    throw new Error(
+      'PRE-RICH Issue rejected: class-saleability evidence is not admissible',
+    )
+  }
+
+  const expectedPriceUsdm = opts.issueClassEvidence.priceReferenceUnits * 100n
+  if (expectedPriceUsdm !== BigInt(priceUsdm)) {
+    throw new Error(
+      'PRE-RICH Issue rejected: class-saleability price does not match priceUsdm',
+    )
+  }
 
   if (
     !Number.isInteger(priceUsdm) ||
