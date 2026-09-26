@@ -7984,3 +7984,13 @@ A funded Preprod wallet address must be supplied through the runtime environment
 
 **USER QUESTION:** NONE.
 
+
+## 2026-09-26 — P2.8 bootstrap repair: libblst
+
+Artifact `p2-8-b1-evidence.zip` from run `36218689829` showed the libsodium blocker was resolved; Cabal then stopped at `cardano-crypto-class-2.3.0.0` because `libblst >= 0.3.14` was absent from the pkg-config database.
+
+The P2.8 workflow now builds the pinned upstream `blst` release `v0.3.14`, installs the produced archive/headers, writes a verified `libblst.pc` entry with version `0.3.14`, and requires `pkg-config --exists 'libblst >= 0.3.14'` before Cabal resolution.
+
+**Classification:** P2.8 dependency/bootstrap = **REPAIRED / FRESH RUN REQUIRED**. The prior artifact proves the failure was before Ledger evaluation; this repair must first demonstrate successful dependency resolution, then native decoding/evaluation. No protocol semantics changed.
+
+**USER QUESTION:** NONE.
