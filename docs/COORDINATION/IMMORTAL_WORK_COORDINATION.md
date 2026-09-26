@@ -7754,3 +7754,14 @@ Findings:
 **Classification:** the audit failure snapshot remains valid as historical independent-assurance evidence, but its fixture-drift findings are **NOT promoted as current open test debt without a fresh exact-head test run**. This preserves the distinction between historical audit observation and present certification evidence.
 
 No runtime, validator, economic, or protocol semantics were changed by this pulse.
+
+
+## 2026-09-26 — Certification pulse: P2.8 EpochInfo provenance audit
+
+Direct inspection of `audit/cardano-ledger-runner/TypedPacketDecode.hs` confirms that the final evaluator call is the native `evalTxExUnitsWithLogs` with typed `PParams`, `Tx`, `UTxO`, `EpochInfo`, and `SystemStart`.
+
+A narrower provenance question is now recorded: `decodeYaciEpochInfo` does not deserialize a native `EpochInfo` artifact. It constructs `fixedEpochInfo` from `genesisResponse.slot_length` and `genesisResponse.epoch_length`. This may be semantically sufficient for the captured Yaci context, but the repository evidence inspected here does not yet prove that equivalence for the exact ledger evaluation packet.
+
+**Classification:** P2.8 remains **OPEN — evaluator path implemented, EpochInfo provenance/equivalence requires exact-packet evidence**. No synthetic transaction, UTxO, PParams or SystemStart substitution is introduced; no closure claim is made for EpochInfo until its source semantics are demonstrated.
+
+This is an evidence/conformance finding, not a reason to weaken or replace the native evaluator.
