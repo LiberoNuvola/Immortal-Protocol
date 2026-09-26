@@ -8808,3 +8808,19 @@ The gate now reports 11 Vitest files / 76 tests passed, Genesis Treasury admissi
 - PRE-RICH Action Refinement conformance: GREEN.
 - TypeScript repository typecheck: GREEN for this gate.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — P2.8 crypto/crypton resolver repair
+
+Run `36220572869` on head `220be99e2a35305f55e971e2d6999babd6758aaa` traversed native crypto, GHC/Cabal setup, Contra-Tracer and Dijkstra resolution, then failed at Cabal dependency resolution:
+`cardano-crypto-1.4.0 -> crypton ^>=1.1` conflicted with pinned `cardano-crypto-class-2.5.1.0 -> crypton ^>=1.0`.
+
+Upstream provenance was checked directly. The parent revision `bcb7ea8a76757bbb5f0704de22200cda99603660` contains `cardano-crypto 1.3.0` with `crypton >=0.32 && <1.1`, while the later `1.4.0` revision requires `crypton ^>=1.1`.
+
+Commit `bac73a7e38661347993eac412bfa8299e9e989a7` changes only the P2.8 runner's source pin from `ac2e12a471b735ad80949bcbf0f6f634e5dbef77` to `bcb7ea8a76757bbb5f0704de22200cda99603660`, aligning the dependency bounds with the already-pinned `cardano-crypto-class 2.5.1.0`.
+
+### Classification
+- P2.8 native prerequisites: **TRAVERSED** through the failing resolver stage.
+- Cabal crypto/crypton compatibility: **REPAIRED — fresh exact-head run required**.
+- Typed Cardano context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, or evaluator semantics changed.
