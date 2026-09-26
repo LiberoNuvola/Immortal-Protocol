@@ -24,5 +24,8 @@ describe('RF8 Treasury relayer boundary', () => {
     expect(treasuryWorker).not.toMatch(/\.submitTx\s*\(/)
     expect(treasuryWorker).toContain('FAIL-CLOSED MIGRATION BOUNDARY')
     expect(treasuryWorker).toContain('canonical EconomicAdmission')
+    // Legacy percentage distribution must remain unreachable in production.
+    expect(treasuryWorker).not.toMatch(/calculateDistribution\s*\(/)
+    expect(source).not.toMatch(/calculateDistribution\s*\(/)
   })
 })
