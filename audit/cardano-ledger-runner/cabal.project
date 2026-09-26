@@ -93,6 +93,12 @@ source-repository-package
 
 source-repository-package
   type: git
+  location: https://github.com/IntersectMBO/cardano-base
+  tag: 58a3814c049324578a1cbc7f8ab9e0edae42249a
+  subdir: measures
+
+source-repository-package
+  type: git
   location: https://github.com/IntersectMBO/plutus
   tag: 2334b4e98f21653e3cdaf7ec25878e781ce7d5dc
   subdir:
