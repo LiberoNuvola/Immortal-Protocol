@@ -4,7 +4,7 @@
  * This is the server/relayer-side boundary between an already-authoritative
  * economic decision and the Cardano runtime witness. It deliberately does
  * not calculate EEV, protected capital, viability or liquidity valuation.
- * Those values must arrive in the signed/canonical admission decision.
+ * Those values must arrive in the canonical admission decision.
  *
  * The browser may consume the resulting witness but cannot manufacture it.
  */
@@ -15,6 +15,9 @@ import {
 import type {
   ExecutableLiquidityObservation,
 } from './ExecutableLiquidityObservation'
+import {
+  validateAuthoritativeIssueAdmissionDecision,
+} from './AuthoritativeIssueAdmissionDecision'
 import type {
   AuthoritativeIssueAdmissionProvider,
   IssueAdmissionRuntimeInputs,
@@ -38,8 +41,8 @@ export type AuthoritativeIssueAdmissionDecision = {
  * Construct the runtime provider from one authoritative admission decision.
  *
  * The provider is intentionally single-decision and input-bound: a decision
- * can only cross the boundary when its Pool reference/value and liquidity
- * source set exactly match the runtime inputs supplied by the caller.
+ * can only cross the boundary when its canonical integrity and its Pool
+ * reference/value exactly match the runtime inputs supplied by the caller.
  */
 export function createAuthoritativeIssueAdmissionProvider(
   decisionSource: (
@@ -48,6 +51,8 @@ export function createAuthoritativeIssueAdmissionProvider(
 ): AuthoritativeIssueAdmissionProvider {
   return async (inputs) => {
     const decision = await decisionSource(inputs)
+
+    validateAuthoritativeIssueAdmissionDecision(decision)
 
     const witness: EconomicAdmissionWitness = {
       gateVersion: decision.gateVersion,
