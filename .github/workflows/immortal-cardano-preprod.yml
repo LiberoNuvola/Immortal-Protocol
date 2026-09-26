@@ -2,7 +2,7 @@ name: IMMORTAL Cardano Preprod Context
 
 concurrency:
   group: immortal-cardano-preprod-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:
