@@ -8406,3 +8406,16 @@ Classification:
 - Typed context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — Cardano Ledger Audit native bootstrap aligned
+
+The dedicated `Cardano Ledger Audit Runner` workflow was using the same pinned ledger project as P2.8 but did not install the native crypto prerequisites required by `cardano-crypto-class`/pkg-config. This would fail before the runner build and would be indistinguishable from a ledger-source failure.
+
+Commit `5171b902b6a8bc8ef0097212fc8d462116b901c4` adds the proven native bootstrap used by P2.8: `libsodium-dev`, `libsecp256k1-dev`, a `libsodium-any` compatibility alias when needed, pinned `blst v0.3.14`, pkg-config registration, and explicit probes before Cabal build.
+
+Classification:
+- Cardano Ledger Audit native prerequisites: **REPAIRED**.
+- Fail-closed SAFE_STALL semantics: **UNCHANGED**.
+- Fresh build/audit evidence: **PENDING**.
+- No ledger/economic/validator semantics changed.
