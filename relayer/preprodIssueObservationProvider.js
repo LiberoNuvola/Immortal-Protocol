@@ -75,6 +75,7 @@ function createPreprodIssueObservationProducer({ readObservation }) {
       counterInputReference,
       poolInputReference,
       poolUsdmValue,
+      runtimeInputs,
     })
 
     if (!observed || typeof observed !== 'object') {
