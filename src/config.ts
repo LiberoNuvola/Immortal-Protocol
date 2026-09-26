@@ -20,3 +20,7 @@ export const ORACLE_STATE_TOKEN_NAME_HEX = env('VITE_ORACLE_STATE_TOKEN_NAME_HEX
 // B1 singleton PrizePool authority NFT. Must be minted once at deployment.
 export const B1_POOL_TOKEN_POLICY_ID = env('VITE_B1_POOL_TOKEN_POLICY_ID')
 export const B1_POOL_TOKEN_NAME_HEX = env('VITE_B1_POOL_TOKEN_NAME_HEX')
+
+// Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
+export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')
+export const B1_PRIZE_POOL_REFERENCE_ADDRESS = env('VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS')
