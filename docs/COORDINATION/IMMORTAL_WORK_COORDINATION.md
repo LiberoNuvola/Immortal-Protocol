@@ -9012,3 +9012,87 @@ Still required:
 5. one-shot Genesis carrier witness.
 
 No frontend, Treasury or observer code may claim Genesis eligibility merely from Treasury funding.
+
+## 23. SESSION CLAIM — Public Protocol Transparency / Action Availability
+
+**Session:** autonomous coordination session — 2026-09-26  
+**Front:** DECLARATION-LAYER-001 / OBSERVABILITY-001  
+**Objective:** make the entire public protocol surface state-aware and maximally transparent. Users must understand what the protocol is doing, which economic mode is active, which actions are available, why unavailable actions are unavailable, and what evidence supports every material public claim.
+
+### Implemented on work/immortal-green-closure
+
+- src/publicActionAvailability.ts
+  - authoritative action-availability vocabulary;
+  - AVAILABLE, NOT_YET_OPEN, PAUSED, CLOSED, BLOCKED, HALTED;
+  - explicit reason, phase, subject, transition hint, evidence reference and observation time;
+  - frontend cannot infer availability from failed transactions.
+- src/publicProtocolMode.ts
+  - explicit public vocabulary for NORMAL_OPERATION, ACTIVE_CLASS, RECOVERY_MODE, SURPLUS_MODE, CAPITAL_PROTECTION, REGENERATION;
+  - mode declarations require reason, evidence reference and observation timestamp.
+- src/__tests__/publicActionAvailability.test.ts
+  - verifies only an authoritative AVAILABLE declaration enables an action.
+- docs/04-guides/15_PUBLIC_TRANSPARENCY_CONTRACT_v0.1.md
+  - public transparency contract for protocol state, Beacon, wallet boundary and transaction lifecycle.
+- docs/04-guides/16_PUBLIC_ACTION_AVAILABILITY_AND_ECONOMIC_MODES_v0.1.md
+  - extends transparency to every user-visible protocol action and economic mode.
+
+### Normative integration rule for concurrent sessions
+
+The frontend MUST consume these declarations rather than reconstruct protocol state locally.
+
+For every public action:
+
+authoritative protocol/economic state → observation/validation → action availability declaration → frontend
+
+For every public mode:
+
+authoritative state → verified mode declaration → frontend
+
+The frontend MUST NOT:
+
+- infer Active Class from UI state;
+- infer Recovery Mode or Surplus Mode from balances;
+- infer Beacon trust from API reachability;
+- submit transactions merely to discover whether an action is permitted;
+- silently downgrade/upgrade trust or economic state;
+- display a stronger state than the authoritative evidence supports.
+
+When state cannot be established, display UNKNOWN / NOT DECLARED or the declared unavailable state. Do not invent an answer.
+
+### Required user-visible model
+
+The public surface must expose, where applicable:
+
+1. protocol Life State;
+2. current protocol activity;
+3. active class and class transition state;
+4. current economic mode;
+5. Beacon trust mode and evidence/freshness;
+6. each relevant action and its availability state;
+7. reason/prerequisite for unavailable actions;
+8. expected next transition only when authoritatively known;
+9. economic effect before wallet signature;
+10. wallet-signing boundary;
+11. transaction lifecycle through confirmation;
+12. evidence and independently inspectable references.
+
+A disabled button without an explanation is insufficient. The interface should explain what the protocol is doing instead and what condition makes the action available again, without inventing an ETA.
+
+### Concurrent frontend handoff
+
+The existing frontend agent may compose the presentation layer freely, but MUST treat the declaration/action models as data supplied by the authoritative observation layer. It must not introduce a second state machine that can disagree with protocol state.
+
+### Status
+
+IMPLEMENTATION STARTED / ARCHITECTURAL BOUNDARY DEFINED / NEEDS INTEGRATION EVIDENCE
+
+### Next engineering actions
+
+1. Map the real economic/transition state into ProtocolModeDeclaration and ActionAvailability.
+2. Enumerate all current protocol transitions/actions and classify their public availability conditions.
+3. Bind Active Class, Recovery Mode, Surplus Mode and Beacon state to authoritative evidence.
+4. Add integration tests proving that UI availability agrees with authoritative state and that unavailable actions are not submitted.
+5. Extend the frontend only through the declaration boundary; do not duplicate economic logic.
+6. Add public evidence links/inspectors after the underlying evidence references are stable.
+
+---
