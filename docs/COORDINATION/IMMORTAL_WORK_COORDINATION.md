@@ -7765,3 +7765,39 @@ A narrower provenance question is now recorded: `decodeYaciEpochInfo` does not d
 **Classification:** P2.8 remains **OPEN — evaluator path implemented, EpochInfo provenance/equivalence requires exact-packet evidence**. No synthetic transaction, UTxO, PParams or SystemStart substitution is introduced; no closure claim is made for EpochInfo until its source semantics are demonstrated.
 
 This is an evidence/conformance finding, not a reason to weaken or replace the native evaluator.
+
+
+## 2026-09-26 — Preprod entry: Demeter/Ogmios context probe
+
+### External provider
+A real Demeter project resource is now provisioned:
+- network: **cardano-preprod**
+- interface: **Ogmios v7**
+- resource status observed as **RUNNING** in the Demeter console.
+- the repository never stores the provider credential; CI consumes `DEMETER_API_KEY` as a GitHub Actions secret.
+
+### Evidence path introduced
+A dedicated workflow `.github/workflows/immortal-cardano-preprod.yml` now probes the live Preprod endpoint and records:
+- network tip;
+- network block height;
+- network start time;
+- Shelley and Alonzo genesis configuration;
+- current ledger epoch;
+- ledger tip;
+- era summaries;
+- current protocol parameters;
+- exact-head/workflow provenance;
+- SHA-256 binding of the captured context packet.
+
+The probe uses the native Ogmios JSON-RPC query surface documented for ledger/network state. No synthetic context is substituted.
+
+### Boundary
+This is **Preprod connectivity/context evidence**, not yet P2.8 evaluator closure. The next certification step still requires a real Preprod transaction/UTxO packet suitable for the native `evalTxExUnitsWithLogs` path. No Reveal success/failure classification is promoted until that transaction is observed and evaluated.
+
+### Classification
+- Demeter Preprod provider: **PROVISIONED**.
+- Ogmios Preprod connectivity: **WORKFLOW EVIDENCE PENDING** until an exact-head run artifact is observed.
+- P2.8 native evaluator: **OPEN**.
+- No economic or validator semantics changed.
+
+**USER QUESTION:** NONE.
