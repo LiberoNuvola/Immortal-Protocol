@@ -2363,3 +2363,21 @@ Evidence classification: implementation/test path only. No live Preprod claim.
 **STATUS: 🟡 CONCRETE OBSERVATION→DECISION INPUT COMPOSITION IMPLEMENTED / 🔴 LIVE PREPROD UTxO + AUTHENTICATED EEV/REFINEMENT WITNESS OPEN**
 
 **NEXT CONCRETE WITNESS:** run the composition against the actual deployed Counter/Pool/V3 carrier and authenticated Oracle/EEV source, then execute the existing Haskell `issue-admission` and bind its decision to the real Issue transaction.
+
+
+# 44.11 ECONOMIC-CONFORMANCE FAILURE ISOLATION — 2026-09-26
+
+The first CI run after the concrete Preprod observation reader exposed two independent implementation defects; both were isolated from the economic rules and corrected fail-closed.
+
+1. `Adapter/CARDANO/observation/AuthoritativeIssueAdmissionDecision.ts` incorrectly read non-existent `authenticatedPoolInputReference` / `authenticatedPoolUsdmValue` fields from `ExecutableLiquidityObservation`. The validator now binds the decision's authenticated Pool reference to the observation's exact `sourceInputReferences`, requires the corresponding observed UTxO, and compares declared liquidity to the authenticated Pool valuation.
+2. `src/preprodV3InitialDatum.ts` used the legacy Lucid 0.10.11 serializer for a nested Plutus List. CI reproduced a WASM `plutuslist_new` failure. The deployment datum is now encoded directly with canonical Plutus CBOR constructors/lists, preserving the exact eight-class datum shape while removing the unrelated WASM initialization dependency.
+
+Observed on commit `dc4732a28a0924507d6b92408372ec4ef4c6551d`: 54 tests passed, 2 failed. The failures were exactly the two defects above. The other checks were green: frontend-build, declaration-conformance, no-result-dependent-authority and GitGuardian.
+
+Fix commits:
+- `d3443ee98d8e7f20e00de27b4f6470076133e3c7` — canonical Pool observation binding.
+- `90bf5ec3bd7453328c432d56aa239e314304e281` — deterministic Preprod V3 datum CBOR encoding.
+
+No economic rule, canonical PRE identity, Genesis threshold, or IMMORTAL universal law was changed.
+
+**STATUS: 🟡 FIXES MATERIALIZED / 🔴 NEW CI EXECUTION + LIVE PREPROD WITNESS OPEN**
