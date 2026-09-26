@@ -57,7 +57,7 @@ export interface MateriosEvidenceAdapter {
 export function createMateriosEvidenceAdapter(): MateriosEvidenceAdapter {
   return {
     decode: decodeMateriosEvidence,
-    verifyTransition: async (evidence, proofVerifier) => {
+    verifyTransition: async (evidence, proofVerifier, executionProofVerifier) => {
       verifyActivationBlockBinding(
         evidence.authorityTransition,
         evidence.checkpoint
@@ -85,7 +85,7 @@ export function createMateriosEvidenceAdapter(): MateriosEvidenceAdapter {
         throw new Error("EXECUTION_PROOF_SYSTEM_MISMATCH");
       }
 
-      return verifyAuthoritySetTransition(
+      if (!await executionProofVerifier.verify(evidence.executionProof, evidence.checkpoint)) {\n        throw new Error("EXECUTION_PROOF_NOT_VERIFIED");\n      }\n\n      return verifyAuthoritySetTransition(
         evidence.authorityTransition,
         proofVerifier
       );
