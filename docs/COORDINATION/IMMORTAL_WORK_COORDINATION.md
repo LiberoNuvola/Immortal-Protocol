@@ -2381,3 +2381,19 @@ Fix commits:
 No economic rule, canonical PRE identity, Genesis threshold, or IMMORTAL universal law was changed.
 
 **STATUS: 🟡 FIXES MATERIALIZED / 🔴 NEW CI EXECUTION + LIVE PREPROD WITNESS OPEN**
+
+
+# 44.12 V3 DEPLOYMENT HELPER WASM DECOUPLING — 2026-09-26
+
+The real Preprod deployment helper had one remaining copy of the CI-only WASM failure mode: `scripts/deployV3Carrier.ts` validated the supplied datum with `Data.from(...)` before constructing the transaction.
+
+That path is now removed. The helper validates the deployment datum by exact equality against `buildPreRichPreprodInitialDatum()` and the canonical 95-byte length, while keeping `Data.void()` only for the mint redeemer. This means the deployment boundary no longer depends on Lucid's WASM Plutus-list decoder for the V3 initial datum.
+
+Commit:
+- `bfd621374fea3cbb55e99986ed9387740a1d850e` — WASM-independent V3 carrier deployment datum validation.
+
+No economic producer, canonical PRE identity, Genesis rule, carrier policy semantics or IMMORTAL universal rule changed.
+
+**STATUS: 🟢 DEPLOYMENT HELPER STRUCTURALLY READY / 🔴 REAL PREPROD SIGNED DEPLOYMENT OPEN**
+
+**NEXT CONCRETE WITNESS:** run `npm run v3:initial-datum`, set the explicit canonical datum and token name in local admin environment, select exactly one real seed UTxO, run `npm run deploy:v3-carrier`, then persist the resulting singleton `txHash#outputIndex`, policy ID and carrier address into the Preprod deployment configuration. The deployer mnemonic remains local-only and must never enter GitHub or the browser.
