@@ -20,6 +20,19 @@ function parseNonNegativeBigInt(value, field) {
   }
 }
 
+function parseInputReference(value, field) {
+  const reference = requiredString(value, field)
+  const match = /^(.*)#(\\d+)$/.exec(reference)
+  if (!match || match[1].length === 0) {
+    throw new Error(`${field} must be an exact txHash#outputIndex reference`)
+  }
+  return {
+    reference,
+    txHash: match[1],
+    index: Number(match[2]),
+  }
+}
+
 function normalizeDecision(raw) {
   if (!raw || raw.admitted !== true || !raw.decision) {
     throw new Error(raw?.error || 'EconomicAdmission rejected Issue')
@@ -109,11 +122,11 @@ async function produceAuthoritativeIssueAdmission({
     throw new Error('runtimeInputs are required')
   }
 
-  const counterInputReference = requiredString(
+  const counter = parseInputReference(
     runtimeInputs.counterInputReference,
     'counterInputReference',
   )
-  const poolInputReference = requiredString(
+  const pool = parseInputReference(
     runtimeInputs.poolInputReference,
     'poolInputReference',
   )
@@ -134,7 +147,7 @@ async function produceAuthoritativeIssueAdmission({
     runtimeInputs.liquiditySourceReferences,
   )
     ? runtimeInputs.liquiditySourceReferences.map(ref =>
-        requiredString(ref, 'liquiditySourceReference'),
+        parseInputReference(ref, 'liquiditySourceReference').reference,
       )
     : []
 
@@ -169,7 +182,7 @@ async function produceAuthoritativeIssueAdmission({
     )
   }
 
-  if (!liquiditySourceReferences.includes(poolInputReference)) {
+  if (!liquiditySourceReferences.includes(pool.reference)) {
     throw new Error(
       'authenticated Pool input must be an executable liquidity source',
     )
@@ -190,21 +203,59 @@ async function produceAuthoritativeIssueAdmission({
       observedAt,
       sourceInputReferences: liquiditySourceReferences,
       utxos: [{
-        txHash: poolInputReference.split('#')[0],
-        index: Number(poolInputReference.split('#')[1]),
+        txHash: pool.txHash,
+        index: pool.index,
         usdmValue: poolUsdmValue,
         spendable: true,
         ringFenced: false,
       }],
       declaredUsdmLiquidity: poolUsdmValue,
     },
-    authenticatedPoolInputReference: poolInputReference,
+    authenticatedPoolInputReference: pool.reference,
     authenticatedPoolUsdmValue: poolUsdmValue,
     requiredImmediateLiquidity: decision.requiredImmediateLiquidity,
-    counterInputReference,
+    counterInputReference: counter.reference,
+  }
+}
+
+/**
+ * Adapt an authoritative observation/refinement producer to the provider
+ * interface consumed by mintSerialNFT.
+ *
+ * buildDecisionContext is the only component allowed to construct the
+ * IssueDecisionInput and observation metadata. It must source those values
+ * from verified runtime observations; this bridge never invents them.
+ */
+function createAuthoritativeIssueAdmissionProvider({
+  buildDecisionContext,
+  runner = defaultRunner,
+  plutusDir = path.resolve(__dirname, '..', 'plutus'),
+}) {
+  if (typeof buildDecisionContext !== 'function') {
+    throw new Error('buildDecisionContext is required')
+  }
+
+  return async function authoritativeIssueAdmissionProvider(runtimeInputs) {
+    const context = await buildDecisionContext(runtimeInputs)
+
+    if (!context || typeof context !== 'object') {
+      throw new Error('authoritative observation producer returned no context')
+    }
+
+    return produceAuthoritativeIssueAdmission({
+      decisionInput: context.decisionInput,
+      runtimeInputs: {
+        ...runtimeInputs,
+        observationReference: context.observationReference,
+        observedAt: context.observedAt,
+      },
+      runner,
+      plutusDir,
+    })
   }
 }
 
 module.exports = {
   produceAuthoritativeIssueAdmission,
+  createAuthoritativeIssueAdmissionProvider,
 }
