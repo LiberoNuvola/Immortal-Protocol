@@ -104,14 +104,43 @@ jobs:
           printf 'runner_os=%s\n' "$RUNNER_OS" >> evidence/workflow-provenance.txt
           cabal --version >> evidence/workflow-provenance.txt
           ghc --version >> evidence/workflow-provenance.txt
+
+          # BUGFIX (2026-09-26): "cabal list --simple-output all" reads the local
+          # Hackage index cache. Without a prior "cabal update" that cache does not
+          # exist yet on a fresh runner, so the grep below silently matched nothing
+          # and pinned-dependency-resolution.txt was written empty. "cabal update"
+          # must run before any "cabal list" call, not after.
+          cabal update
           cabal list --simple-output all | grep -E '^(cardano-prelude|cardano-prelude-test|cardano-crypto-class|cardano-crypto-wrapper)' > evidence/pinned-dependency-resolution.txt || true
+
+          # Self-diagnosing evidence for the pkg-config contract that gates
+          # cardano-crypto-class's blst flag. If a future run hits the same
+          # "not found in the pkg-config database" solver error, this block
+          # tells us on the spot whether the blst step upstream actually
+          # registered the .pc file, instead of leaving only an opaque
+          # Cabal-7107 solver message to reverse-engineer after the fact.
+          {
+            echo "pkg_config_search_path=$(pkg-config --variable pc_path pkg-config)"
+            if pkg-config --exists 'libblst >= 0.3.14'; then
+              echo "libblst_pkgconfig=FOUND $(pkg-config --modversion libblst)"
+            else
+              echo "libblst_pkgconfig=MISSING"
+            fi
+            pkg-config --list-all 2>/dev/null | grep -i blst || echo "libblst_list_all=NO_MATCH"
+          } >> evidence/workflow-provenance.txt
 
       - name: Run ledger-aligned bootstrap
         working-directory: audit/cardano-ledger-runner
+        env:
+          # Defense-in-depth only: on this ubuntu-24.04 image pkg-config already
+          # searches /usr/local/lib/pkgconfig by default (verified empirically),
+          # so this does not fix a real path bug here, but it removes the
+          # dependency on that default for any future/self-hosted runner image
+          # where it may not hold.
+          PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig"
         run: |
           set -o pipefail
           mkdir -p evidence
-          cabal update
           cabal run cardano-ledger-runner -- --evaluate 2>&1 | tee evidence/runner.log
 
       - name: Upload runner evidence only
