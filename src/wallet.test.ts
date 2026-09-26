@@ -2,12 +2,18 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import wallet from './wallet'
 
 describe('modern CIP-30 wallet discovery', () => {
+  let enableCalls = 0
   beforeEach(() => {
+    enableCalls = 0
+    const enable = async () => {
+      enableCalls += 1
+      return {}
+    }
     ;(globalThis as any).window = {
       cardano: {
-        zeta: { enable: async () => ({}), name: 'Zeta', apiVersion: '1.0.0' },
-        alpha: { enable: async () => ({}), name: 'Alpha', apiVersion: '1.0.0' },
-        unnamed: { enable: async () => ({}) },
+        zeta: { enable, name: 'Zeta', apiVersion: '1.0.0' },
+        alpha: { enable, name: 'Alpha', apiVersion: '1.0.0' },
+        unnamed: { enable, apiVersion: '1.0.0' },
         broken: {},
       },
     }
@@ -22,9 +28,7 @@ describe('modern CIP-30 wallet discovery', () => {
   })
 
   it('does not auto-enable a wallet during discovery', () => {
-    const providers = (globalThis as any).window.cardano
-    for (const provider of Object.values(providers) as any[]) {
-      if (provider.enable) expect(provider.enable).not.toHaveBeenCalled?.()
-    }
+    wallet.discover()
+    expect(enableCalls).toBe(0)
   })
 })
