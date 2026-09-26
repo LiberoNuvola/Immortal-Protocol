@@ -8587,3 +8587,20 @@ No new gate, replay vector, research note or mirror fixture is treated as proof 
 - mechanical license hygiene ≠ legal provenance opinion.
 
 **No normative economic or governance parameter changed in this cycle.**
+
+
+## 2026-09-26 — P2.8 crypto matrix realigned
+
+Run 36220572869 (P2.8 run 524) advanced through native prerequisites, GHC/Cabal setup and all pinned source clones, then failed at Cabal resolution because cardano-crypto 1.4.0 selected crypton 1.1.4 while cardano-crypto-class 2.5.1.0 required crypton ^>=1.0.
+
+The upstream Cardano package catalog associates cardano-crypto 1.4.0 with commit ac2e12a471b735ad80949bcbf0f6f634e5dbef77 and cardano-crypto-class 2.6.0.0 with cardano-base commit 12168e4b32b44d30dd401010ccd969accaf2add7. The latter declares crypton ^>=1.1 and is therefore aligned with crypton 1.1.4.
+
+Commit 0053c019aef14c550715cec1e92808a1ac9f4e82 pins cardano-crypto-class 2.6.0.0 from that upstream commit. The prior contra-tracer 0.1.0.2 pin was specific to the older 2.3-era dependency and was removed in commit 57f473ba53545b4b3fddd0153a677205ce3fe8b3 so the current resolver can select the 0.2.1.x line required by the modern Cardano stack.
+
+### Classification
+- Native crypto/bootstrap: TRAVERSED.
+- GHC/Cabal setup: TRAVERSED.
+- cardano-crypto/cardano-crypto-class compatibility: REPAIRED — FRESH RUN REQUIRED.
+- Native evalTxExUnitsWithLogs: OPEN.
+- Reveal execution-budget evidence: OPEN.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
