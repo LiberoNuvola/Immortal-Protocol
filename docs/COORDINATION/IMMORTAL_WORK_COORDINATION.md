@@ -6,7 +6,7 @@
 
 **Repository:** `LiberoNuvola/Immortal-Protocol`  
 **Working branch:** `work/immortal-green-closure`  
-**Snapshot:** 2026-09-25
+**Snapshot:** 2026-09-26
 **Latest observed code commit by this session:** `608a8cf965760a65b4e18399048c44eabe250cef` — documentation handoff follows in commit `5ce9629c78fdd2c8dc6a1170df739bb491e1ea90`
 
 ---
@@ -170,6 +170,10 @@ Local invariant preservation is not, by itself, an infinite-horizon viability pr
 | 3D | Certified persistent NFT binding | OPEN | Close certified persistence/binding semantics and evidence. |
 | VIABILITY-INF | Infinite-horizon viability | OPEN | Distinguish local safety from existence of a continuation strategy; no overclaiming. |
 | BOUNDARY-SEPARATION | Complete IMMORTAL / PRE-RICH separation | OPEN | Remove or isolate PRE-RICH-shaped concepts from the universal kernel where evidence requires it. |
+| DECLARATION-LAYER-001 | Protocol Declaration Layer | **DESIGN / IMPLEMENTED DOMAIN MODEL** | Standardize the public declaration surface: LIFE STATE, CURRENT ACTIVITY, OPERATIONAL STATUS, optional BEACON mode, and evidence bindings. Keep this layer observational/presentational and non-authoritative. |
+| LIFE-STATE-001 | Turritopsis-inspired Life State | **DESIGN / OPEN** | Define and later evidence the mapping from verified protocol observations to the international public vocabulary PLANULA / POLYP / YOUNG_MEDUSA / MEDUSA / REGENERATION without making biological labels economic or certification claims. |
+| ACTIVITY-DECL-001 | Canonical Current Activity | **DESIGN / IMPLEMENTED DOMAIN MODEL** | Declare what a protocol is actually doing now (for example ACTIVATING_CLASS, SELLING_ASSET, ISSUING, SETTLING) from authoritative state/transition observations; never from UI intent or relayer intent. |
+| OBSERVABILITY-001 | Public Operational & Evidence Surface | **DESIGN / OPEN** | Separate economic state from operational status and bind public declarations to reproducible evidence, including observation age/staleness and beacon trust mode where applicable. |
 
 ---
 
@@ -8872,6 +8876,28 @@ The pinned f649f975 Cardano-ledger source does contain `libs/cardano-protocol`. 
 - Native `evalTxExUnitsWithLogs`: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
 
+
+## 2026-09-26 — Protocol transparency / declaration frontier
+
+The public transparency work is now tracked as explicit fronts rather than being treated as frontend decoration.
+
+### Scope added
+
+- `DECLARATION-LAYER-001`: common public declaration schema for Life State, Current Activity, Operational Status, Beacon and Evidence.
+- `LIFE-STATE-001`: Turritopsis-inspired international life vocabulary, explicitly non-economic and non-certifying.
+- `ACTIVITY-DECL-001`: canonical “what the protocol is doing now” vocabulary tied to authoritative state/transition observations.
+- `OBSERVABILITY-001`: evidence-linked public operational surface with explicit staleness/observation scope.
+
+### Current implementation
+
+- `docs/04-guides/13_PROTOCOL_DECLARATION_LAYER_v0.1.md`
+- `PRE-RICH/docs/V5-PUBLIC-LIFE-ACTIVITY-DESIGN-v0.1.md`
+- `src/protocolDeclaration.ts`
+- `src/__tests__/protocolDeclaration.test.ts`
+
+The existing `src/livenessBoundary.ts` remains the R4 execution/liveness classification boundary. The new declaration model does not replace it and does not claim a liveness proof.
+
+No economic constants, validator semantics, beacon trust rules, or authority boundaries were changed.
 
 ## 2026-09-26 — P2.8 exact-head resolver frontier
 
