@@ -8761,3 +8761,21 @@ Current CHaP publishes measures-0.1.0.3 from IntersectMBO/cardano-base commit 58
 - Native evalTxExUnitsWithLogs: OPEN.
 - Reveal execution-budget evidence: OPEN.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+## 2026-09-26 — Triangulation sweep: legacy on-chain Treasury and RF2/RF8 status
+
+### Triangulation result
+A repository + CI + Notion sweep was used to identify fronts that were not visible in the immediate P2.8 queue.
+
+- **RT-1.5 executable liquidity:** implementation/provenance binding is now explicit: exact candidate inputs, exact authenticated B1 PrizePool input reference, exact authenticated Pool USDM value, duplicate/non-spendable/ring-fenced rejection and freshness checks. Release-wide closure remains dependent on fresh authenticated ledger evidence.
+- **RF8 legacy Claim path:** `src/txHelpers.ts::buildClaimTx` had no internal call sites and could have been handed to the generic infrastructure submitter. It is now fail-closed and covered by the RF8 boundary suite. The follow-up typecheck failure was caused only by the now-unused `prizeValidator` import and has been removed.
+- **RF8/Treasury legacy path:** the current relayer Treasury worker is observation-only and fail-closed; however `plutus/Treasury.hs` still contains the historical `TreasuryAction = Distribute` validator and percentage fields. No current production JavaScript call-site was found for this action. This is classified as a legacy on-chain surface requiring release isolation/deactivation, not as a current live side-door in the relayer.
+- **B2 control:** there is still no dedicated authenticated on-chain control datum carrying `CurrentActiveClass` and `HighestClassEverActivated`; full live B2 closure therefore remains an architectural/deployment gap rather than a test gap.
+- **B6 correspondence:** dedicated field-level tests now make the projection boundary explicit; B1 pool state does not natively authenticate all V3 control/jackpot lifecycle fields.
+- **R1/R3/R5/R6/R7/R8 / RF6:** current evidence indicates these still require deployment-specific certificates/instances (Kc, Omega perimeter, migration map, composed certificate, non-vacuity witness) and must not be synthesized from source code alone.
+- **Gate 41:** read-only Blockfrost/Koios acquisition paths exist, but the primary historical witness remains dependent on authenticated provider access; sandbox DNS failure is not treated as evidence of absence.
+
+### Current-head CI
+The exact current head is subject to concurrent advancement. The latest observed exact-head runs continue to show Adapter Sale and Algorithmic Governability succeeding while Kernel/Cardano integration remain in progress. P2.8 has moved past libsodium/blst and Byron-spec dependency blockers on its recent runs; the current native evaluator result is still not observed.
+
+**Non-regression:** no economic constant, validator semantics, fee value, expiry duration, authority-selection rule or oracle convention was changed by this sweep.
