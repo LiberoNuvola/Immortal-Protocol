@@ -8945,3 +8945,14 @@ The TypeScript model and dedicated conformance workflow are present. A successfu
 
 No economic constants, payout rules, expiry semantics, validator safety conditions, authority-selection rules, beacon trust assumptions or Cardano protocol limits were changed.
 
+## 2026-09-26 — Declaration binding pass
+
+The public declaration model now includes an explicit `ObservedLifecycle` boundary and `activityFromObservedLifecycle()`.
+
+This permits the public layer to expose lifecycle activity only from already-observed canonical lifecycle conditions:
+
+`ISSUING` / `AWAITING_FINALITY` / `SETTLING` / `IDLE`.
+
+No frontend intent, wallet click, relayer request, or economic inference is accepted as the source of activity.
+
+Life State and Economic Vitality remain profile-level OPEN work: no threshold or mapping has been invented in this pass.
