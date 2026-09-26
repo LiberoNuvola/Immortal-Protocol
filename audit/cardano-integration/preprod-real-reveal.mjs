@@ -1,4 +1,4 @@
-import { Constr, Data, Lucid, Koios, getAddressDetails, nativeScriptFromJson } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Koios } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 
@@ -8,7 +8,6 @@ import {
   deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget,
   field, fromHex, playerCommitment, sha256, ticketCommitment, toHex,
 } from '../../src/beacon'
-import { KoiosOgmiosProvider } from './KoiosOgmiosProvider.mjs'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const OGMIOS = process.env.DEMETER_OGMIOS_URL?.trim()
@@ -30,8 +29,8 @@ if (!EXPECTED_ADDRESS) throw new Error('PREPROD_WALLET_ADDRESS is required')
 
 await mkdir(EVIDENCE_DIR, { recursive: true })
 
-function nativePolicy(keyHash) {
-  return nativeScriptFromJson({
+function nativePolicy(lucid, keyHash) {
+  return lucid.utils.nativeScriptFromJson({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   })
@@ -81,7 +80,7 @@ if (balanceBefore < 20_000_000n) {
   throw new Error('Preprod wallet needs at least 20 ADA for the complete Reveal evidence sequence')
 }
 
-const testPolicy = nativePolicy(keyHash)
+const testPolicy = nativePolicy(lucid, keyHash)
 const testPolicyId = lucid.utils.mintingPolicyToId(testPolicy)
 const poolTokenNameHex = '504f4f4c'
 const liquidityTokenNameHex = '5553444d'
