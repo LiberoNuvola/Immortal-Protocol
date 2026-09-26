@@ -8517,3 +8517,17 @@ Classification:
 - Preprod conformance binding: **VERIFIED**.
 - Real submitted Preprod transaction: **OPEN**.
 - P2.8 native evaluator: **OPEN**.
+
+
+## 2026-09-26 — P2.8 cardano-crypto alignment repaired
+
+The pinned ledger-core snapshot requires package `cardano-crypto`. Direct inspection of IntersectMBO/cardano-crypto commit `ac2e12a471b735ad80949bcbf0f6f634e5dbef77` identifies release `cardano-crypto-1.4.0`, matching the current ledger dependency surface. The Byron `cardano-crypto-wrapper-1.7.0.0` package is already covered by the ledger snapshot subdir `eras/byron/crypto`.
+
+Commit `220be99e2a35305f55e971e2d6999babd6758aaa` adds the exact `cardano-crypto` source package to the P2.8 runner.
+
+Classification:
+- P2.8 cardano-crypto dependency: **REPAIRED**.
+- Fresh resolver/evaluator run: **PENDING**.
+- Typed context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
