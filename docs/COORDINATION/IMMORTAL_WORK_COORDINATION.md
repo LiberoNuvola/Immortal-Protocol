@@ -8208,3 +8208,22 @@ The runner now includes `eras/dijkstra/impl` under the existing pinned `Intersec
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - Preprod live context: **OPEN — DEMETER_API_KEY still absent in observed runner environment**.
 - No economic, validator, authority-selection, oracle, or evaluator-semantic changes.
+
+
+## 2026-09-26 — Preprod authentication boundary observed
+
+Fresh Preprod run `36219461711` on `b8aa3772278582753dcf6defb2a07e6f4c30dc54` proves the workflow now receives a non-empty Demeter credential and validates the configured Preprod wallet address. The next live step reaches the Demeter Ogmios WebSocket and returns HTTP `401` during the WebSocket handshake.
+
+The repository client already sends the documented `dmtr-api-key` header. Therefore the failure is classified as **provider credential/resource authentication**, not network absence, wallet syntax failure, ledger failure, or protocol semantics. No credential value is copied into the repository or evidence artifact.
+
+Demeter's current public Ogmios documentation specifies that API keys are supplied through the `dmtr-api-key` header and that the authenticated endpoint/key are project-specific. The remaining operational requirement is to use a valid key for the configured Ogmios resource (or the matching authenticated endpoint) before live Preprod context/UTxO evidence can be produced.
+
+### Classification
+- Demeter secret injection: **CONFIRMED PRESENT**.
+- Preprod wallet-address gate: **PASSED**.
+- Ogmios WebSocket authentication: **BLOCKED — HTTP 401**.
+- Live Preprod context: **OPEN**.
+- Live wallet UTxO: **OPEN**.
+- Real Preprod transaction: **OPEN**.
+- P2.8 native evaluator: **OPEN**.
+- No economic, validator, authority-selection, oracle, or evaluator-semantic change.
