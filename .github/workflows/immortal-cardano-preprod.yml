@@ -84,6 +84,23 @@ jobs:
       - name: Bind Preprod observation to exact conformance snapshot
         run: node audit/cardano-integration/preprod-conformance-binding.mjs
 
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          node --input-type=module - <<'JS'
+          import { readFile, writeFile } from 'node:fs/promises'
+          const path = 'node_modules/lucid-cardano/package.json'
+          const pkg = JSON.parse(await readFile(path, 'utf8'))
+          if (!await import('node:fs').then(fs => fs.promises.access('node_modules/lucid-cardano/esm/mod.js').then(() => true).catch(() => false))) {
+            throw new Error('lucid-cardano ESM entrypoint missing')
+          }
+          pkg.type = 'module'
+          pkg.exports = { ".": { "types": "./types/mod.d.ts", "import": "./esm/mod.js" } }
+          await writeFile(path, JSON.stringify(pkg, null, 2) + '\n')
+          await writeFile('src/package.json', JSON.stringify({type:'module'}) + '\n')
+          await writeFile('Adapter/package.json', JSON.stringify({type:'module'}) + '\n')
+          console.log('Normalized lucid-cardano and repository TS modules to ESM')
+          JS
+
       - name: Execute real Preprod Reveal
         env:
           KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
