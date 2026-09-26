@@ -103,6 +103,20 @@ describe('PRE-RICH Issue admission bridge', () => {
     ).toThrow('pre-state hash does not match canonical evidence')
   })
 
+  it('rejects canonical evidence whose action fingerprint differs from the admission', async () => {
+    const admission = await obtainAuthoritativeIssueAdmission(
+      async () => witness(),
+      inputs,
+      classEvidence,
+    )
+    expect(() =>
+      assertIssueAdmissionMatchesCanonicalEvidence(
+        admission,
+        { ...canonicalEvidence, actionFingerprint: '9'.repeat(64) },
+      ),
+    ).toThrow('action fingerprint does not match canonical evidence')
+  })
+
   it('rejects canonical evidence for a non-Issue action', async () => {
     const admission = await obtainAuthoritativeIssueAdmission(
       async () => witness(),
