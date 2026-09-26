@@ -1275,3 +1275,77 @@ This is bounded CI evidence only. It does not close P2.8, PREPROD-REVEAL, B3, Ge
 **Validation result:** the public declaration boundary changes have passed their targeted conformance/typecheck CI, and the algorithmic governability adversarial guard has passed.
 
 **Next concrete witnesses:** exact-head native ledger evaluation packet and real Preprod Reveal packet.
+
+# 26. FIRST REAL PREPROD USER GATE — 2026-09-26
+
+The target of the current development cycle is explicitly:
+
+make the first real PRE-RICH user transaction executable from the public DApp on Cardano Preprod using a normal CIP-30 wallet.
+
+This is a deployment gate distinct from FULL CERTIFICATION.
+
+Required witnesses, in order:
+1. Green Closure DApp is deployable under the repository Pages subpath.
+2. All required Preprod contract/reference-script configuration is present without any wallet seed/private key in the repository.
+3. DEMETER can connect through CIP-30.
+4. The frontend can obtain authoritative current protocol/profile state.
+5. A valid EconomicAdmissionWitness can be produced by the authoritative economic/refinement path for Issue.
+6. mintSerialNFT can consume that witness and submit the real atomic Issue transaction.
+7. The real Preprod transaction is observed and its exact UTxOs/state are persisted.
+8. Beacon synchronization and Reveal use the deployed reference scripts and measured transaction size.
+9. Native cardano-ledger evaluation is performed against the exact Preprod transaction context.
+10. The resulting user-visible lifecycle/evidence is rendered from observation, not UI intent.
+
+## Current concrete blocker
+
+src/mint.ts already implements the atomic Issue transaction and correctly requires:
+- EconomicAdmissionWitness;
+- IssueRefinementEvidence;
+- verified expiry policy + issuance state;
+- authenticated Counter;
+- authenticated BeaconRegistry;
+- authenticated B1 PrizePool;
+- Treasury datum/payment;
+- atomic ticket mint + Prize output + Pool continuation.
+
+However, the repository currently has no frontend/runtime producer that constructs an authoritative EconomicAdmissionWitness for Issue. The DApp therefore correctly keeps Buy Tickets fail-closed.
+
+This is now the primary application-to-economic-runtime blocker for the first real user.
+
+Do not:
+- synthesize a witness in the frontend;
+- fill hashes/EEV/liquidity with placeholders;
+- weaken EconomicAdmission;
+- bypass the Economic Gate;
+- turn the existing Haskell test vector into live authority.
+
+The next implementation task is to bridge the authoritative PRE-RICH economic admission path to the Cardano runtime in a way that preserves the existing evidence-binding checks and can be independently observed/replayed.
+
+## Deployment infrastructure advanced
+
+- dapp.html now uses a relative module path compatible with the GitHub Pages repository subpath.
+- .github/workflows/immortal-preprod-pages.yml now provides a gated V5/PRE-RICH Pages deployment.
+- The Pages workflow fails closed when required Preprod configuration secrets are absent and never requires or stores a wallet seed.
+- .github/workflows/immortal-cardano-preprod.yml no longer cancels an in-flight evidence run when a newer push arrives.
+
+Commits:
+- d6ea9d733bdf375268c1c62292d7313e2258e06c — Pages-compatible DApp module path.
+- 43ccd2884b787e2393f64799bb6e52650e3af34f — gated Preprod Pages deployment.
+- f05f1ab5926da9f1a197e3d5f9c40c0548038024 — preserve Preprod evidence runs.
+
+Status: first-user path IN PROGRESS; frontend deployment infrastructure advanced; authoritative Issue admission bridge remains OPEN.
+
+### Session report
+
+FRONT: First real Preprod user gate
+SUBFRONT: DApp deployment + Issue economic admission bridge
+HEAD: work/immortal-green-closure after f05f1ab5926da9f1a197e3d5f9c40c0548038024
+SOURCE SET: current repository implementation + coordination register
+IMPLEMENTATION: Pages path fixed; gated Preprod Pages workflow added; evidence-run cancellation removed
+TEST/CI: workflow execution still required
+RUNTIME: no new live witness fabricated
+CERTIFICATION: OPEN
+STATUS: IN PROGRESS
+BLOCKER: authoritative EconomicAdmissionWitness producer for Issue
+NEXT CONCRETE WITNESS: executable Issue-admission bridge, then real DEMETER-signed Preprod Issue
+FILES/COMMITS: d6ea9d7, 43ccd28, f05f1ab
