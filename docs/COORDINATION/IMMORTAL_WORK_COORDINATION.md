@@ -7847,3 +7847,34 @@ The runner was therefore hardened without changing the native evaluation target:
 **Classification:** the previously identified EpochInfo provenance gap is **IMPLEMENTATION GAP → HARDENED / EVIDENCE PENDING**. A real packet evaluation is still required to demonstrate the resulting context on an exact workflow head.
 
 No protocol economics, validator semantics, or synthetic ledger context was introduced. The native `evalTxExUnitsWithLogs` boundary remains unchanged.
+
+## 2026-09-26 — Preprod connectivity: Free-tier connection constraint captured
+
+The Demeter Ogmios Preprod pricing screen observed in-session reports for the **Free** tier:
+- minimum ticket: **$0**;
+- price per 100k messages: **$0**;
+- maximum concurrent open connections: **1**.
+
+For the current IMMORTAL evidence workflow, this is sufficient because the Preprod probe is intentionally a single serial WebSocket session. No plan upgrade is required for the present certification path.
+
+Commit `eb74b477facd3e317c0fc1d463eb7706ae11e534` updates `.github/workflows/immortal-cardano-preprod.yml` to:
+- serialize the workflow with a branch-scoped GitHub Actions concurrency group and cancel superseded runs;
+- fail early when `DEMETER_API_KEY` is absent, without printing the credential.
+
+This prevents parallel CI probes from competing for the single Free-tier Ogmios connection and preserves the existing secret boundary.
+
+### Certification boundary
+
+This change is operational/CI hardening only. It does **not** constitute:
+- a successful live Preprod transaction;
+- a P2.8 native evaluator result;
+- a Reveal execution-budget classification;
+- B3/Materios closure;
+- B4/B5/B6 end-to-end ledger evidence.
+
+The next decisive P2.8 artifact remains a real Preprod transaction/UTxO/context packet evaluated by the native `evalTxExUnitsWithLogs` path.
+
+**Classification:** Demeter Free tier = **SUFFICIENT FOR CURRENT SERIAL PROBE**; P2.8 = **OPEN**.
+
+**USER QUESTION:** NONE.
+
