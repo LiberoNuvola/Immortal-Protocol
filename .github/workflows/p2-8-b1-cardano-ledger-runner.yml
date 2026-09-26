@@ -20,6 +20,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsodium-dev pkg-config build-essential
 
+      - name: Verify libsodium pkg-config contract
+        run: |
+          set -euo pipefail
+          if pkg-config --exists libsodium-any; then
+            echo "pkg-config libsodium-any already available"
+          elif pkg-config --exists libsodium; then
+            pcdir="$(pkg-config --variable=pcfiledir libsodium)"
+            test -n "$pcdir"
+            test -f "$pcdir/libsodium.pc"
+            sudo ln -sf "$pcdir/libsodium.pc" "$pcdir/libsodium-any.pc"
+            pkg-config --exists libsodium-any
+            echo "Created compatibility alias libsodium-any.pc -> libsodium.pc"
+          else
+            echo "Neither libsodium-any nor libsodium is available through pkg-config"
+            exit 1
+          fi
+          pkg-config --modversion libsodium
+          pkg-config --modversion libsodium-any
+
       - name: Install GHC and Cabal
         uses: haskell-actions/setup@v2
         with:
