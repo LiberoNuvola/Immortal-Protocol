@@ -133,9 +133,18 @@ eventSchemaValid e =
   payloadProposalId (eventPayload e) == eventProposalId e &&
   eventTypeMatchesPayload (eventType e) (eventPayload e) &&
   payloadTimestampCompatible e &&
+  payloadRulesetVersionCompatible e &&
   not (null (payloadCommitment e)) &&
   not (null (evidenceRefs e)) &&
   unique (evidenceRefs e)
+
+payloadRulesetVersionCompatible :: CanonicalEvent -> Bool
+payloadRulesetVersionCompatible e = case eventPayload e of
+  PayloadDecisionFinalized r ->
+    decisionRulesetVersion r == rulesetVersion e
+  PayloadConformanceRecorded r ->
+    conformanceRulesetVersion r == rulesetVersion e
+  _ -> True
 
 payloadProposalId :: CanonicalPayload -> ProposalId
 payloadProposalId p = case p of
