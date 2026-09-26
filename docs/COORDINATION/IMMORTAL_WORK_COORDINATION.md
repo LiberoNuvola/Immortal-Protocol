@@ -2416,3 +2416,27 @@ No economic producer, canonical PRE identity, Genesis rule, carrier policy seman
 **STATUS: 🟢 DEPLOYMENT HELPER STRUCTURALLY READY / 🔴 REAL PREPROD SIGNED DEPLOYMENT OPEN**
 
 **NEXT CONCRETE WITNESS:** run `npm run v3:initial-datum`, set the explicit canonical datum and token name in local admin environment, select exactly one real seed UTxO, run `npm run deploy:v3-carrier`, then persist the resulting singleton `txHash#outputIndex`, policy ID and carrier address into the Preprod deployment configuration. The deployer mnemonic remains local-only and must never enter GitHub or the browser.
+
+
+## 44.13 LIVE PREPROD V3 CARRIER WITNESS SEAM — 2026-09-26
+
+The V3 deployment helper is now complemented by a dedicated live observation probe:
+- `audit/cardano-integration/preprod-v3-carrier-observation.mjs`
+
+The probe is deliberately narrower than Issue admission. It requires the configured Preprod V3 carrier address/policy/token identity and a Blockfrost project credential, then proves:
+- exactly one matching carrier UTxO;
+- exact carrier asset quantity = 1;
+- exact `txHash#outputIndex` state reference;
+- inline datum presence.
+
+It does **not** calculate EEV, liquidity, ProtectedCapital, viability or Issue admissibility.
+
+The Preprod workflow now exposes this as a **manual-only** job, using DEMETER environment secrets, and uploads the resulting deployment witness. No secret or mnemonic is committed.
+
+Commits:
+- `33ce61fff1bf3650c3ed556234e6f9a0f73e49ea` — live V3 carrier observation probe.
+- `e215b4804c7d02b94ea0cfaf6dcb355acfa741f1` — manual Preprod workflow witness job.
+
+**STATUS: 🟡 EXECUTABLE WITNESS SEAM / 🔴 REAL DEPLOYMENT OBSERVATION OPEN**
+
+This remains distinct from the larger Issue gate: after the V3 singleton is observed, the remaining real Issue blocker is the authenticated valuation/EEV/refinement source plus execution of the existing Haskell `issue-admission` path against the same concrete observation.
