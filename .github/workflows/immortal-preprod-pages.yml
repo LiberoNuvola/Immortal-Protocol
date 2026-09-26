@@ -1,0 +1,120 @@
+name: IMMORTAL Preprod DApp Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "index.html"
+      - "protocol.html"
+      - "algorithm.html"
+      - "mathematics.html"
+      - "code.html"
+      - "adapters.html"
+      - "ecosystem.html"
+      - "governance.html"
+      - "documentation.html"
+      - "community.html"
+      - "dapp.html"
+      - "preprod-treasury.html"
+      - "src/**"
+      - "PRE-RICH/**"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/immortal-preprod-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: immortal-preprod-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    env:
+      VITE_BLOCKFROST_PREPROD_URL: https://cardano-preprod.blockfrost.io/api/v0
+      VITE_BLOCKFROST_PROJECT_ID: ${{ secrets.VITE_BLOCKFROST_PROJECT_ID }}
+      VITE_COUNTER_SCRIPT_ADDRESS: ${{ secrets.VITE_COUNTER_SCRIPT_ADDRESS }}
+      VITE_TREASURY_ADDRESS: ${{ secrets.VITE_TREASURY_ADDRESS }}
+      VITE_TICKET_POLICY_ID: ${{ secrets.VITE_TICKET_POLICY_ID }}
+      VITE_RELAYER_PKH: ${{ secrets.VITE_RELAYER_PKH }}
+      VITE_ORACLE_PUBLISHER_PKH: ${{ secrets.VITE_ORACLE_PUBLISHER_PKH }}
+      VITE_ORACLE_STATE_POLICY_ID: ${{ secrets.VITE_ORACLE_STATE_POLICY_ID }}
+      VITE_ORACLE_STATE_TOKEN_NAME_HEX: ${{ secrets.VITE_ORACLE_STATE_TOKEN_NAME_HEX }}
+      VITE_B1_POOL_TOKEN_POLICY_ID: ${{ secrets.VITE_B1_POOL_TOKEN_POLICY_ID }}
+      VITE_B1_POOL_TOKEN_NAME_HEX: ${{ secrets.VITE_B1_POOL_TOKEN_NAME_HEX }}
+      VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS: ${{ secrets.VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS }}
+      VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS: ${{ secrets.VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS }}
+    steps:
+      - name: Checkout exact Green Closure head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate required Preprod DApp configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in \
+            VITE_BLOCKFROST_PROJECT_ID \
+            VITE_COUNTER_SCRIPT_ADDRESS \
+            VITE_TREASURY_ADDRESS \
+            VITE_TICKET_POLICY_ID \
+            VITE_RELAYER_PKH \
+            VITE_ORACLE_PUBLISHER_PKH \
+            VITE_ORACLE_STATE_POLICY_ID \
+            VITE_ORACLE_STATE_TOKEN_NAME_HEX \
+            VITE_B1_POOL_TOKEN_POLICY_ID \
+            VITE_B1_POOL_TOKEN_NAME_HEX \
+            VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS \
+            VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "missing required Pages environment secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Preprod Pages build is intentionally blocked until all required configuration is supplied."
+            exit 1
+          fi
+
+      - name: Build V5 + PRE-RICH DApp
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
