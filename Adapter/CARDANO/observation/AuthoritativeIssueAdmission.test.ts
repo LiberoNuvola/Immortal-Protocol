@@ -91,4 +91,42 @@ describe('Authoritative Issue admission producer', () => {
       }),
     ).rejects.toThrow()
   })
+
+  it('fails closed when the decision observation is not the same observation used for liquidity', async () => {
+    const provider = createAuthoritativeIssueAdmissionProvider(async () =>
+      decision({
+        authoritativeObservationReference: 'observation:other',
+      }),
+    )
+
+    await expect(
+      provider({
+        counterInputReference: COUNTER,
+        poolInputReference: POOL,
+        liquiditySourceReferences: [POOL],
+        poolUsdmValue: 500n,
+      }),
+    ).rejects.toThrow(
+      'decision observation reference does not match executable-liquidity observation',
+    )
+  })
+
+  it('fails closed on malformed canonical hashes before a Cardano witness is created', async () => {
+    const provider = createAuthoritativeIssueAdmissionProvider(async () =>
+      decision({
+        postStateHash: 'not-a-digest',
+      }),
+    )
+
+    await expect(
+      provider({
+        counterInputReference: COUNTER,
+        poolInputReference: POOL,
+        liquiditySourceReferences: [POOL],
+        poolUsdmValue: 500n,
+      }),
+    ).rejects.toThrow(
+      'postStateHash must be a 32-byte hex digest',
+    )
+  })
 })
