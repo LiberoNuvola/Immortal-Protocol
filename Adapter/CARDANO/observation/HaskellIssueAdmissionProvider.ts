@@ -45,10 +45,10 @@ type HaskellDecisionEnvelope = {
     actionFingerprint: string
     decisionReference: string
     authoritativeObservationReference: string
-    preEEV: number
-    candidateEEV: number
-    availableExecutableLiquidity: number
-    requiredImmediateLiquidity: number
+    preEEV: string
+    candidateEEV: string
+    availableExecutableLiquidity: string
+    requiredImmediateLiquidity: string
   }
 }
 
@@ -145,9 +145,7 @@ export function createHaskellIssueAdmissionProvider(
         spendable: true,
         ringFenced: false,
       }],
-      declaredUsdmLiquidity: BigInt(
-        decision.availableExecutableLiquidity,
-      ),
+      declaredUsdmLiquidity: BigInt(decision.availableExecutableLiquidity),
     }
 
     const result: AuthoritativeIssueAdmissionDecision = {
