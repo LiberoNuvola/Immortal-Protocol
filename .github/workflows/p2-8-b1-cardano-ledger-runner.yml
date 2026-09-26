@@ -150,3 +150,5 @@ jobs:
           name: p2-8-b1-cardano-ledger-runner-evidence
           path: audit/cardano-ledger-runner/evidence/
           if-no-files-found: error
+
+# Exact-head execution trigger: no runner, dependency, or semantic change.
