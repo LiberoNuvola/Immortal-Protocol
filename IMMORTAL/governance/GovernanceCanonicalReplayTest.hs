@@ -293,6 +293,15 @@ main = do
     Right st -> assert (eventsApplied st == 3)
       "CONFORMANCE_RECORDED follows Adopted projection"
 
+  let regressedConformance =
+        withCommitment
+          (conformanceEvent { eventTimestamp = 1
+                            , evidenceRefs = [EvidenceRef "regressed-conformance-evidence"] })
+  case applyCanonicalEvent ruleset emptyState adoptedState
+         (Just (withCommitment adoptionEvent)) regressedConformance of
+    Left _ -> putStrLn "PASS: CONFORMANCE_RECORDED timestamp regression rejected"
+    Right _ -> error "FAIL: CONFORMANCE_RECORDED timestamp regression accepted"
+
   let canonicalizationRecord = CanonicalizationRecord
         { canonicalizationProposalId = 7
         , canonicalizationTargetArtifact = "governance-spec-v0.1"
