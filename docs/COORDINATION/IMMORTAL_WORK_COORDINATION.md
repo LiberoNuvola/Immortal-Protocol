@@ -1959,3 +1959,122 @@ This is **implementation/test evidence only**. It is not Preprod execution evide
 **STATUS: 🟡 BRIDGE IMPLEMENTED / AUTHORITATIVE OBSERVATION PRODUCER OPEN**
 
 **NEXT CONCRETE WITNESS:** bind the bridge to the real Preprod V3 carrier + Pool observation path, execute the Haskell producer on those exact observations, then obtain a real first-user CIP-30 Issue transaction.
+
+
+# 44. PREPROD PRE BRIDGE — PARALLEL ENGINEERING FRONT — 2026-09-26
+
+The canonical PRE materialization gate remains OPEN. A dedicated bridge/materialization investigation is now authorized as a parallel engineering front.
+
+## Objective
+
+Establish a technically executable path to represent the canonical Mainnet PRE in Preprod **without redefining, weakening, or silently substituting the canonical PRE identity**.
+
+Cardano binds a native asset to its complete `PolicyID + AssetName`; changing the minting policy changes the asset identity. Therefore a Preprod representation under a different policy must be treated as a distinct representation and must not be called the canonical PRE without an explicit, verifiable 1:1 binding.
+
+## Explicit exclusions
+
+- **No synthetic PRE** may be promoted to canonical PRE.
+- **No change to Genesis admission threshold or semantics.**
+- **No B3 mechanism or Materios logic may be introduced into this front.**
+- **No weakening of the canonical PRE/Treasury identity.**
+- **No requirement that the first CIP-30/Lace user already hold PRE.**
+- **No modification of IMMORTAL universal economics to solve a deployment problem.**
+- **No reuse of a different PolicyID under the same PRE identity label.**
+- **No production claim from Yaci/devnet fixtures.**
+
+## Parallel agent allocation
+
+### Bridge Agent A — Canonicality / architecture
+
+Determine whether a Preprod representation can be formally bound 1:1 to canonical Mainnet PRE.
+
+Required outputs:
+1. architecture decision record;
+2. canonical identity binding model;
+3. supply conservation invariant;
+4. mint/burn authority model;
+5. failure/replay/double-mint rejection conditions;
+6. explicit statement of what is and is not the canonical PRE asset.
+
+Acceptance: no unresolved identity ambiguity.
+
+### Bridge Agent B — Cardano on-chain implementation
+
+Investigate the minimum viable lock/mint/burn bridge or equivalent representation using existing repository primitives.
+
+Required outputs:
+1. policy/validator design;
+2. exact datum/redeemer model;
+3. transaction flow;
+4. implementation plan using existing Adapter boundaries;
+5. local/Yaci integration tests;
+6. Preprod transaction plan.
+
+Acceptance: executable design with no private-key material in repository/frontend.
+
+### Bridge Agent C — PRE-RICH / Genesis integration
+
+Trace how a bridged/represented PRE could enter:
+
+`representation -> protocol Treasury -> verified Oracle -> Genesis admission`
+
+without creating a second economic PRE.
+
+Required outputs:
+1. Genesis admission compatibility analysis;
+2. Oracle valuation identity/provenance requirements;
+3. Treasury UTxO requirements;
+4. first-user/CIP-30 implications;
+5. explicit non-contamination proof between representation and canonical economic identity.
+
+Acceptance: no Genesis rule changes unless separately and canonically authorized.
+
+### Bridge Agent D — Verification / evidence
+
+Independently verify the historical policy's apparent one-shot/UTxO-parameterized behavior and determine whether direct canonical-policy reuse on Preprod is possible.
+
+Required outputs:
+1. formal decompilation/execution evidence where feasible;
+2. exact role of the embedded historical UTxO/hash;
+3. whether parameter changes necessarily alter PolicyID;
+4. proof boundary and remaining uncertainty;
+5. evidence packet specification for the bridge.
+
+Acceptance: direct canonical-policy reuse is either proven executable or formally ruled out for Preprod.
+
+## Coordination rules
+
+All four agents work from this branch and coordinate through this document.
+
+- Do not duplicate the same implementation.
+- Do not change normative economics.
+- Do not close the gate from design evidence alone.
+- Separate **canonical asset**, **bridge representation**, **collateral/reserve**, and **Treasury observation**.
+- Any proposal that creates a different PolicyID must explicitly name the resulting asset as a representation/wrapped/test asset until a canonical binding is proven.
+- Prefer reuse of existing Adapter, Treasury, Oracle and evidence infrastructure.
+- Record exact commit, test, transaction and UTxO evidence.
+- Fail closed on ambiguity.
+
+## Suggested work order
+
+`D -> A -> B -> C`
+
+D first determines whether direct reuse is possible; A fixes the identity model; B implements the minimum viable bridge; C wires the representation into Treasury/Genesis.
+
+## Definition of Done
+
+The front is closed only when all are satisfied:
+
+1. identity model is explicit;
+2. canonical-vs-representation distinction is machine-checkable;
+3. supply conservation is proven;
+4. mint/burn authority is constrained;
+5. replay/double-mint is rejected;
+6. Treasury observation can independently verify the represented quantity;
+7. Genesis admission consumes an authenticated observation;
+8. at least one real Preprod execution witness exists;
+9. evidence packet is reproducible from frozen inputs.
+
+Until then:
+
+**STATUS: 🟡 PREPROD PRE BRIDGE INVESTIGATION OPEN / PREPROD CANONICAL MATERIALIZATION OPEN**
