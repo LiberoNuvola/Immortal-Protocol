@@ -73,4 +73,26 @@ jobs:
       - name: Run kernel regression suite
         working-directory: plutus
         run: |
-          cabal test v3-golden-vector-tests economic-admission-tests protected-capital-conformance-tests governance-tests governance-canonical-replay-tests legacy-adapter-tests projection-boundary-tests genesis-admission-tests --enable-tests --test-show-details=direct --with-compiler=ghc
+          mkdir -p ../audit/conformance-evidence
+          set -o pipefail
+          cabal test v3-golden-vector-tests economic-admission-tests protected-capital-conformance-tests governance-tests governance-canonical-replay-tests legacy-adapter-tests projection-boundary-tests genesis-admission-tests --enable-tests --test-show-details=direct --with-compiler=ghc | tee ../audit/conformance-evidence/kernel-conformance.txt
+
+      - name: Record projection-boundary evidence provenance
+        if: always()
+        run: |
+          mkdir -p audit/conformance-evidence
+          {
+            echo "head_sha=$GITHUB_SHA"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "workflow_run=$GITHUB_RUN_ID"
+            echo "test=projection-boundary-tests"
+            echo "claim=executable V3-to-Universal differential conformance witness; not full Cardano equivalence"
+          } | tee audit/conformance-evidence/projection-boundary-provenance.txt
+
+      - name: Upload kernel conformance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-kernel-conformance-evidence
+          path: audit/conformance-evidence/
+          if-no-files-found: error
