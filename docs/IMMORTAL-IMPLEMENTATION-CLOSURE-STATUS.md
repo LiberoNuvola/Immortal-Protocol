@@ -149,3 +149,13 @@ The implementation-to-certification transition is now recorded explicitly in `do
 - **No economic semantics changed:** no KA/KC/KD, payout bound, ladder, expiry, Treasury semantics, or protocol size limit was changed.
 
 The Reveal redesign is **implemented but not yet GREEN**: it still requires a deployed reference-script pair, a serialized-size measurement, and native Cardano-ledger evaluation of the exact transaction.
+
+
+## 2026-09-26 — P2.8 resolver frontier update
+
+- Exact-head native P2.8 run `36222473719` on commit `514ac0c37f17bc157d2a78aa0aeee579f69bd100` was superseded by the next branch push before evaluation completed.
+- The preceding Cardano Ledger Audit Runner build reached Cabal dependency resolution and exposed a concrete missing source package: `plutus-tx` required by `plutus-ledger-api-1.67.0.0`.
+- The upstream Plutus `2334b4e98f21653e3cdaf7ec25878e781ce7d5dc` contains `plutus-tx`; the P2.8 runner now materializes that exact subdirectory alongside `plutus-core` and `plutus-ledger-api`.
+- Commit `902a7b592f9537e73f506a3498aafe4dff3e7c58` carries the resolver fix; fresh P2.8 run `36222605699` is queued on that exact head.
+- Therefore P2.8 remains **OPEN**, but the known resolver frontier has advanced from native prerequisites through Cardano/Plutus source materialization to the next executable stage.
+- No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
