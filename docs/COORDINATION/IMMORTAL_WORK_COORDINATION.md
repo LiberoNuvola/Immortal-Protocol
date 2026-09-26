@@ -301,9 +301,15 @@ Singleton identity and ledger enforcement remain deployment work.
 
 **Status: 🟡 DESIGN CANDIDATE / ON-CHAIN INTEGRATION OPEN**
 
-## F4.3 B3
+## F4.3 B3 — PRE-RICH-owned canonicality target
 
-Target architecture:
+**Boundary rule:** B3 belongs to **PRE-RICH**, not to the universal IMMORTAL kernel.
+
+B3 is not an IMMORTAL economic rule. It is the stronger publisher-independent randomness/canonicality target selected by PRE-RICH for its Beacon path. The canonical repository source states this explicitly in `PRE-RICH/docs/B3-BEACON-CONFORMANCE-INVESTIGATION.md`.
+
+IMMORTAL may define only the generic abstraction/boundary for authenticated external canonical evidence. It must not absorb the concrete B3 mechanism, Materios topology, PRE-RICH Beacon domains, or application-specific canonicality policy merely because PRE-RICH instantiates them.
+
+Target PRE-RICH architecture:
 
 `Materios → CanonicalCheckpoint → finality/storage verification → proof → Cardano verifier → CanonicalBeaconAnchor → BeaconRegistry`
 
@@ -558,6 +564,20 @@ Public structure:
 `IMMORTAL → DApp Ecosystem → PRE-RICH`
 
 PRE-RICH is the first Cardano-native application, not the definition of IMMORTAL.
+
+### F8.2a — Immortal-jellyfish / Medusa boundary
+
+The **immortal-jellyfish / Turritopsis / Medusa** concept belongs to the PRE-RICH application/presentation layer as the concrete manifestation of its intended “immortality” property.
+
+It must not be retroactively encoded as a universal IMMORTAL rule merely because PRE-RICH uses it as its defining metaphor.
+
+The architectural hypothesis is:
+
+`IMMORTAL universal algorithm/invariants → PRE-RICH instantiation → observed application property`
+
+This is a design/interpretation boundary, **not yet a formal proof that the universal algorithm itself establishes biological-style immortality**. No threshold, state transition, or economic rule may be invented from the metaphor.
+
+Conversely, PRE-RICH-specific mechanics must not be promoted upstream into IMMORTAL unless separately demonstrated and canonically accepted as universal.
 
 ## F8.3 PRE-RICH DApp
 
@@ -1158,7 +1178,8 @@ No novelty claim was added.
 ### Required next concrete witnesses
 
 1. **P2.8:** exact-head native evaluation packet.
-2. **Preprod Reveal:** real signed reference-script Reveal and ledger evaluation.
+2. **Boundary audit:** verify no B3/PRE-RICH Beacon or Medusa-specific semantics have leaked into universal IMMORTAL sources.
+3. **Preprod Reveal:** real signed reference-script Reveal and ledger evaluation.
 3. **B3:** publisher-independent finality + StateRoot/storage + authority/ancestry evidence.
 4. **Genesis:** live Treasury/Oracle/carrier admission witness.
 5. **Governance:** current-head Haskell execution artifact.
