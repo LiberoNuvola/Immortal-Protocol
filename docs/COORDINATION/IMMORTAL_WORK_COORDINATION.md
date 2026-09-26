@@ -8391,3 +8391,18 @@ Classification:
 - Typed context decode: **OPEN**.
 - Native `evalTxExUnitsWithLogs`: **OPEN**.
 - No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
+
+
+## 2026-09-26 — P2.8 cardano-binary release alignment repaired
+
+After the `cardano-base 0.1.6.0` repair, upstream `cardano-ledger-binary-1.9.x` exposed the next exact bound: `cardano-binary >=1.9.1`. The `cardano-base 0.1.6.0` source snapshot contains `cardano-binary 1.9.0.0`, so leaving it in the same source package would deterministically fail the resolver.
+
+CHaP records `cardano-binary-1.9.1.0` at IntersectMBO/cardano-base commit `060819b59c184b951a54e3c563304983c53a3eac`, subdirectory `cardano-binary`. Commit `597b42d7ab9b4f10d9ef5133ee11a7e2a35721e4` removes `cardano-binary` from the older `cardano-base 0.1.6.0` source package block and pins this exact compatible release separately.
+
+Classification:
+- P2.8 cardano-base compatibility: **REPAIRED**.
+- P2.8 cardano-binary compatibility: **REPAIRED**.
+- Fresh resolver/evaluator evidence: **PENDING**.
+- Typed context decode: **OPEN**.
+- Native `evalTxExUnitsWithLogs`: **OPEN**.
+- No economic, validator, authority-selection, oracle, expiry, fee, or protocol-limit semantics changed.
