@@ -16,6 +16,7 @@ export const LIFE_STATES = [
 export type LifeState = typeof LIFE_STATES[number]
 
 export const PROTOCOL_ACTIVITIES = [
+  'IDLE',
   'ACTIVATING_CLASS',
   'SELLING_ASSET',
   'ISSUING',
@@ -71,7 +72,7 @@ export type BeaconDeclaration = {
 export type ProtocolDeclaration = {
   readonly protocolId: string
   readonly lifeState: LifeState
-  readonly currentActivity?: ProtocolActivityDeclaration
+  readonly currentActivity: ProtocolActivityDeclaration
   readonly operationalStatus: OperationalStatus
   readonly beacon?: BeaconDeclaration
   readonly observedAt: string
@@ -103,6 +104,7 @@ export function declarationPublishable(declaration: ProtocolDeclaration): boolea
     declaration.protocolId.length > 0 &&
     declaration.observedAt.length > 0 &&
     declaration.evidence.length > 0 &&
+    declaration.currentActivity.kind.length > 0 &&
     declaration.evidence.every((evidence) =>
       evidence.evidenceRef.length > 0 &&
       evidence.canonicalStateRef.length > 0 &&
