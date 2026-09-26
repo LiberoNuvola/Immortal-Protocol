@@ -79,6 +79,26 @@ export type ProtocolDeclaration = {
   readonly evidence: readonly DeclarationEvidence[]
 }
 
+
+// Optional richer public-state fields. They are declarations produced by the
+// authoritative observation layer; the frontend must not derive them locally.
+import type { ActionAvailability } from './publicActionAvailability'
+import type { ProtocolModeDeclaration } from './publicProtocolMode'
+
+export type ActiveClassDeclaration = {
+  readonly classId: number
+  readonly status: 'ACTIVE' | 'INACTIVE' | 'TRANSITIONING' | 'BLOCKED'
+  readonly roundId?: string
+  readonly evidenceRef: string
+  readonly observedAt: string
+}
+
+export type PublicProtocolState = {
+  readonly activeClass?: ActiveClassDeclaration
+  readonly modes: readonly ProtocolModeDeclaration[]
+  readonly actions: readonly ActionAvailability[]
+}
+
 export function isLifeState(value: string): value is LifeState {
   return (LIFE_STATES as readonly string[]).includes(value)
 }
