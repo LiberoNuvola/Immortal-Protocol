@@ -8,6 +8,8 @@ import Prelude
   , String
   , error
   , putStrLn
+  , not
+  , (++)
   )
 
 import EconomicGate
