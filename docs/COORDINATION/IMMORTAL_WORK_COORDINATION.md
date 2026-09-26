@@ -1396,3 +1396,25 @@ Commits:
 - `5b7a28a6c4f00867bd04fd04c712dc23fd7a172b` — bridge tests
 
 **NEXT:** implement the authoritative producer/refinement runtime and connect it to this bridge; then execute the first real DEMETER/CIP-30 Preprod Issue. Do not revisit the already-green declaration/governability CI unless changed by this work.
+
+
+## 29. ISSUE FIRST-USER WIRING — 2026-09-26
+
+Progressed beyond the previous green boundary without reopening closed checks.
+
+### Implemented
+
+`src/mint.ts` now exposes `mintSerialNFTWithAuthoritativeAdmission`:
+- resolves the exact Counter and B1PrizePool UTxOs that will be used by the Issue transaction;
+- passes those exact references to `obtainAuthoritativeIssueAdmission`;
+- requires the authenticated Pool USDM valuation from the authoritative caller rather than deriving a new valuation in the browser;
+- receives the EconomicAdmissionWitness from the injected authoritative producer;
+- delegates to the existing `mintSerialNFT` path, which performs the final `submitEconomic(..., 'Issue')` binding immediately before signing.
+
+This closes another **implementation-layer** gap: the admission bridge is no longer an orphan API. It is now on the actual Issue entry path.
+
+### Still explicitly OPEN
+
+This does **not** claim an authoritative producer exists, nor does it claim Preprod execution. The caller must still provide a real producer and authenticated Pool valuation. The next concrete proof is therefore a real producer backed by authoritative observation/refinement, followed by an actual DEMETER/CIP-30 Preprod Issue.
+
+Commit: `01ce8e96903c6c341ab3fc78d8f399470bfd8115`.
