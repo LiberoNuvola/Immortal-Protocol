@@ -194,6 +194,13 @@ predecessorValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 predecessorValid Nothing e = predecessor e == Nothing
 predecessorValid (Just p) e = predecessor e == Just (eventId p)
 
+eventTimestampValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
+eventTimestampValid Nothing _ = True
+eventTimestampValid (Just p) e = eventTimestamp e >= eventTimestamp p
+
 canonicalEventValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 canonicalEventValid prev e =
-  eventSchemaValid e && predecessorValid prev e && eventStatus e == AcceptedEvent
+  eventSchemaValid e &&
+  predecessorValid prev e &&
+  eventTimestampValid prev e &&
+  eventStatus e == AcceptedEvent
