@@ -1,0 +1,36 @@
+name: Protocol Declaration Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+  pull_request:
+    branches:
+      - main
+      - work/immortal-green-closure
+
+permissions:
+  contents: read
+
+jobs:
+  declaration-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Protocol declaration tests
+        run: npx vitest run src/__tests__/protocolDeclaration.test.ts
+
+      - name: Typecheck
+        run: npx tsc --noEmit
