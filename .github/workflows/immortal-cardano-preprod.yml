@@ -39,12 +39,21 @@ jobs:
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
 
-      - name: Validate Preprod probe inputs
+      - name: Validate Demeter credential
         run: |
-          test -n "$DEMETER_API_KEY"
-          test -n "$PREPROD_WALLET_ADDRESS"
-          echo "DEMETER_API_KEY=present"
-          echo "PREPROD_WALLET_ADDRESS=$PREPROD_WALLET_ADDRESS"
+          if [ -n "$DEMETER_API_KEY" ]; then
+            echo "DEMETER_API_KEY=present"
+          else
+            echo "DEMETER_API_KEY=missing"
+            exit 1
+          fi
+
+      - name: Validate Preprod wallet address
+        run: |
+          case "$PREPROD_WALLET_ADDRESS" in
+            addr_test*) echo "PREPROD_WALLET_ADDRESS=valid-testnet-address" ;;
+            *) echo "PREPROD_WALLET_ADDRESS=invalid-or-missing"; exit 1 ;;
+          esac
 
       - name: Probe Demeter Ogmios Preprod context
         run: node audit/cardano-integration/preprod-ogmios-context.mjs
