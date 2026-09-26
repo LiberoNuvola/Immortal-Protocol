@@ -2440,3 +2440,37 @@ Commits:
 **STATUS: 🟡 EXECUTABLE WITNESS SEAM / 🔴 REAL DEPLOYMENT OBSERVATION OPEN**
 
 This remains distinct from the larger Issue gate: after the V3 singleton is observed, the remaining real Issue blocker is the authenticated valuation/EEV/refinement source plus execution of the existing Haskell `issue-admission` path against the same concrete observation.
+
+## 44.14 TREASURY / DEPLOYER / FIRST-USER ROLE SEPARATION — 2026-09-26
+
+The Preprod materialization path was rechecked against the current implementation to prevent role conflation.
+
+### Confirmed boundaries
+
+- **Treasury** is a protocol-controlled Plutus script surface. Its address is derived from the unparameterized Treasury validator and is deployment configuration (VITE_TREASURY_ADDRESS); it is not a personal wallet and does not require a browser/user seed.
+- **V3 deployment signer** is a separate local/admin execution role used only to consume the explicit V3 carrier seed UTxO and submit the one-shot carrier deployment. DEPLOYER_MNEMONIC must never enter the browser, repository, or user-wallet flow.
+- **DEMETER / first PRE-RICH user** remains a CIP-30 wallet and signs user-authorized application transactions. It must not be promoted to Treasury or silently reused as the V3 deployment authority.
+- The repository currently does **not** contain a certified live Preprod Treasury address or a certified live V3 carrier identity. Neither may be invented from fixtures.
+
+### Evidence from implementation
+
+- src/config.ts externalizes VITE_TREASURY_ADDRESS and the V3 carrier identities.
+- src/loadValidator.ts confirms the Treasury validator has no parameters and derives its address from the artifact.
+- scripts/deployV3Carrier.ts explicitly defines DEPLOYER_MNEMONIC as a local/admin boundary and writes deployment evidence only after observing the singleton on Preprod.
+- PRE-RICH/profile/GenesisRegimeCarrier.hs keeps the Genesis carrier separate from Treasury and uses Treasury as an authenticated reference surface.
+
+### Operational consequence
+
+Do **not** use the DEMETER user wallet as a substitute for Treasury or as an implicit protocol deployment key.
+
+The next Preprod execution sequence is:
+
+1. derive/record the canonical Treasury deployment address from the current Treasury artifact and Preprod network;
+2. verify the real Treasury/Oracle/Counter/Pool deployment identities;
+3. identify the dedicated local/admin signer for one-time V3 carrier materialization;
+4. materialize and observe the V3 singleton;
+5. bind real Counter + Pool + V3 + Oracle/EEV evidence into the existing Haskell Issue admission;
+6. connect DEMETER through CIP-30 for the first real user Issue/ticket transaction.
+
+**STATUS: 🟢 ROLE SEPARATION CLOSED / 🔴 LIVE TREASURY + V3 DEPLOYMENT IDENTITIES AND RUNTIME WITNESS OPEN**
+
