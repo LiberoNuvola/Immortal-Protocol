@@ -6,7 +6,7 @@
 >
 > **Working branch:** `work/immortal-green-closure`
 > **Snapshot:** 2026-09-26
-> **Observed HEAD:** `2f99e940b2342a41dfa73a03d0aa96fa40365dd3`
+> **Observed HEAD:** `98e420cd3aa41e6615ba671b65dd36f9406ad820`
 > **HEAD change:** `docs: reorganize cross-session coordination by triangulated fronts`
 
 ---
@@ -1646,3 +1646,14 @@ The Preprod DApp wallet layer was refactored without changing economic authority
 - This is a frontend/application boundary improvement only. It does not grant the wallet economic authority and does not alter IMMORTAL, Genesis, Treasury, Oracle, or V3 carrier semantics.
 
 CI for the latest wallet commits is not yet observed; no green status is claimed until the workflow run is available.
+
+
+## 34. V3 CARRIER OBSERVATION/VALIDATION ALIGNMENT — 2026-09-26
+
+- Canonical V3 jackpot lifecycle has four constructors: Inactive, Locked, Payable, Closed.
+- Preprod V3 observer now preserves all four states instead of collapsing/rejecting Payable and Closed.
+- V3 carrier validator now requires exactly the canonical eight classes in ID order 0..7 and requires the active class to exist in the carrier state.
+- Observer tests cover Payable preservation and singleton ambiguity.
+- No economic constant or Genesis/Treasury authority was changed.
+- Latest branch HEAD: `98e420cd3aa41e6615ba671b65dd36f9406ad820`.
+- GitHub Actions triggered by this HEAD are currently pending; no CI-green claim is made yet.
