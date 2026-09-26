@@ -195,6 +195,20 @@ main = do
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"
+
+  let duplicateIdEvent =
+        withCommitment (event2 { eventId = eventId event1 })
+  case replayCanonical ruleset emptyState
+         [withCommitment event1, duplicateIdEvent] of
+    Left _ -> putStrLn "PASS: duplicate canonical event id rejected"
+    Right _ -> error "FAIL: duplicate canonical event id accepted"
+
+  let lateEvent =
+        withCommitment (event2 { eventTimestamp = 5
+                               , eventPayload = PayloadStatusChanged 1 Classified 5 })
+      regressedEvent =
+        withCommitment (StatusEvent 1 4)
+      StatusEvent _ _ = event2
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment collapsedAcceptedEvent] of
     Left _ -> putStrLn "PASS: collapsed Accepted shortcut rejected before mutation"
     Right _ -> error "FAIL: collapsed Accepted shortcut mutated canonical state"
