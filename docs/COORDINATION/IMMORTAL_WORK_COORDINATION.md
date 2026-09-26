@@ -8360,3 +8360,20 @@ The boundary is now corrected to floor division in `PreRichGenesisAdmission.hs`,
 - RT-1.1 current status: **OPEN UNTIL FRESH CI EVIDENCE**.
 
 No economic threshold or policy parameter changed.
+
+
+## 2026-09-26 — Formal mechanical evidence verified
+
+Run `36219942174` on head `d0c036ed25e11231071ede49a6fdcf04e4665a76` completed **SUCCESS**. All named mechanical reference checks passed: finite abstract-model checks and GOV-23 through GOV-29. This is reproducible mechanical evidence only; it does not upgrade the still-unproven formal theorem or external authenticity/provenance obligations.
+
+## 2026-09-26 — Haskell conformance native crypto bootstrap repaired
+
+Run `36219753443` failed before executing any semantic suite because `cardano-crypto-class` could not satisfy its `libblst >=0.3.14` pkg-config dependency. Commit `a2e662661c632cedf525652127537b4c8897a1e4` adds the pinned upstream `blst v0.3.14` build/install/probe to the aggregate Haskell conformance workflow. Fresh run `36219931498` is the post-fix execution and remains in progress at Haskell setup.
+
+## 2026-09-26 — Preprod read-only context and funding verified
+
+Fresh read-only Preprod run `36219611300` on head `7c80ef9a54c1e4909eea14bed30744ef7d03c134` completed **SUCCESS**, including Demeter/Ogmios context and live wallet UTxO acquisition. Artifact `10899026461` records `utxoCount=28`, `status=FUNDED`, `lovelaceBalance=9986228222`; context digest `fa7c636f7be1c987fbe0259a3e012f27b460476bc7862ebf04b4bde5a14bbc04`. Real Preprod transaction/signature evidence remains open because this workflow is intentionally read-only.
+
+## 2026-09-26 — P2.8 Conway dependency repair under verification
+
+Run `36219617090` failed during Cabal resolution with the exact blocker `unknown package: cardano-ledger-conway (dependency of cardano-ledger-api)`. Commit `592905e9161fbbcab8a25fcd5a8d333369bb21df` adds `eras/conway/impl` to the pinned cardano-ledger source package. Run `36219781384` is the post-fix verification and has reached the ledger-aligned bootstrap; its native crypto prerequisites and GHC/Cabal setup are green, while the real ledger resolver/evaluator evidence is still pending.
