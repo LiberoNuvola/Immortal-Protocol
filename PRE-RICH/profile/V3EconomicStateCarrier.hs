@@ -154,14 +154,28 @@ stateValid s =
     sumUnresolved [] = 0
     sumUnresolved (x:xs) = tcsUnresolved x + sumUnresolved xs
 
-{-# INLINABLE datumStateVersion #-}
-datumStateVersion :: V3EconomicStateDatum -> Integer
-datumStateVersion = vesdStateVersion
+{-# INLINABLE totalTokenInInputs #-}
+totalTokenInInputs :: ScriptContext -> BuiltinByteString -> BuiltinByteString -> Integer
+totalTokenInInputs ctx policy name =
+  let
+    go [] = 0
+    go (i:is) =
+      singletonAmount (txOutValue (txInInfoResolved i)) policy name + go is
+  in go (txInfoInputs (scriptContextTxInfo ctx))
+
+{-# INLINABLE totalTokenInOutputs #-}
+totalTokenInOutputs :: ScriptContext -> BuiltinByteString -> BuiltinByteString -> Integer
+totalTokenInOutputs ctx policy name =
+  let
+    go [] = 0
+    go (o:os) = singletonAmount (txOutValue o) policy name + go os
+  in go (txInfoOutputs (scriptContextTxInfo ctx))
 
 {-# INLINABLE sameStateIdentity #-}
 sameStateIdentity :: V3EconomicStateDatum -> V3EconomicStateDatum -> Bool
 sameStateIdentity before after =
-     vesdStateVersion after == vesdStateVersion before + 1
+     stateValid (vesdState before)
+  && vesdStateVersion after == vesdStateVersion before + 1
   && stateValid (vesdState after)
 
 {-# INLINABLE mkValidator #-}
@@ -180,11 +194,15 @@ mkValidator carrierPolicy carrierName datum action ctx =
     outputDatum = decodeDatum info output
     inputToken = singletonAmount inputValue carrierPolicy carrierName
     outputToken = singletonAmount (txOutValue output) carrierPolicy carrierName
+    totalInputToken = totalTokenInInputs ctx carrierPolicy carrierName
+    totalOutputToken = totalTokenInOutputs ctx carrierPolicy carrierName
   in
        ownInputCount ctx == 1
     && ownOutputCount ctx == 1
     && inputToken == 1
     && outputToken == 1
+    && totalInputToken == 1
+    && totalOutputToken == 1
     && txOutValue output == inputValue
     && case outputDatum of
          Nothing -> False
