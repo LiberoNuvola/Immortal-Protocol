@@ -1008,3 +1008,41 @@ The project may be called:
 Until then, use the exact layer-specific status above.
 
 **No agent may close a gate by changing the meaning of the gate.**
+
+
+---
+
+# 22. PUBLIC TRANSPARENCY LIFECYCLE MATRIX — OBSERVABILITY-002
+
+**Added:** 2026-09-26  
+**Purpose:** close the public declaration mapping from lifecycle/economic events to user-visible action availability without changing protocol economics.
+
+Canonical matrix:
+- `docs/04-guides/17_PUBLIC_TRANSPARENCY_LIFECYCLE_MATRIX_v0.1.md`
+
+Required public coverage:
+- Sale
+- Commit
+- Reveal
+- Claim
+- Expire
+- Class activation/deactivation/contraction
+- Jackpot
+- Recovery Mode
+- Surplus Mode
+- Capital Protection / Regeneration where authoritatively declared
+- Beacon-dependent actions
+- transaction lifecycle and wallet boundary
+
+Rules:
+1. Frontend consumes authoritative declarations; it does not reconstruct economic state.
+2. Every public action has an explicit availability state and explanation.
+3. Active Class and economic modes are declared, never inferred from balances or failed transactions.
+4. Beacon trust is observed/frozen state; B2/B3 are not claimed operational without their required deployment evidence.
+5. Missing state/evidence is rendered as `UNKNOWN / NOT DECLARED`.
+6. No ETA or next transition is invented; it is shown only when authoritatively declared.
+7. This front does not modify KA/KC/KD, economic formulas, validator semantics, Beacon selection, or frontend implementation ownership.
+
+**Current implementation witness:** commit `8f6f0650de4f96d060d10128ac2574aff1e74b3f`.
+
+**Frontend integration target:** consume `ProtocolDeclaration`, `PublicProtocolState`, `ActionAvailability`, `ProtocolModeDeclaration`, and `ActiveClassDeclaration`; do not duplicate the underlying transition algorithms.
