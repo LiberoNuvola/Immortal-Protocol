@@ -2492,3 +2492,29 @@ The live Treasury address and V3 carrier identity remain runtime evidence, not s
 
 **STATUS: 🟢 ARCHITECTURAL ROLES CLOSED / 🔴 DEPLOYMENT SIGNER + LIVE PREPROD EVIDENCE OPEN**
 
+
+
+## 44.14 AUTHORITATIVE ISSUE REFINEMENT ENVELOPE — 2026-09-26
+
+The remaining Issue input seam has been hardened with a dedicated fail-closed transport contract:
+- `relayer/authoritativeIssueRefinementEnvelope.js`
+- `relayer/authoritativeIssueRefinementEnvelope.test.js`
+
+The envelope requires, without defaults:
+- explicit VERIFIED status;
+- source reference;
+- verification reference;
+- derivation version;
+- authenticated observation timestamp and freshness window;
+- preEEV and candidateEEV;
+- executable Pool valuation and required immediate liquidity;
+- truth/freshness/obligation/Ω flags;
+- decision reference.
+
+This is **not** an oracle and **not** a cryptographic verifier. It prevents the Issue relayer from treating an unproven/local/default valuation envelope as authoritative, while leaving the actual external verification source as the remaining deployment task.
+
+Commits:
+- `7177389d3e77178e37c3466c727533234a858ade`
+- `82a64a812719493f6b85c06986544c3904a75139`
+
+**STATUS: 🟡 INPUT CONTRACT HARDENED / 🔴 ACTUAL VERIFIED EEV SOURCE + LIVE WITNESS OPEN**
