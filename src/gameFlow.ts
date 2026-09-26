@@ -18,7 +18,11 @@ import wallet from './wallet'
 
 import { buildScriptsFromLucid } from './loadValidator'
 
-import { ORACLE_PUBLISHER_PKH } from './config'
+import {
+  B1_PRIZE_POOL_REFERENCE_ADDRESS,
+  ORACLE_PUBLISHER_PKH,
+  PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+} from './config'
 
 import {
   deriveBeacon,
@@ -290,6 +294,46 @@ export async function findB1PrizePoolUtxo(
     throw new Error('B1PrizePool singleton violation: multiple valid Pool UTxOs found')
   }
   return candidates[0] ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Reveal reference-script lookup
+// ---------------------------------------------------------------------------
+
+async function findReferenceScriptUtxo(
+  lucid: any,
+  holderAddress: string,
+  expectedScript: Script,
+  label: string,
+): Promise<UTxO> {
+  if (!holderAddress) {
+    throw new Error(
+      `${label} reference-script holder is not configured; canonical Reveal refuses inline-script fallback`,
+    )
+  }
+
+  const candidates = (await lucid.utxosAt(holderAddress)).filter(
+    (utxo: UTxO) => Boolean((utxo as any).scriptRef),
+  )
+
+  const expectedHash = lucid.utils.validatorToScriptHash(expectedScript)
+  const matching = candidates.filter((utxo: UTxO) => {
+    const scriptRef = (utxo as any).scriptRef as Script | undefined
+    if (!scriptRef) return false
+    try {
+      return lucid.utils.validatorToScriptHash(scriptRef) === expectedHash
+    } catch {
+      return false
+    }
+  })
+
+  if (matching.length !== 1) {
+    throw new Error(
+      `${label} reference-script holder must contain exactly one reference script matching ${expectedHash}; found ${matching.length}`,
+    )
+  }
+
+  return matching[0]
 }
 
 // ---------------------------------------------------------------------------
@@ -623,6 +667,22 @@ export async function revealPrize(opts: {
   const nextDatum = datumFromFields(nextFields)
   const owner = await lucid.wallet.address()
 
+  // Both Reveal validators are supplied as reference scripts. The canonical
+  // path intentionally has no inline-script fallback because the historical
+  // inline construction exceeds the Cardano transaction-size ceiling.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   // B1PrizePool: deterministic reserve derivation from PrizeDatum's pdPriceUsdm
   const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
@@ -640,12 +700,12 @@ export async function revealPrize(opts: {
 
   const tx = await lucid
     .newTx()
+    // Use the exact deployed reference scripts; never inline the validators.
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     // PrizeValidator: spend and update
     .collectFrom([prizeUtxo], revealRedeemer(secretHex))
-    .attachSpendingValidator(scripts.prizeValidator as Script)
     // B1PrizePool: spend and update with deterministic priceUsdm
     .collectFrom([b1ppUtxo], b1ppTicketRevealedRedeemer(BigInt(priceUsdm)))
-    .attachSpendingValidator(scripts.b1PrizePool as Script)
     // Output: updated PrizeDatum
     .payToContract(
       opts.prizeAddress,
