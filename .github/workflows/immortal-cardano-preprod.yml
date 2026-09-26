@@ -84,34 +84,6 @@ jobs:
       - name: Bind Preprod observation to exact conformance snapshot
         run: node audit/cardano-integration/preprod-conformance-binding.mjs
 
-      - name: Normalize legacy Lucid ESM entrypoint for Node 22
-        run: |
-          node --input-type=module - <<'JS'
-          import { readFile, writeFile } from 'node:fs/promises'
-          const path = 'node_modules/lucid-cardano/package.json'
-          const pkg = JSON.parse(await readFile(path, 'utf8'))
-          if (!await import('node:fs').then(fs => fs.promises.access('node_modules/lucid-cardano/esm/mod.js').then(() => true).catch(() => false))) {
-            throw new Error('lucid-cardano ESM entrypoint missing')
-          }
-          pkg.type = 'module'
-          pkg.exports = { ".": { "types": "./types/mod.d.ts", "import": "./esm/mod.js" } }
-          await writeFile(path, JSON.stringify(pkg, null, 2) + '\n')
-          await writeFile('src/package.json', JSON.stringify({type:'module'}) + '\n')
-          await writeFile('Adapter/package.json', JSON.stringify({type:'module'}) + '\n')
-          console.log('Normalized lucid-cardano and repository TS modules to ESM')
-          JS
-
-      - name: Execute real Preprod Reveal
-        env:
-          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
-          DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
-          PREPROD_WALLET_ADDRESS: ${{ env.PREPROD_WALLET_ADDRESS }}
-          PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
-          DEMETER_API_KEY: ${{ env.DEMETER_API_KEY }}
-          DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ env.DEMETER_OGMIOS_AUTHENTICATED_URL }}
-          PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
-        run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
-
       - name: Record workflow provenance
         if: always()
         run: |
@@ -132,5 +104,62 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: immortal-cardano-preprod-context
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+
+
+  real-preprod-reveal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: DEMETER
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_WALLET_ADDRESS: addr_test1qpsd5v0jln37h5g7pl2w6j7fhczu2cs4245welp0cn7xajjuy72qvweu0f5nckwtugmlnhfte2kv2a958fdxf9rt53nsdgmheq
+      PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Install isolated Cardano probe dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          node --input-type=module - <<'JS'
+          import { readFile, writeFile } from 'node:fs/promises'
+          const pkgPath = 'node_modules/lucid-cardano/package.json'
+          const pkg = JSON.parse(await readFile(pkgPath, 'utf8'))
+          const fs = await import('node:fs')
+          await fs.promises.access('node_modules/lucid-cardano/esm/mod.js')
+          pkg.type = 'module'
+          pkg.exports = { ".": { "types": "./types/mod.d.ts", "import": "./esm/mod.js" } }
+          await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+          await writeFile('src/package.json', JSON.stringify({type:'module'}) + '\n')
+          await writeFile('Adapter/package.json', JSON.stringify({type:'module'}) + '\n')
+          JS
+
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "$PREPROD_REVEAL_SEED"
+          echo "Preprod signing secret present."
+
+      - name: Execute real Preprod Reveal
+        run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
+
+      - name: Upload real Preprod Reveal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-real-preprod-reveal-evidence
           path: audit/preprod-evidence/
           if-no-files-found: error
