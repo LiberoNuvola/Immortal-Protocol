@@ -79,6 +79,7 @@ source-repository-package
     libs/cardano-ledger-api
     libs/cardano-ledger-binary
     libs/cardano-data
+    libs/cardano-protocol
     libs/cardano-protocol-tpraos
     libs/small-steps
     libs/non-integral
