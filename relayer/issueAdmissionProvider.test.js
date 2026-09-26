@@ -1,6 +1,7 @@
 const { describe, expect, it } = require('vitest')
 const {
   produceAuthoritativeIssueAdmission,
+  createAuthoritativeIssueAdmissionProvider,
 } = require('./issueAdmissionProvider')
 
 const pool = 'b'.repeat(64) + '#1'
@@ -27,8 +28,12 @@ const runtimeInputs = {
   poolInputReference: pool,
   liquiditySourceReferences: [pool],
   poolUsdmValue: '500',
-  observedAt: '123',
+}
+
+const observedContext = {
+  decisionInput,
   observationReference: 'observation:issue:1',
+  observedAt: '123',
 }
 
 const admittedDecision = {
@@ -56,7 +61,10 @@ describe('Issue admission executable bridge', () => {
 
     const witness = await produceAuthoritativeIssueAdmission({
       decisionInput,
-      runtimeInputs,
+      runtimeInputs: {
+        ...runtimeInputs,
+        ...observedContext,
+      },
       runner,
     })
 
@@ -74,6 +82,28 @@ describe('Issue admission executable bridge', () => {
     })
   })
 
+  it('adapts an authoritative observation producer to the mint provider contract', async () => {
+    const runner = async input => {
+      expect(input).toEqual(decisionInput)
+      return admittedDecision
+    }
+
+    const buildDecisionContext = async inputs => {
+      expect(inputs).toEqual(runtimeInputs)
+      return observedContext
+    }
+
+    const provider = createAuthoritativeIssueAdmissionProvider({
+      buildDecisionContext,
+      runner,
+    })
+
+    const witness = await provider(runtimeInputs)
+
+    expect(witness.authenticatedPoolInputReference).toBe(pool)
+    expect(witness.authoritativeObservationReference).toBe('observation:issue:1')
+  })
+
   it('fails closed when the decision is bound to another observation', async () => {
     const runner = async () => ({
       ...admittedDecision,
@@ -86,7 +116,10 @@ describe('Issue admission executable bridge', () => {
     await expect(
       produceAuthoritativeIssueAdmission({
         decisionInput,
-        runtimeInputs,
+        runtimeInputs: {
+          ...runtimeInputs,
+          ...observedContext,
+        },
         runner,
       }),
     ).rejects.toThrow('different observation reference')
@@ -104,9 +137,26 @@ describe('Issue admission executable bridge', () => {
     await expect(
       produceAuthoritativeIssueAdmission({
         decisionInput,
-        runtimeInputs,
+        runtimeInputs: {
+          ...runtimeInputs,
+          ...observedContext,
+        },
         runner,
       }),
     ).rejects.toThrow('does not match observed Pool valuation')
+  })
+
+  it('fails closed on malformed input references', async () => {
+    await expect(
+      produceAuthoritativeIssueAdmission({
+        decisionInput,
+        runtimeInputs: {
+          ...runtimeInputs,
+          ...observedContext,
+          poolInputReference: 'not-a-utxo',
+        },
+        runner: async () => admittedDecision,
+      }),
+    ).rejects.toThrow('exact txHash#outputIndex reference')
   })
 })
