@@ -122,9 +122,30 @@ async function safeKoiosUtxos(address) {
     }
     let scriptRef
     const rs = u.reference_script
-    if (rs?.bytes && rs?.type) {
+    if (rs?.type) {
       const type = { plutusV1: 'PlutusV1', plutusV2: 'PlutusV2', plutusV3: 'PlutusV3' }[rs.type]
-      if (type) scriptRef = { type, script: applyDoubleCborEncoding(normalizeScriptBytes(rs.bytes)) }
+      if (type) {
+        let normalized
+        try {
+          normalized = normalizeScriptBytes(rs.bytes)
+        } catch (error) {
+          const diagnostic = {
+            referenceScriptType: rs.type,
+            referenceScriptKeys: Object.keys(rs),
+            referenceScriptShape: rs,
+            bytesType: typeof rs.bytes,
+            bytesKeys: rs.bytes && typeof rs.bytes === 'object' ? Object.keys(rs.bytes) : undefined,
+            bytesShape: rs.bytes,
+            normalizationError: error instanceof Error ? error.message : String(error),
+          }
+          await writeFile(
+            EVIDENCE_DIR + '/koios-reference-script-diagnostic.json',
+            JSON.stringify(diagnostic, null, 2) + '\\n',
+          )
+          throw new Error('Koios reference script bytes shape is unsupported; diagnostic written to ' + EVIDENCE_DIR + '/koios-reference-script-diagnostic.json')
+        }
+        scriptRef = { type, script: applyDoubleCborEncoding(normalized) }
+      }
     }
     return {
       txHash: u.tx_hash,
