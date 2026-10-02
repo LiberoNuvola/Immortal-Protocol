@@ -57,9 +57,15 @@ function normalizeScriptBytes(bytes) {
   if (bytes instanceof Uint8Array || Buffer.isBuffer(bytes)) return Buffer.from(bytes).toString('hex')
   if (Array.isArray(bytes)) return Buffer.from(bytes).toString('hex')
   if (bytes && typeof bytes === 'object') {
-    if (typeof bytes.hex === 'string') return bytes.hex
-    if (typeof bytes.bytes === 'string') return bytes.bytes
-    if (Array.isArray(bytes.bytes)) return Buffer.from(bytes.bytes).toString('hex')
+    const candidates = [bytes.hex, bytes.bytes, bytes.data, bytes.value, bytes.cbor].filter(v => v !== undefined)
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') return candidate
+      if (candidate instanceof Uint8Array || Buffer.isBuffer(candidate)) return Buffer.from(candidate).toString('hex')
+      if (Array.isArray(candidate)) return Buffer.from(candidate).toString('hex')
+      if (candidate && typeof candidate === 'object') {
+        try { return normalizeScriptBytes(candidate) } catch {}
+      }
+    }
   }
   throw new Error('Koios reference script bytes have an unsupported shape')
 }
