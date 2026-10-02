@@ -45,7 +45,7 @@ Claim is a single-use settlement of an already established right.
 CLAIM ≠ BURN
 ```
 
-Expiry is final. After expiry there is no claim, no new liability and no resurrection; a late reveal cannot create claimability and the expired payment commitment dissolves. Ticket expiry is PRE-RICH profile policy. The per-ticket horizon is derived deterministically from the verified issuance-state snapshot and crystallized into the ticket. The profile may apply deterministic lower and upper bounds, but no canonical numeric values are fixed by IMMORTAL here; the values must themselves be derived from explicit PRE-RICH lifecycle/economic rules.
+Expiry is final. After expiry there is no claim, no new liability and no resurrection; a late reveal cannot create claimability and the expired payment commitment dissolves. Ticket expiry is PRE-RICH profile policy. V1 crystallizes a deterministic horizon from the verified issuance-state snapshot using `preRichExpiryPolicyV1`. The explicit PRE-RICH V1 bounds are `MIN = 2 hours` and `MAX = 300 days`; these are application parameters, not IMMORTAL constants. Within those bounds, the horizon contracts as unresolved-reserve pressure rises.
 
 ## 6. Ticket identity and transfer
 
