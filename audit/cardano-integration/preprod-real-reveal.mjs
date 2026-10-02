@@ -147,13 +147,16 @@ async function safeKoiosUtxos(address) {
         scriptRef = { type, script: applyDoubleCborEncoding(normalized) }
       }
     }
+    const inlineDatum = u.inline_datum?.bytes
+      ? normalizeScriptBytes(u.inline_datum.bytes)
+      : undefined
     return {
       txHash: u.tx_hash,
       outputIndex: u.tx_index,
       assets,
       address: info.address,
-      datumHash: u.inline_datum?.bytes ? undefined : (u.datum_hash || undefined),
-      datum: u.inline_datum?.bytes || undefined,
+      datumHash: inlineDatum ? undefined : (u.datum_hash || undefined),
+      datum: inlineDatum,
       scriptRef,
     }
   }))
