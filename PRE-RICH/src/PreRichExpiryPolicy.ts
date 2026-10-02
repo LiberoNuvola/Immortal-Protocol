@@ -17,12 +17,35 @@ export type PreRichExpiryIssuanceState = {
   unresolvedTicketCount: bigint
 }
 
+export const PRE_RICH_EXPIRY_MIN_HORIZON_MS = 2n * 60n * 60n * 1000n
+export const PRE_RICH_EXPIRY_MAX_HORIZON_MS = 300n * 24n * 60n * 60n * 1000n
+
 export type PreRichExpiryPolicy = {
   policyId: string
   policyVersion: bigint
   minHorizonMs: bigint
   maxHorizonMs: bigint
   deriveHorizonMs: (state: PreRichExpiryIssuanceState) => bigint
+}
+
+export const preRichExpiryPolicyV1: PreRichExpiryPolicy = {
+  policyId: 'pre-rich-expiry-v1',
+  policyVersion: 1n,
+  minHorizonMs: PRE_RICH_EXPIRY_MIN_HORIZON_MS,
+  maxHorizonMs: PRE_RICH_EXPIRY_MAX_HORIZON_MS,
+  deriveHorizonMs: (state) => {
+    if (state.eev === 0n) return PRE_RICH_EXPIRY_MAX_HORIZON_MS
+    const protectedLoad =
+      state.unresolvedReserve * 1000n / state.eev
+    const classPressure =
+      state.currentActiveClass > 0n
+        ? state.highestClassEverActivated * 1000n / state.currentActiveClass
+        : 1000n
+    const stress = protectedLoad > classPressure
+      ? protectedLoad
+      : classPressure
+    return PRE_RICH_EXPIRY_MAX_HORIZON_MS * 1000n / (1000n + stress)
+  },
 }
 
 
