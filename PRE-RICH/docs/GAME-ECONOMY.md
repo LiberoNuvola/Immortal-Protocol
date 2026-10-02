@@ -294,7 +294,7 @@ Expiry is final:
 - a late reveal cannot create claimability or revive the dissolved right;
 - the expired payment commitment dissolves.
 
-The exact ticket lifetime is **not a universal IMMORTAL number**. PRE-RICH/deployment must declare a deterministic `F_D(S_issuance)` policy and crystallize `expiresAt = issuedAt + H` at issuance. The mechanism is CLOSED; the numerical profile parameter remains deployment/application configuration and must not be silently fixed as universal canon.
+The exact ticket lifetime is **not a universal IMMORTAL number**. PRE-RICH V1 declares `preRichExpiryPolicyV1`: `MIN = 2 hours`, `MAX = 300 days`, with the per-ticket horizon derived deterministically from the verified issuance-state snapshot and then crystallized as `expiresAt = issuedAt + H`. V1 uses the existing unresolved-reserve pressure as the dimensionless state input; the bound values are PRE-RICH application parameters, not IMMORTAL constants.
 
 ## 12. Transferability and ticket identity
 
