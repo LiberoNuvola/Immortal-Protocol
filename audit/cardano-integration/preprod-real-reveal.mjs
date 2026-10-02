@@ -57,13 +57,20 @@ function normalizeScriptBytes(bytes) {
   if (bytes instanceof Uint8Array || Buffer.isBuffer(bytes)) return Buffer.from(bytes).toString('hex')
   if (Array.isArray(bytes)) return Buffer.from(bytes).toString('hex')
   if (bytes && typeof bytes === 'object') {
-    const candidates = [bytes.hex, bytes.bytes, bytes.data, bytes.value, bytes.cbor].filter(v => v !== undefined)
+    const candidates = [
+      bytes.hex, bytes.bytes, bytes.data, bytes.value, bytes.cbor,
+      bytes.script, bytes.script_bytes, bytes.serialized, bytes.raw,
+    ].filter(v => v !== undefined)
     for (const candidate of candidates) {
-      if (typeof candidate === 'string') return candidate
-      if (candidate instanceof Uint8Array || Buffer.isBuffer(candidate)) return Buffer.from(candidate).toString('hex')
-      if (Array.isArray(candidate)) return Buffer.from(candidate).toString('hex')
-      if (candidate && typeof candidate === 'object') {
-        try { return normalizeScriptBytes(candidate) } catch {}
+      try {
+        const normalized = normalizeScriptBytes(candidate)
+        if (normalized) return normalized
+      } catch {}
+    }
+    if (typeof bytes.toString === 'function') {
+      const rendered = bytes.toString()
+      if (rendered && rendered !== '[object Object]') {
+        try { return normalizeScriptBytes(rendered) } catch {}
       }
     }
   }
