@@ -567,12 +567,43 @@ const inputDiagnostics = {
 }
 await writeFile(EVIDENCE_DIR + '/reveal-input-diagnostic.json', JSON.stringify(inputDiagnostics, null, 2) + '\n')
 
+// CML compatibility probe: verify the exact on-chain datum can be parsed by the
+// same native CML primitive that Lucid Evolution's Collect path uses.
+try {
+  const { CML } = await import('@lucid-evolution/lucid')
+  CML.PlutusData.from_cbor_hex(prizeDatumCbor)
+  await writeFile(EVIDENCE_DIR + '/cml-prize-datum-probe.json', JSON.stringify({
+    status: 'PARSED',
+    utxo: ref(prizeUtxo),
+    datumLength: prizeDatumCbor.length,
+  }, null, 2) + '\\n')
+} catch (error) {
+  await writeFile(EVIDENCE_DIR + '/cml-prize-datum-probe.json', JSON.stringify({
+    status: 'FAILED',
+    utxo: ref(prizeUtxo),
+    datumLength: prizeDatumCbor.length,
+    error: error instanceof Error ? error.stack : String(error),
+  }, null, 2) + '\\n')
+}
+
+const revealPrizeInput = {
+  ...prizeUtxo,
+  datum: prizeDatumCbor,
+  datumHash: undefined,
+}
+
+const revealPoolInput = {
+  ...poolUtxo,
+  datum: normalizeScriptBytes(poolUtxo.datum),
+  datumHash: undefined,
+}
+
 const revealBase = lucid.newTx()
 
 let reveal
 try {
   reveal = await revealBase
-    .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+     .collectFrom([revealPrizeInput], c(1, [toHex(playerSecret)]))
     .readFrom([prizeReferenceUtxo])
     .attach.SpendingValidator(scripts.prizeValidator)
     .complete()
@@ -581,6 +612,8 @@ try {
     EVIDENCE_DIR + '/collect-prize-diagnostic.json',
     JSON.stringify({
       ...inputDiagnostics.prize,
+      revealInputDatum: revealPrizeInput.datum,
+      revealInputDatumHash: revealPrizeInput.datumHash,
       stage: 'collect-prize',
       error: error instanceof Error ? error.stack : String(error),
     }, null, 2) + '\n',
@@ -590,7 +623,7 @@ try {
 
 try {
   reveal = await reveal
-    .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+     .collectFrom([revealPoolInput], c(2, [PRICE_USDM]))
     .attach.SpendingValidator(scripts.b1PrizePool)
     .complete()
 } catch (error) {
@@ -598,6 +631,8 @@ try {
     EVIDENCE_DIR + '/collect-pool-diagnostic.json',
     JSON.stringify({
       ...inputDiagnostics.pool,
+      revealInputDatum: revealPoolInput.datum,
+      revealInputDatumHash: revealPoolInput.datumHash,
       stage: 'collect-pool',
       error: error instanceof Error ? error.stack : String(error),
     }, null, 2) + '\n',
