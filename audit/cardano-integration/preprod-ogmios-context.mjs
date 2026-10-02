@@ -219,5 +219,14 @@ try {
   console.error(diagnostic.failure)
   process.exitCode = 1
 } finally {
-  client?.close()
+  if (client) {
+    await new Promise(resolve => {
+      if (client.readyState === WebSocket.CLOSED) {
+        resolve()
+        return
+      }
+      client.once('close', resolve)
+      client.close()
+    })
+  }
 }
