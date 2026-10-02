@@ -57,6 +57,18 @@ let credentialLabel
 const attempts = []
 
 for (const [label, key] of credentials) {
+  console.log('Trying Demeter credential: ' + label)
+  if (explicitAuthenticatedEndpoint) {
+    try {
+      client = await openClient(explicitAuthenticatedEndpoint, key, false)
+      credentialLabel = label
+      attempts.push(label + ':authenticated-endpoint=connected')
+      break
+    } catch (explicitError) {
+      const message = explicitError instanceof Error ? explicitError.message : String(explicitError)
+      attempts.push(label + ':authenticated-endpoint=' + (message.match(/status=\d+/)?.[0] ?? 'failed'))
+    }
+  }
   try {
     client = await openClient(endpoint, key, true)
     credentialLabel = label
