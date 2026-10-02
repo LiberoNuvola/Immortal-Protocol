@@ -589,16 +589,24 @@ try {
   }, null, 2) + '\\n')
 }
 
+// Lucid Evolution's Collect path serializes the UTxO datum internally. Use the
+// canonical decoded datum representation as the explicit input payload, while
+// retaining the live CBOR in evidence for provenance.
 const revealPrizeInput = {
-  ...prizeUtxo,
-  datum: prizeDatumCbor,
-  datumHash: undefined,
+  txHash: prizeUtxo.txHash,
+  outputIndex: prizeUtxo.outputIndex,
+  assets: { ...prizeUtxo.assets },
+  address: prizeUtxo.address,
+  datum: Data.from(prizeDatumCbor),
 }
 
+const revealPoolDatumCbor = normalizeScriptBytes(poolUtxo.datum)
 const revealPoolInput = {
-  ...poolUtxo,
-  datum: normalizeScriptBytes(poolUtxo.datum),
-  datumHash: undefined,
+  txHash: poolUtxo.txHash,
+  outputIndex: poolUtxo.outputIndex,
+  assets: { ...poolUtxo.assets },
+  address: poolUtxo.address,
+  datum: Data.from(revealPoolDatumCbor),
 }
 
 const revealBase = lucid.newTx()
@@ -615,8 +623,8 @@ try {
     EVIDENCE_DIR + '/collect-prize-diagnostic.json',
     JSON.stringify({
       ...inputDiagnostics.prize,
-      revealInputDatum: revealPrizeInput.datum,
-      revealInputDatumHash: revealPrizeInput.datumHash,
+      revealInputDatumCbor: prizeDatumCbor,
+      
       stage: 'collect-prize',
       error: error instanceof Error ? error.stack : String(error),
     }, null, 2) + '\n',
@@ -634,8 +642,8 @@ try {
     EVIDENCE_DIR + '/collect-pool-diagnostic.json',
     JSON.stringify({
       ...inputDiagnostics.pool,
-      revealInputDatum: revealPoolInput.datum,
-      revealInputDatumHash: revealPoolInput.datumHash,
+      revealInputDatumCbor: revealPoolDatumCbor,
+      
       stage: 'collect-pool',
       error: error instanceof Error ? error.stack : String(error),
     }, null, 2) + '\n',
