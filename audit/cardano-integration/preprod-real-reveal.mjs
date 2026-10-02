@@ -186,8 +186,6 @@ const details = getAddressDetails(address)
 // Use Koios only for topology discovery. Once exact out-refs are known, rehydrate
 // them through Lucid Evolution's own provider implementation so Collect receives
 // the library-native UTxO shape instead of a hand-built object.
-const originalProviderGetUtxos = provider.getUtxos.bind(provider)
-provider.getUtxos = originalGetUtxos
 
 const keyHash = details.paymentCredential?.hash
 if (!keyHash) throw new Error('Preprod wallet has no payment credential')
@@ -463,17 +461,9 @@ if (deploymentManifest) {
 if (!prizeUtxo || !poolUtxo || !prizeReferenceUtxo || !poolReferenceUtxo) {
   throw new Error('Previously deployed Preprod topology could not be resolved; refusing to bootstrap during Reveal')
 }
-async function rehydrateOutRef(outRef) {
-  const [txHash, indexText] = outRef.split('#')
-  const outputIndex = Number(indexText)
-  const rows = await safeKoiosUtxos(
-    address,
-  )
-  const direct = rows.find(u => u.txHash === txHash && u.outputIndex === outputIndex)
-  if (direct) return direct
-  return direct
-}
 
+// Keep Koios-backed discovery as the source of truth, but re-use the exact
+// discovered values without changing the wallet/provider API surface.
 if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
   throw new Error('Previously deployed Preprod reference scripts are missing or unresolved')
 }
