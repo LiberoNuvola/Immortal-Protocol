@@ -565,12 +565,12 @@ const inputDiagnostics = {
 await writeFile(EVIDENCE_DIR + '/reveal-input-diagnostic.json', JSON.stringify(inputDiagnostics, null, 2) + '\n')
 
 const revealBase = lucid.newTx()
-  .readFrom([prizeReferenceUtxo, poolReferenceUtxo])
 
 let reveal
 try {
   reveal = await revealBase
     .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+    .readFrom([prizeReferenceUtxo])
     .attach.SpendingValidator(scripts.prizeValidator)
     .complete()
 } catch (error) {
