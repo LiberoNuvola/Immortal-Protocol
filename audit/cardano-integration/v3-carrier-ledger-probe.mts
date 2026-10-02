@@ -11,22 +11,54 @@ const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
 
 const provider = new Blockfrost(API, '')
 
-// The pinned Lucid Evolution provider used by the lab does not expose the
-// Blockfrost-compatible evaluation method, while Yaci Store does. Wire the
-// evaluator directly to Yaci's evaluation endpoint so Lucid can obtain
-// execution units without evaluating the script locally.
+ // The pinned Lucid Evolution provider used by the lab does not expose the
+ // Blockfrost-compatible evaluation method, while Yaci Store does. Wire the
+ // evaluator to Yaci's Blockfrost-compatible JSON endpoint so Lucid can obtain
+ // execution units without evaluating the script locally.
 const providerWithEvaluation = provider as Blockfrost & {
-  evaluateTx: (tx: string) => Promise<Array<{
+  evaluateTx: (tx: string, additionalUTxOs?: Array<{
+    txHash: string
+    outputIndex: number
+    address: string
+    assets: Record<string, bigint>
+    datumHash?: string
+    datum?: string
+    scriptRef?: { type: string; script: string }
+  }>) => Promise<Array<{
     redeemer_tag: string
     redeemer_index: number
     ex_units: { mem: number; steps: number }
   }>>
 }
-providerWithEvaluation.evaluateTx = async (tx) => {
-  const response = await fetch(`${API}/utils/txs/evaluate`, {
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
+    { txId: utxo.txHash, index: utxo.outputIndex },
+    {
+      address: utxo.address,
+      value: {
+        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
+        ...Object.entries(utxo.assets)
+          .filter(([unit]) => unit !== 'lovelace')
+          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
+            const policyId = unit.slice(0, 56)
+            const assetName = unit.slice(56)
+            assets[policyId] ??= {}
+            assets[policyId][assetName] = Number(amount)
+            return assets
+          }, {}),
+      },
+      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
+      ...(utxo.datum ? { datum: utxo.datum } : {}),
+    },
+  ])
+
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/cbor' },
-    body: Buffer.from(tx, 'hex'),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cbor: tx,
+      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
+    }),
   })
   const result = await response.json() as {
     fault?: unknown
@@ -37,7 +69,7 @@ providerWithEvaluation.evaluateTx = async (tx) => {
   }
   if (!response.ok || result.fault || !result.result?.EvaluationResult) {
     throw new Error(
-      `Yaci transaction evaluation failed: ${result.message ?? JSON.stringify(result)}`,
+      'Yaci transaction evaluation failed: ' + (result.message ?? JSON.stringify(result)),
     )
   }
   return Object.entries(result.result.EvaluationResult).map(
@@ -51,7 +83,6 @@ providerWithEvaluation.evaluateTx = async (tx) => {
     },
   )
 }
-
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
 const lucid = await Lucid(providerWithEvaluation, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
