@@ -173,32 +173,32 @@ const scripts = buildScriptsFromLucid(
 )
 if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) throw new Error('Failed to derive Reveal script addresses')
 
-const issuedAt = BigInt(Date.now())
-const expiresAt = issuedAt + 3_600_000n
+let issuedAt = BigInt(Date.now())
+let expiresAt = issuedAt + 3_600_000n
 const playerSecret = fromHex('01'.repeat(32))
 
-const beaconValue = await deriveBeacon(0, 0, MAINCHAIN_REF, fromHex('11'.repeat(32)), MATERIOS_CONTEXT, GAME_VERSION)
-const playerCommitmentHex = toHex(await playerCommitment(0, 1, playerSecret))
-const commitmentHex = toHex(await ticketCommitment(
+let beaconValue = await deriveBeacon(0, 0, MAINCHAIN_REF, fromHex('11'.repeat(32)), MATERIOS_CONTEXT, GAME_VERSION)
+let playerCommitmentHex = toHex(await playerCommitment(0, 1, playerSecret))
+let commitmentHex = toHex(await ticketCommitment(
   new TextEncoder().encode('RF-REAL-PREPROD-REVEAL'),
   fromHex(playerCommitmentHex), GAME_VERSION, 1, Number(PRICE_USDM),
   encodeBeaconTarget({ networkId: 0, round: 0, mainchainRef: MAINCHAIN_REF, version: GAME_VERSION }),
 ))
-const ticketSeed = await deriveTicketSeed(0, 1, playerSecret, beaconValue, GAME_VERSION)
-const symbolsSeed = await deriveSymbolsSeed(ticketSeed)
-const symbols = await generateSymbols(symbolsSeed)
-const digest = await sha256(symbolsSeed)
-const expectedResult = await sha256(new Uint8Array([...field(digest), ...field(symbols)]))
-const row1Tier = classifyRowTier(symbols.slice(0, 3))
-const row2Tier = classifyRowTier(symbols.slice(3, 6))
-const payout = BigInt(rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(PRICE_USDM)))
-const prizeTier = Math.max(row1Tier, row2Tier)
+let ticketSeed = await deriveTicketSeed(0, 1, playerSecret, beaconValue, GAME_VERSION)
+let symbolsSeed = await deriveSymbolsSeed(ticketSeed)
+let symbols = await generateSymbols(symbolsSeed)
+let digest = await sha256(symbolsSeed)
+let expectedResult = await sha256(new Uint8Array([...field(digest), ...field(symbols)]))
+let row1Tier = classifyRowTier(symbols.slice(0, 3))
+let row2Tier = classifyRowTier(symbols.slice(3, 6))
+let payout = BigInt(rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(PRICE_USDM)))
+let prizeTier = Math.max(row1Tier, row2Tier)
 
 const prePrizeDatum = prizeDatum(
   testPolicyId, scripts.b1PrizePoolHash, playerCommitmentHex, commitmentHex,
   toHex(beaconValue), issuedAt, expiresAt,
 )
-const postPrizeDatum = c(0, [
+let postPrizeDatum = c(0, [
   testPolicyId, TICKET_NAME_HEX, playerCommitmentHex, PRICE_USDM, commitmentHex,
   toHex(GAME_VERSION), 1n, payout, '', '', c(1), toHex(expectedResult),
   BigInt(prizeTier), c(0, [0n, 0n, toHex(MAINCHAIN_REF), toHex(GAME_VERSION)]),
@@ -206,7 +206,7 @@ const postPrizeDatum = c(0, [
   scripts.b1PrizePoolHash, issuedAt, expiresAt, BigInt(row1Tier), BigInt(row2Tier),
 ])
 const prePoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, PRICE_USDM, 1n, 0n)
-const postPoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, 0n, 0n, payout)
+let postPoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, 0n, 0n, payout)
 
 let bootstrapHash
 let bootstrapCbor = ''
@@ -416,6 +416,42 @@ if (!prizeUtxo || !poolUtxo || !prizeReferenceUtxo || !poolReferenceUtxo) {
 if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
   throw new Error('Previously deployed Preprod reference scripts are missing or unresolved')
 }
+
+const deployedPrizeDatum = Data.from(prizeUtxo.datum)
+if (!(deployedPrizeDatum instanceof Constr) || deployedPrizeDatum.index !== 0 || deployedPrizeDatum.fields.length < 23) {
+  throw new Error('Existing Preprod Prize datum has an unexpected shape')
+}
+if (deployedPrizeDatum.fields[0] !== testPolicyId || deployedPrizeDatum.fields[1] !== TICKET_NAME_HEX) {
+  throw new Error('Existing Preprod ticket identity does not match the current topology')
+}
+if (BigInt(deployedPrizeDatum.fields[3]) !== PRICE_USDM) {
+  throw new Error('Existing Preprod ticket price does not match the Reveal profile')
+}
+issuedAt = BigInt(deployedPrizeDatum.fields[19])
+expiresAt = BigInt(deployedPrizeDatum.fields[20])
+playerCommitmentHex = deployedPrizeDatum.fields[2]
+commitmentHex = deployedPrizeDatum.fields[4]
+const deployedGameVersion = deployedPrizeDatum.fields[5]
+if (deployedGameVersion !== toHex(GAME_VERSION)) throw new Error('Existing Preprod game version mismatch')
+const deployedBeaconValueHex = deployedPrizeDatum.fields[15]
+beaconValue = fromHex(deployedBeaconValueHex)
+ticketSeed = await deriveTicketSeed(0, 1, playerSecret, beaconValue, GAME_VERSION)
+symbolsSeed = await deriveSymbolsSeed(ticketSeed)
+symbols = await generateSymbols(symbolsSeed)
+digest = await sha256(symbolsSeed)
+expectedResult = await sha256(new Uint8Array([...field(digest), ...field(symbols)]))
+row1Tier = classifyRowTier(symbols.slice(0, 3))
+row2Tier = classifyRowTier(symbols.slice(3, 6))
+payout = BigInt(rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(PRICE_USDM)))
+prizeTier = Math.max(row1Tier, row2Tier)
+postPrizeDatum = c(0, [
+  testPolicyId, TICKET_NAME_HEX, playerCommitmentHex, PRICE_USDM, commitmentHex,
+  deployedGameVersion, 1n, payout, '', '', c(1), toHex(expectedResult),
+  BigInt(prizeTier), c(0, [0n, 0n, toHex(MAINCHAIN_REF), deployedGameVersion]),
+  c(1), deployedBeaconValueHex, '11'.repeat(32), toHex(MATERIOS_CONTEXT),
+  scripts.b1PrizePoolHash, issuedAt, expiresAt, BigInt(row1Tier), BigInt(row2Tier),
+])
+postPoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, 0n, 0n, payout)
 
 console.log(JSON.stringify({
   status: 'DEPLOYMENT_REUSED',
