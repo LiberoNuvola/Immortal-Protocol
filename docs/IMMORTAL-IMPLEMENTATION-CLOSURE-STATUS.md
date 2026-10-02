@@ -6,21 +6,21 @@
 
 ## CURRENT OPERATIONAL STATE — 2026-10-02
 
-> **Operational handoff:** Preprod topology is already deployed. The current blocker is execution/evaluation of the real Reveal path; do not redeploy blindly.
+> **Operational handoff:** Preprod topology is already deployed. The current real Reveal test now reaches the provider-backed Preprod validator, which returns a concrete expiry failure; the deployed ticket is stale and must not be reopened.
 
 ### Project position
 
 - **Branch:** `work/immortal-green-closure`
-- **Current code head at verification:** `34157da983935d4e19acce5f1058d16a1f47b618`
+- **Current code head at verification:** `54f8d5933784c77559a5e9cb888a19d207e8cd9e`
 - **Implementation phase:** FINALIZED
 - **Current phase:** live-ledger evidence / integration closure
 - **Primary milestone:** **first real PRE-RICH ticket purchase on Cardano Preprod**
 
 ### Cardano Preprod — CURRENT FACT
 
-**PREPROD DEPLOYMENT = COMPLETE.** The deployed topology is being reused by the Reveal harness; no bootstrap is performed during Reveal.
+**PREPROD DEPLOYMENT = COMPLETE.** The deployed topology is reused by the Reveal harness; no bootstrap occurs during Reveal.
 
-Known live Preprod topology reused by the current run:
+Known deployed topology:
 - Prize UTxO: `87af46f42746e32faf788cdd23d13df81af6aa0919a78cb9128cd09766fd1ad1#1`
 - Pool UTxO: `87af46f42746e32faf788cdd23d13df81af6aa0919a78cb9128cd09766fd1ad1#0`
 - Prize reference UTxO: `2706a87590f497d8880d2f6f2a9c51b0297d082e53d065f9371585dac6ce20c6#0`
@@ -28,50 +28,42 @@ Known live Preprod topology reused by the current run:
 
 ### Latest real Preprod Reveal run
 
-Run **37054620712** was executed on the exact current head `34157da...` with the deployed topology reused.
+Run **37055478116**, job **110999006361**, executed commit `54f8d593...`.
 
 | Gate | Status | Observation |
 |---|---|---|
-| Preprod context | **GREEN** | Context, wallet, live UTxOs, boundary conformance and provenance all succeeded |
-| Deployment reuse | **GREEN** | Existing Prize/Pool/reference UTxOs were rehydrated; no bootstrap |
-| Lucid Evolution API | **GREEN** | `0.6.5` compatibility check passed |
-| Reveal redeemer encoding | **FIXED** | `Data.to(...)` removed the previous CML CBOR memory-access crash |
-| Reveal transaction build/evaluation | **BLOCKED** | Lucid evaluator reports `Spend[0] execution went over budget` during `.complete()` |
-| Signature / submit | **NOT REACHED** | Failure occurs before signing and submission |
-| First real Preprod ticket | **NOT YET EXECUTED** | No Reveal transaction hash exists from this run |
+| Preprod context | **GREEN** | Context, wallet, live UTxOs and conformance all succeeded |
+| Deployment reuse | **GREEN** | Existing deployed topology was rehydrated; no bootstrap |
+| Reveal redeemer encoding | **FIXED** | `Data.to(...)` removed the previous CML CBOR crash |
+| Local UPLC evaluation | **BYPASSED** | `localUPLCEval: false` forced provider evaluation |
+| Provider-backed Preprod evaluation | **REACHED** | Koios/Ogmios evaluated the actual PrizeValidator |
+| Reveal validator result | **REJECTED** | `Prize: reveal window closed` with trace `PT5` |
+| Signature / submit | **NOT REACHED** | Transaction was rejected during completion/evaluation |
+| First real Preprod ticket | **NOT YET EXECUTED** | No Reveal transaction was submitted |
 
-### Interpretation of the current blocker
+### Meaning of the failure
 
-The current error is **not yet a definitive validator-semantic verdict**. The repository's P2.8-B.1 runner documentation explicitly classifies this negative-budget pattern as an evaluator/harness diagnostic and requires ledger-aligned Cardano evaluation with exact transaction context, protocol parameters, epoch information and system start before drawing a validator conclusion.
+The previous budget diagnosis is superseded. With local UPLC evaluation disabled, the provider-backed Preprod path evaluates the validator and returns the concrete rule failure:
 
-Accordingly:
-- Do **not** weaken PrizeValidator or B1PrizePool merely to make Lucid `.complete()` pass.
-- Do **not** redeploy the existing Preprod topology.
-- The next normative diagnostic is the current-head ledger-aligned P2.8 evaluator against the exact Reveal artifacts/context.
+`Prize: reveal window closed`
 
-### Recent code correction
+Therefore the deployed Prize UTxO is an **expired ticket**, not a ticket that can be revealed now. The validator must not be weakened to accept it.
 
-Commit `34157da983935d4e19acce5f1058d16a1f47b618` changed only the Reveal builder encoding:
-- Prize redeemer → `Data.to(c(1, [toHex(playerSecret)]))`
-- Pool redeemer → `Data.to(c(2, [PRICE_USDM]))`
+### Required next transition
 
-This is a transaction-builder compatibility fix; it does not alter economic semantics or validator logic.
+The correct path is:
 
-### Next actions — in order
+**Issue a new real ticket → obtain a fresh Pending Prize UTxO with its crystallized expiry → Reveal that fresh ticket.**
 
-1. Run the exact-head P2.8 ledger-aligned evaluator on the real Reveal context/artifacts.
-2. Classify the result as either measurable successful ExUnits or a ledger-originated script failure; keep Lucid evaluator failures separate.
-3. Only if a ledger-aligned failure is established, inspect the exact failing validator/Plutus path for a semantic or budget issue.
-4. Retry the real Preprod Reveal without redeploying the existing topology.
-5. Claim the first real PRE-RICH ticket only after a wallet-signed Reveal transaction is confirmed on Cardano Preprod and the post-state is reconstructed.
+The existing Issue implementation already requires a verified PRE-RICH expiry policy and verified issuance-state snapshot; the repository explicitly does **not** define a universal numeric expiry duration. Therefore the new Preprod Issue must use the authoritative application/profile inputs rather than inventing a one-hour or other test horizon.
 
 ### Non-regression / handoff rules
 
-- Do not reopen closed economic policy decisions merely to obtain green CI.
-- Do not confuse Yaci/devnet execution with the first real Preprod ticket.
-- Do not describe Preprod deployment as pending: **it is already complete** for the deployed topology being reused.
-- Do not claim a first Preprod ticket until a wallet-signed transaction is confirmed on Cardano Preprod and the PRE-RICH economic transition is verified.
-- When this section becomes stale, update it first before continuing work.
+- Do not redeploy the existing topology.
+- Do not alter `PrizeValidator` to bypass expiry.
+- Do not treat the expired deployed ticket as the first real user ticket.
+- Do not invent an expiry duration where the current source of truth does not provide one.
+- Do not claim a first Preprod ticket until the Issue transaction is signed/confirmed and the subsequent Reveal transition is also confirmed and reconstructed.
 
 ## 1. Closed policy boundaries
 
