@@ -20,6 +20,8 @@ export type PreRichExpiryIssuanceState = {
 export type PreRichExpiryPolicy = {
   policyId: string
   policyVersion: bigint
+  minHorizonMs: bigint
+  maxHorizonMs: bigint
   deriveHorizonMs: (state: PreRichExpiryIssuanceState) => bigint
 }
 
@@ -49,6 +51,9 @@ export function crystallizeTicketExpiry(
 ): CrystallizedTicketExpiry {
   if (!policy.policyId) throw new Error('expiry policyId is required')
   if (policy.policyVersion < 0n) throw new Error('expiry policyVersion must be non-negative')
+  if (policy.minHorizonMs < 0n) throw new Error('expiry minimum horizon must be non-negative')
+  if (policy.maxHorizonMs < 0n) throw new Error('expiry maximum horizon must be non-negative')
+  if (policy.minHorizonMs > policy.maxHorizonMs) throw new Error('expiry minimum horizon cannot exceed maximum horizon')
   if (issuedAt < 0n) throw new Error('issuedAt must be non-negative')
   validateIssuanceState(state)
 
@@ -60,10 +65,17 @@ export function crystallizeTicketExpiry(
   }
   if (first < 0n) throw new Error('expiry horizon must be non-negative')
 
+  const horizonMs =
+    first < policy.minHorizonMs
+      ? policy.minHorizonMs
+      : first > policy.maxHorizonMs
+        ? policy.maxHorizonMs
+        : first
+
   return {
     issuedAt,
-    expiresAt: issuedAt + first,
-    horizonMs: first,
+    expiresAt: issuedAt + horizonMs,
+    horizonMs,
     policyId: policy.policyId,
     policyVersion: policy.policyVersion,
     issuanceStateHash: state.issuanceStateHash,
