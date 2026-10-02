@@ -589,15 +589,15 @@ try {
   }, null, 2) + '\\n')
 }
 
-// Lucid Evolution's Collect path serializes the UTxO datum internally. Use the
-// canonical decoded datum representation as the explicit input payload, while
-// retaining the live CBOR in evidence for provenance.
+// Lucid Evolution expects UTxO datum values as CBOR hex strings and parses
+// them internally while constructing the transaction. Keep the exact live datum
+// CBOR, but strip any provider-specific extra fields before Collect sees it.
 const revealPrizeInput = {
   txHash: prizeUtxo.txHash,
   outputIndex: prizeUtxo.outputIndex,
   assets: { ...prizeUtxo.assets },
   address: prizeUtxo.address,
-  datum: Data.from(prizeDatumCbor),
+  datum: prizeDatumCbor,
 }
 
 const revealPoolDatumCbor = normalizeScriptBytes(poolUtxo.datum)
@@ -606,7 +606,7 @@ const revealPoolInput = {
   outputIndex: poolUtxo.outputIndex,
   assets: { ...poolUtxo.assets },
   address: poolUtxo.address,
-  datum: Data.from(revealPoolDatumCbor),
+  datum: revealPoolDatumCbor,
 }
 
 const revealBase = lucid.newTx()
