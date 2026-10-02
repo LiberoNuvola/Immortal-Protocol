@@ -247,13 +247,13 @@ await writeFile(EVIDENCE_DIR + '/cml-prize-datum-probe.json', JSON.stringify({ s
 
 // Provider-native UTxOs from getUtxosByOutRef are passed untouched to Collect.
 let reveal = await lucid.newTx()
-  .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+  .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
   .readFrom([prizeReferenceUtxo])
   .attach.SpendingValidator(scripts.prizeValidator)
   .complete()
 
 reveal = await reveal
-  .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+  .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
   .attach.SpendingValidator(scripts.b1PrizePool)
   .complete()
 
