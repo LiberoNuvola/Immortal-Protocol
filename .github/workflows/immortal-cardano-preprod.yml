@@ -161,7 +161,7 @@ jobs:
   preprod-deploy:
     # Manual deployment witness: materializes the current Cardano topology on Preprod
     # and records the exact UTxOs, reference scripts, hashes, and tx ids in a manifest.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment: DEMETER
