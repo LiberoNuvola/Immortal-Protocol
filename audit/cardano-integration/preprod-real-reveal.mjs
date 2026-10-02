@@ -544,11 +544,70 @@ const preStateFingerprint = hashJson({
   poolRef: ref(poolUtxo), poolDatum: poolUtxo.datum,
 })
 
-const reveal = await lucid.newTx()
+const inputDiagnostics = {
+  prize: {
+    ref: ref(prizeUtxo),
+    datumType: typeof prizeUtxo.datum,
+    datum: prizeUtxo.datum,
+    datumNormalized: normalizeScriptBytes(prizeUtxo.datum),
+    datumLength: normalizeScriptBytes(prizeUtxo.datum).length,
+    assets: Object.fromEntries(Object.entries(prizeUtxo.assets).map(([k, v]) => [k, v.toString()])),
+  },
+  pool: {
+    ref: ref(poolUtxo),
+    datumType: typeof poolUtxo.datum,
+    datum: poolUtxo.datum,
+    datumNormalized: normalizeScriptBytes(poolUtxo.datum),
+    datumLength: normalizeScriptBytes(poolUtxo.datum).length,
+    assets: Object.fromEntries(Object.entries(poolUtxo.assets).map(([k, v]) => [k, v.toString()])),
+  },
+}
+await writeFile(EVIDENCE_DIR + '/reveal-input-diagnostic.json', JSON.stringify(inputDiagnostics, null, 2) + '\n')
+
+const revealBase = lucid.newTx()
   .readFrom([prizeReferenceUtxo, poolReferenceUtxo])
-  .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
-  .attach.SpendingValidator(scripts.prizeValidator)
-  .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+
+let reveal
+try {
+  reveal = await revealBase
+    .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+    .attach.SpendingValidator(scripts.prizeValidator)
+    .complete()
+} catch (error) {
+  await writeFile(
+    EVIDENCE_DIR + '/collect-prize-diagnostic.json',
+    JSON.stringify({
+      ...inputDiagnostics.prize,
+      stage: 'collect-prize',
+      error: error instanceof Error ? error.stack : String(error),
+    }, null, 2) + '\n',
+  )
+  throw error
+}
+
+try {
+  reveal = await reveal
+    .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+    .attach.SpendingValidator(scripts.b1PrizePool)
+    .complete()
+} catch (error) {
+  await writeFile(
+    EVIDENCE_DIR + '/collect-pool-diagnostic.json',
+    JSON.stringify({
+      ...inputDiagnostics.pool,
+      stage: 'collect-pool',
+      error: error instanceof Error ? error.stack : String(error),
+    }, null, 2) + '\n',
+  )
+  throw error
+}
+
+reveal = await reveal
+  .pay.ToContract(scripts.prizeAddress, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
+  .pay.ToContract(scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
+  .addSigner(address)
+  .validTo(Number(expiresAt))
+  .complete()
   .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(scripts.prizeAddress, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
   .pay.ToContract(scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
