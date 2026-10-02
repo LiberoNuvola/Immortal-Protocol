@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   crystallizeTicketExpiry,
+  preRichExpiryPolicyV1,
+  PRE_RICH_EXPIRY_MIN_HORIZON_MS,
+  PRE_RICH_EXPIRY_MAX_HORIZON_MS,
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
 } from '../../PRE-RICH/src/PreRichExpiryPolicy'
@@ -124,11 +127,11 @@ describe('PRE-RICH expiry policy boundary', () => {
       policyVersion: 1n,
       minHorizonMs: 2n * 60n * 60n * 1000n,
       maxHorizonMs: 300n * 24n * 60n * 60n * 1000n,
-      deriveHorizonMs: () => 30n * 24n * 60n * 60n * 1000n,
+      deriveHorizonMs: () => 301n * 24n * 60n * 60n * 1000n,
     }
 
     const result = crystallizeTicketExpiry(policy, issuanceState, 0n)
-    expect(result.horizonMs).toBe(30n * 24n * 60n * 60n * 1000n)
+    expect(result.horizonMs).toBe(300n * 24n * 60n * 60n * 1000n)
   })
 
   it('clamps the concrete PRE-RICH V1 policy within 2h..300d', () => {
