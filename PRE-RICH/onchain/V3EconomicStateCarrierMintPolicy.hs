@@ -11,20 +11,15 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import qualified PlutusTx.AssocMap as AssocMap
-
-{-# INLINABLE ownMintEntries #-}
-ownMintEntries :: CurrencySymbol -> Value -> [(TokenName, Integer)]
-ownMintEntries cs value =
-  case AssocMap.lookup cs (getValue value) of
-    Nothing -> []
-    Just tokens -> AssocMap.toList tokens
 
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne cs expectedName value =
-  case ownMintEntries cs value of
-    [(name, amount)] -> name == expectedName && amount == 1
+mintedExactlyOne expectedCs expectedName value =
+  case flattenValue value of
+    [(cs, name, amount)] ->
+      cs == expectedCs
+      && name == expectedName
+      && amount == 1
     _ -> False
 
 {-# INLINABLE seedConsumed #-}
@@ -39,7 +34,10 @@ seedConsumed seed info =
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
 mkPolicy seed tokenName _ ctx =
   seedConsumed seed (scriptContextTxInfo ctx)
-  && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
+  && mintedExactlyOne
+       (ownCurrencySymbol ctx)
+       tokenName
+       (txInfoMint (scriptContextTxInfo ctx))
 
 {-# INLINABLE wrap #-}
 wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
