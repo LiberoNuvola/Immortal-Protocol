@@ -326,39 +326,92 @@ if (DEPLOY_ONLY) {
   process.exit(0)
 }
 
-deploymentManifest = JSON.parse(await readFile(DEPLOYMENT_MANIFEST, 'utf8'))
-if (deploymentManifest.schema !== 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1' || deploymentManifest.status !== 'DEPLOYED') {
-  throw new Error('Existing Preprod deployment manifest is missing or not marked DEPLOYED')
+try {
+  deploymentManifest = JSON.parse(await readFile(DEPLOYMENT_MANIFEST, 'utf8'))
+} catch {
+  deploymentManifest = null
 }
-if (deploymentManifest.network !== 'cardano-preprod') throw new Error('Deployment manifest network mismatch')
-if (deploymentManifest.walletAddress !== address) throw new Error('Deployment manifest wallet address mismatch')
-if (deploymentManifest.topology?.prizeAddress !== scripts.prizeAddress) throw new Error('Deployment manifest Prize address mismatch')
-if (deploymentManifest.topology?.b1PrizePoolAddress !== scripts.b1PrizePoolAddress) throw new Error('Deployment manifest B1PrizePool address mismatch')
-if (deploymentManifest.assets?.ticketUnit !== ticketUnit) throw new Error('Deployment manifest ticket asset mismatch')
-if (deploymentManifest.assets?.poolUnit !== poolUnit) throw new Error('Deployment manifest pool asset mismatch')
-if (deploymentManifest.assets?.liquidityUnit !== liquidityUnit) throw new Error('Deployment manifest liquidity asset mismatch')
 
-bootstrapHash = deploymentManifest.bootstrapHash
-prizeReferenceHash = deploymentManifest.prizeReferenceHash
-poolReferenceHash = deploymentManifest.poolReferenceHash
-
-const deployedPrizeRef = deploymentManifest.utxos?.prize
-const deployedPoolRef = deploymentManifest.utxos?.pool
-const deployedPrizeReferenceRef = deploymentManifest.utxos?.prizeReference
-const deployedPoolReferenceRef = deploymentManifest.utxos?.poolReference
-if (!deployedPrizeRef || !deployedPoolRef || !deployedPrizeReferenceRef || !deployedPoolReferenceRef) {
-  throw new Error('Deployment manifest is missing required Preprod UTxO references')
+if (deploymentManifest) {
+  if (deploymentManifest.schema !== 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1' || deploymentManifest.status !== 'DEPLOYED') {
+    throw new Error('Existing Preprod deployment manifest is invalid or not marked DEPLOYED')
+  }
+  if (deploymentManifest.network !== 'cardano-preprod') throw new Error('Deployment manifest network mismatch')
+  if (deploymentManifest.walletAddress !== address) throw new Error('Deployment manifest wallet address mismatch')
+  if (deploymentManifest.topology?.prizeAddress !== scripts.prizeAddress) throw new Error('Deployment manifest Prize address mismatch')
+  if (deploymentManifest.topology?.b1PrizePoolAddress !== scripts.b1PrizePoolAddress) throw new Error('Deployment manifest B1PrizePool address mismatch')
+  if (deploymentManifest.assets?.ticketUnit !== ticketUnit) throw new Error('Deployment manifest ticket asset mismatch')
+  if (deploymentManifest.assets?.poolUnit !== poolUnit) throw new Error('Deployment manifest pool asset mismatch')
+  if (deploymentManifest.assets?.liquidityUnit !== liquidityUnit) throw new Error('Deployment manifest liquidity asset mismatch')
 }
+
+bootstrapHash = deploymentManifest?.bootstrapHash
+prizeReferenceHash = deploymentManifest?.prizeReferenceHash
+poolReferenceHash = deploymentManifest?.poolReferenceHash
 
 const prizeUtxos = await provider.getUtxos(scripts.prizeAddress)
 const poolUtxos = await provider.getUtxos(scripts.b1PrizePoolAddress)
 const referenceUtxos = await provider.getUtxos(address)
-prizeUtxo = prizeUtxos.find(u => ref(u) === deployedPrizeRef)
-poolUtxo = poolUtxos.find(u => ref(u) === deployedPoolRef)
-prizeReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPrizeReferenceRef)
-poolReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPoolReferenceRef)
+
+if (deploymentManifest) {
+  const deployedPrizeRef = deploymentManifest.utxos?.prize
+  const deployedPoolRef = deploymentManifest.utxos?.pool
+  const deployedPrizeReferenceRef = deploymentManifest.utxos?.prizeReference
+  const deployedPoolReferenceRef = deploymentManifest.utxos?.poolReference
+  if (!deployedPrizeRef || !deployedPoolRef || !deployedPrizeReferenceRef || !deployedPoolReferenceRef) {
+    throw new Error('Deployment manifest is missing required Preprod UTxO references')
+  }
+  prizeUtxo = prizeUtxos.find(u => ref(u) === deployedPrizeRef)
+  poolUtxo = poolUtxos.find(u => ref(u) === deployedPoolRef)
+  prizeReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPrizeReferenceRef)
+  poolReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPoolReferenceRef)
+} else {
+  // No cross-run artifact is required: locate the already deployed topology directly on Preprod.
+  // The native-policy asset IDs are deterministic for this wallet, and the reference scripts
+  // are matched by their exact serialized Plutus script bytes.
+  prizeUtxo = prizeUtxos.find(u => u.assets[ticketUnit] === 1n)
+  poolUtxo = poolUtxos.find(u => u.assets[poolUnit] === 1n && u.assets[liquidityUnit] === TOTAL_LIQUIDITY_USDM)
+  const expectedPrizeScript = applyDoubleCborEncoding(scripts.prizeValidator)
+  const expectedPoolScript = applyDoubleCborEncoding(scripts.b1PrizePool)
+  prizeReferenceUtxo = referenceUtxos.find(u => u.scriptRef?.type === 'PlutusV2' && u.scriptRef.script === expectedPrizeScript)
+  poolReferenceUtxo = referenceUtxos.find(u => u.scriptRef?.type === 'PlutusV2' && u.scriptRef.script === expectedPoolScript)
+  if (prizeUtxo && poolUtxo && prizeReferenceUtxo && poolReferenceUtxo) {
+    bootstrapHash = 'recovered-from-live-preprod'
+    prizeReferenceHash = ref(prizeReferenceUtxo).split('#')[0]
+    poolReferenceHash = ref(poolReferenceUtxo).split('#')[0]
+    deploymentManifest = {
+      schema: 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1',
+      status: 'DEPLOYED',
+      network: 'cardano-preprod',
+      walletAddress: address,
+      bootstrapHash,
+      prizeReferenceHash,
+      poolReferenceHash,
+      assets: {
+        poolUnit,
+        liquidityUnit,
+        ticketUnit,
+        liquidityAmount: TOTAL_LIQUIDITY_USDM.toString(),
+      },
+      topology: {
+        prizeHash: scripts.prizeHash,
+        b1PrizePoolHash: scripts.b1PrizePoolHash,
+        prizeAddress: scripts.prizeAddress,
+        b1PrizePoolAddress: scripts.b1PrizePoolAddress,
+      },
+      utxos: {
+        prize: ref(prizeUtxo),
+        pool: ref(poolUtxo),
+        prizeReference: ref(prizeReferenceUtxo),
+        poolReference: ref(poolReferenceUtxo),
+      },
+      source: { walletMode, recoveredFromLivePreprod: true },
+    }
+  }
+}
+
 if (!prizeUtxo || !poolUtxo || !prizeReferenceUtxo || !poolReferenceUtxo) {
-  throw new Error('Previously deployed Preprod UTxOs from manifest are not currently unspent')
+  throw new Error('Previously deployed Preprod topology could not be resolved; refusing to bootstrap during Reveal')
 }
 if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
   throw new Error('Previously deployed Preprod reference scripts are missing or unresolved')
