@@ -4,6 +4,61 @@
 **Classification:** non-normative implementation/evidence checkpoint
 **Date:** 2026-09-26
 
+## CURRENT OPERATIONAL STATE — 2026-10-02
+
+> **This section is the operational handoff for resuming work. Read it before deciding what to do next.**
+
+### Project position
+
+- **Branch:** `work/immortal-green-closure`
+- **Current code head at verification:** `353498b809aee52724240d6fd128af6209293635`
+- **Implementation phase:** FINALIZED
+- **Current phase:** live-ledger evidence / integration closure
+- **Primary milestone:** **first real PRE-RICH ticket purchase on Cardano Preprod**
+
+### Cardano Preprod — CURRENT FACT
+
+**PREPROD DEPLOYMENT = COMPLETE.** Do not treat Preprod deployment as a future task or restart it from zero.
+
+Verified from GitHub Actions run **#207 / run `37032644319`**, on the exact head above:
+
+| Preprod gate | Status | Evidence |
+|---|---|---|
+| Preprod context | **GREEN** | `preprod-context` job succeeded |
+| Demeter credential validation | **GREEN** | Completed in `preprod-context` |
+| Preprod wallet address validation | **GREEN** | Completed in `preprod-context` |
+| Live Preprod wallet UTxO evidence | **GREEN** | Completed in `preprod-context` |
+| IMMORTAL → PRE-RICH Reveal boundary conformance | **GREEN** | Completed in `preprod-context` |
+| Deploy current topology to Preprod | **GREEN** | `preprod-deploy` step succeeded |
+| Preprod deployment manifest | **UPLOADED** | `preprod-deploy` uploaded deployment manifest |
+| Real Preprod Reveal execution | **NOT YET EXECUTED** | `real-preprod-reveal` skipped |
+| V3 Carrier Preprod observation | **NOT YET EXECUTED** | `preprod-v3-carrier-observation` skipped |
+
+**Important:** “Preprod deployed” means the current topology was successfully deployed by the workflow. It does **not** mean that the first real ticket purchase has already happened.
+
+### Current CI
+
+- **IMMORTAL Cardano Integration Lab #1020** — **IN PROGRESS** on commit `353498b809aee52724240d6fd128af6209293635`.
+- **Protocol Declaration Conformance #806** — **SUCCESS** on the same commit.
+- The immediate technical gate remains the Cardano Integration Lab; its V3 Carrier stage and subsequent real-ledger evidence determine what can be closed next.
+
+### Next actions — in order
+
+1. **Let the current Cardano Integration Lab establish the V3 result.**
+2. If the lab identifies a concrete V3 blocker, fix that blocker without changing economic semantics.
+3. Use the already-completed Preprod deployment as the starting point; **do not redeploy blindly**.
+4. Execute the required real Preprod observations/transitions, including the V3 Carrier and Reveal paths as their gates become eligible.
+5. Build, sign, submit and confirm the **first real PRE-RICH ticket purchase on Cardano Preprod**.
+6. Bind the observed transaction and resulting economic transition to the evidence packet.
+
+### Non-regression / handoff rules
+
+- Do not reopen closed economic policy decisions merely to obtain green CI.
+- Do not confuse Yaci/devnet execution with the first real Preprod ticket.
+- Do not describe Preprod deployment as pending: **it is already complete for the verified topology in run #207.**
+- Do not claim a first Preprod ticket until a wallet-signed transaction is confirmed on Cardano Preprod and the PRE-RICH economic transition is verified.
+- When this section becomes stale, update this section first before continuing work.
+
 ## 1. Closed policy boundaries
 
 | Area | Status | Canonical result |
