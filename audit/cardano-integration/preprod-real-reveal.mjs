@@ -1,6 +1,6 @@
 import { Constr, Data, Lucid, Koios, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyDoubleCborEncoding } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
 import { defaultPrizeTable, generateSymbols, classifyRowTier, rowPayoutTotal } from '../../src/gameRules'
@@ -208,99 +208,109 @@ const postPrizeDatum = c(0, [
 const prePoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, PRICE_USDM, 1n, 0n)
 const postPoolDatum = poolDatum(scripts.prizeHash, TOTAL_LIQUIDITY_USDM, 0n, 0n, payout)
 
-const bootstrap = await lucid.newTx()
-  .mintAssets({ [poolUnit]: 1n, [liquidityUnit]: TOTAL_LIQUIDITY_USDM, [ticketUnit]: 1n }, Data.void())
-  .attach.MintingPolicy(testPolicy)
-  .pay.ToContract(
-    scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(prePoolDatum) },
-    { lovelace: 5_000_000n, [poolUnit]: 1n, [liquidityUnit]: TOTAL_LIQUIDITY_USDM },
-  )
-  .pay.ToContract(
-    scripts.prizeAddress, { kind: 'inline', value: Data.to(prePrizeDatum) },
-    { lovelace: 3_000_000n, [ticketUnit]: 1n },
-  )
-  .addSigner(address).complete()
-const bootstrapSigned = await bootstrap.sign.withWallet().complete()
-const bootstrapCbor = bootstrapSigned.toCBOR()
-const bootstrapHash = await bootstrapSigned.submit()
-await lucid.awaitTx(bootstrapHash)
+let bootstrapHash
+let bootstrapCbor = ''
+let prizeReferenceHash
+let poolReferenceHash
+let prizeUtxo
+let poolUtxo
+let prizeReferenceUtxo
+let poolReferenceUtxo
+let deploymentManifest
 
-const prizeUtxos = await waitFor(
-  () => provider.getUtxos(scripts.prizeAddress),
-  xs => xs.some(u => u.assets[ticketUnit] === 1n),
-  'Preprod Prize UTxO',
-)
-const poolUtxos = await waitFor(
-  () => provider.getUtxos(scripts.b1PrizePoolAddress),
-  xs => xs.some(u => u.assets[poolUnit] === 1n),
-  'Preprod B1PrizePool UTxO',
-)
-const prizeUtxo = prizeUtxos.find(u => u.assets[ticketUnit] === 1n)
-const poolUtxo = poolUtxos.find(u => u.assets[poolUnit] === 1n)
-if (!prizeUtxo || !poolUtxo) throw new Error('Preprod bootstrap outputs not found')
-
-const prizeReferenceTx = await lucid.newTx()
-  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
-  .complete()
-const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
-const prizeReferenceHash = await prizeReferenceSigned.submit()
-await lucid.awaitTx(prizeReferenceHash)
-
-const poolReferenceTx = await lucid.newTx()
-  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
-  .complete()
-const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
-const poolReferenceHash = await poolReferenceSigned.submit()
-await lucid.awaitTx(poolReferenceHash)
-
-const referenceUtxos = await provider.getUtxos(address)
-const prizeReferenceUtxo = referenceUtxos.find(u => u.txHash === prizeReferenceHash)
-const poolReferenceUtxo = referenceUtxos.find(u => u.txHash === poolReferenceHash)
-if (!prizeReferenceUtxo || !poolReferenceUtxo || !prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
-  throw new Error('Preprod reference-script outputs could not be resolved with full script CBOR')
-}
-
-const deploymentManifest = {
-  schema: 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1',
-  status: 'DEPLOYED',
-  network: 'cardano-preprod',
-  walletAddress: address,
-  bootstrapHash,
-  prizeReferenceHash,
-  poolReferenceHash,
-  assets: {
-    poolUnit,
-    liquidityUnit,
-    ticketUnit,
-    liquidityAmount: TOTAL_LIQUIDITY_USDM.toString(),
-  },
-  topology: {
-    counterHash: scripts.counterHash,
-    registryHash: scripts.registryHash,
-    treasuryHash: scripts.treasuryHash,
-    prizeHash: scripts.prizeHash,
-    b1PrizePoolHash: scripts.b1PrizePoolHash,
-    ticketPolicyId: scripts.ticketPolicyId,
-    prizeAddress: scripts.prizeAddress,
-    b1PrizePoolAddress: scripts.b1PrizePoolAddress,
-  },
-  utxos: {
-    prize: ref(prizeUtxo),
-    pool: ref(poolUtxo),
-    prizeReference: ref(prizeReferenceUtxo),
-    poolReference: ref(poolReferenceUtxo),
-  },
-  scriptRefs: {
-    prizeReference: prizeReferenceUtxo.scriptRef,
-    poolReference: poolReferenceUtxo.scriptRef,
-  },
-  source: {
-    walletMode,
-    lucidEvolution: '0.6.5',
-  },
-}
-await writeFile(DEPLOYMENT_MANIFEST, JSON.stringify(deploymentManifest, null, 2) + '\\n')
 if (DEPLOY_ONLY) {
+  const bootstrap = await lucid.newTx()
+    .mintAssets({ [poolUnit]: 1n, [liquidityUnit]: TOTAL_LIQUIDITY_USDM, [ticketUnit]: 1n }, Data.void())
+    .attach.MintingPolicy(testPolicy)
+    .pay.ToContract(
+      scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(prePoolDatum) },
+      { lovelace: 5_000_000n, [poolUnit]: 1n, [liquidityUnit]: TOTAL_LIQUIDITY_USDM },
+    )
+    .pay.ToContract(
+      scripts.prizeAddress, { kind: 'inline', value: Data.to(prePrizeDatum) },
+      { lovelace: 3_000_000n, [ticketUnit]: 1n },
+    )
+    .addSigner(address).complete()
+  const bootstrapSigned = await bootstrap.sign.withWallet().complete()
+  bootstrapCbor = bootstrapSigned.toCBOR()
+  bootstrapHash = await bootstrapSigned.submit()
+  await lucid.awaitTx(bootstrapHash)
+
+  const prizeUtxos = await waitFor(
+    () => provider.getUtxos(scripts.prizeAddress),
+    xs => xs.some(u => u.assets[ticketUnit] === 1n),
+    'Preprod Prize UTxO',
+  )
+  const poolUtxos = await waitFor(
+    () => provider.getUtxos(scripts.b1PrizePoolAddress),
+    xs => xs.some(u => u.assets[poolUnit] === 1n),
+    'Preprod B1PrizePool UTxO',
+  )
+  prizeUtxo = prizeUtxos.find(u => u.assets[ticketUnit] === 1n)
+  poolUtxo = poolUtxos.find(u => u.assets[poolUnit] === 1n)
+  if (!prizeUtxo || !poolUtxo) throw new Error('Preprod bootstrap outputs not found')
+
+  const prizeReferenceTx = await lucid.newTx()
+    .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
+    .complete()
+  const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
+  prizeReferenceHash = await prizeReferenceSigned.submit()
+  await lucid.awaitTx(prizeReferenceHash)
+
+  const poolReferenceTx = await lucid.newTx()
+    .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
+    .complete()
+  const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
+  poolReferenceHash = await poolReferenceSigned.submit()
+  await lucid.awaitTx(poolReferenceHash)
+
+  const referenceUtxos = await provider.getUtxos(address)
+  prizeReferenceUtxo = referenceUtxos.find(u => u.txHash === prizeReferenceHash)
+  poolReferenceUtxo = referenceUtxos.find(u => u.txHash === poolReferenceHash)
+  if (!prizeReferenceUtxo || !poolReferenceUtxo || !prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
+    throw new Error('Preprod reference-script outputs could not be resolved with full script CBOR')
+  }
+
+  deploymentManifest = {
+    schema: 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1',
+    status: 'DEPLOYED',
+    network: 'cardano-preprod',
+    walletAddress: address,
+    bootstrapHash,
+    prizeReferenceHash,
+    poolReferenceHash,
+    assets: {
+      poolUnit,
+      liquidityUnit,
+      ticketUnit,
+      liquidityAmount: TOTAL_LIQUIDITY_USDM.toString(),
+    },
+    topology: {
+      counterHash: scripts.counterHash,
+      registryHash: scripts.registryHash,
+      treasuryHash: scripts.treasuryHash,
+      prizeHash: scripts.prizeHash,
+      b1PrizePoolHash: scripts.b1PrizePoolHash,
+      ticketPolicyId: scripts.ticketPolicyId,
+      prizeAddress: scripts.prizeAddress,
+      b1PrizePoolAddress: scripts.b1PrizePoolAddress,
+    },
+    utxos: {
+      prize: ref(prizeUtxo),
+      pool: ref(poolUtxo),
+      prizeReference: ref(prizeReferenceUtxo),
+      poolReference: ref(poolReferenceUtxo),
+    },
+    scriptRefs: {
+      prizeReference: prizeReferenceUtxo.scriptRef,
+      poolReference: poolReferenceUtxo.scriptRef,
+    },
+    source: {
+      walletMode,
+      lucidEvolution: '0.6.5',
+    },
+  }
+  await writeFile(DEPLOYMENT_MANIFEST, JSON.stringify(deploymentManifest, null, 2) + '\\n')
   console.log(JSON.stringify({
     status: 'DEPLOYED',
     network: 'cardano-preprod',
@@ -315,6 +325,57 @@ if (DEPLOY_ONLY) {
   }, null, 2))
   process.exit(0)
 }
+
+deploymentManifest = JSON.parse(await readFile(DEPLOYMENT_MANIFEST, 'utf8'))
+if (deploymentManifest.schema !== 'IMMORTAL-PREPROD-DEPLOYMENT-v0.1' || deploymentManifest.status !== 'DEPLOYED') {
+  throw new Error('Existing Preprod deployment manifest is missing or not marked DEPLOYED')
+}
+if (deploymentManifest.network !== 'cardano-preprod') throw new Error('Deployment manifest network mismatch')
+if (deploymentManifest.walletAddress !== address) throw new Error('Deployment manifest wallet address mismatch')
+if (deploymentManifest.topology?.prizeAddress !== scripts.prizeAddress) throw new Error('Deployment manifest Prize address mismatch')
+if (deploymentManifest.topology?.b1PrizePoolAddress !== scripts.b1PrizePoolAddress) throw new Error('Deployment manifest B1PrizePool address mismatch')
+if (deploymentManifest.assets?.ticketUnit !== ticketUnit) throw new Error('Deployment manifest ticket asset mismatch')
+if (deploymentManifest.assets?.poolUnit !== poolUnit) throw new Error('Deployment manifest pool asset mismatch')
+if (deploymentManifest.assets?.liquidityUnit !== liquidityUnit) throw new Error('Deployment manifest liquidity asset mismatch')
+
+bootstrapHash = deploymentManifest.bootstrapHash
+prizeReferenceHash = deploymentManifest.prizeReferenceHash
+poolReferenceHash = deploymentManifest.poolReferenceHash
+
+const deployedPrizeRef = deploymentManifest.utxos?.prize
+const deployedPoolRef = deploymentManifest.utxos?.pool
+const deployedPrizeReferenceRef = deploymentManifest.utxos?.prizeReference
+const deployedPoolReferenceRef = deploymentManifest.utxos?.poolReference
+if (!deployedPrizeRef || !deployedPoolRef || !deployedPrizeReferenceRef || !deployedPoolReferenceRef) {
+  throw new Error('Deployment manifest is missing required Preprod UTxO references')
+}
+
+const prizeUtxos = await provider.getUtxos(scripts.prizeAddress)
+const poolUtxos = await provider.getUtxos(scripts.b1PrizePoolAddress)
+const referenceUtxos = await provider.getUtxos(address)
+prizeUtxo = prizeUtxos.find(u => ref(u) === deployedPrizeRef)
+poolUtxo = poolUtxos.find(u => ref(u) === deployedPoolRef)
+prizeReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPrizeReferenceRef)
+poolReferenceUtxo = referenceUtxos.find(u => ref(u) === deployedPoolReferenceRef)
+if (!prizeUtxo || !poolUtxo || !prizeReferenceUtxo || !poolReferenceUtxo) {
+  throw new Error('Previously deployed Preprod UTxOs from manifest are not currently unspent')
+}
+if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
+  throw new Error('Previously deployed Preprod reference scripts are missing or unresolved')
+}
+
+console.log(JSON.stringify({
+  status: 'DEPLOYMENT_REUSED',
+  network: 'cardano-preprod',
+  deploymentManifest: DEPLOYMENT_MANIFEST,
+  bootstrapHash,
+  prizeReferenceHash,
+  poolReferenceHash,
+  prizeUtxo: ref(prizeUtxo),
+  poolUtxo: ref(poolUtxo),
+  prizeReferenceUtxo: ref(prizeReferenceUtxo),
+  poolReferenceUtxo: ref(poolReferenceUtxo),
+}, null, 2))
 
 const preStateFingerprint = hashJson({
   prizeRef: ref(prizeUtxo), prizeDatum: prizeUtxo.datum,
