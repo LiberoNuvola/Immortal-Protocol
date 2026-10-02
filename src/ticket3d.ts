@@ -125,7 +125,7 @@ export function mountCertifiedTicket3D(
   const ctx = scratch.getContext('2d')
   if (!ctx) throw new Error('ticket 3D scratch canvas unavailable')
   const scratchSurface = new Image()
-  scratchSurface.src = '/assets/pre-rich.png'
+  scratchSurface.src = '/assets/pre-rich-refined.webp'
   scratchSurface.onload = () => {
     ctx.clearRect(0, 0, scratch.width, scratch.height)
     ctx.fillStyle = '#bfc1c3'
