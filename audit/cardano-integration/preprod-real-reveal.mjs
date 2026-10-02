@@ -250,21 +250,21 @@ let reveal = await lucid.newTx()
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
   .readFrom([prizeReferenceUtxo])
   .attach.SpendingValidator(scripts.prizeValidator)
-  .complete()
+  .complete({ localUPLCEval: false })
 
 reveal = await reveal
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
   .attach.SpendingValidator(scripts.b1PrizePool)
-  .complete()
+  .complete({ localUPLCEval: false })
 
 reveal = await reveal
   .pay.ToContract(scripts.prizeAddress, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
   .pay.ToContract(scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
   .addSigner(address)
   .validTo(Number(expiresAt))
-  .complete()
+  .complete({ localUPLCEval: false })
 
-const signedReveal = await reveal.sign.withWallet().complete()
+const signedReveal = await reveal.sign.withWallet().complete({ localUPLCEval: false })
 const revealCbor = signedReveal.toCBOR()
 const revealBytes = Buffer.from(revealCbor, 'hex').length
 const protocolParameters = await provider.getProtocolParameters()
