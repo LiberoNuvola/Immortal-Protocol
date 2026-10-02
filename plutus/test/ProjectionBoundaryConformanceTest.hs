@@ -10,6 +10,8 @@ import Prelude
   , (++)
   , (==)
   , (-)
+  , (+)
+  , (&&)
   , error
   , putStrLn
   )
