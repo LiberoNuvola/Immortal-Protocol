@@ -2,7 +2,7 @@
 
 **Snapshot branch:** `work/immortal-green-closure`
 **Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-09-26
+**Date:** 2026-10-02
 
 ## CURRENT OPERATIONAL STATE — 2026-10-02
 
@@ -11,7 +11,7 @@
 ### Project position
 
 - **Branch:** `work/immortal-green-closure`
-- **Current code head at verification:** `54f8d5933784c77559a5e9cb888a19d207e8cd9e`
+- **Current code head at verification:** `fa9178d5d51ffc71d63d0a6577fb4c710b90e6f4`
 - **Implementation phase:** FINALIZED
 - **Current phase:** live-ledger evidence / integration closure
 - **Primary milestone:** **first real PRE-RICH ticket purchase on Cardano Preprod**
@@ -65,13 +65,54 @@ The existing Issue implementation already requires a verified PRE-RICH expiry po
 - Do not invent expiry bounds where the current source of truth does not provide a derivation rule.
 - Do not claim a first Preprod ticket until the Issue transaction is signed/confirmed and the subsequent Reveal transition is also confirmed and reconstructed.
 
+## CURRENT OPERATIONAL STATE — 2026-10-02 (expiry + first Issue handoff)
+
+> **Preprod deployment remains complete and reusable.** The expired Prize UTxO is not reopened. The expiry profile is now explicit in PRE-RICH V1; the remaining first-Issue blocker is the live authoritative V3 observation/refinement binding.
+
+### Expiry profile
+
+- `preRichExpiryPolicyV1` is versioned as `pre-rich-expiry-v1`.
+- Explicit PRE-RICH V1 bounds: **2 hours minimum / 300 days maximum**.
+- The horizon is deterministically derived from the verified issuance-state snapshot using unresolved-reserve pressure, then crystallized into `pdExpiresAt`.
+- These bounds are PRE-RICH application parameters, not IMMORTAL economic constants.
+
+### First real Preprod Issue
+
+Current intended chain:
+
+```text
+LIVE Counter + LIVE B1 PrizePool
+        ↓
+LIVE authoritative V3 state observation/refinement   ← OPEN
+        ↓
+complete IssueDecisionInput
+        ↓
+canonical Haskell Issue decision
+        ↓
+EconomicAdmissionWitness
+        ↓
+mintSerialNFT()
+        ↓
+FIRST REAL PREPROD ISSUE
+        ↓
+fresh Reveal
+```
+
+The repository already contains:
+- `relayer/preprodIssueObservation.js`
+- `relayer/issueAdmissionProvider.js`
+- `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts`
+- `PRE-RICH/onchain/V3EconomicStateCarrier.hs`
+
+The missing piece is their **real live Preprod binding** into a complete authoritative `IssueDecisionInput`; fixtures/synthetic witnesses are not acceptable for the first ticket.
+
 ## 1. Closed policy boundaries
 
 | Area | Status | Canonical result |
 |---|---|---|
 | IMMORTAL / Adapter / PRE-RICH ownership | CLOSED | Universal economic semantics remain in IMMORTAL; Cardano realization remains Adapter; PRE-RICH owns application policy. |
 | Ticket expiry semantics | CLOSED | Deterministic DApp/profile horizon crystallized at issuance; expiry final; late reveal economically inert. |
-| Exact expiry duration | OPEN POLICY | Per-ticket horizon is deterministic from verified issuance state; bounded expiry is supported, but MIN/MAX numeric values require an explicit PRE-RICH derivation rule. |
+| Exact expiry duration | CLOSED FOR V1 | V1 uses explicit PRE-RICH bounds of 2 hours to 300 days and a deterministic state-derived horizon within those bounds. |
 | Jackpot ownership | CLOSED | Jackpot is PRE-RICH policy, not an IMMORTAL universal primitive. |
 | Ticket ladder | CLOSED AS PRE-RICH | 1/2/3/5/10/25/50/100 USDM belongs to PRE-RICH profile. |
 | Max normal payout | CLOSED AS PRE-RICH | 500×P belongs to PRE-RICH profile. |
