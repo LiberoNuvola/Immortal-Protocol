@@ -52,6 +52,17 @@ function prizeDatum(ticketPolicyId, prizePoolHash, playerCommitmentHex, commitme
 function poolDatum(prizeHash, liquidity, reserve, count, liabilities) {
   return c(0, [liquidity, liabilities, reserve, count, 0n, 10_000n, 0n, prizeHash])
 }
+function normalizeScriptBytes(bytes) {
+  if (typeof bytes === 'string') return bytes
+  if (bytes instanceof Uint8Array || Buffer.isBuffer(bytes)) return Buffer.from(bytes).toString('hex')
+  if (Array.isArray(bytes)) return Buffer.from(bytes).toString('hex')
+  if (bytes && typeof bytes === 'object') {
+    if (typeof bytes.hex === 'string') return bytes.hex
+    if (typeof bytes.bytes === 'string') return bytes.bytes
+    if (Array.isArray(bytes.bytes)) return Buffer.from(bytes.bytes).toString('hex')
+  }
+  throw new Error('Koios reference script bytes have an unsupported shape')
+}
 async function wait(ms) { return new Promise(r => setTimeout(r, ms)) }
 async function waitFor(fn, predicate, label) {
   for (let i = 0; i < 60; i++) {
@@ -100,7 +111,7 @@ async function safeKoiosUtxos(address) {
     const rs = u.reference_script
     if (rs?.bytes && rs?.type) {
       const type = { plutusV1: 'PlutusV1', plutusV2: 'PlutusV2', plutusV3: 'PlutusV3' }[rs.type]
-      if (type) scriptRef = { type, script: applyDoubleCborEncoding(rs.bytes) }
+      if (type) scriptRef = { type, script: applyDoubleCborEncoding(normalizeScriptBytes(rs.bytes)) }
     }
     return {
       txHash: u.tx_hash,
