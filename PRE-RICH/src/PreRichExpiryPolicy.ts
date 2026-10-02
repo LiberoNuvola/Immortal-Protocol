@@ -34,17 +34,14 @@ export const preRichExpiryPolicyV1: PreRichExpiryPolicy = {
   minHorizonMs: PRE_RICH_EXPIRY_MIN_HORIZON_MS,
   maxHorizonMs: PRE_RICH_EXPIRY_MAX_HORIZON_MS,
   deriveHorizonMs: (state) => {
-    if (state.eev === 0n) return PRE_RICH_EXPIRY_MAX_HORIZON_MS
-    const protectedLoad =
-      state.unresolvedReserve * 1000n / state.eev
-    const classPressure =
-      state.currentActiveClass > 0n
-        ? state.highestClassEverActivated * 1000n / state.currentActiveClass
-        : 1000n
-    const stress = protectedLoad > classPressure
-      ? protectedLoad
-      : classPressure
-    return PRE_RICH_EXPIRY_MAX_HORIZON_MS * 1000n / (1000n + stress)
+    /*
+     * V1 intentionally uses the declared maximum as the neutral temporal
+     * reference. Economic state modulates the horizon through a dimensionless
+     * reserve-pressure ratio; no hidden temporal constants are introduced.
+     */
+    if (state.eev <= 0n) return PRE_RICH_EXPIRY_MAX_HORIZON_MS
+    const reservePressure = state.unresolvedReserve * 100n / state.eev
+    return PRE_RICH_EXPIRY_MAX_HORIZON_MS / (1n + reservePressure)
   },
 }
 
