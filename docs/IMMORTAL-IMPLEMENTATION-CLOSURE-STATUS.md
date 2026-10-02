@@ -62,7 +62,7 @@ The existing Issue implementation already requires a verified PRE-RICH expiry po
 - Do not redeploy the existing topology.
 - Do not alter `PrizeValidator` to bypass expiry.
 - Do not treat the expired deployed ticket as the first real user ticket.
-- Do not invent an expiry duration where the current source of truth does not provide one.
+- Do not invent expiry bounds where the current source of truth does not provide a derivation rule.
 - Do not claim a first Preprod ticket until the Issue transaction is signed/confirmed and the subsequent Reveal transition is also confirmed and reconstructed.
 
 ## 1. Closed policy boundaries
@@ -71,7 +71,7 @@ The existing Issue implementation already requires a verified PRE-RICH expiry po
 |---|---|---|
 | IMMORTAL / Adapter / PRE-RICH ownership | CLOSED | Universal economic semantics remain in IMMORTAL; Cardano realization remains Adapter; PRE-RICH owns application policy. |
 | Ticket expiry semantics | CLOSED | Deterministic DApp/profile horizon crystallized at issuance; expiry final; late reveal economically inert. |
-| Exact expiry duration | CLOSED AS PRE-RICH V1 POLICY | Per-ticket horizon is deterministic from verified issuance state and clamped to 24h minimum / 7d maximum; bounds are application policy, not IMMORTAL constants. |
+| Exact expiry duration | OPEN POLICY | Per-ticket horizon is deterministic from verified issuance state; bounded expiry is supported, but MIN/MAX numeric values require an explicit PRE-RICH derivation rule. |
 | Jackpot ownership | CLOSED | Jackpot is PRE-RICH policy, not an IMMORTAL universal primitive. |
 | Ticket ladder | CLOSED AS PRE-RICH | 1/2/3/5/10/25/50/100 USDM belongs to PRE-RICH profile. |
 | Max normal payout | CLOSED AS PRE-RICH | 500×P belongs to PRE-RICH profile. |
