@@ -4,22 +4,45 @@
 
 ## 1. System
 
-IMMORTAL → Economic Kernel / Ω → Economic admissibility / viability → Cardano Adapter → PRE-RICH → canonical ticket state → certified NFT identity/state → 3D ticket presentation → reveal / persistent state → claim / settlement.
+Application → Application Economic Profile → IMMORTAL → Chain Adapter → Ledger.
+
+For the current Cardano deployment:
+
+PRE-RICH → PRE-RICH Economic Profile → IMMORTAL → Cardano Adapter → Cardano.
+
+A second Cardano application may use the same Cardano Adapter:
+
+Application B → Application B Economic Profile → IMMORTAL → Cardano Adapter → Cardano.
 
 Within PRE-RICH, the principal tracks are Economics, GameRules, and B3 / Beacon. B3 connects Materios → GRANDPA finality → StateRoot → storage proof → succinct/ZK verification → canonical Beacon.
 
 ## 2. Boundaries
 
+### Application Economic Profile
+
+Owns application-specific economic policy and state decomposition.
+
+For PRE-RICH this includes ticket prices/classes, payout policy, Jackpot lifecycle, GameRules, application-specific expiry policy, Beacon usage and deployment policy.
+
+A different application may define materially different economic rules without changing IMMORTAL or requiring a new Cardano Adapter.
+
 ### IMMORTAL
-Owns universal chain-neutral economic semantics and invariants: Economic Kernel, ProtectedCapital, RawSurplus, viability/Ω, liability-first protection, atomic transitions, expiry finality, permissionless execution, safety/liveness and no-bypass economic boundaries.
+
+Owns universal chain-neutral economic semantics and invariants: Economic Kernel, ProtectedCapital, RawSurplus, viability/Ω, liability-first protection, atomic transitions, expiry finality where universal, permissionless execution, safety/liveness and no-bypass economic boundaries.
 
 PRE-RICH rules such as ticket prices, 500x, Jackpot policy and game distribution are not universal IMMORTAL constants.
 
-### Cardano Adapter
-Owns UTxO, Datum/Redeemer/Value, transaction serialization, reference-input/oracle transport, chain-specific evidence, fees and settlement mechanics.
+### Chain Adapter
 
-### PRE-RICH
-Owns Scratch & Win, ticket ladder, 20,000 outcome domain, 500x payout ceiling, Jackpot, GameRules, Beacon consumption, ticket NFT, 3D presentation and application governance.
+Owns chain-specific realization, observation and evidence transport.
+
+For Cardano this includes UTxO, Datum/Redeemer/Value, transaction serialization, reference-input/oracle transport, chain-specific evidence, fees and settlement mechanics.
+
+The Cardano Adapter is shared across IMMORTAL applications on Cardano. It does not become PRE-RICH-specific because PRE-RICH is currently its principal application.
+
+### Ledger
+
+Owns execution according to the concrete chain's consensus and validation rules.
 
 ## 3. B3
 

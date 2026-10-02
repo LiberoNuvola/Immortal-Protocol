@@ -13,6 +13,8 @@ import {
 
 import {
   hashSelectionInputs,
+  verifySelectionInputsCommitment,
+  verifyActivationBlockBinding,
   verifyAuthoritySetTransition,
   type AuthoritySetTransitionStatement
 } from "../src/authority-transition.js";
@@ -73,6 +75,10 @@ function baseStatement(): AuthoritySetTransitionStatement {
       authority(4)
     ],
     sidechainEpoch: 42n,
+    authoritySelectionRegime: {
+      kind: "l1-ariadne" as const,
+      evidenceHash: new Uint8Array(32).fill(0xdd)
+    },
     selectionInputs: Uint8Array.from([9, 8, 7, 6]),
     selectionInputsHash: hashSelectionInputs(
       Uint8Array.from([9, 8, 7, 6])
@@ -224,6 +230,44 @@ describe("authority trust boundary integration", () => {
     ).toThrow("INVALID_VERIFIED_AUTHORITY_SET_TRANSITION");
   });
 
+  it("binds recovered selection inputs to the on-chain commitment", () => {
+    const statement = baseStatement();
+    const commitment = {
+      blockHash: new Uint8Array(statement.activationBlock.hash),
+      blockNumber: statement.activationBlock.number,
+      selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+    };
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement.selectionInputs, commitment)
+    ).not.toThrow();
+
+    const tamperedInputs = Uint8Array.from([9, 8, 7, 5]);
+    expect(() =>
+      verifySelectionInputsCommitment(tamperedInputs, commitment)
+    ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+  });
+
+  it("requires exact activation block identity when binding a transition commitment", () => {
+    const statement = baseStatement();
+    const commitment = {
+      blockHash: new Uint8Array(statement.activationBlock.hash),
+      blockNumber: statement.activationBlock.number,
+      selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+    };
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, commitment)
+    ).not.toThrow();
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        ...commitment,
+        blockNumber: commitment.blockNumber + 1n
+      })
+    ).toThrow("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER_MISMATCH");
+  });
+
   it("uses the transition-derived trusted set when verifying a finalized checkpoint", async () => {
     const statement = baseStatement();
 
@@ -243,6 +287,19 @@ describe("authority trust boundary integration", () => {
       );
 
     const checkpoint = finalizedCheckpoint();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, checkpoint)
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+
+    const matchingCheckpoint = {
+      ...checkpoint,
+      blockHash: new Uint8Array(statement.activationBlock.hash)
+    };
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, matchingCheckpoint)
+    ).not.toThrow();
 
     const result = await verifyFinality(
       checkpoint,

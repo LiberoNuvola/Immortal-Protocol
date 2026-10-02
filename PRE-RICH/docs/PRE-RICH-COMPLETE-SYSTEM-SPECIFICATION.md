@@ -4,7 +4,7 @@
 **Scope:** PRE-RICH application profile of IMMORTAL  
 **Status:** INTEGRATIVE DOCUMENT — it does not create or override normative policy  
 **Canonicality:** normative meaning remains defined by the cited source documents in the IMMORTAL → PRE-RICH hierarchy  
-**Branch:** `main`
+**Branch:** `work/immortal-green-closure`
 
 > This document exists to answer one practical question: **“How does PRE-RICH work, from system state and ticket purchase through randomness, result, settlement, expiry, Genesis, Jackpot and Cardano execution?”**
 >
@@ -32,14 +32,20 @@ IMMORTAL remains the universal normative economic layer. Cardano is the current 
 The architectural boundary is:
 
 ```
+PRE-RICH application intent
+          ↓
+PRE-RICH Economic Profile
+          ↓
 IMMORTAL universal economic rules
           ↓
-PRE-RICH application specialization
-          ↓
-IMMORTAL Cardano Adapter
+Cardano Adapter
           ↓
 Cardano ledger
 ```
+
+The Cardano Adapter is a shared chain boundary, not a PRE-RICH-specific component.
+Other IMMORTAL applications on Cardano may use the same Adapter with a different
+application economic profile.
 
 PRE-RICH policy must not be promoted into universal IMMORTAL semantics merely because it is implemented on Cardano.
 

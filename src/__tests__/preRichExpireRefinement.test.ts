@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   refinesAggregateExpire,
   type ExpireRefinementEvidence,
-} from '../../PRE-RICH/profile/PreRichExpireRefinement'
+} from '../../PRE-RICH/src/PreRichExpireRefinement'
 
 const valid: ExpireRefinementEvidence = {
   ticketId: 'ticket-42',

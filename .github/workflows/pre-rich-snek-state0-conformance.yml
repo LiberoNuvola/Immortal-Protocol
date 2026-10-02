@@ -1,0 +1,32 @@
+name: PRE-RICH Snek State-0 Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/preSnekDecoder.ts"
+      - "src/__tests__/preSnekDecoder.test.ts"
+      - "docs/COORDINATION/GATE41_*.md"
+      - "docs/COORDINATION/GATE41-*.md"
+      - ".github/workflows/pre-rich-snek-state0-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "src/preSnekDecoder.ts"
+      - "src/__tests__/preSnekDecoder.test.ts"
+      - ".github/workflows/pre-rich-snek-state0-conformance.yml"
+
+jobs:
+  state0:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run deterministic State-0 decoder and adversarial fixtures
+        run: node --import tsx --test src/__tests__/preSnekDecoder.test.ts

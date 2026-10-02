@@ -9,17 +9,19 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/PreRichIssueEvidence.ts"
-      - "PRE-RICH/profile/PreRichExpireRefinement.ts"
-      - "PRE-RICH/profile/PreRichIssueRefinement.ts"
-      - "PRE-RICH/profile/PreRichClaimRefinement.ts"
-      - "PRE-RICH/profile/PreRichRevealRefinement.ts"
-      - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
-      - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
-      - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
+      - "PRE-RICH/src/PreRichIssueEvidence.ts"
+      - "PRE-RICH/src/PreRichExpireRefinement.ts"
+      - "PRE-RICH/src/PreRichIssueRefinement.ts"
+      - "PRE-RICH/src/PreRichClaimRefinement.ts"
+      - "PRE-RICH/src/PreRichRevealRefinement.ts"
+      - "PRE-RICH/src/PreRichCertifiedTicket.ts"
+      - "PRE-RICH/src/PreRichJackpotPolicy.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/src/PreRichExpiryPolicy.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
+      - "src/__tests__/immortal-cardano-replay.test.ts"
+      - "src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts"
       - "src/__tests__/preRichIssueRefinement.test.ts"
       - "src/__tests__/preRichClaimRefinement.test.ts"
       - "src/__tests__/preRichRevealRefinement.test.ts"
@@ -31,21 +33,23 @@ on:
       - "src/gameFlow.ts"
       - "src/txHelpers.ts"
       - "src/__tests__/rf8-submission-boundary.test.ts"
+      - "src/__tests__/differentialActionReplay.test.ts"
       - "src/__tests__/canonical-transition-evidence.test.ts"
-      - "PRE-RICH/profile/PreRichCertifiedSettlement.ts"
-      - "PRE-RICH/profile/PreRichCardanoObservationProjection.ts"
-      - "PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts"
+      - "PRE-RICH/src/PreRichCertifiedSettlement.ts"
+      - "PRE-RICH/src/PreRichCardanoObservationProjection.ts"
+      - "PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts"
       - "src/__tests__/preRichCertifiedSettlement.test.ts"
       - "src/__tests__/preRich-gamerules-distribution.test.ts"
       - "src/__tests__/ticket3dSecurity.test.ts"
+      - "src/__tests__/referenceScriptSpendingBoundary.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
       - "src/*.ts"
   pull_request:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/PreRichIssueEvidence.ts"
-      - "PRE-RICH/profile/PreRichExpireRefinement.ts"
+      - "PRE-RICH/src/PreRichIssueEvidence.ts"
+      - "PRE-RICH/src/PreRichExpireRefinement.ts"
       - "src/__tests__/preRichIssueEvidence.test.ts"
       - "src/__tests__/preRichExpireRefinement.test.ts"
       - ".github/workflows/pre-rich-action-refinement-conformance.yml"
@@ -62,11 +66,11 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Run Issue and Expire refinement conformance
-        run: npx vitest run src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/profile/B6-PC05-monetary-scale.conformance.test.ts
+        run: npx vitest run src/__tests__/differentialActionReplay.test.ts src/__tests__/preRichIssueEvidence.test.ts src/__tests__/preRichIssueRefinement.test.ts src/__tests__/preRichClaimRefinement.test.ts src/__tests__/preRichRevealRefinement.test.ts src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/preRichJackpotPolicy.test.ts src/__tests__/preRichExpireRefinement.test.ts src/__tests__/preRichCertifiedSettlement.test.ts src/__tests__/canonical-transition-evidence.test.ts PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts
       
       - name: Run Genesis Treasury admission conformance
-        run: node --import tsx/esm PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+        run: node --import tsx/esm PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts
       - name: Typecheck PRE-RICH presentation/refinement code
         run: npx tsc --noEmit

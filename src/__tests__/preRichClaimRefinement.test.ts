@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { claimRefinementAdmissible, validateClaimRefinementEvidence, type ClaimRefinementEvidence } from '../../PRE-RICH/profile/PreRichClaimRefinement'
+import { claimRefinementAdmissible, validateClaimRefinementEvidence, type ClaimRefinementEvidence } from '../../PRE-RICH/src/PreRichClaimRefinement'
 
 const base: ClaimRefinementEvidence = {
   ticketPolicyId: 'aa'.repeat(28),

@@ -133,9 +133,18 @@ eventSchemaValid e =
   payloadProposalId (eventPayload e) == eventProposalId e &&
   eventTypeMatchesPayload (eventType e) (eventPayload e) &&
   payloadTimestampCompatible e &&
+  payloadRulesetVersionCompatible e &&
   not (null (payloadCommitment e)) &&
   not (null (evidenceRefs e)) &&
   unique (evidenceRefs e)
+
+payloadRulesetVersionCompatible :: CanonicalEvent -> Bool
+payloadRulesetVersionCompatible e = case eventPayload e of
+  PayloadDecisionFinalized r ->
+    decisionRulesetVersion r == rulesetVersion e
+  PayloadConformanceRecorded r ->
+    conformanceRulesetVersion r == rulesetVersion e
+  _ -> True
 
 payloadProposalId :: CanonicalPayload -> ProposalId
 payloadProposalId p = case p of
@@ -194,6 +203,18 @@ predecessorValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 predecessorValid Nothing e = predecessor e == Nothing
 predecessorValid (Just p) e = predecessor e == Just (eventId p)
 
+eventTimestampValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
+eventTimestampValid Nothing _ = True
+eventTimestampValid (Just p) e = eventTimestamp e >= eventTimestamp p
+
+eventIdentityValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
+eventIdentityValid Nothing _ = True
+eventIdentityValid (Just p) e = eventId e /= eventId p
+
 canonicalEventValid :: Maybe CanonicalEvent -> CanonicalEvent -> Bool
 canonicalEventValid prev e =
-  eventSchemaValid e && predecessorValid prev e && eventStatus e == AcceptedEvent
+  eventSchemaValid e &&
+  predecessorValid prev e &&
+  eventTimestampValid prev e &&
+  eventIdentityValid prev e &&
+  eventStatus e == AcceptedEvent

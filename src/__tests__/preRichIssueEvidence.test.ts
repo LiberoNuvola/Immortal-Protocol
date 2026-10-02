@@ -4,7 +4,7 @@ import {
   issueClassSaleable,
   issueRefinementAdmissible,
   validateIssueRefinementEvidence,
-} from '../../PRE-RICH/profile/PreRichIssueEvidence'
+} from '../../PRE-RICH/src/PreRichIssueEvidence'
 
 const base = {
   classId: 2n,

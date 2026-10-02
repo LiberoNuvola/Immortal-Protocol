@@ -1,4 +1,4 @@
-import type { CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
+import type { CertifiedTicketState } from '../PRE-RICH/src/PreRichCertifiedTicket'
 
 export type Ticket3DOptions = {
   onRequestCanonicalRefresh?: () => void | Promise<void>
@@ -12,22 +12,26 @@ function ensureStyles() {
   style.id = STYLE_ID
   style.textContent = `
     .pr3d { perspective: 1200px; display: grid; gap: 14px; place-items: center; width: 100%; user-select: none; }
-    .pr3d__stage { width: min(720px, 92vw); aspect-ratio: 1.6; position: relative; cursor: grab; touch-action: none; }
+    .pr3d__stage { width:min(720px,94vw); aspect-ratio:1.6; position:relative; cursor:grab; touch-action:none; filter:drop-shadow(0 24px 30px rgba(0,0,0,.18)); }
     .pr3d__stage:active { cursor: grabbing; }
     .pr3d__card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 120ms ease-out; }
-    .pr3d__face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 45px rgba(0,0,0,.22); border: 1px solid rgba(0,0,0,.12); padding: 24px; box-sizing: border-box; }
-    .pr3d__front { background: linear-gradient(135deg,#fdf6d8,#f7e9ab); color: #1c1c1c; }
-    .pr3d__back { background: linear-gradient(135deg,#f3f3f3,#d8d8d8); color: #1c1c1c; transform: rotateY(180deg); }
-    .pr3d__identity { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pr3d__title { font-size: 1.55rem; font-weight: 800; margin: 4px 0 12px; }
+    .pr3d__face { position:absolute; inset:0; backface-visibility: hidden; border-radius: 20px; overflow: hidden; box-shadow:0 18px 45px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.5),inset 0 0 28px rgba(255,255,255,.18); border:1px solid rgba(0,0,0,.12); padding:24px; box-sizing: border-box; }
+    .pr3d__front { background:radial-gradient(circle at 82% 18%,rgba(255,255,255,.75),transparent 22%),linear-gradient(135deg,#fff9df,#f7e9ab 55%,#e9cf79); color:#1c1c1c; }
+    .pr3d__back { background:radial-gradient(circle at 18% 12%,rgba(255,255,255,.8),transparent 24%),linear-gradient(135deg,#fafafa,#d8d8d8); color:#1c1c1c; transform:rotateY(180deg); }
+    .pr3d__identity { position:relative; z-index:2; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pr3d__title { position:relative; z-index:2; font-size:1.7rem; font-weight:900; letter-spacing:-.035em; margin: 4px 0 12px; }
     .pr3d__grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-    .pr3d__field { background: rgba(255,255,255,.58); border-radius: 12px; padding: 10px 12px; }
+    .pr3d__field { background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.42)); border:1px solid rgba(255,255,255,.72); box-shadow:0 5px 14px rgba(90,60,0,.07),inset 0 1px rgba(255,255,255,.7); border-radius:12px; padding:10px 12px; backdrop-filter:blur(3px); }
     .pr3d__field small { display:block; opacity:.65; margin-bottom:4px; }
     .pr3d__field strong { font-size: 1rem; }
     .pr3d__rows { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .pr3d__row { padding: 7px 10px; border-radius: 999px; background: rgba(0,0,0,.08); font-size: .82rem; }
     .pr3d__status { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.08); font-weight: 700; }
-    .pr3d__scratch { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; }
+    .pr3d__denomination { position:absolute; z-index:3; right:38px; top:31%; padding:6px 10px; border-radius:999px; background:rgba(24,24,24,.9); color:#fff; font-size:.68rem; font-weight:900; letter-spacing:.1em; box-shadow:0 6px 14px rgba(0,0,0,.18); }
+    .pr3d__artwork { position:absolute; z-index:1; left:24px; top:24px; width:calc(100% - 48px); height:56%; object-fit:contain; object-position:center; border-radius:15px; opacity:1; filter:saturate(1.03) contrast(1.01); box-shadow:0 10px 24px rgba(0,0,0,.16); transform:rotate(1.2deg); border:1px solid rgba(0,0,0,.1); }
+    .pr3d__scratch-hint { position:absolute; inset:auto 0 12px; z-index:5; text-align:center; font-size:.72rem; letter-spacing:.14em; font-weight:800; pointer-events:none; color:#111; }
+    .pr3d__scratch-hint span { background:rgba(255,255,255,.72); padding:6px 10px; border-radius:999px; }
+    .pr3d__scratch { position:absolute; left:31%; top:31%; width:38%; height:40%; z-index:4; border-radius:10px; cursor:crosshair; box-shadow:inset 0 0 0 1px rgba(255,255,255,.34),inset 0 2px 7px rgba(0,0,0,.12); touch-action:none; }
     .pr3d__actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
     .pr3d__actions button { border: 0; border-radius: 10px; padding: 9px 13px; cursor: pointer; }
     .pr3d__meta { font-size:.78rem; opacity:.7; max-width:720px; text-align:center; }
@@ -74,8 +78,16 @@ export function mountCertifiedTicket3D(
       ? `PAYOUT ${text(state.prizeAmount)}`
       : 'REVEALED / NO PAYOUT'
 
+  const artworkIndex = (() => {
+    const seed = state.identity.assetName.replace(/[^0-9a-f]/gi, '').slice(0, 4)
+    const value = seed ? Number.parseInt(seed, 16) : 0
+    return Number.isFinite(value) ? (value % 5) + 1 : 1
+  })()
+  const artwork = `/assets/ticket${artworkIndex}.jpg`
+
   front.innerHTML = `
-    <div class='pr3d__identity'>CERTIFIED TICKET · ${escapeHtml(state.identity.policyId)}.${escapeHtml(state.identity.assetName)}</div>
+    <img class='pr3d__artwork' src='${artwork}' alt='PRE-RICH ticket artwork ${artworkIndex}'>
+    <div class='pr3d__identity' style='margin-top:58%'>CERTIFIED TICKET · ${escapeHtml(state.identity.policyId)}.${escapeHtml(state.identity.assetName)}</div>
     <div class='pr3d__title'>PRE-RICH Scratch Ticket</div>
     <div class='pr3d__status'>${escapeHtml(state.status)} · ${escapeHtml(resultLabel)}</div>
     <div class='pr3d__grid' style='margin-top:14px'>
@@ -88,8 +100,8 @@ export function mountCertifiedTicket3D(
   `
 
   back.innerHTML = `
-    <div class='pr3d__identity'>CANONICAL RECEIPT</div>
-    <div class='pr3d__title'>Ticket Receipt</div>
+    <div class='pr3d__identity'>PRE-RICH · CERTIFIED TICKET</div>
+    <div class='pr3d__title'>Canonical Ticket Receipt</div>
     <div class='pr3d__grid'>
       <div class='pr3d__field'><small>Policy ID</small><strong>${escapeHtml(state.identity.policyId)}</strong></div>
       <div class='pr3d__field'><small>Asset name</small><strong>${escapeHtml(state.identity.assetName)}</strong></div>
@@ -101,13 +113,31 @@ export function mountCertifiedTicket3D(
     <div class='pr3d__rows'><span class='pr3d__row'>Row 1: ${escapeHtml(state.row1Tier)}</span><span class='pr3d__row'>Row 2: ${escapeHtml(state.row2Tier)}</span><span class='pr3d__row'>Tier: ${escapeHtml(state.prizeTier)}</span></div>
   `
 
+  const denomination = document.createElement('div')
+  denomination.className = 'pr3d__denomination'
+  denomination.textContent = text(state.priceUsdm) + ' USDM'
+  front.append(denomination)
+
   const scratch = document.createElement('canvas')
   scratch.className = 'pr3d__scratch'
-  scratch.width = 1200
-  scratch.height = 750
+  scratch.width = 640
+  scratch.height = 360
   const ctx = scratch.getContext('2d')
   if (!ctx) throw new Error('ticket 3D scratch canvas unavailable')
-  ctx.fillStyle = '#c6c6c6'
+  const scratchSurface = new Image()
+  scratchSurface.src = '/assets/pre-rich.png'
+  scratchSurface.onload = () => {
+    ctx.clearRect(0, 0, scratch.width, scratch.height)
+    ctx.fillStyle = '#bfc1c3'
+    ctx.fillRect(0, 0, scratch.width, scratch.height)
+    const margin = 18
+    const ratio = Math.min((scratch.width - margin * 2) / scratchSurface.width, (scratch.height - margin * 2) / scratchSurface.height)
+    const w = scratchSurface.width * ratio
+    const h = scratchSurface.height * ratio
+    ctx.drawImage(scratchSurface, (scratch.width - w) / 2, (scratch.height - h) / 2, w, h)
+    ctx.globalCompositeOperation = 'destination-out'
+  }
+  ctx.fillStyle = '#bfc1c3'
   ctx.fillRect(0,0,scratch.width,scratch.height)
   ctx.globalCompositeOperation = 'destination-out'
 
@@ -147,11 +177,13 @@ export function mountCertifiedTicket3D(
     const sx = scratch.width / rect.width
     const sy = scratch.height / rect.height
     ctx.beginPath()
-    ctx.arc((e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy,72,0,Math.PI*2)
+    ctx.arc((e.clientX-rect.left)*sx,(e.clientY-rect.top)*sy,30,0,Math.PI*2)
     ctx.fill()
   }
-  scratch.addEventListener('pointerdown',(e)=>{ scratch.setPointerCapture(e.pointerId); scratchAt(e) })
-  scratch.addEventListener('pointermove',(e)=>{ if (e.buttons) scratchAt(e) })
+  scratch.addEventListener('pointerdown',(e)=>{ e.stopPropagation(); scratch.setPointerCapture(e.pointerId); scratchAt(e) })
+  scratch.addEventListener('pointermove',(e)=>{ e.stopPropagation(); if (e.buttons) scratchAt(e) })
+  scratch.addEventListener('pointerup',(e)=>e.stopPropagation())
+  scratch.addEventListener('pointercancel',(e)=>e.stopPropagation())
 
   const actions = document.createElement('div')
   actions.className = 'pr3d__actions'
@@ -167,7 +199,11 @@ export function mountCertifiedTicket3D(
   actions.append(reset,refresh)
   container.append(actions,note)
 
+  const resizeObserver = new ResizeObserver(() => render())
+  resizeObserver.observe(stage)
+
   return () => {
+    resizeObserver.disconnect()
     container.replaceChildren()
   }
 }

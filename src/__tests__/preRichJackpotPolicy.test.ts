@@ -5,7 +5,7 @@ import {
   jackpotFundingNeedReferenceUnits,
   stableLadder,
   type PreRichJackpotPolicyInput,
-} from '../../PRE-RICH/profile/PreRichJackpotPolicy'
+} from '../../PRE-RICH/src/PreRichJackpotPolicy'
 
 const base: PreRichJackpotPolicyInput = {
   ticketPricesReferenceUnits: [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n],

@@ -16,9 +16,9 @@ const valid: CanonicalTransitionEvidence = {
   adapterId: 'cardano',
   adapterVersion: '0.1',
   environment: 'yaci-devnet',
-  preStateFingerprint: 'pre-sha256',
-  postStateFingerprint: 'post-sha256',
-  actionFingerprint: 'action-sha256',
+  preStateFingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  postStateFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  actionFingerprint: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
   transactionRef: 'tx-123',
 }
 
@@ -33,7 +33,7 @@ describe('RF10/RF11 — canonical transition evidence binding', () => {
 
   it('requires both canonical state endpoints and the action fingerprint', () => {
     for (const field of ['preStateFingerprint', 'postStateFingerprint', 'actionFingerprint'] as const) {
-      expect(() => validateCanonicalTransitionEvidence({ ...valid, [field]: '' })).toThrow(field + ' must be non-empty')
+      expect(() => validateCanonicalTransitionEvidence({ ...valid, [field]: '' })).toThrow(field + ' must be a 32-byte hex digest')
     }
   })
 
@@ -48,23 +48,23 @@ describe('RF10/RF11 — canonical transition evidence binding', () => {
   })
   it('binds the evidence to the expected canonical action, pre-state, post-state and settlement', () => {
     expect(() => assertCanonicalTransitionBinding(valid, {
-      actionFingerprint: 'action-sha256',
-      preStateFingerprint: 'pre-sha256',
-      postStateFingerprint: 'post-sha256',
+      actionFingerprint: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      preStateFingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      postStateFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       transactionRef: 'tx-123',
     })).not.toThrow()
 
     expect(() => assertCanonicalTransitionBinding(valid, {
-      actionFingerprint: 'stale-action',
-      preStateFingerprint: 'pre-sha256',
-      postStateFingerprint: 'post-sha256',
+      actionFingerprint: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      preStateFingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      postStateFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       transactionRef: 'tx-123',
     })).toThrow('canonical action fingerprint mismatch')
 
     expect(() => assertCanonicalTransitionBinding(valid, {
-      actionFingerprint: 'action-sha256',
-      preStateFingerprint: 'stale-pre-state',
-      postStateFingerprint: 'post-sha256',
+      actionFingerprint: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      preStateFingerprint: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      postStateFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       transactionRef: 'tx-123',
     })).toThrow('canonical pre-state fingerprint mismatch')
   })

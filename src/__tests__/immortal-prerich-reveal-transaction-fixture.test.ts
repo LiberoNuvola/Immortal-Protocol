@@ -32,7 +32,7 @@ import assert from 'node:assert/strict'
 import {
   expectedRevealPostState,
   projectCardanoToImmortalV3,
-} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
+} from '../../PRE-RICH/src/PreRichCardanoObservationProjection'
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
@@ -244,6 +244,8 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
       pool: {
         pendingLiabilitiesUsdm: 500n,
         unresolvedReserveUsdm: 600n,
@@ -282,6 +284,8 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
       pool: {
         pendingLiabilitiesUsdm:
           (fixture.produced.b1PrizePool.datum as B1PrizePoolDatumFixture)
@@ -350,6 +354,8 @@ describe('P2.8-A — PRE-RICH Reveal transaction boundary', () => {
         safetyCapital: 0n,
         reserveProtection: 0n,
         mandatoryFutureCosts: 0n,
+        currentActiveClass: 0n,
+        highestClassEverActivated: 0n,
         pool: {
           pendingLiabilitiesUsdm: postPool.pendingLiabilitiesUsdm,
           unresolvedReserveUsdm: 500n,

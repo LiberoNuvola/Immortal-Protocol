@@ -100,7 +100,7 @@ exact Reveal CBOR
   → persisted typed report
 ```
 
-Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. Closure requires the typed evaluation evidence itself, not only successful compilation or runner startup.
+Current work has already addressed dependency/runtime blockers including `cardano-slotting` and Babbage/inline-datum support. The P2.8 runner now has a native-context decoding path for the exact transaction, protocol parameters, consumed Yaci UTxO, `EpochInfo` and `SystemStart`; the Yaci→Ledger UTxO path is fail-closed on malformed addresses, values, datum hashes and unsupported reference-script evidence. A dedicated decoder conformance executable is included in the lab workflow. The runner now has an explicit `--evaluate` mode and, when enabled, invokes Cardano-ledger `evalTxExUnitsWithLogs` once the complete typed context is decoded, persisting the `RedeemerReportWithLogs`. Before decoding, the runner now verifies the five canonical context artifacts against the SHA-256 values already declared by the exact materialization manifest; any missing, malformed or mismatched digest is fail-closed. The runner also emits a byte-binding manifest for the evaluator report. With missing context it remains explicitly `SAFE_STALL`. This is an implementation milestone only: no successful ledger evaluation result or ledger-originated failure is claimed until a real evidence packet is observed through the workflow. Closure requires actual evidence, not only successful compilation or context decoding.
 
 ## Beacon / Materios / GRANDPA
 
@@ -115,6 +115,26 @@ Relevant proof surfaces:
 `verifier-b3-03b.ts` remains fail-closed when ancestry is not verified.
 
 Current status: the architecture and trust boundary are established, but publisher-independent B3 authority/finality provenance is not to be called complete until the full proof path is available and verified.
+
+### New upstream Materios provenance evidence surface (2026-09-24)
+
+A newly verified Materios explorer/provenance surface strengthens the upstream evidence available to the B3 boundary. The upstream receipt verifier establishes an evidence chain of receipt identity, availability certification, context-bound checkpoint leaf, checkpoint anchoring, Merkle inclusion, manifest integrity and the `AvailabilityCertified` event cross-check.
+
+This is useful for B3 because it adds a concrete provenance surface for receipt/anchor lineage. It does **not** prove the separate authority-selection or GRANDPA-finality obligations in `MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md`.
+
+| New Materios surface | B3 effect |
+| --- | --- |
+| Receipt identity / on-chain storage | **Evidence surface strengthened** |
+| Availability certificate binding | **Evidence surface strengthened** |
+| Checkpoint leaf / Merkle inclusion | **Evidence surface strengthened** |
+| Manifest / certification-event cross-check | **Evidence surface strengthened** |
+| Cardano L1 anchor reference | **Potentially useful evidence input** |
+| AuthoritySelectionInputs provenance | **Not proven by this surface alone** |
+| Authoritative selector execution provenance | **OPEN** |
+| GRANDPA ancestry/finality proof | **OPEN** |
+| Publisher-independent B3 canonicality | **OPEN** |
+
+The explorer lineage is an upstream evidence source, not a replacement for the production `VerifiedAuthoritySetTransition` trust boundary or for cryptographically verified GRANDPA evidence.
 
 ## Governance
 
@@ -146,6 +166,7 @@ Only steps 1–4 should never be presented as proof of real on-chain execution w
 | Residual | Layer | Status | Closure condition |
 | --- | --- | --- | --- |
 | B3 publisher-independent authority provenance | PRE-RICH / Materios | OPEN | Verified finality + authority-selection proof chain |
+| Authority-regime provenance | PRE-RICH / Materios | OPEN | Verified proof binds normal L1/Ariadne regime vs explicit pinned-committee regime |
 | GRANDPA ancestry production proof | Evidence | OPEN | Complete cryptographic/finality verification path |
 | P2.8 typed Ledger Reveal evaluation | Adapter / Evidence | IN PROGRESS | Complete typed report from exact evidence |
 | IMMORTAL↔Cardano semantic equivalence | Adapter / Conformance | OPEN by item | Action-by-action equivalence or explicit justified boundary |
@@ -172,3 +193,12 @@ The primary entry documents are:
 5. this status/evidence one-pager
 
 Together they provide orientation, layer-specific detail and implementation/evidence status without replacing the normative sources.
+
+### P2.8 native decoding hardening — 2026-09-25
+
+The Yaci UTxO adapter now decodes the serialized Cardano address through the native Ledger `decodeAddrEither` path instead of treating `ledger_address_hex` as an already-decoded Ledger value. Invalid addresses therefore fail before evaluation rather than being normalized by a local substitute parser. This remains adapter/evidence infrastructure only; it does not change validator economics.
+
+
+### P2.8 evaluation gate hardening (2026-09-25)
+
+The runner now invokes the pinned Ledger `evalTxExUnitsWithLogs` path when called with `--evaluate`, and the CI workflow invokes that mode after native PParams/Tx/UTxO/EpochInfo/SystemStart decoding. `SAFE_STALL` now exits non-zero so missing or invalid evidence cannot produce a green CI result. A/B remain typed evaluation outcomes and are persisted with a hash-bound evidence report.

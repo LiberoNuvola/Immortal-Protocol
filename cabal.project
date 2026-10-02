@@ -25,7 +25,7 @@ with-compiler: ghc-9.6.7
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/plutus.git
-  tag: 1.67.0.0
+  tag: 48e9bf08f439e7223de713b5b71696fcd81cffc3
   subdir:
     plutus-core
     plutus-ledger-api
@@ -42,3 +42,5 @@ constraints:
 
 package *
   ghc-options: -Wall
+
+-- Exact-head Haskell conformance trigger: no dependency or semantic change.

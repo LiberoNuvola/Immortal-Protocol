@@ -1,5 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module EconomicStateV3
   ( TicketClass
@@ -13,6 +15,7 @@ module EconomicStateV3
   , zeroV3EconomicState
   ) where
 
+import PlutusTx
 import PlutusTx.Prelude
 import EconomicProfile
   ( TicketClass
@@ -38,10 +41,14 @@ data TicketClassState = TicketClassState
   , tcsSaleable :: Bool
   }
 
+PlutusTx.unstableMakeIsData ''TicketClassState
+
 data EconomicControlState = EconomicControlState
   { ecsCurrentActiveClass :: TicketClass
   , ecsHighestClassEverActivated :: TicketClass
   }
+
+PlutusTx.unstableMakeIsData ''EconomicControlState
 
 data JackpotStatus
   = JackpotInactive
@@ -57,12 +64,16 @@ instance Eq JackpotStatus where
   JackpotClosed == JackpotClosed = True
   _ == _ = False
 
+PlutusTx.unstableMakeIsData ''JackpotStatus
+
 data JackpotState = JackpotState
   { jsLockedAmount :: Integer
   , jsThreshold :: Integer
   , jsStatus :: JackpotStatus
   , jsCycle :: Integer
   }
+
+PlutusTx.unstableMakeIsData ''JackpotState
 
 data V3EconomicState = V3EconomicState
   { v3CrystallizedLiabilities :: Integer
@@ -75,6 +86,8 @@ data V3EconomicState = V3EconomicState
   , v3Control :: EconomicControlState
   , v3Jackpot :: JackpotState
   }
+
+PlutusTx.unstableMakeIsData ''V3EconomicState
 
 {-# INLINABLE zeroV3EconomicState #-}
 zeroV3EconomicState :: V3EconomicState

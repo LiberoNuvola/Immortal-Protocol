@@ -160,7 +160,7 @@ A new PRE-RICH refinement witness makes the missing relation explicit:
 - no liability is created by expiry.
 
 Files:
-- PRE-RICH/profile/PreRichExpireRefinement.ts
+- PRE-RICH/src/PreRichExpireRefinement.ts
 - src/__tests__/preRichExpireRefinement.test.ts
 
 This is a refinement/evidence layer, not a replacement for on-chain enforcement and not a proof of arbitrary-ticket selection authority. The Cardano B1 validator remains responsible for transaction-level enforcement of its own predicate.

@@ -143,6 +143,13 @@ finalizedEvent =
     [EvidenceRef "finalization-evidence"]
     AcceptedEvent
 
+mismatchedDecisionRulesetEvent :: CanonicalEvent
+mismatchedDecisionRulesetEvent =
+  finalizedEvent
+    { eventPayload =
+        PayloadDecisionFinalized
+          (finalizationRecord { decisionRulesetVersion = 2 })
+    }
 
 adoptionEvent :: CanonicalEvent
 adoptionEvent =
@@ -180,6 +187,14 @@ main = do
     "state-aware lifecycle rejects premature voting"
   assert (eventSchemaValid classifiedEvent) "classified payload timestamp matches event timestamp"
   assert (eventSchemaValid gatesEvent) "gates payload timestamp matches event timestamp"
+  let classifiedTimestampMismatch =
+        classifiedEvent { eventTimestamp = 8 }
+  assert (not (eventSchemaValid classifiedTimestampMismatch))
+    "classified payload/event timestamp mismatch rejected"
+  let gatesTimestampMismatch =
+        gatesEvent { eventTimestamp = 10 }
+  assert (not (eventSchemaValid gatesTimestampMismatch))
+    "gates payload/event timestamp mismatch rejected"
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment event2] of
     Left err -> error ("FAIL: replay rejected: " ++ err)
     Right st -> do
@@ -187,6 +202,48 @@ main = do
       assert (length (proposals st) == 1) "proposal created from canonical payload"
       assert (proposalStatus (head (proposals st)) == Classified)
         "state derives directly from canonical events"
+
+  let rulesetV2 =
+        [ RulesetDefinition 1 "ruleset-v1" 0 Nothing
+        , RulesetDefinition 2 "ruleset-v2" 100 (Just 1) ]
+      futureRulesetEvent =
+        withCommitment
+          (event2 { rulesetVersion = 2
+                  , eventTimestamp = 50
+                  , eventPayload = PayloadStatusChanged 1 Proposed 50
+                  , predecessor = Nothing })
+      activeRulesetEvent =
+        withCommitment
+          (event2 { rulesetVersion = 2
+                  , eventTimestamp = 100
+                  , eventPayload = PayloadStatusChanged 1 Proposed 100
+                  , predecessor = Nothing })
+  assert "future ruleset rejected before effective timestamp"
+    (not (canonicalGovernanceEventValid rulesetV2 Nothing futureRulesetEvent))
+  assert "ruleset accepted at effective timestamp"
+    (canonicalGovernanceEventValid rulesetV2 Nothing activeRulesetEvent)
+
+  let duplicateIdEvent =
+        withCommitment (event2 { eventId = eventId event1 })
+  case replayCanonical ruleset emptyState
+         [withCommitment event1, duplicateIdEvent] of
+    Left _ -> putStrLn "PASS: duplicate canonical event id rejected"
+    Right _ -> error "FAIL: duplicate canonical event id accepted"
+
+  let lateEvent =
+        withCommitment (event2 { eventTimestamp = 5
+                               , eventPayload = PayloadStatusChanged 1 Classified 5 })
+      regressedEvent =
+        withCommitment
+          (event2 { eventId = "evt-3"
+                  , eventTimestamp = 4
+                  , eventPayload = PayloadStatusChanged 1 ImpactReview 4
+                  , predecessor = Just "evt-2"
+                  , evidenceRefs = [EvidenceRef "regression-evidence"] })
+  case replayCanonical ruleset emptyState
+         [withCommitment event1, lateEvent, regressedEvent] of
+    Left _ -> putStrLn "PASS: canonical event timestamp regression rejected"
+    Right _ -> error "FAIL: canonical event timestamp regression accepted"
   case replayCanonical ruleset emptyState [withCommitment event1, withCommitment collapsedAcceptedEvent] of
     Left _ -> putStrLn "PASS: collapsed Accepted shortcut rejected before mutation"
     Right _ -> error "FAIL: collapsed Accepted shortcut mutated canonical state"
@@ -242,6 +299,9 @@ main = do
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
 
+  assert "decision witness ruleset must match event ruleset"
+    (not (eventSchemaValid mismatchedDecisionRulesetEvent))
+
   let conformanceRecord = ConformanceRecord
         { conformanceProposalId = 7
         , conformanceImplementationCommit = "impl-commit-7"
@@ -257,11 +317,32 @@ main = do
         "evt-conformance" 7 1 EConformanceRecorded Reviewer 259402
         (PayloadConformanceRecorded conformanceRecord)
         "payload-conformance" (Just "evt-adopted") [EvidenceRef "conformance-evidence"] AcceptedEvent
-      adoptedState = GovernanceState 1 [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }] 2
+
+  let mismatchedConformanceEvent =
+        conformanceEvent
+          { eventPayload =
+              PayloadConformanceRecorded
+                (conformanceRecord { conformanceRulesetVersion = 2 })
+          }
+  assert "conformance witness ruleset must match event ruleset"
+    (not (eventSchemaValid mismatchedConformanceEvent))
+  let adoptedState =
+        GovernanceState 1
+          [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }]
+          2
   case applyCanonicalEvent ruleset emptyState adoptedState (Just (withCommitment adoptionEvent)) (withCommitment conformanceEvent) of
     Left err -> error ("FAIL: conformance rejected: " ++ err)
     Right st -> assert (eventsApplied st == 3)
       "CONFORMANCE_RECORDED follows Adopted projection"
+
+  let regressedConformance =
+        withCommitment
+          (conformanceEvent { eventTimestamp = 1
+                            , evidenceRefs = [EvidenceRef "regressed-conformance-evidence"] })
+  case applyCanonicalEvent ruleset emptyState adoptedState
+         (Just (withCommitment adoptionEvent)) regressedConformance of
+    Left _ -> putStrLn "PASS: CONFORMANCE_RECORDED timestamp regression rejected"
+    Right _ -> error "FAIL: CONFORMANCE_RECORDED timestamp regression accepted"
 
   let canonicalizationRecord = CanonicalizationRecord
         { canonicalizationProposalId = 7
@@ -283,6 +364,27 @@ main = do
     Left err -> error ("FAIL: canonicalization rejected: " ++ err)
     Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
       "CANONICALIZED follows Adopted + conformance projection"
+
+  case replayCanonical ruleset finalizationState
+         [ withCommitment finalizedEvent
+         , withCommitment adoptionEvent
+         , withCommitment conformanceEvent
+         , withCommitment canonicalizationEvent
+         ] of
+    Left err -> error ("FAIL: canonical replay rejected valid decision reference: " ++ err)
+    Right st -> assert (proposalStatus (head (proposals st)) == Canonical)
+      "canonical replay binds CANONICALIZED to the finalized DecisionRecord reference"
+
+  let mismatchedReference = canonicalizationRecord { canonicalizationDecisionRecordReference = "canon-ref-tampered" }
+      mismatchedReferenceEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized mismatchedReference }
+  case replayCanonical ruleset finalizationState
+         [ withCommitment finalizedEvent
+         , withCommitment adoptionEvent
+         , withCommitment conformanceEvent
+         , withCommitment mismatchedReferenceEvent
+         ] of
+    Left _ -> putStrLn "PASS: canonicalization reference mismatch blocks canonical replay"
+    Right _ -> error "FAIL: canonical replay accepted mismatched DecisionRecord reference"
 
   let badCanonicalization = canonicalizationRecord { canonicalizationMandatoryGatesResolved = False }
       badCanonicalizationEvent = canonicalizationEvent { eventPayload = PayloadCanonicalized badCanonicalization }
@@ -347,3 +449,5 @@ main = do
     Right _ -> error "FAIL: ADOPTION_RECORDED preceded finalization"
 
 
+
+-- Exact-head conformance trigger: GOV-28 replay hardening current-head evidence 2026-09-26.

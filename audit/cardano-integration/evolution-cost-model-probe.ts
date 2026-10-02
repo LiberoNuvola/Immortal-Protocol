@@ -25,9 +25,16 @@ const costModelLengths = Object.fromEntries(
   ]),
 )
 
+const protocolVersion = protocolParameters.protocolVersion ?? null
+if (costModelLengths.PlutusV2 !== 332) {
+  throw new Error('YACI_PV11_COST_MODEL_MISMATCH: expected PlutusV2 length 332, observed ' + String(costModelLengths.PlutusV2))
+}
+
 console.log(JSON.stringify({
   probe: 'lucid-evolution-yaci-cost-model-compatibility',
+  protocolVersion,
   costModelLengths,
+  expected: { protocolMajor: 11, PlutusV1: 332, PlutusV2: 332, PlutusV3: 350 },
 }, null, 2))
 
 const lucid = await Lucid(provider, 'Preprod')

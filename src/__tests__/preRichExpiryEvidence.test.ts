@@ -5,12 +5,12 @@ import {
   lateRevealEconomicEffect,
   validBeforeExpiry,
   validateTicketExpiryEvidence,
-} from '../../PRE-RICH/profile/PreRichExpiryEvidence'
+} from '../../PRE-RICH/src/PreRichExpiryEvidence'
 import {
   crystallizeTicketExpiry,
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
-} from '../../PRE-RICH/profile/PreRichExpiryPolicy'
+} from '../../PRE-RICH/src/PreRichExpiryPolicy'
 
 const evidence = {
   ticketId: 'ticket-001',

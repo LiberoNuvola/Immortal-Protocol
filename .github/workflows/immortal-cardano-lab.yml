@@ -5,9 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
+  pull_request:
     branches:
-      - work/immortal-green-closure
+      - main
     paths:
       - "audit/**"
       - "src/**"
@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Checkout green
+      - name: Checkout exact workflow head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,7 +33,7 @@ jobs:
           cache: npm
 
       - name: Install project dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Install isolated lab dependencies
         run: npm install --prefix audit/cardano-integration
@@ -164,7 +166,8 @@ jobs:
         run: |
           {
             echo "branch=work/immortal-green-closure"
-            echo "commit=$GITHUB_SHA"
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
             echo "yaci=0.12.0-beta5"
@@ -181,6 +184,9 @@ jobs:
       - name: Probe current Yaci cost models with Lucid Evolution
         run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
 
+      - name: Execute V3 carrier against native Cardano ledger
+        run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
+
       - name: Execute real economic Reveal transition trace
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
@@ -193,11 +199,16 @@ jobs:
       - name: Materialize raw Yaci ledger context for P2.8
         run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
 
-      - name: Run P2.8 ledger evidence gate against this lab packet
+      - name: Run native Yaci UTxO decoder conformance
         working-directory: audit/cardano-ledger-runner
         run: |
           cabal update
-          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence
+          cabal run yaci-utxo-test
+
+      - name: Run P2.8 ledger evidence gate against this lab packet
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence --evaluate
 
       - name: Measure script and transaction resource footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json

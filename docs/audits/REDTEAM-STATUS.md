@@ -16,7 +16,7 @@ The first attack pass is derived from the 2026-09-23 external red-team review an
 | RT-1.2 | Deliberately low valuation | OPEN | Safe-direction monotonicity: lower valuation cannot create extra admissibility |
 | RT-1.3 | Stale oracle | PARTIAL | Freshness checks exist in Genesis path; general EEV path still requires end-to-end evidence |
 | RT-1.4 | Malformed valuation | PARTIAL | Genesis admission validates valuation fields; complete economic-input boundary inventory remains open |
-| RT-1.5 | Non-executable liquidity | OPEN | Locked/wrong-policy/non-spendable value excluded from executable liquidity |
+| RT-1.5 | Non-executable liquidity | CLOSED at implementation binding / OPEN release-wide | Locked/wrong-policy/non-spendable value excluded; authenticated Pool input/value is bound to candidate inputs; fresh ledger evidence still required |
 | RT-1.6 | Reflexive PRE valuation | OPEN / DESIGN QUESTION | Determine whether Genesis admission is mark-to-market or executable liquidation value; do not invent a haircut |
 | RT-1.7 | Mid vs settlement price | OPEN | Settlement cannot silently consume protected capital because valuation convention differs |
 | RT-1.8 | Treasury double-count | HARDENED / NEEDS EVIDENCE | Genesis carrier excludes PrizePool I/O and preserves carrier value; fresh ledger evidence still required |
@@ -35,9 +35,9 @@ The first attack pass is derived from the 2026-09-23 external red-team review an
 | RT-2.6 | Unverified valuation | IMPLEMENTED |
 | RT-2.7 | Conflicting observations | OPEN |
 | RT-2.8 | Duplicate transition | IMPLEMENTED in carrier/Yaci trace |
-| RT-2.9 | Legacy Treasury distribute as Genesis authority | OPEN |
+| RT-2.9 | Legacy Treasury distribute as Genesis authority | RELAYER FAIL-CLOSED / ON-CHAIN LEGACY SURFACE REMAINS |
 | RT-2.10 | Silent PrizePool inflation | HARDENED / NEEDS FRESH LEDGER EVIDENCE |
-| RT-2.11 | UI Genesis while chain remains PRE-GENESIS | OPEN |
+| RT-2.11 | UI Genesis while chain remains PRE-GENESIS | NO CURRENT UI CLASSIFIER IDENTIFIED / LIVE INTEGRATION EVIDENCE OPEN |
 | RT-2.12 | Missing executable Genesis path | NO LONGER APPLICABLE — executable carrier exists |
 | RT-2.13 | Forged observation authentication | OPEN |
 | RT-2.14 | Off-chain/on-chain revalidation mismatch | OPEN |
@@ -187,3 +187,36 @@ The Genesis stress lab now explicitly models the authenticated observation field
 This is a mirror/instrumentation hardening only. It demonstrates that the scenario harness does not silently treat those fields as irrelevant, but it does not prove that a real reference-input UTxO carrying the oracle state is itself authoritative or unforgeable. RT-2.13 therefore remains OPEN at ledger authority level until a real adversarial ledger trace proves that the authenticated Oracle/Treasury references cannot be replaced by attacker-controlled state while preserving the required token identities.
 
 Related implementation commits: 7896bb57f7f4bece265e4412324ec8bc0705ea20 and 8c372499f73e905d4801356685e5acf4984a2117.
+
+
+## 2026-09-26 — RT-1.1 current-head arithmetic discrepancy corrected
+
+A current cross-language inspection found that the PRE-GENESIS → GENESIS arithmetic was inconsistent: the TypeScript admission mirror used conservative integer floor division, while the on-chain/reference Haskell path used `ceilingDiv`. A fractional value just below the 4,000 USDM threshold could therefore round upward in the Haskell predicate.
+
+Concrete witness:
+`9,999,999 PRE × 40,000 / 1,000,000 = 399,999.96`.
+
+The Haskell implementation has now been changed to integer floor division, and a regression vector asserts both the floored value and rejection of the fractional-below-threshold transition.
+
+**Classification:** arithmetic discrepancy = **CORRECTED IN SOURCE; CURRENT-HEAD CI EVIDENCE PENDING**. The previous historical RT-1 closure entry is retained as history; it is not used to infer present conformance.
+
+
+## 2026-09-26 — RT-1.5 status reconciliation
+
+The current implementation has progressed beyond the older RT-1.5 table entry. The EconomicAdmission boundary now binds executable-liquidity evidence to: (1) the candidate transaction inputs, (2) the exact authenticated B1 PrizePool input reference, and (3) the authenticated Pool USDM valuation. The existing negative twins cover missing source inputs, duplicated physical UTxOs, mismatched declared liquidity and source-set mismatch.
+
+Therefore the earlier **RT-1.5 OPEN** table entry is stale at the implementation layer. The current classification is:
+
+- **RT-1.5 implementation/provenance binding: CLOSED / GREEN by code + negative tests**.
+- **RT-1.5 release-wide: OPEN**, pending current-head Cardano ledger evidence and independent authenticated valuation/source evidence.
+
+No new valuation formula, haircut or oracle source was introduced.
+
+
+## 2026-09-26 — RT-2.9 / RT-2.11 status reconciliation
+
+The current branch was rechecked against the runtime and on-chain surfaces.
+
+**RT-2.9:** the active relayer Treasury worker is fail-closed and no longer invokes the legacy percentage distribution path. However, `plutus/Treasury.hs` still exposes the historical `TreasuryAction = Distribute` validator and percentage fields in `TreasuryDatum`. The repository contains no current production JavaScript call-site for `TreasuryAction/Distribute`, and the Genesis carrier explicitly does not use this mechanism. Classification is therefore **relayer path closed; on-chain legacy surface remains and must be release-isolated/deactivated before a final release certification**. No script hash or legacy deployment behavior is changed by this reconciliation.
+
+**RT-2.11:** current UI inspection did not identify a local Genesis classifier capable of overriding the carrier state; current Buy/Mint flows are gated by canonical admission. The remaining question is live product integration, not a demonstrated current UI side-door. Classification is **no current UI classifier identified; live integration evidence remains open**.

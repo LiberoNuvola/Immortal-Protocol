@@ -5,22 +5,22 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
-      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/onchain/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/onchain/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/onchain/PreRichGenesisAdmission.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/OracleTypes.hs"
       - "plutus/B1PrizePool.hs"
       - "plutus/B1LegacyAdapter.hs"
-      - "PRE-RICH/profile/PreRichEconomicProfile.hs"
+      - "PRE-RICH/onchain/PreRichEconomicProfile.hs"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
       - "audit/pre-genesis-genesis/record-artifact-provenance.ts"
       - "audit/pre-genesis-genesis/stress-lab.mjs"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.test.ts"
       - "audit/cardano-integration/create-test-wallet.mjs"
       - "package.json"
       - "package-lock.json"
@@ -29,17 +29,17 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
-      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/onchain/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/onchain/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/onchain/PreRichGenesisAdmission.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/OracleTypes.hs"
       - "plutus/B1PrizePool.hs"
       - "plutus/B1LegacyAdapter.hs"
-      - "PRE-RICH/profile/PreRichEconomicProfile.hs"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/onchain/PreRichEconomicProfile.hs"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.test.ts"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install project dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - uses: haskell-actions/setup@v2
         with:
@@ -158,7 +158,7 @@ jobs:
           PY
 
       - name: Run Genesis Treasury admission mirror
-        run: node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+        run: node --experimental-strip-types PRE-RICH/src/GenesisTreasuryAdmission.test.ts
 
       - name: Run Genesis forged-observation stress lab
         run: node audit/pre-genesis-genesis/stress-lab.mjs

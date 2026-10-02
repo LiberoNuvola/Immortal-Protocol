@@ -6,6 +6,15 @@ on:
     branches:
       - audit/p2-8-b1-cardano-ledger-runner
       - work/immortal-green-closure
+    paths:
+      - ".github/workflows/p2-8-b1-cardano-ledger-runner.yml"
+      - "audit/cardano-ledger-runner/**"
+      - "src/plutusScripts/prizeValidatorFactory.plutus.json"
+      - "src/plutusScripts/b1PrizePoolFactory.plutus.json"
+
+concurrency:
+  group: p2-8-b1-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   ledger-runner:
@@ -15,21 +24,144 @@ jobs:
       - name: Checkout audit branch
         uses: actions/checkout@v4
 
+      - name: Install native Cardano crypto dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
+
+      - name: Verify libsodium pkg-config contract
+        run: |
+          set -euo pipefail
+          if pkg-config --exists libsodium-any; then
+            echo "pkg-config libsodium-any already available"
+          elif pkg-config --exists libsodium; then
+            pcdir="$(pkg-config --variable=pcfiledir libsodium)"
+            test -n "$pcdir"
+            test -f "$pcdir/libsodium.pc"
+            sudo ln -sf "$pcdir/libsodium.pc" "$pcdir/libsodium-any.pc"
+            pkg-config --exists libsodium-any
+            echo "Created compatibility alias libsodium-any.pc -> libsodium.pc"
+          else
+            echo "Neither libsodium-any nor libsodium is available through pkg-config"
+            exit 1
+          fi
+          pkg-config --modversion libsodium
+          pkg-config --modversion libsodium-any
+          pkg-config --exists libsecp256k1
+          pkg-config --modversion libsecp256k1
+
+      - name: Install and register pinned blst
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (
+            cd /tmp/blst
+            ./build.sh
+          )
+          BLST_BUILD_RC=$?
+          set -e
+          BLST_LIB="/tmp/blst/libblst.a"
+          test -s "$BLST_LIB"
+          if [ "$BLST_BUILD_RC" -ne 0 ]; then
+            echo "blst build.sh returned $BLST_BUILD_RC after producing libblst.a; continuing with the verified archive."
+          fi
+          sudo install -m 0644 "$BLST_LIB" /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          prefix=/usr/local
+          exec_prefix=${prefix}
+          libdir=${exec_prefix}/lib
+          includedir=${prefix}/include
+          Name: libblst
+          Description: Multilingual BLS12-381 signature library
+          Version: 0.3.14
+          Cflags: -I${includedir}
+          Libs: -L${libdir} -lblst
+          EOF
+          sudo ldconfig
+          pkg-config --exists 'libblst >= 0.3.14'
+          pkg-config --modversion libblst
+
       - name: Install GHC and Cabal
         uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.8.4'
           cabal-version: '3.12'
 
-      - name: Run ledger-aligned bootstrap
+      - name: Capture runner provenance
         working-directory: audit/cardano-ledger-runner
         run: |
-          cabal update
-          cabal run cardano-ledger-runner
+          set -euo pipefail
+          mkdir -p evidence
+          printf 'workflow_sha=%s\n' "$GITHUB_SHA" > evidence/workflow-provenance.txt
+          printf 'workflow_ref=%s\n' "$GITHUB_REF" >> evidence/workflow-provenance.txt
+          printf 'runner_os=%s\n' "$RUNNER_OS" >> evidence/workflow-provenance.txt
+          cabal --version >> evidence/workflow-provenance.txt
+          ghc --version >> evidence/workflow-provenance.txt
 
-      - name: Upload runner report
+          # BUGFIX (2026-09-26): "cabal list --simple-output all" reads the local
+          # Hackage index cache. Without a prior "cabal update" that cache does not
+          # exist yet on a fresh runner, so the grep below silently matched nothing
+          # and pinned-dependency-resolution.txt was written empty. "cabal update"
+          # must run before any "cabal list" call, not after.
+          cabal update
+          cabal list --simple-output all | grep -E '^(cardano-prelude|cardano-prelude-test|cardano-crypto-class|cardano-crypto-wrapper)' > evidence/pinned-dependency-resolution.txt || true
+
+          # Self-diagnosing evidence for the pkg-config contract that gates
+          # cardano-crypto-class's blst flag. If a future run hits the same
+          # "not found in the pkg-config database" solver error, this block
+          # tells us on the spot whether the blst step upstream actually
+          # registered the .pc file, instead of leaving only an opaque
+          # Cabal-7107 solver message to reverse-engineer after the fact.
+          {
+            echo "pkg_config_search_path=$(pkg-config --variable pc_path pkg-config)"
+            if pkg-config --exists 'libblst >= 0.3.14'; then
+              echo "libblst_pkgconfig=FOUND $(pkg-config --modversion libblst)"
+            else
+              echo "libblst_pkgconfig=MISSING"
+            fi
+            pkg-config --list-all 2>/dev/null | grep -i blst || echo "libblst_list_all=NO_MATCH"
+          } >> evidence/workflow-provenance.txt
+
+      - name: Run ledger-aligned bootstrap
+        working-directory: audit/cardano-ledger-runner
+        env:
+          # Defense-in-depth only: on this ubuntu-24.04 image pkg-config already
+          # searches /usr/local/lib/pkgconfig by default (verified empirically),
+          # so this does not fix a real path bug here, but it removes the
+          # dependency on that default for any future/self-hosted runner image
+          # where it may not hold.
+          PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig"
+        run: |
+          set -o pipefail
+          mkdir -p evidence
+          cabal run cardano-ledger-runner -- --evaluate 2>&1 | tee evidence/runner.log
+
+      - name: Upload runner evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: p2-8-b1-cardano-ledger-runner-report
-          path: audit/cardano-ledger-runner/
+          name: p2-8-b1-cardano-ledger-runner-evidence
+          path: audit/cardano-ledger-runner/evidence/
+          if-no-files-found: error
+
+# Exact-head execution trigger: no runner, dependency, or semantic change.
+
+
+# Exact-head closure trigger 2026-09-26: rerun after plutus-tx materialization.
+
+
+# Exact-head closure trigger 2026-09-26T0608: run after latest resolver frontier.
+
+
+# Exact-head execution trigger 2026-09-26T0810: obtain native evaluator evidence on current head.
+
+# Exact-head execution trigger: unique SHA-scoped concurrency for native P2.8 evidence.
+
+# Exact-head evidence trigger 2026-09-26T0814 after current-head dossier update.

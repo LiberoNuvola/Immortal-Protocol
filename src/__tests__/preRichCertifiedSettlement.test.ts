@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertSettlementQuoteMatchesPrize,
   certifySettlementQuote,
-} from '../../PRE-RICH/profile/PreRichCertifiedSettlement'
+} from '../../PRE-RICH/src/PreRichCertifiedSettlement'
 
 describe('PRE-RICH certified settlement quote', () => {
   it('certifies a concrete positive settlement asset bundle', () => {

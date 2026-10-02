@@ -10,7 +10,7 @@ module PreRichGenesisAdmission
 
 import PlutusTx.Prelude
 import qualified PlutusTx
-import EconomicKernel (ceilingDiv)
+
 
 -- | PRE-RICH application bootstrap predicate. This is deliberately kept
 -- | outside IMMORTAL's universal economic kernel.
@@ -47,9 +47,8 @@ genesisTreasuryValueUsdm o
   | gtoOraclePrecision o <= 0 = Nothing
   | otherwise =
       Just
-        (ceilingDiv
-          (gtoPreQuantity o * gtoVerifiedPreUsdmPrice o)
-          (gtoOraclePrecision o))
+        ((gtoPreQuantity o * gtoVerifiedPreUsdmPrice o)
+          `divide` (gtoOraclePrecision o))
 
 {-# INLINABLE genesisPredicate #-}
 genesisPredicate :: GenesisTreasuryObservation -> Bool

@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "dotenv": "^17.0.0",
-    "lucid-cardano": "^0.10.11"
+    "@lucid-evolution/lucid": "0.6.5",
+    "lucid-cardano": "0.10.11"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
@@ -17,6 +18,12 @@
     "relayer": "node relayer/relayer.js",
     "admin:treasury": "node scripts/admin-treasury.js",
     "test:predeploy": "node --experimental-strip-types scripts/predeploy-check.mjs",
-    "deploy:counter": "tsx scripts/deployCounter.ts"
+    "test:pre-staking": "vitest run src/__tests__/preStaking.test.ts",
+    "deploy:counter": "tsx scripts/deployCounter.ts",
+    "deploy:v3-carrier": "node --import=tsx ./scripts/deployV3Carrier.mts",
+    "v3:initial-datum": "tsx scripts/printV3InitialDatum.ts",
+    "test:v3-mint-policy-remote": "node --import=tsx ./scripts/testV3CarrierMintPolicyRemote.mts",
+    "test:v3-mint-policy-legacy-remote": "node ./scripts/testV3CarrierMintPolicyLegacyRemote.mjs",
+    "test:genesis-mint-policy-remote": "node --import=tsx ./scripts/testGenesisCarrierMintPolicyRemote.mts"
   }
 }

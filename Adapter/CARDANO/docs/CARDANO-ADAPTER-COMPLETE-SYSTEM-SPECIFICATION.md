@@ -3,7 +3,7 @@
 **Role:** end-to-end integrative specification and reader guide
 **Scope:** IMMORTAL Cardano Adapter
 **Status:** INTEGRATIVE DOCUMENT — no new IMMORTAL or Cardano semantics
-**Branch:** main
+**Branch:** work/immortal-green-closure
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ CARDANO LEDGER
 
 ## 3. Responsibilities
 
-The Adapter maps generic concepts to Cardano mechanisms:
+The Adapter maps generic IMMORTAL requirements and application-profile realization requirements to Cardano mechanisms:
 
 - UTxO state;
 - transaction inputs and outputs;

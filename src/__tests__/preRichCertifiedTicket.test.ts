@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertObservedTicketNft, certifyTicketBinding } from '../../PRE-RICH/profile/PreRichCertifiedTicket'
+import { assertObservedTicketNft, certifyTicketBinding } from '../../PRE-RICH/src/PreRichCertifiedTicket'
 import { escapeHtml } from '../../src/ticket3d'
 
 const datum = {

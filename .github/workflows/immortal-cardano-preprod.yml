@@ -1,0 +1,276 @@
+name: IMMORTAL Cardano Preprod Context
+
+concurrency:
+  group: immortal-cardano-preprod-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_reveal:
+        description: "Execute the real Preprod Reveal after deployment"
+        required: true
+        default: false
+        type: boolean
+      observe_v3:
+        description: "Observe the live Preprod V3 singleton"
+        required: true
+        default: false
+        type: boolean
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/**"
+      - "audit/cardano-integration/preprod-conformance-binding.mjs"
+      - "audit/cardano-ledger-runner/**"
+      - "PRE-RICH/**"
+      - "Adapter/**"
+      - "plutus/test/ProjectionBoundaryConformanceTest.hs"
+      - "audit/cardano-integration/preprod-v3-carrier-observation.mjs"
+      - ".github/workflows/immortal-cardano-preprod.yml"
+
+jobs:
+  preprod-context:
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 15
+    env:
+      DEMETER_OGMIOS_URL: wss://cardano-preprod-v7.ogmios-m1.dmtr.host
+      DEMETER_API_KEY: ${{ secrets.DEMETER_API_KEY || secrets.DEMETER }}
+      DEMETER_API_KEY_PRIMARY: ${{ secrets.DEMETER_API_KEY }}
+      DEMETER_API_KEY_ALIAS: ${{ secrets.DEMETER }}
+      DEMETER_OGMIOS_AUTHENTICATED_URL: ${{ secrets.DEMETER_OGMIOS_AUTHENTICATED_URL }}
+      PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install isolated Preprod probe dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Validate Demeter credential
+        run: |
+          if [ -n "$DEMETER_API_KEY" ]; then
+            echo "DEMETER_API_KEY=present"
+          else
+            echo "Demeter credential secret missing (expected DEMETER_API_KEY or DEMETER in Environment DEMETER)"
+            exit 1
+          fi
+
+      - name: Validate Preprod wallet address
+        run: |
+          case "$PREPROD_WALLET_ADDRESS" in
+            addr_test*) echo "PREPROD_WALLET_ADDRESS=valid-testnet-address" ;;
+            *) echo "PREPROD_WALLET_ADDRESS=invalid-or-missing"; exit 1 ;;
+          esac
+
+      - name: Probe Demeter Ogmios Preprod context
+        run: node audit/cardano-integration/preprod-ogmios-context.mjs
+
+      - name: Verify live Preprod wallet UTxO evidence
+        run: |
+          test -s audit/preprod-evidence/preprod-wallet-utxo.json
+          test -s audit/preprod-evidence/preprod-wallet-utxo.sha256
+          test -s audit/preprod-evidence/preprod-wallet-summary.txt
+          cat audit/preprod-evidence/preprod-wallet-summary.txt
+
+      - name: Run IMMORTAL to PRE-RICH Reveal boundary conformance
+        run: |
+          set -o pipefail
+          npx vitest run src/__tests__/immortal-reveal-conformance.test.ts --reporter=verbose | tee audit/preprod-evidence/immortal-pre-rich-reveal-conformance.txt
+
+      - name: Bind Preprod observation to exact conformance snapshot
+        run: node audit/cardano-integration/preprod-conformance-binding.mjs
+
+      - name: Record workflow provenance
+        if: always()
+        run: |
+          mkdir -p audit/preprod-evidence
+          {
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "runner_os=$RUNNER_OS"
+            echo "node=$(node --version)"
+            echo "provider=Demeter"
+            echo "network=cardano-preprod"
+            echo "interface=Ogmios-v7"
+          } | tee audit/preprod-evidence/workflow-provenance.txt
+
+      - name: Upload Preprod evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-preprod-context
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+
+  preprod-v3-carrier-observation:
+    # Manual only: live deployment witness once V3 identities are configured.
+    # Proves singleton materialization only; it does not assert economics.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.observe_v3 }}
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 15
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
+      VITE_V3_CARRIER_ADDRESS: ${{ secrets.VITE_V3_CARRIER_ADDRESS }}
+      VITE_V3_CARRIER_POLICY_ID: ${{ secrets.VITE_V3_CARRIER_POLICY_ID }}
+      VITE_V3_CARRIER_TOKEN_NAME_HEX: ${{ secrets.VITE_V3_CARRIER_TOKEN_NAME_HEX }}
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate V3 deployment configuration
+        run: |
+          test -n "$BLOCKFROST_PROJECT_ID"
+          test -n "$VITE_V3_CARRIER_ADDRESS"
+          test -n "$VITE_V3_CARRIER_POLICY_ID"
+          test -n "$VITE_V3_CARRIER_TOKEN_NAME_HEX"
+      - name: Observe exact live Preprod V3 singleton
+        run: node --import tsx/esm audit/cardano-integration/preprod-v3-carrier-observation.mjs
+      - name: Upload V3 carrier evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-v3-carrier-evidence
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+
+
+  preprod-deploy:
+    # Manual deployment witness: materializes the current Cardano topology on Preprod
+    # and records the exact UTxOs, reference scripts, hashes, and tx ids in a manifest.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: DEMETER
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
+      PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
+      PREPROD_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-deployment.json
+      PREPROD_DEPLOY_ONLY: '1'
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install isolated Cardano probe dependencies
+        run: npm install --prefix audit/cardano-integration
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          node --input-type=module - <<'JS'
+          import { readFile, writeFile } from 'node:fs/promises'
+          const pkgPath = 'node_modules/lucid-cardano/package.json'
+          const pkg = JSON.parse(await readFile(pkgPath, 'utf8'))
+          const fs = await import('node:fs')
+          await fs.promises.access('node_modules/lucid-cardano/esm/mod.js')
+          pkg.type = 'module'
+          pkg.exports = { ".": { "types": "./types/mod.d.ts", "import": "./esm/mod.js" } }
+          await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+          await writeFile('src/package.json', JSON.stringify({type:'module'}) + '\n')
+          await writeFile('Adapter/package.json', JSON.stringify({type:'module'}) + '\n')
+          JS
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "$PREPROD_REVEAL_SEED"
+          echo "Preprod deployment signing secret present."
+      - name: Verify Lucid Evolution transaction API
+        run: node audit/cardano-integration/preprod-real-reveal-api-check.mjs
+      - name: Deploy current topology to Preprod
+        run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
+      - name: Upload Preprod deployment manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-deployment-manifest
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+
+  real-preprod-reveal:
+    # Safety gate: Reveal is never launched by a deployment dispatch unless explicitly selected.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_reveal }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: DEMETER
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
+      PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install isolated Cardano probe dependencies
+        run: npm install --prefix audit/cardano-integration
+
+      - name: Normalize legacy Lucid ESM entrypoint for Node 22
+        run: |
+          node --input-type=module - <<'JS'
+          import { readFile, writeFile } from 'node:fs/promises'
+          const pkgPath = 'node_modules/lucid-cardano/package.json'
+          const pkg = JSON.parse(await readFile(pkgPath, 'utf8'))
+          const fs = await import('node:fs')
+          await fs.promises.access('node_modules/lucid-cardano/esm/mod.js')
+          pkg.type = 'module'
+          pkg.exports = { ".": { "types": "./types/mod.d.ts", "import": "./esm/mod.js" } }
+          await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+          await writeFile('src/package.json', JSON.stringify({type:'module'}) + '\n')
+          await writeFile('Adapter/package.json', JSON.stringify({type:'module'}) + '\n')
+          JS
+
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "$PREPROD_REVEAL_SEED"
+          echo "Preprod signing secret present."
+
+      - name: Verify Lucid Evolution transaction API
+        run: node audit/cardano-integration/preprod-real-reveal-api-check.mjs
+
+      - name: Execute real Preprod Reveal
+        run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
+
+      - name: Upload real Preprod Reveal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-real-preprod-reveal-evidence
+          path: audit/preprod-evidence/
+          if-no-files-found: error

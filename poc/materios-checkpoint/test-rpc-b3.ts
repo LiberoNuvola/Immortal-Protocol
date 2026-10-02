@@ -1,0 +1,469 @@
+import { strict as assert } from 'node:assert'
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { test } from 'node:test'
+import { MateriosRpc } from './src/rpc.ts'
+import { extractSelectionInputsCommitment } from './src/selectionCommitment.ts'
+import { buildCalculateCommitteeCallData, encodeScEpochNumber, MATERIOS_COMMITTEE_RUNTIME_API } from './src/runtimeApi.ts'
+
+async function withServer(
+  handler: (req: IncomingMessage, res: ServerResponse) => void,
+): Promise<{ endpoint: string; close: () => Promise<void> }> {
+  const server = createServer(handler)
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  if (!address || typeof address === 'string') throw new Error('server address unavailable')
+  return {
+    endpoint: `http://127.0.0.1:${address.port}`,
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      ),
+  }
+}
+
+async function readBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) chunks.push(Buffer.from(chunk))
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+test('getGrandpaFinalityProof requests the standard finality RPC', async () => {
+  const targetBlock = 1234
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: '0xaabbccdd',
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const proof = await rpc.getGrandpaFinalityProof(targetBlock)
+    assert.equal(proof, '0xaabbccdd')
+    assert.equal(seenMethod, 'grandpa_proveFinality')
+    assert.deepEqual(seenParams, [targetBlock])
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaFinalityProof accepts an unavailable proof as null', async () => {
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: null,
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    assert.equal(await rpc.getGrandpaFinalityProof(0), null)
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaFinalityProof rejects malformed proof transport', async () => {
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: 'not-hex',
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => rpc.getGrandpaFinalityProof(1),
+      /grandpa_proveFinality: expected hex string/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
+test('getRuntimeCode requests state_getCode at the exact block', async () => {
+  const target = `0x${'11'.repeat(32)}`
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({ jsonrpc: '2.0', id: body.id, result: '0x6000' }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const code = await rpc.getRuntimeCode(target)
+    assert.equal(code, '0x6000')
+    assert.equal(seenMethod, 'state_getCode')
+    assert.deepEqual(seenParams, [target])
+  } finally {
+    await server.close()
+  }
+})
+
+test('extractSelectionInputsCommitment recovers the unique on-chain set hash', () => {
+  const selectionInputsHash = `0x${'ab'.repeat(32)}`
+  const irrelevant = `0x040100${'11'.repeat(40)}`
+  const target = `0x040e00aabbccdd${selectionInputsHash.slice(2)}`
+
+  const commitment = extractSelectionInputsCommitment([irrelevant, target])
+
+  assert.equal(commitment.extrinsicIndex, 1)
+  assert.equal(commitment.extrinsicHex, target)
+  assert.equal(commitment.selectionInputsHash, selectionInputsHash)
+})
+
+test('extractSelectionInputsCommitment fails closed on missing or duplicate set inherents', () => {
+  const hash = `0x${'cd'.repeat(32)}`
+  const target = `0x040e00aabb${hash.slice(2)}`
+
+  assert.throws(
+    () => extractSelectionInputsCommitment([`0x040100${'11'.repeat(40)}`]),
+    /SessionCommitteeManagement::set inherent extrinsic not found/,
+  )
+
+  assert.throws(
+    () => extractSelectionInputsCommitment([target, target]),
+    /multiple SessionCommitteeManagement::set inherent extrinsics/,
+  )
+})
+
+test('extractSelectionInputsCommitment rejects a truncated set inherent', () => {
+  assert.throws(
+    () => extractSelectionInputsCommitment(['0x040e00aabbcc']),
+    /SessionCommitteeManagement::set inherent extrinsic\[0\] is truncated/,
+  )
+})
+
+test('getSelectionInputsCommitment reads the exact requested block', async () => {
+  const target = `0x${'23'.repeat(32)}`
+  const hash = `0x${'ef'.repeat(32)}`
+  const setExtrinsic = `0x040e00aabb${hash.slice(2)}`
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        block: {
+          extrinsics: [setExtrinsic],
+        },
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const commitment = await rpc.getSelectionInputsCommitment(target)
+    assert.equal(commitment.selectionInputsHash, hash)
+    assert.equal(seenMethod, 'chain_getBlock')
+    assert.deepEqual(seenParams, [target])
+  } finally {
+    await server.close()
+  }
+})
+
+test('Materios committee Runtime API call data appends SCALE u64 epoch', () => {
+  assert.equal(MATERIOS_COMMITTEE_RUNTIME_API, 'SessionValidatorManagementApi_calculate_committee')
+  assert.equal(encodeScEpochNumber(0n), '0x0000000000000000')
+  assert.equal(encodeScEpochNumber(88n), '0x5800000000000000')
+  assert.equal(
+    buildCalculateCommitteeCallData('0x01020304', 88n),
+    '0x010203045800000000000000',
+  )
+  assert.throws(
+    () => encodeScEpochNumber(-1n),
+    /sidechainEpoch must be non-negative/,
+  )
+  assert.throws(
+    () => buildCalculateCommitteeCallData('0102', 1n),
+    /authoritySelectionInputsHex must be 0x-prefixed hex/,
+  )
+})
+
+test('getCommitteeExecutionProof preserves exact transport fields', async () => {
+  const target = `0x${'22'.repeat(32)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          blockHash: target,
+          runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
+          callDataHex: '0xaabb',
+          resultHex: '0xccdd',
+          proofScaleHex: '0x040801020304',
+          runtime: {
+            specName: 'materios',
+            implName: 'materios',
+            authoringVersion: 1,
+            specVersion: 238,
+            implVersion: 1,
+            apis: [['0x1234', 1]],
+          },
+        },
+      }),
+    )
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const packet = await rpc.getCommitteeExecutionProof('0xaabb', target)
+    assert.equal(packet.blockHash, target)
+    assert.equal(packet.runtimeApiMethod, 'SessionValidatorManagementApi_calculate_committee')
+    assert.equal(packet.callDataHex, '0xaabb')
+    assert.equal(packet.resultHex, '0xccdd')
+    assert.equal(packet.proofScaleHex, '0x040801020304')
+    assert.equal(packet.runtime.specVersion, 238)
+  } finally {
+    await server.close()
+  }
+})
+
+test('getCommitteeExecutionProof fails closed on malformed proof bytes', async () => {
+  const target = `0x${'33'.repeat(32)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          blockHash: target,
+          runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
+          callDataHex: '0xaabb',
+          resultHex: '0xccdd',
+          proofScaleHex: 'not-hex',
+          runtime: {
+            specName: 'materios',
+            implName: 'materios',
+            authoringVersion: 1,
+            specVersion: 238,
+            implVersion: 1,
+            apis: [],
+          },
+        },
+      }),
+    )
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => rpc.getCommitteeExecutionProof('0xaabb', target),
+      /B3 proof proofScaleHex: expected hex string/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
+
+test('collectCommitteeExecutionEvidence rejects runtime identity drift', async () => {
+  const target = `0x${'44'.repeat(32)}`
+  const runtime = {
+    specName: 'materios',
+    implName: 'materios',
+    authoringVersion: 1,
+    specVersion: 239,
+    implVersion: 1,
+    apis: [],
+  }
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+
+    if (body.method === 'chain_getHeader') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          parentHash: `0x${'55'.repeat(32)}`,
+          number: '0x10',
+          stateRoot: `0x${'66'.repeat(32)}`,
+          extrinsicsRoot: `0x${'77'.repeat(32)}`,
+          digest: { logs: [] },
+        },
+      }))
+      return
+    }
+
+    if (body.method === 'state_getCode') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: '0x6000',
+      }))
+      return
+    }
+
+    if (body.method === 'state_getRuntimeVersion') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          specName: 'materios',
+          implName: 'materios',
+          authoringVersion: 1,
+          specVersion: 238,
+          implVersion: 1,
+          apis: [],
+        },
+      }))
+      return
+    }
+
+    if (body.method === 'materios_b3_calculateCommitteeProof') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          blockHash: target,
+          runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
+          callDataHex: '0xaabb',
+          resultHex: '0xccdd',
+          proofScaleHex: '0x040801020304',
+          runtime,
+        },
+      }))
+      return
+    }
+
+    res.end(JSON.stringify({ jsonrpc: '2.0', id: body.id, error: { code: -32601, message: 'method not mocked' } }))
+  })
+
+  try {
+    const { collectCommitteeExecutionEvidence, MateriosRpc } = await import('./src/rpc.ts')
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => collectCommitteeExecutionEvidence(rpc, {
+        finalizedBlockHash: target,
+        callDataHex: '0xaabb',
+      }),
+      /B3 execution-proof runtime identity does not match block runtime/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
+
+test('collector rejects proof call-data drift', async () => {
+  const target = `0x${'88'.repeat(32)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+
+    if (body.method === 'chain_getHeader') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          parentHash: `0x${'99'.repeat(32)}`,
+          number: '0x20',
+          stateRoot: `0x${'aa'.repeat(32)}`,
+          extrinsicsRoot: `0x${'bb'.repeat(32)}`,
+          digest: { logs: [] },
+        },
+      }))
+      return
+    }
+
+    if (body.method === 'state_getCode') {
+      res.end(JSON.stringify({ jsonrpc: '2.0', id: body.id, result: '0x6000' }))
+      return
+    }
+
+    if (body.method === 'state_getRuntimeVersion') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          specName: 'materios',
+          implName: 'materios',
+          authoringVersion: 1,
+          specVersion: 238,
+          implVersion: 1,
+          apis: [],
+        },
+      }))
+      return
+    }
+
+    if (body.method === 'materios_b3_calculateCommitteeProof') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          blockHash: target,
+          runtimeApiMethod: 'SessionValidatorManagementApi_calculate_committee',
+          callDataHex: '0xaacc',
+          resultHex: '0xccdd',
+          proofScaleHex: '0x040801020304',
+          runtime: {
+            specName: 'materios',
+            implName: 'materios',
+            authoringVersion: 1,
+            specVersion: 238,
+            implVersion: 1,
+            apis: [],
+          },
+        },
+      }))
+      return
+    }
+
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      error: { code: -32601, message: 'method not mocked' },
+    }))
+  })
+
+  try {
+    const { collectCommitteeExecutionEvidence, MateriosRpc } = await import('./src/rpc.ts')
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => collectCommitteeExecutionEvidence(rpc, {
+        finalizedBlockHash: target,
+        callDataHex: '0xaabb',
+      }),
+      /B3 execution-proof callDataHex does not match requested call data/,
+    )
+  } finally {
+    await server.close()
+  }
+})

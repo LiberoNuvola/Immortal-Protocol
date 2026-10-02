@@ -1,0 +1,37 @@
+name: PRE-RICH Jackpot Activation & Policy Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/PreRichJackpotActivation.ts"
+      - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
+      - "src/__tests__/preRichJackpotActivation.test.ts"
+      - "src/__tests__/preRichJackpotPolicy.test.ts"
+      - ".github/workflows/pre-rich-jackpot-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "PRE-RICH/profile/PreRichJackpotActivation.ts"
+      - "PRE-RICH/profile/PreRichJackpotPolicy.ts"
+      - "src/__tests__/preRichJackpotActivation.test.ts"
+      - "src/__tests__/preRichJackpotPolicy.test.ts"
+      - ".github/workflows/pre-rich-jackpot-conformance.yml"
+
+jobs:
+  jackpot-policy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Jackpot activation and policy conformance
+        run: npx vitest run src/__tests__/preRichJackpotActivation.test.ts src/__tests__/preRichJackpotPolicy.test.ts
