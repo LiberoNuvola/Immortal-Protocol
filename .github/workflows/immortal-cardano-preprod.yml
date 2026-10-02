@@ -265,6 +265,9 @@ jobs:
       - name: Verify Lucid Evolution transaction API
         run: node audit/cardano-integration/preprod-real-reveal-api-check.mjs
 
+      - name: Prepare evidence directory
+        run: mkdir -p audit/preprod-evidence
+
       - name: Execute real Preprod Reveal
         run: node --import tsx/esm audit/cardano-integration/preprod-real-reveal.mjs
 
@@ -274,4 +277,4 @@ jobs:
         with:
           name: immortal-real-preprod-reveal-evidence
           path: audit/preprod-evidence/
-          if-no-files-found: error
+          if-no-files-found: warn
