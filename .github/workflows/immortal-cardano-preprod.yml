@@ -161,7 +161,7 @@ jobs:
   preprod-deploy:
     # Manual deployment witness: materializes the current Cardano topology on Preprod
     # and records the exact UTxOs, reference scripts, hashes, and tx ids in a manifest.
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.run_reveal }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment: DEMETER
@@ -225,6 +225,7 @@ jobs:
       PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
       PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
       PREPROD_REVEAL_EVIDENCE_DIR: audit/preprod-evidence
+      PREPROD_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-deployment.json
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
