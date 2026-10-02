@@ -115,7 +115,7 @@ async function safeKoiosUtxos(address) {
   const rows = await response.json()
   const info = rows?.[0]
   if (!info) return []
-  return (info.utxo_set ?? []).map((u) => {
+  return Promise.all((info.utxo_set ?? []).map(async (u) => {
     const assets = { lovelace: BigInt(u.value) }
     for (const asset of u.asset_list ?? []) {
       assets[asset.policy_id + (asset.asset_name ?? '')] = BigInt(asset.quantity)
@@ -156,7 +156,7 @@ async function safeKoiosUtxos(address) {
       datum: u.inline_datum?.bytes || undefined,
       scriptRef,
     }
-  })
+  }))
 }
 const originalGetUtxos = provider.getUtxos.bind(provider)
 provider.awaitTx = safeKoiosAwaitTx
