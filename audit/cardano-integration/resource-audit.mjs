@@ -43,12 +43,32 @@ if (existsSync(evidenceDir)) {
   }
 }
 
-const maxTxSize = 16 * 1024
+function readObservedMaxTxSize() {
+  if (!existsSync(evidenceDir)) return null
+  for (const name of readdirSync(evidenceDir)) {
+    if (!name.endsWith('.json')) continue
+    try {
+      const json = JSON.parse(readFileSync(join(evidenceDir, name), 'utf8'))
+      const candidate =
+        json.maxTxSize ??
+        json.maxTxSizeBytes ??
+        json.protocolParameters?.maxTxSize ??
+        json.protocolParameters?.maxTxSizeBytes
+      if (Number.isInteger(candidate) && candidate > 0) return candidate
+    } catch {
+      // Ignore non-protocol evidence JSON.
+    }
+  }
+  return null
+}
+
+const observedMaxTxSize = readObservedMaxTxSize()
 const report = {
   purpose: 'IMMORTAL Cardano resource audit',
-  maxTxSizeAssumptionBytes: maxTxSize,
+  maxTxSizeBytes: observedMaxTxSize,
+  maxTxSizeSource: observedMaxTxSize === null ? 'not-present-in-evidence' : 'observed-protocol-parameters',
   measured: rows,
-  note: 'Transaction size is measured from serialized CBOR when real transaction evidence is present; script size is measured from compiled Plutus cborHex. ExUnits and final fee require evaluated script transactions and protocol parameters.',
+  note: 'Transaction size is measured from serialized CBOR when real transaction evidence is present; the report never substitutes a hardcoded protocol limit when observed protocol parameters are available. Script size is measured from compiled Plutus cborHex. ExUnits and final fee require evaluated script transactions and protocol parameters.',
 }
 
 console.log(JSON.stringify(report, null, 2))

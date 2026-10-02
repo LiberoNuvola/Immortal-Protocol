@@ -11,7 +11,8 @@ library
         ../IMMORTAL/conformance
         ../Adapter/CARDANO/observation
         ../IMMORTAL/governance
-        ../PRE-RICH/profile
+        ../PRE-RICH/onchain
+        ../Adapter/REFERENCE
 
     exposed-modules:
         Types
@@ -37,10 +38,13 @@ library
         PreRichEconomicProfile
         PreRichEconomicProjection
         PreRichEconomicAdmission
+        PreRichIssueDecision
         PreRichGenesisAdmission
         PreRichRegimeState
         GenesisRegimeCarrier
         GenesisCarrierMintPolicy
+        V3EconomicStateCarrier
+        V3EconomicStateCarrierMintPolicy
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
@@ -55,6 +59,7 @@ library
         GovernanceConformanceWitness
         GovernanceCanonicalizationWitness
         GovernanceFinality
+        ReferenceAdapter
 
     other-modules:
 
@@ -73,11 +78,26 @@ library
 
     ghc-options:
         -Wall
+        -fno-ignore-interface-pragmas
+        -fno-omit-interface-pragmas
+        -fno-full-laziness
         -fno-strictness
         -fno-specialise
         -fno-spec-constr
         -fno-unbox-strict-fields
         -fno-unbox-small-strict-fields
+
+executable issue-admission
+    hs-source-dirs: export
+    main-is: IssueAdmission.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
+    ghc-options:
+        -Wall
 
 executable export-scripts
     hs-source-dirs:
@@ -93,11 +113,15 @@ executable export-scripts
         base16-bytestring,
         bytestring,
         directory,
+        filepath,
         text,
         pre-rich-plutus
     default-language: Haskell2010
     ghc-options:
         -Wall
+        -fno-ignore-interface-pragmas
+        -fno-omit-interface-pragmas
+        -fno-full-laziness
         -fno-strictness
         -fno-specialise
         -fno-spec-constr
@@ -139,6 +163,15 @@ test-suite governance-canonical-replay-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: ../IMMORTAL/governance
     main-is: GovernanceCanonicalReplayTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite issue-decision-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PreRichIssueDecisionTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
@@ -186,6 +219,7 @@ test-suite legacy-adapter-tests
     main-is: B1LegacyAdapterTest.hs
     build-depends:
         base ^>=4.18.2,
+        bytestring,
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
@@ -214,6 +248,61 @@ test-suite genesis-regime-carrier-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
     main-is: GenesisRegimeCarrierTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite v3-economic-state-carrier-binding-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: V3EconomicStateCarrierBindingTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+
+test-suite economic-gate-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: EconomicGateTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+
+executable inspect-historical-pre-policy
+    hs-source-dirs: export
+    main-is: InspectHistoricalPrePolicy.hs
+    build-depends:
+        base ^>=4.18.2,
+        bytestring,
+        base16-bytestring,
+        text,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0
+    default-language: Haskell2010
+    ghc-options:
+        -Wall
+
+
+test-suite reference-adapter-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: ../Adapter/REFERENCE/test
+    main-is: ReferenceAdapterTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+
+executable reference-adapter-golden
+    hs-source-dirs:
+        ../Adapter/REFERENCE/export
+    main-is: ReferenceAdapterGolden.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus

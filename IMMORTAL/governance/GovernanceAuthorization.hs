@@ -36,7 +36,15 @@ evidenceValid e =
 rulesetAuthorizationValid :: RulesetRegistry -> CanonicalEvent -> Bool
 rulesetAuthorizationValid rs e =
   rulesetVersionRegistered (GovernanceEventSchema.rulesetVersion e) rs &&
-  commitmentMatches e
+  commitmentMatches e &&
+  case activeRuleset (eventTimestamp e) rs of
+    Just active ->
+      RulesetRegistry.rulesetVersion active == GovernanceEventSchema.rulesetVersion e &&
+      rulesetCompatible
+        (GovernanceEventSchema.rulesetVersion e)
+        (rulesetCommitment active)
+        rs
+    Nothing -> False
 
 canonicalGovernanceEventValid
   :: RulesetRegistry

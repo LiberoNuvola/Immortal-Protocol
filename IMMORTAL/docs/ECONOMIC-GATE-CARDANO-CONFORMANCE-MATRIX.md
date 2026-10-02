@@ -204,7 +204,7 @@ The branch now contains an additive universal economic boundary:
 - `IMMORTAL/kernel/UniversalEconomicKernel.hs` — ProtectedCapital, RawSurplus and non-negativity/solvency predicates over that aggregate;
 - `IMMORTAL/kernel/EconomicGate.hs` — explicit Economic Gate → Viability → execution-admissibility interface.
 
-The bridge `PRE-RICH/profile/PreRichEconomicProjection.hs` projects the existing rich V3 state into the universal aggregate and fails closed on invalid profile data, unknown classes, inconsistent per-class exposure, duplicate class state, and aggregate reserve/count mismatch.
+The bridge `PRE-RICH/onchain/PreRichEconomicProjection.hs` projects the existing rich V3 state into the universal aggregate and fails closed on invalid profile data, unknown classes, inconsistent per-class exposure, duplicate class state, and aggregate reserve/count mismatch.
 
 The implementation intentionally does **not** claim that the new aggregate is already the canonical transition state, nor that the booleans entering `EconomicGateInput` constitute a proof. The interface requires the authoritative observation/refinement layer to bind truth, freshness and obligation-completeness inputs to actual evidence. Likewise, `viabilityGate` requires the safe-post-state predicate and the authoritative-Ω successor condition over a certified `K_c`; certification remains a separate CK1–CK8 conformance burden.
 
@@ -236,3 +236,39 @@ Recent CI evidence on the working branch:
 - The Cardano Integration Lab remains in progress in the latest observed run.
 
 Accordingly the Gate interface is implemented, while semantic V3↔Cardano equivalence, full ProtectedCapital preservation, authoritative observation provenance and viability certification remain OPEN.
+
+## 2026-09-26 — Differential boundary evidence
+
+The projection boundary now has executable transition-level evidence in
+`plutus/test/ProjectionBoundaryConformanceTest.hs`. The test compares the V3
+candidate state with the UniversalEconomicState projection after the canonical
+`Issue`, `Reveal`, `Claim`, and `Expire` transitions and asserts the exact
+deltas for:
+
+- crystallized liabilities;
+- unresolved reserve;
+- unresolved ticket count;
+- worst-case exposure at the PRE-RICH 500× profile bound;
+- Universal ProtectedCapital;
+- Universal RawSurplus where EEV is supplied;
+- preservation of unrelated protected-capital components.
+
+The same test also exercises fail-closed rejection for inconsistent aggregate
+reserve/count state, duplicate/unknown classes, inconsistent class exposure,
+and negative protected-capital/liability components.
+
+This is **executable differential conformance evidence for the represented
+IMMORTAL V3 → Universal boundary**. It is not, by itself, proof of full
+V3 → PRE-RICH → Adapter → Cardano equivalence.
+
+The kernel CI now preserves the complete test output and provenance as the
+`immortal-kernel-conformance-evidence` artifact. The Preprod workflow trigger
+was also widened so changes under P2.8, PRE-RICH, Adapter, and the projection
+test cause a fresh Demeter/Ogmios Preprod observation run.
+
+The closure status therefore remains:
+
+- **V3 → Universal differential boundary:** evidenced for the represented transitions;
+- **Economic Gate equivalence:** OPEN;
+- **full V3 → PRE-RICH → Adapter → Cardano equivalence:** OPEN;
+- **real Preprod ledger-aligned A/B evaluator result:** still evidence-required.

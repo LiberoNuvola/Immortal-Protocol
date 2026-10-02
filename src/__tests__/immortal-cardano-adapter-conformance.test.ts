@@ -26,7 +26,7 @@ import {
   type AuthoritativeClassState,
   type ObservedB1Pool,
   type ObservedUnresolvedTicket,
-} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
+} from '../../PRE-RICH/src/PreRichCardanoObservationProjection'
 
 type Fixture = {
   pool: ObservedB1Pool

@@ -30,7 +30,7 @@ IMMORTAL does not require either one at the universal semantic layer.
 
 ## Experimental and socioeconomic premise
 
-> **What would happen if humanity's guiding light were a shared ethical code rather than the individual pursuit of profit?**
+> **What happens when economic coordination is designed from explicit shared principles rather than from a single proprietary objective?**
 
 IMMORTAL is an experiment built around that question.
 

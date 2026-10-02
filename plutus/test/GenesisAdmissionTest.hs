@@ -19,6 +19,8 @@ main = do
   assert (genesisTreasuryValueUsdm base == Just 400000) "4000 PRE at 100 subunits/PRE = 400000 USDM subunits"
   assert (genesisPredicate base == True) "exact 4000 USDM Genesis threshold admits"
   assert (genesisPredicate (base { gtoPreQuantity = 3999 }) == False) "below threshold rejects"
+  assert (genesisTreasuryValueUsdm (base { gtoPreQuantity = 3999999, gtoVerifiedPreUsdmPrice = 100000 }) == Just 399999) "fractional subunit value floors below threshold"
+  assert (genesisPredicate (base { gtoPreQuantity = 3999999, gtoVerifiedPreUsdmPrice = 100000 }) == False) "fractional sub-threshold value cannot round upward into Genesis"
   assert (genesisPredicate (base { gtoOracleFresh = False }) == False) "stale oracle rejects"
   assert (genesisPredicate (base { gtoTreasuryIdentityVerified = False }) == False) "wrong Treasury rejects"
   assert (genesisPredicate (base { gtoSourceRegimePreGenesis = False }) == False) "wrong source regime rejects"

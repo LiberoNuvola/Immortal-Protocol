@@ -55,6 +55,11 @@ describe('RF8 application submission boundary', () => {
     ])
   })
 
+  it('fails closed on the retired generic claim builder', () => {
+    const source = readFileSync(join(ROOT, 'txHelpers.ts'), 'utf8')
+    expect(source).toContain('Legacy buildClaimTx disabled: use the canonical Claim flow with EconomicAdmission')
+  })
+
   it('keeps the generic submission helper distinct from economic submission', () => {
     const source = readFileSync(join(ROOT, 'txHelpers.ts'), 'utf8')
     expect(source).toMatch(/export async function signAndSubmitTx/)

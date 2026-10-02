@@ -6,6 +6,8 @@ RPC responses are evidence supplied by a node; they are not themselves
 a source of canonicality or independently verified finality.
 */
 
+import { extractSelectionInputsCommitment, type SelectionInputsCommitment } from "./selectionCommitment.js";
+
 export type JsonRpcId = number | string;
 
 type JsonRpcError = {
@@ -138,6 +140,112 @@ return validateHeader(value);
 
 }
 
+
+/**
+ * Fetch deployed runtime WASM at an exact block.
+ * The returned bytes remain untrusted evidence until their hash is bound
+ * to an independently trusted runtime identity.
+ */
+async getRuntimeCode(at: string): Promise<string> {
+  const hash = requireHash(at, "state_getCode block hash");
+  const value = await this.call<unknown>("state_getCode", [hash]);
+  return requireHex(value, "state_getCode");
+}
+
+/**
+ * Fetch the planned narrow Materios B3 execution-proof response.
+ * This RPC is transport only; it must not be treated as canonicality.
+ */
+  /**
+   * Read the exact block at the requested hash and recover the unique on-chain
+   * SessionCommitteeManagement::set selection-input commitment.
+   *
+   * This is extraction only. The returned commitment is still untrusted
+   * evidence until the caller binds the block to an independently verified
+   * finalized checkpoint.
+   */
+  async getSelectionInputsCommitment(
+    at: string,
+  ): Promise<SelectionInputsCommitment> {
+    const hash = requireHash(at, "selection commitment block hash");
+    const value = await this.call<unknown>("chain_getBlock", [hash]);
+
+    if (typeof value !== "object" || value === null) {
+      throw new Error("chain_getBlock: invalid block object");
+    }
+
+    const block = value as Record<string, unknown>;
+    const rawBlock = block.block;
+    if (typeof rawBlock !== "object" || rawBlock === null) {
+      throw new Error("chain_getBlock: missing block payload");
+    }
+
+    const payload = rawBlock as Record<string, unknown>;
+    if (
+      !Array.isArray(payload.extrinsics) ||
+      !payload.extrinsics.every((x) => typeof x === "string")
+    ) {
+      throw new Error("chain_getBlock: extrinsics must be string array");
+    }
+
+    return extractSelectionInputsCommitment(
+      payload.extrinsics as readonly string[],
+    );
+  }
+
+async getCommitteeExecutionProof(
+  callDataHex: string,
+  at: string,
+): Promise<CommitteeExecutionProofResponse> {
+  const hash = requireHash(at, "B3 execution-proof block hash");
+  if (!/^0x[0-9a-fA-F]*$/.test(callDataHex)) {
+    throw new Error(`B3 execution-proof call data is invalid hex: ${callDataHex}`);
+  }
+
+  const value = await this.call<unknown>(
+    "materios_b3_calculateCommitteeProof",
+    [hash, callDataHex],
+  );
+  return validateCommitteeExecutionProofResponse(value);
+}
+
+/**
+ * Request the standard Substrate GRANDPA finality proof for a block number.
+ *
+ * The node may return null when it cannot construct the proof. Returned bytes
+ * are the SCALE-encoded FinalityProof/GrandpaJustification transport object.
+ * They remain untrusted evidence until independently decoded and verified.
+ */
+/**
+ * IMPORTANT: grandpa_proveFinality returns a SCALE-encoded FinalityProof
+ * whose justification may target the last block of the authority set rather
+ * than the requested block itself. The opaque transport bytes therefore must
+ * not be fed directly to verifyFinality(), which currently models a
+ * GrandpaJustification whose commit target must equal the checkpoint.
+ *
+ * Callers must decode FinalityProof, bind proof.block to the requested block,
+ * verify the supplied unknown_headers path, and then verify the embedded
+ * justification against the authority set before treating the proof as finality.
+ */
+async getGrandpaFinalityProof(
+blockNumber: number
+): Promise<string | null> {
+if (!Number.isSafeInteger(blockNumber) || blockNumber < 0) {
+throw new Error("grandpa_proveFinality: invalid block number");
+}
+
+const value = await this.call<unknown>(
+"grandpa_proveFinality",
+[blockNumber]
+);
+
+if (value === null) {
+return null;
+}
+
+return requireHex(value, "grandpa_proveFinality");
+}
+
 async getRuntimeVersion(
 hash?: string
 ): Promise<RuntimeVersion> {
@@ -190,6 +298,89 @@ digest: {
 logs: string[];
 };
 };
+
+
+
+/**
+ * Assemble the transport fields needed by the B3 packet from one exact block.
+ * This function does not verify finality or the execution proof.
+ */
+export async function collectCommitteeExecutionEvidence(
+  rpc: MateriosRpc,
+  params: {
+    finalizedBlockHash: string
+    callDataHex: string
+  },
+): Promise<{
+  blockHash: string
+  header: SubstrateHeader
+  runtimeCodeHex: string
+  execution: CommitteeExecutionProofResponse
+}> {
+  const blockHash = requireHash(params.finalizedBlockHash, 'finalized block hash')
+  const [header, runtimeCodeHex, execution, blockRuntime] = await Promise.all([
+    rpc.getHeader(blockHash),
+    rpc.getRuntimeCode(blockHash),
+    rpc.getCommitteeExecutionProof(params.callDataHex, blockHash),
+    rpc.getRuntimeVersion(blockHash),
+  ])
+
+  const proofBlockHash = requireHash(execution.blockHash, 'B3 proof blockHash')
+  if (proofBlockHash !== blockHash) {
+    throw new Error('B3 execution-proof blockHash does not match requested finalized block')
+  }
+
+  if (execution.callDataHex.toLowerCase() !== params.callDataHex.toLowerCase()) {
+    throw new Error('B3 execution-proof callDataHex does not match requested call data')
+  }
+
+  if (execution.runtimeApiMethod !== 'SessionValidatorManagementApi_calculate_committee') {
+    throw new Error('B3 execution-proof runtimeApiMethod is not the canonical committee API')
+  }
+
+  if (
+    execution.runtime.specName !== blockRuntime.specName ||
+    execution.runtime.implName !== blockRuntime.implName ||
+    execution.runtime.specVersion !== blockRuntime.specVersion ||
+    execution.runtime.implVersion !== blockRuntime.implVersion
+  ) {
+    throw new Error('B3 execution-proof runtime identity does not match block runtime')
+  }
+
+  if (header.stateRoot.length !== 66) {
+    throw new Error('B3 finalized header stateRoot is malformed')
+  }
+
+  return { blockHash, header, runtimeCodeHex, execution }
+}
+
+export type CommitteeExecutionProofResponse = {
+  blockHash: string;
+  runtimeApiMethod: string;
+  callDataHex: string;
+  resultHex: string;
+  proofScaleHex: string;
+  runtime: RuntimeVersion;
+};
+
+function validateCommitteeExecutionProofResponse(
+  value: unknown,
+): CommitteeExecutionProofResponse {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("B3 execution-proof response: invalid object");
+  }
+  const v = value as Record<string, unknown>;
+  const blockHash = requireHash(v.blockHash, "B3 proof blockHash");
+  if (typeof v.runtimeApiMethod !== "string" || !v.runtimeApiMethod.trim()) {
+    throw new Error("B3 proof runtimeApiMethod is required");
+  }
+  const callDataHex = requireHex(v.callDataHex, "B3 proof callDataHex");
+  const resultHex = requireHex(v.resultHex, "B3 proof resultHex");
+  const proofScaleHex = requireHex(v.proofScaleHex, "B3 proof proofScaleHex");
+  const runtime = validateRuntimeVersion(v.runtime);
+
+  return { blockHash, runtimeApiMethod: v.runtimeApiMethod, callDataHex, resultHex, proofScaleHex, runtime };
+}
 
 export type RuntimeVersion = {
 specName: string;

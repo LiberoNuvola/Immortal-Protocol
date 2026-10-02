@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { revealRefinementAdmissible, validateRevealRefinementEvidence, type RevealRefinementEvidence } from '../../PRE-RICH/profile/PreRichRevealRefinement'
+import { revealRefinementAdmissible, validateRevealRefinementEvidence, type RevealRefinementEvidence } from '../../PRE-RICH/src/PreRichRevealRefinement'
 
 const base: RevealRefinementEvidence = {
   ticketPolicyId: 'aa'.repeat(28),

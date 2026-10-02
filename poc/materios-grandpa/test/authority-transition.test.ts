@@ -19,6 +19,8 @@ import {
   hashAuthoritySetTransitionStatement,
   hashSelectionInputs,
   validateAuthoritySetTransitionStatement,
+  verifyActivationBlockBinding,
+  verifySelectionInputsCommitment,
   verifyAuthoritySetTransition
 } from "../src/authority-transition.js";
 
@@ -55,6 +57,13 @@ function baseStatement() {
       authority(2)
     ],
     sidechainEpoch: 42n,
+    authoritySelectionRegime: {
+      kind: "l1-ariadne" as const,
+      evidenceHash: Uint8Array.from(
+        { length: 32 },
+        () => 0xcc
+      )
+    },
     selectionInputs,
     selectionInputsHash:
       hashSelectionInputs(selectionInputs),
@@ -289,6 +298,137 @@ describe("authority transition boundary", () => {
     expect(() =>
       validateAuthoritySetTransitionStatement(mutated)
     ).toThrow("SELECTION_INPUTS_HASH_MISMATCH");
+  });
+
+  it("binds the authority-selection regime into the public statement", () => {
+    const statement = baseStatement();
+
+    const changed = {
+      ...statement,
+      authoritySelectionRegime: {
+        kind: "pinned-committee" as const,
+        evidenceHash: Uint8Array.from(
+          { length: 32 },
+          () => 0xdd
+        ),
+        untilEpoch: 99n
+      }
+    };
+
+    expect(
+      Array.from(
+        hashAuthoritySetTransitionStatement(statement)
+      )
+    ).not.toEqual(
+      Array.from(
+        hashAuthoritySetTransitionStatement(changed)
+      )
+    );
+  });
+
+  it("binds recovered selection inputs to the on-chain commitment", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        statement.selectionInputs,
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+        }
+      )
+    ).not.toThrow();
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        Uint8Array.from([0x10, 0x20, 0x30, 0x41]),
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+        }
+      )
+    ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+
+    expect(() =>
+      verifySelectionInputsCommitment(
+        statement.selectionInputs,
+        {
+          blockHash: new Uint8Array(statement.activationBlock.hash),
+          selectionInputsHash: new Uint8Array(32).fill(0xff)
+        }
+      )
+    ).toThrow("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+  });
+
+  it("requires the selection-input hash to equal the on-chain commitment", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(32).fill(0xee)
+      })
+    ).toThrow("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
+
+    expect(() =>
+      verifySelectionInputsCommitment(statement, {
+        blockHash: new Uint8Array(31),
+        blockNumber: statement.activationBlock.number,
+        selectionInputsHash: new Uint8Array(statement.selectionInputsHash)
+      })
+    ).toThrow("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
+  });
+
+  it("requires the finality checkpoint to equal the activation block hash and number", () => {
+    const statement = baseStatement();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(32).fill(0xcc),
+        blockNumber: statement.activationBlock.number
+      })
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+
+    expect(() =>
+      verifyActivationBlockBinding(statement, {
+        blockHash: new Uint8Array(statement.activationBlock.hash),
+        blockNumber: statement.activationBlock.number + 1n
+      })
+    ).toThrow("ACTIVATION_BLOCK_FINALITY_NUMBER_MISMATCH");
+  });
+
+  it("rejects a pinned-committee regime that is already expired", () => {
+    const statement = {
+      ...baseStatement(),
+      authoritySelectionRegime: {
+        kind: "pinned-committee" as const,
+        evidenceHash: Uint8Array.from(
+          { length: 32 },
+          () => 0xdd
+        ),
+        untilEpoch: 41n
+      }
+    };
+
+    expect(() =>
+      validateAuthoritySetTransitionStatement(statement)
+    ).toThrow("PINNED_COMMITTEE_EXPIRED");
   });
 
   it("binds the proof-system identity into the public statement", () => {
@@ -539,6 +679,53 @@ describe("authority transition boundary", () => {
     expect(
       trusted.authorities[0].publicKey[0]
     ).toBe(0x03);
+  });
+
+  it("rejects a verified transition with a forged statement hash", async () => {
+    const statement = baseStatement();
+    const verified = await verifyAuthoritySetTransition(
+      statement,
+      { verify: () => true }
+    );
+
+    const forged = {
+      ...verified,
+      statementHash: new Uint8Array(32).fill(0xee)
+    };
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        forged
+      )
+    ).toThrow(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+    );
+  });
+
+  it("revalidates the public transition statement before trusting it", async () => {
+    const statement = baseStatement();
+    const verified = await verifyAuthoritySetTransition(
+      statement,
+      { verify: () => true }
+    );
+
+    const forged = {
+      ...verified,
+      publicStatement: {
+        ...verified.publicStatement,
+        sidechainEpoch: verified.publicStatement.sidechainEpoch + 1n
+      }
+    };
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        forged
+      )
+    ).toThrow(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+    );
   });
 
   it("rejects a forged verified-transition marker", () => {

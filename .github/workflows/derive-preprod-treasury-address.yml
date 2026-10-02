@@ -1,0 +1,31 @@
+name: Derive Preprod Treasury Address
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - plutus/out/treasury.plutus.json
+      - audit/pre-genesis-genesis/derive-preprod-treasury-address.mts
+      - .github/workflows/derive-preprod-treasury-address.yml
+      - package.json
+      - package-lock.json
+
+jobs:
+  derive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Derive Treasury script hash and Preprod address
+        run: npx tsx audit/pre-genesis-genesis/derive-preprod-treasury-address.mts | tee treasury-address.json
+      - name: Upload derivation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-treasury-address
+          path: treasury-address.json

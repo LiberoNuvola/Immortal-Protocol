@@ -9,19 +9,19 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/PreRichExpiryEvidence.ts"
-      - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
-      - "src/__tests__/preRichExpiryEvidence.test.ts"
-      - "src/__tests__/preRichExpiryPolicy.test.ts"
+      - "PRE-RICH/src/PreRichExpiryEvidence.ts"
+      - "PRE-RICH/src/PreRichExpiryPolicy.ts"
+      - "PRE-RICH/tests/conformance/PreRichExpiryEvidence.test.ts"
+      - "PRE-RICH/tests/conformance/PreRichExpiryPolicy.test.ts"
       - ".github/workflows/pre-rich-expiry-conformance.yml"
   pull_request:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/PreRichExpiryEvidence.ts"
-      - "PRE-RICH/profile/PreRichExpiryPolicy.ts"
-      - "src/__tests__/preRichExpiryEvidence.test.ts"
-      - "src/__tests__/preRichExpiryPolicy.test.ts"
+      - "PRE-RICH/src/PreRichExpiryEvidence.ts"
+      - "PRE-RICH/src/PreRichExpiryPolicy.ts"
+      - "PRE-RICH/tests/conformance/PreRichExpiryEvidence.test.ts"
+      - "PRE-RICH/tests/conformance/PreRichExpiryPolicy.test.ts"
       - ".github/workflows/pre-rich-expiry-conformance.yml"
 
 jobs:
@@ -36,6 +36,6 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Run PRE-RICH expiry refinement conformance
-        run: npx vitest run src/__tests__/preRichExpiryEvidence.test.ts src/__tests__/preRichExpiryPolicy.test.ts
+        run: npx vitest run PRE-RICH/tests/conformance/PreRichExpiryEvidence.test.ts PRE-RICH/tests/conformance/PreRichExpiryPolicy.test.ts

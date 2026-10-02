@@ -6,7 +6,7 @@ import {
   isPreRichJackpotStableLadder,
   preRichJackpotFundingNeed,
   type PreRichJackpotFundingWitness,
-} from '../../PRE-RICH/profile/PreRichJackpotActivation'
+} from '../../PRE-RICH/src/PreRichJackpotActivation'
 
 const stable: PreRichJackpotFundingWitness = {
   currentActiveClass: PRE_RICH_JACKPOT_TOP_CLASS_ID,

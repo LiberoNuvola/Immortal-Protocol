@@ -38,6 +38,12 @@ main = do
           , eventTimestamp = 7
           , payloadCommitment = payloadCommitment e1c
           }))
+  assert "classified payload timestamp mismatch rejected"
+    (not (eventSchemaValid
+      (e1c { eventType = EProposalClassified
+          , eventPayload = PayloadProposalClassified 1 DocumentationOnly 7
+          , eventTimestamp = 8
+          })))
   assert "gates payload timestamp is bound"
     (eventSchemaValid
       (e1 { eventType = EGatesSet
@@ -46,6 +52,14 @@ main = do
           , eventTimestamp = 8
           , payloadCommitment = "r1"
           }))
+  assert "gates payload timestamp mismatch rejected"
+    (not (eventSchemaValid
+      (e1 { eventType = EGatesSet
+          , actorClass = Reviewer
+          , eventPayload = PayloadGatesSet 1 g 8
+          , eventTimestamp = 9
+          , payloadCommitment = "r1"
+          })))
   assert "duplicate evidence refs rejected"
     (not (eventSchemaValid (e1 { evidenceRefs = [EvidenceRef "x", EvidenceRef "x"] })))
   assert "canonical authorization accepts declared proposer role"

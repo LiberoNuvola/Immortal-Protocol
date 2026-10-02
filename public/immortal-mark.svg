@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+<title id="title">IMMORTAL Protocol mark</title>
+<desc id="desc">Black circular arrow surrounding an angular K-like mark and asterisk on a turquoise field.</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#21f5f4"/>
+    <stop offset="1" stop-color="#0697a8"/>
+  </linearGradient>
+</defs>
+<rect width="1024" height="1024" rx="96" fill="url(#bg)"/>
+<circle cx="512" cy="512" r="355" fill="none" stroke="#000" stroke-width="18"/>
+<path d="M804 687 A355 355 0 0 1 805 688" fill="none" stroke="#000" stroke-width="18"/>
+<path d="M729 758 L819 718 L790 813 Z" fill="#000"/>
+<path d="M325 558 L325 337 L398 337 L398 474 L566 337 L661 337 L462 534 L680 687 L584 687 L423 575 L398 598 L398 687 L325 687 Z" fill="#000"/>
+<path d="M705 404 V508 M652 456 H758 M669 420 L741 492 M741 420 L669 492" stroke="#000" stroke-width="12" stroke-linecap="square"/>
+</svg>

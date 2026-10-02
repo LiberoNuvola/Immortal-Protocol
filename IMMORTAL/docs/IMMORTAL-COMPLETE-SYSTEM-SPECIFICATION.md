@@ -3,7 +3,7 @@
 **Role:** end-to-end integrative specification and reader guide  
 **Scope:** chain-neutral IMMORTAL protocol  
 **Status:** INTEGRATIVE DOCUMENT — no new normative semantics  
-**Branch:** main
+**Branch:** work/immortal-green-closure
 
 ## 1. Purpose
 

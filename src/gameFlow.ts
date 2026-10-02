@@ -18,7 +18,11 @@ import wallet from './wallet'
 
 import { buildScriptsFromLucid } from './loadValidator'
 
-import { ORACLE_PUBLISHER_PKH } from './config'
+import {
+  B1_PRIZE_POOL_REFERENCE_ADDRESS,
+  ORACLE_PUBLISHER_PKH,
+  PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+} from './config'
 
 import {
   deriveBeacon,
@@ -41,12 +45,12 @@ import {
 
 import { signAndSubmitTx, signAndSubmitEconomicTx } from './txHelpers'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
-import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/profile/PreRichCertifiedTicket'
+import { assertObservedTicketNft, certifyTicketBinding, type CertifiedTicketState } from '../PRE-RICH/src/PreRichCertifiedTicket'
 
 import {
   assertSettlementQuoteMatchesPrize,
   type CertifiedSettlementQuote,
-} from '../PRE-RICH/profile/PreRichCertifiedSettlement'
+} from '../PRE-RICH/src/PreRichCertifiedSettlement'
 
 // ---------------------------------------------------------------------------
 // Plutus Data helpers
@@ -253,6 +257,33 @@ function datumFromFields(fields: unknown[]): Data {
   return constr(0, fields as Data[])
 }
 
+/**
+ * Public observation boundary for the canonical PRE-RICH prize lifecycle.
+ *
+ * The mapping is deliberately derived only from on-chain PrizeDatum status and
+ * BeaconStatus. It does not inspect wallet/UI intent or infer economic state.
+ */
+export type ObservedPrizeLifecycle =
+  | 'ISSUING'
+  | 'AWAITING_FINALITY'
+  | 'SETTLING'
+  | 'IDLE'
+
+export function observePrizeLifecycle(utxo: UTxO): ObservedPrizeLifecycle {
+  const datum = decodePrizeDatum(utxo)
+  if (!datum) throw new Error('PrizeDatum not decodable')
+
+  const status = constrIndex(datum.fields[10])
+  const beaconStatus = constrIndex(datum.fields[14])
+
+  if (status === 0 && beaconStatus === 0) return 'ISSUING'
+  if (status === 0 && beaconStatus === 1) return 'AWAITING_FINALITY'
+  if (status === 1) return 'SETTLING'
+  if (status === 2) return 'IDLE'
+
+  throw new Error('Unsupported or inconsistent PRE-RICH PrizeDatum lifecycle')
+}
+
 // ---------------------------------------------------------------------------
 // Prize UTxO lookup
 // ---------------------------------------------------------------------------
@@ -290,6 +321,46 @@ export async function findB1PrizePoolUtxo(
     throw new Error('B1PrizePool singleton violation: multiple valid Pool UTxOs found')
   }
   return candidates[0] ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Reveal reference-script lookup
+// ---------------------------------------------------------------------------
+
+async function findReferenceScriptUtxo(
+  lucid: any,
+  holderAddress: string,
+  expectedScript: Script,
+  label: string,
+): Promise<UTxO> {
+  if (!holderAddress) {
+    throw new Error(
+      `${label} reference-script holder is not configured; canonical Reveal refuses inline-script fallback`,
+    )
+  }
+
+  const candidates = (await lucid.utxosAt(holderAddress)).filter(
+    (utxo: UTxO) => Boolean((utxo as any).scriptRef),
+  )
+
+  const expectedHash = lucid.utils.validatorToScriptHash(expectedScript)
+  const matching = candidates.filter((utxo: UTxO) => {
+    const scriptRef = (utxo as any).scriptRef as Script | undefined
+    if (!scriptRef) return false
+    try {
+      return lucid.utils.validatorToScriptHash(scriptRef) === expectedHash
+    } catch {
+      return false
+    }
+  })
+
+  if (matching.length !== 1) {
+    throw new Error(
+      `${label} reference-script holder must contain exactly one reference script matching ${expectedHash}; found ${matching.length}`,
+    )
+  }
+
+  return matching[0]
 }
 
 // ---------------------------------------------------------------------------
@@ -623,6 +694,22 @@ export async function revealPrize(opts: {
   const nextDatum = datumFromFields(nextFields)
   const owner = await lucid.wallet.address()
 
+  // Both Reveal validators are supplied as reference scripts. The canonical
+  // path intentionally has no inline-script fallback because the historical
+  // inline construction exceeds the Cardano transaction-size ceiling.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   // B1PrizePool: deterministic reserve derivation from PrizeDatum's pdPriceUsdm
   const b1ppUtxo = await findB1PrizePoolUtxo(lucid, b1PrizePoolAddress)
   if (!b1ppUtxo) throw new Error('B1PrizePool UTxO not found')
@@ -640,12 +727,12 @@ export async function revealPrize(opts: {
 
   const tx = await lucid
     .newTx()
+    // Use the exact deployed reference scripts; never inline the validators.
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     // PrizeValidator: spend and update
     .collectFrom([prizeUtxo], revealRedeemer(secretHex))
-    .attachSpendingValidator(scripts.prizeValidator as Script)
     // B1PrizePool: spend and update with deterministic priceUsdm
     .collectFrom([b1ppUtxo], b1ppTicketRevealedRedeemer(BigInt(priceUsdm)))
-    .attachSpendingValidator(scripts.b1PrizePool as Script)
     // Output: updated PrizeDatum
     .payToContract(
       opts.prizeAddress,
@@ -900,6 +987,22 @@ export async function claimPrize(opts: {
 
   const buyer = await lucid.wallet.address()
 
+  // Both Claim validators use deployed reference scripts. Keeping the two
+  // large validator programs out of the transaction body preserves the same
+  // Cardano transaction-size boundary already enforced for Reveal.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   const nextFields = [...datum.fields]
   nextFields[10] = emptyConstr(2) // Claimed
   const nextDatum = datumFromFields(nextFields)
@@ -924,12 +1027,10 @@ export async function claimPrize(opts: {
 
   const tx = await lucid
     .newTx()
-    // PrizeValidator: spend and update to Claimed
+    // PrizeValidator + B1PrizePool are supplied as reference scripts.
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     .collectFrom([prizeUtxo], claimRedeemer())
-    .attachSpendingValidator(scripts.prizeValidator as Script)
-    // B1PrizePool: spend and update
     .collectFrom([b1ppUtxo], b1ppTicketClaimedRedeemer(BigInt(prizeAmount)))
-    .attachSpendingValidator(scripts.b1PrizePool as Script)
     // Ticket NFT: spend to prove ownership (NFT returns to buyer, not burned)
     .collectFrom([ticketUtxo])
     // Output: updated PrizeDatum (Claimed)
@@ -1041,6 +1142,22 @@ export async function expirePrize(opts: {
 
   const nextPoolDatum = datumFromFields(poolFields)
   const executor = await lucid.wallet.address()
+
+  // Expire uses the same reference-script realization as Reveal/Claim; no
+  // inline validator fallback is permitted because both scripts are large.
+  const prizeValidatorReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    PRIZE_VALIDATOR_REFERENCE_ADDRESS,
+    scripts.prizeValidator as Script,
+    'PrizeValidator',
+  )
+  const b1PrizePoolReferenceUtxo = await findReferenceScriptUtxo(
+    lucid,
+    B1_PRIZE_POOL_REFERENCE_ADDRESS,
+    scripts.b1PrizePool as Script,
+    'B1PrizePool',
+  )
+
   const prizeAssets = utxoAssets(prizeUtxo)
   const nonLovelaceAssets = Object.entries(prizeAssets).filter(
     ([unit, quantity]) => unit !== 'lovelace' && quantity !== 0n,
@@ -1056,19 +1173,14 @@ export async function expirePrize(opts: {
 
   const tx = await lucid
     .newTx()
+    .readFrom([prizeValidatorReferenceUtxo, b1PrizePoolReferenceUtxo])
     .collectFrom(
       [prizeUtxo],
       expireRedeemer(),
     )
-    .attachSpendingValidator(
-      scripts.prizeValidator as Script,
-    )
     .collectFrom(
       [poolUtxo],
       b1ppTicketExpiredRedeemer(),
-    )
-    .attachSpendingValidator(
-      scripts.b1PrizePool as Script,
     )
     // The Prize UTxO carries execution/min-UTxO ADA, while the ticket NFT
     // remains independently held by its owner. Returning this physical

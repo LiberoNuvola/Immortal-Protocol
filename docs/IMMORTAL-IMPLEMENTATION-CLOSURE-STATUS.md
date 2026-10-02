@@ -1,8 +1,8 @@
 # IMMORTAL — Implementation & Conformance Closure Status
 
-**Snapshot branch:** `aa2cf1d2eda2977e11e7328e9f235079a836b72c`
+**Snapshot branch:** `work/immortal-green-closure`
 **Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-09-21
+**Date:** 2026-09-26
 
 ## 1. Closed policy boundaries
 
@@ -30,7 +30,7 @@
 | R4 liveness classifier | GREEN | FM1–FM10 classifier passes dedicated CI after precedence correction. |
 | 3D certified ticket boundary | IMPLEMENTED | NFT identity/state binding separated from presentation renderer; renderer has no economic authority. |
 | Frontend build | GREEN | Vite build passes after separating browser/runtime boundary. |
-| Governance replay/registry | INTEGRATED INTO HASKELL GATE | Core governance suites registered; current final Haskell result pending in latest run. |
+| Governance replay/registry | IMPLEMENTED / BUILD EVIDENCE PENDING | Canonical replay now binds CANONICALIZED to the exact finalized DecisionRecord reference; current Haskell build evidence remains pending. |
 | Materios evidence packet | IMPLEMENTED / bounded | Deterministic anchor tuple binding; finality/storage proof authenticity remains external verifier work. |
 
 ## 3. Explicit remaining certification gaps
@@ -43,11 +43,11 @@
 | RF8 no-side-door | Whole-program proof requires enumeration of every economic-state-mutating path, not only current tests. |
 | RF6 Ω completeness | Real environment perimeter and over-approximation certificate require deployment-specific evidence. |
 | Non-vacuity / Kc | Concrete S0/QNE/certificate E1–E10 are deployment/profile evidence, not universal math. |
-| B2 live/on-chain control integration | Hysteresis reference is implemented, but live PRE-RICH control datum/on-chain enforcement is separate. |
+| B2 live/on-chain control integration | DESIGN CANDIDATE | Dedicated authenticated PRE-RICH control singleton is now specified in `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md`; deployment singleton identity and ledger enforcement remain open. |
 | Jackpot activation on-chain | Application policy is implemented; direct on-chain activation remains open because current B1 datum lacks current/highest class state. |
 | 3D production UI wiring | IMPLEMENTED on current branch; visual/UX conformance remains evidence-only. |
-| P2.8 full lifecycle | Yaci lab remains the final real-ledger evidence gate for the whole Issue→Reveal→Claim/Expire path. |
-| Haskell final regression | Pending current-head runner completion; toolchain pin and native dependencies are now aligned with `cabal.project`. |
+| P2.8 full lifecycle | Yaci/native-ledger lab remains the final real-ledger evidence gate; Reveal now has a reference-script remediation path that must be measured on ledger. |
+| Haskell final regression | Pending current-head runner completion; toolchain pins and required native dependency siblings are aligned with `cabal.project`. |
 
 ## 4. Anti-regression decisions
 
@@ -99,6 +99,73 @@ The remaining items in this document are therefore certification/conformance obl
 - B6 full V3↔Cardano semantic equivalence remains partial despite Issue/Reveal/Claim/Expire refinement evidence.
 - RF6/Kc/Ω deployment certification and RF8 whole-program proof remain open.
 - Exact numeric expiry remains an application/deployment parameter; no universal number is fixed.
+- GOV-28 DecisionRecord → CanonicalizationRecord reference provenance has been implemented in canonical replay; only executable Haskell/build evidence remains open.
 
 ### Non-reopening statement
 The current work does not reopen closed economic policy decisions. In particular, Classic-6, the PRE-RICH ladder, 500× cap, Jackpot semantics and expiry mechanism remain governed by their current decision records. Historical/legacy distributions are provenance only.
+
+## Current closure delta — 2026-09-25
+
+- GOV-28 canonicalization provenance is now enforced during full canonical replay: the canonicalization reference must equal the finalized DecisionRecord reference for the same proposal; tampered references are rejected by regression tests.
+- The current Cardano Integration Lab generates fresh Haskell/Plutus validator artifacts before copying them into src/plutusScripts and then executes the real Reveal trace. This materially narrows the interpretation of the external audit's earlier budget finding: a future lab run can distinguish stale committed artifacts from a fresh-source execution-budget failure.
+- P2.8 raw Yaci materialization is now fail-closed and sources transaction inputs, timing and protocol context directly from Yaci Store; the native Cardano-ledger evaluator remains the final evidence step.
+- No frozen economic constant or validator safety condition was relaxed in this closure cycle.
+
+
+## 2026-09-25 — Phase finalization
+
+**Implementation phase:** FINALIZED  
+**Certification/evidence phase:** OPEN BY DESIGN
+
+The implementation phase is frozen at the current semantics. The remaining gates are evidence gates or explicit normative decisions, not invitations to alter economics or validators.
+
+### Final certification gates
+- P2.8 native Cardano-ledger evaluator artifact on the exact current head.
+- Fresh Haskell/Plutus Reveal artifact execution and definitive budget classification.
+- Materios/B3 publisher-independent finality, runtime-state and selection-input proof composition.
+- B4/B5/B6 end-to-end ledger conformance evidence.
+- Independent specialist Plutus/UPLC audit plus second-human review.
+- Protocol Usage Fee parameters only where an authoritative normative source explicitly selects them.
+
+### Freeze rule
+Do not alter KA/KC/KD, payout bounds, price ladder, Genesis semantics, ProtectedCapital/RawSurplus accounting, expiry semantics, oracle rules, validator safety checks, authority selection, or protocol limits merely to obtain green CI or satisfy an audit observation.
+
+### Certification rule
+A gate may be marked CLOSED only with an exact commit, exact workflow/test, exact artifact or observation, and an explicit scope statement. Simulation, unit tests, schemas, or source claims must not be promoted to live-ledger or cryptographic proof.
+
+
+## Finalization manifest — 2026-09-25
+
+The implementation-to-certification transition is now recorded explicitly in `docs/COORDINATION/FINALIZATION-CERTIFICATION-MANIFEST-20260925.md` (commit `c16c2d30c791458fa99744aa200c5f03f55d6918`). The manifest freezes the implementation boundary and enumerates the remaining certification gates without treating them as permission to alter protocol semantics.
+
+
+## 2026-09-26 — Structural closure pass
+
+- **Lucid toolchain:** `lucid-cardano` is now pinned exactly to `0.10.11` in `package.json`; the lockfile already resolves that exact package version.
+- **Reveal size blocker:** canonical `revealPrize` no longer embeds PrizeValidator and B1PrizePool validator scripts. It requires configured reference-script holders, verifies the reference-script hashes against the locally constructed validator hashes, and fails closed if either holder is missing, ambiguous, or mismatched.
+- **Reveal remediation design:** `docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md` records the selected architecture and closure criterion.
+- **B2:** `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md` defines the minimum authenticated control boundary while explicitly leaving the deployment-specific singleton identity open.
+- **Issue/class-saleability boundary:** `src/mint.ts` now requires and validates `IssueRefinementEvidence` before constructing the atomic sale, so the application Issue path fails closed instead of silently relying on UI/relayer intent. This is application-boundary evidence only; authenticated on-chain control remains the B2 gate.
+- **No economic semantics changed:** no KA/KC/KD, payout bound, ladder, expiry, Treasury semantics, or protocol size limit was changed.
+
+The Reveal redesign is **implemented but not yet GREEN**: it still requires a deployed reference-script pair, a serialized-size measurement, and native Cardano-ledger evaluation of the exact transaction.
+
+
+## 2026-09-26 — P2.8 resolver frontier update
+
+- Exact-head native P2.8 run `36222473719` on commit `514ac0c37f17bc157d2a78aa0aeee579f69bd100` was superseded by the next branch push before evaluation completed.
+- The preceding Cardano Ledger Audit Runner build reached Cabal dependency resolution and exposed a concrete missing source package: `plutus-tx` required by `plutus-ledger-api-1.67.0.0`.
+- The upstream Plutus `2334b4e98f21653e3cdaf7ec25878e781ce7d5dc` contains `plutus-tx`; the P2.8 runner now materializes that exact subdirectory alongside `plutus-core` and `plutus-ledger-api`.
+- Commit `902a7b592f9537e73f506a3498aafe4dff3e7c58` carries the resolver fix; fresh P2.8 run `36222605699` is queued on that exact head.
+- Therefore P2.8 remains **OPEN**, but the known resolver frontier has advanced from native prerequisites through Cardano/Plutus source materialization to the next executable stage.
+- No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
+
+## 2026-09-26 — P2.8 microlens compatibility frontier
+
+- Cardano Ledger Audit Runner run `36222605693` reached compilation after the `plutus-tx` resolver fix and failed concretely in `cardano-prelude-0.2.0.0`: its `Cardano.Prelude.Microlens` imports `Field1..Field5` from `Lens.Micro.Internal`, while microlens `0.5.x` moved those definitions to `Lens.Micro`.
+- This is a dependency/API compatibility issue, not an IMMORTAL economic or validator defect.
+- The P2.8 runner now constrains `microlens == 0.4.14.0`, the compatible API surface for the pinned `cardano-prelude` source.
+- The fix is committed as `9ec325e1ca7be43d573ce71560824d9134e1bea1` and the audit branch was advanced to the same exact head for the next native run.
+- Native dependencies and GHC/Cabal setup have already completed successfully on P2.8 run `36223012451`; that run predates the microlens pin, so it is not the closure run. It remains useful only as evidence that the P2.8 setup/bootstrap path is progressing beyond the prior resolver stop.
+- P2.8 remains **OPEN** until a run containing the microlens pin reaches typed-context evaluation and produces the required native-ledger evidence packet.
+- No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.

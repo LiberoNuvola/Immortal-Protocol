@@ -21,6 +21,36 @@ export const AD_SLOT_DYNAMIC_PRICING = {
   step: 0.5,
 }
 
+export type AdAttentionObservation = {
+  observedVisitorsPerHour: number
+  baselineVisitorsPerHour: number
+  occupancyRatio: number
+  trendRatio: number
+  futureAttentionLowRatio: number
+  futureAttentionHighRatio: number
+  trajectoryConfidence: number
+  observedAt: number
+  maxAgeMs?: number
+}
+
+export type AdPricingEnvelope = {
+  currentPricePerHour: number
+  lowerPricePerHour: number
+  upperPricePerHour: number
+  confidence: number
+  validUntil: number
+}
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+const isFiniteNonNegative = (value: number) => Number.isFinite(value) && value >= 0
+
+const quantize = (value: number) => {
+  const { floorPricePerHour, ceilingPricePerHour, step } = AD_SLOT_DYNAMIC_PRICING
+  const clamped = clamp(value, floorPricePerHour, ceilingPricePerHour)
+  return Math.round(clamped / step) * step
+}
+
 export function getPackageById(packageId: AdSlotPackageId): AdSlotPackage {
   const packageDef = AD_SLOT_PACKAGES.find((candidate) => candidate.id === packageId)
   if (!packageDef) throw new Error(`Unknown package: ${packageId}`)
@@ -35,9 +65,77 @@ export function getDynamicPricePerHour(occupancyRatio: number): number {
   return Math.round(clamped / step) * step
 }
 
-export function calculateAdTotalUsd(packageId: AdSlotPackageId, occupancyRatio = 0): number {
+/**
+ * Derive a bounded advertising-price envelope from an attention observation.
+ *
+ * This is application-level PRE-RICH logic. It is deliberately a pure function:
+ * it does not fetch analytics, trust browser counters, or claim to predict the
+ * future. Future attention is supplied as an explicit bounded interval.
+ *
+ * Returns null when the observation is malformed or stale, so a caller cannot
+ * silently price from untrusted/stale state.
+ */
+export function calculateAdaptivePriceEnvelope(
+  observation: AdAttentionObservation,
+  now = Date.now(),
+): AdPricingEnvelope | null {
+  const maxAgeMs = observation.maxAgeMs ?? 15 * 60 * 1000
+
+  if (
+    !isFiniteNonNegative(observation.observedVisitorsPerHour) ||
+    !isFiniteNonNegative(observation.baselineVisitorsPerHour) ||
+    !Number.isFinite(observation.occupancyRatio) ||
+    !Number.isFinite(observation.trendRatio) ||
+    !Number.isFinite(observation.futureAttentionLowRatio) ||
+    !Number.isFinite(observation.futureAttentionHighRatio) ||
+    !Number.isFinite(observation.trajectoryConfidence) ||
+    !Number.isFinite(observation.observedAt) ||
+    maxAgeMs < 0
+  ) return null
+
+  if (now < observation.observedAt || now - observation.observedAt > maxAgeMs) return null
+  if (observation.baselineVisitorsPerHour <= 0) return null
+
+  const low = Math.max(0, Math.min(observation.futureAttentionLowRatio, observation.futureAttentionHighRatio))
+  const high = Math.max(low, observation.futureAttentionHighRatio)
+  const confidence = clamp(observation.trajectoryConfidence, 0, 1)
+  const occupancy = clamp(observation.occupancyRatio, 0, 1)
+  const currentAttentionRatio = clamp(
+    observation.observedVisitorsPerHour / observation.baselineVisitorsPerHour,
+    0.25,
+    4,
+  )
+  const trendFactor = clamp(1 + observation.trendRatio * 0.25, 0.75, 1.25)
+
+  const basePressure = 1 + occupancy * 1.5
+  const currentFactor = clamp(0.75 + currentAttentionRatio * 0.25, 0.75, 1.75) * trendFactor
+  const futureLowFactor = 0.75 + clamp(low, 0, 3) * 0.25
+  const futureHighFactor = 0.75 + clamp(high, 0, 3) * 0.25
+
+  const conservativeLow = basePressure * (currentFactor * (1 - confidence) + futureLowFactor * confidence)
+  const conservativeHigh = basePressure * (currentFactor * (1 - confidence) + futureHighFactor * confidence)
+  const current = basePressure * currentFactor
+
+  const lowerPricePerHour = quantize(conservativeLow)
+  const upperPricePerHour = quantize(Math.max(conservativeHigh, conservativeLow))
+  const currentPricePerHour = quantize(current)
+
+  return {
+    currentPricePerHour,
+    lowerPricePerHour: Math.min(lowerPricePerHour, upperPricePerHour),
+    upperPricePerHour,
+    confidence,
+    validUntil: observation.observedAt + maxAgeMs,
+  }
+}
+
+export function calculateAdTotalUsd(
+  packageId: AdSlotPackageId,
+  occupancyRatio = 0,
+  pricingEnvelope?: AdPricingEnvelope | null,
+): number {
   const pkg = getPackageById(packageId)
-  const dynamicRate = getDynamicPricePerHour(occupancyRatio)
+  const dynamicRate = pricingEnvelope?.currentPricePerHour ?? getDynamicPricePerHour(occupancyRatio)
   const packagePrice = Number((pkg.hours * dynamicRate).toFixed(2))
   return Number(packagePrice.toFixed(2))
 }
@@ -60,6 +158,7 @@ export default {
   AD_SLOT_DYNAMIC_PRICING,
   getPackageById,
   getDynamicPricePerHour,
+  calculateAdaptivePriceEnvelope,
   calculateAdTotalUsd,
   parsePackageSelection,
   formatUsd,

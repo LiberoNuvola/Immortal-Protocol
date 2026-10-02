@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {
   expectedRevealPostState,
   projectCardanoToImmortalV3,
-} from '../../PRE-RICH/profile/PreRichCardanoObservationProjection'
+} from '../../PRE-RICH/src/PreRichCardanoObservationProjection'
 
 const USDM_SUBUNITS_PER_REFERENCE_UNIT = 100n
 
@@ -13,6 +13,8 @@ function preInput() {
     safetyCapital: 0n,
     reserveProtection: 0n,
     mandatoryFutureCosts: 0n,
+    currentActiveClass: 0n,
+    highestClassEverActivated: 0n,
 
     pool: {
       pendingLiabilitiesUsdm: 500n,
@@ -41,14 +43,14 @@ function preInput() {
     ],
 
     authoritativeClasses: [
-      { classId: 0n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 1n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 2n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 3n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 4n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 5n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 6n, issued: 1n, cap: 1n, saleable: true },
-      { classId: 7n, issued: 1n, cap: 1n, saleable: true },
+      { classId: 0n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 1n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 2n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 3n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 4n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 5n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 6n, issued: 1n, cap: 10n, saleable: true },
+      { classId: 7n, issued: 1n, cap: 10n, saleable: true },
     ],
   }
 }
@@ -136,6 +138,8 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
       safetyCapital: 0n,
       reserveProtection: 0n,
       mandatoryFutureCosts: 0n,
+      currentActiveClass: 0n,
+      highestClassEverActivated: 0n,
       pool: {
         pendingLiabilitiesUsdm: 1500n,
         unresolvedReserveUsdm: 400n,
@@ -158,9 +162,14 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
       ],
 
       authoritativeClasses: [
-        { classId: 0n, issued: 1n, cap: 1n, saleable: true },
-        { classId: 1n, issued: 1n, cap: 1n, saleable: true },
-        { classId: 2n, issued: 1n, cap: 1n, saleable: true },
+        { classId: 0n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 1n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 2n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 3n, issued: 0n, cap: 10n, saleable: true },
+        { classId: 4n, issued: 0n, cap: 10n, saleable: true },
+        { classId: 5n, issued: 0n, cap: 10n, saleable: true },
+        { classId: 6n, issued: 0n, cap: 10n, saleable: true },
+        { classId: 7n, issued: 0n, cap: 10n, saleable: true },
       ],
     }
 
@@ -209,3 +218,42 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
   })
 })
 
+
+
+describe('B6 — differential canonical/Cardano replay negatives', () => {
+  test('rejects an observed post-state when the unresolved reserve delta is wrong', () => {
+    const input = preInput()
+    input.pool.unresolvedReserveUsdm = 500n
+    assert.throws(
+      () => projectCardanoToImmortalV3(input),
+      /B1 unresolved reserve mismatch/,
+    )
+  })
+
+  test('rejects an observed post-state when the unresolved ticket count is wrong', () => {
+    const input = preInput()
+    input.pool.unresolvedTicketCount = 2n
+    assert.throws(
+      () => projectCardanoToImmortalV3(input),
+      /B1 unresolved ticket count mismatch/,
+    )
+  })
+
+  test('rejects a duplicate ticket identity instead of double-counting exposure', () => {
+    const input = preInput()
+    input.tickets[2].ticketId = input.tickets[1].ticketId
+    assert.throws(
+      () => projectCardanoToImmortalV3(input),
+      /duplicate unresolved ticket ID/,
+    )
+  })
+
+  test('rejects a non-canonical price before constructing the V3 state', () => {
+    const input = preInput()
+    input.tickets[1].priceUsdm = 150n
+    assert.throws(
+      () => projectCardanoToImmortalV3(input),
+      /non-canonical/,
+    )
+  })
+})

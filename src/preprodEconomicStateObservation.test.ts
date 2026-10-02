@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest'
+
+import { Constr, Data } from '../node_modules/lucid-cardano/esm/mod.js'
+import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
+
+function stateDatum() {
+  const classes = Array.from({ length: 8 }, (_, i) =>
+    new Constr(0, [BigInt(i), 0n, 0n, 0n, 10n, new Constr(1, [])]),
+  )
+  const state = new Constr(0, [
+    0n, 0n, 0n, 0n, 0n, 0n,
+    classes,
+    new Constr(0, [0n, 0n]),
+    new Constr(0, [0n, 0n, new Constr(0, []), 0n]),
+  ])
+  return Data.to(new Constr(0, [0n, state]))
+}
+
+function lucidWith(utxos: any[]) {
+  return { utxosAt: async () => utxos }
+}
+
+const decodeDatum = (raw: string) => Data.from(raw)
+
+const baseUtxo = {
+  txHash: '11'.repeat(32),
+  outputIndex: 0,
+  assets: { ['aa'.repeat(28) + '5354415445']: 1n },
+  datum: stateDatum(),
+}
+
+describe('Preprod V3 economic state carrier observer', () => {
+  it('decodes one authenticated singleton state', async () => {
+    const observed = await observeEconomicStateCarrier({
+      lucid: lucidWith([baseUtxo]),
+      decodeDatum,
+      carrierAddress: 'addr_test1carrier',
+      carrierPolicyId: 'aa'.repeat(28),
+      carrierTokenNameHex: '5354415445',
+    })
+    expect(observed.stateVersion).toBe(0n)
+    expect(observed.state.classes.length).toBe(8)
+    expect(observed.state.unresolvedReserve).toBe(0n)
+    expect(observed.carrierStateReference).toBe('cardano:tx/' + '11'.repeat(32) + '#0')
+  })
+
+  it('rejects ambiguous singleton state', async () => {
+    await expect(
+      observeEconomicStateCarrier({
+        lucid: lucidWith([baseUtxo, { ...baseUtxo, outputIndex: 1 }]),
+        decodeDatum,
+        carrierAddress: 'addr_test1carrier',
+        carrierPolicyId: 'aa'.repeat(28),
+        carrierTokenNameHex: '5354415445',
+      }),
+    ).rejects.toThrow('ambiguous')
+  })
+
+  it('decodes payable Jackpot lifecycle state without collapsing it', async () => {
+    const fields = new Constr(0, [
+      0n, 0n, 0n, 0n, 0n, 0n,
+      Array.from({ length: 8 }, (_, i) =>
+        new Constr(0, [BigInt(i), 0n, 0n, 0n, 10n, new Constr(1, [])]),
+      ),
+      new Constr(0, [0n, 0n]),
+      new Constr(0, [0n, 0n, new Constr(2, []), 0n]),
+    ])
+    const utxo = { ...baseUtxo, datum: Data.to(new Constr(0, [0n, fields])) }
+    const observed = await observeEconomicStateCarrier({
+      lucid: lucidWith([utxo]),
+      decodeDatum,
+      carrierAddress: 'addr_test1carrier',
+      carrierPolicyId: 'aa'.repeat(28),
+      carrierTokenNameHex: '5354415445',
+    })
+    expect(observed.state.jackpot.status).toBe('payable')
+  })
+})

@@ -4,7 +4,7 @@ import {
   crystallizeTicketExpiry,
   type PreRichExpiryIssuanceState,
   type PreRichExpiryPolicy,
-} from '../../PRE-RICH/profile/PreRichExpiryPolicy'
+} from '../../PRE-RICH/src/PreRichExpiryPolicy'
 
 const issuanceState: PreRichExpiryIssuanceState = {
   issuanceStateHash: 'fixture-state-hash',

@@ -25,10 +25,96 @@ const MAX_AUTHORITIES = 1024;
 const TRANSITION_DOMAIN =
   "PRE-RICH/MATERIOS/AUTHORITY-TRANSITION/V1";
 
+export interface OnChainSelectionInputsCommitment {
+  /** Canonical block containing the SessionValidatorManagement::set call. */
+  readonly blockHash: Uint8Array;
+  /** Block number is required for statement-form verification. */
+  readonly blockNumber?: bigint;
+  /** Exact 32-byte selection_inputs_hash emitted by that call. */
+  readonly selectionInputsHash: Uint8Array;
+}
+
+/**
+ * Binds recovered AuthoritySelectionInputs or a transition statement to the
+ * canonical on-chain selection-input commitment. This helper never reproduces
+ * Materios' selector; it authenticates only the committed inputs/binding.
+ */
+export function verifySelectionInputsCommitment(
+  selectionInputs: Uint8Array,
+  commitment: OnChainSelectionInputsCommitment
+): void;
+export function verifySelectionInputsCommitment(
+  statement:
+    | AuthoritySetTransitionStatement
+    | AuthoritySetTransitionPublicStatement,
+  commitment: OnChainSelectionInputsCommitment & { readonly blockNumber: bigint }
+): void;
+export function verifySelectionInputsCommitment(
+  subject:
+    | Uint8Array
+    | AuthoritySetTransitionStatement
+    | AuthoritySetTransitionPublicStatement,
+  commitment: OnChainSelectionInputsCommitment
+): void {
+  if (commitment.blockHash.length !== HASH_LENGTH) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH");
+  }
+  if (commitment.selectionInputsHash.length !== HASH_LENGTH) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH");
+  }
+  if (
+    commitment.blockNumber !== undefined &&
+    (commitment.blockNumber < 0n || commitment.blockNumber > U32_MAX)
+  ) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
+  }
+
+  if (subject instanceof Uint8Array) {
+    const expected = hashSelectionInputs(subject);
+    if (!equalBytes(expected, commitment.selectionInputsHash)) {
+      throw new Error("SELECTION_INPUTS_ONCHAIN_COMMITMENT_MISMATCH");
+    }
+    return;
+  }
+
+  const publicStatement =
+    "proofBytes" in subject
+      ? authoritySetTransitionPublicStatement(subject)
+      : subject;
+  validateAuthoritySetTransitionPublicStatement(publicStatement);
+
+  if (commitment.blockNumber === undefined) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER");
+  }
+  if (!equalBytes(commitment.blockHash, publicStatement.activationBlock.hash)) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_HASH_MISMATCH");
+  }
+  if (commitment.blockNumber !== publicStatement.activationBlock.number) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_BLOCK_NUMBER_MISMATCH");
+  }
+  if (!equalBytes(
+    commitment.selectionInputsHash,
+    publicStatement.selectionInputsHash
+  )) {
+    throw new Error("SELECTION_INPUTS_COMMITMENT_HASH_MISMATCH");
+  }
+}
+
 export interface AuthorityActivationBlock {
   readonly hash: Uint8Array;
   readonly number: bigint;
 }
+
+export type AuthoritySelectionRegime =
+  | {
+      readonly kind: "l1-ariadne";
+      readonly evidenceHash: Uint8Array;
+    }
+  | {
+      readonly kind: "pinned-committee";
+      readonly evidenceHash: Uint8Array;
+      readonly untilEpoch: bigint;
+    };
 
 /**
  * Untrusted evidence supplied by the Materios adapter/proof boundary.
@@ -47,6 +133,7 @@ export interface AuthoritySetTransitionStatement {
   readonly fromSetId: bigint;
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
+  readonly authoritySelectionRegime: AuthoritySelectionRegime;
   readonly selectionInputs: Uint8Array;
   readonly selectionInputsHash: Uint8Array;
   /** Identifies the proof system that authenticated the transition. */
@@ -96,6 +183,7 @@ export interface AuthoritySetTransitionPublicStatement {
   readonly fromSetId: bigint;
   readonly fromAuthorities: readonly GrandpaAuthority[];
   readonly sidechainEpoch: bigint;
+  readonly authoritySelectionRegime: AuthoritySelectionRegime;
   readonly selectionInputsHash: Uint8Array;
   /** Identifies the proof system that authenticated the transition. */
   readonly proofSystem: string;
@@ -149,6 +237,9 @@ export function authoritySetTransitionPublicStatement(
     fromSetId: statement.fromSetId,
     fromAuthorities: statement.fromAuthorities,
     sidechainEpoch: statement.sidechainEpoch,
+    authoritySelectionRegime: cloneAuthoritySelectionRegime(
+      statement.authoritySelectionRegime
+    ),
     selectionInputsHash: new Uint8Array(
       statement.selectionInputsHash
     ),
@@ -191,6 +282,9 @@ export function encodeAuthoritySetTransitionStatement(
     encodeU64(publicStatement.fromSetId),
     encodeAuthoritySet(publicStatement.fromAuthorities),
     encodeU64(publicStatement.sidechainEpoch),
+    encodeAuthoritySelectionRegime(
+      publicStatement.authoritySelectionRegime
+    ),
     encodeBytes(publicStatement.selectionInputsHash),
     encodeString(publicStatement.proofSystem),
     encodeAuthoritySet(publicStatement.toAuthorities),
@@ -209,6 +303,40 @@ export function hashAuthoritySetTransitionStatement(
     encodeAuthoritySetTransitionStatement(statement),
     { dkLen: HASH_LENGTH }
   );
+}
+
+export interface FinalityCheckpointBinding {
+  readonly blockHash: Uint8Array;
+  readonly blockNumber: bigint;
+}
+
+/**
+ * Binds the authority-set transition activation block to the independently
+ * verified GRANDPA checkpoint. Equality is required for both hash and number;
+ * matching the number alone is insufficient.
+ */
+export function verifyActivationBlockBinding(
+  statement: AuthoritySetTransitionStatement | AuthoritySetTransitionPublicStatement,
+  checkpoint: FinalityCheckpointBinding
+): void {
+  const publicStatement =
+    "proofBytes" in statement
+      ? authoritySetTransitionPublicStatement(statement)
+      : statement;
+
+  validateAuthoritySetTransitionPublicStatement(publicStatement);
+
+  if (checkpoint.blockHash.length !== HASH_LENGTH) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+  }
+
+  if (checkpoint.blockNumber !== publicStatement.activationBlock.number) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_NUMBER_MISMATCH");
+  }
+
+  if (!equalBytes(checkpoint.blockHash, publicStatement.activationBlock.hash)) {
+    throw new Error("ACTIVATION_BLOCK_FINALITY_HASH_MISMATCH");
+  }
 }
 
 export function hashSelectionInputs(
@@ -291,6 +419,11 @@ export function validateAuthoritySetTransitionStatement(
     "INVALID_SIDECHAIN_EPOCH"
   );
 
+  validateAuthoritySelectionRegime(
+    statement.authoritySelectionRegime,
+    statement.sidechainEpoch
+  );
+
   const expectedInputsHash =
     hashSelectionInputs(
       statement.selectionInputs
@@ -369,6 +502,10 @@ export function validateAuthoritySetTransitionPublicStatement(
     statement.sidechainEpoch,
     "INVALID_SIDECHAIN_EPOCH"
   );
+  validateAuthoritySelectionRegime(
+    statement.authoritySelectionRegime,
+    statement.sidechainEpoch
+  );
   validateHash(
     statement.selectionInputsHash,
     "INVALID_SELECTION_INPUTS_HASH"
@@ -394,6 +531,65 @@ export function authoritySetIdentity(
       encodeAuthoritySet(authorities),
       { dkLen: HASH_LENGTH }
     )
+  );
+}
+
+function validateAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime,
+  sidechainEpoch: bigint
+): void {
+  if (regime.kind !== "l1-ariadne" && regime.kind !== "pinned-committee") {
+    throw new Error("INVALID_AUTHORITY_SELECTION_REGIME");
+  }
+
+  validateHash(
+    regime.evidenceHash,
+    "INVALID_AUTHORITY_SELECTION_REGIME_EVIDENCE_HASH"
+  );
+
+  if (regime.kind === "pinned-committee") {
+    validateU64(
+      regime.untilEpoch,
+      "INVALID_PINNED_COMMITTEE_UNTIL_EPOCH"
+    );
+
+    if (sidechainEpoch > regime.untilEpoch) {
+      throw new Error("PINNED_COMMITTEE_EXPIRED");
+    }
+  }
+}
+
+function cloneAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime
+): AuthoritySelectionRegime {
+  if (regime.kind === "pinned-committee") {
+    return {
+      kind: regime.kind,
+      evidenceHash: new Uint8Array(regime.evidenceHash),
+      untilEpoch: regime.untilEpoch
+    };
+  }
+
+  return {
+    kind: regime.kind,
+    evidenceHash: new Uint8Array(regime.evidenceHash)
+  };
+}
+
+function encodeAuthoritySelectionRegime(
+  regime: AuthoritySelectionRegime
+): Uint8Array {
+  if (regime.kind === "pinned-committee") {
+    return concatBytes(
+      Uint8Array.of(1),
+      encodeBytes(regime.evidenceHash),
+      encodeU64(regime.untilEpoch)
+    );
+  }
+
+  return concatBytes(
+    Uint8Array.of(0),
+    encodeBytes(regime.evidenceHash)
   );
 }
 

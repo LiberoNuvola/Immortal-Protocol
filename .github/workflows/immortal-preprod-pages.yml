@@ -1,0 +1,78 @@
+name: IMMORTAL Public Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "index.html"
+      - "protocol.html"
+      - "algorithm.html"
+      - "mathematics.html"
+      - "code.html"
+      - "adapters.html"
+      - "ecosystem.html"
+      - "governance.html"
+      - "documentation.html"
+      - "community.html"
+      - "dapp.html"
+      - "preprod-treasury.html"
+      - "src/**"
+      - "PRE-RICH/**"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/immortal-preprod-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: immortal-preprod-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    # Public protocol pages do not require DEMETER/Preprod secrets at build time.
+    # PRE-RICH runtime actions remain fail-closed when authoritative evidence is absent.
+    steps:
+      - name: Checkout exact Green Closure head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build V5 + PRE-RICH DApp
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -848,43 +848,43 @@ mkValidator
                                 "B1PrizePool: payout exceeds effective pool"
                                 (payout <= effectivePool datum)
 
-                       && traceIfFalse
-                            "B1PrizePool: payout must be non-negative"
-                            (payout >= 0)
+                           && traceIfFalse
+                                "B1PrizePool: payout must be non-negative"
+                                (payout >= 0)
 
-                       && traceIfFalse
-                            "B1PrizePool: price mismatch"
-                            (pdPriceUsdm outPd == priceUsdm)
+                           && traceIfFalse
+                                "B1PrizePool: price mismatch"
+                                (pdPriceUsdm outPd == priceUsdm)
 
-                       && traceIfFalse
-                            "B1PrizePool: status must be Revealed"
-                            (pdStatus outPd == Revealed)
+                           && traceIfFalse
+                                "B1PrizePool: status must be Revealed"
+                                (pdStatus outPd == Revealed)
 
-                       && ppTotalLiquidity n
-                            == ppTotalLiquidity datum
+                           && ppTotalLiquidity n
+                                == ppTotalLiquidity datum
 
-                       && ppLockedJackpot n
-                            == ppLockedJackpot datum
+                           && ppLockedJackpot n
+                                == ppLockedJackpot datum
 
-                       && ppJackpotThreshold n
-                            == ppJackpotThreshold datum
+                           && ppJackpotThreshold n
+                                == ppJackpotThreshold datum
 
-                       && ppSuspendedClasses n
-                            == ppSuspendedClasses datum
+                           && ppSuspendedClasses n
+                                == ppSuspendedClasses datum
 
-                       && ppPrizeHash n
-                            == ppPrizeHash datum
+                           && ppPrizeHash n
+                                == ppPrizeHash datum
 
-                       && ppUnresolvedTicketCount n
-                            == ppUnresolvedTicketCount datum - 1
+                           && ppUnresolvedTicketCount n
+                                == ppUnresolvedTicketCount datum - 1
 
-                       && ppUnresolvedReserve n
-                             == ppUnresolvedReserve datum
-                                  + EconomicKernel.reserveRevealDelta reserveRelease
-                       && ppPendingLiabilities n
-                            == ppPendingLiabilities datum
-                                 + EconomicKernel.liabilityRevealDelta payout
-                       && solvencyInvariant n
+                           && ppUnresolvedReserve n
+                                 == ppUnresolvedReserve datum
+                                      + EconomicKernel.reserveRevealDelta reserveRelease
+                           && ppPendingLiabilities n
+                                == ppPendingLiabilities datum
+                                     + EconomicKernel.liabilityRevealDelta payout
+                           && solvencyInvariant n
 
         -- ==================================================
         -- TicketClaimed
@@ -982,60 +982,60 @@ mkValidator
                              "B1PrizePool: claim prize input must be Revealed"
                              (pdStatus inPd == Revealed)
 
-                       && traceIfFalse
-                            "B1PrizePool: claim ticket identity changed"
-                            (pdTicketPolicy inPd == pdTicketPolicy pd
-                              && pdTicketName inPd == pdTicketName pd)
+                           && traceIfFalse
+                                "B1PrizePool: claim ticket identity changed"
+                                (pdTicketPolicy inPd == pdTicketPolicy pd
+                                  && pdTicketName inPd == pdTicketName pd)
 
-                       && traceIfFalse
-                            "B1PrizePool: claim payout changed"
-                            (pdPrizeAmount inPd == pdPrizeAmount pd)
+                           && traceIfFalse
+                                "B1PrizePool: claim payout changed"
+                                (pdPrizeAmount inPd == pdPrizeAmount pd)
 
-                       && traceIfFalse
-                             "B1PrizePool: owner not signed"
-                             ownerSigned
+                           && traceIfFalse
+                                 "B1PrizePool: owner not signed"
+                                 ownerSigned
 
-                       && traceIfFalse
-                            "B1PrizePool: not claimed"
-                            (pdStatus pd == Claimed)
+                           && traceIfFalse
+                                "B1PrizePool: not claimed"
+                                (pdStatus pd == Claimed)
 
-                       && traceIfFalse
-                            "B1PrizePool: payout mismatch"
-                            (pdPrizeAmount pd == claimedAmount)
+                           && traceIfFalse
+                                "B1PrizePool: payout mismatch"
+                                (pdPrizeAmount pd == claimedAmount)
 
-                       && traceIfFalse
-                            "B1PrizePool: payout USDM value insufficient"
-                            payoutPaid
+                           && traceIfFalse
+                                "B1PrizePool: payout USDM value insufficient"
+                                payoutPaid
 
-                       && traceIfFalse
-                            "B1PrizePool: physical pool value delta mismatch"
-                            (poolInputUsdm - poolOutputUsdm == claimedAmount)
+                           && traceIfFalse
+                                "B1PrizePool: physical pool value delta mismatch"
+                                (poolInputUsdm - poolOutputUsdm == claimedAmount)
 
-                       && ppUnresolvedReserve n
-                            == ppUnresolvedReserve datum
+                           && ppUnresolvedReserve n
+                                == ppUnresolvedReserve datum
 
-                       && ppUnresolvedTicketCount n
-                            == ppUnresolvedTicketCount datum
+                           && ppUnresolvedTicketCount n
+                                == ppUnresolvedTicketCount datum
 
-                       && ppLockedJackpot n
-                            == ppLockedJackpot datum
+                           && ppLockedJackpot n
+                                == ppLockedJackpot datum
 
-                       && ppJackpotThreshold n
-                            == ppJackpotThreshold datum
+                           && ppJackpotThreshold n
+                                == ppJackpotThreshold datum
 
-                       && ppSuspendedClasses n
-                            == ppSuspendedClasses datum
+                           && ppSuspendedClasses n
+                                == ppSuspendedClasses datum
 
-                       && ppPrizeHash n
-                            == ppPrizeHash datum
+                           && ppPrizeHash n
+                                == ppPrizeHash datum
 
-                       && ppTotalLiquidity n
-                            == ppTotalLiquidity datum - claimedAmount
+                           && ppTotalLiquidity n
+                                == ppTotalLiquidity datum - claimedAmount
 
-                       && ppPendingLiabilities n
-                             == ppPendingLiabilities datum
-                                  + EconomicKernel.liabilityClaimDelta claimedAmount
-                       && solvencyInvariant n
+                           && ppPendingLiabilities n
+                                 == ppPendingLiabilities datum
+                                      + EconomicKernel.liabilityClaimDelta claimedAmount
+                           && solvencyInvariant n
 
         -- ==================================================
         -- TicketExpired

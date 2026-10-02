@@ -1,0 +1,40 @@
+name: PRE-RICH Certified Ticket & 3D Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
+      - "src/ticket3d.ts"
+      - "src/__tests__/preRichCertifiedTicket.test.ts"
+      - "src/__tests__/ticket3dSecurity.test.ts"
+      - ".github/workflows/pre-rich-certified-ticket-conformance.yml"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - "PRE-RICH/profile/PreRichCertifiedTicket.ts"
+      - "src/ticket3d.ts"
+      - "src/__tests__/preRichCertifiedTicket.test.ts"
+      - "src/__tests__/ticket3dSecurity.test.ts"
+      - ".github/workflows/pre-rich-certified-ticket-conformance.yml"
+
+jobs:
+  certified-ticket:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run certified ticket binding and renderer security conformance
+        run: npx vitest run src/__tests__/preRichCertifiedTicket.test.ts src/__tests__/ticket3dSecurity.test.ts

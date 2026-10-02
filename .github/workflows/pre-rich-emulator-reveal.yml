@@ -13,7 +13,7 @@ on:
       - "src/__tests__/immortal-cardano-emulator-smoke.mjs"
       - "src/plutusScripts/**"
       - "plutus/**"
-      - "PRE-RICH/profile/**"
+      - "PRE-RICH/**"
       - "src/gameFlow.ts"
       - "package.json"
       - "package-lock.json"
@@ -33,7 +33,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Normalize Lucid ESM entrypoint
         run: |
           node --input-type=module <<'NODE'

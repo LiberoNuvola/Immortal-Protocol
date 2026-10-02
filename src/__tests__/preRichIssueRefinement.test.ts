@@ -4,7 +4,7 @@ import {
   issueTicketRefinementAdmissible,
   validateIssueTicketRefinementEvidence,
   type IssueTicketRefinementEvidence,
-} from '../../PRE-RICH/profile/PreRichIssueRefinement'
+} from '../../PRE-RICH/src/PreRichIssueRefinement'
 
 const base: IssueTicketRefinementEvidence = {
   classId: 0n,

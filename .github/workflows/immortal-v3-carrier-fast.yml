@@ -1,0 +1,128 @@
+name: IMMORTAL V3 Carrier Fast Ledger Gate
+# Fast ledger-only verification path; full P2.8 remains manual/PR gated.
+
+concurrency:
+  group: v3-carrier-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "PRE-RICH/onchain/**"
+      - "plutus/**"
+      - "scripts/deployV3Carrier.mts"
+      - "audit/cardano-integration/v3-carrier-ledger-probe.mts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/immortal-v3-carrier-fast.yml"
+  workflow_dispatch:
+
+jobs:
+  v3-carrier-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Restore V3 Plutus artifact cache
+        id: v3-artifact-cache
+        uses: actions/cache@v4
+        with:
+          path: plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
+
+      - name: Setup Haskell for V3 artifact rebuild
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+          cabal-version: '3.12.1.0'
+
+      - name: Install Plutus native dependencies
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
+          rm -rf /tmp/blst
+          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+          chmod +x /tmp/blst/build.sh
+          set +e
+          (cd /tmp/blst && ./build.sh)
+          rc=$?
+          set -e
+          test -s /tmp/blst/libblst.a
+          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo ldconfig
+          sudo mkdir -p /usr/local/lib/pkgconfig
+          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+          prefix=/usr/local
+          libdir=${prefix}/lib
+          includedir=${prefix}/include
+          Name: libblst
+          Description: supranational blst
+          Version: 0.3.14
+          Libs: -L${libdir} -lblst
+          Cflags: -I${includedir}
+          EOF
+          pkg-config --exists 'libblst >= 0.3.14'
+          pkg-config --modversion libblst
+          if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a"; fi
+
+      - name: Generate V3 Plutus artifact
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        run: cabal run exe:export-scripts -j1
+
+      - name: Verify V3 Plutus artifact
+        run: |
+          test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          node -e "const a=require('./plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json'); if(a.type!=='PlutusScriptV2'||!a.cborHex) process.exit(1); console.log('V3 artifact ready')"
+
+      - name: Install pinned Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
+
+      - name: Start isolated Cardano devnet
+        run: |
+          mkdir -p audit/yaci-evidence
+          nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
+          echo $! > audit/yaci-evidence/yaci.pid
+
+      - name: Wait for Yaci Store
+        run: |
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest.json; then
+              exit 0
+            fi
+            sleep 2
+          done
+          tail -300 audit/yaci-evidence/yaci.log || true
+          exit 1
+
+      - name: Derive funded CI test wallet
+        run: node audit/cardano-integration/create-test-wallet.mjs
+
+      - name: Execute V3 carrier against native Cardano ledger
+        run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
+
+      - name: Preserve V3 ledger evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-v3-carrier-fast-evidence
+          path: audit/yaci-evidence/

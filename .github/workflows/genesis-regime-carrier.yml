@@ -1,21 +1,27 @@
 name: Genesis Regime Carrier Conformance
 
+# CI retrigger: verify Reference Adapter and Reference↔Cardano differential on the current head.
+
 on:
   push:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
-      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
-      - "PRE-RICH/profile/PreRichRegimeState.hs"
+      - "PRE-RICH/onchain/GenesisRegimeCarrier.hs"
+      - "PRE-RICH/onchain/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs"
+      - "PRE-RICH/onchain/V3EconomicStateCarrier.hs"
+      - "PRE-RICH/onchain/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/onchain/PreRichRegimeState.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/pre-rich-plutus.cabal"
+      - "Adapter/REFERENCE/**"
+      - "src/__tests__/reference-cardano-differential.test.ts"
       - "plutus/export/Export.hs"
       - "src/__tests__/genesis-carrier-mint-policy-emulator.mjs"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.test.ts"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
       - "package.json"
       - "package-lock.json"
@@ -24,17 +30,18 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
-      - "PRE-RICH/profile/GenesisRegimeCarrier.hs"
-      - "PRE-RICH/profile/GenesisCarrierMintPolicy.hs"
-      - "PRE-RICH/profile/PreRichGenesisAdmission.hs"
-      - "PRE-RICH/profile/PreRichRegimeState.hs"
+      - "PRE-RICH/onchain/GenesisRegimeCarrier.hs"
+      - "Adapter/REFERENCE/**"
+      - "PRE-RICH/onchain/GenesisCarrierMintPolicy.hs"
+      - "PRE-RICH/onchain/PreRichGenesisAdmission.hs"
+      - "PRE-RICH/onchain/PreRichRegimeState.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/pre-rich-plutus.cabal"
       - "plutus/export/Export.hs"
       - "src/__tests__/genesis-carrier-mint-policy-emulator.mjs"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/profile/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
+      - "PRE-RICH/src/GenesisTreasuryAdmission.test.ts"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
       - "package.json"
       - "package-lock.json"
@@ -89,6 +96,12 @@ jobs:
       - name: Run Genesis regime carrier tests
         working-directory: plutus
         run: cabal test genesis-regime-carrier-tests
+      - name: Run V3 economic state carrier binding tests
+        working-directory: plutus
+        run: cabal test v3-economic-state-carrier-binding-tests
+      - name: Run Reference Adapter conformance tests
+        working-directory: plutus
+        run: cabal test reference-adapter-tests
       - name: Export scripts
         working-directory: plutus
         run: cabal run exe:export-scripts
@@ -96,13 +109,17 @@ jobs:
         run: |
           test -s plutus/out/genesisRegimeCarrier.plutus.json
           test -s plutus/out/genesisCarrierMintPolicy.plutus.json
+          test -s plutus/out/v3EconomicStateCarrier.plutus.json
+          test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
       - name: Install Node dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
+      - name: Run Reference ↔ Cardano differential test
+        run: npx tsx --test src/__tests__/reference-cardano-differential.test.ts
       - name: Run Genesis Treasury admission mirror
-        run: node --experimental-strip-types PRE-RICH/profile/GenesisTreasuryAdmission.test.ts
+        run: node --experimental-strip-types PRE-RICH/src/GenesisTreasuryAdmission.test.ts
       - name: Run Genesis carrier singleton ledger lab
         run: node src/__tests__/genesis-carrier-mint-policy-emulator.mjs

@@ -1,0 +1,34 @@
+name: PRE-RICH adaptive advertising
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - 'src/adSlots.ts'
+      - 'src/__tests__/adSlots.test.ts'
+      - 'relayer/attentionObservation.js'
+      - 'relayer/__tests__/attentionObservation.test.js relayer/__tests__/attentionAuthority.test.js relayer/__tests__/attentionSignature.test.js relayer/__tests__/attentionProducerRegistry.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - 'src/adSlots.ts'
+      - 'src/__tests__/adSlots.test.ts'
+      - 'relayer/attentionObservation.js'
+      - 'relayer/__tests__/attentionObservation.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  adaptive-advertising:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run adaptive advertising tests
+        run: npx vitest run src/__tests__/adSlots.test.ts src/__tests__/adPricingDecision.test.ts src/__tests__/adCampaignAdmission.test.ts src/__tests__/adSettlement.test.ts relayer/__tests__/attentionObservation.test.js

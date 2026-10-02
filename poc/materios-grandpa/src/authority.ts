@@ -5,6 +5,8 @@ import {
 
 import {
   authoritySetIdentity,
+  hashAuthoritySetTransitionStatement,
+  validateAuthoritySetTransitionPublicStatement,
   type VerifiedAuthoritySetTransition
 } from "./authority-transition.js";
 
@@ -117,6 +119,25 @@ export function trustedAuthorityStateFromVerifiedTransition(
   validateAuthorityState(current);
 
   const statement = transition.publicStatement;
+
+  try {
+    validateAuthoritySetTransitionPublicStatement(statement);
+  } catch {
+    throw new Error(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION"
+    );
+  }
+
+  if (
+    !equalBytes(
+      transition.statementHash,
+      hashAuthoritySetTransitionStatement(statement)
+    )
+  ) {
+    throw new Error(
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+    );
+  }
 
   if (
     statement.chainId !== current.chainId

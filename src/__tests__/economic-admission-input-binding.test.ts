@@ -38,6 +38,8 @@ function witness(): EconomicAdmissionWitness {
     postStateHash: 'e'.repeat(64),
     eev: 100n,
     executableLiquidityObservation: observation(),
+    authenticatedPoolInputReference: TX_A + '#0',
+    authenticatedPoolUsdmValue: 100n,
     requiredImmediateLiquidity: 100n,
   }
 }
