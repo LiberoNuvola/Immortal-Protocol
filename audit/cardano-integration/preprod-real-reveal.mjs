@@ -416,8 +416,8 @@ if (deploymentManifest) {
   // are matched by their exact serialized Plutus script bytes.
   prizeUtxo = prizeUtxos.find(u => u.assets[ticketUnit] === 1n)
   poolUtxo = poolUtxos.find(u => u.assets[poolUnit] === 1n && u.assets[liquidityUnit] === TOTAL_LIQUIDITY_USDM)
-  const expectedPrizeScript = applyDoubleCborEncoding(scripts.prizeValidator)
-  const expectedPoolScript = applyDoubleCborEncoding(scripts.b1PrizePool)
+  const expectedPrizeScript = applyDoubleCborEncoding(normalizeScriptBytes(scripts.prizeValidator))
+  const expectedPoolScript = applyDoubleCborEncoding(normalizeScriptBytes(scripts.b1PrizePool))
   prizeReferenceUtxo = referenceUtxos.find(u => u.scriptRef?.type === 'PlutusV2' && u.scriptRef.script === expectedPrizeScript)
   poolReferenceUtxo = referenceUtxos.find(u => u.scriptRef?.type === 'PlutusV2' && u.scriptRef.script === expectedPoolScript)
   if (prizeUtxo && poolUtxo && prizeReferenceUtxo && poolReferenceUtxo) {
