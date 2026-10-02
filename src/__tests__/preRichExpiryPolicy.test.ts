@@ -105,30 +105,36 @@ describe('PRE-RICH expiry policy boundary', () => {
     )
   })
 
-  it('clamps PRE-RICH V1 below the 24-hour minimum', () => {
+  it('clamps PRE-RICH V1 below the 2-hour minimum', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'pre-rich-v1',
       policyVersion: 1n,
-      minHorizonMs: 24n * 60n * 60n * 1000n,
-      maxHorizonMs: 7n * 24n * 60n * 60n * 1000n,
+      minHorizonMs: 2n * 60n * 60n * 1000n,
+      maxHorizonMs: 300n * 24n * 60n * 60n * 1000n,
       deriveHorizonMs: () => 1n,
     }
 
     const result = crystallizeTicketExpiry(policy, issuanceState, 0n)
-    expect(result.horizonMs).toBe(24n * 60n * 60n * 1000n)
+    expect(result.horizonMs).toBe(2n * 60n * 60n * 1000n)
   })
 
-  it('clamps PRE-RICH V1 above the 7-day maximum', () => {
+  it('clamps PRE-RICH V1 above the 300-day maximum', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'pre-rich-v1',
       policyVersion: 1n,
-      minHorizonMs: 24n * 60n * 60n * 1000n,
-      maxHorizonMs: 7n * 24n * 60n * 60n * 1000n,
+      minHorizonMs: 2n * 60n * 60n * 1000n,
+      maxHorizonMs: 300n * 24n * 60n * 60n * 1000n,
       deriveHorizonMs: () => 30n * 24n * 60n * 60n * 1000n,
     }
 
     const result = crystallizeTicketExpiry(policy, issuanceState, 0n)
-    expect(result.horizonMs).toBe(7n * 24n * 60n * 60n * 1000n)
+    expect(result.horizonMs).toBe(30n * 24n * 60n * 60n * 1000n)
+  })
+
+  it('clamps the concrete PRE-RICH V1 policy within 2h..300d', () => {
+    const result = crystallizeTicketExpiry(preRichExpiryPolicyV1, issuanceState, 0n)
+    expect(result.horizonMs).toBeLessThanOrEqual(PRE_RICH_EXPIRY_MAX_HORIZON_MS)
+    expect(result.horizonMs).toBeGreaterThanOrEqual(PRE_RICH_EXPIRY_MIN_HORIZON_MS)
   })
 
   it('preserves a zero horizon as an exact policy result', () => {
