@@ -6,58 +6,72 @@
 
 ## CURRENT OPERATIONAL STATE — 2026-10-02
 
-> **This section is the operational handoff for resuming work. Read it before deciding what to do next.**
+> **Operational handoff:** Preprod topology is already deployed. The current blocker is execution/evaluation of the real Reveal path; do not redeploy blindly.
 
 ### Project position
 
 - **Branch:** `work/immortal-green-closure`
-- **Current code head at verification:** `353498b809aee52724240d6fd128af6209293635`
+- **Current code head at verification:** `34157da983935d4e19acce5f1058d16a1f47b618`
 - **Implementation phase:** FINALIZED
 - **Current phase:** live-ledger evidence / integration closure
 - **Primary milestone:** **first real PRE-RICH ticket purchase on Cardano Preprod**
 
 ### Cardano Preprod — CURRENT FACT
 
-**PREPROD DEPLOYMENT = COMPLETE.** Do not treat Preprod deployment as a future task or restart it from zero.
+**PREPROD DEPLOYMENT = COMPLETE.** The deployed topology is being reused by the Reveal harness; no bootstrap is performed during Reveal.
 
-Verified from GitHub Actions run **#207 / run `37032644319`**, on the exact head above:
+Known live Preprod topology reused by the current run:
+- Prize UTxO: `87af46f42746e32faf788cdd23d13df81af6aa0919a78cb9128cd09766fd1ad1#1`
+- Pool UTxO: `87af46f42746e32faf788cdd23d13df81af6aa0919a78cb9128cd09766fd1ad1#0`
+- Prize reference UTxO: `2706a87590f497d8880d2f6f2a9c51b0297d082e53d065f9371585dac6ce20c6#0`
+- Pool reference UTxO: `b12d47bc8a0adabd6b84a1c4b5806935d4e03bedb1bdfe5415d06ae355bb540d#0`
 
-| Preprod gate | Status | Evidence |
+### Latest real Preprod Reveal run
+
+Run **37054620712** was executed on the exact current head `34157da...` with the deployed topology reused.
+
+| Gate | Status | Observation |
 |---|---|---|
-| Preprod context | **GREEN** | `preprod-context` job succeeded |
-| Demeter credential validation | **GREEN** | Completed in `preprod-context` |
-| Preprod wallet address validation | **GREEN** | Completed in `preprod-context` |
-| Live Preprod wallet UTxO evidence | **GREEN** | Completed in `preprod-context` |
-| IMMORTAL → PRE-RICH Reveal boundary conformance | **GREEN** | Completed in `preprod-context` |
-| Deploy current topology to Preprod | **GREEN** | `preprod-deploy` step succeeded |
-| Preprod deployment manifest | **UPLOADED** | `preprod-deploy` uploaded deployment manifest |
-| Real Preprod Reveal execution | **NOT YET EXECUTED** | `real-preprod-reveal` skipped |
-| V3 Carrier Preprod observation | **NOT YET EXECUTED** | `preprod-v3-carrier-observation` skipped |
+| Preprod context | **GREEN** | Context, wallet, live UTxOs, boundary conformance and provenance all succeeded |
+| Deployment reuse | **GREEN** | Existing Prize/Pool/reference UTxOs were rehydrated; no bootstrap |
+| Lucid Evolution API | **GREEN** | `0.6.5` compatibility check passed |
+| Reveal redeemer encoding | **FIXED** | `Data.to(...)` removed the previous CML CBOR memory-access crash |
+| Reveal transaction build/evaluation | **BLOCKED** | Lucid evaluator reports `Spend[0] execution went over budget` during `.complete()` |
+| Signature / submit | **NOT REACHED** | Failure occurs before signing and submission |
+| First real Preprod ticket | **NOT YET EXECUTED** | No Reveal transaction hash exists from this run |
 
-**Important:** “Preprod deployed” means the current topology was successfully deployed by the workflow. It does **not** mean that the first real ticket purchase has already happened.
+### Interpretation of the current blocker
 
-### Current CI
+The current error is **not yet a definitive validator-semantic verdict**. The repository's P2.8-B.1 runner documentation explicitly classifies this negative-budget pattern as an evaluator/harness diagnostic and requires ledger-aligned Cardano evaluation with exact transaction context, protocol parameters, epoch information and system start before drawing a validator conclusion.
 
-- **IMMORTAL Cardano Integration Lab #1020** — **IN PROGRESS** on commit `353498b809aee52724240d6fd128af6209293635`.
-- **Protocol Declaration Conformance #806** — **SUCCESS** on the same commit.
-- The immediate technical gate remains the Cardano Integration Lab; its V3 Carrier stage and subsequent real-ledger evidence determine what can be closed next.
+Accordingly:
+- Do **not** weaken PrizeValidator or B1PrizePool merely to make Lucid `.complete()` pass.
+- Do **not** redeploy the existing Preprod topology.
+- The next normative diagnostic is the current-head ledger-aligned P2.8 evaluator against the exact Reveal artifacts/context.
+
+### Recent code correction
+
+Commit `34157da983935d4e19acce5f1058d16a1f47b618` changed only the Reveal builder encoding:
+- Prize redeemer → `Data.to(c(1, [toHex(playerSecret)]))`
+- Pool redeemer → `Data.to(c(2, [PRICE_USDM]))`
+
+This is a transaction-builder compatibility fix; it does not alter economic semantics or validator logic.
 
 ### Next actions — in order
 
-1. **Let the current Cardano Integration Lab establish the V3 result.**
-2. If the lab identifies a concrete V3 blocker, fix that blocker without changing economic semantics.
-3. Use the already-completed Preprod deployment as the starting point; **do not redeploy blindly**.
-4. Execute the required real Preprod observations/transitions, including the V3 Carrier and Reveal paths as their gates become eligible.
-5. Build, sign, submit and confirm the **first real PRE-RICH ticket purchase on Cardano Preprod**.
-6. Bind the observed transaction and resulting economic transition to the evidence packet.
+1. Run the exact-head P2.8 ledger-aligned evaluator on the real Reveal context/artifacts.
+2. Classify the result as either measurable successful ExUnits or a ledger-originated script failure; keep Lucid evaluator failures separate.
+3. Only if a ledger-aligned failure is established, inspect the exact failing validator/Plutus path for a semantic or budget issue.
+4. Retry the real Preprod Reveal without redeploying the existing topology.
+5. Claim the first real PRE-RICH ticket only after a wallet-signed Reveal transaction is confirmed on Cardano Preprod and the post-state is reconstructed.
 
 ### Non-regression / handoff rules
 
 - Do not reopen closed economic policy decisions merely to obtain green CI.
 - Do not confuse Yaci/devnet execution with the first real Preprod ticket.
-- Do not describe Preprod deployment as pending: **it is already complete for the verified topology in run #207.**
+- Do not describe Preprod deployment as pending: **it is already complete** for the deployed topology being reused.
 - Do not claim a first Preprod ticket until a wallet-signed transaction is confirmed on Cardano Preprod and the PRE-RICH economic transition is verified.
-- When this section becomes stale, update this section first before continuing work.
+- When this section becomes stale, update it first before continuing work.
 
 ## 1. Closed policy boundaries
 
