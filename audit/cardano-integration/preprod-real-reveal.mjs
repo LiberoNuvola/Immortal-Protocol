@@ -608,12 +608,6 @@ reveal = await reveal
   .addSigner(address)
   .validTo(Number(expiresAt))
   .complete()
-  .attach.SpendingValidator(scripts.b1PrizePool)
-  .pay.ToContract(scripts.prizeAddress, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
-  .pay.ToContract(scripts.b1PrizePoolAddress, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
-  .addSigner(address)
-  .validTo(Number(expiresAt))
-  .complete()
 
 const signedReveal = await reveal.sign.withWallet().complete()
 const revealCbor = signedReveal.toCBOR()
