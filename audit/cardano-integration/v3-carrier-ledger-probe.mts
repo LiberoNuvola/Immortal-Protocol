@@ -3,7 +3,7 @@
  * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
  */
 import { readFileSync } from 'node:fs'
-import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script } from '@lucid-evolution/lucid'
 
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
 const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
@@ -13,40 +13,20 @@ const provider = new Blockfrost(API, '')
 
 // The pinned Lucid Evolution provider used by the lab does not expose the
 // Blockfrost-compatible evaluation method, while Yaci Store does. Wire the
-// evaluator directly to Yaci's Blockfrost-compatible endpoint so Lucid can
-// obtain execution units without evaluating the script locally.
+// evaluator directly to Yaci's evaluation endpoint so Lucid can obtain
+// execution units without evaluating the script locally.
 const providerWithEvaluation = provider as Blockfrost & {
-  evaluateTx: (tx: string, additionalUTxOs?: UTxO[]) => Promise<Array<{
+  evaluateTx: (tx: string) => Promise<Array<{
     redeemer_tag: string
     redeemer_index: number
     ex_units: { mem: number; steps: number }
   }>>
 }
-providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs) => {
-  const payload = {
-    cbor: tx,
-    ...(additionalUTxOs?.length
-      ? {
-          additionalUtxoSet: additionalUTxOs.map((utxo) => ({
-            input: {
-              transaction: { id: utxo.txHash },
-              index: utxo.outputIndex,
-            },
-            output: {
-              address: utxo.address,
-              value: utxo.assets,
-              datum: utxo.datum,
-              datumHash: utxo.datumHash,
-              scriptRef: utxo.scriptRef,
-            },
-          })),
-        }
-      : {}),
-  }
-  const response = await fetch(`${API}/utils/txs/evaluate/utxos`, {
+providerWithEvaluation.evaluateTx = async (tx) => {
+  const response = await fetch(`${API}/utils/txs/evaluate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/cbor' },
+    body: Buffer.from(tx, 'hex'),
   })
   const result = await response.json() as {
     fault?: unknown
