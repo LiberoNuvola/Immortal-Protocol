@@ -462,7 +462,35 @@ if (!prizeReferenceUtxo.scriptRef || !poolReferenceUtxo.scriptRef) {
   throw new Error('Previously deployed Preprod reference scripts are missing or unresolved')
 }
 
-const deployedPrizeDatum = Data.from(prizeUtxo.datum)
+const prizeDatumCbor = normalizeScriptBytes(prizeUtxo.datum)
+if (!/^[0-9a-fA-F]+$/.test(prizeDatumCbor) || prizeDatumCbor.length % 2 !== 0) {
+  await writeFile(
+    EVIDENCE_DIR + '/prize-datum-diagnostic.json',
+    JSON.stringify({
+      utxo: ref(prizeUtxo),
+      datumType: typeof prizeUtxo.datum,
+      datum: prizeUtxo.datum,
+      normalized: prizeDatumCbor,
+    }, null, 2) + '\n',
+  )
+  throw new Error('Existing Preprod Prize datum is not valid hex CBOR')
+}
+let deployedPrizeDatum
+try {
+  deployedPrizeDatum = Data.from(prizeDatumCbor)
+} catch (error) {
+  await writeFile(
+    EVIDENCE_DIR + '/prize-datum-diagnostic.json',
+    JSON.stringify({
+      utxo: ref(prizeUtxo),
+      datumType: typeof prizeUtxo.datum,
+      datum: prizeUtxo.datum,
+      normalized: prizeDatumCbor,
+      decodeError: error instanceof Error ? error.stack : String(error),
+    }, null, 2) + '\n',
+  )
+  throw new Error('Existing Preprod Prize datum could not be decoded by Lucid: ' + (error instanceof Error ? error.message : String(error)))
+}
 if (!(deployedPrizeDatum instanceof Constr) || deployedPrizeDatum.index !== 0 || deployedPrizeDatum.fields.length < 23) {
   throw new Error('Existing Preprod Prize datum has an unexpected shape')
 }
