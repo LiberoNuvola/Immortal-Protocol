@@ -25,6 +25,9 @@ export type PreRichExpiryPolicy = {
   deriveHorizonMs: (state: PreRichExpiryIssuanceState) => bigint
 }
 
+export const PRE_RICH_V1_MIN_EXPIRY_HORIZON_MS = 24n * 60n * 60n * 1000n
+export const PRE_RICH_V1_MAX_EXPIRY_HORIZON_MS = 7n * 24n * 60n * 60n * 1000n
+
 export type CrystallizedTicketExpiry = {
   issuedAt: bigint
   expiresAt: bigint
