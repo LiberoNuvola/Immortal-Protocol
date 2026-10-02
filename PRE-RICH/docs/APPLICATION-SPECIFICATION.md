@@ -45,7 +45,7 @@ Claim is a single-use settlement of an already established right.
 CLAIM ≠ BURN
 ```
 
-Expiry is final. After expiry there is no claim, no new liability and no resurrection; a late reveal cannot create claimability and the expired payment commitment dissolves. The exact ticket duration is OPEN-02.
+Expiry is final. After expiry there is no claim, no new liability and no resurrection; a late reveal cannot create claimability and the expired payment commitment dissolves. Ticket expiry is PRE-RICH profile policy. For V1, the per-ticket horizon is derived deterministically from the verified issuance-state snapshot and then clamped to an application-defined safety range of **24 hours minimum** and **7 days maximum**. The crystallized `expiresAt` is immutable for that ticket; later economic state changes do not rewrite it.
 
 ## 6. Ticket identity and transfer
 
