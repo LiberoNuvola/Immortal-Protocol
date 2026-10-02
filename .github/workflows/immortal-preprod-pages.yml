@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - work/immortal-green-closure
+      - main
     paths:
       - "index.html"
       - "protocol.html"
