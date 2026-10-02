@@ -211,7 +211,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: immortal-preprod-deployment-manifest
-          path: audit/preprod-evidence/
+          path: audit/preprod-evidence/preprod-deployment.json
           if-no-files-found: error
 
   real-preprod-reveal:
@@ -241,6 +241,12 @@ jobs:
 
       - name: Install isolated Cardano probe dependencies
         run: npm install --prefix audit/cardano-integration
+
+      - name: Download immutable deployment manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-preprod-deployment-manifest
+          path: audit/preprod-evidence
 
       - name: Normalize legacy Lucid ESM entrypoint for Node 22
         run: |
