@@ -7,6 +7,15 @@ on:
       - main
     paths:
       - "index.html"
+      - "web/**"
+      - "live.html"
+      - "first-user.html"
+      - "timeline.html"
+      - "research.html"
+      - "playground.html"
+      - "verification-lab.html"
+      - "state-explorer.html"
+      - "threat-model.html"
       - "protocol.html"
       - "algorithm.html"
       - "mathematics.html"
@@ -40,7 +49,7 @@ jobs:
     # Public protocol pages do not require DEMETER/Preprod secrets at build time.
     # PRE-RICH runtime actions remain fail-closed when authoritative evidence is absent.
     steps:
-      - name: Checkout exact Green Closure head
+      - name: Checkout exact main head
         uses: actions/checkout@v4
 
       - name: Setup Node
