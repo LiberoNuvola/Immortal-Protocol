@@ -61,6 +61,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Materialize IMMORTAL hero asset
+        run: base64 -d web/assets/immortal-jellyfish.webp.b64 > web/assets/immortal-jellyfish.webp
+
       - name: Build V5 + PRE-RICH DApp
         run: npm run build
 
