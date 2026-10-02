@@ -21,6 +21,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'fixture-policy',
       policyVersion: 1n,
+      minHorizonMs: 500n,
+      maxHorizonMs: 2_000n,
       deriveHorizonMs: (state) => 1_000n + state.currentActiveClass * 100n,
     }
 
@@ -38,6 +40,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'state-reactive-fixture',
       policyVersion: 2n,
+      minHorizonMs: 1_000n,
+      maxHorizonMs: 3_000n,
       deriveHorizonMs: (state) => state.eev + state.unresolvedReserve,
     }
 
@@ -55,6 +59,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'negative-fixture',
       policyVersion: 1n,
+      minHorizonMs: 0n,
+      maxHorizonMs: 2_000n,
       deriveHorizonMs: () => -1n,
     }
 
@@ -67,6 +73,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'identity-fixture',
       policyVersion: 1n,
+      minHorizonMs: 0n,
+      maxHorizonMs: 2_000n,
       deriveHorizonMs: () => 1n,
     }
 
@@ -84,6 +92,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'non-deterministic-fixture',
       policyVersion: 1n,
+      minHorizonMs: 0n,
+      maxHorizonMs: 2_000n,
       deriveHorizonMs: () => {
         calls += 1
         return BigInt(calls)
@@ -99,6 +109,8 @@ describe('PRE-RICH expiry policy boundary', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'zero-fixture',
       policyVersion: 1n,
+      minHorizonMs: 0n,
+      maxHorizonMs: 2_000n,
       deriveHorizonMs: () => 0n,
     }
 
