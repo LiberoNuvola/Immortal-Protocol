@@ -297,4 +297,4 @@ considered a supported PRE-RICH realization profile.
 - PRE-RICH Game Economy:
   `PRE-RICH/docs/GAME-ECONOMY.md`
 - IMMORTAL Economic Kernel:
-  `IMMORTAL/docs/ECONOMIC-KERNEL.md`
+  `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
