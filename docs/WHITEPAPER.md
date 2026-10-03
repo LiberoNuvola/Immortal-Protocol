@@ -1,5 +1,7 @@
 # PRE-RICH — White Paper
 
+> **Scope:** PRE-RICH application orientation only. It does not define universal IMMORTAL semantics. Universal authority: `../docs/00-normative/`; application policy: `../PRE-RICH/docs/`.
+
 **Open Protocol for Transparent, Programmable and Resilient Economic Systems**
 
 **Version:** 0.6.1 — Release Candidate
