@@ -80,6 +80,8 @@ jobs:
           Libs=-L${libdir} -lblst
           Cflags=-I${includedir}
           EOF
+          export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
           pkg-config --exists 'libblst >= 0.3.14'
           pkg-config --modversion libblst
           if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a"; fi
