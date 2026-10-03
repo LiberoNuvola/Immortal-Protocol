@@ -57,14 +57,16 @@ Recommended reading:
 
 Core documents:
 
-1. `IMMORTAL/docs/CONSTITUTION.md`
-2. `PRE-RICH/docs/GAME-ECONOMY.md`
-3. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
-4. `IMMORTAL/docs/ECONOMIC-ALGORITHM.md` + `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
-5. `IMMORTAL/docs/CONFORMANCE.md` + `PRE-RICH/docs/CONFORMANCE.md`
-6. `docs/CONSTITUTION-GAP-MATRIX.md`
-7. `IMMORTAL/docs/ARCHITECTURE.md`
-8. `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
+1. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+2. `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`
+3. `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+4. `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+5. `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`
+6. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+7. `PRE-RICH/docs/GAME-ECONOMY.md`
+8. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
+9. `docs/CONSTITUTION-GAP-MATRIX.md`
+10. `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
 
 > **Documentation principle:** the White Paper explains; normative documents define; the implementation realizes; tests and proofs provide evidence.
 
