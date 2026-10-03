@@ -81,7 +81,7 @@ Documentation is part of protocol auditability.
 
 ## Security
 
-Do not disclose a suspected vulnerability in a public issue. Follow [`SECURITY.md`](SECURITY.md) for private reporting guidance.
+Do not disclose a suspected vulnerability in a public issue. Follow [`../SECURITY.md`](SECURITY.md) for private reporting guidance.
 
 ## License
 
