@@ -1,4 +1,5 @@
 # IMMORTAL Constitution
+> **NON-NORMATIVE READER GUIDE. Canonical authority: `docs/00-normative/01_CONSTITUTION_FINAL.md`. In case of conflict, the canonical normative corpus wins.**
 
 **Scope:** general-purpose economic protocol  
 **Status:** INTEGRATIVE READER GUIDE — normative authority remains in `../../docs/00-normative/01_CONSTITUTION_FINAL.md`  
