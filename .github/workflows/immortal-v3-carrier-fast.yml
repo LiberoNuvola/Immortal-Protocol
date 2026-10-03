@@ -86,11 +86,21 @@ jobs:
           pkg-config --modversion libblst
           if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a"; fi
 
+      - name: Configure CI Hackage endpoint
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        run: |
+          cat > "$RUNNER_TEMP/cabal-v3-ci-config" <<'EOF'
+          repository hackage.haskell.org
+            url: https://hackage.haskell.org/
+            secure: False
+          EOF
+          echo "Configured canonical Hackage HTTPS endpoint for CI artifact dependency fetches."
+
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
         run: |
           set +e
-          cabal run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
+          cabal --config-file="$RUNNER_TEMP/cabal-v3-ci-config" run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
           rc=$?
           set -e
 
