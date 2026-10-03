@@ -75,11 +75,11 @@ jobs:
           prefix=/usr/local
           libdir=${prefix}/lib
           includedir=${prefix}/include
-          Name: libblst
-          Description: supranational blst
-          Version: 0.3.14
-          Libs: -L${libdir} -lblst
-          Cflags: -I${includedir}
+          Name=libblst
+          Description=supranational blst
+          Version=0.3.14
+          Libs=-L${libdir} -lblst
+          Cflags=-I${includedir}
           EOF
           pkg-config --exists 'libblst >= 0.3.14'
           pkg-config --modversion libblst
@@ -87,7 +87,32 @@ jobs:
 
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: cabal run exe:export-scripts -j1
+        run: |
+          set +e
+          cabal run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
+          rc=$?
+          set -e
+
+          echo "Cabal V3 artifact generation exit code: $rc"
+          echo "V3-specific compiler diagnostics:"
+          grep -E 'V3EconomicStateCarrier(MintPolicy)?\.hs' plutus/v3-artifact-build.log | tail -200 || true
+
+          if [ "$rc" -ne 0 ]; then
+            echo "Last 120 build-log lines:"
+            tail -120 plutus/v3-artifact-build.log || true
+            exit "$rc"
+          fi
+
+          echo "V3 artifact generation completed."
+          exit 0
+
+      - name: Preserve V3 Plutus build log
+        if: always() && steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-v3-plutus-build-log
+          path: plutus/v3-artifact-build.log
+          if-no-files-found: ignore
 
       - name: Verify V3 Plutus artifact
         run: |
