@@ -79,7 +79,7 @@ emit v =
           ++ "|rawSurplus=" ++ show surplus
           ++ "|expectedRawSurplus=" ++ expectedSurplus
         )
-    (Just eev, Just pc, Just expected) -> do
+    (_, Just eev, Just pc, Just expected, _, _) -> do
       let state = stateFor pc
           actualPc = protectedCapital state
           actualSurplus = rawSurplus eev state
