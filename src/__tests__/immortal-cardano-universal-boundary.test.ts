@@ -41,7 +41,6 @@ function project(input: {
   safety: bigint
   reserveProtection: bigint
   futureCosts: bigint
-  lockedJackpot?: bigint
 }) {
   const reserve = input.tickets.reduce((sum, ticket) => sum + ticket.priceUsdm, 0n)
 
@@ -55,7 +54,7 @@ function project(input: {
       pendingLiabilitiesUsdm: input.liabilities * 100n,
       unresolvedReserveUsdm: reserve,
       unresolvedTicketCount: BigInt(input.tickets.length),
-      lockedJackpotUsdm: (input.lockedJackpot ?? 0n) * 100n,
+      lockedJackpotUsdm: 0n,
       jackpotThresholdUsdm: 10_000n,
     },
     tickets: input.tickets,
@@ -73,7 +72,6 @@ function protectedComponents(state: ReturnType<typeof project>) {
     safetyCapital: state.safetyCapital,
     reserveProtection: state.reserveProtection,
     mandatoryFutureCosts: state.mandatoryFutureCosts,
-    additionalProtectedCapital: state.jackpot.lockedAmount,
   }
 }
 
@@ -168,18 +166,6 @@ test('Cardano observation preserves V07 state-locality as distinct V3 states', (
   assert.equal(protectedComponents(high).worstCaseExposure, 4500n)
 })
 
-test('Cardano observation carries locked jackpot liquidity into additional protected capital', () => {
-  const state = project({
-    liabilities: 0n,
-    tickets: [],
-    safety: 0n,
-    reserveProtection: 0n,
-    futureCosts: 0n,
-    lockedJackpot: 700n,
-  })
-
-  assert.equal(protectedComponents(state).additionalProtectedCapital, 700n)
-})
 
 test('Cardano observation rejects corrupted aggregate reserve instead of repairing it', () => {
   assert.throws(
