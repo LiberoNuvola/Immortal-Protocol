@@ -55,7 +55,7 @@ jobs:
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
         run: |
           set +e
-          cabal --config-file="$RUNNER_TEMP/cabal-v3-ci-config" run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
+          cabal --config-file="$CABAL_CONFIG" run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
           rc=$?
           set -e
 
