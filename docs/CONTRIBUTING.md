@@ -10,11 +10,11 @@ Read these documents first:
 
 1. [`README.md`](../README.md)
 2. [`ROADMAP.md`](ROADMAP.md)
-3. [`IMMORTAL Constitution`](../IMMORTAL/docs/CONSTITUTION.md)
+3. [`IMMORTAL Constitution`](00-normative/01_CONSTITUTION_FINAL.md)
 4. [`PRE-RICH Game Economy`](../PRE-RICH/docs/GAME-ECONOMY.md)
 5. [`PRE-RICH Complete System Specification`](../PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md)
-6. [`IMMORTAL Economic Algorithm`](../IMMORTAL/docs/ECONOMIC-ALGORITHM.md) and [`PRE-RICH Economic Algorithm`](../PRE-RICH/docs/ECONOMIC-ALGORITHM.md)
-7. [`IMMORTAL Conformance`](../IMMORTAL/docs/CONFORMANCE.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](CONSTITUTION-GAP-MATRIX.md)
+6. [`IMMORTAL normative specifications`](00-normative/) and [`PRE-RICH Economic Algorithm`](../PRE-RICH/docs/ECONOMIC-ALGORITHM.md)
+7. [`IMMORTAL Conformance Specification`](00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](CONSTITUTION-GAP-MATRIX.md)
 8. [`Cardano Adapter specification`](../Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md)
 
 The repository deliberately distinguishes documented, implemented, verified, experimental and target states.
