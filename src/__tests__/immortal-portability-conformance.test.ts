@@ -19,6 +19,13 @@ describe('IMMORTAL portability conformance seed vectors', () => {
   it('keeps the machine-readable vector set bound to the universal formula', () => {
     for (const vector of executable) {
       if ('cases' in vector || !('expected' in vector) || vector.expected === null) continue
+      if ('carAmount' in vector) {
+        const protectedCapital = vector.carAmount + vector.otherProtectedCapital
+        expect(rawSurplus(vector.eev, protectedCapital)).toBe(vector.expected.rawSurplus)
+        expect(protectedCapital).toBe(vector.expected.protectedCapital)
+        expect(vector.expected.carClassification).toBe('non-discretionary-protected')
+        continue
+      }
       expect(rawSurplus(vector.eev, vector.protectedCapital)).toBe(vector.expected.rawSurplus)
     }
   })
