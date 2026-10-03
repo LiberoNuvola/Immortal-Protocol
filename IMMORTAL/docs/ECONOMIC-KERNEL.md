@@ -1,4 +1,5 @@
 # IMMORTAL Economic Kernel — Reader Guide
+> **NON-NORMATIVE READER GUIDE. Canonical authority: `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`. In case of conflict, the canonical normative corpus wins.**
 
 > This file summarizes the canonical economic kernel. It does not create or override normative semantics. For the complete v3.0.0 definitions, theorems, proofs, conformance obligations and non-claims, use `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`.
 
