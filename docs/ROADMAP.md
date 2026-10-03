@@ -1,5 +1,7 @@
 # PRE-RICH Roadmap
 
+> **Scope:** PRE-RICH application roadmap. It does not define universal IMMORTAL semantics; application policy remains under `PRE-RICH/docs/` and universal authority under `00-normative/`.
+
 **Last updated:** September 2026
 **Current status:** Open-source preparation + implementation/evidence closure
 **Mainnet status:** Not ready
