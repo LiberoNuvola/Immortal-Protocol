@@ -1,5 +1,9 @@
-# IMMORTAL Economic Kernel
+# IMMORTAL Economic Kernel — Reader Guide
 
+> This file summarizes the canonical economic kernel. It does not create or override normative semantics. For the complete v3.0.0 definitions, theorems, proofs, conformance obligations and non-claims, use `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`.
+
+**Role:** integrative reader guide / summary  
+**Authority:** `../../docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`  
 **Scope:** generic mathematical/economic kernel; no blockchain or application-specific constants.
 
 ## 1. State
