@@ -13,20 +13,17 @@ import PlutusTx
 import PlutusTx.Prelude
 import qualified PlutusTx.AssocMap as AssocMap
 
--- Keep the singleton test structural, matching the already-ledger-tested
--- Genesis carrier policy: one currency symbol, one token name, quantity one.
--- This deliberately avoids both flattenValue and Value equality.
+-- Validate the complete mint slice belonging to this policy:
+-- exactly one token name (ECONOMICSTATE) and exactly one unit.
+-- Use the ledger-api Value accessor instead of destructuring getValue's
+-- association-list representation. This keeps the policy compatible with
+-- native/alternative evaluators while preserving the singleton invariant.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
 mintedExactlyOne expectedCs expectedName value =
-  case AssocMap.toList (getValue value) of
-    [(cs, tokens)]
-      | cs == expectedCs ->
-          case AssocMap.toList tokens of
-            [(name, amount)] ->
-              name == expectedName && amount == 1
-            _ -> False
-    _ -> False
+  withCurrencySymbol expectedCs value False $ \tokens ->
+    AssocMap.lookup expectedName tokens == Just 1
+    && AssocMap.null (AssocMap.delete expectedName tokens)
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
