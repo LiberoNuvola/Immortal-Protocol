@@ -225,6 +225,43 @@ The adapter must not cache or reuse the surplus from another state.
 
 ---
 
+## V10 — CAR as a protected conditional commitment
+
+### Input
+
+```text
+EEV = 1000
+CAR = 200
+Other protected capital = 300
+```
+
+The CAR amount is explicitly classified as a **non-discretionary protected commitment** for this fixture.
+
+### Expected
+
+```text
+ProtectedCapital = 200 + 300 = 500
+RawSurplus = max(0, 1000 - 500) = 500
+```
+
+### What this vector does NOT define
+
+It does not define:
+
+- the application's CAR allocation trigger;
+- allocation percentage or rate;
+- a universal CAR lifecycle beyond the already normative commitment/settlement/expiry deltas;
+- any mapping to `additionalProtectedCapital`;
+- any mapping to PRE-RICH Jackpot state.
+
+### Conformance
+
+PASS iff the normalized result preserves CAR as protected non-discretionary value for the fixture and produces the same aggregate ProtectedCapital/RawSurplus boundary.
+
+This is an accounting/conformance vector, not an allocation-policy vector.
+
+---
+
 ## V08 — Expiry finality placeholder
 
 The universal model and current architecture identify expiry finality as a conformance concern, but the exact universal transition schema is not reproduced here.
@@ -316,6 +353,7 @@ V04
 V05
 V06
 V07
+V10
 ```
 
 Then:
