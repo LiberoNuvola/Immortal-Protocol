@@ -11,6 +11,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
+import PlutusTx.List qualified as List
 
 -- Validate the complete mint slice belonging to this policy:
 -- exactly one token name (ECONOMICSTATE) and exactly one unit.
@@ -25,10 +26,7 @@ mintedExactlyOne expectedCs expectedName value =
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
 seedConsumed seed info =
-  let
-    go [] = False
-    go (i:is) = txInInfoOutRef i == seed || go is
-  in go (txInfoInputs info)
+  List.any (i -> txInInfoOutRef i == seed) (txInfoInputs info)
 
 {-# INLINABLE mkPolicy #-}
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
