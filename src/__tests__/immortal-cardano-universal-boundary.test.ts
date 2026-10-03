@@ -90,7 +90,6 @@ test('Cardano observation preserves the V01 protected-capital boundary decomposi
     safetyCapital: 200n,
     reserveProtection: 0n,
     mandatoryFutureCosts: 0n,
-    additionalProtectedCapital: 0n,
   })
 })
 
@@ -109,7 +108,6 @@ test('Cardano observation preserves V05 complete protected-capital decomposition
     safetyCapital: 500n,
     reserveProtection: 500n,
     mandatoryFutureCosts: 500n,
-    additionalProtectedCapital: 0n,
   })
 })
 
