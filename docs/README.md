@@ -70,3 +70,36 @@ When in doubt, do not promote an application rule into the universal layer.
 ## Archive rule
 
 Historical documents remain available for traceability but are not current normative authority unless explicitly referenced by the authority hierarchy.
+
+
+## Five-click paths
+
+### Protocol reviewer
+1. `README.md`
+2. `docs/EXECUTIVE-SUMMARY.md`
+3. `docs/DOCUMENTATION-AUTHORITY-MATRIX.md`
+4. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+5. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+
+### Cardano implementer
+1. `README.md`
+2. `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md`
+3. `Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md`
+4. `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
+5. `docs/03-audit/`
+
+### PRE-RICH contributor
+1. `README.md`
+2. `docs/ROADMAP.md`
+3. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
+4. `PRE-RICH/docs/GAME-ECONOMY.md`
+5. `PRE-RICH/docs/CONFORMANCE.md`
+
+### Evidence / audit
+Use `docs/02-certification/`, `docs/03-audit/` and `audit/` as evidence surfaces. These do not override `docs/00-normative/` or the applicable application/adapter specifications.
+
+## Layered files that intentionally remain at root
+
+The root-level `WHITEPAPER.md`, `ROADMAP.md` and `CONTRIBUTING.md` are repository/IMMORTAL-level entry documents. Their similarly named files under `docs/` are PRE-RICH-facing documents and are **not competing duplicates**. Keep both unless their scopes are deliberately changed.
+
+The same rule applies to system maps: `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md` is the end-to-end navigation map; `docs/IMMORTAL-SYSTEM-MAP.md` is a continuity/provenance checkpoint. Neither is normative authority.
