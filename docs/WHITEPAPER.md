@@ -279,7 +279,7 @@ Payout is limited by:
 
 No fixed JackpotAllocationRate is canonical by default.
 
-The exact Jackpot payout mode remains OPEN: threshold payout vs full current locked-balance payout.
+The Jackpot payout mode is closed at the current PRE-RICH policy level: full current locked-balance payout exactly once.
 
 ## 16. Expiry
 
@@ -295,7 +295,7 @@ After `expiresAt`:
 - a late reveal cannot create claimability or liability;
 - a late reveal cannot resurrect the expired right.
 
-The exact ticket expiry duration remains OPEN.
+The expiry mechanism is closed: the horizon is deterministically derived at issuance under `preRichExpiryPolicyV1` and crystallized into `expiresAt`; V1 bounds are 2 hours minimum / 300 days maximum and are application parameters, not IMMORTAL constants.
 
 ## 17. Non-Custodial Claims
 
@@ -358,7 +358,7 @@ As of September 2026:
 - independent external security audit is not completed;
 - the project is **not mainnet-ready**.
 
-Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps.
+Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps; these are not policy openings.
 
 These gaps do not reopen the frozen economic semantics.
 
