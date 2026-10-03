@@ -1,0 +1,81 @@
+name: IMMORTAL Plutus CI Bootstrap
+description: Canonical GHC/Cabal, native Cardano crypto, blst and Hackage bootstrap for IMMORTAL CI
+inputs:
+  update-hackage:
+    description: Update the Cabal package index
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Setup Haskell toolchain
+      uses: haskell-actions/setup@v2
+      with:
+        ghc-version: "9.6.7"
+        cabal-version: "3.12.1.0"
+
+    - name: Install canonical Plutus native dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
+        if ! pkg-config --exists libsodium-any; then
+          if pkg-config --exists libsodium; then
+            pcdir="$(pkg-config --variable=pcfiledir libsodium)"
+            sudo ln -sf "$pcdir/libsodium.pc" "$pcdir/libsodium-any.pc"
+          fi
+        fi
+        pkg-config --exists libsodium-any || pkg-config --exists libsodium
+        pkg-config --exists libsecp256k1
+
+        rm -rf /tmp/blst
+        git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
+        chmod +x /tmp/blst/build.sh
+        rc=0
+        (cd /tmp/blst && ./build.sh -shared) || rc=$?
+        echo "blst build.sh exit code: $rc"
+        test -s /tmp/blst/libblst.a
+        test -s /tmp/blst/libblst.so
+
+        sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+        sudo install -m 0755 /tmp/blst/libblst.so /usr/local/lib/libblst.so
+        sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
+        sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
+        sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
+
+        sudo mkdir -p /usr/local/lib/pkgconfig
+        cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
+        prefix=/usr/local
+        libdir=${prefix}/lib
+        includedir=${prefix}/include
+        Name: libblst
+        Description: supranational blst
+        Version: 0.3.14
+        Libs: -L${libdir} -lblst
+        Cflags: -I${includedir}
+        EOF
+
+        sudo ldconfig
+        echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
+        pkg-config --exists 'libblst >= 0.3.14'
+        pkg-config --modversion libblst
+        if [ "$rc" -ne 0 ]; then
+          echo "WARNING: blst build.sh returned $rc after producing verified shared/static artifacts."
+        fi
+
+    - name: Configure canonical Hackage HTTPS endpoint
+      if: inputs.update-hackage == 'true'
+      shell: bash
+      run: |
+        cat > "$RUNNER_TEMP/cabal-immortal-ci-config" <<'EOF'
+        repository hackage.haskell.org
+          url: https://hackage.haskell.org/
+          secure: True
+        EOF
+        echo "CABAL_CONFIG=$RUNNER_TEMP/cabal-immortal-ci-config" >> "$GITHUB_ENV"
+
+    - name: Initialize Cabal package index
+      if: inputs.update-hackage == 'true'
+      shell: bash
+      run: cabal --config-file="$RUNNER_TEMP/cabal-immortal-ci-config" update
