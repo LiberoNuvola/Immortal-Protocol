@@ -54,7 +54,7 @@ PRE-RICH-specific contribution and security guidance may remain inside `PRE-RICH
 
 `IMMORTAL/docs/IMMORTAL-COMPLETE-SYSTEM-SPECIFICATION.md` is an **integrative reader guide**, not an additional normative source; it must not compete with `docs/00-normative/`.
 
-The PRE-RICH White Paper belongs in `PRE-RICH/docs/` and must not replace the universal IMMORTAL White Paper.
+`docs/WHITEPAPER.md` is the PRE-RICH-facing White Paper entry document for this repository tree. It is intentionally layered with the repository/IMMORTAL `WHITEPAPER.md` and does not replace the universal IMMORTAL White Paper.
 
 ## ARCHIVE
 
