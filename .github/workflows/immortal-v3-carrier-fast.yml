@@ -61,10 +61,12 @@ jobs:
           git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
           chmod +x /tmp/blst/build.sh
           rc=0
-          (cd /tmp/blst && ./build.sh) || rc=$?
+          (cd /tmp/blst && ./build.sh -shared) || rc=$?
           echo "blst build.sh exit code: $rc"
           test -s /tmp/blst/libblst.a
+          test -s /tmp/blst/libblst.so
           sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
+          sudo install -m 0755 /tmp/blst/libblst.so /usr/local/lib/libblst.so
           sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
           sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
           sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
