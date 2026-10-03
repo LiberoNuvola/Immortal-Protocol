@@ -1,5 +1,6 @@
 name: IMMORTAL V3 Carrier Fast Ledger Gate
 # Fast ledger-only verification path; full P2.8 remains manual/PR gated.
+# CI trigger: verify canonical blst/shared Plutus bootstrap on current HEAD.
 
 concurrency:
   group: v3-carrier-fast-${{ github.ref }}
