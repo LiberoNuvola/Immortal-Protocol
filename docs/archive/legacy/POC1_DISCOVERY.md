@@ -1,6 +1,6 @@
 # PoC-1 Discovery Report (Historical)
 
-> **Historical record, not a current specification.** This report preserves an early discovery pass and includes unverified assumptions, including a relayer trust statement and references to `sr25519`. It is superseded for current design by [docs/poc1-spec.md](../poc1-spec.md), [docs/architecture-spec.md](../architecture-spec.md), and [docs/beacon-trust-model.md](../beacon-trust-model.md). It must not be used to claim B3 implementation or to select cryptographic parameters.
+> **Historical record, not a current specification.** This report preserves an early discovery pass and includes unverified assumptions, including a relayer trust statement and references to `sr25519`. It is superseded for current design by [current B3 investigation](../../../PRE-RICH/docs/B3-BEACON-CONFORMANCE-INVESTIGATION.md) and the [archived architecture specification](../architecture-spec.md). It must not be used to claim B3 implementation or to select cryptographic parameters.
 
 **Date:** 2026-09-01  
 **Status:** Discovery phase completed. Specification ready. Implementation pending.
