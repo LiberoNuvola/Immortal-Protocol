@@ -10,17 +10,16 @@
 
 Primary authority is external to this matrix:
 
-- `docs/IMMORTAL/CONSTITUTION.md`
-- `docs/IMMORTAL/ECONOMIC-KERNEL.md`
-- `docs/IMMORTAL/ECONOMIC-ALGORITHM.md`
-- `docs/IMMORTAL/ARCHITECTURE.md`
-- `docs/IMMORTAL/CONFORMANCE.md`
-- `docs/CARDANO/ADAPTER-SPECIFICATION.md`
-- `docs/PRE-RICH/CONSTITUTION.md`
-- `docs/PRE-RICH/APPLICATION-SPECIFICATION.md`
-- `docs/PRE-RICH/GAME-ECONOMY.md`
-- `docs/PRE-RICH/ECONOMIC-ALGORITHM.md`
-- `docs/PRE-RICH/CONFORMANCE.md`
+- `docs/00-normative/01_CONSTITUTION_FINAL.md`
+- `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`
+- `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+- `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+- `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+- `Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md`
+- `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
+- `PRE-RICH/docs/GAME-ECONOMY.md`
+- `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
+- `PRE-RICH/docs/CONFORMANCE.md`
 
 The matrix cannot supersede any of them.
 
@@ -74,7 +73,7 @@ The gap tracker must never rewrite the following as proposals:
 
 After reconciliation with the latest Decision Register and PRE-RICH policy closure, only the following remains an active normative `OPEN DECISION`:
 
-1. Exact ticket expiry duration.
+No current PRE-RICH policy item remains in the normative OPEN set. The expiry mechanism is closed; exact V1 numeric bounds are application/deployment parameters.
 
 The following are **CLOSED at the current PRE-RICH policy level** and must not be reintroduced as open decisions:
 - Jackpot payout mode = full current locked-balance payout exactly once.
