@@ -1,5 +1,7 @@
 # Contributing to PRE-RICH
 
+> **Scope:** PRE-RICH application contribution guidance. It does not create universal IMMORTAL semantics; universal authority remains under `00-normative/`.
+
 Thank you for contributing to PRE-RICH.
 
 PRE-RICH is an open protocol/framework. **Scratch & Win is its first concrete implementation, not the whole protocol.**
