@@ -15,12 +15,7 @@ import PlutusTx.Prelude
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
 mintedExactlyOne expectedCs expectedName value =
-  case flattenValue value of
-    [(cs, name, amount)] ->
-      cs == expectedCs
-      && name == expectedName
-      && amount == 1
-    _ -> False
+  value == singleton expectedCs expectedName 1
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
