@@ -8,14 +8,14 @@ PRE-RICH is an open protocol/framework. **Scratch & Win is its first concrete im
 
 Read these documents first:
 
-1. [`README.md`](README.md)
+1. [`README.md`](../README.md)
 2. [`ROADMAP.md`](ROADMAP.md)
-3. [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md)
-4. [`docs/Game-Economy.md`](docs/Game-Economy.md)
-5. [`docs/Game-Economy-Specification.md`](docs/Game-Economy-Specification.md)
-6. [`docs/ECONOMIC-ALGORITHM.md`](docs/ECONOMIC-ALGORITHM.md)
-7. [`docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`](docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md)
-8. [`docs/CONSTITUTION-GAP-MATRIX.md`](docs/CONSTITUTION-GAP-MATRIX.md)
+3. [`IMMORTAL Constitution`](../IMMORTAL/docs/CONSTITUTION.md)
+4. [`PRE-RICH Game Economy`](../PRE-RICH/docs/GAME-ECONOMY.md)
+5. [`PRE-RICH Complete System Specification`](../PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md)
+6. [`IMMORTAL Economic Algorithm`](../IMMORTAL/docs/ECONOMIC-ALGORITHM.md) and [`PRE-RICH Economic Algorithm`](../PRE-RICH/docs/ECONOMIC-ALGORITHM.md)
+7. [`IMMORTAL Conformance`](../IMMORTAL/docs/CONFORMANCE.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](CONSTITUTION-GAP-MATRIX.md)
+8. [`Cardano Adapter specification`](../Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md)
 
 The repository deliberately distinguishes documented, implemented, verified, experimental and target states.
 
