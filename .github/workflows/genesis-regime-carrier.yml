@@ -26,6 +26,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/genesis-regime-carrier.yml"
+      - ".github/actions/setup-plutus/**"
   pull_request:
     branches:
       - work/immortal-green-closure
