@@ -65,3 +65,15 @@ When two documents appear to disagree:
 8. historical material.
 
 If a secondary document disagrees with a higher layer, the secondary document is the candidate for correction — not the protocol semantics.
+
+
+## Duplicate-looking filenames that are intentionally layered
+
+The repository contains same-name documents at different layers. They are not automatically duplicates:
+
+- root `WHITEPAPER.md`, `ROADMAP.md`, `CONTRIBUTING.md` = repository / IMMORTAL-level entry material;
+- `docs/WHITEPAPER.md`, `docs/ROADMAP.md`, `docs/CONTRIBUTING.md` = PRE-RICH-facing material;
+- `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md` = end-to-end navigation map;
+- `docs/IMMORTAL-SYSTEM-MAP.md` = continuity/provenance checkpoint.
+
+A same-name or similar-name file should be merged/deleted only after its scope, inbound references and authority role are verified. The existence of similarly named layered documents is not by itself a documentation defect.
