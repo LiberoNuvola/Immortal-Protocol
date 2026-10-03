@@ -1,4 +1,5 @@
 # IMMORTAL — Complete System Specification
+> **NON-NORMATIVE INTEGRATIVE READER GUIDE. This document does not create a second source of truth. Universal normative authority remains in `docs/00-normative/`; adapter and application authority remains in their respective layers.**
 
 **Role:** end-to-end integrative specification and reader guide  
 **Scope:** chain-neutral IMMORTAL protocol  
@@ -322,11 +323,11 @@ Those belong to the relevant adapter, application or deployment scope.
 
 ## 16. Primary sources
 
-- IMMORTAL/docs/CONSTITUTION.md
-- IMMORTAL/docs/ECONOMIC-KERNEL.md
-- IMMORTAL/docs/ECONOMIC-ALGORITHM.md
-- IMMORTAL/docs/ARCHITECTURE.md
-- IMMORTAL/docs/CONFORMANCE.md
+- docs/00-normative/01_CONSTITUTION_FINAL.md
+- docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md
+- docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md
+- docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md
+- docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md
 - IMMORTAL/docs/V3-CARDANO-SEMANTIC-EQUIVALENCE.md
 
 **This document is an integrative specification, not a new source of truth.**

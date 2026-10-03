@@ -1,0 +1,18 @@
+name: Documentation Link Check
+on:
+  push:
+    branches: [main, b1-hardening, work/immortal-green-closure]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docs-link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Markdown links and documentation scope
+        run: node scripts/docs-link-check.mjs

@@ -1,7 +1,8 @@
 # IMMORTAL Constitution
+> **NON-NORMATIVE READER GUIDE. Canonical authority: `docs/00-normative/01_CONSTITUTION_FINAL.md`. In case of conflict, the canonical normative corpus wins.**
 
 **Scope:** general-purpose economic protocol  
-**Status:** normative constitutional specification  
+**Status:** INTEGRATIVE READER GUIDE — normative authority remains in `../../docs/00-normative/01_CONSTITUTION_FINAL.md`  
 **Chain dependence:** none  
 **Application dependence:** none
 
@@ -12,6 +13,8 @@ IMMORTAL defines a general economic protocol whose validity derives from canonic
 IMMORTAL is independent of any particular blockchain, asset, application, frontend, backend, relayer or operator.
 
 ## 2. Normative hierarchy
+
+> This document summarizes the constitutional layer for readers. It does not create a second normative Constitution. The canonical v3.0.0 authority is `docs/00-normative/01_CONSTITUTION_FINAL.md`.
 
 ```text
 IMMORTAL CONSTITUTION

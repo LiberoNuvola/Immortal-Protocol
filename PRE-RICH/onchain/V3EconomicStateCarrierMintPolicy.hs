@@ -13,19 +13,17 @@ import PlutusTx
 import PlutusTx.Prelude
 import qualified PlutusTx.AssocMap as AssocMap
 
-{-# INLINABLE ownMintEntries #-}
-ownMintEntries :: CurrencySymbol -> Value -> [(TokenName, Integer)]
-ownMintEntries cs value =
-  case AssocMap.lookup cs (getValue value) of
-    Nothing -> []
-    Just tokens -> AssocMap.toList tokens
-
+-- Validate the complete mint slice belonging to this policy:
+-- exactly one token name (ECONOMICSTATE) and exactly one unit.
+-- Use the ledger-api Value accessor instead of destructuring getValue's
+-- association-list representation. This keeps the policy compatible with
+-- native/alternative evaluators while preserving the singleton invariant.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne cs expectedName value =
-  case ownMintEntries cs value of
-    [(name, amount)] -> name == expectedName && amount == 1
-    _ -> False
+mintedExactlyOne expectedCs expectedName value =
+  withCurrencySymbol expectedCs value False $ \tokens ->
+    AssocMap.lookup expectedName tokens == Just 1
+    && AssocMap.null (AssocMap.delete expectedName tokens)
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
@@ -39,7 +37,10 @@ seedConsumed seed info =
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
 mkPolicy seed tokenName _ ctx =
   seedConsumed seed (scriptContextTxInfo ctx)
-  && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
+  && mintedExactlyOne
+       (ownCurrencySymbol ctx)
+       tokenName
+       (txInfoMint (scriptContextTxInfo ctx))
 
 {-# INLINABLE wrap #-}
 wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit

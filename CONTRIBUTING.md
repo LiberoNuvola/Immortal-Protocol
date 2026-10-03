@@ -1,5 +1,7 @@
 # Contributing to IMMORTAL
 
+> **Scope:** IMMORTAL universal / repository-level contribution policy. PRE-RICH-facing contribution guidance: `docs/CONTRIBUTING.md`. This document does not create normative protocol semantics.
+
 Thank you for contributing to IMMORTAL.
 
 IMMORTAL is an experimental open-source protocol. The repository contains universal protocol material, adapters, applications, implementations, proofs, tests and historical research. Contributions must preserve those boundaries.

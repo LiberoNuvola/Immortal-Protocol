@@ -1,8 +1,10 @@
 # IMMORTAL — Implementation & Conformance Closure Status
 
-**Snapshot branch:** `work/immortal-green-closure`
-**Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-09-26
+**Classification:** non-normative audit / implementation-evidence checkpoint
+**Branch:** `work/immortal-green-closure`
+**Date:** 2026-10-03
+
+> This document records stable implementation/conformance closure and certification gaps. It is not a normative source and does not create protocol semantics.
 
 ## 1. Closed policy boundaries
 
@@ -10,7 +12,7 @@
 |---|---|---|
 | IMMORTAL / Adapter / PRE-RICH ownership | CLOSED | Universal economic semantics remain in IMMORTAL; Cardano realization remains Adapter; PRE-RICH owns application policy. |
 | Ticket expiry semantics | CLOSED | Deterministic DApp/profile horizon crystallized at issuance; expiry final; late reveal economically inert. |
-| Exact expiry duration | OPEN POLICY | No universal number; historical 365-day value is non-canonical. |
+| Exact expiry duration | CLOSED FOR V1 | V1 uses explicit PRE-RICH bounds of 2 hours to 300 days and a deterministic state-derived horizon within those bounds. |
 | Jackpot ownership | CLOSED | Jackpot is PRE-RICH policy, not an IMMORTAL universal primitive. |
 | Ticket ladder | CLOSED AS PRE-RICH | 1/2/3/5/10/25/50/100 USDM belongs to PRE-RICH profile. |
 | Max normal payout | CLOSED AS PRE-RICH | 500×P belongs to PRE-RICH profile. |

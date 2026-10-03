@@ -1,4 +1,5 @@
 # IMMORTAL / PRE-RICH — End-to-End System Map & Continuity Checkpoint
+> **NON-NORMATIVE CONTINUITY / PROVENANCE CHECKPOINT. Secondary map only. For primary navigation use `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md`. This file does not create protocol authority.**
 
 > Continuity map for reconstructing the system without repeating repository + Notion + Library archaeology. This is an orientation/provenance document, not a replacement for normative specifications.
 

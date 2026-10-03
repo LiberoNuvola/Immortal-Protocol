@@ -2,7 +2,7 @@
 
 **Status:** OPERATIONAL / NON-NORMATIVE  
 **Authority:** subordinate to the canonical IMMORTAL and PRE-RICH specifications.  
-**Repository reference:** `b1-hardening` / `9d0b8c6`  
+**Repository reference:** `work/immortal-green-closure`  
 **Scope:** operational checks, failure handling, liveness and conformance observation.  
 **This document does not define economic policy.**
 
@@ -10,17 +10,18 @@
 
 This runbook must be read together with:
 
-1. `docs/IMMORTAL/CONSTITUTION.md`
-2. `docs/IMMORTAL/ECONOMIC-KERNEL.md`
-3. `docs/IMMORTAL/ECONOMIC-ALGORITHM.md`
-4. `docs/IMMORTAL/ARCHITECTURE.md`
-5. `docs/IMMORTAL/CONFORMANCE.md`
-6. `docs/CARDANO/ADAPTER-SPECIFICATION.md`
-7. `docs/PRE-RICH/CONSTITUTION.md`
-8. `docs/PRE-RICH/APPLICATION-SPECIFICATION.md`
-9. `docs/PRE-RICH/GAME-ECONOMY.md`
-10. `docs/PRE-RICH/ECONOMIC-ALGORITHM.md`
-11. `docs/PRE-RICH/CONFORMANCE.md`
+1. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+2. `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`
+3. `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+4. `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+5. `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`
+6. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+7. `Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md`
+8. `PRE-RICH/docs/CONSTITUTION.md`
+9. `PRE-RICH/docs/APPLICATION-SPECIFICATION.md`
+10. `PRE-RICH/docs/GAME-ECONOMY.md`
+11. `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
+12. `PRE-RICH/docs/CONFORMANCE.md`
 
 Operational observations do not override those sources.
 

@@ -16,7 +16,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="app-shell dapp-shell">
     <header class="dapp-header">
       <div class="dapp-brand-lockup">
-        <img class="dapp-immortal-mark" src="/immortal-mark.svg" alt="IMMORTAL Protocol">
+        <img class="dapp-immortal-mark" src="./web/assets/immortal-mark.svg" alt="IMMORTAL Protocol">
         <div><span class="dapp-kicker">IMMORTAL / PRE-RICH</span>
         <h1>The application layer.</h1>
         <div class="dapp-product-line"><strong>PRE-RICH</strong><span>powered by IMMORTAL</span></div>

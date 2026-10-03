@@ -1,5 +1,7 @@
 # Economic Gate ↔ Cardano Conformance Matrix
 
+> **NON-NORMATIVE AUDIT / CONFORMANCE MATRIX.** Canonical universal semantics remain under `../../docs/00-normative/`; this matrix records an implementation refinement boundary and does not create protocol semantics.
+
 Status: OPEN — conformance closure work
 Branch: `work/immortal-green-closure`
 

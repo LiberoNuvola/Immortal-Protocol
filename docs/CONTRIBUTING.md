@@ -1,5 +1,7 @@
 # Contributing to PRE-RICH
 
+> **Scope:** PRE-RICH application contribution guidance. It does not create universal IMMORTAL semantics; universal authority remains under `00-normative/`.
+
 Thank you for contributing to PRE-RICH.
 
 PRE-RICH is an open protocol/framework. **Scratch & Win is its first concrete implementation, not the whole protocol.**
@@ -8,14 +10,14 @@ PRE-RICH is an open protocol/framework. **Scratch & Win is its first concrete im
 
 Read these documents first:
 
-1. [`README.md`](README.md)
+1. [`README.md`](../README.md)
 2. [`ROADMAP.md`](ROADMAP.md)
-3. [`docs/CONSTITUTION.md`](docs/CONSTITUTION.md)
-4. [`docs/Game-Economy.md`](docs/Game-Economy.md)
-5. [`docs/Game-Economy-Specification.md`](docs/Game-Economy-Specification.md)
-6. [`docs/ECONOMIC-ALGORITHM.md`](docs/ECONOMIC-ALGORITHM.md)
-7. [`docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`](docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md)
-8. [`docs/CONSTITUTION-GAP-MATRIX.md`](docs/CONSTITUTION-GAP-MATRIX.md)
+3. [`IMMORTAL Constitution`](00-normative/01_CONSTITUTION_FINAL.md)
+4. [`PRE-RICH Game Economy`](../PRE-RICH/docs/GAME-ECONOMY.md)
+5. [`PRE-RICH Complete System Specification`](../PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md)
+6. [`IMMORTAL normative specifications`](00-normative/) and [`PRE-RICH Economic Algorithm`](../PRE-RICH/docs/ECONOMIC-ALGORITHM.md)
+7. [`IMMORTAL Conformance Specification`](00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](03-audit/CONSTITUTION-GAP-MATRIX.md)
+8. [`Cardano Adapter specification`](../Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md)
 
 The repository deliberately distinguishes documented, implemented, verified, experimental and target states.
 
@@ -41,11 +43,7 @@ Before changing normative economic rules:
 
 The current frozen economic baseline includes KA=8, KC=4, KD=4. The hysteresis semantic principle is CLOSED; remaining quantitative validation is implementation/evidence work.
 
-The current genuinely open policy set is limited to:
-
-1. Jackpot payout mode;
-2. exact ticket expiry duration;
-3. future Jackpot allocation policy, but only if an explicit allocation rule is required.
+The previously open application-policy items are closed in the current PRE-RICH baseline. Jackpot payout mode is full current locked-balance payout exactly once; Jackpot funding has no fixed allocation rate; and expiry uses the state-derived `preRichExpiryPolicyV1` mechanism, with V1 bounds of 2 hours minimum / 300 days maximum as application parameters. Remaining work is implementation/conformance/evidence unless a new explicit policy decision is adopted.
 
 ## Development
 
@@ -83,7 +81,7 @@ Documentation is part of protocol auditability.
 
 ## Security
 
-Do not disclose a suspected vulnerability in a public issue. Follow [`SECURITY.md`](SECURITY.md) for private reporting guidance.
+Do not disclose a suspected vulnerability in a public issue. Follow [`../SECURITY.md`](SECURITY.md) for private reporting guidance.
 
 ## License
 

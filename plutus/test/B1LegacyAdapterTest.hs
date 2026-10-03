@@ -8,6 +8,7 @@ import Prelude
   , String
   , error
   , putStrLn
+  , not
   , (&&)
   , (==)
   , Either (Left, Right)

@@ -12,7 +12,7 @@ GOV-23 is a coherent governance milestone after GOV-22.
   - independent deterministic replay reference
 - `verification/GOV-23-NEGATIVE-CASES.json`
   - explicit negative validation cases
-- `docs/GOV-23-INDEPENDENT-REPLAY.md`
+- `docs/01-formal-records/governance/GOV-23-INDEPENDENT-REPLAY.md`
   - normative/evidentiary boundary and acceptance criteria
 
 ### Run

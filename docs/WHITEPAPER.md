@@ -1,12 +1,14 @@
 # PRE-RICH — White Paper
 
+> **Scope:** PRE-RICH application orientation only. It does not define universal IMMORTAL semantics. Universal authority: `../docs/00-normative/`; application policy: `../PRE-RICH/docs/`.
+
 **Open Protocol for Transparent, Programmable and Resilient Economic Systems**
 
 **Version:** 0.6.1 — Release Candidate
 **Date:** September 2026
 **Status:** Research / Active Development — Open-Source Candidate — Not Mainnet-Ready
 
-> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Economic Algorithm Conformance Matrix](docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md) and the [Constitution Gap Matrix](docs/CONSTITUTION-GAP-MATRIX.md).
+> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Conformance and Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md) and the [Constitution Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md).
 >
 > The Conformance Matrix tracks implementation evidence; it does not create or modify economic policy.
 
@@ -57,14 +59,16 @@ Recommended reading:
 
 Core documents:
 
-1. `docs/CONSTITUTION.md`
-2. `docs/Game-Economy.md`
-3. `docs/Game-Economy-Specification.md`
-4. `docs/ECONOMIC-ALGORITHM.md`
-5. `docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
-6. `docs/CONSTITUTION-GAP-MATRIX.md`
-7. `docs/architecture-spec.md`
-8. `docs/beacon-trust-model.md`
+1. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+2. `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`
+3. `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+4. `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+5. `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`
+6. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+7. `PRE-RICH/docs/GAME-ECONOMY.md`
+8. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
+9. `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
+10. `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
 
 > **Documentation principle:** the White Paper explains; normative documents define; the implementation realizes; tests and proofs provide evidence.
 
@@ -277,7 +281,7 @@ Payout is limited by:
 
 No fixed JackpotAllocationRate is canonical by default.
 
-The exact Jackpot payout mode remains OPEN: threshold payout vs full current locked-balance payout.
+The Jackpot payout mode is closed at the current PRE-RICH policy level: full current locked-balance payout exactly once.
 
 ## 16. Expiry
 
@@ -293,7 +297,7 @@ After `expiresAt`:
 - a late reveal cannot create claimability or liability;
 - a late reveal cannot resurrect the expired right.
 
-The exact ticket expiry duration remains OPEN.
+The expiry mechanism is closed: the horizon is deterministically derived at issuance under `preRichExpiryPolicyV1` and crystallized into `expiresAt`; V1 bounds are 2 hours minimum / 300 days maximum and are application parameters, not IMMORTAL constants.
 
 ## 17. Non-Custodial Claims
 
@@ -356,7 +360,7 @@ As of September 2026:
 - independent external security audit is not completed;
 - the project is **not mainnet-ready**.
 
-Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps.
+Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps; these are not policy openings.
 
 These gaps do not reopen the frozen economic semantics.
 
@@ -438,9 +442,7 @@ This White Paper belongs to the aligned document set including:
 - Economic Algorithm v0.3.1
 - Economic Algorithm Conformance Matrix v0.1.1
 
-The canonical Conformance Matrix filename is:
-
-`docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
+Conformance is tracked by the IMMORTAL and PRE-RICH conformance specifications together with `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`. Historical conformance matrices remain under `docs/archive/` and are not current authority.
 
 ## Disclaimer
 

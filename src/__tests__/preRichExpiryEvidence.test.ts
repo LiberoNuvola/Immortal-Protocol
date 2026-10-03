@@ -63,6 +63,8 @@ describe('PRE-RICH ticket expiry refinement evidence', () => {
     const policy: PreRichExpiryPolicy = {
       policyId: 'fixture-policy',
       policyVersion: 1n,
+      minHorizonMs: 1n,
+      maxHorizonMs: 10_000n,
       deriveHorizonMs: (state) => 500n + state.economicEpoch * 10n,
     }
 

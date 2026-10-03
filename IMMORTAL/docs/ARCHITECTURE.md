@@ -1,5 +1,7 @@
 # IMMORTAL Architecture
 
+> **NON-NORMATIVE INTEGRATIVE READER GUIDE.** Canonical universal authority: `../../docs/00-normative/`; this file explains implementation architecture and does not create protocol semantics.
+
 ## 1. Layers
 
 ```text

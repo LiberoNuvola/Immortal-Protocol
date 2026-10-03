@@ -1,7 +1,8 @@
 # IMMORTAL Documentation Manifest
 
-**Baseline:** September 2026  
-**Purpose:** final editorial classification for the b1-hardening documentation tree.
+**Normative baseline:** IMMORTAL v3.0.0 crystallization, 17 September 2026  
+**Working branch:** `work/immortal-green-closure`  
+**Purpose:** editorial classification and source-of-truth map for the current documentation tree.
 
 ## KEEP — canonical normative corpus
 
@@ -14,7 +15,7 @@ The following remain authoritative and should not be rewritten merely for presen
 - `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`
 - `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
 
-Their mathematical content is the source of truth.
+These files are the **universal normative semantic corpus**. Their mathematical and constitutional content is the source of truth.
 
 ## KEEP — formal and certification records
 
@@ -24,7 +25,7 @@ These documents record proofs, obligations and evidence and should not be collap
 
 ## UPDATE — navigation / orientation
 
-The following are presentation-layer documents and should point clearly into the canonical corpus:
+The following are presentation-layer documents and should point clearly into the canonical corpus. `docs/README.md` is the navigation authority for this tree:
 
 - root `README.md`
 - root `WHITEPAPER.md`
@@ -35,7 +36,7 @@ The following are presentation-layer documents and should point clearly into the
 
 ## UPDATE — repository policy
 
-The following must describe IMMORTAL rather than PRE-RICH as the repository-level project:
+The repository-level policy documents describe IMMORTAL; PRE-RICH-specific contribution/security guidance remains scoped to `PRE-RICH/` or explicitly application-scoped files.
 
 - root `CONTRIBUTING.md`
 - root `SECURITY.md`
@@ -51,7 +52,9 @@ PRE-RICH-specific contribution and security guidance may remain inside `PRE-RICH
 
 `PRE-RICH/docs/` is the application-scoped documentation set. Its constitution and economic policy remain application-specific.
 
-The PRE-RICH White Paper belongs in `PRE-RICH/docs/` and must not replace the universal IMMORTAL White Paper.
+`IMMORTAL/docs/IMMORTAL-COMPLETE-SYSTEM-SPECIFICATION.md` is an **integrative reader guide**, not an additional normative source; it must not compete with `docs/00-normative/`.
+
+`docs/WHITEPAPER.md` is the PRE-RICH-facing White Paper entry document for this repository tree. It is intentionally layered with the repository/IMMORTAL `WHITEPAPER.md` and does not replace the universal IMMORTAL White Paper.
 
 ## ARCHIVE
 
@@ -67,7 +70,9 @@ Their scope must be identified by the surrounding adapter/application documentat
 
 ## Final editorial rule
 
-There must be one universal semantic source of truth.
+There must be one universal semantic source of truth: `docs/00-normative/`.
+
+Integrative guides may summarize it, but must explicitly remain non-authoritative.
 
 There may be many explanatory documents.
 

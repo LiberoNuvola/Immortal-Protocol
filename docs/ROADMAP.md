@@ -1,7 +1,9 @@
 # PRE-RICH Roadmap
 
+> **Scope:** PRE-RICH application roadmap. It does not define universal IMMORTAL semantics; application policy remains under `PRE-RICH/docs/` and universal authority under `00-normative/`.
+
 **Last updated:** September 2026
-**Current status:** Open-source preparation + B1 hardening / conformance
+**Current status:** Open-source preparation + implementation/evidence closure
 **Mainnet status:** Not ready
 
 > **PRE-RICH is an open protocol to be extended, not a product to be copied. Scratch & Win is its first implementation.**
@@ -58,13 +60,9 @@ The normative baseline includes:
 
 The semantic hysteresis decision is **CLOSED**. KA/KC/KD are canonical. Remaining numerical validation is implementation/quantitative validation, not a policy reopening.
 
-The genuinely open policy set is limited to:
+The previously open application-policy items are now closed in the current PRE-RICH baseline: Jackpot payout mode is full current locked-balance payout exactly once; Jackpot funding is state-derived without a fixed allocation percentage; the expiry mechanism is state-derived and crystallized at issuance. The V1 numeric bounds (2 hours minimum / 300 days maximum) are PRE-RICH application/deployment parameters, not IMMORTAL constants.
 
-1. Jackpot payout mode: threshold payout vs full current locked-balance payout.
-2. Exact ticket expiry duration.
-3. Future Jackpot allocation policy, but only if an explicit allocation rule is actually required.
-
-All other remaining work is implementation or evidence work unless a new explicit normative decision is adopted.
+Remaining work is implementation, conformance or deployment evidence unless a new explicit normative decision is adopted.
 
 ## 3. Scratch & Win — B1 Hardening & Conformance
 
@@ -174,12 +172,13 @@ The immediate objective is:
 5. independently review it;
 6. then make a separate mainnet decision.
 
-**Detailed implementation status:** `docs/CONSTITUTION-GAP-MATRIX.md`
+**Detailed implementation status:** `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
 
-**Economic authority:** `docs/Game-Economy.md` and `docs/Game-Economy-Specification.md`
+**Universal economic authority:** `docs/00-normative/`  
+**Application economic authority:** `PRE-RICH/docs/GAME-ECONOMY.md` + `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
 
-**Economic execution baseline:** `docs/ECONOMIC-ALGORITHM.md`
+**Economic execution baseline:** `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md` + `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
 
-**Conformance matrix:** `docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
+**Conformance tracking:** `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` + `PRE-RICH/docs/CONFORMANCE.md` + `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
 
-**Architectural target:** `docs/beacon-trust-model.md`
+**Beacon closure tracking:** `docs/03-audit/BEACON-CLOSURE-MATRIX.md`

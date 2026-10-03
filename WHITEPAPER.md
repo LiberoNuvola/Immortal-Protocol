@@ -1,5 +1,7 @@
 # IMMORTAL — White Paper
 
+> **Scope:** IMMORTAL universal / repository-level orientation. This is not the PRE-RICH application White Paper. PRE-RICH-facing: `docs/WHITEPAPER.md`. Universal normative authority: `docs/00-normative/`.
+
 **Universal Economic Protocol**  
 **Documentation baseline:** September 2026  
 **Status:** Experimental / Open Source / Research & Development

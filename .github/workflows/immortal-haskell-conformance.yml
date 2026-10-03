@@ -10,6 +10,7 @@ on:
       - "IMMORTAL/**"
       - "PRE-RICH/profile/**"
       - "Adapter/CARDANO/observation/**"
+      - "Adapter/REFERENCE/**"
       - "cabal.project"
       - ".github/workflows/immortal-haskell-conformance.yml"
   pull_request:
@@ -20,6 +21,7 @@ on:
       - "IMMORTAL/**"
       - "PRE-RICH/profile/**"
       - "Adapter/CARDANO/observation/**"
+      - "Adapter/REFERENCE/**"
       - "cabal.project"
       - ".github/workflows/immortal-haskell-conformance.yml"
 
@@ -118,6 +120,18 @@ jobs:
       - name: Projection boundary conformance
         working-directory: plutus
         run: cabal test projection-boundary-tests
+
+      - name: Portability vectors through UniversalEconomicKernel
+        working-directory: plutus
+        run: cabal test portability-vector-kernel-tests
+
+      - name: Cardano V3 to Universal boundary conformance
+        working-directory: plutus
+        run: cabal test cardano-universal-boundary-tests
+
+      - name: Normalized Reference economic output
+        working-directory: plutus
+        run: cabal run reference-economic-conformance
 
       - name: Genesis admission conformance
         working-directory: plutus
