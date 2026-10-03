@@ -11,11 +11,22 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
+import qualified PlutusTx.AssocMap as AssocMap
 
+-- Keep the singleton test structural, matching the already-ledger-tested
+-- Genesis carrier policy: one currency symbol, one token name, quantity one.
+-- This deliberately avoids both flattenValue and Value equality.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
 mintedExactlyOne expectedCs expectedName value =
-  value == singleton expectedCs expectedName 1
+  case AssocMap.toList (getValue value) of
+    [(cs, tokens)]
+      | cs == expectedCs ->
+          case AssocMap.toList tokens of
+            [(name, amount)] ->
+              name == expectedName && amount == 1
+            _ -> False
+    _ -> False
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
