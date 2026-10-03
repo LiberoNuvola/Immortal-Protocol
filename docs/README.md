@@ -103,3 +103,9 @@ Use `docs/02-certification/`, `docs/03-audit/` and `audit/` as evidence surfaces
 The root-level `WHITEPAPER.md`, `ROADMAP.md` and `CONTRIBUTING.md` are repository/IMMORTAL-level entry documents. Their similarly named files under `docs/` are PRE-RICH-facing documents and are **not competing duplicates**. Keep both unless their scopes are deliberately changed.
 
 The same rule applies to system maps: `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md` is the end-to-end navigation map; `docs/IMMORTAL-SYSTEM-MAP.md` is a continuity/provenance checkpoint. Neither is normative authority.
+
+
+## Current status entry points
+
+- Stable implementation/conformance closure: `docs/03-audit/IMMORTAL-IMPLEMENTATION-CLOSURE-STATUS.md`
+- Current operational Preprod handoff: `docs/COORDINATION/PREPROD-FIRST-TICKET-HANDOFF-20261003.md`
