@@ -92,9 +92,14 @@ jobs:
           cat > "$RUNNER_TEMP/cabal-v3-ci-config" <<'EOF'
           repository hackage.haskell.org
             url: https://hackage.haskell.org/
-            secure: False
+            secure: True
           EOF
           echo "Configured canonical Hackage HTTPS endpoint for CI artifact dependency fetches."
+
+      - name: Initialize CI Hackage package index
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        run: |
+          cabal --config-file="$RUNNER_TEMP/cabal-v3-ci-config" update
 
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
