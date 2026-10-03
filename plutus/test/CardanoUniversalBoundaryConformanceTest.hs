@@ -102,8 +102,9 @@ main = do
 
   assert
     ( projectionBoundaryEquivalent profile 1000 (stateFor 0 1 500 0 0)
-      && not (projectionBoundaryEquivalent profile 900 (stateFor 0 1 500 0 0))
+      && projectionBoundaryEquivalent profile 900 (stateFor 0 1 500 0 0)
+      && not (UniversalKernel.solvencyInvariant 900 v01)
     )
-    "Universal bridge evaluates solvency without Cardano-side economic interpretation"
+    "Universal bridge preserves the V3 solvency predicate without Cardano-side economic interpretation"
 
   putStrLn "ALL CARDANO V3 -> UNIVERSAL BOUNDARY TESTS PASSED"
