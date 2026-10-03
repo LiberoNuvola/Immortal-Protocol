@@ -174,7 +174,9 @@ This is a **technical ledger-evaluation failure**, not an economic-policy decisi
 
 The first remediation was deliberately narrow: the V3 mint policy was changed to check that the mint value is exactly the expected singleton asset rather than destructuring it through `flattenValue`.
 
-**Result of the next ledger-native run (#1071): the same Plutus evaluation failure remained.** Therefore the cause has not yet been isolated to `flattenValue`, and no economic rule is being changed to make the test pass.
+**Result of the next ledger-native run (#1071): the same Plutus evaluation failure remained.** Therefore the cause was not isolated to `flattenValue`, and no economic rule was changed to make the test pass.
+
+A second narrow remediation is now committed at **5167a390ceea6fc436297c8b561cc6a7e94def4c**: the singleton check is structural, using the same `AssocMap` representation already used by the ledger-tested Genesis carrier mint policy, and avoids both `flattenValue` and `Value` equality. Its ledger result is still pending.
 
 The economic rule being enforced remains the same:
 
@@ -186,11 +188,13 @@ The economic rule being enforced remains the same:
 
 **Current branch:** `work/immortal-green-closure`
 
-**Current V3 test commit:** `25d6283bf07b49974cf6614cac6cab26f6f94cae`
+**Current V3 test commit:** `5167a390ceea6fc436297c8b561cc6a7e94def4c`
 
-**Cardano Integration Lab #1071:** **IN PROGRESS**
+**Previous Cardano Integration Lab #1073:** **FAILED at V3 Carrier** with the same non-constructor Plutus evaluator error. Reveal and later lifecycle steps were not executed.
 
-The current run has already passed:
+**Current structural-fix ledger result:** **PENDING**
+
+The latest completed run has already demonstrated:
 
 - repository checkout;
 - Node setup;
