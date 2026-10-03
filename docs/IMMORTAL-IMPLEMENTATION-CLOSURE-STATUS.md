@@ -2,19 +2,26 @@
 
 **Snapshot branch:** `work/immortal-green-closure`
 **Classification:** non-normative implementation/evidence checkpoint
-**Date:** 2026-10-02
+**Date:** 2026-10-03
 
-## CURRENT OPERATIONAL STATE — 2026-10-02
+## CURRENT OPERATIONAL STATE — 2026-10-03
 
 > **Operational handoff:** Preprod topology is already deployed. The current real Reveal test now reaches the provider-backed Preprod validator, which returns a concrete expiry failure; the deployed ticket is stale and must not be reopened.
 
 ### Project position
 
 - **Branch:** `work/immortal-green-closure`
-- **Current code head at verification:** `fa9178d5d51ffc71d63d0a6577fb4c710b90e6f4`
+- **Current code head at verification:** `036e18fb1d383a25fcebbcd1de9b8ce6f532eece`
 - **Implementation phase:** FINALIZED
 - **Current phase:** live-ledger evidence / integration closure
 - **Primary milestone:** **first real PRE-RICH ticket purchase on Cardano Preprod**
+
+### V3 Cardano Integration Lab — CURRENT FACT
+
+- Previous ledger-native run **#1073 / 37097267189** failed specifically at **V3 Carrier** with the same Plutus non-constructor evaluator error previously seen in #1069/#1071.
+- Reveal and later lifecycle steps were skipped because V3 failed first.
+- Commit **5167a390ceea6fc436297c8b561cc6a7e94def4c** introduced a structural singleton mint check using `AssocMap.toList (getValue value)`, avoiding both `flattenValue` and `Value` equality while preserving the exact-one-token semantics.
+- The structural-fix ledger result is **PENDING**; no economic or validator safety rule was relaxed.
 
 ### Cardano Preprod — CURRENT FACT
 
