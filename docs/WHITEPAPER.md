@@ -6,7 +6,7 @@
 **Date:** September 2026
 **Status:** Research / Active Development — Open-Source Candidate — Not Mainnet-Ready
 
-> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Conformance and Gap Matrix](CONSTITUTION-GAP-MATRIX.md) and the [Constitution Gap Matrix](CONSTITUTION-GAP-MATRIX.md).
+> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Conformance and Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md) and the [Constitution Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md).
 >
 > The Conformance Matrix tracks implementation evidence; it does not create or modify economic policy.
 
@@ -65,7 +65,7 @@ Core documents:
 6. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
 7. `PRE-RICH/docs/GAME-ECONOMY.md`
 8. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
-9. `docs/CONSTITUTION-GAP-MATRIX.md`
+9. `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
 10. `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
 
 > **Documentation principle:** the White Paper explains; normative documents define; the implementation realizes; tests and proofs provide evidence.
@@ -440,7 +440,7 @@ This White Paper belongs to the aligned document set including:
 - Economic Algorithm v0.3.1
 - Economic Algorithm Conformance Matrix v0.1.1
 
-Conformance is tracked by the IMMORTAL and PRE-RICH conformance specifications together with `docs/CONSTITUTION-GAP-MATRIX.md`. Historical conformance matrices remain under `docs/archive/` and are not current authority.
+Conformance is tracked by the IMMORTAL and PRE-RICH conformance specifications together with `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`. Historical conformance matrices remain under `docs/archive/` and are not current authority.
 
 ## Disclaimer
 
