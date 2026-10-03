@@ -223,6 +223,7 @@ test-suite legacy-adapter-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -232,6 +233,17 @@ test-suite projection-boundary-tests
     main-is: ProjectionBoundaryConformanceTest.hs
     build-depends:
         base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite portability-vector-kernel-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PortabilityVectorConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -263,7 +275,6 @@ test-suite v3-economic-state-carrier-binding-tests
         pre-rich-plutus
     default-language: Haskell2010
 
-
 test-suite economic-gate-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
@@ -272,7 +283,6 @@ test-suite economic-gate-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
-
 
 executable inspect-historical-pre-policy
     hs-source-dirs: export
@@ -288,7 +298,6 @@ executable inspect-historical-pre-policy
     ghc-options:
         -Wall
 
-
 test-suite reference-adapter-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: ../Adapter/REFERENCE/test
@@ -297,7 +306,6 @@ test-suite reference-adapter-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
-
 
 executable reference-adapter-golden
     hs-source-dirs:
