@@ -10,6 +10,7 @@ import Prelude
   , (+)
   , error
   , putStrLn
+  , not
   )
 
 import EconomicStateV3
@@ -59,10 +60,6 @@ stateFor liabilities unresolved safety reserveProtection futureCosts =
     (classesWith unresolved)
     (EconomicControlState 0 0)
     (JackpotState 0 10000 JackpotInactive 0)
-  where
-    safety = safety
-    reserveProtection = reserveProtection
-    futureCosts = futureCosts
 
 project :: V3EconomicState -> UniversalEconomicState
 project s =
