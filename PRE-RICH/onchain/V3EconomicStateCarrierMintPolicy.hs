@@ -11,19 +11,16 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import qualified PlutusTx.AssocMap as AssocMap
 
 -- Validate the complete mint slice belonging to this policy:
 -- exactly one token name (ECONOMICSTATE) and exactly one unit.
--- Use the ledger-api Value accessor instead of destructuring getValue's
--- association-list representation. This keeps the policy compatible with
--- native/alternative evaluators while preserving the singleton invariant.
+-- Compare against the canonical singleton Value directly. This avoids
+-- destructuring the Value/AssocMap representation in the compiled policy,
+-- while preserving the same exact singleton-value invariant.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
 mintedExactlyOne expectedCs expectedName value =
-  withCurrencySymbol expectedCs value False $ \tokens ->
-    AssocMap.lookup expectedName tokens == Just 1
-    && AssocMap.null (AssocMap.delete expectedName tokens)
+  value == singleton expectedCs expectedName 1
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
