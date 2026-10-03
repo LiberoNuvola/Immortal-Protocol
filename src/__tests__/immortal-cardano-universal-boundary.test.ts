@@ -117,30 +117,3 @@ test('Cardano adapter V07 locality cases remain distinct at the observation boun
     4500n,
   )
 })
-
-test('V05 remains explicitly outside the current Cardano projection mapping', () => {
-  const decomposition = {
-    crystallizedLiabilities: 1000n,
-    worstCaseExposure: 6000n,
-    safetyCapital: 500n,
-    reserveProtection: 500n,
-    mandatoryFutureCosts: 500n,
-    additionalProtectedCapital: 0n,
-  }
-
-  assert.equal(
-    decomposition.crystallizedLiabilities +
-      decomposition.worstCaseExposure +
-      decomposition.safetyCapital +
-      decomposition.reserveProtection +
-      decomposition.mandatoryFutureCosts +
-      decomposition.additionalProtectedCapital,
-    8500n,
-  )
-
-  // Current Cardano PRE-RICH projection does not expose the universal
-  // worstCaseExposure/additionalProtectedCapital decomposition directly.
-  // Do not manufacture a mapping here: V05 stays pending until the
-  // authoritative projection boundary is explicitly defined.
-  assert.equal(true, true)
-})
