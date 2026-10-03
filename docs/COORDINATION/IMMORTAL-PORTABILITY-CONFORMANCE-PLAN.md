@@ -201,6 +201,19 @@ The vector must include both:
 - a state with surplus;
 - a state where protected capital consumes all available EEV.
 
+### Vector A2 — CAR protected-commitment boundary
+
+CAR is already closed at the universal accounting level as the L2 commitment class:
+
+```text
+L2 = CAR = value conditionally committed to a future allocation
+L2 ⊆ ProtectedCapital
+```
+
+The conformance vector may therefore test the accounting classification of a non-discretionary CAR amount without defining the application's allocation rule.
+
+It MUST NOT equate CAR with `additionalProtectedCapital`, Jackpot, or any other application-specific state field.
+
 ### Vector B — Liability-first admission
 
 Construct a state where a candidate transition would create an obligation.
@@ -383,6 +396,8 @@ No broader claim should be inferred from a small adapter.
 - [ ] Chain-neutral reference runner exists
 - [ ] Initial vectors are deterministic
 - [ ] Vectors are derived from existing authoritative semantics
+- [x] CAR accounting vector derived from L2 / ProtectedCapital semantics
+- [ ] CAR allocation policy remains profile-specific and is not universalized
 - [ ] No new economic constants introduced
 
 ### Phase C — Second adapter
