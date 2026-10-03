@@ -1,0 +1,25 @@
+name: IMMORTAL Portability Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+  pull_request:
+    paths:
+      - 'Adapter/REFERENCE/conformance/**'
+      - 'src/__tests__/immortal-portability-conformance.test.ts'
+      - '.github/workflows/immortal-portability-conformance.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npx vitest run src/__tests__/immortal-portability-conformance.test.ts
