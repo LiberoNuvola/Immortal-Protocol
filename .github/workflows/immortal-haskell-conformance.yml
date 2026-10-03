@@ -125,6 +125,10 @@ jobs:
         working-directory: plutus
         run: cabal test portability-vector-kernel-tests
 
+      - name: Cardano V3 to Universal boundary conformance
+        working-directory: plutus
+        run: cabal test cardano-universal-boundary-tests
+
       - name: Normalized Reference economic output
         working-directory: plutus
         run: cabal run reference-economic-conformance
