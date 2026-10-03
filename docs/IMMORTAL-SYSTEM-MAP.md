@@ -1,4 +1,5 @@
 # IMMORTAL / PRE-RICH — End-to-End System Map & Continuity Checkpoint
+> **NON-NORMATIVE CONTINUITY / PROVENANCE MAP. This is a navigation and handoff artifact, not a source of protocol authority. Use the canonical normative corpus, adapter specifications and PRE-RICH specifications for authoritative semantics.**
 
 > Continuity map for reconstructing the system without repeating repository + Notion + Library archaeology. This is an orientation/provenance document, not a replacement for normative specifications.
 
