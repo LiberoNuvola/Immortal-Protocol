@@ -32,6 +32,8 @@ data Vector = Vector
   , vectorDecomposition :: Maybe Decomposition
   , vectorCases :: Maybe [VectorCase]
   , vectorStatus :: Maybe String
+  , vectorCarAmount :: Maybe Integer
+  , vectorOtherProtectedCapital :: Maybe Integer
   }
   deriving (Generic, Show)
 
@@ -73,6 +75,8 @@ instance FromJSON Vector where
       <*> o .:? "decomposition"
       <*> o .:? "cases"
       <*> o .:? "status"
+      <*> o .:? "carAmount"
+      <*> o .:? "otherProtectedCapital"
 
 instance FromJSON Expected where
   parseJSON = withObject "Expected" $ \o ->
@@ -174,11 +178,21 @@ main = do
   let executable = filter (\v -> vectorStatus v == Nothing) (vectors file)
       pending = filter (\v -> vectorStatus v /= Nothing) (vectors file)
 
-  assertPass (length executable == 7) "V01-V07 are executable"
+  assertPass (length executable == 8) "V01-V07 and V10 are executable"
   assertPass (length pending == 2) "V08-V09 remain explicitly pending"
 
   mapM_ checkVector executable
   mapM_ checkCases executable
+
+  case filter (\v -> vectorId v == "V10") executable of
+    [v] ->
+      case (vectorCarAmount v, vectorOtherProtectedCapital v, vectorProtectedCapital v) of
+        (Just car, Just other, Nothing) ->
+          assertPass
+            (car + other == 500)
+            "V10 CAR remains a protected conditional commitment in the fixture"
+        _ -> assertPass False "V10 CAR fixture fields present"
+    _ -> assertPass False "V10 present"
 
   let v05 = filter (\v -> vectorId v == "V05") executable
   case v05 of
