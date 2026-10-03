@@ -8,6 +8,7 @@ on:
     paths:
       - 'Adapter/REFERENCE/conformance/**'
       - 'src/__tests__/immortal-portability-conformance.test.ts'
+      - 'src/__tests__/immortal-cardano-universal-boundary.test.ts'
       - '.github/workflows/immortal-portability-conformance.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -22,4 +23,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install --no-audit --no-fund
-      - run: npx vitest run src/__tests__/immortal-portability-conformance.test.ts
+      - run: npx vitest run src/__tests__/immortal-portability-conformance.test.ts src/__tests__/immortal-cardano-universal-boundary.test.ts
