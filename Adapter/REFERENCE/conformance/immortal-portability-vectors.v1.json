@@ -77,6 +77,23 @@
       "name": "safety-viability-separation",
       "status": "pending-certified-kernel-fixture",
       "expected": null
+    },
+    {
+      "id": "V10",
+      "name": "car-as-protected-conditional-commitment",
+      "eev": 1000,
+      "carAmount": 200,
+      "otherProtectedCapital": 300,
+      "expected": {
+        "protectedCapital": 500,
+        "rawSurplus": 500,
+        "carClassification": "non-discretionary-protected"
+      },
+      "notes": [
+        "CAR is tested here as L2: value conditionally committed to a future allocation.",
+        "The vector does not define the application's allocation rule.",
+        "The vector does not equate CAR with additionalProtectedCapital or with any application-specific mechanism."
+      ]
     }
   ]
 }
