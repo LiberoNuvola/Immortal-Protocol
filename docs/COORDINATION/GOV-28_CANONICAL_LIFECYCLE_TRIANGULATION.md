@@ -14,7 +14,7 @@ The repository contains a stronger written implementation contract than the live
 It also requires ordered immutable replay and invalid-event rejection.
 
 ### GOV-28 / GOV-29 status documents
-`docs/GOV-28-FULL-GOVERNANCE-CONFORMANCE.md` states that canonical replay should consume canonical events rather than a hidden parallel semantic event source.
+`docs/01-formal-records/governance/GOV-28-FULL-GOVERNANCE-CONFORMANCE.md` states that canonical replay should consume canonical events rather than a hidden parallel semantic event source.
 
 `docs/GOV-29-EXECUTABLE-CANONICAL-REPLAY.md` claims the replay API consumes only `GovernanceState + [CanonicalEvent]`.
 
