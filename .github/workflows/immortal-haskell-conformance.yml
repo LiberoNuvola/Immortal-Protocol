@@ -119,6 +119,10 @@ jobs:
         working-directory: plutus
         run: cabal test projection-boundary-tests
 
+      - name: Portability vectors through UniversalEconomicKernel
+        working-directory: plutus
+        run: cabal test portability-vector-kernel-tests
+
       - name: Genesis admission conformance
         working-directory: plutus
         run: cabal test genesis-admission-tests
