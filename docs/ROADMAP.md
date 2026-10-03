@@ -176,10 +176,10 @@ The immediate objective is:
 
 **Detailed implementation status:** `docs/CONSTITUTION-GAP-MATRIX.md`
 
-**Economic authority:** `docs/Game-Economy.md` and `docs/Game-Economy-Specification.md`
+**Economic authority:** `PRE-RICH/docs/GAME-ECONOMY.md` and `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
 
-**Economic execution baseline:** `docs/ECONOMIC-ALGORITHM.md`
+**Economic execution baseline:** `IMMORTAL/docs/ECONOMIC-ALGORITHM.md` + `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
 
-**Conformance matrix:** `docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
+**Conformance tracking:** `IMMORTAL/docs/CONFORMANCE.md` + `PRE-RICH/docs/CONFORMANCE.md` + `docs/CONSTITUTION-GAP-MATRIX.md`
 
-**Architectural target:** `docs/beacon-trust-model.md`
+**Beacon closure tracking:** `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
