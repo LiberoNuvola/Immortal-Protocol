@@ -22,6 +22,8 @@ data Vector = Vector
   , vectorProtectedCapital :: Maybe Integer
   , vectorExpected :: Maybe Expected
   , vectorStatus :: Maybe String
+  , vectorCarAmount :: Maybe Integer
+  , vectorOtherProtectedCapital :: Maybe Integer
   }
 
 data Expected = Expected
@@ -41,6 +43,8 @@ instance FromJSON Vector where
       <*> o .:? "protectedCapital"
       <*> o .:? "expected"
       <*> o .:? "status"
+      <*> o .:? "carAmount"
+      <*> o .:? "otherProtectedCapital"
 
 instance FromJSON Expected where
   parseJSON = withObject "Expected" $ \o ->
@@ -63,7 +67,18 @@ main = do
 
 emit :: Vector -> IO ()
 emit v =
-  case (vectorEev v, vectorProtectedCapital v, vectorExpected v) of
+  case (vectorId v, vectorEev v, vectorProtectedCapital v, vectorExpected v, vectorCarAmount v, vectorOtherProtectedCapital v) of
+    ("V10", Just eev, Nothing, Just expected, Just car, Just other) -> do
+      let pc = car + other
+          surplus = max 0 (eev - pc)
+          expectedSurplus = maybe "NA" show (expectedRawSurplus expected)
+      putStrLn
+        ( "V10"
+          ++ "|carAmount=" ++ show car
+          ++ "|protectedCapital=" ++ show pc
+          ++ "|rawSurplus=" ++ show surplus
+          ++ "|expectedRawSurplus=" ++ expectedSurplus
+        )
     (Just eev, Just pc, Just expected) -> do
       let state = stateFor pc
           actualPc = protectedCapital state
