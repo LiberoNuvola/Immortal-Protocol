@@ -41,11 +41,7 @@ Before changing normative economic rules:
 
 The current frozen economic baseline includes KA=8, KC=4, KD=4. The hysteresis semantic principle is CLOSED; remaining quantitative validation is implementation/evidence work.
 
-The current genuinely open policy set is limited to:
-
-1. Jackpot payout mode;
-2. exact ticket expiry duration;
-3. future Jackpot allocation policy, but only if an explicit allocation rule is required.
+The previously open application-policy items are closed in the current PRE-RICH baseline. Jackpot payout mode is full current locked-balance payout exactly once; Jackpot funding has no fixed allocation rate; and expiry uses the state-derived `preRichExpiryPolicyV1` mechanism, with V1 bounds of 2 hours minimum / 300 days maximum as application parameters. Remaining work is implementation/conformance/evidence unless a new explicit policy decision is adopted.
 
 ## Development
 
