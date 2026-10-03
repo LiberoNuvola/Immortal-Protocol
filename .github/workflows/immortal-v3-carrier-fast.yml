@@ -17,6 +17,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/immortal-v3-carrier-fast.yml"
+      - ".github/actions/setup-plutus/**"
   workflow_dispatch:
 
 jobs:
