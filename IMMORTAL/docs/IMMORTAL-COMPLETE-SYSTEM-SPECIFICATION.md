@@ -1,4 +1,5 @@
 # IMMORTAL — Complete System Specification
+> **NON-NORMATIVE INTEGRATIVE READER GUIDE. This document does not create a second source of truth. Universal normative authority remains in `docs/00-normative/`; adapter and application authority remains in their respective layers.**
 
 **Role:** end-to-end integrative specification and reader guide  
 **Scope:** chain-neutral IMMORTAL protocol  
