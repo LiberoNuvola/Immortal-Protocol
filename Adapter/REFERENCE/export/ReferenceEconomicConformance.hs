@@ -52,7 +52,7 @@ stateFor pc =
 
 main :: IO ()
 main = do
-  decoded <- eitherDecode <$> BL.readFile "../../Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json"
+  decoded <- eitherDecode <$> BL.readFile "../Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json"
   file <-
     case decoded of
       Left err -> putStrLn ("REFERENCE_ERROR|" ++ err) >> exitFailure
