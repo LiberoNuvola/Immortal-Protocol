@@ -14,7 +14,7 @@ Read these documents first:
 4. [`PRE-RICH Game Economy`](../PRE-RICH/docs/GAME-ECONOMY.md)
 5. [`PRE-RICH Complete System Specification`](../PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md)
 6. [`IMMORTAL normative specifications`](00-normative/) and [`PRE-RICH Economic Algorithm`](../PRE-RICH/docs/ECONOMIC-ALGORITHM.md)
-7. [`IMMORTAL Conformance Specification`](00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](CONSTITUTION-GAP-MATRIX.md)
+7. [`IMMORTAL Conformance Specification`](00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md), [`PRE-RICH Conformance`](../PRE-RICH/docs/CONFORMANCE.md) and [`Constitution & Conformance Gap Matrix`](03-audit/CONSTITUTION-GAP-MATRIX.md)
 8. [`Cardano Adapter specification`](../Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md)
 
 The repository deliberately distinguishes documented, implemented, verified, experimental and target states.
