@@ -105,7 +105,19 @@ The root-level `WHITEPAPER.md`, `ROADMAP.md` and `CONTRIBUTING.md` are repositor
 The same rule applies to system maps: `docs/IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md` is the end-to-end navigation map; `docs/IMMORTAL-SYSTEM-MAP.md` is a continuity/provenance checkpoint. Neither is normative authority.
 
 
-## Current status entry points
+## Status — do not mix
 
-- Stable implementation/conformance closure: `docs/03-audit/IMMORTAL-IMPLEMENTATION-CLOSURE-STATUS.md`
-- Current operational Preprod handoff: `docs/COORDINATION/PREPROD-FIRST-TICKET-HANDOFF-20261003.md`
+| Need | Open |
+|---|---|
+| Stable closure / certification gaps | `03-audit/IMMORTAL-IMPLEMENTATION-CLOSURE-STATUS.md` |
+| What to do next on Preprod | `COORDINATION/PREPROD-FIRST-TICKET-HANDOFF-20261003.md` |
+| Live verification register | `03-audit/VERIFICATION_STATUS.md` |
+| Open obligations | `03-audit/RESIDUAL_OBLIGATION_REGISTER.md` |
+
+### System maps
+
+- **Primary navigation:** `IMMORTAL-ADAPTER-PRE-RICH-COMPLETE-SYSTEM-MAP.md`
+- **Secondary continuity checkpoint:** `IMMORTAL-SYSTEM-MAP.md`
+
+The secondary map is for provenance/continuity; it is not a competing navigation authority.
+
