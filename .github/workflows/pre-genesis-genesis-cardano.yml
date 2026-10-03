@@ -25,6 +25,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/pre-genesis-genesis-cardano.yml"
+      - ".github/actions/setup-legacy-lucid/**"
   pull_request:
     branches:
       - work/immortal-green-closure
@@ -140,22 +141,8 @@ jobs:
       - name: Derive funded CI test wallet
         run: node audit/cardano-integration/create-test-wallet.mjs
 
-      - name: Normalize legacy Lucid ESM entrypoint for Node 22
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          package_path = Path("node_modules/lucid-cardano/package.json")
-          package = json.loads(package_path.read_text())
-          package["type"] = "module"
-          package["exports"] = {
-              ".": {
-                  "types": "./types/mod.d.ts",
-                  "import": "./esm/mod.js",
-              }
-          }
-          package_path.write_text(json.dumps(package, indent=2) + "\n")
-          PY
+      - name: Setup legacy Lucid runtime
+        uses: ./.github/actions/setup-legacy-lucid
 
       - name: Run Genesis Treasury admission mirror
         run: node --experimental-strip-types PRE-RICH/src/GenesisTreasuryAdmission.test.ts
