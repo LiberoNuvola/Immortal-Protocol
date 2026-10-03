@@ -172,7 +172,9 @@ A non-constructor value was scrutinized in a case expression
 
 This is a **technical ledger-evaluation failure**, not an economic-policy decision.
 
-The immediate remediation was deliberately narrow: the V3 mint policy now checks that the mint value is exactly the expected singleton asset rather than destructuring it through `flattenValue`.
+The first remediation was deliberately narrow: the V3 mint policy was changed to check that the mint value is exactly the expected singleton asset rather than destructuring it through `flattenValue`.
+
+**Result of the next ledger-native run (#1071): the same Plutus evaluation failure remained.** Therefore the cause has not yet been isolated to `flattenValue`, and no economic rule is being changed to make the test pass.
 
 The economic rule being enforced remains the same:
 
