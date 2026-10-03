@@ -1,5 +1,7 @@
 # IMMORTAL Core Documentation
 
+> **NON-NORMATIVE IMPLEMENTATION GUIDE.** Canonical universal authority: `../../docs/00-normative/`. This directory explains the reference implementation and does not create protocol semantics.
+
 This directory contains documentation placed next to the IMMORTAL reference implementation and formal core.
 
 It is implementation-oriented.
