@@ -170,13 +170,13 @@ The immediate objective is:
 5. independently review it;
 6. then make a separate mainnet decision.
 
-**Detailed implementation status:** `docs/CONSTITUTION-GAP-MATRIX.md`
+**Detailed implementation status:** `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
 
 **Universal economic authority:** `docs/00-normative/`  
 **Application economic authority:** `PRE-RICH/docs/GAME-ECONOMY.md` + `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
 
 **Economic execution baseline:** `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md` + `PRE-RICH/docs/ECONOMIC-ALGORITHM.md`
 
-**Conformance tracking:** `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` + `PRE-RICH/docs/CONFORMANCE.md` + `docs/CONSTITUTION-GAP-MATRIX.md`
+**Conformance tracking:** `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` + `PRE-RICH/docs/CONFORMANCE.md` + `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
 
 **Beacon closure tracking:** `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
