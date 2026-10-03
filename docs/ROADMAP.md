@@ -1,7 +1,7 @@
 # PRE-RICH Roadmap
 
 **Last updated:** September 2026
-**Current status:** Open-source preparation + B1 hardening / conformance
+**Current status:** Open-source preparation + implementation/evidence closure
 **Mainnet status:** Not ready
 
 > **PRE-RICH is an open protocol to be extended, not a product to be copied. Scratch & Win is its first implementation.**
@@ -58,13 +58,9 @@ The normative baseline includes:
 
 The semantic hysteresis decision is **CLOSED**. KA/KC/KD are canonical. Remaining numerical validation is implementation/quantitative validation, not a policy reopening.
 
-The genuinely open policy set is limited to:
+The previously open application-policy items are now closed in the current PRE-RICH baseline: Jackpot payout mode is full current locked-balance payout exactly once; Jackpot funding is state-derived without a fixed allocation percentage; the expiry mechanism is state-derived and crystallized at issuance. The V1 numeric bounds (2 hours minimum / 300 days maximum) are PRE-RICH application/deployment parameters, not IMMORTAL constants.
 
-1. Jackpot payout mode: threshold payout vs full current locked-balance payout.
-2. Exact ticket expiry duration.
-3. Future Jackpot allocation policy, but only if an explicit allocation rule is actually required.
-
-All other remaining work is implementation or evidence work unless a new explicit normative decision is adopted.
+Remaining work is implementation, conformance or deployment evidence unless a new explicit normative decision is adopted.
 
 ## 3. Scratch & Win — B1 Hardening & Conformance
 
