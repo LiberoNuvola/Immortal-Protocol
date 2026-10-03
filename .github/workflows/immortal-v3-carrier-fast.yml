@@ -45,63 +45,9 @@ jobs:
           path: plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
           key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
 
-      - name: Setup Haskell for V3 artifact rebuild
+      - name: Setup canonical Plutus CI
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.6.7'
-          cabal-version: '3.12.1.0'
-
-      - name: Install Plutus native dependencies
-        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
-          rm -rf /tmp/blst
-          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
-          chmod +x /tmp/blst/build.sh
-          rc=0
-          (cd /tmp/blst && ./build.sh -shared) || rc=$?
-          echo "blst build.sh exit code: $rc"
-          test -s /tmp/blst/libblst.a
-          test -s /tmp/blst/libblst.so
-          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
-          sudo install -m 0755 /tmp/blst/libblst.so /usr/local/lib/libblst.so
-          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
-          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
-          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
-          sudo ldconfig
-          sudo mkdir -p /usr/local/lib/pkgconfig
-          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
-          prefix=/usr/local
-          libdir=${prefix}/lib
-          includedir=${prefix}/include
-          Name: libblst
-          Description: supranational blst
-          Version: 0.3.14
-          Libs=-L${libdir} -lblst
-          Cflags=-I${includedir}
-          EOF
-          export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
-          pkg-config --exists 'libblst >= 0.3.14'
-          pkg-config --modversion libblst
-          if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a"; fi
-
-      - name: Configure CI Hackage endpoint
-        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: |
-          cat > "$RUNNER_TEMP/cabal-v3-ci-config" <<'EOF'
-          repository hackage.haskell.org
-            url: https://hackage.haskell.org/
-            secure: True
-          EOF
-          echo "Configured canonical Hackage HTTPS endpoint for CI artifact dependency fetches."
-
-      - name: Initialize CI Hackage package index
-        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: |
-          cabal --config-file="$RUNNER_TEMP/cabal-v3-ci-config" update
+        uses: ./.github/actions/setup-plutus
 
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
