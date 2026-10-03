@@ -74,9 +74,9 @@ jobs:
           prefix=/usr/local
           libdir=${prefix}/lib
           includedir=${prefix}/include
-          Name=libblst
-          Description=supranational blst
-          Version=0.3.14
+          Name: libblst
+          Description: supranational blst
+          Version: 0.3.14
           Libs=-L${libdir} -lblst
           Cflags=-I${includedir}
           EOF
