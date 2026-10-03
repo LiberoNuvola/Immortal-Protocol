@@ -1,4 +1,6 @@
 /** Ledger-native V3 carrier mint probe against the local Yaci Conway devnet.
+ * V3 mint policy now validates the exact singleton Value without flattenValue; this comment
+ * intentionally keeps the Cardano integration-lab path in the workflow trigger set.
  * Intentionally bypasses Lucid UPLC evaluation: the signed transaction is submitted
  * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
  */
