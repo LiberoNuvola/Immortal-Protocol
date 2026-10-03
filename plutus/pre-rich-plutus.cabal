@@ -13,7 +13,6 @@ library
         ../IMMORTAL/governance
         ../PRE-RICH/onchain
         ../Adapter/REFERENCE
-
     exposed-modules:
         Types
         OracleTypes
@@ -60,9 +59,7 @@ library
         GovernanceCanonicalizationWitness
         GovernanceFinality
         ReferenceAdapter
-
     other-modules:
-
     build-depends:
         base ^>=4.18.2,
         plutus-core ^>=1.67.0.0,
@@ -73,9 +70,7 @@ library
         base16-bytestring,
         text,
         cryptohash-sha256
-
     default-language: Haskell2010
-
     ghc-options:
         -Wall
         -fno-ignore-interface-pragmas
@@ -96,12 +91,10 @@ executable issue-admission
         bytestring,
         pre-rich-plutus
     default-language: Haskell2010
-    ghc-options:
-        -Wall
+    ghc-options: -Wall
 
 executable export-scripts
-    hs-source-dirs:
-        export
+    hs-source-dirs: export
     main-is: Export.hs
     build-depends:
         base ^>=4.18.2,
@@ -127,6 +120,16 @@ executable export-scripts
         -fno-spec-constr
         -fno-unbox-strict-fields
         -fno-unbox-small-strict-fields
+
+executable reference-economic-conformance
+    hs-source-dirs: ../Adapter/REFERENCE/export
+    main-is: ReferenceEconomicConformance.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
 
 test-suite economic-oracle-tests
     type: exitcode-stdio-1.0
@@ -295,8 +298,7 @@ executable inspect-historical-pre-policy
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0
     default-language: Haskell2010
-    ghc-options:
-        -Wall
+    ghc-options: -Wall
 
 test-suite reference-adapter-tests
     type: exitcode-stdio-1.0
@@ -308,8 +310,7 @@ test-suite reference-adapter-tests
     default-language: Haskell2010
 
 executable reference-adapter-golden
-    hs-source-dirs:
-        ../Adapter/REFERENCE/export
+    hs-source-dirs: ../Adapter/REFERENCE/export
     main-is: ReferenceAdapterGolden.hs
     build-depends:
         base ^>=4.18.2,
