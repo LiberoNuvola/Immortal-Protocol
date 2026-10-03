@@ -77,3 +77,11 @@ The repository contains same-name documents at different layers. They are not au
 - `docs/IMMORTAL-SYSTEM-MAP.md` = continuity/provenance checkpoint.
 
 A same-name or similar-name file should be merged/deleted only after its scope, inbound references and authority role are verified. The existence of similarly named layered documents is not by itself a documentation defect.
+
+
+## Current placement decisions
+
+- Governance conformance packages GOV-23 through GOV-29 are formal records under `docs/01-formal-records/governance/`.
+- Conformance/gap matrices are audit artifacts under `docs/03-audit/`.
+- `docs/COORDINATION/` remains for operational handoffs, triangulation and working-session records.
+- Historical material remains under `docs/archive/` and is never promoted by relocation alone.
