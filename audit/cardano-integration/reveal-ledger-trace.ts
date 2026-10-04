@@ -197,6 +197,17 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
       },
       ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
       ...(utxo.datum ? { datum: utxo.datum } : {}),
+      ...(utxo.scriptRef
+        ? {
+            script: {
+              [utxo.scriptRef.type === 'PlutusV1'
+                ? 'plutus:v1'
+                : utxo.scriptRef.type === 'PlutusV3'
+                  ? 'plutus:v3'
+                  : 'plutus:v2']: utxo.scriptRef.script,
+            },
+          }
+        : {}),
     },
   ])
 
@@ -208,17 +219,23 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
       ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
     }),
   })
-  const result = await response.json() as {
+  const rawResponse = await response.text()
+  let result: {
     fault?: unknown
     result?: {
       EvaluationResult?: Record<string, { memory: number; steps: number }>
     }
     message?: string
   }
+  try {
+    result = JSON.parse(rawResponse) as typeof result
+  } catch {
+    result = { message: rawResponse }
+  }
 
   if (!response.ok || result.fault || !result.result?.EvaluationResult) {
     throw new Error(
-      `Yaci transaction evaluation failed (HTTP ${response.status}): ${result.message ?? JSON.stringify(result)}`,
+      `Yaci transaction evaluation failed (HTTP ${response.status}): ${rawResponse.slice(0, 4000)}`,
     )
   }
 
@@ -504,6 +521,7 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
+console.log('REVEAL_EVAL_STAGE=prize-input')
 let reveal = await lucid
   .newTx()
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
@@ -511,12 +529,14 @@ let reveal = await lucid
   .attach.SpendingValidator(scripts.prizeValidator)
   .complete({ localUPLCEval: false })
 
+console.log('REVEAL_EVAL_STAGE=prize-plus-pool')
 reveal = await reveal
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
   .readFrom([poolReferenceInput])
   .attach.SpendingValidator(scripts.b1PrizePool)
   .complete({ localUPLCEval: false })
 
+console.log('REVEAL_EVAL_STAGE=final-outputs')
 reveal = await reveal
   .pay.ToContract(scripts.prizeAddress as string, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
   .pay.ToContract(scripts.b1PrizePoolAddress as string, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
