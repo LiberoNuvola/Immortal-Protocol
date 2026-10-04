@@ -377,11 +377,7 @@ const preStateFingerprint = hashJson({
 // Publish the two validator scripts as reference-script UTxOs before building Reveal.
 const prizeReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.prizeValidator as Script },
-    { lovelace: 2_000_000n },
-  )
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
   .complete({ localUPLCEval: false })
 const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const prizeReferenceHash = await prizeReferenceSigned.submit()
@@ -389,11 +385,7 @@ await lucid.awaitTx(prizeReferenceHash)
 
 const poolReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.b1PrizePool as Script },
-    { lovelace: 2_000_000n },
-  )
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
   .complete({ localUPLCEval: false })
 const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const poolReferenceHash = await poolReferenceSigned.submit()
@@ -417,12 +409,12 @@ const poolReferenceInput = {
   scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
 }
 
-const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
-const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
-if (lucid.utils.validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
+const expectedPrizeHash = validatorToScriptHash(scripts.prizeValidator as Script)
+const expectedPoolHash = validatorToScriptHash(scripts.b1PrizePool as Script)
+if (validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
   throw new Error('PrizeValidator reference script hash mismatch')
 }
-if (lucid.utils.validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
+if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
