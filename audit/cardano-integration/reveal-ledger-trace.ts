@@ -51,7 +51,6 @@ const SEED =
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
 const TICKET_NAME_HEX = '52462d5245414c2d52455645414c'
-const ORACLE_STATE_POLICY_ID = '00'.repeat(28)
 const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45' // ORACLE
 const MAINCHAIN_REF = new Uint8Array(32)
 const MATERIOS_CONTEXT = new Uint8Array(32)
@@ -177,11 +176,16 @@ const poolUnit = testPolicyId + poolTokenNameHex
 const liquidityUnit = testPolicyId + liquidityTokenNameHex
 const ticketUnit = testPolicyId + TICKET_NAME_HEX
 
+// Reveal does not consume Oracle state, but the parameterized validators require
+// a non-empty singleton identity. Use the deterministic fixture policy here;
+// production Oracle identity remains deployment-configured.
+const fixtureOracleStatePolicyId = testPolicyId
+
 const scripts = buildScriptsFromLucid(
   { ...lucid, utils: { validatorToScriptHash, mintingPolicyToId, validatorToAddress: (script: Script) => validatorToAddress('Preprod', script) } },
   defaultPrizeTable,
   keyHash,
-  ORACLE_STATE_POLICY_ID,
+  fixtureOracleStatePolicyId,
   ORACLE_STATE_TOKEN_NAME_HEX,
   testPolicyId,
   poolTokenNameHex,
