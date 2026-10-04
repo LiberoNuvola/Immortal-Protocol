@@ -1,7 +1,58 @@
 import { describe, expect, it } from 'vitest'
 import vectors from '../../Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json'
 
-type Vector = (typeof vectors.vectors)[number]
+type Expected = {
+  rawSurplus: number
+  protectedCapital?: number
+  solvency?: boolean
+  discretionaryAuthorizationFromRawSurplus?: string
+  carClassification?: string
+}
+
+type SimpleVector = {
+  id: string
+  eev: number
+  protectedCapital: number
+  expected: Expected
+}
+
+type CarVector = {
+  id: string
+  eev: number
+  carAmount: number
+  otherProtectedCapital: number
+  expected: Expected & {
+    protectedCapital: number
+    carClassification: string
+  }
+}
+
+type DecompositionVector = {
+  id: string
+  eev: number
+  protectedCapital: number
+  decomposition: {
+    crystallizedLiabilities: number
+    worstCaseExposure: number
+    safetyCapital: number
+    reserveProtection: number
+    mandatoryFutureCosts: number
+    additionalProtectedCapital: number
+  }
+  expected: Expected & { protectedCapital: number }
+}
+
+type LocalityVector = {
+  id: string
+  cases: Array<{
+    eev: number
+    protectedCapital: number
+    expectedRawSurplus: number
+  }>
+}
+
+type ExecutableVector = SimpleVector | CarVector | DecompositionVector | LocalityVector
+
 
 function rawSurplus(eev: number, protectedCapital: number): number {
   return Math.max(0, eev - protectedCapital)
@@ -13,12 +64,12 @@ function solvency(eev: number, protectedCapital: number): boolean {
 
 describe('IMMORTAL portability conformance seed vectors', () => {
   const executable = vectors.vectors.filter(
-    (vector): vector is Vector & { status?: never } => !('status' in vector),
-  )
+    (vector) => !('status' in vector),
+  ) as unknown as ExecutableVector[]
 
   it('keeps the machine-readable vector set bound to the universal formula', () => {
     for (const vector of executable) {
-      if ('cases' in vector || !('expected' in vector) || vector.expected === null) continue
+      if ('cases' in vector) continue
       if ('carAmount' in vector) {
         const protectedCapital = vector.carAmount + vector.otherProtectedCapital
         expect(rawSurplus(vector.eev, protectedCapital)).toBe(vector.expected.rawSurplus)

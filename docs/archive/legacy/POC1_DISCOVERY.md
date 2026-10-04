@@ -1,6 +1,6 @@
 # PoC-1 Discovery Report (Historical)
 
-> **Historical record, not a current specification.** This report preserves an early discovery pass and includes unverified assumptions, including a relayer trust statement and references to `sr25519`. It is superseded for current design by [current B3 investigation](../../../PRE-RICH/docs/B3-BEACON-CONFORMANCE-INVESTIGATION.md) and the [archived architecture specification](../architecture-spec.md). It must not be used to claim B3 implementation or to select cryptographic parameters.
+> **Historical record, not a current specification.** This report preserves an early discovery pass and includes unverified assumptions, including a relayer trust statement and references to `sr25519`. It is superseded for current design by the current B3 investigation and the archived architecture specification. It must not be used to claim B3 implementation or to select cryptographic parameters.
 
 **Date:** 2026-09-01  
 **Status:** Discovery phase completed. Specification ready. Implementation pending.
@@ -13,7 +13,7 @@
 
 **Decision:** PoC-1 will accept justifications **off-chain from the relayer**, not from node RPC. The verifier will be completely independent — it will NOT contact Materios at all.
 
-**Result:** Full specification for PoC-1 is now defined (→ `docs/poc1-spec.md`).
+**Result:** The historical PoC-1 discovery is preserved here; current design evidence is maintained in the B3 beacon conformance investigation.
 
 ---
 
@@ -112,7 +112,9 @@ PoC-1 Verifier (completely independent)
 
 ## PoC-1 Specification
 
-### Full specification is in: [docs/poc1-spec.md](../poc1-spec.md)
+### Current superseding documentation
+
+See the [B3 beacon conformance investigation](../../../PRE-RICH/docs/B3-BEACON-CONFORMANCE-INVESTIGATION.md) for the current architecture and evidence status.
 
 Quick summary:
 
