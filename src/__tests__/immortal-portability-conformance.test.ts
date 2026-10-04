@@ -13,6 +13,7 @@ type SimpleVector = {
   id: string
   eev: number
   protectedCapital: number
+  candidateDiscretionaryAllocation?: number
   expected: Expected
 }
 
@@ -103,6 +104,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
     const vector = executable.find((item) => item.id === 'V06')
     expect(vector).toBeDefined()
     if (!vector || !('candidateDiscretionaryAllocation' in vector)) return
+    if (!('protectedCapital' in vector)) return
 
     expect(vector.expected.discretionaryAuthorizationFromRawSurplus).toBe('not-defined')
     expect(rawSurplus(vector.eev, vector.protectedCapital)).toBe(vector.expected.rawSurplus)
@@ -124,7 +126,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
     for (const id of ['V03', 'V04']) {
       const vector = executable.find((item) => item.id === id)
       expect(vector).toBeDefined()
-      if (!vector || !('expected' in vector) || vector.expected === null) continue
+      if (!vector || !('protectedCapital' in vector)) continue
 
       expect(solvency(vector.eev, vector.protectedCapital)).toBe(vector.expected.solvency)
     }
