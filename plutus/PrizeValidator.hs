@@ -787,9 +787,8 @@ wrap regHash table oracleStatePolicy oracleStateName oraclePublisher d r ctx =
     (mkValidator
       regHash
       table
-      (OracleStateId
-        (unsafeFromBuiltinData oracleStatePolicy)
-        (unsafeFromBuiltinData oracleStateName))
+      (unsafeFromBuiltinData oracleStatePolicy)
+      (unsafeFromBuiltinData oracleStateName)
       (unsafeFromBuiltinData oraclePublisher)
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)
