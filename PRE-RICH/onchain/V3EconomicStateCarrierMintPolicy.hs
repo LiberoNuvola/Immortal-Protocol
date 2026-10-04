@@ -11,7 +11,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import PlutusTx.List qualified as List
+import qualified PlutusTx.List as List
 
 -- Validate the complete mint slice belonging to this policy:
 -- exactly one currency symbol, one token name, and one unit.
