@@ -11,28 +11,14 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import qualified PlutusTx.List as List
 
--- Diagnostic Probe A:
--- isolate seedConsumed from all Value/mint-shape inspection.
--- mintedExactlyOne is deliberately bypassed for this probe only.
-{-# INLINABLE mintedExactlyOne #-}
-mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne _ _ _ = True
-
-{-# INLINABLE seedConsumed #-}
-seedConsumed :: TxOutRef -> TxInfo -> Bool
-seedConsumed seed info =
-  List.any (\i -> txInInfoOutRef i == seed) (txInfoInputs info)
-
+-- Diagnostic Probe B:
+-- remove every TxInfo/Value/ScriptContext field access from the policy body.
+-- This probe intentionally tests only whether the compiled mint-policy
+-- wrapper/evaluator accepts the carrier policy shape.
 {-# INLINABLE mkPolicy #-}
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkPolicy seed tokenName _ ctx =
-  seedConsumed seed (scriptContextTxInfo ctx)
-  && mintedExactlyOne
-       (ownCurrencySymbol ctx)
-       tokenName
-       (txInfoMint (scriptContextTxInfo ctx))
+mkPolicy _seed _tokenName _ctx = True
 
 {-# INLINABLE wrap #-}
 wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
