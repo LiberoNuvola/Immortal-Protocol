@@ -313,7 +313,8 @@ const differentialParams = [
     script: (beaconRegistryValidator as any).script,
   } as any),
   toEvolutionData(prizeTableToData(defaultPrizeTable)),
-  new Constr(0, [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX]),
+  fixtureOracleStatePolicyId,
+  ORACLE_STATE_TOKEN_NAME_HEX,
   keyHash,
 ]
 const evolutionPrizeScriptHex = evolutionApplyParamsToScript(
