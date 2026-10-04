@@ -227,7 +227,7 @@ Same target + plausible commit + insufficient weight = MUST REJECT
 
 | File | Purpose |
 |------|---------|
-| [docs/poc1-spec.md](../poc1-spec.md) | Complete PoC-1 specification |
+| Current B3 investigation | Superseding current architecture/evidence reference |
 | `/memories/repo/poc1-discovery.md` | Discovery notes (for future reference) |
 
 ---
