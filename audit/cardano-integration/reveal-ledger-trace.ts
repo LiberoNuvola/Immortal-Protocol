@@ -15,7 +15,7 @@ import { Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, m
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { buildScriptsFromLucid, prizeValidatorFactory, prizeTableToData } from '../../src/loadValidator'
+import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
@@ -294,10 +294,26 @@ if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
 
+function toEvolutionData(value: any): any {
+  if (typeof value === 'bigint' || typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(toEvolutionData)
+  if (value instanceof Map) {
+    return new Map([...value.entries()].map(([k, v]) => [toEvolutionData(k), toEvolutionData(v)]))
+  }
+  if (value && typeof value.index === 'number' && Array.isArray(value.fields)) {
+    return new Constr(value.index, value.fields.map(toEvolutionData))
+  }
+  throw new Error('unsupported Data value in parameterization differential')
+}
+
+const legacyPrizeScriptHex = (scripts.prizeValidator as any).script
 const differentialParams = [
-  validatorToScriptHash((await import('../../src/loadValidator')).beaconRegistryValidator as any),
+  validatorToScriptHash({
+    type: 'PlutusV2',
+    script: (beaconRegistryValidator as any).script,
+  } as any),
   toEvolutionData(prizeTableToData(defaultPrizeTable)),
-  toEvolutionData(new Constr(0, [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX])),
+  new Constr(0, [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX]),
   keyHash,
 ]
 const evolutionPrizeScriptHex = evolutionApplyParamsToScript(
@@ -306,11 +322,11 @@ const evolutionPrizeScriptHex = evolutionApplyParamsToScript(
 )
 console.log(JSON.stringify({
   parameterizationDifferential: {
-    legacyBytes: Buffer.from(legacyPrizeScript, 'hex').length,
+    legacyBytes: Buffer.from(legacyPrizeScriptHex, 'hex').length,
     evolutionBytes: Buffer.from(evolutionPrizeScriptHex, 'hex').length,
-    legacyHash: validatorToScriptHash(scripts.prizeValidator as any),
+    legacyHash: validatorToScriptHash({ type: 'PlutusV2', script: legacyPrizeScriptHex } as any),
     evolutionHash: validatorToScriptHash({ type: 'PlutusV2', script: evolutionPrizeScriptHex } as any),
-    identicalCbor: legacyPrizeScript === evolutionPrizeScriptHex,
+    identicalCbor: legacyPrizeScriptHex === evolutionPrizeScriptHex,
   },
 }, null, 2))
 
