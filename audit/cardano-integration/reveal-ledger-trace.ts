@@ -521,25 +521,23 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
-console.log('REVEAL_EVAL_STAGE=prize-input')
-let reveal = await lucid
+const reveal = await lucid
   .newTx()
+  .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
-  .readFrom([prizeReferenceInput])
   .attach.SpendingValidator(scripts.prizeValidator)
-  .complete({ localUPLCEval: false })
-
-console.log('REVEAL_EVAL_STAGE=prize-plus-pool')
-reveal = await reveal
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
-  .readFrom([poolReferenceInput])
   .attach.SpendingValidator(scripts.b1PrizePool)
-  .complete({ localUPLCEval: false })
-
-console.log('REVEAL_EVAL_STAGE=final-outputs')
-reveal = await reveal
-  .pay.ToContract(scripts.prizeAddress as string, { kind: 'inline', value: Data.to(postPrizeDatum) }, prizeUtxo.assets)
-  .pay.ToContract(scripts.b1PrizePoolAddress as string, { kind: 'inline', value: Data.to(postPoolDatum) }, poolUtxo.assets)
+  .pay.ToContract(
+    scripts.prizeAddress as string,
+    { kind: 'inline', value: Data.to(postPrizeDatum) },
+    prizeUtxo.assets,
+  )
+  .pay.ToContract(
+    scripts.b1PrizePoolAddress as string,
+    { kind: 'inline', value: Data.to(postPoolDatum) },
+    poolUtxo.assets,
+  )
   .addSigner(address)
   .validTo(Number(expiresAt))
   .complete({ localUPLCEval: false })
