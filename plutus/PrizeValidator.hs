@@ -46,7 +46,7 @@ import Types
   )
 
 import OracleTypes
-  ( OracleStateId
+  ( OracleStateId (..)
   )
 
 -- ============================================================
@@ -749,7 +749,7 @@ validateClaim oracleState oraclePublisher datum ctx =
 mkValidator
   :: ScriptHash
   -> PrizeTable
-  -> BuiltinData
+  -> OracleStateId
   -> PubKeyHash
   -> PrizeDatum
   -> PrizeAction
@@ -763,7 +763,7 @@ mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
       validateReveal table datum playerSecret ctx
     Claim ->
       validateClaim
-        (unsafeFromBuiltinData oracleStateData)
+        oracleStateData
         oraclePublisher
         datum
         ctx
@@ -775,7 +775,7 @@ wrap
   :: ScriptHash
   -> PrizeTable
   -> BuiltinData
-  -> PubKeyHash
+  -> BuiltinData
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
@@ -785,8 +785,8 @@ wrap regHash table oracleState oraclePublisher d r ctx =
     (mkValidator
       regHash
       table
-      oracleState
-      oraclePublisher
+      (unsafeFromBuiltinData oracleState)
+      (unsafeFromBuiltinData oraclePublisher)
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)
       (unsafeFromBuiltinData ctx))
@@ -795,7 +795,7 @@ compiledValidatorFactory
   :: CompiledCode
        ( ScriptHash
          -> PrizeTable
-         -> BuiltinData
+         -> OracleStateId
          -> PubKeyHash
          -> BuiltinData
          -> BuiltinData
