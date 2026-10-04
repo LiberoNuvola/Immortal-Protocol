@@ -11,11 +11,11 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { buildScriptsFromLucid } from '../../src/loadValidator'
+import { buildScriptsFromLucid, prizeValidatorFactory, prizeTableToData } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
@@ -293,6 +293,26 @@ const scripts = buildScriptsFromLucid(
 if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
+
+const differentialParams = [
+  validatorToScriptHash((await import('../../src/loadValidator')).beaconRegistryValidator as any),
+  toEvolutionData(prizeTableToData(defaultPrizeTable)),
+  toEvolutionData(new Constr(0, [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX])),
+  keyHash,
+]
+const evolutionPrizeScriptHex = evolutionApplyParamsToScript(
+  (prizeValidatorFactory as any).script,
+  differentialParams,
+)
+console.log(JSON.stringify({
+  parameterizationDifferential: {
+    legacyBytes: Buffer.from(legacyPrizeScript, 'hex').length,
+    evolutionBytes: Buffer.from(evolutionPrizeScriptHex, 'hex').length,
+    legacyHash: validatorToScriptHash(scripts.prizeValidator as any),
+    evolutionHash: validatorToScriptHash({ type: 'PlutusV2', script: evolutionPrizeScriptHex } as any),
+    identicalCbor: legacyPrizeScript === evolutionPrizeScriptHex,
+  },
+}, null, 2))
 
 const issuedAt = BigInt(Date.now())
 const expiresAt = issuedAt + 3_600_000n
