@@ -36,7 +36,7 @@ mintedExactlyOne expectedCs expectedName value =
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
 seedConsumed seed info =
-  List.any (i -> txInInfoOutRef i == seed) (txInfoInputs info)
+  List.any (\i -> txInInfoOutRef i == seed) (txInfoInputs info)
 
 {-# INLINABLE mkPolicy #-}
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
