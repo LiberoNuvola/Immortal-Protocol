@@ -99,7 +99,7 @@ jobs:
       - name: Start isolated Cardano devnet
         run: |
           mkdir -p audit/yaci-evidence
-          nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
+          nohup yaci-devkit up --enable-yaci-store --enable-ogmios > audit/yaci-evidence/yaci.log 2>&1 &
           echo $! > audit/yaci-evidence/yaci.pid
 
       - name: Wait for Yaci Store
