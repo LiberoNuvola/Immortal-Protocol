@@ -779,13 +779,16 @@ wrap
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
+  -> BuiltinData
   -> BuiltinUnit
-wrap regHash table oracleState oraclePublisher d r ctx =
+wrap regHash table oracleStatePolicy oracleStateName oraclePublisher d r ctx =
   check
     (mkValidator
       regHash
       table
-      (unsafeFromBuiltinData oracleState)
+      (OracleStateId
+        (unsafeFromBuiltinData oracleStatePolicy)
+        (unsafeFromBuiltinData oracleStateName))
       (unsafeFromBuiltinData oraclePublisher)
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)
@@ -795,6 +798,7 @@ compiledValidatorFactory
   :: CompiledCode
        ( ScriptHash
          -> PrizeTable
+         -> BuiltinData
          -> BuiltinData
          -> BuiltinData
          -> BuiltinData
