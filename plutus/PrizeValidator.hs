@@ -795,8 +795,8 @@ compiledValidatorFactory
   :: CompiledCode
        ( ScriptHash
          -> PrizeTable
-         -> OracleStateId
-         -> PubKeyHash
+         -> BuiltinData
+         -> BuiltinData
          -> BuiltinData
          -> BuiltinData
          -> BuiltinData
