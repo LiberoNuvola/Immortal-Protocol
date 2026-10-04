@@ -42,8 +42,9 @@ jobs:
       - name: Setup canonical Plutus CI
         uses: ./.github/actions/setup-plutus
 
-      - name: Cache Cabal/Plutus build state
-        uses: actions/cache@v4
+      - name: Restore Cabal/Plutus build state
+        id: plutus-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cabal/packages
@@ -58,6 +59,16 @@ jobs:
       # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
+
+      - name: Save Cabal/Plutus build state
+        if: steps.plutus-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', 'plutus/**/*.hs', 'plutus/**/*.lhs') }}
 
       - name: Record generated artifact hashes
         run: |
