@@ -18,7 +18,7 @@ import PlutusTx.Prelude
 -- wrapper/evaluator accepts the carrier policy shape.
 {-# INLINABLE mkPolicy #-}
 mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkPolicy _seed _tokenName _ctx = True
+mkPolicy _seed _tokenName _unit _ctx = True
 
 {-# INLINABLE wrap #-}
 wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
