@@ -14,14 +14,24 @@ import PlutusTx.Prelude
 import PlutusTx.List qualified as List
 
 -- Validate the complete mint slice belonging to this policy:
--- exactly one token name (ECONOMICSTATE) and exactly one unit.
--- Compare against the canonical singleton Value directly. This avoids
--- destructuring the Value/AssocMap representation in the compiled policy,
--- while preserving the same exact singleton-value invariant.
+-- exactly one currency symbol, one token name, and one unit.
+--
+-- IMPORTANT: do not use Eq Value here. Plutus' Eq Value compares the
+-- underlying associative maps and is therefore exactly the representation
+-- that the native Scalus/Yaci evaluator has rejected in this path.
+--
+-- flattenValue exposes the normalized non-zero entries as a plain list.
+-- Matching that list explicitly preserves the exact-singleton invariant
+-- without scrutinizing the Value/AssocMap representation in our policy.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
 mintedExactlyOne expectedCs expectedName value =
-  value == singleton expectedCs expectedName 1
+  case flattenValue value of
+    [(actualCs, actualName, amount)] ->
+      actualCs == expectedCs
+        && actualName == expectedName
+        && amount == 1
+    _ -> False
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
