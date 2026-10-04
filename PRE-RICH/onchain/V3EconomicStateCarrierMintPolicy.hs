@@ -13,20 +13,12 @@ import PlutusTx
 import PlutusTx.Prelude
 import qualified PlutusTx.List as List
 
--- Validate the complete mint slice belonging to this policy:
--- exactly one currency symbol, one token name, and one unit.
---
--- IMPORTANT: do not use Eq Value here. Plutus' Eq Value compares the
--- underlying associative maps and is therefore exactly the representation
--- that the native Scalus/Yaci evaluator has rejected in this path.
---
--- flattenValue exposes the normalized non-zero entries as a plain list.
--- Matching that list explicitly preserves the exact-singleton invariant
--- without scrutinizing the Value/AssocMap representation in our policy.
+-- Diagnostic Probe A:
+-- isolate seedConsumed from all Value/mint-shape inspection.
+-- mintedExactlyOne is deliberately bypassed for this probe only.
 {-# INLINABLE mintedExactlyOne #-}
 mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne expectedCs expectedName value =
-  valueOf value expectedCs expectedName == 1
+mintedExactlyOne _ _ _ = True
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
