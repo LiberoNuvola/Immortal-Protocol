@@ -82,7 +82,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
   })
 
   it('preserves the protected-capital decomposition witness', () => {
-    const vector = vectors.vectors.find((item) => item.id === 'V05')
+    const vector = executable.find((item) => item.id === 'V05')
     expect(vector).toBeDefined()
     if (!vector || !('decomposition' in vector)) return
 
@@ -100,7 +100,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
   })
 
   it('does not turn RawSurplus into a universal discretionary-allocation rule', () => {
-    const vector = vectors.vectors.find((item) => item.id === 'V06')
+    const vector = executable.find((item) => item.id === 'V06')
     expect(vector).toBeDefined()
     if (!vector || !('candidateDiscretionaryAllocation' in vector)) return
 
@@ -109,7 +109,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
   })
 
   it('preserves state locality', () => {
-    const vector = vectors.vectors.find((item) => item.id === 'V07')
+    const vector = executable.find((item) => item.id === 'V07')
     expect(vector).toBeDefined()
     if (!vector || !('cases' in vector)) return
 
@@ -122,7 +122,7 @@ describe('IMMORTAL portability conformance seed vectors', () => {
 
   it('checks explicit solvency fixtures without redefining the economic gate', () => {
     for (const id of ['V03', 'V04']) {
-      const vector = vectors.vectors.find((item) => item.id === id)
+      const vector = executable.find((item) => item.id === id)
       expect(vector).toBeDefined()
       if (!vector || !('expected' in vector) || vector.expected === null) continue
 
