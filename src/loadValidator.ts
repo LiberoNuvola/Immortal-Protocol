@@ -244,7 +244,8 @@ export function buildPrizeValidator(
       [
         registryScriptHashHex,
         prizeTableToData(table),
-        new Constr(0, [oracleStatePolicyId, oracleStateTokenNameHex]),
+        oracleStatePolicyId,
+        oracleStateTokenNameHex,
         oraclePublisherPkhHex,
       ],
     )
