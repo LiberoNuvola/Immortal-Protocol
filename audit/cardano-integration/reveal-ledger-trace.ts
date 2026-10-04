@@ -678,6 +678,12 @@ writeFileSync(
       valuationMode: 'fixture-1-to-1-test-asset',
       canonicalEconomicPoolUsdmValueEvaluated: false,
     },
+    oracle: {
+      oracleStatePolicyId: fixtureOracleStatePolicyId,
+      oracleStateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
+      oracleMode: 'fixture-identity-only',
+      productionOracleQualified: false,
+    },
     observedCardanoTransitionEvidence: evidence,
     replay: {
       rejected: replayRejected,
