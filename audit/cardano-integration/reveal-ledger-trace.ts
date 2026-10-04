@@ -152,7 +152,89 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid(provider, 'Preprod')
+
+// Yaci Store exposes the Blockfrost-compatible JSON evaluator, while the
+// pinned Lucid Evolution provider needs evaluateTx supplied explicitly.
+const providerWithEvaluation = provider as Blockfrost & {
+  evaluateTx: (tx: string, additionalUTxOs?: Array<{
+    txHash: string
+    outputIndex: number
+    address: string
+    assets: Record<string, bigint>
+    datumHash?: string
+    datum?: string
+    scriptRef?: { type: string; script: string }
+  }>) => Promise<Array<{
+    redeemer_tag: string
+    redeemer_index: number
+    ex_units: { mem: number; steps: number }
+  }>>
+}
+
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
+    throw new Error(
+      `Yaci transaction evaluation received non-hex transaction CBOR: ${cbor.slice(0, 80)}`,
+    )
+  }
+
+  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
+    { txId: utxo.txHash, index: utxo.outputIndex },
+    {
+      address: utxo.address,
+      value: {
+        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
+        ...Object.entries(utxo.assets)
+          .filter(([unit]) => unit !== 'lovelace')
+          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
+            const policyId = unit.slice(0, 56)
+            const assetName = unit.slice(56)
+            assets[policyId] ??= {}
+            assets[policyId][assetName] = Number(amount)
+            return assets
+          }, {}),
+      },
+      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
+      ...(utxo.datum ? { datum: utxo.datum } : {}),
+    },
+  ])
+
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cbor,
+      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
+    }),
+  })
+  const result = await response.json() as {
+    fault?: unknown
+    result?: {
+      EvaluationResult?: Record<string, { memory: number; steps: number }>
+    }
+    message?: string
+  }
+
+  if (!response.ok || result.fault || !result.result?.EvaluationResult) {
+    throw new Error(
+      `Yaci transaction evaluation failed (HTTP ${response.status}): ${result.message ?? JSON.stringify(result)}`,
+    )
+  }
+
+  return Object.entries(result.result.EvaluationResult).map(
+    ([pointer, data]) => {
+      const [redeemer_tag, redeemer_index] = pointer.split(':')
+      return {
+        redeemer_tag,
+        redeemer_index: Number(redeemer_index),
+        ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
+      }
+    },
+  )
+}
+
+const lucid = await Lucid(providerWithEvaluation, 'Preprod')
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
