@@ -42,6 +42,17 @@ jobs:
       - name: Setup canonical Plutus CI
         uses: ./.github/actions/setup-plutus
 
+      - name: Cache Cabal/Plutus build state
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', 'plutus/**/*.hs', 'plutus/**/*.lhs') }}
+          restore-keys: |
+            plutus-build-${{ runner.os }}-
+
       # Cost-model diagnostic run: preserve the real Reveal path while recording the Yaci protocol-model shape.
       # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
       # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
