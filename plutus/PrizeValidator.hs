@@ -749,13 +749,14 @@ validateClaim oracleState oraclePublisher datum ctx =
 mkValidator
   :: ScriptHash
   -> PrizeTable
-  -> OracleStateId
+  -> BuiltinByteString
+  -> BuiltinByteString
   -> PubKeyHash
   -> PrizeDatum
   -> PrizeAction
   -> ScriptContext
   -> Bool
-mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
+mkValidator regHash table oracleStatePolicy oracleStateName oraclePublisher datum action ctx =
   case action of
     SyncBeacon ->
       validateSyncBeacon regHash datum ctx
@@ -763,7 +764,7 @@ mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
       validateReveal table datum playerSecret ctx
     Claim ->
       validateClaim
-        oracleStateData
+        (OracleStateId oracleStatePolicy oracleStateName)
         oraclePublisher
         datum
         ctx
