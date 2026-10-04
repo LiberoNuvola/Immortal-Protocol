@@ -24,7 +24,7 @@ on:
 jobs:
   v3-carrier-ledger:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
 
           echo "Cabal V3 artifact generation exit code: $rc"
           echo "V3-specific compiler diagnostics:"
-          grep -E 'V3EconomicStateCarrier(MintPolicy)?\.hs' plutus/v3-artifact-build.log | tail -200 || true
+          grep -E 'V3EconomicStateCarrier(MintPolicy)?\\.hs' plutus/v3-artifact-build.log | tail -200 || true
 
           if [ "$rc" -ne 0 ]; then
             echo "Last 120 build-log lines:"
