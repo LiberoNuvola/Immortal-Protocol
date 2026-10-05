@@ -591,7 +591,7 @@ ticketMinted
 {-# INLINABLE mkValidator #-}
 mkValidator
   :: ScriptHash
-  -> OracleStateId
+  -> BuiltinData
   -> PubKeyHash
   -> BuiltinByteString
   -> BuiltinByteString
@@ -601,7 +601,7 @@ mkValidator
   -> Bool
 mkValidator
   prizeHash
-  oracleState
+  oracleStateData
   oraclePublisher
   poolPolicy
   poolName
@@ -609,6 +609,9 @@ mkValidator
   action
   ctx =
   let
+    oracleState :: OracleStateId
+    oracleState = unsafeFromBuiltinData oracleStateData
+
     info =
       scriptContextTxInfo ctx
 
@@ -1155,7 +1158,7 @@ wrap
   check
     ( mkValidator
         (unsafeFromBuiltinData prizeHash)
-        (unsafeFromBuiltinData oracleState)
+        oracleState
         (unsafeFromBuiltinData oraclePublisher)
         (unsafeFromBuiltinData poolPolicy)
         (unsafeFromBuiltinData poolName)
