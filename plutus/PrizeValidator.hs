@@ -778,8 +778,6 @@ wrap
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
-  -> BuiltinData
-  -> BuiltinData
   -> BuiltinUnit
 wrap regHash table oracleState oraclePublisher d r ctx =
   check
@@ -796,7 +794,6 @@ compiledValidatorFactory
   :: CompiledCode
        ( ScriptHash
          -> PrizeTable
-         -> BuiltinData
          -> BuiltinData
          -> BuiltinData
          -> BuiltinData
