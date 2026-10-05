@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -155,6 +155,38 @@ const provider = new Blockfrost(API, '')
 
 // Yaci Store exposes the Blockfrost-compatible JSON evaluator, while the
 // pinned Lucid Evolution provider needs evaluateTx supplied explicitly.
+// Diagnostics only: tx shape and redeemer ExUnits, to compare evaluated vs final vs submitted tx.
+const describeTx = (cborHex: string) => {
+  const tx = CML.Transaction.from_cbor_hex(cborHex)
+  const body = tx.body()
+  const redeemers: Array<{ tag: number; index: number; mem: string; steps: string }> = []
+  const rs = tx.witness_set().redeemers()
+  const legacy = rs?.as_arr_legacy_redeemer()
+  if (legacy) {
+    for (let i = 0; i < legacy.len(); i++) {
+      const r = legacy.get(i)
+      redeemers.push({ tag: Number(r.tag()), index: Number(r.index()), mem: r.ex_units().mem().toString(), steps: r.ex_units().steps().toString() })
+    }
+  }
+  const map = rs?.as_map_redeemer_key_to_redeemer_val()
+  if (map) {
+    const keys = map.keys()
+    for (let i = 0; i < keys.len(); i++) {
+      const key = keys.get(i)
+      const val = map.get(key)
+      if (val) redeemers.push({ tag: Number(key.tag()), index: Number(key.index()), mem: val.ex_units().mem().toString(), steps: val.ex_units().steps().toString() })
+    }
+  }
+  return {
+    txSha256: createHash('sha256').update(Buffer.from(cborHex, 'hex')).digest('hex'),
+    bodyHash: CML.hash_transaction(body).to_hex(),
+    bytes: cborHex.length / 2,
+    fee: body.fee().toString(),
+    ttl: body.ttl()?.toString() ?? null,
+    redeemers,
+  }
+}
+
 const providerWithEvaluation = provider as Blockfrost & {
   evaluateTx: (tx: string, additionalUTxOs?: Array<{
     txHash: string
@@ -239,7 +271,7 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
     )
   }
 
-  return Object.entries(result.result.EvaluationResult).map(
+  const evaluated = Object.entries(result.result.EvaluationResult).map(
     ([pointer, data]) => {
       const [redeemer_tag, redeemer_index] = pointer.split(':')
       return {
@@ -249,6 +281,10 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
       }
     },
   )
+  if (evaluated.length > 0) {
+    console.log(JSON.stringify({ revealDiag: 'yaci-evaluate', tx: describeTx(cbor), yaciExUnits: evaluated }))
+  }
+  return evaluated
 }
 
 // validTo() converts ms to slots with this table; the 'Preprod' default does not match the devnet genesis.
@@ -599,6 +635,13 @@ const reveal = await lucid
   .addSigner(address)
   .validTo(Number(revealValidTo()))
   .complete({ localUPLCEval: false })
+
+{
+  const builtCbor = reveal.toCBOR()
+  writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
+  const reEvaluated = await providerWithEvaluation.evaluateTx(builtCbor, []).catch((e: unknown) => String(e).slice(0, 600))
+  console.log(JSON.stringify({ revealDiag: 'final-built', tx: describeTx(builtCbor), yaciReEvaluationOfFinal: reEvaluated }))
+}
 
 let signedReveal: any = null
 /*
