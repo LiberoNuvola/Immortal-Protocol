@@ -349,6 +349,11 @@ console.log(JSON.stringify({
 
 const issuedAt = BigInt(Date.now())
 const expiresAt = issuedAt + 3_600_000n
+// Upper bound stays <= pdExpiresAt but inside the devnet ledger time horizon (safe zone 300 s).
+const revealValidTo = () => {
+  const near = BigInt(Date.now()) + 180_000n
+  return near < expiresAt ? near : expiresAt
+}
 const playerSecret = fromHex('01'.repeat(32))
 
 const beaconValue = await deriveBeacon(
@@ -592,7 +597,7 @@ const reveal = await lucid
     poolUtxo.assets,
   )
   .addSigner(address)
-  .validTo(Number(expiresAt))
+  .validTo(Number(revealValidTo()))
   .complete({ localUPLCEval: false })
 
 let signedReveal: any = null
