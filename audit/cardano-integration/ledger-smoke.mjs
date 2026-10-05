@@ -31,6 +31,7 @@ writeFileSync('audit/yaci-evidence/ledger-smoke.json', JSON.stringify({
   purpose: 'real-local-cardano-ledger-smoke',
   address,
   inputUtxos: utxos.length,
+  inputRefs: utxos.map((u) => `${u.txHash}#${u.outputIndex}`),
   inputBalance: balance.toString(),
   txHash,
   txCbor,
