@@ -749,14 +749,13 @@ validateClaim oracleState oraclePublisher datum ctx =
 mkValidator
   :: ScriptHash
   -> PrizeTable
-  -> BuiltinByteString
-  -> BuiltinByteString
+  -> BuiltinData
   -> PubKeyHash
   -> PrizeDatum
   -> PrizeAction
   -> ScriptContext
   -> Bool
-mkValidator regHash table oracleStatePolicy oracleStateName oraclePublisher datum action ctx =
+mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
   case action of
     SyncBeacon ->
       validateSyncBeacon regHash datum ctx
@@ -764,7 +763,7 @@ mkValidator regHash table oracleStatePolicy oracleStateName oraclePublisher datu
       validateReveal table datum playerSecret ctx
     Claim ->
       validateClaim
-        (OracleStateId oracleStatePolicy oracleStateName)
+        (unsafeFromBuiltinData oracleStateData)
         oraclePublisher
         datum
         ctx
@@ -782,13 +781,12 @@ wrap
   -> BuiltinData
   -> BuiltinData
   -> BuiltinUnit
-wrap regHash table oracleStatePolicy oracleStateName oraclePublisher d r ctx =
+wrap regHash table oracleState oraclePublisher d r ctx =
   check
     (mkValidator
       regHash
       table
-      (unsafeFromBuiltinData oracleStatePolicy)
-      (unsafeFromBuiltinData oracleStateName)
+      oracleState
       (unsafeFromBuiltinData oraclePublisher)
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)
