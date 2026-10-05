@@ -13,6 +13,8 @@ on:
       - "PRE-RICH/onchain/V3EconomicStateCarrier.hs"
       - "PRE-RICH/onchain/PreRichGenesisAdmission.hs"
       - "PRE-RICH/onchain/PreRichRegimeState.hs"
+      - "PRE-RICH/onchain/PreRichLifecycleTransition.hs"
+      - "plutus/test/PreRichLifecycleTransitionTest.hs"
       - "plutus/Types.hs"
       - "plutus/Economic.hs"
       - "plutus/pre-rich-plutus.cabal"
@@ -63,6 +65,9 @@ jobs:
       - name: Run Genesis regime carrier tests
         working-directory: plutus
         run: cabal test genesis-regime-carrier-tests
+      - name: Run PRE-RICH lifecycle/QNE tests
+        working-directory: plutus
+        run: cabal test pre-rich-lifecycle-transition-tests
       - name: Run V3 economic state carrier binding tests
         working-directory: plutus
         run: cabal test v3-economic-state-carrier-binding-tests
