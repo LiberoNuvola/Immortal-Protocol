@@ -101,8 +101,22 @@ const lucid = await Lucid(providerWithEvaluation, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
-const utxos = await lucid.wallet().getUtxos()
-if (utxos.length === 0) throw new Error('V3 ledger probe wallet has no UTxOs')
+const smoke = JSON.parse(readFileSync('audit/yaci-evidence/ledger-smoke.json', 'utf8')) as { inputRefs?: string[] }
+const consumedBySmoke = new Set(smoke.inputRefs ?? [])
+
+let utxos: Awaited<ReturnType<typeof lucid.wallet().getUtxos>> = []
+for (let attempt = 0; attempt < 30; attempt += 1) {
+  utxos = await lucid.wallet().getUtxos()
+  const fresh = utxos.filter((u) => !consumedBySmoke.has(`${u.txHash}#${u.outputIndex}`))
+  if (fresh.length > 0) {
+    utxos = fresh
+    break
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+}
+if (utxos.length === 0) {
+  throw new Error('V3 ledger probe wallet has no UTxO fresh after the ledger smoke transaction')
+}
 
 const seed = utxos[0]
 const artifact = JSON.parse(
