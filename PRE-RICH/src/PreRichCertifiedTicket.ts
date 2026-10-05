@@ -11,8 +11,15 @@ export type CertifiedTicketIdentity = {
   assetName: string
 }
 
+export type CertifiedTicketProvenance = {
+  beaconStatus: 'Pending' | 'Ready'
+  mcHash?: string
+  materiosContext?: string
+}
+
 export type CertifiedTicketState = {
   identity: CertifiedTicketIdentity
+  provenance: CertifiedTicketProvenance
   purchaseTxHash?: string
   priceUsdm: bigint
   commitment: string
@@ -53,6 +60,7 @@ export function certifyTicketBinding(input: {
     row1Tier: bigint
     row2Tier: bigint
     beaconTarget: string
+    provenance?: CertifiedTicketProvenance
   }
   purchaseTxHash?: string
   verificationReference?: string
@@ -81,6 +89,7 @@ export function certifyTicketBinding(input: {
       policyId: datumPolicy,
       assetName: datumName,
     },
+    provenance: input.datum.provenance ?? { beaconStatus: 'Pending' },
     purchaseTxHash: input.purchaseTxHash,
     priceUsdm: input.datum.priceUsdm,
     commitment: input.datum.commitment,
