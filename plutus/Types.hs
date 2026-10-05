@@ -292,28 +292,28 @@ instance FromData B1PrizePoolDatum where
   fromBuiltinData d =
     Builtins.matchData
       d
-      (\\tag fields ->
+      (\tag fields ->
         if tag == 0
           then b1PrizePoolDatumFromFields fields
           else Nothing)
-      (\\_ -> Nothing)
-      (\\_ -> Nothing)
-      (\\_ -> Nothing)
-      (\\_ -> Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
+      (\_ -> Nothing)
 
 instance UnsafeFromData B1PrizePoolDatum where
   {-# INLINABLE unsafeFromBuiltinData #-}
   unsafeFromBuiltinData d =
     Builtins.matchData
       d
-      (\\tag fields ->
+      (\tag fields ->
         if tag == 0
           then b1PrizePoolDatumUnsafeFromFields fields
           else traceError "B1PrizePoolDatum: invalid constructor")
-      (\\_ -> traceError "B1PrizePoolDatum: expected constructor")
-      (\\_ -> traceError "B1PrizePoolDatum: expected constructor")
-      (\\_ -> traceError "B1PrizePoolDatum: expected constructor")
-      (\\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
+      (\_ -> traceError "B1PrizePoolDatum: expected constructor")
 
 
 
