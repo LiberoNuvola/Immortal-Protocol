@@ -843,6 +843,10 @@ export async function loadCertifiedTicketState(opts: {
 
   const commitment = bytesField(datum.fields[4])
   const gameVersion = bytesField(datum.fields[5])
+  const beaconStatusIndex = constrIndex(datum.fields[14])
+  const beaconStatus = beaconStatusIndex === 0 ? 'Pending' : beaconStatusIndex === 1 ? 'Ready' : null
+  const mcHash = bytesField(datum.fields[16])
+  const materiosContext = bytesField(datum.fields[17])
   const result = bytesField(datum.fields[11])
 
   if (
@@ -856,7 +860,8 @@ export async function loadCertifiedTicketState(opts: {
     row2Tier === null ||
     commitment === null ||
     gameVersion === null ||
-    result === null
+    result === null ||
+    !beaconStatus
   ) {
     throw new Error('Certified ticket PrizeDatum has incomplete state')
   }
@@ -883,6 +888,11 @@ export async function loadCertifiedTicketState(opts: {
       row1Tier: BigInt(row1Tier),
       row2Tier: BigInt(row2Tier),
       beaconTarget: JSON.stringify(target),
+      provenance: {
+        beaconStatus,
+        mcHash: mcHash || undefined,
+        materiosContext: materiosContext || undefined,
+      },
     },
     purchaseTxHash,
     verificationReference: purchaseTxHash
