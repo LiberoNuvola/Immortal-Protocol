@@ -251,7 +251,21 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   )
 }
 
-const lucid = await Lucid(providerWithEvaluation, 'Preprod')
+// validTo() converts ms to slots with this table; the 'Preprod' default does not match the devnet genesis.
+const devnetGenesis = await (await fetch(API + '/genesis')).json() as {
+  system_start: number
+  slot_length: number
+}
+if (!Number.isSafeInteger(devnetGenesis.system_start) || devnetGenesis.system_start <= 0 ||
+    !Number.isSafeInteger(devnetGenesis.slot_length) || devnetGenesis.slot_length <= 0) {
+  throw new Error('Yaci /genesis lacks system_start/slot_length: ' + JSON.stringify(devnetGenesis))
+}
+const devnetSlotConfig = {
+  zeroTime: devnetGenesis.system_start * 1000,
+  zeroSlot: 0,
+  slotLength: devnetGenesis.slot_length * 1000,
+}
+const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: devnetSlotConfig })
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
