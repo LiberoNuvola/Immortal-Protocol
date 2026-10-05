@@ -104,7 +104,7 @@ const address = await lucid.wallet().address()
 const smoke = JSON.parse(readFileSync('audit/yaci-evidence/ledger-smoke.json', 'utf8')) as { inputRefs?: string[] }
 const consumedBySmoke = new Set(smoke.inputRefs ?? [])
 
-let utxos: Awaited<ReturnType<typeof lucid.wallet().getUtxos>> = []
+let utxos = await lucid.wallet().getUtxos()
 for (let attempt = 0; attempt < 30; attempt += 1) {
   utxos = await lucid.wallet().getUtxos()
   const fresh = utxos.filter((u) => !consumedBySmoke.has(`${u.txHash}#${u.outputIndex}`))
