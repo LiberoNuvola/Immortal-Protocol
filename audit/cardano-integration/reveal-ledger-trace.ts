@@ -561,9 +561,9 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
 const reveal = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
-  .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+  .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
   .attach.SpendingValidator(scripts.prizeValidator)
-  .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+  .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
   .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(
     scripts.prizeAddress as string,
