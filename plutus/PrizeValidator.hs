@@ -46,7 +46,7 @@ import Types
   )
 
 import OracleTypes
-  ( OracleStateId (..)
+  ( OracleStateId
   )
 
 -- ============================================================
@@ -775,7 +775,7 @@ wrap
   :: ScriptHash
   -> PrizeTable
   -> BuiltinData
-  -> BuiltinData
+  -> PubKeyHash
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
@@ -786,7 +786,7 @@ wrap regHash table oracleState oraclePublisher d r ctx =
       regHash
       table
       oracleState
-      (unsafeFromBuiltinData oraclePublisher)
+      oraclePublisher
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)
       (unsafeFromBuiltinData ctx))
@@ -796,7 +796,7 @@ compiledValidatorFactory
        ( ScriptHash
          -> PrizeTable
          -> BuiltinData
-         -> BuiltinData
+         -> PubKeyHash
          -> BuiltinData
          -> BuiltinData
          -> BuiltinData
