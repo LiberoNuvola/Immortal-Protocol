@@ -609,9 +609,6 @@ mkValidator
   action
   ctx =
   let
-    oracleState :: OracleStateId
-    oracleState = unsafeFromBuiltinData oracleStateData
-
     info =
       scriptContextTxInfo ctx
 
@@ -642,6 +639,9 @@ mkValidator
 
         FundTreasury ->
           let
+            oracleState :: OracleStateId
+            oracleState = unsafeFromBuiltinData oracleStateData
+
             ownOutVal =
               ownOutputValue ctx
 
@@ -925,6 +925,9 @@ mkValidator
 
                        Just pd ->
                          let
+                           oracleState :: OracleStateId
+                           oracleState = unsafeFromBuiltinData oracleStateData
+
                            ticketCs =
                              pdTicketPolicy pd
 
