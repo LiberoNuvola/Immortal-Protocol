@@ -252,18 +252,20 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
 }
 
 // validTo() converts ms to slots with this table; the 'Preprod' default does not match the devnet genesis.
-const devnetGenesis = await (await fetch(API + '/genesis')).json() as {
-  system_start: number
-  slot_length: number
+// Anchor = latest Yaci block (slot, time); slot length is the Yaci devkit default (1.0 s, see bootstrap log).
+const DEVNET_SLOT_LENGTH_MS = 1000
+const latestBlock = await (await fetch(API + '/blocks/latest')).json() as {
+  slot: number
+  time: number
 }
-if (!Number.isSafeInteger(devnetGenesis.system_start) || devnetGenesis.system_start <= 0 ||
-    !Number.isSafeInteger(devnetGenesis.slot_length) || devnetGenesis.slot_length <= 0) {
-  throw new Error('Yaci /genesis lacks system_start/slot_length: ' + JSON.stringify(devnetGenesis))
+if (!Number.isSafeInteger(latestBlock.slot) || latestBlock.slot < 0 ||
+    !Number.isSafeInteger(latestBlock.time) || latestBlock.time <= 0) {
+  throw new Error('Yaci /blocks/latest lacks slot/time: ' + JSON.stringify(latestBlock))
 }
 const devnetSlotConfig = {
-  zeroTime: devnetGenesis.system_start * 1000,
-  zeroSlot: 0,
-  slotLength: devnetGenesis.slot_length * 1000,
+  zeroTime: latestBlock.time * 1000,
+  zeroSlot: latestBlock.slot,
+  slotLength: DEVNET_SLOT_LENGTH_MS,
 }
 const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: devnetSlotConfig })
 const protocolParameters = await provider.getProtocolParameters()
