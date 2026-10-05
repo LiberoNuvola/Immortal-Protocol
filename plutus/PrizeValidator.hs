@@ -778,6 +778,7 @@ wrap
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
+  -> BuiltinData
   -> BuiltinUnit
 wrap regHash table oracleState oraclePublisher d r ctx =
   check
