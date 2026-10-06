@@ -92,7 +92,7 @@ import {
   issueClassSaleable,
   type IssueRefinementEvidence,
 } from '../PRE-RICH/src/PreRichIssueEvidence'
-import { observeEconomicStateCarrier } from '../PRE-RICH/src/PreRichCardanoObservationProjection'
+import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
