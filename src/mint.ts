@@ -1466,7 +1466,6 @@ export async function mintSerialNFT(
 
   tx = tx.complete()
 
-t
   // ----------------------------------------------------------
 
   const submission =
