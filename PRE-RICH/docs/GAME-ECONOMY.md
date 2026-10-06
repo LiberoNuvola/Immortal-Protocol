@@ -74,9 +74,13 @@ A winning payout is determined at reveal and becomes immutable at crystallizatio
 
 ### 3.1 Surplus, class activation and prize capacity
 
-The relationship between protocol wealth and player prizes is **state-derived through the ticket class frontier**, not through a mutable prize multiplier.
+Protocol economic strength can improve player economics in **two distinct regimes**.
 
-The canonical normal payout remains:
+First, while the ticket ladder can still expand, a stronger verified economic state can permit a higher `CurrentActiveClass`. Because normal prizes are proportional to ticket price `P`, the absolute prize amounts then increase automatically.
+
+Second, after the maximum ticket class and the required Jackpot regime are already active, class progression can no longer express additional economic surplus. The recovered PRE-RICH economic design calls this the **mature surplus regime** and assigns the remaining adaptive role to **AWRA — Adaptive Win Rate Algorithm**.
+
+The deterministic base payout remains:
 
 ```text
 Prize(P, tier) = BaseMultiplier(tier) × P / 2
@@ -91,47 +95,60 @@ BaseMultiplier =
 MaximumNormalPayout(P) = 500 × P
 ```
 
-`RawSurplus` does **not** directly multiply the five tier payouts and does not dynamically rewrite the canonical `PrizeTable`.
+### 3.2 Mature surplus and AWRA
 
-Instead, economic state determines the highest class that can safely be sold:
-
-```text
-CurrentActiveClass(S)
-  = highest class whose verified post-sale state remains safe
-```
-
-`RawSurplus = max(0, EEV − ProtectedCapital)` is one part of the state from which that economic capacity is derived. A larger surplus can therefore permit a higher saleable ticket price `P`; because the same deterministic tier multipliers apply to that larger `P`, the **absolute prize amounts increase automatically**.
-
-Examples for the maximum normal win:
-
-| Ticket class | P | Maximum normal win |
-|---|---:|---:|
-| Genesis | 1 USDM | 500 USDM |
-| Class 2 | 2 USDM | 1,000 USDM |
-| Class 3 | 3 USDM | 1,500 USDM |
-| Class 4 | 5 USDM | 2,500 USDM |
-| Class 5 | 10 USDM | 5,000 USDM |
-| Class 6 | 25 USDM | 12,500 USDM |
-| Class 7 | 50 USDM | 25,000 USDM |
-| Class 8 | 100 USDM | 50,000 USDM |
-
-This means the state-to-prize feedback is:
+Define the economic boundary:
 
 ```text
-stronger protected economic position
-        ↓
-more residual capacity / RawSurplus
-        ↓
-ability to satisfy a higher safe class frontier
-        ↓
-higher ticket price P
-        ↓
-higher absolute prizes at the same deterministic tiers
+RawSurplus = max(0, EEV − ProtectedCapital)
 ```
 
-Conversely, when solvency deteriorates, `CurrentActiveClass` contracts. New tickets then use only the lower saleable classes; already-issued and crystallized tickets are not repriced or reduced.
+The historical economic-algorithm checkpoint also defined the candidate distribution floor:
 
-A direct rule of the form `Prize = BaseMultiplier × P × f(RawSurplus)` is **not** part of the current canonical PRE-RICH policy. Adding such a direct surplus-to-payout scaling rule would be a new explicit economic decision.
+```text
+C = V − L − E − J − R − M − O
+X(P) = 499P + Fs + Fr + Fc
+DS = max(0, C − KD × X(Pcurrent))
+```
+
+`DS` is the candidate amount that may be used only after preserving the safety/continuity floor. It is **not** an automatic entitlement to spend and must still pass the post-state Economic Gate and Viability checks.
+
+When all ticket classes are already active and the required Jackpot state is already funded/protected, further surplus cannot create a new ticket class. In that mature state, the intended adaptive consumer is AWRA.
+
+AWRA may improve future-ticket economics through an explicitly authorised, deterministic configuration. The recovered design identified the following objective dimensions:
+
+- win probability `W = P(payout > 0)`;
+- profit-win probability `G = P(payout > ticket)`;
+- probability of two row wins `D`;
+- probability of payout at least `5×`;
+- expected value `EV`;
+- variance / `σ`;
+- tail risk;
+- required reserve.
+
+AWRA is therefore **not** a hidden multiplier controlled by the operator. It is a state-dependent application policy that may choose only among authorised configurations whose projected post-state remains safe.
+
+Hard constraints:
+
+```text
+crystallised payouts             unchanged
+unresolved worst-case protection  preserved
+locked Jackpot                    preserved
+Reserve / Maintenance / O         preserved
+500 × P ceiling                   preserved
+post-state Economic Gate          required
+Viability                         required
+```
+
+The change applies only to tickets whose result has not yet been crystallised. Once a ticket is crystallised, later surplus changes, AWRA changes or class changes cannot rewrite its payout.
+
+### 3.3 What is frozen and what is not
+
+**Frozen today:** the base five-tier payout table, the `500 × P` normal ceiling, the class ladder, liability-first accounting and the protected-capital / `RawSurplus` boundary.
+
+**Recovered but not numerically frozen:** the mature-surplus AWRA function itself. The historical checkpoints explicitly state that an AWRA optimum had not yet been established and that the preferred approach was a Pareto frontier or explicit lexicographic priorities under hard solvency constraints.
+
+Thus the current base table remains the canonical configuration until an AWRA policy is explicitly parameterised, versioned and adopted. See `PRE-RICH/docs/AWRA-SURPLUS-MODE-DESIGN.md` for the recovered design record.
 
 ## 4. Unresolved-ticket reserve
 
