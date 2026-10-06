@@ -52,6 +52,25 @@ JackpotPayout <= LockedJackpotLiquidity
 
 The approved payout-mode policy remains open.
 
+## 5. Mature surplus / AWRA
+
+After the maximum ticket class has been reached and the applicable Jackpot protection is satisfied, additional genuine residual surplus is not represented by another ticket class. The recovered PRE-RICH economic design identifies **AWRA — Adaptive Win Rate Algorithm** as the application-level adaptive consumer of that mature surplus.
+
+The boundary is:
+
+```text
+RawSurplus = max(0, EEV − ProtectedCapital)
+        ↓
+mature surplus state
+        ↓
+AWRA may improve future-ticket economics
+        ↓
+same Economic Gate / Viability constraints
+```
+
+AWRA does not change already crystallized payouts, does not consume protected capital or locked Jackpot liquidity, and does not raise the normal `500 × P` ceiling.
+
+The recovered AWRA design is documented in `PRE-RICH/docs/AWRA-SURPLUS-MODE-DESIGN.md`. Its exact quantitative optimisation is **not yet parameter-frozen** and must not be inferred as a hidden multiplier.
 ## 5. Expiry
 
 Expiry is final: no claim, no new liability, no resurrection, late reveal cannot create claimability, and the expired payment commitment dissolves. Exact duration remains open.
