@@ -54,30 +54,60 @@ WorstCaseExposure(P,N) = 500 × P × N
 
 RawSurplus = max(0, EEV − ProtectedCapital)
 
-### 3.1 Surplus → class frontier → prize capacity
+### 3.1 Surplus regimes and AWRA
 
-`RawSurplus` is not a direct multiplier on the normal prize table.
+`RawSurplus` must be interpreted together with the current class frontier and Jackpot state.
 
-The deterministic relationship is:
+Before the maximum class is reached:
 
 ```text
-RawSurplus / full economic state
-        ↓
-CurrentActiveClass(S) = highest class whose post-sale state is safe
-        ↓
-ticket price P from the active ladder
-        ↓
-Prize(P,tier) = BaseMultiplier(tier) × P / 2
+economic state
+    ↓
+CurrentActiveClass = highest class whose post-sale state is safe
+    ↓
+ticket price P
+    ↓
+normal payout = BaseMultiplier × P / 2
 ```
 
-The five base multipliers remain fixed at `2 / 5 / 10 / 200 / 1000`, so the normal ceiling remains `500 × P`.
+Thus stronger economic capacity can increase absolute prizes by enabling a higher ticket class.
 
-Therefore, a stronger economic state can increase player prize amounts by allowing higher ticket classes to become saleable. It does not silently rewrite the tier multipliers or the RTP of an already-defined table.
+After the maximum class is active and the applicable Jackpot regime is already funded/protected, there is no additional class to activate. The recovered economic design identifies this state as the **mature surplus regime** and uses **AWRA (Adaptive Win Rate Algorithm)** as the adaptive consumer of genuine residual surplus.
 
-When the economic state deteriorates, the class frontier contracts. This affects new sales only; existing tickets and crystallized payouts remain immutable.
+The historical checkpoint defined the candidate distribution floor:
 
-Any future rule that directly scales payout or RTP from `RawSurplus` (for example `Prize = BaseMultiplier × P × f(RawSurplus)`) would be a new explicit PRE-RICH economic decision and must not be inferred from the current model.
+```text
+C = V − L − E − J − R − M − O
+X(P) = 499P + Fs + Fr + Fc
+DS = max(0, C − KD × X(Pcurrent))
+```
 
+`DS` is a candidate surplus budget, not an unconditional permission to spend. Any AWRA action must be evaluated on the projected post-state through the same Economic Gate / Viability machinery.
+
+AWRA is allowed to improve future-ticket economics, using state and authorised ruleset information. Candidate objective dimensions recovered from the checkpoint are:
+
+```text
+W = P(payout > 0)
+G = P(payout > ticket)
+D = P(two row wins)
+H = P(payout >= 5×)
+EV, variance/σ, tail risk, required reserve
+```
+
+AWRA MUST preserve:
+
+```text
+crystallised payouts           immutable
+worst-case unresolved exposure protected
+locked Jackpot                 protected
+Reserve/Maintenance/O          protected
+MaximumNormalPayout(P)         <= 500 × P
+post-state safety              required
+```
+
+AWRA therefore does not mean an arbitrary `RawSurplus` multiplier. It is a deterministic policy over an authorised candidate configuration set. The candidate set, objective ordering, bounds and tie-break rules are not yet numerically frozen and must be versioned before production adoption.
+
+See `PRE-RICH/docs/AWRA-SURPLUS-MODE-DESIGN.md` for the recovered design record and exact boundary between the frozen baseline and the future adaptive policy.
 
 ## 4. Reserve and class control
 
