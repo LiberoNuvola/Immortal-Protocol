@@ -137,7 +137,12 @@ qneAcrossOmega state action preEEV preProtectedCapital witnesses =
   && preEEV >= 0
   && preProtectedCapital >= 0
   && witnessesNonEmpty witnesses
-  && all (qneWitnessHolds preEEV preProtectedCapital) witnesses
+  && allQneWitnesses preEEV preProtectedCapital witnesses
   where
     witnessesNonEmpty [] = False
     witnessesNonEmpty (_:_) = True
+
+    allQneWitnesses _ _ [] = True
+    allQneWitnesses eev protected (w:ws) =
+         qneWitnessHolds eev protected w
+      && allQneWitnesses eev protected ws
