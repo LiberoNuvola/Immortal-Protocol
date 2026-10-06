@@ -72,6 +72,67 @@ MaximumNormalPayout(P) = 500 × P
 
 A winning payout is determined at reveal and becomes immutable at crystallization.
 
+### 3.1 Surplus, class activation and prize capacity
+
+The relationship between protocol wealth and player prizes is **state-derived through the ticket class frontier**, not through a mutable prize multiplier.
+
+The canonical normal payout remains:
+
+```text
+Prize(P, tier) = BaseMultiplier(tier) × P / 2
+
+BaseMultiplier =
+  Tier 1 → 2
+  Tier 2 → 5
+  Tier 3 → 10
+  Tier 4 → 200
+  Tier 5 → 1000
+
+MaximumNormalPayout(P) = 500 × P
+```
+
+`RawSurplus` does **not** directly multiply the five tier payouts and does not dynamically rewrite the canonical `PrizeTable`.
+
+Instead, economic state determines the highest class that can safely be sold:
+
+```text
+CurrentActiveClass(S)
+  = highest class whose verified post-sale state remains safe
+```
+
+`RawSurplus = max(0, EEV − ProtectedCapital)` is one part of the state from which that economic capacity is derived. A larger surplus can therefore permit a higher saleable ticket price `P`; because the same deterministic tier multipliers apply to that larger `P`, the **absolute prize amounts increase automatically**.
+
+Examples for the maximum normal win:
+
+| Ticket class | P | Maximum normal win |
+|---|---:|---:|
+| Genesis | 1 USDM | 500 USDM |
+| Class 2 | 2 USDM | 1,000 USDM |
+| Class 3 | 3 USDM | 1,500 USDM |
+| Class 4 | 5 USDM | 2,500 USDM |
+| Class 5 | 10 USDM | 5,000 USDM |
+| Class 6 | 25 USDM | 12,500 USDM |
+| Class 7 | 50 USDM | 25,000 USDM |
+| Class 8 | 100 USDM | 50,000 USDM |
+
+This means the state-to-prize feedback is:
+
+```text
+stronger protected economic position
+        ↓
+more residual capacity / RawSurplus
+        ↓
+ability to satisfy a higher safe class frontier
+        ↓
+higher ticket price P
+        ↓
+higher absolute prizes at the same deterministic tiers
+```
+
+Conversely, when solvency deteriorates, `CurrentActiveClass` contracts. New tickets then use only the lower saleable classes; already-issued and crystallized tickets are not repriced or reduced.
+
+A direct rule of the form `Prize = BaseMultiplier × P × f(RawSurplus)` is **not** part of the current canonical PRE-RICH policy. Adding such a direct surplus-to-payout scaling rule would be a new explicit economic decision.
+
 ## 4. Unresolved-ticket reserve
 
 Every unrevealed ticket consumes economic capacity. The reference statistical model is:
