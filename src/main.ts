@@ -417,6 +417,10 @@ connectBtn?.addEventListener('click', async () => {
   openWalletPicker()
 })
 
+document.getElementById('open-verify')?.addEventListener('click', () => {
+  document.getElementById('verify-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+})
+
 changeWalletBtn?.addEventListener('click', openWalletPicker)
 walletPickerClose?.addEventListener('click', closeWalletPicker)
 walletPicker?.querySelector('.wallet-picker__backdrop')?.addEventListener('click', closeWalletPicker)
