@@ -8,22 +8,62 @@ import {
   type CanonicalTransitionEvidence,
 } from '../Adapter/CARDANO/observation/CanonicalTransitionEvidence'
 
+export type IssueV3CandidateClassState = {
+  classId: string
+  issued: string
+  unresolved: string
+  exposure: string
+  cap: string
+  saleable: boolean
+}
+
+export type IssueV3CandidateState = {
+  crystallizedLiabilities: string
+  unresolvedReserve: string
+  unresolvedTicketCount: string
+  safetyCapital: string
+  reserveProtection: string
+  mandatoryFutureCosts: string
+  classes: IssueV3CandidateClassState[]
+  control: {
+    currentActiveClass: string
+    highestClassEverActivated: string
+  }
+  jackpot: {
+    lockedAmount: string
+    threshold: string
+    status: 'inactive' | 'locked' | 'payable' | 'closed'
+    cycle: string
+  }
+}
+
+export type IssueV3CarrierBinding = {
+  carrierStateReference: string
+  candidateState: IssueV3CandidateState
+}
+
+export type AuthoritativeIssueAdmissionWitness =
+  EconomicAdmissionWitness & {
+    v3CarrierBinding?: IssueV3CarrierBinding
+  }
+
 export type IssueAdmissionRuntimeInputs = {
   counterInputReference: string
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
+  carrierStateReference?: string
 }
 
 export type AuthoritativeIssueAdmissionProvider = (
   inputs: IssueAdmissionRuntimeInputs,
-) => Promise<EconomicAdmissionWitness>
+) => Promise<AuthoritativeIssueAdmissionWitness>
 
 export async function obtainAuthoritativeIssueAdmission(
   provider: AuthoritativeIssueAdmissionProvider,
   inputs: IssueAdmissionRuntimeInputs,
   classEvidence: IssueRefinementEvidence,
-): Promise<EconomicAdmissionWitness> {
+): Promise<AuthoritativeIssueAdmissionWitness> {
   if (!issueClassSaleable(classEvidence)) {
     throw new Error('class is not saleable')
   }
@@ -32,7 +72,11 @@ export async function obtainAuthoritativeIssueAdmission(
 
   assertEconomicAdmission(
     witness,
-    [inputs.counterInputReference, inputs.poolInputReference],
+    [
+      inputs.counterInputReference,
+      inputs.poolInputReference,
+      ...(inputs.carrierStateReference ? [inputs.carrierStateReference] : []),
+    ],
     inputs.liquiditySourceReferences,
     'Issue',
   )

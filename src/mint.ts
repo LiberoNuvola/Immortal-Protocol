@@ -46,7 +46,12 @@ import {
 import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
-import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from './preRichIssueAdmissionBridge'
+import {
+  obtainAuthoritativeIssueAdmission,
+  type AuthoritativeIssueAdmissionProvider,
+  type AuthoritativeIssueAdmissionWitness,
+  type IssueV3CandidateState,
+} from './preRichIssueAdmissionBridge'
 import {
   buildScriptsFromLucid,
   counterValidator,
@@ -57,6 +62,10 @@ import {
   RELAYER_PKH,
   TICKET_PAYMENT_LOVELACE,
   TREASURY_ADDRESS,
+  TICKET_POLICY_ID,
+  V3_CARRIER_ADDRESS,
+  V3_CARRIER_POLICY_ID,
+  V3_CARRIER_TOKEN_NAME_HEX,
 } from './config'
 
 import {
@@ -83,6 +92,7 @@ import {
   issueClassSaleable,
   type IssueRefinementEvidence,
 } from '../PRE-RICH/src/PreRichIssueEvidence'
+import { observeEconomicStateCarrier } from '../PRE-RICH/src/PreRichCardanoObservationProjection'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
@@ -127,6 +137,79 @@ function beaconTargetToConstr(
     BigInt(target.round),
     toHex(target.mainchainRef),
     toHex(target.version),
+  ])
+}
+
+function booleanConstr(value: boolean): Constr<Data> {
+  return constr(value ? 1 : 0)
+}
+
+function issueCandidateStateToConstr(state: IssueV3CandidateState): Constr<Data> {
+  if (state.classes.length !== 8) {
+    throw new Error('Authoritative Issue candidate V3 state must contain exactly 8 classes')
+  }
+  const classes = state.classes.map((entry, index) => {
+    if (BigInt(entry.classId) !== BigInt(index)) {
+      throw new Error('Authoritative Issue candidate V3 class IDs are not canonical')
+    }
+    return constr(0, [
+      BigInt(entry.classId),
+      BigInt(entry.issued),
+      BigInt(entry.unresolved),
+      BigInt(entry.exposure),
+      BigInt(entry.cap),
+      booleanConstr(entry.saleable),
+    ])
+  })
+  const jackpotStatus = {
+    inactive: 0,
+    locked: 1,
+    payable: 2,
+    closed: 3,
+  }[state.jackpot.status]
+  if (jackpotStatus === undefined) {
+    throw new Error('Authoritative Issue candidate V3 jackpot status is invalid')
+  }
+  return constr(0, [
+    BigInt(state.crystallizedLiabilities),
+    BigInt(state.unresolvedReserve),
+    BigInt(state.unresolvedTicketCount),
+    BigInt(state.safetyCapital),
+    BigInt(state.reserveProtection),
+    BigInt(state.mandatoryFutureCosts),
+    classes,
+    constr(0, [
+      BigInt(state.control.currentActiveClass),
+      BigInt(state.control.highestClassEverActivated),
+    ]),
+    constr(jackpotStatus),
+  ])
+}
+
+function issueCarrierDatum(
+  stateVersion: bigint,
+  candidateState: IssueV3CandidateState,
+): Constr<Data> {
+  if (stateVersion < 0n) throw new Error('V3 carrier state version must be non-negative')
+  return constr(0, [
+    stateVersion + 1n,
+    issueCandidateStateToConstr(candidateState),
+  ])
+}
+
+function issueCarrierAction(
+  admission: AuthoritativeIssueAdmissionWitness,
+): Constr<Data> {
+  if (admission.actionClass !== 'Issue') {
+    throw new Error('V3 carrier action class must be Issue')
+  }
+  return constr(0, [
+    strToHex('Issue'),
+    strToHex(admission.decisionReference),
+    strToHex(admission.authoritativeObservationReference),
+    admission.stateHash,
+    admission.actionFingerprint,
+    admission.postStateHash,
   ])
 }
 
@@ -656,6 +739,9 @@ export type MintSerialOptions = {
    * expiry horizon. The caller is responsible for sourcing/verifying it.
    */
   expiryIssuanceState?: PreRichExpiryIssuanceState
+  lucid?: any
+  v3CarrierValidator?: Script
+  requireV3CarrierBinding?: boolean
 }
 
 // ============================================================
@@ -666,7 +752,7 @@ export async function mintSerialNFT(
   opts: MintSerialOptions,
 ): Promise<MintSerialResult> {
   const lucid =
-    wallet.getLucid()
+    opts.lucid ?? wallet.getLucid()
 
   if (!lucid) {
     throw new Error(
@@ -765,6 +851,10 @@ export async function mintSerialNFT(
     b1PrizePoolHash,
     treasuryAddress: derivedTreasuryAddress,
   } = scripts
+
+  if (TICKET_POLICY_ID && ticketPolicyId.toLowerCase() !== TICKET_POLICY_ID.toLowerCase()) {
+    throw new Error('Derived Ticket policy ID does not match configured canonical PRE-RICH ticket policy')
+  }
 
   void prizeValidator
 
@@ -1044,6 +1134,55 @@ export async function mintSerialNFT(
   // B1PrizePool singleton
   // ----------------------------------------------------------
 
+  const requireCarrierBinding = opts.requireV3CarrierBinding === true
+  let carrierObservation: Awaited<ReturnType<typeof observeEconomicStateCarrier>> | null = null
+  let carrierUtxo: UTxO | null = null
+
+  if (requireCarrierBinding) {
+    if (!V3_CARRIER_ADDRESS || !V3_CARRIER_POLICY_ID || !V3_CARRIER_TOKEN_NAME_HEX) {
+      throw new Error('Authoritative Issue requires the deployed V3 carrier identity configuration')
+    }
+    if (!opts.v3CarrierValidator) {
+      throw new Error('Authoritative Issue requires the deployed V3 carrier validator script')
+    }
+    carrierObservation = await observeEconomicStateCarrier({
+      lucid,
+      carrierAddress: V3_CARRIER_ADDRESS,
+      carrierPolicyId: V3_CARRIER_POLICY_ID,
+      carrierTokenNameHex: V3_CARRIER_TOKEN_NAME_HEX,
+      decodeDatum: (raw: string) => Data.from(raw),
+    })
+    const liveCarrierUtxos: UTxO[] = await lucid.utxosAt(V3_CARRIER_ADDRESS)
+    const matches = liveCarrierUtxos.filter(
+      (utxo: UTxO) =>
+        (utxo.assets?.[V3_CARRIER_POLICY_ID + V3_CARRIER_TOKEN_NAME_HEX] ?? 0n) === 1n,
+    )
+    if (matches.length !== 1) {
+      throw new Error('Authoritative Issue requires exactly one deployed V3 carrier singleton UTxO')
+    }
+    carrierUtxo = matches[0]
+    const carrierRef = carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
+    if (carrierRef !== carrierObservation.carrierStateReference) {
+      throw new Error('Observed V3 carrier reference is internally inconsistent')
+    }
+
+    const requestedClass = Number(opts.issueClassEvidence.classId)
+    const liveClass = carrierObservation.state.classes[requestedClass]
+    if (!liveClass) throw new Error('Requested Issue class is absent from the live V3 carrier state')
+    if (
+      liveClass.classId !== opts.issueClassEvidence.classId ||
+      liveClass.issued !== opts.issueClassEvidence.issued ||
+      liveClass.cap !== opts.issueClassEvidence.cap ||
+      carrierObservation.state.control.currentActiveClass !== opts.issueClassEvidence.currentActiveClass ||
+      carrierObservation.state.control.highestClassEverActivated !== opts.issueClassEvidence.highestClassEverActivated ||
+      !liveClass.saleable ||
+      liveClass.issued >= liveClass.cap ||
+      liveClass.classId > carrierObservation.state.control.currentActiveClass
+    ) {
+      throw new Error('Issue class evidence does not match the live V3 carrier saleability state')
+    }
+  }
+
   const pool =
     await findSingletonB1PrizePoolUtxo(
       lucid,
@@ -1092,6 +1231,9 @@ export async function mintSerialNFT(
         poolUsdmValue: opts.authoritativePoolUsdmValue ?? (() => {
           throw new Error('authoritativePoolUsdmValue is required when using authoritativeIssueAdmissionProvider')
         })(),
+        carrierStateReference: carrierUtxo
+          ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
+          : undefined,
       },
       opts.issueClassEvidence,
     )
@@ -1101,6 +1243,28 @@ export async function mintSerialNFT(
     throw new Error(
       'Authoritative Issue admission is required: provide economicAdmission or authoritativeIssueAdmissionProvider',
     )
+  }
+
+  let candidateCarrierDatum: Constr<Data> | null = null
+  let carrierRedeemer: Constr<Data> | null = null
+
+  if (requireCarrierBinding) {
+    const bound = economicAdmission as AuthoritativeIssueAdmissionWitness
+    if (!bound.v3CarrierBinding) {
+      throw new Error('Authoritative Issue admission is missing the V3 carrier binding')
+    }
+    if (!carrierUtxo || !carrierObservation) {
+      throw new Error('V3 carrier observation is missing')
+    }
+    const observedCarrierRef = carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
+    if (bound.v3CarrierBinding.carrierStateReference !== observedCarrierRef) {
+      throw new Error('Authoritative Issue admission is bound to a different V3 carrier state')
+    }
+    candidateCarrierDatum = issueCarrierDatum(
+      carrierObservation.stateVersion,
+      bound.v3CarrierBinding.candidateState,
+    )
+    carrierRedeemer = issueCarrierAction(bound)
   }
 
   // ----------------------------------------------------------
@@ -1122,8 +1286,8 @@ export async function mintSerialNFT(
    * B1PrizePool checks TicketIssued.
    */
 
-  const tx =
-    await lucid
+  let tx =
+    lucid
       .newTx()
 
       // ------------------------------------------------------
@@ -1276,10 +1440,33 @@ export async function mintSerialNFT(
 
       .addSigner(buyer)
 
-      .complete()
+
 
   // ----------------------------------------------------------
-  // Sign + submit
+  // Sign + submi  if (requireCarrierBinding) {
+    if (!carrierUtxo || !candidateCarrierDatum || !carrierRedeemer || !V3_CARRIER_ADDRESS) {
+      throw new Error('V3 carrier transaction binding is incomplete')
+    }
+    tx = tx
+      .collectFrom(
+        [carrierUtxo],
+        Data.to(carrierRedeemer),
+      )
+      .attachSpendingValidator(
+        opts.v3CarrierValidator as Script,
+      )
+      .payToContract(
+        V3_CARRIER_ADDRESS,
+        {
+          inline: Data.to(candidateCarrierDatum),
+        },
+        carrierUtxo.assets,
+      )
+  }
+
+  tx = tx.complete()
+
+t
   // ----------------------------------------------------------
 
   const submission =
@@ -1287,6 +1474,7 @@ export async function mintSerialNFT(
       .submitEconomic(tx, economicAdmission, [
         `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
+        ...(carrierUtxo ? [`${carrierUtxo.txHash}#${carrierUtxo.outputIndex}`] : []),
       ], [
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ], 'Issue')
@@ -1356,6 +1544,7 @@ export async function mintSerialNFTWithAuthoritativeAdmission(
   return mintSerialNFT({
     ...opts,
     economicAdmission: undefined,
+    requireV3CarrierBinding: true,
   })
 }
 

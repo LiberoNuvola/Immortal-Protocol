@@ -9,7 +9,7 @@
  * must inject the authoritative producer. The browser remains a consumer.
  */
 
-import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
+import type { AuthoritativeIssueAdmissionWitness } from './preRichIssueAdmissionBridge'
 import {
   obtainAuthoritativeIssueAdmission,
   type AuthoritativeIssueAdmissionProvider,
@@ -22,7 +22,7 @@ export type IssueAdmissionProducerContext = IssueAdmissionRuntimeInputs & {
 }
 
 export type AuthoritativeIssueAdmissionProducer =
-  (context: IssueAdmissionProducerContext) => Promise<EconomicAdmissionWitness>
+  (context: IssueAdmissionProducerContext) => Promise<AuthoritativeIssueAdmissionWitness>
 
 /**
  * Adapt an externally authoritative producer to the existing Issue bridge.
@@ -49,7 +49,7 @@ export function createAuthoritativeIssueAdmissionProvider(
 export async function produceIssueAdmission(
   producer: AuthoritativeIssueAdmissionProducer,
   context: IssueAdmissionProducerContext,
-): Promise<EconomicAdmissionWitness> {
+): Promise<AuthoritativeIssueAdmissionWitness> {
   const provider = createAuthoritativeIssueAdmissionProvider(
     producer,
     context.issueClassEvidence,
