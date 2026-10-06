@@ -195,6 +195,7 @@ async function readPreprodIssueObservation({
   price,
   authoritativeInputs,
   observedAt,
+  authoritySource,
 }) {
   if (!lucid) throw new Error('lucid is required')
   required(counterAddress, 'counterAddress')
@@ -209,8 +210,8 @@ async function readPreprodIssueObservation({
   if (!Number.isInteger(price) || price <= 0) {
     throw new Error('price must be a positive integer')
   }
-  if (!authoritativeInputs || typeof authoritativeInputs !== 'object') {
-    throw new Error('authoritativeInputs are required')
+  if (typeof authoritySource !== 'function' && (!authoritativeInputs || typeof authoritativeInputs !== 'object')) {
+    throw new Error('authoritativeInputs or an authenticated authoritySource is required')
   }
   if (observedAt === undefined || observedAt === null) {
     throw new Error('observedAt is required from the authenticated observation source')
@@ -237,6 +238,22 @@ async function readPreprodIssueObservation({
   const poolRef = exactRef(poolUtxo, 'B1PrizePool')
   const observationReference =
     'preprod-issue:' + counterRef + ':' + poolRef + ':' + carrier.carrierStateReference
+
+  if (typeof authoritySource === 'function') {
+    authoritativeInputs = await authoritySource({
+      counterInputReference: counterRef,
+      poolInputReference: poolRef,
+      carrierStateReference: carrier.carrierStateReference,
+      classId,
+      price,
+      observedAt: BigInt(observedAt),
+      observationReference,
+    })
+  }
+
+  if (!authoritativeInputs || typeof authoritativeInputs !== 'object') {
+    throw new Error('authenticated authority source returned no evidence')
+  }
 
   const requiredKeys = [
     'poolUsdmValue',
