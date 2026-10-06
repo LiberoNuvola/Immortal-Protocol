@@ -1443,7 +1443,10 @@ export async function mintSerialNFT(
 
 
   // ----------------------------------------------------------
-  // Sign + submi  if (requireCarrierBinding) {
+  // Optional authoritative V3 carrier continuation
+  // ----------------------------------------------------------
+
+  if (requireCarrierBinding) {
     if (!carrierUtxo || !candidateCarrierDatum || !carrierRedeemer || !V3_CARRIER_ADDRESS) {
       throw new Error('V3 carrier transaction binding is incomplete')
     }
