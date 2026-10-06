@@ -1,5 +1,6 @@
 const { readPreprodIssueObservation } = require('./preprodIssueObservationReader')
 const { createPreprodIssueObservationProducer } = require('./preprodIssueObservationProvider')
+const { fetchSignedIssueAuthority } = require('./signedIssueAuthority')
 
 function createPreprodIssueObservationProducerFromLucid({ lucid, deployment }) {
   if (!lucid) throw new Error('lucid is required')
