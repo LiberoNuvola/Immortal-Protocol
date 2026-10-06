@@ -54,6 +54,30 @@ WorstCaseExposure(P,N) = 500 × P × N
 
 RawSurplus = max(0, EEV − ProtectedCapital)
 
+### 3.1 Surplus → class frontier → prize capacity
+
+`RawSurplus` is not a direct multiplier on the normal prize table.
+
+The deterministic relationship is:
+
+```text
+RawSurplus / full economic state
+        ↓
+CurrentActiveClass(S) = highest class whose post-sale state is safe
+        ↓
+ticket price P from the active ladder
+        ↓
+Prize(P,tier) = BaseMultiplier(tier) × P / 2
+```
+
+The five base multipliers remain fixed at `2 / 5 / 10 / 200 / 1000`, so the normal ceiling remains `500 × P`.
+
+Therefore, a stronger economic state can increase player prize amounts by allowing higher ticket classes to become saleable. It does not silently rewrite the tier multipliers or the RTP of an already-defined table.
+
+When the economic state deteriorates, the class frontier contracts. This affects new sales only; existing tickets and crystallized payouts remain immutable.
+
+Any future rule that directly scales payout or RTP from `RawSurplus` (for example `Prize = BaseMultiplier × P × f(RawSurplus)`) would be a new explicit PRE-RICH economic decision and must not be inferred from the current model.
+
 
 ## 4. Reserve and class control
 
