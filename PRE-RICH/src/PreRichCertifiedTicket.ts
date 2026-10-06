@@ -28,6 +28,7 @@ export type CertifiedTicketState = {
   row2Tier: bigint
   beaconTarget: string
   verificationReference?: string
+  materiosContext: string
 }
 
 function normalizeHex(value: string): string {
@@ -53,6 +54,7 @@ export function certifyTicketBinding(input: {
     row1Tier: bigint
     row2Tier: bigint
     beaconTarget: string
+    materiosContext: string
   }
   purchaseTxHash?: string
   verificationReference?: string
@@ -95,6 +97,7 @@ export function certifyTicketBinding(input: {
     row1Tier: input.datum.row1Tier,
     row2Tier: input.datum.row2Tier,
     beaconTarget: input.datum.beaconTarget,
+    materiosContext: input.datum.materiosContext,
     verificationReference: input.verificationReference,
   }
 }

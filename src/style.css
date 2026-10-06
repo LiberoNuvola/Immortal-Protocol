@@ -280,3 +280,15 @@ button:focus-visible {
  .game-actions{display:grid}
  .game-buy,.game-claim{width:100%}
 }
+
+/* PRE-RICH NFT ticket composition */
+.dapp-about-link{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.76;text-decoration:none;white-space:nowrap}
+.dapp-about-link:hover{opacity:1}
+.my-ticket-card{grid-column:1/-1}
+.my-ticket-card #ticket-3d{min-height:0}
+.price-ladder{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.price-choice{display:grid;gap:3px;min-width:0;text-align:left}
+.price-choice__class{font-size:9px;letter-spacing:.1em;opacity:.58}
+.price-choice strong{font-size:14px}
+.price-choice small{font-size:9px;letter-spacing:.08em;opacity:.45}
+@media(max-width:820px){.dapp-about-link{display:block;margin-bottom:8px}.price-ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}

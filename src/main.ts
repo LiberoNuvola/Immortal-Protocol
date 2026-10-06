@@ -4,6 +4,7 @@ import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
 import { mountCertifiedTicket3D } from './ticket3d'
 import { TICKET_POLICY_ID } from './config'
+import { PRE_RICH_CANONICAL_PRICES } from '../PRE-RICH/src/PreRichCardanoObservationProjection'
 import adSlots from './adSlots'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -19,6 +20,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         </div>
       </div>
       <div class="dapp-header__actions">
+        <a class="dapp-about-link" href="./web/ecosystem.html">Cos’è PRE-RICH? →</a>
         <span class="network-pill">CARDANO · PREPROD</span>
         <button id="connect" class="primary-action">Connect Wallet</button>
         <button id="change-wallet" class="secondary-action" hidden>Change Wallet</button>
@@ -83,12 +85,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
       <article class="dapp-card class-card">
         <div class="dapp-card__head"><span class="dapp-label">TICKET CLASSES</span><span class="state-badge observing">CHOOSE YOUR ENTRY</span></div>
-        <p>Higher classes use the same game lifecycle with a different ticket denomination defined by PRE-RICH.</p>
+        <p>All eight canonical classes are shown before purchase. Which classes are saleable is determined by the authoritative class state, not by the browser.</p>
       </article>
       <div class="class-explain">
-        <div><b>1 USDM</b><small>Genesis · first entry</small></div>
-        <div><b>2–10 USDM</b><small>Progressive classes</small></div>
-        <div><b>25–100 USDM</b><small>Higher denominations</small></div>
+        <div><b>8 CANONICAL CLASSES</b><small>1 · 2 · 3 · 5 · 10 · 25 · 50 · 100 USDM</small></div>
+        <div><b>CLASS STATE</b><small>Activation and saleability follow observed protocol state.</small></div>
+        <div><b>NFT TICKET</b><small>Issued class and price are printed dynamically on the ticket.</small></div>
       </div>
     </section>
 
@@ -99,19 +101,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <span class="dapp-label">SELECTED CLASS</span>
           <h2 id="selected-class">Genesis / 1 USDM</h2>
           <p id="selected-class-note">Choose the ticket you want. The final purchase remains subject to the authoritative PRE-RICH economic gate.</p>
-          <div class="price-ladder" id="price-ladder">
-            <button type="button" data-price="1" class="price-choice selected" aria-pressed="true">1</button>
-            <button type="button" data-price="2" class="price-choice" aria-pressed="false">2</button>
-            <button type="button" data-price="3" class="price-choice" aria-pressed="false">3</button>
-            <button type="button" data-price="5" class="price-choice" aria-pressed="false">5</button>
-            <button type="button" data-price="10" class="price-choice" aria-pressed="false">10</button>
-            <button type="button" data-price="25" class="price-choice" aria-pressed="false">25</button>
-            <button type="button" data-price="50" class="price-choice" aria-pressed="false">50</button>
-            <button type="button" data-price="100" class="price-choice" aria-pressed="false">100</button>
-          </div>
+          <div class="price-ladder" id="price-ladder"></div>
         </div>
         <div class="admission-checklist game-checklist">
-          <div><span>Selected ticket</span><b id="game-class">GENESIS · 1 USDM</b></div>
+          <div><span>Selected ticket</span><b id="game-class">CLASS 0 · GENESIS · 1 USDM</b></div>
           <div><span>Prize eligibility</span><b id="game-eligibility">AWAITING OBSERVATION</b></div>
           <div><span>Economic admission</span><b id="gate-check">LOCKED</b></div>
           <div><span>Wallet signature</span><b id="game-signature">REQUIRED</b></div>
@@ -191,11 +184,39 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `
 const status = (msg: string) => { const el = document.getElementById('status'); if (el) el.textContent = msg }
-let selectedIssuePrice = 1
-const issueClassNames: Record<number, string> = {1:'Genesis',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
+let selectedIssuePrice = Number(PRE_RICH_CANONICAL_PRICES[0])
+const classIdForPrice = (price: number) => PRE_RICH_CANONICAL_PRICES.findIndex((value) => Number(value) === price)
+const issueClassNameForPrice = (price: number) => {
+  const classId = classIdForPrice(price)
+  if (classId === 0) return 'Genesis · Class 0'
+  return classId >= 0 ? 'Class ' + classId : 'Application class'
+}
+const buildPriceLadder = () => {
+  const ladder = document.getElementById('price-ladder')
+  if (!ladder) return
+  ladder.replaceChildren()
+  PRE_RICH_CANONICAL_PRICES.forEach((priceValue, classId) => {
+    const price = Number(priceValue)
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'price-choice' + (classId === 0 ? ' selected' : '')
+    button.dataset.price = String(price)
+    button.setAttribute('aria-pressed', String(classId === 0))
+    const classLine = document.createElement('span')
+    classLine.className = 'price-choice__class'
+    classLine.textContent = 'CLASS ' + classId
+    const priceLine = document.createElement('strong')
+    priceLine.textContent = price + ' USDM'
+    const noteLine = document.createElement('small')
+    noteLine.textContent = classId === 0 ? 'GENESIS' : 'LADDER'
+    button.append(classLine, priceLine, noteLine)
+    ladder.appendChild(button)
+  })
+}
+buildPriceLadder()
 
 const syncPreview = () => {
-  const name = issueClassNames[selectedIssuePrice] || 'Application class'
+  const name = issueClassNameForPrice(selectedIssuePrice)
   const connectedWallet = connected ? 'CONNECTED' : 'NOT CONNECTED'
   const ready = connected
   const setText = (id: string, value: string) => { const el = document.getElementById(id); if (el) el.textContent = value }
@@ -218,7 +239,7 @@ document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((button) =
     document.querySelectorAll('.price-choice').forEach((b) => b.classList.remove('selected'))
     button.classList.add('selected')
     document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((b) => b.setAttribute('aria-pressed', String(b === button)))
-    const name = issueClassNames[selectedIssuePrice] || 'Application class'
+    const name = issueClassNameForPrice(selectedIssuePrice)
     const title = document.getElementById('selected-class')
     if (title) title.textContent = name + ' / ' + selectedIssuePrice + ' USDM'
     syncPreview()
