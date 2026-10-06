@@ -68,6 +68,39 @@ Economic Gate → Viability Gate (K_c) → Policy Selector → Atomic Execution
 Policy chooses only among already-safe executable actions; it cannot enlarge the safe
 action set. Enlargement by a policy selector is non-conforming (C5b).
 
+## 6A. Adaptive-policy boundary
+
+The universal term **Policy Selector** is an execution boundary, not a concrete economic
+strategy. A conforming policy MAY be adaptive: it may select among actions already inside
+`A_exec^spec(S;K_c)` using the current canonical state, authorised environment inputs and
+the active ruleset.
+
+This does **not** make every adaptive application strategy a universal IMMORTAL primitive.
+
+In particular:
+
+- IMMORTAL provides the generic safety/admissibility boundary for adaptive selection.
+- An application/profile defines any concrete adaptive economic policy, its candidate
+  configurations, objective function, parameter bounds and versioning.
+- Such a policy cannot enlarge `A_exec^spec`, weaken `Safe`, alter `ProtectedCapital`,
+  rewrite crystallised rights, or self-authorise a new economic rule.
+- PRE-RICH's **AWRA (Adaptive Win Rate Algorithm)** is an application-level specialization
+  of this generic boundary; AWRA is therefore not a universal IMMORTAL economic constant
+  or kernel primitive.
+
+Thus:
+
+```text
+IMMORTAL:
+  state → admissibility / safety → safe candidate set → policy selection
+
+PRE-RICH:
+  mature surplus → AWRA candidate evaluation → authorised configuration
+```
+
+The universal layer intentionally stops at the policy-selection boundary. The concrete
+AWRA objective and numerical policy remain governed by PRE-RICH application specifications.
+
 ## 7. Separation of layers
 
 | Layer | Owns | Does not own |
