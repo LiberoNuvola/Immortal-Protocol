@@ -724,13 +724,13 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeInput info prizeHash of
+                 case findPrizeOutput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: exactly one decodable prize input required"
+                       "B1PrizePool: exactly one decodable PrizeDatum output required"
 
                    Just pd ->
-                        pdStatus pd == Pending
+                     pdStatus pd == Pending
 
                      && pdPrizeAmount pd == 0
 
@@ -753,8 +753,6 @@ mkValidator
                      && pdPriceUsdm pd
                           == priceUsdm
 
-                     -- Ticket issuance does not change physical
-                     -- pool liquidity.
                      && ppTotalLiquidity n
                           == ppTotalLiquidity datum
 

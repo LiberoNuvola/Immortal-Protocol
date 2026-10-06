@@ -19,6 +19,7 @@ import qualified PlutusTx.AssocMap as AssocMap
 
 import Beacon
   ( encodeBeaconTarget
+  , integerToBytes
   , sameTarget
   , ticketCommitment
   )
@@ -42,15 +43,10 @@ import OracleTypes
 -- Generic helpers
 -- ============================================================
 
-{-# INLINABLE integerToBuiltinByteString #-}
-integerToBuiltinByteString :: Integer -> BuiltinByteString
-integerToBuiltinByteString n =
-  consByteString n emptyByteString
-
 {-# INLINABLE tokenNameFromInteger #-}
 tokenNameFromInteger :: Integer -> TokenName
 tokenNameFromInteger n =
-  TokenName (integerToBuiltinByteString n)
+  TokenName (integerToBytes n)
 
 {-# INLINABLE listLength #-}
 listLength :: [a] -> Integer
