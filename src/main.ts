@@ -4,13 +4,7 @@ import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
 import { mountCertifiedTicket3D } from './ticket3d'
 import { TICKET_POLICY_ID } from './config'
-import adSlots, {
-  AD_SLOT_PACKAGES,
-  calculateAdTotalUsd,
-  formatUsd,
-  getExpiryDateFromPackage,
-  getPackageById,
-} from './adSlots'
+import adSlots from './adSlots'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="app-shell dapp-shell prerich-game-shell">
@@ -197,38 +191,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `
 const status = (msg: string) => { const el = document.getElementById('status'); if (el) el.textContent = msg }
-const slotStatus = (msg: string) => { const el = document.getElementById('slot-status'); if (el) el.textContent = msg }
-
-const renderAdPackages = () => {
-  const container = document.getElementById('slot-packages')
-  if (!container) return
-
-  container.innerHTML = AD_SLOT_PACKAGES.map((pkg) => {
-    const total = calculateAdTotalUsd(pkg.id)
-    const expiry = getExpiryDateFromPackage(pkg.id)
-    return `
-      <button class="slot-package" data-package-id="${pkg.id}">
-        <span class="slot-package__title">${pkg.label}</span>
-        <span class="slot-package__meta">${pkg.hours}h · ${formatUsd(total)}</span>
-        <span class="slot-package__meta">Auto-expiry: ${expiry.toLocaleString()}</span>
-      </button>
-    `
-  }).join('')
-
-  container.querySelectorAll<HTMLButtonElement>('.slot-package').forEach((button) => {
-    button.addEventListener('click', () => {
-      const packageId = button.dataset.packageId as any
-      const pkg = getPackageById(packageId)
-      const total = calculateAdTotalUsd(pkg.id)
-      const expiry = getExpiryDateFromPackage(pkg.id)
-      slotStatus(`${pkg.label}: ${formatUsd(total)} · slot stays active until ${expiry.toLocaleString()}`)
-      status(`Selected ad package: ${pkg.label} (${formatUsd(total)})`)
-    })
-  })
-}
-
-renderAdPackages()
-
 let selectedIssuePrice = 1
 const issueClassNames: Record<number, string> = {1:'Genesis',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
 
