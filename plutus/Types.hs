@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
 
 module Types
   ( PrizeStatus (..)
