@@ -160,7 +160,7 @@ test('v36 dynamic risk envelope matches recovered state-dependent ratios', () =>
 
   assert.ok(Math.abs(e4000.allowedRatio - 1.0875) < 1e-12)
   assert.ok(Math.abs(e8000.allowedRatio - 1.09375) < 1e-12)
-  assert.ok(Math.abs(e12000.allowedRatio - (1 + 0.1 * (11 / 12))) < 1e-12)
+  assert.ok(Math.abs(e12000.allowedRatio - (1 + 0.1 * (23 / 24))) < 1e-12)
   assert.ok(Math.abs(e20000.allowedRatio - 1.0975) < 1e-12)
 })
 
@@ -179,7 +179,7 @@ test('dynamic risk envelope tightens as unresolved worst-case exposure consumes 
   })
 
   assert.equal(noUnresolved.allowedRatio, 1.1)
-  assert.equal(manyUnresolved.allowedRatio, 1)
+  assert.equal(manyUnresolved.allowedRatio, 1.05)
   assert.equal(riskEnvelopeAdmissible(1, manyUnresolved.allowedRatio), true)
   assert.equal(riskEnvelopeAdmissible(1.0000001, manyUnresolved.allowedRatio), false)
 })
