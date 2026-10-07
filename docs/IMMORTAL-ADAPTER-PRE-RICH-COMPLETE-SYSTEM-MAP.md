@@ -50,6 +50,32 @@ Una decisione applicativa non può diventare automaticamente una decisione econo
 
 Il flusso non è quindi soltanto top-down. L'evidenza prodotta dal livello di esecuzione ritorna verso i livelli superiori per la verifica e la conformance.
 
+## 2A. Mechanism map
+
+The end-to-end architecture contains explicit mechanisms at each layer.
+
+| Layer | First-class mechanisms | Core boundary |
+|---|---|---|
+| **IMMORTAL** | Economic Gate · Viability Kernel · A_safe · ProtectedCapital · RawSurplus · Worst-Case Analysis · Statistical Risk Analysis · Hysteresis · Contraction · Quiescence · Recovery | Defines the economically safe/admissible space. |
+| **PRE-RICH** | AWRA · Treasury Allocation · Adaptive Asset/Liquidation · Jackpot Policy · Game Outcome / Randomization | Chooses application behaviour only inside the upstream safe-action space. |
+| **Cardano Adapter** | Evidence transport · semantic preservation · settlement realization · chain conformance | Realizes and verifies execution without acquiring economic authority. |
+
+The central invariant is:
+
+```text
+IMMORTAL safety / admissibility
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+        Cardano Adapter
+              ↓
+            Ledger
+```
+
+AWRA is explicitly a PRE-RICH mechanism rather than an IMMORTAL safety primitive. Its recovered static candidate machinery, current-model adaptation and historical dynamic risk-envelope are documented in the dedicated AWRA recovery specification; the final policy objective/optimizer remains open.
+
 ## 3. Responsabilità normative
 
 ### IMMORTAL
