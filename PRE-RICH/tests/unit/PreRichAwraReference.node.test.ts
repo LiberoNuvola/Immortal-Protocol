@@ -5,6 +5,9 @@ import {
   admitAwraCandidate,
   computeAwraProbabilityDeltas,
   deriveAwraAlpha,
+  AWRA_LOSS_OUTCOME_MULTIPLE,
+  awraBudgetAdmissibleAfterJackpot,
+  deriveAwraPostJackpotResidualSurplus,
   evaluateAwraCandidate,
   evaluateAwraDistribution,
   generateRecovered55Candidates,
@@ -68,12 +71,28 @@ test('the recovered 55-candidate grid can be evaluated on the current Classic-6 
   assert.ok(Math.abs(base.probabilityAtLeast100x - 0.001999) < 1e-12)
 
   for (const candidate of candidates) {
-    const evaluation = evaluateAwraCandidate(currentClassic6, candidate, 0)
+    const evaluation = evaluateAwraCandidate(currentClassic6, candidate, AWRA_LOSS_OUTCOME_MULTIPLE)
     assert.ok(
       Math.abs(evaluation.expectedPayout - base.expectedPayout - candidate.budget) < 1e-10,
       candidate.id,
     )
   }
+})
+
+test('Jackpot funding consumes only its exact need and leaves the remainder for AWRA', () => {
+  assert.equal(deriveAwraPostJackpotResidualSurplus(100, 40), 60)
+  assert.equal(deriveAwraPostJackpotResidualSurplus(100, 0), 100)
+  assert.equal(awraBudgetAdmissibleAfterJackpot(100, 40, 60), true)
+  assert.equal(awraBudgetAdmissibleAfterJackpot(100, 40, 60.0000001), false)
+})
+
+test('AWRA cannot validate against pre-Jackpot RawSurplus when the Jackpot need is larger', () => {
+  assert.equal(awraBudgetAdmissibleAfterJackpot(100, 75, 25), true)
+  assert.equal(awraBudgetAdmissibleAfterJackpot(100, 75, 25.0000001), false)
+  assert.throws(
+    () => deriveAwraPostJackpotResidualSurplus(100, 101),
+    /Jackpot funding need exceeds RawSurplus/,
+  )
 })
 
 test('economic gate, viability and authorized preference remain separate', () => {
