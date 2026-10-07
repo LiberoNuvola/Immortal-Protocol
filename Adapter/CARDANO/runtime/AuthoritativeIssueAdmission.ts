@@ -54,6 +54,20 @@ export async function resolveAuthoritativeIssueAdmission(
 
   const witness = await source.provider(inputs)
 
+  if (!witness.eevQualification || witness.eevQualification.status !== 'qualified') {
+    throw new Error('authoritative Issue witness requires a qualified EEV certificate')
+  }
+  for (const key of ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'] as const) {
+    const evidence = witness.eevQualification.evidence[key]
+    if (
+      !evidence ||
+      !evidence.reference.trim() ||
+      !/^[0-9a-fA-F]{64}$/.test(evidence.digest)
+    ) {
+      throw new Error('authoritative Issue witness has incomplete EEV evidence: ' + key)
+    }
+  }
+
   assertEconomicAdmission(
     witness,
     [
