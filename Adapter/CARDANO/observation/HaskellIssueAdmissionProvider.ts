@@ -21,6 +21,7 @@ export type HaskellIssueObservation = {
   carrierInputReference: string
   carrierPolicyId: string
   carrierTokenNameHex: string
+  carrierPreStateVersion: bigint
 }
 
 export type HaskellIssueAdmissionProviderOptions = {
@@ -189,6 +190,7 @@ export function createHaskellIssueAdmissionProvider(
       carrierInputReference: observed.carrierInputReference,
       carrierPolicyId: observed.carrierPolicyId,
       carrierTokenNameHex: observed.carrierTokenNameHex,
+      carrierPreStateVersion: observed.carrierPreStateVersion,
       carrierCandidateState: normalizeBigInts(decision.candidateState) as any,
     }
 
