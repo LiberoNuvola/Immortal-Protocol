@@ -17,6 +17,20 @@ export type IssueEvidenceArtifact = {
   digest: string
 }
 
+export type IssueEevDeploymentApproval = {
+  status: 'DEPLOYMENT_APPROVED'
+  candidateId: string
+  sourceSetId: string
+  profileVersion: string
+  evidenceHash: string
+  qualifiedProperties: readonly string[]
+  excludedProperties: readonly string[]
+  testSuiteVersion: string
+  failureMatrixVersion: string
+  validFrom: string
+  validUntilOrRevalidationRule: string
+}
+
 export type IssueEevQualificationEvidence = {
   status: 'qualified'
   contractVersion: string
@@ -24,6 +38,7 @@ export type IssueEevQualificationEvidence = {
   verificationReference: string
   derivationVersion: string
   snapshotReference: string
+  deploymentApproval: IssueEevDeploymentApproval
   evidence: Record<
     'EV1' | 'EV2' | 'EV3' | 'EV4' | 'EV5' | 'EV6' | 'EV7',
     IssueEvidenceArtifact
@@ -147,6 +162,25 @@ export function assertAuthoritativeIssueAdmissionWitness(
   requiredString(eev.verificationReference, 'eevQualification.verificationReference')
   requiredString(eev.derivationVersion, 'eevQualification.derivationVersion')
   requiredString(eev.snapshotReference, 'eevQualification.snapshotReference')
+  if (eev.deploymentApproval?.status !== 'DEPLOYMENT_APPROVED') {
+    throw new Error('authoritative Issue witness requires DEPLOYMENT_APPROVED EEV qualification')
+  }
+  requiredString(eev.deploymentApproval.candidateId, 'eevQualification.deploymentApproval.candidateId')
+  requiredString(eev.deploymentApproval.sourceSetId, 'eevQualification.deploymentApproval.sourceSetId')
+  requiredString(eev.deploymentApproval.profileVersion, 'eevQualification.deploymentApproval.profileVersion')
+  assertDigest(eev.deploymentApproval.evidenceHash, 'eevQualification.deploymentApproval.evidenceHash')
+  for (const key of ['qualifiedProperties', 'excludedProperties'] as const) {
+    if (!Array.isArray(eev.deploymentApproval[key])) {
+      throw new Error('eevQualification.deploymentApproval.' + key + ' must be an array')
+    }
+    eev.deploymentApproval[key].forEach((value, index) =>
+      requiredString(value, 'eevQualification.deploymentApproval.' + key + '[' + index + ']'),
+    )
+  }
+  requiredString(eev.deploymentApproval.testSuiteVersion, 'eevQualification.deploymentApproval.testSuiteVersion')
+  requiredString(eev.deploymentApproval.failureMatrixVersion, 'eevQualification.deploymentApproval.failureMatrixVersion')
+  requiredString(eev.deploymentApproval.validFrom, 'eevQualification.deploymentApproval.validFrom')
+  requiredString(eev.deploymentApproval.validUntilOrRevalidationRule, 'eevQualification.deploymentApproval.validUntilOrRevalidationRule')
   assertEvidenceRecord(
     eev.evidence,
     ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'],
