@@ -18,6 +18,10 @@ export type HaskellIssueObservation = {
   observationReference: string
   poolInputReference: string
   poolUsdmValue: bigint
+  carrierInputReference: string
+  carrierPolicyId: string
+  carrierTokenNameHex: string
+  candidateState: Record<string, unknown>
   liquiditySourceReferences: readonly string[]
 }
 
@@ -49,6 +53,7 @@ type HaskellDecisionEnvelope = {
     candidateEEV: string
     availableExecutableLiquidity: string
     requiredImmediateLiquidity: string
+    candidateState: Record<string, unknown>
   }
 }
 
@@ -57,6 +62,20 @@ function runProducer(
   args: readonly string[],
   input: Record<string, unknown>,
 ): Promise<HaskellDecisionEnvelope> {
+  const normalizeBigInts = (value: unknown): unknown => {
+    if (typeof value === 'bigint') return value.toString()
+    if (Array.isArray(value)) return value.map(normalizeBigInts)
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+          key,
+          normalizeBigInts(entry),
+        ]),
+      )
+    }
+    return value
+  }
+
   return new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -100,7 +119,7 @@ function runProducer(
       resolve(parsed)
     })
 
-    child.stdin.end(JSON.stringify(input))
+    child.stdin.end(JSON.stringify(normalizeBigInts(input)))
   })
 }
 
@@ -163,6 +182,10 @@ export function createHaskellIssueAdmissionProvider(
       authenticatedPoolUsdmValue: observed.poolUsdmValue,
       requiredImmediateLiquidity:
         BigInt(decision.requiredImmediateLiquidity),
+      carrierInputReference: observed.carrierInputReference,
+      carrierPolicyId: observed.carrierPolicyId,
+      carrierTokenNameHex: observed.carrierTokenNameHex,
+      carrierCandidateState: normalizeBigInts(decision.candidateState) as any,
     }
 
     return result
