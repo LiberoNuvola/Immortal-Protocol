@@ -299,6 +299,70 @@ The current implementation additionally enforces the recovered policy
 boundary that AWRA is checked against the residual left after exact Jackpot
 `FundingNeed`, rather than against the pre-Jackpot `RawSurplus`.
 
+## 11B. Recovered research boundary: static vs dynamic AWRA
+
+### Static ticket-level layer — REPRODUCED
+
+The recovered 55-candidate experiment is fully expressible on the current
+ticket-level Classic-6 distribution because its mutable mass is only the
+`1×/2×` pair and the donor is the loss outcome.
+
+For a candidate `(B, w1, w2)` with `w2 = 1 - w1`, the recovered transform gives:
+
+```text
+Δp(1×) = B · w1
+Δp(2×) = B · w2 / 2
+
+W' = 0.234375 + B · (1 + w1) / 2
+G' = 0.085625 + B · (1 - w1) / 2
+EV' = 0.64996875 + B
+P(>=5×)' = 0.0208
+P(>=100×)' = 0.001999
+Var' = 44.750915874 + B · (0.7000625 - w1) - B²
+```
+
+These are derived consequences of the recovered 55-grid transformation and
+the current Classic-6 distribution. They are not new normative policy.
+
+### Row-coupled / board-level layer — OPEN
+
+The historical AWRA metric `D = P(two row wins)` cannot be reconstructed from
+the ticket-level payout table alone. The current baseline gives
+`D = 0.015625` from the independent row model, but an adaptive ticket-level
+probability change does not uniquely determine how `D` should change.
+
+Therefore AWRA must not claim to control or optimize `D` until the
+transformation is defined at row/board level (or an equivalent canonical
+joint distribution is restored). The existing 55-grid remains valid as a
+ticket-level research sweep only.
+
+### Dynamic v35-v39 layer — HISTORICAL RESULTS, ENGINE SOURCE NOT RECOVERED
+
+The Library retains the result artifacts for the state-dependent and dynamic
+AWRA studies (v35, v36, v37, v38 and v39), including state/headroom, risk and
+class-activity outputs. The underlying v37-v39 generator/selection source was
+not recovered from the available Library/GitHub material.
+
+Recovered evidence therefore supports the following claims only:
+
+- state-dependent risk was tested as a candidate admissibility/preference layer;
+- the dynamic experiments varied `eta`, starting cash and trial seeds, and
+  produced different mean AWRA budgets/risk outcomes;
+- higher available headroom generally increased admissible/discretionary
+  AWRA budget in the historical experiments;
+- the exact function that converted state/headroom into `B_AWRA` is not
+  recoverable from the result-only artifacts currently available.
+
+No historical v37-v39 numeric relationship is promoted to canonical policy.
+
+### Recovery integration boundary — CONFIRMED
+
+The v33 recovery work explicitly identified a model boundary: the recovery
+kernel did not carry sufficient payout-distribution state to decide AWRA
+distribution changes itself. It could preserve safety/exposure semantics, but
+not infer the adaptive payout transformation. That result is now treated as a
+representation boundary, not as evidence that AWRA was absent.
+
 ## 12. Required next conformance work
 
 The correct next research/implementation sequence is:
