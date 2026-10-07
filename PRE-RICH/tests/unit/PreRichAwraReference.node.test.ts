@@ -14,6 +14,15 @@ import {
   selectAuthorizedAwraCandidate,
 } from '../../../PRE-RICH/src/PreRichAwraReference.ts'
 
+import {
+  deriveDynamicRiskEnvelope,
+  deriveCandidateRiskRatio,
+  filterCandidatesByRiskEnvelope,
+  observedV37BudgetTarget,
+  riskEnvelopeAdmissible,
+  classifyHistoricalBudget,
+} from '../../../PRE-RICH/src/PreRichAwraDynamicReference.ts'
+
 const currentClassic6 = [
   { multiple: 0, probability: 0.765625 },
   { multiple: 1, probability: 0.14875 },
@@ -121,4 +130,96 @@ test('economic gate, viability and authorized preference remain separate', () =>
     (left, right) => right.budget - left.budget,
   )
   assert.equal(selected?.id, 'safe-low')
+})
+
+test('v36 dynamic risk envelope matches recovered state-dependent ratios', () => {
+  const e4000 = deriveDynamicRiskEnvelope({
+    executableCash: 4000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 1,
+    eta: 0.1,
+  })
+  const e8000 = deriveDynamicRiskEnvelope({
+    executableCash: 8000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 1,
+    eta: 0.1,
+  })
+  const e12000 = deriveDynamicRiskEnvelope({
+    executableCash: 12000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 1,
+    eta: 0.1,
+  })
+  const e20000 = deriveDynamicRiskEnvelope({
+    executableCash: 20000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 1,
+    eta: 0.1,
+  })
+
+  assert.ok(Math.abs(e4000.allowedRatio - 1.0875) < 1e-12)
+  assert.ok(Math.abs(e8000.allowedRatio - 1.09375) < 1e-12)
+  assert.ok(Math.abs(e12000.allowedRatio - (1 + 0.1 * (11 / 12))) < 1e-12)
+  assert.ok(Math.abs(e20000.allowedRatio - 1.0975) < 1e-12)
+})
+
+test('dynamic risk envelope tightens as unresolved worst-case exposure consumes cash headroom', () => {
+  const noUnresolved = deriveDynamicRiskEnvelope({
+    executableCash: 4000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 0,
+    eta: 0.1,
+  })
+  const manyUnresolved = deriveDynamicRiskEnvelope({
+    executableCash: 4000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 4,
+    eta: 0.1,
+  })
+
+  assert.equal(noUnresolved.allowedRatio, 1.1)
+  assert.equal(manyUnresolved.allowedRatio, 1)
+  assert.equal(riskEnvelopeAdmissible(1, manyUnresolved.allowedRatio), true)
+  assert.equal(riskEnvelopeAdmissible(1.0000001, manyUnresolved.allowedRatio), false)
+})
+
+test('historical v37 observed budget fit matches recovered eta outputs', () => {
+  assert.equal(observedV37BudgetTarget(0), 0.005)
+  assert.equal(observedV37BudgetTarget(0.05), 0.025)
+  assert.equal(observedV37BudgetTarget(0.1), 0.05)
+})
+
+test('historical dynamic selector boundary remains external to the risk envelope', () => {
+  const envelope = deriveDynamicRiskEnvelope({
+    executableCash: 8000,
+    unresolvedTicketPrice: 1,
+    unresolvedCount: 1,
+    eta: 0.1,
+  })
+  const candidates = [
+    { id: 'low', budget: 0.005, riskMax: 2.2109461185727546 },
+    { id: 'mid', budget: 0.05, riskMax: 2.25566840999 },
+    { id: 'high', budget: 0.1, riskMax: 2.5 },
+  ]
+  const filtered = filterCandidatesByRiskEnvelope(
+    candidates,
+    envelope,
+    2.2109461185727546,
+  )
+
+  assert.ok(filtered.some((candidate) => candidate.id === 'low'))
+  assert.ok(filtered.some((candidate) => candidate.id === 'mid'))
+  assert.ok(!filtered.some((candidate) => candidate.id === 'high'))
+  assert.equal(
+    deriveCandidateRiskRatio(2.25566840999, 2.2109461185727546),
+    1.020222,
+  )
+})
+
+test('historical budget classification does not promote fitted values to canonical policy', () => {
+  assert.equal(classifyHistoricalBudget(0.005), 'GRID_VALUE')
+  assert.equal(classifyHistoricalBudget(0.05), 'GRID_VALUE')
+  assert.equal(classifyHistoricalBudget(0.034583333333333334), 'GRID_VALUE')
+  assert.equal(classifyHistoricalBudget(0.2), 'ABOVE_RECOVERED_GRID')
 })
