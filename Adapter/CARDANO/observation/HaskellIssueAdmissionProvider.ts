@@ -7,10 +7,11 @@
  * exact observed Cardano inputs.
  */
 import { spawn } from 'node:child_process'
-import {
-  createAuthoritativeIssueAdmissionProvider,
-  type AuthoritativeIssueAdmissionDecision,
-} from './AuthoritativeIssueAdmission'
+import type {
+  AuthoritativeIssueAdmissionProvider,
+  AuthoritativeIssueAdmissionWitness,
+  IssueV3CandidateState,
+} from '../../../src/preRichIssueAdmissionBridge'
 
 export type HaskellIssueObservation = {
   decisionInput: Record<string, unknown>
@@ -19,6 +20,8 @@ export type HaskellIssueObservation = {
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
+  carrierStateReference: string
+  eevQualification: Record<string, unknown>
   /**
    * Timestamp of the authenticated observation snapshot, in milliseconds.
    * This value is provenance data and must not be replaced by local wall-clock time.
@@ -35,6 +38,7 @@ export type HaskellIssueAdmissionProviderOptions = {
       poolInputReference: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
+      carrierStateReference: string
     },
   ) => Promise<HaskellIssueObservation>
 }
@@ -112,8 +116,8 @@ function runProducer(
 
 export function createHaskellIssueAdmissionProvider(
   options: HaskellIssueAdmissionProviderOptions,
-) {
-  return createAuthoritativeIssueAdmissionProvider(async (inputs) => {
+): AuthoritativeIssueAdmissionProvider {
+  return async (inputs) => {
     const observed = await options.observationSource(inputs)
     const envelope = await runProducer(
       options.command,
@@ -140,6 +144,15 @@ export function createHaskellIssueAdmissionProvider(
       )
     }
 
+    if (!decision.candidateState) {
+      throw new Error('Haskell Issue producer returned no candidate V3 state')
+    }
+    if (!inputs.carrierStateReference) {
+      throw new Error(
+        'authoritative Issue provider requires the exact V3 carrier state reference',
+      )
+    }
+
     const observation = {
       observationReference: observed.observationReference,
       observedAt: observed.observedAt,
@@ -154,7 +167,9 @@ export function createHaskellIssueAdmissionProvider(
       declaredUsdmLiquidity: BigInt(decision.availableExecutableLiquidity),
     }
 
-    const result: AuthoritativeIssueAdmissionDecision = {
+    const result: AuthoritativeIssueAdmissionWitness = {
+      admitted: true,
+      actionClass: 'Issue',
       gateVersion: 'pre-rich-economic-gate-v1',
       decisionReference: decision.decisionReference,
       authoritativeObservationReference:
@@ -169,8 +184,12 @@ export function createHaskellIssueAdmissionProvider(
       authenticatedPoolUsdmValue: observed.poolUsdmValue,
       requiredImmediateLiquidity:
         BigInt(decision.requiredImmediateLiquidity),
+      v3CarrierBinding: {
+        carrierStateReference: inputs.carrierStateReference,
+        candidateState: decision.candidateState,
+      },
     }
 
     return result
-  })
+  }
 }
