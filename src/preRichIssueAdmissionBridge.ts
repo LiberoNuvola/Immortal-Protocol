@@ -170,6 +170,7 @@ export async function obtainAuthoritativeIssueAdmission(
   }
 
   assertEconomicAdmission(
+    witness,
     [
       inputs.counterInputReference,
       inputs.poolInputReference,
