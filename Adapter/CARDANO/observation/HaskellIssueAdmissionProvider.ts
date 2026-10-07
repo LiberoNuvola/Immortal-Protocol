@@ -31,6 +31,7 @@ export type HaskellIssueAdmissionProviderOptions = {
     inputs: {
       counterInputReference: string
       poolInputReference: string
+      carrierInputReference: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
     },
@@ -78,12 +79,3 @@ function runProducer(
   return new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
-    })
-
-    let stdout = ''
-    let stderr = ''
-
-    child.stdout.setEncoding('utf8')
-    child.stderr.setEncoding('utf8')
-    child.stdout.on('data', (chunk: string) => {
-      stdout += chunk
