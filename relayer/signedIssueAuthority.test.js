@@ -116,6 +116,15 @@ assert.throws(
 
 assert.throws(
   () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({ observationReference: 'obs://issue/tampered' }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /Issue authority observation reference mismatch/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
     signed(makePayload({ observedAt: '500', freshnessWindow: '100' }), privateKey),
     publicKey.export({ type: 'spki', format: 'pem' }),
     expected,
