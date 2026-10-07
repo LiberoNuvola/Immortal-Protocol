@@ -173,3 +173,33 @@ test('fails closed when observation time is not authenticated', async () => {
     /observedAt is required/,
   )
 })
+
+
+test('fails closed when authoritative boolean evidence is not actually boolean', async () => {
+  await assert.rejects(
+    () => readPreprodIssueObservation({
+      lucid: fakeLucid(),
+      counterAddress: 'counter',
+      b1PrizePoolAddress: 'pool',
+      poolTokenUnit: 'poolpolicy' + 'poolname',
+      carrierAddress: 'carrier',
+      carrierPolicyId: 'carrierpolicy',
+      carrierTokenNameHex: 'carriername',
+      classId: 0,
+      price: 1,
+      observedAt: 123n,
+      authoritativeInputs: {
+        poolUsdmValue: 1n,
+        preEEV: 1n,
+        candidateEEV: 1n,
+        requiredImmediateLiquidity: 1n,
+        truthVerified: 'false',
+        eevFresh: true,
+        obligationsComplete: true,
+        allOmegaSuccessorsCertified: true,
+        decisionReference: 'decision-1',
+      },
+    }),
+    /truthVerified must be boolean/,
+  )
+})
