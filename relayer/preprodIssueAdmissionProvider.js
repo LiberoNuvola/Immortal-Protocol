@@ -41,6 +41,9 @@ function createPreprodIssueObservationProducerFromLucid({ lucid, deployment }) {
       if (observed.poolInputReference !== poolInputReference) {
         throw new Error('Preprod reader Pool reference does not match runtime input')
       }
+      if (observed.carrierStateReference !== 'cardano:tx/' + carrierInputReference) {
+        throw new Error('Preprod reader V3 carrier reference does not match runtime input')
+      }
       if (String(observed.poolUsdmValue) !== String(poolUsdmValue)) {
         throw new Error('Preprod reader Pool valuation does not match runtime input')
       }
