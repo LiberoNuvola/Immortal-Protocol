@@ -58,19 +58,19 @@ instance A.FromJSON V3EconomicState where
 instance A.ToJSON TicketClassState where
   toJSON c =
     A.object
-      [ "classId" A..= tcsClassId c
-      , "issued" A..= tcsIssued c
-      , "unresolved" A..= tcsUnresolved c
-      , "exposure" A..= tcsExposure c
-      , "cap" A..= tcsCap c
+      [ "classId" A..= show (tcsClassId c)
+      , "issued" A..= show (tcsIssued c)
+      , "unresolved" A..= show (tcsUnresolved c)
+      , "exposure" A..= show (tcsExposure c)
+      , "cap" A..= show (tcsCap c)
       , "saleable" A..= tcsSaleable c
       ]
 
 instance A.ToJSON EconomicControlState where
   toJSON c =
     A.object
-      [ "currentActiveClass" A..= ecsCurrentActiveClass c
-      , "highestClassEverActivated" A..= ecsHighestClassEverActivated c
+      [ "currentActiveClass" A..= show (ecsCurrentActiveClass c)
+      , "highestClassEverActivated" A..= show (ecsHighestClassEverActivated c)
       ]
 
 instance A.ToJSON JackpotStatus where
@@ -84,21 +84,21 @@ instance A.ToJSON JackpotStatus where
 instance A.ToJSON JackpotState where
   toJSON j =
     A.object
-      [ "lockedAmount" A..= jsLockedAmount j
-      , "threshold" A..= jsThreshold j
+      [ "lockedAmount" A..= show (jsLockedAmount j)
+      , "threshold" A..= show (jsThreshold j)
       , "status" A..= jsStatus j
-      , "cycle" A..= jsCycle j
+      , "cycle" A..= show (jsCycle j)
       ]
 
 instance A.ToJSON V3EconomicState where
   toJSON s =
     A.object
-      [ "crystallizedLiabilities" A..= v3CrystallizedLiabilities s
-      , "unresolvedReserve" A..= v3UnresolvedReserve s
-      , "unresolvedTicketCount" A..= v3UnresolvedTicketCount s
-      , "safetyCapital" A..= v3SafetyCapital s
-      , "reserveProtection" A..= v3ReserveProtection s
-      , "mandatoryFutureCosts" A..= v3MandatoryFutureCosts s
+      [ "crystallizedLiabilities" A..= show (v3CrystallizedLiabilities s)
+      , "unresolvedReserve" A..= show (v3UnresolvedReserve s)
+      , "unresolvedTicketCount" A..= show (v3UnresolvedTicketCount s)
+      , "safetyCapital" A..= show (v3SafetyCapital s)
+      , "reserveProtection" A..= show (v3ReserveProtection s)
+      , "mandatoryFutureCosts" A..= show (v3MandatoryFutureCosts s)
       , "classes" A..= v3Classes s
       , "control" A..= v3Control s
       , "jackpot" A..= v3Jackpot s
