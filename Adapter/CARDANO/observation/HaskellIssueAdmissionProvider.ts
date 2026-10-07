@@ -12,6 +12,8 @@ import type {
   AuthoritativeIssueAdmissionWitness,
   IssueV3CandidateState,
   EevQualificationEvidence,
+  ProtectedCapitalProvenance,
+  ViabilityCertificateEvidence,
 } from '../../../src/preRichIssueAdmissionBridge'
 
 export type HaskellIssueObservation = {
@@ -23,6 +25,8 @@ export type HaskellIssueObservation = {
   liquiditySourceReferences: readonly string[]
   carrierStateReference: string
   eevQualification: EevQualificationEvidence
+  protectedCapitalProvenance: ProtectedCapitalProvenance
+  viabilityCertificate: ViabilityCertificateEvidence
   /**
    * Timestamp of the authenticated observation snapshot, in milliseconds.
    * This value is provenance data and must not be replaced by local wall-clock time.
@@ -190,6 +194,8 @@ export function createHaskellIssueAdmissionProvider(
         candidateState: decision.candidateState,
       },
       eevQualification: observed.eevQualification,
+      protectedCapitalProvenance: observed.protectedCapitalProvenance,
+      viabilityCertificate: observed.viabilityCertificate,
     }
 
     return result
