@@ -7,10 +7,8 @@
  * exact observed Cardano inputs.
  */
 import { spawn } from 'node:child_process'
-import {
-  createAuthoritativeIssueAdmissionProvider,
-  type AuthoritativeIssueAdmissionDecision,
-} from './AuthoritativeIssueAdmission'
+import { createAuthoritativeIssueAdmissionProvider } from '../../../src/authoritativeIssueAdmissionProducer'
+import type { EconomicAdmissionWitness } from '../runtime/EconomicAdmission'
 
 export type HaskellIssueObservation = {
   decisionInput: Record<string, unknown>
@@ -19,6 +17,9 @@ export type HaskellIssueObservation = {
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
+  carrierInputReference: string
+  carrierPolicyId: string
+  carrierTokenNameHex: string
 }
 
 export type HaskellIssueAdmissionProviderOptions = {
@@ -167,8 +168,10 @@ export function createHaskellIssueAdmissionProvider(
       declaredUsdmLiquidity: BigInt(decision.availableExecutableLiquidity),
     }
 
-    const result: AuthoritativeIssueAdmissionDecision = {
+    const result: EconomicAdmissionWitness = {
       gateVersion: 'pre-rich-economic-gate-v1',
+      admitted: true,
+      actionClass: 'Issue',
       decisionReference: decision.decisionReference,
       authoritativeObservationReference:
         decision.authoritativeObservationReference,
