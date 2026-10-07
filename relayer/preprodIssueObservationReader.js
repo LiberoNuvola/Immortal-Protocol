@@ -100,6 +100,19 @@ function decodeCarrierDatum(utxo) {
   }
 }
 
+function deriveProtectedCapitalProvenance(state) {
+  const components = Object.freeze({
+    crystallizedLiabilities: state.crystallizedLiabilities,
+    unresolvedReserve: state.unresolvedReserve,
+    safetyCapital: state.safetyCapital,
+    reserveProtection: state.reserveProtection,
+    lockedJackpot: state.jackpot.lockedAmount,
+    mandatoryFutureCosts: state.mandatoryFutureCosts,
+  })
+  const protectedCapital = Object.values(components).reduce((sum, value) => sum + value, 0n)
+  return Object.freeze({ components, protectedCapital })
+}
+
 async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierTokenNameHex }) {
   const unit = required(carrierPolicyId, 'carrierPolicyId') + required(carrierTokenNameHex, 'carrierTokenNameHex')
   const utxos = await lucid.utxosAt(required(carrierAddress, 'carrierAddress'))
@@ -303,6 +316,7 @@ async function readPreprodIssueObservation({
     carrierStateReference: carrier.carrierStateReference,
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
+    protectedCapital: deriveProtectedCapitalProvenance(carrier.state),
     poolState,
     decisionInput: {
       preState: carrier.state,
