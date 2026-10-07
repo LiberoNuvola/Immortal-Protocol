@@ -243,6 +243,26 @@ export function evaluateAwraDistribution(
   }
 }
 
+
+
+/**
+ * Select exactly one candidate from the admissible set using an externally
+ * authorized preference ordering. The comparator is supplied by the caller;
+ * this module does not define a canonical Pareto or lexicographic objective.
+ */
+export function selectAuthorizedAwraCandidate(
+  candidates: readonly AwraCandidate[],
+  isAdmissible: (candidate: AwraCandidate) => boolean,
+  comparePreference: (left: AwraCandidate, right: AwraCandidate) => number,
+): AwraCandidate | null {
+  const admissible = candidates.filter(isAdmissible)
+  if (admissible.length === 0) return null
+
+  return admissible.slice(1).reduce((best, candidate) => {
+    return comparePreference(candidate, best) < 0 ? candidate : best
+  }, admissible[0])
+}
+
 export function admitAwraCandidate(
   rawSurplus: number,
   candidate: AwraCandidate,
