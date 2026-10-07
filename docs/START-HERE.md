@@ -20,6 +20,32 @@ The project is **experimental**: documentation, implementation, conformance and 
 - Not a claim that a green test alone proves deployment-wide conformance.
 - Not a declaration that B3 is complete.
 
+## Mechanisms at a glance
+
+The system is intentionally composed of explicit mechanisms rather than a single undifferentiated economic algorithm.
+
+**IMMORTAL:** Economic Gate · Viability Kernel (K_Ω) · A_safe · ProtectedCapital · RawSurplus · Worst-Case Analysis · Statistical Risk Analysis · Hysteresis · Contraction · Quiescence · Recovery / PRE-GENESIS
+
+**PRE-RICH:** AWRA · Treasury Allocation Policy · Adaptive Asset / Liquidation Policy · Jackpot Policy · Game Outcome / Randomization
+
+**Adapter:** evidence transport · semantic preservation · settlement realization · chain conformance
+
+The key boundary is:
+
+```text
+IMMORTAL safety / admissibility
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+        Cardano Adapter
+              ↓
+            Ledger
+```
+
+For the recovered AWRA machinery, see [AWRA Recovery & Re-Integration](../PRE-RICH/docs/AWRA-RECOVERY-REINTEGRATION-v0.1.md). That document separates recovered history, current-model reproduction and policy-open elements.
+
 ## Where to go next
 
 - **Understand the model:** [Executive Summary](EXECUTIVE-SUMMARY.md)
