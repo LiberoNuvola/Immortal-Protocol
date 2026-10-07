@@ -76,7 +76,7 @@ describe('CardanoExecutionAdapter authoritative Issue boundary', () => {
       decisionReference: 'decision://issue/1',
       authoritativeObservationReference: 'obs://issue/1',
       stateHash: 'a'.repeat(64),
-      actionClass: 'Issue',
+      actionClass: 'Issue' as const,
       actionFingerprint: 'b'.repeat(64),
       postStateHash: 'c'.repeat(64),
       eev: 100n,
