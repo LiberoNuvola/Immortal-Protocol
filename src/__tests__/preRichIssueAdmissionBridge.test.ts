@@ -131,6 +131,8 @@ const inputs = {
   poolInputReference: pool,
   liquiditySourceReferences: [pool],
   poolUsdmValue: 500n,
+  classId: 0n,
+  price: 1n,
 }
 
 describe('PRE-RICH Issue admission bridge', () => {
