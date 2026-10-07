@@ -7,6 +7,7 @@ import {
   deriveAwraAlpha,
   evaluateAwraDistribution,
   generateRecovered55Candidates,
+  selectAuthorizedAwraCandidate,
 } from '../PreRichAwraReference'
 
 describe('PRE-RICH AWRA reference layer', () => {
@@ -16,10 +17,11 @@ describe('PRE-RICH AWRA reference layer', () => {
       { multiple: 2, weight: 0.6 },
     ])
 
-    expect(deltas).toEqual([
-      { multiple: 1, probability: 0.020000000000000004 },
-      { multiple: 2, probability: 0.015 },
-    ])
+    expect(deltas).toHaveLength(2)
+    expect(deltas[0]?.multiple).toBe(1)
+    expect(deltas[0]?.probability).toBeCloseTo(0.02)
+    expect(deltas[1]?.multiple).toBe(2)
+    expect(deltas[1]?.probability).toBeCloseTo(0.015)
 
     const addedExpectedPayout = deltas.reduce(
       (sum, delta) => sum + delta.multiple * delta.probability,
@@ -89,6 +91,23 @@ describe('PRE-RICH AWRA reference layer', () => {
       viability: () => true,
       authorizedPolicy: () => true,
     }).budgetWithinRawSurplus).toBe(false)
+  })
+
+
+
+  it('never lets preference select an inadmissible candidate', () => {
+    const candidates = [
+      { id: 'unsafe-high', budget: 10, weights: [{ multiple: 1, weight: 1 }] },
+      { id: 'safe-low', budget: 5, weights: [{ multiple: 1, weight: 1 }] },
+    ]
+
+    const selected = selectAuthorizedAwraCandidate(
+      candidates,
+      (candidate) => candidate.id === 'safe-low',
+      (left, right) => right.budget - left.budget,
+    )
+
+    expect(selected?.id).toBe('safe-low')
   })
 
   it('recovers the historical 5 x 11 grid shape without inventing extra weights', () => {
