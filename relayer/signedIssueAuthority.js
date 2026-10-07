@@ -108,6 +108,45 @@ function validateEevQualification(value) {
     throw new Error('eevQualification status must be qualified')
   }
 
+  const deploymentApproval = requiredObject(
+    qualification.deploymentApproval,
+    'eevQualification.deploymentApproval',
+  )
+  if (deploymentApproval.status !== 'DEPLOYMENT_APPROVED') {
+    throw new Error('eevQualification deployment status must be DEPLOYMENT_APPROVED')
+  }
+  for (const field of [
+    'candidateId',
+    'sourceSetId',
+    'profileVersion',
+    'testSuiteVersion',
+    'failureMatrixVersion',
+    'validFrom',
+    'validUntilOrRevalidationRule',
+  ]) {
+    requiredString(
+      deploymentApproval[field],
+      'eevQualification.deploymentApproval.' + field,
+    )
+  }
+  requiredDigest(
+    deploymentApproval.evidenceHash,
+    'eevQualification.deploymentApproval.evidenceHash',
+  )
+  for (const field of ['qualifiedProperties', 'excludedProperties']) {
+    if (!Array.isArray(deploymentApproval[field])) {
+      throw new Error(
+        'eevQualification.deploymentApproval.' + field + ' must be an array',
+      )
+    }
+    deploymentApproval[field].forEach((item, index) =>
+      requiredString(
+        item,
+        'eevQualification.deploymentApproval.' + field + '[' + index + ']',
+      ),
+    )
+  }
+
   const contractVersion = requiredString(
     qualification.contractVersion,
     'eevQualification.contractVersion',
@@ -154,6 +193,22 @@ function validateEevQualification(value) {
   return Object.freeze({
     status: 'qualified',
     contractVersion,
+    deploymentApproval: Object.freeze({
+      status: 'DEPLOYMENT_APPROVED',
+      candidateId: deploymentApproval.candidateId,
+      sourceSetId: deploymentApproval.sourceSetId,
+      profileVersion: deploymentApproval.profileVersion,
+      evidenceHash: requiredDigest(
+        deploymentApproval.evidenceHash,
+        'eevQualification.deploymentApproval.evidenceHash',
+      ),
+      qualifiedProperties: Object.freeze([...deploymentApproval.qualifiedProperties]),
+      excludedProperties: Object.freeze([...deploymentApproval.excludedProperties]),
+      testSuiteVersion: deploymentApproval.testSuiteVersion,
+      failureMatrixVersion: deploymentApproval.failureMatrixVersion,
+      validFrom: deploymentApproval.validFrom,
+      validUntilOrRevalidationRule: deploymentApproval.validUntilOrRevalidationRule,
+    }),
     sourceReference,
     verificationReference,
     derivationVersion,
