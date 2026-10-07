@@ -211,6 +211,38 @@ export function applyAwraProbabilityDeltas(
   return normalized
 }
 
+
+/**
+ * Evaluate one AWRA candidate against a supplied base distribution.
+ *
+ * `donorMultiple` is deliberately explicit because the current protocol
+ * documents the transformation boundary but does not freeze a universal
+ * probability-donor rule.
+ */
+export function evaluateAwraCandidate(
+  distribution: readonly AwraOutcome[],
+  candidate: AwraCandidate,
+  donorMultiple: number,
+): AwraCandidateEvaluation {
+  if (!Number.isFinite(candidate.budget) || candidate.budget < 0) {
+    throw new Error('AWRA candidate budget must be finite and non-negative')
+  }
+
+  const deltas = computeAwraProbabilityDeltas(
+    candidate.budget,
+    candidate.weights,
+  )
+  const transformed = applyAwraProbabilityDeltas(
+    distribution,
+    deltas,
+    donorMultiple,
+  )
+  return {
+    candidate,
+    ...evaluateAwraDistribution(transformed),
+  }
+}
+
 export function evaluateAwraDistribution(
   distribution: readonly AwraOutcome[],
 ): Omit<AwraCandidateEvaluation, 'candidate'> {
