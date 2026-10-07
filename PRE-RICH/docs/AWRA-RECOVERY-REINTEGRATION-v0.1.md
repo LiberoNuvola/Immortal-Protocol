@@ -363,6 +363,58 @@ distribution changes itself. It could preserve safety/exposure semantics, but
 not infer the adaptive payout transformation. That result is now treated as a
 representation boundary, not as evidence that AWRA was absent.
 
+## 11C. Dynamic risk-envelope reconstruction
+
+The archived v36 RiskEnvelope result set permits a stronger recovery than a
+generic "state-dependent risk" label.
+
+For executable cash `V_exec`, unresolved ticket price `P_u`, unresolved count
+`N`, and historical tuning parameter `eta`, the observed envelope is:
+
+```text
+U_wc = 500 · P_u · N
+exposurePressure = U_wc / V_exec
+headroomFactor = max(0, 1 - exposurePressure)
+allowedRiskRatio = 1 + eta · headroomFactor
+```
+
+The archived values match this relation exactly for the recovered grid. For
+example, with `P_u = 1`, `N = 1`, `eta = 0.10`:
+
+| executable cash | recovered allowedRiskRatio |
+|---:|---:|
+| 4,000 | 1.0875 |
+| 8,000 | 1.09375 |
+| 12,000 | 1.095833... |
+| 20,000 | 1.0975 |
+
+The important consequence is structural: unresolved worst-case exposure
+reduces the amount of candidate-risk degradation that `eta` is permitted to
+tolerate. The envelope therefore tightens automatically as protected exposure
+consumes headroom.
+
+### v37-v39 budget-selection lineage
+
+The later dynamic trials show a second layer between the risk envelope and the
+final AWRA budget. The recovered evidence is sufficient to classify the
+lineage, but not to reconstruct the hidden selector implementation exactly.
+
+- **v37:** recovered trial means match an observed budget target of
+  `B = max(0.005, eta / 2)` for the tested `eta` values (`0`, `0.05`, `0.10`).
+  This is recorded as an observed fit, not a canonical rule.
+- **v38:** budget becomes state-sensitive; the archived trials expose
+  `min_headroom`, `mean_headroom`, `mean_B`, `mean_risk` and show that the
+  returned budget changes with executable starting capital and `eta`.
+- **v39:** the state-sensitive trajectory is extended with explicit
+  `mean_headroom`, `mean_B`, `mean_risk`, `max_risk`, `class_drops` and
+  `active`; the returned budget remains below the recovered static ceiling
+  for the observed cases.
+
+The original v37-v39 selector source is still not recovered. Therefore the
+reference implementation exposes the exact v36 risk-envelope primitives and
+the observed v37 budget fit, but leaves final candidate preference/selection
+external and governable.
+
 ## 12. Required next conformance work
 
 The correct next research/implementation sequence is:
