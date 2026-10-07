@@ -39,6 +39,25 @@ function certificate() {
   }
 }
 
+function protectedCapitalProvenance() {
+  return {
+    sourceReference: 'c'.repeat(64) + '#2',
+    components: {
+      crystallizedLiabilities: '10',
+      worstCaseExposure: '100',
+      safetyCapital: '20',
+      reserveProtection: '30',
+      lockedJackpot: '50',
+      mandatoryFutureCosts: '40',
+    },
+    accountingInputs: {
+      unresolvedReserve: '3',
+      unresolvedTicketCount: '2',
+    },
+    total: '250',
+  }
+}
+
 function viabilityCertificate() {
   const digest = (n) => String(n).repeat(64).slice(0, 64)
   const proofs = {}
@@ -85,6 +104,7 @@ function makePayload(overrides = {}) {
     verificationReference: 'verify://eev/preprod',
     derivationVersion: 'eev-v1',
     eevQualification: certificate(),
+    protectedCapitalProvenance: protectedCapitalProvenance(),
     viabilityCertificate: viabilityCertificate(),
     ...overrides,
   }
@@ -147,6 +167,20 @@ assert.throws(
 )
 
 console.log('signedIssueAuthority: PASS')
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      protectedCapitalProvenance: {
+        ...protectedCapitalProvenance(),
+        total: '251',
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /ProtectedCapital provenance total does not match components/,
+)
 
 
 assert.throws(
