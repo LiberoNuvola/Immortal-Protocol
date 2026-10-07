@@ -6,6 +6,47 @@ const hash = 'a'.repeat(64)
 const poolRef = 'b'.repeat(64) + '#0'
 const counterRef = 'c'.repeat(64) + '#0'
 
+function protectedCapitalProvenance() {
+  return {
+    sourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    components: {
+      crystallizedLiabilities: 10n,
+      worstCaseExposure: 50n,
+      safetyCapital: 20n,
+      reserveProtection: 30n,
+      lockedJackpot: 40n,
+      mandatoryFutureCosts: 50n,
+    },
+    accountingInputs: {
+      unresolvedReserve: 1n,
+      unresolvedTicketCount: 1n,
+    },
+    total: 200n,
+  }
+}
+
+function viabilityCertificate() {
+  const proofs = Object.fromEntries(['VC1','VC2','VC3','VC4','VC5','VC6'].map((key, i) => [
+    key,
+    { reference: 'proof://' + key, digest: String(i + 1).repeat(64).slice(0,64) },
+  ]))
+  const evidence = Object.fromEntries(['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10'].map((key, i) => [
+    key,
+    { reference: 'evidence://' + key, digest: String((i + 1) % 10).repeat(64).slice(0,64) },
+  ]))
+  return {
+    id: 'pre-rich-kc-v1',
+    version: '1',
+    modelReference: 'model://pre-rich-v1',
+    characteristicPredicateReference: 'chi://pre-rich-v1',
+    witnessSelectorReference: 'wit://pre-rich-v1',
+    boundsReference: 'bounds://pre-rich-v1',
+    proofs,
+    evidence,
+    digest: '9'.repeat(64),
+  }
+}
+
 function eevQualification() {
   return {
     status: 'qualified' as const,
@@ -26,7 +67,12 @@ function eevQualification() {
   }
 }
 
-function witness(): EconomicAdmissionWitness {
+function witness(): EconomicAdmissionWitness & {
+  v3CarrierBinding: { carrierStateReference: string; candidateState: any }
+  eevQualification: ReturnType<typeof eevQualification>
+  protectedCapitalProvenance: ReturnType<typeof protectedCapitalProvenance>
+  viabilityCertificate: ReturnType<typeof viabilityCertificate>
+} {
   return {
     gateVersion: 'economic-gate-v1', admitted: true,
     decisionReference: 'decision://issue/1',
@@ -43,6 +89,22 @@ function witness(): EconomicAdmissionWitness {
     authenticatedPoolUsdmValue: 100n,
     requiredImmediateLiquidity: 1n,
     eevQualification: eevQualification(),
+    protectedCapitalProvenance: protectedCapitalProvenance(),
+    viabilityCertificate: viabilityCertificate(),
+    v3CarrierBinding: {
+      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      candidateState: {
+        crystallizedLiabilities: '10',
+        unresolvedReserve: '1',
+        unresolvedTicketCount: '1',
+        safetyCapital: '20',
+        reserveProtection: '30',
+        mandatoryFutureCosts: '50',
+        classes: [],
+        control: { currentActiveClass: '0', highestClassEverActivated: '0' },
+        jackpot: { lockedAmount: '40', threshold: '0', status: 'inactive', cycle: '0' },
+      },
+    },
   }
 }
 
