@@ -54,6 +54,7 @@ type HaskellDecisionEnvelope = {
     candidateEEV: string
     availableExecutableLiquidity: string
     requiredImmediateLiquidity: string
+    candidateState: IssueV3CandidateState
   }
 }
 
