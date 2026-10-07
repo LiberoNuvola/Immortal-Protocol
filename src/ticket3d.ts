@@ -239,15 +239,15 @@ export function mountCertifiedTicket3D(container:HTMLElement,state:CertifiedTick
   }
   legend.appendChild(legendWrap);backInner.appendChild(legend)
 
-  const cert=makePanel('MATERIOS · CERTIFICATION','pr-ticket3d__cert')
+  const cert=makePanel('MATERIOS · PROVENANCE','pr-ticket3d__cert')
   addKv(cert,'NFT identity',shortHex(state.identity.policyId,14)+'.'+shortHex(state.identity.assetName,10))
   addKv(cert,'Materios context',shortHex(state.materiosContext,18))
   addKv(cert,'Canonical ref',state.verificationReference?shortHex(state.verificationReference,22):'not attached')
   if(state.status!=='Pending'){
     const reveal=document.createElement('div');reveal.className='pr-ticket3d__reveal'
-    const rtitle=document.createElement('strong');rtitle.textContent='REVEAL CERTIFICATE · VERIFIED';reveal.appendChild(rtitle)
+    const rtitle=document.createElement('strong');rtitle.textContent='REVEAL STATE · VERIFIED';reveal.appendChild(rtitle)
     const rg=document.createElement('div');rg.className='pr-ticket3d__result-grid'
-    for(const [label,value] of [['Row 1',state.row1Tier.toString()],['Row 2',state.row2Tier.toString()],['Payout',formatUsdm(state.prizeAmount)+' USDM'],['Result',shortHex(state.result,16)]]){
+    for(const [label,value] of [['Row 1',state.row1Tier.toString()],['Row 2',state.row2Tier.toString()],['Payout',formatUsdm(state.prizeAmount)+' USDM'],['Result',state.result?shortHex(state.result,16):'not attached']]){
       const s=document.createElement('span');s.textContent=label+': '+value;rg.appendChild(s)
     }
     reveal.appendChild(rg);cert.appendChild(reveal)
