@@ -18,6 +18,81 @@ function nonNegative(value, field) {
   return n
 }
 
+function requiredObject(value, field) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(field + ' is required')
+  }
+  return value
+}
+
+function requiredDigest(value, field) {
+  const digest = requiredString(value, field)
+  if (!/^[0-9a-fA-F]{64}$/.test(digest)) {
+    throw new Error(field + ' must be a 32-byte hex digest')
+  }
+  return digest.toLowerCase()
+}
+
+function validateEevQualification(value) {
+  const qualification = requiredObject(value, 'eevQualification')
+  if (qualification.status !== 'qualified') {
+    throw new Error('eevQualification status must be qualified')
+  }
+
+  const contractVersion = requiredString(
+    qualification.contractVersion,
+    'eevQualification.contractVersion',
+  )
+  const sourceReference = requiredString(
+    qualification.sourceReference,
+    'eevQualification.sourceReference',
+  )
+  const verificationReference = requiredString(
+    qualification.verificationReference,
+    'eevQualification.verificationReference',
+  )
+  const derivationVersion = requiredString(
+    qualification.derivationVersion,
+    'eevQualification.derivationVersion',
+  )
+  const snapshotReference = requiredString(
+    qualification.snapshotReference,
+    'eevQualification.snapshotReference',
+  )
+  const evidence = requiredObject(
+    qualification.evidence,
+    'eevQualification.evidence',
+  )
+
+  const normalizedEvidence = {}
+  for (const key of ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7']) {
+    const artifact = requiredObject(
+      evidence[key],
+      'eevQualification.evidence.' + key,
+    )
+    normalizedEvidence[key] = Object.freeze({
+      reference: requiredString(
+        artifact.reference,
+        'eevQualification.evidence.' + key + '.reference',
+      ),
+      digest: requiredDigest(
+        artifact.digest,
+        'eevQualification.evidence.' + key + '.digest',
+      ),
+    })
+  }
+
+  return Object.freeze({
+    status: 'qualified',
+    contractVersion,
+    sourceReference,
+    verificationReference,
+    derivationVersion,
+    snapshotReference,
+    evidence: Object.freeze(normalizedEvidence),
+  })
+}
+
 function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (!envelope || typeof envelope !== 'object') throw new Error('Issue authority envelope is required')
   if (!publicKeyPem) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY is required')
@@ -44,6 +119,26 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   try { valid = crypto.verify(null, signedBytes, publicKeyPem, signatureBytes) } catch (error) { throw new Error('Issue authority signature verification failed: ' + error.message) }
   if (!valid) throw new Error('Issue authority signature is invalid')
 
+  const eevQualification = validateEevQualification(payload.eevQualification)
+  if (
+    eevQualification.sourceReference !==
+    requiredString(payload.sourceReference, 'sourceReference')
+  ) {
+    throw new Error('EEV qualification sourceReference mismatch')
+  }
+  if (
+    eevQualification.verificationReference !==
+    requiredString(payload.verificationReference, 'verificationReference')
+  ) {
+    throw new Error('EEV qualification verificationReference mismatch')
+  }
+  if (
+    eevQualification.derivationVersion !==
+    requiredString(payload.derivationVersion, 'derivationVersion')
+  ) {
+    throw new Error('EEV qualification derivationVersion mismatch')
+  }
+
   const values = {
     poolUsdmValue: nonNegative(payload.poolUsdmValue, 'poolUsdmValue'),
     preEEV: nonNegative(payload.preEEV, 'preEEV'),
@@ -67,6 +162,19 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   }
   if (freshnessWindow === 0n) throw new Error('Issue authority freshnessWindow must be positive')
 
+  if (expected.currentObservedAt !== undefined) {
+    const currentObservedAt = nonNegative(
+      expected.currentObservedAt,
+      'current observedAt',
+    )
+    if (currentObservedAt < observedAt) {
+      throw new Error('Issue authority observation is from the future')
+    }
+    if (currentObservedAt - observedAt > freshnessWindow) {
+      throw new Error('Issue authority EEV observation is stale')
+    }
+  }
+
   return Object.freeze({
     ...values,
     truthVerified: true,
@@ -80,6 +188,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     verificationReference: requiredString(payload.verificationReference, 'verificationReference'),
     sourceReference: requiredString(payload.sourceReference, 'sourceReference'),
     derivationVersion: requiredString(payload.derivationVersion, 'derivationVersion'),
+    eevQualification,
   })
 }
 
@@ -93,7 +202,10 @@ async function fetchSignedIssueAuthority({ baseUrl, publicKeyPem, request }) {
   const response = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } })
   if (!response.ok) throw new Error('Issue authority returned HTTP ' + response.status)
   const envelope = await response.json()
-  return verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, request)
+  return verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
+    ...request,
+    currentObservedAt: Date.now(),
+  })
 }
 
 module.exports = { canonicalize, verifySignedIssueAuthorityEnvelope, fetchSignedIssueAuthority }
