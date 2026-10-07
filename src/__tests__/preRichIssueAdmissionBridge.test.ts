@@ -43,6 +43,14 @@ function protectedCapitalProvenance() {
 }
 
 function viabilityCertificate() {
+  const proof = (key: string, n: string) => ({
+    reference: 'proof://' + key,
+    digest: n.repeat(64).slice(0, 64),
+  })
+  const evidence = (key: string, n: string) => ({
+    reference: 'evidence://' + key,
+    digest: n.repeat(64).slice(0, 64),
+  })
   return {
     id: 'pre-rich-kc-v1',
     version: '1',
@@ -50,12 +58,26 @@ function viabilityCertificate() {
     characteristicPredicateReference: 'chi://pre-rich-v1',
     witnessSelectorReference: 'wit://pre-rich-v1',
     boundsReference: 'bounds://pre-rich-v1',
-    proofs: Object.fromEntries(['VC1','VC2','VC3','VC4','VC5','VC6'].map((key, i) => [
-      key, { reference: 'proof://' + key, digest: String(i + 1).repeat(64).slice(0,64) },
-    ])),
-    evidence: Object.fromEntries(['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10'].map((key, i) => [
-      key, { reference: 'evidence://' + key, digest: String(i % 10).repeat(64).slice(0,64) },
-    ])),
+    proofs: {
+      VC1: proof('VC1', '1'),
+      VC2: proof('VC2', '2'),
+      VC3: proof('VC3', '3'),
+      VC4: proof('VC4', '4'),
+      VC5: proof('VC5', '5'),
+      VC6: proof('VC6', '6'),
+    },
+    evidence: {
+      E1: evidence('E1', '1'),
+      E2: evidence('E2', '2'),
+      E3: evidence('E3', '3'),
+      E4: evidence('E4', '4'),
+      E5: evidence('E5', '5'),
+      E6: evidence('E6', '6'),
+      E7: evidence('E7', '7'),
+      E8: evidence('E8', '8'),
+      E9: evidence('E9', '9'),
+      E10: evidence('E10', '0'),
+    },
     digest: '9'.repeat(64),
   }
 }
