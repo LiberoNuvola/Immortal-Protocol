@@ -40,7 +40,7 @@ function fakeLucid() {
       if (address === 'carrier') {
         const d = datum()
         d.fields[1].fields[0] = 10n
-        d.fields[1].fields[1] = 4n
+        d.fields[1].fields[1] = 3n
         d.fields[1].fields[2] = 2n
         d.fields[1].fields[3] = 20n
         d.fields[1].fields[4] = 30n
@@ -48,7 +48,7 @@ function fakeLucid() {
         d.fields[1].fields[6][0].fields[2] = 1n
         d.fields[1].fields[6][0].fields[3] = 1n
         d.fields[1].fields[6][1].fields[2] = 1n
-        d.fields[1].fields[6][1].fields[3] = 3n
+        d.fields[1].fields[6][1].fields[3] = 2n
         d.fields[1].fields[1] = 4n
         d.fields[1].fields[2] = 2n
         d.fields[1].fields[6][0].fields[4] = 10n
@@ -94,14 +94,18 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.counterInputReference, ref('a') + '#0')
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, 'cardano:tx/' + ref('c') + '#2')
-  assert.equal(result.protectedCapital.protectedCapital, 154n)
+  assert.equal(result.protectedCapital.protectedCapital, 1650n)
   assert.deepEqual(result.protectedCapital.components, {
     crystallizedLiabilities: 10n,
-    unresolvedReserve: 4n,
+    worstCaseExposure: 1500n,
     safetyCapital: 20n,
     reserveProtection: 30n,
     lockedJackpot: 50n,
     mandatoryFutureCosts: 40n,
+  })
+  assert.deepEqual(result.protectedCapital.accountingInputs, {
+    unresolvedReserve: 3n,
+    unresolvedTicketCount: 2n,
   })
   assert.equal(result.decisionInput.preState.control.currentActiveClass, 0n)
   assert.equal(result.decisionInput.classId, 0n)
