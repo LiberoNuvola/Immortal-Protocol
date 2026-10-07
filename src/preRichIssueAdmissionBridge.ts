@@ -103,6 +103,8 @@ export type IssueAdmissionRuntimeInputs = {
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
+  classId: bigint
+  price: bigint
   carrierStateReference?: string
 }
 
