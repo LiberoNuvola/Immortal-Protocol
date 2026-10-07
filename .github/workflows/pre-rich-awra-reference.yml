@@ -7,16 +7,14 @@ on:
     paths:
       - 'PRE-RICH/src/PreRichAwraReference.ts'
       - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts'
       - '.github/workflows/pre-rich-awra-reference.yml'
-      - 'package.json'
-      - 'package-lock.json'
   pull_request:
     paths:
       - 'PRE-RICH/src/PreRichAwraReference.ts'
       - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts'
       - '.github/workflows/pre-rich-awra-reference.yml'
-      - 'package.json'
-      - 'package-lock.json'
   workflow_dispatch:
 
 jobs:
@@ -27,7 +25,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Run recovered AWRA reference tests
-        run: npx vitest run PRE-RICH/tests/unit/PreRichAwraReference.test.ts
+      - name: Run dependency-free AWRA reference tests
+        run: node --experimental-strip-types --test PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts
