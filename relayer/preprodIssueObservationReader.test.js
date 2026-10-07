@@ -8,7 +8,7 @@ function datum() {
   const prices = [1n,2n,3n,5n,10n,25n,50n,100n]
   const classes = prices.map((price, i) => ({
     fields: [
-      BigInt(i), 0n, 0n, 0n, 10n,
+      BigInt(i), i < 2 ? 1n : 0n, 0n, 0n, 10n,
       { index: i === 0 ? 1 : 0, fields: [] },
     ],
   }))
