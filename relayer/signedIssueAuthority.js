@@ -197,7 +197,9 @@ async function fetchSignedIssueAuthority({ baseUrl, publicKeyPem, request }) {
   if (!publicKeyPem) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY is required')
   const url = new URL(baseUrl)
   for (const [key, value] of Object.entries(request)) {
-    url.searchParams.set(key, String(value))
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, String(value))
+    }
   }
   const response = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } })
   if (!response.ok) throw new Error('Issue authority returned HTTP ' + response.status)
