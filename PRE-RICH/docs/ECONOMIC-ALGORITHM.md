@@ -54,6 +54,70 @@ WorstCaseExposure(P,N) = 500 × P × N
 
 RawSurplus = max(0, EEV − ProtectedCapital)
 
+## 3A. AWRA — adaptive distribution boundary
+
+AWRA is an application-level policy mechanism operating only on economic
+surplus that remains after protected obligations and the applicable Jackpot
+requirement have been accounted for.
+
+The safety boundary is:
+
+```text
+verified economic state
+→ ProtectedCapital
+→ current Jackpot protection / funding requirement
+→ residual RawSurplus
+→ AWRA candidate budget
+→ candidate post-state
+→ Economic Gate
+→ Viability / Ω admissibility
+→ authorized policy preference
+→ atomic transition
+```
+
+The historical AWRA research defines, for an admissible budget `B_AWRA` and
+weighted target payout `x`:
+
+```text
+Δp_x = B_AWRA × w_x / x
+```
+
+This formula is preserved as historical/reference computation. The current
+application specification does **not** freeze a universal numeric `alpha`,
+budget fraction, Pareto objective, lexicographic ordering, risk ceiling or
+cadence.
+
+Where:
+
+```text
+RawSurplus > 0
+```
+
+a reporting value may be derived as:
+
+```text
+alpha = B_AWRA / RawSurplus
+```
+
+but `alpha` is not itself an authorization source or policy default.
+
+An AWRA candidate is admissible only when:
+
+```text
+B_AWRA <= RawSurplus
+AND
+post-state Economic Gate = ACCEPT
+AND
+declared Viability / Ω conditions = ACCEPT
+AND
+candidate is inside the authorized application policy domain
+```
+
+Historical candidate grids and numerical experiments are retained in
+`PRE-RICH/docs/AWRA-RECOVERY-REINTEGRATION-v0.1.md` and the Library research
+artifacts. They must be recalibrated against the current canonical Classic-6
+ticket distribution before any numerical result is promoted.
+
 
 ## 4. Reserve and class control
 
