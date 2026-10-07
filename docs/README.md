@@ -22,6 +22,32 @@ The repository distinguishes universal protocol semantics from adapter and appli
 
 Evidence records do not create normative authority.
 
+## Mechanism index
+
+The repository documents the following first-class mechanisms explicitly.
+
+| Layer | Mechanisms |
+|---|---|
+| **IMMORTAL** | Economic Gate · Viability Kernel (K_Ω) · A_safe · ProtectedCapital · RawSurplus · Worst-Case Analysis · Statistical Risk Analysis · Hysteresis · Contraction · Quiescence · Recovery / PRE-GENESIS |
+| **PRE-RICH** | AWRA · Treasury Allocation Policy · Adaptive Asset / Liquidation Policy · Jackpot Policy · Game Outcome / Randomization |
+| **Adapter** | Evidence transport · semantic preservation · settlement realization · chain conformance |
+
+The architectural rule is:
+
+```text
+IMMORTAL safety / admissibility
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+        Cardano Adapter
+              ↓
+            Ledger
+```
+
+The mechanism registry is a documentation index, not a new normative layer. Individual mechanisms remain governed by their applicable canonical specification.
+
 ## Recommended paths
 
 ### For everyone
