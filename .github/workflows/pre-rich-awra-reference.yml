@@ -6,6 +6,7 @@ on:
       - work/immortal-green-closure
     paths:
       - 'PRE-RICH/src/PreRichAwraReference.ts'
+      - 'PRE-RICH/src/PreRichAwraDynamicReference.ts'
       - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
       - 'PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts'
       - '.github/workflows/pre-rich-awra-reference.yml'
