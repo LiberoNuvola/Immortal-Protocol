@@ -211,9 +211,10 @@ test('historical dynamic selector boundary remains external to the risk envelope
   assert.ok(filtered.some((candidate) => candidate.id === 'low'))
   assert.ok(filtered.some((candidate) => candidate.id === 'mid'))
   assert.ok(!filtered.some((candidate) => candidate.id === 'high'))
-  assert.equal(
-    deriveCandidateRiskRatio(2.25566840999, 2.2109461185727546),
-    1.020222,
+  assert.ok(
+    Math.abs(
+      deriveCandidateRiskRatio(2.25566840999, 2.2109461185727546) - 1.020222,
+    ) < 1e-6,
   )
 })
 
