@@ -6,8 +6,6 @@
  * already-authoritative witness is complete and bound to the exact runtime
  * inputs before the Cardano execution adapter can consume it.
  */
-import type { IssueRefinementEvidence } from '../../../PRE-RICH/src/PreRichIssueEvidence'
-import { issueClassSaleable } from '../../../PRE-RICH/src/PreRichIssueEvidence'
 import {
   assertEconomicAdmission,
   type EconomicAdmissionWitness,
@@ -39,7 +37,7 @@ function requiredString(value: string, name: string): void {
 export async function resolveAuthoritativeIssueAdmission(
   source: AuthoritativeIssueAdmissionSource,
   inputs: IssueAdmissionRuntimeInputs,
-  classEvidence: IssueRefinementEvidence,
+  _classEvidence?: unknown,
 ): Promise<EconomicAdmissionWitness> {
   if (!source || typeof source !== 'object') {
     throw new Error('authoritative Issue source is required')
@@ -48,10 +46,6 @@ export async function resolveAuthoritativeIssueAdmission(
   requiredString(source.version, 'authoritative Issue source version')
   if (typeof source.provider !== 'function') {
     throw new Error('authoritative Issue source provider is required')
-  }
-
-  if (!issueClassSaleable(classEvidence)) {
-    throw new Error('class is not saleable')
   }
 
   if (inputs.poolUsdmValue < 0n) {
