@@ -26,6 +26,29 @@ function certificate() {
   }
 }
 
+function viabilityCertificate() {
+  const digest = (n) => String(n).repeat(64).slice(0, 64)
+  const proofs = {}
+  for (const [i, key] of ['VC1','VC2','VC3','VC4','VC5','VC6'].entries()) {
+    proofs[key] = { reference: 'proof://' + key, digest: digest(i + 1) }
+  }
+  const evidence = {}
+  for (const [i, key] of ['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10'].entries()) {
+    evidence[key] = { reference: 'evidence://' + key, digest: digest((i + 1) % 10) }
+  }
+  return {
+    id: 'pre-rich-kc-v1',
+    version: '1',
+    modelReference: 'model://pre-rich-v1',
+    characteristicPredicateReference: 'chi://pre-rich-v1',
+    witnessSelectorReference: 'wit://pre-rich-v1',
+    boundsReference: 'bounds://pre-rich-v1',
+    proofs,
+    evidence,
+    digest: 'f'.repeat(64),
+  }
+}
+
 function makePayload(overrides = {}) {
   return {
     counterInputReference: 'a'.repeat(64) + '#0',
@@ -49,6 +72,7 @@ function makePayload(overrides = {}) {
     verificationReference: 'verify://eev/preprod',
     derivationVersion: 'eev-v1',
     eevQualification: certificate(),
+    viabilityCertificate: viabilityCertificate(),
     ...overrides,
   }
 }
@@ -100,3 +124,18 @@ assert.throws(
 )
 
 console.log('signedIssueAuthority: PASS')
+
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      viabilityCertificate: {
+        ...viabilityCertificate(),
+        proofs: { ...viabilityCertificate().proofs, VC3: undefined },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /viabilityCertificate.proofs.VC3 is required/,
+)
