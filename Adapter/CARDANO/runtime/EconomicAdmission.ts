@@ -15,6 +15,33 @@ import {
 
 export type EconomicActionClass = 'Issue' | 'Reveal' | 'Claim' | 'Expire'
 
+export type V3CandidateState = {
+  crystallizedLiabilities: bigint
+  unresolvedReserve: bigint
+  unresolvedTicketCount: bigint
+  safetyCapital: bigint
+  reserveProtection: bigint
+  mandatoryFutureCosts: bigint
+  classes: Array<{
+    classId: bigint
+    issued: bigint
+    unresolved: bigint
+    exposure: bigint
+    cap: bigint
+    saleable: boolean
+  }>
+  control: {
+    currentActiveClass: bigint
+    highestClassEverActivated: bigint
+  }
+  jackpot: {
+    lockedAmount: bigint
+    threshold: bigint
+    status: 'inactive' | 'locked' | 'payable' | 'closed'
+    cycle: bigint
+  }
+}
+
 export type EconomicAdmissionWitness = {
   gateVersion: string
   admitted: true
@@ -34,6 +61,13 @@ export type EconomicAdmissionWitness = {
   authenticatedPoolInputReference: string
   authenticatedPoolUsdmValue: bigint
   requiredImmediateLiquidity: bigint
+  /** Exact V3 carrier consumed/continued by this economic transition. */
+  carrierInputReference?: string
+  carrierPolicyId?: string
+  carrierTokenNameHex?: string
+  carrierPreStateVersion?: bigint
+  /** Candidate post-state produced by the authoritative Haskell decision. */
+  carrierCandidateState?: V3CandidateState
 }
 
 export function assertEconomicAdmission(

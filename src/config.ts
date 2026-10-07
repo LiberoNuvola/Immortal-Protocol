@@ -25,6 +25,8 @@ export const B1_POOL_TOKEN_NAME_HEX = env('VITE_B1_POOL_TOKEN_NAME_HEX')
 export const V3_CARRIER_ADDRESS = env('VITE_V3_CARRIER_ADDRESS')
 export const V3_CARRIER_POLICY_ID = env('VITE_V3_CARRIER_POLICY_ID')
 export const V3_CARRIER_TOKEN_NAME_HEX = env('VITE_V3_CARRIER_TOKEN_NAME_HEX')
+// Public PlutusV2 validator CBOR for the deployed V3 carrier. The Issue path fails closed if absent.
+export const V3_CARRIER_SCRIPT_CBOR = env('VITE_V3_CARRIER_SCRIPT_CBOR')
 
 // Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
 export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')

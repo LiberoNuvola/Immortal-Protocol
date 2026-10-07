@@ -46,7 +46,11 @@ import {
 import wallet from './wallet'
 import { createCardanoExecutionAdapter } from '../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import type { EconomicAdmissionWitness } from '../Adapter/CARDANO/runtime/EconomicAdmission'
-import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from './preRichIssueAdmissionBridge'
+import {
+  obtainAuthoritativeIssueAdmission,
+  assertIssueCarrierBindingWitness,
+  type AuthoritativeIssueAdmissionProvider,
+} from './preRichIssueAdmissionBridge'
 import {
   buildScriptsFromLucid,
   counterValidator,
@@ -57,6 +61,10 @@ import {
   RELAYER_PKH,
   TICKET_PAYMENT_LOVELACE,
   TREASURY_ADDRESS,
+  V3_CARRIER_ADDRESS,
+  V3_CARRIER_POLICY_ID,
+  V3_CARRIER_TOKEN_NAME_HEX,
+  V3_CARRIER_SCRIPT_CBOR,
 } from './config'
 
 import {
@@ -466,6 +474,94 @@ async function findSingletonB1PrizePoolUtxo(
 }
 
 // ============================================================
+// V3 Economic State Carrier
+// ============================================================
+
+function parseBigIntField(value: unknown, field: string): bigint {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return BigInt(value)
+  if (typeof value === 'string' && /^-?\d+$/.test(value)) return BigInt(value)
+  throw new Error(`authoritative V3 candidate state field ${field} is not an integer`)
+}
+
+function parseBoolField(value: unknown, field: string): boolean {
+  if (typeof value === 'boolean') return value
+  throw new Error(`authoritative V3 candidate state field ${field} is not boolean`)
+}
+
+function buildV3CandidateStateConstr(raw: unknown): Constr<Data> {
+  if (!raw || typeof raw !== 'object') throw new Error('authoritative V3 candidate post-state is missing')
+  const state = raw as Record<string, unknown>
+  if (!Array.isArray(state.classes) || state.classes.length !== 8) {
+    throw new Error('authoritative V3 candidate post-state must contain exactly 8 classes')
+  }
+  const prices = [1n, 2n, 3n, 5n, 10n, 25n, 50n, 100n]
+  const classes = state.classes.map((entry, index) => {
+    if (!entry || typeof entry !== 'object') throw new Error(`candidate class ${index} is malformed`)
+    const c = entry as Record<string, unknown>
+    const classId = parseBigIntField(c.classId, `classes[${index}].classId`)
+    const issued = parseBigIntField(c.issued, `classes[${index}].issued`)
+    const unresolved = parseBigIntField(c.unresolved, `classes[${index}].unresolved`)
+    const exposure = parseBigIntField(c.exposure, `classes[${index}].exposure`)
+    const cap = parseBigIntField(c.cap, `classes[${index}].cap`)
+    const saleable = parseBoolField(c.saleable, `classes[${index}].saleable`)
+    if (classId !== BigInt(index)) throw new Error('candidate V3 class IDs must be canonical 0..7')
+    if (issued < 0n || unresolved < 0n || exposure < 0n || cap < 0n || unresolved > issued) {
+      throw new Error(`candidate V3 class ${index} violates non-negative/count invariants`)
+    }
+    if (exposure !== prices[index] * unresolved) {
+      throw new Error(`candidate V3 class ${index} exposure does not match canonical price`)
+    }
+    return constr(0, [classId, issued, unresolved, exposure, cap, saleable ? constr(1) : constr(0)])
+  })
+  const control = state.control as Record<string, unknown>
+  const currentActiveClass = parseBigIntField(control?.currentActiveClass, 'control.currentActiveClass')
+  const highestClassEverActivated = parseBigIntField(control?.highestClassEverActivated, 'control.highestClassEverActivated')
+  if (currentActiveClass < 0n || currentActiveClass > 7n || highestClassEverActivated < currentActiveClass || highestClassEverActivated > 7n) {
+    throw new Error('candidate V3 control state is invalid')
+  }
+  const jackpot = state.jackpot as Record<string, unknown>
+  const statusIndex = jackpot?.status === 'inactive' ? 0 : jackpot?.status === 'locked' ? 1 : jackpot?.status === 'payable' ? 2 : jackpot?.status === 'closed' ? 3 : -1
+  if (statusIndex < 0) throw new Error('candidate V3 jackpot status is invalid')
+  return constr(0, [
+    parseBigIntField(state.crystallizedLiabilities, 'crystallizedLiabilities'),
+    parseBigIntField(state.unresolvedReserve, 'unresolvedReserve'),
+    parseBigIntField(state.unresolvedTicketCount, 'unresolvedTicketCount'),
+    parseBigIntField(state.safetyCapital, 'safetyCapital'),
+    parseBigIntField(state.reserveProtection, 'reserveProtection'),
+    parseBigIntField(state.mandatoryFutureCosts, 'mandatoryFutureCosts'),
+    classes,
+    constr(0, [currentActiveClass, highestClassEverActivated]),
+    constr(0, [
+      parseBigIntField(jackpot.lockedAmount, 'jackpot.lockedAmount'),
+      parseBigIntField(jackpot.threshold, 'jackpot.threshold'),
+      constr(statusIndex),
+      parseBigIntField(jackpot.cycle, 'jackpot.cycle'),
+    ]),
+  ])
+}
+
+function buildV3CarrierRedeemer(admission: EconomicAdmissionWitness, classId: bigint, classPriceReferenceUnits: bigint): Constr<Data> {
+  const hashBytes = (hex: string, field: string): string => {
+    if (!/^[0-9a-fA-F]{64}$/.test(hex)) throw new Error(`${field} must be exactly 32 bytes of hex`)
+    return hex
+  }
+  if (!admission.carrierInputReference || !admission.carrierCandidateState) {
+    throw new Error('Issue admission is missing the authoritative V3 carrier binding')
+  }
+  return constr(0, [
+    toHex(new TextEncoder().encode('Issue')),
+    toHex(utf8(admission.decisionReference)),
+    toHex(utf8(admission.authoritativeObservationReference)),
+    hashBytes(admission.stateHash, 'stateHash'),
+    hashBytes(admission.actionFingerprint, 'actionFingerprint'),
+    hashBytes(admission.postStateHash, 'postStateHash'),
+    classId,
+    classPriceReferenceUnits,
+  ])
+}
+
+// ============================================================
 // Treasury
 // ============================================================
 
@@ -497,7 +593,6 @@ async function getTreasuryDatum(
   if (typeof datum === 'string') {
     return Data.from(datum)
   }
-
   return datum as Data
 }
 
@@ -802,7 +897,6 @@ export async function mintSerialNFT(
 
   const counterUtxo =
     counterUtxos[0]
-
   let n: number | null = null
 
   try {
@@ -997,13 +1091,11 @@ export async function mintSerialNFT(
       playerCommitmentHex,
 
       priceUsdm,
-
       commitmentHex,
 
       gameVersionHex,
 
       ticketNonce,
-
       prizeAmount,
 
       paymentPolicyHex:
@@ -1050,6 +1142,22 @@ export async function mintSerialNFT(
       b1PrizePoolAddress,
     )
 
+  if (!V3_CARRIER_ADDRESS || !V3_CARRIER_POLICY_ID || !V3_CARRIER_TOKEN_NAME_HEX || !V3_CARRIER_SCRIPT_CBOR) {
+    throw new Error('V3 carrier deployment identity and validator script are required for Issue')
+  }
+  const carrierUnit = V3_CARRIER_POLICY_ID + V3_CARRIER_TOKEN_NAME_HEX
+  const carrierUtxos = await lucid.utxosAt(V3_CARRIER_ADDRESS)
+  const carrierMatches = carrierUtxos.filter((utxo: UTxO) => (utxo.assets?.[carrierUnit] ?? 0n) === 1n)
+  if (carrierMatches.length !== 1) {
+    throw new Error(`Expected exactly 1 deployed V3 carrier UTxO, found ${carrierMatches.length}`)
+  }
+  const carrierUtxo = carrierMatches[0]
+  const carrierFields = fieldsOf(carrierUtxo.datum)
+  if (!carrierFields || carrierFields.length !== 2) throw new Error('Deployed V3 carrier datum is missing or malformed')
+  const carrierPreStateVersion = integerFromData(carrierFields[0])
+  if (carrierPreStateVersion === null || carrierPreStateVersion < 0n) throw new Error('Deployed V3 carrier state version is invalid')
+  const carrierInputReference = carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
+
   const nextPoolDatum =
     buildNextPoolDatum(
       pool.state,
@@ -1088,6 +1196,7 @@ export async function mintSerialNFT(
       {
         counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
         poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
+        carrierInputReference,
         liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
         poolUsdmValue: opts.authoritativePoolUsdmValue ?? (() => {
           throw new Error('authoritativePoolUsdmValue is required when using authoritativeIssueAdmissionProvider')
@@ -1103,8 +1212,21 @@ export async function mintSerialNFT(
     )
   }
 
+  assertIssueCarrierBindingWitness(economicAdmission)
+  if (economicAdmission.carrierInputReference !== carrierInputReference) throw new Error('Issue admission is bound to a different V3 carrier input')
+  if (economicAdmission.carrierPolicyId !== V3_CARRIER_POLICY_ID || economicAdmission.carrierTokenNameHex !== V3_CARRIER_TOKEN_NAME_HEX) throw new Error('Issue admission is bound to a different V3 carrier singleton')
+  if (economicAdmission.carrierPreStateVersion !== carrierPreStateVersion) throw new Error('Issue admission V3 carrier pre-state version mismatch')
+  const carrierPostDatum = constr(0, [carrierPreStateVersion + 1n, buildV3CandidateStateConstr(economicAdmission.carrierCandidateState)])
+  const carrierRedeemer = buildV3CarrierRedeemer(
+    economicAdmission,
+    opts.issueClassEvidence.classId,
+    opts.issueClassEvidence.priceReferenceUnits,
+  )
+  const carrierValidator: Script = { type: 'PlutusV2', script: V3_CARRIER_SCRIPT_CBOR }
+
   // ----------------------------------------------------------
-  // C-02 atomic sale transaction  // ----------------------------------------------------------
+  // C-02 atomic sale transaction
+  // ----------------------------------------------------------
 
   /*
    * The SAME transaction contains:
@@ -1173,6 +1295,8 @@ export async function mintSerialNFT(
       .attachSpendingValidator(
         b1PrizePool as Script,
       )
+      .collectFrom([carrierUtxo], carrierRedeemer)
+      .attachSpendingValidator(carrierValidator)
 
       // ------------------------------------------------------
       // BeaconRegistry reference input
@@ -1239,6 +1363,12 @@ export async function mintSerialNFT(
         pool.utxo.assets,
       )
 
+      .payToContract(
+        V3_CARRIER_ADDRESS,
+        { inline: Data.to(carrierPostDatum) },
+        carrierUtxo.assets,
+      )
+
       // ------------------------------------------------------
       // Treasury payment
       //
@@ -1287,6 +1417,7 @@ export async function mintSerialNFT(
       .submitEconomic(tx, economicAdmission, [
         `${counterUtxo.txHash}#${counterUtxo.outputIndex}`,
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
+        carrierInputReference,
       ], [
         `${pool.utxo.txHash}#${pool.utxo.outputIndex}`,
       ], 'Issue')
@@ -1297,7 +1428,6 @@ export async function mintSerialNFT(
   // ----------------------------------------------------------
   // Result
   // ----------------------------------------------------------
-
   return {
     txHash,
 
