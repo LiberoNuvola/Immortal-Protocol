@@ -14,6 +14,7 @@ export type HaskellIssueObservation = {
   decisionInput: Record<string, unknown>
   decisionReference: string
   observationReference: string
+  observedAt: bigint
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
@@ -156,7 +157,7 @@ export function createHaskellIssueAdmissionProvider(
 
     const observation = {
       observationReference: observed.observationReference,
-      observedAt: Date.now(),
+      observedAt: observed.observedAt,
       sourceInputReferences: [...observed.liquiditySourceReferences],
       utxos: [{
         txHash: observed.poolInputReference.split('#')[0],
