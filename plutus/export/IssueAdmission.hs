@@ -18,7 +18,7 @@ parseIntegerLike value =
     A.Number n ->
       case Scientific.floatingOrInteger n of
         Right i -> pure i
-        Left (_ :: Double) -> fail "expected integer"
+        Left _ -> fail "expected integer"
     A.String t ->
       case readMaybe (T.unpack t) of
         Just i -> pure i
@@ -37,7 +37,7 @@ instance A.FromJSON JackpotStatus where
 instance A.FromJSON TicketClassState where
   parseJSON = A.withObject "TicketClassState" $ \o ->
     TicketClassState
-      <$> o A..: "classId" >>= parseIntegerLike >>= parseIntegerLike
+      <$> o A..: "classId" >>= parseIntegerLike
       <*> o A..: "issued" >>= parseIntegerLike
       <*> o A..: "unresolved" >>= parseIntegerLike
       <*> o A..: "exposure" >>= parseIntegerLike
@@ -124,7 +124,7 @@ instance A.FromJSON IssueDecisionInput where
   parseJSON = A.withObject "IssueDecisionInput" $ \o ->
     IssueDecisionInput
       <$> o A..: "preState"
-      <*> o A..: "classId" >>= parseIntegerLike >>= parseIntegerLike
+      <*> o A..: "classId" >>= parseIntegerLike
       <*> o A..: "price" >>= parseIntegerLike
       <*> o A..: "preEEV" >>= parseIntegerLike
       <*> o A..: "candidateEEV" >>= parseIntegerLike
