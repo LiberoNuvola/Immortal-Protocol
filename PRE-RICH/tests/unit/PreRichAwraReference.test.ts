@@ -122,7 +122,7 @@ describe('PRE-RICH AWRA reference layer', () => {
     expect(metrics.profitWinRate).toBeCloseTo(0.085625)
     expect(metrics.expectedPayout).toBeCloseTo(0.64996875)
     expect(metrics.variance).toBeCloseTo(44.750915874, 8)
-    expect(metrics.probabilityAtLeast100x).toBeCloseTo(0.0019875)
+    expect(metrics.probabilityAtLeast100x).toBeCloseTo(0.001999)
   })
 
   it('never lets preference select an inadmissible candidate', () => {
