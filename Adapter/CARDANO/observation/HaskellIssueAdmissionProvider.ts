@@ -31,7 +31,7 @@ export type HaskellIssueObservation = {
    * Timestamp of the authenticated observation snapshot, in milliseconds.
    * This value is provenance data and must not be replaced by local wall-clock time.
    */
-  observedAt: number
+  observedAt: bigint
 }
 
 export type HaskellIssueAdmissionProviderOptions = {
