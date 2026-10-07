@@ -42,6 +42,20 @@ export type IssueV3CarrierBinding = {
   candidateState: IssueV3CandidateState
 }
 
+export type EevDeploymentApproval = {
+  status: 'DEPLOYMENT_APPROVED'
+  candidateId: string
+  sourceSetId: string
+  profileVersion: string
+  evidenceHash: string
+  qualifiedProperties: readonly string[]
+  excludedProperties: readonly string[]
+  testSuiteVersion: string
+  failureMatrixVersion: string
+  validFrom: string
+  validUntilOrRevalidationRule: string
+}
+
 export type EevQualificationEvidence = {
   status: 'qualified'
   contractVersion: string
@@ -49,6 +63,7 @@ export type EevQualificationEvidence = {
   verificationReference: string
   derivationVersion: string
   snapshotReference: string
+  deploymentApproval: EevDeploymentApproval
   evidence: Record<
     'EV1' | 'EV2' | 'EV3' | 'EV4' | 'EV5' | 'EV6' | 'EV7',
     { reference: string; digest: string }
