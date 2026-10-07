@@ -1231,6 +1231,8 @@ export async function mintSerialNFT(
         poolUsdmValue: opts.authoritativePoolUsdmValue ?? (() => {
           throw new Error('authoritativePoolUsdmValue is required when using authoritativeIssueAdmissionProvider')
         })(),
+        classId: opts.issueClassEvidence.classId,
+        price: opts.issueClassEvidence.priceReferenceUnits,
         carrierStateReference: carrierUtxo
           ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
           : undefined,
