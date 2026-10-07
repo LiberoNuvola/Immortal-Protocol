@@ -178,6 +178,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (payload.carrierStateReference !== expected.carrierStateReference) throw new Error('Issue authority carrier reference mismatch')
   if (payload.classId !== expected.classId) throw new Error('Issue authority classId mismatch')
   if (payload.price !== expected.price) throw new Error('Issue authority price mismatch')
+  if (payload.observationReference !== expected.observationReference) throw new Error('Issue authority observation reference mismatch')
 
   const signedBytes = Buffer.from(canonicalize(payload), 'utf8')
   let signatureBytes
