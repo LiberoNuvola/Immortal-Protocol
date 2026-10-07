@@ -33,6 +33,75 @@ function requiredDigest(value, field) {
   return digest.toLowerCase()
 }
 
+function validateViabilityCertificate(value) {
+  const certificate = requiredObject(value, 'viabilityCertificate')
+  const fields = [
+    'id',
+    'version',
+    'modelReference',
+    'characteristicPredicateReference',
+    'witnessSelectorReference',
+    'boundsReference',
+  ]
+  for (const field of fields) {
+    requiredString(certificate[field], 'viabilityCertificate.' + field)
+  }
+  const digest = requiredDigest(certificate.digest, 'viabilityCertificate.digest')
+
+  const proofs = requiredObject(certificate.proofs, 'viabilityCertificate.proofs')
+  const normalizedProofs = {}
+  for (const key of ['VC1', 'VC2', 'VC3', 'VC4', 'VC5', 'VC6']) {
+    const proof = requiredObject(
+      proofs[key],
+      'viabilityCertificate.proofs.' + key,
+    )
+    normalizedProofs[key] = Object.freeze({
+      reference: requiredString(
+        proof.reference,
+        'viabilityCertificate.proofs.' + key + '.reference',
+      ),
+      digest: requiredDigest(
+        proof.digest,
+        'viabilityCertificate.proofs.' + key + '.digest',
+      ),
+    })
+  }
+
+  const evidence = requiredObject(
+    certificate.evidence,
+    'viabilityCertificate.evidence',
+  )
+  const normalizedEvidence = {}
+  for (const key of ['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10']) {
+    const artifact = requiredObject(
+      evidence[key],
+      'viabilityCertificate.evidence.' + key,
+    )
+    normalizedEvidence[key] = Object.freeze({
+      reference: requiredString(
+        artifact.reference,
+        'viabilityCertificate.evidence.' + key + '.reference',
+      ),
+      digest: requiredDigest(
+        artifact.digest,
+        'viabilityCertificate.evidence.' + key + '.digest',
+      ),
+    })
+  }
+
+  return Object.freeze({
+    id: certificate.id,
+    version: certificate.version,
+    modelReference: certificate.modelReference,
+    characteristicPredicateReference: certificate.characteristicPredicateReference,
+    witnessSelectorReference: certificate.witnessSelectorReference,
+    boundsReference: certificate.boundsReference,
+    proofs: Object.freeze(normalizedProofs),
+    evidence: Object.freeze(normalizedEvidence),
+    digest,
+  })
+}
+
 function validateEevQualification(value) {
   const qualification = requiredObject(value, 'eevQualification')
   if (qualification.status !== 'qualified') {
@@ -120,6 +189,9 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (!valid) throw new Error('Issue authority signature is invalid')
 
   const eevQualification = validateEevQualification(payload.eevQualification)
+  const viabilityCertificate = validateViabilityCertificate(
+    payload.viabilityCertificate,
+  )
   if (
     eevQualification.sourceReference !==
     requiredString(payload.sourceReference, 'sourceReference')
@@ -189,6 +261,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     sourceReference: requiredString(payload.sourceReference, 'sourceReference'),
     derivationVersion: requiredString(payload.derivationVersion, 'derivationVersion'),
     eevQualification,
+    viabilityCertificate,
   })
 }
 
