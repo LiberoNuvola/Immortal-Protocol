@@ -13,7 +13,7 @@ export type IssueAdmissionRuntimeInputs = {
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
-  carrierInputReference: string
+  carrierInputReference?: string
 }
 
 export type AuthoritativeIssueAdmissionProvider = (
