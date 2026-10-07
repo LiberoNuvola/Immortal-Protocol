@@ -176,7 +176,7 @@ export function observedV37BudgetTarget(
  */
 export function classifyHistoricalBudget(
   budget: number,
-): 'BELOW_FLOOR' | 'GRID_VALUE' | 'ABOVE_RECOVERED_GRID' {
+): 'BELOW_FLOOR' | 'GRID_VALUE' | 'NON_GRID_VALUE' | 'ABOVE_RECOVERED_GRID' {
   if (!Number.isFinite(budget) || budget < 0) {
     throw new Error('budget must be finite and non-negative')
   }
@@ -192,5 +192,5 @@ export function classifyHistoricalBudget(
   }
   return budget > HISTORICAL_AWRA_MAX_BUDGET
     ? 'ABOVE_RECOVERED_GRID'
-    : 'GRID_VALUE'
+    : 'NON_GRID_VALUE'
 }
