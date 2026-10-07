@@ -108,16 +108,27 @@ function requireBoolean(value, field) {
 }
 
 function deriveProtectedCapitalProvenance(state) {
+  const worstCaseExposure = state.classes.reduce(
+    (sum, entry) => sum + (500n * entry.exposure),
+    0n,
+  )
   const components = Object.freeze({
     crystallizedLiabilities: state.crystallizedLiabilities,
-    unresolvedReserve: state.unresolvedReserve,
+    worstCaseExposure,
     safetyCapital: state.safetyCapital,
     reserveProtection: state.reserveProtection,
     lockedJackpot: state.jackpot.lockedAmount,
     mandatoryFutureCosts: state.mandatoryFutureCosts,
   })
   const protectedCapital = Object.values(components).reduce((sum, value) => sum + value, 0n)
-  return Object.freeze({ components, protectedCapital })
+  return Object.freeze({
+    components,
+    accountingInputs: Object.freeze({
+      unresolvedReserve: state.unresolvedReserve,
+      unresolvedTicketCount: state.unresolvedTicketCount,
+    }),
+    protectedCapital,
+  })
 }
 
 async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierTokenNameHex }) {
