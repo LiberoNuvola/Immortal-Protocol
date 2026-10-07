@@ -95,6 +95,36 @@ describe('PRE-RICH AWRA reference layer', () => {
 
 
 
+
+
+  it('accepts the current canonical Classic-6 ticket distribution as a reference input', () => {
+    const distribution = [
+      { multiple: 0, probability: 0.765625 },
+      { multiple: 1, probability: 0.14875 },
+      { multiple: 2, probability: 0.007225 },
+      { multiple: 2.5, probability: 0.0525 },
+      { multiple: 3.5, probability: 0.0051 },
+      { multiple: 5, probability: 0.01665 },
+      { multiple: 6, probability: 0.00153 },
+      { multiple: 7.5, probability: 0.00054 },
+      { multiple: 10, probability: 0.000081 },
+      { multiple: 100, probability: 0.0016625 },
+      { multiple: 101, probability: 0.0001615 },
+      { multiple: 102.5, probability: 0.000057 },
+      { multiple: 105, probability: 0.0000171 },
+      { multiple: 200, probability: 0.0000009025 },
+      { multiple: 500, probability: 0.0000999975 },
+    ]
+
+    const metrics = evaluateAwraDistribution(distribution)
+
+    expect(metrics.winRate).toBeCloseTo(0.234375)
+    expect(metrics.profitWinRate).toBeCloseTo(0.085625)
+    expect(metrics.expectedPayout).toBeCloseTo(0.64996875)
+    expect(metrics.variance).toBeCloseTo(44.750915874, 8)
+    expect(metrics.probabilityAtLeast100x).toBeCloseTo(0.0019875)
+  })
+
   it('never lets preference select an inadmissible candidate', () => {
     const candidates = [
       { id: 'unsafe-high', budget: 10, weights: [{ multiple: 1, weight: 1 }] },
