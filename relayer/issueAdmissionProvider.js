@@ -54,7 +54,7 @@ function normalizeDecision(raw) {
     actionClass: 'Issue',
     actionFingerprint: requiredString(decision.actionFingerprint, 'actionFingerprint'),
     postStateHash: requiredString(decision.postStateHash, 'postStateHash'),
-    eev: parseNonNegativeBigInt(decision.preEEV, 'preEEV'),
+    eev: parseNonNegativeBigInt(decision.candidateEEV, 'candidateEEV'),
     availableExecutableLiquidity: parseNonNegativeBigInt(
       decision.availableExecutableLiquidity,
       'availableExecutableLiquidity',
