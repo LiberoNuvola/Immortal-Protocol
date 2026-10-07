@@ -38,10 +38,26 @@ function fakeLucid() {
         }]
       }
       if (address === 'carrier') {
+        const d = datum()
+        d.fields[1].fields[0] = 10n
+        d.fields[1].fields[1] = 4n
+        d.fields[1].fields[2] = 2n
+        d.fields[1].fields[3] = 20n
+        d.fields[1].fields[4] = 30n
+        d.fields[1].fields[5] = 40n
+        d.fields[1].fields[6][0].fields[2] = 1n
+        d.fields[1].fields[6][0].fields[3] = 1n
+        d.fields[1].fields[6][1].fields[2] = 1n
+        d.fields[1].fields[6][1].fields[3] = 3n
+        d.fields[1].fields[1] = 4n
+        d.fields[1].fields[2] = 2n
+        d.fields[1].fields[6][0].fields[4] = 10n
+        d.fields[1].fields[6][1].fields[4] = 10n
+        d.fields[1].fields[8].fields[0] = 50n
         return [{
           txHash: ref('c'),
           outputIndex: 2,
-          datum: datum(),
+          datum: d,
           assets: { ['carrierpolicy' + 'carriername']: 1n },
         }]
       }
@@ -78,6 +94,15 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.counterInputReference, ref('a') + '#0')
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, 'cardano:tx/' + ref('c') + '#2')
+  assert.equal(result.protectedCapital.protectedCapital, 154n)
+  assert.deepEqual(result.protectedCapital.components, {
+    crystallizedLiabilities: 10n,
+    unresolvedReserve: 4n,
+    safetyCapital: 20n,
+    reserveProtection: 30n,
+    lockedJackpot: 50n,
+    mandatoryFutureCosts: 40n,
+  })
   assert.equal(result.decisionInput.preState.control.currentActiveClass, 0n)
   assert.equal(result.decisionInput.classId, 0n)
   assert.equal(result.decisionInput.observationReference.includes(ref('c')), true)
