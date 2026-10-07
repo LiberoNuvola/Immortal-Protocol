@@ -244,7 +244,10 @@ async function readPreprodIssueObservation({
   if (typeof authoritySource !== 'function' && (!authoritativeInputs || typeof authoritativeInputs !== 'object')) {
     throw new Error('authoritativeInputs or an authenticated authoritySource is required')
   }
-  if (observedAt === undefined || observedAt === null) {
+  if (
+    typeof authoritySource !== 'function' &&
+    (observedAt === undefined || observedAt === null)
+  ) {
     throw new Error('observedAt is required from the authenticated observation source')
   }
 
@@ -277,7 +280,9 @@ async function readPreprodIssueObservation({
       carrierStateReference: carrier.carrierStateReference,
       classId,
       price,
-      observedAt: BigInt(observedAt),
+      ...(observedAt === undefined || observedAt === null
+        ? {}
+        : { observedAt: BigInt(observedAt) }),
       observationReference,
     })
   }
@@ -309,6 +314,14 @@ async function readPreprodIssueObservation({
     return n
   }
 
+  const authoritativeObservedAt =
+    authoritativeInputs.observedAt === undefined || authoritativeInputs.observedAt === null
+      ? observedAt
+      : authoritativeInputs.observedAt
+  if (authoritativeObservedAt === undefined || authoritativeObservedAt === null) {
+    throw new Error('authenticated authority source did not provide observedAt')
+  }
+
   const poolUsdmValue = nonNegative(authoritativeInputs.poolUsdmValue, 'poolUsdmValue')
   const preEEV = nonNegative(authoritativeInputs.preEEV, 'preEEV')
   const candidateEEV = nonNegative(authoritativeInputs.candidateEEV, 'candidateEEV')
@@ -327,7 +340,7 @@ async function readPreprodIssueObservation({
 
   return {
     observationReference,
-    observedAt: BigInt(observedAt),
+    observedAt: nonNegative(authoritativeObservedAt, 'observedAt'),
     counterInputReference: counterRef,
     poolInputReference: poolRef,
     poolUsdmValue,
@@ -335,6 +348,7 @@ async function readPreprodIssueObservation({
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
     protectedCapital: deriveProtectedCapitalProvenance(carrier.state),
+    eevQualification: authoritativeInputs.eevQualification,
     poolState,
     decisionInput: {
       preState: carrier.state,
