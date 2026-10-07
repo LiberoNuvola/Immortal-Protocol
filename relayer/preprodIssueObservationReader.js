@@ -100,6 +100,13 @@ function decodeCarrierDatum(utxo) {
   }
 }
 
+function requireBoolean(value, field) {
+  if (typeof value !== 'boolean') {
+    throw new Error(field + ' must be boolean')
+  }
+  return value
+}
+
 function deriveProtectedCapitalProvenance(state) {
   const components = Object.freeze({
     crystallizedLiabilities: state.crystallizedLiabilities,
@@ -326,10 +333,13 @@ async function readPreprodIssueObservation({
       candidateEEV,
       availableExecutableLiquidity: poolUsdmValue,
       requiredImmediateLiquidity,
-      truthVerified: Boolean(authoritativeInputs.truthVerified),
-      eevFresh: Boolean(authoritativeInputs.eevFresh),
-      obligationsComplete: Boolean(authoritativeInputs.obligationsComplete),
-      allOmegaSuccessorsCertified: Boolean(authoritativeInputs.allOmegaSuccessorsCertified),
+      truthVerified: requireBoolean(authoritativeInputs.truthVerified, 'truthVerified'),
+      eevFresh: requireBoolean(authoritativeInputs.eevFresh, 'eevFresh'),
+      obligationsComplete: requireBoolean(authoritativeInputs.obligationsComplete, 'obligationsComplete'),
+      allOmegaSuccessorsCertified: requireBoolean(
+        authoritativeInputs.allOmegaSuccessorsCertified,
+        'allOmegaSuccessorsCertified',
+      ),
       decisionReference: required(authoritativeInputs.decisionReference, 'decisionReference'),
       observationReference,
     },
