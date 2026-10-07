@@ -82,6 +82,12 @@ export type AuthoritativeIssueAdmissionProvider = (
   inputs: IssueAdmissionRuntimeInputs,
 ) => Promise<AuthoritativeIssueAdmissionWitness>
 
+export type AuthoritativeIssueAdmissionSource = {
+  id: string
+  version: string
+  provider: AuthoritativeIssueAdmissionProvider
+}
+
 export type IssueAdmissionRuntimeInputs = {
   counterInputReference: string
   poolInputReference: string
