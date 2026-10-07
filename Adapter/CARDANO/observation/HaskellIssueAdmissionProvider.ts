@@ -39,7 +39,7 @@ export type HaskellIssueAdmissionProviderOptions = {
       poolInputReference: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
-      carrierStateReference: string
+      carrierStateReference?: string
     },
   ) => Promise<HaskellIssueObservation>
 }
