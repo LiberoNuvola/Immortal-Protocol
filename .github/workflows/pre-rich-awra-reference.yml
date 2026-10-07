@@ -19,6 +19,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Dynamic risk-envelope source is covered by the same dependency-free suite.
   awra-reference:
     runs-on: ubuntu-latest
     steps:
