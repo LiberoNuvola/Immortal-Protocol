@@ -9,6 +9,9 @@
  * the caller supplies the authorized policy/risk/viability functions.
  */
 
+/** Application-level loss outcome used by the recovered AWRA transform. */
+export const AWRA_LOSS_OUTCOME_MULTIPLE = 0
+
 export type AwraOutcome = {
   readonly multiple: number
   readonly probability: number
@@ -132,6 +135,42 @@ export function awraBudgetAdmissible(
     throw new Error('AWRA budget must be finite and non-negative')
   }
   return budget <= rawSurplus
+}
+
+/**
+ * Compute the discretionary surplus that remains for AWRA after the current
+ * Jackpot policy has taken only its exact state-derived funding need.
+ *
+ * Any surplus above that exact need remains available to the next
+ * discretionary policy layer.
+ */
+export function deriveAwraPostJackpotResidualSurplus(
+  rawSurplus: number,
+  jackpotFundingNeed: number,
+): number {
+  if (!Number.isFinite(jackpotFundingNeed) || jackpotFundingNeed < 0) {
+    throw new Error('Jackpot funding need must be finite and non-negative')
+  }
+  if (jackpotFundingNeed > rawSurplus) {
+    throw new Error('Jackpot funding need exceeds RawSurplus')
+  }
+  return rawSurplus - jackpotFundingNeed
+}
+
+/**
+ * Check an AWRA budget against the residual left after exact Jackpot funding.
+ * This prevents validation against the pre-Jackpot RawSurplus by accident.
+ */
+export function awraBudgetAdmissibleAfterJackpot(
+  rawSurplus: number,
+  jackpotFundingNeed: number,
+  budget: number,
+): boolean {
+  const residual = deriveAwraPostJackpotResidualSurplus(
+    rawSurplus,
+    jackpotFundingNeed,
+  )
+  return awraBudgetAdmissible(residual, budget)
 }
 
 /**
