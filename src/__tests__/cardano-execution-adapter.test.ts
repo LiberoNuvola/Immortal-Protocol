@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   createCardanoExecutionAdapter,
 } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import type { EconomicAdmissionWitness } from '../../Adapter/CARDANO/runtime/EconomicAdmission'
 
 describe('CardanoExecutionAdapter', () => {
   it('owns signing and infrastructure submission', async () => {
@@ -47,6 +48,7 @@ describe('CardanoExecutionAdapter', () => {
     expect(source).not.toMatch(/lucid\.(signTx|submitTx)\b/)
     expect(source).toContain('createCardanoExecutionAdapter')
   })
+
   it('keeps every TypeScript economic transaction orchestrator behind the Adapter submit boundary', () => {
     const files = [
       '../mint.ts',
@@ -65,18 +67,18 @@ describe('CardanoExecutionAdapter', () => {
     )
     expect(txHelpers).toContain('createCardanoExecutionAdapter')
   })
-
 })
+
 describe('CardanoExecutionAdapter authoritative Issue boundary', () => {
   it('rejects a legacy Issue witness that lacks authoritative provenance', async () => {
     const pool = 'b'.repeat(64) + '#0'
-    const witness = {
+    const witness: EconomicAdmissionWitness = {
       gateVersion: 'economic-gate-v1',
-      admitted: true as const,
+      admitted: true,
       decisionReference: 'decision://issue/1',
       authoritativeObservationReference: 'obs://issue/1',
       stateHash: 'a'.repeat(64),
-      actionClass: 'Issue' as const,
+      actionClass: 'Issue',
       actionFingerprint: 'b'.repeat(64),
       postStateHash: 'c'.repeat(64),
       eev: 100n,
