@@ -5,6 +5,7 @@ import {
   awraBudgetAdmissible,
   computeAwraProbabilityDeltas,
   deriveAwraAlpha,
+  evaluateAwraCandidate,
   evaluateAwraDistribution,
   generateRecovered55Candidates,
   selectAuthorizedAwraCandidate,
@@ -138,6 +139,39 @@ describe('PRE-RICH AWRA reference layer', () => {
     )
 
     expect(selected?.id).toBe('safe-low')
+  })
+
+
+
+  it('can rerun the recovered 55 candidates against the current Classic-6 model', () => {
+    const distribution = [
+      { multiple: 0, probability: 0.765625 },
+      { multiple: 1, probability: 0.14875 },
+      { multiple: 2, probability: 0.007225 },
+      { multiple: 2.5, probability: 0.0525 },
+      { multiple: 3.5, probability: 0.0051 },
+      { multiple: 5, probability: 0.01665 },
+      { multiple: 6, probability: 0.00153 },
+      { multiple: 7.5, probability: 0.00054 },
+      { multiple: 10, probability: 0.000081 },
+      { multiple: 100, probability: 0.0016625 },
+      { multiple: 101, probability: 0.0001615 },
+      { multiple: 102.5, probability: 0.000057 },
+      { multiple: 105, probability: 0.0000171 },
+      { multiple: 200, probability: 0.0000009025 },
+      { multiple: 500, probability: 0.0000999975 },
+    ]
+
+    const baseExpected = evaluateAwraDistribution(distribution).expectedPayout
+    const evaluations = generateRecovered55Candidates().map((candidate) =>
+      evaluateAwraCandidate(distribution, candidate, 0),
+    )
+
+    expect(evaluations).toHaveLength(55)
+    for (const evaluation of evaluations) {
+      expect(evaluation.expectedPayout - baseExpected)
+        .toBeCloseTo(evaluation.candidate.budget)
+    }
   })
 
   it('recovers the historical 5 x 11 grid shape without inventing extra weights', () => {
