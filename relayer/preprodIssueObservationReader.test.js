@@ -49,7 +49,7 @@ function fakeLucid() {
         d.fields[1].fields[6][0].fields[3] = 1n
         d.fields[1].fields[6][1].fields[2] = 1n
         d.fields[1].fields[6][1].fields[3] = 2n
-        d.fields[1].fields[1] = 4n
+        d.fields[1].fields[1] = 3n
         d.fields[1].fields[2] = 2n
         d.fields[1].fields[6][0].fields[4] = 10n
         d.fields[1].fields[6][1].fields[4] = 10n
