@@ -77,7 +77,7 @@ const good = verifySignedIssueAuthorityEnvelope(
   publicKey.export({ type: 'spki', format: 'pem' }),
   expected,
 )
-assert.equal(good.candidateEEV, undefined)
+assert.equal(good.candidateEEV, 1201n)
 assert.equal(good.eevQualification.status, 'qualified')
 assert.equal(good.observedAt, 1000n)
 
