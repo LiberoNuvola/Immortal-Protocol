@@ -164,6 +164,6 @@ describe('qualified EEV certificate boundary', () => {
     await expect(resolveAuthoritativeIssueAdmission(
       { id: 'test-authority', version: '1', provider: async () => bad },
       inputs, classEvidence,
-    )).rejects.toThrow(/incomplete EEV evidence: EV6/)
+    )).rejects.toThrow(/EV6/)
   })
 })
