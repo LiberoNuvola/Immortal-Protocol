@@ -217,6 +217,64 @@ function validateEevQualification(value) {
   })
 }
 
+function validateProtectedCapitalProvenance(value) {
+  const provenance = requiredObject(value, 'protectedCapitalProvenance')
+  const sourceReference = requiredString(
+    provenance.sourceReference,
+    'protectedCapitalProvenance.sourceReference',
+  )
+  const components = requiredObject(
+    provenance.components,
+    'protectedCapitalProvenance.components',
+  )
+  const componentNames = [
+    'crystallizedLiabilities',
+    'worstCaseExposure',
+    'safetyCapital',
+    'reserveProtection',
+    'lockedJackpot',
+    'mandatoryFutureCosts',
+  ]
+  const normalizedComponents = {}
+  for (const name of componentNames) {
+    normalizedComponents[name] = nonNegative(
+      components[name],
+      'protectedCapitalProvenance.components.' + name,
+    )
+  }
+  const accountingInputs = requiredObject(
+    provenance.accountingInputs,
+    'protectedCapitalProvenance.accountingInputs',
+  )
+  const normalizedAccountingInputs = {
+    unresolvedReserve: nonNegative(
+      accountingInputs.unresolvedReserve,
+      'protectedCapitalProvenance.accountingInputs.unresolvedReserve',
+    ),
+    unresolvedTicketCount: nonNegative(
+      accountingInputs.unresolvedTicketCount,
+      'protectedCapitalProvenance.accountingInputs.unresolvedTicketCount',
+    ),
+  }
+  const total = nonNegative(
+    provenance.total,
+    'protectedCapitalProvenance.total',
+  )
+  const sum = Object.values(normalizedComponents).reduce(
+    (acc, value) => acc + value,
+    0n,
+  )
+  if (sum !== total) {
+    throw new Error('ProtectedCapital provenance total does not match components')
+  }
+  return Object.freeze({
+    sourceReference,
+    components: Object.freeze(normalizedComponents),
+    accountingInputs: Object.freeze(normalizedAccountingInputs),
+    total,
+  })
+}
+
 function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (!envelope || typeof envelope !== 'object') throw new Error('Issue authority envelope is required')
   if (!publicKeyPem) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY is required')
@@ -245,6 +303,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (!valid) throw new Error('Issue authority signature is invalid')
 
   const eevQualification = validateEevQualification(payload.eevQualification)
+  const protectedCapitalProvenance = validateProtectedCapitalProvenance(payload.protectedCapitalProvenance)
   const viabilityCertificate = validateViabilityCertificate(
     payload.viabilityCertificate,
   )
@@ -265,6 +324,9 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     requiredString(payload.derivationVersion, 'derivationVersion')
   ) {
     throw new Error('EEV qualification derivationVersion mismatch')
+  }
+  if (protectedCapitalProvenance.sourceReference !== payload.carrierStateReference) {
+    throw new Error('ProtectedCapital provenance is not bound to the V3 carrier state')
   }
 
   const values = {
@@ -317,6 +379,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     sourceReference: requiredString(payload.sourceReference, 'sourceReference'),
     derivationVersion: requiredString(payload.derivationVersion, 'derivationVersion'),
     eevQualification,
+    protectedCapitalProvenance,
     viabilityCertificate,
   })
 }
