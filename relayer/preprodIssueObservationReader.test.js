@@ -88,14 +88,27 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
       obligationsComplete: true,
       allOmegaSuccessorsCertified: true,
       decisionReference: 'decision-1',
+      protectedCapitalProvenance: {
+        sourceReference: 'c'.repeat(64) + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
     },
   })
 
   assert.equal(result.counterInputReference, ref('a') + '#0')
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, 'cardano:tx/' + ref('c') + '#2')
-  assert.equal(result.protectedCapital.protectedCapital, 1650n)
-  assert.deepEqual(result.protectedCapital.components, {
+  assert.equal(result.protectedCapitalProvenance.total, 1650n)
+  assert.deepEqual(result.protectedCapitalProvenance.components, {
     crystallizedLiabilities: 10n,
     worstCaseExposure: 1500n,
     safetyCapital: 20n,
@@ -103,7 +116,7 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     lockedJackpot: 50n,
     mandatoryFutureCosts: 40n,
   })
-  assert.deepEqual(result.protectedCapital.accountingInputs, {
+  assert.deepEqual(result.protectedCapitalProvenance.accountingInputs, {
     unresolvedReserve: 3n,
     unresolvedTicketCount: 2n,
   })
