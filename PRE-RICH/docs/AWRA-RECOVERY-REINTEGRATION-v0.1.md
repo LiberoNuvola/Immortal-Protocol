@@ -274,6 +274,31 @@ Therefore historical AWRA measurements MUST NOT be copied into the current canon
 
 The historical AWRA selector is recoverable. Its numerical outputs must be re-run against the current canonical distribution before any promotion.
 
+## 11A. Current-model static recalibration result
+
+The required static recalibration against the current Classic-6 ticket-level
+distribution is now reproduced by the dependency-free AWRA reference test.
+
+The test verifies all 55 recovered historical candidate configurations against
+the current distribution and checks that each candidate increases expected
+payout by exactly its declared AWRA budget `B_AWRA`. It also rechecks the
+current baseline metrics:
+
+```text
+EV = 0.64996875 × P
+Win Rate = 0.234375
+Profit-Win Rate = 0.085625
+P(payout >= 100×P) = 0.001999
+```
+
+This closes the **static model-adaptation** step. It does not close dynamic
+risk/Ω admissibility, selection governance, cadence, or any numerical AWRA
+policy parameter.
+
+The current implementation additionally enforces the recovered policy
+boundary that AWRA is checked against the residual left after exact Jackpot
+`FundingNeed`, rather than against the pre-Jackpot `RawSurplus`.
+
 ## 12. Required next conformance work
 
 The correct next research/implementation sequence is:
