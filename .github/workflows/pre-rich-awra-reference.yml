@@ -1,0 +1,33 @@
+name: PRE-RICH AWRA reference conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - 'PRE-RICH/src/PreRichAwraReference.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - '.github/workflows/pre-rich-awra-reference.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - 'PRE-RICH/src/PreRichAwraReference.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - '.github/workflows/pre-rich-awra-reference.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  awra-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run recovered AWRA reference tests
+        run: npx vitest run PRE-RICH/tests/unit/PreRichAwraReference.test.ts
