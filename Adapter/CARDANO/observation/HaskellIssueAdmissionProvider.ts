@@ -19,6 +19,11 @@ export type HaskellIssueObservation = {
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
+  /**
+   * Timestamp of the authenticated observation snapshot, in milliseconds.
+   * This value is provenance data and must not be replaced by local wall-clock time.
+   */
+  observedAt: number
 }
 
 export type HaskellIssueAdmissionProviderOptions = {
@@ -136,7 +141,7 @@ export function createHaskellIssueAdmissionProvider(
 
     const observation = {
       observationReference: observed.observationReference,
-      observedAt: Date.now(),
+      observedAt: observed.observedAt,
       sourceInputReferences: [...observed.liquiditySourceReferences],
       utxos: [{
         txHash: observed.poolInputReference.split('#')[0],
