@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   admitAwraCandidate,
   applyAwraProbabilityDeltas,
+  awraBudgetAdmissibleAfterJackpot,
   awraBudgetAdmissible,
   computeAwraProbabilityDeltas,
   deriveAwraAlpha,
+  deriveAwraPostJackpotResidualSurplus,
   evaluateAwraCandidate,
   evaluateAwraDistribution,
   generateRecovered55Candidates,
@@ -66,6 +68,16 @@ describe('PRE-RICH AWRA reference layer', () => {
 
     expect(transformedMetrics.expectedPayout - baseMetrics.expectedPayout)
       .toBeCloseTo(0.02)
+  })
+
+  it('enforces the post-Jackpot residual boundary', () => {
+    expect(deriveAwraPostJackpotResidualSurplus(100, 40)).toBe(60)
+    expect(deriveAwraPostJackpotResidualSurplus(100, 0)).toBe(100)
+    expect(awraBudgetAdmissibleAfterJackpot(100, 40, 60)).toBe(true)
+    expect(awraBudgetAdmissibleAfterJackpot(100, 40, 60.0001)).toBe(false)
+    expect(() => deriveAwraPostJackpotResidualSurplus(100, 101)).toThrow(
+      'Jackpot funding need exceeds RawSurplus',
+    )
   })
 
   it('keeps safety, viability and authorized policy as distinct gates', () => {
