@@ -31,7 +31,7 @@ export type HaskellIssueAdmissionProviderOptions = {
     inputs: {
       counterInputReference: string
       poolInputReference: string
-      carrierInputReference: string
+      carrierInputReference?: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
     },
