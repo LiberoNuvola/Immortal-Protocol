@@ -28,7 +28,9 @@ valid =
     (bytes "observation:issue:001")
     (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     (bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-    (bytes "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+    (bytes "cccccccccccccccccccccccccccccccc")
+    0
+    1
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -50,7 +52,9 @@ main = do
         (bytes "observation:reveal:001")
         (bytes "pre")
         (bytes "action")
-        (bytes "post")))
+        (bytes "post")
+        0
+        1))
     "Reveal envelope remains supported"
 
   assert
@@ -61,7 +65,9 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "action")
-        (bytes "post"))))
+        (bytes "post")
+        0
+        1))))
     "unknown action class fails closed"
 
   assert
@@ -105,7 +111,9 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "action")
-        (bytes ""))))
+        (bytes "")
+        0
+        1))))
     "missing post-state hash fails closed"
 
   putStrLn "ALL V3 CARRIER BINDING TESTS PASSED"
