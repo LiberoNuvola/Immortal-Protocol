@@ -348,7 +348,14 @@ async function readPreprodIssueObservation({
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
     protectedCapital: deriveProtectedCapitalProvenance(carrier.state),
+    protectedCapitalProvenance: {
+      sourceReference: carrier.carrierStateReference,
+      components: deriveProtectedCapitalProvenance(carrier.state).components,
+      accountingInputs: deriveProtectedCapitalProvenance(carrier.state).accountingInputs,
+      total: deriveProtectedCapitalProvenance(carrier.state).protectedCapital,
+    },
     eevQualification: authoritativeInputs.eevQualification,
+    viabilityCertificate: authoritativeInputs.viabilityCertificate,
     poolState,
     decisionInput: {
       preState: carrier.state,
