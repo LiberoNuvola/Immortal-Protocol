@@ -84,6 +84,52 @@ Jackpot selection is cryptographically verifiable and non-discretionary. Payout 
 
 B1 is the current authorized-publisher application trust model. B3 is a stronger publisher-independent canonicality target. B3 must not be claimed as implemented without its required verification evidence.
 
+## 11. First-Class Adaptive Mechanisms
+
+PRE-RICH exposes several application-level mechanisms explicitly. They operate only within the economic and safety envelope supplied by IMMORTAL.
+
+### AWRA — Adaptive Win Rate Algorithm
+
+AWRA adapts winning-rate / payout behaviour using application-level policy and available residual headroom.
+
+The current repository restores and reproduces the historical static candidate transformation against the current Classic-6 distribution and retains the historical dynamic risk-envelope lineage.
+
+The exact final optimizer/objective, numeric `alpha`, fixed budget fraction, cadence, risk ceiling and dynamic selector are **not canonical**.
+
+AWRA cannot:
+
+- consume protected capital or mandatory obligations;
+- bypass the Economic Gate;
+- bypass viability or `A_safe`;
+- define its own authority or evidence source;
+- promote a historical candidate into normative policy.
+
+### Treasury Allocation Policy
+
+Treasury allocation is application policy over residual value. Historical fixed percentage schemes such as `75/10/10/5` are non-canonical.
+
+### Adaptive Asset / Liquidation Policy
+
+PRE-RICH may choose among application asset-management actions such as:
+
+```text
+HOLD / SALE / LIQUIDATE / REBALANCE
+```
+
+The action must first satisfy economic feasibility and the IMMORTAL safe-action boundary. No universal asset-ranking rule is implied.
+
+### Mechanism boundary
+
+```text
+IMMORTAL Economic Gate / Viability
+                ↓
+             A_safe
+                ↓
+       PRE-RICH mechanism
+                ↓
+          Adapter execution
+```
+
 ## 11. Governance boundary
 
 PRE-RICH governance cannot override IMMORTAL invariants, assign individual economic outcomes, alter crystallized payouts or create privileged personal economic entitlement.
