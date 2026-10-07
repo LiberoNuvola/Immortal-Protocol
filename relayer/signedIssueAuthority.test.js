@@ -10,6 +10,19 @@ function certificate() {
   return {
     status: 'qualified',
     contractVersion: '3.0.0',
+    deploymentApproval: {
+      status: 'DEPLOYMENT_APPROVED',
+      candidateId: 'pre-rich-eev-v1',
+      sourceSetId: 'source-set://preprod/1',
+      profileVersion: 'pre-rich-eev-v1',
+      evidenceHash: 'e'.repeat(64),
+      qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
+      excludedProperties: [],
+      testSuiteVersion: 'eev-qualification-tests-v1',
+      failureMatrixVersion: 'eev-failure-matrix-v1',
+      validFrom: '2026-10-07T00:00:00Z',
+      validUntilOrRevalidationRule: 'revalidate-on-source-or-profile-change',
+    },
     sourceReference: 'source://eev/preprod',
     verificationReference: 'verify://eev/preprod',
     derivationVersion: 'eev-v1',
@@ -103,6 +116,7 @@ const good = verifySignedIssueAuthorityEnvelope(
 )
 assert.equal(good.candidateEEV, 1201n)
 assert.equal(good.eevQualification.status, 'qualified')
+assert.equal(good.eevQualification.deploymentApproval.status, 'DEPLOYMENT_APPROVED')
 assert.equal(good.observedAt, 1000n)
 
 assert.throws(
