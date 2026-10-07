@@ -50,10 +50,7 @@ function createPreprodIssueObservationProducerFromLucid({
       if (!runtimeInputs || typeof runtimeInputs !== 'object') throw new Error('runtimeInputs are required')
 
       const authoritativeInputs = runtimeInputs.authoritativeInputs
-      const observationTimestamp =
-        runtimeInputs.observedAt === undefined || runtimeInputs.observedAt === null
-          ? Date.now()
-          : runtimeInputs.observedAt
+      const observationTimestamp = runtimeInputs.observedAt
 
       if (
         (!authoritativeInputs || typeof authoritativeInputs !== 'object') &&
