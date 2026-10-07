@@ -551,8 +551,8 @@ function buildV3CarrierRedeemer(admission: EconomicAdmissionWitness, classId: bi
   }
   return constr(0, [
     toHex(new TextEncoder().encode('Issue')),
-    utf8(admission.decisionReference),
-    utf8(admission.authoritativeObservationReference),
+    toHex(utf8(admission.decisionReference)),
+    toHex(utf8(admission.authoritativeObservationReference)),
     hashBytes(admission.stateHash, 'stateHash'),
     hashBytes(admission.actionFingerprint, 'actionFingerprint'),
     hashBytes(admission.postStateHash, 'postStateHash'),
@@ -897,7 +897,6 @@ export async function mintSerialNFT(
 
   const counterUtxo =
     counterUtxos[0]
-
   let n: number | null = null
 
   try {
@@ -1097,7 +1096,6 @@ export async function mintSerialNFT(
       gameVersionHex,
 
       ticketNonce,
-
       prizeAmount,
 
       paymentPolicyHex:
