@@ -225,6 +225,16 @@ describe('PRE-RICH Issue admission bridge', () => {
     ).toThrow('action fingerprint does not match canonical evidence')
   })
 
+  it('rejects an EEV certificate that is qualified but not deployment-approved', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).status = 'QUALIFIED'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/DEPLOYMENT_APPROVED EEV qualification/)
+  })
+
   it('rejects canonical evidence for a non-Issue action', async () => {
     const admission = await obtainAuthoritativeIssueAdmission(
       async () => witness(),
