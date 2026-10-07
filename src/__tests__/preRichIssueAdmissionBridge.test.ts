@@ -6,6 +6,26 @@ import type { EconomicAdmissionWitness } from '../../Adapter/CARDANO/runtime/Eco
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
 
+function eevQualification() {
+  return {
+    status: 'qualified' as const,
+    contractVersion: '3.0.0',
+    sourceReference: 'source://test-eev',
+    verificationReference: 'verify://test-eev',
+    derivationVersion: 'test-eev-v1',
+    snapshotReference: 'snapshot://issue/1',
+    evidence: {
+      EV1: { reference: 'evidence://EV1', digest: 'a'.repeat(64) },
+      EV2: { reference: 'evidence://EV2', digest: 'b'.repeat(64) },
+      EV3: { reference: 'evidence://EV3', digest: 'c'.repeat(64) },
+      EV4: { reference: 'evidence://EV4', digest: 'd'.repeat(64) },
+      EV5: { reference: 'evidence://EV5', digest: 'e'.repeat(64) },
+      EV6: { reference: 'evidence://EV6', digest: 'f'.repeat(64) },
+      EV7: { reference: 'evidence://EV7', digest: '0'.repeat(64) },
+    },
+  }
+}
+
 function witness(): EconomicAdmissionWitness {
   return {
     gateVersion: 'economic-gate-v1',
@@ -27,6 +47,7 @@ function witness(): EconomicAdmissionWitness {
     authenticatedPoolInputReference: pool,
     authenticatedPoolUsdmValue: 500n,
     requiredImmediateLiquidity: 100n,
+    eevQualification: eevQualification(),
   }
 }
 
