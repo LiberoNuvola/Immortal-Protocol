@@ -6,7 +6,9 @@
  * economic/refinement layer before that decision becomes a Cardano witness.
  */
 import type { ExecutableLiquidityObservation } from './ExecutableLiquidityObservation'
-import type { AuthoritativeIssueAdmissionDecision } from './AuthoritativeIssueAdmission'
+import type { EconomicAdmissionWitness } from '../runtime/EconomicAdmission'
+
+export type AuthoritativeIssueAdmissionDecision = EconomicAdmissionWitness
 
 function nonEmpty(value: string, name: string): void {
   if (!value.trim()) throw new Error(name + ' must be non-empty')
