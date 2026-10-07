@@ -72,7 +72,7 @@ describe('CardanoExecutionAdapter authoritative Issue boundary', () => {
     const pool = 'b'.repeat(64) + '#0'
     const witness = {
       gateVersion: 'economic-gate-v1',
-      admitted: true,
+      admitted: true as const,
       decisionReference: 'decision://issue/1',
       authoritativeObservationReference: 'obs://issue/1',
       stateHash: 'a'.repeat(64),
