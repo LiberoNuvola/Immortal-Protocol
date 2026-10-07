@@ -265,6 +265,34 @@ No team/founder/developer/administrator receives an automatic personal economic 
 
 The historical 75/10/10/5 allocation is non-canonical.
 
+## 15A. First-Class Adaptive Mechanisms
+
+The current PRE-RICH architecture contains explicit application mechanisms that operate inside the economic space made safe by IMMORTAL. They are not hidden implementation details.
+
+| Mechanism | Role | Boundary |
+|---|---|---|
+| **AWRA — Adaptive Win Rate Algorithm** | Adapts winning-rate / payout behaviour within available application surplus and the authorized ruleset. | Cannot consume protected capital, bypass Economic Gate / viability, or define its own economic authority. |
+| **Treasury Allocation Policy** | Chooses how residual application value is routed among permitted destinations. | Historical fixed splits such as 75/10/10/5 are non-canonical. |
+| **Adaptive Asset / Liquidation Policy** | Chooses among safe asset-management actions such as HOLD, SALE, LIQUIDATE or REBALANCE. | Preference is evaluated only after economic feasibility and `A_safe`; no universal asset-ranking rule is implied. |
+| **Jackpot Policy** | Manages the application-specific jackpot lifecycle. | Locked Jackpot remains protected; funding and payout remain subject to the economic boundary. |
+| **Game Outcome / Randomization** | Produces the application result from canonical rules and randomness/evidence. | Unverified or player-supplied data cannot become economic authority. |
+
+The boundary is:
+
+```text
+IMMORTAL Economic Gate / Viability
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+       Cardano Adapter
+              ↓
+            Ledger
+```
+
+For AWRA specifically, the current repository has recovered and reproduced the historical static candidate machinery against the current Classic-6 model and recovered the historical dynamic risk-envelope lineage. The exact final optimizer, objective, cadence, alpha/budget fraction and dynamic selector remain application-policy work.
+
 ## 15. PrizePool and Jackpot
 
 PrizePool tracks liquidity, unresolved reservations, pending liabilities, locked Jackpot liquidity and class state.
