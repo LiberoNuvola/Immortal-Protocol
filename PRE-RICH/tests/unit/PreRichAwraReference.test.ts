@@ -9,7 +9,7 @@ import {
   evaluateAwraDistribution,
   generateRecovered55Candidates,
   selectAuthorizedAwraCandidate,
-} from '../PreRichAwraReference'
+} from '../../src/PreRichAwraReference'
 
 describe('PRE-RICH AWRA reference layer', () => {
   it('recovers the historical budget-to-probability transformation', () => {
