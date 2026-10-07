@@ -221,6 +221,6 @@ test('historical dynamic selector boundary remains external to the risk envelope
 test('historical budget classification does not promote fitted values to canonical policy', () => {
   assert.equal(classifyHistoricalBudget(0.005), 'GRID_VALUE')
   assert.equal(classifyHistoricalBudget(0.05), 'GRID_VALUE')
-  assert.equal(classifyHistoricalBudget(0.034583333333333334), 'GRID_VALUE')
+  assert.equal(classifyHistoricalBudget(0.034583333333333334), 'NON_GRID_VALUE')
   assert.equal(classifyHistoricalBudget(0.2), 'ABOVE_RECOVERED_GRID')
 })
