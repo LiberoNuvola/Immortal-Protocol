@@ -141,6 +141,25 @@ export async function obtainAuthoritativeIssueAdmission(
   if (!witness.eevQualification || witness.eevQualification.status !== 'qualified') {
     throw new Error('authoritative Issue witness requires a qualified EEV certificate')
   }
+  const deploymentApproval = witness.eevQualification.deploymentApproval
+  if (!deploymentApproval || deploymentApproval.status !== 'DEPLOYMENT_APPROVED') {
+    throw new Error('authoritative Issue witness requires DEPLOYMENT_APPROVED EEV qualification')
+  }
+  if (!deploymentApproval.candidateId.trim() || !deploymentApproval.sourceSetId.trim() ||
+      !deploymentApproval.profileVersion.trim() || !deploymentApproval.testSuiteVersion.trim() ||
+      !deploymentApproval.failureMatrixVersion.trim() || !deploymentApproval.validFrom.trim() ||
+      !deploymentApproval.validUntilOrRevalidationRule.trim() ||
+      !/^[0-9a-fA-F]{64}$/.test(deploymentApproval.evidenceHash)) {
+    throw new Error('authoritative Issue witness has incomplete EEV deployment approval')
+  }
+  for (const key of ['qualifiedProperties', 'excludedProperties'] as const) {
+    for (const [index, value] of deploymentApproval[key].entries()) {
+      if (!value.trim()) {
+        throw new Error('authoritative Issue witness has incomplete EEV deployment approval: ' + key + '[' + index + ']')
+      }
+    }
+  }
+
   for (const key of ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'] as const) {
     const evidence = witness.eevQualification.evidence[key]
     if (
