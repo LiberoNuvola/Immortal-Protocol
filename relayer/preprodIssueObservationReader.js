@@ -107,30 +107,6 @@ function requireBoolean(value, field) {
   return value
 }
 
-function deriveProtectedCapitalProvenance(state) {
-  const worstCaseExposure = state.classes.reduce(
-    (sum, entry) => sum + (500n * entry.exposure),
-    0n,
-  )
-  const components = Object.freeze({
-    crystallizedLiabilities: state.crystallizedLiabilities,
-    worstCaseExposure,
-    safetyCapital: state.safetyCapital,
-    reserveProtection: state.reserveProtection,
-    lockedJackpot: state.jackpot.lockedAmount,
-    mandatoryFutureCosts: state.mandatoryFutureCosts,
-  })
-  const protectedCapital = Object.values(components).reduce((sum, value) => sum + value, 0n)
-  return Object.freeze({
-    components,
-    accountingInputs: Object.freeze({
-      unresolvedReserve: state.unresolvedReserve,
-      unresolvedTicketCount: state.unresolvedTicketCount,
-    }),
-    protectedCapital,
-  })
-}
-
 async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierTokenNameHex }) {
   const unit = required(carrierPolicyId, 'carrierPolicyId') + required(carrierTokenNameHex, 'carrierTokenNameHex')
   const utxos = await lucid.utxosAt(required(carrierAddress, 'carrierAddress'))
@@ -322,6 +298,10 @@ async function readPreprodIssueObservation({
     throw new Error('authenticated authority source did not provide observedAt')
   }
 
+  const protectedCapitalProvenance = authoritativeInputs.protectedCapitalProvenance
+  if (!protectedCapitalProvenance || typeof protectedCapitalProvenance !== 'object') {
+    throw new Error('authenticated authority source did not provide ProtectedCapital provenance')
+  }
   const poolUsdmValue = nonNegative(authoritativeInputs.poolUsdmValue, 'poolUsdmValue')
   const preEEV = nonNegative(authoritativeInputs.preEEV, 'preEEV')
   const candidateEEV = nonNegative(authoritativeInputs.candidateEEV, 'candidateEEV')
@@ -347,13 +327,7 @@ async function readPreprodIssueObservation({
     carrierStateReference: carrier.carrierStateReference,
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
-    protectedCapital: deriveProtectedCapitalProvenance(carrier.state),
-    protectedCapitalProvenance: {
-      sourceReference: carrier.carrierStateReference,
-      components: deriveProtectedCapitalProvenance(carrier.state).components,
-      accountingInputs: deriveProtectedCapitalProvenance(carrier.state).accountingInputs,
-      total: deriveProtectedCapitalProvenance(carrier.state).protectedCapital,
-    },
+    protectedCapitalProvenance: authoritativeInputs.protectedCapitalProvenance,
     eevQualification: authoritativeInputs.eevQualification,
     viabilityCertificate: authoritativeInputs.viabilityCertificate,
     poolState,
