@@ -12,6 +12,7 @@ Its documentation defines application-specific policy and mechanics. It does not
 4. [Economic Algorithm](ECONOMIC-ALGORITHM.md)
 5. [Game Economy](GAME-ECONOMY.md)
 6. [Conformance](CONFORMANCE.md)
+7. [AWRA Recovery & Re-Integration](AWRA-RECOVERY-REINTEGRATION-v0.1.md) — recovered historical AWRA machinery, current-model boundary and non-normative status
 
 ## Boundary
 
