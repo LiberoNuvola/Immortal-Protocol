@@ -182,6 +182,7 @@ test('dynamic risk envelope tightens as unresolved worst-case exposure consumes 
   assert.equal(manyUnresolved.allowedRatio, 1.05)
   assert.equal(riskEnvelopeAdmissible(1, manyUnresolved.allowedRatio), true)
   assert.equal(riskEnvelopeAdmissible(1.0000001, manyUnresolved.allowedRatio), true)
+  assert.equal(riskEnvelopeAdmissible(1.0500001, manyUnresolved.allowedRatio), false)
 })
 
 test('historical v37 observed budget fit matches recovered eta outputs', () => {
