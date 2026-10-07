@@ -65,8 +65,9 @@ The safety boundary is:
 ```text
 verified economic state
 → ProtectedCapital
-→ current Jackpot protection / funding requirement
-→ residual RawSurplus
+→ pre-Jackpot RawSurplus
+→ exact Jackpot FundingNeed
+→ residual post-Jackpot surplus
 → AWRA candidate budget
 → candidate post-state
 → Economic Gate
@@ -74,6 +75,25 @@ verified economic state
 → authorized policy preference
 → atomic transition
 ```
+
+For the current PRE-RICH Jackpot policy:
+
+```text
+S_J = RawSurplus(state)
+F_J = FundingNeed(state)
+
+0 <= F_J <= S_J
+S_AWRA = S_J - F_J
+B_AWRA <= S_AWRA
+```
+
+`F_J` is the exact state-derived gap to the current Jackpot floor. It is not a
+permission to appropriate the entire pre-Jackpot surplus. Any amount
+`S_J - F_J` remains discretionary surplus available to the next policy layer.
+
+Therefore AWRA MUST be checked against `S_AWRA`, never against `S_J` after a
+non-zero Jackpot funding need. When `F_J = 0`, the full pre-Jackpot RawSurplus
+remains available to AWRA subject to the normal post-state Economic Gate.
 
 The historical AWRA research defines, for an admissible budget `B_AWRA` and
 weighted target payout `x`:
