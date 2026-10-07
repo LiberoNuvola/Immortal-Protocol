@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { assertIssueAdmissionMatchesCanonicalEvidence } from '../preRichIssueAdmissionBridge'
 import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from '../preRichIssueAdmissionBridge'
-import type { EconomicAdmissionWitness } from '../../Adapter/CARDANO/runtime/EconomicAdmission'
+import type { AuthoritativeIssueAdmissionWitness } from '../preRichIssueAdmissionBridge'
 
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
@@ -26,7 +26,7 @@ function eevQualification() {
   }
 }
 
-function witness(): EconomicAdmissionWitness {
+function witness(): AuthoritativeIssueAdmissionWitness {
   return {
     gateVersion: 'economic-gate-v1',
     admitted: true,
