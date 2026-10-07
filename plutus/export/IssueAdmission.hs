@@ -55,6 +55,55 @@ instance A.FromJSON V3EconomicState where
       <*> o A..: "control"
       <*> o A..: "jackpot"
 
+instance A.ToJSON TicketClassState where
+  toJSON c =
+    A.object
+      [ "classId" A..= tcsClassId c
+      , "issued" A..= tcsIssued c
+      , "unresolved" A..= tcsUnresolved c
+      , "exposure" A..= tcsExposure c
+      , "cap" A..= tcsCap c
+      , "saleable" A..= tcsSaleable c
+      ]
+
+instance A.ToJSON EconomicControlState where
+  toJSON c =
+    A.object
+      [ "currentActiveClass" A..= ecsCurrentActiveClass c
+      , "highestClassEverActivated" A..= ecsHighestClassEverActivated c
+      ]
+
+instance A.ToJSON JackpotStatus where
+  toJSON status =
+    A.String $ case status of
+      JackpotInactive -> "inactive"
+      JackpotLocked -> "locked"
+      JackpotPayable -> "payable"
+      JackpotClosed -> "closed"
+
+instance A.ToJSON JackpotState where
+  toJSON j =
+    A.object
+      [ "lockedAmount" A..= jsLockedAmount j
+      , "threshold" A..= jsThreshold j
+      , "status" A..= jsStatus j
+      , "cycle" A..= jsCycle j
+      ]
+
+instance A.ToJSON V3EconomicState where
+  toJSON s =
+    A.object
+      [ "crystallizedLiabilities" A..= v3CrystallizedLiabilities s
+      , "unresolvedReserve" A..= v3UnresolvedReserve s
+      , "unresolvedTicketCount" A..= v3UnresolvedTicketCount s
+      , "safetyCapital" A..= v3SafetyCapital s
+      , "reserveProtection" A..= v3ReserveProtection s
+      , "mandatoryFutureCosts" A..= v3MandatoryFutureCosts s
+      , "classes" A..= v3Classes s
+      , "control" A..= v3Control s
+      , "jackpot" A..= v3Jackpot s
+      ]
+
 instance A.FromJSON IssueDecisionInput where
   parseJSON = A.withObject "IssueDecisionInput" $ \o ->
     IssueDecisionInput
@@ -86,6 +135,7 @@ instance A.ToJSON IssueDecision where
       , "candidateEEV" A..= show (idCandidateEEV d)
       , "availableExecutableLiquidity" A..= show (idAvailableExecutableLiquidity d)
       , "requiredImmediateLiquidity" A..= show (idRequiredImmediateLiquidity d)
+      , "candidateState" A..= idCandidateState d
       ]
 
 actionText :: V3Action -> String
