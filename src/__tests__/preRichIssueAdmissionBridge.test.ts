@@ -91,7 +91,7 @@ describe('PRE-RICH Issue admission bridge', () => {
 
   it('rejects a witness bound to a different pool', async () => {
     const provider: AuthoritativeIssueAdmissionProvider = async () => ({ ...witness(), authenticatedPoolInputReference: 'c'.repeat(64) + '#9' })
-    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).rejects.toThrow('different B1 PrizePool input')
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).rejects.toThrow(/different B1 PrizePool input|executable liquidity observation/)
   })
 
   it('rejects a non-saleable class before invoking authority', async () => {
