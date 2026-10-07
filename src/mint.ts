@@ -541,7 +541,7 @@ function buildV3CandidateStateConstr(raw: unknown): Constr<Data> {
   ])
 }
 
-function buildV3CarrierRedeemer(admission: EconomicAdmissionWitness, classId: bigint, priceUsdm: number): Constr<Data> {
+function buildV3CarrierRedeemer(admission: EconomicAdmissionWitness, classId: bigint, classPriceReferenceUnits: bigint): Constr<Data> {
   const hashBytes = (hex: string, field: string): string => {
     if (!/^[0-9a-fA-F]{64}$/.test(hex)) throw new Error(`${field} must be exactly 32 bytes of hex`)
     return hex
@@ -557,7 +557,7 @@ function buildV3CarrierRedeemer(admission: EconomicAdmissionWitness, classId: bi
     hashBytes(admission.actionFingerprint, 'actionFingerprint'),
     hashBytes(admission.postStateHash, 'postStateHash'),
     classId,
-    BigInt(priceUsdm),
+    classPriceReferenceUnits,
   ])
 }
 
@@ -1217,7 +1217,11 @@ export async function mintSerialNFT(
   if (economicAdmission.carrierPolicyId !== V3_CARRIER_POLICY_ID || economicAdmission.carrierTokenNameHex !== V3_CARRIER_TOKEN_NAME_HEX) throw new Error('Issue admission is bound to a different V3 carrier singleton')
   if (economicAdmission.carrierPreStateVersion !== carrierPreStateVersion) throw new Error('Issue admission V3 carrier pre-state version mismatch')
   const carrierPostDatum = constr(0, [carrierPreStateVersion + 1n, buildV3CandidateStateConstr(economicAdmission.carrierCandidateState)])
-  const carrierRedeemer = buildV3CarrierRedeemer(economicAdmission, opts.issueClassEvidence.classId, priceUsdm)
+  const carrierRedeemer = buildV3CarrierRedeemer(
+    economicAdmission,
+    opts.issueClassEvidence.classId,
+    opts.issueClassEvidence.priceReferenceUnits,
+  )
   const carrierValidator: Script = { type: 'PlutusV2', script: V3_CARRIER_SCRIPT_CBOR }
 
   // ----------------------------------------------------------
