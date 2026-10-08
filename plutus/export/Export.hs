@@ -59,6 +59,11 @@ main :: IO ()
 main = do
   cwd <- getCurrentDirectory
 
+  -- The Cabal package lives in ./plutus. Export paths are therefore
+  -- normalized relative to the invocation directory:
+  --   repo root  -> plutus/out
+  --   repo/plutus -> out
+  -- This prevents the accidental repo/plutus/plutus/out layout.
   let outputDir =
         if takeFileName cwd == "plutus"
           then "out"
