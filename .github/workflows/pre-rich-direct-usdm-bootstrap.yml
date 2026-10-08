@@ -81,10 +81,15 @@ jobs:
       - name: Materialize direct-USDM source-set evidence
         run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
 
-      - name: Verify direct-USDM deployment and source-set evidence
+      - name: Qualify direct-USDM EV1-EV7 evidence
+        run: node audit/cardano-integration/preprod-direct-usdm-qualification.mjs
+
+      - name: Verify direct-USDM evidence chain
         run: |
           test -s audit/preprod-evidence/preprod-direct-usdm-deployment.json
           test -s audit/preprod-evidence/preprod-direct-usdm-source-set.json
+          test -s audit/preprod-evidence/preprod-direct-usdm-qualification.json
+          node -e "const q=require('./audit/preprod-evidence/preprod-direct-usdm-qualification.json'); if(q.status!=='qualified'||q.deploymentApproval!==null) process.exit(1)"
 
       - name: Upload direct-USDM deployment evidence
         if: always()
