@@ -41,5 +41,12 @@ jobs:
           test -s plutus/out/preRichControlCarrier.plutus.json
           test -s plutus/out/preRichControlCarrierMintPolicy.plutus.json
 
+      - name: Run B2 authenticated observation regressions
+        run: |
+          npx vitest run \
+            src/__tests__/preprodB2ControlObservation.test.ts \
+            relayer/preprodIssueObservationReader.test.js \
+            relayer/preprodIssueObservationProvider.test.js
+
       - name: Browser build
         run: npm run build
