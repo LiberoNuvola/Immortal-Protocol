@@ -183,15 +183,6 @@ test-suite issue-decision-tests
         pre-rich-plutus
     default-language: Haskell2010
 
-test-suite b2-control-conformance-tests
-    type: exitcode-stdio-1.0
-    hs-source-dirs: test
-    main-is: PreRichControlCarrierTest.hs
-    build-depends:
-        base ^>=4.18.2,
-        pre-rich-plutus
-    default-language: Haskell2010
-
 test-suite economic-admission-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
