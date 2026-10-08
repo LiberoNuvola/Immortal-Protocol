@@ -710,8 +710,6 @@ export type MintSerialOptions = {
   economicAdmission?: EconomicAdmissionWitness
   /** Server/relayer-side producer for the authoritative Issue admission. */
   authoritativeIssueAdmissionProvider?: AuthoritativeIssueAdmissionProvider
-  /** Canonical B1 pool USDM valuation obtained from the authoritative observation boundary. */
-  authoritativePoolUsdmValue?: bigint
   /**
    * Verified PRE-RICH class-saleability witness for this Issue transition.
    * The application path fails closed when it is absent or inconsistent;
@@ -1228,9 +1226,6 @@ export async function mintSerialNFT(
         counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
         poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
         liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
-        poolUsdmValue: opts.authoritativePoolUsdmValue ?? (() => {
-          throw new Error('authoritativePoolUsdmValue is required when using authoritativeIssueAdmissionProvider')
-        })(),
         classId: opts.issueClassEvidence.classId,
         price: opts.issueClassEvidence.priceReferenceUnits,
         carrierStateReference: carrierUtxo
