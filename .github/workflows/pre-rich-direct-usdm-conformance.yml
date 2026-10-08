@@ -57,6 +57,7 @@ jobs:
         run: |
           node --check audit/cardano-integration/preprod-direct-usdm-source-set.mjs
           node --check audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
+          node --check audit/cardano-integration/preprod-direct-usdm-qualification.mjs
 
       - name: Build browser bundle
         run: npm run build
