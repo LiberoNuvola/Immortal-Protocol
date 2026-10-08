@@ -25,6 +25,8 @@ import qualified GenesisRegimeCarrier
 import qualified GenesisCarrierMintPolicy
 import qualified V3EconomicStateCarrier
 import qualified V3EconomicStateCarrierMintPolicy
+import qualified PreRichControlCarrier
+import qualified PreRichControlCarrierMintPolicy
 
 compiledCborHex :: CompiledCode a -> Text
 compiledCborHex code =
@@ -57,11 +59,6 @@ main :: IO ()
 main = do
   cwd <- getCurrentDirectory
 
-  -- The Cabal package lives in ./plutus. Export paths are therefore
-  -- normalized relative to the invocation directory:
-  --   repo root  -> plutus/out
-  --   repo/plutus -> out
-  -- This prevents the accidental repo/plutus/plutus/out layout.
   let outputDir =
         if takeFileName cwd == "plutus"
           then "out"
@@ -113,6 +110,16 @@ main = do
     (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json")
     "PreRich V3 economic state carrier one-shot mint policy factory"
     (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
+
+  writeScriptJson
+    (outputDir <> "/preRichControlCarrier.plutus.json")
+    "PreRich authenticated control carrier validator (CurrentActiveClass / HighestClassEverActivated)"
+    (compiledCborHex PreRichControlCarrier.compiledValidatorFactory)
+
+  writeScriptJson
+    (outputDir <> "/preRichControlCarrierMintPolicy.plutus.json")
+    "PreRich authenticated control carrier one-shot mint policy factory"
+    (compiledCborHex PreRichControlCarrierMintPolicy.compiledPolicyFactory)
 
   writeScriptJson
     (outputDir <> "/b1PrizePoolFactory.plutus.json")
