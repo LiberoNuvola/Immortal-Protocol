@@ -17,7 +17,7 @@ function digest(value) {
 
 function parseRef(value, field) {
   if (typeof value !== 'string') throw new Error(field + ' must be a string')
-  const match = /^([0-9a-fA-F]{64})#(\\d+)$/.exec(value)
+  const match = /^([0-9a-fA-F]{64})#(\d+)$/.exec(value)
   if (!match) throw new Error(field + ' must be an exact txHash#outputIndex reference')
   return { txHash: match[1], outputIndex: Number(match[2]) }
 }
