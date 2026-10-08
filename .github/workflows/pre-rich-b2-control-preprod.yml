@@ -43,7 +43,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Install native Plutus dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev libblst-dev pkg-config build-essential
 
       - name: Setup Haskell for fresh Plutus artifacts
         uses: haskell-actions/setup@v2
