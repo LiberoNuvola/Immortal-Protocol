@@ -115,6 +115,9 @@ function validateEevQualification(value) {
   if (deploymentApproval.status !== 'DEPLOYMENT_APPROVED') {
     throw new Error('eevQualification deployment status must be DEPLOYMENT_APPROVED')
   }
+  if (deploymentApproval.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') {
+    throw new Error('eevQualification profile is not the deployed direct-USDM profile')
+  }
   for (const field of [
     'candidateId',
     'sourceSetId',
