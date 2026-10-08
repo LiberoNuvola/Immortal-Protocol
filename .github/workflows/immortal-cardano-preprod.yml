@@ -188,6 +188,9 @@ jobs:
           cache: npm
       - name: Install repository dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Setup legacy Lucid runtime for script compilation
+        uses: ./.github/actions/setup-legacy-lucid
       - name: Verify wallet signing secret
         run: test -n "$PREPROD_REVEAL_SEED"
       - name: Materialize authenticated Preprod Oracle State
