@@ -1,0 +1,45 @@
+name: PRE-RICH Direct-USDM Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "Adapter/CARDANO/observation/DirectUsdmEev.ts"
+      - "Adapter/CARDANO/observation/DirectUsdmEev.test.ts"
+      - "Adapter/CARDANO/observation/PreprodDirectUsdmObservation.ts"
+      - "Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts"
+      - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs"
+      - ".github/workflows/pre-rich-direct-usdm-conformance.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pre-rich-direct-usdm-conformance
+  cancel-in-progress: true
+
+jobs:
+  direct-usdm-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run direct-USDM unit tests
+        run: |
+          npx vitest run             Adapter/CARDANO/observation/DirectUsdmEev.test.ts             Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts             --reporter=verbose
+
+      - name: Parse direct-USDM audit scripts
+        run: |
+          node --check audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+          node --check audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
