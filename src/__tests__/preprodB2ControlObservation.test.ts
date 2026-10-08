@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Constr, Data } from 'lucid-cardano'
-import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
+import { observePreprodB2Control } from '../../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 
 const policyId = 'a'.repeat(56)
 const tokenNameHex = 'b'.repeat(64)
