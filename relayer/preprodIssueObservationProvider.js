@@ -66,15 +66,18 @@ function createPreprodIssueObservationProducer({ readObservation }) {
       runtimeInputs.poolInputReference,
       'poolInputReference',
     )
-    const poolUsdmValue = requiredNonNegativeInteger(
-      runtimeInputs.poolUsdmValue,
-      'poolUsdmValue',
-    )
+    const runtimePoolUsdmValue =
+      runtimeInputs.poolUsdmValue === undefined
+        ? undefined
+        : requiredNonNegativeInteger(
+            runtimeInputs.poolUsdmValue,
+            'poolUsdmValue',
+          )
 
     const observed = await readObservation({
       counterInputReference,
       poolInputReference,
-      poolUsdmValue,
+      poolUsdmValue: runtimePoolUsdmValue,
       runtimeInputs,
     })
 
@@ -97,7 +100,10 @@ function createPreprodIssueObservationProducer({ readObservation }) {
     if (observed.poolInputReference !== poolInputReference) {
       throw new Error('authoritative observation Pool reference mismatch')
     }
-    if (String(observed.poolUsdmValue) !== poolUsdmValue) {
+    if (
+      runtimePoolUsdmValue !== undefined &&
+      String(observed.poolUsdmValue) !== runtimePoolUsdmValue
+    ) {
       throw new Error('authoritative observation Pool valuation mismatch')
     }
 
