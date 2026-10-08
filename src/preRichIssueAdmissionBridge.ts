@@ -63,7 +63,11 @@ export type EevQualificationEvidence = {
   verificationReference: string
   derivationVersion: string
   snapshotReference: string
-  deploymentApproval: EevDeploymentApproval
+  /**
+   * Present only after a separate deployment-governance decision.
+   * Final Issue admission still requires DEPLOYMENT_APPROVED.
+   */
+  deploymentApproval?: EevDeploymentApproval
   evidence: Record<
     'EV1' | 'EV2' | 'EV3' | 'EV4' | 'EV5' | 'EV6' | 'EV7',
     { reference: string; digest: string }
