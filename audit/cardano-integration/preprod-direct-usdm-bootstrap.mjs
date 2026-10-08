@@ -240,6 +240,25 @@ if (!scripts.b1PrizePoolAddress || !scripts.prizeAddress) {
   throw new Error('failed to derive direct-USDM B1 topology')
 }
 
+const oracleStateUnit =
+  ORACLE_STATE_POLICY_ID + ORACLE_STATE_TOKEN_NAME_HEX
+
+const oracleStateUtxos =
+  (await provider.getUtxos(address)).filter(
+    u => (u.assets?.[oracleStateUnit] ?? 0n) === 1n,
+  )
+
+if (oracleStateUtxos.length !== 1) {
+  throw new Error(
+    'direct-USDM bootstrap requires exactly one materialized Oracle State UTxO in the configured Preprod wallet',
+  )
+}
+
+const oracleStateUtxo = oracleStateUtxos[0]
+if (!oracleStateUtxo.datum) {
+  throw new Error('materialized Oracle State UTxO is missing its inline datum')
+}
+
 const existingPool = (await provider.getUtxos(scripts.b1PrizePoolAddress))
   .filter(u => (u.assets?.[poolTokenUnit] ?? 0n) > 0n)
 
@@ -331,7 +350,11 @@ const manifest = {
     statePolicyId: ORACLE_STATE_POLICY_ID,
     stateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
     publisherPkh: ORACLE_PUBLISHER_PKH,
-    note: 'retained only because current B1 script factories require Oracle State parameterization; direct-USDM EEV itself performs no oracle valuation',
+    address,
+    unit: oracleStateUnit,
+    utxo: ref(oracleStateUtxo),
+    authorityKind: 'DEPLOYMENT_WALLET_SIGNED',
+    note: 'deployment compatibility oracle for the existing B1 fixed Preprod ADA settlement path; direct-USDM EEV itself is sourced from the concrete Pool UTxO and does not perform oracle valuation',
   },
   topology: {
     counterHash: scripts.counterHash,
