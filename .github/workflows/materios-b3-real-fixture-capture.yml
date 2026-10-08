@@ -1,0 +1,79 @@
+name: Materios B3 Real Fixture Capture
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "poc/materios-checkpoint/src/capture-finalized.ts"
+      - ".github/workflows/materios-b3-real-fixture-capture.yml"
+
+concurrency:
+  group: materios-b3-real-fixture-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact B3 head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Materios checkpoint tooling
+        run: npm install --no-audit --no-fund --prefix poc/materios-checkpoint
+
+      - name: Capture real Materios finalized checkpoint
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+        run: npm run capture:finalized --prefix poc/materios-checkpoint
+
+      - name: Require real GRANDPA proof transport
+        working-directory: poc/materios-checkpoint
+        run: |
+          node - <<'NODE'
+          const fs = require('fs')
+          const path = 'out/MateriosFinalizedStateCapture.json'
+          const packet = JSON.parse(fs.readFileSync(path, 'utf8'))
+          if (packet.scope?.open?.includes('independent decoding and GRANDPA FinalityProof verification')) {
+            // This file is still a capture artifact; the workflow must not
+            // confuse transport evidence with a verified B3 proof.
+          }
+          if (packet.grandpa?.finality_proof?.status !== 'captured') {
+            throw new Error(
+              'REAL_B3_FIXTURE_BLOCKED: Materios Preprod did not expose a GRANDPA finality proof'
+            )
+          }
+          if (!packet.grandpa?.set_id || !Array.isArray(packet.grandpa?.authorities) || packet.grandpa.authorities.length === 0) {
+            throw new Error(
+              'REAL_B3_FIXTURE_BLOCKED: finalized checkpoint lacks a concrete GRANDPA authority set'
+            )
+          }
+          if (!packet.selection_inputs_commitment?.selection_inputs_hash) {
+            throw new Error(
+              'REAL_B3_FIXTURE_BLOCKED: finalized checkpoint lacks selection-input commitment evidence'
+            )
+          }
+          console.log('Real finalized checkpoint and proof transport captured.')
+          console.log('block_hash=', packet.finalized.block_hash)
+          console.log('block_number=', packet.finalized.block_number)
+          console.log('state_root=', packet.finalized.state_root)
+          console.log('grandpa_set_id=', packet.grandpa.set_id)
+          console.log('selection_inputs_hash=', packet.selection_inputs_commitment.selection_inputs_hash)
+          NODE
+
+      - name: Upload B3 capture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3-real-fixture-capture
+          path: poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
+          if-no-files-found: error
