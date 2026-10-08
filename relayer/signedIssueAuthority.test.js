@@ -126,6 +126,8 @@ const expected = {
   poolInputReference: 'b'.repeat(64) + '#1',
   carrierStateReference: 'c'.repeat(64) + '#2',
   directUsdmUnit: 'e'.repeat(56) + '0014df10745553444d',
+  observationReference: 'obs://issue/1',
+  decisionReference: 'decision://issue/1',
   classId: 0,
   price: 1,
   currentObservedAt: 1100,
