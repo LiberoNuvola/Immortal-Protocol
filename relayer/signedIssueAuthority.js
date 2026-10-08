@@ -283,6 +283,21 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (!payload || typeof payload !== 'object') throw new Error('Issue authority payload is required')
   const signature = requiredString(envelope.signature, 'Issue authority signature')
 
+  const expectedDirectUsdmUnit = requiredString(
+    expected.directUsdmUnit,
+    'directUsdmUnit',
+  )
+  const payloadDirectUsdmUnit = requiredString(
+    payload.directUsdmUnit,
+    'directUsdmUnit',
+  )
+  if (
+    payloadDirectUsdmUnit.toLowerCase() !==
+    expectedDirectUsdmUnit.toLowerCase()
+  ) {
+    throw new Error('Issue authority directUsdmUnit mismatch')
+  }
+
   const requiredRefs = ['counterInputReference', 'poolInputReference', 'carrierStateReference', 'observationReference', 'decisionReference']
   for (const field of requiredRefs) requiredString(payload[field], field)
 
@@ -378,6 +393,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     verificationReference: requiredString(payload.verificationReference, 'verificationReference'),
     sourceReference: requiredString(payload.sourceReference, 'sourceReference'),
     derivationVersion: requiredString(payload.derivationVersion, 'derivationVersion'),
+    directUsdmUnit: payloadDirectUsdmUnit.toLowerCase(),
     eevQualification,
     protectedCapitalProvenance,
     viabilityCertificate,
