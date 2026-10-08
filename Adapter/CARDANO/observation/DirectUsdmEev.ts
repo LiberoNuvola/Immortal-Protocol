@@ -1,24 +1,11 @@
 /**
  * Direct-USDM EEV observation boundary for PRE-RICH Preprod.
  *
- * IMPORTANT:
- * - This module observes a physical native-token balance only.
- * - It does not use Economic.poolUsdmValue.
- * - It does not query or apply an oracle price.
- * - The Preprod tUSDM identity below is an EXTERNAL CANDIDATE identity,
- *   not yet a PRE-RICH normative deployment approval.
+ * This module observes a physical native-token balance only.
+ * It does not use Economic.poolUsdmValue and does not apply an oracle price.
  *
- * External evidence currently supporting this candidate identity:
- * https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_cardano.md
- *
- * The protocol economic denomination is 100 sub-units per 1 USDM.
- * The candidate Preprod tUSDM has 6 ledger decimals (1,000,000 atomic units per token). Therefore:
- *
- *   atomic tUSDM -> IMMORTAL USDM sub-units
- *   = floor(atomic * 100 / 1_000_000000)
- *
- * The floor is deliberate: any unrepresentable fractional economic
- * sub-unit is discarded rather than overstated.
+ * The Preprod tUSDM identity below is an EXTERNAL CANDIDATE identity,
+ * not yet a PRE-RICH normative deployment approval.
  */
 
 export const PREPROD_TUSDM_CANDIDATE_POLICY_ID =
@@ -39,17 +26,11 @@ export const TUSDM_ATOMIC_UNITS_PER_TOKEN = 10n ** 6n
 
 function requiredNonNegative(quantity: bigint, name: string): bigint {
   if (typeof quantity !== 'bigint' || quantity < 0n) {
-    throw new Error(
-      name + ' must be a non-negative bigint'
-    )
+    throw new Error(name + ' must be a non-negative bigint')
   }
   return quantity
 }
 
-/**
- * Convert physical candidate tUSDM atomic units into the protocol's
- * integer USDM economic sub-units conservatively.
- */
 export function directUsdmEevFromAtomic(quantity: bigint): bigint {
   const atomic = requiredNonNegative(quantity, 'quantity')
   return (
@@ -57,13 +38,6 @@ export function directUsdmEevFromAtomic(quantity: bigint): bigint {
   ) / TUSDM_ATOMIC_UNITS_PER_TOKEN
 }
 
-/**
- * Observe direct-USDM value from an authenticated UTxO asset map.
- *
- * The caller must already have established that the UTxO is the exact
- * deployed B1 PrizePool input. This helper only performs identity-bound
- * asset extraction and deterministic conversion.
- */
 export function observeDirectUsdmEev({
   assets,
   expectedUnit = PREPROD_TUSDM_CANDIDATE_UNIT,
