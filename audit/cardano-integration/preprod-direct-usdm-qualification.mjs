@@ -88,8 +88,8 @@ try {
 if (deployment?.network !== 'cardano-preprod') {
   throw new Error('deployment manifest is not for Cardano Preprod')
 }
-if (deployment?.profileVersion !== PROFILE_VERSION) {
-  throw new Error('deployment manifest profileVersion is not the direct-USDM profile')
+if (deployment?.profileCandidate !== PROFILE_VERSION) {
+  throw new Error('deployment manifest profileCandidate is not the direct-USDM profile')
 }
 if (deployment?.assets?.directUsdmUnit !== directUsdmUnit) {
   throw new Error('deployment direct-USDM asset does not match the configured unit')
