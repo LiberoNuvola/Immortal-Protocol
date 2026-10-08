@@ -47,7 +47,7 @@ export async function observePreprodDirectUsdmPool({
   if (!poolAddress || !poolAddress.startsWith('addr_test')) {
     throw new Error('poolAddress must be a Preprod address')
   }
-  if (!/^[0-9a-fA-F]{64}#\\d+$/.test(poolInputReference)) {
+  if (!/^[0-9a-fA-F]{64}#\d+$/.test(poolInputReference)) {
     throw new Error('poolInputReference must be an exact txHash#outputIndex reference')
   }
   if (!/^[0-9a-fA-F]{56,}$/.test(poolTokenUnit)) {
