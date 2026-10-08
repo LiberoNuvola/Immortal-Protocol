@@ -8,7 +8,7 @@ import {
   Data,
 } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const SEED = process.env.PREPROD_REVEAL_SEED?.trim()

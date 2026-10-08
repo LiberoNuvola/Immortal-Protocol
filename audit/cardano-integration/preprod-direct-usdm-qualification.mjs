@@ -8,6 +8,9 @@ const DEPLOYMENT_MANIFEST =
 const SOURCE_SET =
   process.env.PREPROD_DIRECT_USDM_SOURCE_SET ??
   EVIDENCE_DIR + '/preprod-direct-usdm-source-set.json'
+const ORACLE_STATE_MANIFEST =
+  process.env.PREPROD_ORACLE_STATE_MANIFEST ??
+  EVIDENCE_DIR + '/preprod-oracle-state-deployment.json'
 
 const PROFILE_VERSION = 'PRE-RICH-EEV-USDM-DIRECT-V1'
 const CONTRACT_VERSION = '3.0.0'
@@ -74,6 +77,7 @@ await mkdir(EVIDENCE_DIR, { recursive: true })
 
 let deployment
 let sourceSet
+let oracleState
 try {
   deployment = JSON.parse(await readFile(DEPLOYMENT_MANIFEST, 'utf8'))
 } catch {
@@ -84,7 +88,27 @@ try {
 } catch {
   throw new Error('real direct-USDM source-set evidence is required')
 }
+try {
+  oracleState = JSON.parse(await readFile(ORACLE_STATE_MANIFEST, 'utf8'))
+} catch {
+  throw new Error('materialized Preprod Oracle State evidence is required')
+}
 
+if (oracleState?.network !== 'cardano-preprod' || oracleState?.status !== 'MATERIALIZED') {
+  throw new Error('Oracle State manifest is not a materialized Cardano Preprod deployment')
+}
+if (oracleState?.authorityKind !== 'DEPLOYMENT_WALLET_SIGNED') {
+  throw new Error('Oracle State authority kind is not the declared deployment-wallet authority')
+}
+if (!oracleState?.oracleState?.policyId || !oracleState?.oracleState?.tokenNameHex || !oracleState?.oracleState?.publisherPkh || !oracleState?.oracleState?.address || !oracleState?.oracleState?.utxo) {
+  throw new Error('Oracle State manifest is missing the concrete singleton identity')
+}
+if (deployment?.oracleConfiguration?.statePolicyId !== oracleState.oracleState.policyId || deployment?.oracleConfiguration?.stateTokenNameHex !== oracleState.oracleState.tokenNameHex || deployment?.oracleConfiguration?.publisherPkh !== oracleState.oracleState.publisherPkh) {
+  throw new Error('deployment Oracle configuration does not match materialized Oracle State evidence')
+}
+if (deployment?.oracleConfiguration?.address !== oracleState.oracleState.address || deployment?.oracleConfiguration?.utxo !== oracleState.oracleState.utxo) {
+  throw new Error('deployment Oracle State location does not match materialized evidence')
+}
 if (deployment?.network !== 'cardano-preprod') {
   throw new Error('deployment manifest is not for Cardano Preprod')
 }
@@ -163,6 +187,9 @@ const snapshot = {
   contractVersion: CONTRACT_VERSION,
   derivationVersion: DERIVATION_VERSION,
   directUsdmUnit,
+  oracleStateReference: ORACLE_STATE_MANIFEST,
+  oracleStateEvidenceHash: requireHexDigest(oracleState?.evidenceHash, 'oracleState.evidenceHash'),
+  oracleStateIdentity: oracleState.oracleState,
   deploymentManifestReference: DEPLOYMENT_MANIFEST,
   sourceSetReference: SOURCE_SET,
   deploymentEvidenceHash: requireHexDigest(
@@ -190,6 +217,13 @@ const qualification = {
   testSuiteVersion: 'pre-rich-direct-usdm-conformance-v1',
   failureMatrixVersion: 'pre-rich-direct-usdm-failure-matrix-v1',
   deploymentApproval: null,
+  oracleState: {
+    status: oracleState.status,
+    authorityKind: oracleState.authorityKind,
+    identity: oracleState.oracleState,
+    datumSemantics: oracleState.datumSemantics,
+    evidenceHash: oracleState.evidenceHash,
+  },
   sourceSet: {
     statusAtQualification: sourceSet.status,
     directUsdmUnit,

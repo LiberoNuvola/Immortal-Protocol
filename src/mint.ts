@@ -39,7 +39,6 @@
 import {
   Constr,
   Data,
-  getAddressDetails,
   type Script,
   type UTxO,
 } from 'lucid-cardano'
