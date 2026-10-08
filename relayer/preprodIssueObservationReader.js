@@ -147,6 +147,84 @@ function singletonByUnit(utxos, unit, label) {
   return matches[0]
 }
 
+function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
+  if (
+    !utxo?.datum ||
+    typeof utxo.datum === 'string' ||
+    !Array.isArray(utxo.datum.fields) ||
+    utxo.datum.fields.length !== 6
+  ) {
+    throw new Error('B2 control datum is missing or malformed')
+  }
+  const asInt = (v, field) => {
+    try {
+      const n = typeof v === 'bigint' ? v : BigInt(v?.int ?? v)
+      if (n < 0n) throw new Error()
+      return n
+    } catch {
+      throw new Error('B2 control ' + field + ' is not a non-negative integer')
+    }
+  }
+  const asHex = (v, field) => {
+    if (typeof v !== 'string' || !/^[0-9a-fA-F]*$/.test(v)) {
+      throw new Error('B2 control ' + field + ' is not hex')
+    }
+    return v.toLowerCase()
+  }
+  const fields = utxo.datum.fields
+  const currentActiveClass = asInt(fields[0], 'currentActiveClass')
+  const highestClassEverActivated = asInt(fields[1], 'highestClassEverActivated')
+  const stateVersion = asInt(fields[2], 'stateVersion')
+  const transitionNonce = asInt(fields[3], 'transitionNonce')
+  const controlPolicy = asHex(fields[4], 'controlPolicy')
+  const controlTokenNameHex = asHex(fields[5], 'controlTokenName')
+  if (
+    currentActiveClass > highestClassEverActivated ||
+    highestClassEverActivated > 7n ||
+    controlPolicy !== required(expectedPolicyId, 'controlPolicyId').toLowerCase() ||
+    controlTokenNameHex !== required(expectedTokenNameHex, 'controlTokenNameHex').toLowerCase()
+  ) {
+    throw new Error('B2 control datum violates authenticated control invariants')
+  }
+  return {
+    currentActiveClass,
+    highestClassEverActivated,
+    stateVersion,
+    transitionNonce,
+    controlPolicy,
+    controlTokenNameHex,
+  }
+}
+
+async function observeB2Control({
+  lucid,
+  controlAddress,
+  controlPolicyId,
+  controlTokenNameHex,
+}) {
+  const unit =
+    required(controlPolicyId, 'controlPolicyId') +
+    required(controlTokenNameHex, 'controlTokenNameHex')
+  const utxos = await lucid.utxosAt(required(controlAddress, 'controlAddress'))
+  const matches = utxos.filter((u) => (u.assets?.[unit] ?? 0n) === 1n)
+  if (matches.length !== 1) {
+    throw new Error(
+      'B2 control singleton is ambiguous: expected exactly one UTxO, found ' +
+        matches.length,
+    )
+  }
+  const controlUtxo = matches[0]
+  const decoded = decodeB2ControlDatum(
+    controlUtxo,
+    controlPolicyId,
+    controlTokenNameHex,
+  )
+  return {
+    ...decoded,
+    controlStateReference: exactRef(controlUtxo, 'B2 control'),
+  }
+}
+
 function decodePoolDatum(utxo) {
   if (!utxo?.datum || typeof utxo.datum === 'string' || !Array.isArray(utxo.datum.fields) ||
       utxo.datum.fields.length !== 8) {
@@ -198,6 +276,9 @@ async function readPreprodIssueObservation({
   carrierAddress,
   carrierPolicyId,
   carrierTokenNameHex,
+  controlAddress,
+  controlPolicyId,
+  controlTokenNameHex,
   classId,
   price,
   authoritativeInputs,
@@ -211,6 +292,9 @@ async function readPreprodIssueObservation({
   required(carrierAddress, 'carrierAddress')
   required(carrierPolicyId, 'carrierPolicyId')
   required(carrierTokenNameHex, 'carrierTokenNameHex')
+  required(controlAddress, 'controlAddress')
+  required(controlPolicyId, 'controlPolicyId')
+  required(controlTokenNameHex, 'controlTokenNameHex')
   if (!Number.isInteger(classId) || classId < 0 || classId > 7) {
     throw new Error('classId must be an integer in 0..7')
   }
@@ -243,6 +327,21 @@ async function readPreprodIssueObservation({
     carrierPolicyId,
     carrierTokenNameHex,
   })
+  const control = await observeB2Control({
+    lucid,
+    controlAddress,
+    controlPolicyId,
+    controlTokenNameHex,
+  })
+
+  if (
+    control.currentActiveClass !== carrier.state.control.currentActiveClass ||
+    control.highestClassEverActivated !== carrier.state.control.highestClassEverActivated
+  ) {
+    throw new Error(
+      'B2 control state does not match the authenticated V3 control projection',
+    )
+  }
 
   const counterRef = exactRef(counterUtxo, 'Counter')
   const poolRef = exactRef(poolUtxo, 'B1PrizePool')
@@ -327,6 +426,13 @@ async function readPreprodIssueObservation({
     carrierStateReference: carrier.carrierStateReference,
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
+    controlStateReference: 'cardano:tx/' + control.controlStateReference,
+    controlState: {
+      currentActiveClass: control.currentActiveClass,
+      highestClassEverActivated: control.highestClassEverActivated,
+      stateVersion: control.stateVersion,
+      transitionNonce: control.transitionNonce,
+    },
     protectedCapitalProvenance: authoritativeInputs.protectedCapitalProvenance,
     eevQualification: authoritativeInputs.eevQualification,
     viabilityCertificate: authoritativeInputs.viabilityCertificate,
@@ -348,6 +454,7 @@ async function readPreprodIssueObservation({
       ),
       decisionReference: required(authoritativeInputs.decisionReference, 'decisionReference'),
       observationReference,
+      controlStateReference: 'cardano:tx/' + control.controlStateReference,
     },
   }
 }
