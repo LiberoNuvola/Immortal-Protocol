@@ -4,7 +4,8 @@ import { createPreprodIssueObservationProducerFromLucid } from './preprodIssueAd
 const deployment = {
   counterAddress: 'addr_test_counter',
   b1PrizePoolAddress: 'addr_test_pool',
-  poolTokenUnit: 'poolunit',
+  poolTokenUnit: 'p'.repeat(56),
+  directUsdmUnit: 'u'.repeat(56),
   carrierAddress: 'addr_test_carrier',
   carrierPolicyId: 'carrierpolicy',
   carrierTokenNameHex: '43415252494552',
@@ -19,7 +20,10 @@ const fakeLucid = {
       return [{
         txHash: 'b'.repeat(64),
         outputIndex: 1,
-        assets: { [deployment.poolTokenUnit]: 1n },
+        assets: {
+          [deployment.poolTokenUnit]: 1n,
+          [deployment.directUsdmUnit]: 1_000_000_000n,
+        },
         datum: { fields: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] },
       }]
     }
@@ -51,20 +55,29 @@ const producer = createPreprodIssueObservationProducerFromLucid({ lucid: fakeLuc
 const context = await producer({
   counterInputReference: 'a'.repeat(64) + '#0',
   poolInputReference: 'b'.repeat(64) + '#1',
-  poolUsdmValue: 0,
+  poolUsdmValue: 100_000,
   classId: 0,
   price: 1,
   observedAt: 1,
   authoritativeInputs: {
-    poolUsdmValue: 0,
-    preEEV: 0,
-    candidateEEV: 0,
+    poolUsdmValue: 100_000,
+    preEEV: 100_000,
+    candidateEEV: 100_000,
     requiredImmediateLiquidity: 0,
     truthVerified: true,
     eevFresh: true,
     obligationsComplete: true,
     allOmegaSuccessorsCertified: true,
     decisionReference: 'decision:1',
+    protectedCapitalProvenance: {},
+    eevQualification: {
+      status: 'qualified',
+      deploymentApproval: {
+        status: 'DEPLOYMENT_APPROVED',
+        profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
+      },
+    },
+    viabilityCertificate: {},
   },
 })
 
