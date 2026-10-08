@@ -55,7 +55,6 @@ const producer = createPreprodIssueObservationProducerFromLucid({ lucid: fakeLuc
 const context = await producer({
   counterInputReference: 'a'.repeat(64) + '#0',
   poolInputReference: 'b'.repeat(64) + '#1',
-  poolUsdmValue: 100_000,
   classId: 0,
   price: 1,
   observedAt: 1,
