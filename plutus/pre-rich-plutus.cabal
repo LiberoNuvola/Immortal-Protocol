@@ -45,6 +45,8 @@ library
         GenesisCarrierMintPolicy
         V3EconomicStateCarrier
         V3EconomicStateCarrierMintPolicy
+        PreRichControlCarrier
+        PreRichControlCarrierMintPolicy
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
