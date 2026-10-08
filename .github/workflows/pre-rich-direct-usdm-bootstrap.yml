@@ -8,18 +8,6 @@ on:
         required: true
         default: "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d"
         type: string
-      oracle_state_policy_id:
-        description: "Exact deployed Oracle State policy ID"
-        required: true
-        type: string
-      oracle_state_token_name_hex:
-        description: "Exact deployed Oracle State token name (hex)"
-        required: true
-        type: string
-      oracle_publisher_pkh:
-        description: "Exact deployed Oracle publisher key hash"
-        required: true
-        type: string
       wallet_address:
         description: "Exact Preprod wallet address resolved by PREPROD_REVEAL_SEED"
         required: true
@@ -39,9 +27,6 @@ jobs:
       PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
       PREPROD_WALLET_ADDRESS: ${{ inputs.wallet_address }}
       PREPROD_TUSDM_UNIT: ${{ inputs.tusdm_unit }}
-      PREPROD_ORACLE_STATE_POLICY_ID: ${{ inputs.oracle_state_policy_id }}
-      PREPROD_ORACLE_STATE_TOKEN_NAME_HEX: ${{ inputs.oracle_state_token_name_hex }}
-      PREPROD_ORACLE_PUBLISHER_PKH: ${{ inputs.oracle_publisher_pkh }}
       PREPROD_EVIDENCE_DIR: audit/preprod-evidence
       PREPROD_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-direct-usdm-deployment.json
 
@@ -61,14 +46,18 @@ jobs:
       - name: Verify wallet signing secret
         run: test -n "$PREPROD_REVEAL_SEED"
 
-      - name: Print deployment identities
+      - name: Materialize authenticated Preprod Oracle State
+        id: oracle-state
+        run: node --import tsx/esm audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs
+
+      - name: Print materialized Oracle State identity
         run: |
-          echo "network=cardano-preprod"
-          echo "tusdm_unit=$PREPROD_TUSDM_UNIT"
-          echo "oracle_state_policy_id=$PREPROD_ORACLE_STATE_POLICY_ID"
-          echo "oracle_state_token_name_hex=$PREPROD_ORACLE_STATE_TOKEN_NAME_HEX"
-          echo "oracle_publisher_pkh=$PREPROD_ORACLE_PUBLISHER_PKH"
-          echo "wallet_address=$PREPROD_WALLET_ADDRESS"
+          echo "oracle_state_policy_id=${{ steps.oracle-state.outputs.oracle_state_policy_id }}"
+          echo "oracle_state_token_name_hex=${{ steps.oracle-state.outputs.oracle_state_token_name_hex }}"
+          echo "oracle_publisher_pkh=${{ steps.oracle-state.outputs.oracle_publisher_pkh }}"
+          echo "oracle_state_address=${{ steps.oracle-state.outputs.oracle_state_address }}"
+          echo "oracle_state_unit=${{ steps.oracle-state.outputs.oracle_state_unit }}"
+          echo "oracle_state_utxo=${{ steps.oracle-state.outputs.oracle_state_utxo }}"
 
       - name: Verify direct-USDM unit is the current external Preprod candidate
         run: |
@@ -76,6 +65,10 @@ jobs:
           echo "tUSDM candidate identity matches the currently evidenced x402 Preprod asset."
 
       - name: Bootstrap direct-USDM B1 PrizePool
+        env:
+          PREPROD_ORACLE_STATE_POLICY_ID: ${{ steps.oracle-state.outputs.oracle_state_policy_id }}
+          PREPROD_ORACLE_STATE_TOKEN_NAME_HEX: ${{ steps.oracle-state.outputs.oracle_state_token_name_hex }}
+          PREPROD_ORACLE_PUBLISHER_PKH: ${{ steps.oracle-state.outputs.oracle_publisher_pkh }}
         run: node --import tsx/esm audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
 
       - name: Materialize direct-USDM source-set evidence
@@ -86,6 +79,7 @@ jobs:
 
       - name: Verify direct-USDM evidence chain
         run: |
+          test -s audit/preprod-evidence/preprod-oracle-state-deployment.json
           test -s audit/preprod-evidence/preprod-direct-usdm-deployment.json
           test -s audit/preprod-evidence/preprod-direct-usdm-source-set.json
           test -s audit/preprod-evidence/preprod-direct-usdm-qualification.json

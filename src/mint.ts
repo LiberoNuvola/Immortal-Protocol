@@ -39,6 +39,7 @@
 import {
   Constr,
   Data,
+  getAddressDetails,
   type Script,
   type UTxO,
 } from 'lucid-cardano'
@@ -59,6 +60,9 @@ import {
 
 import {
   ORACLE_PUBLISHER_PKH,
+  ORACLE_STATE_ADDRESS,
+  ORACLE_STATE_POLICY_ID,
+  ORACLE_STATE_TOKEN_NAME_HEX,
   RELAYER_PKH,
   TICKET_PAYMENT_LOVELACE,
   TREASURY_ADDRESS,
@@ -1129,6 +1133,53 @@ export async function mintSerialNFT(
     await lucid.wallet.address()
 
   // ----------------------------------------------------------
+  // Authenticated Oracle State reference
+  // ----------------------------------------------------------
+  //
+  // The MintPolicy values the exact Treasury payment using the canonical
+  // Economic oracle path. Therefore the Issue transaction must carry the
+  // configured Oracle State singleton as a reference input. We do not
+  // calculate or supply an economic value here: the on-chain Economic layer
+  // decodes the datum from this exact reference UTxO.
+  //
+  if (
+    !ORACLE_STATE_ADDRESS ||
+    !ORACLE_STATE_POLICY_ID ||
+    !ORACLE_STATE_TOKEN_NAME_HEX
+  ) {
+    throw new Error(
+      'Authoritative Issue requires the deployed Oracle State identity and address',
+    )
+  }
+
+  const oracleStateUnit =
+    ORACLE_STATE_POLICY_ID + ORACLE_STATE_TOKEN_NAME_HEX
+
+  const oracleStateUtxos: UTxO[] =
+    await lucid.utxosAt(ORACLE_STATE_ADDRESS)
+
+  const oracleStateMatches =
+    oracleStateUtxos.filter(
+      (utxo: UTxO) =>
+        (utxo.assets?.[oracleStateUnit] ?? 0n) === 1n,
+    )
+
+  if (oracleStateMatches.length !== 1) {
+    throw new Error(
+      `Expected exactly 1 authenticated Oracle State UTxO at ${ORACLE_STATE_ADDRESS}, found ${oracleStateMatches.length}`,
+    )
+  }
+
+  const oracleStateUtxo =
+    oracleStateMatches[0]
+
+  if (!oracleStateUtxo.datum) {
+    throw new Error(
+      'Authenticated Oracle State UTxO is missing its inline datum',
+    )
+  }
+
+  // ----------------------------------------------------------
   // B1PrizePool singleton
   // ----------------------------------------------------------
 
@@ -1340,7 +1391,7 @@ export async function mintSerialNFT(
       // ------------------------------------------------------
 
       .readFrom(
-        [registryUtxo],
+        [registryUtxo, oracleStateUtxo],
       )
 
       // ------------------------------------------------------
