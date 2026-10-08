@@ -204,11 +204,6 @@ console.log(
 if (walletLovelace < 20_000_000n) {
   throw new Error('wallet needs at least 20 ADA before direct-USDM bootstrap')
 }
-if (walletTusdm < PHYSICAL_TUSDM_ATOMS) {
-  throw new Error(
-    'wallet does not contain enough deployment-approved physical tUSDM; fund the wallet first and rerun',
-  )
-}
 
 const poolPolicy = scriptFromNative({
   type: 'all',
@@ -260,73 +255,112 @@ if (!oracleStateUtxo.datum) {
 }
 
 const existingPool = (await provider.getUtxos(scripts.b1PrizePoolAddress))
-  .filter(u => (u.assets?.[poolTokenUnit] ?? 0n) > 0n)
+  .filter(u => (u.assets?.[poolTokenUnit] ?? 0n) === 1n)
 
-if (existingPool.length !== 0) {
+if (existingPool.length > 1) {
   throw new Error(
-    'derived direct-USDM Pool address already contains the Pool singleton; refusing duplicate deployment',
+    'derived direct-USDM Pool address contains multiple Pool singleton UTxOs; refusing ambiguous recovery',
   )
 }
 
-const prizeHash = scripts.prizeHash
+let pool
+let bootstrapTxHash = null
+let txBytes = null
+let reusedExisting = false
 
-const poolDatum = new Constr(0, [
-  TARGET_EEV_USDM_SUBUNITS,
-  0n,
-  0n,
-  0n,
-  0n,
-  10_000n,
-  0n,
-  prizeHash,
-])
-
-const bootstrap = await lucid
-  .newTx()
-  .mintAssets({ [poolTokenUnit]: 1n }, Data.void())
-  .attach.MintingPolicy(poolPolicy)
-  .pay.ToContract(
-    scripts.b1PrizePoolAddress,
-    { kind: 'inline', value: Data.to(poolDatum) },
-    {
-      lovelace: POOL_LOVELACE,
-      [poolTokenUnit]: 1n,
-      [TUSDM_UNIT]: PHYSICAL_TUSDM_ATOMS,
-    },
+if (existingPool.length === 1) {
+  const existing = existingPool[0]
+  if ((existing.assets?.[TUSDM_UNIT] ?? 0n) !== PHYSICAL_TUSDM_ATOMS) {
+    throw new Error(
+      'existing direct-USDM Pool singleton does not contain the deployment-approved physical tUSDM amount',
+    )
+  }
+  if ((existing.assets?.lovelace ?? 0n) < POOL_LOVELACE) {
+    throw new Error(
+      'existing direct-USDM Pool singleton has insufficient lovelace for the declared deployment',
+    )
+  }
+  pool = existing
+  reusedExisting = true
+  console.log(
+    JSON.stringify(
+      {
+        status: 'EXISTING_DIRECT_USDM_DEPLOYMENT',
+        poolUtxo: ref(pool),
+        directUsdmAtomicAmount: PHYSICAL_TUSDM_ATOMS.toString(),
+        verifiedUsdmSubunits: TARGET_EEV_USDM_SUBUNITS.toString(),
+      },
+      null,
+      2,
+    ),
   )
-  .addSigner(address)
-  .complete()
+} else {
+  if (walletTusdm < PHYSICAL_TUSDM_ATOMS) {
+    throw new Error(
+      'wallet does not contain enough deployment-approved physical tUSDM and no existing direct-USDM Pool deployment is recoverable',
+    )
+  }
 
-const signed = await bootstrap.sign.withWallet().complete()
-const cbor = signed.toCBOR()
-const txBytes = Buffer.from(cbor, 'hex').length
-const txHash = await signed.submit()
-await lucid.awaitTx(txHash)
+  const prizeHash = scripts.prizeHash
 
-const poolUtxo = await waitFor(
-  () => provider.getUtxos(scripts.b1PrizePoolAddress),
-  xs =>
-    xs.filter(
-      u =>
-        u.assets?.[poolTokenUnit] === 1n &&
-        u.assets?.[TUSDM_UNIT] === PHYSICAL_TUSDM_ATOMS,
-    ).length > 0,
-  'direct-USDM PrizePool UTxO',
-)
+  const poolDatum = new Constr(0, [
+    TARGET_EEV_USDM_SUBUNITS,
+    0n,
+    0n,
+    0n,
+    0n,
+    10_000n,
+    0n,
+    prizeHash,
+  ])
 
-const matches = poolUtxo.filter(
-  u =>
-    u.assets?.[poolTokenUnit] === 1n &&
-    u.assets?.[TUSDM_UNIT] === PHYSICAL_TUSDM_ATOMS,
-)
+  const bootstrap = await lucid
+    .newTx()
+    .mintAssets({ [poolTokenUnit]: 1n }, Data.void())
+    .attach.MintingPolicy(poolPolicy)
+    .pay.ToContract(
+      scripts.b1PrizePoolAddress,
+      { kind: 'inline', value: Data.to(poolDatum) },
+      {
+        lovelace: POOL_LOVELACE,
+        [poolTokenUnit]: 1n,
+        [TUSDM_UNIT]: PHYSICAL_TUSDM_ATOMS,
+      },
+    )
+    .addSigner(address)
+    .complete()
 
-if (matches.length !== 1) {
-  throw new Error(
-    'direct-USDM bootstrap did not produce exactly one expected Pool UTxO',
+  const signed = await bootstrap.sign.withWallet().complete()
+  const cbor = signed.toCBOR()
+  txBytes = Buffer.from(cbor, 'hex').length
+  bootstrapTxHash = await signed.submit()
+  await lucid.awaitTx(bootstrapTxHash)
+
+  const poolUtxo = await waitFor(
+    () => provider.getUtxos(scripts.b1PrizePoolAddress),
+    xs =>
+      xs.filter(
+        u =>
+          u.assets?.[poolTokenUnit] === 1n &&
+          u.assets?.[TUSDM_UNIT] === PHYSICAL_TUSDM_ATOMS,
+      ).length > 0,
+    'direct-USDM PrizePool UTxO',
   )
+
+  const matches = poolUtxo.filter(
+    u =>
+      u.assets?.[poolTokenUnit] === 1n &&
+      u.assets?.[TUSDM_UNIT] === PHYSICAL_TUSDM_ATOMS,
+  )
+
+  if (matches.length !== 1) {
+    throw new Error(
+      'direct-USDM bootstrap did not produce exactly one expected Pool UTxO',
+    )
+  }
+
+  pool = matches[0]
 }
-
-const pool = matches[0]
 
 const manifest = {
   schema: 'IMMORTAL-PREPROD-DIRECT-USDM-DEPLOYMENT-v0.1',
@@ -335,8 +369,9 @@ const manifest = {
   profileCandidate: 'PRE-RICH-EEV-USDM-DIRECT-V1',
   walletAddress: address,
   bootstrap: {
-    txHash,
+    txHash: bootstrapTxHash,
     transactionBytes: txBytes,
+    reusedExisting,
   },
   assets: {
     poolTokenPolicyId,
