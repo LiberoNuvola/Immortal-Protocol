@@ -59,6 +59,8 @@ async function main(): Promise<void> {
   const header = await rpc.getHeader(finalizedHash);
   const runtime = await rpc.getRuntimeVersion(finalizedHash);
   const runtimeCodeHex = await rpc.getRuntimeCode(finalizedHash);
+  const selectionInputsCommitment =
+    await rpc.getSelectionInputsCommitment(finalizedHash);
 
   const authoritiesHex = await rpc.stateCall(
     "GrandpaApi_grandpa_authorities",
@@ -134,6 +136,11 @@ async function main(): Promise<void> {
       })),
       finality_proof: grandpaFinalityProof,
     },
+    selection_inputs_commitment: {
+      extrinsic_index: selectionInputsCommitment.extrinsicIndex,
+      extrinsic_hex: selectionInputsCommitment.extrinsicHex,
+      selection_inputs_hash: selectionInputsCommitment.selectionInputsHash,
+    },
     scope: {
       verified: [
         "finalized head hash obtained from chain_getFinalizedHead",
@@ -170,6 +177,10 @@ async function main(): Promise<void> {
   console.log("GRANDPA set_id:", setId.toString());
   console.log("authorities:", authorities.length);
   console.log("GRANDPA finality proof status:", grandpaFinalityProof.status);
+  console.log(
+    "selection_inputs_hash:",
+    selectionInputsCommitment.selectionInputsHash,
+  );
   console.log("wrote:", outPath);
 }
 
