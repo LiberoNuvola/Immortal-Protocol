@@ -2,6 +2,44 @@ const { readPreprodIssueObservation } = require('./preprodIssueObservationReader
 const { createPreprodIssueObservationProducer } = require('./preprodIssueObservationProvider')
 const { fetchSignedIssueAuthority } = require('./signedIssueAuthority')
 
+function exactRef(utxo) {
+  if (
+    !utxo ||
+    typeof utxo.txHash !== 'string' ||
+    !/^[0-9a-fA-F]{64}$/.test(utxo.txHash) ||
+    !Number.isInteger(utxo.outputIndex) ||
+    utxo.outputIndex < 0
+  ) {
+    throw new Error('Pool UTxO has no exact Cardano reference')
+  }
+  return utxo.txHash + '#' + utxo.outputIndex
+}
+
+async function observeDirectUsdmPool({ lucid, deployment, poolInputReference }) {
+  if (typeof deployment.directUsdmUnit !== 'string' || deployment.directUsdmUnit.trim() === '') {
+    throw new Error('deployment.directUsdmUnit is required')
+  }
+
+  const utxos = await lucid.utxosAt(deployment.b1PrizePoolAddress)
+  const matches = utxos.filter(utxo => exactRef(utxo) === poolInputReference)
+
+  if (matches.length !== 1) {
+    throw new Error('exact B1 PrizePool input is no longer live; direct-USDM observation is stale')
+  }
+
+  const pool = matches[0]
+  if ((pool.assets?.[deployment.poolTokenUnit] ?? 0n) !== 1n) {
+    throw new Error('exact B1 PrizePool input does not contain the expected singleton')
+  }
+
+  const quantity = BigInt(pool.assets?.[deployment.directUsdmUnit] ?? 0n)
+  if (quantity <= 0n) {
+    throw new Error('exact B1 PrizePool input does not contain the deployment direct-USDM asset')
+  }
+
+  return (quantity * 100n) / 1_000_000n
+}
+
 function createPreprodIssueObservationProducerFromLucid({
   lucid,
   deployment,
@@ -16,6 +54,7 @@ function createPreprodIssueObservationProducerFromLucid({
     'counterAddress',
     'b1PrizePoolAddress',
     'poolTokenUnit',
+    'directUsdmUnit',
     'carrierAddress',
     'carrierPolicyId',
     'carrierTokenNameHex',
@@ -51,6 +90,18 @@ function createPreprodIssueObservationProducerFromLucid({
 
       const authoritativeInputs = runtimeInputs.authoritativeInputs
       const observationTimestamp = runtimeInputs.observedAt
+      const directUsdmValue = await observeDirectUsdmPool({
+        lucid,
+        deployment,
+        poolInputReference,
+      })
+
+      if (directUsdmValue !== poolUsdmValue) {
+        throw new Error(
+          'runtime Pool valuation does not match exact physical direct-USDM observation',
+        )
+      }
+
 
       if (
         (!authoritativeInputs || typeof authoritativeInputs !== 'object') &&
@@ -83,6 +134,24 @@ function createPreprodIssueObservationProducerFromLucid({
       if (String(observed.poolUsdmValue) !== String(poolUsdmValue)) {
         throw new Error('Preprod reader Pool valuation does not match runtime input')
       }
+      if (
+        BigInt(String(observed.decisionInput.preEEV)) !== directUsdmValue ||
+        BigInt(String(observed.decisionInput.candidateEEV)) !== directUsdmValue
+      ) {
+        throw new Error(
+          'authoritative Issue EEV values do not match direct physical USDM observation',
+        )
+      }
+
+      const qualification = observed.eevQualification
+      const profileVersion = qualification?.deploymentApproval?.profileVersion
+      if (
+        profileVersion !== undefined &&
+        profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1'
+      ) {
+        throw new Error('authoritative Issue EEV profile does not match direct-USDM V1')
+      }
+
       return observed
     },
   })
