@@ -85,7 +85,7 @@ function createPreprodIssueObservationProducerFromLucid({
         : null
 
   return createPreprodIssueObservationProducer({
-    readObservation: async ({ counterInputReference, poolInputReference, poolUsdmValue, runtimeInputs }) => {
+    readObservation: async ({ counterInputReference, poolInputReference, runtimeInputs }) => {
       if (!runtimeInputs || typeof runtimeInputs !== 'object') throw new Error('runtimeInputs are required')
 
       const authoritativeInputs = runtimeInputs.authoritativeInputs
@@ -95,12 +95,6 @@ function createPreprodIssueObservationProducerFromLucid({
         deployment,
         poolInputReference,
       })
-
-      if (directUsdmValue !== poolUsdmValue) {
-        throw new Error(
-          'runtime Pool valuation does not match exact physical direct-USDM observation',
-        )
-      }
 
 
       if (
@@ -123,6 +117,7 @@ function createPreprodIssueObservationProducerFromLucid({
             : undefined,
         authoritySource: configuredAuthoritySource,
         observedAt: observationTimestamp,
+        poolUsdmValue: directUsdmValue,
       })
 
       if (observed.counterInputReference !== counterInputReference) {
@@ -131,8 +126,8 @@ function createPreprodIssueObservationProducerFromLucid({
       if (observed.poolInputReference !== poolInputReference) {
         throw new Error('Preprod reader Pool reference does not match runtime input')
       }
-      if (String(observed.poolUsdmValue) !== String(poolUsdmValue)) {
-        throw new Error('Preprod reader Pool valuation does not match runtime input')
+      if (BigInt(String(observed.poolUsdmValue)) !== directUsdmValue) {
+        throw new Error('Preprod reader Pool valuation does not match direct physical observation')
       }
       if (
         BigInt(String(observed.decisionInput.preEEV)) !== directUsdmValue ||
