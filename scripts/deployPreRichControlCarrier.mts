@@ -106,8 +106,17 @@ async function main() {
   const seedIndexRaw = required('PREPROD_CONTROL_SEED_OUTPUT_INDEX')
   const seedIndex = Number(seedIndexRaw)
 
-  if (!/^[0-9a-f]+$/i.test(tokenNameHex)) {
-    throw new Error('PREPROD_CONTROL_TOKEN_NAME_HEX must be hexadecimal')
+  if (
+    !/^[0-9a-f]+$/i.test(tokenNameHex) ||
+    tokenNameHex.length % 2 !== 0 ||
+    tokenNameHex.length > 64
+  ) {
+    throw new Error(
+      'PREPROD_CONTROL_TOKEN_NAME_HEX must be an even-length hex string representing at most 32 bytes',
+    )
+  }
+  if (!/^[0-9a-f]{64}$/i.test(seedTxHash)) {
+    throw new Error('PREPROD_CONTROL_SEED_TX_HASH must be a 32-byte transaction hash')
   }
   if (!Number.isInteger(seedIndex) || seedIndex < 0) {
     throw new Error('PREPROD_CONTROL_SEED_OUTPUT_INDEX must be a non-negative integer')
