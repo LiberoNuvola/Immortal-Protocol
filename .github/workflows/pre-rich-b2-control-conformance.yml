@@ -1,0 +1,42 @@
+name: PRE-RICH B2 Control Carrier Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+  workflow_dispatch:
+
+jobs:
+  conformance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+
+      - name: Build and export Plutus artifacts
+        working-directory: plutus
+        run: cabal run exe:export-scripts
+
+      - name: Verify B2 artifacts exist
+        run: |
+          test -s plutus/out/preRichControlCarrier.plutus.json
+          test -s plutus/out/preRichControlCarrierMintPolicy.plutus.json
+
+      - name: Browser build
+        run: npm run build
