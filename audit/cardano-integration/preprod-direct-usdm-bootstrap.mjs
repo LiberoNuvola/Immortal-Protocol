@@ -291,7 +291,7 @@ const poolUtxo = await waitFor(
       u =>
         u.assets?.[poolTokenUnit] === 1n &&
         u.assets?.[TUSDM_UNIT] === PHYSICAL_TUSDM_ATOMS,
-    ),
+    ).length > 0,
   'direct-USDM PrizePool UTxO',
 )
 
