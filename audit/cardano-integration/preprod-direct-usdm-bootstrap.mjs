@@ -428,7 +428,7 @@ console.log(
       status: manifest.status,
       network: manifest.network,
       profileCandidate: manifest.profileCandidate,
-      txHash,
+      txHash: bootstrapTxHash,
       poolUtxo: ref(pool),
       b1PrizePoolAddress: scripts.b1PrizePoolAddress,
       b1PrizePoolHash: scripts.b1PrizePoolHash,
