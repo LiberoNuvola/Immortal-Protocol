@@ -149,6 +149,9 @@ export async function obtainAuthoritativeIssueAdmission(
   if (!deploymentApproval || deploymentApproval.status !== 'DEPLOYMENT_APPROVED') {
     throw new Error('authoritative Issue witness requires DEPLOYMENT_APPROVED EEV qualification')
   }
+  if (deploymentApproval.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') {
+    throw new Error('authoritative Issue witness EEV profile is not the deployed direct-USDM profile')
+  }
   if (!deploymentApproval.candidateId.trim() || !deploymentApproval.sourceSetId.trim() ||
       !deploymentApproval.profileVersion.trim() || !deploymentApproval.testSuiteVersion.trim() ||
       !deploymentApproval.failureMatrixVersion.trim() || !deploymentApproval.validFrom.trim() ||
