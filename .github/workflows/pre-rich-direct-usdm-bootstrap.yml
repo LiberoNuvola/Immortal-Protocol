@@ -78,9 +78,13 @@ jobs:
       - name: Bootstrap direct-USDM B1 PrizePool
         run: node --import tsx/esm audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
 
-      - name: Verify direct-USDM source-set evidence
+      - name: Materialize direct-USDM source-set evidence
+        run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+
+      - name: Verify direct-USDM deployment and source-set evidence
         run: |
           test -s audit/preprod-evidence/preprod-direct-usdm-deployment.json
+          test -s audit/preprod-evidence/preprod-direct-usdm-source-set.json
 
       - name: Upload direct-USDM deployment evidence
         if: always()
