@@ -14,7 +14,7 @@ function certificate() {
       status: 'DEPLOYMENT_APPROVED',
       candidateId: 'pre-rich-eev-v1',
       sourceSetId: 'source-set://preprod/1',
-      profileVersion: 'pre-rich-eev-v1',
+      profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'e'.repeat(64),
       qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
       excludedProperties: [],
@@ -143,6 +143,23 @@ assert.equal(good.eevQualification.status, 'qualified')
 assert.equal(good.eevQualification.deploymentApproval.status, 'DEPLOYMENT_APPROVED')
 assert.equal(good.observedAt, 1000n)
 assert.equal(good.directUsdmUnit, expected.directUsdmUnit)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({
+      eevQualification: {
+        ...certificate(),
+        deploymentApproval: {
+          ...certificate().deploymentApproval,
+          profileVersion: 'OTHER-EEV-PROFILE',
+        },
+      },
+    }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /eevQualification profile is not the deployed direct-USDM profile/,
+)
 
 assert.throws(
   () => verifySignedIssueAuthorityEnvelope(
