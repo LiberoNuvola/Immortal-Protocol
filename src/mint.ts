@@ -69,6 +69,9 @@ import {
   V3_CARRIER_ADDRESS,
   V3_CARRIER_POLICY_ID,
   V3_CARRIER_TOKEN_NAME_HEX,
+  B2_CONTROL_ADDRESS,
+  B2_CONTROL_POLICY_ID,
+  B2_CONTROL_TOKEN_NAME_HEX,
 } from './config'
 
 import {
@@ -96,6 +99,7 @@ import {
   type IssueRefinementEvidence,
 } from '../PRE-RICH/src/PreRichIssueEvidence'
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
+import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
@@ -743,6 +747,12 @@ export type MintSerialOptions = {
   lucid?: any
   v3CarrierValidator?: Script
   requireV3CarrierBinding?: boolean
+  /**
+   * When enabled, Issue must bind to the authenticated PRE-RICH B2
+   * control singleton as a reference input and its class-control state must
+   * match the V3 projection observed for the same live state.
+   */
+  requireB2ControlBinding?: boolean
 }
 
 // ============================================================
@@ -1231,6 +1241,64 @@ export async function mintSerialNFT(
     }
   }
 
+  const requireB2ControlBinding = opts.requireB2ControlBinding === true
+  let b2ControlUtxo: UTxO | null = null
+
+  if (requireB2ControlBinding) {
+    if (!B2_CONTROL_ADDRESS || !B2_CONTROL_POLICY_ID || !B2_CONTROL_TOKEN_NAME_HEX) {
+      throw new Error('Authoritative Issue requires the deployed B2 control singleton identity configuration')
+    }
+
+    const b2Unit =
+      B2_CONTROL_POLICY_ID.toLowerCase() +
+      B2_CONTROL_TOKEN_NAME_HEX.toLowerCase()
+
+    const liveB2ControlUtxos: UTxO[] = await lucid.utxosAt(B2_CONTROL_ADDRESS)
+    const b2Matches = liveB2ControlUtxos.filter(
+      (utxo: UTxO) => (utxo.assets?.[b2Unit] ?? 0n) === 1n,
+    )
+    if (b2Matches.length !== 1) {
+      throw new Error(
+        'Authoritative Issue requires exactly one authenticated B2 control singleton UTxO',
+      )
+    }
+
+    b2ControlUtxo = b2Matches[0]
+
+    const observedB2 = await observePreprodB2Control(
+      lucid,
+      {
+        address: B2_CONTROL_ADDRESS,
+        policyId: B2_CONTROL_POLICY_ID,
+        tokenNameHex: B2_CONTROL_TOKEN_NAME_HEX,
+      },
+    )
+
+    const b2Reference =
+      b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
+
+    if (
+      observedB2.stateReference !== b2Reference ||
+      observedB2.currentActiveClass !==
+        BigInt(opts.issueClassEvidence.currentActiveClass) ||
+      observedB2.highestClassEverActivated !==
+        BigInt(opts.issueClassEvidence.highestClassEverActivated)
+    ) {
+      throw new Error(
+        'Authenticated B2 control state does not match the authoritative Issue class-control evidence',
+      )
+    }
+
+    if (
+      BigInt(opts.issueClassEvidence.classId) >
+      observedB2.currentActiveClass
+    ) {
+      throw new Error(
+        'Authenticated B2 control state does not make the requested Issue class active',
+      )
+    }
+  }
+
   const pool =
     await findSingletonB1PrizePoolUtxo(
       lucid,
@@ -1390,7 +1458,11 @@ export async function mintSerialNFT(
       // ------------------------------------------------------
 
       .readFrom(
-        [registryUtxo, oracleStateUtxo],
+        [
+          registryUtxo,
+          oracleStateUtxo,
+          ...(b2ControlUtxo ? [b2ControlUtxo] : []),
+        ],
       )
 
       // ------------------------------------------------------
@@ -1594,6 +1666,7 @@ export async function mintSerialNFTWithAuthoritativeAdmission(
     ...opts,
     economicAdmission: undefined,
     requireV3CarrierBinding: true,
+    requireB2ControlBinding: true,
   })
 }
 
