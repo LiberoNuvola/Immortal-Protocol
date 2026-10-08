@@ -27,6 +27,11 @@ export const V3_CARRIER_ADDRESS = env('VITE_V3_CARRIER_ADDRESS')
 export const V3_CARRIER_POLICY_ID = env('VITE_V3_CARRIER_POLICY_ID')
 export const V3_CARRIER_TOKEN_NAME_HEX = env('VITE_V3_CARRIER_TOKEN_NAME_HEX')
 
+// B2 authenticated PRE-RICH control carrier. Deployment identity is externalized.
+export const B2_CONTROL_ADDRESS = env('VITE_B2_CONTROL_ADDRESS')
+export const B2_CONTROL_POLICY_ID = env('VITE_B2_CONTROL_POLICY_ID')
+export const B2_CONTROL_TOKEN_NAME_HEX = env('VITE_B2_CONTROL_TOKEN_NAME_HEX')
+
 // Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
 export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')
 export const B1_PRIZE_POOL_REFERENCE_ADDRESS = env('VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS')
