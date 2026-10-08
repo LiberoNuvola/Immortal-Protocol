@@ -16,6 +16,7 @@ describe('Preprod authoritative Issue provider composition', () => {
         },
         authorityUrl: '',
         authorityPublicKeyPem: 'key',
+        directUsdmUnit: 'b'.repeat(56),
         command: 'issue-admission',
       }),
     ).toThrow('authorityUrl is required')
@@ -35,6 +36,7 @@ describe('Preprod authoritative Issue provider composition', () => {
         },
         authorityUrl: 'https://authority.invalid/issue',
         authorityPublicKeyPem: '',
+        directUsdmUnit: 'b'.repeat(56),
         command: 'issue-admission',
       }),
     ).toThrow('authorityPublicKeyPem is required')
@@ -54,6 +56,7 @@ describe('Preprod authoritative Issue provider composition', () => {
         },
         authorityUrl: 'https://authority.invalid/issue',
         authorityPublicKeyPem: 'key',
+        directUsdmUnit: 'b'.repeat(56),
         command: '',
       }),
     ).toThrow('command is required')
