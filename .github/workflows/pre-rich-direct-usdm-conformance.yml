@@ -13,6 +13,13 @@ on:
       - "audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs"
       - "relayer/preprodIssueAdmissionProvider.js"
       - "relayer/preprodIssueAdmissionProvider.test.mjs"
+      - "relayer/signedIssueAuthority.js"
+      - "relayer/signedIssueAuthority.test.js"
+      - "Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts"
+      - "Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts"
+      - "src/preRichIssueAdmissionBridge.ts"
+      - "src/__tests__/preRichIssueAdmissionBridge.test.ts"
+      - "src/mint.ts"
       - ".github/workflows/pre-rich-direct-usdm-conformance.yml"
   workflow_dispatch:
 
@@ -41,7 +48,15 @@ jobs:
         run: |
           npx vitest run             Adapter/CARDANO/observation/DirectUsdmEev.test.ts             Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts             --reporter=verbose
 
+      - name: Run authority and admission conformance
+        run: |
+          node relayer/signedIssueAuthority.test.js
+          npx vitest run             Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts             src/__tests__/preRichIssueAdmissionBridge.test.ts             --reporter=verbose
+
       - name: Parse direct-USDM audit scripts
         run: |
           node --check audit/cardano-integration/preprod-direct-usdm-source-set.mjs
           node --check audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
+
+      - name: Build browser bundle
+        run: npm run build
