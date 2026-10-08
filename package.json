@@ -21,6 +21,7 @@
     "test:pre-staking": "vitest run src/__tests__/preStaking.test.ts",
     "deploy:counter": "tsx scripts/deployCounter.ts",
     "deploy:v3-carrier": "node --import=tsx ./scripts/deployV3Carrier.mts",
+    "deploy:b2-control": "node --import=tsx ./scripts/deployPreRichControlCarrier.mts",
     "v3:initial-datum": "tsx scripts/printV3InitialDatum.ts",
     "test:v3-mint-policy-remote": "node --import=tsx ./scripts/testV3CarrierMintPolicyRemote.mts",
     "test:v3-mint-policy-legacy-remote": "node ./scripts/testV3CarrierMintPolicyLegacyRemote.mjs",
