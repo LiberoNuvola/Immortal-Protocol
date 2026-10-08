@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { directUsdmEevFromAtomic, observeDirectUsdmEev } from './DirectUsdmEev'
 
+// Snapshot coverage: direct-USDM evidence remains fail-closed.
 describe('Direct USDM EEV boundary', () => {
   it('maps one physical token to the protocol economic unit', () => {
     expect(directUsdmEevFromAtomic(1_000_000n)).toBe(100n)
