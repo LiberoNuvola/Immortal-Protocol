@@ -15,6 +15,7 @@
  */
 
 import type { AuthoritativeIssueAdmissionProvider } from '../../../src/preRichIssueAdmissionBridge'
+import { observePreprodDirectUsdmPool } from './PreprodDirectUsdmObservation'
 import {
   createHaskellIssueAdmissionProvider,
   type HaskellIssueObservation,
@@ -55,6 +56,7 @@ export type PreprodAuthoritativeIssueProviderOptions = {
   }
   authorityUrl: string
   authorityPublicKeyPem: string
+  directUsdmUnit: string
   command: string
   args?: readonly string[]
   /**
@@ -71,6 +73,9 @@ export function createPreprodAuthoritativeIssueProvider(
   if (!options.authorityUrl.trim()) throw new Error('authorityUrl is required')
   if (!options.authorityPublicKeyPem.trim()) {
     throw new Error('authorityPublicKeyPem is required')
+  }
+  if (!options.directUsdmUnit.trim()) {
+    throw new Error('directUsdmUnit is required')
   }
   if (!options.command.trim()) throw new Error('command is required')
 
@@ -98,15 +103,92 @@ export function createPreprodAuthoritativeIssueProvider(
       ...options.deployment,
       classId: Number(inputs.classId),
       price: Number(inputs.price),
-      authoritySource: async (authorityRequest: Record<string, unknown>) =>
-        fetchSignedIssueAuthority({
+      authoritySource: async (authorityRequest: Record<string, unknown>) => {
+        const direct = await observePreprodDirectUsdmPool({
+          lucid: options.lucid as {
+            utxosAt(address: string): Promise<any[]>
+          },
+          poolAddress: options.deployment.b1PrizePoolAddress,
+          poolInputReference: String(authorityRequest.poolInputReference),
+          poolTokenUnit: options.deployment.poolTokenUnit,
+          directUsdmUnit: options.directUsdmUnit,
+          observationReference: String(authorityRequest.observationReference),
+          observedAt:
+            authorityRequest.observedAt === undefined ||
+            authorityRequest.observedAt === null
+              ? undefined
+              : BigInt(String(authorityRequest.observedAt)),
+        })
+
+        const authority = await fetchSignedIssueAuthority({
           baseUrl: options.authorityUrl,
           publicKeyPem: options.authorityPublicKeyPem,
           request: {
             ...request,
             ...authorityRequest,
+            directUsdmUnit: options.directUsdmUnit,
+            directUsdmObservedValue: direct.poolUsdmValue.toString(),
+            directUsdmObservationReference: direct.observationReference,
+            directUsdmObservedAt: direct.observedAt.toString(),
           },
-        }),
+        })
+
+        if (BigInt(String(authority.poolUsdmValue)) !== direct.poolUsdmValue) {
+          throw new Error(
+            'signed authority Pool valuation does not match direct physical USDM observation',
+          )
+        }
+
+        if (
+          authority.preEEV !== undefined &&
+          BigInt(String(authority.preEEV)) !== direct.poolUsdmValue
+        ) {
+          throw new Error(
+            'signed authority preEEV does not match direct physical USDM observation',
+          )
+        }
+
+        if (
+          authority.candidateEEV !== undefined &&
+          BigInt(String(authority.candidateEEV)) !== direct.poolUsdmValue
+        ) {
+          throw new Error(
+            'signed authority candidateEEV does not match direct physical USDM observation',
+          )
+        }
+
+        if (
+          authority.observedAt !== undefined &&
+          BigInt(String(authority.observedAt)) !== direct.observedAt
+        ) {
+          throw new Error(
+            'signed authority observedAt does not match direct physical observation timestamp',
+          )
+        }
+
+        const qualification = authority.eevQualification as
+          | Record<string, unknown>
+          | undefined
+        const approval = qualification?.deploymentApproval as
+          | Record<string, unknown>
+          | undefined
+
+        if (
+          qualification &&
+          qualification.status !== 'qualified'
+        ) {
+          throw new Error('signed authority did not provide qualified EEV evidence')
+        }
+
+        if (
+          approval &&
+          approval.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1'
+        ) {
+          throw new Error('signed authority EEV profile does not match direct-USDM V1')
+        }
+
+        return authority
+      },
       ...(options.currentObservedAt === undefined
         ? {}
         : { observedAt: options.currentObservedAt }),
