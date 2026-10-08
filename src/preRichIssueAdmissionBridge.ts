@@ -117,7 +117,11 @@ export type IssueAdmissionRuntimeInputs = {
   counterInputReference: string
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
-  poolUsdmValue: bigint
+  /**
+   * Optional runtime comparison hint. The authoritative provider remains the
+   * sole producer of the economic value; callers must not calculate EEV.
+   */
+  poolUsdmValue?: bigint
   classId: bigint
   price: bigint
   carrierStateReference?: string
@@ -220,8 +224,11 @@ export async function obtainAuthoritativeIssueAdmission(
     throw new Error('economic admission is bound to a different B1 PrizePool input')
   }
 
-  if (witness.authenticatedPoolUsdmValue !== inputs.poolUsdmValue) {
-    throw new Error('economic admission B1 PrizePool valuation does not match runtime input')
+  if (
+    inputs.poolUsdmValue !== undefined &&
+    witness.authenticatedPoolUsdmValue !== inputs.poolUsdmValue
+  ) {
+    throw new Error('economic admission B1 PrizePool valuation does not match runtime hint')
   }
 
   return witness
