@@ -14,7 +14,7 @@ function eevQualification() {
       status: 'DEPLOYMENT_APPROVED' as const,
       candidateId: 'test-eev-v1',
       sourceSetId: 'test-source-set-v1',
-      profileVersion: 'test-eev-profile-v1',
+      profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'e'.repeat(64),
       qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
       excludedProperties: [],
@@ -223,6 +223,16 @@ describe('PRE-RICH Issue admission bridge', () => {
         { ...canonicalEvidence, actionFingerprint: '9'.repeat(64) },
       ),
     ).toThrow('action fingerprint does not match canonical evidence')
+  })
+
+  it('rejects an EEV certificate for a different profile', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).profileVersion = 'OTHER-EEV-PROFILE'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/not the deployed direct-USDM profile/)
   })
 
   it('rejects an EEV certificate that is qualified but not deployment-approved', async () => {
