@@ -141,7 +141,7 @@ const sourceSet = {
 sourceSet.evidenceHash = digest(sourceSet)
 
 const output = EVIDENCE_DIR + '/preprod-direct-usdm-source-set.json'
-await writeFile(output, JSON.stringify(sourceSet, null, 2) + '\\n')
+await writeFile(output, JSON.stringify(sourceSet, null, 2) + '\n')
 
 console.log(JSON.stringify({
   status: sourceSet.status,
