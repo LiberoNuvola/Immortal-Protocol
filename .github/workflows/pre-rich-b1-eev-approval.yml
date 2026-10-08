@@ -1,0 +1,61 @@
+name: PRE-RICH B1 EEV Deployment Approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      approve_eev:
+        description: "Approve the already-qualified direct-USDM EEV deployment candidate"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  approve:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.approve_eev }}
+    runs-on: ubuntu-24.04
+    environment: PREPROD-EEV-APPROVAL
+    timeout-minutes: 15
+    env:
+      PREPROD_TUSDM_UNIT: e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+      PREPROD_EEV_APPROVAL_ACTION: APPROVE_PREPROD_EEV
+      PREPROD_EEV_APPROVAL_TOKEN: ${{ secrets.PREPROD_EEV_APPROVAL_TOKEN }}
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Re-materialize current direct-USDM evidence
+        run: |
+          test -s "${PREPROD_EVIDENCE_DIR}/preprod-direct-usdm-qualification.json"
+          test -s "${PREPROD_EVIDENCE_DIR}/preprod-direct-usdm-source-set.json"
+          test -s "${PREPROD_EVIDENCE_DIR}/preprod-direct-usdm-deployment.json"
+          test -s "${PREPROD_EVIDENCE_DIR}/preprod-oracle-state-deployment.json"
+
+      - name: Verify protected approval control is present
+        run: |
+          test -n "${PREPROD_EEV_APPROVAL_TOKEN}"
+
+      - name: Materialize DEPLOYMENT_APPROVED qualification
+        run: node audit/cardano-integration/preprod-direct-usdm-approve.mjs
+
+      - name: Verify approval result
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const p = 'audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json'
+          const q = JSON.parse(fs.readFileSync(p, 'utf8'))
+          if (q.status !== 'qualified') throw new Error('qualification is not qualified')
+          if (q.deploymentApproval?.status !== 'DEPLOYMENT_APPROVED') throw new Error('deployment approval missing')
+          if (q.deploymentApproval?.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') throw new Error('wrong deployment profile')
+          if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.evidenceHash)) throw new Error('approval evidence hash missing')
+          NODE
+
+      - name: Upload approved qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          path: audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json
+          if-no-files-found: error
