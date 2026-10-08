@@ -84,9 +84,13 @@ try {
   throw new Error('real direct-USDM Preprod deployment manifest is required')
 }
 try {
-  sourceSet = JSON.parse(await readFile(SOURCE_SET, 'utf8'))
-} catch {
-  throw new Error('real direct-USDM source-set evidence is required')
+  const sourceSetRaw = await readFile(SOURCE_SET, 'utf8')
+  sourceSet = JSON.parse(sourceSetRaw)
+} catch (error) {
+  throw new Error(
+    'real direct-USDM source-set evidence is required: ' +
+      (error instanceof Error ? error.message : String(error)),
+  )
 }
 try {
   oracleState = JSON.parse(await readFile(ORACLE_STATE_MANIFEST, 'utf8'))
