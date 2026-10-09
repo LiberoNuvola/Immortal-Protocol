@@ -84,6 +84,7 @@ function viabilityCertificate() {
 function makePayload(overrides = {}) {
   return {
     counterInputReference: 'a'.repeat(64) + '#0',
+    controlStateReference: 'd'.repeat(64) + '#3',
     poolInputReference: 'b'.repeat(64) + '#1',
     carrierStateReference: 'c'.repeat(64) + '#2',
     directUsdmUnit: 'e'.repeat(56) + '0014df10745553444d',
@@ -123,6 +124,7 @@ function signed(payload, privateKey) {
 const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519')
 const expected = {
   counterInputReference: 'a'.repeat(64) + '#0',
+  controlStateReference: 'd'.repeat(64) + '#3',
   poolInputReference: 'b'.repeat(64) + '#1',
   carrierStateReference: 'c'.repeat(64) + '#2',
   directUsdmUnit: 'e'.repeat(56) + '0014df10745553444d',
@@ -179,6 +181,15 @@ assert.throws(
     expected,
   ),
   /eevQualification.evidence.EV6 is required/,
+)
+
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload({ controlStateReference: '9'.repeat(64) + '#3' }), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    expected,
+  ),
+  /Issue authority B2 control reference mismatch/,
 )
 
 assert.throws(
