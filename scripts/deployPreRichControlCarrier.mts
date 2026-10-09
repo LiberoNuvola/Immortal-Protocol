@@ -29,7 +29,6 @@ import {
   mintingPolicyToId,
   validatorToAddress,
   getAddressDetails,
-  PubKeyHash,
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
