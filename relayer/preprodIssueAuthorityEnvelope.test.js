@@ -92,6 +92,8 @@ const envelope = signIssueAuthorityEnvelope({
   publicKeyPem,
   currentObservedAt: now,
 })
+assert.equal(envelope.payload.actionClass, 'Issue')
+assert.equal(envelope.payload.stateHash, witness.stateHash)
 verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   counterInputReference: refs.counter,
   controlStateReference: refs.control,
