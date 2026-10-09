@@ -145,6 +145,10 @@ async function main() {
   lucid.selectWallet.fromSeed(mnemonic)
 
   const signerAddress = await lucid.wallet().address()
+
+  const lovelace = BigInt(
+    process.env.PREPROD_CONTROL_LOVELACE ?? '3000000',
+  )
   if (lovelace <= 0n) {
     throw new Error('PREPROD_CONTROL_LOVELACE must be positive')
   }
@@ -196,13 +200,6 @@ async function main() {
     'Preprod',
     carrierValidator,
   )
-
-  const lovelace = BigInt(
-    process.env.PREPROD_CONTROL_LOVELACE ?? '3000000',
-  )
-  if (lovelace <= 0n) {
-    throw new Error('PREPROD_CONTROL_LOVELACE must be positive')
-  }
 
   const initialDatum = buildInitialDatum(
     policyId,
