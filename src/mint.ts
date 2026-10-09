@@ -1727,7 +1727,6 @@ export async function mintSerialNFT(
 export async function mintSerialNFTWithAuthoritativeAdmission(
   opts: Omit<MintSerialOptions, 'economicAdmission'> & {
     authoritativeIssueAdmissionProvider: AuthoritativeIssueAdmissionProvider
-    authoritativePoolUsdmValue: bigint
   },
 ): Promise<MintSerialResult> {
   return mintSerialNFT({
