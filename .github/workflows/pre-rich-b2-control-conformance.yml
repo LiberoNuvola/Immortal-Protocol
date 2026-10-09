@@ -41,6 +41,7 @@ jobs:
         run: |
           npx vitest run \
             src/__tests__/preprodB2ControlObservation.test.ts \
+            Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts \
             relayer/preprodIssueObservationReader.test.js \
             relayer/preprodIssueObservationProvider.test.js
 
