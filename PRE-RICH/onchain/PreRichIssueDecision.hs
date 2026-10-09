@@ -142,6 +142,7 @@ produceIssueDecision input =
           Just
             (IssueDecision
               { idAction = action
+              , idPreState = idiPreState input
               , idPreStateHash = preHash
               , idPostStateHash = postHash
               , idActionFingerprint = actionHash
