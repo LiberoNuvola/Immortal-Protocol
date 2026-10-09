@@ -1,13 +1,17 @@
-const { Data } = require('lucid-cardano')
+let lucidDataModulePromise
 
-function datumFields(utxo, label) {
+async function datumFields(utxo, label) {
   const datum = utxo?.datum
   if (!datum) throw new Error(label + ' datum is missing or malformed')
   if (typeof datum === 'string') {
     try {
+      lucidDataModulePromise ??= import('@lucid-evolution/lucid')
+      const { Data } = await lucidDataModulePromise
       return Data.from(datum)
     } catch (error) {
-      throw new Error(label + ' datum CBOR is invalid: ' + (error instanceof Error ? error.message : String(error)))
+      throw new Error(
+        label + ' datum CBOR is invalid: ' + (error instanceof Error ? error.message : String(error)),
+      )
     }
   }
   return datum
@@ -28,7 +32,7 @@ function datumFields(utxo, label) {
  * introduced in the relayer.
  */
 
-function decodeCarrierDatum(utxo) {
+async function decodeCarrierDatum(utxo) {
   const datum = datumFields(utxo, 'V3 carrier')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 2) {
     throw new Error('V3 carrier datum is missing or malformed')
@@ -129,7 +133,7 @@ async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierT
   if (matches.length !== 1) {
     throw new Error('V3 economic state carrier is ambiguous: expected exactly one singleton UTxO, found ' + matches.length)
   }
-  const decoded = decodeCarrierDatum(matches[0])
+  const decoded = await decodeCarrierDatum(matches[0])
   const carrierStateReference = exactRef(matches[0], 'V3 carrier')
   return {
     ...decoded,
@@ -162,7 +166,7 @@ function singletonByUnit(utxos, unit, label) {
   return matches[0]
 }
 
-function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
+async function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
   const datum = datumFields(utxo, 'B2 control')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 6) {
     throw new Error('B2 control datum is missing or malformed')
@@ -225,7 +229,7 @@ async function observeB2Control({
     )
   }
   const controlUtxo = matches[0]
-  const decoded = decodeB2ControlDatum(
+  const decoded = await decodeB2ControlDatum(
     controlUtxo,
     controlPolicyId,
     controlTokenNameHex,
@@ -236,7 +240,7 @@ async function observeB2Control({
   }
 }
 
-function decodePoolDatum(utxo) {
+async function decodePoolDatum(utxo) {
   const datum = datumFields(utxo, 'B1PrizePool')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 8) {
     throw new Error('B1PrizePool datum is missing or malformed')
@@ -330,7 +334,7 @@ async function readPreprodIssueObservation({
 
   const poolUtxos = await lucid.utxosAt(b1PrizePoolAddress)
   const poolUtxo = singletonByUnit(poolUtxos, poolTokenUnit, 'B1PrizePool')
-  const poolState = decodePoolDatum(poolUtxo)
+  const poolState = await decodePoolDatum(poolUtxo)
 
   const carrier = await observeCarrier({
     lucid,
