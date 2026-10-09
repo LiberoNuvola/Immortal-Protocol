@@ -111,6 +111,11 @@ export type ViabilityCertificateEvidence = {
 
 export type AuthoritativeIssueAdmissionWitness =
   EconomicAdmissionWitness & {
+    /** Authoritative pre-transition EEV used by the canonical Haskell decision. */
+    preEEV: bigint
+    /** Exact PRE-RICH Issue coordinates consumed by the canonical decision. */
+    issueClassId: bigint
+    issuePrice: bigint
     v3CarrierBinding?: IssueV3CarrierBinding
     eevQualification: EevQualificationEvidence
     protectedCapitalProvenance: ProtectedCapitalProvenance
@@ -180,6 +185,16 @@ export async function obtainAuthoritativeIssueAdmission(
     ) {
       throw new Error('authoritative Issue witness has incomplete EEV evidence: ' + key)
     }
+  }
+
+  if (witness.preEEV < 0n) {
+    throw new Error('authoritative Issue witness pre-EEV must be non-negative')
+  }
+  if (witness.issueClassId !== inputs.classId) {
+    throw new Error('authoritative Issue witness classId does not match runtime input')
+  }
+  if (witness.issuePrice !== inputs.price) {
+    throw new Error('authoritative Issue witness price does not match runtime input')
   }
 
   const pc = witness.protectedCapitalProvenance
