@@ -44,11 +44,11 @@ function fakeLucid() {
           datum: {
             fields: [
               0n, 0n, 0n, 0n,
-              'controlpolicy',
-              'controlname',
+              'ab'.repeat(28),
+              'b2c0',
             ],
           },
-          assets: { ['controlpolicy' + 'controlname']: 1n },
+          assets: { ['ab'.repeat(28) + 'b2c0']: 1n },
         }]
       }
       if (address === 'carrier') {
@@ -90,8 +90,8 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     carrierPolicyId: 'carrierpolicy',
     carrierTokenNameHex: 'carriername',
     controlAddress: 'control',
-    controlPolicyId: 'controlpolicy',
-    controlTokenNameHex: 'controlname',
+    controlPolicyId: 'ab'.repeat(28),
+    controlTokenNameHex: 'b2c0',
     classId: 0,
     price: 1,
     observedAt: 123n,
