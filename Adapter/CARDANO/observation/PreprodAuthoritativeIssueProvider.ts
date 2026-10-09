@@ -80,6 +80,15 @@ export function createPreprodAuthoritativeIssueProvider(
   if (!options.directUsdmUnit.trim()) {
     throw new Error('directUsdmUnit is required')
   }
+  if (!options.deployment.controlAddress.trim()) {
+    throw new Error('controlAddress is required')
+  }
+  if (!options.deployment.controlPolicyId.trim()) {
+    throw new Error('controlPolicyId is required')
+  }
+  if (!options.deployment.controlTokenNameHex.trim()) {
+    throw new Error('controlTokenNameHex is required')
+  }
   if (!options.command.trim()) throw new Error('command is required')
 
   const observationSource = async (inputs: {
