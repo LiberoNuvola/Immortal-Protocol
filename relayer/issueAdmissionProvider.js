@@ -22,7 +22,7 @@ function parseNonNegativeBigInt(value, field) {
 
 function parseInputReference(value, field) {
   const reference = requiredString(value, field)
-  const match = /^(.*)#(\\d+)$/.exec(reference)
+  const match = /^(.*)#(\d+)$/.exec(reference)
   if (!match || match[1].length === 0) {
     throw new Error(`${field} must be an exact txHash#outputIndex reference`)
   }
