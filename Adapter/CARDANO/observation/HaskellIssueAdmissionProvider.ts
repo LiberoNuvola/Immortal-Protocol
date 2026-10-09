@@ -195,6 +195,33 @@ export function createHaskellIssueAdmissionProvider(
       )
     }
 
+    const authorityProtectedCapitalProvenance = observed.protectedCapitalProvenance
+    const authorityPcComponents = authorityProtectedCapitalProvenance.components
+    const decisionPcComponents = rawProtectedCapitalProvenance.components
+    for (const key of [
+      'crystallizedLiabilities',
+      'worstCaseExposure',
+      'safetyCapital',
+      'reserveProtection',
+      'lockedJackpot',
+      'mandatoryFutureCosts',
+    ] as const) {
+      if (
+        BigInt(String(authorityPcComponents[key])) !==
+        BigInt(String(decisionPcComponents[key]))
+      ) {
+        throw new Error(
+          `Haskell Issue producer ProtectedCapital mismatch on ${key}`,
+        )
+      }
+    }
+    if (
+      BigInt(String(authorityProtectedCapitalProvenance.total)) !==
+      BigInt(String(rawProtectedCapitalProvenance.total))
+    ) {
+      throw new Error('Haskell Issue producer ProtectedCapital total mismatch')
+    }
+
     const protectedCapitalProvenance: ProtectedCapitalProvenance = {
       sourceReference: observed.carrierStateReference,
       components: {
@@ -244,6 +271,7 @@ export function createHaskellIssueAdmissionProvider(
 
     const result: AuthoritativeIssueAdmissionWitness = {
       admitted: true,
+      counterInputReference: inputs.counterInputReference,
       actionClass: 'Issue',
       gateVersion: 'pre-rich-economic-gate-v1',
       decisionReference: decision.decisionReference,
