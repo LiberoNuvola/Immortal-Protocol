@@ -5,6 +5,7 @@ import type { AuthoritativeIssueAdmissionWitness } from '../preRichIssueAdmissio
 
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
+const control = 'e'.repeat(64) + '#3'
 
 function eevQualification() {
   return {
@@ -107,6 +108,7 @@ function witness(): AuthoritativeIssueAdmissionWitness {
     gateVersion: 'economic-gate-v1',
     admitted: true,
     counterInputReference: counter,
+    controlStateReference: control,
     preEEV: 1000n,
     issueClassId: 0n,
     issuePrice: 1n,
@@ -174,6 +176,7 @@ const canonicalEvidence = {
 
 const inputs = {
   counterInputReference: counter,
+  controlStateReference: control,
   poolInputReference: pool,
   liquiditySourceReferences: [pool],
   poolUsdmValue: 500n,
@@ -185,6 +188,15 @@ describe('PRE-RICH Issue admission bridge', () => {
   it('accepts only an authoritative Issue witness bound to exact runtime inputs', async () => {
     const provider: AuthoritativeIssueAdmissionProvider = async () => witness()
     await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).resolves.toMatchObject({ actionClass: 'Issue' })
+  })
+
+  it('rejects a witness bound to a different B2 control state', async () => {
+    const provider: AuthoritativeIssueAdmissionProvider = async () => ({
+      ...witness(),
+      controlStateReference: 'f'.repeat(64) + '#3',
+    })
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence))
+      .rejects.toThrow(/B2 control reference/)
   })
 
   it('rejects a witness bound to a different pool', async () => {
