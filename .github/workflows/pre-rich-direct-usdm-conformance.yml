@@ -56,6 +56,7 @@ jobs:
       - name: Run authority and admission conformance
         run: |
           node relayer/signedIssueAuthority.test.js
+          node relayer/preprodIssueAuthorityEnvelope.test.js
           npx vitest run             Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts             src/__tests__/preRichIssueAdmissionBridge.test.ts             --reporter=verbose
 
       - name: Parse direct-USDM audit scripts
