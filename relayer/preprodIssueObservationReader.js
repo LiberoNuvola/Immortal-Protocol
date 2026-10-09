@@ -1,3 +1,18 @@
+const { Data } = require('lucid-cardano')
+
+function datumFields(utxo, label) {
+  const datum = utxo?.datum
+  if (!datum) throw new Error(label + ' datum is missing or malformed')
+  if (typeof datum === 'string') {
+    try {
+      return Data.from(datum)
+    } catch (error) {
+      throw new Error(label + ' datum CBOR is invalid: ' + (error instanceof Error ? error.message : String(error)))
+    }
+  }
+  return datum
+}
+
 /**
  * Concrete Preprod observation reader for the PRE-RICH Issue boundary.
  *
@@ -14,8 +29,8 @@
  */
 
 function decodeCarrierDatum(utxo) {
-  if (!utxo?.datum || typeof utxo.datum === 'string' || !Array.isArray(utxo.datum.fields) ||
-      utxo.datum.fields.length !== 2) {
+  const datum = datumFields(utxo, 'V3 carrier')
+  if (!Array.isArray(datum.fields) || datum.fields.length !== 2) {
     throw new Error('V3 carrier datum is missing or malformed')
   }
   const asInt = (v, field) => {
@@ -27,7 +42,7 @@ function decodeCarrierDatum(utxo) {
       throw new Error('V3 carrier ' + field + ' is not a non-negative integer')
     }
   }
-  const root = utxo.datum.fields
+  const root = datum.fields
   const stateVersion = asInt(root[0], 'stateVersion')
   const state = root[1]
   if (!state || !Array.isArray(state.fields) || state.fields.length !== 9) {
@@ -149,10 +164,7 @@ function singletonByUnit(utxos, unit, label) {
 
 function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
   if (
-    !utxo?.datum ||
-    typeof utxo.datum === 'string' ||
-    !Array.isArray(utxo.datum.fields) ||
-    utxo.datum.fields.length !== 6
+    false
   ) {
     throw new Error('B2 control datum is missing or malformed')
   }
@@ -171,7 +183,7 @@ function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
     }
     return v.toLowerCase()
   }
-  const fields = utxo.datum.fields
+  const fields = datumFields(utxo, 'B2 control').fields
   const currentActiveClass = asInt(fields[0], 'currentActiveClass')
   const highestClassEverActivated = asInt(fields[1], 'highestClassEverActivated')
   const stateVersion = asInt(fields[2], 'stateVersion')
@@ -226,8 +238,8 @@ async function observeB2Control({
 }
 
 function decodePoolDatum(utxo) {
-  if (!utxo?.datum || typeof utxo.datum === 'string' || !Array.isArray(utxo.datum.fields) ||
-      utxo.datum.fields.length !== 8) {
+  const datum = datumFields(utxo, 'B1PrizePool')
+  if (!Array.isArray(datum.fields) || datum.fields.length !== 8) {
     throw new Error('B1PrizePool datum is missing or malformed')
   }
   const asInt = (v, field) => {
@@ -240,12 +252,12 @@ function decodePoolDatum(utxo) {
     }
   }
   return {
-    totalLiquidity: asInt(utxo.datum.fields[0], 'totalLiquidity'),
-    pendingLiabilities: asInt(utxo.datum.fields[1], 'pendingLiabilities'),
-    unresolvedReserve: asInt(utxo.datum.fields[2], 'unresolvedReserve'),
-    unresolvedTicketCount: asInt(utxo.datum.fields[3], 'unresolvedTicketCount'),
-    lockedJackpot: asInt(utxo.datum.fields[4], 'lockedJackpot'),
-    jackpotThreshold: asInt(utxo.datum.fields[5], 'jackpotThreshold'),
+    totalLiquidity: asInt(datum.fields[0], 'totalLiquidity'),
+    pendingLiabilities: asInt(datum.fields[1], 'pendingLiabilities'),
+    unresolvedReserve: asInt(datum.fields[2], 'unresolvedReserve'),
+    unresolvedTicketCount: asInt(datum.fields[3], 'unresolvedTicketCount'),
+    lockedJackpot: asInt(datum.fields[4], 'lockedJackpot'),
+    jackpotThreshold: asInt(datum.fields[5], 'jackpotThreshold'),
   }
 }
 
