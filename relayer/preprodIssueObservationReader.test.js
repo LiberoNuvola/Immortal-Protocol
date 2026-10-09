@@ -37,6 +37,20 @@ function fakeLucid() {
           assets: { ['poolpolicy' + 'poolname']: 1n },
         }]
       }
+      if (address === 'control') {
+        return [{
+          txHash: ref('e'),
+          outputIndex: 3,
+          datum: {
+            fields: [
+              0n, 0n, 0n, 0n,
+              'controlpolicy',
+              'controlname',
+            ],
+          },
+          assets: { ['controlpolicy' + 'controlname']: 1n },
+        }]
+      }
       if (address === 'carrier') {
         const d = datum()
         d.fields[1].fields[0] = 10n
@@ -75,6 +89,9 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     carrierAddress: 'carrier',
     carrierPolicyId: 'carrierpolicy',
     carrierTokenNameHex: 'carriername',
+    controlAddress: 'control',
+    controlPolicyId: 'controlpolicy',
+    controlTokenNameHex: 'controlname',
     classId: 0,
     price: 1,
     observedAt: 123n,
@@ -107,6 +124,7 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.counterInputReference, ref('a') + '#0')
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, 'cardano:tx/' + ref('c') + '#2')
+  assert.equal(result.controlStateReference, 'cardano:tx/' + ref('e') + '#3')
   assert.equal(result.protectedCapitalProvenance.total, 1650n)
   assert.deepEqual(result.protectedCapitalProvenance.components, {
     crystallizedLiabilities: 10n,
@@ -143,6 +161,9 @@ test('fails closed when the carrier singleton is ambiguous', async () => {
       carrierAddress: 'carrier',
       carrierPolicyId: 'carrierpolicy',
       carrierTokenNameHex: 'carriername',
+      controlAddress: 'control',
+      controlPolicyId: 'controlpolicy',
+      controlTokenNameHex: 'controlname',
       classId: 0,
       price: 1,
       observedAt: 123n,
