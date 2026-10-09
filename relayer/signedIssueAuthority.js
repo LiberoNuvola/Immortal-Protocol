@@ -284,6 +284,15 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
 
   const payload = envelope.payload
   if (!payload || typeof payload !== 'object') throw new Error('Issue authority payload is required')
+  if (payload.schema !== 'PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1') {
+    throw new Error('Issue authority payload schema is invalid')
+  }
+  if (payload.authorityVersion !== '1') {
+    throw new Error('Issue authority authorityVersion is invalid')
+  }
+  if (payload.actionClass !== 'Issue') {
+    throw new Error('Issue authority actionClass must be Issue')
+  }
   const signature = requiredString(envelope.signature, 'Issue authority signature')
 
   const expectedDirectUsdmUnit = requiredString(
