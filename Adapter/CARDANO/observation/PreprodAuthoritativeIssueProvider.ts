@@ -30,7 +30,6 @@ const { readPreprodIssueObservation } = require('../../../relayer/preprodIssueOb
     poolInputReference: string
     poolUsdmValue: bigint
     carrierStateReference: string
-    controlStateReference: string
     eevQualification: unknown
     protectedCapitalProvenance: unknown
     viabilityCertificate: unknown
@@ -95,6 +94,7 @@ export function createPreprodAuthoritativeIssueProvider(
 
   const observationSource = async (inputs: {
     counterInputReference: string
+    controlStateReference: string
     poolInputReference: string
     liquiditySourceReferences: readonly string[]
     poolUsdmValue: bigint
@@ -142,7 +142,6 @@ export function createPreprodAuthoritativeIssueProvider(
             ...request,
             ...authorityRequest,
             directUsdmUnit: options.directUsdmUnit,
-            controlStateReference: inputs.controlStateReference,
             directUsdmObservedValue: direct.poolUsdmValue.toString(),
             directUsdmObservationReference: direct.observationReference,
             directUsdmObservedAt: direct.observedAt.toString(),
@@ -151,7 +150,7 @@ export function createPreprodAuthoritativeIssueProvider(
 
         if (
           authority.controlStateReference !==
-          'cardano:tx/' + inputs.controlStateReference
+          String(authorityRequest.controlStateReference)
         ) {
           throw new Error(
             'signed authority B2 control reference does not match direct observed control state',
