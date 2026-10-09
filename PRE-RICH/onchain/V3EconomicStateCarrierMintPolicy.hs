@@ -8,23 +8,56 @@ module V3EconomicStateCarrierMintPolicy
   ) where
 
 import PlutusLedgerApi.V2
+import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
 
--- Diagnostic Probe C:
--- eliminate ScriptContext decoding entirely. The wrapper still has the
--- canonical minting-policy argument shape, but the policy body does not
--- inspect or decode the redeemer/context.
+{-# INLINABLE seedConsumed #-}
+seedConsumed :: TxOutRef -> TxInfo -> Bool
+seedConsumed seed info =
+  go (txInfoInputs info)
+  where
+    go [] = False
+    go (i:is) =
+      txInInfoOutRef i == seed || go is
+
 {-# INLINABLE mkPolicy #-}
-mkPolicy :: TxOutRef -> TokenName -> () -> Bool
-mkPolicy _seed _tokenName _unit = True
+mkPolicy
+  :: TxOutRef
+  -> TokenName
+  -> ()
+  -> ScriptContext
+  -> Bool
+mkPolicy seed tokenName _ ctx =
+  let
+    info = scriptContextTxInfo ctx
+    ownCs = ownCurrencySymbol ctx
+    expected = singleton ownCs tokenName 1
+  in
+       seedConsumed seed info
+    && txInfoMint info == expected
 
 {-# INLINABLE wrap #-}
-wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrap seed tokenName _redeemer _ctx =
-  check (mkPolicy seed tokenName ())
+wrap
+  :: TxOutRef
+  -> TokenName
+  -> BuiltinData
+  -> BuiltinData
+  -> BuiltinUnit
+wrap seed tokenName _ ctx =
+  check
+    (mkPolicy
+      seed
+      tokenName
+      ()
+      (unsafeFromBuiltinData ctx))
 
 compiledPolicyFactory
   :: CompiledCode
-       (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+       ( TxOutRef
+         -> TokenName
+         -> BuiltinData
+         -> BuiltinData
+         -> BuiltinUnit
+       )
 compiledPolicyFactory = $$(compile [|| wrap ||])
