@@ -1,4 +1,7 @@
-const { describe, expect, it } = require('vitest')
+import { createRequire } from 'node:module'
+import { describe, expect, it } from 'vitest'
+
+const require = createRequire(import.meta.url)
 const { createPreprodIssueObservationProducer } = require('./preprodIssueObservationProvider')
 
 const counter = 'a'.repeat(64) + '#0'
