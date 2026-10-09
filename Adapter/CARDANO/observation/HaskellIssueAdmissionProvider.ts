@@ -24,6 +24,7 @@ export type HaskellIssueObservation = {
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
   carrierStateReference: string
+  controlStateReference: string
   eevQualification: EevQualificationEvidence
   protectedCapitalProvenance: ProtectedCapitalProvenance
   viabilityCertificate: ViabilityCertificateEvidence
@@ -294,6 +295,7 @@ export function createHaskellIssueAdmissionProvider(
     const result: AuthoritativeIssueAdmissionWitness = {
       admitted: true,
       counterInputReference: inputs.counterInputReference,
+      controlStateReference: observed.controlStateReference,
       actionClass: 'Issue',
       gateVersion: 'pre-rich-economic-gate-v1',
       decisionReference: decision.decisionReference,
