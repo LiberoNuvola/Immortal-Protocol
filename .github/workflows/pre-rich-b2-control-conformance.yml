@@ -42,8 +42,12 @@ jobs:
           npx vitest run \
             src/__tests__/preprodB2ControlObservation.test.ts \
             Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts \
-            relayer/preprodIssueObservationReader.test.js \
             relayer/preprodIssueObservationProvider.test.js
+          # node:test / plain-node suites: vitest cannot discover these
+          node --test relayer/preprodIssueObservationReader.test.js
+          node relayer/preprodIssueAdmissionProvider.test.mjs
+          node relayer/preprodIssueAuthorityEnvelope.test.js
+          node relayer/signedIssueAuthority.test.js
 
       - name: Browser build
         run: npm run build
