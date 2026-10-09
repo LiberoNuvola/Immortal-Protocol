@@ -455,7 +455,7 @@ async function readPreprodIssueObservation({
       ),
       decisionReference: required(authoritativeInputs.decisionReference, 'decisionReference'),
       observationReference,
-      controlStateReference: 'cardano:tx/' + control.controlStateReference,
+      controlStateReference: control.controlStateReference,
     },
   }
 }
