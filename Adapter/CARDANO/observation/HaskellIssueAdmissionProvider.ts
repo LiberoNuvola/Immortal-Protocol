@@ -41,6 +41,7 @@ export type HaskellIssueAdmissionProviderOptions = {
   observationSource: (
     inputs: {
       counterInputReference: string
+      controlStateReference: string
       poolInputReference: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
