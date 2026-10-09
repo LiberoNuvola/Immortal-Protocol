@@ -46,6 +46,11 @@ function signIssueAuthorityEnvelope({
     throw new Error('witness observedAt is required')
   }
   const observedAt = BigInt(String(observedAtRaw))
+  if (witness.preEEV === undefined || witness.preEEV === null) {
+    throw new Error('witness preEEV is required')
+  }
+  const preEEV = BigInt(String(witness.preEEV))
+  if (preEEV < 0n) throw new Error('witness preEEV must be non-negative')
 
   const eevQualification = witness.eevQualification
   const protectedCapitalProvenance = witness.protectedCapitalProvenance
@@ -73,7 +78,7 @@ function signIssueAuthorityEnvelope({
     price: String(witness.issuePrice),
     directUsdmUnit: unit.toLowerCase(),
     poolUsdmValue: String(witness.authenticatedPoolUsdmValue),
-    preEEV: String(witness.preEEV),
+    preEEV: String(preEEV),
     candidateEEV: String(witness.eev),
     requiredImmediateLiquidity: String(witness.requiredImmediateLiquidity),
     truthVerified: true,
