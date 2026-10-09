@@ -115,7 +115,7 @@ async function observeCarrier({ lucid, carrierAddress, carrierPolicyId, carrierT
     throw new Error('V3 economic state carrier is ambiguous: expected exactly one singleton UTxO, found ' + matches.length)
   }
   const decoded = decodeCarrierDatum(matches[0])
-  const carrierStateReference = 'cardano:tx/' + exactRef(matches[0], 'V3 carrier')
+  const carrierStateReference = exactRef(matches[0], 'V3 carrier')
   return {
     ...decoded,
     carrierStateReference,
@@ -353,7 +353,7 @@ async function readPreprodIssueObservation({
       counterInputReference: counterRef,
       poolInputReference: poolRef,
       carrierStateReference: carrier.carrierStateReference,
-      controlStateReference: 'cardano:tx/' + control.controlStateReference,
+      controlStateReference: control.controlStateReference,
       classId,
       price,
       ...(observedAt === undefined || observedAt === null
@@ -427,7 +427,7 @@ async function readPreprodIssueObservation({
     carrierStateReference: carrier.carrierStateReference,
     carrierPolicyId: carrier.carrierPolicyId,
     carrierTokenNameHex: carrier.carrierTokenNameHex,
-    controlStateReference: 'cardano:tx/' + control.controlStateReference,
+    controlStateReference: control.controlStateReference,
     controlState: {
       currentActiveClass: control.currentActiveClass,
       highestClassEverActivated: control.highestClassEverActivated,
