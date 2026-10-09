@@ -111,6 +111,8 @@ export type ViabilityCertificateEvidence = {
 
 export type AuthoritativeIssueAdmissionWitness =
   EconomicAdmissionWitness & {
+    /** Exact Counter input bound to the authoritative Issue observation. */
+    counterInputReference: string
     /** Authoritative pre-transition EEV used by the canonical Haskell decision. */
     preEEV: bigint
     /** Exact PRE-RICH Issue coordinates consumed by the canonical decision. */
@@ -187,6 +189,9 @@ export async function obtainAuthoritativeIssueAdmission(
     }
   }
 
+  if (witness.counterInputReference.trim() !== inputs.counterInputReference) {
+    throw new Error('authoritative Issue witness Counter reference does not match runtime input')
+  }
   if (witness.preEEV < 0n) {
     throw new Error('authoritative Issue witness pre-EEV must be non-negative')
   }
