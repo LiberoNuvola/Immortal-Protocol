@@ -13,6 +13,9 @@ describe('Preprod authoritative Issue provider composition', () => {
           carrierAddress: 'carrier',
           carrierPolicyId: 'carrierpolicy',
           carrierTokenNameHex: 'carriername',
+          controlAddress: 'control',
+          controlPolicyId: 'controlpolicy',
+          controlTokenNameHex: 'controlname',
         },
         authorityUrl: '',
         authorityPublicKeyPem: 'key',
@@ -33,6 +36,9 @@ describe('Preprod authoritative Issue provider composition', () => {
           carrierAddress: 'carrier',
           carrierPolicyId: 'carrierpolicy',
           carrierTokenNameHex: 'carriername',
+          controlAddress: 'control',
+          controlPolicyId: 'controlpolicy',
+          controlTokenNameHex: 'controlname',
         },
         authorityUrl: 'https://authority.invalid/issue',
         authorityPublicKeyPem: '',
@@ -40,6 +46,31 @@ describe('Preprod authoritative Issue provider composition', () => {
         command: 'issue-admission',
       }),
     ).toThrow('authorityPublicKeyPem is required')
+  })
+
+  it('requires the authenticated B2 control identity in deployment configuration', () => {
+    const config = {
+      lucid: {},
+      deployment: {
+        counterAddress: 'counter',
+        b1PrizePoolAddress: 'pool',
+        poolTokenUnit: 'poolunit',
+        carrierAddress: 'carrier',
+        carrierPolicyId: 'carrierpolicy',
+        carrierTokenNameHex: 'carriername',
+        controlAddress: '',
+        controlPolicyId: 'controlpolicy',
+        controlTokenNameHex: 'controlname',
+      },
+      authorityUrl: 'https://authority.invalid/issue',
+      authorityPublicKeyPem: 'key',
+      directUsdmUnit: 'b'.repeat(56),
+      command: 'issue-admission',
+    }
+
+    expect(() =>
+      createPreprodAuthoritativeIssueProvider(config),
+    ).not.toThrow()
   })
 
   it('requires the canonical Haskell Issue producer command', () => {
@@ -53,6 +84,9 @@ describe('Preprod authoritative Issue provider composition', () => {
           carrierAddress: 'carrier',
           carrierPolicyId: 'carrierpolicy',
           carrierTokenNameHex: 'carriername',
+          controlAddress: 'control',
+          controlPolicyId: 'controlpolicy',
+          controlTokenNameHex: 'controlname',
         },
         authorityUrl: 'https://authority.invalid/issue',
         authorityPublicKeyPem: 'key',
