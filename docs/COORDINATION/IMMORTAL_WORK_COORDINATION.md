@@ -1610,3 +1610,34 @@ The existing browser/adapter path remains fail-closed when any required authorit
 🔴 Atomic first-user Preprod Issue still blocked
 
 No V3 economic rule changed.
+
+
+## 44.51 ISSUE AUTHORITY — WITNESS IDENTITY HARDENING — 2026-10-09
+
+A second binding pass closed three concrete interface ambiguities found while wiring the new ProtectedCapital provenance path.
+
+### Closed
+
+1. The authoritative Issue witness now carries the exact Counter reference, pre-EEV, Issue class and Issue price instead of receiving those values outside the witness.
+2. The Haskell Issue adapter requires the canonical action string `Issue:<classId>:<price>` and verifies pre-EEV, candidate EEV and executable liquidity against the authoritative decision input.
+3. Haskell-derived ProtectedCapital is cross-checked component-by-component and by total against the upstream authenticated authority source before being admitted into the witness.
+4. The signed authority verifier now accepts JSON numeric coordinates independent of whether the runtime expected values are `number` or `bigint`, while still comparing them as exact integers.
+5. The signed envelope requires the explicit Issue schema/action and the signer refuses a missing or negative pre-EEV.
+6. A dedicated `HaskellIssueAdmissionProvider.test.ts` exercises the binding path and a negative ProtectedCapital mismatch case; Adapter Sale Conformance now runs it.
+
+### CI
+
+Current branch head: `69222769c2e8f31b21c1ebd50a3e87d68c1906a3`.
+
+At the latest check:
+- PRE-RICH B2 Control Carrier Conformance #46: queued
+- Cardano Adapter Sale Conformance #3131: queued
+- Protocol Declaration Conformance #1860: queued
+
+No green status is claimed before completion.
+
+### Kc / Ω boundary
+
+The concrete deployment Kc remains intentionally external. The normative certification package requires a real profile instantiation of `(S,A,Accept,Ω,T,Safe)` plus VC1–VC6 and E1–E10. The current repository does not contain such a deployment certificate, and the 2026-10-05 viability audit shows that treating only `Issue/Reveal/Claim/Expire` as the complete infinite-horizon action space would make the concrete kernel empty. No artificial Kc, narrowed Ω, or fake QNE action is introduced here.
+
+No V3 economic rule changed.
