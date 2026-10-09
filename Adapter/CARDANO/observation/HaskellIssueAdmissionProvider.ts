@@ -66,6 +66,22 @@ type HaskellDecisionEnvelope = {
     availableExecutableLiquidity: string
     requiredImmediateLiquidity: string
     candidateState: IssueV3CandidateState
+    protectedCapitalProvenance?: {
+      sourceType?: string
+      components: {
+        crystallizedLiabilities: string
+        worstCaseExposure: string
+        safetyCapital: string
+        reserveProtection: string
+        lockedJackpot: string
+        mandatoryFutureCosts: string
+      }
+      accountingInputs: {
+        unresolvedReserve: string
+        unresolvedTicketCount: string
+      }
+      total: string
+    }
   }
 }
 
@@ -139,6 +155,25 @@ export function createHaskellIssueAdmissionProvider(
 
     if (decision.actionClass !== 'Issue') {
       throw new Error('Haskell Issue producer returned a non-Issue action')
+    }
+    const expectedAction = `Issue:${inputs.classId.toString()}:${inputs.price.toString()}`
+    if (decision.action !== expectedAction) {
+      throw new Error(
+        `Haskell Issue producer action mismatch: expected ${expectedAction}, got ${decision.action}`,
+      )
+    }
+    if (BigInt(String(decision.preEEV)) !== BigInt(String(observed.decisionInput.preEEV))) {
+      throw new Error('Haskell Issue producer pre-EEV does not match authoritative decision input')
+    }
+    if (BigInt(String(decision.candidateEEV)) !== BigInt(String(observed.decisionInput.candidateEEV))) {
+      throw new Error('Haskell Issue producer candidate EEV does not match authoritative decision input')
+    }
+    if (BigInt(String(decision.availableExecutableLiquidity)) !== observed.poolUsdmValue) {
+      throw new Error('Haskell Issue producer executable liquidity does not match observed Pool value')
+    }
+    const rawProtectedCapitalProvenance = decision.protectedCapitalProvenance
+    if (!rawProtectedCapitalProvenance) {
+      throw new Error('Haskell Issue producer did not emit ProtectedCapital provenance')
     }
 
     if (
@@ -217,6 +252,9 @@ export function createHaskellIssueAdmissionProvider(
       stateHash: decision.stateHash,
       actionFingerprint: decision.actionFingerprint,
       postStateHash: decision.postStateHash,
+      preEEV: BigInt(decision.preEEV),
+      issueClassId: inputs.classId,
+      issuePrice: inputs.price,
       eev: BigInt(decision.candidateEEV),
       executableLiquidityObservation: observation,
       authenticatedPoolInputReference:
@@ -229,7 +267,7 @@ export function createHaskellIssueAdmissionProvider(
         candidateState: decision.candidateState,
       },
       eevQualification: observed.eevQualification,
-      protectedCapitalProvenance: observed.protectedCapitalProvenance,
+      protectedCapitalProvenance,
       viabilityCertificate: observed.viabilityCertificate,
     }
 
