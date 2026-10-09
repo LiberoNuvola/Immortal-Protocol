@@ -45,6 +45,24 @@ const { fetchSignedIssueAuthority } = require('../../../relayer/signedIssueAutho
   }) => Promise<Record<string, unknown>>
 }
 
+export function buildSignedIssueAuthorityRequest(
+  request: Record<string, unknown>,
+  authorityRequest: Record<string, unknown>,
+  directUsdmUnit: string,
+  directUsdmObservedValue: bigint,
+  directUsdmObservationReference: string,
+  directUsdmObservedAt: bigint,
+): Record<string, unknown> {
+  return {
+    ...request,
+    ...authorityRequest,
+    directUsdmUnit,
+    directUsdmObservedValue: directUsdmObservedValue.toString(),
+    directUsdmObservationReference,
+    directUsdmObservedAt: directUsdmObservedAt.toString(),
+  }
+}
+
 export type PreprodAuthoritativeIssueProviderOptions = {
   lucid: unknown
   deployment: {
@@ -138,14 +156,14 @@ export function createPreprodAuthoritativeIssueProvider(
         const authority = await fetchSignedIssueAuthority({
           baseUrl: options.authorityUrl,
           publicKeyPem: options.authorityPublicKeyPem,
-          request: {
-            ...request,
-            ...authorityRequest,
-            directUsdmUnit: options.directUsdmUnit,
-            directUsdmObservedValue: direct.poolUsdmValue.toString(),
-            directUsdmObservationReference: direct.observationReference,
-            directUsdmObservedAt: direct.observedAt.toString(),
-          },
+          request: buildSignedIssueAuthorityRequest(
+            request,
+            authorityRequest,
+            options.directUsdmUnit,
+            direct.poolUsdmValue,
+            direct.observationReference,
+            direct.observedAt,
+          ),
         })
 
         if (
