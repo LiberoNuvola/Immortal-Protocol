@@ -122,6 +122,17 @@ singletonAmountOutputs ctx cs tn =
 boundedClass :: Integer -> Bool
 boundedClass x = x >= 0 && x <= 7
 
+{-# INLINABLE authoritySigned #-}
+authoritySigned :: BuiltinByteString -> TxInfo -> Bool
+authoritySigned authority info =
+  go (txInfoSignatories info)
+  where
+    expected = PubKeyHash authority
+
+    go [] = False
+    go (pkh:rest) =
+      pkh == expected || go rest
+
 {-# INLINABLE datumValid #-}
 datumValid :: BuiltinByteString -> BuiltinByteString -> PreRichControlDatum -> Bool
 datumValid configuredPolicy configuredToken datum =
@@ -168,11 +179,12 @@ decodeDatum info out =
 mkValidator
   :: BuiltinByteString
   -> BuiltinByteString
+  -> BuiltinByteString
   -> PreRichControlDatum
   -> PreRichControlAction
   -> ScriptContext
   -> Bool
-mkValidator configuredPolicy configuredToken before action ctx =
+mkValidator configuredPolicy configuredToken configuredAuthority before action ctx =
   let
     output = ownOutputResolved ctx
     inputValue = txOutValue (ownInputResolved ctx)
@@ -183,7 +195,8 @@ mkValidator configuredPolicy configuredToken before action ctx =
     inputToken = singletonAmountInputs ctx cs tn
     outputToken = singletonAmountOutputs ctx cs tn
   in
-       countOwnInputs ctx == 1
+       authoritySigned configuredAuthority (scriptContextTxInfo ctx)
+    && countOwnInputs ctx == 1
     && countOwnOutputs ctx == 1
     && inputToken == 1
     && outputToken == 1
@@ -201,15 +214,17 @@ mkValidator configuredPolicy configuredToken before action ctx =
 wrap
   :: BuiltinByteString
   -> BuiltinByteString
+  -> BuiltinByteString
   -> BuiltinData
   -> BuiltinData
   -> BuiltinData
   -> BuiltinUnit
-wrap policy token datum action ctx =
+wrap policy token authority datum action ctx =
   check
     (mkValidator
       policy
       token
+      authority
       (unsafeFromBuiltinData datum)
       (unsafeFromBuiltinData action)
       (unsafeFromBuiltinData ctx))
@@ -217,6 +232,7 @@ wrap policy token datum action ctx =
 compiledValidatorFactory
   :: CompiledCode
        ( BuiltinByteString
+         -> BuiltinByteString
          -> BuiltinByteString
          -> BuiltinData
          -> BuiltinData
