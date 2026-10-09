@@ -101,6 +101,7 @@ export type IssueAdmissionV3CarrierBinding = {
 export type AuthoritativeIssueAdmissionWitness =
   EconomicAdmissionWitness & {
     counterInputReference: string
+    controlStateReference: string
     preEEV: bigint
     issueClassId: bigint
     issuePrice: bigint
@@ -126,6 +127,7 @@ export type AuthoritativeIssueAdmissionSource = {
 
 export type IssueAdmissionRuntimeInputs = {
   counterInputReference: string
+  controlStateReference: string
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
@@ -276,6 +278,7 @@ export function assertAuthoritativeIssueAdmissionWitness(
     throw new Error('v3CarrierBinding.candidateState is required')
   }
   requiredString(candidate.counterInputReference, 'counterInputReference')
+  requiredString(candidate.controlStateReference, 'controlStateReference')
   const preEEV = candidate.preEEV
   if (typeof preEEV !== 'bigint' || preEEV < 0n) {
     throw new Error('authoritative Issue witness pre-EEV is invalid')
@@ -355,6 +358,9 @@ export async function resolveAuthoritativeIssueAdmission(
   assertAuthoritativeIssueAdmissionWitness(witness)
   if (witness.counterInputReference !== inputs.counterInputReference) {
     throw new Error('authoritative Issue witness Counter reference does not match runtime input')
+  }
+  if (witness.controlStateReference !== inputs.controlStateReference) {
+    throw new Error('authoritative Issue witness B2 control reference does not match runtime input')
   }
   if (witness.preEEV < 0n) {
     throw new Error('authoritative Issue witness pre-EEV must be non-negative')
