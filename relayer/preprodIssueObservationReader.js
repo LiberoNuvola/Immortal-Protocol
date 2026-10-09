@@ -33,7 +33,7 @@ async function datumFields(utxo, label) {
  */
 
 async function decodeCarrierDatum(utxo) {
-  const datum = datumFields(utxo, 'V3 carrier')
+  const datum = await datumFields(utxo, 'V3 carrier')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 2) {
     throw new Error('V3 carrier datum is missing or malformed')
   }
@@ -167,7 +167,7 @@ function singletonByUnit(utxos, unit, label) {
 }
 
 async function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
-  const datum = datumFields(utxo, 'B2 control')
+  const datum = await datumFields(utxo, 'B2 control')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 6) {
     throw new Error('B2 control datum is missing or malformed')
   }
@@ -241,7 +241,7 @@ async function observeB2Control({
 }
 
 async function decodePoolDatum(utxo) {
-  const datum = datumFields(utxo, 'B1PrizePool')
+  const datum = await datumFields(utxo, 'B1PrizePool')
   if (!Array.isArray(datum.fields) || datum.fields.length !== 8) {
     throw new Error('B1PrizePool datum is missing or malformed')
   }
