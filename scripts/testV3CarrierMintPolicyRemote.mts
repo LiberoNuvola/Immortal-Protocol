@@ -84,8 +84,13 @@ async function main() {
 
   const walletUtxos = await lucid.wallet().getUtxos()
   const alternateSeed = walletUtxos.find(
-    (u) => u.txHash !== seed.txHash || u.outputIndex !== seed.outputIndex,
+    (u) =>
+      (u.txHash !== seed.txHash || u.outputIndex !== seed.outputIndex) &&
+      BigInt(u.assets?.lovelace ?? 0n) >= 2_000_000n,
   )
+  if (!alternateSeed) {
+    throw new Error('V3 mint policy negative test requires an alternate funded seed UTxO')
+  }
 
   await lucid
     .newTx()
