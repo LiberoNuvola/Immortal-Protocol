@@ -1335,6 +1335,10 @@ export async function mintSerialNFT(
   // Authoritative Issue admission
   // ----------------------------------------------------------
 
+  if (requireB2ControlBinding && !b2ControlUtxo) {
+    throw new Error('Authenticated Issue requires the exact B2 control reference before admission')
+  }
+
   let economicAdmission = opts.economicAdmission
 
   if (!economicAdmission && opts.authoritativeIssueAdmissionProvider) {
@@ -1342,6 +1346,9 @@ export async function mintSerialNFT(
       opts.authoritativeIssueAdmissionProvider,
       {
         counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
+        controlStateReference: b2ControlUtxo
+          ? b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
+          : '',
         poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
         liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
         classId: opts.issueClassEvidence.classId,
