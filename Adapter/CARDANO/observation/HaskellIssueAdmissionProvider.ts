@@ -160,6 +160,13 @@ export function createHaskellIssueAdmissionProvider(
       )
     }
 
+    const protectedCapitalProvenance: ProtectedCapitalProvenance = {
+      sourceReference: observed.carrierStateReference,
+      components: rawProtectedCapitalProvenance.components,
+      accountingInputs: rawProtectedCapitalProvenance.accountingInputs,
+      total: BigInt(String(rawProtectedCapitalProvenance.total)),
+    }
+
     const observation = {
       observationReference: observed.observationReference,
       observedAt: observed.observedAt,
