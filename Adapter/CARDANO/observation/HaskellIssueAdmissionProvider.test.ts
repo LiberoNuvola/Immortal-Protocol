@@ -71,6 +71,13 @@ function viabilityCertificate() {
     proofs: refs('proof:', ['VC1','VC2','VC3','VC4','VC5','VC6']),
     evidence: refs('evidence:', ['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10']),
     digest: '3'.repeat(64),
+    deploymentBinding: {
+      network: 'cardano-preprod',
+      carrierStateReference: carrier,
+      stateHash: '4'.repeat(64),
+      eevSnapshotReference: 'sha256:' + 'f'.repeat(64),
+      protectedCapitalSourceReference: carrier,
+    },
   }
 }
 
@@ -87,7 +94,17 @@ function producerScript() {
     candidateEEV: '100',
     availableExecutableLiquidity: '100',
     requiredImmediateLiquidity: '0',
-    candidateState: {},
+    candidateState: {
+      crystallizedLiabilities: '1',
+      unresolvedReserve: '1',
+      unresolvedTicketCount: '1',
+      safetyCapital: '2',
+      reserveProtection: '3',
+      mandatoryFutureCosts: '5',
+      classes: [],
+      control: { currentActiveClass: '0', highestClassEverActivated: '0' },
+      jackpot: { lockedAmount: '4', threshold: '0', status: 'inactive', cycle: '0' },
+    },
     protectedCapitalProvenance: {
       sourceType: 'V3_PRESTATE_CANONICAL_HASKELL',
       components: {
