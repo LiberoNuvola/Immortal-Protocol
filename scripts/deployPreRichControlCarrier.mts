@@ -9,8 +9,8 @@
  *   BLOCKFROST_PROJECT_ID (or VITE_BLOCKFROST_PROJECT_ID)
  *   DEPLOYER_MNEMONIC
  *   PREPROD_CONTROL_TOKEN_NAME_HEX
- *   PREPROD_CONTROL_SEED_TX_HASH
- *   PREPROD_CONTROL_SEED_OUTPUT_INDEX
+ *   PREPROD_CONTROL_SEED_TX_HASH (optional deterministic override)
+ *   PREPROD_CONTROL_SEED_OUTPUT_INDEX (optional deterministic override)
  *
  * Optional:
  *   PREPROD_CONTROL_LOVELACE (default 3000000)
@@ -59,6 +59,21 @@ function loadArtifact(path: string, label: string): ScriptEnvelope {
   return envelope
 }
 
+function deterministicSeed(utxos: UTxO[], minimumLovelace: bigint): UTxO {
+  const eligible = utxos
+    .filter((utxo) => (utxo.assets.lovelace ?? 0n) >= minimumLovelace)
+    .sort((a, b) =>
+      a.txHash.localeCompare(b.txHash) ||
+      a.outputIndex - b.outputIndex,
+    )
+  if (eligible.length === 0) {
+    throw new Error(
+      'PRE-RICH control deployment found no deterministic wallet seed UTxO with sufficient lovelace',
+    )
+  }
+  return eligible[0]
+}
+
 function selectedSeed(utxos: UTxO[], txHash: string, outputIndex: number): UTxO {
   const matches = utxos.filter(
     (utxo) =>
@@ -102,9 +117,9 @@ async function main() {
 
   const mnemonic = required('DEPLOYER_MNEMONIC')
   const tokenNameHex = required('PREPROD_CONTROL_TOKEN_NAME_HEX').toLowerCase()
-  const seedTxHash = required('PREPROD_CONTROL_SEED_TX_HASH')
-  const seedIndexRaw = required('PREPROD_CONTROL_SEED_OUTPUT_INDEX')
-  const seedIndex = Number(seedIndexRaw)
+  const seedTxHash = (process.env.PREPROD_CONTROL_SEED_TX_HASH ?? '').trim()
+  const seedIndexRaw = (process.env.PREPROD_CONTROL_SEED_OUTPUT_INDEX ?? '').trim()
+  const seedIndex = seedIndexRaw === '' ? null : Number(seedIndexRaw)
 
   if (
     !/^[0-9a-f]+$/i.test(tokenNameHex) ||
@@ -115,11 +130,11 @@ async function main() {
       'PREPROD_CONTROL_TOKEN_NAME_HEX must be an even-length hex string representing at most 32 bytes',
     )
   }
-  if (!/^[0-9a-f]{64}$/i.test(seedTxHash)) {
-    throw new Error('PREPROD_CONTROL_SEED_TX_HASH must be a 32-byte transaction hash')
+  if (seedTxHash !== '' && !/^[0-9a-f]{64}$/i.test(seedTxHash)) {
+    throw new Error('PREPROD_CONTROL_SEED_TX_HASH must be a 32-byte transaction hash when supplied')
   }
-  if (!Number.isInteger(seedIndex) || seedIndex < 0) {
-    throw new Error('PREPROD_CONTROL_SEED_OUTPUT_INDEX must be a non-negative integer')
+  if (seedIndex !== null && (!Number.isInteger(seedIndex) || seedIndex < 0)) {
+    throw new Error('PREPROD_CONTROL_SEED_OUTPUT_INDEX must be a non-negative integer when supplied')
   }
 
   const provider = new Blockfrost(
@@ -130,11 +145,15 @@ async function main() {
   lucid.selectWallet.fromSeed(mnemonic)
 
   const signerAddress = await lucid.wallet().address()
-  const seed = selectedSeed(
-    await lucid.wallet().getUtxos(),
-    seedTxHash,
-    seedIndex,
-  )
+  if (lovelace <= 0n) {
+    throw new Error('PREPROD_CONTROL_LOVELACE must be positive')
+  }
+
+  const walletUtxos = await lucid.wallet().getUtxos()
+  const seed =
+    seedTxHash === '' || seedIndex === null
+      ? deterministicSeed(walletUtxos, lovelace + 2_000_000n)
+      : selectedSeed(walletUtxos, seedTxHash, seedIndex)
 
   const policyFactory = loadArtifact(
     resolve(
