@@ -3,7 +3,7 @@
 **Date:** 2026-10-09  
 **Active branch:** `work/immortal-green-closure`  
 **Initial reconciliation tip:** `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`  
-**Current verified branch tip at this refresh:** `b1af5d801cd4b9b0d23a28e5139857727894571d`
+**Current verified branch tip at this refresh:** `5bbea55f0cbef071f8cc031e44ab3923ebf6ac85`
 
 ## 1. Repository topology truth
 
@@ -265,3 +265,24 @@ Current branch head is `b1af5d801cd4b9b0d23a28e5139857727894571d`. GitHub report
 - Blockfrost proxy exposure/hardening decision.
 
 No V3 economic semantics, Reveal semantics, EEV perimeter, B3/Materios semantics or Beacon-4 research status were changed by this refresh.
+
+## 2026-10-09 — First-user Issue wiring closure pass
+
+The browser-to-authority path is now materially wired without moving economic authority into the browser:
+
+- `src/remoteAuthoritativeIssueAdmissionProvider.ts` sends only runtime Issue coordinates to a server-side authority endpoint and revives the returned witness; it does not derive EEV, ProtectedCapital, viability or Gate flags.
+- `relayer/issueAuthorityServer.js` composes the existing `createPreprodAuthoritativeIssueProvider()` with a Preprod Blockfrost observation client, exact deployment identities, the signed authority source and the canonical Haskell `issue-admission` producer. The endpoint has an exact CORS origin requirement and returns only an admitted witness.
+- `src/main.ts` now uses the remote provider from the BUY path, observes the live V3 carrier for class evidence, loads the deployment-provided V3 factory, verifies that parameterization reconstructs the configured carrier address, and calls `mintSerialNFTWithAuthoritativeAdmission()`.
+- `src/mint.ts` now derives the V1 expiry issuance snapshot only after authoritative Issue admission, using the same live pre-state plus `preEEV`; no local valuation is substituted.
+
+### New deployment dependency
+
+The repository still contains no V3 carrier validator factory under `src/plutusScripts`. The browser therefore loads the deployment-provided factory through `VITE_V3_CARRIER_FACTORY_URL` and verifies the derived validator address before signing. This is deliberately deployment-bound; an old or mismatched factory cannot be silently accepted.
+
+### Current CI
+
+Current head `5bbea55f0cbef071f8cc031e44ab3923ebf6ac85` has multiple GitHub checks queued and GitGuardian in progress at the time of this refresh. No GREEN claim is made until exact-head checks complete.
+
+### Security boundary
+
+The new Issue authority endpoint is a transport/execution surface, not an authentication system: CORS restricts browser origins but does not constitute caller authentication. Operational deployment hardening (abuse/rate-limit policy, network exposure and secret management) remains separate from economic correctness.
