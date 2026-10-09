@@ -251,6 +251,9 @@ export async function obtainAuthoritativeIssueAdmission(
     }
   }
   const vcBinding = vc.deploymentBinding
+  if (!vcBinding) {
+    throw new Error('authoritative Issue witness requires viability deployment binding')
+  }
   if (
     vcBinding.network !== 'cardano-preprod' ||
     vcBinding.carrierStateReference !== witness.v3CarrierBinding.carrierStateReference ||
