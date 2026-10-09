@@ -113,8 +113,8 @@ async function main() {
     throw new Error('V3 mint policy accepted invalid case: ' + label)
   }
 
-  if (alternateSeed) {
-    await expectRejected('unconsumed configured seed', () =>
+  {
+    await expectRejected('unconsumed configured seed', async () =>
       lucid
         .newTx()
         .collectFrom([alternateSeed])
@@ -123,15 +123,13 @@ async function main() {
         .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
         .complete({ localUPLCEval: true }),
     )
-  } else {
-    console.warn('No alternate wallet UTxO available; seed-consumption negative case was not exercised.')
   }
 
   const wrongUnit =
     policyId +
     (tokenNameHex === '00' ? '01' : '00')
 
-  await expectRejected('wrong token name', () =>
+  await expectRejected('wrong token name', async () =>
     lucid
       .newTx()
       .collectFrom([seed])
@@ -141,7 +139,7 @@ async function main() {
       .complete({ localUPLCEval: true }),
   )
 
-  await expectRejected('wrong mint quantity', () =>
+  await expectRejected('wrong mint quantity', async () =>
     lucid
       .newTx()
       .collectFrom([seed])
