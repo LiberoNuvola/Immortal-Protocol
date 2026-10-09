@@ -16,6 +16,12 @@ function positiveInteger(value, field) {
   }
 }
 
+function requiredDigest(value, field) {
+  const digest = requiredString(value, field)
+  if (!/^[0-9a-fA-F]{64}$/.test(digest)) throw new Error(field + ' must be a 32-byte hex digest')
+  return digest.toLowerCase()
+}
+
 /**
  * Sign the already-computed authoritative Issue witness.
  *
@@ -80,6 +86,8 @@ function signIssueAuthorityEnvelope({
   const payload = {
     schema: 'PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1',
     authorityVersion: '1',
+    actionClass: requiredString(witness.actionClass, 'actionClass'),
+    stateHash: requiredDigest(witness.stateHash, 'stateHash'),
     counterInputReference: requiredString(witness.counterInputReference, 'counterInputReference'),
     controlStateReference: requiredString(witness.controlStateReference, 'controlStateReference'),
     poolInputReference: requiredString(witness.authenticatedPoolInputReference, 'poolInputReference'),
