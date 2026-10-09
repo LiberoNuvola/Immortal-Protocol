@@ -163,9 +163,8 @@ function singletonByUnit(utxos, unit, label) {
 }
 
 function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
-  if (
-    false
-  ) {
+  const datum = datumFields(utxo, 'B2 control')
+  if (!Array.isArray(datum.fields) || datum.fields.length !== 6) {
     throw new Error('B2 control datum is missing or malformed')
   }
   const asInt = (v, field) => {
@@ -183,7 +182,7 @@ function decodeB2ControlDatum(utxo, expectedPolicyId, expectedTokenNameHex) {
     }
     return v.toLowerCase()
   }
-  const fields = datumFields(utxo, 'B2 control').fields
+  const fields = datum.fields
   const currentActiveClass = asInt(fields[0], 'currentActiveClass')
   const highestClassEverActivated = asInt(fields[1], 'highestClassEverActivated')
   const stateVersion = asInt(fields[2], 'stateVersion')
