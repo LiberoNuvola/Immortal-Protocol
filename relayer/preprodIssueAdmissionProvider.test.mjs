@@ -10,7 +10,7 @@ const deployment = {
   carrierPolicyId: 'carrierpolicy',
   carrierTokenNameHex: '43415252494552',
   controlAddress: 'addr_test_control',
-  controlPolicyId: 'controlpolicy',
+  controlPolicyId: 'ab'.repeat(28),
   controlTokenNameHex: '434f4e54524f4c',
 }
 
@@ -96,5 +96,5 @@ const context = await producer({
 
 assert.equal(context.decisionInput.classId, 0n)
 assert.equal(context.decisionInput.availableExecutableLiquidity, 100_000n)
-assert.equal(context.controlStateReference, 'e'.repeat(64) + '#3')
+assert.equal(context.controlStateReference, 'cardano:tx/' + 'e'.repeat(64) + '#3')
 console.log('preprodIssueAdmissionProvider: PASS')
