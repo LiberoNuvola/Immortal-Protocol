@@ -114,6 +114,7 @@ function signIssueAuthorityEnvelope({
 
   verifySignedIssueAuthorityEnvelope(envelope, publicKey, {
     counterInputReference: payload.counterInputReference,
+    controlStateReference: payload.controlStateReference,
     poolInputReference: payload.poolInputReference,
     carrierStateReference: payload.carrierStateReference,
     classId: witness.issueClassId,
