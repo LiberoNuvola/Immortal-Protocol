@@ -70,7 +70,7 @@ describe('Preprod authoritative Issue provider composition', () => {
 
     expect(() =>
       createPreprodAuthoritativeIssueProvider(config),
-    ).not.toThrow()
+    ).toThrow('controlAddress is required')
   })
 
   it('requires the canonical Haskell Issue producer command', () => {
