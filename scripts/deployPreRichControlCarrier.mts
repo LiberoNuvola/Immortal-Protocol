@@ -138,7 +138,7 @@ async function main() {
     throw new Error('deploying wallet has no payment key hash')
   }
   const controlAuthorityPkh =
-    (process.env.PREPROD_CONTROL_AUTHORITY_PKH ?? signerPaymentPkh).trim()
+    (process.env.PREPROD_CONTROL_AUTHORITY_PKH?.trim() || signerPaymentPkh).trim()
   if (!/^[0-9a-fA-F]{56}$/.test(controlAuthorityPkh)) {
     throw new Error('PREPROD_CONTROL_AUTHORITY_PKH must be a 28-byte payment key hash')
   }
