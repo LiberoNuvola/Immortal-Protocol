@@ -43,10 +43,10 @@ const viabilityCertificate = {
   digest: '2'.repeat(64),
   deploymentBinding: {
     network: 'cardano-preprod',
-    carrierStateReference: 'cardano:tx/' + refs.carrier,
+    carrierStateReference: refs.carrier,
     stateHash: '3'.repeat(64),
     eevSnapshotReference: 'sha256:' + 'c'.repeat(64),
-    protectedCapitalSourceReference: 'cardano:tx/' + refs.carrier,
+    protectedCapitalSourceReference: refs.carrier,
   },
 }
 const witness = {
@@ -55,16 +55,16 @@ const witness = {
   decisionReference: 'decision-1',
   authoritativeObservationReference: 'observation-1',
   counterInputReference: refs.counter,
-  controlStateReference: 'cardano:tx/' + refs.control,
+  controlStateReference: refs.control,
   authenticatedPoolInputReference: refs.pool,
   authenticatedPoolUsdmValue: 100n,
   eev: 100n,
   requiredImmediateLiquidity: 0n,
   executableLiquidityObservation: { observedAt: BigInt(Date.now()) },
-  v3CarrierBinding: { carrierStateReference: 'cardano:tx/' + refs.carrier },
+  v3CarrierBinding: { carrierStateReference: refs.carrier },
   eevQualification,
   protectedCapitalProvenance: {
-    sourceReference: 'cardano:tx/' + refs.carrier,
+    sourceReference: refs.carrier,
     components: {
       crystallizedLiabilities: '1',
       worstCaseExposure: '2',
@@ -94,9 +94,9 @@ const envelope = signIssueAuthorityEnvelope({
 })
 verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   counterInputReference: refs.counter,
-  controlStateReference: 'cardano:tx/' + refs.control,
+  controlStateReference: refs.control,
   poolInputReference: refs.pool,
-  carrierStateReference: 'cardano:tx/' + refs.carrier,
+  carrierStateReference: refs.carrier,
   classId: 0,
   price: 1,
   directUsdmUnit: 'd'.repeat(56),
@@ -112,7 +112,7 @@ try {
         ...witness.viabilityCertificate,
         deploymentBinding: {
           ...witness.viabilityCertificate.deploymentBinding,
-          carrierStateReference: 'cardano:tx/' + '9'.repeat(64) + '#0',
+          carrierStateReference: '9'.repeat(64) + '#0',
         },
       },
     },
@@ -135,7 +135,7 @@ try {
   verifySignedIssueAuthorityEnvelope(badSchema, publicKeyPem, {
     counterInputReference: refs.counter,
     poolInputReference: refs.pool,
-    carrierStateReference: 'cardano:tx/' + refs.carrier,
+    carrierStateReference: refs.carrier,
     classId: 0n,
     price: 1n,
     directUsdmUnit: 'd'.repeat(56),
