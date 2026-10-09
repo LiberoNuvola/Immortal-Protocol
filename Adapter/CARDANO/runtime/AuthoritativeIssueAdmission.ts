@@ -78,6 +78,13 @@ export type IssueViabilityCertificateEvidence = {
     IssueEvidenceArtifact
   >
   digest: string
+  deploymentBinding: {
+    network: 'cardano-preprod'
+    carrierStateReference: string
+    stateHash: string
+    eevSnapshotReference: string
+    protectedCapitalSourceReference: string
+  }
 }
 
 export type IssueAdmissionV3CarrierBinding = {
@@ -87,6 +94,14 @@ export type IssueAdmissionV3CarrierBinding = {
 
 export type AuthoritativeIssueAdmissionWitness =
   EconomicAdmissionWitness & {
+    counterInputReference: string
+    preEEV: bigint
+    issueClassId: bigint
+    issuePrice: bigint
+    truthVerified: true
+    eevFresh: true
+    obligationsComplete: true
+    allOmegaSuccessorsCertified: true
     v3CarrierBinding: IssueAdmissionV3CarrierBinding
     eevQualification: IssueEevQualificationEvidence
     protectedCapitalProvenance: IssueProtectedCapitalProvenance
@@ -108,6 +123,8 @@ export type IssueAdmissionRuntimeInputs = {
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
+  classId: bigint
+  price: bigint
   carrierStateReference?: string
 }
 
@@ -252,8 +269,61 @@ export function assertAuthoritativeIssueAdmissionWitness(
   if (!carrier.candidateState || typeof carrier.candidateState !== 'object') {
     throw new Error('v3CarrierBinding.candidateState is required')
   }
-  if (pc.sourceReference !== carrier.carrierStateReference) {
-    throw new Error('ProtectedCapital provenance is not bound to the V3 carrier')
+  requiredString(candidate.counterInputReference, 'counterInputReference')
+  const preEEV = candidate.preEEV
+  if (typeof preEEV !== 'bigint' || preEEV < 0n) {
+    throw new Error('authoritative Issue witness pre-EEV is invalid')
+  }
+  const issueClassId = candidate.issueClassId
+  const issuePrice = candidate.issuePrice
+  if (typeof issueClassId !== 'bigint' || issueClassId < 0n) {
+    throw new Error('authoritative Issue witness classId is invalid')
+  }
+  if (typeof issuePrice !== 'bigint' || issuePrice <= 0n) {
+    throw new Error('authoritative Issue witness price is invalid')
+  }
+  for (const field of [
+    'truthVerified',
+    'eevFresh',
+    'obligationsComplete',
+    'allOmegaSuccessorsCertified',
+  ] as const) {
+    if (candidate[field] !== true) {
+      throw new Error('authoritative Issue witness ' + field + ' must be true')
+    }
+  }
+  const vcBinding = vc.deploymentBinding
+  requiredString(vcBinding.network, 'viabilityCertificate.deploymentBinding.network')
+  requiredString(
+    vcBinding.carrierStateReference,
+    'viabilityCertificate.deploymentBinding.carrierStateReference',
+  )
+  assertDigest(
+    vcBinding.stateHash,
+    'viabilityCertificate.deploymentBinding.stateHash',
+  )
+  requiredString(
+    vcBinding.eevSnapshotReference,
+    'viabilityCertificate.deploymentBinding.eevSnapshotReference',
+  )
+  requiredString(
+    vcBinding.protectedCapitalSourceReference,
+    'viabilityCertificate.deploymentBinding.protectedCapitalSourceReference',
+  )
+  if (vcBinding.network !== 'cardano-preprod') {
+    throw new Error('viabilityCertificate deployment network must be cardano-preprod')
+  }
+  if (vcBinding.carrierStateReference !== carrier.carrierStateReference) {
+    throw new Error('viability certificate carrier binding mismatch')
+  }
+  if (vcBinding.stateHash !== String(candidate.stateHash)) {
+    throw new Error('viability certificate state hash binding mismatch')
+  }
+  if (vcBinding.eevSnapshotReference !== eev.snapshotReference) {
+    throw new Error('viability certificate EEV snapshot binding mismatch')
+  }
+  if (vcBinding.protectedCapitalSourceReference !== pc.sourceReference) {
+    throw new Error('viability certificate ProtectedCapital source binding mismatch')
   }
 }
 
@@ -277,6 +347,18 @@ export async function resolveAuthoritativeIssueAdmission(
 
   const witness = await source.provider(inputs)
   assertAuthoritativeIssueAdmissionWitness(witness)
+  if (witness.counterInputReference !== inputs.counterInputReference) {
+    throw new Error('authoritative Issue witness Counter reference does not match runtime input')
+  }
+  if (witness.preEEV < 0n) {
+    throw new Error('authoritative Issue witness pre-EEV must be non-negative')
+  }
+  if (witness.issueClassId !== inputs.classId) {
+    throw new Error('authoritative Issue witness classId does not match runtime input')
+  }
+  if (witness.issuePrice !== inputs.price) {
+    throw new Error('authoritative Issue witness price does not match runtime input')
+  }
 
   assertEconomicAdmission(
     witness,
