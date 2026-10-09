@@ -52,6 +52,17 @@ function signIssueAuthorityEnvelope({
   const preEEV = BigInt(String(witness.preEEV))
   if (preEEV < 0n) throw new Error('witness preEEV must be non-negative')
 
+  for (const [name, value] of [
+    ['truthVerified', witness.truthVerified],
+    ['eevFresh', witness.eevFresh],
+    ['obligationsComplete', witness.obligationsComplete],
+    ['allOmegaSuccessorsCertified', witness.allOmegaSuccessorsCertified],
+  ]) {
+    if (value !== true) {
+      throw new Error('witness ' + name + ' must be true before signing')
+    }
+  }
+
   const eevQualification = witness.eevQualification
   const protectedCapitalProvenance = witness.protectedCapitalProvenance
   const viabilityCertificate = witness.viabilityCertificate
@@ -81,10 +92,10 @@ function signIssueAuthorityEnvelope({
     preEEV: String(preEEV),
     candidateEEV: String(witness.eev),
     requiredImmediateLiquidity: String(witness.requiredImmediateLiquidity),
-    truthVerified: true,
-    eevFresh: true,
-    obligationsComplete: true,
-    allOmegaSuccessorsCertified: true,
+    truthVerified: witness.truthVerified,
+    eevFresh: witness.eevFresh,
+    obligationsComplete: witness.obligationsComplete,
+    allOmegaSuccessorsCertified: witness.allOmegaSuccessorsCertified,
     observedAt: String(observedAt),
     freshnessWindow: String(freshness),
     verificationReference: requiredString(eevQualification.verificationReference, 'eevQualification.verificationReference'),
@@ -104,8 +115,8 @@ function signIssueAuthorityEnvelope({
     counterInputReference: payload.counterInputReference,
     poolInputReference: payload.poolInputReference,
     carrierStateReference: payload.carrierStateReference,
-    classId: Number(witness.issueClassId),
-    price: Number(witness.issuePrice),
+    classId: witness.issueClassId,
+    price: witness.issuePrice,
     directUsdmUnit: unit,
     observationReference: payload.observationReference,
     observedAt,
