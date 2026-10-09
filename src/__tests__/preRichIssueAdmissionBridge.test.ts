@@ -94,7 +94,7 @@ function viabilityCertificate() {
     },
     digest: '9'.repeat(64),
     deploymentBinding: {
-      network: 'cardano-preprod',
+      network: 'cardano-preprod' as const,
       carrierStateReference: 'd'.repeat(64) + '#2',
       stateHash: '1'.repeat(64),
       eevSnapshotReference: 'snapshot://issue/1',
@@ -283,7 +283,7 @@ describe('PRE-RICH Issue admission bridge', () => {
   it('rejects a witness with a downgraded authority flag', async () => {
     const bad = { ...witness(), eevFresh: false }
     await expect(obtainAuthoritativeIssueAdmission(
-      async () => bad,
+      async () => bad as any,
       inputs,
       classEvidence,
     )).rejects.toThrow(/not fully verified/)
