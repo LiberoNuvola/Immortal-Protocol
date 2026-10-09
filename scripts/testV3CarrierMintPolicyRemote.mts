@@ -92,21 +92,26 @@ async function main() {
     throw new Error('V3 mint policy negative test requires an alternate funded seed UTxO')
   }
 
+  const walletAddress = await lucid.wallet().address()
+
   await lucid
     .newTx()
     .collectFrom([seed])
     .mintAssets({ [carrierUnit]: 1n }, Data.void())
     .attach.MintingPolicy(mintPolicy)
-    .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
+    .pay.ToAddress(walletAddress, { lovelace: 2_000_000n, [carrierUnit]: 1n })
     .complete({ localUPLCEval: true })
 
+  const scriptFailure = /script|evaluat|redeemer|validator|policy|trace|phase/i
   const expectRejected = async (label: string, build: () => Promise<unknown>) => {
     try {
       await build()
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      if (!/(uplc|plutus|validator|minting policy|script|redeemer|evaluation)/i.test(message)) {
-        throw new Error('V3 mint policy negative case failed for a non-script reason (' + label + '): ' + message)
+      if (!scriptFailure.test(message)) {
+        throw new Error(
+          'V3 mint policy negative case "' + label + '" failed for a non-script reason: ' + message,
+        )
       }
       return
     }
@@ -120,7 +125,7 @@ async function main() {
         .collectFrom([alternateSeed])
         .mintAssets({ [carrierUnit]: 1n }, Data.void())
         .attach.MintingPolicy(mintPolicy)
-        .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
+        .pay.ToAddress(walletAddress, { lovelace: 2_000_000n, [carrierUnit]: 1n })
         .complete({ localUPLCEval: true }),
     )
   }
@@ -135,7 +140,7 @@ async function main() {
       .collectFrom([seed])
       .mintAssets({ [wrongUnit]: 1n }, Data.void())
       .attach.MintingPolicy(mintPolicy)
-      .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [wrongUnit]: 1n })
+      .pay.ToAddress(walletAddress, { lovelace: 2_000_000n, [wrongUnit]: 1n })
       .complete({ localUPLCEval: true }),
   )
 
@@ -145,7 +150,7 @@ async function main() {
       .collectFrom([seed])
       .mintAssets({ [carrierUnit]: 2n }, Data.void())
       .attach.MintingPolicy(mintPolicy)
-      .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 2n })
+      .pay.ToAddress(walletAddress, { lovelace: 2_000_000n, [carrierUnit]: 2n })
       .complete({ localUPLCEval: true }),
   )
 
