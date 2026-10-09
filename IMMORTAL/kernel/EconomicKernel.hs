@@ -91,6 +91,7 @@ classSaleable s cid =
     Just c ->
          cid <= ecsCurrentActiveClass (v3Control s)
       && tcsIssued c < tcsCap c
+      && tcsSaleable c
   where
     findClass [] _ = Nothing
     findClass (c:cs) x
