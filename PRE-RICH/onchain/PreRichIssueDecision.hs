@@ -49,6 +49,10 @@ data IssueDecision = IssueDecision
   , idCandidateEEV :: Integer
   , idAvailableExecutableLiquidity :: Integer
   , idRequiredImmediateLiquidity :: Integer
+  , idTruthVerified :: Bool
+  , idEEVFresh :: Bool
+  , idObligationsComplete :: Bool
+  , idAllOmegaSuccessorsCertified :: Bool
   , idCandidateState :: V3EconomicState
   }
 
@@ -155,6 +159,11 @@ produceIssueDecision input =
                   peaAvailableExecutableLiquidity admitted
               , idRequiredImmediateLiquidity =
                   peaRequiredImmediateLiquidity admitted
+              , idTruthVerified = idiTruthVerified input
+              , idEEVFresh = idiEEVFresh input
+              , idObligationsComplete = idiObligationsComplete input
+              , idAllOmegaSuccessorsCertified =
+                  idiAllOmegaSuccessorsCertified input
               , idCandidateState = peaCandidateV3 admitted
               })
 
