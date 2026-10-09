@@ -1,6 +1,7 @@
 const { generateKeyPairSync } = require('node:crypto')
 const { signIssueAuthorityEnvelope } = require('./preprodIssueAuthorityEnvelope')
 const { verifySignedIssueAuthorityEnvelope } = require('./signedIssueAuthority')
+const assert = require('node:assert/strict')
 
 const refs = {
   counter: 'b'.repeat(64) + '#0',
