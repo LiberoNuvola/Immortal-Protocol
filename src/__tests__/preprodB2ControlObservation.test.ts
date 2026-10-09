@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Constr, Data } from 'lucid-cardano'
+import { Constr, Data, type UTxO } from 'lucid-cardano'
 import { observePreprodB2Control } from '../../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 
 const policyId = 'a'.repeat(56)
@@ -27,9 +27,9 @@ function datum(
   )
 }
 
-function lucidWith(utxos: unknown[]) {
+function lucidWith(utxos: UTxO[]) {
   return {
-    utxosAt: async (_address: string) => utxos,
+    utxosAt: async (_address: string): Promise<UTxO[]> => utxos,
   }
 }
 
