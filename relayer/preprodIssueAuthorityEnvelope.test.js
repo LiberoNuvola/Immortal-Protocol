@@ -94,4 +94,39 @@ verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   observedAt: witness.executableLiquidityObservation.observedAt,
   currentObservedAt: now,
 })
-console.log('PASS: signed Issue authority envelope self-verifies')
+const badSchema = {
+  payload: { ...envelope.payload, schema: 'OTHER' },
+  signature: envelope.signature,
+}
+try {
+  verifySignedIssueAuthorityEnvelope(badSchema, publicKeyPem, {
+    counterInputReference: refs.counter,
+    poolInputReference: refs.pool,
+    carrierStateReference: 'cardano:tx/' + refs.carrier,
+    classId: 0,
+    price: 1,
+    directUsdmUnit: 'd'.repeat(56),
+    observationReference: 'observation-1',
+    observedAt: witness.executableLiquidityObservation.observedAt,
+    currentObservedAt: now,
+  })
+  throw new Error('FAIL: invalid Issue authority schema was accepted')
+} catch (error) {
+  if (!String(error.message).includes('schema is invalid')) throw error
+}
+
+try {
+  signIssueAuthorityEnvelope({
+    witness: { ...witness, preEEV: undefined },
+    directUsdmUnit: 'd'.repeat(56),
+    freshnessWindow: 300000,
+    privateKeyPem,
+    publicKeyPem,
+    currentObservedAt: now,
+  })
+  throw new Error('FAIL: missing witness preEEV was accepted')
+} catch (error) {
+  if (!String(error.message).includes('witness preEEV is required')) throw error
+}
+
+console.log('PASS: signed Issue authority envelope self-verifies and rejects malformed authority')
