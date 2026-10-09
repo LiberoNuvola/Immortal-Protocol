@@ -59,6 +59,29 @@ function validateViabilityCertificate(value) {
     requiredString(certificate[field], 'viabilityCertificate.' + field)
   }
   const digest = requiredDigest(certificate.digest, 'viabilityCertificate.digest')
+  const deploymentBinding = requiredObject(
+    certificate.deploymentBinding,
+    'viabilityCertificate.deploymentBinding',
+  )
+  for (const field of [
+    'network',
+    'carrierStateReference',
+    'stateHash',
+    'eevSnapshotReference',
+    'protectedCapitalSourceReference',
+  ]) {
+    requiredString(
+      deploymentBinding[field],
+      'viabilityCertificate.deploymentBinding.' + field,
+    )
+  }
+  if (deploymentBinding.network !== 'cardano-preprod') {
+    throw new Error('viabilityCertificate deployment network must be cardano-preprod')
+  }
+  const deploymentStateHash = requiredDigest(
+    deploymentBinding.stateHash,
+    'viabilityCertificate.deploymentBinding.stateHash',
+  )
 
   const proofs = requiredObject(certificate.proofs, 'viabilityCertificate.proofs')
   const normalizedProofs = {}
@@ -111,6 +134,14 @@ function validateViabilityCertificate(value) {
     proofs: Object.freeze(normalizedProofs),
     evidence: Object.freeze(normalizedEvidence),
     digest,
+    deploymentBinding: Object.freeze({
+      network: deploymentBinding.network,
+      carrierStateReference: deploymentBinding.carrierStateReference,
+      stateHash: deploymentStateHash,
+      eevSnapshotReference: deploymentBinding.eevSnapshotReference,
+      protectedCapitalSourceReference:
+        deploymentBinding.protectedCapitalSourceReference,
+    }),
   })
 }
 
@@ -370,6 +401,28 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   }
   if (protectedCapitalProvenance.sourceReference !== payload.carrierStateReference) {
     throw new Error('ProtectedCapital provenance is not bound to the V3 carrier state')
+  }
+  const vcBinding = viabilityCertificate.deploymentBinding
+  if (vcBinding.carrierStateReference !== payload.carrierStateReference) {
+    throw new Error('Viability certificate carrier binding mismatch')
+  }
+  if (vcBinding.stateHash !== requiredDigest(payload.stateHash, 'stateHash')) {
+    throw new Error('Viability certificate state hash binding mismatch')
+  }
+  if (
+    vcBinding.eevSnapshotReference !==
+    requiredString(
+      payload.eevQualification.snapshotReference,
+      'eevQualification.snapshotReference',
+    )
+  ) {
+    throw new Error('Viability certificate EEV snapshot binding mismatch')
+  }
+  if (
+    vcBinding.protectedCapitalSourceReference !==
+    protectedCapitalProvenance.sourceReference
+  ) {
+    throw new Error('Viability certificate ProtectedCapital source binding mismatch')
   }
 
   const values = {
