@@ -92,6 +92,13 @@ function viabilityCertificate() {
       E10: evidence('E10', '0'),
     },
     digest: '9'.repeat(64),
+    deploymentBinding: {
+      network: 'cardano-preprod',
+      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      stateHash: '1'.repeat(64),
+      eevSnapshotReference: 'snapshot://issue/1',
+      protectedCapitalSourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    },
   }
 }
 
@@ -236,6 +243,16 @@ describe('PRE-RICH Issue admission bridge', () => {
       inputs,
       classEvidence,
     )).rejects.toThrow(/not fully verified/)
+  })
+
+  it('rejects a viability certificate bound to another deployment state', async () => {
+    const bad = witness()
+    ;(bad.viabilityCertificate.deploymentBinding as any).stateHash = '8'.repeat(64)
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/Viability certificate is bound to a different deployment\/state/)
   })
 
   it('rejects an EEV certificate for a different profile', async () => {
