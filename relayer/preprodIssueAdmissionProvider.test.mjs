@@ -9,6 +9,9 @@ const deployment = {
   carrierAddress: 'addr_test_carrier',
   carrierPolicyId: 'carrierpolicy',
   carrierTokenNameHex: '43415252494552',
+  controlAddress: 'addr_test_control',
+  controlPolicyId: 'controlpolicy',
+  controlTokenNameHex: '434f4e54524f4c',
 }
 
 const fakeLucid = {
@@ -25,6 +28,16 @@ const fakeLucid = {
           [deployment.directUsdmUnit]: 1_000_000_000n,
         },
         datum: { fields: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] },
+      }]
+    }
+    if (address === deployment.controlAddress) {
+      return [{
+        txHash: 'e'.repeat(64),
+        outputIndex: 3,
+        assets: { [deployment.controlPolicyId + deployment.controlTokenNameHex]: 1n },
+        datum: {
+          fields: [0n, 0n, 0n, 0n, deployment.controlPolicyId, deployment.controlTokenNameHex],
+        },
       }]
     }
     if (address === deployment.carrierAddress) {
@@ -55,6 +68,7 @@ const producer = createPreprodIssueObservationProducerFromLucid({ lucid: fakeLuc
 const context = await producer({
   counterInputReference: 'a'.repeat(64) + '#0',
   poolInputReference: 'b'.repeat(64) + '#1',
+  controlStateReference: 'e'.repeat(64) + '#3',
   classId: 0,
   price: 1,
   observedAt: 1,
