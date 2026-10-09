@@ -14,6 +14,7 @@
  *
  * Optional:
  *   PREPROD_CONTROL_LOVELACE (default 3000000)
+ *   PREPROD_CONTROL_AUTHORITY_PKH (defaults to deployer payment key hash)
  *
  * The control token name is intentionally deployment-supplied. It is not
  * hard-coded in source.
@@ -27,6 +28,8 @@ import {
   Lucid,
   mintingPolicyToId,
   validatorToAddress,
+  getAddressDetails,
+  PubKeyHash,
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
@@ -145,6 +148,16 @@ async function main() {
   lucid.selectWallet.fromSeed(mnemonic)
 
   const signerAddress = await lucid.wallet().address()
+  const signerDetails = getAddressDetails(signerAddress)
+  const signerPaymentPkh = signerDetails.paymentCredential?.hash
+  if (!signerPaymentPkh) {
+    throw new Error('deploying wallet has no payment key hash')
+  }
+  const controlAuthorityPkh =
+    (process.env.PREPROD_CONTROL_AUTHORITY_PKH ?? signerPaymentPkh).trim()
+  if (!/^[0-9a-fA-F]{56}$/.test(controlAuthorityPkh)) {
+    throw new Error('PREPROD_CONTROL_AUTHORITY_PKH must be a 28-byte payment key hash')
+  }
 
   const lovelace = BigInt(
     process.env.PREPROD_CONTROL_LOVELACE ?? '3000000',
@@ -193,6 +206,7 @@ async function main() {
     script: applyParamsToScript(carrierFactory.cborHex, [
       policyId,
       tokenNameHex,
+      controlAuthorityPkh,
     ]),
   }
 
@@ -267,6 +281,7 @@ async function main() {
       transitionNonce: '0',
     },
     signerAddress,
+    controlAuthorityPkh,
     role: 'authenticated PRE-RICH application control state',
   }
 
