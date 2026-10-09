@@ -78,6 +78,13 @@ function viabilityCertificate() {
     proofs,
     evidence,
     digest: 'f'.repeat(64),
+    deploymentBinding: {
+      network: 'cardano-preprod',
+      carrierStateReference: 'c'.repeat(64) + '#2',
+      stateHash: '4'.repeat(64),
+      eevSnapshotReference: 'snapshot://eev/123',
+      protectedCapitalSourceReference: 'c'.repeat(64) + '#2',
+    },
   }
 }
 
