@@ -229,6 +229,15 @@ describe('PRE-RICH Issue admission bridge', () => {
     ).toThrow('action fingerprint does not match canonical evidence')
   })
 
+  it('rejects a witness with a downgraded authority flag', async () => {
+    const bad = { ...witness(), eevFresh: false }
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/not fully verified/)
+  })
+
   it('rejects an EEV certificate for a different profile', async () => {
     const bad = witness()
     ;(bad.eevQualification.deploymentApproval as any).profileVersion = 'OTHER-EEV-PROFILE'
