@@ -99,6 +99,10 @@ function witness(): AuthoritativeIssueAdmissionWitness {
   return {
     gateVersion: 'economic-gate-v1',
     admitted: true,
+    counterInputReference: counter,
+    preEEV: 1000n,
+    issueClassId: 0n,
+    issuePrice: 1n,
     decisionReference: 'decision:issue:1',
     authoritativeObservationReference: 'observation:issue:1',
     stateHash: '1'.repeat(64),
