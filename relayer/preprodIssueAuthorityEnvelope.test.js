@@ -52,6 +52,13 @@ const viabilityCertificate = {
 const witness = {
   admitted: true,
   actionClass: 'Issue',
+  preEEV: 100n,
+  issueClassId: 0n,
+  issuePrice: 1n,
+  truthVerified: true,
+  eevFresh: true,
+  obligationsComplete: true,
+  allOmegaSuccessorsCertified: true,
   decisionReference: 'decision-1',
   authoritativeObservationReference: 'observation-1',
   counterInputReference: refs.counter,
