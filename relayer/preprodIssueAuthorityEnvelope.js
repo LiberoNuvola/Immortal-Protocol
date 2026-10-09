@@ -81,6 +81,7 @@ function signIssueAuthorityEnvelope({
     schema: 'PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1',
     authorityVersion: '1',
     counterInputReference: requiredString(witness.counterInputReference, 'counterInputReference'),
+    controlStateReference: requiredString(witness.controlStateReference, 'controlStateReference'),
     poolInputReference: requiredString(witness.authenticatedPoolInputReference, 'poolInputReference'),
     carrierStateReference: requiredString(witness.v3CarrierBinding?.carrierStateReference, 'carrierStateReference'),
     observationReference: requiredString(witness.authoritativeObservationReference, 'authoritativeObservationReference'),
