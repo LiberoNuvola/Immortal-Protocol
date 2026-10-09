@@ -32,6 +32,6 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run canonical replay vectors
         run: npx vitest run src/__tests__/preRich-gamerules-replay.test.ts
