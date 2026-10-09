@@ -3,6 +3,8 @@ import {
   type EconomicAdmissionWitness,
 } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import { issueClassSaleable, type IssueRefinementEvidence } from '../PRE-RICH/src/PreRichIssueEvidence'
+const stripTxPrefix = (value: string): string => String(value).trim().replace(/^cardano:tx\//, '')
+
 import {
   validateCanonicalTransitionEvidence,
   type CanonicalTransitionEvidence,
@@ -256,10 +258,10 @@ export async function obtainAuthoritativeIssueAdmission(
   }
   if (
     vcBinding.network !== 'cardano-preprod' ||
-    vcBinding.carrierStateReference !== witness.v3CarrierBinding.carrierStateReference ||
+    stripTxPrefix(vcBinding.carrierStateReference) !== stripTxPrefix(witness.v3CarrierBinding.carrierStateReference) ||
     vcBinding.stateHash !== witness.stateHash ||
     vcBinding.eevSnapshotReference !== witness.eevQualification.snapshotReference ||
-    vcBinding.protectedCapitalSourceReference !== pc.sourceReference
+    stripTxPrefix(vcBinding.protectedCapitalSourceReference) !== stripTxPrefix(pc.sourceReference)
   ) {
     throw new Error('authoritative Issue witness Viability certificate is bound to a different deployment/state')
   }
