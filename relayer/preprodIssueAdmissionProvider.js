@@ -58,6 +58,9 @@ function createPreprodIssueObservationProducerFromLucid({
     'carrierAddress',
     'carrierPolicyId',
     'carrierTokenNameHex',
+    'controlAddress',
+    'controlPolicyId',
+    'controlTokenNameHex',
   ]) {
     if (typeof deployment[field] !== 'string' || deployment[field].trim() === '') {
       throw new Error('deployment.' + field + ' is required')
@@ -68,12 +71,13 @@ function createPreprodIssueObservationProducerFromLucid({
     typeof authoritySource === 'function'
       ? authoritySource
       : authorityUrl && authorityPublicKeyPem
-        ? ({ counterInputReference, poolInputReference, carrierStateReference, classId, price, observedAt, observationReference }) =>
+        ? ({ counterInputReference, controlStateReference, poolInputReference, carrierStateReference, classId, price, observedAt, observationReference }) =>
             fetchSignedIssueAuthority({
               baseUrl: authorityUrl,
               publicKeyPem: authorityPublicKeyPem,
               request: {
                 counterInputReference,
+                controlStateReference,
                 poolInputReference,
                 carrierStateReference,
                 classId,
@@ -125,6 +129,12 @@ function createPreprodIssueObservationProducerFromLucid({
       }
       if (observed.poolInputReference !== poolInputReference) {
         throw new Error('Preprod reader Pool reference does not match runtime input')
+      }
+      if (
+        runtimeInputs.controlStateReference !== undefined &&
+        observed.controlStateReference !== runtimeInputs.controlStateReference
+      ) {
+        throw new Error('Preprod reader B2 control reference does not match runtime input')
       }
       if (BigInt(String(observed.poolUsdmValue)) !== directUsdmValue) {
         throw new Error('Preprod reader Pool valuation does not match direct physical observation')
