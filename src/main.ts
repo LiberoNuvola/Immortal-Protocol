@@ -3,7 +3,19 @@ import wallet from './wallet'
 import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
 import { mountCertifiedTicket3D } from './ticket3d'
-import { TICKET_POLICY_ID } from './config'
+import {
+  ISSUE_AUTHORITY_ENDPOINT,
+  TICKET_POLICY_ID,
+  V3_CARRIER_ADDRESS,
+  V3_CARRIER_FACTORY_URL,
+  V3_CARRIER_POLICY_ID,
+  V3_CARRIER_TOKEN_NAME_HEX,
+} from './config'
+import { mintSerialNFTWithAuthoritativeAdmission } from './mint'
+import { preRichExpiryPolicyV1 } from '../PRE-RICH/src/PreRichExpiryPolicy'
+import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
+import { loadV3CarrierValidatorFromDeployment } from './v3CarrierScript'
+import type { IssueRefinementEvidence } from '../PRE-RICH/src/PreRichIssueEvidence'
 import adSlots, {
   AD_SLOT_PACKAGES,
   calculateAdTotalUsd,
@@ -207,6 +219,38 @@ renderAdPackages()
 
 let selectedIssuePrice = 1
 const issueClassNames: Record<number, string> = {1:'Class 1',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
+const issuePriceToClassId: Record<number, bigint> = {1:0n,2:1n,3:2n,5:3n,10:4n,25:5n,50:6n,100:7n}
+
+function issueExecutionConfigured(): boolean {
+  return Boolean(
+    ISSUE_AUTHORITY_ENDPOINT &&
+    V3_CARRIER_FACTORY_URL &&
+    V3_CARRIER_ADDRESS &&
+    V3_CARRIER_POLICY_ID &&
+    V3_CARRIER_TOKEN_NAME_HEX,
+  )
+}
+
+function syncIssueButton() {
+  const buy = document.getElementById('buy') as HTMLButtonElement | null
+  if (!buy) return
+
+  if (!connected) {
+    buy.disabled = true
+    buy.textContent = 'Buy Ticket — connect wallet'
+    return
+  }
+
+  if (!issueExecutionConfigured()) {
+    buy.disabled = true
+    buy.textContent = 'Buy Ticket — deployment wiring unavailable'
+    return
+  }
+
+  buy.disabled = false
+  buy.textContent = 'Buy Ticket — authoritative admission'
+}
+
 
 const syncPreview = () => {
   const name = issueClassNames[selectedIssuePrice] || 'Application class'
@@ -239,6 +283,9 @@ document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((button) =
     status('Selected ' + name + '. Selection is not economic admission.')
   })
 })
+
+
+syncIssueButton()
 
 const ticket3dContainer = document.getElementById('ticket-3d')
 let lastTicketAssetId: string | null = null
@@ -361,6 +408,7 @@ function openWalletPicker() {
           const bal = await ui.refreshBalance().catch(() => '—')
           ui.updateWalletUI(true, res.address, bal)
           syncPreview()
+          syncIssueButton()
           await observeWalletTicket()
           status('Connected to ' + res.walletName)
         } catch (e: any) {
@@ -387,6 +435,7 @@ connectBtn?.addEventListener('click', async () => {
     if (walletAddressEl) walletAddressEl.textContent = 'Connect a CIP-30 wallet to continue.'
     if (walletIconEl) walletIconEl.textContent = '◌'
     syncPreview()
+    syncIssueButton()
     status('Disconnected')
     return
   }
@@ -406,6 +455,7 @@ wallet.on('accountChanged', async (session) => {
   document.getElementById('wallet-state-badge')!.textContent = 'CONNECTED'
   document.getElementById('readiness-wallet')!.textContent = 'Connected wallet'
   syncPreview()
+  syncIssueButton()
   await observeWalletTicket()
   status('Wallet account changed')
 })
@@ -425,9 +475,82 @@ document.getElementById('claim')?.addEventListener('click', async () => {
 })
 
 document.getElementById('buy')?.addEventListener('click', async () => {
-  // The UI has no authoritative Economic Gate producer yet. Do not synthesize
-  // a witness merely to make the Buy button executable.
-  status('Purchase unavailable: authoritative Economic Gate admission is required.')
+  const buy = document.getElementById('buy') as HTMLButtonElement | null
+  if (buy) {
+    buy.disabled = true
+    buy.textContent = 'Preparing authoritative Issue…'
+  }
+
+  try {
+    if (!connected) throw new Error('Connect a Preprod wallet first')
+    if (!issueExecutionConfigured()) {
+      throw new Error('Authoritative Issue endpoint and V3 carrier factory are not configured')
+    }
+
+    const lucid = wallet.getLucid()
+    if (!lucid) throw new Error('Wallet session unavailable')
+
+    const classId = issuePriceToClassId[selectedIssuePrice]
+    if (classId === undefined) throw new Error('Selected Issue price is not in the canonical PRE-RICH ladder')
+
+    status('Observing the live V3 carrier before requesting admission…')
+    const carrier = await observeEconomicStateCarrier({
+      lucid,
+      carrierAddress: V3_CARRIER_ADDRESS,
+      carrierPolicyId: V3_CARRIER_POLICY_ID,
+      carrierTokenNameHex: V3_CARRIER_TOKEN_NAME_HEX,
+      decodeDatum: (raw: string) => Data.from(raw),
+    })
+
+    const liveClass = carrier.state.classes[Number(classId)]
+    if (!liveClass) throw new Error('Requested Issue class is absent from the live V3 carrier')
+
+    const issueClassEvidence: IssueRefinementEvidence = {
+      classId,
+      priceReferenceUnits: BigInt(selectedIssuePrice),
+      currentActiveClass: carrier.state.control.currentActiveClass,
+      highestClassEverActivated: carrier.state.control.highestClassEverActivated,
+      issued: liveClass.issued,
+      cap: liveClass.cap,
+    }
+
+    if (!liveClass.saleable) {
+      throw new Error('Requested Issue class is not saleable in the live V3 state')
+    }
+
+    status('Loading the deployment-bound V3 validator factory…')
+    const v3CarrierValidator = await loadV3CarrierValidatorFromDeployment(lucid, {
+      factoryUrl: V3_CARRIER_FACTORY_URL,
+      carrierPolicyId: V3_CARRIER_POLICY_ID,
+      carrierTokenNameHex: V3_CARRIER_TOKEN_NAME_HEX,
+      expectedCarrierAddress: V3_CARRIER_ADDRESS,
+    })
+
+    const provider = createRemoteAuthoritativeIssueAdmissionProvider(
+      ISSUE_AUTHORITY_ENDPOINT,
+    )
+
+    document.getElementById('issue-gate-state')!.textContent = 'REQUESTING'
+    status('Requesting the authoritative Issue witness from the server-side producer…')
+
+    const result = await mintSerialNFTWithAuthoritativeAdmission({
+      lucid,
+      issueClassEvidence,
+      priceUsdm: selectedIssuePrice * 100,
+      expiryPolicy: preRichExpiryPolicyV1,
+      v3CarrierValidator,
+      authoritativeIssueAdmissionProvider: provider,
+    })
+
+    document.getElementById('issue-gate-state')!.textContent = 'ADMITTED'
+    status('Ticket Issue submitted and confirmed: ' + result.txHash)
+    await observeWalletTicket()
+  } catch (error) {
+    document.getElementById('issue-gate-state')!.textContent = 'LOCKED'
+    status('Issue blocked: ' + (error instanceof Error ? error.message : String(error)))
+  } finally {
+    syncIssueButton()
+  }
 })
 
 export default adSlots
