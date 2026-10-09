@@ -22,6 +22,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npx vitest run src/__tests__/immortal-portability-conformance.test.ts
       - run: node --import=tsx --test src/__tests__/immortal-cardano-universal-boundary.test.ts
