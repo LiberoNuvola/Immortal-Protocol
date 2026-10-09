@@ -21,6 +21,8 @@ function requiredString(value, field) {
   return value
 }
 
+const stripTxPrefix = (value) => String(value).trim().replace(/^cardano:tx\//, '')
+
 function requiredReference(value, field) {
   const reference = requiredString(value, field)
   if (!/^(.*)#(\d+)$/.test(reference)) {
@@ -102,7 +104,7 @@ function createPreprodIssueObservationProducer({ readObservation }) {
     }
     if (
       runtimeInputs.controlStateReference !== undefined &&
-      observed.controlStateReference !== runtimeInputs.controlStateReference
+      stripTxPrefix(observed.controlStateReference) !== stripTxPrefix(runtimeInputs.controlStateReference)
     ) {
       throw new Error('authoritative observation B2 control reference mismatch')
     }
