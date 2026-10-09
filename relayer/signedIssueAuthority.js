@@ -469,6 +469,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     allOmegaSuccessorsCertified: true,
     decisionReference: payload.decisionReference,
     observationReference: payload.observationReference,
+    controlStateReference: payload.controlStateReference,
     observedAt,
     freshnessWindow,
     verificationReference: requiredString(payload.verificationReference, 'verificationReference'),
