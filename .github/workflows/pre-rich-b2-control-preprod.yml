@@ -48,14 +48,10 @@ jobs:
       - name: Install repository dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Install native Plutus dependencies
-        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev libblst-dev pkg-config build-essential
-
-      - name: Setup Haskell for fresh Plutus artifacts
-        uses: haskell-actions/setup@v2
+      - name: Setup canonical Plutus CI
+        uses: ./.github/actions/setup-plutus
         with:
-          ghc-version: "9.6.7"
-          cabal-version: "3.12.1.0"
+          update-hackage: "true"
 
       - name: Build and export fresh Plutus artifacts
         working-directory: plutus
