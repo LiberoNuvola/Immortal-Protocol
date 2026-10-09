@@ -67,32 +67,6 @@ export type IssueProtectedCapitalProvenance = {
 
 export type IssueViabilityCertificateEvidence = ViabilityCertificateEvidence
 
-/* Legacy alias retained for local consumers. */
-type _IssueViabilityCertificateEvidence = {
-  id: string
-  version: string
-  modelReference: string
-  characteristicPredicateReference: string
-  witnessSelectorReference: string
-  boundsReference: string
-  proofs: Record<
-    'VC1' | 'VC2' | 'VC3' | 'VC4' | 'VC5' | 'VC6',
-    IssueEvidenceArtifact
-  >
-  evidence: Record<
-    'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9' | 'E10',
-    IssueEvidenceArtifact
-  >
-  digest: string
-  deploymentBinding: {
-    network: 'cardano-preprod'
-    carrierStateReference: string
-    stateHash: string
-    eevSnapshotReference: string
-    protectedCapitalSourceReference: string
-  }
-}
-
 export type IssueAdmissionV3CarrierBinding = {
   carrierStateReference: string
   candidateState: Record<string, unknown>
@@ -302,6 +276,9 @@ export function assertAuthoritativeIssueAdmissionWitness(
     }
   }
   const vcBinding = vc.deploymentBinding
+  if (!vcBinding) {
+    throw new Error('authoritative Issue witness requires viability deployment binding')
+  }
   requiredString(vcBinding.network, 'viabilityCertificate.deploymentBinding.network')
   requiredString(
     vcBinding.carrierStateReference,
