@@ -59,7 +59,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build V5 + PRE-RICH DApp
         run: npm run build
