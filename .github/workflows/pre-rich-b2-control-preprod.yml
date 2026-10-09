@@ -2,24 +2,6 @@ name: PRE-RICH B2 Control Carrier — Preprod
 
 on:
   workflow_dispatch:
-    inputs:
-      control_token_name_hex:
-        description: "Deployment-specific control singleton token name (hex, supplied by operator)"
-        required: true
-        type: string
-      seed_tx_hash:
-        description: "Exact wallet seed UTxO transaction hash"
-        required: true
-        type: string
-      seed_output_index:
-        description: "Exact wallet seed UTxO output index"
-        required: true
-        type: string
-      control_authority_pkh:
-        description: "Payment key hash authorized to mutate the B2 control singleton (optional; defaults to deployer wallet)"
-        required: false
-        default: ""
-        type: string
 
 jobs:
   deploy:
@@ -29,10 +11,7 @@ jobs:
     env:
       BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
       DEPLOYER_MNEMONIC: ${{ secrets.PREPROD_REVEAL_SEED }}
-      PREPROD_CONTROL_TOKEN_NAME_HEX: ${{ inputs.control_token_name_hex }}
-      PREPROD_CONTROL_SEED_TX_HASH: ${{ inputs.seed_tx_hash }}
-      PREPROD_CONTROL_SEED_OUTPUT_INDEX: ${{ inputs.seed_output_index }}
-      PREPROD_CONTROL_AUTHORITY_PKH: ${{ inputs.control_authority_pkh }}
+      PREPROD_CONTROL_TOKEN_NAME_HEX: "4232434f4e54524f4c"
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
@@ -56,6 +35,53 @@ jobs:
       - name: Build and export fresh Plutus artifacts
         working-directory: plutus
         run: cabal run exe:export-scripts
+
+      - name: Select deterministic live wallet seed UTxO
+        run: |
+          node --input-type=module <<'NODE'
+          import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
+          import { appendFile } from 'node:fs/promises'
+
+          const projectId = process.env.BLOCKFROST_PROJECT_ID?.trim()
+          const mnemonic = process.env.DEPLOYER_MNEMONIC?.trim()
+          if (!projectId) throw new Error('BLOCKFROST_PROJECT_ID is required')
+          if (!mnemonic) throw new Error('DEPLOYER_MNEMONIC is required')
+
+          const lucid = await Lucid(
+            new Blockfrost('https://cardano-preprod.blockfrost.io/api/v0', projectId),
+            'Preprod',
+          )
+          lucid.selectWallet.fromSeed(mnemonic)
+
+          const address = await lucid.wallet().address()
+          const candidates = (await lucid.wallet().getUtxos())
+            .filter((u) => (u.assets.lovelace ?? 0n) >= 5_000_000n)
+            .sort((a, b) =>
+              (a.txHash + '#' + a.outputIndex).localeCompare(b.txHash + '#' + b.outputIndex),
+            )
+
+          if (candidates.length === 0) {
+            throw new Error('No live Preprod wallet UTxO contains at least 5 ADA')
+          }
+
+          const seed = candidates[0]
+
+          console.log(JSON.stringify({
+            walletAddress: address,
+            selectedSeedRef: seed.txHash + '#' + seed.outputIndex,
+            lovelace: seed.assets.lovelace.toString(),
+            tokenNameHex: process.env.PREPROD_CONTROL_TOKEN_NAME_HEX,
+          }, null, 2))
+
+          await appendFile(
+            process.env.GITHUB_ENV,
+            [
+              'PREPROD_CONTROL_SEED_TX_HASH=' + seed.txHash,
+              'PREPROD_CONTROL_SEED_OUTPUT_INDEX=' + seed.outputIndex,
+              '',
+            ].join('\\n'),
+          )
+          NODE
 
       - name: Verify signing configuration without exposing secret
         run: |
