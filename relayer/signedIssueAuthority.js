@@ -25,6 +25,18 @@ function requiredObject(value, field) {
   return value
 }
 
+function integerEqual(left, right, field) {
+  let a
+  let b
+  try {
+    a = BigInt(String(left))
+    b = BigInt(String(right))
+  } catch {
+    throw new Error(field + ' must be an integer')
+  }
+  return a === b
+}
+
 function requiredDigest(value, field) {
   const digest = requiredString(value, field)
   if (!/^[0-9a-fA-F]{64}$/.test(digest)) {
@@ -316,8 +328,12 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   if (payload.counterInputReference !== expected.counterInputReference) throw new Error('Issue authority Counter reference mismatch')
   if (payload.poolInputReference !== expected.poolInputReference) throw new Error('Issue authority Pool reference mismatch')
   if (payload.carrierStateReference !== expected.carrierStateReference) throw new Error('Issue authority carrier reference mismatch')
-  if (payload.classId !== expected.classId) throw new Error('Issue authority classId mismatch')
-  if (payload.price !== expected.price) throw new Error('Issue authority price mismatch')
+  if (!integerEqual(payload.classId, expected.classId, 'classId')) {
+    throw new Error('Issue authority classId mismatch')
+  }
+  if (!integerEqual(payload.price, expected.price, 'price')) {
+    throw new Error('Issue authority price mismatch')
+  }
   if (payload.observationReference !== expected.observationReference) throw new Error('Issue authority observation reference mismatch')
 
   const signedBytes = Buffer.from(canonicalize(payload), 'utf8')
