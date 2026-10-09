@@ -21,7 +21,7 @@ jobs:
           cache: npm
 
       - name: Install repository dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Setup canonical Plutus toolchain
         uses: ./.github/actions/setup-plutus
