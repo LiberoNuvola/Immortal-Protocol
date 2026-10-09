@@ -6,6 +6,7 @@ const refs = {
   counter: 'b'.repeat(64) + '#0',
   pool: 'a'.repeat(64) + '#0',
   carrier: 'c'.repeat(64) + '#0',
+  control: 'e'.repeat(64) + '#3',
 }
 const { publicKey, privateKey } = generateKeyPairSync('ed25519')
 const eevQualification = {
@@ -54,6 +55,7 @@ const witness = {
   decisionReference: 'decision-1',
   authoritativeObservationReference: 'observation-1',
   counterInputReference: refs.counter,
+  controlStateReference: 'cardano:tx/' + refs.control,
   authenticatedPoolInputReference: refs.pool,
   authenticatedPoolUsdmValue: 100n,
   eev: 100n,
@@ -118,6 +120,7 @@ try {
   verifySignedIssueAuthorityEnvelope(badCertificateBinding, publicKeyPem, {
     counterInputReference: refs.counter,
     poolInputReference: refs.pool,
+    controlStateReference: 'cardano:tx/' + refs.control,
     carrierStateReference: 'cardano:tx/' + refs.carrier,
     classId: 0n,
     price: 1n,
