@@ -353,10 +353,11 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     throw new Error('Issue authority directUsdmUnit mismatch')
   }
 
-  const requiredRefs = ['counterInputReference', 'poolInputReference', 'carrierStateReference', 'observationReference', 'decisionReference']
+  const requiredRefs = ['counterInputReference', 'controlStateReference', 'poolInputReference', 'carrierStateReference', 'observationReference', 'decisionReference']
   for (const field of requiredRefs) requiredString(payload[field], field)
 
   if (payload.counterInputReference !== expected.counterInputReference) throw new Error('Issue authority Counter reference mismatch')
+  if (payload.controlStateReference !== expected.controlStateReference) throw new Error('Issue authority B2 control reference mismatch')
   if (payload.poolInputReference !== expected.poolInputReference) throw new Error('Issue authority Pool reference mismatch')
   if (payload.carrierStateReference !== expected.carrierStateReference) throw new Error('Issue authority carrier reference mismatch')
   if (!integerEqual(payload.classId, expected.classId, 'classId')) {
