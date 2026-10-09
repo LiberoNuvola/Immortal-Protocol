@@ -53,6 +53,9 @@ export type PreprodAuthoritativeIssueProviderOptions = {
     carrierAddress: string
     carrierPolicyId: string
     carrierTokenNameHex: string
+    controlAddress: string
+    controlPolicyId: string
+    controlTokenNameHex: string
   }
   authorityUrl: string
   authorityPublicKeyPem: string
