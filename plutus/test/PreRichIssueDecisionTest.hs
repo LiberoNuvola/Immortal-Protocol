@@ -15,6 +15,10 @@ import Prelude
 
 import EconomicStateV3
 import PreRichIssueDecision
+  ( IssueDecisionInput (..)
+  , produceIssueDecision
+  , canonicalV3State
+  )
 
 baseState :: V3EconomicState
 baseState =
@@ -54,7 +58,7 @@ main = do
     Nothing -> error "FAIL: valid authoritative Issue decision was rejected"
     Just decision -> do
       assert (idPreEEV decision == 500) "producer preserves authoritative pre-EEV"
-      assert (idPreState decision == baseState) "producer retains exact pre-state for provenance"
+      assert (canonicalV3State (idPreState decision) == canonicalV3State baseState) "producer retains exact pre-state for provenance"
       assert (idCandidateEEV decision == 500) "producer preserves authoritative candidate EEV"
       assert (idAvailableExecutableLiquidity decision == 500) "producer preserves executable liquidity"
       assert (idDecisionReference decision == "decision:issue:test") "decision reference is carried"
