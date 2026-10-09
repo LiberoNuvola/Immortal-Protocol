@@ -1062,50 +1062,6 @@ export async function mintSerialNFT(
   const gameVersionHex =
     toHex(gameVersion)
 
-  // ----------------------------------------------------------
-  // PrizeDatum is constructed only after authoritative Issue admission.
-  // The expiry issuance snapshot, when omitted, is taken from the same
-  // authenticated pre-transition V3 observation and authoritative preEEV
-  // bound to that admission. No local economic value is substituted.
-  // ----------------------------------------------------------
-
-  const prizeDatumConstr =
-    buildPrizeDatumConstr({
-      ticketPolicyHex:
-        ticketPolicyId,
-
-      ticketNameHex:
-        tokenNameHex,
-
-      playerCommitmentHex,
-
-      priceUsdm,
-
-      commitmentHex,
-
-      gameVersionHex,
-
-      ticketNonce,
-
-      prizeAmount,
-
-      paymentPolicyHex:
-        '',
-
-      paymentNameHex:
-        '',
-
-      target,
-
-      prizePoolHashHex:
-        b1PrizePoolHash,
-
-      issuedAt:
-        issuedAtMs,
-
-      expiresAt:
-        expiresAtMs,
-    })
 
   // ----------------------------------------------------------
   // Ticket asset
