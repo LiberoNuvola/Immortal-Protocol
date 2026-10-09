@@ -147,7 +147,16 @@ export function createHaskellIssueAdmissionProvider(
   options: HaskellIssueAdmissionProviderOptions,
 ): AuthoritativeIssueAdmissionProvider {
   return async (inputs) => {
-    const observed = await options.observationSource(inputs)
+    const poolUsdmValue = inputs.poolUsdmValue
+    if (poolUsdmValue === undefined) {
+      throw new Error('authoritative Issue provider requires a verified direct-USDM pool value')
+    }
+
+    const observationInputs = {
+      ...inputs,
+      poolUsdmValue,
+    }
+    const observed = await options.observationSource(observationInputs)
     const envelope = await runProducer(
       options.command,
       options.args ?? [],
