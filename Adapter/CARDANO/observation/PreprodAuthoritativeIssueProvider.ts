@@ -26,6 +26,7 @@ const { readPreprodIssueObservation } = require('../../../relayer/preprodIssueOb
     observationReference: string
     observedAt: bigint
     counterInputReference: string
+    controlStateReference: string
     poolInputReference: string
     poolUsdmValue: bigint
     carrierStateReference: string
