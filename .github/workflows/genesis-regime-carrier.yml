@@ -88,7 +88,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install Node dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run Reference ↔ Cardano differential test
         run: npx tsx --test src/__tests__/reference-cardano-differential.test.ts
       - name: Run Genesis Treasury admission mirror
