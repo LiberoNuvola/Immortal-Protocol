@@ -7,6 +7,13 @@ import qualified Data.Text as T
 import System.Exit (exitFailure)
 
 import EconomicStateV3
+import EconomicKernel
+  ( protectedCapital
+  , worstCaseExposure
+  )
+import PreRichEconomicProfile
+  ( preRichEconomicProfileV1
+  )
 import PreRichIssueDecision
 
 instance A.FromJSON JackpotStatus where
@@ -113,6 +120,25 @@ v3StateToJSON s =
     jackpotStatusText JackpotPayable = "payable"
     jackpotStatusText JackpotClosed = "closed"
 
+protectedCapitalToJSON :: V3EconomicState -> A.Value
+protectedCapitalToJSON s =
+  A.object
+    [ "sourceType" A..= ("V3_PRESTATE_CANONICAL_HASKELL" :: String)
+    , "components" A..= A.object
+        [ "crystallizedLiabilities" A..= toDecimalString (v3CrystallizedLiabilities s)
+        , "worstCaseExposure" A..= toDecimalString (worstCaseExposure preRichEconomicProfileV1 s)
+        , "safetyCapital" A..= toDecimalString (v3SafetyCapital s)
+        , "reserveProtection" A..= toDecimalString (v3ReserveProtection s)
+        , "lockedJackpot" A..= toDecimalString (jsLockedAmount (v3Jackpot s))
+        , "mandatoryFutureCosts" A..= toDecimalString (v3MandatoryFutureCosts s)
+        ]
+    , "accountingInputs" A..= A.object
+        [ "unresolvedReserve" A..= toDecimalString (v3UnresolvedReserve s)
+        , "unresolvedTicketCount" A..= toDecimalString (v3UnresolvedTicketCount s)
+        ]
+    , "total" A..= toDecimalString (protectedCapital preRichEconomicProfileV1 s)
+    ]
+
 instance A.ToJSON IssueDecision where
   toJSON d =
     A.object
@@ -128,6 +154,7 @@ instance A.ToJSON IssueDecision where
       , "availableExecutableLiquidity" A..= show (idAvailableExecutableLiquidity d)
       , "requiredImmediateLiquidity" A..= show (idRequiredImmediateLiquidity d)
       , "candidateState" A..= v3StateToJSON (idCandidateState d)
+      , "protectedCapitalProvenance" A..= protectedCapitalToJSON (idPreState d)
       ]
 
 actionText :: V3Action -> String
