@@ -1,4 +1,5 @@
 import './style.css'
+import { Data } from 'lucid-cardano'
 import wallet from './wallet'
 import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
@@ -285,8 +286,6 @@ document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((button) =
 })
 
 
-syncIssueButton()
-
 const ticket3dContainer = document.getElementById('ticket-3d')
 let lastTicketAssetId: string | null = null
 
@@ -354,6 +353,8 @@ const walletNameEl = document.getElementById('wallet-name') as HTMLElement | nul
 const walletAddressEl = document.getElementById('wallet-address') as HTMLElement | null
 const walletIconEl = document.getElementById('wallet-icon') as HTMLElement | null
 let connected = false
+
+syncIssueButton()
 
 function shortAddress(address: string) {
   return address.length > 18 ? address.slice(0, 10) + '…' + address.slice(-8) : address
