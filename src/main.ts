@@ -13,6 +13,7 @@ import {
   V3_CARRIER_TOKEN_NAME_HEX,
 } from './config'
 import { mintSerialNFTWithAuthoritativeAdmission } from './mint'
+import { createRemoteAuthoritativeIssueAdmissionProvider } from './remoteAuthoritativeIssueAdmissionProvider'
 import { preRichExpiryPolicyV1 } from '../PRE-RICH/src/PreRichExpiryPolicy'
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 import { loadV3CarrierValidatorFromDeployment } from './v3CarrierScript'
