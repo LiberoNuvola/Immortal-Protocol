@@ -286,3 +286,32 @@ Current head `5bbea55f0cbef071f8cc031e44ab3923ebf6ac85` has multiple GitHub chec
 ### Security boundary
 
 The new Issue authority endpoint is a transport/execution surface, not an authentication system: CORS restricts browser origins but does not constitute caller authentication. Operational deployment hardening (abuse/rate-limit policy, network exposure and secret management) remains separate from economic correctness.
+
+## 2026-10-09 — External audit reconciliation and correction pass
+
+A subsequent repository review at the 2026-10-09 branch tip identified that the earlier audit baseline at d1465fe had already been superseded by first-user authority/server wiring commits through 4afee3b02c99ba9c8da685225d71bcd48da0f9eb. The current correction pass therefore targets only defects still present after that wiring.
+
+### Corrected
+- relayer/preprodIssueAuthorityEnvelope.js: signed payload now explicitly carries actionClass and stateHash, and validates the state hash shape before self-verification.
+- relayer/preprodIssueObservationReader.js: authoritative Issue state references now use canonical runtime form txHash#outputIndex; public/evidence observation modules retain cardano:tx/... where that representation is part of their public contract.
+- relayer/preprodIssueObservationReader.js: string datum CBOR from real Lucid UTxOs is decoded through lucid-cardano before field validation for V3 carrier, B2 control and B1 PrizePool observations.
+- scripts/testV3CarrierMintPolicyRemote.mts: invalid-case builders are async, a funded alternate UTxO is required for the seed-consumption negative case, and unexpected non-script errors no longer count as policy rejection.
+- src/main.ts: current DApp BUY path now imports the existing remoteAuthoritativeIssueAdmissionProvider module rather than calling an undeclared symbol.
+- CI now explicitly executes relayer/preprodIssueAuthorityEnvelope.test.js in Direct-USDM conformance.
+- A GitHub Actions lockfile-refresh workflow was added to regenerate the root npm lockfile from the current package.json and verify the exact @lucid-evolution/lucid version. Its first run is currently queued; no lockfile GREEN is claimed until the generated lock is observed.
+
+### Current exact branch state
+Current branch tip: 9f4ce00b9a889249c8da601b0101cf7bf83de201.
+
+The implementation corrections above are committed. The root package-lock.json is still pending runner-generated synchronization because the local environment cannot resolve the npm registry reliably.
+
+### Remaining high-priority evidence/implementation gates
+- observe successful lockfile refresh, then re-establish npm ci CI evidence;
+- execute signer/bridge/reader tests against the refreshed dependency tree;
+- fresh V3 corrected artifact rebuild and exact-SHA evidence before any new carrier deployment;
+- live B2 singleton and adversarial ledger evidence;
+- deployment-specific Kc/Ω evidence;
+- historical credential revocation/rotation verification;
+- Blockfrost proxy exposure/hardening decision.
+
+No V3 economic semantics, Reveal semantics, EEV perimeter, B3/Materios semantics or Beacon-4 research status were changed by this correction pass.
