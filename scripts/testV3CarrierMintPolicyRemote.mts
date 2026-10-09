@@ -100,10 +100,14 @@ async function main() {
     .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
     .complete({ localUPLCEval: true })
 
-  const expectRejected = async (label: string, build: () => any) => {
+  const expectRejected = async (label: string, build: () => Promise<unknown>) => {
     try {
       await build()
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/(uplc|plutus|validator|minting policy|script|redeemer|evaluation)/i.test(message)) {
+        throw new Error('V3 mint policy negative case failed for a non-script reason (' + label + '): ' + message)
+      }
       return
     }
     throw new Error('V3 mint policy accepted invalid case: ' + label)
