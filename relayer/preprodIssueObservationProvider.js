@@ -23,7 +23,7 @@ function requiredString(value, field) {
 
 function requiredReference(value, field) {
   const reference = requiredString(value, field)
-  if (!/^(.*)#(\\d+)$/.test(reference)) {
+  if (!/^(.*)#(\d+)$/.test(reference)) {
     throw new Error(`${field} must be an exact txHash#outputIndex reference`)
   }
   return reference
