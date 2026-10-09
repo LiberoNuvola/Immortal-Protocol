@@ -43,11 +43,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run direct-USDM unit tests
         run: |
           npx vitest run             Adapter/CARDANO/observation/DirectUsdmEev.test.ts             Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts             --reporter=verbose
+
+      - name: Typecheck authoritative Issue provider boundary
+        run: |
+          npx tsc --noEmit --strict --skipLibCheck             --target ES2020             --module ESNext             --moduleResolution bundler             --allowImportingTsExtensions             Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts             Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts
 
       - name: Run authority and admission conformance
         run: |
