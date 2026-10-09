@@ -42,7 +42,7 @@ function eevQualification() {
 
 function protectedCapitalProvenance() {
   return {
-    sourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    sourceReference: 'd'.repeat(64) + '#2',
     components: {
       crystallizedLiabilities: 10n,
       worstCaseExposure: 50n,
@@ -95,10 +95,10 @@ function viabilityCertificate() {
     digest: '9'.repeat(64),
     deploymentBinding: {
       network: 'cardano-preprod',
-      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      carrierStateReference: 'd'.repeat(64) + '#2',
       stateHash: '1'.repeat(64),
       eevSnapshotReference: 'snapshot://issue/1',
-      protectedCapitalSourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      protectedCapitalSourceReference: 'd'.repeat(64) + '#2',
     },
   }
 }
@@ -133,7 +133,7 @@ function witness(): AuthoritativeIssueAdmissionWitness {
     protectedCapitalProvenance: protectedCapitalProvenance(),
     viabilityCertificate: viabilityCertificate(),
     v3CarrierBinding: {
-      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      carrierStateReference: 'd'.repeat(64) + '#2',
       candidateState: {
         crystallizedLiabilities: '10',
         unresolvedReserve: '1',
