@@ -25,6 +25,7 @@
     "v3:initial-datum": "tsx scripts/printV3InitialDatum.ts",
     "test:v3-mint-policy-remote": "node --import=tsx ./scripts/testV3CarrierMintPolicyRemote.mts",
     "test:v3-mint-policy-legacy-remote": "node ./scripts/testV3CarrierMintPolicyLegacyRemote.mjs",
-    "test:genesis-mint-policy-remote": "node --import=tsx ./scripts/testGenesisCarrierMintPolicyRemote.mts"
+    "test:genesis-mint-policy-remote": "node --import=tsx ./scripts/testGenesisCarrierMintPolicyRemote.mts",
+    "issue-authority-server": "node --import=tsx relayer/issueAuthorityServer.js"
   }
 }
