@@ -214,7 +214,7 @@ export async function observeEconomicStateCarrier(
 
   return {
     carrierAddress: input.carrierAddress,
-    carrierStateReference: `${carrier.txHash}#${carrier.outputIndex}`,
+    carrierStateReference: `cardano:tx/${carrier.txHash}#${carrier.outputIndex}`,
     carrierPolicyId: input.carrierPolicyId,
     carrierTokenNameHex: input.carrierTokenNameHex,
     stateVersion,
