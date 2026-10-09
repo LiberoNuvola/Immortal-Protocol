@@ -56,6 +56,7 @@ function singletonUtxo(
   return {
     txHash,
     outputIndex,
+    address,
     assets: {
       [unit]: quantity,
       ...(policy === policyId && token === tokenNameHex
