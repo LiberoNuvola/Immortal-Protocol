@@ -8,12 +8,14 @@ on:
         required: true
         type: string
       seed_tx_hash:
-        description: "Exact wallet seed UTxO transaction hash"
-        required: true
+        description: "Exact wallet seed UTxO transaction hash (optional; deterministic wallet selection when omitted)"
+        required: false
+        default: ""
         type: string
       seed_output_index:
-        description: "Exact wallet seed UTxO output index"
-        required: true
+        description: "Exact wallet seed UTxO output index (optional; deterministic wallet selection when omitted)"
+        required: false
+        default: ""
         type: string
 
 jobs:
@@ -60,8 +62,12 @@ jobs:
           test -n "${BLOCKFROST_PROJECT_ID}"
           test -n "${DEPLOYER_MNEMONIC}"
           test -n "${PREPROD_CONTROL_TOKEN_NAME_HEX}"
-          test -n "${PREPROD_CONTROL_SEED_TX_HASH}"
-          test -n "${PREPROD_CONTROL_SEED_OUTPUT_INDEX}"
+          if [ -n "${PREPROD_CONTROL_SEED_TX_HASH}" ] || [ -n "${PREPROD_CONTROL_SEED_OUTPUT_INDEX}" ]; then
+            test -n "${PREPROD_CONTROL_SEED_TX_HASH}"
+            test -n "${PREPROD_CONTROL_SEED_OUTPUT_INDEX}"
+          else
+            echo "No explicit B2 seed supplied; deploy script will select a deterministic wallet UTxO."
+          fi
 
       - name: Deploy authenticated B2 control singleton
         run: node --import=tsx/esm scripts/deployPreRichControlCarrier.mts
