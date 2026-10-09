@@ -77,9 +77,6 @@ const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' })
 const now = Number(witness.executableLiquidityObservation.observedAt)
 const envelope = signIssueAuthorityEnvelope({
   witness,
-  preEEV: 100n,
-  classId: 0,
-  price: 1,
   directUsdmUnit: 'd'.repeat(56),
   freshnessWindow: 300000,
   privateKeyPem,
