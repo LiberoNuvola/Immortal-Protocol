@@ -11,6 +11,9 @@ import {
   type EconomicAdmissionWitness,
 } from './EconomicAdmission'
 import { validateAuthoritativeIssueAdmissionDecision } from '../observation/AuthoritativeIssueAdmissionDecision'
+import type {
+  ViabilityCertificateEvidence,
+} from '../../../src/preRichIssueAdmissionBridge'
 
 export type IssueEvidenceArtifact = {
   reference: string
@@ -62,7 +65,10 @@ export type IssueProtectedCapitalProvenance = {
   total: bigint
 }
 
-export type IssueViabilityCertificateEvidence = {
+export type IssueViabilityCertificateEvidence = ViabilityCertificateEvidence
+
+/* Legacy alias retained for local consumers. */
+type _IssueViabilityCertificateEvidence = {
   id: string
   version: string
   modelReference: string
