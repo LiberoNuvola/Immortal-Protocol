@@ -129,4 +129,18 @@ try {
   if (!String(error.message).includes('witness preEEV is required')) throw error
 }
 
+try {
+  signIssueAuthorityEnvelope({
+    witness: { ...witness, eevFresh: false },
+    directUsdmUnit: 'd'.repeat(56),
+    freshnessWindow: 300000,
+    privateKeyPem,
+    publicKeyPem,
+    currentObservedAt: now,
+  })
+  throw new Error('FAIL: unverified witness flag was accepted')
+} catch (error) {
+  if (!String(error.message).includes('witness eevFresh must be true')) throw error
+}
+
 console.log('PASS: signed Issue authority envelope self-verifies and rejects malformed authority')
