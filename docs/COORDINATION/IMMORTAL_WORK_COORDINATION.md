@@ -1641,3 +1641,25 @@ No green status is claimed before completion.
 The concrete deployment Kc remains intentionally external. The normative certification package requires a real profile instantiation of `(S,A,Accept,Ω,T,Safe)` plus VC1–VC6 and E1–E10. The current repository does not contain such a deployment certificate, and the 2026-10-05 viability audit shows that treating only `Issue/Reveal/Claim/Expire` as the complete infinite-horizon action space would make the concrete kernel empty. No artificial Kc, narrowed Ω, or fake QNE action is introduced here.
 
 No V3 economic rule changed.
+
+
+## 44.52 B2 CONTROL AUTHORITY + ISSUE IDENTITY BINDING — 2026-10-09
+
+The PRE-RICH B2 control carrier is now bound to an explicit deployment authority key. The validator rejects every control mutation unless the configured payment key hash is among the transaction signatories. The deployment script derives that authority from the deployer wallet by default and records it in the deployment manifest; a separate PREPROD_CONTROL_AUTHORITY_PKH may be supplied.
+
+The real Issue authority witness now also carries the exact B2 control UTxO reference. That reference is propagated through the live observation reader, Haskell Issue provider, signed authority envelope, verifier and mintSerialNFT call-site. The live Issue path reads the exact B2 singleton as a reference input and fails closed on any mismatch.
+
+The Issue witness therefore binds:
+
+- Counter UTxO;
+- B2 control UTxO;
+- B1 PrizePool UTxO;
+- V3 carrier UTxO;
+- pre-EEV/class/price;
+- ProtectedCapital provenance;
+- EEV EV1–EV7 + deployment approval;
+- viability VC1–VC6 + E1–E10 + deployment binding.
+
+Historical research recovery confirms that PRE-RICH's earlier Dynamic Viability Machine already modeled PRE_GENESIS, QUIESCENT, contraction and recovery. Those semantics remain historical/research evidence until a concrete deployment Kc/Ω package proves VC1–VC6, especially inductiveness, acceptance compatibility, Ω soundness and non-vacuity. No V3 economic semantics were changed.
+
+B2 remains deployment-open until the real control singleton identity is materialized on Cardano Preprod and an adversarial ledger trace proves authorized mutation, singleton uniqueness and Issue reference binding.
