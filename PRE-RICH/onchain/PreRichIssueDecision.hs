@@ -39,6 +39,7 @@ data IssueDecisionInput = IssueDecisionInput
 
 data IssueDecision = IssueDecision
   { idAction :: V3Action
+  , idPreState :: V3EconomicState
   , idPreStateHash :: P.String
   , idPostStateHash :: P.String
   , idActionFingerprint :: P.String
