@@ -3,7 +3,7 @@
 **Date:** 2026-10-09  
 **Active branch:** `work/immortal-green-closure`  
 **Initial reconciliation tip:** `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`  
-**Current post-audit tip:** to be refreshed after this documentation commit
+**Current verified branch tip at last refresh:** `2c6285be703ae5bb905b869cf901b6bbd50dc7b3`
 
 ## 1. Repository topology truth
 
@@ -207,7 +207,7 @@ No protocol/economic semantics were changed by this audit snapshot.
 - F-01: V3 carrier source restored to secure one-shot policy; negative probe added; artifact rebuild/evidence remains.
 - F-03: provider `controlStateReference` type drift fixed; dedicated TypeScript boundary typecheck added.
 - F-04: explicit `tcsSaleable` now enforced by `EconomicKernel.classSaleable`; negative Issue vector added.
-- F-06: B2 cache fingerprint hardened against source/toolchain/lockfile drift.
+- F-06: B2/V3 cache fingerprints hardened against source/toolchain/lockfile drift.
 - F-07: inspected Node CI workflows switched from `npm install` to `npm ci`.
 - F-02: confirmed as generic API hardening only; first-user wrapper already forces B2/V3 binding.
 - F-05: no independent defect established because Issue binds the exact B2 singleton UTxO.
@@ -218,7 +218,7 @@ No protocol/economic semantics were changed by this audit snapshot.
 - F-09 Blockfrost proxy exposure/hardening decision.
 - Current-head CI/evidence binding for the post-fix SHA.
 - Deployment-specific Kc/Ω, live B2 singleton and adversarial ledger evidence.
-- Rebuild and exact-SHA verification of the corrected V3 carrier artifact before a new carrier deployment.
+- Rebuild and exact-SHA verification of the corrected V3 carrier artifact before a new carrier deployment; the V3 fast workflow cache/install path is now hardened too.
 
 **Non-regression:** no V3 economic semantics, Reveal semantics, EEV perimeter, B3/Materios semantics or Beacon 4 status were reopened.
 
@@ -229,3 +229,9 @@ Current branch tip after the audit fixes: `63ca3eb542a85c85cf204c3131cec79c9165e
 Implementation commits in this cycle include the provider contract fix, CI reproducibility hardening, explicit class saleability enforcement, secure V3 one-shot mint policy restoration and negative ledger-probe coverage.
 
 No V3 economic semantics, Reveal semantics, EEV perimeter or B3/Beacon semantics were changed.
+
+## 2026-10-09 — Final audit refresh
+
+The V3 fast workflow was additionally aligned with the B2 cache discipline: `npm ci` is used and the cache key now includes the V3 policy source, Plutus cabal files, `.github/actions/setup-plutus/action.yml` and `package-lock.json`.
+
+The repository credential-boundary check scans the current tracked tree for literal provider credentials. It does not, by design, prove revocation of historical secrets; that remains an operational security verification item.
