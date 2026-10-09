@@ -5,6 +5,7 @@ import type { EconomicAdmissionWitness } from '../EconomicAdmission'
 const hash = 'a'.repeat(64)
 const poolRef = 'b'.repeat(64) + '#0'
 const counterRef = 'c'.repeat(64) + '#0'
+const controlRef = 'e'.repeat(64) + '#3'
 
 function protectedCapitalProvenance() {
   return {
@@ -109,6 +110,7 @@ function witness(): EconomicAdmissionWitness & {
     authenticatedPoolUsdmValue: 100n,
     requiredImmediateLiquidity: 1n,
     counterInputReference: counterRef,
+    controlStateReference: controlRef,
     preEEV: 100n,
     issueClassId: 0n,
     issuePrice: 1n,
@@ -138,6 +140,7 @@ function witness(): EconomicAdmissionWitness & {
 
 const inputs = {
   counterInputReference: counterRef,
+  controlStateReference: controlRef,
   poolInputReference: poolRef,
   liquiditySourceReferences: [poolRef],
   poolUsdmValue: 100n,
