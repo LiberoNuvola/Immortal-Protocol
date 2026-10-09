@@ -107,6 +107,13 @@ export type ViabilityCertificateEvidence = {
     { reference: string; digest: string }
   >
   digest: string
+  deploymentBinding: {
+    network: 'cardano-preprod'
+    carrierStateReference: string
+    stateHash: string
+    eevSnapshotReference: string
+    protectedCapitalSourceReference: string
+  }
 }
 
 export type AuthoritativeIssueAdmissionWitness =
@@ -237,6 +244,17 @@ export async function obtainAuthoritativeIssueAdmission(
       throw new Error('authoritative Issue witness has incomplete viability proof: ' + key)
     }
   }
+  const vcBinding = vc.deploymentBinding
+  if (
+    vcBinding.network !== 'cardano-preprod' ||
+    vcBinding.carrierStateReference !== witness.v3CarrierBinding.carrierStateReference ||
+    vcBinding.stateHash !== witness.stateHash ||
+    vcBinding.eevSnapshotReference !== witness.eevQualification.snapshotReference ||
+    vcBinding.protectedCapitalSourceReference !== pc.sourceReference
+  ) {
+    throw new Error('authoritative Issue witness Viability certificate is bound to a different deployment/state')
+  }
+
   for (const key of ['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10'] as const) {
     const evidence = vc.evidence[key]
     if (!evidence || !evidence.reference.trim() || !/^[0-9a-fA-F]{64}$/.test(evidence.digest)) {
