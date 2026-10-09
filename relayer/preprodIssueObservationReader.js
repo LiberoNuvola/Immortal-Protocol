@@ -353,6 +353,7 @@ async function readPreprodIssueObservation({
       counterInputReference: counterRef,
       poolInputReference: poolRef,
       carrierStateReference: carrier.carrierStateReference,
+      controlStateReference: 'cardano:tx/' + control.controlStateReference,
       classId,
       price,
       ...(observedAt === undefined || observedAt === null
