@@ -65,6 +65,10 @@ type HaskellDecisionEnvelope = {
     candidateEEV: string
     availableExecutableLiquidity: string
     requiredImmediateLiquidity: string
+    truthVerified: boolean
+    eevFresh: boolean
+    obligationsComplete: boolean
+    allOmegaSuccessorsCertified: boolean
     candidateState: IssueV3CandidateState
     protectedCapitalProvenance?: {
       sourceType?: string
@@ -171,6 +175,24 @@ export function createHaskellIssueAdmissionProvider(
     if (BigInt(String(decision.availableExecutableLiquidity)) !== observed.poolUsdmValue) {
       throw new Error('Haskell Issue producer executable liquidity does not match observed Pool value')
     }
+    for (const [key, expected] of [
+      ['truthVerified', observed.decisionInput.truthVerified],
+      ['eevFresh', observed.decisionInput.eevFresh],
+      ['obligationsComplete', observed.decisionInput.obligationsComplete],
+      ['allOmegaSuccessorsCertified', observed.decisionInput.allOmegaSuccessorsCertified],
+    ] as const) {
+      if (decision[key] !== expected) {
+        throw new Error(
+          `Haskell Issue producer ${key} does not match authoritative decision input`,
+        )
+      }
+      if (decision[key] !== true) {
+        throw new Error(
+          `Haskell Issue producer ${key} is not true`,
+        )
+      }
+    }
+
     const rawProtectedCapitalProvenance = decision.protectedCapitalProvenance
     if (!rawProtectedCapitalProvenance) {
       throw new Error('Haskell Issue producer did not emit ProtectedCapital provenance')
@@ -283,6 +305,10 @@ export function createHaskellIssueAdmissionProvider(
       preEEV: BigInt(decision.preEEV),
       issueClassId: inputs.classId,
       issuePrice: inputs.price,
+      truthVerified: true,
+      eevFresh: true,
+      obligationsComplete: true,
+      allOmegaSuccessorsCertified: true,
       eev: BigInt(decision.candidateEEV),
       executableLiquidityObservation: observation,
       authenticatedPoolInputReference:
