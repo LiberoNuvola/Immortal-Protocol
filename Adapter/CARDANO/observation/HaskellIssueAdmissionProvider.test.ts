@@ -94,6 +94,10 @@ function producerScript() {
     candidateEEV: '100',
     availableExecutableLiquidity: '100',
     requiredImmediateLiquidity: '0',
+    truthVerified: true,
+    eevFresh: true,
+    obligationsComplete: true,
+    allOmegaSuccessorsCertified: true,
     candidateState: {
       crystallizedLiabilities: '1',
       unresolvedReserve: '1',
