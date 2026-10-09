@@ -15,6 +15,8 @@ import type {
   ViabilityCertificateEvidence,
 } from '../../../src/preRichIssueAdmissionBridge'
 
+const stripTxPrefix = (value: string): string => String(value).trim().replace(/^cardano:tx\//, '')
+
 export type IssueEvidenceArtifact = {
   reference: string
   digest: string
@@ -299,7 +301,7 @@ export function assertAuthoritativeIssueAdmissionWitness(
   if (vcBinding.network !== 'cardano-preprod') {
     throw new Error('viabilityCertificate deployment network must be cardano-preprod')
   }
-  if (vcBinding.carrierStateReference !== carrier.carrierStateReference) {
+  if (stripTxPrefix(vcBinding.carrierStateReference) !== stripTxPrefix(carrier.carrierStateReference)) {
     throw new Error('viability certificate carrier binding mismatch')
   }
   if (vcBinding.stateHash !== String(candidate.stateHash)) {
@@ -308,7 +310,7 @@ export function assertAuthoritativeIssueAdmissionWitness(
   if (vcBinding.eevSnapshotReference !== eev.snapshotReference) {
     throw new Error('viability certificate EEV snapshot binding mismatch')
   }
-  if (vcBinding.protectedCapitalSourceReference !== pc.sourceReference) {
+  if (stripTxPrefix(vcBinding.protectedCapitalSourceReference) !== stripTxPrefix(pc.sourceReference)) {
     throw new Error('viability certificate ProtectedCapital source binding mismatch')
   }
 }
