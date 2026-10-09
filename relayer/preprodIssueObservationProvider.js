@@ -101,6 +101,12 @@ function createPreprodIssueObservationProducer({ readObservation }) {
       throw new Error('authoritative observation Pool reference mismatch')
     }
     if (
+      runtimeInputs.controlStateReference !== undefined &&
+      observed.controlStateReference !== runtimeInputs.controlStateReference
+    ) {
+      throw new Error('authoritative observation B2 control reference mismatch')
+    }
+    if (
       runtimePoolUsdmValue !== undefined &&
       String(observed.poolUsdmValue) !== runtimePoolUsdmValue
     ) {
@@ -128,6 +134,7 @@ function createPreprodIssueObservationProducer({ readObservation }) {
       decisionInput,
       observationReference,
       observedAt,
+      controlStateReference: observed.controlStateReference,
     }
   }
 }
