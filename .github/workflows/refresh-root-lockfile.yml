@@ -1,0 +1,66 @@
+name: Refresh Root NPM Lockfile
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - package.json
+      - .github/workflows/refresh-root-lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: refresh-root-lockfile
+      cancel-in-progress: true
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Refresh package-lock from package.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify Lucid Evolution lock entry
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'))
+          const expected = pkg.dependencies?.['@lucid-evolution/lucid']
+          const entry = lock.packages?.['node_modules/@lucid-evolution/lucid']
+          if (!expected) throw new Error('package.json does not declare @lucid-evolution/lucid')
+          if (!entry) throw new Error('package-lock.json has no @lucid-evolution/lucid package entry')
+          if (entry.version !== expected) {
+            throw new Error('lockfile Lucid version mismatch: expected ' + expected + ', got ' + entry.version)
+          }
+          console.log(JSON.stringify({
+            package: '@lucid-evolution/lucid',
+            declared: expected,
+            locked: entry.version,
+          }))
+          NODE
+
+      - name: Commit refreshed lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: refresh root npm lockfile"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
