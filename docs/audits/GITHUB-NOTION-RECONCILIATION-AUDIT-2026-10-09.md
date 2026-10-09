@@ -145,6 +145,15 @@ The repository history contains a prior commit explicitly removing provider secr
 
 **Required action:** confirm whether this service is private/internal. If public, add appropriate rate limiting, request restrictions and safe logging, and minimize exposed endpoint surface.
 
+### F-10 — Current tip has no combined CI status
+**Severity:** P2 / evidence integrity.
+
+GitHub reports no combined status entries for the verified branch tip `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`.
+
+**Risk:** a green result from an earlier run/commit can be misread as evidence for the current tip.
+
+**Required action:** when declaring current-head green, bind the claim to the exact commit SHA and retain the corresponding workflow/run artifact or status reference.
+
 ## 4. Documentation drift
 
 The following repository/Notion records are stale relative to the verified 2026-10-09 branch tip:
