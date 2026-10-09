@@ -153,6 +153,10 @@ instance A.ToJSON IssueDecision where
       , "candidateEEV" A..= show (idCandidateEEV d)
       , "availableExecutableLiquidity" A..= show (idAvailableExecutableLiquidity d)
       , "requiredImmediateLiquidity" A..= show (idRequiredImmediateLiquidity d)
+      , "truthVerified" A..= idTruthVerified d
+      , "eevFresh" A..= idEEVFresh d
+      , "obligationsComplete" A..= idObligationsComplete d
+      , "allOmegaSuccessorsCertified" A..= idAllOmegaSuccessorsCertified d
       , "candidateState" A..= v3StateToJSON (idCandidateState d)
       , "protectedCapitalProvenance" A..= protectedCapitalToJSON (idPreState d)
       ]
