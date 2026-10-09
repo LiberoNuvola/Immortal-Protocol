@@ -144,6 +144,56 @@ const tx = await lucid
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
   .complete({ localUPLCEval: false })
 
+const expectRejected = async (label: string, build: () => Promise<unknown>) => {
+  try {
+    await build()
+  } catch {
+    return
+  }
+  throw new Error('V3 carrier mint policy accepted invalid case: ' + label)
+}
+
+const alternateSeed = utxos.find(
+  (u) =>
+    (u.txHash !== seed.txHash || u.outputIndex !== seed.outputIndex) &&
+    BigInt(u.assets?.lovelace ?? 0n) >= 2_000_000n,
+)
+
+if (alternateSeed) {
+  await expectRejected('unconsumed configured seed', () =>
+    lucid
+      .newTx()
+      .collectFrom([alternateSeed])
+      .mintAssets({ [unit]: 1n }, Data.void())
+      .attach.MintingPolicy(policy)
+      .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
+      .complete({ localUPLCEval: true }),
+  )
+}
+
+const wrongUnit =
+  policyId + (TOKEN_NAME_HEX === '00' ? '01' : '00')
+
+await expectRejected('wrong token name', () =>
+  lucid
+    .newTx()
+    .collectFrom([seed])
+    .mintAssets({ [wrongUnit]: 1n }, Data.void())
+    .attach.MintingPolicy(policy)
+    .pay.ToAddress(address, { lovelace: 2_000_000n, [wrongUnit]: 1n })
+    .complete({ localUPLCEval: true }),
+)
+
+await expectRejected('wrong mint quantity', () =>
+  lucid
+    .newTx()
+    .collectFrom([seed])
+    .mintAssets({ [unit]: 2n }, Data.void())
+    .attach.MintingPolicy(policy)
+    .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 2n })
+    .complete({ localUPLCEval: true }),
+)
+
 const signed = await tx.sign.withWallet().complete()
 const txHash = await signed.submit()
 await lucid.awaitTx(txHash)
