@@ -38,14 +38,14 @@ jobs:
           cache: npm
 
       - name: Install project dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Restore V3 Plutus artifact cache
         id: v3-artifact-cache
         uses: actions/cache@v4
         with:
           path: plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
-          key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
+          key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
 
       - name: Setup canonical Plutus CI
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
