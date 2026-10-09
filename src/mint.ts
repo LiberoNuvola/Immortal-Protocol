@@ -1063,28 +1063,10 @@ export async function mintSerialNFT(
     toHex(gameVersion)
 
   // ----------------------------------------------------------
-  // Issuance timestamps
-  // ----------------------------------------------------------
-
-  const issuedAtMs =
-    BigInt(Date.now())
-
-  if (!opts.expiryPolicy || !opts.expiryIssuanceState) {
-    throw new Error(
-      'verified expiry policy and issuance state are required; no fixed expiry duration is available',
-    )
-  }
-
-  const expiry = crystallizeTicketExpiry(
-    opts.expiryPolicy,
-    opts.expiryIssuanceState,
-    issuedAtMs,
-  )
-
-  const expiresAtMs = expiry.expiresAt
-
-  // ----------------------------------------------------------
-  // PrizeDatum
+  // PrizeDatum is constructed only after authoritative Issue admission.
+  // The expiry issuance snapshot, when omitted, is taken from the same
+  // authenticated pre-transition V3 observation and authoritative preEEV
+  // bound to that admission. No local economic value is substituted.
   // ----------------------------------------------------------
 
   const prizeDatumConstr =
@@ -1366,6 +1348,85 @@ export async function mintSerialNFT(
       'Authoritative Issue admission is required: provide economicAdmission or authoritativeIssueAdmissionProvider',
     )
   }
+
+  const issuedAtMs = BigInt(Date.now())
+
+  if (!opts.expiryPolicy) {
+    throw new Error(
+      'verified expiry policy is required; no fixed expiry duration is available',
+    )
+  }
+
+  const authoritativeAdmission = economicAdmission as AuthoritativeIssueAdmissionWitness
+  const expiryIssuanceState = opts.expiryIssuanceState ?? (
+    requireCarrierBinding && carrierObservation
+      ? {
+          issuanceStateHash: authoritativeAdmission.stateHash,
+          economicEpoch: carrierObservation.stateVersion,
+          currentActiveClass: carrierObservation.state.control.currentActiveClass,
+          highestClassEverActivated: carrierObservation.state.control.highestClassEverActivated,
+          eev: authoritativeAdmission.preEEV,
+          unresolvedReserve: carrierObservation.state.unresolvedReserve,
+          unresolvedTicketCount: carrierObservation.state.unresolvedTicketCount,
+        }
+      : undefined
+  )
+
+  if (!expiryIssuanceState) {
+    throw new Error(
+      'verified expiry issuance state is required unless the authoritative V3 Issue admission supplies the pre-transition snapshot',
+    )
+  }
+
+  const expiry = crystallizeTicketExpiry(
+    opts.expiryPolicy,
+    expiryIssuanceState,
+    issuedAtMs,
+  )
+
+  const expiresAtMs = expiry.expiresAt
+
+  // ----------------------------------------------------------
+  // PrizeDatum
+  // ----------------------------------------------------------
+
+  const prizeDatumConstr =
+    buildPrizeDatumConstr({
+      ticketPolicyHex:
+        ticketPolicyId,
+
+      ticketNameHex:
+        tokenNameHex,
+
+      playerCommitmentHex,
+
+      priceUsdm,
+
+      commitmentHex,
+
+      gameVersionHex,
+
+      ticketNonce,
+
+      prizeAmount,
+
+      paymentPolicyHex:
+        '',
+
+      paymentNameHex:
+        '',
+
+      target,
+
+      prizePoolHashHex:
+        b1PrizePoolHash,
+
+      issuedAt:
+        issuedAtMs,
+
+      expiresAt:
+        expiresAtMs,
+    })
 
   let candidateCarrierDatum: Constr<Data> | null = null
   let carrierRedeemer: Constr<Data> | null = null
