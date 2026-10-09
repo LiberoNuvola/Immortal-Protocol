@@ -83,6 +83,10 @@ function viabilityCertificate() {
 
 function makePayload(overrides = {}) {
   return {
+    schema: 'PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1',
+    authorityVersion: '1',
+    actionClass: 'Issue',
+    stateHash: '4'.repeat(64),
     counterInputReference: 'a'.repeat(64) + '#0',
     controlStateReference: 'd'.repeat(64) + '#3',
     poolInputReference: 'b'.repeat(64) + '#1',
