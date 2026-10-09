@@ -4,6 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
+-- PlutusScriptV2 must not use UPLC 1.1.0 `case` on builtin pairs/lists.
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
 
 module PrizeValidator
   ( mkValidator
@@ -749,20 +751,24 @@ validateClaim oracleState oraclePublisher datum ctx =
 mkValidator
   :: ScriptHash
   -> PrizeTable
-  -> OracleStateId
+  -> BuiltinData
   -> PubKeyHash
   -> PrizeDatum
   -> PrizeAction
   -> ScriptContext
   -> Bool
-mkValidator regHash table oracleState oraclePublisher datum action ctx =
+mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
   case action of
     SyncBeacon ->
       validateSyncBeacon regHash datum ctx
     Reveal playerSecret ->
       validateReveal table datum playerSecret ctx
     Claim ->
-      validateClaim oracleState oraclePublisher datum ctx
+      validateClaim
+        (unsafeFromBuiltinData oracleStateData)
+        oraclePublisher
+        datum
+        ctx
     Expire ->
       validateExpire datum ctx
 
@@ -781,7 +787,7 @@ wrap regHash table oracleState oraclePublisher d r ctx =
     (mkValidator
       regHash
       table
-      (unsafeFromBuiltinData oracleState)
+      oracleState
       oraclePublisher
       (unsafeFromBuiltinData d)
       (unsafeFromBuiltinData r)

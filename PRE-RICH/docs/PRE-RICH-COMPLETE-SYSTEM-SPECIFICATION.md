@@ -56,6 +56,48 @@ PRE-RICH policy must not be promoted into universal IMMORTAL semantics merely be
 
 ---
 
+## 2A. First-Class Mechanism Architecture
+
+The application is not only a ticket lifecycle plus a solvency calculation. It contains explicit mechanisms whose roles and boundaries must be visible to a reader.
+
+### IMMORTAL safety substrate
+
+- **Economic Gate** — authorizes economically admissible transitions.
+- **Viability Kernel (K_Ω)** — evaluates whether safe continuation exists under the declared outcome set.
+- **A_safe** — filters candidate actions to those whose admissible outcomes remain viable.
+- **ProtectedCapital / RawSurplus** — separates protected obligations from discretionary residual capacity.
+- **Worst-Case Analysis** — bounds deterministic economic exposure.
+- **Statistical Risk Analysis** — estimates reserve needs without replacing deterministic protection.
+- **Hysteresis / Contraction / Quiescence / Recovery** — manage regime transitions and safe reduction/recovery without retroactively authorizing unsafe actions.
+
+### PRE-RICH adaptive/application mechanisms
+
+- **AWRA — Adaptive Win Rate Algorithm** — adapts game win/payout behaviour inside the residual economic headroom and authorized application policy.
+- **Treasury Allocation Policy** — selects permitted uses of residual application value.
+- **Adaptive Asset / Liquidation Policy** — selects among asset-management actions after economic feasibility and safe-action filtering.
+- **Jackpot Policy** — manages the application-specific jackpot lifecycle within protected-capital constraints.
+- **Game Outcome / Randomization** — produces deterministic application outcomes from the canonical rules and accepted randomness/evidence.
+
+### Adapter mechanism
+
+The Cardano Adapter performs evidence transport, semantic preservation, concrete settlement realization and chain conformance. It cannot create economic authority.
+
+### Boundary invariant
+
+```text
+IMMORTAL Economic Gate / Viability
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+        Cardano Adapter
+              ↓
+            Ledger
+```
+
+**Important:** a mechanism may be explicit and real while some numerical parameters or optimization choices remain open. AWRA is the clearest example: its recovery, current-model adaptation and risk-envelope lineage are documented, while the final optimizer/objective and other policy parameters are not canonized.
+
 ## 2. System at a glance
 
 At the application level, the system can be understood as four coupled state machines.

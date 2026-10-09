@@ -73,6 +73,7 @@ describe('Issue admission executable bridge', () => {
       actionClass: 'Issue',
       authenticatedPoolInputReference: pool,
       authenticatedPoolUsdmValue: 500n,
+      eev: 1001n,
       requiredImmediateLiquidity: 100n,
     })
     expect(witness.executableLiquidityObservation.utxos[0]).toMatchObject({
@@ -100,6 +101,7 @@ describe('Issue admission executable bridge', () => {
 
     const witness = await provider(runtimeInputs)
 
+    expect(witness.eev).toBe(1001n)
     expect(witness.authenticatedPoolInputReference).toBe(pool)
     expect(witness.authoritativeObservationReference).toBe('observation:issue:1')
   })

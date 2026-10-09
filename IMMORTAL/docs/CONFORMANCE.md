@@ -1,5 +1,7 @@
 # IMMORTAL Conformance
 
+> **NON-NORMATIVE INTEGRATIVE READER GUIDE.** Canonical conformance authority: `../../docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`; this file summarizes implementation-facing requirements and does not create protocol semantics.
+
 ## 1. Purpose
 
 Defines protocol-level requirements for an implementation claiming conformance to IMMORTAL.

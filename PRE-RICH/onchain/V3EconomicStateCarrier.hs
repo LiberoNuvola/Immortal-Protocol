@@ -10,6 +10,8 @@ module V3EconomicStateCarrier
   , V3EconomicStateAction (..)
   , mkValidator
   , bindingEnvelopeValid
+  , canonicalV3StateHash
+  , bindingEndpointsValid
   , compiledValidator
   ) where
 
@@ -27,6 +29,7 @@ import EconomicStateV3
   , JackpotState (..)
   , JackpotStatus (..)
   )
+import Beacon ( integerToBytes )
 
 data V3EconomicStateDatum = V3EconomicStateDatum
   { vesdStateVersion :: Integer
@@ -203,6 +206,102 @@ sameStateIdentity before after =
   && vesdStateVersion after == vesdStateVersion before + 1
   && stateValid (vesdState after)
 
+{-# INLINABLE pipeByte #-}
+pipeByte :: BuiltinByteString
+pipeByte = consByteString 124 emptyByteString
+
+{-# INLINABLE joinFieldsB #-}
+joinFieldsB :: [BuiltinByteString] -> BuiltinByteString
+joinFieldsB [] = emptyByteString
+joinFieldsB [x] = x
+joinFieldsB (x:xs) = appendByteString x (appendByteString pipeByte (joinFieldsB xs))
+
+{-# INLINABLE canonicalClass #-}
+canonicalClass :: TicketClassState -> BuiltinByteString
+canonicalClass c =
+  joinFieldsB
+    [ integerToBytes (tcsClassId c)
+    , integerToBytes (tcsIssued c)
+    , integerToBytes (tcsUnresolved c)
+    , integerToBytes (tcsExposure c)
+    , integerToBytes (tcsCap c)
+    , if tcsSaleable c then integerToBytes 1 else integerToBytes 0
+    ]
+
+{-# INLINABLE canonicalClasses #-}
+canonicalClasses :: [TicketClassState] -> BuiltinByteString
+canonicalClasses [] = emptyByteString
+canonicalClasses [c] = canonicalClass c
+canonicalClasses (c:cs) = appendByteString (canonicalClass c)
+  (appendByteString pipeByte (canonicalClasses cs))
+
+{-# INLINABLE canonicalControl #-}
+canonicalControl :: EconomicControlState -> BuiltinByteString
+canonicalControl c = joinFieldsB
+  [ integerToBytes (ecsCurrentActiveClass c)
+  , integerToBytes (ecsHighestClassEverActivated c)
+  ]
+
+{-# INLINABLE jackpotStatusBytes #-}
+jackpotStatusBytes :: JackpotStatus -> BuiltinByteString
+jackpotStatusBytes JackpotInactive = "inactive"
+jackpotStatusBytes JackpotLocked = "locked"
+jackpotStatusBytes JackpotPayable = "payable"
+jackpotStatusBytes JackpotClosed = "closed"
+
+{-# INLINABLE canonicalJackpot #-}
+canonicalJackpot :: JackpotState -> BuiltinByteString
+canonicalJackpot j = joinFieldsB
+  [ integerToBytes (jsLockedAmount j)
+  , integerToBytes (jsThreshold j)
+  , jackpotStatusBytes (jsStatus j)
+  , integerToBytes (jsCycle j)
+  ]
+
+{-# INLINABLE canonicalV3State #-}
+canonicalV3State :: V3EconomicState -> BuiltinByteString
+canonicalV3State s = joinFieldsB
+  [ integerToBytes (v3CrystallizedLiabilities s)
+  , integerToBytes (v3UnresolvedReserve s)
+  , integerToBytes (v3UnresolvedTicketCount s)
+  , integerToBytes (v3SafetyCapital s)
+  , integerToBytes (v3ReserveProtection s)
+  , integerToBytes (v3MandatoryFutureCosts s)
+  , canonicalClasses (v3Classes s)
+  , canonicalControl (v3Control s)
+  , canonicalJackpot (v3Jackpot s)
+  ]
+
+{-# INLINABLE hexNibble #-}
+hexNibble :: Integer -> BuiltinByteString
+hexNibble n =
+  if n < 10
+    then consByteString (48 + n) emptyByteString
+    else consByteString (87 + n) emptyByteString
+
+{-# INLINABLE byteToHex #-}
+byteToHex :: Integer -> BuiltinByteString
+byteToHex b =
+  appendByteString
+    (hexNibble (divide b 16))
+    (hexNibble (remainder b 16))
+
+{-# INLINABLE bytesToHex #-}
+bytesToHex :: BuiltinByteString -> BuiltinByteString
+bytesToHex bs = go 0 emptyByteString
+  where
+    len = lengthOfByteString bs
+    go n acc
+      | n >= len = acc
+      | otherwise =
+          go
+            (n + 1)
+            (appendByteString acc (byteToHex (indexByteString bs n)))
+
+{-# INLINABLE canonicalV3StateHash #-}
+canonicalV3StateHash :: V3EconomicState -> BuiltinByteString
+canonicalV3StateHash = bytesToHex . sha2_256 . canonicalV3State
+
 {-# INLINABLE bindingFieldValid #-}
 bindingFieldValid :: BuiltinByteString -> Bool
 bindingFieldValid field = lengthOfByteString field > 0
@@ -218,6 +317,19 @@ bindingEnvelopeValid action =
       && bindingFieldValid preHash
       && bindingFieldValid actionHash
       && bindingFieldValid postHash
+
+{-# INLINABLE bindingEndpointsValid #-}
+bindingEndpointsValid
+  :: V3EconomicStateDatum
+  -> V3EconomicStateDatum
+  -> V3EconomicStateAction
+  -> Bool
+bindingEndpointsValid before after action =
+     bindingEnvelopeValid action
+  && case action of
+       AdvanceV3State _ _ _ preHash _ postHash ->
+            preHash == canonicalV3StateHash (vesdState before)
+         && postHash == canonicalV3StateHash (vesdState after)
 
 {-# INLINABLE mkValidator #-}
 mkValidator
@@ -251,7 +363,7 @@ mkValidator carrierPolicy carrierName datum action ctx =
            case action of
              AdvanceV3State _ _ _ _ _ _ ->
                sameStateIdentity datum after
-           && bindingEnvelopeValid action
+           && bindingEndpointsValid datum after action
 
 {-# INLINABLE wrap #-}
 wrap

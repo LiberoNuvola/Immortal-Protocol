@@ -1,0 +1,81 @@
+name: PRE-RICH B2 Control Carrier — Preprod
+
+on:
+  workflow_dispatch:
+    inputs:
+      control_token_name_hex:
+        description: "Deployment-specific control singleton token name (hex, supplied by operator)"
+        required: true
+        type: string
+      seed_tx_hash:
+        description: "Exact wallet seed UTxO transaction hash"
+        required: true
+        type: string
+      seed_output_index:
+        description: "Exact wallet seed UTxO output index"
+        required: true
+        type: string
+      control_authority_pkh:
+        description: "Payment key hash authorized to mutate the B2 control singleton (optional; defaults to deployer wallet)"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 30
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
+      DEPLOYER_MNEMONIC: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_CONTROL_TOKEN_NAME_HEX: ${{ inputs.control_token_name_hex }}
+      PREPROD_CONTROL_SEED_TX_HASH: ${{ inputs.seed_tx_hash }}
+      PREPROD_CONTROL_SEED_OUTPUT_INDEX: ${{ inputs.seed_output_index }}
+      PREPROD_CONTROL_AUTHORITY_PKH: ${{ inputs.control_authority_pkh }}
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install native Plutus dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev libblst-dev pkg-config build-essential
+
+      - name: Setup Haskell for fresh Plutus artifacts
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+
+      - name: Build and export fresh Plutus artifacts
+        working-directory: plutus
+        run: cabal run exe:export-scripts
+
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "${BLOCKFROST_PROJECT_ID}"
+          test -n "${DEPLOYER_MNEMONIC}"
+          test -n "${PREPROD_CONTROL_TOKEN_NAME_HEX}"
+          test -n "${PREPROD_CONTROL_SEED_TX_HASH}"
+          test -n "${PREPROD_CONTROL_SEED_OUTPUT_INDEX}"
+
+      - name: Deploy authenticated B2 control singleton
+        run: node --import=tsx/esm scripts/deployPreRichControlCarrier.mts
+
+      - name: Upload B2 control deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-b2-control-deployment
+          path: audit/preprod-issue/b2-control-deployment.json
+          if-no-files-found: warn

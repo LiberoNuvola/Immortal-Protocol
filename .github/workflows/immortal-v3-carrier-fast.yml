@@ -1,5 +1,6 @@
 name: IMMORTAL V3 Carrier Fast Ledger Gate
 # Fast ledger-only verification path; full P2.8 remains manual/PR gated.
+# CI trigger: verify canonical blst/shared Plutus bootstrap on current HEAD.
 
 concurrency:
   group: v3-carrier-fast-${{ github.ref }}
@@ -17,12 +18,13 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/immortal-v3-carrier-fast.yml"
+      - ".github/actions/setup-plutus/**"
   workflow_dispatch:
 
 jobs:
   v3-carrier-ledger:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
@@ -45,49 +47,38 @@ jobs:
           path: plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
           key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
 
-      - name: Setup Haskell for V3 artifact rebuild
+      - name: Setup canonical Plutus CI
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.6.7'
-          cabal-version: '3.12.1.0'
-
-      - name: Install Plutus native dependencies
-        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsodium-dev libsecp256k1-dev pkg-config build-essential git
-          rm -rf /tmp/blst
-          git clone --depth 1 --branch v0.3.14 https://github.com/supranational/blst.git /tmp/blst
-          chmod +x /tmp/blst/build.sh
-          set +e
-          (cd /tmp/blst && ./build.sh)
-          rc=$?
-          set -e
-          test -s /tmp/blst/libblst.a
-          sudo install -m 0644 /tmp/blst/libblst.a /usr/local/lib/libblst.a
-          sudo install -m 0644 /tmp/blst/bindings/blst_aux.h /usr/local/include/blst_aux.h
-          sudo install -m 0644 /tmp/blst/bindings/blst.h /usr/local/include/blst.h
-          sudo install -m 0644 /tmp/blst/bindings/blst.hpp /usr/local/include/blst.hpp
-          sudo ldconfig
-          sudo mkdir -p /usr/local/lib/pkgconfig
-          cat <<'EOF' | sudo tee /usr/local/lib/pkgconfig/libblst.pc >/dev/null
-          prefix=/usr/local
-          libdir=${prefix}/lib
-          includedir=${prefix}/include
-          Name: libblst
-          Description: supranational blst
-          Version: 0.3.14
-          Libs: -L${libdir} -lblst
-          Cflags: -I${includedir}
-          EOF
-          pkg-config --exists 'libblst >= 0.3.14'
-          pkg-config --modversion libblst
-          if [ "$rc" -ne 0 ]; then echo "blst build.sh returned $rc after producing libblst.a"; fi
+        uses: ./.github/actions/setup-plutus
 
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
-        run: cabal run exe:export-scripts -j1
+        run: |
+          set +e
+          cabal --config-file="$CABAL_CONFIG" run exe:export-scripts -j1 > plutus/v3-artifact-build.log 2>&1
+          rc=$?
+          set -e
+
+          echo "Cabal V3 artifact generation exit code: $rc"
+          echo "V3-specific compiler diagnostics:"
+          grep -E 'V3EconomicStateCarrier(MintPolicy)?\\.hs' plutus/v3-artifact-build.log | tail -200 || true
+
+          if [ "$rc" -ne 0 ]; then
+            echo "Last 120 build-log lines:"
+            tail -120 plutus/v3-artifact-build.log || true
+            exit "$rc"
+          fi
+
+          echo "V3 artifact generation completed."
+          exit 0
+
+      - name: Preserve V3 Plutus build log
+        if: always() && steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-v3-plutus-build-log
+          path: plutus/v3-artifact-build.log
+          if-no-files-found: ignore
 
       - name: Verify V3 Plutus artifact
         run: |

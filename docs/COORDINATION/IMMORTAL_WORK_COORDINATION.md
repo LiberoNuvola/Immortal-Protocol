@@ -1570,3 +1570,96 @@ The next required step is therefore to bind the actual Issue transaction to the 
 A Genesis Regime Carrier workflow for the latest source change is currently **in progress** (run `36357870924`, head `f35c08c743c07d62a264366bbf085d3b840fd5e5`). No green result is claimed until the run completes.
 
 **STATUS: 🟢 DECISION-ENVELOPE STRUCTURE · 🔴 CRYPTOGRAPHIC/STATE-HASH RECOMPUTATION · 🔴 LIVE CARRIER→ISSUE TX BINDING · 🔴 EEV SOURCE · 🟡 LIQUIDITY LIVE EVIDENCE**
+
+
+## 44.50 ISSUE AUTHORITY — PROTECTED-CAPITAL PROVENANCE BINDING — 2026-10-09
+
+The Issue authority seam was advanced without changing PRE-RICH economics or the V3 decision semantics.
+
+### Implemented
+
+- PRE-RICH/onchain/PreRichIssueDecision.hs now retains the exact authoritative preState inside the produced IssueDecision.
+- plutus/export/IssueAdmission.hs now emits a structured ProtectedCapital provenance witness derived by the canonical Haskell EconomicKernel.protectedCapital / worstCaseExposure path, with all six protected components and accounting inputs.
+- Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts now binds that provenance to the exact observed V3 carrier state reference and normalizes serialized integer fields to bigint.
+- relayer/preprodIssueAuthorityEnvelope.js provides a fail-closed signing boundary for the complete Issue authority envelope and self-verifies the generated signature before returning it.
+- relayer/preprodIssueAuthorityEnvelope.test.js covers the positive signed-envelope path.
+- plutus/test/PreRichIssueDecisionTest.hs now asserts preservation of the exact pre-state used for provenance.
+
+### Boundary preserved
+
+This closes a concrete provenance implementation gap:
+
+authenticated V3 carrier preState → canonical Haskell Issue decision → ProtectedCapital provenance → signed Issue authority envelope
+
+It does not manufacture EEV or Viability. The signed envelope still requires:
+
+- EEV qualification with EV1–EV7 and DEPLOYMENT_APPROVED;
+- a real ViabilityCertificate with VC1–VC6 and E1–E10;
+- exact live Pool/Counter/carrier/control bindings;
+- an explicit immediate-liquidity requirement;
+- deployment-held signing authority.
+
+The existing browser/adapter path remains fail-closed when any required authority evidence is missing.
+
+### Current classification
+
+🟢 ProtectedCapital provenance derivation/binding implemented
+🟢 Signed Issue envelope producer implemented
+🔴 Concrete Viability/Kc-Ω certificate evidence still required
+🔴 B2 live control deployment still required
+🔴 Atomic first-user Preprod Issue still blocked
+
+No V3 economic rule changed.
+
+
+## 44.51 ISSUE AUTHORITY — WITNESS IDENTITY HARDENING — 2026-10-09
+
+A second binding pass closed three concrete interface ambiguities found while wiring the new ProtectedCapital provenance path.
+
+### Closed
+
+1. The authoritative Issue witness now carries the exact Counter reference, pre-EEV, Issue class and Issue price instead of receiving those values outside the witness.
+2. The Haskell Issue adapter requires the canonical action string `Issue:<classId>:<price>` and verifies pre-EEV, candidate EEV and executable liquidity against the authoritative decision input.
+3. Haskell-derived ProtectedCapital is cross-checked component-by-component and by total against the upstream authenticated authority source before being admitted into the witness.
+4. The signed authority verifier now accepts JSON numeric coordinates independent of whether the runtime expected values are `number` or `bigint`, while still comparing them as exact integers.
+5. The signed envelope requires the explicit Issue schema/action and the signer refuses a missing or negative pre-EEV.
+6. A dedicated `HaskellIssueAdmissionProvider.test.ts` exercises the binding path and a negative ProtectedCapital mismatch case; Adapter Sale Conformance now runs it.
+
+### CI
+
+Current branch head: `69222769c2e8f31b21c1ebd50a3e87d68c1906a3`.
+
+At the latest check:
+- PRE-RICH B2 Control Carrier Conformance #46: queued
+- Cardano Adapter Sale Conformance #3131: queued
+- Protocol Declaration Conformance #1860: queued
+
+No green status is claimed before completion.
+
+### Kc / Ω boundary
+
+The concrete deployment Kc remains intentionally external. The normative certification package requires a real profile instantiation of `(S,A,Accept,Ω,T,Safe)` plus VC1–VC6 and E1–E10. The current repository does not contain such a deployment certificate, and the 2026-10-05 viability audit shows that treating only `Issue/Reveal/Claim/Expire` as the complete infinite-horizon action space would make the concrete kernel empty. No artificial Kc, narrowed Ω, or fake QNE action is introduced here.
+
+No V3 economic rule changed.
+
+
+## 44.52 B2 CONTROL AUTHORITY + ISSUE IDENTITY BINDING — 2026-10-09
+
+The PRE-RICH B2 control carrier is now bound to an explicit deployment authority key. The validator rejects every control mutation unless the configured payment key hash is among the transaction signatories. The deployment script derives that authority from the deployer wallet by default and records it in the deployment manifest; a separate PREPROD_CONTROL_AUTHORITY_PKH may be supplied.
+
+The real Issue authority witness now also carries the exact B2 control UTxO reference. That reference is propagated through the live observation reader, Haskell Issue provider, signed authority envelope, verifier and mintSerialNFT call-site. The live Issue path reads the exact B2 singleton as a reference input and fails closed on any mismatch.
+
+The Issue witness therefore binds:
+
+- Counter UTxO;
+- B2 control UTxO;
+- B1 PrizePool UTxO;
+- V3 carrier UTxO;
+- pre-EEV/class/price;
+- ProtectedCapital provenance;
+- EEV EV1–EV7 + deployment approval;
+- viability VC1–VC6 + E1–E10 + deployment binding.
+
+Historical research recovery confirms that PRE-RICH's earlier Dynamic Viability Machine already modeled PRE_GENESIS, QUIESCENT, contraction and recovery. Those semantics remain historical/research evidence until a concrete deployment Kc/Ω package proves VC1–VC6, especially inductiveness, acceptance compatibility, Ω soundness and non-vacuity. No V3 economic semantics were changed.
+
+B2 remains deployment-open until the real control singleton identity is materialized on Cardano Preprod and an adversarial ledger trace proves authorized mutation, singleton uniqueness and Issue reference binding.

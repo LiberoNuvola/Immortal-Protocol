@@ -16,7 +16,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="app-shell dapp-shell">
     <header class="dapp-header">
       <div class="dapp-brand-lockup">
-        <img class="dapp-immortal-mark" src="/immortal-mark.svg" alt="IMMORTAL Protocol">
+        <img class="dapp-immortal-mark" src="./web/assets/immortal-mark.svg" alt="IMMORTAL Protocol">
         <div><span class="dapp-kicker">IMMORTAL / PRE-RICH</span>
         <h1>The application layer.</h1>
         <div class="dapp-product-line"><strong>PRE-RICH</strong><span>powered by IMMORTAL</span></div>
@@ -79,10 +79,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
     <section class="purchase-console dapp-card">
       <div class="dapp-card__head"><span class="dapp-label">06 · ISSUE CONSOLE</span><span id="issue-gate-state" class="state-badge">GATE LOCKED</span></div>
+      <div class="genesis-note"><strong>GENESIS</strong><span>Automatic activation event — when the verified PRE Treasury reaches the Genesis threshold, Class 1 becomes active at 1 USDM per ticket.</span></div>
       <div class="purchase-console__grid">
         <div>
           <span class="dapp-label">SELECTED CLASS</span>
-          <h2 id="selected-class">Genesis / 1 USDM</h2>
+          <h2 id="selected-class">Class 1 / 1 USDM</h2>
           <p id="selected-class-note">Application price profile. Selection does not constitute economic admission.</p>
           <div class="price-ladder" id="price-ladder">
             <button type="button" data-price="1" class="price-choice selected" aria-pressed="true">1</button>
@@ -125,7 +126,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <div class="preview-section">
           <span class="dapp-label">ECONOMIC REQUEST</span>
           <div class="preview-row"><span>Application</span><b>PRE-RICH</b></div>
-          <div class="preview-row"><span>Class</span><b id="preview-class">Genesis</b></div>
+          <div class="preview-row"><span>Class</span><b id="preview-class">Class 1</b></div>
           <div class="preview-row"><span>Economic price</span><b id="preview-price">1 USDM</b></div>
           <div class="preview-row"><span>Action</span><b>ISSUE</b></div>
         </div>
@@ -205,7 +206,7 @@ const renderAdPackages = () => {
 renderAdPackages()
 
 let selectedIssuePrice = 1
-const issueClassNames: Record<number, string> = {1:'Genesis',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
+const issueClassNames: Record<number, string> = {1:'Class 1',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
 
 const syncPreview = () => {
   const name = issueClassNames[selectedIssuePrice] || 'Application class'

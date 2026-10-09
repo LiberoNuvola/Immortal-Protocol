@@ -8,7 +8,7 @@ function datum() {
   const prices = [1n,2n,3n,5n,10n,25n,50n,100n]
   const classes = prices.map((price, i) => ({
     fields: [
-      BigInt(i), 0n, 0n, 0n, 10n,
+      BigInt(i), i < 2 ? 1n : 0n, 0n, 0n, 10n,
       { index: i === 0 ? 1 : 0, fields: [] },
     ],
   }))
@@ -37,11 +37,41 @@ function fakeLucid() {
           assets: { ['poolpolicy' + 'poolname']: 1n },
         }]
       }
+      if (address === 'control') {
+        return [{
+          txHash: ref('e'),
+          outputIndex: 3,
+          datum: {
+            fields: [
+              0n, 0n, 0n, 0n,
+              'controlpolicy',
+              'controlname',
+            ],
+          },
+          assets: { ['controlpolicy' + 'controlname']: 1n },
+        }]
+      }
       if (address === 'carrier') {
+        const d = datum()
+        d.fields[1].fields[0] = 10n
+        d.fields[1].fields[1] = 3n
+        d.fields[1].fields[2] = 2n
+        d.fields[1].fields[3] = 20n
+        d.fields[1].fields[4] = 30n
+        d.fields[1].fields[5] = 40n
+        d.fields[1].fields[6][0].fields[2] = 1n
+        d.fields[1].fields[6][0].fields[3] = 1n
+        d.fields[1].fields[6][1].fields[2] = 1n
+        d.fields[1].fields[6][1].fields[3] = 2n
+        d.fields[1].fields[1] = 3n
+        d.fields[1].fields[2] = 2n
+        d.fields[1].fields[6][0].fields[4] = 10n
+        d.fields[1].fields[6][1].fields[4] = 10n
+        d.fields[1].fields[8].fields[0] = 50n
         return [{
           txHash: ref('c'),
           outputIndex: 2,
-          datum: datum(),
+          datum: d,
           assets: { ['carrierpolicy' + 'carriername']: 1n },
         }]
       }
@@ -59,6 +89,9 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
     carrierAddress: 'carrier',
     carrierPolicyId: 'carrierpolicy',
     carrierTokenNameHex: 'carriername',
+    controlAddress: 'control',
+    controlPolicyId: 'controlpolicy',
+    controlTokenNameHex: 'controlname',
     classId: 0,
     price: 1,
     observedAt: 123n,
@@ -72,12 +105,39 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
       obligationsComplete: true,
       allOmegaSuccessorsCertified: true,
       decisionReference: 'decision-1',
+      protectedCapitalProvenance: {
+        sourceReference: 'c'.repeat(64) + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
     },
   })
 
   assert.equal(result.counterInputReference, ref('a') + '#0')
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, 'cardano:tx/' + ref('c') + '#2')
+  assert.equal(result.controlStateReference, 'cardano:tx/' + ref('e') + '#3')
+  assert.equal(result.protectedCapitalProvenance.total, 1650n)
+  assert.deepEqual(result.protectedCapitalProvenance.components, {
+    crystallizedLiabilities: 10n,
+    worstCaseExposure: 1500n,
+    safetyCapital: 20n,
+    reserveProtection: 30n,
+    lockedJackpot: 50n,
+    mandatoryFutureCosts: 40n,
+  })
+  assert.deepEqual(result.protectedCapitalProvenance.accountingInputs, {
+    unresolvedReserve: 3n,
+    unresolvedTicketCount: 2n,
+  })
   assert.equal(result.decisionInput.preState.control.currentActiveClass, 0n)
   assert.equal(result.decisionInput.classId, 0n)
   assert.equal(result.decisionInput.observationReference.includes(ref('c')), true)
@@ -101,6 +161,9 @@ test('fails closed when the carrier singleton is ambiguous', async () => {
       carrierAddress: 'carrier',
       carrierPolicyId: 'carrierpolicy',
       carrierTokenNameHex: 'carriername',
+      controlAddress: 'control',
+      controlPolicyId: 'controlpolicy',
+      controlTokenNameHex: 'controlname',
       classId: 0,
       price: 1,
       observedAt: 123n,
@@ -114,6 +177,19 @@ test('fails closed when the carrier singleton is ambiguous', async () => {
         obligationsComplete: true,
         allOmegaSuccessorsCertified: true,
         decisionReference: 'decision-1',
+      protectedCapitalProvenance: {
+        sourceReference: 'c'.repeat(64) + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
       },
     }),
     /ambiguous/,
@@ -143,8 +219,64 @@ test('fails closed when observation time is not authenticated', async () => {
         obligationsComplete: true,
         allOmegaSuccessorsCertified: true,
         decisionReference: 'decision-1',
+      protectedCapitalProvenance: {
+        sourceReference: 'c'.repeat(64) + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
       },
     }),
     /observedAt is required/,
+  )
+})
+
+
+test('fails closed when authoritative boolean evidence is not actually boolean', async () => {
+  await assert.rejects(
+    () => readPreprodIssueObservation({
+      lucid: fakeLucid(),
+      counterAddress: 'counter',
+      b1PrizePoolAddress: 'pool',
+      poolTokenUnit: 'poolpolicy' + 'poolname',
+      carrierAddress: 'carrier',
+      carrierPolicyId: 'carrierpolicy',
+      carrierTokenNameHex: 'carriername',
+      classId: 0,
+      price: 1,
+      observedAt: 123n,
+      authoritativeInputs: {
+        poolUsdmValue: 1n,
+        preEEV: 1n,
+        candidateEEV: 1n,
+        requiredImmediateLiquidity: 1n,
+        truthVerified: 'false',
+        eevFresh: true,
+        obligationsComplete: true,
+        allOmegaSuccessorsCertified: true,
+        decisionReference: 'decision-1',
+      protectedCapitalProvenance: {
+        sourceReference: 'c'.repeat(64) + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
+      },
+    }),
+    /truthVerified must be boolean/,
   )
 })

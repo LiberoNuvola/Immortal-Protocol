@@ -18,6 +18,7 @@ const datum = {
   row1Tier: 0n,
   row2Tier: 0n,
   beaconTarget: 'target-12',
+  provenance: { beaconStatus: 'Pending' as const },
 }
 
 describe('Certified 3D renderer escaping', () => {
@@ -40,6 +41,7 @@ describe('Certified persistent ticket binding', () => {
     expect(state.identity.policyId).toBe(datum.ticketPolicy)
     expect(state.identity.assetName).toBe(datum.ticketName)
     expect(state.status).toBe('Pending')
+    expect(state.provenance.beaconStatus).toBe('Pending')
   })
 
   it('rejects policy substitution', () => {
@@ -112,5 +114,27 @@ describe('Certified ticket NFT observation', () => {
       'aa'.repeat(28),
       '3132',
     )).toThrow('certified ticket NFT must be observed with quantity exactly one')
+  })
+})
+
+ 
+describe('Certified ticket provenance', () => {
+  it('carries real Materios/Beacon fields without treating them as B3 proof', () => {
+    const state = certifyTicketBinding({
+      walletAssetPolicyId: datum.ticketPolicy,
+      walletAssetNameHex: datum.ticketName,
+      datum: {
+        ...datum,
+        provenance: {
+          beaconStatus: 'Ready',
+          mcHash: 'aa'.repeat(32),
+          materiosContext: 'bb'.repeat(16),
+        },
+      },
+      verificationReference: 'verify-materios-1',
+    })
+    expect(state.provenance.beaconStatus).toBe('Ready')
+    expect(state.provenance.mcHash).toBe('aa'.repeat(32))
+    expect(state.provenance.materiosContext).toBe('bb'.repeat(16))
   })
 })

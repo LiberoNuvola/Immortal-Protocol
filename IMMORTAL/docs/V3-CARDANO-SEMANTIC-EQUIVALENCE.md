@@ -1,5 +1,7 @@
 # IMMORTAL — V3 ↔ Cardano Semantic Equivalence Register
 
+> **NON-NORMATIVE CONFORMANCE / EVIDENCE REGISTER.** Canonical universal semantics remain under `../../docs/00-normative/`; this register records refinement obligations and current gaps without redefining them.
+
 **Status:** OPEN — B6 implementation/conformance
 **Branch:** `work/immortal-green-closure`
 **Purpose:** record the exact refinement obligations between the chain-neutral V3 economic model and the Cardano/PRE-RICH realization. This document is evidence/conformance material; it does not redefine canonical economics.

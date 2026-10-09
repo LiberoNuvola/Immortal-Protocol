@@ -1,12 +1,14 @@
 # PRE-RICH — White Paper
 
+> **Scope:** PRE-RICH application orientation only. It does not define universal IMMORTAL semantics. Universal authority: `../docs/00-normative/`; application policy: `../PRE-RICH/docs/`.
+
 **Open Protocol for Transparent, Programmable and Resilient Economic Systems**
 
 **Version:** 0.6.1 — Release Candidate
 **Date:** September 2026
 **Status:** Research / Active Development — Open-Source Candidate — Not Mainnet-Ready
 
-> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Economic Algorithm Conformance Matrix](docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md) and the [Constitution Gap Matrix](docs/CONSTITUTION-GAP-MATRIX.md).
+> **Implementation status:** for the distinction between documented rules, implemented behavior, and verified evidence, see the [Conformance and Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md) and the [Constitution Gap Matrix](03-audit/CONSTITUTION-GAP-MATRIX.md).
 >
 > The Conformance Matrix tracks implementation evidence; it does not create or modify economic policy.
 
@@ -57,14 +59,16 @@ Recommended reading:
 
 Core documents:
 
-1. `docs/CONSTITUTION.md`
-2. `docs/Game-Economy.md`
-3. `docs/Game-Economy-Specification.md`
-4. `docs/ECONOMIC-ALGORITHM.md`
-5. `docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
-6. `docs/CONSTITUTION-GAP-MATRIX.md`
-7. `docs/architecture-spec.md`
-8. `docs/beacon-trust-model.md`
+1. `docs/00-normative/01_CONSTITUTION_FINAL.md`
+2. `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`
+3. `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+4. `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+5. `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`
+6. `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
+7. `PRE-RICH/docs/GAME-ECONOMY.md`
+8. `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md`
+9. `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`
+10. `docs/03-audit/BEACON-CLOSURE-MATRIX.md`
 
 > **Documentation principle:** the White Paper explains; normative documents define; the implementation realizes; tests and proofs provide evidence.
 
@@ -261,6 +265,34 @@ No team/founder/developer/administrator receives an automatic personal economic 
 
 The historical 75/10/10/5 allocation is non-canonical.
 
+## 15A. First-Class Adaptive Mechanisms
+
+The current PRE-RICH architecture contains explicit application mechanisms that operate inside the economic space made safe by IMMORTAL. They are not hidden implementation details.
+
+| Mechanism | Role | Boundary |
+|---|---|---|
+| **AWRA — Adaptive Win Rate Algorithm** | Adapts winning-rate / payout behaviour within available application surplus and the authorized ruleset. | Cannot consume protected capital, bypass Economic Gate / viability, or define its own economic authority. |
+| **Treasury Allocation Policy** | Chooses how residual application value is routed among permitted destinations. | Historical fixed splits such as 75/10/10/5 are non-canonical. |
+| **Adaptive Asset / Liquidation Policy** | Chooses among safe asset-management actions such as HOLD, SALE, LIQUIDATE or REBALANCE. | Preference is evaluated only after economic feasibility and `A_safe`; no universal asset-ranking rule is implied. |
+| **Jackpot Policy** | Manages the application-specific jackpot lifecycle. | Locked Jackpot remains protected; funding and payout remain subject to the economic boundary. |
+| **Game Outcome / Randomization** | Produces the application result from canonical rules and randomness/evidence. | Unverified or player-supplied data cannot become economic authority. |
+
+The boundary is:
+
+```text
+IMMORTAL Economic Gate / Viability
+              ↓
+           A_safe
+              ↓
+     PRE-RICH policy/mechanism
+              ↓
+       Cardano Adapter
+              ↓
+            Ledger
+```
+
+For AWRA specifically, the current repository has recovered and reproduced the historical static candidate machinery against the current Classic-6 model and recovered the historical dynamic risk-envelope lineage. The exact final optimizer, objective, cadence, alpha/budget fraction and dynamic selector remain application-policy work.
+
 ## 15. PrizePool and Jackpot
 
 PrizePool tracks liquidity, unresolved reservations, pending liabilities, locked Jackpot liquidity and class state.
@@ -277,7 +309,7 @@ Payout is limited by:
 
 No fixed JackpotAllocationRate is canonical by default.
 
-The exact Jackpot payout mode remains OPEN: threshold payout vs full current locked-balance payout.
+The Jackpot payout mode is closed at the current PRE-RICH policy level: full current locked-balance payout exactly once.
 
 ## 16. Expiry
 
@@ -293,7 +325,7 @@ After `expiresAt`:
 - a late reveal cannot create claimability or liability;
 - a late reveal cannot resurrect the expired right.
 
-The exact ticket expiry duration remains OPEN.
+The expiry mechanism is closed: the horizon is deterministically derived at issuance under `preRichExpiryPolicyV1` and crystallized into `expiresAt`; V1 bounds are 2 hours minimum / 300 days maximum and are application parameters, not IMMORTAL constants.
 
 ## 17. Non-Custodial Claims
 
@@ -356,7 +388,7 @@ As of September 2026:
 - independent external security audit is not completed;
 - the project is **not mainnet-ready**.
 
-Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps.
+Known implementation/evidence gaps include autonomous operational liveness consolidation, transition conformance, quantitative hysteresis validation, expiry conformance, Jackpot conformance and other previously identified implementation gaps; these are not policy openings.
 
 These gaps do not reopen the frozen economic semantics.
 
@@ -438,9 +470,7 @@ This White Paper belongs to the aligned document set including:
 - Economic Algorithm v0.3.1
 - Economic Algorithm Conformance Matrix v0.1.1
 
-The canonical Conformance Matrix filename is:
-
-`docs/ECONOMIC-ALGORITHM_CONFORMANCE-MATRIX.md`
+Conformance is tracked by the IMMORTAL and PRE-RICH conformance specifications together with `docs/03-audit/CONSTITUTION-GAP-MATRIX.md`. Historical conformance matrices remain under `docs/archive/` and are not current authority.
 
 ## Disclaimer
 

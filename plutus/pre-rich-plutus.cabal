@@ -13,7 +13,6 @@ library
         ../IMMORTAL/governance
         ../PRE-RICH/onchain
         ../Adapter/REFERENCE
-
     exposed-modules:
         Types
         OracleTypes
@@ -41,10 +40,13 @@ library
         PreRichIssueDecision
         PreRichGenesisAdmission
         PreRichRegimeState
+        PreRichLifecycleTransition
         GenesisRegimeCarrier
         GenesisCarrierMintPolicy
         V3EconomicStateCarrier
         V3EconomicStateCarrierMintPolicy
+        PreRichControlCarrier
+        PreRichControlCarrierMintPolicy
         B1LegacyAdapter
         ProtectedCapitalConformance
         Governance
@@ -60,9 +62,7 @@ library
         GovernanceCanonicalizationWitness
         GovernanceFinality
         ReferenceAdapter
-
     other-modules:
-
     build-depends:
         base ^>=4.18.2,
         plutus-core ^>=1.67.0.0,
@@ -73,9 +73,7 @@ library
         base16-bytestring,
         text,
         cryptohash-sha256
-
     default-language: Haskell2010
-
     ghc-options:
         -Wall
         -fno-ignore-interface-pragmas
@@ -96,12 +94,10 @@ executable issue-admission
         bytestring,
         pre-rich-plutus
     default-language: Haskell2010
-    ghc-options:
-        -Wall
+    ghc-options: -Wall
 
 executable export-scripts
-    hs-source-dirs:
-        export
+    hs-source-dirs: export
     main-is: Export.hs
     build-depends:
         base ^>=4.18.2,
@@ -127,6 +123,16 @@ executable export-scripts
         -fno-spec-constr
         -fno-unbox-strict-fields
         -fno-unbox-small-strict-fields
+
+executable reference-economic-conformance
+    hs-source-dirs: ../Adapter/REFERENCE/export
+    main-is: ReferenceEconomicConformance.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
 
 test-suite economic-oracle-tests
     type: exitcode-stdio-1.0
@@ -223,6 +229,7 @@ test-suite legacy-adapter-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -235,10 +242,39 @@ test-suite projection-boundary-tests
         pre-rich-plutus
     default-language: Haskell2010
 
+test-suite portability-vector-kernel-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PortabilityVectorConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite cardano-universal-boundary-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: CardanoUniversalBoundaryConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
 test-suite genesis-admission-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
     main-is: GenesisAdmissionTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite pre-rich-lifecycle-transition-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PreRichLifecycleTransitionTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
@@ -263,7 +299,6 @@ test-suite v3-economic-state-carrier-binding-tests
         pre-rich-plutus
     default-language: Haskell2010
 
-
 test-suite economic-gate-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
@@ -272,7 +307,6 @@ test-suite economic-gate-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
-
 
 executable inspect-historical-pre-policy
     hs-source-dirs: export
@@ -285,9 +319,7 @@ executable inspect-historical-pre-policy
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0
     default-language: Haskell2010
-    ghc-options:
-        -Wall
-
+    ghc-options: -Wall
 
 test-suite reference-adapter-tests
     type: exitcode-stdio-1.0
@@ -298,10 +330,8 @@ test-suite reference-adapter-tests
         pre-rich-plutus
     default-language: Haskell2010
 
-
 executable reference-adapter-golden
-    hs-source-dirs:
-        ../Adapter/REFERENCE/export
+    hs-source-dirs: ../Adapter/REFERENCE/export
     main-is: ReferenceAdapterGolden.hs
     build-depends:
         base ^>=4.18.2,

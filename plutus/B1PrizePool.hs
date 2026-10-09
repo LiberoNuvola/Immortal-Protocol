@@ -4,6 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
+-- PlutusScriptV2 must not use UPLC 1.1.0 `case` on builtin pairs/lists.
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
 
 module B1PrizePool
   ( mkValidator
@@ -591,7 +593,7 @@ ticketMinted
 {-# INLINABLE mkValidator #-}
 mkValidator
   :: ScriptHash
-  -> OracleStateId
+  -> BuiltinData
   -> PubKeyHash
   -> BuiltinByteString
   -> BuiltinByteString
@@ -601,7 +603,7 @@ mkValidator
   -> Bool
 mkValidator
   prizeHash
-  oracleState
+  oracleStateData
   oraclePublisher
   poolPolicy
   poolName
@@ -639,6 +641,9 @@ mkValidator
 
         FundTreasury ->
           let
+            oracleState :: OracleStateId
+            oracleState = unsafeFromBuiltinData oracleStateData
+
             ownOutVal =
               ownOutputValue ctx
 
@@ -719,13 +724,13 @@ mkValidator
                  False
 
                Just n ->
-                 case findPrizeInput info prizeHash of
+                 case findPrizeOutput info prizeHash of
                    Nothing ->
                      traceError
-                       "B1PrizePool: exactly one decodable prize input required"
+                       "B1PrizePool: exactly one decodable PrizeDatum output required"
 
                    Just pd ->
-                        pdStatus pd == Pending
+                     pdStatus pd == Pending
 
                      && pdPrizeAmount pd == 0
 
@@ -748,8 +753,6 @@ mkValidator
                      && pdPriceUsdm pd
                           == priceUsdm
 
-                     -- Ticket issuance does not change physical
-                     -- pool liquidity.
                      && ppTotalLiquidity n
                           == ppTotalLiquidity datum
 
@@ -922,6 +925,9 @@ mkValidator
 
                        Just pd ->
                          let
+                           oracleState :: OracleStateId
+                           oracleState = unsafeFromBuiltinData oracleStateData
+
                            ticketCs =
                              pdTicketPolicy pd
 
@@ -1155,7 +1161,7 @@ wrap
   check
     ( mkValidator
         (unsafeFromBuiltinData prizeHash)
-        (unsafeFromBuiltinData oracleState)
+        oracleState
         (unsafeFromBuiltinData oraclePublisher)
         (unsafeFromBuiltinData poolPolicy)
         (unsafeFromBuiltinData poolName)

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Questo one-pager affianca le quattro guide integrative del sistema. Non è una certificazione e non sostituisce le fonti normative. Il suo scopo è indicare, per ciascun livello, cosa è normativamente definito, cosa è implementato, cosa è stato testato, quale evidenza esiste e quali residuali restano aperti.
+Questo one-pager è un riepilogo non-normativo dello stato di implementazione ed evidenza. Non è una certificazione e non sostituisce le fonti normative. Il checkpoint operativo corrente è separato in `docs/COORDINATION/PREPROD-FIRST-TICKET-HANDOFF-20261003.md`, mentre il quadro di closure/certificazione è in `docs/03-audit/IMMORTAL-IMPLEMENTATION-CLOSURE-STATUS.md`. Il suo scopo è indicare, per ciascun livello, cosa è normativamente definito, cosa è implementato, cosa è stato testato, quale evidenza esiste e quali residuali restano aperti.
 
 ## Status vocabulary
 
@@ -36,11 +36,10 @@ Una riga non deve essere considerata chiusa solo perché una CI è verde.
 ### Normative layer
 
 Defined in:
-`IMMORTAL/docs/CONSTITUTION.md`
-`IMMORTAL/docs/ECONOMIC-KERNEL.md`
-`IMMORTAL/docs/ECONOMIC-ALGORITHM.md`
-`IMMORTAL/docs/ARCHITECTURE.md`
-`IMMORTAL/docs/CONFORMANCE.md`
+`docs/00-normative/01_CONSTITUTION_FINAL.md`
+`docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`
+`docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md`
+`docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md`
 
 Core properties already represented by implementation/conformance include obligations, ProtectedCapital, RawSurplus, post-state safety, deterministic derivation, atomic transition semantics, historical monotonicity and expiry finality.
 

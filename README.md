@@ -1,5 +1,8 @@
 # IMMORTAL Protocol
 
+> **Start here (non-technical):** [docs/START-HERE.md](docs/START-HERE.md)
+
+
 **Chain-neutral economic protocol** with explicit obligations, protected capital, deterministic transitions, and auditable evidence.
 
 > **IMMORTAL = protocol · Cardano = adapter · PRE-RICH = first application**

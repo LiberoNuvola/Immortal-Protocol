@@ -1,3 +1,5 @@
+> **FORMAL GOVERNANCE RECORD — NON-NORMATIVE BY ITSELF.** This package records governance/conformance closure work. It cannot override the canonical Constitution, specifications or explicit normative decision records.
+
 # GOV-26 — Haskell Commitment Binding & Canonical Event Validity
 
 ## Status

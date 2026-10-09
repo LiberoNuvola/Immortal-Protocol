@@ -1,0 +1,89 @@
+name: PRE-RICH B1 EEV Deployment Approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      approve_eev:
+        description: "Approve the already-qualified direct-USDM EEV deployment candidate"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  approve:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.approve_eev }}
+    runs-on: ubuntu-24.04
+    environment: PREPROD-EEV-APPROVAL
+    timeout-minutes: 30
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_REVEAL_SEED: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_WALLET_ADDRESS: addr_test1qp5lufttvlv0zxpz5d9j2z4chgn3hhkm2y76lx0xrzmtez2vdw4kh93zkwpqapr6nnnu5q8aakyr76ks9cl40wvaf96sqdraw4
+      PREPROD_TUSDM_UNIT: e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+      PREPROD_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-direct-usdm-deployment.json
+      PREPROD_ORACLE_STATE_MANIFEST: audit/preprod-evidence/preprod-oracle-state-deployment.json
+      PREPROD_EEV_APPROVAL_ACTION: APPROVE_PREPROD_EEV
+      PREPROD_EEV_APPROVAL_TOKEN: ${{ secrets.PREPROD_EEV_APPROVAL_TOKEN }}
+    steps:
+      - name: Checkout exact workflow head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Setup legacy Lucid runtime
+        uses: ./.github/actions/setup-legacy-lucid
+
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "$PREPROD_REVEAL_SEED"
+          test -n "$PREPROD_EEV_APPROVAL_TOKEN"
+
+      - name: Materialize/reuse authenticated Oracle State
+        id: oracle-state
+        run: node --import=tsx/esm audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs
+
+      - name: Materialize/recover current direct-USDM deployment manifest
+        env:
+          PREPROD_ORACLE_STATE_POLICY_ID: ${{ steps.oracle-state.outputs.oracle_state_policy_id }}
+          PREPROD_ORACLE_STATE_TOKEN_NAME_HEX: ${{ steps.oracle-state.outputs.oracle_state_token_name_hex }}
+          PREPROD_ORACLE_PUBLISHER_PKH: ${{ steps.oracle-state.outputs.oracle_publisher_pkh }}
+        run: node --import=tsx/esm audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs
+
+      - name: Re-observe exact live direct-USDM source set
+        run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+
+      - name: Re-qualify EV1-EV7 against the current live candidate
+        run: node audit/cardano-integration/preprod-direct-usdm-qualification.mjs
+
+      - name: Materialize DEPLOYMENT_APPROVED qualification
+        run: node audit/cardano-integration/preprod-direct-usdm-approve.mjs
+
+      - name: Verify approval result
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const p = 'audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json'
+          const q = JSON.parse(fs.readFileSync(p, 'utf8'))
+          if (q.status !== 'qualified') throw new Error('qualification is not qualified')
+          if (q.deploymentApproval?.status !== 'DEPLOYMENT_APPROVED') throw new Error('deployment approval missing')
+          if (q.deploymentApproval?.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') throw new Error('wrong deployment profile')
+          if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.evidenceHash)) throw new Error('approval evidence hash missing')
+          NODE
+
+      - name: Upload approved EEV evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          path: audit/preprod-evidence/
+          if-no-files-found: error

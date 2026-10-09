@@ -1,15 +1,117 @@
 import { describe, expect, it } from 'vitest'
 import { assertIssueAdmissionMatchesCanonicalEvidence } from '../preRichIssueAdmissionBridge'
 import { obtainAuthoritativeIssueAdmission, type AuthoritativeIssueAdmissionProvider } from '../preRichIssueAdmissionBridge'
-import type { EconomicAdmissionWitness } from '../../Adapter/CARDANO/runtime/EconomicAdmission'
+import type { AuthoritativeIssueAdmissionWitness } from '../preRichIssueAdmissionBridge'
 
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
+const control = 'e'.repeat(64) + '#3'
 
-function witness(): EconomicAdmissionWitness {
+function eevQualification() {
+  return {
+    status: 'qualified' as const,
+    contractVersion: '3.0.0',
+    deploymentApproval: {
+      status: 'DEPLOYMENT_APPROVED' as const,
+      candidateId: 'test-eev-v1',
+      sourceSetId: 'test-source-set-v1',
+      profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
+      evidenceHash: 'e'.repeat(64),
+      qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
+      excludedProperties: [],
+      testSuiteVersion: 'test-suite-v1',
+      failureMatrixVersion: 'failure-matrix-v1',
+      validFrom: '2026-10-07T00:00:00Z',
+      validUntilOrRevalidationRule: 'revalidate-on-source-or-profile-change',
+    },
+    sourceReference: 'source://test-eev',
+    verificationReference: 'verify://test-eev',
+    derivationVersion: 'test-eev-v1',
+    snapshotReference: 'snapshot://issue/1',
+    evidence: {
+      EV1: { reference: 'evidence://EV1', digest: 'a'.repeat(64) },
+      EV2: { reference: 'evidence://EV2', digest: 'b'.repeat(64) },
+      EV3: { reference: 'evidence://EV3', digest: 'c'.repeat(64) },
+      EV4: { reference: 'evidence://EV4', digest: 'd'.repeat(64) },
+      EV5: { reference: 'evidence://EV5', digest: 'e'.repeat(64) },
+      EV6: { reference: 'evidence://EV6', digest: 'f'.repeat(64) },
+      EV7: { reference: 'evidence://EV7', digest: '0'.repeat(64) },
+    },
+  }
+}
+
+function protectedCapitalProvenance() {
+  return {
+    sourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    components: {
+      crystallizedLiabilities: 10n,
+      worstCaseExposure: 50n,
+      safetyCapital: 20n,
+      reserveProtection: 30n,
+      lockedJackpot: 40n,
+      mandatoryFutureCosts: 50n,
+    },
+    accountingInputs: { unresolvedReserve: 1n, unresolvedTicketCount: 1n },
+    total: 200n,
+  }
+}
+
+function viabilityCertificate() {
+  const proof = (key: string, n: string) => ({
+    reference: 'proof://' + key,
+    digest: n.repeat(64).slice(0, 64),
+  })
+  const evidence = (key: string, n: string) => ({
+    reference: 'evidence://' + key,
+    digest: n.repeat(64).slice(0, 64),
+  })
+  return {
+    id: 'pre-rich-kc-v1',
+    version: '1',
+    modelReference: 'model://pre-rich-v1',
+    characteristicPredicateReference: 'chi://pre-rich-v1',
+    witnessSelectorReference: 'wit://pre-rich-v1',
+    boundsReference: 'bounds://pre-rich-v1',
+    proofs: {
+      VC1: proof('VC1', '1'),
+      VC2: proof('VC2', '2'),
+      VC3: proof('VC3', '3'),
+      VC4: proof('VC4', '4'),
+      VC5: proof('VC5', '5'),
+      VC6: proof('VC6', '6'),
+    },
+    evidence: {
+      E1: evidence('E1', '1'),
+      E2: evidence('E2', '2'),
+      E3: evidence('E3', '3'),
+      E4: evidence('E4', '4'),
+      E5: evidence('E5', '5'),
+      E6: evidence('E6', '6'),
+      E7: evidence('E7', '7'),
+      E8: evidence('E8', '8'),
+      E9: evidence('E9', '9'),
+      E10: evidence('E10', '0'),
+    },
+    digest: '9'.repeat(64),
+    deploymentBinding: {
+      network: 'cardano-preprod',
+      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      stateHash: '1'.repeat(64),
+      eevSnapshotReference: 'snapshot://issue/1',
+      protectedCapitalSourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    },
+  }
+}
+
+function witness(): AuthoritativeIssueAdmissionWitness {
   return {
     gateVersion: 'economic-gate-v1',
     admitted: true,
+    counterInputReference: counter,
+    controlStateReference: control,
+    preEEV: 1000n,
+    issueClassId: 0n,
+    issuePrice: 1n,
     decisionReference: 'decision:issue:1',
     authoritativeObservationReference: 'observation:issue:1',
     stateHash: '1'.repeat(64),
@@ -27,6 +129,23 @@ function witness(): EconomicAdmissionWitness {
     authenticatedPoolInputReference: pool,
     authenticatedPoolUsdmValue: 500n,
     requiredImmediateLiquidity: 100n,
+    eevQualification: eevQualification(),
+    protectedCapitalProvenance: protectedCapitalProvenance(),
+    viabilityCertificate: viabilityCertificate(),
+    v3CarrierBinding: {
+      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      candidateState: {
+        crystallizedLiabilities: '10',
+        unresolvedReserve: '1',
+        unresolvedTicketCount: '1',
+        safetyCapital: '20',
+        reserveProtection: '30',
+        mandatoryFutureCosts: '50',
+        classes: [],
+        control: { currentActiveClass: '0', highestClassEverActivated: '0' },
+        jackpot: { lockedAmount: '40', threshold: '0', status: 'inactive', cycle: '0' },
+      },
+    },
   }
 }
 
@@ -57,9 +176,12 @@ const canonicalEvidence = {
 
 const inputs = {
   counterInputReference: counter,
+  controlStateReference: control,
   poolInputReference: pool,
   liquiditySourceReferences: [pool],
   poolUsdmValue: 500n,
+  classId: 0n,
+  price: 1n,
 }
 
 describe('PRE-RICH Issue admission bridge', () => {
@@ -68,9 +190,18 @@ describe('PRE-RICH Issue admission bridge', () => {
     await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).resolves.toMatchObject({ actionClass: 'Issue' })
   })
 
+  it('rejects a witness bound to a different B2 control state', async () => {
+    const provider: AuthoritativeIssueAdmissionProvider = async () => ({
+      ...witness(),
+      controlStateReference: 'f'.repeat(64) + '#3',
+    })
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence))
+      .rejects.toThrow(/B2 control reference/)
+  })
+
   it('rejects a witness bound to a different pool', async () => {
     const provider: AuthoritativeIssueAdmissionProvider = async () => ({ ...witness(), authenticatedPoolInputReference: 'c'.repeat(64) + '#9' })
-    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).rejects.toThrow('different B1 PrizePool input')
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).rejects.toThrow(/different B1 PrizePool input|executable liquidity observation/)
   })
 
   it('rejects a non-saleable class before invoking authority', async () => {
@@ -115,6 +246,45 @@ describe('PRE-RICH Issue admission bridge', () => {
         { ...canonicalEvidence, actionFingerprint: '9'.repeat(64) },
       ),
     ).toThrow('action fingerprint does not match canonical evidence')
+  })
+
+  it('rejects a witness with a downgraded authority flag', async () => {
+    const bad = { ...witness(), eevFresh: false }
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/not fully verified/)
+  })
+
+  it('rejects a viability certificate bound to another deployment state', async () => {
+    const bad = witness()
+    ;(bad.viabilityCertificate.deploymentBinding as any).stateHash = '8'.repeat(64)
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/Viability certificate is bound to a different deployment\/state/)
+  })
+
+  it('rejects an EEV certificate for a different profile', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).profileVersion = 'OTHER-EEV-PROFILE'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/not the deployed direct-USDM profile/)
+  })
+
+  it('rejects an EEV certificate that is qualified but not deployment-approved', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).status = 'QUALIFIED'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/DEPLOYMENT_APPROVED EEV qualification/)
   })
 
   it('rejects canonical evidence for a non-Issue action', async () => {

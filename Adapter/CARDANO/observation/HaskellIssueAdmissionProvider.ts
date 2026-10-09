@@ -7,10 +7,14 @@
  * exact observed Cardano inputs.
  */
 import { spawn } from 'node:child_process'
-import {
-  createAuthoritativeIssueAdmissionProvider,
-  type AuthoritativeIssueAdmissionDecision,
-} from './AuthoritativeIssueAdmission'
+import type {
+  AuthoritativeIssueAdmissionProvider,
+  AuthoritativeIssueAdmissionWitness,
+  IssueV3CandidateState,
+  EevQualificationEvidence,
+  ProtectedCapitalProvenance,
+  ViabilityCertificateEvidence,
+} from '../../../src/preRichIssueAdmissionBridge'
 
 export type HaskellIssueObservation = {
   decisionInput: Record<string, unknown>
@@ -19,6 +23,16 @@ export type HaskellIssueObservation = {
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
+  carrierStateReference: string
+  controlStateReference: string
+  eevQualification: EevQualificationEvidence
+  protectedCapitalProvenance: ProtectedCapitalProvenance
+  viabilityCertificate: ViabilityCertificateEvidence
+  /**
+   * Timestamp of the authenticated observation snapshot, in milliseconds.
+   * This value is provenance data and must not be replaced by local wall-clock time.
+   */
+  observedAt: bigint
 }
 
 export type HaskellIssueAdmissionProviderOptions = {
@@ -30,6 +44,9 @@ export type HaskellIssueAdmissionProviderOptions = {
       poolInputReference: string
       liquiditySourceReferences: readonly string[]
       poolUsdmValue: bigint
+      classId: bigint
+      price: bigint
+      carrierStateReference?: string
     },
   ) => Promise<HaskellIssueObservation>
 }
@@ -49,6 +66,27 @@ type HaskellDecisionEnvelope = {
     candidateEEV: string
     availableExecutableLiquidity: string
     requiredImmediateLiquidity: string
+    truthVerified: boolean
+    eevFresh: boolean
+    obligationsComplete: boolean
+    allOmegaSuccessorsCertified: boolean
+    candidateState: IssueV3CandidateState
+    protectedCapitalProvenance?: {
+      sourceType?: string
+      components: {
+        crystallizedLiabilities: string
+        worstCaseExposure: string
+        safetyCapital: string
+        reserveProtection: string
+        lockedJackpot: string
+        mandatoryFutureCosts: string
+      }
+      accountingInputs: {
+        unresolvedReserve: string
+        unresolvedTicketCount: string
+      }
+      total: string
+    }
   }
 }
 
@@ -106,8 +144,8 @@ function runProducer(
 
 export function createHaskellIssueAdmissionProvider(
   options: HaskellIssueAdmissionProviderOptions,
-) {
-  return createAuthoritativeIssueAdmissionProvider(async (inputs) => {
+): AuthoritativeIssueAdmissionProvider {
+  return async (inputs) => {
     const observed = await options.observationSource(inputs)
     const envelope = await runProducer(
       options.command,
@@ -123,6 +161,43 @@ export function createHaskellIssueAdmissionProvider(
     if (decision.actionClass !== 'Issue') {
       throw new Error('Haskell Issue producer returned a non-Issue action')
     }
+    const expectedAction = `Issue:${inputs.classId.toString()}:${inputs.price.toString()}`
+    if (decision.action !== expectedAction) {
+      throw new Error(
+        `Haskell Issue producer action mismatch: expected ${expectedAction}, got ${decision.action}`,
+      )
+    }
+    if (BigInt(String(decision.preEEV)) !== BigInt(String(observed.decisionInput.preEEV))) {
+      throw new Error('Haskell Issue producer pre-EEV does not match authoritative decision input')
+    }
+    if (BigInt(String(decision.candidateEEV)) !== BigInt(String(observed.decisionInput.candidateEEV))) {
+      throw new Error('Haskell Issue producer candidate EEV does not match authoritative decision input')
+    }
+    if (BigInt(String(decision.availableExecutableLiquidity)) !== observed.poolUsdmValue) {
+      throw new Error('Haskell Issue producer executable liquidity does not match observed Pool value')
+    }
+    for (const [key, expected] of [
+      ['truthVerified', observed.decisionInput.truthVerified],
+      ['eevFresh', observed.decisionInput.eevFresh],
+      ['obligationsComplete', observed.decisionInput.obligationsComplete],
+      ['allOmegaSuccessorsCertified', observed.decisionInput.allOmegaSuccessorsCertified],
+    ] as const) {
+      if (decision[key] !== expected) {
+        throw new Error(
+          `Haskell Issue producer ${key} does not match authoritative decision input`,
+        )
+      }
+      if (decision[key] !== true) {
+        throw new Error(
+          `Haskell Issue producer ${key} is not true`,
+        )
+      }
+    }
+
+    const rawProtectedCapitalProvenance = decision.protectedCapitalProvenance
+    if (!rawProtectedCapitalProvenance) {
+      throw new Error('Haskell Issue producer did not emit ProtectedCapital provenance')
+    }
 
     if (
       decision.decisionReference !== observed.decisionReference ||
@@ -134,9 +209,78 @@ export function createHaskellIssueAdmissionProvider(
       )
     }
 
+    if (!decision.candidateState) {
+      throw new Error('Haskell Issue producer returned no candidate V3 state')
+    }
+    if (!inputs.carrierStateReference) {
+      throw new Error(
+        'authoritative Issue provider requires the exact V3 carrier state reference',
+      )
+    }
+
+    const authorityProtectedCapitalProvenance = observed.protectedCapitalProvenance
+    const authorityPcComponents = authorityProtectedCapitalProvenance.components
+    const decisionPcComponents = rawProtectedCapitalProvenance.components
+    for (const key of [
+      'crystallizedLiabilities',
+      'worstCaseExposure',
+      'safetyCapital',
+      'reserveProtection',
+      'lockedJackpot',
+      'mandatoryFutureCosts',
+    ] as const) {
+      if (
+        BigInt(String(authorityPcComponents[key])) !==
+        BigInt(String(decisionPcComponents[key]))
+      ) {
+        throw new Error(
+          `Haskell Issue producer ProtectedCapital mismatch on ${key}`,
+        )
+      }
+    }
+    if (
+      BigInt(String(authorityProtectedCapitalProvenance.total)) !==
+      BigInt(String(rawProtectedCapitalProvenance.total))
+    ) {
+      throw new Error('Haskell Issue producer ProtectedCapital total mismatch')
+    }
+
+    const protectedCapitalProvenance: ProtectedCapitalProvenance = {
+      sourceReference: observed.carrierStateReference,
+      components: {
+        crystallizedLiabilities: BigInt(
+          String(rawProtectedCapitalProvenance.components.crystallizedLiabilities),
+        ),
+        worstCaseExposure: BigInt(
+          String(rawProtectedCapitalProvenance.components.worstCaseExposure),
+        ),
+        safetyCapital: BigInt(
+          String(rawProtectedCapitalProvenance.components.safetyCapital),
+        ),
+        reserveProtection: BigInt(
+          String(rawProtectedCapitalProvenance.components.reserveProtection),
+        ),
+        lockedJackpot: BigInt(
+          String(rawProtectedCapitalProvenance.components.lockedJackpot),
+        ),
+        mandatoryFutureCosts: BigInt(
+          String(rawProtectedCapitalProvenance.components.mandatoryFutureCosts),
+        ),
+      },
+      accountingInputs: {
+        unresolvedReserve: BigInt(
+          String(rawProtectedCapitalProvenance.accountingInputs.unresolvedReserve),
+        ),
+        unresolvedTicketCount: BigInt(
+          String(rawProtectedCapitalProvenance.accountingInputs.unresolvedTicketCount),
+        ),
+      },
+      total: BigInt(String(rawProtectedCapitalProvenance.total)),
+    }
+
     const observation = {
       observationReference: observed.observationReference,
-      observedAt: Date.now(),
+      observedAt: observed.observedAt,
       sourceInputReferences: [...observed.liquiditySourceReferences],
       utxos: [{
         txHash: observed.poolInputReference.split('#')[0],
@@ -148,7 +292,11 @@ export function createHaskellIssueAdmissionProvider(
       declaredUsdmLiquidity: BigInt(decision.availableExecutableLiquidity),
     }
 
-    const result: AuthoritativeIssueAdmissionDecision = {
+    const result: AuthoritativeIssueAdmissionWitness = {
+      admitted: true,
+      counterInputReference: inputs.counterInputReference,
+      controlStateReference: observed.controlStateReference,
+      actionClass: 'Issue',
       gateVersion: 'pre-rich-economic-gate-v1',
       decisionReference: decision.decisionReference,
       authoritativeObservationReference:
@@ -156,6 +304,13 @@ export function createHaskellIssueAdmissionProvider(
       stateHash: decision.stateHash,
       actionFingerprint: decision.actionFingerprint,
       postStateHash: decision.postStateHash,
+      preEEV: BigInt(decision.preEEV),
+      issueClassId: inputs.classId,
+      issuePrice: inputs.price,
+      truthVerified: true,
+      eevFresh: true,
+      obligationsComplete: true,
+      allOmegaSuccessorsCertified: true,
       eev: BigInt(decision.candidateEEV),
       executableLiquidityObservation: observation,
       authenticatedPoolInputReference:
@@ -163,8 +318,15 @@ export function createHaskellIssueAdmissionProvider(
       authenticatedPoolUsdmValue: observed.poolUsdmValue,
       requiredImmediateLiquidity:
         BigInt(decision.requiredImmediateLiquidity),
+      v3CarrierBinding: {
+        carrierStateReference: inputs.carrierStateReference,
+        candidateState: decision.candidateState,
+      },
+      eevQualification: observed.eevQualification,
+      protectedCapitalProvenance,
+      viabilityCertificate: observed.viabilityCertificate,
     }
 
     return result
-  })
+  }
 }

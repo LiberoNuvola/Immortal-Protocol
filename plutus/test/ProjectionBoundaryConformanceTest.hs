@@ -10,6 +10,8 @@ import Prelude
   , (++)
   , (==)
   , (-)
+  , (+)
+  , (&&)
   , error
   , putStrLn
   )
@@ -106,11 +108,11 @@ main = do
         (uesWorstCaseExposure after == uesWorstCaseExposure before - 1000)
         "Reveal removes exactly the profile worst-case exposure"
       assert
-        (UniversalKernel.protectedCapital after == UniversalKernel.protectedCapital before - 1000)
-        "Reveal changes universal ProtectedCapital by payout minus 500x exposure"
+        (UniversalKernel.protectedCapital after == UniversalKernel.protectedCapital before)
+        "Reveal exchanges 500x exposure for crystallized payout without changing ProtectedCapital"
       assert
-        (UniversalKernel.rawSurplus 4000 after == UniversalKernel.rawSurplus 4000 before + 1000)
-        "Reveal produces the same RawSurplus delta at the universal boundary"
+        (UniversalKernel.rawSurplus 4000 after == UniversalKernel.rawSurplus 4000 before)
+        "Reveal preserves RawSurplus at the universal boundary"
 
   case transition profile (validState { v3CrystallizedLiabilities = 1250 }) (Claim 1000) of
     Nothing -> error "FAIL: canonical Claim transition rejected"

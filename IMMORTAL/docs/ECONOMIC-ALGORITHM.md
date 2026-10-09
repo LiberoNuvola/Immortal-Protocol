@@ -1,5 +1,7 @@
 # IMMORTAL Economic Algorithm
 
+> **NON-NORMATIVE INTEGRATIVE READER GUIDE.** Canonical universal authority: `../../docs/00-normative/`; this file explains the algorithmic realization and does not create protocol semantics.
+
 ## Canonical sequence
 
 Truth

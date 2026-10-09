@@ -39,6 +39,7 @@ data IssueDecisionInput = IssueDecisionInput
 
 data IssueDecision = IssueDecision
   { idAction :: V3Action
+  , idPreState :: V3EconomicState
   , idPreStateHash :: P.String
   , idPostStateHash :: P.String
   , idActionFingerprint :: P.String
@@ -48,6 +49,10 @@ data IssueDecision = IssueDecision
   , idCandidateEEV :: Integer
   , idAvailableExecutableLiquidity :: Integer
   , idRequiredImmediateLiquidity :: Integer
+  , idTruthVerified :: Bool
+  , idEEVFresh :: Bool
+  , idObligationsComplete :: Bool
+  , idAllOmegaSuccessorsCertified :: Bool
   , idCandidateState :: V3EconomicState
   }
 
@@ -142,6 +147,7 @@ produceIssueDecision input =
           Just
             (IssueDecision
               { idAction = action
+              , idPreState = idiPreState input
               , idPreStateHash = preHash
               , idPostStateHash = postHash
               , idActionFingerprint = actionHash
@@ -153,6 +159,11 @@ produceIssueDecision input =
                   peaAvailableExecutableLiquidity admitted
               , idRequiredImmediateLiquidity =
                   peaRequiredImmediateLiquidity admitted
+              , idTruthVerified = idiTruthVerified input
+              , idEEVFresh = idiEEVFresh input
+              , idObligationsComplete = idiObligationsComplete input
+              , idAllOmegaSuccessorsCertified =
+                  idiAllOmegaSuccessorsCertified input
               , idCandidateState = peaCandidateV3 admitted
               })
 

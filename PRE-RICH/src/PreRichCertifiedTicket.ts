@@ -11,8 +11,15 @@ export type CertifiedTicketIdentity = {
   assetName: string
 }
 
+export type CertifiedTicketProvenance = {
+  beaconStatus: 'Pending' | 'Ready'
+  mcHash?: string
+  materiosContext?: string
+}
+
 export type CertifiedTicketState = {
   identity: CertifiedTicketIdentity
+  provenance: CertifiedTicketProvenance
   purchaseTxHash?: string
   priceUsdm: bigint
   commitment: string
@@ -53,6 +60,7 @@ export function certifyTicketBinding(input: {
     row1Tier: bigint
     row2Tier: bigint
     beaconTarget: string
+    provenance?: CertifiedTicketProvenance
   }
   purchaseTxHash?: string
   verificationReference?: string
@@ -76,11 +84,18 @@ export function certifyTicketBinding(input: {
   if (input.datum.issuedAt < 0n) throw new Error('issuedAt must be non-negative')
   if (input.datum.expiresAt < input.datum.issuedAt) throw new Error('expiresAt must not precede issuedAt')
 
+  const provenance = input.datum.provenance ?? { beaconStatus: 'Pending' as const }
+  if (provenance.beaconStatus === 'Ready') {
+    if (!provenance.mcHash?.trim()) throw new Error('Ready Beacon provenance requires mcHash')
+    if (!provenance.materiosContext?.trim()) throw new Error('Ready Beacon provenance requires Materios context')
+  }
+
   return {
     identity: {
       policyId: datumPolicy,
       assetName: datumName,
     },
+    provenance,
     purchaseTxHash: input.purchaseTxHash,
     priceUsdm: input.datum.priceUsdm,
     commitment: input.datum.commitment,

@@ -39,3 +39,12 @@
 @media(max-width:800px){.boundary-grid{grid-template-columns:1fr}.protocol-map{grid-template-columns:1fr;grid-template-rows:none}.map-box{grid-column:auto!important;grid-row:auto!important}.map-core{order:-2}.map-research{order:-1}}
 
 .brand-mark{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;overflow:hidden;border-radius:50%;background:#19d9dd;box-shadow:0 0 24px rgba(25,217,221,.22)}.brand-mark img{width:100%;height:100%;display:block;object-fit:cover}.brand-mark img{border-radius:50%}
+
+/* Primary navigation: keep the first layer small; secondary routes live in More. */
+.navlinks details{position:relative;font-size:.76rem;color:#b5d6ca}
+.navlinks summary{cursor:pointer;list-style:none;opacity:.66}
+.navlinks summary::-webkit-details-marker{display:none}
+.navlinks details[open] summary{opacity:1;color:#9de3c4}
+.nav-more{position:absolute;right:0;top:calc(100% + 8px);min-width:190px;padding:10px;border:1px solid rgba(180,230,211,.16);border-radius:12px;background:rgba(4,18,14,.96);backdrop-filter:blur(10px);display:grid;gap:6px;box-shadow:0 15px 45px rgba(0,0,0,.35)}
+.nav-more a{padding:6px 8px;white-space:nowrap}
+@media(max-width:700px){.nav-more{position:static;margin-top:8px;box-shadow:none}.navlinks details{width:100%}}

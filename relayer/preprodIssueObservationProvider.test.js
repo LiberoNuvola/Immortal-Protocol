@@ -3,6 +3,7 @@ const { createPreprodIssueObservationProducer } = require('./preprodIssueObserva
 
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
+const control = 'e'.repeat(64) + '#3'
 
 const decisionInput = {
   preState: { crystallizedLiabilities: '0' },
@@ -26,6 +27,7 @@ describe('Preprod Issue observation producer', () => {
       readObservation: async inputs => ({
         ...inputs,
         observationReference: 'preprod:obs:1',
+        controlStateReference: control,
         observedAt: '123',
         decisionInput,
       }),
@@ -35,12 +37,14 @@ describe('Preprod Issue observation producer', () => {
       producer({
         counterInputReference: counter,
         poolInputReference: pool,
+        controlStateReference: control,
         poolUsdmValue: '500',
       }),
     ).resolves.toEqual({
       decisionInput,
       observationReference: 'preprod:obs:1',
       observedAt: '123',
+      controlStateReference: control,
     })
   })
 

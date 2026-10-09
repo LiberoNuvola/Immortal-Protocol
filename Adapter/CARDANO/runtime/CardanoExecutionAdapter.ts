@@ -3,6 +3,7 @@ import {
   type EconomicActionClass,
   type EconomicAdmissionWitness,
 } from './EconomicAdmission'
+import { assertAuthoritativeIssueAdmissionWitness } from './AuthoritativeIssueAdmission'
 
 export type CardanoLucidExecutionPort = {
   signTx(tx: unknown): Promise<unknown>
@@ -52,6 +53,9 @@ export function createCardanoExecutionAdapter(
         liquiditySourceReferences,
         expectedActionClass,
       )
+      if (expectedActionClass === 'Issue') {
+        assertAuthoritativeIssueAdmissionWitness(admission)
+      }
       return this.submitInfrastructure(tx)
     },
   }

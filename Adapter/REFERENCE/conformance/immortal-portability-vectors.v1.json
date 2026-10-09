@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "immortal-portability-vectors.v1",
+  "status": "executable-seed",
+  "authority": "IMMORTAL UniversalEconomicKernel",
+  "purpose": "Chain-neutral conformance fixtures. Expected values are fixture assertions, not a second economic authority.",
+  "vectors": [
+    {
+      "id": "V01",
+      "name": "raw-surplus-positive",
+      "eev": 1000,
+      "protectedCapital": 700,
+      "expected": { "rawSurplus": 300 }
+    },
+    {
+      "id": "V02",
+      "name": "raw-surplus-boundary",
+      "eev": 1000,
+      "protectedCapital": 1000,
+      "expected": { "rawSurplus": 0 }
+    },
+    {
+      "id": "V03",
+      "name": "protected-capital-exceeds-eev",
+      "eev": 900,
+      "protectedCapital": 1000,
+      "expected": { "rawSurplus": 0, "solvency": false }
+    },
+    {
+      "id": "V04",
+      "name": "zero-boundary",
+      "eev": 0,
+      "protectedCapital": 0,
+      "expected": { "rawSurplus": 0, "solvency": true }
+    },
+    {
+      "id": "V05",
+      "name": "protected-capital-decomposition",
+      "eev": 10000,
+      "protectedCapital": 8500,
+      "decomposition": {
+        "crystallizedLiabilities": 1000,
+        "worstCaseExposure": 6000,
+        "safetyCapital": 500,
+        "reserveProtection": 500,
+        "mandatoryFutureCosts": 500,
+        "additionalProtectedCapital": 0
+      },
+      "expected": { "protectedCapital": 8500, "rawSurplus": 1500 }
+    },
+    {
+      "id": "V06",
+      "name": "liability-first-no-discretionary-interpretation",
+      "eev": 10000,
+      "protectedCapital": 9500,
+      "candidateDiscretionaryAllocation": 800,
+      "expected": {
+        "rawSurplus": 500,
+        "discretionaryAuthorizationFromRawSurplus": "not-defined"
+      }
+    },
+    {
+      "id": "V07",
+      "name": "state-locality",
+      "cases": [
+        { "eev": 5000, "protectedCapital": 2000, "expectedRawSurplus": 3000 },
+        { "eev": 5000, "protectedCapital": 4500, "expectedRawSurplus": 500 }
+      ]
+    },
+    {
+      "id": "V08",
+      "name": "expiry-finality",
+      "status": "pending-schema-extraction",
+      "expected": null
+    },
+    {
+      "id": "V09",
+      "name": "safety-viability-separation",
+      "status": "pending-certified-kernel-fixture",
+      "expected": null
+    },
+    {
+      "id": "V10",
+      "name": "car-as-protected-conditional-commitment",
+      "eev": 1000,
+      "carAmount": 200,
+      "otherProtectedCapital": 300,
+      "expected": {
+        "protectedCapital": 500,
+        "rawSurplus": 500,
+        "carClassification": "non-discretionary-protected"
+      },
+      "notes": [
+        "CAR is tested here as L2: value conditionally committed to a future allocation.",
+        "The vector does not define the application's allocation rule.",
+        "The vector does not equate CAR with additionalProtectedCapital or with any application-specific mechanism."
+      ]
+    }
+  ]
+}

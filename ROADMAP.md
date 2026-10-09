@@ -1,5 +1,7 @@
 # IMMORTAL Roadmap
 
+> **Scope:** IMMORTAL universal / repository-level roadmap. PRE-RICH-facing roadmap: `docs/ROADMAP.md`. This document does not create normative protocol semantics.
+
 **Status:** Experimental / Open Source / Research & Development  
 **Baseline:** September 2026
 

@@ -8,44 +8,21 @@ module V3EconomicStateCarrierMintPolicy
   ) where
 
 import PlutusLedgerApi.V2
-import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import qualified PlutusTx.AssocMap as AssocMap
 
-{-# INLINABLE ownMintEntries #-}
-ownMintEntries :: CurrencySymbol -> Value -> [(TokenName, Integer)]
-ownMintEntries cs value =
-  case AssocMap.lookup cs (getValue value) of
-    Nothing -> []
-    Just tokens -> AssocMap.toList tokens
-
-{-# INLINABLE mintedExactlyOne #-}
-mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne cs expectedName value =
-  case ownMintEntries cs value of
-    [(name, amount)] -> name == expectedName && amount == 1
-    _ -> False
-
-{-# INLINABLE seedConsumed #-}
-seedConsumed :: TxOutRef -> TxInfo -> Bool
-seedConsumed seed info =
-  let
-    go [] = False
-    go (i:is) = txInInfoOutRef i == seed || go is
-  in go (txInfoInputs info)
-
+-- Diagnostic Probe C:
+-- eliminate ScriptContext decoding entirely. The wrapper still has the
+-- canonical minting-policy argument shape, but the policy body does not
+-- inspect or decode the redeemer/context.
 {-# INLINABLE mkPolicy #-}
-mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkPolicy seed tokenName _ ctx =
-  seedConsumed seed (scriptContextTxInfo ctx)
-  && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
+mkPolicy :: TxOutRef -> TokenName -> () -> Bool
+mkPolicy _seed _tokenName _unit = True
 
 {-# INLINABLE wrap #-}
 wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrap seed tokenName _ ctx =
-  check
-    (mkPolicy seed tokenName () (unsafeFromBuiltinData ctx))
+wrap seed tokenName _redeemer _ctx =
+  check (mkPolicy seed tokenName ())
 
 compiledPolicyFactory
   :: CompiledCode

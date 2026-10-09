@@ -11,11 +11,11 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, nativeScriptFromJson, type Script, type UTxO } from 'lucid-cardano'
+import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { buildScriptsFromLucid } from '../../src/loadValidator'
+import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
@@ -51,8 +51,7 @@ const SEED =
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
 const TICKET_NAME_HEX = '52462d5245414c2d52455645414c'
-const ORACLE_STATE_POLICY_ID = '00'.repeat(28)
-const ORACLE_STATE_TOKEN_NAME_HEX = ''
+const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45' // ORACLE
 const MAINCHAIN_REF = new Uint8Array(32)
 const MATERIOS_CONTEXT = new Uint8Array(32)
 const GAME_VERSION = new TextEncoder().encode('V1')
@@ -63,7 +62,7 @@ type NativeScript = { type: 'sig'; keyHash: string } | {
 }
 
 function nativePolicy(lucid: any, keyHash: string): Script {
-  return nativeScriptFromJson({
+  return scriptFromNative({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as NativeScript)
@@ -153,7 +152,158 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid.new(provider, 'Preprod')
+
+// Yaci Store exposes the Blockfrost-compatible JSON evaluator, while the
+// pinned Lucid Evolution provider needs evaluateTx supplied explicitly.
+// Diagnostics only: tx shape and redeemer ExUnits, to compare evaluated vs final vs submitted tx.
+const describeTx = (cborHex: string) => {
+  const tx = CML.Transaction.from_cbor_hex(cborHex)
+  const body = tx.body()
+  const redeemers: Array<{ tag: number; index: number; mem: string; steps: string }> = []
+  const rs = tx.witness_set().redeemers()
+  const legacy = rs?.as_arr_legacy_redeemer()
+  if (legacy) {
+    for (let i = 0; i < legacy.len(); i++) {
+      const r = legacy.get(i)
+      redeemers.push({ tag: Number(r.tag()), index: Number(r.index()), mem: r.ex_units().mem().toString(), steps: r.ex_units().steps().toString() })
+    }
+  }
+  const map = rs?.as_map_redeemer_key_to_redeemer_val()
+  if (map) {
+    const keys = map.keys()
+    for (let i = 0; i < keys.len(); i++) {
+      const key = keys.get(i)
+      const val = map.get(key)
+      if (val) redeemers.push({ tag: Number(key.tag()), index: Number(key.index()), mem: val.ex_units().mem().toString(), steps: val.ex_units().steps().toString() })
+    }
+  }
+  return {
+    txSha256: createHash('sha256').update(Buffer.from(cborHex, 'hex')).digest('hex'),
+    bodyHash: CML.hash_transaction(body).to_hex(),
+    bytes: cborHex.length / 2,
+    fee: body.fee().toString(),
+    ttl: body.ttl()?.toString() ?? null,
+    redeemers,
+  }
+}
+
+const providerWithEvaluation = provider as Blockfrost & {
+  evaluateTx: (tx: string, additionalUTxOs?: Array<{
+    txHash: string
+    outputIndex: number
+    address: string
+    assets: Record<string, bigint>
+    datumHash?: string
+    datum?: string
+    scriptRef?: { type: string; script: string }
+  }>) => Promise<Array<{
+    redeemer_tag: string
+    redeemer_index: number
+    ex_units: { mem: number; steps: number }
+  }>>
+}
+
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
+    throw new Error(
+      `Yaci transaction evaluation received non-hex transaction CBOR: ${cbor.slice(0, 80)}`,
+    )
+  }
+
+  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
+    { txId: utxo.txHash, index: utxo.outputIndex },
+    {
+      address: utxo.address,
+      value: {
+        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
+        ...Object.entries(utxo.assets)
+          .filter(([unit]) => unit !== 'lovelace')
+          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
+            const policyId = unit.slice(0, 56)
+            const assetName = unit.slice(56)
+            assets[policyId] ??= {}
+            assets[policyId][assetName] = Number(amount)
+            return assets
+          }, {}),
+      },
+      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
+      ...(utxo.datum ? { datum: utxo.datum } : {}),
+      ...(utxo.scriptRef
+        ? {
+            script: {
+              [utxo.scriptRef.type === 'PlutusV1'
+                ? 'plutus:v1'
+                : utxo.scriptRef.type === 'PlutusV3'
+                  ? 'plutus:v3'
+                  : 'plutus:v2']: utxo.scriptRef.script,
+            },
+          }
+        : {}),
+    },
+  ])
+
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cbor,
+      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
+    }),
+  })
+  const rawResponse = await response.text()
+  let result: {
+    fault?: unknown
+    result?: {
+      EvaluationResult?: Record<string, { memory: number; steps: number }>
+    }
+    message?: string
+  }
+  try {
+    result = JSON.parse(rawResponse) as typeof result
+  } catch {
+    result = { message: rawResponse }
+  }
+
+  if (!response.ok || result.fault || !result.result?.EvaluationResult) {
+    throw new Error(
+      `Yaci transaction evaluation failed (HTTP ${response.status}): ${rawResponse.slice(0, 4000)}`,
+    )
+  }
+
+  const evaluated = Object.entries(result.result.EvaluationResult).map(
+    ([pointer, data]) => {
+      const [redeemer_tag, redeemer_index] = pointer.split(':')
+      return {
+        redeemer_tag,
+        redeemer_index: Number(redeemer_index),
+        ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
+      }
+    },
+  )
+  if (evaluated.length > 0) {
+    console.log(JSON.stringify({ revealDiag: 'yaci-evaluate', tx: describeTx(cbor), yaciExUnits: evaluated }))
+  }
+  return evaluated
+}
+
+// validTo() converts ms to slots with this table; the 'Preprod' default does not match the devnet genesis.
+// Anchor = latest Yaci block (slot, time); slot length is the Yaci devkit default (1.0 s, see bootstrap log).
+const DEVNET_SLOT_LENGTH_MS = 1000
+const latestBlock = await (await fetch(API + '/blocks/latest')).json() as {
+  slot: number
+  time: number
+}
+if (!Number.isSafeInteger(latestBlock.slot) || latestBlock.slot < 0 ||
+    !Number.isSafeInteger(latestBlock.time) || latestBlock.time <= 0) {
+  throw new Error('Yaci /blocks/latest lacks slot/time: ' + JSON.stringify(latestBlock))
+}
+const devnetSlotConfig = {
+  zeroTime: latestBlock.time * 1000,
+  zeroSlot: latestBlock.slot,
+  slotLength: DEVNET_SLOT_LENGTH_MS,
+}
+const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: devnetSlotConfig })
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
@@ -162,26 +312,31 @@ console.log(JSON.stringify({
     Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
   ),
 }, null, 2))
-lucid.selectWalletFromSeed(SEED)
+lucid.selectWallet.fromSeed(SEED)
 
-const address = await lucid.wallet.address()
+const address = await lucid.wallet().address()
 const details = getAddressDetails(address)
 const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
 const testPolicy = nativePolicy(lucid, keyHash)
-const testPolicyId = typeof lucid.utils.mintingPolicyToId === 'function' ? lucid.utils.mintingPolicyToId(testPolicy) : lucid.utils.validatorToScriptHash(testPolicy)
+const testPolicyId = mintingPolicyToId(testPolicy)
 const poolTokenNameHex = '504f4f4c'
 const liquidityTokenNameHex = '5553444d'
 const poolUnit = testPolicyId + poolTokenNameHex
 const liquidityUnit = testPolicyId + liquidityTokenNameHex
 const ticketUnit = testPolicyId + TICKET_NAME_HEX
 
+// Reveal does not consume Oracle state, but the parameterized validators require
+// a non-empty singleton identity. Use the deterministic fixture policy here;
+// production Oracle identity remains deployment-configured.
+const fixtureOracleStatePolicyId = testPolicyId
+
 const scripts = buildScriptsFromLucid(
-  lucid,
+  { ...lucid, utils: { validatorToScriptHash, mintingPolicyToId, validatorToAddress: (script: Script) => validatorToAddress('Preprod', script) } },
   defaultPrizeTable,
   keyHash,
-  ORACLE_STATE_POLICY_ID,
+  fixtureOracleStatePolicyId,
   ORACLE_STATE_TOKEN_NAME_HEX,
   testPolicyId,
   poolTokenNameHex,
@@ -191,8 +346,50 @@ if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
 
+function toEvolutionData(value: any): any {
+  if (typeof value === 'bigint' || typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(toEvolutionData)
+  if (value instanceof Map) {
+    return new Map([...value.entries()].map(([k, v]) => [toEvolutionData(k), toEvolutionData(v)]))
+  }
+  if (value && typeof value.index === 'number' && Array.isArray(value.fields)) {
+    return new Constr(value.index, value.fields.map(toEvolutionData))
+  }
+  throw new Error('unsupported Data value in parameterization differential')
+}
+
+const legacyPrizeScriptHex = (scripts.prizeValidator as any).script
+const differentialParams = [
+  validatorToScriptHash({
+    type: 'PlutusV2',
+    script: (beaconRegistryValidator as any).script,
+  } as any),
+  toEvolutionData(prizeTableToData(defaultPrizeTable)),
+  fixtureOracleStatePolicyId,
+  ORACLE_STATE_TOKEN_NAME_HEX,
+  keyHash,
+]
+const evolutionPrizeScriptHex = evolutionApplyParamsToScript(
+  (prizeValidatorFactory as any).script,
+  differentialParams,
+)
+console.log(JSON.stringify({
+  parameterizationDifferential: {
+    legacyBytes: Buffer.from(legacyPrizeScriptHex, 'hex').length,
+    evolutionBytes: Buffer.from(evolutionPrizeScriptHex, 'hex').length,
+    legacyHash: validatorToScriptHash({ type: 'PlutusV2', script: legacyPrizeScriptHex } as any),
+    evolutionHash: validatorToScriptHash({ type: 'PlutusV2', script: evolutionPrizeScriptHex } as any),
+    identicalCbor: legacyPrizeScriptHex === evolutionPrizeScriptHex,
+  },
+}, null, 2))
+
 const issuedAt = BigInt(Date.now())
 const expiresAt = issuedAt + 3_600_000n
+// Upper bound stays <= pdExpiresAt but inside the devnet ledger time horizon (safe zone 300 s).
+const revealValidTo = () => {
+  const near = BigInt(Date.now()) + 180_000n
+  return near < expiresAt ? near : expiresAt
+}
 const playerSecret = fromHex('01'.repeat(32))
 
 const beaconValue = await deriveBeacon(
@@ -303,28 +500,28 @@ const bootstrap = await lucid
     },
     Data.void(),
   )
-  .attachMintingPolicy(testPolicy)
-  .payToContract(
+  .attach.MintingPolicy(testPolicy)
+  .pay.ToContract(
     scripts.b1PrizePoolAddress,
-    { inline: Data.to(prePoolDatum) },
+    { kind: 'inline', value: Data.to(prePoolDatum) },
     {
       lovelace: 5_000_000n,
       [poolUnit]: 1n,
       [liquidityUnit]: TOTAL_LIQUIDITY_USDM,
     },
   )
-  .payToContract(
+  .pay.ToContract(
     scripts.prizeAddress,
-    { inline: Data.to(prePrizeDatum) },
+    { kind: 'inline', value: Data.to(prePrizeDatum) },
     {
       lovelace: 3_000_000n,
       [ticketUnit]: 1n,
     },
   )
   .addSigner(address)
-  .complete()
+  .complete({ localUPLCEval: false })
 
-const bootstrapSigned = await bootstrap.sign().complete()
+const bootstrapSigned = await bootstrap.sign.withWallet().complete({ localUPLCEval: false })
 const bootstrapHash = await bootstrapSigned.submit()
 await lucid.awaitTx(bootstrapHash)
 
@@ -377,25 +574,17 @@ const preStateFingerprint = hashJson({
 // Publish the two validator scripts as reference-script UTxOs before building Reveal.
 const prizeReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.prizeValidator as Script },
-    { lovelace: 2_000_000n },
-  )
-  .complete()
-const prizeReferenceSigned = await prizeReferenceTx.sign().complete()
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
+  .complete({ localUPLCEval: false })
+const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const prizeReferenceHash = await prizeReferenceSigned.submit()
 await lucid.awaitTx(prizeReferenceHash)
 
 const poolReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.b1PrizePool as Script },
-    { lovelace: 2_000_000n },
-  )
-  .complete()
-const poolReferenceSigned = await poolReferenceTx.sign().complete()
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
+  .complete({ localUPLCEval: false })
+const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const poolReferenceHash = await poolReferenceSigned.submit()
 await lucid.awaitTx(poolReferenceHash)
 
@@ -417,33 +606,42 @@ const poolReferenceInput = {
   scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
 }
 
-const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
-const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
-if (lucid.utils.validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
+const expectedPrizeHash = validatorToScriptHash(scripts.prizeValidator as Script)
+const expectedPoolHash = validatorToScriptHash(scripts.b1PrizePool as Script)
+if (validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
   throw new Error('PrizeValidator reference script hash mismatch')
 }
-if (lucid.utils.validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
+if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
 const reveal = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
-  .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
-  .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
-  .payToContract(
+  .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
+  .attach.SpendingValidator(scripts.prizeValidator)
+  .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
+  .attach.SpendingValidator(scripts.b1PrizePool)
+  .pay.ToContract(
     scripts.prizeAddress as string,
-    { inline: Data.to(postPrizeDatum) },
+    { kind: 'inline', value: Data.to(postPrizeDatum) },
     prizeUtxo.assets,
   )
-  .payToContract(
+  .pay.ToContract(
     scripts.b1PrizePoolAddress as string,
-    { inline: Data.to(postPoolDatum) },
+    { kind: 'inline', value: Data.to(postPoolDatum) },
     poolUtxo.assets,
   )
   .addSigner(address)
-  .validTo(Number(expiresAt))
-  .complete()
+  .validTo(Number(revealValidTo()))
+  .complete({ localUPLCEval: false })
+
+{
+  const builtCbor = reveal.toCBOR()
+  writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
+  const reEvaluated = await providerWithEvaluation.evaluateTx(builtCbor, []).catch((e: unknown) => String(e).slice(0, 600))
+  console.log(JSON.stringify({ revealDiag: 'final-built', tx: describeTx(builtCbor), yaciReEvaluationOfFinal: reEvaluated }))
+}
 
 let signedReveal: any = null
 /*
@@ -453,10 +651,10 @@ let signedReveal: any = null
  */
 const executionAdapter = createCardanoExecutionAdapter({
   signTx: async (tx: unknown) => {
-    signedReveal = await lucid.signTx(tx as any)
+    signedReveal = await (tx as any).sign.withWallet().complete({ localUPLCEval: false })
     return signedReveal
   },
-  submitTx: async (signedTx: unknown) => lucid.submitTx(signedTx as any),
+  submitTx: async (signedTx: unknown) => (signedTx as any).submit(),
 })
 const submission = await executionAdapter.submitInfrastructure(reveal)
 const txHash = submission.transactionRef
@@ -548,7 +746,7 @@ assertCardanoObservedTransitionBinding(evidence, {
 let replayRejected = false
 let replayError = ''
 try {
-  await lucid.submitTx(signedReveal)
+  await (signedReveal as any).submit()
 } catch (error) {
   replayRejected = true
   replayError = error instanceof Error ? error.message : String(error)
@@ -598,6 +796,12 @@ writeFileSync(
       sourceSetExact: true,
       valuationMode: 'fixture-1-to-1-test-asset',
       canonicalEconomicPoolUsdmValueEvaluated: false,
+    },
+    oracle: {
+      oracleStatePolicyId: fixtureOracleStatePolicyId,
+      oracleStateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
+      oracleMode: 'fixture-identity-only',
+      productionOracleQualified: false,
     },
     observedCardanoTransitionEvidence: evidence,
     replay: {

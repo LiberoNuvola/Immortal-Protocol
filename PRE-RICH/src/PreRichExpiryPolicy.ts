@@ -17,11 +17,34 @@ export type PreRichExpiryIssuanceState = {
   unresolvedTicketCount: bigint
 }
 
+export const PRE_RICH_EXPIRY_MIN_HORIZON_MS = 2n * 60n * 60n * 1000n
+export const PRE_RICH_EXPIRY_MAX_HORIZON_MS = 300n * 24n * 60n * 60n * 1000n
+
 export type PreRichExpiryPolicy = {
   policyId: string
   policyVersion: bigint
+  minHorizonMs: bigint
+  maxHorizonMs: bigint
   deriveHorizonMs: (state: PreRichExpiryIssuanceState) => bigint
 }
+
+export const preRichExpiryPolicyV1: PreRichExpiryPolicy = {
+  policyId: 'pre-rich-expiry-v1',
+  policyVersion: 1n,
+  minHorizonMs: PRE_RICH_EXPIRY_MIN_HORIZON_MS,
+  maxHorizonMs: PRE_RICH_EXPIRY_MAX_HORIZON_MS,
+  deriveHorizonMs: (state) => {
+    /*
+     * V1 intentionally uses the declared maximum as the neutral temporal
+     * reference. Economic state modulates the horizon through a dimensionless
+     * reserve-pressure ratio; no hidden temporal constants are introduced.
+     */
+    if (state.eev <= 0n) return PRE_RICH_EXPIRY_MAX_HORIZON_MS
+    const reservePressure = state.unresolvedReserve * 100n / state.eev
+    return PRE_RICH_EXPIRY_MAX_HORIZON_MS / (1n + reservePressure)
+  },
+}
+
 
 export type CrystallizedTicketExpiry = {
   issuedAt: bigint
@@ -49,6 +72,9 @@ export function crystallizeTicketExpiry(
 ): CrystallizedTicketExpiry {
   if (!policy.policyId) throw new Error('expiry policyId is required')
   if (policy.policyVersion < 0n) throw new Error('expiry policyVersion must be non-negative')
+  if (policy.minHorizonMs < 0n) throw new Error('expiry minimum horizon must be non-negative')
+  if (policy.maxHorizonMs < 0n) throw new Error('expiry maximum horizon must be non-negative')
+  if (policy.minHorizonMs > policy.maxHorizonMs) throw new Error('expiry minimum horizon cannot exceed maximum horizon')
   if (issuedAt < 0n) throw new Error('issuedAt must be non-negative')
   validateIssuanceState(state)
 
@@ -60,10 +86,17 @@ export function crystallizeTicketExpiry(
   }
   if (first < 0n) throw new Error('expiry horizon must be non-negative')
 
+  const horizonMs =
+    first < policy.minHorizonMs
+      ? policy.minHorizonMs
+      : first > policy.maxHorizonMs
+        ? policy.maxHorizonMs
+        : first
+
   return {
     issuedAt,
-    expiresAt: issuedAt + first,
-    horizonMs: first,
+    expiresAt: issuedAt + horizonMs,
+    horizonMs,
     policyId: policy.policyId,
     policyVersion: policy.policyVersion,
     issuanceStateHash: state.issuanceStateHash,

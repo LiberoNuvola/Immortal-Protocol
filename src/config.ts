@@ -16,6 +16,7 @@ export const RELAYER_PKH = env('VITE_RELAYER_PKH')
 export const ORACLE_PUBLISHER_PKH = env('VITE_ORACLE_PUBLISHER_PKH')
 export const ORACLE_STATE_POLICY_ID = env('VITE_ORACLE_STATE_POLICY_ID')
 export const ORACLE_STATE_TOKEN_NAME_HEX = env('VITE_ORACLE_STATE_TOKEN_NAME_HEX')
+export const ORACLE_STATE_ADDRESS = env('VITE_ORACLE_STATE_ADDRESS')
 
 // B1 singleton PrizePool authority NFT. Must be minted once at deployment.
 export const B1_POOL_TOKEN_POLICY_ID = env('VITE_B1_POOL_TOKEN_POLICY_ID')
@@ -25,6 +26,11 @@ export const B1_POOL_TOKEN_NAME_HEX = env('VITE_B1_POOL_TOKEN_NAME_HEX')
 export const V3_CARRIER_ADDRESS = env('VITE_V3_CARRIER_ADDRESS')
 export const V3_CARRIER_POLICY_ID = env('VITE_V3_CARRIER_POLICY_ID')
 export const V3_CARRIER_TOKEN_NAME_HEX = env('VITE_V3_CARRIER_TOKEN_NAME_HEX')
+
+// B2 authenticated PRE-RICH control carrier. Deployment identity is externalized.
+export const B2_CONTROL_ADDRESS = env('VITE_B2_CONTROL_ADDRESS')
+export const B2_CONTROL_POLICY_ID = env('VITE_B2_CONTROL_POLICY_ID')
+export const B2_CONTROL_TOKEN_NAME_HEX = env('VITE_B2_CONTROL_TOKEN_NAME_HEX')
 
 // Canonical Reveal reference-script holders. The Reveal path fails closed if absent.
 export const PRIZE_VALIDATOR_REFERENCE_ADDRESS = env('VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS')

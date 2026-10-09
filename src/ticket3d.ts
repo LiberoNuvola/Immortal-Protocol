@@ -35,6 +35,7 @@ function ensureStyles() {
     .pr3d__actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
     .pr3d__actions button { border: 0; border-radius: 10px; padding: 9px 13px; cursor: pointer; }
     .pr3d__meta { font-size:.78rem; opacity:.7; max-width:720px; text-align:center; }
+    .pr3d__certificate { margin-top:12px; padding:10px 12px; border:1px dashed rgba(0,0,0,.24); border-radius:12px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; line-height:1.45; background:rgba(255,255,255,.4); }
   `
   document.head.appendChild(style)
 }
@@ -99,8 +100,12 @@ export function mountCertifiedTicket3D(
     <div class='pr3d__rows'><span class='pr3d__row'>${escapeHtml(row1)}</span><span class='pr3d__row'>${escapeHtml(row2)}</span></div>
   `
 
+  const provenanceLabel = state.provenance.beaconStatus === 'Ready' ? 'MATERIOS EVIDENCE ATTACHED' : 'MATERIOS EVIDENCE PENDING'
+  const mcHashLabel = state.provenance.mcHash ? state.provenance.mcHash.slice(0, 20) + '…' : 'pending'
+  const materiosContextLabel = state.provenance.materiosContext ? state.provenance.materiosContext.slice(0, 20) + '…' : 'pending'
+
   back.innerHTML = `
-    <div class='pr3d__identity'>PRE-RICH · CERTIFIED TICKET</div>
+    <div class='pr3d__identity'>PRE-RICH · CERTIFIED NFT</div>
     <div class='pr3d__title'>Canonical Ticket Receipt</div>
     <div class='pr3d__grid'>
       <div class='pr3d__field'><small>Policy ID</small><strong>${escapeHtml(state.identity.policyId)}</strong></div>
@@ -109,6 +114,13 @@ export function mountCertifiedTicket3D(
       <div class='pr3d__field'><small>Commitment</small><strong>${escapeHtml(state.commitment.slice(0, 16))}…</strong></div>
       <div class='pr3d__field'><small>Beacon target</small><strong>${escapeHtml(state.beaconTarget)}</strong></div>
       <div class='pr3d__field'><small>Verification</small><strong>${escapeHtml(state.verificationReference ?? 'not attached')}</strong></div>
+    </div>
+    <div class='pr3d__certificate'>
+      <strong>${escapeHtml(provenanceLabel)}</strong><br>
+      Beacon status: ${escapeHtml(state.provenance.beaconStatus)}<br>
+      MATERIOS mcHash: ${escapeHtml(mcHashLabel)}<br>
+      MATERIOS context: ${escapeHtml(materiosContextLabel)}<br>
+      B3 canonical proof: NOT CLAIMED BY THIS VIEW
     </div>
     <div class='pr3d__rows'><span class='pr3d__row'>Row 1: ${escapeHtml(state.row1Tier)}</span><span class='pr3d__row'>Row 2: ${escapeHtml(state.row2Tier)}</span><span class='pr3d__row'>Tier: ${escapeHtml(state.prizeTier)}</span></div>
   `

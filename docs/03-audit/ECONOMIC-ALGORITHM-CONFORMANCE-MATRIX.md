@@ -1,3 +1,5 @@
+> **AUDIT / CONFORMANCE MATRIX — NON-NORMATIVE.** This document tracks implementation and evidence against canonical sources; it does not create protocol semantics.
+
 # IMMORTAL / PRE-RICH — Economic Algorithm Conformance Matrix
 
 **Status:** OPERATIONAL / NON-NORMATIVE  

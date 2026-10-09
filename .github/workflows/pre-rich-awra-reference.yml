@@ -1,0 +1,31 @@
+name: PRE-RICH AWRA reference conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - 'PRE-RICH/src/PreRichAwraReference.ts'
+      - 'PRE-RICH/src/PreRichAwraDynamicReference.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts'
+      - '.github/workflows/pre-rich-awra-reference.yml'
+  pull_request:
+    paths:
+      - 'PRE-RICH/src/PreRichAwraReference.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.test.ts'
+      - 'PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts'
+      - '.github/workflows/pre-rich-awra-reference.yml'
+  workflow_dispatch:
+
+jobs:
+  # Dynamic risk-envelope source is covered by the same dependency-free suite.
+  awra-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run dependency-free AWRA reference tests
+        run: node --experimental-strip-types --test PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts
