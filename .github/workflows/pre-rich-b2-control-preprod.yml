@@ -27,14 +27,52 @@ jobs:
       - name: Install repository dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Restore compiled B2 Plutus artifacts
+        id: b2-artifact-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            plutus/out/preRichControlCarrier.plutus.json
+            plutus/out/preRichControlCarrierMintPolicy.plutus.json
+          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
+
       - name: Setup canonical Plutus CI
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-plutus
         with:
           update-hackage: "true"
 
-      - name: Build and export fresh Plutus artifacts
+      - name: Build and export B2 Plutus artifacts on cache miss
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
         working-directory: plutus
         run: cabal run exe:export-scripts
+
+      - name: Verify compiled B2 Plutus artifacts
+        run: |
+          test -s plutus/out/preRichControlCarrier.plutus.json
+          test -s plutus/out/preRichControlCarrierMintPolicy.plutus.json
+          node - <<'NODE'
+          const fs = require('node:fs')
+          for (const file of [
+            'plutus/out/preRichControlCarrier.plutus.json',
+            'plutus/out/preRichControlCarrierMintPolicy.plutus.json',
+          ]) {
+            const a = JSON.parse(fs.readFileSync(file, 'utf8'))
+            if (a.type !== 'PlutusScriptV2' || !/^[0-9a-f]+$/i.test(a.cborHex || '')) {
+              throw new Error('invalid Plutus artifact: ' + file)
+            }
+          }
+          console.log('B2 Plutus artifacts ready')
+          NODE
+
+      - name: Save compiled B2 Plutus artifacts
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            plutus/out/preRichControlCarrier.plutus.json
+            plutus/out/preRichControlCarrierMintPolicy.plutus.json
+          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/cabal.project', 'plutus/*.cabal') }}
 
       - name: Select deterministic live wallet seed UTxO
         run: |
@@ -79,7 +117,7 @@ jobs:
               'PREPROD_CONTROL_SEED_TX_HASH=' + seed.txHash,
               'PREPROD_CONTROL_SEED_OUTPUT_INDEX=' + seed.outputIndex,
               '',
-            ].join('\\n'),
+            ].join('\n'),
           )
           NODE
 
