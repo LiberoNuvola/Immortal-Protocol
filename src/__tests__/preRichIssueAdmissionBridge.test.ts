@@ -116,6 +116,10 @@ function witness(): AuthoritativeIssueAdmissionWitness {
     authoritativeObservationReference: 'observation:issue:1',
     stateHash: '1'.repeat(64),
     actionClass: 'Issue',
+    truthVerified: true,
+    eevFresh: true,
+    obligationsComplete: true,
+    allOmegaSuccessorsCertified: true,
     actionFingerprint: '2'.repeat(64),
     postStateHash: '3'.repeat(64),
     eev: 1000n,
@@ -185,6 +189,34 @@ const inputs = {
 }
 
 describe('PRE-RICH Issue admission bridge', () => {
+  it('accepts the live reference formats: plain carrier/provenance with a cardano:tx/ viability binding', async () => {
+    const plain = 'd'.repeat(64) + '#2'
+    const base = witness()
+    const provider: AuthoritativeIssueAdmissionProvider = async () => ({
+      ...base,
+      v3CarrierBinding: { ...base.v3CarrierBinding!, carrierStateReference: plain },
+      protectedCapitalProvenance: { ...base.protectedCapitalProvenance, sourceReference: plain },
+    })
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence))
+      .resolves.toMatchObject({ actionClass: 'Issue' })
+  })
+
+  it('still rejects a viability binding that points at a different carrier even across formats', async () => {
+    const base = witness()
+    const provider: AuthoritativeIssueAdmissionProvider = async () => ({
+      ...base,
+      viabilityCertificate: {
+        ...base.viabilityCertificate,
+        deploymentBinding: {
+          ...base.viabilityCertificate.deploymentBinding,
+          carrierStateReference: 'cardano:tx/' + '9'.repeat(64) + '#2',
+        },
+      },
+    })
+    await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence))
+      .rejects.toThrow(/different deployment\/state/)
+  })
+
   it('accepts only an authoritative Issue witness bound to exact runtime inputs', async () => {
     const provider: AuthoritativeIssueAdmissionProvider = async () => witness()
     await expect(obtainAuthoritativeIssueAdmission(provider, inputs, classEvidence)).resolves.toMatchObject({ actionClass: 'Issue' })
