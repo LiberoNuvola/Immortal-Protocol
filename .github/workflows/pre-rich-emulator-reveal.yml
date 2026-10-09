@@ -33,7 +33,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Normalize Lucid ESM entrypoint
         run: |
           node --input-type=module <<'NODE'
