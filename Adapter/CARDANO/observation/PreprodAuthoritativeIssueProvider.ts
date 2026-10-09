@@ -148,6 +148,15 @@ export function createPreprodAuthoritativeIssueProvider(
           },
         })
 
+        if (
+          authority.controlStateReference !==
+          'cardano:tx/' + inputs.controlStateReference
+        ) {
+          throw new Error(
+            'signed authority B2 control reference does not match direct observed control state',
+          )
+        }
+
         if (BigInt(String(authority.poolUsdmValue)) !== direct.poolUsdmValue) {
           throw new Error(
             'signed authority Pool valuation does not match direct physical USDM observation',
