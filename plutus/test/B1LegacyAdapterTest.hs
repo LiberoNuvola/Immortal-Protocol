@@ -11,6 +11,7 @@ import Prelude
   , not
   , (&&)
   , (==)
+  , (++)
   , Either (Left, Right)
   )
 
