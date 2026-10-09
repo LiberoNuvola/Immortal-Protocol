@@ -64,8 +64,8 @@ Beacon 4 remains research/open architecture and must not be promoted to normativ
 
 ## 3. Repository audit findings
 
-### F-01 — V3 carrier mint policy is currently diagnostic/unrestricted
-**Severity:** P2 for current first-ticket path; P0/P1 before any new V3 carrier deployment.
+### F-01 — V3 carrier mint-policy false-green (RESOLVED IN SOURCE)
+**Severity:** P0/P1 before any new V3 carrier deployment; resolved in current source.
 
 `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` currently defines a diagnostic policy whose predicate is always true and does not inspect `ScriptContext`. The deployment path loads that artifact.
 
@@ -83,16 +83,16 @@ In `src/mint.ts`, `requireB2ControlBinding` and `requireV3CarrierBinding` are ca
 **Required action:** add a regression test/documented production contract preventing the generic entrypoint from being reused as the public first-user path. No change to economic semantics is required.
 
 ### F-03 — Type contract drift in PreprodAuthoritativeIssueProvider
-**Severity:** P1/P2.
+**Severity:** P1/P2 — **FIXED**.
 
 `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` reads `inputs.controlStateReference` inside its `observationSource` callback, but that property is absent from the callback input type. The corresponding `HaskellIssueAdmissionProviderOptions.observationSource` type also omits `controlStateReference`.
 
 Runtime composition later supplies/observes the B2 control reference, so this is primarily a type-safety/interface-consistency defect, but it can be hidden by transpile-only execution.
 
-**Required action:** align the callback types with the actual Issue runtime contract and ensure CI performs a real TypeScript typecheck over these files.
+**Resolution:** added `controlStateReference` to the callback contract and added an explicit TypeScript boundary typecheck to Direct-USDM conformance CI.
 
 ### F-04 — Saleability has two predicates with different authority boundaries
-**Severity:** P2, conformance hardening.
+**Severity:** P2 — **FIXED**.
 
 `EconomicKernel.classSaleable` checks active-class and cap conditions but does not inspect `tcsSaleable`. PRE-RICH Issue refinement also uses active-class + cap, while the live V3 observation path separately checks `liveClass.saleable`.
 
@@ -100,7 +100,7 @@ The repository's state-ownership documentation treats `tcsSaleable` as applicati
 
 **Risk:** future code could accidentally rely on `EconomicKernel.classSaleable` alone and admit a class marked non-saleable by application state.
 
-**Required action:** add an explicit negative conformance vector for `tcsSaleable = false` with otherwise valid active/cap state, and document the required layer at every Issue entrypoint.
+**Resolution:** `EconomicKernel.classSaleable` now requires `tcsSaleable`, and `PreRichIssueDecisionTest.hs` includes the explicit non-saleable negative vector.
 
 ### F-05 — B2/V3 cross-check only compares current/highest activation state
 **Severity:** P2.
@@ -184,7 +184,23 @@ This audit does **not** reopen:
 
 No protocol/economic semantics were changed by this audit snapshot.
 
-## 7. Immediate priority order
+### Resolved this cycle
+
+- F-01 source-level diagnostic V3 mint policy restored to one-shot enforcement.
+- F-03 provider callback type drift fixed and typechecked in CI.
+- F-04 explicit class saleability now enforced in the Issue economic gate.
+- F-06 B2 cache key strengthened against toolchain/lockfile drift.
+- F-07 Node CI installations switched to lockfile-reproducible `npm ci`.
+- V3 ledger probe strengthened with negative cases for seed, token name and mint quantity.
+
+### Still open
+
+- F-08 historical credential rotation/revocation verification.
+- F-09 Blockfrost proxy exposure/hardening decision.
+- Concrete deployment-specific Kc/Ω evidence and live B2 singleton/adversarial ledger evidence remain outside this code-only pass.
+- Current-head CI evidence must be captured against the latest exact SHA; no green result is inferred from previous runs.
+
+## 7. Current audit-cycle status
 
 1. F-01 — restore/verify the V3 carrier mint policy before any new V3 carrier deployment.
 2. F-08 — verify historical credential rotation/revocation.
@@ -195,3 +211,11 @@ No protocol/economic semantics were changed by this audit snapshot.
 **Closed/advanced in this audit cycle:** F-03 type-contract drift fixed; F-07 dependency reproducibility fixed; F-02 reclassified as generic-API hardening only; F-05 no code change justified.
 
 **Current conclusion:** the architecture is materially further closed than the older status documents indicate. The remaining blockers are concentrated in concrete deployment evidence plus a small number of code/operational hardening items.
+
+## 2026-10-09 — Post-audit implementation delta
+
+Current branch tip after the audit fixes: `63ca3eb542a85c85cf204c3131cec79c9165e596`.
+
+Implementation commits in this cycle include the provider contract fix, CI reproducibility hardening, explicit class saleability enforcement, secure V3 one-shot mint policy restoration and negative ledger-probe coverage.
+
+No V3 economic semantics, Reveal semantics, EEV perimeter or B3/Beacon semantics were changed.
