@@ -28,6 +28,14 @@ baseState =
     (EconomicControlState 0 0)
     (JackpotState 0 0 JackpotInactive 0)
 
+unsaleableState :: V3EconomicState
+unsaleableState =
+  V3EconomicState
+    0 0 0 0 0 0
+    [TicketClassState 0 0 0 0 1 False]
+    (EconomicControlState 0 0)
+    (JackpotState 0 0 JackpotInactive 0)
+
 input :: IssueDecisionInput
 input =
   IssueDecisionInput
@@ -74,5 +82,9 @@ main = do
   case produceIssueDecision (input { idiAvailableExecutableLiquidity = 0, idiRequiredImmediateLiquidity = 1 }) of
     Nothing -> putStrLn "PASS: insufficient executable liquidity is rejected"
     Just _ -> error "FAIL: insufficient executable liquidity was admitted"
+
+  case produceIssueDecision (input { idiPreState = unsaleableState }) of
+    Nothing -> putStrLn "PASS: explicitly non-saleable class is rejected"
+    Just _ -> error "FAIL: explicitly non-saleable class was admitted"
 
   putStrLn "ALL AUTHORITATIVE ISSUE DECISION TESTS PASSED"
