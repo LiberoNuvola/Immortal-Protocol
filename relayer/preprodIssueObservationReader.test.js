@@ -286,24 +286,52 @@ test('decodes Lucid CBOR string datums', async () => {
   const lucid = fakeLucid()
   const { Data, Constr } = await import('@lucid-evolution/lucid')
 
-  const toConstr = value => {
-    if (value && Array.isArray(value.fields)) {
-      return new Constr(
-        typeof value.index === 'number' ? value.index : 0,
-        value.fields.map(toConstr),
-      )
-    }
-    return value
-  }
+  const poolDatum = new Constr(0, [
+    1_000n, 0n, 0n, 0n, 0n, 0n,
+    new Constr(0, []),
+    new Constr(0, []),
+  ])
+  const controlDatum = new Constr(0, [
+    0n,
+    0n,
+    0n,
+    0n,
+    'ab'.repeat(28),
+    'b2c0',
+  ])
+  const classes = Array.from({ length: 8 }, (_, i) =>
+    new Constr(0, [
+      BigInt(i),
+      i < 2 ? 1n : 0n,
+      i < 2 ? 1n : 0n,
+      i === 0 ? 1n : i === 1 ? 2n : 0n,
+      10n,
+      new Constr(i < 2 ? 1 : 0, []),
+    ]),
+  )
+  const carrierDatum = new Constr(0, [
+    0n,
+    new Constr(0, [
+      10n,
+      3n,
+      2n,
+      20n,
+      30n,
+      40n,
+      classes,
+      new Constr(0, [0n, 0n]),
+      new Constr(0, [50n, 0n, new Constr(0, []), 0n]),
+    ]),
+  ])
 
   const originalUtxosAt = lucid.utxosAt
   lucid.utxosAt = async address => {
     const values = await originalUtxosAt(address)
     if (values.length !== 1) return values
     const value = { ...values[0] }
-    if (address === 'pool' || address === 'control' || address === 'carrier') {
-      value.datum = Data.to(toConstr(value.datum))
-    }
+    if (address === 'pool') value.datum = Data.to(poolDatum)
+    if (address === 'control') value.datum = Data.to(controlDatum)
+    if (address === 'carrier') value.datum = Data.to(carrierDatum)
     return [value]
   }
 
