@@ -1570,3 +1570,43 @@ The next required step is therefore to bind the actual Issue transaction to the 
 A Genesis Regime Carrier workflow for the latest source change is currently **in progress** (run `36357870924`, head `f35c08c743c07d62a264366bbf085d3b840fd5e5`). No green result is claimed until the run completes.
 
 **STATUS: 🟢 DECISION-ENVELOPE STRUCTURE · 🔴 CRYPTOGRAPHIC/STATE-HASH RECOMPUTATION · 🔴 LIVE CARRIER→ISSUE TX BINDING · 🔴 EEV SOURCE · 🟡 LIQUIDITY LIVE EVIDENCE**
+
+
+## 44.50 ISSUE AUTHORITY — PROTECTED-CAPITAL PROVENANCE BINDING — 2026-10-09
+
+The Issue authority seam was advanced without changing PRE-RICH economics or the V3 decision semantics.
+
+### Implemented
+
+- PRE-RICH/onchain/PreRichIssueDecision.hs now retains the exact authoritative preState inside the produced IssueDecision.
+- plutus/export/IssueAdmission.hs now emits a structured ProtectedCapital provenance witness derived by the canonical Haskell EconomicKernel.protectedCapital / worstCaseExposure path, with all six protected components and accounting inputs.
+- Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts now binds that provenance to the exact observed V3 carrier state reference and normalizes serialized integer fields to bigint.
+- relayer/preprodIssueAuthorityEnvelope.js provides a fail-closed signing boundary for the complete Issue authority envelope and self-verifies the generated signature before returning it.
+- relayer/preprodIssueAuthorityEnvelope.test.js covers the positive signed-envelope path.
+- plutus/test/PreRichIssueDecisionTest.hs now asserts preservation of the exact pre-state used for provenance.
+
+### Boundary preserved
+
+This closes a concrete provenance implementation gap:
+
+authenticated V3 carrier preState → canonical Haskell Issue decision → ProtectedCapital provenance → signed Issue authority envelope
+
+It does not manufacture EEV or Viability. The signed envelope still requires:
+
+- EEV qualification with EV1–EV7 and DEPLOYMENT_APPROVED;
+- a real ViabilityCertificate with VC1–VC6 and E1–E10;
+- exact live Pool/Counter/carrier/control bindings;
+- an explicit immediate-liquidity requirement;
+- deployment-held signing authority.
+
+The existing browser/adapter path remains fail-closed when any required authority evidence is missing.
+
+### Current classification
+
+🟢 ProtectedCapital provenance derivation/binding implemented
+🟢 Signed Issue envelope producer implemented
+🔴 Concrete Viability/Kc-Ω certificate evidence still required
+🔴 B2 live control deployment still required
+🔴 Atomic first-user Preprod Issue still blocked
+
+No V3 economic rule changed.
