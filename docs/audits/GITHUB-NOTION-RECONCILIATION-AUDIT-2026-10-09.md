@@ -3,7 +3,7 @@
 **Date:** 2026-10-09  
 **Active branch:** `work/immortal-green-closure`  
 **Initial reconciliation tip:** `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`  
-**Current verified branch tip at last refresh:** `2c6285be703ae5bb905b869cf901b6bbd50dc7b3`
+**Current verified branch tip at this refresh:** `b1af5d801cd4b9b0d23a28e5139857727894571d`
 
 ## 1. Repository topology truth
 
@@ -235,3 +235,33 @@ No V3 economic semantics, Reveal semantics, EEV perimeter or B3/Beacon semantics
 The V3 fast workflow was additionally aligned with the B2 cache discipline: `npm ci` is used and the cache key now includes the V3 policy source, Plutus cabal files, `.github/actions/setup-plutus/action.yml` and `package-lock.json`.
 
 The repository credential-boundary check scans the current tracked tree for literal provider credentials. It does not, by design, prove revocation of historical secrets; that remains an operational security verification item.
+
+## 2026-10-09 — Deep Issue-path audit refresh
+
+The serrated audit of the live Issue path found and corrected two concrete implementation defects and one reproducibility drift:
+
+- **Provider contract drift fixed:** `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` now declares the exact `controlStateReference` already consumed by its observation callback. Commit: `a9a2613896b2634b6de221cb9fe9c8d3f07717be`.
+- **UTxO reference parser bug fixed:** `relayer/issueAdmissionProvider.js` and `relayer/preprodIssueObservationProvider.js` contained a regex literal that matched `\d` literally instead of decimal output indexes. Normal `txHash#0` / `txHash#1` references were therefore rejected. Fixed in commits `acd2b5d1a5a6d92117c2e53ea9e08a11b9f1d4e5` and `65df6516236d62f70c9397611646e3468ed1eb22c`.
+- **Root dependency reproducibility extended:** remaining root workflow installs in the audited Preprod/conformance set were aligned to `npm ci`; isolated subproject/global installs were intentionally left unchanged. The B2 conformance workflow was finalized in commit `b1af5d801cd4b9b0d23a28e5139857727894571d`.
+
+### Production wiring finding — IMPORTANT
+
+The repository has a concrete `createPreprodAuthoritativeIssueProvider()` implementation and the canonical Haskell producer boundary, but there is **no current production browser call-site** that instantiates that Preprod provider or passes it to `mintSerialNFTWithAuthoritativeAdmission()`. `dapp.html` loads `src/main.ts`; `src/main.ts` keeps BUY disabled and explicitly states that authoritative admission is required. `src/tickets.ts` still exposes a lower-level legacy `mintSerialNFT()` path, but it is not imported by the current DApp entrypoint.
+
+This is classified as an **integration/closure gap, not an economic-rule defect**. The fail-closed lock is correct. The next executable step is to wire the authenticated server-side/provider path into the intended first-user entrypoint without reintroducing browser-side EEV/ProtectedCapital fabrication or the legacy generic mint path.
+
+### Current-head evidence
+
+Current branch head is `b1af5d801cd4b9b0d23a28e5139857727894571d`. GitHub reports no combined commit statuses for this SHA. The first push-triggered workflow observed for the SHA (`pre-rich-emulator-reveal`, run `37978074095`) completed **failure**; therefore this audit makes **no GREEN claim** for the current head.
+
+### Remaining blockers
+
+- authoritative provider production wiring / first real Issue execution;
+- current-head successful CI bound to the exact SHA;
+- fresh V3 artifact rebuild + exact-SHA verification before any new V3 deployment;
+- live B2 singleton + adversarial ledger evidence;
+- deployment-specific Kc/Ω evidence;
+- historical credential revocation/rotation verification;
+- Blockfrost proxy exposure/hardening decision.
+
+No V3 economic semantics, Reveal semantics, EEV perimeter, B3/Materios semantics or Beacon-4 research status were changed by this refresh.
