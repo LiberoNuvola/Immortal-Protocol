@@ -165,7 +165,7 @@ Therefore implementation MUST NOT hard-code one.
 
 Closure requires:
 
-`deployment control singleton identity → real UTxO → authenticated datum → adversarial ledger trace`
+`deployment control singleton identity + control authority key → real UTxO → authenticated datum → authorized transition → adversarial ledger trace`
 
 Until that identity and ledger instance exist, B2 remains **architecturally specified but not GREEN**.
 
