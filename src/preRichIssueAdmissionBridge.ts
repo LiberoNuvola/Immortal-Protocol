@@ -118,6 +118,10 @@ export type AuthoritativeIssueAdmissionWitness =
     /** Exact PRE-RICH Issue coordinates consumed by the canonical decision. */
     issueClassId: bigint
     issuePrice: bigint
+    truthVerified: true
+    eevFresh: true
+    obligationsComplete: true
+    allOmegaSuccessorsCertified: true
     v3CarrierBinding?: IssueV3CarrierBinding
     eevQualification: EevQualificationEvidence
     protectedCapitalProvenance: ProtectedCapitalProvenance
@@ -200,6 +204,10 @@ export async function obtainAuthoritativeIssueAdmission(
   }
   if (witness.issuePrice !== inputs.price) {
     throw new Error('authoritative Issue witness price does not match runtime input')
+  }
+
+  if (!witness.truthVerified || !witness.eevFresh || !witness.obligationsComplete || !witness.allOmegaSuccessorsCertified) {
+    throw new Error('authoritative Issue witness is not fully verified, fresh, obligation-complete and Ω-certified')
   }
 
   const pc = witness.protectedCapitalProvenance
