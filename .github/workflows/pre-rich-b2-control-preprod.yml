@@ -17,6 +17,11 @@ on:
         required: false
         default: ""
         type: string
+      control_authority_pkh:
+        description: "Payment key hash authorized to mutate the B2 control singleton (optional; defaults to deployer wallet)"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   deploy:
@@ -29,6 +34,7 @@ jobs:
       PREPROD_CONTROL_TOKEN_NAME_HEX: ${{ inputs.control_token_name_hex }}
       PREPROD_CONTROL_SEED_TX_HASH: ${{ inputs.seed_tx_hash }}
       PREPROD_CONTROL_SEED_OUTPUT_INDEX: ${{ inputs.seed_output_index }}
+      PREPROD_CONTROL_AUTHORITY_PKH: ${{ inputs.control_authority_pkh }}
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
