@@ -29,6 +29,7 @@ const { readPreprodIssueObservation } = require('../../../relayer/preprodIssueOb
     poolInputReference: string
     poolUsdmValue: bigint
     carrierStateReference: string
+    controlStateReference: string
     eevQualification: unknown
     protectedCapitalProvenance: unknown
     viabilityCertificate: unknown
@@ -214,6 +215,7 @@ export function createPreprodAuthoritativeIssueProvider(
       poolUsdmValue: observed.poolUsdmValue,
       liquiditySourceReferences: [observed.poolInputReference],
       carrierStateReference: observed.carrierStateReference.replace(/^cardano:tx\//, ''),
+      controlStateReference: observed.controlStateReference.replace(/^cardano:tx\//, ''),
       eevQualification: observed.eevQualification as HaskellIssueObservation['eevQualification'],
       protectedCapitalProvenance:
         observed.protectedCapitalProvenance as HaskellIssueObservation['protectedCapitalProvenance'],
