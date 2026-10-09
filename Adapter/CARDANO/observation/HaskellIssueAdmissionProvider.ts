@@ -162,8 +162,34 @@ export function createHaskellIssueAdmissionProvider(
 
     const protectedCapitalProvenance: ProtectedCapitalProvenance = {
       sourceReference: observed.carrierStateReference,
-      components: rawProtectedCapitalProvenance.components,
-      accountingInputs: rawProtectedCapitalProvenance.accountingInputs,
+      components: {
+        crystallizedLiabilities: BigInt(
+          String(rawProtectedCapitalProvenance.components.crystallizedLiabilities),
+        ),
+        worstCaseExposure: BigInt(
+          String(rawProtectedCapitalProvenance.components.worstCaseExposure),
+        ),
+        safetyCapital: BigInt(
+          String(rawProtectedCapitalProvenance.components.safetyCapital),
+        ),
+        reserveProtection: BigInt(
+          String(rawProtectedCapitalProvenance.components.reserveProtection),
+        ),
+        lockedJackpot: BigInt(
+          String(rawProtectedCapitalProvenance.components.lockedJackpot),
+        ),
+        mandatoryFutureCosts: BigInt(
+          String(rawProtectedCapitalProvenance.components.mandatoryFutureCosts),
+        ),
+      },
+      accountingInputs: {
+        unresolvedReserve: BigInt(
+          String(rawProtectedCapitalProvenance.accountingInputs.unresolvedReserve),
+        ),
+        unresolvedTicketCount: BigInt(
+          String(rawProtectedCapitalProvenance.accountingInputs.unresolvedTicketCount),
+        ),
+      },
       total: BigInt(String(rawProtectedCapitalProvenance.total)),
     }
 
