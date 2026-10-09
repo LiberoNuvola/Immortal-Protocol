@@ -1,0 +1,108 @@
+name: PRE-RICH B2 Control Carrier — Preprod AUTO
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 30
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
+      DEPLOYER_MNEMONIC: ${{ secrets.PREPROD_REVEAL_SEED }}
+      PREPROD_CONTROL_TOKEN_NAME_HEX: "4232434f4e54524f4c"
+
+    steps:
+      - name: Checkout operational B2 branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install native Plutus dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libsecp256k1-dev libblst-dev pkg-config build-essential
+
+      - name: Setup Haskell for fresh Plutus artifacts
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.7"
+          cabal-version: "3.12.1.0"
+
+      - name: Build and export fresh Plutus artifacts
+        working-directory: plutus
+        run: cabal run exe:export-scripts
+
+      - name: Select deterministic live wallet seed UTxO
+        run: |
+          node --input-type=module <<'NODE'
+          import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
+          import { appendFile } from 'node:fs/promises'
+
+          const projectId = process.env.BLOCKFROST_PROJECT_ID?.trim()
+          const mnemonic = process.env.DEPLOYER_MNEMONIC?.trim()
+          if (!projectId) throw new Error('BLOCKFROST_PROJECT_ID is required')
+          if (!mnemonic) throw new Error('DEPLOYER_MNEMONIC is required')
+
+          const lucid = await Lucid(
+            new Blockfrost('https://cardano-preprod.blockfrost.io/api/v0', projectId),
+            'Preprod',
+          )
+          lucid.selectWallet.fromSeed(mnemonic)
+
+          const address = await lucid.wallet().address()
+          const candidates = (await lucid.wallet().getUtxos())
+            .filter((u) => (u.assets.lovelace ?? 0n) >= 5_000_000n)
+            .sort((a, b) =>
+              (a.txHash + '#' + a.outputIndex).localeCompare(b.txHash + '#' + b.outputIndex),
+            )
+
+          if (candidates.length === 0) {
+            throw new Error('No live Preprod wallet UTxO contains at least 5 ADA')
+          }
+
+          const seed = candidates[0]
+
+          console.log(JSON.stringify({
+            walletAddress: address,
+            selectedSeedRef: seed.txHash + '#' + seed.outputIndex,
+            lovelace: seed.assets.lovelace.toString(),
+            tokenNameHex: process.env.PREPROD_CONTROL_TOKEN_NAME_HEX,
+          }, null, 2))
+
+          await appendFile(
+            process.env.GITHUB_ENV,
+            [
+              'PREPROD_CONTROL_SEED_TX_HASH=' + seed.txHash,
+              'PREPROD_CONTROL_SEED_OUTPUT_INDEX=' + seed.outputIndex,
+              '',
+            ].join('\\n'),
+          )
+          NODE
+
+      - name: Verify signing configuration without exposing secret
+        run: |
+          test -n "${BLOCKFROST_PROJECT_ID}"
+          test -n "${DEPLOYER_MNEMONIC}"
+          test -n "${PREPROD_CONTROL_TOKEN_NAME_HEX}"
+          test -n "${PREPROD_CONTROL_SEED_TX_HASH}"
+          test -n "${PREPROD_CONTROL_SEED_OUTPUT_INDEX}"
+
+      - name: Deploy authenticated B2 control singleton
+        run: node --import=tsx/esm scripts/deployPreRichControlCarrier.mts
+
+      - name: Upload B2 control deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-preprod-b2-control-deployment
+          path: audit/preprod-issue/b2-control-deployment.json
+          if-no-files-found: warn
