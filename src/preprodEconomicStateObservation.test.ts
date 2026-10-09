@@ -41,7 +41,7 @@ describe('Preprod V3 economic state carrier observer', () => {
     expect(observed.stateVersion).toBe(0n)
     expect(observed.state.classes.length).toBe(8)
     expect(observed.state.unresolvedReserve).toBe(0n)
-    expect(observed.carrierStateReference).toBe('cardano:tx/' + '11'.repeat(32) + '#0')
+    expect(observed.carrierStateReference).toBe('11'.repeat(32) + '#0')
   })
 
   it('rejects ambiguous singleton state', async () => {
