@@ -94,6 +94,7 @@ const envelope = signIssueAuthorityEnvelope({
 })
 verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   counterInputReference: refs.counter,
+  controlStateReference: 'cardano:tx/' + refs.control,
   poolInputReference: refs.pool,
   carrierStateReference: 'cardano:tx/' + refs.carrier,
   classId: 0,
@@ -103,30 +104,22 @@ verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   observedAt: witness.executableLiquidityObservation.observedAt,
   currentObservedAt: now,
 })
-const badCertificateBinding = {
-  payload: {
-    ...envelope.payload,
-    viabilityCertificate: {
-      ...envelope.payload.viabilityCertificate,
-      deploymentBinding: {
-        ...envelope.payload.viabilityCertificate.deploymentBinding,
-        carrierStateReference: 'cardano:tx/' + '9'.repeat(64) + '#0',
+try {
+  signIssueAuthorityEnvelope({
+    witness: {
+      ...witness,
+      viabilityCertificate: {
+        ...witness.viabilityCertificate,
+        deploymentBinding: {
+          ...witness.viabilityCertificate.deploymentBinding,
+          carrierStateReference: 'cardano:tx/' + '9'.repeat(64) + '#0',
+        },
       },
     },
-  },
-  signature: envelope.signature,
-}
-try {
-  verifySignedIssueAuthorityEnvelope(badCertificateBinding, publicKeyPem, {
-    counterInputReference: refs.counter,
-    poolInputReference: refs.pool,
-    controlStateReference: 'cardano:tx/' + refs.control,
-    carrierStateReference: 'cardano:tx/' + refs.carrier,
-    classId: 0n,
-    price: 1n,
     directUsdmUnit: 'd'.repeat(56),
-    observationReference: 'observation-1',
-    observedAt: witness.executableLiquidityObservation.observedAt,
+    freshnessWindow: 300000,
+    privateKeyPem,
+    publicKeyPem,
     currentObservedAt: now,
   })
   throw new Error('FAIL: mismatched viability certificate binding was accepted')
