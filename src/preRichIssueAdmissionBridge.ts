@@ -120,6 +120,8 @@ export type AuthoritativeIssueAdmissionWitness =
   EconomicAdmissionWitness & {
     /** Exact Counter input bound to the authoritative Issue observation. */
     counterInputReference: string
+    /** Exact authenticated B2 control singleton UTxO used for Issue admission. */
+    controlStateReference: string
     /** Authoritative pre-transition EEV used by the canonical Haskell decision. */
     preEEV: bigint
     /** Exact PRE-RICH Issue coordinates consumed by the canonical decision. */
@@ -137,6 +139,7 @@ export type AuthoritativeIssueAdmissionWitness =
 
 export type IssueAdmissionRuntimeInputs = {
   counterInputReference: string
+  controlStateReference: string
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   /**
@@ -202,6 +205,9 @@ export async function obtainAuthoritativeIssueAdmission(
 
   if (witness.counterInputReference.trim() !== inputs.counterInputReference) {
     throw new Error('authoritative Issue witness Counter reference does not match runtime input')
+  }
+  if (witness.controlStateReference.trim() !== inputs.controlStateReference.trim()) {
+    throw new Error('authoritative Issue witness B2 control reference does not match runtime input')
   }
   if (witness.preEEV < 0n) {
     throw new Error('authoritative Issue witness pre-EEV must be non-negative')
