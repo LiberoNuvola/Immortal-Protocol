@@ -27,7 +27,7 @@ jobs:
       - run: npx tsx --test src/__tests__/immortal-cardano-adapter-conformance.test.ts
       - run: npx vitest run src/preprodEconomicStateObservation.test.ts
       - run: node --test relayer/preprodIssueObservationReader.test.js relayer/signedIssueAuthority.test.js
-      - run: npx vitest run Adapter/CARDANO/runtime/__tests__/AuthoritativeIssueAdmission.test.ts src/__tests__/preRichIssueAdmissionBridge.test.ts
+      - run: npx vitest run Adapter/CARDANO/runtime/__tests__/AuthoritativeIssueAdmission.test.ts src/__tests__/preRichIssueAdmissionBridge.test.ts Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.test.ts
       - name: Run repository-wide RF8 production boundary audit
         run: node scripts/check-rf8-production-boundary.mjs
 
