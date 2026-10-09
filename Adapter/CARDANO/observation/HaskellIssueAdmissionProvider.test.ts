@@ -75,6 +75,7 @@ function viabilityCertificate() {
     deploymentBinding: {
       network: 'cardano-preprod',
       carrierStateReference: carrier,
+        controlStateReference: control,
       stateHash: '4'.repeat(64),
       eevSnapshotReference: 'sha256:' + 'f'.repeat(64),
       protectedCapitalSourceReference: carrier,
@@ -163,6 +164,7 @@ describe('Haskell Issue admission provider', () => {
         liquiditySourceReferences: [pool],
         carrierStateReference: carrier,
         controlStateReference: control,
+        controlStateReference: control,
         eevQualification: eev,
         protectedCapitalProvenance: protectedCapital,
         viabilityCertificate: certificate,
@@ -178,6 +180,7 @@ describe('Haskell Issue admission provider', () => {
       classId: 0n,
       price: 1n,
       carrierStateReference: carrier,
+        controlStateReference: control,
     })
 
     expect(witness.actionClass).toBe('Issue')
@@ -225,6 +228,7 @@ describe('Haskell Issue admission provider', () => {
         poolUsdmValue: 100n,
         liquiditySourceReferences: [pool],
         carrierStateReference: carrier,
+        controlStateReference: control,
         eevQualification: eev,
         protectedCapitalProvenance: bad,
         viabilityCertificate: certificate,
@@ -241,6 +245,7 @@ describe('Haskell Issue admission provider', () => {
         classId: 0n,
         price: 1n,
         carrierStateReference: carrier,
+        controlStateReference: control,
       }),
     ).rejects.toThrow('ProtectedCapital mismatch on safetyCapital')
   })
