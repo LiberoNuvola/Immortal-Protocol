@@ -54,6 +54,13 @@ function signIssueAuthorityEnvelope({
   if (!protectedCapitalProvenance || typeof protectedCapitalProvenance !== 'object') throw new Error('witness.protectedCapitalProvenance is required')
   if (!viabilityCertificate || typeof viabilityCertificate !== 'object') throw new Error('witness.viabilityCertificate is required')
 
+  if (!Number.isInteger(Number(witness.issueClassId)) || witness.issueClassId < 0n) {
+    throw new Error('witness issueClassId must be a non-negative integer')
+  }
+  if (!Number.isInteger(Number(witness.issuePrice)) || witness.issuePrice <= 0n) {
+    throw new Error('witness issuePrice must be a positive integer')
+  }
+
   const payload = {
     schema: 'PRE-RICH-SIGNED-ISSUE-AUTHORITY-V1',
     authorityVersion: '1',
