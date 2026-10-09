@@ -40,6 +40,13 @@ const viabilityCertificate = {
   proofs: Object.fromEntries(['VC1','VC2','VC3','VC4','VC5','VC6'].map(k => [k, { reference: 'proof:' + k, digest: 'f'.repeat(64) }])),
   evidence: Object.fromEntries(['E1','E2','E3','E4','E5','E6','E7','E8','E9','E10'].map(k => [k, { reference: 'evidence:' + k, digest: '1'.repeat(64) }])),
   digest: '2'.repeat(64),
+  deploymentBinding: {
+    network: 'cardano-preprod',
+    carrierStateReference: 'cardano:tx/' + refs.carrier,
+    stateHash: '3'.repeat(64),
+    eevSnapshotReference: 'sha256:' + 'c'.repeat(64),
+    protectedCapitalSourceReference: 'cardano:tx/' + refs.carrier,
+  },
 }
 const witness = {
   admitted: true,
@@ -94,6 +101,36 @@ verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   observedAt: witness.executableLiquidityObservation.observedAt,
   currentObservedAt: now,
 })
+const badCertificateBinding = {
+  payload: {
+    ...envelope.payload,
+    viabilityCertificate: {
+      ...envelope.payload.viabilityCertificate,
+      deploymentBinding: {
+        ...envelope.payload.viabilityCertificate.deploymentBinding,
+        carrierStateReference: 'cardano:tx/' + '9'.repeat(64) + '#0',
+      },
+    },
+  },
+  signature: envelope.signature,
+}
+try {
+  verifySignedIssueAuthorityEnvelope(badCertificateBinding, publicKeyPem, {
+    counterInputReference: refs.counter,
+    poolInputReference: refs.pool,
+    carrierStateReference: 'cardano:tx/' + refs.carrier,
+    classId: 0n,
+    price: 1n,
+    directUsdmUnit: 'd'.repeat(56),
+    observationReference: 'observation-1',
+    observedAt: witness.executableLiquidityObservation.observedAt,
+    currentObservedAt: now,
+  })
+  throw new Error('FAIL: mismatched viability certificate binding was accepted')
+} catch (error) {
+  if (!String(error.message).includes('carrier binding mismatch')) throw error
+}
+
 const badSchema = {
   payload: { ...envelope.payload, schema: 'OTHER' },
   signature: envelope.signature,
