@@ -40,6 +40,8 @@ async function observeDirectUsdmPool({ lucid, deployment, poolInputReference }) 
   return (quantity * 100n) / 1_000_000n
 }
 
+const stripTxPrefix = (value) => String(value).trim().replace(/^cardano:tx\//, '')
+
 function createPreprodIssueObservationProducerFromLucid({
   lucid,
   deployment,
@@ -132,7 +134,7 @@ function createPreprodIssueObservationProducerFromLucid({
       }
       if (
         runtimeInputs.controlStateReference !== undefined &&
-        observed.controlStateReference !== runtimeInputs.controlStateReference
+        stripTxPrefix(observed.controlStateReference) !== stripTxPrefix(runtimeInputs.controlStateReference)
       ) {
         throw new Error('Preprod reader B2 control reference does not match runtime input')
       }
