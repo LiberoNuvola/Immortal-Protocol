@@ -82,6 +82,11 @@ async function main() {
   const policyId = mintingPolicyToId(mintPolicy)
   const carrierUnit = policyId + tokenNameHex
 
+  const walletUtxos = await lucid.wallet().getUtxos()
+  const alternateSeed = walletUtxos.find(
+    (u) => u.txHash !== seed.txHash || u.outputIndex !== seed.outputIndex,
+  )
+
   await lucid
     .newTx()
     .collectFrom([seed])
@@ -90,13 +95,63 @@ async function main() {
     .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
     .complete({ localUPLCEval: true })
 
+  const expectRejected = async (label: string, build: () => any) => {
+    try {
+      await build()
+    } catch {
+      return
+    }
+    throw new Error('V3 mint policy accepted invalid case: ' + label)
+  }
+
+  if (alternateSeed) {
+    await expectRejected('unconsumed configured seed', () =>
+      lucid
+        .newTx()
+        .collectFrom([alternateSeed])
+        .mintAssets({ [carrierUnit]: 1n }, Data.void())
+        .attach.MintingPolicy(mintPolicy)
+        .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 1n })
+        .complete({ localUPLCEval: true }),
+    )
+  } else {
+    console.warn('No alternate wallet UTxO available; seed-consumption negative case was not exercised.')
+  }
+
+  const wrongUnit =
+    policyId +
+    (tokenNameHex === '00' ? '01' : '00')
+
+  await expectRejected('wrong token name', () =>
+    lucid
+      .newTx()
+      .collectFrom([seed])
+      .mintAssets({ [wrongUnit]: 1n }, Data.void())
+      .attach.MintingPolicy(mintPolicy)
+      .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [wrongUnit]: 1n })
+      .complete({ localUPLCEval: true }),
+  )
+
+  await expectRejected('wrong mint quantity', () =>
+    lucid
+      .newTx()
+      .collectFrom([seed])
+      .mintAssets({ [carrierUnit]: 2n }, Data.void())
+      .attach.MintingPolicy(mintPolicy)
+      .pay.ToAddress(await lucid.wallet().address(), { lovelace: 2_000_000n, [carrierUnit]: 2n })
+      .complete({ localUPLCEval: true }),
+  )
+
   console.log(JSON.stringify({
-    result: 'V3_MINT_POLICY_LOCAL_EVALUATION_PASSED',
+    result: 'V3_MINT_POLICY_SECURITY_NEGATIVE_TESTS_PASSED',
     submitted: false,
     evaluator: 'Lucid Evolution local evaluator',
     seedRef: seed.txHash + '#' + seed.outputIndex,
     policyId,
     carrierUnit,
+    negativeCases: ['unconsumed configured seed', 'wrong token name', 'wrong mint quantity'].filter(
+      (name) => name !== 'unconsumed configured seed' || Boolean(alternateSeed),
+    ),
   }, null, 2))
 }
 
