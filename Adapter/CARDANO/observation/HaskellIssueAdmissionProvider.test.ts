@@ -6,6 +6,7 @@ import { createHaskellIssueAdmissionProvider } from './HaskellIssueAdmissionProv
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
 const carrier = 'c'.repeat(64) + '#2'
+const control = 'e'.repeat(64) + '#3'
 const observationReference = 'observation:issue:provider'
 const decisionReference = 'decision:issue:provider'
 
@@ -161,6 +162,7 @@ describe('Haskell Issue admission provider', () => {
         poolUsdmValue: 100n,
         liquiditySourceReferences: [pool],
         carrierStateReference: carrier,
+        controlStateReference: control,
         eevQualification: eev,
         protectedCapitalProvenance: protectedCapital,
         viabilityCertificate: certificate,
@@ -187,6 +189,7 @@ describe('Haskell Issue admission provider', () => {
     expect(witness.eevFresh).toBe(true)
     expect(witness.obligationsComplete).toBe(true)
     expect(witness.allOmegaSuccessorsCertified).toBe(true)
+    expect(witness.controlStateReference).toBe(control)
     expect(witness.protectedCapitalProvenance.total).toBe(515n)
     expect(witness.protectedCapitalProvenance.sourceReference).toBe(carrier)
   })
