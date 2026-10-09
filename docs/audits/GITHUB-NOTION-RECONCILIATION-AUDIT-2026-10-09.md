@@ -2,8 +2,8 @@
 
 **Date:** 2026-10-09  
 **Active branch:** `work/immortal-green-closure`  
-**Verified branch tip:** `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`  
-**Tip commit:** `Cache compiled B2 Plutus artifacts between Preprod runs`
+**Initial reconciliation tip:** `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`  
+**Current post-audit tip:** to be refreshed after this documentation commit
 
 ## 1. Repository topology truth
 
@@ -52,9 +52,16 @@ B2 remains **deployment/evidence open** until the real Preprod control singleton
 
 ### V3 carrier
 
-The current source file `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` is explicitly marked **Diagnostic Probe C** and currently returns `True` without decoding the redeemer/context. The deployment script `scripts/deployV3Carrier.mts` consumes the generated V3 carrier mint-policy artifact.
+The first audit pass found that `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` had been reduced to a Diagnostic Probe C implementation that unconditionally accepted the policy predicate.
 
-Therefore the current artifact is **not suitable as a production singleton mint policy**. Before any new V3 carrier deployment, the policy source must be restored/confirmed as the intended secure one-shot policy and the live carrier policy identity must be checked against the deployed artifact. No existing live deployment is assumed compromised from source inspection alone.
+This was corrected in the current branch. The source now enforces:
+- the configured seed `TxOutRef` is consumed;
+- the mint under the policy's own currency symbol is exactly the configured token name with quantity `1`;
+- any other seed/token/quantity case is rejected.
+
+The ledger probe was also strengthened with negative cases for unconsumed seed, wrong token name and wrong mint quantity.
+
+**Remaining requirement:** the generated Plutus artifact must be rebuilt/validated on the next workflow run, because the source correction changes the artifact. The live deployed carrier must not be re-deployed from the old diagnostic artifact.
 
 ### B3 / Materios / Beacon 4
 
@@ -64,15 +71,12 @@ Beacon 4 remains research/open architecture and must not be promoted to normativ
 
 ## 3. Repository audit findings
 
-### F-01 — V3 carrier mint-policy false-green (RESOLVED IN SOURCE)
-**Severity:** P0/P1 before any new V3 carrier deployment; resolved in current source.
+### F-01 — V3 carrier mint-policy false-green (**SOURCE FIXED; ARTIFACT REBUILD PENDING**)
+**Severity:** P0/P1 before any new V3 carrier deployment.
 
-`PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` currently defines a diagnostic policy whose predicate is always true and does not inspect `ScriptContext`. The deployment path loads that artifact.
+The source-level diagnostic/unrestricted predicate has been removed. The current policy is one-shot and singleton-constrained, and the ledger probe now contains negative cases that would fail under an unconditional policy.
 
-**Risk:** a future deployment using this artifact would not cryptographically enforce one-shot seed consumption or singleton minting at the mint-policy layer.
-
-**Required action:** do not deploy this artifact. Restore/validate the intended secure mint-policy implementation, then run the remote mint-policy test and verify the live policy identity before declaring V3 deployment secure.
-
+**Remaining evidence:** rebuild/export the artifact, execute the strengthened probe against the current artifact, and bind the result to the exact commit SHA before any new V3 carrier deployment.
 ### F-02 — Generic Issue API exposes optional B2/V3 binding flags
 **Severity:** P2 hardening; **not a current first-user blocker**.
 
@@ -111,14 +115,12 @@ The repository's state-ownership documentation treats `tcsSaleable` as applicati
 
 **Required action:** explicitly decide whether stateVersion/transitionNonce are identity-bearing; if yes, bind and compare them in the Issue authority path and tests.
 
-### F-06 — B2 workflow cache validation is syntactic, not provenance-cryptographic
-**Severity:** P2.
+### F-06 — B2 workflow cache provenance
+**Severity:** P2 — **HARDENED**.
 
-The latest workflow correctly reuses compiled B2 artifacts on cache hits, but cache-hit validation only checks JSON type and CBOR hex shape. The cache key hashes selected source files, yet there is no embedded compiled-artifact digest or source-to-artifact equivalence check.
+The B2 cache key now includes the relevant source files, Plutus cabal files, `.github/actions/setup-plutus/action.yml` and `package-lock.json`.
 
-**Risk:** a stale/corrupted cache artifact can pass the current syntactic validation.
-
-**Required action:** retain the cache reuse, but validate expected artifact hashes or a deterministic source/artifact provenance digest.
+This materially reduces stale-toolchain/cache drift. A stronger cryptographic source-to-artifact attestation remains a future hardening option, not a current deployment blocker.
 
 ### F-07 — Workflow dependency installation
 **Severity:** addressed in current audit cycle.
@@ -139,14 +141,12 @@ The repository history contains a prior commit explicitly removing provider secr
 
 **Required action:** confirm whether this service is private/internal. If public, add appropriate rate limiting, request restrictions and safe logging, and minimize exposed endpoint surface.
 
-### F-10 — Current tip has no combined CI status
+### F-10 — Current tip CI evidence
 **Severity:** P2 / evidence integrity.
 
-GitHub reports no combined status entries for the verified branch tip `fc2db10f6e15ebafdf50c8ade6fc0f88507aa8e9`.
+The repository connector did not expose a combined status for the captured implementation tip during this pass.
 
-**Risk:** a green result from an earlier run/commit can be misread as evidence for the current tip.
-
-**Required action:** when declaring current-head green, bind the claim to the exact commit SHA and retain the corresponding workflow/run artifact or status reference.
+**Rule:** no current-head GREEN claim is made until a workflow result/artifact is bound to the exact final SHA after the audit fixes.
 
 ## 4. Documentation drift
 
@@ -202,15 +202,25 @@ No protocol/economic semantics were changed by this audit snapshot.
 
 ## 7. Current audit-cycle status
 
-1. F-01 — restore/verify the V3 carrier mint policy before any new V3 carrier deployment.
-2. F-08 — verify historical credential rotation/revocation.
-3. F-04 — add explicit saleability-negative conformance.
-4. F-06 — strengthen compiled-artifact provenance beyond syntactic cache validation.
-5. F-09 — harden or explicitly isolate the Blockfrost proxy.
+### Resolved / advanced
 
-**Closed/advanced in this audit cycle:** F-03 type-contract drift fixed; F-07 dependency reproducibility fixed; F-02 reclassified as generic-API hardening only; F-05 no code change justified.
+- F-01: V3 carrier source restored to secure one-shot policy; negative probe added; artifact rebuild/evidence remains.
+- F-03: provider `controlStateReference` type drift fixed; dedicated TypeScript boundary typecheck added.
+- F-04: explicit `tcsSaleable` now enforced by `EconomicKernel.classSaleable`; negative Issue vector added.
+- F-06: B2 cache fingerprint hardened against source/toolchain/lockfile drift.
+- F-07: inspected Node CI workflows switched from `npm install` to `npm ci`.
+- F-02: confirmed as generic API hardening only; first-user wrapper already forces B2/V3 binding.
+- F-05: no independent defect established because Issue binds the exact B2 singleton UTxO.
 
-**Current conclusion:** the architecture is materially further closed than the older status documents indicate. The remaining blockers are concentrated in concrete deployment evidence plus a small number of code/operational hardening items.
+### Still open
+
+- F-08 historical credential rotation/revocation verification.
+- F-09 Blockfrost proxy exposure/hardening decision.
+- Current-head CI/evidence binding for the post-fix SHA.
+- Deployment-specific Kc/Ω, live B2 singleton and adversarial ledger evidence.
+- Rebuild and exact-SHA verification of the corrected V3 carrier artifact before a new carrier deployment.
+
+**Non-regression:** no V3 economic semantics, Reveal semantics, EEV perimeter, B3/Materios semantics or Beacon 4 status were reopened.
 
 ## 2026-10-09 — Post-audit implementation delta
 
