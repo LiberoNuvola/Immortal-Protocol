@@ -44,6 +44,13 @@ function viabilityCertificate() {
     proofs,
     evidence,
     digest: '9'.repeat(64),
+    deploymentBinding: {
+      network: 'cardano-preprod',
+      carrierStateReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+      stateHash: hash,
+      eevSnapshotReference: 'snapshot://issue/1',
+      protectedCapitalSourceReference: 'cardano:tx/' + 'd'.repeat(64) + '#2',
+    },
   }
 }
 
@@ -101,6 +108,14 @@ function witness(): EconomicAdmissionWitness & {
     authenticatedPoolInputReference: poolRef,
     authenticatedPoolUsdmValue: 100n,
     requiredImmediateLiquidity: 1n,
+    counterInputReference: counterRef,
+    preEEV: 100n,
+    issueClassId: 0n,
+    issuePrice: 1n,
+    truthVerified: true,
+    eevFresh: true,
+    obligationsComplete: true,
+    allOmegaSuccessorsCertified: true,
     eevQualification: eevQualification(),
     protectedCapitalProvenance: protectedCapitalProvenance(),
     viabilityCertificate: viabilityCertificate(),
@@ -126,6 +141,8 @@ const inputs = {
   poolInputReference: poolRef,
   liquiditySourceReferences: [poolRef],
   poolUsdmValue: 100n,
+  classId: 0n,
+  price: 1n,
 }
 const classEvidence = {
   classId: 0n, priceReferenceUnits: 1n,
