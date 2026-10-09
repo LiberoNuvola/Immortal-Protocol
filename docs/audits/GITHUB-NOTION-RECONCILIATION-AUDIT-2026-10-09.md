@@ -65,7 +65,7 @@ Beacon 4 remains research/open architecture and must not be promoted to normativ
 ## 3. Repository audit findings
 
 ### F-01 — V3 carrier mint policy is currently diagnostic/unrestricted
-**Severity:** P0/P1 before any V3 deployment.
+**Severity:** P2 for current first-ticket path; P0/P1 before any new V3 carrier deployment.
 
 `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` currently defines a diagnostic policy whose predicate is always true and does not inspect `ScriptContext`. The deployment path loads that artifact.
 
@@ -73,16 +73,14 @@ Beacon 4 remains research/open architecture and must not be promoted to normativ
 
 **Required action:** do not deploy this artifact. Restore/validate the intended secure mint-policy implementation, then run the remote mint-policy test and verify the live policy identity before declaring V3 deployment secure.
 
-### F-02 — Issue production path makes B2/V3 binding optional at API level
-**Severity:** P1 before enabling the first-user Buy path.
+### F-02 — Generic Issue API exposes optional B2/V3 binding flags
+**Severity:** P2 hardening; **not a current first-user blocker**.
 
-In `src/mint.ts`, both `requireB2ControlBinding` and `requireV3CarrierBinding` are caller-supplied booleans. The transaction adds the B2 control reference and V3 carrier continuation only when those flags are enabled.
+In `src/mint.ts`, `requireB2ControlBinding` and `requireV3CarrierBinding` are caller-supplied booleans. However, the dedicated production entrypoint `mintSerialNFTWithAuthoritativeAdmission()` explicitly forces both to `true`.
 
-The Cardano execution adapter correctly requires an authoritative Issue witness, but the generic Issue admission contract alone does not prove that the live B2 singleton was consumed as a reference input.
+**Conclusion:** the first-user Issue path is already protected against omission at this wrapper boundary. The remaining concern is future misuse of the lower-level generic `mintSerialNFT()` entrypoint.
 
-**Risk:** a future production call-site could provide a structurally valid authoritative witness while omitting the live B2 reference-input binding.
-
-**Required action:** make the first-user/production Issue entrypoint require B2 + V3 bindings unconditionally, or introduce a distinct production constructor whose type/contract makes omission impossible. Keep generic infrastructure paths separate.
+**Required action:** add a regression test/documented production contract preventing the generic entrypoint from being reused as the public first-user path. No change to economic semantics is required.
 
 ### F-03 — Type contract drift in PreprodAuthoritativeIssueProvider
 **Severity:** P1/P2.
@@ -122,14 +120,10 @@ The latest workflow correctly reuses compiled B2 artifacts on cache hits, but ca
 
 **Required action:** retain the cache reuse, but validate expected artifact hashes or a deterministic source/artifact provenance digest.
 
-### F-07 — Workflow dependency installation is not lockfile-reproducible
-**Severity:** P2.
+### F-07 — Workflow dependency installation
+**Severity:** addressed in current audit cycle.
 
-`.github/workflows/pre-rich-b2-control-preprod.yml` uses `npm install --no-audit --no-fund` instead of `npm ci`.
-
-**Risk:** dependency resolution can vary from the committed lockfile state.
-
-**Required action:** use the repository's locked dependency installation mode for CI.
+`.github/workflows/pre-rich-b2-control-preprod.yml` now uses `npm ci --no-audit --no-fund`. The Direct-USDM conformance workflow was aligned as well.
 
 ### F-08 — Historical credential exposure requires rotation verification
 **Severity:** P1 security hygiene.
@@ -166,7 +160,16 @@ The following repository/Notion records are stale relative to the verified 2026-
 
 These documents should not be silently rewritten as normative history. A dated reconciliation delta is the correct mechanism.
 
-## 5. Non-regression boundary
+## 5. Audit-cycle changes applied
+
+- Corrected the F-02 classification: the dedicated first-user Issue wrapper already forces B2/V3 binding.
+- Corrected F-05: exact B2 singleton reference binding means version/nonce are not an unproven independent identity requirement.
+- Fixed F-03 by adding `controlStateReference` to the Haskell Issue provider observation contract.
+- Added explicit TypeScript typecheck of the authoritative Issue provider boundary to the Direct-USDM conformance workflow.
+- Switched the B2 Preprod and Direct-USDM conformance workflows from `npm install` to `npm ci`.
+- F-01 remains a deployment blocker for any new V3 carrier deployment, but not a first-user Issue blocker by itself.
+
+## 6. Non-regression boundary
 
 This audit does **not** reopen:
 
@@ -181,14 +184,14 @@ This audit does **not** reopen:
 
 No protocol/economic semantics were changed by this audit snapshot.
 
-## 6. Immediate priority order
+## 7. Immediate priority order
 
-1. F-01 — prevent deployment of the diagnostic V3 mint policy.
-2. F-02 — make production Issue binding to B2/V3 non-optional.
-3. F-03 — repair provider type contracts and run real TS typecheck.
-4. F-08 — verify credential rotation.
-5. F-05/F-06/F-07 — harden provenance and CI reproducibility.
-6. F-04 — close saleability conformance ambiguity with explicit negative evidence.
-7. F-09 — harden or explicitly isolate the Blockfrost proxy.
+1. F-01 — restore/verify the V3 carrier mint policy before any new V3 carrier deployment.
+2. F-08 — verify historical credential rotation/revocation.
+3. F-04 — add explicit saleability-negative conformance.
+4. F-06 — strengthen compiled-artifact provenance beyond syntactic cache validation.
+5. F-09 — harden or explicitly isolate the Blockfrost proxy.
 
-**Current conclusion:** the architecture is materially further closed than the older status documents indicate. The remaining blockers are concentrated in concrete deployment evidence and a small number of implementation-boundary hardening issues, with F-01 and F-02 the most important code-level findings before production Issue/V3 deployment.
+**Closed/advanced in this audit cycle:** F-03 type-contract drift fixed; F-07 dependency reproducibility fixed; F-02 reclassified as generic-API hardening only; F-05 no code change justified.
+
+**Current conclusion:** the architecture is materially further closed than the older status documents indicate. The remaining blockers are concentrated in concrete deployment evidence plus a small number of code/operational hardening items.
