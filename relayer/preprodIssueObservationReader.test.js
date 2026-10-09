@@ -280,3 +280,75 @@ test('fails closed when authoritative boolean evidence is not actually boolean',
     /truthVerified must be boolean/,
   )
 })
+
+
+test('decodes Lucid CBOR string datums', async () => {
+  const lucid = fakeLucid()
+  const { Data, Constr } = await import('@lucid-evolution/lucid')
+
+  const toConstr = value => {
+    if (value && Array.isArray(value.fields)) {
+      return new Constr(
+        typeof value.index === 'number' ? value.index : 0,
+        value.fields.map(toConstr),
+      )
+    }
+    return value
+  }
+
+  const originalUtxosAt = lucid.utxosAt
+  lucid.utxosAt = async address => {
+    const values = await originalUtxosAt(address)
+    if (values.length !== 1) return values
+    const value = { ...values[0] }
+    if (address === 'pool' || address === 'control' || address === 'carrier') {
+      value.datum = Data.to(toConstr(value.datum))
+    }
+    return [value]
+  }
+
+  const result = await readPreprodIssueObservation({
+    lucid,
+    counterAddress: 'counter',
+    b1PrizePoolAddress: 'pool',
+    poolTokenUnit: 'poolpolicy' + 'poolname',
+    carrierAddress: 'carrier',
+    carrierPolicyId: 'carrierpolicy',
+    carrierTokenNameHex: 'carriername',
+    controlAddress: 'control',
+    controlPolicyId: 'ab'.repeat(28),
+    controlTokenNameHex: 'b2c0',
+    classId: 0,
+    price: 1,
+    observedAt: 123n,
+    authoritativeInputs: {
+      poolUsdmValue: 1_000n,
+      preEEV: 1_000n,
+      candidateEEV: 1_000n,
+      requiredImmediateLiquidity: 1n,
+      truthVerified: true,
+      eevFresh: true,
+      obligationsComplete: true,
+      allOmegaSuccessorsCertified: true,
+      decisionReference: 'decision-cbor',
+      protectedCapitalProvenance: {
+        sourceReference: ref('c') + '#2',
+        components: {
+          crystallizedLiabilities: 10n,
+          worstCaseExposure: 1500n,
+          safetyCapital: 20n,
+          reserveProtection: 30n,
+          lockedJackpot: 50n,
+          mandatoryFutureCosts: 40n,
+        },
+        accountingInputs: { unresolvedReserve: 3n, unresolvedTicketCount: 2n },
+        total: 1650n,
+      },
+    },
+  })
+
+  assert.equal(result.poolInputReference, ref('b') + '#1')
+  assert.equal(result.controlStateReference, ref('e') + '#3')
+  assert.equal(result.carrierStateReference, ref('c') + '#2')
+  assert.equal(result.decisionInput.classId, 0n)
+})
