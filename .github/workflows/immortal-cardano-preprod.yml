@@ -63,7 +63,7 @@ jobs:
           cache: npm
 
       - name: Install repository test dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install isolated Preprod probe dependencies
         run: npm install --prefix audit/cardano-integration
@@ -146,7 +146,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install repository dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Validate V3 deployment configuration
         run: |
           test -n "$BLOCKFROST_PROJECT_ID"
@@ -187,7 +187,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install repository dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Setup legacy Lucid runtime for script compilation
         uses: ./.github/actions/setup-legacy-lucid
@@ -243,7 +243,7 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install repository dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Install isolated Cardano probe dependencies
         run: npm install --prefix audit/cardano-integration
       - name: Setup legacy Lucid runtime
@@ -287,7 +287,7 @@ jobs:
           cache: npm
 
       - name: Install repository dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Install isolated Cardano probe dependencies
         run: npm install --prefix audit/cardano-integration
