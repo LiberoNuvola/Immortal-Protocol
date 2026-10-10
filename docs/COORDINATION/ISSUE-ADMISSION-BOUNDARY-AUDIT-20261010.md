@@ -94,3 +94,23 @@ The source-of-truth search found the general IMMORTAL gate explicitly says it do
 ### Current execution status
 
 This follow-up is source inspection only. No tests, typecheck, workflow, signing, or Preprod transaction was run. G1a/G2/G3 remain open.
+## 2026-10-10 follow-up — actual completed-transaction input check
+
+### G2 implementation slice
+
+Implemented at `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`:
+- `submitEconomic()` now inspects the completed transaction through the Lucid `toTransaction()` API and reads spending inputs from the CML transaction body.
+- It canonicalizes each actual reference as lowercase `txHash#index`, rejects malformed/duplicate body inputs, rejects duplicate declared references, and fails before signing if any admission-declared protocol input is absent from the actual transaction body.
+- The regression suite now covers missing admission-bound inputs and an uninspectable/opaque transaction, both requiring that signing and submission are not called.
+- This uses the `TxSignBuilder.toTransaction()` / CML body-input API documented by Lucid Evolution typings. The exact pinned 0.6.5 install has not been executed in this environment, so focused CI/typecheck remains required.
+
+**Important scope limit:** this is a one-way containment check: every declared protocol input must occur in the actual transaction. It intentionally does not reject additional inputs, because Lucid completion may select wallet/fee inputs that are not in the existing protocol-reference list. Those additional inputs are not yet classified as wallet-controlled versus unexpected script inputs, and the finalized transaction body hash is not yet bound into the admission witness. Therefore G2 is **PARTIAL, not closed**.
+
+### Validation status
+
+Commits:
+- Adapter implementation: `fb6f3e9c00e990f964addf2dda81a7f1670988d9`
+- Initial regression tests: `519c06c654aad24cc081e09792e594d946ff8e06`
+- Test correction to assert the same transaction object is signed: `6cd4fcee5b0e4c248ae9f5801b10d5bf637260da`
+
+No tests, typecheck, workflow, signing, or Preprod transaction were run here. Do not mark G2 green. Next: verify this code against the pinned package in the repository's runner, then define a governed way to classify any additional body inputs and bind the final body to the admitted action without changing economic semantics.
