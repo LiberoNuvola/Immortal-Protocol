@@ -51,10 +51,11 @@ describe('PRE-RICH hysteresis control binding', () => {
       80n,
       classes,
       { currentActiveClass: 2, highestClassEverActivated: 2 },
-      { currentActiveClass: 0, highestClassEverActivated: 2 },
+      { currentActiveClass: 1, highestClassEverActivated: 2 },
     )
 
     expect(result.action).toBe('CONTRACT')
+    expect(result.currentActiveClass).toBe(1)
     expect(result.highestClassEverActivated).toBe(2)
   })
 
