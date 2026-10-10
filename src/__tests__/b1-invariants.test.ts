@@ -479,6 +479,28 @@ describe('TicketIssued', () => {
   })
 })
 
+describe('T3: Treasury receipts do not increase PrizePool solvency capital', () => {
+  it('with 4,000 USDM in the Pool, eight 1-USDM tickets fit the 500x bound but a ninth does not', () => {
+    // 1 USDM = 100 sub-units; Pool liquidity = 4,000 USDM = 400,000 sub-units.
+    // Each unresolved 1-USDM ticket adds 100 reserve sub-units and 50,000
+    // sub-units of worst-case exposure (500 USDM) under this mirror.
+    let state = makeState({ ppTotalLiquidity: 400_000 })
+
+    for (let i = 0; i < 8; i += 1) {
+      state = applyTicketIssued(state, 100)
+      assert.ok(solvencyOk(state), `ticket ${i + 1} should remain solvent`)
+    }
+
+    assert.equal(state.ppTotalLiquidity, 400_000)
+    assert.equal(state.ppUnresolvedReserve, 800)
+
+    const ninth = applyTicketIssued(state, 100)
+    assert.equal(ninth.ppTotalLiquidity, 400_000, 'Issue does not add Treasury receipts to Pool liquidity')
+    assert.equal(solvencyOk(ninth), false, 'ninth ticket exceeds the Pool-backed 500x exposure bound')
+  })
+})
+
+
 describe('TicketRevealed', () => {
   it('unresolvedTicketCount decreases by 1', () => {
     const d = makeState({ ppUnresolvedTicketCount: 5 })
