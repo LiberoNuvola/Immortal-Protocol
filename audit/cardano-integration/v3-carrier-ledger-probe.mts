@@ -4,6 +4,7 @@
  * Intentionally bypasses Lucid UPLC evaluation: the signed transaction is submitted
  * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
  */
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script } from '@lucid-evolution/lucid'
 
@@ -143,6 +144,18 @@ const tx = await lucid
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
   .complete({ localUPLCEval: false })
+
+console.log(JSON.stringify({
+  result: 'V3_CARRIER_PROBE_PREPARED_FOR_LEDGER',
+  seedRef: seed.txHash + '#' + seed.outputIndex,
+  factoryScriptCborSha256: createHash('sha256').update(artifact.cborHex, 'hex').digest('hex'),
+  policyId,
+  unit,
+  parameterEncoding: {
+    seed: 'Constr(0, [Constr(0, [txHashBytes]), outputIndex])',
+    tokenName: 'Constr(0, [tokenNameBytes])',
+  },
+}, null, 2))
 
 const expectRejected = async (label: string, build: () => Promise<unknown>) => {
   try {
