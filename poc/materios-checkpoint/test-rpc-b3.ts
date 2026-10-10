@@ -467,3 +467,94 @@ test('collector rejects proof call-data drift', async () => {
     await server.close()
   }
 })
+
+test('getStorage and getReadProof bind reads to the exact historical block', async () => {
+  const target = `0x${'12'.repeat(32)}`
+  const storageKey = `0x${'34'.repeat(48)}`
+  let seen: Array<{ method: string; params: unknown[] }> = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seen.push({ method: body.method, params: body.params })
+    res.setHeader('content-type', 'application/json')
+
+    if (body.method === 'state_getStorage') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: '0xaabbcc',
+      }))
+      return
+    }
+
+    if (body.method === 'state_getReadProof') {
+      res.end(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          at: target,
+          proof: ['0x0102', '0x0304'],
+        },
+      }))
+      return
+    }
+
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      error: { code: -32601, message: 'method not mocked' },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const value = await rpc.getStorage(storageKey, target)
+    const proof = await rpc.getReadProof([storageKey], target)
+
+    assert.equal(value, '0xaabbcc')
+    assert.deepEqual(proof, {
+      at: target,
+      proof: ['0x0102', '0x0304'],
+    })
+    assert.deepEqual(seen[0], {
+      method: 'state_getStorage',
+      params: [storageKey, target],
+    })
+    assert.deepEqual(seen[1], {
+      method: 'state_getReadProof',
+      params: [[storageKey], target],
+    })
+  } finally {
+    await server.close()
+  }
+})
+
+test('getReadProof rejects a proof returned for another block', async () => {
+  const target = `0x${'56'.repeat(32)}`
+  const other = `0x${'78'.repeat(32)}`
+  const storageKey = `0x${'9a'.repeat(48)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        at: other,
+        proof: ['0x0102'],
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => rpc.getReadProof([storageKey], target),
+      /state_getReadProof\.at does not match requested block hash/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
