@@ -32,6 +32,26 @@ const admission: EconomicAdmissionWitness = {
 
 const candidateInputs = [pool0, pool1]
 
+function completedTxWithInputs(references: readonly string[]) {
+  const inputs = references.map((reference) => {
+    const [txHash, outputIndex] = reference.split('#')
+    return {
+      transaction_id: () => ({ to_hex: () => txHash }),
+      index: () => Number(outputIndex),
+    }
+  })
+  return {
+    toTransaction: () => ({
+      body: () => ({
+        inputs: () => ({
+          len: () => inputs.length,
+          get: (index: number) => inputs[index],
+        }),
+      }),
+    }),
+  }
+}
+
 describe('economic Cardano submission boundary', () => {
   it('fails closed when no Economic Gate admission is supplied', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
@@ -44,9 +64,31 @@ describe('economic Cardano submission boundary', () => {
   it('consumes a valid admission before signing and submitting', async () => {
     const lucid = { signTx: vi.fn().mockResolvedValue('signed'), submitTx: vi.fn().mockResolvedValue('tx-1') }
     const adapter = createCardanoExecutionAdapter(lucid)
-    await expect(adapter.submitEconomic({ candidate: true }, admission, candidateInputs, [pool0])).resolves.toEqual({ transactionRef: 'tx-1' })
-    expect(lucid.signTx).toHaveBeenCalledWith({ candidate: true })
+    const tx = completedTxWithInputs(candidateInputs)
+    await expect(adapter.submitEconomic(tx, admission, candidateInputs, [pool0])).resolves.toEqual({ transactionRef: 'tx-1' })
+    expect(lucid.signTx).toHaveBeenCalledWith(tx)
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+  })
+
+
+  it('rejects admission-bound inputs that are absent from the actual completed transaction body', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(
+      adapter.submitEconomic(completedTxWithInputs([pool0]), admission, candidateInputs, [pool0]),
+    ).rejects.toThrow('not all present in the actual transaction body')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when the completed transaction body cannot be inspected', async () => {
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    await expect(
+      adapter.submitEconomic({}, admission, candidateInputs, [pool0]),
+    ).rejects.toThrow('completed Lucid transaction with toTransaction()')
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
   })
 
   it('rejects a witness whose action class differs from the economic orchestrator', async () => {
