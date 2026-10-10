@@ -58,7 +58,7 @@ describe('B6 V3 ↔ Cardano projection correspondence boundary', () => {
       classId: BigInt(index),
       issued: index < 2 ? 1n : 0n,
       unresolved: index < 2 ? 1n : 0n,
-      exposure: price,
+      exposure: price * BigInt(index < 2 ? 1 : 0),
       cap: 10n + BigInt(index),
       saleable: index !== 3,
     })))
