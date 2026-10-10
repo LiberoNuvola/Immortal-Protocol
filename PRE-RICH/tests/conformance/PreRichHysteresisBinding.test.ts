@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertPreRichControlMatches,
   assertPreRichControlHistory,
-} from './PreRichHysteresisBinding'
+} from '../../src/PreRichHysteresisBinding'
 
 const classes = [
   { id: 0, capacityCost: 10n },
