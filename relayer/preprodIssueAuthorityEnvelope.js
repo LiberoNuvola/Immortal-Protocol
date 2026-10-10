@@ -88,6 +88,8 @@ function signIssueAuthorityEnvelope({
     authorityVersion: '1',
     actionClass: requiredString(witness.actionClass, 'actionClass'),
     stateHash: requiredDigest(witness.stateHash, 'stateHash'),
+    postStateHash: requiredDigest(witness.postStateHash, 'postStateHash'),
+    actionFingerprint: requiredDigest(witness.actionFingerprint, 'actionFingerprint'),
     counterInputReference: requiredString(witness.counterInputReference, 'counterInputReference'),
     controlStateReference: requiredString(witness.controlStateReference, 'controlStateReference'),
     poolInputReference: requiredString(witness.authenticatedPoolInputReference, 'poolInputReference'),
@@ -114,6 +116,19 @@ function signIssueAuthorityEnvelope({
     protectedCapitalProvenance,
     viabilityCertificate,
   }
+
+  const carrierBindingMessage = [
+    payload.actionClass,
+    payload.decisionReference,
+    payload.observationReference,
+    payload.stateHash,
+    payload.actionFingerprint,
+    payload.postStateHash,
+  ].join('|')
+
+  payload.carrierBindingSignature = crypto
+    .sign(null, Buffer.from(carrierBindingMessage, 'utf8'), privateKey)
+    .toString('hex')
 
   const signature = crypto
     .sign(null, Buffer.from(canonicalize(payload), 'utf8'), privateKey)
