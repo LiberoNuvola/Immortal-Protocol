@@ -100,6 +100,7 @@ import {
 } from '../PRE-RICH/src/PreRichIssueEvidence'
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
+import type { IssueIntent } from '../IMMORTAL/intent/IssueIntent'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
@@ -1280,17 +1281,22 @@ export async function mintSerialNFT(
   let economicAdmission = opts.economicAdmission
 
   if (!economicAdmission && opts.authoritativeIssueAdmissionProvider) {
+    const issueIntent: IssueIntent = {
+      action: 'Issue',
+      classId: opts.issueClassEvidence.classId,
+      price: opts.issueClassEvidence.priceReferenceUnits,
+    }
+
     economicAdmission = await obtainAuthoritativeIssueAdmission(
       opts.authoritativeIssueAdmissionProvider,
       {
+        ...issueIntent,
         counterInputReference: counterUtxo.txHash + '#' + counterUtxo.outputIndex,
         controlStateReference: b2ControlUtxo
           ? b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
           : '',
         poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
-        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
-        classId: opts.issueClassEvidence.classId,
-        price: opts.issueClassEvidence.priceReferenceUnits,
+        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utputIndex],
         carrierStateReference: carrierUtxo
           ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
           : undefined,
