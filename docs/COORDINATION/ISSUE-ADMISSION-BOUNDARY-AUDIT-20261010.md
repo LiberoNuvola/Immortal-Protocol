@@ -122,3 +122,15 @@ Added `.github/workflows/issue-admission-boundary-ci.yml` on `work/immortal-gree
 The workflow is isolated from Preprod and deployment workflows. It installs the repository's locked dependencies with `npm ci`, runs `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`, and typechecks the adapter plus that test file against the repository's pinned Lucid dependency. It triggers on relevant adapter/observation/package changes, pull requests, or manual dispatch.
 
 **Status at documentation time:** workflow definition committed; no successful run has been observed yet. Do not infer test or typecheck success from workflow creation. G2 remains PARTIAL pending the actual run and the unresolved classification/body-binding of extra inputs. G1/G3 and G4-G5 remain OPEN.
+
+
+## 2026-10-10 follow-up — CI run check
+
+Checked the workflow file and commit status for `2a76c164d0f1649b100124058591e67b766ca444`.
+- The commit status endpoint returned no statuses.
+- The available workflow-run lookup returned no runs for that commit.
+- Therefore there is currently **no observed CI result** for the new workflow; this is neither a pass nor a test failure.
+
+Trigger caveat: the workflow file currently exists on `work/immortal-green-closure`, not confirmed on the repository default branch. GitHub's manual `workflow_dispatch` requires the workflow to exist on the default branch to be dispatchable from the UI. Also, pushes created using `GITHUB_TOKEN` do not normally trigger further workflow runs. The available GitHub connector here exposes no workflow-dispatch action, so the next verification needs either an authorized manual dispatch after the workflow is available on the default branch, or a normal eligible push/PR event. Do not alter main/default branch solely to force this without checking the repository's established branch policy.
+
+G7 remains OPEN; G2 remains PARTIAL. No test, typecheck, or Preprod transaction success is claimed.
