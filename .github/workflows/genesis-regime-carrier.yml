@@ -1,6 +1,11 @@
 name: Genesis Regime Carrier Conformance
 
 # CI retrigger: verify Reference Adapter and Reference↔Cardano differential on the current head.
+#
+# Artifact policy:
+# - Reuse compiled Plutus outputs when the deterministic source/toolchain fingerprint matches.
+# - Reuse Cabal build state on retries of the same source fingerprint.
+# - Rebuild/export only on cache miss. Tests and evidence still run on every workflow execution.
 
 on:
   push:
@@ -56,12 +61,54 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup canonical Plutus CI
         uses: ./.github/actions/setup-plutus
 
+      - name: Restore Cabal dependency store
+        id: cabal-store-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: genesis-cabal-store-${{ runner.os }}-ghc9.6.7-cabal3.12.1.0-${{ hashFiles('plutus/cabal.project*', 'plutus/pre-rich-plutus.cabal', '.github/actions/setup-plutus/**') }}
+
+      - name: Restore Cabal build state
+        id: cabal-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: plutus/dist-newstyle
+          key: genesis-cabal-build-${{ runner.os }}-${{ hashFiles('plutus/**/*.hs', 'plutus/**/*.cabal', 'plutus/cabal.project*', 'IMMORTAL/**/*.hs', 'Adapter/REFERENCE/**/*.hs', 'PRE-RICH/onchain/**/*.hs', '.github/actions/setup-plutus/**') }}
+
+      - name: Restore exported Plutus artifacts
+        id: genesis-artifact-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            plutus/out/genesisRegimeCarrier.plutus.json
+            plutus/out/genesisCarrierMintPolicy.plutus.json
+            plutus/out/v3EconomicStateCarrier.plutus.json
+            plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          key: genesis-plutus-artifacts-${{ runner.os }}-${{ hashFiles('plutus/**/*.hs', 'plutus/**/*.cabal', 'plutus/cabal.project*', 'IMMORTAL/**/*.hs', 'Adapter/REFERENCE/**/*.hs', 'PRE-RICH/onchain/**/*.hs', 'plutus/export/Export.hs', '.github/actions/setup-plutus/**', 'package-lock.json') }}
+
       - name: Build PRE-RICH Plutus package
+        if: steps.cabal-build-cache.outputs.cache-hit != 'true'
         working-directory: plutus
         run: cabal build pre-rich-plutus
+
+      - name: Save Cabal build state
+        if: steps.cabal-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: plutus/dist-newstyle
+          key: genesis-cabal-build-${{ runner.os }}-${{ hashFiles('plutus/**/*.hs', 'plutus/**/*.cabal', 'plutus/cabal.project*', 'IMMORTAL/**/*.hs', 'Adapter/REFERENCE/**/*.hs', 'PRE-RICH/onchain/**/*.hs', '.github/actions/setup-plutus/**') }}
+
+      - name: Save Cabal dependency store
+        if: steps.cabal-store-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: genesis-cabal-store-${{ runner.os }}-ghc9.6.7-cabal3.12.1.0-${{ hashFiles('plutus/cabal.project*', 'plutus/pre-rich-plutus.cabal', '.github/actions/setup-plutus/**') }}
+
       - name: Run Genesis regime carrier tests
         working-directory: plutus
         run: cabal test genesis-regime-carrier-tests
@@ -74,15 +121,31 @@ jobs:
       - name: Run Reference Adapter conformance tests
         working-directory: plutus
         run: cabal test reference-adapter-tests
+
       - name: Export scripts
+        if: steps.genesis-artifact-cache.outputs.cache-hit != 'true'
         working-directory: plutus
         run: cabal run exe:export-scripts
+
+      - name: Save exported Plutus artifacts
+        if: steps.genesis-artifact-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            plutus/out/genesisRegimeCarrier.plutus.json
+            plutus/out/genesisCarrierMintPolicy.plutus.json
+            plutus/out/v3EconomicStateCarrier.plutus.json
+            plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          key: genesis-plutus-artifacts-${{ runner.os }}-${{ hashFiles('plutus/**/*.hs', 'plutus/**/*.cabal', 'plutus/cabal.project*', 'IMMORTAL/**/*.hs', 'Adapter/REFERENCE/**/*.hs', 'PRE-RICH/onchain/**/*.hs', 'plutus/export/Export.hs', '.github/actions/setup-plutus/**', 'package-lock.json') }}
+
       - name: Assert Genesis carrier artifacts exist
         run: |
           test -s plutus/out/genesisRegimeCarrier.plutus.json
           test -s plutus/out/genesisCarrierMintPolicy.plutus.json
           test -s plutus/out/v3EconomicStateCarrier.plutus.json
           test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          node -e "for (const f of ['genesisRegimeCarrier.plutus.json','genesisCarrierMintPolicy.plutus.json','v3EconomicStateCarrier.plutus.json','v3EconomicStateCarrierMintPolicy.plutus.json']) { const a=require('./plutus/out/'+f); if(a.type!=='PlutusScriptV2'||!a.cborHex) process.exit(1); } console.log('Genesis/V3 artifacts ready')"
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
