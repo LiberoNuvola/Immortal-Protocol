@@ -16,7 +16,7 @@ import Prelude
   )
 
 import PlutusLedgerApi.V2 (ScriptHash)
-import PlutusTx.Prelude (BuiltinByteString, emptyByteString)
+import PlutusTx.Prelude (BuiltinByteString)
 
 import B1LegacyAdapter
 import EconomicStateV3
@@ -31,7 +31,7 @@ assert condition label =
   if condition then putStrLn ("PASS: " ++ label) else error ("FAIL: " ++ label)
 
 dummyHash :: ScriptHash
-dummyHash = ScriptHash emptyByteString
+dummyHash = error "dummy ScriptHash"
 
 zeroState :: V3EconomicState
 zeroState = zeroV3EconomicState
