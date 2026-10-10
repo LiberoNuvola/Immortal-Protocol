@@ -135,4 +135,34 @@ main = do
       assert (uesUnresolvedTicketCount (peaCandidateUniversal admitted) == 0) "expire removes exactly one unresolved ticket from the candidate"
       assert (solvencyInvariant 1 (peaCandidateUniversal admitted)) "expired candidate remains universally solvent"
 
+
+  let mixedClassStressState =
+        V3EconomicState
+          100 102 3 7 11 13
+          [ TicketClassState 0 2 2 2 10 True
+          , TicketClassState 7 1 1 100 10 True
+          ]
+          (EconomicControlState 7 7)
+          (JackpotState 17 0 JackpotLocked 1)
+
+  case preRichEconomicAdmission profile mixedClassStressState (Issue 0 1) 51648 51648 51648 0 True True True True of
+    Nothing -> error "FAIL: exact mixed-class protected-capital boundary was rejected"
+    Just admitted -> do
+      let candidate = peaCandidateUniversal admitted
+      assert (uesUnresolvedReserve candidate == 103) "mixed-class stress preserves aggregate unresolved reserve"
+      assert (uesUnresolvedTicketCount candidate == 4) "mixed-class stress increments unresolved count exactly once"
+      assert (uesWorstCaseExposure candidate == 51500) "mixed-class worst case is class-aware at 500x"
+      assert (uesCrystallizedLiabilities candidate == 100) "mixed-class stress protects crystallized liabilities"
+      assert (uesSafetyCapital candidate == 7) "mixed-class stress preserves SafetyCapital"
+      assert (uesReserveProtection candidate == 11) "mixed-class stress preserves ReserveProtection"
+      assert (uesMandatoryFutureCosts candidate == 13) "mixed-class stress preserves MandatoryFutureCosts"
+      assert (uesAdditionalProtectedCapital candidate == 17) "mixed-class stress preserves locked Jackpot capital"
+      assert (solvencyInvariant 51648 candidate) "mixed-class exact ProtectedCapital boundary remains solvent"
+
+  assert
+    (case preRichEconomicAdmission profile mixedClassStressState (Issue 0 1) 51648 51647 51647 0 True True True True of
+       Nothing -> True
+       Just _ -> False)
+    "mixed-class stress rejects EEV one unit below complete ProtectedCapital"
+
   putStrLn "ALL ECONOMIC ADMISSION TESTS PASSED"
