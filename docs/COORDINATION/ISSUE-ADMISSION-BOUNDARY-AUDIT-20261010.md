@@ -191,3 +191,14 @@ The inspected `.github/workflows/immortal-preprod-pages.yml` runs `npm ci` and `
 This is a source-level configuration finding, not proof of the exact currently deployed artifact or its runtime environment. No endpoint URL is hardcoded here because the authorized service URL has not been verified in repository evidence.
 
 **G1 refined status: source composition and consumer path implemented; deployed endpoint configuration and live server readiness NOT VERIFIED / OPEN.** To close this safely, identify the approved deployed `/issue-admission` base URL and the repository's established Pages configuration mechanism, then verify a build with that non-secret endpoint present. Do not expose the server private key or authority credentials in the frontend build; only the public endpoint belongs in `VITE_ISSUE_AUTHORITY_ENDPOINT`.
+
+
+## 2026-10-10 follow-up — default-branch comparison
+
+A direct comparison with `main` confirms the deployment risk is stronger than a missing environment variable alone:
+- `main:src/main.ts` currently imports only the older DApp path and does not import `ISSUE_AUTHORITY_ENDPOINT`, `createRemoteAuthoritativeIssueAdmissionProvider`, or `mintSerialNFTWithAuthoritativeAdmission`.
+- `main:src/config.ts` does not define `ISSUE_AUTHORITY_ENDPOINT`.
+- `main:.github/workflows/immortal-preprod-pages.yml` builds the `main` checkout and does not inject `VITE_ISSUE_AUTHORITY_ENDPOINT`.
+- The newer source-level Issue consumer path exists on `work/immortal-green-closure`, not in the inspected `main` files.
+
+**Operational consequence:** the deployed Pages build cannot be assumed to contain the newer authoritative Issue consumer path. Do not diagnose this solely as a secret/env setting. The intended source changes must first be promoted through the established PR/release policy; after that, the public endpoint must be supplied through a verified build configuration, and the server must be independently shown ready. No branch merge or deployment was performed in this audit.
