@@ -10,6 +10,7 @@
  *   DEPLOYER_MNEMONIC
  *   V3_CARRIER_TOKEN_NAME_HEX
  *   V3_CARRIER_INITIAL_DATUM_CBOR
+ *   ISSUE_AUTHORITY_PUBLIC_KEY
  *
  * Optional:
  *   V3_CARRIER_SEED_TX_HASH
@@ -18,6 +19,7 @@
  */
 import 'dotenv/config'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { createPublicKey } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, validatorToAddress, mintingPolicyToId, type Script, type UTxO } from '@lucid-evolution/lucid'
@@ -78,6 +80,13 @@ async function main() {
   const mnemonic = required('DEPLOYER_MNEMONIC')
   const tokenNameHex = required('V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
   const initialDatumCbor = required('V3_CARRIER_INITIAL_DATUM_CBOR')
+  const issueAuthorityPublicKeyPem = required('ISSUE_AUTHORITY_PUBLIC_KEY')
+  const issueAuthorityJwk = createPublicKey(issueAuthorityPublicKeyPem).export({ format: 'jwk' }) as JsonWebKey & { x?: string }
+  if (!issueAuthorityJwk.x) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must be an Ed25519 public key')
+  const authorityPublicKeyHex = Buffer.from(issueAuthorityJwk.x, 'base64url').toString('hex')
+  if (authorityPublicKeyHex.length !== 64) {
+    throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must encode a 32-byte Ed25519 public key')
+  }
 
   if (!/^[0-9a-f]+$/i.test(tokenNameHex)) {
     throw new Error('V3_CARRIER_TOKEN_NAME_HEX must be hexadecimal')
@@ -122,7 +131,7 @@ async function main() {
 
   const carrierValidator: Script = {
     type: 'PlutusV2',
-    script: applyParamsToScript(carrierFactory.cborHex, [policyId, tokenNameHex]),
+    script: applyParamsToScript(carrierFactory.cborHex, [policyId, tokenNameHex, authorityPublicKeyHex]),
   }
   const carrierAddress = validatorToAddress('Preprod', carrierValidator)
 
@@ -162,6 +171,7 @@ async function main() {
     initialDatumCbor,
     initialDatumExplicit: true,
     signerAddress,
+    issueAuthorityPublicKeyHex: authorityPublicKeyHex,
   }
 
   mkdirSync('audit/preprod-issue', { recursive: true })
