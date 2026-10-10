@@ -11,7 +11,9 @@ module V3EconomicStateCarrier
   , mkValidator
   , bindingEnvelopeValid
   , canonicalV3StateHash
+  , canonicalCarrierBindingMessage
   , bindingEndpointsValid
+  , bindingAuthorityValid
   , compiledValidator
   ) where
 
@@ -46,6 +48,7 @@ data V3EconomicStateAction
       , v3PreStateHash      :: BuiltinByteString
       , v3ActionFingerprint :: BuiltinByteString
       , v3PostStateHash     :: BuiltinByteString
+      , v3AuthoritySignature :: BuiltinByteString
       }
 
 PlutusTx.unstableMakeIsData ''V3EconomicStateAction
@@ -306,6 +309,32 @@ canonicalV3StateHash = bytesToHex . sha2_256 . canonicalV3State
 bindingFieldValid :: BuiltinByteString -> Bool
 bindingFieldValid field = lengthOfByteString field > 0
 
+{-# INLINABLE canonicalCarrierBindingMessage #-}
+canonicalCarrierBindingMessage :: V3EconomicStateAction -> BuiltinByteString
+canonicalCarrierBindingMessage action =
+  case action of
+    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash _ ->
+      joinFieldsB
+        [ actionClass
+        , decisionRef
+        , observationRef
+        , preHash
+        , actionHash
+        , postHash
+        ]
+
+{-# INLINABLE bindingAuthorityValid #-}
+bindingAuthorityValid :: BuiltinByteString -> V3EconomicStateAction -> Bool
+bindingAuthorityValid authorityPublicKey action =
+  case action of
+    AdvanceV3State _ _ _ _ _ _ signature ->
+         lengthOfByteString authorityPublicKey == 32
+      && lengthOfByteString signature == 64
+      && verifyEd25519Signature
+           authorityPublicKey
+           (canonicalCarrierBindingMessage action)
+           signature
+
 {-# INLINABLE bindingEnvelopeValid #-}
 bindingEnvelopeValid :: V3EconomicStateAction -> Bool
 bindingEnvelopeValid action =
@@ -327,7 +356,7 @@ bindingEndpointsValid
 bindingEndpointsValid before after action =
      bindingEnvelopeValid action
   && case action of
-       AdvanceV3State _ _ _ preHash _ postHash ->
+       AdvanceV3State _ _ _ preHash _ postHash _ ->
             preHash == canonicalV3StateHash (vesdState before)
          && postHash == canonicalV3StateHash (vesdState after)
 
@@ -335,11 +364,12 @@ bindingEndpointsValid before after action =
 mkValidator
   :: BuiltinByteString
   -> BuiltinByteString
+  -> BuiltinByteString
   -> V3EconomicStateDatum
   -> V3EconomicStateAction
   -> ScriptContext
   -> Bool
-mkValidator carrierPolicy carrierName datum action ctx =
+mkValidator carrierPolicy carrierName authorityPublicKey datum action ctx =
   let
     info = scriptContextTxInfo ctx
     inputValue = txOutValue (ownInput ctx)
@@ -361,13 +391,15 @@ mkValidator carrierPolicy carrierName datum action ctx =
          Nothing -> False
          Just after ->
            case action of
-             AdvanceV3State _ _ _ _ _ _ ->
+             AdvanceV3State _ _ _ _ _ _ _ ->
                sameStateIdentity datum after
            && bindingEndpointsValid datum after action
+           && bindingAuthorityValid authorityPublicKey action
 
 {-# INLINABLE wrap #-}
 wrap
   :: BuiltinByteString
+  -> BuiltinByteString
   -> BuiltinByteString
   -> BuiltinData
   -> BuiltinData
@@ -385,6 +417,7 @@ wrap policy name datum action ctx =
 compiledValidator
   :: CompiledCode
        (BuiltinByteString
+        -> BuiltinByteString
         -> BuiltinByteString
         -> BuiltinData
         -> BuiltinData
