@@ -168,6 +168,7 @@ describe('Haskell Issue admission provider', () => {
         eevQualification: eev,
         protectedCapitalProvenance: protectedCapital,
         viabilityCertificate: certificate,
+        carrierBindingSignature: 'a'.repeat(128),
         observedAt: 1000n,
       }),
     })
@@ -195,6 +196,7 @@ describe('Haskell Issue admission provider', () => {
     expect(witness.controlStateReference).toBe(control)
     expect(witness.protectedCapitalProvenance.total).toBe(515n)
     expect(witness.protectedCapitalProvenance.sourceReference).toBe(carrier)
+    expect(witness.carrierAuthoritySignature).toBe('a'.repeat(128))
   })
 
   it('rejects Haskell ProtectedCapital that disagrees with the authority source', async () => {
@@ -232,6 +234,7 @@ describe('Haskell Issue admission provider', () => {
         eevQualification: eev,
         protectedCapitalProvenance: bad,
         viabilityCertificate: certificate,
+        carrierBindingSignature: 'a'.repeat(128),
         observedAt: 1000n,
       }),
     })
