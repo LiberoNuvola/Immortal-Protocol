@@ -362,6 +362,9 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
 
   const requiredRefs = ['counterInputReference', 'controlStateReference', 'poolInputReference', 'carrierStateReference', 'observationReference', 'decisionReference']
   for (const field of requiredRefs) requiredString(payload[field], field)
+  const payloadStateHash = requiredDigest(payload.stateHash, 'stateHash')
+  const payloadActionFingerprint = requiredDigest(payload.actionFingerprint, 'actionFingerprint')
+  const payloadPostStateHash = requiredDigest(payload.postStateHash, 'postStateHash')
 
   if (payload.counterInputReference !== expected.counterInputReference) throw new Error('Issue authority Counter reference mismatch')
   if (payload.controlStateReference !== expected.controlStateReference) throw new Error('Issue authority B2 control reference mismatch')
@@ -379,9 +382,9 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     payload.actionClass,
     payload.decisionReference,
     payload.observationReference,
-    requiredDigest(payload.stateHash, 'stateHash'),
-    requiredDigest(payload.actionFingerprint, 'actionFingerprint'),
-    requiredDigest(payload.postStateHash, 'postStateHash'),
+    payloadStateHash,
+    payloadActionFingerprint,
+    payloadPostStateHash,
   ].join('|')
 
   let carrierSignatureValid = false
