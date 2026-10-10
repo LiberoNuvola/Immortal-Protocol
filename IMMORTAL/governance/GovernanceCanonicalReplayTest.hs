@@ -3,6 +3,8 @@ module Main where
 import Governance
 import GovernanceEventSchema
 import GovernanceCanonicalReplay
+import GovernanceAuthorization (canonicalGovernanceEventValid)
+import GovernanceConformance (lifecycleEventAdmissible)
 import GovernanceFinality
 import GovernanceDecisionWitness
 import GovernanceConformanceWitness
