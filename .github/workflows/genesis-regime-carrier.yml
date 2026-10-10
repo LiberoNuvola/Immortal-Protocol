@@ -23,7 +23,7 @@ on:
       - "plutus/export/Export.hs"
       - "src/__tests__/genesis-carrier-mint-policy-emulator.mjs"
       - "PRE-RICH/src/GenesisTreasuryAdmission.ts"
-      - "PRE-RICH/src/GenesisTreasuryAdmission.test.ts"
+      - "PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts"
       - "audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts"
       - "package.json"
       - "package-lock.json"
@@ -92,6 +92,6 @@ jobs:
       - name: Run Reference ↔ Cardano differential test
         run: npx tsx --test src/__tests__/reference-cardano-differential.test.ts
       - name: Run Genesis Treasury admission mirror
-        run: node --experimental-strip-types PRE-RICH/src/GenesisTreasuryAdmission.test.ts
+        run: node --experimental-strip-types PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts
       - name: Run Genesis carrier singleton ledger lab
         run: node src/__tests__/genesis-carrier-mint-policy-emulator.mjs
