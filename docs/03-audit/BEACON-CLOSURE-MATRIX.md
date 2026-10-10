@@ -78,3 +78,79 @@ It must never display B3 merely because B3 code paths exist. The displayed mode 
 - `verification/pre-rich-gamerules-v1-vectors.json`
 
 **Conclusion:** Beacon architecture is now explicitly classified at the evidence boundary. The remaining B3 item is one external cryptographic/provenance witness, not an undefined collection of frontend or game-rule tasks.
+
+## 2026-10-10 — Real Materios Preprod witness reconnaissance
+
+A real Preprod receipt/anchor chain has now been bound at the provenance level without promoting it to B3 cryptographic closure.
+
+### Verified provenance chain
+
+The observed real receipt is:
+
+`0x552e9e621ad05f0b824b24c36d71b87afbd65387316b7be7406df57d3a598871`
+
+The corresponding certification hash is:
+
+`78c0bbd6a33dd38009858d540b70e02c756f352ffce30bb4feaa0251e161aa8a`
+
+The receipt was observed on-chain in block `1856393`. The checkpoint leaf construction:
+
+`SHA256("materios-checkpoint-v1" || chain_genesis || receipt_id || cert_hash)`
+
+reproduces exactly:
+
+`0x807c464cc9064a73e22d07cbaba9f05a07eaa12a7fba68539d2654c704ba941c`
+
+That leaf is the singleton root of the real batch associated with the receipt and is bound to the first observed anchor:
+
+- anchor block: `1856408`
+- anchor block hash: `0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e`
+- anchor id: `0x01b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55`
+- content/root hash: `0x807c464cc9064a73e22d07cbaba9f05a07eaa12a7fba68539d2654c704ba941c`
+- manifest hash: `0xebd2ea0e0e463344c3caecf6d97279ef87077737adc997570afa8a26c1febeb8`
+
+The current `OrinqReceipts::Anchors[anchor_id]` value was also observed with matching content hash, root hash and manifest hash. The upstream runtime path for `submit_anchor` stores the record under a new anchor id and rejects duplicate ids, so this is an immutable-anchor binding for this witness.
+
+### Exact B3-B target
+
+The remaining state-authentication witness is now narrowed to one exact object:
+
+`Anchor block 1856408 -> header StateRoot -> Anchors[anchor_id] storage proof -> exact AnchorRecord`
+
+The public Materios Preprod RPC serves the historical header, but the state at block `1856408` is pruned. Therefore both historical `state_getStorage` and historical `state_getReadProof` fail with `UnknownBlock: State already discarded`.
+
+This is a **state-retention/infrastructure blocker**, not an unresolved storage-key derivation problem.
+
+A conforming B3-B witness therefore requires an archive/full-state Materios node (or an equivalent independently retained historical-state source) from which the verifier can obtain:
+
+1. the exact header and StateRoot for block `1856408`;
+2. the exact `Anchors[anchor_id]` value;
+3. the native storage proof for that key at that block;
+4. an offline proof verification against the exact StateRoot.
+
+### B3-A remains separate
+
+The same real anchor finding does **not** establish GRANDPA finality for block `1856408`.
+
+The currently exposed public RPC does not provide `grandpa_proveFinality`, so the B3-A requirement remains:
+
+`exact checkpoint -> real GRANDPA justification -> authenticated authority-set state/transition -> independent verification`
+
+No B3 GREEN claim is made from the receipt/anchor lineage alone.
+
+### Current classification
+
+| Evidence component | Status |
+| --- | --- |
+| Real receipt observed | **FOUND** |
+| Real availability certificate bound to receipt | **FOUND** |
+| Real checkpoint leaf recomputed | **FOUND / independently reproducible** |
+| Real anchor identified and bound to leaf/root | **FOUND** |
+| Current AnchorRecord observed | **FOUND** |
+| Historical StateRoot at anchor block | **HEADER AVAILABLE / STATE PRUNED** |
+| Historical `state_getReadProof` | **BLOCKED BY STATE RETENTION** |
+| GRANDPA finality proof for anchor block | **OPEN** |
+| Authority-set provenance/transition proof | **OPEN** |
+| Publisher-independent B3 closure | **OPEN** |
+
+This reconnaissance does not alter V3, Reveal, EEV semantics, B2 semantics or Beacon 4 status. It only replaces the previous generic “real fixture open” statement with a concrete, reproducible partial witness and a precisely identified infrastructure boundary.
