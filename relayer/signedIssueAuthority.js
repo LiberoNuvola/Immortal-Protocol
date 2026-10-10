@@ -337,6 +337,13 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     throw new Error('Issue authority actionClass must be Issue')
   }
   const signature = requiredString(envelope.signature, 'Issue authority signature')
+  const carrierBindingSignature = requiredString(
+    payload.carrierBindingSignature,
+    'Issue authority carrierBindingSignature',
+  )
+  if (!/^[0-9a-fA-F]{128}$/.test(carrierBindingSignature)) {
+    throw new Error('Issue authority carrierBindingSignature must be a 64-byte hex signature')
+  }
 
   const expectedDirectUsdmUnit = requiredString(
     expected.directUsdmUnit,
@@ -367,6 +374,30 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     throw new Error('Issue authority price mismatch')
   }
   if (payload.observationReference !== expected.observationReference) throw new Error('Issue authority observation reference mismatch')
+
+  const carrierBindingMessage = [
+    payload.actionClass,
+    payload.decisionReference,
+    payload.observationReference,
+    requiredDigest(payload.stateHash, 'stateHash'),
+    requiredDigest(payload.actionFingerprint, 'actionFingerprint'),
+    requiredDigest(payload.postStateHash, 'postStateHash'),
+  ].join('|')
+
+  let carrierSignatureValid = false
+  try {
+    carrierSignatureValid = crypto.verify(
+      null,
+      Buffer.from(carrierBindingMessage, 'utf8'),
+      publicKeyPem,
+      Buffer.from(carrierBindingSignature, 'hex'),
+    )
+  } catch (error) {
+    throw new Error('Issue authority carrier-binding signature verification failed: ' + error.message)
+  }
+  if (!carrierSignatureValid) {
+    throw new Error('Issue authority carrier-binding signature is invalid')
+  }
 
   const signedBytes = Buffer.from(canonicalize(payload), 'utf8')
   let signatureBytes
@@ -476,6 +507,7 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
     verificationReference: requiredString(payload.verificationReference, 'verificationReference'),
     sourceReference: requiredString(payload.sourceReference, 'sourceReference'),
     derivationVersion: requiredString(payload.derivationVersion, 'derivationVersion'),
+    carrierBindingSignature: carrierBindingSignature.toLowerCase(),
     directUsdmUnit: payloadDirectUsdmUnit.toLowerCase(),
     eevQualification,
     protectedCapitalProvenance,
