@@ -10,7 +10,15 @@ const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
 const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
 
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
-const lucid = await Lucid(new Blockfrost(API, ''), 'Preprod')
+const provider = new Blockfrost(API, '')
+// Yaci Store's evaluator response is not compatible with Lucid 0.6.5's Blockfrost
+// response parser, and Lucid's local evaluator rejects this valid Value encoding
+// before submission. Supply a bounded transaction-level budget for this diagnostic
+// probe; the native Cardano ledger still evaluates the actual script on submission.
+;(provider as unknown as { evaluateTx: () => Promise<unknown> }).evaluateTx = async () => [
+  { redeemer_tag: 'mint', redeemer_index: 0, ex_units: { mem: 10_000_000, steps: 5_000_000_000 } },
+]
+const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
@@ -41,10 +49,8 @@ const tx = await lucid
   .mintAssets({ [unit]: 1n }, Data.void())
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
-  // Yaci Store does not expose Lucid's expected Blockfrost evaluateTx response.
-  // Use Lucid's local evaluator for balancing; the submitted transaction is still
-  // independently accepted or rejected by the native Yaci/Cardano ledger below.
-  .complete({ localUPLCEval: true })
+  // Use the bounded evaluation budget above; ledger validation remains authoritative.
+  .complete({ localUPLCEval: false })
 
 const signed = await tx.sign.withWallet().complete()
 const txHash = await signed.submit()
