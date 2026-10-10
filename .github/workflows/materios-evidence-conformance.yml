@@ -12,6 +12,7 @@ on:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
       - "poc/materios-checkpoint/src/capture-finalized.ts"
       - "poc/materios-checkpoint/src/capture-anchor.ts"
+      - "poc/materios-checkpoint/src/capture-anchor.ts"
       - "poc/materios-checkpoint/src/executionProof.ts"
       - "poc/materios-checkpoint/src/rpc.ts"
       - "poc/materios-checkpoint/test-canonicalEvidence.ts"
@@ -27,6 +28,7 @@ on:
     paths:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
       - "poc/materios-checkpoint/src/capture-finalized.ts"
+      - "poc/materios-checkpoint/src/capture-anchor.ts"
       - "poc/materios-checkpoint/src/executionProof.ts"
       - "poc/materios-checkpoint/src/rpc.ts"
       - "poc/materios-checkpoint/test-canonicalEvidence.ts"
