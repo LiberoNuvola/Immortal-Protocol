@@ -144,3 +144,8 @@ constraints:
   microlens == 0.5.0.0
 
 -- Exact-head execution trigger: no dependency or semantic change.
+
+-- CI uses Ubuntu's stock libsodium, not the Cardano-specific VRF fork.
+-- Build the pinned cardano-crypto-praos VRF C implementation into the package.
+package cardano-crypto-praos
+  flags: -external-libsodium-vrf
