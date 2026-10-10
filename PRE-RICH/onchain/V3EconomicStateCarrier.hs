@@ -339,7 +339,7 @@ bindingAuthorityValid authorityPublicKey action =
 bindingEnvelopeValid :: V3EconomicStateAction -> Bool
 bindingEnvelopeValid action =
   case action of
-    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash ->
+    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash _ ->
          (actionClass == "Issue" || actionClass == "Reveal" || actionClass == "Claim" || actionClass == "Expire")
       && bindingFieldValid decisionRef
       && bindingFieldValid observationRef
@@ -405,11 +405,12 @@ wrap
   -> BuiltinData
   -> BuiltinData
   -> BuiltinUnit
-wrap policy name datum action ctx =
+wrap policy name authorityPublicKey datum action ctx =
   check
     (mkValidator
       policy
       name
+      authorityPublicKey
       (unsafeFromBuiltinData datum)
       (unsafeFromBuiltinData action)
       (unsafeFromBuiltinData ctx))
