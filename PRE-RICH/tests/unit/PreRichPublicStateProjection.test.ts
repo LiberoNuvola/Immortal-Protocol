@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { projectObservedPreRichPublicState } from '../PreRichPublicStateProjection'
+import { projectObservedPreRichPublicState } from '../../src/PreRichPublicStateProjection'
 
 const state = {
   crystallizedLiabilities: 0n,
