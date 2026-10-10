@@ -27,6 +27,16 @@ jobs:
       - name: Install checkpoint tooling
         run: npm ci --prefix poc/materios-checkpoint --ignore-scripts
 
+      - name: Setup pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Restore Rust verifier cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
       - name: Require archive-capable RPC
         env:
           MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
