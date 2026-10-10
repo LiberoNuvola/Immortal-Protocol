@@ -2,6 +2,11 @@ name: Materios B3-B snapshot archive probe
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - .github/workflows/materios-b3-b-snapshot-archive-probe.yml
 
 permissions:
   contents: read
