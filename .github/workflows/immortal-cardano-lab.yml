@@ -5,6 +5,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/**"
+      - "src/**"
+      - "plutus/**"
+      - "Adapter/**"
+      - ".github/workflows/immortal-cardano-lab.yml"
   pull_request:
     branches:
       - main
