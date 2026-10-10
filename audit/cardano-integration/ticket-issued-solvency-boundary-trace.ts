@@ -136,6 +136,13 @@ try {
 if (!ninthRejected || rejectionStage !== 'submit') {
   throw new Error('T3 inconclusive: ninth Issue was not rejected during ledger submission; stage=' + rejectionStage + '; error=' + rejectionError)
 }
+const poolAfterNinthAttempt = await lucid.utxosAt(scripts.b1PrizePoolAddress)
+if (!poolAfterNinthAttempt.some(u => ref(u) === ref(pool))) {
+  throw new Error('T3 FAIL: Pool input was consumed; ninth Issue may have landed despite the reported error')
+}
+if (!/script|validator|B1PrizePool|Plutus|evaluation|execution unit|rejected/i.test(rejectionError)) {
+  throw new Error('T3 inconclusive: rejection did not identify an on-chain script failure: ' + rejectionError)
+}
 const evidence = {
   fixture: 'T3-B1-TICKET-ISSUED-500X-BOUNDARY',
   environment: 'local-yaci-devnet',
