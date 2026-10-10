@@ -1296,7 +1296,7 @@ export async function mintSerialNFT(
           ? b2ControlUtxo.txHash + '#' + b2ControlUtxo.outputIndex
           : '',
         poolInputReference: pool.utxo.txHash + '#' + pool.utxo.outputIndex,
-        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utputIndex],
+        liquiditySourceReferences: [pool.utxo.txHash + '#' + pool.utxo.outputIndex],
         carrierStateReference: carrierUtxo
           ? carrierUtxo.txHash + '#' + carrierUtxo.outputIndex
           : undefined,
