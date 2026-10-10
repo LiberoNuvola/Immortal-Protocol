@@ -114,6 +114,59 @@ describe("PRE-RICH hysteresis reference", () => {
     ).toThrow();
   });
 
+
+  it("survives a multi-step stress path without losing historical activation or upgrading early", () => {
+    let state = {
+      currentActiveClass: null as number | null,
+      highestClassEverActivated: null as number | null,
+    };
+
+    const step = (capacity: bigint) => {
+      const result = evolvePreRichHysteresis(capacity, CLASSES, state);
+      state = {
+        currentActiveClass: result.currentActiveClass,
+        highestClassEverActivated: result.highestClassEverActivated,
+      };
+      return result;
+    };
+
+    expect(step(800n)).toMatchObject({
+      action: "ACTIVATE",
+      currentActiveClass: 4,
+      highestClassEverActivated: 4,
+    });
+    expect(step(399n)).toMatchObject({
+      action: "CONTRACT",
+      currentActiveClass: 3,
+      highestClassEverActivated: 4,
+    });
+    expect(step(401n)).toMatchObject({
+      action: "RETAIN",
+      currentActiveClass: 3,
+      highestClassEverActivated: 4,
+    });
+    expect(step(799n)).toMatchObject({
+      action: "RETAIN",
+      currentActiveClass: 3,
+      highestClassEverActivated: 4,
+    });
+    expect(step(800n)).toMatchObject({
+      action: "UPGRADE",
+      currentActiveClass: 4,
+      highestClassEverActivated: 4,
+    });
+    expect(step(39n)).toMatchObject({
+      action: "HALT",
+      currentActiveClass: null,
+      highestClassEverActivated: 4,
+    });
+    expect(step(800n)).toMatchObject({
+      action: "ACTIVATE",
+      currentActiveClass: 4,
+      highestClassEverActivated: 4,
+    });
+  });
+
   it("rejects a state whose current class exceeds its historical maximum", () => {
     expect(() =>
       evolvePreRichHysteresis(800n, CLASSES, {
