@@ -13,7 +13,7 @@ export type IssueIntent = {
   readonly action: 'Issue'
   readonly classId: bigint
   /**
-   * Canonical PRE-RICH reference price units (1/2/3/5/10/25/50/100).
+   * Profile-defined price coordinate supplied by the application intent.
    * This is an input to the requested transition, not an assertion that the
    * requested class is currently saleable.
    */
