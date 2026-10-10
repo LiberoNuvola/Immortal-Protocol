@@ -23,12 +23,29 @@ jobs:
       - name: Install repository dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Compute deterministic B2 artifact cache key
+        id: b2-artifact-key
+        shell: bash
+        run: |
+          echo "key=b2-plutus-artifacts-${{ runner.os }}-${{ hashFiles('plutus/**/*.hs', 'plutus/**/*.cabal', 'plutus/cabal.project*', '.github/actions/setup-plutus/**', 'package-lock.json') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiled B2 Plutus artifacts
+        id: b2-artifact-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            plutus/out/preRichControlCarrier.plutus.json
+            plutus/out/preRichControlCarrierMintPolicy.plutus.json
+          key: ${{ steps.b2-artifact-key.outputs.key }}
+
       - name: Setup canonical Plutus toolchain
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-plutus
         with:
           update-hackage: "true"
 
       - name: Build and export Plutus artifacts
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
         working-directory: plutus
         run: cabal run exe:export-scripts
 
@@ -36,6 +53,15 @@ jobs:
         run: |
           test -s plutus/out/preRichControlCarrier.plutus.json
           test -s plutus/out/preRichControlCarrierMintPolicy.plutus.json
+
+      - name: Save compiled B2 Plutus artifacts
+        if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            plutus/out/preRichControlCarrier.plutus.json
+            plutus/out/preRichControlCarrierMintPolicy.plutus.json
+          key: ${{ steps.b2-artifact-key.outputs.key }}
 
       - name: Run B2 authenticated observation regressions
         run: |
