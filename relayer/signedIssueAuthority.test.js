@@ -94,6 +94,8 @@ function makePayload(overrides = {}) {
     authorityVersion: '1',
     actionClass: 'Issue',
     stateHash: '4'.repeat(64),
+    postStateHash: '5'.repeat(64),
+    actionFingerprint: '6'.repeat(64),
     counterInputReference: 'a'.repeat(64) + '#0',
     controlStateReference: 'd'.repeat(64) + '#3',
     poolInputReference: 'b'.repeat(64) + '#1',
@@ -124,6 +126,19 @@ function makePayload(overrides = {}) {
 }
 
 function signed(payload, privateKey) {
+  const carrierBindingMessage = [
+    payload.actionClass,
+    payload.decisionReference,
+    payload.observationReference,
+    payload.stateHash,
+    payload.actionFingerprint,
+    payload.postStateHash,
+  ].join('|')
+  payload.carrierBindingSignature = crypto.sign(
+    null,
+    Buffer.from(carrierBindingMessage, 'utf8'),
+    privateKey,
+  ).toString('hex')
   const signature = crypto.sign(
     null,
     Buffer.from(canonicalize(payload), 'utf8'),
