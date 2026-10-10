@@ -2,11 +2,7 @@ use codec::{Decode, Encode};
 use sp_core::Blake2Hasher;
 use sp_runtime::StateVersion;
 use sp_state_machine::{
-    backend::Backend,
-    prove_read,
-    read_proof_check,
-    InMemoryBackend,
-    StorageProof,
+    backend::Backend, prove_read, read_proof_check, InMemoryBackend, StorageProof,
 };
 
 /// Inputs required to independently verify one Substrate storage read proof.
@@ -69,9 +65,7 @@ mod tests {
             state_version,
         ));
 
-        let root = backend
-            .storage_root(std::iter::empty(), state_version)
-            .0;
+        let root = backend.storage_root(std::iter::empty(), state_version).0;
 
         let proof = prove_read(backend, &[&b"anchor"[..]]).expect("fixture proof");
         (
