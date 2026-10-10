@@ -171,3 +171,18 @@ The Reveal redesign is **implemented but not yet GREEN**: it still requires a de
 - Native dependencies and GHC/Cabal setup have already completed successfully on P2.8 run `36223012451`; that run predates the microlens pin, so it is not the closure run. It remains useful only as evidence that the P2.8 setup/bootstrap path is progressing beyond the prior resolver stop.
 - P2.8 remains **OPEN** until a run containing the microlens pin reaches typed-context evaluation and produces the required native-ledger evidence packet.
 - No economic, validator, oracle, expiry, governance-policy, authority-selection or protocol-limit semantics changed.
+
+## 2026-10-10 — Materios B3-B historical-state source boundary
+
+The B3-B source probe is now exhausted as a snapshot-bootstrap path; no protocol or verifier semantics were changed.
+
+- Exact probe: GitHub Actions run `38076689117`, job `114285041681`, branch head `7f73fb5ac8cb9af0243462d68a5676846b94adc3`.
+- The official snapshot manifest resolved to head block `2223346`; download and SHA-256 verification succeeded, and the extracted RocksDB root was `/tmp/materios-snapshot/chains/materios_preprod_v6/db`.
+- The official Materios v6 node started far enough to identify the database as a FULL node and load the mock follower registration file, then failed closed with: `Incompatible pruning modes [stored: Constrained(Constraints { max_blocks: Some(256) }); requested: ArchiveAll]`.
+- Therefore the published bootstrap snapshot is not an archive database and cannot be promoted to one by changing the requested node pruning mode.
+- The exact B3-B target remains block `1856408`, hash `0x7db6da35478aa3b56bca56bfbff4feeab7287f2d580df03548528d894cfdf44e`. The public Materios RPC can return the target hash/header, but historical `state_getStorage`/`state_getReadProof` at that hash report discarded state.
+- Official Materios documentation defines a **Full Node** as **RPC + archive / read-only peer**, while the published bootstrap artifact is described as the **current RocksDB pointer**. No concrete public archive RPC endpoint is documented in the inspected official sources.
+- B3-B therefore remains **OPEN** until an archive-capable Materios RPC or an archive-compatible historical database is available. This is an external evidence-source availability boundary, not a failure of the IMMORTAL storage-proof verifier.
+- The snapshot probe is diagnostic evidence only; it is not a substitute for the required B3-B proof packet and must not be used to claim cryptographic closure.
+
+No economic semantics, V3/Reveal semantics, B2 semantics, authority-selector semantics, or verifier acceptance rules were changed by this closure note.
