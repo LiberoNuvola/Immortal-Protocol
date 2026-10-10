@@ -345,7 +345,9 @@ bindingEnvelopeValid action =
       && bindingFieldValid observationRef
       && bindingFieldValid preHash
       && bindingFieldValid actionHash
+      && lengthOfByteString actionHash == 64
       && bindingFieldValid postHash
+      && lengthOfByteString signature == 64
 
 {-# INLINABLE bindingEndpointsValid #-}
 bindingEndpointsValid
