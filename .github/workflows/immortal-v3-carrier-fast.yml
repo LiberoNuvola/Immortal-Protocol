@@ -49,9 +49,24 @@ jobs:
             plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
           key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrier.hs', 'PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
 
+      - name: Restore Cabal/Plutus build state
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
+        id: plutus-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+          restore-keys: |
+            plutus-build-${{ runner.os }}-
+
       - name: Setup canonical Plutus CI
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: ${{ steps.plutus-build-cache.outputs.cache-matched-key == '' }}
 
       - name: Generate V3 Plutus artifact
         if: steps.v3-artifact-cache.outputs.cache-hit != 'true'

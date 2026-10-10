@@ -65,7 +65,6 @@ runs:
         fi
 
     - name: Configure canonical Hackage HTTPS endpoint
-      if: inputs.update-hackage == 'true'
       shell: bash
       run: |
         cat > "$RUNNER_TEMP/cabal-immortal-ci-config" <<'EOF'

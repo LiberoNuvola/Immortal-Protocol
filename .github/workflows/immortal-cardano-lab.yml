@@ -13,6 +13,8 @@ on:
       - "src/**"
       - "plutus/**"
       - "Adapter/**"
+      - "PRE-RICH/onchain/**"
+      - ".github/actions/setup-plutus/**"
       - ".github/workflows/immortal-cardano-lab.yml"
   pull_request:
     branches:
@@ -48,9 +50,6 @@ jobs:
       - name: Install isolated lab dependencies
         run: npm install --prefix audit/cardano-integration
 
-      - name: Setup canonical Plutus CI
-        uses: ./.github/actions/setup-plutus
-
       - name: Restore Cabal/Plutus build state
         id: plutus-cache
         uses: actions/cache/restore@v4
@@ -59,9 +58,14 @@ jobs:
             ~/.cabal/packages
             ~/.cabal/store
             dist-newstyle
-          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', 'plutus/**/*.hs', 'plutus/**/*.lhs') }}
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
           restore-keys: |
             plutus-build-${{ runner.os }}-
+
+      - name: Setup canonical Plutus CI
+        uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: ${{ steps.plutus-cache.outputs.cache-matched-key == '' }}
 
       # Cost-model diagnostic run: preserve the real Reveal path while recording the Yaci protocol-model shape.
       # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
@@ -70,7 +74,7 @@ jobs:
         run: cabal run exe:export-scripts
 
       - name: Save Cabal/Plutus build state
-        if: steps.plutus-cache.outputs.cache-hit != 'true'
+        if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
