@@ -218,6 +218,7 @@ function issueCarrierAction(
     admission.stateHash,
     admission.actionFingerprint,
     admission.postStateHash,
+    admission.carrierAuthoritySignature ?? '',
   ])
 }
 
@@ -1409,6 +1410,14 @@ export async function mintSerialNFT(
     const bound = economicAdmission as AuthoritativeIssueAdmissionWitness
     if (!bound.v3CarrierBinding) {
       throw new Error('Authoritative Issue admission is missing the V3 carrier binding')
+    }
+    if (
+      typeof bound.carrierAuthoritySignature !== 'string' ||
+      !/^[0-9a-fA-F]{128}$/.test(bound.carrierAuthoritySignature)
+    ) {
+      throw new Error(
+        'Authoritative Issue admission is missing a valid V3 carrier authority signature',
+      )
     }
     if (!carrierUtxo || !carrierObservation) {
       throw new Error('V3 carrier observation is missing')
