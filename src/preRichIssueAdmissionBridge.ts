@@ -3,6 +3,7 @@ import {
   type EconomicAdmissionWitness,
 } from '../Adapter/CARDANO/runtime/EconomicAdmission'
 import { issueClassSaleable, type IssueRefinementEvidence } from '../PRE-RICH/src/PreRichIssueEvidence'
+import type { IssueIntent } from '../IMMORTAL/intent/IssueIntent'
 const stripTxPrefix = (value: string): string => String(value).trim().replace(/^cardano:tx\//, '')
 
 import {
@@ -139,7 +140,7 @@ export type AuthoritativeIssueAdmissionWitness =
     viabilityCertificate: ViabilityCertificateEvidence
   }
 
-export type IssueAdmissionRuntimeInputs = {
+export type IssueAdmissionRuntimeInputs = IssueIntent & {
   counterInputReference: string
   controlStateReference: string
   poolInputReference: string
