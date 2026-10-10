@@ -1,0 +1,164 @@
+name: Materios B3-B snapshot archive probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: materios-b3-b-snapshot-probe-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    steps:
+      - name: Checkout B3 head
+        uses: actions/checkout@v4
+        with:
+          ref: \${{ github.ref }}
+
+      - name: Fetch current official snapshot manifest
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 4 --retry-delay 2 \
+            https://materios.fluxpointstudios.com/operator-snapshots/preprod/latest.json \
+            -o /tmp/materios-latest.json
+          jq -e '
+            .chain == "materios_preprod_v6" and
+            (.url | type == "string") and
+            (.sha256 | test("^[0-9a-f]{64}$")) and
+            (.size_bytes | numbers)
+          ' /tmp/materios-latest.json >/dev/null
+          cat /tmp/materios-latest.json
+          echo "url=$(jq -r .url /tmp/materios-latest.json)" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(jq -r .sha256 /tmp/materios-latest.json)" >> "$GITHUB_OUTPUT"
+          echo "head=$(jq -r .head_block_at_publish /tmp/materios-latest.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Download and verify snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/materios-snapshot
+          echo "Downloading snapshot head=\${{ steps.manifest.outputs.head }}"
+          curl -fL --retry 4 --retry-delay 3 --progress-bar \
+            "\${{ steps.manifest.outputs.url }}" \
+            -o /tmp/materios-snapshot/snapshot.tar.gz
+          printf '%s  %s\n' \
+            "\${{ steps.manifest.outputs.sha256 }}" \
+            /tmp/materios-snapshot/snapshot.tar.gz | sha256sum -c -
+          tar -xzf /tmp/materios-snapshot/snapshot.tar.gz -C /tmp/materios-snapshot
+          rm -f /tmp/materios-snapshot/snapshot.tar.gz
+          test -d /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
+          du -sh /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
+
+      - name: Download chain spec and node binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/materios-bin
+          curl -fsSL --retry 4 --retry-delay 2 \
+            https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json \
+            -o /tmp/materios-bin/chain-spec-raw.json
+          curl -fsSL --retry 4 --retry-delay 2 \
+            https://materios.fluxpointstudios.com/releases/materios-node-v6-x86_64-linux \
+            -o /tmp/materios-bin/materios-node
+          chmod +x /tmp/materios-bin/materios-node
+          /tmp/materios-bin/materios-node --version
+          test -s /tmp/materios-bin/chain-spec-raw.json
+
+      - name: Start archive-state node from official snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/materios-runtime
+          /tmp/materios-bin/materios-node \
+            --chain /tmp/materios-bin/chain-spec-raw.json \
+            --base-path /tmp/materios-snapshot/data \
+            --state-pruning archive \
+            --pruning archive \
+            --rpc-port 9944 \
+            --rpc-methods unsafe \
+            --name "immortal-b3-snapshot-probe" \
+            > /tmp/materios-runtime/node.log 2>&1 &
+          echo $! > /tmp/materios-runtime/node.pid
+
+          for i in $(seq 1 120); do
+            if curl -sf -X POST \
+              -H 'content-type: application/json' \
+              http://127.0.0.1:9944 \
+              -d '{"jsonrpc":"2.0","id":1,"method":"system_health","params":[]}' \
+              >/tmp/materios-runtime/health.json; then
+              cat /tmp/materios-runtime/health.json
+              break
+            fi
+            if ! kill -0 "$(cat /tmp/materios-runtime/node.pid)" 2>/dev/null; then
+              cat /tmp/materios-runtime/node.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          curl -sf -X POST \
+            -H 'content-type: application/json' \
+            http://127.0.0.1:9944 \
+            -d '{"jsonrpc":"2.0","id":1,"method":"system_health","params":[]}' \
+            | jq .
+
+      - name: Probe exact B3-B historical state
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat >/tmp/materios-runtime/probe.mjs <<'EOF'
+          const targetHeight = 1856408;
+          const expectedHash = "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e";
+          const key =
+            "0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55";
+
+          const rpc = async (method, params = []) => {
+            const res = await fetch("http://127.0.0.1:9944", {
+              method: "POST",
+              headers: {"content-type": "application/json"},
+              body: JSON.stringify({jsonrpc:"2.0", id:1, method, params})
+            });
+            const body = await res.json();
+            if (body.error) throw new Error(method + ": " + JSON.stringify(body.error));
+            return body.result;
+          };
+
+          const hash = await rpc("chain_getBlockHash", [targetHeight]);
+          console.log("block_hash=", hash);
+          if (hash !== expectedHash) throw new Error("snapshot hash mismatch at target height");
+
+          const header = await rpc("chain_getHeader", [hash]);
+          console.log("header=", JSON.stringify(header));
+          if (header.number !== "0x1c5398") throw new Error("unexpected target block number");
+          if (!/^0x[0-9a-f]{64}$/.test(header.stateRoot)) throw new Error("invalid stateRoot");
+
+          const storage = await rpc("state_getStorage", [key, hash]);
+          console.log("storage_value_bytes=", storage === null ? "null" : (storage.length - 2) / 2);
+          if (storage === null) throw new Error("historical storage key returned null");
+
+          const proof = await rpc("state_getReadProof", [[key], hash]);
+          console.log("proof_at=", proof.at);
+          console.log("proof_nodes=", proof.proof?.length ?? 0);
+          if (proof.at?.toLowerCase() !== hash.toLowerCase()) throw new Error("proof.at mismatch");
+          if (!Array.isArray(proof.proof) || proof.proof.length === 0) throw new Error("empty storage proof");
+
+          console.log("B3-B SNAPSHOT ARCHIVE PROBE: PASS");
+          EOF
+
+          node /tmp/materios-runtime/probe.mjs
+
+      - name: Dump node tail on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "=== Materios node tail ==="
+          tail -n 250 /tmp/materios-runtime/node.log || true
