@@ -1,3 +1,7 @@
+mod storage;
+
+pub use storage::{verify_storage_proof, StorageProofInput};
+
 use codec::Decode;
 use sc_executor::WasmExecutor;
 use sp_core::{
