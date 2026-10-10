@@ -81,7 +81,7 @@ async function main() {
   const tokenNameHex = required('V3_CARRIER_TOKEN_NAME_HEX').toLowerCase()
   const initialDatumCbor = required('V3_CARRIER_INITIAL_DATUM_CBOR')
   const issueAuthorityPublicKeyPem = required('ISSUE_AUTHORITY_PUBLIC_KEY')
-  const issueAuthorityJwk = createPublicKey(issueAuthorityPublicKeyPem).export({ format: 'jwk' }) as JsonWebKey & { x?: string }
+  const issueAuthorityJwk = createPublicKey(issueAuthorityPublicKeyPem).export({ format: 'jwk' }) as { x?: string }
   if (!issueAuthorityJwk.x) throw new Error('ISSUE_AUTHORITY_PUBLIC_KEY must be an Ed25519 public key')
   const authorityPublicKeyHex = Buffer.from(issueAuthorityJwk.x, 'base64url').toString('hex')
   if (authorityPublicKeyHex.length !== 64) {
