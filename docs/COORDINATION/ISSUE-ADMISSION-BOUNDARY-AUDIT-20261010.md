@@ -114,3 +114,11 @@ Commits:
 - Test correction to assert the same transaction object is signed: `6cd4fcee5b0e4c248ae9f5801b10d5bf637260da`
 
 No tests, typecheck, workflow, signing, or Preprod transaction were run here. Do not mark G2 green. Next: verify this code against the pinned package in the repository's runner, then define a governed way to classify any additional body inputs and bind the final body to the admitted action without changing economic semantics.
+
+## 2026-10-10 follow-up — isolated boundary CI added
+
+Added `.github/workflows/issue-admission-boundary-ci.yml` on `work/immortal-green-closure` (commit `2a76c164d0f1649b100124058591e67b766ca444`).
+
+The workflow is isolated from Preprod and deployment workflows. It installs the repository's locked dependencies with `npm ci`, runs `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`, and typechecks the adapter plus that test file against the repository's pinned Lucid dependency. It triggers on relevant adapter/observation/package changes, pull requests, or manual dispatch.
+
+**Status at documentation time:** workflow definition committed; no successful run has been observed yet. Do not infer test or typecheck success from workflow creation. G2 remains PARTIAL pending the actual run and the unresolved classification/body-binding of extra inputs. G1/G3 and G4-G5 remain OPEN.
