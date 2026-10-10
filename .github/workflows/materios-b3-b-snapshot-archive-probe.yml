@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: materios-b3-b-snapshot-probe-\${{ github.ref }}
+  group: materios-b3-b-snapshot-probe-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout B3 head
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.ref }}
+          ref: ${{ github.ref }}
 
       - name: Fetch current official snapshot manifest
         id: manifest
@@ -45,12 +45,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/materios-snapshot
-          echo "Downloading snapshot head=\${{ steps.manifest.outputs.head }}"
+          echo "Downloading snapshot head=${{ steps.manifest.outputs.head }}"
           curl -fL --retry 4 --retry-delay 3 --progress-bar \
-            "\${{ steps.manifest.outputs.url }}" \
+            "${{ steps.manifest.outputs.url }}" \
             -o /tmp/materios-snapshot/snapshot.tar.gz
           printf '%s  %s\n' \
-            "\${{ steps.manifest.outputs.sha256 }}" \
+            "${{ steps.manifest.outputs.sha256 }}" \
             /tmp/materios-snapshot/snapshot.tar.gz | sha256sum -c -
           tar -xzf /tmp/materios-snapshot/snapshot.tar.gz -C /tmp/materios-snapshot
           rm -f /tmp/materios-snapshot/snapshot.tar.gz
