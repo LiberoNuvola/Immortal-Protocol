@@ -13,12 +13,13 @@ packages: .
 tests: False
 benchmarks: False
 
--- Must match cardano-crypto-leios at 8c9ca: that snapshot adds the
--- FixedSizeCodec instance for SigDSIGN (BLS12381DSIGN) used by Leios.
+-- Use the published cardano-crypto-class 2.5.1.0 source revision.
+-- The newer 8c9ca snapshot keeps the same package version but fails to resolve
+-- Leios's FixedSizeCodec (SigDSIGN) constraint in this mixed ledger snapshot.
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-base
-  tag: 8c9ca80ce9b57e5e1f4f9509042245187f4ba5e9
+  tag: 060819b59c184b951a54e3c563304983c53a3eac
   subdir:
     cardano-crypto-class
 
