@@ -102,6 +102,9 @@ const envelope = signIssueAuthorityEnvelope({
 })
 assert.equal(envelope.payload.actionClass, 'Issue')
 assert.equal(envelope.payload.stateHash, witness.stateHash)
+assert.equal(envelope.payload.postStateHash, witness.postStateHash)
+assert.equal(envelope.payload.actionFingerprint, witness.actionFingerprint)
+assert.match(envelope.payload.carrierBindingSignature, /^[0-9a-f]{128}$/)
 verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, {
   counterInputReference: refs.counter,
   controlStateReference: refs.control,
@@ -157,6 +160,33 @@ try {
 } catch (error) {
   if (!String(error.message).includes('schema is invalid')) throw error
 }
+
+verifySignedIssueAuthorityEnvelope(
+  {
+    payload: {
+      ...envelope.payload,
+      carrierBindingSignature: envelope.payload.carrierBindingSignature.replace(/^../, 'ff'),
+    },
+    signature: envelope.signature,
+  },
+  publicKeyPem,
+  {
+    counterInputReference: refs.counter,
+    poolInputReference: refs.pool,
+    carrierStateReference: refs.carrier,
+    classId: 0n,
+    price: 1n,
+    directUsdmUnit: 'd'.repeat(56),
+    observationReference: 'observation-1',
+    observedAt: witness.executableLiquidityObservation.observedAt,
+    currentObservedAt: now,
+  },
+).then(
+  () => { throw new Error('FAIL: tampered carrier binding signature was accepted') },
+  (error) => {
+    if (!String(error.message).includes('carrier-binding signature')) throw error
+  },
+)
 
 try {
   signIssueAuthorityEnvelope({
