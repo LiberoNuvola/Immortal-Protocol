@@ -174,9 +174,15 @@ jobs:
             echo "run_id=$GITHUB_RUN_ID"
             echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
-      - name: Record Yaci cluster timing/configuration
+      - name: Record Yaci runtime state without invoking a second CLI
         run: |
-          yaci-devkit info | tee audit/yaci-evidence/yaci-devkit-info.txt
+          {
+            echo "captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "yaci_version=0.12.0-beta5"
+            echo "runtime_processes:"
+            ps -eo pid,ppid,stat,args | grep -E '[y]aci|[c]ardano-node|[c]ardano-submit-api' || true
+          } | tee audit/yaci-evidence/yaci-runtime.txt
+          curl --fail --silent --show-error http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-after-bootstrap.json
 
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
