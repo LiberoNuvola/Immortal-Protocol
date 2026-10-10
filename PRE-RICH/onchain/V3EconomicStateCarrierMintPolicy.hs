@@ -64,4 +64,4 @@ compiledPolicyFactory
          -> BuiltinData
          -> BuiltinUnit
        )
-compiledPolicyFactory = $(compile [|| wrap ||])
+compiledPolicyFactory = $$(compile [|| wrap ||])
