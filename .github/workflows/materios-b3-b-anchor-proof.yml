@@ -1,0 +1,88 @@
+name: Materios B3-B historical anchor proof
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: materios-b3-anchor-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout B3 head
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install checkpoint tooling
+        run: npm ci --prefix poc/materios-checkpoint --ignore-scripts
+
+      - name: Require archive-capable RPC
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+        run: |
+          if [ -z "$MATERIOS_ARCHIVE_RPC" ]; then
+            echo "B3-B BLOCKED: MATERIOS_ARCHIVE_RPC secret is required" >&2
+            exit 1
+          fi
+
+      - name: Capture exact historical anchor witness
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+        run: npm run capture:anchor --prefix poc/materios-checkpoint
+
+      - name: Run Rust storage-proof verifier tests
+        run: cargo test --manifest-path poc/materios-execution-verifier/Cargo.toml
+
+      - name: Verify captured StateRoot + StorageProof + exact key/value
+        id: verify_storage
+        working-directory: poc/materios-checkpoint
+        run: |
+          STATE_ROOT=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.target.state_root)')
+          STORAGE_KEY=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.target.storage_key)')
+          EXPECTED_VALUE=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.anchor_record.scale_hex)')
+          node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); for (const n of p.storage_proof.nodes) console.log(n)'             | cargo run --quiet --manifest-path ../materios-execution-verifier/Cargo.toml --bin verify-storage-witness -- "$STATE_ROOT" "$STORAGE_KEY" "$EXPECTED_VALUE" > /tmp/proof_scale_hex.txt
+          test -s /tmp/proof_scale_hex.txt
+          PROOF_SCALE_HEX=$(cat /tmp/proof_scale_hex.txt)
+          case "$PROOF_SCALE_HEX" in
+            0x*) ;;
+            *) echo "Verifier did not return SCALE proof hex" >&2; exit 1 ;;
+          esac
+          echo "proof_scale_hex=$PROOF_SCALE_HEX" >> "$GITHUB_OUTPUT"
+          echo "B3-B state-root/storage-proof verification: GREEN"
+
+      - name: Materialize verified evidence packet
+        working-directory: poc/materios-checkpoint
+        env:
+          PROOF_SCALE_HEX: ${{ steps.verify_storage.outputs.proof_scale_hex }}
+        run: |
+          python - <<'PY'
+          import json, os
+          src = "out/MateriosB3AnchorStateWitness.json"
+          dst = "out/MateriosB3AnchorStateWitness.verified.json"
+          packet = json.load(open(src, "r", encoding="utf-8"))
+          packet["storage_proof"]["scale_hex"] = os.environ["PROOF_SCALE_HEX"]
+          packet["verification"] = {
+              "state_root_storage_proof": "verified",
+              "scope": "exact header.stateRoot + exact storage key + exact returned value"
+          }
+          json.dump(packet, open(dst, "w", encoding="utf-8"), indent=2)
+          open(dst, "a", encoding="utf-8").write("\n")
+          PY
+
+      - name: Upload verified B3-B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3-b-anchor-state-proof
+          path: poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json
+          if-no-files-found: error
