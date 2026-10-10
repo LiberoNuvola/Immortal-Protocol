@@ -142,6 +142,35 @@ return validateHeader(value);
 
 
 /**
+ * Fetch one exact storage value at an exact block.
+ * A non-null response remains untrusted evidence until its block/state-root
+ * binding is independently verified.
+ */
+async getStorage(key: string, at: string): Promise<string | null> {
+  const storageKey = requireHex(key, "state_getStorage key");
+  const hash = requireHash(at, "state_getStorage block hash");
+  const value = await this.call<unknown>("state_getStorage", [storageKey, hash]);
+  if (value === null) return null;
+  return requireHex(value, "state_getStorage result");
+}
+
+/**
+ * Fetch the native Substrate storage read proof for exact keys at an exact block.
+ * The returned proof object is transport-only evidence.
+ */
+async getReadProof(keys: readonly string[], at: string): Promise<StorageReadProofResponse> {
+  if (keys.length === 0) {
+    throw new Error("state_getReadProof: at least one storage key is required");
+  }
+  const normalizedKeys = keys.map((key, index) =>
+    requireHex(key, "state_getReadProof key[" + index + "]"),
+  );
+  const hash = requireHash(at, "state_getReadProof block hash");
+  const value = await this.call<unknown>("state_getReadProof", [normalizedKeys, hash]);
+  return validateStorageReadProofResponse(value, hash);
+}
+
+/**
  * Fetch deployed runtime WASM at an exact block.
  * The returned bytes remain untrusted evidence until their hash is bound
  * to an independently trusted runtime identity.
@@ -352,6 +381,32 @@ export async function collectCommitteeExecutionEvidence(
   }
 
   return { blockHash, header, runtimeCodeHex, execution }
+}
+
+export type StorageReadProofResponse = {
+  at: string;
+  proof: string[];
+};
+
+function validateStorageReadProofResponse(
+  value: unknown,
+  expectedAt: string,
+): StorageReadProofResponse {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("state_getReadProof: invalid response object");
+  }
+  const v = value as Record<string, unknown>;
+  const at = requireHash(v.at, "state_getReadProof.at");
+  if (at.toLowerCase() !== expectedAt.toLowerCase()) {
+    throw new Error("state_getReadProof.at does not match requested block hash");
+  }
+  if (!Array.isArray(v.proof) || !v.proof.every((x) => typeof x === "string" && /^0x[0-9a-fA-F]+$/.test(x))) {
+    throw new Error("state_getReadProof.proof must be a non-empty hex string array");
+  }
+  if (v.proof.length === 0) {
+    throw new Error("state_getReadProof.proof must not be empty");
+  }
+  return { at, proof: v.proof as string[] };
 }
 
 export type CommitteeExecutionProofResponse = {
