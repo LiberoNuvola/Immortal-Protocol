@@ -64,8 +64,9 @@ describe('economic Cardano submission boundary', () => {
   it('consumes a valid admission before signing and submitting', async () => {
     const lucid = { signTx: vi.fn().mockResolvedValue('signed'), submitTx: vi.fn().mockResolvedValue('tx-1') }
     const adapter = createCardanoExecutionAdapter(lucid)
-    await expect(adapter.submitEconomic(completedTxWithInputs(candidateInputs), admission, candidateInputs, [pool0])).resolves.toEqual({ transactionRef: 'tx-1' })
-    expect(lucid.signTx).toHaveBeenCalledWith(completedTxWithInputs(candidateInputs))
+    const tx = completedTxWithInputs(candidateInputs)
+    await expect(adapter.submitEconomic(tx, admission, candidateInputs, [pool0])).resolves.toEqual({ transactionRef: 'tx-1' })
+    expect(lucid.signTx).toHaveBeenCalledWith(tx)
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
