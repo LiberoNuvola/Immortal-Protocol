@@ -100,6 +100,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/materios-runtime
+          printf '%s\n' '[]' > /tmp/materios-runtime/registrations.json
+          export USE_MAIN_CHAIN_FOLLOWER_MOCK=true
+          export MAIN_CHAIN_FOLLOWER_MOCK_REGISTRATIONS_FILE=/tmp/materios-runtime/registrations.json
           /tmp/materios-bin/materios-node \
             --chain /tmp/materios-bin/chain-spec-raw.json \
             --base-path /tmp/materios-snapshot \
