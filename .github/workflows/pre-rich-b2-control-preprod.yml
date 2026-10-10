@@ -72,7 +72,7 @@ jobs:
           path: |
             plutus/out/preRichControlCarrier.plutus.json
             plutus/out/preRichControlCarrierMintPolicy.plutus.json
-          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
+          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/export/Export.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
 
       - name: Select deterministic live wallet seed UTxO
         run: |
