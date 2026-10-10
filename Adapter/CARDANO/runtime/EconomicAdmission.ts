@@ -28,6 +28,12 @@ export type EconomicAdmissionWitness = {
   actionFingerprint: string
   /** Canonical V3 candidate post-state fingerprint. */
   postStateHash: string
+  /**
+   * Cryptographic authority signature for the V3 carrier binding message.
+   * Required by the real carrier-bound Issue path; optional for generic
+   * admission fixtures and non-carrier-bound economic transitions.
+   */
+  carrierAuthoritySignature?: string
   eev: bigint
   executableLiquidityObservation: ExecutableLiquidityObservation
   /** Independently authenticated B1 PrizePool state used for value correlation. */
