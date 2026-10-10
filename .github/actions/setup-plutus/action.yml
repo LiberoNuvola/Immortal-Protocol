@@ -78,4 +78,20 @@ runs:
     - name: Initialize Cabal package index
       if: inputs.update-hackage == 'true'
       shell: bash
-      run: cabal --config-file="$RUNNER_TEMP/cabal-immortal-ci-config" update
+      run: |
+        set -euo pipefail
+        config="$RUNNER_TEMP/cabal-immortal-ci-config"
+        # Keep Cabal's secure Hackage metadata verification enabled. Retry
+        # transient mirror/CDN failures rather than disabling repository security.
+        for attempt in 1 2 3 4; do
+          if cabal --config-file="$config" update; then
+            exit 0
+          else
+            rc=$?
+            echo "Cabal package-index update failed (attempt $attempt/4, exit $rc)." >&2
+            if [ "$attempt" -eq 4 ]; then
+              exit "$rc"
+            fi
+            sleep $((attempt * 5))
+          fi
+        done
