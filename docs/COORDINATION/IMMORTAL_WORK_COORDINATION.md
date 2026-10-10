@@ -1677,3 +1677,32 @@ The Issue witness therefore binds:
 Historical research recovery confirms that PRE-RICH's earlier Dynamic Viability Machine already modeled PRE_GENESIS, QUIESCENT, contraction and recovery. Those semantics remain historical/research evidence until a concrete deployment Kc/Ω package proves VC1–VC6, especially inductiveness, acceptance compatibility, Ω soundness and non-vacuity. No V3 economic semantics were changed.
 
 B2 remains deployment-open until the real control singleton identity is materialized on Cardano Preprod and an adversarial ledger trace proves authorized mutation, singleton uniqueness and Issue reference binding.
+
+## 44.53 RED TEAM R3 — V3 CARRIER DECISION-BINDING MALLEABILITY — 2026-10-10
+
+A source-level red-team recheck of the current V3 carrier confirmed that the 2026-09-28 decision-envelope work is structural only.
+
+`PRE-RICH/onchain/V3EconomicStateCarrier.hs` requires:
+
+- an allowed action class;
+- non-empty decision and observation references;
+- non-empty pre/action/post fingerprint fields;
+- canonical pre-state hash equality;
+- canonical post-state hash equality;
+- singleton/input/output/value/version invariants.
+
+It does **not** recompute the canonical action fingerprint, authenticate the decision/observation references, invoke the canonical economic transition, or prove that the carrier spend corresponds to an authoritative Issue admission.
+
+Therefore an actor able to spend the carrier can construct a structurally valid `AdvanceV3State` carrying fabricated provenance and an arbitrary 32-byte action fingerprint, while still supplying a self-consistent valid V3 after-state.
+
+The off-chain `mintSerialNFTWithAuthoritativeAdmission()` path does build the correct envelope and consumes the deployed carrier, but that does not close the independent on-chain carrier spend surface.
+
+Red-team evidence:
+`docs/audits/REDTEAM-R3-V3-CARRIER-MALLEABILITY.md`
+commit `d456be3ebe243187778c6d35e861137a36b8bfb2`.
+
+**STATUS: 🔴 R3 CONFIRMED OPEN / RELEASE BLOCKER**
+
+No production validator change is made in this pass because the repository does not yet contain a canonical on-chain decision-authority mechanism that can be reused without inventing new protocol semantics.
+
+Closure must be sourced from the existing architecture and must make the carrier transition non-malleably correspond to the existing economic decision/admission path. V3 semantics, Reveal semantics, EEV rules and B1 liquidity rules remain unchanged.
