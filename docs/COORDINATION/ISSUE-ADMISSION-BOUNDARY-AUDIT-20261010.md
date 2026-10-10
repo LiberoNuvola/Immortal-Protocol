@@ -170,3 +170,24 @@ The previous statement “production construction/wiring not found” was too br
 - G6: OPEN — adversarial coverage remains incomplete.
 
 Next safe work: verify the deployment/consumer configuration for `/issue-admission` and qualify the external authority contract from existing normative records; separately define the existing-policy-compatible final-body binding without inventing new economics or freshness thresholds.
+
+
+## 2026-10-10 follow-up — DApp consumer traced; Pages endpoint build wiring unresolved
+
+### G1 — frontend-to-server path exists in source
+
+Further inspection found the intended consumer path:
+- `src/main.ts` imports `ISSUE_AUTHORITY_ENDPOINT`, constructs `createRemoteAuthoritativeIssueAdmissionProvider(ISSUE_AUTHORITY_ENDPOINT)`, and passes it to `mintSerialNFTWithAuthoritativeAdmission()` on the Buy Ticket path.
+- `src/remoteAuthoritativeIssueAdmissionProvider.ts` POSTs runtime inputs to that endpoint and fails closed on HTTP failure or missing admission.
+- `src/config.ts` reads the endpoint from `VITE_ISSUE_AUTHORITY_ENDPOINT`.
+- `relayer/issueAuthorityServer.js` exposes `POST /issue-admission` and composes the Preprod provider from required environment variables.
+
+Therefore the previous audit statement that no production consumer path exists is superseded: the source-level DApp-to-server path is implemented.
+
+### Remaining concrete deployment gap
+
+The inspected `.github/workflows/immortal-preprod-pages.yml` runs `npm ci` and `npm run build` without setting `VITE_ISSUE_AUTHORITY_ENDPOINT` in the job environment or injecting it into the build. `src/config.ts` defaults missing Vite variables to the empty string, and `issueExecutionConfigured()` requires a non-empty endpoint. On a build made by this workflow without an externally injected environment, the Buy Ticket action therefore remains disabled with “deployment wiring unavailable”.
+
+This is a source-level configuration finding, not proof of the exact currently deployed artifact or its runtime environment. No endpoint URL is hardcoded here because the authorized service URL has not been verified in repository evidence.
+
+**G1 refined status: source composition and consumer path implemented; deployed endpoint configuration and live server readiness NOT VERIFIED / OPEN.** To close this safely, identify the approved deployed `/issue-admission` base URL and the repository's established Pages configuration mechanism, then verify a build with that non-secret endpoint present. Do not expose the server private key or authority credentials in the frontend build; only the public endpoint belongs in `VITE_ISSUE_AUTHORITY_ENDPOINT`.
