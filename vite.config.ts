@@ -1,3 +1,4 @@
+import wasm from 'vite-plugin-wasm'
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
@@ -6,6 +7,7 @@ const lucidWebEntry = fileURLToPath(
 )
 
 export default defineConfig({
+  plugins: [wasm()],
   root: '.',
   base: './',
   resolve: {
