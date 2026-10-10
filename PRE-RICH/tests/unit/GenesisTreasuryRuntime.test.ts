@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Constr } from 'lucid-cardano'
-import { observeAndAdmitGenesisTreasury } from '../GenesisTreasuryRuntime'
+import { observeAndAdmitGenesisTreasury } from '../../src/GenesisTreasuryRuntime'
 
 describe('Genesis Treasury runtime composition', () => {
   it('admits a fresh observed Treasury value at the 4000 USDM threshold', async () => {
