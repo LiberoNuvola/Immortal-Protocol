@@ -134,3 +134,39 @@ Checked the workflow file and commit status for `2a76c164d0f1649b100124058591e67
 Trigger caveat: the workflow file currently exists on `work/immortal-green-closure`, not confirmed on the repository default branch. GitHub's manual `workflow_dispatch` requires the workflow to exist on the default branch to be dispatchable from the UI. Also, pushes created using `GITHUB_TOKEN` do not normally trigger further workflow runs. The available GitHub connector here exposes no workflow-dispatch action, so the next verification needs either an authorized manual dispatch after the workflow is available on the default branch, or a normal eligible push/PR event. Do not alter main/default branch solely to force this without checking the repository's established branch policy.
 
 G7 remains OPEN; G2 remains PARTIAL. No test, typecheck, or Preprod transaction success is claimed.
+
+
+## 2026-10-10 follow-up — isolated CI verified and production composition re-traced
+
+### G7 — isolated boundary CI result
+
+Verified GitHub Actions run:
+- Run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38072649520
+- Run ID: `38072649520`, run number 1
+- Head commit: `2a76c164d0f1649b100124058591e67b766ca444`
+- Conclusion: `success`
+- Job `adapter-boundary`: success
+- Steps `Install locked dependencies`, `Run Issue Admission boundary tests`, and `Typecheck adapter and boundary tests against locked Lucid`: all completed successfully.
+
+This closes the isolated validation slice for the adapter boundary code at that exact commit. It does not close full-suite validation, Preprod transaction execution, or the remaining admission authority gaps.
+
+### G1 — refined finding after tracing server-side composition
+
+The previous statement “production construction/wiring not found” was too broad when read as a claim that no concrete composition exists. The branch contains:
+- `relayer/issueAuthorityServer.js`, whose `createProvider()` loads `createPreprodAuthoritativeIssueProvider()`, initializes Blockfrost/Lucid for Preprod, and requires deployment/source configuration;
+- `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts`, which composes direct-USDM Pool observation, signed external authority evidence, and the canonical Haskell Issue decision provider;
+- `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts`, which calls the Haskell producer and binds its result into the runtime witness.
+
+**Revised status: implementation composition exists; live operational authority remains unverified / OPEN.** Repository inspection does not prove that this server is deployed/running, that the DApp is configured to call it for the first-user Issue, or that the external signed authority source and its EEV/control-state evidence satisfy the qualification contract. The research qualification remains explicit that the source/perimeter/horizon and authenticated control-state provenance must be qualified before live Issue. Do not label G1 closed on the basis of factories or server code alone.
+
+### Current gate status
+
+- G2: PARTIAL — body-input containment test and typecheck now pass in the isolated CI; extra inputs are not classified and finalized body identity is not bound to the witness.
+- G7: PARTIAL — this focused workflow is green at the exact commit above; full suite and Preprod evidence remain separate.
+- G1: OPEN — concrete server-side composition exists, but deployed invocation and authority qualification are not evidenced.
+- G3: OPEN — no governed Issue-specific freshness horizon/current-time authority established.
+- G4: OPEN — evidence digests are shape-checked, not recomputed from authenticated source bytes.
+- G5: OPEN — no independent ledger-inclusion / StateAfter reconciliation demonstrated.
+- G6: OPEN — adversarial coverage remains incomplete.
+
+Next safe work: verify the deployment/consumer configuration for `/issue-admission` and qualify the external authority contract from existing normative records; separately define the existing-policy-compatible final-body binding without inventing new economics or freshness thresholds.
