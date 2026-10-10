@@ -91,6 +91,14 @@ source-repository-package
     libs/non-integral
     libs/vector-map
 
+-- Pin the runner's required 1.9.1.0 binary package independently:
+-- the broader f649 snapshot contains cardano-ledger-binary 1.9.0.0.
+source-repository-package
+  type: git
+  location: https://github.com/IntersectMBO/cardano-ledger
+  tag: 048b78d2807ce9644dbe483c605625824f6be88f
+  subdir: libs/cardano-ledger-binary
+
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-ledger
