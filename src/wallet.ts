@@ -1,11 +1,8 @@
 import { Blockfrost, Lucid, type Network } from 'lucid-cardano'
 import { BLOCKFROST_PREPROD_URL, BLOCKFROST_PROJECT_ID } from './config'
 
-declare global {
-  interface Window {
-    cardano?: Record<string, Cip30Provider>
-  }
-}
+// Window.cardano is already declared by @lucid-evolution/core-types; a second
+// optional declaration conflicts with it (TS2687), so none is repeated here.
 
 export type Cip30Provider = {
   enable: () => Promise<any>
