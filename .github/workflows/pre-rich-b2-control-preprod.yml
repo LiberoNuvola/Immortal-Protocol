@@ -11,7 +11,7 @@ jobs:
     env:
       BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
       DEPLOYER_MNEMONIC: ${{ secrets.PREPROD_REVEAL_SEED }}
-      PREPROD_CONTROL_TOKEN_NAME_HEX: "4232434f4e54524f4c"
+      PREPROD_CONTROL_TOKEN_NAME_HEX: ${{ vars.PREPROD_CONTROL_TOKEN_NAME_HEX }}
     steps:
       - name: Checkout exact workflow head
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
           path: |
             plutus/out/preRichControlCarrier.plutus.json
             plutus/out/preRichControlCarrierMintPolicy.plutus.json
-          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
+          key: b2-control-plutus-${{ runner.os }}-${{ hashFiles('PRE-RICH/onchain/PreRichControlCarrier.hs', 'PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs', 'plutus/export/Export.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
 
       - name: Setup canonical Plutus CI
         if: steps.b2-artifact-cache.outputs.cache-hit != 'true'
