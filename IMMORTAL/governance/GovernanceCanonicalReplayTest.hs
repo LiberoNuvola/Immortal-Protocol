@@ -8,7 +8,7 @@ import GovernanceDecisionWitness
 import GovernanceConformanceWitness
 import GovernanceCanonicalizationWitness
 import GovernanceCommitment (commitmentDigestHex)
-import RulesetRegistry
+import RulesetRegistry hiding (rulesetVersion)
 
 ruleset :: RulesetRegistry
 ruleset = [RulesetDefinition 1 "ruleset-v1" 0 Nothing]
