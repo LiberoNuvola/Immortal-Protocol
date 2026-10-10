@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type UTxO } from 'lucid-cardano'
+import { type UTxO } from '@lucid-evolution/lucid'
 import { observePreprodB2Control } from '../../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 
 const policyId = 'a'.repeat(56)
