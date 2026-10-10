@@ -63,6 +63,7 @@ describe('Preprod Issue observation boundary', () => {
         b1PrizePoolAddress: 'pool',
         poolTokenUnit: 'c'.repeat(64) + '706f6f6c',
         poolUsdmValue: 500n,
+        observedAt: 123n,
         authoritativeStateProducer: async () => ({
           observationReference: 'observation:preprod:missing-input',
         }),
@@ -86,8 +87,25 @@ describe('Preprod Issue observation boundary', () => {
         b1PrizePoolAddress: 'pool',
         poolTokenUnit: 'c'.repeat(64) + '706f6f6c',
         poolUsdmValue: 500n,
+        observedAt: 123n,
         authoritativeStateProducer: async () => ({}),
       }),
     ).rejects.toThrow('Counter observation is ambiguous')
   })
+  it('fails closed when the source-authenticated observation timestamp is omitted', async () => {
+    await expect(
+      buildPreprodIssueDecisionContext({
+        lucid: lucidWith('counter', 'pool'),
+        counterAddress: 'counter',
+        b1PrizePoolAddress: 'pool',
+        poolTokenUnit: 'c'.repeat(64) + '706f6f6c',
+        poolUsdmValue: 500n,
+        authoritativeStateProducer: async () => ({
+          observationReference: 'observation:preprod:missing-time',
+          decisionInput: { authoritative: true },
+        }),
+      }),
+    ).rejects.toThrow('source-authenticated observedAt is required')
+  })
+
 })
