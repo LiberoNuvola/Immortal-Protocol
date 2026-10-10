@@ -6,6 +6,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "src/preRichHysteresis.ts"
+      - "src/__tests__/preRichHysteresis.test.ts"
       - "PRE-RICH/src/PreRichHysteresisBinding.ts"
       - "PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts"
       - ".github/workflows/pre-rich-hysteresis-conformance.yml"
@@ -14,6 +15,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "src/preRichHysteresis.ts"
+      - "src/__tests__/preRichHysteresis.test.ts"
       - "PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts"
       - "PRE-RICH/src/PreRichHysteresisBinding.ts"
       - "PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts"
@@ -36,4 +38,4 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Run PRE-RICH hysteresis conformance
-        run: npx vitest run PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
+        run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
