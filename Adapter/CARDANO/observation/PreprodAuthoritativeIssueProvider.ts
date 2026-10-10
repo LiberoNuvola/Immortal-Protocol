@@ -33,6 +33,7 @@ const { readPreprodIssueObservation } = require('../../../relayer/preprodIssueOb
     eevQualification: unknown
     protectedCapitalProvenance: unknown
     viabilityCertificate: unknown
+    carrierBindingSignature: string
     decisionInput: Record<string, unknown>
   }>
 }
@@ -236,6 +237,15 @@ export function createPreprodAuthoritativeIssueProvider(
         : { observedAt: options.currentObservedAt }),
     })
 
+    const carrierBindingSignature = String(
+      (observed as Record<string, unknown>).carrierBindingSignature ?? '',
+    ).trim()
+    if (!/^[0-9a-fA-F]{128}$/.test(carrierBindingSignature)) {
+      throw new Error(
+        'signed authority did not provide a valid V3 carrier binding signature',
+      )
+    }
+
     return {
       decisionInput: observed.decisionInput,
       decisionReference: String((observed.decisionInput as Record<string, unknown>).decisionReference),
@@ -250,6 +260,7 @@ export function createPreprodAuthoritativeIssueProvider(
         observed.protectedCapitalProvenance as HaskellIssueObservation['protectedCapitalProvenance'],
       viabilityCertificate:
         observed.viabilityCertificate as HaskellIssueObservation['viabilityCertificate'],
+      carrierBindingSignature,
       observedAt: observed.observedAt,
     }
   }
