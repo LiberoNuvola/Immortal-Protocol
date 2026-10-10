@@ -21,12 +21,15 @@ import { parseHeaderNumber } from "./scale.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-const RPC = process.env.MATERIOS_ARCHIVE_RPC;
-if (!RPC) {
-  throw new Error(
-    "MATERIOS_ARCHIVE_RPC is required and must point to a historical-state-capable Materios RPC",
-  );
-}
+const RPC = (() => {
+  const value = process.env.MATERIOS_ARCHIVE_RPC;
+  if (!value) {
+    throw new Error(
+      "MATERIOS_ARCHIVE_RPC is required and must point to a historical-state-capable Materios RPC",
+    );
+  }
+  return value;
+})();
 
 const BLOCK_HASH =
   process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH ??
