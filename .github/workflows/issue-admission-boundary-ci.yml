@@ -1,0 +1,50 @@
+name: Issue Admission Boundary CI
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "Adapter/CARDANO/runtime/**"
+      - "Adapter/CARDANO/observation/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/issue-admission-boundary-ci.yml"
+  pull_request:
+    paths:
+      - "Adapter/CARDANO/runtime/**"
+      - "Adapter/CARDANO/observation/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/issue-admission-boundary-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-admission-boundary-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  adapter-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact tested revision
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run Issue Admission boundary tests
+        run: npx vitest run Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts --reporter=verbose
+      - name: Typecheck adapter and boundary tests against locked Lucid
+        run: >-
+          npx tsc --noEmit --strict --target ES2020 --module ESNext
+          --moduleResolution bundler --skipLibCheck --types node,vitest/globals
+          Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts
+          Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts
