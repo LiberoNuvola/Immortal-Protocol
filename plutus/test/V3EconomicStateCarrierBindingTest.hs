@@ -16,6 +16,7 @@ import PlutusTx (toBuiltin)
 import V3EconomicStateCarrier
   ( V3EconomicStateAction (..)
   , bindingEnvelopeValid
+  , bindingAuthorityValid
   )
 
 bytes = toBuiltin . BSC.pack
@@ -29,6 +30,10 @@ valid =
     (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     (bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
     (bytes "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+    (bytes "3c1a0d94bc0024da6e8d1e0eaab96011b2fc07e2cbb074205a117bc90c0009b7e7339cd42d6cbd49a979918a71c98bf38ea550f241fede2615a4f504aa168a06")
+
+authorityPublicKey =
+  bytes "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664"
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -43,20 +48,15 @@ main = do
     "valid Issue decision envelope is accepted"
 
   assert
-    (bindingAuthorityValid
-      (bytes "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664")
-      valid)
+    (bindingAuthorityValid authorityPublicKey valid)
     "valid Issue authority signature is accepted"
 
   assert
-    (not (bindingAuthorityValid
-      (bytes "00")
-      valid))
+    (not (bindingAuthorityValid (bytes "00") valid))
     "invalid authority public-key size fails closed"
 
   assert
-    (not (bindingAuthorityValid
-      (bytes "79b5562e8fe654f94078b112e8a98ba7901f853ae695bed7e0e3910bad049664")
+    (not (bindingAuthorityValid authorityPublicKey
       (AdvanceV3State
         (bytes "Issue")
         (bytes "decision:issue:002")
@@ -75,7 +75,8 @@ main = do
         (bytes "observation:reveal:001")
         (bytes "pre")
         (bytes "action")
-        (bytes "post")))
+        (bytes "post")
+        (bytes "sig")))
     "Reveal envelope remains supported"
 
   assert
@@ -86,7 +87,8 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "action")
-        (bytes "post"))))
+        (bytes "post")
+        (bytes "sig"))))
     "unknown action class fails closed"
 
   assert
@@ -97,7 +99,8 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "action")
-        (bytes "post"))))
+        (bytes "post")
+        (bytes "sig"))))
     "missing decision reference fails closed"
 
   assert
@@ -108,7 +111,8 @@ main = do
         (bytes "observation")
         (bytes "")
         (bytes "action")
-        (bytes "post"))))
+        (bytes "post")
+        (bytes "sig"))))
     "missing pre-state hash fails closed"
 
   assert
@@ -119,7 +123,8 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "")
-        (bytes "post"))))
+        (bytes "post")
+        (bytes "sig"))))
     "missing action fingerprint fails closed"
 
   assert
@@ -130,7 +135,8 @@ main = do
         (bytes "observation")
         (bytes "pre")
         (bytes "action")
-        (bytes ""))))
+        (bytes "")
+        (bytes "sig"))))
     "missing post-state hash fails closed"
 
   putStrLn "ALL V3 CARRIER BINDING TESTS PASSED"
