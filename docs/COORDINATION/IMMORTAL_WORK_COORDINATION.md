@@ -24,6 +24,20 @@ Every front is tracked across six layers:
 
 A front is **CLOSED** only at the layer explicitly required by its acceptance criterion.
 
+## 0.1 REUSE OF VERIFIED COMPILED ARTIFACTS
+
+When a workflow requires a compiled Plutus artifact and that artifact is already available with the **same deterministic source/project/toolchain fingerprint**, the workflow **MUST reuse the verified artifact** instead of recompiling it.
+
+Operational sequence:
+
+1. **Cache hit:** restore the required artifact(s) directly, verify that the expected files exist, and continue with the conformance/deployment steps.
+2. **Cache miss:** bootstrap the canonical Plutus toolchain, compile/export the artifact(s), verify them, then persist them for reuse.
+3. A later test, observation or conformance failure **does not invalidate a successfully compiled artifact**. A retry may reuse it when the fingerprint remains identical.
+4. An artifact from a different source/project/toolchain fingerprint **MUST NOT be reused**, even when its filename or role is identical.
+5. Deployment evidence remains bound to the exact artifact identity/fingerprint required by the deployment gate; cache reuse is an execution optimization, not an authority change.
+
+The rule applies to compiled artifacts only. It does not permit skipping tests, evidence generation, exact-SHA checks, or deployment-specific certification.
+
 Never promote:
 - design → implementation;
 - implementation → proof;
