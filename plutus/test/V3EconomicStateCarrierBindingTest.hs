@@ -76,7 +76,7 @@ main = do
         (bytes "pre")
         (bytes "action")
         (bytes "post")
-        (bytes "sig")))
+        (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))
     "Reveal envelope remains supported"
 
   assert
