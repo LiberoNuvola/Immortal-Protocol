@@ -64,3 +64,33 @@ Tests must use real production boundaries where possible. Mocks can test fail-cl
 - Regression added but **not executed in this checkpoint**: omitted timestamp rejected by observation entrypoint.
 - Still open: prove timestamp authenticity at all production callers; mandatory freshness gate/policy; actual transaction-body/input binding; evidence-source digest recomputation; post-submit ledger reconciliation.
 - No test run, typecheck, workflow run, or Preprod transaction was executed as part of this patch.
+
+## 2026-10-10 follow-up — production caller and candidate transaction lifecycle
+
+### G1a — timestamp/source caller trace
+
+- relayer/preprodIssueObservation.js has one discovered callsite in its own test file; repository code search did not find a production invocation of buildPreprodIssueDecisionContext.
+- relayer/preprodIssueObservationProvider.js is a factory. Its injected readObservation supplies observedAt, but repository inspection did not find a production construction/wiring of this provider into a live Issue admission service.
+- relayer/issueAdmissionProvider.js is also a transport/factory. It checks shape and correlates the observation reference/liquidity value; it does not independently authenticate the clock or enforce a freshness horizon.
+- The qualification note docs/research/ISSUE-AUTHORITY-PRODUCER-QUALIFICATION-2026-09-28.md requires fresh liquidity under a caller-supplied horizon, exact Pool binding, and a qualified authoritative source. It does not define a concrete Issue max-age or authoritative current-time source.
+- The adaptive advertising freshness rules are PRE-RICH advertising-specific and must not be transplanted into Issue admission.
+
+**G1a result: OPEN / production authority wiring not found.** The explicit timestamp argument patch prevents an implicit local clock fallback in the observation helper, but there is no verified production caller whose timestamp provenance can be certified. Do not treat the parameter name or an injected function as proof of authenticity.
+
+### G2 — completed Lucid candidate transaction
+
+src/mint.ts builds the Issue transaction, calls tx.complete(), and only then invokes CardanoExecutionAdapter.submitEconomic(tx, admission, inputReferences, liquiditySourceReferences, 'Issue'). The declared references are assembled separately from the known Counter, Pool, and optional carrier UTxOs. The adapter still accepts tx: unknown and passes it to signTx after validating only the separate reference list.
+
+This narrows the implementation target: inspect the completed Lucid transaction body at the adapter boundary, derive its actual spending input references using the supported Lucid Evolution/CML API, and compare them with the admission-bound references before signing. The exact equality policy must account for the protocol's declared candidate inputs and any wallet/fee inputs introduced during completion; do not assume the pre-completion list is the complete body. Also bind the finalized body (or canonical body hash) to the admission/revalidation step so a different candidate cannot reuse the witness.
+
+**No adapter patch applied yet:** the supported completed-transaction API and its return shape must be verified against the repository's installed Lucid Evolution version and existing tests before coding. Do not guess method names or add a runtime cast that only makes the typecheck look green.
+
+### Freshness policy reconciliation
+
+The source-of-truth search found the general IMMORTAL gate explicitly says it does not manufacture freshness (IMMORTAL/kernel/EconomicGate.hs), while the Issue producer qualification calls for freshness under an adopted evidence contract but leaves the concrete source/horizon unqualified. The existing helper intentionally accepts both currentObservedAt and maxAge from its caller. No current Issue-specific governed horizon/current-time authority was identified in the inspected material.
+
+**G3 result: OPEN / policy and source unresolved.** Keep live Issue fail-closed until an existing normative/profile/deployment decision identifies the authority and horizon. Do not import the advertising horizon or invent a constant.
+
+### Current execution status
+
+This follow-up is source inspection only. No tests, typecheck, workflow, signing, or Preprod transaction was run. G1a/G2/G3 remain open.
