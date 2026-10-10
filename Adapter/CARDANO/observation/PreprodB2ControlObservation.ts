@@ -1,4 +1,4 @@
-import { Constr, Data, type UTxO } from 'lucid-cardano'
+import { Constr, Data, type UTxO } from '@lucid-evolution/lucid'
 
 export type PreprodB2ControlState = {
   readonly currentActiveClass: bigint
