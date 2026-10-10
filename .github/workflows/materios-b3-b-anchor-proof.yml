@@ -46,6 +46,11 @@ jobs:
             exit 1
           fi
 
+      - name: Preflight historical archive RPC
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+        run: node audit/materios-b3/archive-rpc-preflight.mjs
+
       - name: Capture exact historical anchor witness
         env:
           MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
