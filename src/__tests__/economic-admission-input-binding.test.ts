@@ -110,7 +110,7 @@ describe('Economic admission provenance', () => {
         [TX_A + '#0'],
         [TX_A + '#0'],
       ),
-      /actionFingerprint is required/,
+      /actionFingerprint must be a 32-byte hex digest/,
     )
 
     assert.throws(
