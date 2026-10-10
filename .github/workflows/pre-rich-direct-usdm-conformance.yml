@@ -23,6 +23,9 @@ on:
       - "src/preRichIssueAdmissionBridge.ts"
       - "src/__tests__/preRichIssueAdmissionBridge.test.ts"
       - "src/mint.ts"
+      - "relayer/preprodIssueObservationReader.js"
+      - "relayer/preprodIssueObservationReader.test.js"
+      - "relayer/preprodIssueAuthorityEnvelope.test.js"
       - ".github/workflows/pre-rich-direct-usdm-conformance.yml"
   workflow_dispatch:
 
