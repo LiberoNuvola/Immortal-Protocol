@@ -1278,15 +1278,15 @@ export async function mintSerialNFT(
     throw new Error('Authenticated Issue requires the exact B2 control reference before admission')
   }
 
+  const issueIntent: IssueIntent = {
+    action: 'Issue',
+    classId: opts.issueClassEvidence.classId,
+    price: opts.issueClassEvidence.priceReferenceUnits,
+  }
+
   let economicAdmission = opts.economicAdmission
 
   if (!economicAdmission && opts.authoritativeIssueAdmissionProvider) {
-    const issueIntent: IssueIntent = {
-      action: 'Issue',
-      classId: opts.issueClassEvidence.classId,
-      price: opts.issueClassEvidence.priceReferenceUnits,
-    }
-
     economicAdmission = await obtainAuthoritativeIssueAdmission(
       opts.authoritativeIssueAdmissionProvider,
       {
@@ -1311,6 +1311,19 @@ export async function mintSerialNFT(
     )
   }
 
+  if (economicAdmission.actionClass !== issueIntent.action) {
+    throw new Error('Economic admission action does not match the requested Issue intent')
+  }
+
+  const authoritativeAdmission = economicAdmission as AuthoritativeIssueAdmissionWitness
+
+  if (
+    authoritativeAdmission.issueClassId !== issueIntent.classId ||
+    authoritativeAdmission.issuePrice !== issueIntent.price
+  ) {
+    throw new Error('Economic admission coordinates do not match the requested Issue intent')
+  }
+
   const issuedAtMs = BigInt(Date.now())
 
   if (!opts.expiryPolicy) {
@@ -1319,7 +1332,6 @@ export async function mintSerialNFT(
     )
   }
 
-  const authoritativeAdmission = economicAdmission as AuthoritativeIssueAdmissionWitness
   const expiryIssuanceState = opts.expiryIssuanceState ?? (
     requireCarrierBinding && carrierObservation
       ? {
