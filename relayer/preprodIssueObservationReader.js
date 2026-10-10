@@ -413,6 +413,14 @@ async function readPreprodIssueObservation({
     throw new Error('authenticated authority source did not provide observedAt')
   }
 
+  const carrierBindingSignature = required(
+    authoritativeInputs.carrierBindingSignature,
+    'carrierBindingSignature',
+  )
+  if (!/^[0-9a-fA-F]{128}$/.test(carrierBindingSignature)) {
+    throw new Error('authenticated authority carrierBindingSignature is invalid')
+  }
+
   const protectedCapitalProvenance = authoritativeInputs.protectedCapitalProvenance
   if (!protectedCapitalProvenance || typeof protectedCapitalProvenance !== 'object') {
     throw new Error('authenticated authority source did not provide ProtectedCapital provenance')
@@ -452,6 +460,7 @@ async function readPreprodIssueObservation({
     protectedCapitalProvenance: authoritativeInputs.protectedCapitalProvenance,
     eevQualification: authoritativeInputs.eevQualification,
     viabilityCertificate: authoritativeInputs.viabilityCertificate,
+    carrierBindingSignature,
     poolState,
     decisionInput: {
       preState: carrier.state,
