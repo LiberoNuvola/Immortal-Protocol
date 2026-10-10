@@ -151,10 +151,10 @@ jobs:
         run: node audit/pre-genesis-genesis/stress-lab.mjs
 
       - name: Execute real PRE-GENESIS -> GENESIS transition
-        run: node --import tsx/esm audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts
+        run: node --experimental-strip-types audit/pre-genesis-genesis/genesis-carrier-ledger-trace.ts
 
       - name: Bind Genesis evidence to generated artifact hashes
-        run: node --import tsx/esm audit/pre-genesis-genesis/record-artifact-provenance.ts
+        run: node --experimental-strip-types audit/pre-genesis-genesis/record-artifact-provenance.ts
 
       - name: Upload Genesis ledger evidence
         if: always()
