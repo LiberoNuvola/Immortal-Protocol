@@ -5,14 +5,19 @@ on:
     branches:
       - work/immortal-green-closure
     paths:
+      - '.github/workflows/pre-rich-adaptive-advertising.yml'
       - 'src/adSlots.ts'
       - 'src/__tests__/adSlots.test.ts'
       - 'relayer/attentionObservation.js'
-      - 'relayer/__tests__/attentionObservation.test.js relayer/__tests__/attentionAuthority.test.js relayer/__tests__/attentionSignature.test.js relayer/__tests__/attentionProducerRegistry.test.js'
+      - 'relayer/__tests__/attentionObservation.test.js'
+      - 'relayer/__tests__/attentionAuthority.test.js'
+      - 'relayer/__tests__/attentionSignature.test.js'
+      - 'relayer/__tests__/attentionProducerRegistry.test.js'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
     paths:
+      - '.github/workflows/pre-rich-adaptive-advertising.yml'
       - 'src/adSlots.ts'
       - 'src/__tests__/adSlots.test.ts'
       - 'relayer/attentionObservation.js'
