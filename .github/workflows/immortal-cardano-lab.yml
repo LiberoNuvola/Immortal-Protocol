@@ -157,6 +157,9 @@ jobs:
       - name: Execute real FundTreasury canonical Oracle valuation trace
         run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
 
+      - name: Execute real TicketIssued 500x solvency boundary trace
+        run: node --import tsx/esm audit/cardano-integration/ticket-issued-solvency-boundary-trace.ts
+
       - name: Execute real economic Expire transition trace
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
