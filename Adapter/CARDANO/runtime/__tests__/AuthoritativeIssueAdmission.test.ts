@@ -139,6 +139,7 @@ function witness(): EconomicAdmissionWitness & {
 }
 
 const inputs = {
+  action: 'Issue',
   counterInputReference: counterRef,
   controlStateReference: controlRef,
   poolInputReference: poolRef,
