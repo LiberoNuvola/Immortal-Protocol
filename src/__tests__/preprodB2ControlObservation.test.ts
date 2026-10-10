@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { Constr, Data, type UTxO } from 'lucid-cardano'
+import { type UTxO } from 'lucid-cardano'
 import { observePreprodB2Control } from '../../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 
 const policyId = 'a'.repeat(56)
 const tokenNameHex = 'b'.repeat(64)
 const unit = policyId + tokenNameHex
 const address = 'addr_test1_b2_control'
+
+function cborInt(n: bigint): string {
+  if (n >= 0n && n < 24n) return n.toString(16).padStart(2, '0')
+  throw new Error('test datum integer out of compact CBOR range')
+}
 
 function datum(
   current = 0n,
@@ -15,15 +20,14 @@ function datum(
   policy = policyId,
   token = tokenNameHex,
 ): string {
-  return Data.to(
-    new Constr(0, [
-      current,
-      highest,
-      stateVersion,
-      transitionNonce,
-      policy,
-      token,
-    ]),
+  return (
+    'd87986' +
+    cborInt(current) +
+    cborInt(highest) +
+    cborInt(stateVersion) +
+    cborInt(transitionNonce) +
+    '581c' + policy +
+    '5820' + token
   )
 }
 
