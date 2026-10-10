@@ -41,7 +41,10 @@ const tx = await lucid
   .mintAssets({ [unit]: 1n }, Data.void())
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
-  .complete({ localUPLCEval: false })
+  // Yaci Store does not expose Lucid's expected Blockfrost evaluateTx response.
+  // Use Lucid's local evaluator for balancing; the submitted transaction is still
+  // independently accepted or rejected by the native Yaci/Cardano ledger below.
+  .complete({ localUPLCEval: true })
 
 const signed = await tx.sign.withWallet().complete()
 const txHash = await signed.submit()
