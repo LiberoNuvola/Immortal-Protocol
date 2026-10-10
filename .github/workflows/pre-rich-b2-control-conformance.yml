@@ -4,6 +4,20 @@ on:
   push:
     branches:
       - work/immortal-green-closure
+    paths:
+      - ".github/workflows/pre-rich-b2-control-conformance.yml"
+      - ".github/actions/setup-plutus/**"
+      - "plutus/**"
+      - "src/**"
+      - "Adapter/**"
+      - "relayer/**"
+      - "package.json"
+      - "package-lock.json"
+      - "index.html"
+      - "vite.config.*"
+      - "tsconfig*.json"
+      - "public/**"
+      - "assets/**"
   workflow_dispatch:
 
 jobs:
