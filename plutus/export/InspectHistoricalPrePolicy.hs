@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import qualified Data.ByteString as BS
@@ -17,10 +19,7 @@ candidateTxHash = "f6874f42a880915f7d79d6b23ecc55eb378b5fd8847c4004ed1c98a2eba70
 
 main :: IO ()
 main = do
-  let (decoded, rest) = B16.decode (TE.encodeUtf8 historicalPolicyHex)
-  if not (BS.null rest)
-    then fail "historical PRE policy hex contains non-hex suffix"
-    else pure ()
+  decoded <- either fail pure (B16.decode (TE.encodeUtf8 historicalPolicyHex))
 
   if BS.length decoded /= 381
     then fail ("unexpected serialized witness length: " <> show (BS.length decoded))
