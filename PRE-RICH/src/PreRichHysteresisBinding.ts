@@ -41,6 +41,10 @@ export function assertPreRichControlMatches(
   observedControl: ObservedPreRichControl,
   policy: PreRichHysteresisPolicy = PRE_RICH_HYSTERESIS_V1,
 ): HysteresisResult {
+  // Validate historical invariants first so an impossible regression is
+  // classified as such, rather than being obscured by the equality check.
+  assertPreRichControlHistory(previousControl, observedControl)
+
   const expected = derivePreRichControl(
     capacity,
     classes,
@@ -57,10 +61,6 @@ export function assertPreRichControlMatches(
       'PRE-RICH control-state mismatch: observed control is not the deterministic hysteresis result',
     )
   }
-
-  // Apply the independent historical-control invariants to the same result
-  // before exposing it as an admissible observation.
-  assertPreRichControlHistory(previousControl, observedControl)
 
   return expected
 }
