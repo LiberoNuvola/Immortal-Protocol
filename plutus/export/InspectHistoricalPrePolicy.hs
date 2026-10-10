@@ -5,7 +5,7 @@ import qualified Data.ByteString.Short as SBS
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text as T
-import PlutusLedgerApi.Common.SerialisedScript (uncheckedDeserialiseUPLC)
+import PlutusLedgerApi.Common (uncheckedDeserialiseUPLC)
 
 historicalPolicyHex :: T.Text
 historicalPolicyHex =
