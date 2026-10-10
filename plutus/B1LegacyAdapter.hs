@@ -117,8 +117,8 @@ v3ToLegacyB1 totalLiquidity prizeHash s
   | v3ReserveProtection s /= 0 = Left V3ContainsUnsupportedProtectedCapital
   | v3MandatoryFutureCosts s /= 0 = Left V3ContainsUnsupportedProtectedCapital
   | jsLockedAmount (v3Jackpot s) /= 0 = Left V3ContainsUnsupportedJackpotState
-  | ecsHighestClassEverActivated (v3Control s)
-      /= ecsCurrentActiveClass (v3Control s) =
+  | ecsCurrentActiveClass (v3Control s) /= 0
+      || ecsHighestClassEverActivated (v3Control s) /= 0 =
       Left LegacyMissingHistoricalControl
   | not (EconomicKernel.conservationInvariant preRichEconomicProfileV1 s) =
       Left LegacyAggregateMismatch

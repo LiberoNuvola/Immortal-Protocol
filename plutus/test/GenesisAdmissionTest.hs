@@ -2,7 +2,7 @@
 
 module Main where
 
-import Prelude (Bool(..), IO, String, error, putStrLn, (==))
+import Prelude (Bool(..), IO, Maybe (Just), String, error, putStrLn, (==), (++))
 import PreRichGenesisAdmission
 
 assert :: Bool -> String -> IO ()

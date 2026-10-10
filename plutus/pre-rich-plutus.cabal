@@ -170,8 +170,12 @@ test-suite governance-canonical-replay-tests
     hs-source-dirs: ../IMMORTAL/governance
     main-is: GovernanceCanonicalReplayTest.hs
     build-depends:
+
         base ^>=4.18.2,
         text,
+        bytestring,
+        base16-bytestring,
+        cryptohash-sha256,
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -190,7 +194,7 @@ test-suite economic-admission-tests
     main-is: EconomicAdmissionTest.hs
     build-depends:
         base ^>=4.18.2,
-        text,
+
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -232,7 +236,7 @@ test-suite legacy-adapter-tests
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
         plutus-tx-plugin ^>=1.67.0.0,
-        text,
+
         pre-rich-plutus
     default-language: Haskell2010
 
@@ -271,7 +275,7 @@ test-suite genesis-admission-tests
     main-is: GenesisAdmissionTest.hs
     build-depends:
         base ^>=4.18.2,
-        text,
+
         pre-rich-plutus
     default-language: Haskell2010
 

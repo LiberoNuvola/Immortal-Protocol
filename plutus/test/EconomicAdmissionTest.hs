@@ -10,6 +10,7 @@ import Prelude
   , error
   , putStrLn
   , (==)
+  , (++)
   )
 
 import EconomicProfile
@@ -18,6 +19,7 @@ import EconomicTransitionV3
 import PreRichEconomicAdmission
 import PreRichEconomicProfile
 import UniversalEconomicKernel
+import UniversalEconomicState (UniversalEconomicState (..))
 
 profile :: EconomicProfile
 profile = preRichEconomicProfileV1

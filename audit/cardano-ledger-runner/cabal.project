@@ -13,9 +13,9 @@ packages: .
 tests: False
 benchmarks: False
 
--- Use the published cardano-crypto-class 2.5.1.0 source revision.
--- The newer 8c9ca snapshot keeps the same package version but fails to resolve
--- Leios's FixedSizeCodec (SigDSIGN) constraint in this mixed ledger snapshot.
+-- Keep crypto-class, binary, Praos, and Leios on one Cardano Base source snapshot.
+-- Some package versions match across commits, but mixing those source revisions
+-- left Leios's SigDSIGN FixedSizeCodec instance unavailable to the ledger runner.
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-base
