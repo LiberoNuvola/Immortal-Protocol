@@ -102,9 +102,8 @@ jobs:
           mkdir -p /tmp/materios-runtime
           /tmp/materios-bin/materios-node \
             --chain /tmp/materios-bin/chain-spec-raw.json \
-            --base-path /tmp/materios-snapshot/data \
+            --base-path /tmp/materios-snapshot \
             --state-pruning archive \
-            --pruning archive \
             --rpc-port 9944 \
             --rpc-methods unsafe \
             --name "immortal-b3-snapshot-probe" \
