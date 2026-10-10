@@ -11,6 +11,7 @@ on:
     paths:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
       - "poc/materios-checkpoint/src/capture-finalized.ts"
+      - "poc/materios-checkpoint/src/capture-anchor.ts"
       - "poc/materios-checkpoint/src/executionProof.ts"
       - "poc/materios-checkpoint/src/rpc.ts"
       - "poc/materios-checkpoint/test-canonicalEvidence.ts"
@@ -44,11 +45,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-audit --no-fund --prefix poc/materios-checkpoint
+      - run: npm ci --prefix poc/materios-checkpoint --ignore-scripts
       - run: npx --prefix poc/materios-checkpoint tsx --test poc/materios-checkpoint/test-canonicalEvidence.ts
       - run: npm run test:execution-proof --prefix poc/materios-checkpoint
       - run: npm run test:rpc-b3 --prefix poc/materios-checkpoint
       - run: npm run typecheck --prefix poc/materios-checkpoint
-      - run: npm install --no-audit --no-fund --prefix poc/materios-grandpa
+      - run: npm ci --prefix poc/materios-grandpa --ignore-scripts
       - run: npm test --prefix poc/materios-grandpa
       - run: npm run build --prefix poc/materios-grandpa
