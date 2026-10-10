@@ -96,5 +96,5 @@ const context = await producer({
 
 assert.equal(context.decisionInput.classId, 0n)
 assert.equal(context.decisionInput.availableExecutableLiquidity, 100_000n)
-assert.equal(context.controlStateReference, 'cardano:tx/' + 'e'.repeat(64) + '#3')
+assert.equal(context.controlStateReference, 'e'.repeat(64) + '#3')
 console.log('preprodIssueAdmissionProvider: PASS')
