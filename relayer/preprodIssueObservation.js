@@ -69,8 +69,20 @@ async function buildPreprodIssueDecisionContext({
   poolTokenUnit,
   poolUsdmValue,
   authoritativeStateProducer,
-  observedAt = BigInt(Date.now()),
+  observedAt,
 }) {
+  if (observedAt === undefined || observedAt === null) {
+    throw new Error('source-authenticated observedAt is required')
+  }
+  let authenticatedObservedAt
+  try {
+    authenticatedObservedAt = BigInt(observedAt)
+  } catch {
+    throw new Error('source-authenticated observedAt must be an integer timestamp')
+  }
+  if (authenticatedObservedAt < 0n) {
+    throw new Error('source-authenticated observedAt must be non-negative')
+  }
   if (!lucid) throw new Error('lucid is required')
   required(counterAddress, 'counterAddress')
   required(b1PrizePoolAddress, 'b1PrizePoolAddress')
@@ -125,7 +137,7 @@ async function buildPreprodIssueDecisionContext({
     poolState,
     counterInputReference,
     poolInputReference,
-    observedAt: BigInt(observedAt),
+    observedAt: authenticatedObservedAt,
     poolUsdmValue: authenticatedPoolUsdmValue,
   })
 
@@ -142,7 +154,7 @@ async function buildPreprodIssueDecisionContext({
   return {
     decisionInput: context.decisionInput,
     observationReference: context.observationReference,
-    observedAt: BigInt(observedAt),
+    observedAt: authenticatedObservedAt,
     runtimeInputs: {
       counterInputReference,
       poolInputReference,
