@@ -103,6 +103,7 @@ jobs:
           printf '%s\n' '[]' > /tmp/materios-runtime/registrations.json
           export USE_MAIN_CHAIN_FOLLOWER_MOCK=true
           export MOCK_REGISTRATIONS_FILE=/tmp/materios-runtime/registrations.json
+          export MAIN_CHAIN_FOLLOWER_MOCK_REGISTRATIONS_FILE=/tmp/materios-runtime/registrations.json
           export MC__FIRST_EPOCH_TIMESTAMP_MILLIS=1596059091000
           export MC__EPOCH_DURATION_MILLIS=432000000
           export MC__FIRST_EPOCH_NUMBER=208
