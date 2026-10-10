@@ -83,7 +83,7 @@ describe('PRE-RICH non-custodial snapshot reward calculator', () => {
         { ...snapshot, balances: [{ beneficiaryId: 'alice', balance: 0n }] },
         treasury,
       ),
-    ).toThrow('Reward treasury has no eligible weight')
+    ).toThrow('Treasury staking balance has no eligible weight')
   })
 
   it('rejects epoch and asset mismatches', () => {
