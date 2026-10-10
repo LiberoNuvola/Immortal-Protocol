@@ -161,32 +161,33 @@ try {
   if (!String(error.message).includes('schema is invalid')) throw error
 }
 
-verifySignedIssueAuthorityEnvelope(
-  {
-    payload: {
-      ...envelope.payload,
-      carrierBindingSignature: envelope.payload.carrierBindingSignature.replace(/^../, 'ff'),
+try {
+  verifySignedIssueAuthorityEnvelope(
+    {
+      payload: {
+        ...envelope.payload,
+        carrierBindingSignature: envelope.payload.carrierBindingSignature.replace(/^../, 'ff'),
+      },
+      signature: envelope.signature,
     },
-    signature: envelope.signature,
-  },
-  publicKeyPem,
-  {
-    counterInputReference: refs.counter,
-    poolInputReference: refs.pool,
-    carrierStateReference: refs.carrier,
-    classId: 0n,
-    price: 1n,
-    directUsdmUnit: 'd'.repeat(56),
-    observationReference: 'observation-1',
-    observedAt: witness.executableLiquidityObservation.observedAt,
-    currentObservedAt: now,
-  },
-).then(
-  () => { throw new Error('FAIL: tampered carrier binding signature was accepted') },
-  (error) => {
-    if (!String(error.message).includes('carrier-binding signature')) throw error
-  },
-)
+    publicKeyPem,
+    {
+      counterInputReference: refs.counter,
+      controlStateReference: refs.control,
+      poolInputReference: refs.pool,
+      carrierStateReference: refs.carrier,
+      classId: 0n,
+      price: 1n,
+      directUsdmUnit: 'd'.repeat(56),
+      observationReference: 'observation-1',
+      observedAt: witness.executableLiquidityObservation.observedAt,
+      currentObservedAt: now,
+    },
+  )
+  throw new Error('FAIL: tampered carrier binding signature was accepted')
+} catch (error) {
+  if (!String(error.message).includes('carrier-binding signature')) throw error
+}
 
 try {
   signIssueAuthorityEnvelope({
