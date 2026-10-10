@@ -17,7 +17,8 @@ on:
       - "src/gameFlow.ts"
       - "package.json"
       - "package-lock.json"
-      - ".github/workflows/pre-rich-emulator-reveal.yml"\n      - ".github/actions/setup-plutus/**"
+      - ".github/workflows/pre-rich-emulator-reveal.yml"
+      - ".github/actions/setup-plutus/**"
   workflow_dispatch:
 
 jobs:
