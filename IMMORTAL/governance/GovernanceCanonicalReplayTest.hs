@@ -301,8 +301,9 @@ main = do
       "ADOPTION_RECORDED follows finalized Accepted projection"
   putStrLn "GOV-28 ADOPTION RECORD CHECK PASSED"
 
-  assert "decision witness ruleset must match event ruleset"
+  assert
     (not (eventSchemaValid mismatchedDecisionRulesetEvent))
+    "decision witness ruleset must match event ruleset"
 
   let conformanceRecord = ConformanceRecord
         { conformanceProposalId = 7
@@ -326,8 +327,9 @@ main = do
               PayloadConformanceRecorded
                 (conformanceRecord { conformanceRulesetVersion = 2 })
           }
-  assert "conformance witness ruleset must match event ruleset"
+  assert
     (not (eventSchemaValid mismatchedConformanceEvent))
+    "conformance witness ruleset must match event ruleset"
   let adoptedState =
         GovernanceState 1
           [finalizationProposal { proposalStatus = Adopted, finalizationAt = Just 259400 }]
