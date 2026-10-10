@@ -339,7 +339,7 @@ bindingAuthorityValid authorityPublicKey action =
 bindingEnvelopeValid :: V3EconomicStateAction -> Bool
 bindingEnvelopeValid action =
   case action of
-    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash _ ->
+    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash signature ->
          (actionClass == "Issue" || actionClass == "Reveal" || actionClass == "Claim" || actionClass == "Expire")
       && bindingFieldValid decisionRef
       && bindingFieldValid observationRef
