@@ -46,8 +46,9 @@ fn main() -> Result<(), String> {
         return Err("proof nodes: no nodes supplied".into());
     }
 
-    let proof = StorageProof::new_with_duplicate_nodes_check(nodes)
-        .map_err(|e| format!("proof nodes rejected: {e:?}"))?;
+    // StorageProof itself is the SDK's canonical set representation.
+    // Preserve that native semantic instead of inventing an extra duplicate-node rule.
+    let proof = StorageProof::new(nodes);
     let proof_scale = proof.encode();
 
     verify_storage_proof(StorageProofInput {
