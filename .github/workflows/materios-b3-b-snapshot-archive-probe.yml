@@ -50,6 +50,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/materios-snapshot
+          echo "=== disk before snapshot ==="
+          df -h /tmp
+          echo "=== inode before snapshot ==="
+          df -ih /tmp
           echo "Downloading snapshot head=${{ steps.manifest.outputs.head }}"
           curl -fL --retry 4 --retry-delay 3 --progress-bar \
             "${{ steps.manifest.outputs.url }}" \
@@ -57,7 +61,16 @@ jobs:
           printf '%s  %s\n' \
             "${{ steps.manifest.outputs.sha256 }}" \
             /tmp/materios-snapshot/snapshot.tar.gz | sha256sum -c -
-          tar -xzf /tmp/materios-snapshot/snapshot.tar.gz -C /tmp/materios-snapshot
+          echo "=== extracting snapshot ==="
+          set +e
+          tar -xzf /tmp/materios-snapshot/snapshot.tar.gz -C /tmp/materios-snapshot 2>&1 | tail -n 100
+          TAR_RC=${PIPESTATUS[0]}
+          set -e
+          echo "tar_exit_code=${TAR_RC}"
+          echo "=== disk after extraction attempt ==="
+          df -h /tmp || true
+          df -ih /tmp || true
+          test "${TAR_RC}" -eq 0
           rm -f /tmp/materios-snapshot/snapshot.tar.gz
           test -d /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
           du -sh /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
