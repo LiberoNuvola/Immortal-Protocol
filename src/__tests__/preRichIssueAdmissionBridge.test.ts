@@ -179,6 +179,7 @@ const canonicalEvidence = {
 }
 
 const inputs = {
+  action: 'Issue',
   counterInputReference: counter,
   controlStateReference: control,
   poolInputReference: pool,
