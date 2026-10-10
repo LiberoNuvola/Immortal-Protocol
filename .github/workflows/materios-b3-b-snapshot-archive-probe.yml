@@ -72,8 +72,13 @@ jobs:
           df -ih /tmp || true
           test "${TAR_RC}" -eq 0
           rm -f /tmp/materios-snapshot/snapshot.tar.gz
-          test -d /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
-          du -sh /tmp/materios-snapshot/data/chains/materios_preprod_v6/db
+          echo "=== db roots ==="
+          find /tmp/materios-snapshot -type d -path "*/chains/materios_preprod_v6/db" -print
+          DB_PATH=$(find /tmp/materios-snapshot -type d -path "*/chains/materios_preprod_v6/db" -print -quit)
+          test -n "${DB_PATH}"
+          echo "db_path=${DB_PATH}"
+          du -sh "${DB_PATH}"
+          printf "%s" "${DB_PATH}" > /tmp/materios-snapshot/db-path.txt
 
       - name: Download chain spec and node binary
         shell: bash
