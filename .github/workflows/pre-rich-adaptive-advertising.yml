@@ -31,4 +31,6 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Run adaptive advertising tests
-        run: npx vitest run src/__tests__/adSlots.test.ts src/__tests__/adPricingDecision.test.ts src/__tests__/adCampaignAdmission.test.ts src/__tests__/adSettlement.test.ts relayer/__tests__/attentionObservation.test.js
+        run: |
+          npx vitest run src/__tests__/adSlots.test.ts src/__tests__/adPricingDecision.test.ts src/__tests__/adCampaignAdmission.test.ts src/__tests__/adSettlement.test.ts
+          node --test relayer/__tests__/attentionObservation.test.js

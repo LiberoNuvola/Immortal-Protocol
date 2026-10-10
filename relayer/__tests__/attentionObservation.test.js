@@ -1,4 +1,5 @@
-const { describe, expect, it } = require('vitest')
+const { describe, it } = require('node:test')
+const assert = require('node:assert/strict')
 const {
   AttentionObservationAggregator,
   buildAttentionObservationEnvelope,
@@ -18,18 +19,18 @@ describe('attention observation producer', () => {
     })
 
     const snapshot = aggregator.snapshot(60_003)
-    expect(snapshot.uniqueVisitorBuckets).toBe(2)
-    expect(snapshot.observedVisits).toBe(3)
-    expect(snapshot).not.toHaveProperty('ip')
-    expect(snapshot).not.toHaveProperty('walletAddress')
-    expect(snapshot).not.toHaveProperty('userAgent')
+    assert.equal(snapshot.uniqueVisitorBuckets, 2)
+    assert.equal(snapshot.observedVisits, 3)
+    assert.equal(Object.hasOwn(snapshot, 'ip'), false)
+    assert.equal(Object.hasOwn(snapshot, 'walletAddress'), false)
+    assert.equal(Object.hasOwn(snapshot, 'userAgent'), false)
   })
 
   it('fails closed on malformed visitor signals', () => {
     const aggregator = new AttentionObservationAggregator()
-    expect(() => aggregator.record({ bucketId: '' })).toThrow()
-    expect(() => AttentionObservationAggregator.normalizeBucket('', 'salt')).toThrow()
-    expect(() => AttentionObservationAggregator.normalizeBucket('x', '')).toThrow()
+    assert.throws(() => aggregator.record({ bucketId: '' }))
+    assert.throws(() => AttentionObservationAggregator.normalizeBucket('', 'salt'))
+    assert.throws(() => AttentionObservationAggregator.normalizeBucket('x', ''))
   })
 
   it('produces an explicit application observation envelope', () => {
@@ -45,8 +46,8 @@ describe('attention observation producer', () => {
       trajectoryConfidence: 0.5,
     })
 
-    expect(envelope.source).toBe('attention-aggregator-v0.1')
-    expect(envelope.observationWindowMs).toBe(60_000)
-    expect(envelope.trajectoryConfidence).toBe(0.5)
+    assert.equal(envelope.source, 'attention-aggregator-v0.1')
+    assert.equal(envelope.observationWindowMs, 60_000)
+    assert.equal(envelope.trajectoryConfidence, 0.5)
   })
 })
