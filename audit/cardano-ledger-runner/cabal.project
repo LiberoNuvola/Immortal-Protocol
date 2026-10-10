@@ -73,13 +73,6 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/IntersectMBO/cardano-ledger
-  tag: 048b78d2807ce9644dbe483c605625824f6be88f
-  subdir:
-    libs/cardano-ledger-binary
-
-source-repository-package
-  type: git
-  location: https://github.com/IntersectMBO/cardano-ledger
   tag: f649f9751074d2ab3de033fc3912f29c9862c1f5
   subdir:
     eras/byron/crypto
