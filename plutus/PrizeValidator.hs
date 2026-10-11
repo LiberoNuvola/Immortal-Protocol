@@ -866,10 +866,17 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
     maybeOwner =
       ticketOwnerPkh ticketCs ticketTn (txInfoInputs info)
 
-    ownerSigned = rawOwnerSigned ticketCs ticketTn rawCtx
-
     rawOwner =
       rawTicketOwnerHash ticketCs ticketTn rawCtx
+
+    -- Reuse the already-derived owner instead of traversing raw inputs twice.
+    ownerSigned =
+      case rawOwner of
+        Nothing -> False
+        Just ownerHash ->
+          case rawSignatories rawCtx of
+            Nothing -> False
+            Just rawSigs -> rawContainsData ownerHash rawSigs
 
     -- C-03: Oracle-based settlement verification. Sum every output to the
     -- ticket owner's enterprise address by comparing the raw Plutus Data
