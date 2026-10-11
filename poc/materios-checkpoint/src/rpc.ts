@@ -316,73 +316,6 @@ return requireHex(value, `state_call(${method})`);
 
 
 }
-}
-
-export type SubstrateHeader = {
-parentHash: string;
-number: string;
-stateRoot: string;
-extrinsicsRoot: string;
-digest: {
-logs: string[];
-};
-};
-
-
-
-/**
- * Assemble the transport fields needed by the B3 packet from one exact block.
- * This function does not verify finality or the execution proof.
- */
-export async function collectCommitteeExecutionEvidence(
-  rpc: MateriosRpc,
-  params: {
-    finalizedBlockHash: string
-    callDataHex: string
-  },
-): Promise<{
-  blockHash: string
-  header: SubstrateHeader
-  runtimeCodeHex: string
-  execution: CommitteeExecutionProofResponse
-}> {
-  const blockHash = requireHash(params.finalizedBlockHash, 'finalized block hash')
-  const [header, runtimeCodeHex, execution, blockRuntime] = await Promise.all([
-    rpc.getHeader(blockHash),
-    rpc.getRuntimeCode(blockHash),
-    rpc.getCommitteeExecutionProof(params.callDataHex, blockHash),
-    rpc.getRuntimeVersion(blockHash),
-  ])
-
-  const proofBlockHash = requireHash(execution.blockHash, 'B3 proof blockHash')
-  if (proofBlockHash !== blockHash) {
-    throw new Error('B3 execution-proof blockHash does not match requested finalized block')
-  }
-
-  if (execution.callDataHex.toLowerCase() !== params.callDataHex.toLowerCase()) {
-    throw new Error('B3 execution-proof callDataHex does not match requested call data')
-  }
-
-  if (execution.runtimeApiMethod !== 'SessionValidatorManagementApi_calculate_committee') {
-    throw new Error('B3 execution-proof runtimeApiMethod is not the canonical committee API')
-  }
-
-  if (
-    execution.runtime.specName !== blockRuntime.specName ||
-    execution.runtime.implName !== blockRuntime.implName ||
-    execution.runtime.specVersion !== blockRuntime.specVersion ||
-    execution.runtime.implVersion !== blockRuntime.implVersion
-  ) {
-    throw new Error('B3 execution-proof runtime identity does not match block runtime')
-  }
-
-  if (header.stateRoot.length !== 66) {
-    throw new Error('B3 finalized header stateRoot is malformed')
-  }
-
-  return { blockHash, header, runtimeCodeHex, execution }
-}
-
 export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
 
 export type ChainBlockJustifications = {
@@ -462,6 +395,73 @@ async getGrandpaJustificationAtBlock(
   }
 
   return grandpa[0] ?? null;
+}
+
+}
+
+export type SubstrateHeader = {
+parentHash: string;
+number: string;
+stateRoot: string;
+extrinsicsRoot: string;
+digest: {
+logs: string[];
+};
+};
+
+
+
+/**
+ * Assemble the transport fields needed by the B3 packet from one exact block.
+ * This function does not verify finality or the execution proof.
+ */
+export async function collectCommitteeExecutionEvidence(
+  rpc: MateriosRpc,
+  params: {
+    finalizedBlockHash: string
+    callDataHex: string
+  },
+): Promise<{
+  blockHash: string
+  header: SubstrateHeader
+  runtimeCodeHex: string
+  execution: CommitteeExecutionProofResponse
+}> {
+  const blockHash = requireHash(params.finalizedBlockHash, 'finalized block hash')
+  const [header, runtimeCodeHex, execution, blockRuntime] = await Promise.all([
+    rpc.getHeader(blockHash),
+    rpc.getRuntimeCode(blockHash),
+    rpc.getCommitteeExecutionProof(params.callDataHex, blockHash),
+    rpc.getRuntimeVersion(blockHash),
+  ])
+
+  const proofBlockHash = requireHash(execution.blockHash, 'B3 proof blockHash')
+  if (proofBlockHash !== blockHash) {
+    throw new Error('B3 execution-proof blockHash does not match requested finalized block')
+  }
+
+  if (execution.callDataHex.toLowerCase() !== params.callDataHex.toLowerCase()) {
+    throw new Error('B3 execution-proof callDataHex does not match requested call data')
+  }
+
+  if (execution.runtimeApiMethod !== 'SessionValidatorManagementApi_calculate_committee') {
+    throw new Error('B3 execution-proof runtimeApiMethod is not the canonical committee API')
+  }
+
+  if (
+    execution.runtime.specName !== blockRuntime.specName ||
+    execution.runtime.implName !== blockRuntime.implName ||
+    execution.runtime.specVersion !== blockRuntime.specVersion ||
+    execution.runtime.implVersion !== blockRuntime.implVersion
+  ) {
+    throw new Error('B3 execution-proof runtime identity does not match block runtime')
+  }
+
+  if (header.stateRoot.length !== 66) {
+    throw new Error('B3 finalized header stateRoot is malformed')
+  }
+
+  return { blockHash, header, runtimeCodeHex, execution }
 }
 
 export type StorageReadProofResponse = {
