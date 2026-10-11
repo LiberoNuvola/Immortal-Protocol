@@ -99,6 +99,24 @@ The exact type aliases/import paths should follow the crate's current API at the
 
 The node's existing `FullDeps<C, P>` must therefore be extended with the GRANDPA RPC dependencies.
 
+## Standard-node evidence route
+
+The pinned Substrate SDK exposes block data as `SignedBlock`, whose `justifications` field is populated from the node's local blockchain backend. This gives the Adapter a second, non-Materios-specific evidence source:
+
+```
+chain_getBlock(finalized_hash)
+        |
+        +--> block.header
+        |
+        +--> justifications[[engine_id, encoded_justification]]
+                         |
+                         +--> engine `FRNK` (GRANDPA)
+```
+
+This route is preferable to treating the absence of `grandpa_proveFinality` as a missing protocol capability. It uses a standard Substrate read surface already present in the node stack. The response remains untrusted transport evidence: the Adapter must decode the GRANDPA justification and verify signatures, quorum, ancestry, and the authority-set provenance before crossing the B3-A verified boundary.
+
+A block may legitimately have no stored justification. Therefore the implementation keeps `grandpa_proveFinality` as the first source and `chain_getBlock.justifications` as the fallback, rather than assuming every finalized block carries a justification.
+
 ## B3 evidence contract
 
 The adapter must request the proof for the exact block number belonging to the exact checkpoint under verification.
