@@ -123,7 +123,7 @@ async function main() {
       new Constr(0, [seed.txHash]),
       BigInt(seed.outputIndex),
     ]),
-      new Constr(0, [tokenNameHex]),
+      tokenNameHex,
     ]),
   }
   const policyId = mintingPolicyToId(mintPolicy)

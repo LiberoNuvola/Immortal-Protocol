@@ -67,7 +67,7 @@ const policy: Script = {
   type: 'PlutusV2',
   script: applyParamsToScript(artifact.cborHex, [
     new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
-    new Constr(0, [TOKEN_NAME_HEX]),
+    TOKEN_NAME_HEX,
   ]),
 }
 const policyId = mintingPolicyToId(policy)
@@ -90,7 +90,7 @@ console.log(JSON.stringify({
   unit,
   parameterEncoding: {
     seed: 'Constr(0, [Constr(0, [txHashBytes]), outputIndex])',
-    tokenName: 'Constr(0, [tokenNameBytes])',
+    tokenName: 'Bytes(tokenNameBytes)',
   },
 }, null, 2))
 
