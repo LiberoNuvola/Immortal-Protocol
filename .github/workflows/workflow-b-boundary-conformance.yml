@@ -30,6 +30,10 @@ jobs:
         run: node audit/algorithmic-governability/adapter-maturity-registry-boundary.mjs
       - name: IMMORTAL generalized derivation boundary
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
+      - name: EXP cross-function conformance boundary
+        run: node audit/algorithmic-governability/exp-cross-function-conformance-boundary.mjs
+      - name: Bitcoin L1 adversarial boundary
+        run: node audit/algorithmic-governability/bitcoin-l1-adversarial-boundary.mjs
       - name: EXP-06 evidence catalog boundary
         run: node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
       - name: EXP-01 typed obligation bucket boundary
