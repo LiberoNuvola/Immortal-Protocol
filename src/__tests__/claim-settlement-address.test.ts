@@ -18,6 +18,8 @@ describe('Claim settlement address binding', () => {
     expect(claim).toContain('const buyerPaymentCredential = lucid.utils.paymentCredentialOf(buyer)')
     expect(claim).toContain("if (!buyerPaymentCredential || buyerPaymentCredential.type !== 'Key')")
     expect(claim).toContain('const claimantAddress = lucid.utils.credentialToAddress(buyerPaymentCredential)')
+    expect(claim).toContain('if (claimantAddress === buyer)')
+    expect(claim).toContain('returned ticket NFT cannot enter the payout valuation')
   })
 
   it('pays settlement to the enterprise claimant address, not the wallet base address', () => {
