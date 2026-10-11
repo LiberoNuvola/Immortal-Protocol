@@ -19,7 +19,7 @@ The repository currently has one concrete adapter: Cardano. Midnight is a second
 
 The historical reference is **Moriarty** (not “Miroarty”). Charles Hoskinson has described Moriarty as a **Turing-incomplete intent language for the planned Midnight DeFi kernel**, with formal/small-step semantics; he has also reported a loan contract compiling to Midnight's zkIR and a transaction validating on Midnight Preview.
 
-This directly confirms the architectural relevance of Moriarty to the Intent concept being studied here. The exact source repository is not yet bound into this IMMORTAL repository as a dependency, so the research remains source-attribution-aware rather than treating Moriarty as a production dependency.
+This directly confirms the architectural relevance of Moriarty to the Intent concept being studied here. The source repository is now identified as **CharlesHoskinson/Moriarty**. It is used here as an external reference only, not as an IMMORTAL production dependency.
 
 Midnight's documented smart-contract language is Compact. The current official documentation describes Compact as a strongly typed, bounded language for smart contracts, with public ledger state, zero-knowledge circuits, and TypeScript-supplied witnesses.
 
