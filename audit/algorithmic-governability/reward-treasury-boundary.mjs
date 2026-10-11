@@ -6,43 +6,40 @@ const assert = (condition, message) => {
 }
 
 /*
- * Boundary only.
- * No canonical reward amount or Treasury distribution rule is selected here.
- * The test proves only that a certified reward budget cannot exceed a separately
- * observed revenue envelope and cannot be sourced from protected value.
+ * Structural accounting boundary only.
+ * No reward amount, percentage or Treasury allocation formula is introduced.
+ * The revenue/budget relationship is supplied as an externally certified fact.
  */
 const boundary = Object.freeze({
   accountingVersion: 'accounting-v1',
   rewardRuleVersion: 'reward-v1',
-  certifiedBudget: 50n,
-  availableRevenue: 50n,
-  protectedValue: 1000n,
+  budgetWithinAvailableRevenue: true,
+  protectedValueExcluded: true,
   receiptVerified: true,
 })
 
 const certifyBudget = (b) => {
   if (!b?.receiptVerified) return 'UNVERIFIABLE'
-  if (b.certifiedBudget < 0n || b.availableRevenue < 0n || b.protectedValue < 0n) {
-    return 'REJECTED'
-  }
-  if (b.certifiedBudget > b.availableRevenue) return 'REJECTED'
-  return b.certifiedBudget
+  if (b.protectedValueExcluded !== true) return 'REJECTED'
+  if (b.budgetWithinAvailableRevenue == null) return 'UNVERIFIABLE'
+  if (b.budgetWithinAvailableRevenue !== true) return 'REJECTED'
+  return 'CERTIFIED'
 }
 
-assert(certifyBudget(boundary) === 50n, 'verified revenue can support an explicitly certified reward budget')
-assert(certifyBudget(Object.freeze({ ...boundary, certifiedBudget: 51n })) === 'REJECTED', 'certified budget cannot exceed observed available revenue')
+assert(certifyBudget(boundary) === 'CERTIFIED',
+  'verified revenue/accounting evidence can certify a reward budget boundary')
+assert(
+  certifyBudget(Object.freeze({ ...boundary, budgetWithinAvailableRevenue: false })) === 'REJECTED',
+  'reward budget cannot exceed the separately observed available revenue envelope',
+)
 assert(
   certifyBudget(Object.freeze({ ...boundary, receiptVerified: false })) === 'UNVERIFIABLE',
   'unverified Treasury receipt cannot certify a reward budget',
 )
-
-const protectedOnly = Object.freeze({
-  ...boundary,
-  certifiedBudget: 0n,
-  availableRevenue: 0n,
-  protectedValue: 1050n,
-})
-assert(certifyBudget(protectedOnly) === 0n, 'protected-only state produces no reward budget')
+assert(
+  certifyBudget(Object.freeze({ ...boundary, protectedValueExcluded: false })) === 'REJECTED',
+  'Protected value cannot be treated as reward budget',
+)
 
 const mutatedAccounting = Object.freeze({
   ...boundary,
