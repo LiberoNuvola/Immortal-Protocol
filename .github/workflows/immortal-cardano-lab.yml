@@ -232,7 +232,8 @@ jobs:
             echo "YACI_STORE_EVALUATOR=ogmios"
             grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config"
           } | tee audit/yaci-evidence/evaluator-mode.txt
-- name: Derive funded CI test wallet
+
+      - name: Derive funded CI test wallet
         id: wallet
         run: |
           address="$(node audit/cardano-integration/create-test-wallet.mjs)"
