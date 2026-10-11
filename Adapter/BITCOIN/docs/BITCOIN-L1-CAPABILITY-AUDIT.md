@@ -142,13 +142,62 @@ For B3, evidence must additionally demonstrate the publisher-independent canonic
 
 This audit does not modify IMMORTAL economic constants, ProtectedCapital, Economic Gate semantics, viability rules, PRE-RICH economics, Beacon semantics or Cardano Adapter semantics. Bitcoin-specific assumptions remain inside `Adapter/BITCOIN/`.
 
-## 9. Next concrete packet
+## 9. Evidence envelope and adversarial packet
+
+Before any concrete Bitcoin implementation is selected, the research demonstrator should normalize the minimum observation envelope:
+
+`BitcoinObservation = (chainIdentity, blockRef, txRef, inputs, outputs, commitmentRef, observationStatus, confirmationState, reorgStatus, sourceReference)`
+
+The envelope is intentionally descriptive: it does not create a new IMMORTAL authority or a new economic rule.
+
+### Reorg state transition
+
+| Observation state | Event | Required treatment |
+|---|---|---|
+| PENDING | transaction first observed | non-final / non-accepted |
+| INCLUDED | transaction observed in a block | retain provenance; do not infer irreversible finality |
+| ACCEPTED | declared confirmation/finality policy satisfied | eligible only for the declared adapter evidence class |
+| ACCEPTED | competing chain/reorg removes anchor | invalidate or downgrade the prior observation; revalidate from the canonical chain |
+| PENDING / INCLUDED | conflicting spend observed | classify conflict; do not synthesize a canonical settlement |
+| any | stale or inconsistent source | `UNVERIFIABLE` / fail closed |
+
+### Adversarial vectors
+
+**BTC-IMM-NEG-01 — valid transaction, no IMMORTAL admission**
+
+A consensus-valid transaction spends and creates valid Bitcoin UTXOs but has no authenticated binding to the required IMMORTAL action, state and rule identity.
+
+Expected classification: **REJECTED for IMMORTAL execution evidence**, despite Bitcoin consensus validity.
+
+**BTC-IMM-NEG-02 — valid inclusion, post-state mismatch**
+
+The transaction is valid and confirmed, but deterministic reconstruction of the expected IMMORTAL post-state does not equal the observed state transition.
+
+Expected classification: **REJECTED / CONFORMANCE FAILURE**; Bitcoin inclusion remains an observation fact but cannot close the IMMORTAL transition.
+
+**BTC-IMM-NEG-03 — reorg invalidation**
+
+A previously accepted observation loses its canonical block anchor after a reorganization.
+
+Expected classification: **INVALIDATED/DOWNGRADED**, followed by fresh canonical observation and revalidation. Prior evidence must not survive merely because it was once accepted.
+
+### Research demonstrator gate
+
+The first bounded Bitcoin demonstrator should therefore prove only these properties:
+
+1. the observation envelope is deterministic and provenance-bound;
+2. IMMORTAL admission is an independent authenticated input;
+3. expected post-state is checked independently of Bitcoin consensus validity;
+4. reorg/conflict events revoke or downgrade dependent observations;
+5. fee/valuation evidence cannot silently become economic authorization.
+
+Only after this packet is executable should a concrete Bitcoin technology profile be compared against the common IMMORTAL fixture.
+
+## 10. Next concrete packet
 
 1. Select one research profile for a bounded demonstrator without calling it production.
-2. Specify the canonical evidence envelope for transaction, input/output set, commitment, block/header identity and observation status.
-3. Define the reorg transition table (pending → observed → accepted under declared policy; accepted → invalidated/downgraded on reorg).
-4. Add a negative vector where a valid Bitcoin transaction lacks valid IMMORTAL admission.
-5. Add a negative vector where post-state mismatch is detected despite valid transaction inclusion.
-6. Compare the selected profile against the same IMMORTAL semantic fixture only after these boundaries are explicit.
+2. Implement the envelope and transition table above.
+3. Execute the three negative vectors above against the same semantic fixture.
+4. Compare the selected profile against the same IMMORTAL semantic fixture only after these boundaries are explicit.
 
 Until these gates pass, Bitcoin remains a research Adapter profile only.
