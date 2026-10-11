@@ -547,7 +547,9 @@ const expireTx = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(3)))
+  .attach.SpendingValidator(scripts.prizeValidator as Script)
   .collectFrom([poolUtxo], Data.to(c(4)))
+  .attach.SpendingValidator(scripts.b1PrizePool as Script)
   .pay.ToAddress(address, {
     lovelace: prizeUtxo.assets.lovelace ?? 0n,
   })

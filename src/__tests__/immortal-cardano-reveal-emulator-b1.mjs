@@ -539,6 +539,13 @@ async function main() {
 
   lucid.selectWalletFromSeed(seed);
 
+  // Keep reference-script outputs outside the spending wallet's coin-selection
+  // address. Otherwise the second publishing transaction can consume the first
+  // reference output as its funding input before the Reveal test reads it.
+  const referenceLucid = await Lucid.new(emulator, "Preprod");
+  referenceLucid.selectWalletFromSeed(generateSeedPhrase());
+  const referenceAddress = await referenceLucid.wallet.address();
+
   /*
    * --------------------------------------------------------------
    * 2. Load actual PRE-RICH Plutus artifacts
@@ -893,7 +900,7 @@ async function main() {
     await lucid
       .newTx()
       .payToAddressWithData(
-        walletAddress,
+        referenceAddress,
         { scriptRef: prizeScript },
         { lovelace: 2_000_000n },
       )
@@ -907,7 +914,7 @@ async function main() {
     await lucid
       .newTx()
       .payToAddressWithData(
-        walletAddress,
+        referenceAddress,
         { scriptRef: poolScript },
         { lovelace: 2_000_000n },
       )
@@ -933,7 +940,7 @@ async function main() {
       poolAddress,
     );
 
-  const referenceUtxos = await lucid.utxosAt(walletAddress);
+  const referenceUtxos = await lucid.utxosAt(referenceAddress);
 
   /*
    * Lucid/Emulator may normalize the scriptRef representation when it
