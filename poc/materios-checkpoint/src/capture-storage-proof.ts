@@ -583,83 +583,77 @@ async function discoverRecentCertifiedReceipt(
     candidates.length,
   );
 
-  for (const candidate of candidates.slice(0, 24)) {
-    try {
-      const certification =
-        await getCertification(
-          candidate.receiptId,
-        );
-
-      const chainHash =
-        await rpc.call<string>(
-          "chain_getBlockHash",
-          [certification.block],
-        );
-
-      if (
-        chainHash.toLowerCase() !==
-        certification.hash.toLowerCase()
-      ) {
-        continue;
-      }
-
-      const certificationHeader =
-        await rpc.getHeader(
-          certification.hash,
-        );
-
-      const finalizedNumber =
-        Number(BigInt(finalizedHead.number));
-
-      if (
-        !Number.isSafeInteger(finalizedNumber) ||
-        finalizedNumber <
-          certification.block
-      ) {
-        continue;
-      }
-
-      const historicalValue =
-        await rpc.getStorage(
-          candidate.storageKey,
-          certification.hash,
-        );
-
-      if (historicalValue === null) {
-        continue;
-      }
-
-      console.log(
-        "selected_receipt:",
-        candidate.receiptId,
-      );
-      console.log(
-        "selected_certified_block:",
-        certification.block,
-      );
-      console.log(
-        "selected_certified_hash:",
-        certification.hash,
-      );
-      console.log(
-        "selected_state_root:",
-        certificationHeader.stateRoot,
-      );
-
-      return {
-        receiptId: candidate.receiptId,
-        certification,
-        storageKey: candidate.storageKey,
-        storageValue: historicalValue,
-      };
-    } catch {
-      continue;
-    }
+  const candidate = candidates[0];
+  if (!candidate) {
+    throw new Error(
+      "no currently certified ReceiptRecord found at finalized head",
+    );
   }
 
-  throw new Error(
-    "no recent certified receipt has a still-queryable certified block/state",
+  const storageValue =
+    await rpc.getStorage(
+      candidate.storageKey,
+      finalizedHeadHash,
+    );
+
+  if (storageValue === null) {
+    throw new Error(
+      "selected certified ReceiptRecord is absent at finalized head",
+    );
+  }
+
+  const finalizedNumber =
+    Number(BigInt(finalizedHead.number));
+
+  if (
+    !Number.isSafeInteger(finalizedNumber) ||
+    finalizedNumber < 0
+  ) {
+    throw new Error(
+      "finalized head number is invalid",
+    );
+  }
+
+  const parsed =
+    parseReceiptRecord(storageValue);
+
+  if (
+    parsed.availabilityCertHash ===
+    "0x0000000000000000000000000000000000000000000000000000000000000000"
+  ) {
+    throw new Error(
+      "selected ReceiptRecord is not certified",
+    );
+  }
+
+  console.log(
+    "selected_receipt:",
+    candidate.receiptId,
   );
+  console.log(
+    "finalized_observation_block:",
+    finalizedNumber,
+  );
+  console.log(
+    "finalized_observation_hash:",
+    finalizedHeadHash,
+  );
+  console.log(
+    "availability_cert_hash:",
+    parsed.availabilityCertHash,
+  );
+
+  return {
+    receiptId: candidate.receiptId,
+    certification: {
+      block: finalizedNumber,
+      hash: finalizedHeadHash,
+      certHash: parsed.availabilityCertHash,
+      signers: 0,
+    },
+    storageKey: candidate.storageKey,
+    storageValue,
+  };
 }
 
 async function main(): Promise<void> {
