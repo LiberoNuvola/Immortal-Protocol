@@ -194,8 +194,14 @@ async function main(): Promise<void> {
   console.log("state root:", header.stateRoot);
   console.log("specVersion:", runtime.specVersion);
   console.log("runtime code bytes:", packet.runtime_code.byte_length);
-  console.log("runtime code sha256:", codeSha256);
-  console.log("runtime code blake2_256:", packet.runtime_code.blake2_256);
+  console.log(
+    "runtime code sha256:",
+    packet.runtime_code.sha256 ?? "unavailable",
+  );
+  console.log(
+    "runtime code blake2_256:",
+    packet.runtime_code.blake2_256 ?? "unavailable",
+  );
   console.log("GRANDPA set_id:", setId.toString());
   console.log("authorities:", authorities.length);
   console.log("GRANDPA finality proof status:", grandpaFinalityProof.status);
