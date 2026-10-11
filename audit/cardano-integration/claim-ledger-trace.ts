@@ -293,9 +293,27 @@ const claimEvaluationFallbacks: Array<Record<string, unknown>> = []
 
 function claimContextShapeMismatch(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
-  return message.includes('Yaci transaction evaluation failed') &&
+
+  // Scalus/Yaci may surface the same PubKeyHash representation mismatch in
+  // either its native KnownTypeUnliftingError form or Ogmios EvaluateTx's
+  // validationError form. Keep this narrowly bound to the exact bytestring-vs-
+  // data mismatch at equalsByteString; do not treat generic HTTP 400/script
+  // failures as budget-fallback candidates.
+  const yaciShapeMismatch =
+    message.includes('Yaci transaction evaluation failed') &&
     message.includes('KnownTypeUnliftingError') &&
     message.includes('Expected type ByteString, got VCon(Data')
+
+  const ogmiosShapeMismatch =
+    message.includes('Yaci transaction evaluation failed (HTTP 400)') &&
+    message.includes('"servicename" : "ogmios"') &&
+    message.includes('"methodname" : "EvaluateTx"') &&
+    message.includes('"validationError" :') &&
+    message.includes('Type mismatch: expected: bytestring; actual: data') &&
+    message.includes('(builtin equalsByteString)') &&
+    message.includes('(con data (B #')
+
+  return yaciShapeMismatch || ogmiosShapeMismatch
 }
 
 async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Promise<Array<{
