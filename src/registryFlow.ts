@@ -14,9 +14,11 @@
  * The canonical round identity is established before publication
  * of the external Materios receipt.
  *
- * The GameRoundCommitment is stored directly inside the
- * BeaconRegistryDatum and is therefore authenticated by the
- * BeaconRegistry validator.
+ * GameRoundCommitment is computed and checked off-chain before
+ * publication, but the current seven-field BeaconRegistryDatum
+ * does NOT store it and the current BeaconRegistry validator does
+ * NOT authenticate it. This distinction is intentional until an
+ * authorized schema change closes the representation gap.
  */
 
 import { signAndSubmitTx } from './txHelpers'
@@ -112,8 +114,10 @@ export type RegistryPublishParams = {
 /**
  * Publish the beacon for an already anchored round.
  *
- * The Pending registry UTxO must already contain the canonical
- * GameRoundCommitment.
+ * The canonical GameRoundCommitment is validated from the supplied
+ * round inputs. The current on-chain Pending registry datum does not
+ * carry this commitment, so any optional decoded commitment field
+ * below is treated only as an off-chain consistency check.
  *
  * The transaction must be signed by the relayer identified by
  * brRelayerPkh in the Pending registry datum.
@@ -176,13 +180,11 @@ export async function publishRoundBeacon(
   }
 
   /*
-   * The Pending registry UTxO must already contain this exact
-   * GameRoundCommitment. We cannot authenticate the previous datum
-   * purely from the generic `any` type, but if the caller exposes
-   * the decoded datum we verify it before constructing the Ready datum.
-   *
-   * This is an off-chain consistency check only.
-   * The authoritative check is performed by BeaconRegistry.hs.
+   * The current canonical Pending datum does not contain
+   * GameRoundCommitment. If a caller exposes an enriched/decoded
+   * auxiliary object with that field, validate it only as an
+   * off-chain consistency check; this does not make the field
+   * authenticated on-chain.
    */
   if (p.registryUtxo?.datum) {
     const pending = p.registryUtxo.datum
@@ -263,11 +265,10 @@ export async function publishRoundBeacon(
   /*
    * IMPORTANT:
    *
-   * BeaconRegistryDatum now contains the complete
-   * GameRoundCommitment as a single nested value.
-   *
-   * Do not add brGameId/brConfigHash/brProtocolVersion here:
-   * they are intentionally contained inside brGameRoundCommitment.
+   * The canonical on-chain BeaconRegistryDatum currently has seven
+   * fields and does not contain GameRoundCommitment. Keep the
+   * commitment as supplied round context for the off-chain builder
+   * only; the current on-chain validator does not authenticate it.
    */
   const readyDatum = p.buildReadyDatum({
     brRound: p.roundId,
