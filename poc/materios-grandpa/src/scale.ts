@@ -345,6 +345,34 @@ export class ScaleReader {
     return result;
   }
 
+  /**
+   * Return an immutable copy of the already-consumed byte range without
+   * changing the reader position. Used to preserve variable-length SCALE
+   * objects when they are embedded in another object.
+   */
+  slice(
+    start: number,
+    end: number
+  ): Uint8Array {
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start < 0 ||
+      end < start ||
+      end > this.data.length
+    ) {
+      throw new ScaleDecodeError(
+        "INVALID_SLICE_RANGE"
+      );
+    }
+
+    return this.data.slice(
+      start,
+      end
+    );
+  }
+
+
   readUnsignedLE(
     byteLength: number
   ): bigint {
