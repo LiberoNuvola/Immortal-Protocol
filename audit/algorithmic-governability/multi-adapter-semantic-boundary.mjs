@@ -35,6 +35,23 @@ assert(a.ruleVersion === b.ruleVersion, 'adapters preserve the universal rule id
 assert(Number(a.payload.split(':')[1]) === b.payload.amount, 'adapters preserve the same semantic result')
 assert(a.chain !== b.chain, 'adapter encodings remain chain-specific')
 
+const semanticAmountFromAdapter = (adapter) => {
+  if (adapter.chain === 'cardano') {
+    const [prefix, amount] = adapter.payload.split(':')
+    if (prefix !== 'lovelace-like') return null
+    return Number(amount)
+  }
+  if (adapter.chain === 'adapter-b') return adapter.payload.amount
+  return null
+}
+
+const verifySemanticEquivalence = (adapter, expected) =>
+  adapter.ruleVersion === expected.ruleVersion &&
+  semanticAmountFromAdapter(adapter) === expected.semanticAmount
+
+assert(verifySemanticEquivalence(a, result), 'Cardano adapter preserves the universal semantic result')
+assert(verifySemanticEquivalence(b, result), 'adapter-b preserves the universal semantic result')
+
 const tampered = Object.freeze({
   ...otherAdapter(result),
   payload: { amount: result.semanticAmount + 1 },
