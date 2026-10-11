@@ -340,6 +340,17 @@ identityFieldsEq a b =
   && pdExpiresAt a == pdExpiresAt b
   -- pdRow1Tier / pdRow2Tier are mutable Reveal outputs. Their canonical
   -- values are independently checked against GameRules in validateReveal.
+  -- Every OTHER transition that continues the datum must keep them frozen
+  -- through rowTiersUnchanged below.
+
+-- | Row tiers are written exactly once, by Reveal. Sync (before Reveal) and
+-- Claim (after Reveal) must carry them over unchanged so the on-chain record
+-- of the revealed result stays immutable.
+{-# INLINABLE rowTiersUnchanged #-}
+rowTiersUnchanged :: PrizeDatum -> PrizeDatum -> Bool
+rowTiersUnchanged a b =
+     pdRow1Tier a == pdRow1Tier b
+  && pdRow2Tier a == pdRow2Tier b
 
 -- ============================================================
 -- Registry reference
@@ -408,6 +419,7 @@ validateSyncBeacon regHash datum ctx =
                 False
               Just n ->
                    identityFieldsEq n datum
+                && rowTiersUnchanged n datum
                 && pdPrizeAmount n == pdPrizeAmount datum
                 && pdStatus n == Pending
                 && pdBeaconStatus n == BeaconReady
@@ -693,6 +705,7 @@ validateClaim oracleState oraclePublisher datum ctx =
           False
         Just n ->
              identityFieldsEq n datum
+          && rowTiersUnchanged n datum
           && pdBeaconStatus n == pdBeaconStatus datum
           && pdBeaconValue n == pdBeaconValue datum
           && pdMcHash n == pdMcHash datum
