@@ -55,6 +55,109 @@ test('getGrandpaFinalityProof requests the standard finality RPC', async () => {
   }
 })
 
+test('getGrandpaJustificationAtBlock reads standard chain_getBlock justification', async () => {
+  const target = `0x${'ab'.repeat(32)}`
+  let seenMethod = ''
+  let seenParams: unknown[] = []
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    seenMethod = body.method
+    seenParams = body.params
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        block: {
+          header: {
+            number: '0x2a',
+          },
+          extrinsics: [],
+        },
+        justifications: [
+          ['0x46524e4b', '0xaabbccdd'],
+          ['0x41555241', '0x1122'],
+        ],
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    const justification = await rpc.getGrandpaJustificationAtBlock(target)
+    assert.equal(justification, '0xaabbccdd')
+    assert.equal(seenMethod, 'chain_getBlock')
+    assert.deepEqual(seenParams, [target])
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaJustificationAtBlock returns null when block has no stored justification', async () => {
+  const target = `0x${'bc'.repeat(32)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        block: {
+          header: {
+            number: '0x2b',
+          },
+          extrinsics: [],
+        },
+        justifications: null,
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    assert.equal(await rpc.getGrandpaJustificationAtBlock(target), null)
+  } finally {
+    await server.close()
+  }
+})
+
+test('getGrandpaJustificationAtBlock rejects multiple GRANDPA entries', async () => {
+  const target = `0x${'cd'.repeat(32)}`
+
+  const server = await withServer(async (req, res) => {
+    const body = JSON.parse(await readBody(req))
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        block: {
+          header: {
+            number: '0x2c',
+          },
+          extrinsics: [],
+        },
+        justifications: [
+          ['0x46524e4b', '0xaabb'],
+          ['0x46524e4b', '0xccdd'],
+        ],
+      },
+    }))
+  })
+
+  try {
+    const rpc = new MateriosRpc(server.endpoint)
+    await assert.rejects(
+      () => rpc.getGrandpaJustificationAtBlock(target),
+      /chain_getBlock: multiple GRANDPA justifications/,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
 test('getGrandpaFinalityProof accepts an unavailable proof as null', async () => {
   const server = await withServer(async (req, res) => {
     const body = JSON.parse(await readBody(req))
