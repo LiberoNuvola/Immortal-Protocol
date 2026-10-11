@@ -166,7 +166,7 @@ function concat(parts: Uint8Array[]): Uint8Array {
 
 function scaleCompact(value: number): Uint8Array {
   if (!Number.isSafeInteger(value) || value < 0 || value >= 1 << 30) {
-    throw new Error(\`unsupported SCALE compact value: \${value}\`);
+    throw new Error(`unsupported SCALE compact value: ${value}`);
   }
   if (value < 1 << 6) return Uint8Array.of(value << 2);
   if (value < 1 << 14) {
@@ -196,7 +196,7 @@ function encodeStorageProofScale(nodes: string[]): string {
 function receiptStorageKey(receiptId: string): string {
   const id = hexToBytes(receiptId);
   if (id.length !== 32) {
-    throw new Error(\`receiptId must be 32 bytes, got \${id.length}\`);
+    throw new Error(`receiptId must be 32 bytes, got ${id.length}`);
   }
 
   const key = concat([
@@ -207,7 +207,7 @@ function receiptStorageKey(receiptId: string): string {
   ]);
 
   if (key.length !== 80) {
-    throw new Error(\`receipt storage key must be 80 bytes, got \${key.length}\`);
+    throw new Error(`receipt storage key must be 80 bytes, got ${key.length}`);
   }
 
   return bytesToHex(key);
@@ -228,7 +228,7 @@ async function waitForReceiptId(): Promise<string> {
 
     if (!response.ok || !response.body) {
       throw new Error(
-        \`firehose HTTP \${response.status} \${response.statusText}\`,
+        `firehose HTTP ${response.status} ${response.statusText}`,
       );
     }
 
@@ -283,9 +283,9 @@ async function getCertification(
   signers: number;
 }> {
   const url =
-    \`\${INDEXER}/receipt-attestors?receiptId=\${encodeURIComponent(
+    `${INDEXER}/receipt-attestors?receiptId=${encodeURIComponent(
       receiptId,
-    )}\`;
+    )}`;
 
   for (let attempt = 1; attempt <= 12; attempt++) {
     const response = await fetch(url);
@@ -319,7 +319,7 @@ async function getCertification(
 
     if (response.status !== 404) {
       throw new Error(
-        \`indexer HTTP \${response.status} for receipt-attestors\`,
+        `indexer HTTP ${response.status} for receipt-attestors`,
       );
     }
 
@@ -340,7 +340,7 @@ async function main(): Promise<void> {
     systemPrefix !== "0x26aa394eea5630e07c48ae0c9558cef7"
   ) {
     throw new Error(
-      \`Twox128 self-check failed: got \${systemPrefix}\`,
+      `Twox128 self-check failed: got ${systemPrefix}`,
     );
   }
 
@@ -476,7 +476,7 @@ async function main(): Promise<void> {
   await writeFile(
     join(outputDir, "MateriosB3BLiveStorageProof.json"),
     JSON.stringify(
-      { ...evidence, evidence_sha256: \`0x\${evidenceSha256}\` },
+      { ...evidence, evidence_sha256: `0x${evidenceSha256}` },
       null,
       2,
     ) + "\n",
@@ -509,7 +509,7 @@ async function main(): Promise<void> {
   console.log("storage_value_bytes:", hexToBytes(storageValue).length);
   console.log("proof_nodes:", readProof.proof.length);
   console.log("proof_scale_bytes:", (proofScaleHex.length - 2) / 2);
-  console.log("evidence_sha256:", \`0x\${evidenceSha256}\`);
+  console.log("evidence_sha256:", `0x${evidenceSha256}`);
   console.log("capture: PASS");
 }
 
