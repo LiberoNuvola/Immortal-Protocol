@@ -13,6 +13,8 @@ export type MidnightFinalizedExecutionReceipt = Readonly<{
   admissionStateHash: string
   actionFingerprint: string
   finalityReference: string
+  observedPostStateHash: string
+  executionEvidenceReference: string
   status: "FINALIZED"
 }>
 
@@ -36,6 +38,8 @@ export type MidnightExecutionEvidence = Readonly<{
   observationReference: string
   ledgerStateReference: string
   sourceReference: string
+  observedPostStateHash: string
+  executionEvidenceReference: string
 }>
 
 const nonEmpty = (value: string, field: string) => {
@@ -55,10 +59,13 @@ export function bindMidnightFinalizedReceipt(
   if (receipt.admissionStateHash !== envelope.admissionStateHash) throw new Error("Midnight receipt admission state mismatch")
   if (receipt.actionFingerprint !== envelope.actionFingerprint) throw new Error("Midnight receipt action fingerprint mismatch")
   if (receipt.status !== "FINALIZED") throw new Error("Midnight execution is not finalized")
+  if (receipt.observedPostStateHash !== envelope.expectedPostStateHash) throw new Error("Midnight receipt post-state mismatch")
   nonEmpty(receipt.transactionReference, "transactionReference")
   nonEmpty(receipt.finalityReference, "finalityReference")
+  nonEmpty(receipt.executionEvidenceReference, "executionEvidenceReference")
   digest(receipt.admissionStateHash, "admissionStateHash")
   digest(receipt.actionFingerprint, "actionFingerprint")
+  digest(receipt.observedPostStateHash, "observedPostStateHash")
   return Object.freeze({ ...receipt })
 }
 
@@ -84,6 +91,8 @@ export function buildMidnightExecutionEvidence(
     observationReference: observation.observationReference,
     ledgerStateReference: observation.ledgerStateReference,
     sourceReference: observation.sourceReference,
+    observedPostStateHash: receipt.observedPostStateHash,
+    executionEvidenceReference: receipt.executionEvidenceReference,
   })
 }
 
