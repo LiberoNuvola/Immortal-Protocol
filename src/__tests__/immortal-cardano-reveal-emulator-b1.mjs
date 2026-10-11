@@ -1038,7 +1038,7 @@ async function main() {
         );
 
       const budgetOverrun =
-        /execution went over budget|went over budget|Mem -\\d+|CPU -\\d+/i.test(
+        /execution went over budget|went over budget|Mem -\d+|CPU -\d+/i.test(
           message,
         );
 
@@ -1096,18 +1096,57 @@ async function main() {
    * must be rejected by the real parameterized validator.
    */
 
+  function isBudgetOverrun(message) {
+    return /execution went over budget|went over budget|Mem -\d+|CPU -\d+|execution budget|budget.{0,30}(?:exceed|exhaust|limit)|exceed.{0,30}budget/i.test(message);
+  }
+
+  const inconclusiveNegativeProbes = [];
+
   async function expectRejected(label, txBuilder) {
     let rejected = false;
+    let stage = "build";
 
     try {
       const tx = await txBuilder();
+      stage = "sign";
       const signed = await tx.sign().complete();
+      stage = "submit";
       const hash = await signed.submit();
+      stage = "await";
       await emulator.awaitTx(hash);
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (isBudgetOverrun(message)) {
+        inconclusiveNegativeProbes.push({
+          label,
+          stage,
+          classification: "BUDGET_OVERRUN",
+          error: message.split(/\r?\n/)[0],
+        });
+        console.log(label, "INCONCLUSIVE_BUDGET_OVERRUN", "stage=" + stage);
+        console.log(label, "ERROR", message.split(/\r?\n/)[0]);
+        return;
+      }
+
+      const scriptFailure =
+        /failed script execution|PlutusFailure|PlutusV[12] script failed|script evaluation failed|validator failure|script failure|script failed|CekError/i.test(message);
+
+      if (!scriptFailure) {
+        inconclusiveNegativeProbes.push({
+          label,
+          stage,
+          classification: "UNCLASSIFIED_ERROR",
+          error: message.split(/\r?\n/)[0],
+        });
+        console.log(label, "INCONCLUSIVE_NON_SCRIPT_ERROR", "stage=" + stage);
+        console.log(label, "ERROR", message.split(/\r?\n/)[0]);
+        return;
+      }
+
       rejected = true;
-      console.log(label, "REJECTED", true);
-      console.log(label, "ERROR", String(error).split("\\n")[0]);
+      console.log(label, "REJECTED", true, "stage=" + stage);
+      console.log(label, "ERROR", message.split(/\r?\n/)[0]);
     }
 
     if (!rejected) {
@@ -1215,8 +1254,9 @@ async function main() {
    * recreate both continuing outputs
    */
 
-  const revealTx =
-    await lucid
+  let revealTx;
+  try {
+    revealTx = await lucid
       .newTx()
 
       .collectFrom(
@@ -1287,11 +1327,34 @@ async function main() {
       )
 
       .complete();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      isBudgetOverrun(message)
+        ? "P2.8-B.1 REVEAL INCONCLUSIVE_BUDGET_OVERRUN"
+        : "P2.8-B.1 REVEAL BUILD FAILED",
+    );
+    console.error(error);
+    process.exitCode = 1;
+    return;
+  }
 
-  const revealSigned =
-    await revealTx
+  let revealSigned;
+  try {
+    revealSigned = await revealTx
       .sign()
       .complete();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      isBudgetOverrun(message)
+        ? "P2.8-B.1 REVEAL INCONCLUSIVE_BUDGET_OVERRUN"
+        : "P2.8-B.1 REVEAL SIGNED-COMPLETION FAILED",
+    );
+    console.error(error);
+    process.exitCode = 1;
+    return;
+  }
 
   let revealHash;
 
@@ -1341,6 +1404,14 @@ async function main() {
     throw new Error(
       `Expected one continuing Pool UTxO, got ${postPool.length}`,
     );
+  }
+
+  if (inconclusiveNegativeProbes.length > 0) {
+    console.error(
+      "P2.8-B.1 NEGATIVE_PROBES_INCONCLUSIVE",
+      JSON.stringify(inconclusiveNegativeProbes),
+    );
+    throw new Error("P2.8-B.1 cannot claim semantic negative coverage while a probe is inconclusive");
   }
 
   /*

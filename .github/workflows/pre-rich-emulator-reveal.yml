@@ -46,12 +46,43 @@ jobs:
           x.exports={".":{types:"./types/mod.d.ts",import:"./esm/mod.js"}}
           fs.writeFileSync(p, JSON.stringify(x,null,2)+"\n")
           NODE
+      - name: Restore Cabal/Plutus build state
+        id: plutus-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+          restore-keys: |
+            plutus-build-${{ runner.os }}-
+
       - name: Setup canonical Plutus CI
         uses: ./.github/actions/setup-plutus
+        with:
+          update-hackage: ${{ steps.plutus-cache.outputs.cache-matched-key == '' }}
 
       - name: Build and export fresh Plutus artifacts
         run: cabal run exe:export-scripts
+
+      - name: Save Cabal/Plutus build state
+        if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
       - name: Run isolated emulator smoke
         run: node src/__tests__/immortal-cardano-emulator-smoke.mjs
       - name: Run real PRE-RICH Reveal emulator conformance
+        run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
+
+      - name: Run diagnostic-only Reveal budget probe (not acceptance evidence)
+        if: always()
+        continue-on-error: true
+        env:
+          P2_8_B1_BUDGET_PROBE: "1"
         run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
