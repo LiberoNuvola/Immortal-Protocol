@@ -28,6 +28,7 @@ import {
   applyParamsToScript,
   generateSeedPhrase,
 } from "lucid-cardano";
+import { CML } from "@lucid-evolution/lucid";
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -486,14 +487,20 @@ async function main() {
    * "validator would execute but the emulator stops before completion".
    * It never changes the canonical/default CI path.
    */
-  const emulatorProtocolParameters =
-    process.env.P2_8_B1_BUDGET_PROBE === "1"
+  const budgetProbe = process.env.P2_8_B1_BUDGET_PROBE === "1";
+  const sizeProbe = process.env.P2_8_B1_SIZE_PROBE === "1";
+  const emulatorProtocolParameters = {
+    ...baseEmulatorParams,
+    ...(budgetProbe
       ? {
-          ...baseEmulatorParams,
           maxTxExMem: 100_000_000_000n,
           maxTxExSteps: 100_000_000_000n,
         }
-      : baseEmulatorParams;
+      : {}),
+    // Diagnostic only: lift the serialization ceiling to inspect the actual
+    // completed transaction. This mode is never acceptance/conformance evidence.
+    ...(sizeProbe ? { maxTxSize: 100_000 } : {}),
+  };
 
   const emulator =
     new Emulator(
@@ -530,7 +537,8 @@ async function main() {
       maxTxExSteps: emulatorParams.maxTxExSteps,
       priceMem: emulatorParams.priceMem,
       priceStep: emulatorParams.priceStep,
-      budgetProbe: process.env.P2_8_B1_BUDGET_PROBE === "1",
+      budgetProbe,
+      sizeProbe,
       plutusV2CostModelLength: emulatorParams.costModels?.PlutusV2
         ? Object.keys(emulatorParams.costModels.PlutusV2).length
         : 0,
@@ -1371,6 +1379,42 @@ async function main() {
     );
     console.error(error);
     process.exitCode = 1;
+    return;
+  }
+
+  if (process.env.P2_8_B1_SIZE_PROBE === "1") {
+    const txCbor = revealTx.toString().replace(/^0x/, "");
+    if (!/^[0-9a-fA-F]+$/.test(txCbor) || txCbor.length % 2 !== 0) {
+      throw new Error("Size probe could not obtain valid transaction CBOR");
+    }
+    const parsedTx = CML.Transaction.from_cbor_hex(txCbor);
+    const bodyBytes = parsedTx.body().to_cbor_bytes().length;
+    const witnessSetBytes = parsedTx.witness_set().to_cbor_bytes().length;
+    const datumBytes = {
+      prePrize: Data.to(prePrizeDatum).length / 2,
+      postPrize: Data.to(postPrizeDatum).length / 2,
+      prePool: Data.to(prePoolDatum).length / 2,
+      postPool: Data.to(postPoolDatum).length / 2,
+    };
+    const redeemerBytes = {
+      prizeReveal: Data.to(constr(1, [bytesData(toHex(playerSecret))])).length / 2,
+      poolTicketRevealed: Data.to(constr(2, [BigInt(priceUsdm)])).length / 2,
+    };
+    const referenceScriptBytes = {
+      prize: prizeScript.script.length / 2,
+      pool: poolScript.script.length / 2,
+    };
+    console.log("P2.8-B.1 SIZE PROBE (diagnostic only)", JSON.stringify({
+      txBytes: txCbor.length / 2,
+      maxTxSizeCanonical: baseEmulatorParams.maxTxSize,
+      bodyBytes,
+      witnessSetBytes,
+      overheadBytes: txCbor.length / 2 - bodyBytes - witnessSetBytes,
+      datumBytes,
+      redeemerBytes,
+      referenceScriptBytes,
+      note: "Reference scripts are stored in reference UTxOs and are not part of this transaction's witness set; this probe does not establish ledger acceptance.",
+    }));
     return;
   }
 
