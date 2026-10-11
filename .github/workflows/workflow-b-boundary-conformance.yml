@@ -26,6 +26,8 @@ jobs:
           node-version: 22
       - name: Workflow B harness coverage guard
         run: node audit/algorithmic-governability/workflow-b-harness-coverage-boundary.mjs
+      - name: Adapter maturity registry boundary
+        run: node audit/algorithmic-governability/adapter-maturity-registry-boundary.mjs
       - name: IMMORTAL generalized derivation boundary
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
       - name: EXP-06 evidence catalog boundary
