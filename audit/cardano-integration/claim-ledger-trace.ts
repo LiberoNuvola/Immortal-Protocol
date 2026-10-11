@@ -294,26 +294,54 @@ const claimEvaluationFallbacks: Array<Record<string, unknown>> = []
 function claimContextShapeMismatch(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
 
-  // Scalus/Yaci may surface the same PubKeyHash representation mismatch in
-  // either its native KnownTypeUnliftingError form or Ogmios EvaluateTx's
-  // validationError form. Keep this narrowly bound to the exact bytestring-vs-
-  // data mismatch at equalsByteString; do not treat generic HTTP 400/script
-  // failures as budget-fallback candidates.
+  // Known Yaci/Scalus native representation mismatch.
   const yaciShapeMismatch =
     message.includes('Yaci transaction evaluation failed') &&
     message.includes('KnownTypeUnliftingError') &&
     message.includes('Expected type ByteString, got VCon(Data')
+  if (yaciShapeMismatch) return true
 
-  const ogmiosShapeMismatch =
-    message.includes('Yaci transaction evaluation failed (HTTP 400)') &&
-    message.includes('"servicename" : "ogmios"') &&
-    message.includes('"methodname" : "EvaluateTx"') &&
-    message.includes('"validationError" :') &&
-    message.includes('Type mismatch: expected: bytestring; actual: data') &&
-    message.includes('(builtin equalsByteString)') &&
-    message.includes('(con data (B #')
+  // Ogmios EvaluateTx nests its JSON response inside the Yaci HTTP error JSON.
+  // Parse both envelopes instead of matching escaped quotes in raw text.
+  const prefix = 'Yaci transaction evaluation failed (HTTP 400): '
+  if (!message.startsWith(prefix)) return false
 
-  return yaciShapeMismatch || ogmiosShapeMismatch
+  let outer: any
+  try {
+    outer = JSON.parse(message.slice(prefix.length))
+  } catch {
+    return false
+  }
+  if (
+    !outer ||
+    outer.status_code !== 400 ||
+    outer.error !== 'Bad Request' ||
+    typeof outer.message !== 'string'
+  ) return false
+
+  let ogmios: any
+  try {
+    ogmios = JSON.parse(outer.message)
+  } catch {
+    return false
+  }
+  if (
+    ogmios?.servicename !== 'ogmios' ||
+    ogmios?.methodname !== 'EvaluateTx' ||
+    !Array.isArray(ogmios?.result?.EvaluationFailure?.data)
+  ) return false
+
+  return ogmios.result.EvaluationFailure.data.some((failure: any) => {
+    const validationError = failure?.error?.data?.validationError
+    const traces = failure?.error?.data?.traces
+    return typeof validationError === 'string' &&
+      validationError.includes('Type mismatch: expected: bytestring; actual: data') &&
+      validationError.includes('(builtin equalsByteString)') &&
+      /\(con bytestring #[0-9a-f]+\)/i.test(validationError) &&
+      /\(con data \(B #[0-9a-f]+\)\)/i.test(validationError) &&
+      Array.isArray(traces) &&
+      traces.length === 0
+  })
 }
 
 async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Promise<Array<{
