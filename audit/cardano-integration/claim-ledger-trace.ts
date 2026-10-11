@@ -493,8 +493,6 @@ const fixtureExpiresAt = BigInt(latestBlockTimeMs + 600_000)
 const oracleStateUnit = fixtureOracleStatePolicyId + ORACLE_STATE_TOKEN_NAME_HEX
 const poolPolicyId = testPolicyId
 const ticketPolicyId = testPolicyId
-const ticketUnit = ticketPolicyId + TICKET_NAME_HEX
-const poolUnit = poolPolicyId + poolTokenNameHex
 
 const playerCommitmentHex = '22'.repeat(32)
 const commitmentHex = '33'.repeat(32)
