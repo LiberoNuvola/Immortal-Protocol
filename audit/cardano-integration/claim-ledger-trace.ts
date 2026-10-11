@@ -323,19 +323,36 @@ async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: n
   } catch {
     throw new Error('Claim fallback received invalid protocol-parameters JSON: ' + raw.slice(0, 1200))
   }
-  const normalizedLimits = (protocolParameters as any).maxTxExecutionUnits
+  const activeNested = (
+    active.max_tx_execution_units ??
+    active.maxTxExecutionUnits ??
+    active.max_tx_ex_units ??
+    active.maxTxExUnits ??
+    {}
+  ) as Record<string, unknown>
+  const normalizedLimits = (
+    (protocolParameters as any).maxTxExecutionUnits ??
+    (protocolParameters as any).max_tx_execution_units ??
+    (protocolParameters as any).maxTxExUnits ??
+    {}
+  ) as Record<string, unknown>
   const maxMemory = Number(
     active.max_tx_ex_mem ?? active.maxTxExMem ??
-    normalizedLimits?.memory ?? normalizedLimits?.mem,
+    activeNested.memory ?? activeNested.mem ?? activeNested.ex_mem ??
+    normalizedLimits.memory ?? normalizedLimits.mem ?? normalizedLimits.ex_mem,
   )
   const maxSteps = Number(
-    active.max_tx_ex_steps ?? active.maxTxExSteps ?? normalizedLimits?.steps,
+    active.max_tx_ex_steps ?? active.maxTxExSteps ??
+    activeNested.steps ?? activeNested.cpu ?? activeNested.ex_steps ??
+    normalizedLimits.steps ?? normalizedLimits.cpu ?? normalizedLimits.ex_steps,
   )
   if (!Number.isSafeInteger(maxMemory) || maxMemory <= 0 ||
       !Number.isSafeInteger(maxSteps) || maxSteps <= 0) {
     throw new Error(
-      'Claim fallback requires active max_tx_ex_mem/max_tx_ex_steps; available keys=' +
-      Object.keys(active).sort().join(','),
+      'Claim fallback cannot resolve active execution limits; top-level keys=' +
+      Object.keys(active).sort().join(',') +
+      '; nested limit keys=' + Object.keys(activeNested).sort().join(',') +
+      '; normalized limit keys=' + Object.keys(normalizedLimits).sort().join(','),
     )
   }
 
