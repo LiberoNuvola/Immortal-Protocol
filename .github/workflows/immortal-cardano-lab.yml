@@ -176,6 +176,10 @@ jobs:
       - name: Execute real economic Expire transition trace
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
+      # Isolated Claim conformance fixture; not a production Issue-admission witness.
+      - name: Execute real economic Claim transition trace
+        run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
+
       - name: Materialize raw Yaci ledger context for P2.8
         run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
 
