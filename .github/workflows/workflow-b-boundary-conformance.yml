@@ -32,8 +32,12 @@ jobs:
         run: node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
       - name: EXP-02 term structure horizon boundary
         run: node audit/algorithmic-governability/exp-02-term-structure-horizon-boundary.mjs
+      - name: EXP-01 seniority order boundary
+        run: node audit/algorithmic-governability/exp-01-seniority-order-boundary.mjs
       - name: EXP-03 minimal asset eligibility boundary
         run: node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.mjs
+      - name: EXP-03 asset valuation haircut boundary
+        run: node audit/algorithmic-governability/exp-03-asset-valuation-haircut-boundary.mjs
       - name: EXP-04 profile composition boundary
         run: node audit/algorithmic-governability/exp-04-profile-composition-boundary.mjs
       - name: EXP-05 contingent claims boundary
