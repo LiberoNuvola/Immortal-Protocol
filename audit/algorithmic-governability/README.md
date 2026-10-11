@@ -33,7 +33,7 @@ This lab contains support for the **IMMORTAL Expansion** research front. Its ide
 
 The **EXP-** prefix is deliberate: it prevents these generalization axes from being confused with Governance (`GOV-xx`), system closure fronts (`B4/B5/B6`), or the separate G1–G6 liveness conditions.
 
-Current bounded implementations in this branch include **EXP-01-light, EXP-02 boundary, EXP-03-minimal, EXP-04 boundary, EXP-05 boundary, EXP-06, EXP-07-light, EXP-08 boundary, EXP-09 boundary, EXP-10 boundary, EXP-11 boundary and EXP-12 boundary**. These are research/conformance boundaries only; their production semantics remain open. The catalog is now executable at the boundary layer, but this does not mean the underlying production generalizations are canonical or deployed.
+Current bounded implementations in this branch include **EXP-01-light + seniority boundary, EXP-02 boundary, EXP-03-minimal + valuation/haircut boundary, EXP-04 boundary, EXP-05 boundary, EXP-06, EXP-07-light, EXP-08 boundary, EXP-09 boundary, EXP-10 boundary, EXP-11 boundary and EXP-12 boundary**. These are research/conformance boundaries only; their production semantics remain open. The catalog is now executable at the boundary layer, but this does not mean the underlying production generalizations are canonical or deployed.
 
 These expansions are not a second governance system and do not create new economic authority.
 
@@ -81,8 +81,10 @@ The lab intentionally gives two monitors identical observations but different de
 ```bash
 node audit/algorithmic-governability/no-result-dependent-authority.mjs
 node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
+node audit/algorithmic-governability/exp-01-seniority-order-boundary.mjs
 node audit/algorithmic-governability/exp-02-term-structure-horizon-boundary.mjs
 node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.mjs
+node audit/algorithmic-governability/exp-03-asset-valuation-haircut-boundary.mjs
 node audit/algorithmic-governability/exp-04-profile-composition-boundary.mjs
 node audit/algorithmic-governability/exp-05-contingent-claims-boundary.mjs
 node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
