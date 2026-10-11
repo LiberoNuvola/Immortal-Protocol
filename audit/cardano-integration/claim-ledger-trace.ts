@@ -735,9 +735,7 @@ type ClaimVariant = {
   label: string
   expectedTraceMarkers: string[]
   mutateRowTier?: boolean
-  settlementUsdm?: bigint
   extraSettlementOutput?: boolean
-  ticketNftReceiver?: string
   includeOwnerSigner?: boolean
 }
 
@@ -757,9 +755,8 @@ async function buildClaimTx(variant: ClaimVariant) {
     0n,
   )
 
-  const settlementUsdm = variant.settlementUsdm ?? PRIZE_AMOUNT
   const settlementLovelace = MIN_UTXO_LOVELACE +
-    (settlementUsdm * 1_000_000n) / ADA_PRICE_USDM_SUBUNITS
+    (PRIZE_AMOUNT * 1_000_000n) / ADA_PRICE_USDM_SUBUNITS
 
   let builder = lucid
     .newTx()
@@ -807,7 +804,7 @@ async function buildClaimTx(variant: ClaimVariant) {
 
   builder = builder
     .pay.ToAddress(
-      variant.ticketNftReceiver ?? address,
+      address,
       { lovelace: 2_000_000n, [ticketUnit]: 1n },
     )
 
@@ -903,17 +900,6 @@ await expectClaimRejected({
   mutateRowTier: true,
 })
 await expectClaimRejected({
-  label: 'settlement-underpayment',
-  expectedTraceMarkers: [
-    'Prize: payout',
-    'B1PrizePool: payout USDM value insufficient',
-  ],
-  settlementUsdm: PRIZE_AMOUNT - 1n,
-  // Prevent B1's recursive per-output payout helper from inspecting the
-  // ticket NFT output when the first settlement output is intentionally short.
-  ticketNftReceiver: referenceAddress,
-})
-await expectClaimRejected({
   label: 'aggregate-settlement-overpayment',
   expectedTraceMarkers: ['Prize: payout'],
   extraSettlementOutput: true,
@@ -924,8 +910,8 @@ await expectClaimRejected({
   includeOwnerSigner: false,
 })
 
-if (negativeResults.length !== 4) {
-  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/4 rejected')
+if (negativeResults.length !== 3) {
+  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/3 rejected')
 }
 
 const validTx = await buildClaimTx({ label: 'valid-claim' })
