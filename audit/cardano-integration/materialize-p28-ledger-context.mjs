@@ -198,13 +198,12 @@ async function acquireGenesis() {
   }
 
   const raw = JSON.parse(bytes.toString('utf8'))
-  const systemStartRaw = raw?.systemStart
+  const systemStartRaw = raw?.systemStart ?? raw?.system_start
   const systemStartSeconds = typeof systemStartRaw === 'number'
     ? systemStartRaw
     : Math.floor(new Date(String(systemStartRaw)).getTime() / 1000)
-  const epochLength = Number(raw?.epochLength)
-  const slotLength = Number(raw?.slotLength)
-  const networkMagic = Number(raw?.networkMagic)
+  const epochLength = Number(raw?.epochLength ?? raw?.epoch_length)
+  const slotLength = Number(raw?.slotLength ?? raw?.slot_length)
 
   if (!Number.isSafeInteger(systemStartSeconds) || systemStartSeconds <= 0) {
     throw new Error('DevKit genesis has invalid systemStart: ' + String(systemStartRaw))
@@ -215,13 +214,8 @@ async function acquireGenesis() {
   if (!(Number.isFinite(slotLength) && slotLength > 0)) {
     throw new Error('DevKit genesis has invalid slotLength: ' + String(raw?.slotLength))
   }
-  if (!Number.isSafeInteger(networkMagic) || networkMagic <= 0) {
-    throw new Error('DevKit genesis has invalid networkMagic: ' + String(raw?.networkMagic))
-  }
-
   return {
     response: {
-      network_magic: networkMagic,
       system_start: systemStartSeconds,
       epoch_length: epochLength,
       slot_length: Math.max(1, Math.ceil(slotLength)),
