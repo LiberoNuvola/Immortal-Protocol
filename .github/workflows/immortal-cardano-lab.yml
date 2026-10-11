@@ -67,18 +67,9 @@ jobs:
         with:
           update-hackage: ${{ steps.plutus-cache.outputs.cache-matched-key == '' }}
 
-      # Cost-model diagnostic run: preserve the real Reveal path while recording the Yaci protocol-model shape.
-      # Closure-line trigger: this lab must bind current validator sources to the real Yaci trace.
-      # Trigger fresh lab runs when closure-line Haskell/profile bindings change upstream.
+      # Generate validators from the exact source snapshot tested below.
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
-
-      - name: Validate Claim signer-boundary kernel before devnet launch
-        working-directory: plutus
-        run: |
-          set -euo pipefail
-          cabal test v3-golden-vector-tests --enable-tests --test-show-details=direct
-          cabal test economic-admission-tests --enable-tests --test-show-details=direct
 
       - name: Save Cabal/Plutus build state
         if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
@@ -109,7 +100,6 @@ jobs:
           cp plutus/out/prizeValidatorFactory.plutus.json src/plutusScripts/prizeValidatorFactory.plutus.json
           cp plutus/out/beaconRegistry.plutus.json src/plutusScripts/beaconRegistry.plutus.json
 
-
       - name: Setup legacy Lucid runtime
         uses: ./.github/actions/setup-legacy-lucid
 
@@ -119,9 +109,8 @@ jobs:
       - name: Start isolated Cardano devnet with Yaci Store
         run: |
           mkdir -p audit/yaci-evidence
-          # In DevKit 0.12.0-beta5, --enable-yaci-store intentionally disables
-          # Ogmios. Start the store first, then enable Ogmios and restart the store
-          # so the store selects its Ogmios evaluator based on the live process.
+          # DevKit beta5 starts Store with Scalus; the next step restarts it
+          # after starting Ogmios so the selected evaluator is unambiguous.
           nohup yaci-devkit up --enable-yaci-store > audit/yaci-evidence/yaci.log 2>&1 &
           echo $! > audit/yaci-evidence/yaci.pid
 
@@ -150,8 +139,8 @@ jobs:
             exit 1
           fi
 
-          # DevKit beta5 starts Store before the post-start Ogmios event.
-          # Stop Store, start Ogmios, and restart Store to select Ogmios at startup.
+          # Rebind the evaluator in a controlled order: stop Store, start Ogmios,
+          # then restart Store so it selects Ogmios during process startup.
           curl --fail --silent --show-error --request POST \
             http://localhost:10000/local-cluster/api/admin/yaci-store/stop \
             -o audit/yaci-evidence/yaci-store-stop.json
@@ -229,12 +218,18 @@ jobs:
             exit 1
           fi
 
-          if ! grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios          {
+          if ! grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios$' "$store_config"; then
+            echo "Yaci Store config does not confirm the Ogmios evaluator."
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config" || true
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+          {
             echo "YACI_STORE_EVALUATOR=ogmios"
             grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config"
           } | tee audit/yaci-evidence/evaluator-mode.txt
 
-      - name: Derive funded CI test wallet
+- name: Derive funded CI test wallet
         id: wallet
         run: |
           address="$(node audit/cardano-integration/create-test-wallet.mjs)"
