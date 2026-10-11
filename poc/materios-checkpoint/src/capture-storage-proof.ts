@@ -344,6 +344,18 @@ async function main(): Promise<void> {
     );
   }
 
+  const knownReceiptId =
+    "0xb157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009";
+  const knownReceiptKey = receiptStorageKey(knownReceiptId);
+  const expectedReceiptKey =
+    "0xf2f45ef88f71bc25f444a160450145be5087a88ab53079a394ab62a465d461833657966cc15aa1d2b23158dd0c61e4e2b157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009";
+
+  if (knownReceiptKey !== expectedReceiptKey) {
+    throw new Error(
+      `receipt storage key self-check failed: got ${knownReceiptKey}`,
+    );
+  }
+
   const rpc = new MateriosRpc(RPC);
   console.log("B3-B live storage proof capture");
   console.log("RPC:", RPC);
