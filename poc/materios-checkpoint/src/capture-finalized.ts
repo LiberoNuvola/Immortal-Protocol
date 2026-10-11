@@ -58,7 +58,16 @@ async function main(): Promise<void> {
   const finalizedHash = await rpc.getFinalizedHead();
   const header = await rpc.getHeader(finalizedHash);
   const runtime = await rpc.getRuntimeVersion(finalizedHash);
-  const runtimeCodeHex = await rpc.getRuntimeCode(finalizedHash);
+
+  let runtimeCodeHex: string | null = null;
+  let runtimeCodeError: string | undefined;
+  try {
+    runtimeCodeHex = await rpc.getRuntimeCode(finalizedHash);
+  } catch (error) {
+    runtimeCodeError =
+      error instanceof Error ? error.message : String(error);
+  }
+
   const selectionInputsCommitment =
     await rpc.getSelectionInputsCommitment(finalizedHash);
 
@@ -76,7 +85,24 @@ async function main(): Promise<void> {
   const authorities = decodeAuthorityList(authoritiesHex);
   const setId = decodeSetId(setIdHex);
   const blockNumber = parseHeaderNumber(header.number);
-  const codeSha256 = sha256Hex(runtimeCodeHex);
+
+  const runtimeCodeEvidence =
+    runtimeCodeHex === null
+      ? {
+          status: "unavailable" as const,
+          byte_length: null,
+          sha256: null,
+          blake2_256: null,
+          native_substrate_hash: "blake2_256",
+          error: runtimeCodeError ?? "runtime code unavailable",
+        }
+      : {
+          status: "captured" as const,
+          byte_length: (runtimeCodeHex.length - 2) / 2,
+          sha256: sha256Hex(runtimeCodeHex),
+          blake2_256: blake2_256Hex(runtimeCodeHex),
+          native_substrate_hash: "blake2_256" as const,
+        };
 
   let grandpaFinalityProof: {
     status: "captured" | "unavailable";
@@ -121,13 +147,7 @@ async function main(): Promise<void> {
       extrinsics_root: header.extrinsicsRoot,
     },
     runtime,
-    runtime_code: {
-      encoding: "hex",
-      byte_length: (runtimeCodeHex.length - 2) / 2,
-      sha256: codeSha256,
-      blake2_256: blake2_256Hex(runtimeCodeHex),
-      native_substrate_hash: "blake2_256",
-    },
+    runtime_code: runtimeCodeEvidence,
     grandpa: {
       set_id: setId.toString(),
       authorities: authorities.map((a) => ({
@@ -146,7 +166,9 @@ async function main(): Promise<void> {
         "finalized head hash obtained from chain_getFinalizedHead",
         "header read at the exact finalized hash",
         "runtime version read at the exact finalized hash",
-        "runtime code read at the exact finalized hash",
+        ...(runtimeCodeHex !== null
+          ? ["runtime code read at the exact finalized hash"]
+          : []),
         "GRANDPA authority list read at the exact finalized hash",
         "GRANDPA set id read at the exact finalized hash",
         "standard grandpa_proveFinality transport queried for the finalized block number; raw bytes are untrusted evidence",
