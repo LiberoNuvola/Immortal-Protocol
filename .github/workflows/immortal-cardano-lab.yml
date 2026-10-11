@@ -73,6 +73,13 @@ jobs:
       - name: Generate fresh Plutus validator artifacts
         run: cabal run exe:export-scripts
 
+      - name: Validate Claim signer-boundary kernel before devnet launch
+        working-directory: plutus
+        run: |
+          set -euo pipefail
+          cabal test v3-golden-vector-tests --enable-tests --test-show-details=direct
+          cabal test economic-admission-tests --enable-tests --test-show-details=direct
+
       - name: Save Cabal/Plutus build state
         if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
