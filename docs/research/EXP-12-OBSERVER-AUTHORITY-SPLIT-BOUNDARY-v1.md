@@ -39,6 +39,18 @@ The repository already treats relayer/keeper/operator components as executor/obs
 
 This EXP axis extracts that separation as a reusable generalization; it does not replace the existing B3 or Governance contracts.
 
+## Boundary conformance
+
+The executable boundary requires:
+
+- an explicitly verified observation identity;
+- an explicit provenance/evidence reference for that observation;
+- a separately supplied authorization boundary with its own authority reference;
+- preservation of those identities across the authorization result;
+- fail-closed behavior when verification, provenance, or authority identity is missing.
+
+Mutation of observation identity remains distinguishable from the separately supplied authority identity. This is an identity/provenance check only; it does not define which authority is institutionally valid.
+
 ## Open questions
 
 - Which evidence classes can be single-source?
