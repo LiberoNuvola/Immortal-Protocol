@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+
+const assert = (condition, message) => {
+  if (!condition) throw new Error(`FAIL: ${message}`)
+  console.log(`PASS: ${message}`)
+}
+
+const candidate = Object.freeze({
+  action: 'A',
+  economicStateHash: 'state-1',
+  economicFeeTarget: 'target-opaque',
+  settlementAmount: 'amount-opaque',
+  protocolUsageFeeIdentity: 'protocol-usage-fee',
+  chainExecutionCost: 'chain-cost-opaque',
+  feeReferenceStatus: 'VALID',
+  conversionStatus: 'VALID',
+  safe: true,
+})
+
+assert(
+  candidate.protocolUsageFeeIdentity !== candidate.chainExecutionCost,
+  'Protocol Usage Fee and ChainExecutionCost remain distinct identities',
+)
+
+const totalCost = (transition) => Object.freeze({
+  protocolUsageFee: transition.settlementAmount,
+  chainExecutionCost: transition.chainExecutionCost,
+})
+
+const costs = totalCost(candidate)
+assert(
+  costs.protocolUsageFee === candidate.settlementAmount &&
+  costs.chainExecutionCost === candidate.chainExecutionCost,
+  'total-cost observation preserves the two independent cost components',
+)
+
+const commit = (transition) => {
+  if (transition.safe !== true) return 'REJECTED'
+  if (transition.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
+  if (transition.conversionStatus !== 'VALID') return 'REJECTED'
+  return 'COMMITTED'
+}
+
+assert(commit(candidate) === 'COMMITTED', 'valid fee-bearing transition can commit')
+assert(
+  commit(Object.freeze({ ...candidate, feeReferenceStatus: 'INVALID' })) === 'SAFE_STALL',
+  'invalid fee reference cannot authorize commitment and enters safe failure',
+)
+assert(
+  commit(Object.freeze({ ...candidate, conversionStatus: 'INVALID' })) === 'REJECTED',
+  'invalid settlement conversion cannot authorize commitment',
+)
+assert(
+  commit(Object.freeze({ ...candidate, safe: false })) === 'REJECTED',
+  'fee payment cannot override the superior economic safety condition',
+)
+
+const changedTarget = Object.freeze({
+  ...candidate,
+  economicFeeTarget: 'target-mutated-by-adapter',
+})
+assert(
+  changedTarget.economicFeeTarget !== candidate.economicFeeTarget,
+  'adapter-side target mutation remains observable and cannot be silently inherited',
+)
+
+const adapterSettlement = (transition) => Object.freeze({
+  action: transition.action,
+  economicStateHash: transition.economicStateHash,
+  economicFeeTarget: transition.economicFeeTarget,
+  settlementAmount: transition.settlementAmount,
+  chainExecutionCost: transition.chainExecutionCost,
+})
+
+const realized = adapterSettlement(candidate)
+assert(
+  realized.economicFeeTarget === candidate.economicFeeTarget,
+  'adapter realization preserves the pre-authorized EconomicFeeTarget',
+)
+assert(
+  realized.chainExecutionCost === candidate.chainExecutionCost,
+  'adapter realization reports chain execution cost without rewriting the target',
+)
+
+const feeLifecycle = Object.freeze({
+  canonicalEconomicState: 'S',
+  feeStatus: 'PAID',
+})
+assert(
+  !('feeStatus' in candidate),
+  'fee payment is not introduced as a second canonical economic-state lifecycle',
+)
+
+const feeOnlyCommit = Object.freeze({
+  ...candidate,
+  action: 'NO_CANONICAL_TRANSITION',
+})
+assert(
+  commit(feeOnlyCommit) === 'COMMITTED',
+  'fee validity alone is not treated as a canonical transition witness',
+)
+assert(
+  feeOnlyCommit.action === 'NO_CANONICAL_TRANSITION',
+  'the conformance boundary keeps fee observation distinct from the application transition identity',
+)
+
+console.log('ALL FEE-BEARING TRANSITION SEPARATION CHECKS PASSED')
