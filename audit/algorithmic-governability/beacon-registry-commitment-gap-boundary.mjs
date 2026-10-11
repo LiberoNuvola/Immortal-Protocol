@@ -34,8 +34,8 @@ const tsFieldBlock = datumBuilder.slice(
 assert(!tsFieldBlock.includes('brGameRoundCommitment'), 'canonical TypeScript registry datum fields do not fabricate a commitment field')
 
 assert(
-  /not authenticated by the current on-chain registry datum/i.test(flow) &&
-  /off-chain consistency check only/i.test(flow),
+  /does NOT authenticate it/i.test(flow) &&
+  /off-chain consistency check/i.test(flow),
   'registry publish flow explicitly distinguishes off-chain commitment consistency from on-chain authentication',
 )
 
