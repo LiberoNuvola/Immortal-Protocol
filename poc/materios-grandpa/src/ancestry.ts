@@ -68,6 +68,42 @@ export function decodeMateriosHeader(
 ): DecodedHeader {
   try {
     const reader = new ScaleReader(rawHeader);
+    const decoded =
+      decodeMateriosHeaderFromReader(reader);
+
+    reader.assertEof();
+
+    return {
+      parentHash: decoded.parentHash,
+      number: decoded.number,
+      stateRoot: decoded.stateRoot,
+      extrinsicsRoot: decoded.extrinsicsRoot,
+      digest: decoded.digest
+    };
+  } catch (error) {
+    if (error instanceof ScaleDecodeError) {
+      throw error;
+    }
+
+    throw new ScaleDecodeError(
+      "MALFORMED_HEADER"
+    );
+  }
+}
+
+/**
+ * Decode one canonical Substrate header directly from a shared SCALE reader.
+ *
+ * The returned evidence includes the exact consumed bytes and their Blake2
+ * hash so an enclosing proof decoder can preserve header boundaries without
+ * guessing the variable-length digest size.
+ */
+export function decodeMateriosHeaderFromReader(
+  reader: ScaleReader
+): GrandpaAncestryHeader {
+  try {
+    const start =
+      reader.position;
 
     const parentHash =
       reader.readBytes(32);
@@ -84,14 +120,28 @@ export function decodeMateriosHeader(
     const digest =
       decodeDigest(reader);
 
-    reader.assertEof();
+    const rawHeader =
+      reader.slice(
+        start,
+        reader.position
+      );
+
+    const hash =
+      blake2b(
+        rawHeader,
+        { dkLen: 32 }
+      );
 
     return {
       parentHash,
       number,
       stateRoot,
       extrinsicsRoot,
-      digest
+      digest,
+      rawHeader,
+      hash,
+      encoding:
+        MATERIOS_HEADER_ENCODING
     };
   } catch (error) {
     if (error instanceof ScaleDecodeError) {
