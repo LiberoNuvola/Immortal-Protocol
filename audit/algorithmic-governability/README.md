@@ -12,13 +12,30 @@ This lab does not define new economic or governance rules. It checks two already
 
 The harness uses deliberately small immutable toy objects. Passing it is evidence that the implementation preserves these boundaries in the modeled cases; it is not a proof of the entire protocol.
 
-## G4 / G5 workflow mapping
+## IMMORTAL Expansion namespace
 
-G4 and G5 are **not missing research functions** and should not be duplicated in this Node-only lab.
+This lab contains support for the **IMMORTAL Expansion** research front. Its identifiers are:
 
-- **G4 — B4/B5/B6 system closure:** ProtectedCapital, Economic Gate, viability and V3↔Cardano semantic correspondence. Canonical evidence is carried by the dedicated Haskell/Cardano conformance workflows and the frozen B5/B6 action-evidence contract.
-- **G5 — Governance certification:** current-head governance build/execution evidence, canonical replay and GOV-18/GOV-28 lifecycle conformance. Canonical evidence is carried by the dedicated Haskell governance suites.
-- This lab may expose or cross-reference those fronts, but must not invent a parallel governance/economic implementation.
+| ID | Generalization |
+| --- | --- |
+| EXP-01 | Typed obligations / seniority |
+| EXP-02 | Term structure / time horizon |
+| EXP-03 | Multi-asset / eligibility / haircut boundary |
+| EXP-04 | Composition of profiles |
+| EXP-05 | Abstract contingent claims |
+| EXP-06 | Evidence-as-input |
+| EXP-07 | Regime / hysteresis |
+| EXP-08 | Netting / offset |
+| EXP-09 | Obligation transfer / novation |
+| EXP-10 | Explicit risk budget |
+| EXP-11 | Deterministic auction / allocation |
+| EXP-12 | Observer vs authority split |
+
+The **EXP-** prefix is deliberate: it prevents these generalization axes from being confused with Governance (`GOV-xx`), system closure fronts (`B4/B5/B6`), or the separate G1–G6 liveness conditions.
+
+Current bounded implementations in this branch include EXP-01-light, EXP-03-minimal, EXP-06 and EXP-07-light. The remaining EXP items stay research/open until their semantic boundary is explicitly justified.
+
+These expansions are not a second governance system and do not create new economic authority.
 
 ## Evidence model
 
