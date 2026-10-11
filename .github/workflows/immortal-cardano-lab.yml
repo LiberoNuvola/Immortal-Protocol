@@ -115,7 +115,7 @@ jobs:
           # Yaci DevKit 0.12.0-beta5 disables Ogmios when --enable-yaci-store is
           # supplied. Start Kupomios first, then start Yaci Store via its admin API
           # so it selects the Ogmios evaluator rather than the Scalus fallback.
-          nohup yaci-devkit up --enable-kupomios > audit/yaci-evidence/yaci.log 2>&1 &
+          nohup yaci-devkit up --component node yaci-store --enable-kupomios > audit/yaci-evidence/yaci.log 2>&1 &
           echo $! > audit/yaci-evidence/yaci.pid
 
       - name: Start Yaci Store after Ogmios
