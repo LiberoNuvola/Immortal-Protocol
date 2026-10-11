@@ -23,6 +23,8 @@ const derive = (boundary, certifiedInput) => {
   if (!certifiedInput || certifiedInput.withinDeclaredBounds == null) {
     return { status: 'UNVERIFIABLE' }
   }
+  if (certifiedInput.domain && certifiedInput.domain !== boundary.domain) return { status: 'REJECTED' }
+  if (certifiedInput.ruleVersion && certifiedInput.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
   if (certifiedInput.withinDeclaredBounds !== true) return { status: 'REJECTED' }
   return Object.freeze({
     status: 'ADMISSIBLE',
@@ -75,6 +77,83 @@ const selfExpansion = Object.freeze({
 assert(selfExpansion.domain !== fee.domain, 'self-expanded domain is distinguishable')
 assert(selfExpansion.ruleVersion !== fee.ruleVersion, 'self-expanded rule identity is distinguishable')
 assert(selfExpansion.boundContract !== fee.boundContract, 'self-expanded bounds identity is distinguishable')
+
+/*
+ * Explicit Explore -> Certify -> Adopt separation.
+ *
+ * Explore may report a PARTIAL search, but that result must retain its coverage
+ * status and cannot be silently relabeled as a complete normative universe.
+ * Adoption requires an independently authorized existing path; derivation alone
+ * never mutates canonical state.
+ */
+const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => {
+  if (!certifiedState || certifiedState.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  return Object.freeze({
+    status: 'CANDIDATE_SET',
+    family: boundary.domain,
+    ruleVersion: boundary.ruleVersion,
+    evidenceContract: boundary.evidenceContract,
+    candidates: Object.freeze([...candidates]),
+    coverage,
+  })
+}
+
+const certifyCandidate = (boundary, candidate) => {
+  if (!candidate || candidate.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  if (candidate.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
+  if (candidate.evidenceVerified !== true) return { status: 'UNVERIFIABLE' }
+  if (candidate.withinDeclaredBounds !== true) return { status: 'REJECTED' }
+  return Object.freeze({
+    status: 'ADMISSIBLE',
+    family: boundary.domain,
+    ruleVersion: boundary.ruleVersion,
+    evidenceContract: boundary.evidenceContract,
+    value: candidate.value,
+  })
+}
+
+const adopt = (certifiedResult, authorization) => {
+  if (certifiedResult?.status !== 'ADMISSIBLE') return { status: 'UNVERIFIABLE' }
+  if (authorization !== 'existing-authorized-path') return { status: 'UNVERIFIABLE' }
+  return Object.freeze({ status: 'ADOPTED', semanticResult: certifiedResult })
+}
+
+const search = explore(reward, { domain: 'reward' }, ['candidate-1', 'candidate-2'], 'PARTIAL')
+assert(search.coverage === 'PARTIAL', 'partial search coverage is explicit')
+assert(search.candidates.length === 2, 'candidate set records the portion actually explored')
+const searchClaim = Object.freeze({ ...search, coverage: 'COMPLETE' })
+assert(searchClaim.coverage !== search.coverage, 'complete coverage cannot be inherited from a partial search')
+assert(
+  certifyCandidate(reward, {
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }).status === 'ADMISSIBLE',
+  'certification is a distinct step after exploration',
+)
+const certified = certifyCandidate(reward, {
+  domain: 'reward',
+  ruleVersion: 'reward-v1',
+  evidenceVerified: true,
+  withinDeclaredBounds: true,
+  value: 7,
+})
+assert(adopt(certified, 'existing-authorized-path').status === 'ADOPTED',
+  'adoption requires an existing authorized path')
+assert(adopt(certified, 'algorithm-decides').status === 'UNVERIFIABLE',
+  'the derivation engine cannot self-authorize adoption')
+assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
+
+assert(
+  derive(reward, { domain: 'fee', value: 7, withinDeclaredBounds: true }).status === 'REJECTED',
+  'a candidate from another function family cannot cross the reward boundary',
+)
+assert(
+  derive(reward, { domain: 'reward', ruleVersion: 'fee-v1', value: 7, withinDeclaredBounds: true }).status === 'REJECTED',
+  'a result bound to another rule version cannot cross the reward boundary',
+)
 
 import fs from 'node:fs'
 import path from 'node:path'
