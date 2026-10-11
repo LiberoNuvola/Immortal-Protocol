@@ -788,47 +788,26 @@ async function main(): Promise<void> {
       }
     | null = null;
 
-  const transitionProbeLog: Array<{
-    blockNumber: number;
-    hash?: string;
-    found?: boolean;
-    error?: string;
-  }> = [];
+  for (const block of recentBlocks) {
+    if (block.number > Number(witness.blockNumber)) {
+      continue;
+    }
 
-  for (const candidate of transitionCandidates(finalizedHeight)) {
-    try {
-      const block = await getBlockByNumber(candidate);
-      const selection = extractSelectionInputsHash(
-        block.signed.block.extrinsics,
-      );
+    const selection = extractSelectionInputsHash(
+      block.signed.block.extrinsics,
+    );
 
-      transitionProbeLog.push({
-        blockNumber: candidate,
-        hash: block.hash,
-        found: selection !== null,
-      });
-
-      if (selection !== null) {
-        transitionWitness = {
-          blockNumber: candidate,
-          blockHash: block.hash,
-          extrinsicIndex: selection.extrinsicIndex,
-          extrinsicHex: selection.extrinsicHex,
-          selectionInputsHash:
-            selection.selectionInputsHash,
-          finalityEvidenceOnSameBlock:
-            extractGrandpaJustification(block.signed) !== null,
-        };
-        break;
-      }
-    } catch (error) {
-      transitionProbeLog.push({
-        blockNumber: candidate,
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      });
+    if (selection !== null) {
+      transitionWitness = {
+        blockNumber: block.number,
+        blockHash: block.hash,
+        extrinsicIndex: selection.extrinsicIndex,
+        extrinsicHex: selection.extrinsicHex,
+        selectionInputsHash: selection.selectionInputsHash,
+        finalityEvidenceOnSameBlock:
+          extractGrandpaJustification(block.signed) !== null,
+      };
+      break;
     }
   }
 
