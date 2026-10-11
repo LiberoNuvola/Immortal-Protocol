@@ -113,6 +113,8 @@ jobs:
         run: node audit/algorithmic-governability/reward-treasury-boundary.mjs
       - name: Fee-bearing transition separation boundary
         run: node audit/algorithmic-governability/fee-bearing-transition-separation-boundary.mjs
+      - name: RF8 economic mutator inventory boundary
+        run: node audit/algorithmic-governability/rf8-economic-mutator-inventory-boundary.mjs
       - name: Multi-adapter semantic boundary
         run: node audit/algorithmic-governability/multi-adapter-semantic-boundary.mjs
       - name: Permissionless liveness and replay boundary
