@@ -1140,6 +1140,21 @@ async function main() {
         return;
       }
 
+      // A builder-side CEK error is not a ledger rejection. In particular,
+      // lucid-cardano 0.10.11 performs native UPLC evaluation in .complete()
+      // by default; failures at build/sign/await stages must stay inconclusive.
+      if (stage !== "submit") {
+        inconclusiveNegativeProbes.push({
+          label,
+          stage,
+          classification: "PRE_SUBMISSION_OR_AWAIT_FAILURE",
+          error: message.split(/\r?\n/)[0],
+        });
+        console.log(label, "INCONCLUSIVE_NOT_SUBMIT_REJECTION", "stage=" + stage);
+        console.log(label, "ERROR", message.split(/\r?\n/)[0]);
+        return;
+      }
+
       const scriptFailure =
         /failed script execution|PlutusFailure|PlutusV[12] script failed|script evaluation failed|validator failure|script failure|script failed|CekError/i.test(message);
 
