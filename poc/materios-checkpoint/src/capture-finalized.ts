@@ -229,7 +229,8 @@ async function main(): Promise<void> {
   console.log("GRANDPA finality proof status:", grandpaFinalityProof.status);
   console.log(
     "selection_inputs_hash:",
-    selectionInputsCommitment.selectionInputsHash,
+    selectionInputsCommitment?.selectionInputsHash ??
+      "unavailable at this finalized block",
   );
   console.log("wrote:", outPath);
 }
