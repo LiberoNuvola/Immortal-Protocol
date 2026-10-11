@@ -733,6 +733,7 @@ if (
 
 type ClaimVariant = {
   label: string
+  expectedTraceMarkers: string[]
   mutateRowTier?: boolean
   settlementUsdm?: bigint
   extraSettlementOutput?: boolean
@@ -838,16 +839,25 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
       throw error
     }
 
+    const expectedMarker = variant.expectedTraceMarkers.find((marker) =>
+      message.includes(marker),
+    )
     const rejectedByYaciEvaluation =
       message.includes('Yaci transaction evaluation failed') ||
-      message.includes('Yaci evaluation failed') ||
-      /HTTP 4\d\d/.test(message)
-    const rejectedByLedger = phase === 'ledger submission'
-    if (!rejectedByYaciEvaluation && !rejectedByLedger) {
+      message.includes('Yaci evaluation failed')
+    const rejectedByLedger =
+      phase === 'ledger submission' &&
+      /HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message)
+
+    // Do not turn network/configuration failures, unrelated evaluator errors,
+    // or generic 4xx responses into a PASS. The log must identify the expected
+    // validator branch for this negative twin.
+    if ((!rejectedByYaciEvaluation && !rejectedByLedger) || !expectedMarker) {
       throw new Error(
         'Negative twin "' + variant.label +
-        '" failed outside the Yaci evaluator/ledger rejection path (' +
-        phase + '): ' + message,
+        '" did not prove its expected on-chain rejection (' + phase +
+        ', expected one of ' + variant.expectedTraceMarkers.join(' | ') +
+        '): ' + message,
       )
     }
 
@@ -855,6 +865,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
       label: variant.label,
       rejected: true,
       rejectedAt: rejectedByYaciEvaluation ? 'Yaci Plutus evaluation' : 'Yaci ledger submission',
+      expectedTraceMarker: expectedMarker,
       txCborSha256: cborHash,
       error: message.slice(0, 2500),
     })
@@ -862,6 +873,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
       claimNegativeTwin: variant.label,
       rejected: true,
       rejectedAt: rejectedByYaciEvaluation ? 'Yaci Plutus evaluation' : 'Yaci ledger submission',
+      expectedTraceMarker: expectedMarker,
       txCborSha256: cborHash,
       error: message.slice(0, 900),
     }))
@@ -884,19 +896,30 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
 
 await expectClaimRejected({
   label: 'mutated-row-tier',
+  expectedTraceMarkers: ['Prize: bad claim continuing'],
   mutateRowTier: true,
 })
 await expectClaimRejected({
+  label: 'settlement-underpayment',
+  expectedTraceMarkers: [
+    'Prize: payout',
+    'B1PrizePool: payout USDM value insufficient',
+  ],
+  settlementUsdm: PRIZE_AMOUNT - 1n,
+})
+await expectClaimRejected({
   label: 'aggregate-settlement-overpayment',
+  expectedTraceMarkers: ['Prize: payout'],
   extraSettlementOutput: true,
 })
 await expectClaimRejected({
   label: 'missing-owner-required-signer',
+  expectedTraceMarkers: ['Prize: owner sig', 'B1PrizePool: owner not signed'],
   includeOwnerSigner: false,
 })
 
-if (negativeResults.length !== 3) {
-  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/3 rejected')
+if (negativeResults.length !== 4) {
+  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/4 rejected')
 }
 
 const validTx = await buildClaimTx({ label: 'valid-claim' })
