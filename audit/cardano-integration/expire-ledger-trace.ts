@@ -25,7 +25,7 @@ import {
   type UTxO,
 } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
 import {
@@ -493,7 +493,7 @@ const expireTx = await lucid
     poolUtxo.assets,
   )
   .addSigner(address)
-  .validFrom(Number(expiresAt))
+  .validFrom(Number(expiresAt + 1_000n))
   .complete({ localUPLCEval: false })
 
 // This fixture qualifies the on-chain EXPIRE transition only. It does not
