@@ -65,6 +65,23 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
 
+      - name: Discover live receipt via Firehose
+        id: receipt
+        shell: bash
+        run: |
+          set -uo pipefail
+          line=$(curl -N -sS --max-time 30 \
+            -H "Accept: text/event-stream" \
+            https://materios.fluxpointstudios.com/api/firehose/stream \
+            | grep -m1 '"kind":"receipt:certified"' || true)
+
+          receipt_id=$(printf '%s' "$line" \
+            | sed -n 's/.*"receiptId":"\([^"]*\)".*/\1/p')
+
+          test -n "$receipt_id"
+          echo "receipt_id=$receipt_id" >> "$GITHUB_OUTPUT"
+          echo "receipt_id=$receipt_id"
+
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
         run: npx tsx src/capture-storage-proof.ts
@@ -72,6 +89,7 @@ jobs:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
+          MATERIOS_RECEIPT_ID: ${{ steps.receipt.outputs.receipt_id }}
           RECEIPT_TIMEOUT_MS: "120000"
 
       - uses: dtolnay/rust-toolchain@stable
