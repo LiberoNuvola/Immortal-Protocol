@@ -9,7 +9,10 @@ const assert = (condition, message) => {
 }
 
 const repoRoot = process.cwd()
-const roots = ['src', 'relayer', 'web']
+// Scan executable/runtime and deployment tooling surfaces. The legacy
+// treasuryPolicy.ts definition itself is intentionally excluded because this
+// boundary verifies non-use, not removal of historical compatibility code.
+const roots = ['src', 'relayer', 'web', 'scripts']
 
 function walk(dir) {
   const out = []
@@ -42,5 +45,5 @@ for (const file of sourceFiles) {
   }
 }
 
-assert(hits.length === 0, 'legacy Treasury policy symbols are absent from production JS/TS call surfaces')
+assert(hits.length === 0, 'legacy Treasury policy symbols are absent from executable runtime and deployment-tool call surfaces')
 console.log('ALL TREASURY LEGACY ISOLATION CHECKS PASSED')
