@@ -54,12 +54,12 @@ const PREPROD_SLOTS_PER_EPOCH = Number(
   process.env.MATERIOS_SLOTS_PER_EPOCH ?? "600",
 );
 
-const JUSTIFICATION_LOOKBACK = Number(
-  process.env.MATERIOS_JUSTIFICATION_LOOKBACK ?? "8",
+const WITNESS_LOOKBACK = Number(
+  process.env.MATERIOS_WITNESS_LOOKBACK ?? "768",
 );
 
-const TRANSITION_LOOKBACK_EPOCHS = Number(
-  process.env.MATERIOS_TRANSITION_LOOKBACK_EPOCHS ?? "12",
+const BLOCK_BATCH_SIZE = Number(
+  process.env.MATERIOS_BLOCK_BATCH_SIZE ?? "64",
 );
 
 type JsonRpcResponse<T> = {
@@ -367,92 +367,193 @@ function decodeSetId(hex: string): bigint {
   return value;
 }
 
-function compactCandidates(
-  finalizedHeight: bigint,
-): number[] {
-  const out: number[] = [];
-  const seen = new Set<number>();
 
-  const add = (height: bigint) => {
+type RpcBatchCall = {
+  method: string;
+  params: unknown[];
+};
+
+async function rpcBatch<T>(
+  calls: readonly RpcBatchCall[],
+): Promise<T[]> {
+  if (calls.length === 0) {
+    return [];
+  }
+
+  const response = await fetch(RPC, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(
+      calls.map((call, index) => ({
+        jsonrpc: "2.0",
+        id: index + 1,
+        method: call.method,
+        params: call.params,
+      })),
+    ),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      "RPC batch HTTP " +
+        response.status +
+        " " +
+        response.statusText,
+    );
+  }
+
+  const body = (await response.json()) as
+    | JsonRpcResponse<T>[]
+    | JsonRpcResponse<T>;
+
+  if (!Array.isArray(body)) {
+    throw new Error("RPC batch endpoint did not return an array");
+  }
+
+  if (body.length !== calls.length) {
+    throw new Error(
+      "RPC batch response length mismatch: expected " +
+        calls.length +
+        ", got " +
+        body.length,
+    );
+  }
+
+  const ordered = new Array<T>(calls.length);
+
+  for (const item of body) {
     if (
-      height < 0n ||
-      height > BigInt(Number.MAX_SAFE_INTEGER)
+      typeof item?.id !== "number" ||
+      item.id < 1 ||
+      item.id > calls.length
     ) {
-      return;
+      throw new Error("RPC batch returned an invalid id");
     }
 
-    const n = Number(height);
-    if (!seen.has(n)) {
-      seen.add(n);
-      out.push(n);
+    const call = calls[item.id - 1]!;
+    if (item.error) {
+      throw new Error(
+        "RPC " +
+          call.method +
+          ": " +
+          item.error.code +
+          " " +
+          item.error.message,
+      );
     }
-  };
 
-  const base =
-    finalizedHeight -
-    (finalizedHeight % BigInt(JUSTIFICATION_PERIOD));
+    if (!Object.prototype.hasOwnProperty.call(item, "result")) {
+      throw new Error(
+        "RPC " + call.method + ": missing result",
+      );
+    }
 
-  for (
-    let i = 0;
-    i < JUSTIFICATION_LOOKBACK;
-    i += 1
-  ) {
-    add(base - BigInt(i * JUSTIFICATION_PERIOD));
+    ordered[item.id - 1] = item.result as T;
   }
 
-  for (let delta = -8; delta <= 8; delta += 1) {
-    add(base + BigInt(delta));
-  }
-
-  return out
-    .filter((height) => BigInt(height) <= finalizedHeight)
-    .sort((a, b) => b - a);
+  return ordered;
 }
 
-function transitionCandidates(
-  finalizedHeight: bigint,
-): number[] {
-  const out: number[] = [];
-  const seen = new Set<number>();
+async function getRecentBlocks(
+  startNumber: number,
+  endNumber: number,
+): Promise<Array<{
+  number: number;
+  hash: string;
+  signed: SignedBlock;
+}>> {
+  if (
+    startNumber < 0 ||
+    endNumber < startNumber ||
+    !Number.isSafeInteger(startNumber) ||
+    !Number.isSafeInteger(endNumber)
+  ) {
+    throw new Error("invalid dense block scan range");
+  }
 
-  const add = (height: bigint) => {
-    if (
-      height < 0n ||
-      height > BigInt(Number.MAX_SAFE_INTEGER)
-    ) {
-      return;
-    }
-
-    const n = Number(height);
-    if (!seen.has(n)) {
-      seen.add(n);
-      out.push(n);
-    }
-  };
-
-  const period = BigInt(PREPROD_SLOTS_PER_EPOCH);
-  const base = finalizedHeight - (finalizedHeight % period);
+  const out: Array<{
+    number: number;
+    hash: string;
+    signed: SignedBlock;
+  }> = [];
 
   for (
-    let epoch = 0;
-    epoch < TRANSITION_LOOKBACK_EPOCHS;
-    epoch += 1
+    let start = startNumber;
+    start <= endNumber;
+    start += BLOCK_BATCH_SIZE
   ) {
-    const boundary =
-      base - BigInt(epoch * PREPROD_SLOTS_PER_EPOCH);
+    const batchEnd = Math.min(
+      endNumber,
+      start + BLOCK_BATCH_SIZE - 1,
+    );
 
-    for (let delta = -4; delta <= 4; delta += 1) {
-      add(boundary + BigInt(delta));
+    const numbers: number[] = [];
+    for (let number = start; number <= batchEnd; number += 1) {
+      numbers.push(number);
+    }
+
+    const hashes = await rpcBatch<string>(
+      numbers.map((number) => ({
+        method: "chain_getBlockHash",
+        params: [number],
+      })),
+    );
+
+    for (const hash of hashes) {
+      requireHash(hash, "chain_getBlockHash");
+    }
+
+    const blocks = await rpcBatch<SignedBlock>(
+      hashes.map((hash) => ({
+        method: "chain_getBlock",
+        params: [hash],
+      })),
+    );
+
+    for (let i = 0; i < blocks.length; i += 1) {
+      const signed = blocks[i]!;
+      const requestedNumber = numbers[i]!;
+      if (
+        !signed ||
+        typeof signed !== "object" ||
+        !signed.block ||
+        !signed.block.header
+      ) {
+        throw new Error(
+          "chain_getBlock returned malformed block at height " +
+            requestedNumber,
+        );
+      }
+
+      const header = signed.block.header;
+      const headerNumber = parseBlockNumber(
+        header.number,
+        "dense header number",
+      );
+
+      if (headerNumber !== BigInt(requestedNumber)) {
+        throw new Error(
+          "dense block number mismatch at requested height " +
+            requestedNumber,
+        );
+      }
+
+      const hash = hashes[i]!.toLowerCase();
+      if (requireHash(header.parentHash, "parentHash") === hash) {
+        throw new Error(
+          "self-parented block at height " + requestedNumber,
+        );
+      }
+
+      out.push({
+        number: requestedNumber,
+        hash,
+        signed,
+      });
     }
   }
 
-  return out
-    .filter(
-      (height) =>
-        height >= 0 &&
-        BigInt(height) <= finalizedHeight,
-    )
-    .sort((a, b) => b - a);
+  return out;
 }
 
 async function getBlockByNumber(
