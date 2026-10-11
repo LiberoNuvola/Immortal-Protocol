@@ -105,4 +105,4 @@ AG-01 can move from OPEN only when:
 
 are all present for AG-01..AG-10, with no result-dependent self-promotion path.
 
-Current status: **OPEN / conformance evidence advancing**.
+Current status: **OPEN / executable negative evidence advancing**.
