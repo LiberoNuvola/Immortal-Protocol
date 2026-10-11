@@ -34,6 +34,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: G7 canonical hysteresis conformance
         run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
+      - name: Contributor credential separation boundary
+        run: node audit/algorithmic-governability/contributor-credential-separation-boundary.mjs
       - name: Contributor reward boundary
         run: node audit/algorithmic-governability/reward-contributor-boundary.mjs
       - name: Treasury and reward accounting boundary
