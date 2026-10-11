@@ -219,17 +219,23 @@ rawTicketOwnerHashInInputs ticketCs ticketTn (rawInput:rest) =
         Nothing -> Nothing
         Just rawValue ->
           case rawAssetAmount ticketCs ticketTn rawValue of
-            Just 1 ->
-              case rawConstrField 0 0 rawOut of
-                Nothing -> Nothing
-                Just rawAddress ->
-                  case rawConstrField 0 0 rawAddress of
-                    Just rawCredential ->
-                      case rawConstr rawCredential of
-                        Just (0, fields) -> rawField 0 fields
-                        _ -> Nothing
+            Just amount ->
+              if amount == 1
+                then
+                  case rawConstrField 0 0 rawOut of
                     Nothing -> Nothing
-            _ -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
+                    Just rawAddress ->
+                      case rawConstrField 0 0 rawAddress of
+                        Just rawCredential ->
+                          case rawConstr rawCredential of
+                            Just (tag, fields) ->
+                              if tag == 0
+                                then rawField 0 fields
+                                else Nothing
+                            Nothing -> Nothing
+                        Nothing -> Nothing
+                else rawTicketOwnerHashInInputs ticketCs ticketTn rest
+            Nothing -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
 
 {-# INLINABLE rawMapPairs #-}
 rawMapPairs :: BuiltinData -> Maybe [(BuiltinData, BuiltinData)]
