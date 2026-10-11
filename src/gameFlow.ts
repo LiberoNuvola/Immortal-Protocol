@@ -1006,6 +1006,11 @@ export async function claimPrize(opts: {
     throw new Error('Claim requires a wallet address with a payment key credential')
   }
   const claimantAddress = lucid.utils.credentialToAddress(buyerPaymentCredential)
+  if (claimantAddress === buyer) {
+    throw new Error(
+      'Claim requires a wallet address distinct from the enterprise settlement address so the returned ticket NFT cannot enter the payout valuation',
+    )
+  }
 
   // Both Claim validators use deployed reference scripts. Keeping the two
   // large validator programs out of the transaction body preserves the same
