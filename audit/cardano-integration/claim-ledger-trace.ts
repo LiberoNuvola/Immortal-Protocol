@@ -198,13 +198,11 @@ const providerWithEvaluation = provider as Blockfrost & {
   }>>
 }
 
-// Yaci's first evaluation under-declared the final Reveal context by 438 memory
-// and 105,090 steps per redeemer (about 0.019%) in run #1595. Keep the raw
-// evaluator result separate from the budget returned to Lucid, and apply a
-// small engineering margin so fee/body finalization cannot leave a redeemer
-// just below the cost of its final ledger context. This does not change any
-// validator or economic rule; the final preflight below verifies coverage and
-// checks the aggregate against the active protocol limits.
+// Keep Yaci's raw evaluator result separate from the budget returned to Lucid.
+// The 1% margin is a transaction-construction allowance only: the trace does
+// not presume Claim's measured cost. Ledger submission remains authoritative;
+// record both values in the output if evaluation succeeds. This does not change
+// any validator or economic rule.
 const EX_UNITS_SAFETY_MARGIN_BPS = 100
 const EX_UNITS_SAFETY_DENOMINATOR = 10_000n
 
@@ -321,7 +319,7 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   }))
   if (measured.length > 0) {
     console.log(JSON.stringify({
-      revealDiag: 'yaci-evaluate',
+      claimDiag: 'yaci-evaluate',
       tx: describeTx(cbor),
       yaciMeasuredExUnits: measured,
       yaciBudgetedExUnits: budgeted,
