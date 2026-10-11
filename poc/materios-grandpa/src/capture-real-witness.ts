@@ -857,8 +857,15 @@ async function main(): Promise<void> {
         "The selection_inputs_hash is a real on-chain commitment, but this capture does not claim independent selector execution or authenticated authority-set provenance.",
     },
     probes: {
-      justification: justificationProbeLog,
-      transition: transitionProbeLog,
+      dense_scan_start: scanStart,
+      dense_scan_end: finalizedHeightNumber,
+      dense_scan_blocks: recentBlocks.length,
+      blocks_with_grandpa_justification: witnessedBlocks.map(
+        (block) => ({
+          blockNumber: block.number,
+          blockHash: block.hash,
+        }),
+      ),
     },
     b3a_claim: {
       cryptographic_finality:
@@ -889,6 +896,11 @@ async function main(): Promise<void> {
   if (cryptoVerification.status !== "PASS") {
     console.error(
       "GRANDPA CRYPTOGRAPHIC VERIFICATION: FAIL",
+    );
+    process.exitCode = 1;
+  } else if (transitionWitness === null) {
+    console.error(
+      "AUTHORITY TRANSITION COMMITMENT: NOT FOUND IN WITNESS WINDOW",
     );
     process.exitCode = 1;
   }
