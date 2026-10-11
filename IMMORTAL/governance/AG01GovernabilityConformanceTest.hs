@@ -5,7 +5,7 @@ import GovernanceEventSchema
 import GovernanceAuthorization
 import GovernanceCanonicalReplay
 import GovernanceCommitment
-import RulesetRegistry
+import qualified RulesetRegistry
 
 assert :: String -> Bool -> IO ()
 assert label ok =
@@ -19,7 +19,7 @@ main = do
       proposal =
         Proposal 1 DocumentationOnly snapshot 0 Nothing Nothing Nothing Nothing
           Nothing [] [] gates Proposed
-      rules = [RulesetDefinition 1 "ruleset-v1" 0 Nothing]
+      rules = [RulesetRegistry.RulesetDefinition 1 "ruleset-v1" 0 Nothing]
       base =
         CanonicalEvent "ag-evt-1" 1 1 EProposalSubmitted Proposer 0
           (PayloadProposalSubmitted proposal) "" Nothing [EvidenceRef "ag-e1"]
@@ -37,7 +37,7 @@ main = do
 
   assert "AG-08 unregistered ruleset is rejected"
     (not (canonicalGovernanceEventValid rules Nothing
-      (valid { RulesetRegistry.rulesetVersion = 2 })))
+      (valid { rulesetVersion = 2 })))
 
   let badPredecessor =
         committed
