@@ -12,9 +12,17 @@ This lab does not define new economic or governance rules. It checks two already
 
 The harness uses deliberately small immutable toy objects. Passing it is evidence that the implementation preserves these boundaries in the modeled cases; it is not a proof of the entire protocol.
 
+## G4 / G5 workflow mapping
+
+G4 and G5 are **not missing research functions** and should not be duplicated in this Node-only lab.
+
+- **G4 — B4/B5/B6 system closure:** ProtectedCapital, Economic Gate, viability and V3↔Cardano semantic correspondence. Canonical evidence is carried by the dedicated Haskell/Cardano conformance workflows and the frozen B5/B6 action-evidence contract.
+- **G5 — Governance certification:** current-head governance build/execution evidence, canonical replay and GOV-18/GOV-28 lifecycle conformance. Canonical evidence is carried by the dedicated Haskell governance suites.
+- This lab may expose or cross-reference those fronts, but must not invent a parallel governance/economic implementation.
+
 ## Evidence model
 
-```text
+```
 Immutable Boundary
   ├─ Domain
   ├─ Rule
