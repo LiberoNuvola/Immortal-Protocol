@@ -5,13 +5,32 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - audit/kernel-invalid-class-fail-closed
       - work/immortal-green-closure
+    paths:
+      - "plutus/**"
+      - "IMMORTAL/**"
+      - "PRE-RICH/onchain/**"
+      - "Adapter/CARDANO/observation/**"
+      - "Adapter/REFERENCE/**"
+      - "cabal.project"
+      - "cabal.project.freeze"
+      - ".github/actions/setup-plutus/**"
   pull_request:
     branches:
       - b1-hardening
+    paths:
+      - "plutus/**"
+      - "IMMORTAL/**"
+      - "PRE-RICH/onchain/**"
+      - "Adapter/CARDANO/observation/**"
+      - "Adapter/REFERENCE/**"
+      - "cabal.project"
+      - "cabal.project.freeze"
+      - ".github/actions/setup-plutus/**"
 
 jobs:
   kernel-fail-closed:
