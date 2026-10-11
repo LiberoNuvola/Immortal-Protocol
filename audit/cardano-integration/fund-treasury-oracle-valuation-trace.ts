@@ -257,7 +257,9 @@ const fund = await lucid
   .addSigner(address)
   .validFrom(Number(now))
   .validTo(Number(now + 3_600_000n))
-  .complete()
+  // Use the Yaci-backed provider evaluator; the local Lucid evaluator loads
+  // a stale Plutus cost-model vector and fails at operation 166 before submit.
+  .complete({ localUPLCEval: false })
 
 const signed = await fund.sign().complete()
 const txCbor = signed.toCBOR()
