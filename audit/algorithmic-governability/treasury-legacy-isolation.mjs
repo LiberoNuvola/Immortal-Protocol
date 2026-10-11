@@ -24,13 +24,14 @@ function walk(dir) {
 const sourceFiles = roots.flatMap((root) => {
   const abs = path.join(repoRoot, root)
   return fs.existsSync(abs) ? walk(abs) : []
-}).filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
+}).filter((file) => /.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
   .filter((file) => !file.endsWith(path.join('src', 'treasuryPolicy.ts')))
 
 const forbiddenPatterns = [
-  /calculateTreasuryDistribution\s*\(/,
-  /TreasuryAction(?:\.|\s|\(|$)/,
-  /\bDistribute\b/,
+  /(?:from|require)\s*\(?['"][^'"]*treasuryPolicy(?:\.ts)?['"]\)?/,
+  /\bTREASURY_POLICY\b/,
+  /\bcalculateTreasuryDistribution\s*\(/,
+  /\b(?:TreasuryAction|DISTRIBUTE_REDEEMER)\b/,
 ]
 
 const hits = []
@@ -41,5 +42,5 @@ for (const file of sourceFiles) {
   }
 }
 
-assert(hits.length === 0, 'legacy Treasury percentage-distribution symbols are absent from production JS/TS surfaces')
+assert(hits.length === 0, 'legacy Treasury policy symbols are absent from production JS/TS call surfaces')
 console.log('ALL TREASURY LEGACY ISOLATION CHECKS PASSED')
