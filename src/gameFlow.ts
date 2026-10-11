@@ -997,6 +997,16 @@ export async function claimPrize(opts: {
 
   const buyer = await lucid.wallet.address()
 
+  // PrizeValidator constructs claimantAddr as an enterprise address from the
+  // ticket owner's payment credential (no staking credential). Send settlement
+  // there so its exact-USDM check observes the payout. Return the ticket NFT to
+  // the original wallet address separately, preserving the owner's full address.
+  const buyerPaymentCredential = lucid.utils.paymentCredentialOf(buyer)
+  if (!buyerPaymentCredential || buyerPaymentCredential.type !== 'Key') {
+    throw new Error('Claim requires a wallet address with a payment key credential')
+  }
+  const claimantAddress = lucid.utils.credentialToAddress(buyerPaymentCredential)
+
   // Both Claim validators use deployed reference scripts. Keeping the two
   // large validator programs out of the transaction body preserves the same
   // Cardano transaction-size boundary already enforced for Reveal.
@@ -1055,10 +1065,10 @@ export async function claimPrize(opts: {
       { inline: Data.to(nextB1ppDatum) },
       utxoAssets(b1ppUtxo),
     )
-    // Payout to claimant: caller supplies the concrete settlement asset.
-    // On-chain PrizeValidator verifies exact USDM equivalence.
-    .payToAddress(buyer, settlementValue)
-    // Ticket NFT back to buyer
+    // Payout to the enterprise address derived by PrizeValidator from the
+    // payment credential. Its aggregate valuation must equal pdPrizeAmount.
+    .payToAddress(claimantAddress, settlementValue)
+    // Ticket NFT back to the owner's original wallet address (including stake credential).
     .payToAddress(buyer, { [opts.ticketPolicyId + opts.ticketAssetNameHex]: 1n })
     .addSigner(buyer)
     .validTo(expiresAt)
