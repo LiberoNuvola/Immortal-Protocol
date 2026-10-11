@@ -222,6 +222,10 @@ test-suite governance-phase6-tests
     main-is: GovernancePhase6Test.hs
     build-depends:
         base ^>=4.18.2,
+        base16-bytestring,
+        bytestring,
+        cryptohash-sha256,
+        text,
         pre-rich-plutus
     default-language: Haskell2010
 
