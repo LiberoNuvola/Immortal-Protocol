@@ -163,7 +163,7 @@ const postPoolDatum = c(0, [
 ])
 
 // Bootstrap both authenticated reference state and the Pool state.
-const bootstrap = await lucid
+const bootstrapBuilder = lucid
   .newTx()
   .mintAssets(
     {
@@ -190,13 +190,17 @@ const bootstrap = await lucid
     { inline: Data.to(oracleDatum) } as any,
   )
   .addSigner(address)
-  // Bootstrap only creates the local trace fixtures; use provider/ledger
-  // evaluation rather than the stale legacy Lucid cost-model vector.
-  .complete({ localUPLCEval: false })
+
+console.log('[FT-DIAG] before bootstrap .complete(localUPLCEval=false)')
+const bootstrap = await bootstrapBuilder.complete({ localUPLCEval: false })
+console.log('[FT-DIAG] after bootstrap .complete')
 
 const bootstrapSigned = await bootstrap.sign().complete()
+console.log('[FT-DIAG] before bootstrap submit')
 const bootstrapHash = await bootstrapSigned.submit()
+console.log('[FT-DIAG] bootstrap submit returned hash=' + bootstrapHash)
 await lucid.awaitTx(bootstrapHash)
+console.log('[FT-DIAG] bootstrap awaitTx complete')
 
 const poolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
@@ -255,12 +259,16 @@ type FundTreasuryEvaluation = {
 const fundEvaluator = provider as unknown as {
   evaluateTx: (tx: string) => Promise<FundTreasuryEvaluation[]>
 }
-fundEvaluator.evaluateTx = async (_tx: string) => [{
+fundEvaluator.evaluateTx = async (_tx: string) => {
+  console.log('[FT-DIAG] provider.evaluateTx override invoked')
+  return [{
   redeemer_tag: 'spend',
   redeemer_index: 0,
   ex_units: { mem: 13_000_000, steps: 9_000_000_000 },
-}]
+  }]
+}
 
+console.log('[FT-DIAG] before FundTreasury .complete(localUPLCEval=false)')
 const fund = await lucid
   .newTx()
   .collectFrom([poolInput], Data.to(c(0)))
@@ -280,11 +288,15 @@ const fund = await lucid
   // Use the bounded construction budget above; only ledger submission and
   // the observed post-state below determine whether FundTreasury succeeds.
   .complete({ localUPLCEval: false })
+console.log('[FT-DIAG] after FundTreasury .complete')
 
 const signed = await fund.sign().complete()
 const txCbor = signed.toCBOR()
+console.log('[FT-DIAG] before FundTreasury submit')
 const txHash = await signed.submit()
+console.log('[FT-DIAG] FundTreasury submit returned hash=' + txHash)
 await lucid.awaitTx(txHash)
+console.log('[FT-DIAG] FundTreasury awaitTx complete')
 
 let duplicateSubmissionRejected = false
 let duplicateSubmissionError = ''
