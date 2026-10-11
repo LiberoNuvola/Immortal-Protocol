@@ -1,6 +1,5 @@
 import {
   concatBytes,
-  bytesToHex,
   encodeCompact,
   encodeU32,
   encodeU64,
