@@ -92,3 +92,5 @@ jobs:
         run: node audit/algorithmic-governability/competing-monitor-epistemic-boundary.mjs
       - name: Treasury legacy isolation
         run: node audit/algorithmic-governability/treasury-legacy-isolation.mjs
+      - name: AG-01 executable wiring boundary
+        run: node audit/algorithmic-governability/ag01-executable-wiring-boundary.mjs
