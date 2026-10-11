@@ -384,6 +384,28 @@ async function main(): Promise<void> {
     );
   }
 
+  const finalizedHeadHash =
+    await rpc.getFinalizedHead();
+  const finalizedHead =
+    await rpc.getHeader(finalizedHeadHash);
+  const parseHexBlockNumber = (value: string): number => {
+    const parsed = Number(BigInt(value));
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
+      throw new Error(
+        `invalid block number: ${value}`,
+      );
+    }
+    return parsed;
+  };
+
+  const finalizedBlockNumber =
+    parseHexBlockNumber(finalizedHead.number);
+  if (finalizedBlockNumber < certification.block) {
+    throw new Error(
+      `certified block ${certification.block} is ahead of finalized head ${finalizedBlockNumber}`,
+    );
+  }
+
   const storageKey = receiptStorageKey(receiptId);
   const storageValue = await rpc.getStorage(
     storageKey,
@@ -421,6 +443,12 @@ async function main(): Promise<void> {
       state_root: header.stateRoot,
       extrinsics_root: header.extrinsicsRoot,
     },
+    finalized_head_observation: {
+      number: finalizedBlockNumber,
+      hash: finalizedHeadHash,
+      state_root: finalizedHead.stateRoot,
+      covers_certified_block: true,
+    },
     read_proof: {
       at: readProof.at,
       node_count: readProof.proof.length,
@@ -430,6 +458,7 @@ async function main(): Promise<void> {
     transport_checks: {
       block_hash_matches_indexer: true,
       block_hash_matches_chain_getBlockHash: true,
+      finalized_head_covers_certified_block: true,
       storage_value_present: true,
       storage_key_bytes: hexToBytes(storageKey).length,
       storage_value_bytes: hexToBytes(storageValue).length,
