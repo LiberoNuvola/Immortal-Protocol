@@ -152,7 +152,10 @@ oraclePriceFor
 -- Other assets:
 --   the complete quantity is valued.
 --
--- Every asset encountered by this function requires a matching oracle.
+-- Every non-zero asset encountered by this function requires a matching
+-- oracle. Value arithmetic can retain zero-quantity map entries (for example,
+-- after poolUsdmValue removes the Pool singleton); they have no economic value
+-- and must not trigger an oracle lookup.
 {-# INLINABLE totalUsdmValue #-}
 totalUsdmValue
   :: TxInfo
@@ -182,35 +185,42 @@ totalUsdmValue info oracleState publisher val =
     goInner
       refs
       csBytes
-      ((tn, amt):rest) =
-      let
-        price =
-          oraclePriceFor
+      ((tn, amt):rest)
+      | amt == 0 =
+          goInner
             refs
-            oracleState
-            publisher
-            info
             csBytes
-            (unTokenName tn)
+            rest
 
-        economicAmt
-          | csBytes == unCurrencySymbol adaSymbol
-          && unTokenName tn == unTokenName adaToken =
-              max
-                0
-                (amt - minUtxoLovelace)
+      | otherwise =
+          let
+            price =
+              oraclePriceFor
+                refs
+                oracleState
+                publisher
+                info
+                csBytes
+                (unTokenName tn)
 
-          | otherwise =
-              amt
+            economicAmt
+              | csBytes == unCurrencySymbol adaSymbol
+              && unTokenName tn == unTokenName adaToken =
+                  max
+                    0
+                    (amt - minUtxoLovelace)
 
-      in
-        ceilingDiv
-          (economicAmt * price)
-          precision
-          + goInner
-              refs
-              csBytes
-              rest
+              | otherwise =
+                  amt
+
+          in
+            ceilingDiv
+              (economicAmt * price)
+              precision
+              + goInner
+                  refs
+                  csBytes
+                  rest
 
 
 -- | Canonical Pool valuation excluding the protocol singleton NFT.
