@@ -259,16 +259,17 @@ Selection should be based on architectural contrast, not popularity.
 
 The preferred research target is an account-based execution model, because it tests whether the IMMORTAL semantics survive a materially different state representation and transaction model.
 
-The environment is not selected by this document.
+For the current research phase, **Midnight + Moriarty is the preferred candidate environment** because it is materially different from Cardano and exposes an explicit intent/plan/proof execution model. This is a research selection, not a production adapter commitment.
 
 Selection criteria:
 
 1. materially different state model from Cardano;
-2. deterministic local execution/testing;
-3. reproducible state snapshots;
-4. accessible execution evidence;
-5. ability to implement a minimal adapter without introducing a second economic engine;
-6. low enough operational cost that conformance tests can run repeatedly.
+2. concrete public source available for the execution/intent model;
+3. deterministic local execution/testing;
+4. reproducible state snapshots;
+5. accessible execution evidence;
+6. ability to implement a minimal adapter without introducing a second economic engine;
+7. low enough operational cost that conformance tests can run repeatedly.
 
 ## 9. Evidence levels
 
@@ -401,7 +402,7 @@ No broader claim should be inferred from a small adapter.
 - [ ] No new economic constants introduced
 
 ### Phase C — Second adapter
-- [ ] Second environment selected
+- [x] Midnight + Moriarty selected as the current research candidate
 - [ ] Minimal adapter implemented
 - [ ] Same vectors execute in both environments
 - [ ] Differences are normalized at the adapter boundary
