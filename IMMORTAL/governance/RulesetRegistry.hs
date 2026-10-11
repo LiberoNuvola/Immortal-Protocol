@@ -16,7 +16,7 @@ registryValid rs=all rulesetDefinitionValid rs && unique vs && increasing vs && 
  dedup []=[]; dedup(x:xs)=x:dedup(filter(/=x)xs)
  increasing []=True
  increasing [_]=True
- increasing(a:b:xs)=a<b && increasing(b:xs)
+ increasing(a:b:xs)=b==a+1 && increasing(b:xs)
  supersessionOK []=True
  supersessionOK [_]=True
  supersessionOK(r:n:xs)=supersedes n==Just(rulesetVersion r) && supersessionOK(n:xs)
@@ -30,7 +30,7 @@ registerRuleset r rs
           |otherwise->Left"ruleset version must extend the registry monotonically"
  where
   appendable x []=supersedes x==Nothing
-  appendable x ys=case reverse ys of latest:_->rulesetVersion x>rulesetVersion latest && supersedes x==Just(rulesetVersion latest); []->False
+  appendable x ys=case reverse ys of latest:_->rulesetVersion x==rulesetVersion latest+1 && supersedes x==Just(rulesetVersion latest); []->False
 lookupRuleset _ []=Nothing
 lookupRuleset v(r:rs)|rulesetVersion r==v=Just r|otherwise=lookupRuleset v rs
 activeRuleset now=foldl choose Nothing where

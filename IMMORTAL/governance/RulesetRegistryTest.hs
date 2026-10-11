@@ -8,6 +8,7 @@ r2x=RulesetDefinition 2 "different-v2" 100 (Just 1)
 main=do
  let rs=[r1,r2]; rs3=[r1,r2,r3]
  assert"valid three-version chain"(registryValid rs3)
+ assert"registry rejects skipped version"(not(registryValid [r1,RulesetDefinition 3 "commitment-v3" 200 (Just 1)]))
  assert"initial registration"(registerRuleset r1 emptyRegistry==Right[r1])
  assert"append-only successor"(registerRuleset r2[r1]==Right rs)
  assert"idempotent identical re-registration"(registerRuleset r2 rs==Right rs)
