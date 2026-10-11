@@ -16,6 +16,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude hiding (unless)
+import qualified PlutusTx.AssocMap as AssocMap
 import qualified Economic
 
 import Beacon
@@ -112,6 +113,19 @@ countOwnScriptOutputs ctx =
         _ ->
           go os
 
+-- | Direct Value lookup with the same zero-on-missing semantics as
+-- the canonical Ledger API helper. B1PrizePool uses this explicit traversal
+-- to avoid a ByteString/Data representation mismatch in the compiled lookup.
+{-# INLINABLE assetAmount #-}
+assetAmount :: Value -> CurrencySymbol -> TokenName -> Integer
+assetAmount value cs tn =
+  case AssocMap.lookup cs (getValue value) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup tn tokens of
+        Nothing -> 0
+        Just amount -> amount
+
 {-# INLINABLE ticketOwnerPkh #-}
 ticketOwnerPkh
   :: CurrencySymbol
@@ -122,7 +136,7 @@ ticketOwnerPkh _ _ [] = Nothing
 ticketOwnerPkh cs tn (i:is) =
   let resolved = txInInfoResolved i
   in
-    if valueOf (txOutValue resolved) cs tn == 1
+    if assetAmount (txOutValue resolved) cs tn == 1
       then
         case addressCredential (txOutAddress resolved) of
           PubKeyCredential pkh ->
