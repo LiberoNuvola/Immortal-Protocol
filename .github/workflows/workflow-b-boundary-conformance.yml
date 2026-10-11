@@ -30,6 +30,8 @@ jobs:
         run: node audit/algorithmic-governability/evidence-catalog-boundary.mjs
       - name: Typed obligation bucket boundary
         run: node audit/algorithmic-governability/typed-obligation-buckets-boundary.mjs
+      - name: Install Node test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: G7 canonical hysteresis conformance
         run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
       - name: Contributor reward boundary
