@@ -26,6 +26,8 @@ jobs:
           node-version: 22
       - name: Generalized derivation boundary
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
+      - name: G6 evidence catalog boundary
+        run: node audit/algorithmic-governability/evidence-catalog-boundary.mjs
       - name: Contributor reward boundary
         run: node audit/algorithmic-governability/reward-contributor-boundary.mjs
       - name: Treasury and reward accounting boundary
