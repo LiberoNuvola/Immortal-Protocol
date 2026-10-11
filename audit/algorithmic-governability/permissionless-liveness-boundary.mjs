@@ -31,9 +31,13 @@ const noKeeper = attempt(initial, null, 7)
 assert(noKeeper.status === 'SAFE_STALL', 'absence of a keeper produces safe stall')
 assert(noKeeper.canonicalVersion === initial.canonicalVersion, 'safe stall does not mutate canonical state')
 
-const staleAttempt = attempt(initial, 'keeper-a', 7)
-assert(staleAttempt.status === 'UNVERIFIABLE', 'stale evidence cannot authorize transition')
-assert(staleAttempt.canonicalVersion === initial.canonicalVersion, 'stale evidence leaves canonical state unchanged')
+const missingFreshEvidence = attempt(initial, 'keeper-a', 7)
+assert(missingFreshEvidence.status === 'UNVERIFIABLE', 'missing/stale evidence cannot authorize transition')
+assert(missingFreshEvidence.canonicalVersion === initial.canonicalVersion, 'missing/stale evidence leaves canonical state unchanged')
+
+const staleVersion = attempt(Object.freeze({ ...initial, evidenceFresh: true }), 'keeper-a', 6)
+assert(staleVersion.status === 'STALE_STATE', 'invocation against an outdated canonical version is rejected')
+assert(staleVersion.canonicalVersion === initial.canonicalVersion, 'stale-version invocation cannot mutate canonical state')
 
 const freshState = Object.freeze({ ...initial, evidenceFresh: true })
 const applied = attempt(freshState, 'keeper-b', 7)
