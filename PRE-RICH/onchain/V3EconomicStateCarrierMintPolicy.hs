@@ -38,24 +38,26 @@ mkPolicy seed tokenName _ ctx =
     && txInfoMint info == expected
 
 {-# INLINABLE wrap #-}
+-- Lucid applyParamsToScript supplies Plutus Data constants. Decode the seed
+-- and token name at the ABI boundary before entering the typed policy logic.
 wrap
-  :: TxOutRef
-  -> TokenName
+  :: BuiltinData
+  -> BuiltinData
   -> BuiltinData
   -> BuiltinData
   -> BuiltinUnit
-wrap seed tokenName _ ctx =
+wrap seedData tokenNameData _ ctx =
   check
     (mkPolicy
-      seed
-      tokenName
+      (unsafeFromBuiltinData seedData)
+      (unsafeFromBuiltinData tokenNameData)
       ()
       (unsafeFromBuiltinData ctx))
 
 compiledPolicyFactory
   :: CompiledCode
-       ( TxOutRef
-         -> TokenName
+       ( BuiltinData
+         -> BuiltinData
          -> BuiltinData
          -> BuiltinData
          -> BuiltinUnit
