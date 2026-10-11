@@ -280,3 +280,74 @@ A new real Preprod capture must show:
 6. Only after 1–5 may the result cross the IMMORTAL `VerifiedAuthoritySetTransition` boundary.
 
 Until these conditions hold, B3-A remains OPEN.
+
+
+### Exact upstream patch shape
+
+**`partnerchain/node/src/rpc.rs`**
+
+Extend `FullDeps` with a GRANDPA dependency bundle:
+
+```rust
+pub struct GrandpaDeps<B> {
+    pub shared_voter_state: sc_consensus_grandpa::SharedVoterState,
+    pub shared_authority_set:
+        sc_consensus_grandpa::SharedAuthoritySet<
+            <Block as sp_runtime::traits::Block>::Hash,
+            <Block as sp_runtime::traits::Block>::Header::Number,
+        >,
+    pub justification_stream:
+        sc_consensus_grandpa::GrandpaJustificationStream<Block>,
+    pub subscription_executor:
+        sc_rpc::SubscriptionTaskExecutor,
+    pub finality_proof_provider:
+        std::sync::Arc<
+            sc_consensus_grandpa::FinalityProofProvider<B, Block>,
+        >,
+}
+```
+
+The `create_full` bounds must additionally provide the backend required by `FinalityProofProvider`, and the function must merge:
+
+```rust
+use sc_consensus_grandpa_rpc::{
+    Grandpa,
+    GrandpaApiServer,
+};
+
+module.merge(
+    Grandpa::new(
+        grandpa.subscription_executor,
+        grandpa.shared_authority_set,
+        grandpa.shared_voter_state,
+        grandpa.justification_stream,
+        grandpa.finality_proof_provider,
+    )
+    .into_rpc(),
+)?;
+```
+
+**`partnerchain/node/src/service.rs`**
+
+Immediately after `grandpa_block_import/grandpa_link` are created, derive:
+
+```rust
+let shared_authority_set =
+    grandpa_link.shared_authority_set().clone();
+
+let justification_stream =
+    grandpa_link.justification_stream();
+
+let shared_voter_state =
+    sc_consensus_grandpa::SharedVoterState::empty();
+
+let finality_proof_provider =
+    sc_consensus_grandpa::FinalityProofProvider::new_for_service(
+        backend.clone(),
+        Some(shared_authority_set.clone()),
+    );
+```
+
+Pass these into `crate::rpc::FullDeps`. Reuse the same `shared_voter_state` in `GrandpaParams` rather than constructing an unrelated second instance.
+
+No selector logic, no new proof format, and no change to consensus rules is involved.
