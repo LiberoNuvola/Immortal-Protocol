@@ -41,8 +41,10 @@ const SEED =
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
 const TICKET_NAME_HEX = '52462d5245414c2d455850495245'
-const ORACLE_STATE_POLICY_ID = '00'.repeat(28)
-const ORACLE_STATE_TOKEN_NAME_HEX = ''
+// This trace exercises EXPIRE only. Bind the validator to the same explicit
+// synthetic Oracle State singleton identity used by the other Yaci fixtures;
+// this is not evidence of a live or authoritative Oracle.
+const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45'
 const MAINCHAIN_REF = new Uint8Array(32)
 const GAME_VERSION = new TextEncoder().encode('V1')
 
@@ -365,7 +367,7 @@ const scripts = buildScriptsFromLucid(
   },
   defaultPrizeTable,
   keyHash,
-  ORACLE_STATE_POLICY_ID,
+  testPolicyId,
   ORACLE_STATE_TOKEN_NAME_HEX,
   testPolicyId,
   poolTokenNameHex,
