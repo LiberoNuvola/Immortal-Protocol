@@ -1,14 +1,10 @@
 use std::env;
 use std::fs;
 
-use immortal_materios_execution_verifier::{
-    verify_storage_proof,
-    StorageProofInput,
-};
+use immortal_materios_execution_verifier::{verify_storage_proof, StorageProofInput};
 
 fn decode_hex_file(path: &str) -> Result<Vec<u8>, String> {
-    let raw =
-        fs::read_to_string(path).map_err(|e| format!("read {path}: {e}"))?;
+    let raw = fs::read_to_string(path).map_err(|e| format!("read {path}: {e}"))?;
     let value = raw.trim().strip_prefix("0x").unwrap_or(raw.trim());
 
     if value.len() % 2 != 0 {
@@ -46,30 +42,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proof_scale = decode_hex_file(&args[4])?;
 
     if state_root.len() != 32 {
-        return Err(
-            format!(
-                "state root must be 32 bytes, got {}",
-                state_root.len()
-            )
-            .into(),
-        );
+        return Err(format!("state root must be 32 bytes, got {}", state_root.len()).into());
     }
 
     if storage_key.len() != 80 {
-        return Err(
-            format!(
-                "storage key must be 80 bytes, got {}",
-                storage_key.len()
-            )
-            .into(),
-        );
+        return Err(format!("storage key must be 80 bytes, got {}", storage_key.len()).into());
     }
 
     verify_storage_proof(StorageProofInput {
-        state_root: state_root
-            .as_slice()
-            .try_into()
-            .expect("32 bytes checked"),
+        state_root: state_root.as_slice().try_into().expect("32 bytes checked"),
         proof_scale: &proof_scale,
         storage_key: &storage_key,
         expected_value: &storage_value,
