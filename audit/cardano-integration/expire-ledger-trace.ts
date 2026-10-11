@@ -17,15 +17,17 @@ import {
   Lucid,
   Blockfrost,
   getAddressDetails,
-  nativeScriptFromJson,
+  scriptFromNative,
+  mintingPolicyToId,
+  validatorToScriptHash,
+  validatorToAddress,
   type Script,
   type UTxO,
-} from 'lucid-cardano'
+} from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
-import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   assertCanonicalTransitionBinding,
   type CanonicalTransitionEvidence,
@@ -58,8 +60,8 @@ function ref(u: UTxO): string {
   return u.txHash + '#' + u.outputIndex
 }
 
-function nativePolicy(lucid: any, keyHash: string): Script {
-  return nativeScriptFromJson({
+function nativePolicy(keyHash: string): Script {
+  return scriptFromNative({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as any)
@@ -156,23 +158,196 @@ function prizeDatum(
   ])
 }
 
-const wallet = JSON.parse(
-  readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
-)
+const provider = new Blockfrost(API, '')
 
-const lucid = await Lucid.new(
-  new Blockfrost(API, ''),
-  'Preprod',
-)
-lucid.selectWalletFromSeed(SEED)
+type EvaluationUTxO = {
+  txHash: string
+  outputIndex: number
+  address: string
+  assets: Record<string, bigint>
+  datumHash?: string | null
+  datum?: string | null
+  scriptRef?: { type: string; script: string } | null
+}
+type EvaluationRedeemer = {
+  redeemer_tag: string
+  redeemer_index: number
+  ex_units: { mem: number; steps: number }
+}
+type YaciEvaluationResponse = {
+  fault?: unknown
+  result?: { EvaluationResult?: Record<string, { memory: number; steps: number }> }
+  message?: string
+}
 
-const address = await lucid.wallet.address()
+const latestBlock = await (await fetch(API + '/blocks/latest')).json() as {
+  slot: number
+  time: number
+}
+if (
+  !Number.isSafeInteger(latestBlock.slot) ||
+  latestBlock.slot < 0 ||
+  !Number.isSafeInteger(latestBlock.time) ||
+  latestBlock.time <= 0
+) {
+  throw new Error('Yaci /blocks/latest lacks slot/time: ' + JSON.stringify(latestBlock))
+}
+const latestBlockTimeMs = latestBlock.time < 100_000_000_000
+  ? latestBlock.time * 1000
+  : latestBlock.time
+if (!Number.isSafeInteger(latestBlockTimeMs) || latestBlockTimeMs <= 0) {
+  throw new Error('Yaci /blocks/latest has invalid normalized time: ' + JSON.stringify(latestBlock))
+}
+const devnetSlotConfig = {
+  zeroTime: latestBlockTimeMs,
+  zeroSlot: latestBlock.slot,
+  slotLength: 1000,
+}
+console.log(JSON.stringify({
+  expireTimeAnchor: 'yaci-latest-block',
+  latestBlockSlot: latestBlock.slot,
+  latestBlockTimeRaw: latestBlock.time,
+  latestBlockTimeMs,
+  slotLengthMs: 1000,
+}))
+
+const EX_UNITS_SAFETY_MARGIN_BPS = 100
+const EX_UNITS_DENOMINATOR = 10_000n
+let expireEvaluationEvidence: {
+  measured: EvaluationRedeemer[]
+  budgeted: EvaluationRedeemer[]
+  safetyMarginBps: number
+} | null = null
+
+function withExUnitsSafetyMargin(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Yaci returned invalid execution units: ' + String(value))
+  }
+  return Number(
+    (BigInt(value) * (EX_UNITS_DENOMINATOR + BigInt(EX_UNITS_SAFETY_MARGIN_BPS))
+      + EX_UNITS_DENOMINATOR - 1n) / EX_UNITS_DENOMINATOR,
+  )
+}
+
+async function evaluateYaciTx(
+  tx: string,
+  additionalUTxOs: EvaluationUTxO[] = [],
+): Promise<EvaluationRedeemer[]> {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
+    throw new Error('Yaci received invalid transaction CBOR: ' + cbor.slice(0, 80))
+  }
+
+  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
+    { txId: utxo.txHash, index: utxo.outputIndex },
+    {
+      address: utxo.address,
+      value: {
+        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
+        ...Object.entries(utxo.assets)
+          .filter(([unit]) => unit !== 'lovelace')
+          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
+            const policyId = unit.slice(0, 56)
+            const assetName = unit.slice(56)
+            assets[policyId] ??= {}
+            assets[policyId][assetName] = Number(amount)
+            return assets
+          }, {}),
+      },
+      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
+      ...(utxo.datum ? { datum: utxo.datum } : {}),
+      ...(utxo.scriptRef
+        ? {
+            script: {
+              [utxo.scriptRef.type === 'PlutusV1'
+                ? 'plutus:v1'
+                : utxo.scriptRef.type === 'PlutusV3'
+                  ? 'plutus:v3'
+                  : 'plutus:v2']: utxo.scriptRef.script,
+            },
+          }
+        : {}),
+    },
+  ])
+
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cbor,
+      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
+    }),
+  })
+  const raw = await response.text()
+  let parsed: YaciEvaluationResponse
+  try {
+    parsed = JSON.parse(raw) as YaciEvaluationResponse
+  } catch {
+    parsed = { message: raw }
+  }
+  if (!response.ok || parsed.fault || !parsed.result?.EvaluationResult) {
+    throw new Error(
+      `Yaci EXPIRE evaluation failed (HTTP ${response.status}): ${raw.slice(0, 3500)}`,
+    )
+  }
+  return Object.entries(parsed.result.EvaluationResult).map(([pointer, data]) => {
+    const [redeemer_tag, redeemer_index] = pointer.split(':')
+    return {
+      redeemer_tag,
+      redeemer_index: Number(redeemer_index),
+      ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
+    }
+  })
+}
+
+const providerWithEvaluation = provider as Blockfrost & {
+  evaluateTx: (tx: string, additionalUTxOs?: EvaluationUTxO[]) => Promise<EvaluationRedeemer[]>
+}
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  const measured = await evaluateYaciTx(tx, additionalUTxOs)
+  const budgeted = measured.map((redeemer) => ({
+    ...redeemer,
+    ex_units: {
+      mem: withExUnitsSafetyMargin(redeemer.ex_units.mem),
+      steps: withExUnitsSafetyMargin(redeemer.ex_units.steps),
+    },
+  }))
+  if (budgeted.length > 0) {
+    const pointers = budgeted.map((x) => `${x.redeemer_tag}:${x.redeemer_index}`).sort()
+    if (
+      budgeted.length !== 2 ||
+      budgeted.some((x) => x.redeemer_tag !== 'spend') ||
+      pointers.join(',') !== 'spend:0,spend:1'
+    ) {
+      throw new Error('EXPIRE expected two spending redeemers (spend:0, spend:1); got ' + JSON.stringify(budgeted))
+    }
+  }
+  expireEvaluationEvidence = {
+    measured,
+    budgeted,
+    safetyMarginBps: EX_UNITS_SAFETY_MARGIN_BPS,
+  }
+  console.log(JSON.stringify({
+    expireDiag: 'yaci-evaluate',
+    measured,
+    budgeted,
+    safetyMarginBps: EX_UNITS_SAFETY_MARGIN_BPS,
+  }))
+  return budgeted
+}
+
+const lucid = await Lucid(providerWithEvaluation, 'Preprod', {
+  slotConfig: devnetSlotConfig,
+})
+lucid.selectWallet.fromSeed(SEED)
+
+const address = await lucid.wallet().address()
 const details = getAddressDetails(address)
 const keyHash = details.paymentCredential?.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
-const testPolicy = nativePolicy(lucid, keyHash)
-const testPolicyId = typeof lucid.utils.mintingPolicyToId === 'function' ? lucid.utils.mintingPolicyToId(testPolicy) : lucid.utils.validatorToScriptHash(testPolicy)
+const testPolicy = nativePolicy(keyHash)
+const testPolicyId = mintingPolicyToId(testPolicy)
 const poolTokenNameHex = '504f4f4c'
 const liquidityTokenNameHex = '5553444d'
 const poolUnit = testPolicyId + poolTokenNameHex
@@ -180,7 +355,14 @@ const liquidityUnit = testPolicyId + liquidityTokenNameHex
 const ticketUnit = testPolicyId + TICKET_NAME_HEX
 
 const scripts = buildScriptsFromLucid(
-  lucid,
+  {
+    ...lucid,
+    utils: {
+      validatorToScriptHash,
+      mintingPolicyToId,
+      validatorToAddress: (script: Script) => validatorToAddress('Preprod', script),
+    },
+  },
   defaultPrizeTable,
   keyHash,
   ORACLE_STATE_POLICY_ID,
@@ -193,9 +375,12 @@ if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
 
-const now = BigInt(Date.now())
-const issuedAt = now - 7_200_000n
-const expiresAt = now - 3_600_000n
+// Preserve the PRE-RICH minimum 2-hour issued-to-expiry interval, but place the
+// expiry boundary only 10 seconds behind the latest local-ledger time. This
+// keeps the EXPIRE validity lower bound inside Yaci's available era-history;
+// the local synthetic fixture does not claim a real issuance event.
+const expiresAt = BigInt(latestBlockTimeMs) - 10_000n
+const issuedAt = expiresAt - 7_200_000n
 
 const prePrizeDatum = prizeDatum(
   testPolicyId,
@@ -230,26 +415,26 @@ const bootstrap = await lucid
     },
     Data.void(),
   )
-  .attachMintingPolicy(testPolicy)
-  .payToContract(
-    scripts.b1PrizePoolAddress,
-    { inline: Data.to(prePoolDatum) },
+  .attach.MintingPolicy(testPolicy)
+  .pay.ToContract(
+    scripts.b1PrizePoolAddress as string,
+    { kind: 'inline', value: Data.to(prePoolDatum) },
     {
       lovelace: 5_000_000n,
       [poolUnit]: 1n,
       [liquidityUnit]: TOTAL_LIQUIDITY_USDM,
     },
   )
-  .payToContract(
-    scripts.prizeAddress,
-    { inline: Data.to(prePrizeDatum) },
+  .pay.ToContract(
+    scripts.prizeAddress as string,
+    { kind: 'inline', value: Data.to(prePrizeDatum) },
     { lovelace: 3_000_000n },
   )
-  .payToAddress(address, { [ticketUnit]: 1n })
+  .pay.ToAddress(address, { lovelace: 2_000_000n, [ticketUnit]: 1n })
   .addSigner(address)
   .complete()
 
-const bootstrapSigned = await bootstrap.sign().complete()
+const bootstrapSigned = await bootstrap.sign.withWallet().complete()
 const bootstrapHash = await bootstrapSigned.submit()
 await lucid.awaitTx(bootstrapHash)
 
@@ -285,35 +470,36 @@ const preStateFingerprint = hashJson({
   poolDatum: poolUtxo.datum,
 })
 
+console.log(JSON.stringify({
+  expireBuild: 'begin',
+  prizeInput: ref(prizeUtxo),
+  poolInput: ref(poolUtxo),
+  expiresAt: expiresAt.toString(),
+  latestBlockSlot: latestBlock.slot,
+  latestBlockTimeMs,
+}))
 const expireTx = await lucid
   .newTx()
-  .collectFrom([prizeUtxo], c(3))
-  .attachSpendingValidator(scripts.prizeValidator as Script)
-  .collectFrom([poolUtxo], c(4))
-  .attachSpendingValidator(scripts.b1PrizePool as Script)
-  .payToAddress(address, {
+  .collectFrom([prizeUtxo], Data.to(c(3)))
+  .attach.SpendingValidator(scripts.prizeValidator as Script)
+  .collectFrom([poolUtxo], Data.to(c(4)))
+  .attach.SpendingValidator(scripts.b1PrizePool as Script)
+  .pay.ToAddress(address, {
     lovelace: prizeUtxo.assets.lovelace ?? 0n,
   })
-  .payToContract(
+  .pay.ToContract(
     scripts.b1PrizePoolAddress as string,
-    { inline: Data.to(postPoolDatum) },
+    { kind: 'inline', value: Data.to(postPoolDatum) },
     poolUtxo.assets,
   )
   .addSigner(address)
   .validFrom(Number(expiresAt))
-  .complete()
+  .complete({ localUPLCEval: false })
 
-let signedExpire: any = null
-const executionAdapter = createCardanoExecutionAdapter({
-  signTx: async (tx: unknown) => {
-    signedExpire = await lucid.signTx(tx as any)
-    return signedExpire
-  },
-  submitTx: async (signedTx: unknown) => lucid.submitTx(signedTx as any),
-})
-const submission = await executionAdapter.submit(expireTx)
-const txHash = submission.transactionRef
-if (!signedExpire) throw new Error('Adapter did not retain signed EXPIRE for replay evidence')
+// This fixture qualifies the on-chain EXPIRE transition only. It does not
+// claim an authoritative production Issue-admission witness or bypass that gate.
+const signedExpire = await expireTx.sign.withWallet().complete()
+const txHash = await signedExpire.submit()
 const txCbor = signedExpire.toCBOR()
 await lucid.awaitTx(txHash)
 
@@ -452,6 +638,16 @@ writeFileSync(
     consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
     producedUtxos: [ref(postPool)],
     canonicalEvidence,
+    yaciEvaluation: expireEvaluationEvidence,
+    timeAnchor: {
+      source: 'Yaci latest block',
+      slot: latestBlock.slot,
+      timeRaw: latestBlock.time,
+      timeMs: latestBlockTimeMs,
+      slotLengthMs: 1000,
+      expiresAt: expiresAt.toString(),
+      issuedAt: issuedAt.toString(),
+    },
     replay: {
       rejected: replayRejected,
       error: replayError,
