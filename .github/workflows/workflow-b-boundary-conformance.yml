@@ -62,6 +62,8 @@ jobs:
         run: node audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs
       - name: B5/B6 action evidence boundary
         run: node audit/algorithmic-governability/b5-b6-action-evidence-boundary.mjs
+      - name: Action evidence integrity boundary
+        run: node audit/algorithmic-governability/action-evidence-integrity-boundary.mjs
       - name: Midnight adapter Intent boundary
         run: node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
       - name: Moriarty IMMORTAL Intent semantic boundary
