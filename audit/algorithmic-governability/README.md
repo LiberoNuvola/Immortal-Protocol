@@ -37,6 +37,22 @@ Current bounded implementations in this branch include **EXP-01-light, EXP-02 bo
 
 These expansions are not a second governance system and do not create new economic authority.
 
+
+## Workflow B — multi-front boundary matrix
+
+| Front | Current boundary | What remains open |
+| --- | --- | --- |
+| Generalized derivation | executable family/rule/evidence identity | canonical parameter functions and institutional approval |
+| Contributor credential | accepted ContributionRecord → credential | canonical credential schema / reward entitlement |
+| Contributor reward | eligibility + explicit rule/evidence identity | reward function, budget policy, canonical authorization |
+| Treasury → reward accounting | certified budget ≤ observed available revenue | normative reward-budget semantics and source classification |
+| Multi-adapter semantics | same certified semantic result across encodings | real adapter differential evidence on concrete actions |
+| Permissionless liveness | safe stall, stale-state rejection, single transition | action-specific real liveness witnesses |
+| Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
+| Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
+
+These are boundary/conformance surfaces, not claims of production closure. They must not be used to infer missing economic rules.
+
 ## Evidence model
 
 ```
