@@ -137,12 +137,107 @@ await writeFile(EVIDENCE_DIR + '/protocol-parameters-raw.json', JSON.stringify(r
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
 
-const genesisResponse = await fetch(API + '/genesis')
-if (!genesisResponse.ok) throw new Error('Yaci /genesis failed: HTTP ' + genesisResponse.status)
-const genesis = await genesisResponse.json()
-for (const field of ['system_start', 'epoch_length', 'slot_length']) {
-  if (!Number.isSafeInteger(genesis[field]) || genesis[field] <= 0) throw new Error('Yaci /genesis has invalid ' + field)
+async function acquireGenesis() {
+  const response = await fetch(API + '/genesis')
+  if (response.ok) {
+    const body = await response.json()
+    for (const field of ['network_magic', 'system_start', 'epoch_length', 'slot_length']) {
+      if (!Number.isSafeInteger(Number(body?.[field])) || Number(body[field]) <= 0) {
+        throw new Error('Yaci /genesis has invalid ' + field)
+      }
+    }
+    return {
+      response: {
+        ...body,
+        network_magic: Number(body.network_magic),
+        system_start: Number(body.system_start),
+        epoch_length: Number(body.epoch_length),
+        slot_length: Number(body.slot_length),
+      },
+      source: {
+        kind: 'Yaci Store Blockfrost-compatible /genesis endpoint',
+        endpoint: API + '/genesis',
+        httpStatus: response.status,
+      },
+      raw: body,
+    }
+  }
+
+  /*
+   * Some DevKit/Yaci Store profiles disable the optional /genesis controller.
+   * Do not substitute a hardcoded Cardano timing constant: read the exact
+   * genesis artifact produced by this very DevKit cluster instead.
+   */
+  if (response.status !== 404) {
+    throw new Error('Yaci /genesis failed: HTTP ' + response.status)
+  }
+
+  const home = process.env.HOME
+  const explicitDir = process.env.YACI_DEVKIT_GENESIS_DIR
+  const genesisDir = explicitDir || (home ? home + '/.yaci-cli/local-clusters/default/node/genesis' : null)
+  if (!genesisDir) throw new Error('Yaci /genesis is unavailable and YACI_DEVKIT_GENESIS_DIR/HOME is missing')
+
+  const candidates = [
+    genesisDir + '/shelley-genesis.json',
+    genesisDir + '/genesis.json',
+  ]
+
+  let selected = null
+  let bytes = null
+  for (const path of candidates) {
+    try {
+      bytes = await readFile(path)
+      selected = path
+      break
+    } catch {
+      // Try the next exact DevKit-generated genesis filename.
+    }
+  }
+  if (!selected || !bytes) {
+    throw new Error('Yaci /genesis returned 404 and no DevKit-generated Shelley genesis file was found under ' + genesisDir)
+  }
+
+  const raw = JSON.parse(bytes.toString('utf8'))
+  const systemStartRaw = raw?.systemStart
+  const systemStartSeconds = typeof systemStartRaw === 'number'
+    ? systemStartRaw
+    : Math.floor(new Date(String(systemStartRaw)).getTime() / 1000)
+  const epochLength = Number(raw?.epochLength)
+  const slotLength = Number(raw?.slotLength)
+  const networkMagic = Number(raw?.networkMagic)
+
+  if (!Number.isSafeInteger(systemStartSeconds) || systemStartSeconds <= 0) {
+    throw new Error('DevKit genesis has invalid systemStart: ' + String(systemStartRaw))
+  }
+  if (!Number.isSafeInteger(epochLength) || epochLength <= 0) {
+    throw new Error('DevKit genesis has invalid epochLength: ' + String(raw?.epochLength))
+  }
+  if (!(Number.isFinite(slotLength) && slotLength > 0)) {
+    throw new Error('DevKit genesis has invalid slotLength: ' + String(raw?.slotLength))
+  }
+  if (!Number.isSafeInteger(networkMagic) || networkMagic <= 0) {
+    throw new Error('DevKit genesis has invalid networkMagic: ' + String(raw?.networkMagic))
+  }
+
+  return {
+    response: {
+      network_magic: networkMagic,
+      system_start: systemStartSeconds,
+      epoch_length: epochLength,
+      slot_length: Math.max(1, Math.ceil(slotLength)),
+    },
+    source: {
+      kind: 'Yaci DevKit generated genesis artifact',
+      path: selected,
+      sha256: sha256(bytes),
+      reason: 'Yaci Store /genesis returned HTTP 404',
+    },
+    raw,
+  }
 }
+
+const genesisAcquisition = await acquireGenesis()
+const genesis = genesisAcquisition.response
 
 const utxoResponse = await fetch(API + '/txs/' + txHash + '/utxos')
 if (!utxoResponse.ok) throw new Error('Yaci /txs/{hash}/utxos failed: HTTP ' + utxoResponse.status)
@@ -197,7 +292,9 @@ await writeFile(
       yaciDevkitInfo: 'yaci-devkit-info.txt',
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
-    genesisResponse,
+    genesisResponse: genesisAcquisition.response,
+    genesisSource: genesisAcquisition.source,
+    genesisRaw: genesisAcquisition.raw,
     yaciDevkitInfo,
     sourceOfTruth: 'Yaci /genesis structured response + exact Slot Length from yaci-devkit info',
   }, null, 2) + '\n',
