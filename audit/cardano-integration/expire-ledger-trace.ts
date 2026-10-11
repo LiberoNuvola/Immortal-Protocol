@@ -316,13 +316,21 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   }))
   if (budgeted.length > 0) {
     const pointers = budgeted.map((x) => `${x.redeemer_tag}:${x.redeemer_index}`).sort()
+    const spendIndices = budgeted.map((x) => x.redeemer_index)
     if (
       budgeted.length !== 2 ||
-      budgeted.some((x) => x.redeemer_tag !== 'spend') ||
-      pointers.join(',') !== 'spend:0,spend:1'
+      budgeted.some((x) =>
+        x.redeemer_tag !== 'spend' ||
+        !Number.isSafeInteger(x.redeemer_index) ||
+        x.redeemer_index < 0
+      ) ||
+      new Set(spendIndices).size !== 2
     ) {
-      throw new Error('EXPIRE expected two spending redeemers (spend:0, spend:1); got ' + JSON.stringify(budgeted))
+      throw new Error('EXPIRE expected exactly two distinct spending redeemers with valid input indices; got ' + JSON.stringify(budgeted))
     }
+    // Redeemer indices are assigned against the full sorted transaction input
+    // list, including any wallet input added during coin selection. Do not
+    // assume that the two script inputs occupy indices 0 and 1.
   }
   expireEvaluationEvidence = {
     measured,
