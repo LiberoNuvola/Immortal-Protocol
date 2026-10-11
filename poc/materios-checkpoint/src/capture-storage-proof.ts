@@ -341,106 +341,365 @@ async function getCertification(
   );
 }
 
+type ReceiptCandidate = {
+  receiptId: string;
+  storageKey: string;
+  createdAtMillis: bigint;
+  availabilityCertHash: string;
+};
+
+function parseReceiptRecord(
+  storageValue: string,
+): {
+  createdAtMillis: bigint;
+  availabilityCertHash: string;
+} {
+  const bytes = hexToBytes(storageValue);
+  let offset = 96;
+
+  for (let option = 0; option < 2; option++) {
+    if (offset >= bytes.length) {
+      throw new Error("ReceiptRecord option flag is missing");
+    }
+
+    const flag = bytes[offset++];
+
+    if (flag === 1) {
+      if (offset + 32 > bytes.length) {
+        throw new Error("ReceiptRecord option payload is truncated");
+      }
+      offset += 32;
+    } else if (flag !== 0) {
+      throw new Error(
+        \`ReceiptRecord option flag is invalid: \${flag}\`,
+      );
+    }
+  }
+
+  const requiredHashes = 6 * 32;
+  if (offset + requiredHashes + 8 > bytes.length) {
+    throw new Error(
+      "ReceiptRecord is truncated before created_at_millis",
+    );
+  }
+
+  const availabilityCertOffset = offset + 5 * 32;
+  const availabilityCertHash = bytesToHex(
+    bytes.slice(
+      availabilityCertOffset,
+      availabilityCertOffset + 32,
+    ),
+  );
+
+  offset += requiredHashes;
+
+  let createdAtMillis = 0n;
+  for (let i = 0; i < 8; i++) {
+    createdAtMillis |=
+      BigInt(bytes[offset + i]) <<
+      BigInt(i * 8);
+  }
+
+  return {
+    createdAtMillis,
+    availabilityCertHash,
+  };
+}
+
+async function discoverRecentCertifiedReceipt(
+  rpc: MateriosRpc,
+): Promise<{
+  receiptId: string;
+  certification: {
+    block: number;
+    hash: string;
+    certHash: string;
+    signers: number;
+  };
+  storageKey: string;
+  storageValue: string;
+}> {
+  const finalizedHeadHash =
+    await rpc.getFinalizedHead();
+  const finalizedHead =
+    await rpc.getHeader(finalizedHeadHash);
+
+  const prefix = bytesToHex(
+    concat([
+      twox128("OrinqReceipts"),
+      twox128("Receipts"),
+    ]),
+  );
+
+  const rawKeys = await rpc.call<unknown>(
+    "state_getKeysPaged",
+    [
+      prefix,
+      2500,
+      null,
+      finalizedHeadHash,
+    ],
+  );
+
+  if (
+    !Array.isArray(rawKeys) ||
+    !rawKeys.every(
+      (key) =>
+        typeof key === "string" &&
+        /^0x[0-9a-fA-F]+$/.test(key),
+    )
+  ) {
+    throw new Error(
+      "state_getKeysPaged returned invalid receipt keys",
+    );
+  }
+
+  console.log(
+    "finalized_head:",
+    finalizedHeadHash,
+  );
+  console.log(
+    "finalized_block:",
+    BigInt(finalizedHead.number).toString(),
+  );
+  console.log(
+    "receipt_keys:",
+    rawKeys.length,
+  );
+
+  const candidates: ReceiptCandidate[] = [];
+
+  for (let start = 0; start < rawKeys.length; start += 250) {
+    const batch = rawKeys.slice(start, start + 250);
+
+    const values = await Promise.all(
+      batch.map(async (storageKey) => {
+        const storageValue =
+          await rpc.getStorage(
+            storageKey,
+            finalizedHeadHash,
+          );
+
+        if (storageValue === null) {
+          return null;
+        }
+
+        try {
+          const parsed =
+            parseReceiptRecord(storageValue);
+
+          if (
+            parsed.availabilityCertHash ===
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ) {
+            return null;
+          }
+
+          return {
+            receiptId: bytesToHex(
+              hexToBytes(storageKey).slice(-32),
+            ),
+            storageKey,
+            storageValue,
+            createdAtMillis:
+              parsed.createdAtMillis,
+            availabilityCertHash:
+              parsed.availabilityCertHash,
+          };
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    for (const value of values) {
+      if (value !== null) candidates.push(value);
+    }
+  }
+
+  candidates.sort((a, b) =>
+    a.createdAtMillis === b.createdAtMillis
+      ? a.receiptId.localeCompare(b.receiptId)
+      : a.createdAtMillis > b.createdAtMillis
+        ? -1
+        : 1,
+  );
+
+  console.log(
+    "certified receipt candidates:",
+    candidates.length,
+  );
+
+  for (const candidate of candidates.slice(0, 24)) {
+    try {
+      const certification =
+        await getCertification(
+          candidate.receiptId,
+        );
+
+      const chainHash =
+        await rpc.call<string>(
+          "chain_getBlockHash",
+          [certification.block],
+        );
+
+      if (
+        chainHash.toLowerCase() !==
+        certification.hash.toLowerCase()
+      ) {
+        continue;
+      }
+
+      const certificationHeader =
+        await rpc.getHeader(
+          certification.hash,
+        );
+
+      const finalizedNumber =
+        Number(BigInt(finalizedHead.number));
+
+      if (
+        !Number.isSafeInteger(finalizedNumber) ||
+        finalizedNumber <
+          certification.block
+      ) {
+        continue;
+      }
+
+      const historicalValue =
+        await rpc.getStorage(
+          candidate.storageKey,
+          certification.hash,
+        );
+
+      if (historicalValue === null) {
+        continue;
+      }
+
+      console.log(
+        "selected_receipt:",
+        candidate.receiptId,
+      );
+      console.log(
+        "selected_certified_block:",
+        certification.block,
+      );
+      console.log(
+        "selected_certified_hash:",
+        certification.hash,
+      );
+      console.log(
+        "selected_state_root:",
+        certificationHeader.stateRoot,
+      );
+
+      return {
+        receiptId: candidate.receiptId,
+        certification,
+        storageKey: candidate.storageKey,
+        storageValue: historicalValue,
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(
+    "no recent certified receipt has a still-queryable certified block/state",
+  );
+}
+
 async function main(): Promise<void> {
   const outputDir = join(__dir, "..", "out");
   mkdirSync(outputDir, { recursive: true });
 
   const systemPrefix = bytesToHex(twox128("System"));
   if (
-    systemPrefix !== "0x26aa394eea5630e07c48ae0c9558cef7"
+    systemPrefix !==
+    "0x26aa394eea5630e07c48ae0c9558cef7"
   ) {
     throw new Error(
-      `Twox128 self-check failed: got ${systemPrefix}`,
+      \`Twox128 self-check failed: got \${systemPrefix}\`,
     );
   }
 
   const knownReceiptId =
     "0xb157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009";
-  const knownReceiptKey = receiptStorageKey(knownReceiptId);
+  const knownReceiptKey =
+    receiptStorageKey(knownReceiptId);
   const expectedReceiptKey =
     "0xf2f45ef88f71bc25f444a160450145be5087a88ab53079a394ab62a465d461833657966cc15aa1d2b23158dd0c61e4e2b157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009";
 
   if (knownReceiptKey !== expectedReceiptKey) {
     throw new Error(
-      `receipt storage key self-check failed: got ${knownReceiptKey}`,
+      \`receipt storage key self-check failed: got \${knownReceiptKey}\`,
     );
   }
 
   const rpc = new MateriosRpc(RPC);
-  console.log("B3-B live storage proof capture");
+  console.log(
+    "B3-B live storage proof capture",
+  );
   console.log("RPC:", RPC);
-  console.log("Discovering live receipt:certified event...");
-
-  const receiptId =
-    process.env.MATERIOS_RECEIPT_ID ??
-    await waitForReceiptId();
-  console.log("receipt_id:", receiptId);
-
-  const certification = await getCertification(receiptId);
-  console.log("certified_block:", certification.block);
-  console.log("certified_hash:", certification.hash);
-  console.log("certified_signers:", certification.signers);
-
-  const header = await rpc.getHeader(certification.hash);
-  const chainHash = await rpc.call<string>(
-    "chain_getBlockHash",
-    [certification.block],
+  console.log(
+    "Discovering a recent certified receipt from finalized state...",
   );
 
-  if (
-    chainHash.toLowerCase() !==
-    certification.hash.toLowerCase()
-  ) {
-    throw new Error(
-      "chain_getBlockHash does not match indexer certified_at_hash",
+  const discovered =
+    await discoverRecentCertifiedReceipt(rpc);
+
+  const receiptId =
+    discovered.receiptId;
+  const certification =
+    discovered.certification;
+  const storageKey =
+    discovered.storageKey;
+  const storageValue =
+    discovered.storageValue;
+
+  const header =
+    await rpc.getHeader(
+      certification.hash,
     );
-  }
 
   const finalizedHeadHash =
     await rpc.getFinalizedHead();
   const finalizedHead =
-    await rpc.getHeader(finalizedHeadHash);
-  const parseHexBlockNumber = (value: string): number => {
-    const parsed = Number(BigInt(value));
-    if (!Number.isSafeInteger(parsed) || parsed < 0) {
-      throw new Error(
-        `invalid block number: ${value}`,
-      );
-    }
-    return parsed;
-  };
+    await rpc.getHeader(
+      finalizedHeadHash,
+    );
 
   const finalizedBlockNumber =
-    parseHexBlockNumber(finalizedHead.number);
-  if (finalizedBlockNumber < certification.block) {
+    Number(
+      BigInt(finalizedHead.number),
+    );
+
+  if (
+    !Number.isSafeInteger(
+      finalizedBlockNumber,
+    ) ||
+    finalizedBlockNumber <
+      certification.block
+  ) {
     throw new Error(
-      `certified block ${certification.block} is ahead of finalized head ${finalizedBlockNumber}`,
+      \`certified block \${certification.block} is ahead of finalized head \${finalizedBlockNumber}\`,
     );
   }
 
-  const storageKey = receiptStorageKey(receiptId);
-  const storageValue = await rpc.getStorage(
-    storageKey,
-    certification.hash,
-  );
-
-  if (storageValue === null) {
-    throw new Error(
-      "receipt storage key is absent at certified block",
+  const readProof =
+    await rpc.getReadProof(
+      [storageKey],
+      certification.hash,
     );
-  }
 
-  const readProof = await rpc.getReadProof(
-    [storageKey],
-    certification.hash,
-  );
-
-  const proofScaleHex = encodeStorageProofScale(
-    readProof.proof,
-  );
+  const proofScaleHex =
+    encodeStorageProofScale(
+      readProof.proof,
+    );
 
   const evidence = {
-    schema_version: "materios-b3b-live-storage-proof-v1",
+    schema_version:
+      "materios-b3b-live-storage-proof-v1",
     network: "materios_preprod",
     receipt: {
       receipt_id: receiptId,
@@ -453,42 +712,68 @@ async function main(): Promise<void> {
       hash: certification.hash,
       parent_hash: header.parentHash,
       state_root: header.stateRoot,
-      extrinsics_root: header.extrinsicsRoot,
+      extrinsics_root:
+        header.extrinsicsRoot,
     },
     finalized_head_observation: {
-      number: finalizedBlockNumber,
+      number:
+        finalizedBlockNumber,
       hash: finalizedHeadHash,
-      state_root: finalizedHead.stateRoot,
-      covers_certified_block: true,
+      state_root:
+        finalizedHead.stateRoot,
+      covers_certified_block:
+        true,
     },
     read_proof: {
       at: readProof.at,
-      node_count: readProof.proof.length,
-      proof_nodes: readProof.proof,
-      proof_scale_hex: proofScaleHex,
+      node_count:
+        readProof.proof.length,
+      proof_nodes:
+        readProof.proof,
+      proof_scale_hex:
+        proofScaleHex,
     },
     transport_checks: {
-      block_hash_matches_indexer: true,
-      block_hash_matches_chain_getBlockHash: true,
-      finalized_head_covers_certified_block: true,
-      storage_value_present: true,
-      storage_key_bytes: hexToBytes(storageKey).length,
-      storage_value_bytes: hexToBytes(storageValue).length,
-      proof_node_count: readProof.proof.length,
+      block_hash_matches_indexer:
+        true,
+      block_hash_matches_chain_getBlockHash:
+        true,
+      finalized_head_covers_certified_block:
+        true,
+      storage_value_present:
+        true,
+      storage_key_bytes:
+        hexToBytes(storageKey).length,
+      storage_value_bytes:
+        hexToBytes(storageValue).length,
+      proof_node_count:
+        readProof.proof.length,
     },
   };
 
   const evidenceText =
-    JSON.stringify(evidence, null, 2) + "\n";
+    JSON.stringify(
+      evidence,
+      null,
+      2,
+    ) + "\n";
+
   const evidenceSha256 =
     createHash("sha256")
       .update(evidenceText)
       .digest("hex");
 
   await writeFile(
-    join(outputDir, "MateriosB3BLiveStorageProof.json"),
+    join(
+      outputDir,
+      "MateriosB3BLiveStorageProof.json",
+    ),
     JSON.stringify(
-      { ...evidence, evidence_sha256: `0x${evidenceSha256}` },
+      {
+        ...evidence,
+        evidence_sha256:
+          \`0x\${evidenceSha256}\`,
+      },
       null,
       2,
     ) + "\n",
@@ -496,32 +781,53 @@ async function main(): Promise<void> {
   );
 
   await writeFile(
-    join(outputDir, "b3b-state-root.hex"),
+    join(
+      outputDir,
+      "b3b-state-root.hex",
+    ),
     header.stateRoot + "\n",
     "utf8",
   );
+
   await writeFile(
-    join(outputDir, "b3b-storage-key.hex"),
+    join(
+      outputDir,
+      "b3b-storage-key.hex",
+    ),
     storageKey + "\n",
     "utf8",
   );
+
   await writeFile(
-    join(outputDir, "b3b-storage-value.hex"),
+    join(
+      outputDir,
+      "b3b-storage-value.hex",
+    ),
     storageValue + "\n",
     "utf8",
   );
+
   await writeFile(
-    join(outputDir, "b3b-proof-scale.hex"),
+    join(
+      outputDir,
+      "b3b-proof-scale.hex",
+    ),
     proofScaleHex + "\n",
     "utf8",
   );
 
-  console.log("state_root:", header.stateRoot);
-  console.log("storage_key_bytes:", hexToBytes(storageKey).length);
-  console.log("storage_value_bytes:", hexToBytes(storageValue).length);
-  console.log("proof_nodes:", readProof.proof.length);
-  console.log("proof_scale_bytes:", (proofScaleHex.length - 2) / 2);
-  console.log("evidence_sha256:", `0x${evidenceSha256}`);
+  console.log(
+    "proof_nodes:",
+    readProof.proof.length,
+  );
+  console.log(
+    "proof_scale_bytes:",
+    (proofScaleHex.length - 2) / 2,
+  );
+  console.log(
+    "evidence_sha256:",
+    \`0x\${evidenceSha256}\`,
+  );
   console.log("capture: PASS");
 }
 
