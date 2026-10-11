@@ -34,6 +34,12 @@ jobs:
         run: node audit/algorithmic-governability/exp-cross-function-conformance-boundary.mjs
       - name: Bitcoin L1 adversarial boundary
         run: node audit/algorithmic-governability/bitcoin-l1-adversarial-boundary.mjs
+      - name: F6 Genesis evidence boundary
+        run: node audit/algorithmic-governability/f6-genesis-evidence-boundary.mjs
+      - name: R4 liveness evidence boundary
+        run: node audit/algorithmic-governability/r4-liveness-evidence-boundary.mjs
+      - name: Beacon 4 independence/conflict boundary
+        run: node audit/algorithmic-governability/beacon-4-independence-conflict-boundary.mjs
       - name: EXP-06 evidence catalog boundary
         run: node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
       - name: EXP-01 typed obligation bucket boundary
