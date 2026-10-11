@@ -31,7 +31,7 @@ jobs:
       - name: EXP-01 typed obligation bucket boundary
         run: node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
       - name: EXP-03 minimal asset eligibility boundary
-        run: node audit/algorithmic-governability/g3-minimal-asset-eligibility-boundary.mjs
+        run: node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.mjs
       - name: Install Node test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: EXP-07 canonical hysteresis conformance
