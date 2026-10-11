@@ -377,10 +377,15 @@ const gitignore = read('.gitignore')
 if (/\.env/.test(gitignore)) ok('.gitignore protects environment configuration')
 else fail('.gitignore does not clearly protect .env')
 
+// The relayer private key must never be assigned in frontend configuration.
+// A Blockfrost project id may be read from the build environment, but a literal
+// project id in source is committed configuration and must be rejected.
+const hardcodedBlockfrostProjectId =
+  /BLOCKFROST_PROJECT_ID\s*[:=]\s*(['"`])[^'"`\r\n]*\1/.test(configTs)
 if (
   !/RELAYER_PRIVATE_KEY\s*[:=]/.test(configTs) &&
-  !/BLOCKFROST_PROJECT_ID\s*[:=]/.test(configTs)
-) ok('No relayer private key / Blockfrost project assignment found in src/config.ts')
+  !hardcodedBlockfrostProjectId
+) ok('No relayer private key or hardcoded Blockfrost project id found in src/config.ts')
 else fail('Sensitive relayer configuration appears in src/config.ts')
 
 if (fs.existsSync(path.resolve(ROOT, 'src/plutusScripts/mintPolicy.plutus.json'))) {

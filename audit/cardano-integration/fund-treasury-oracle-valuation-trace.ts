@@ -243,6 +243,24 @@ assertExecutableLiquidityMatchesAuthenticatedPool(
   preLiquidity,
 )
 
+// Yaci Store's Scalus evaluator currently fails at CostModel operation 166
+// before submission. Assign an in-bounds construction budget only for this
+// diagnostic trace; the Cardano ledger remains authoritative for validation.
+// This transaction contains exactly one Plutus spending redeemer (B1PrizePool).
+type FundTreasuryEvaluation = {
+  redeemer_tag: string
+  redeemer_index: number
+  ex_units: { mem: number; steps: number }
+}
+const fundEvaluator = provider as unknown as {
+  evaluateTx: (tx: string) => Promise<FundTreasuryEvaluation[]>
+}
+fundEvaluator.evaluateTx = async (_tx: string) => [{
+  redeemer_tag: 'spend',
+  redeemer_index: 0,
+  ex_units: { mem: 13_000_000, steps: 9_000_000_000 },
+}]
+
 const fund = await lucid
   .newTx()
   .collectFrom([poolInput], Data.to(c(0)))
@@ -259,8 +277,8 @@ const fund = await lucid
   .addSigner(address)
   .validFrom(Number(now))
   .validTo(Number(now + 3_600_000n))
-  // Use the Yaci-backed provider evaluator; the local Lucid evaluator loads
-  // a stale Plutus cost-model vector and fails at operation 166 before submit.
+  // Use the bounded construction budget above; only ledger submission and
+  // the observed post-state below determine whether FundTreasury succeeds.
   .complete({ localUPLCEval: false })
 
 const signed = await fund.sign().complete()
@@ -317,6 +335,14 @@ const evidence = {
   transactionRef: txHash,
   txCbor,
   action: 'FundTreasury',
+  transactionBuildBudget: {
+    source: 'bounded test-harness assignment; not a measured execution cost',
+    redeemerTag: 'spend',
+    redeemerIndex: 0,
+    mem: 13_000_000,
+    steps: 9_000_000_000,
+    ledgerValidationAuthoritative: true,
+  },
   preState: {
     poolRef,
     poolLovelace: INITIAL_POOL_LOVELACE.toString(),
