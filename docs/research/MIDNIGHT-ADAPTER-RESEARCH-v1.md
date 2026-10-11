@@ -143,7 +143,7 @@ A Midnight Adapter therefore has two different proof obligations:
 - concrete settlement mechanism is application-dependent;
 - DUST / chain execution cost must remain distinct from any future IMMORTAL Protocol Usage Fee;
 - real Midnight finality/evidence acquisition is not yet implemented;
-- the exact Miroarty source for the historical Intent concept remains unresolved.
+- the exact Moriarty source repository/integration remains open.
 
 ## 12. Research status
 
