@@ -50,6 +50,8 @@ jobs:
         run: node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
       - name: B3-C RootProof verification boundary
         run: node audit/algorithmic-governability/b3-c-rootproof-boundary.mjs
+      - name: B3-A witness packet boundary
+        run: node audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs
       - name: B5/B6 action evidence boundary
         run: node audit/algorithmic-governability/b5-b6-action-evidence-boundary.mjs
       - name: Install Node test dependencies
