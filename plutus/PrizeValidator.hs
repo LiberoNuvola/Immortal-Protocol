@@ -112,11 +112,6 @@ countOwnScriptOutputs ctx =
         _ ->
           go os
 
-{-# INLINABLE pkElem #-}
-pkElem :: PubKeyHash -> [PubKeyHash] -> Bool
-pkElem _ [] = False
-pkElem x (y:ys) = x == y || pkElem x ys
-
 {-# INLINABLE ticketOwnerPkh #-}
 ticketOwnerPkh
   :: CurrencySymbol
@@ -675,7 +670,7 @@ validateClaim oracleState oraclePublisher datum ctx =
     ownerSigned =
       case maybeOwner of
         Just pkh ->
-          pkElem pkh (txInfoSignatories info)
+          txSignedBy info pkh
         Nothing ->
           False
 

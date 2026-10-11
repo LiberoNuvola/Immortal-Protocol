@@ -400,17 +400,6 @@ ticketOwnerPkh cs bs (i:is) =
       else
         ticketOwnerPkh cs bs is
 
-{-# INLINABLE pkElem #-}
-pkElem
-  :: PubKeyHash
-  -> [PubKeyHash]
-  -> Bool
-pkElem _ [] =
-  False
-
-pkElem x (y:ys) =
-  x == y || pkElem x ys
-
 -- ============================================================
 -- Oracle / payout helpers
 -- ============================================================
@@ -943,9 +932,7 @@ mkValidator
                            ownerSigned =
                              case maybeOwner of
                                Just pkh ->
-                                 pkElem
-                                   pkh
-                                   (txInfoSignatories info)
+                                 txSignedBy info pkh
 
                                Nothing ->
                                  False
