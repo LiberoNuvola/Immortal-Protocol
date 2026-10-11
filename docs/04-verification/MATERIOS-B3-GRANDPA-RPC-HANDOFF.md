@@ -235,3 +235,48 @@ Once this wiring exists in an upstream build, the standard RPC can produce the S
 Status remains:
 
 **standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; real proof fixture OPEN.**
+
+## Live Preprod finding — 2026-10-11
+
+A real finalized-state capture was executed against:
+
+`https://materios.fluxpointstudios.com/preprod-rpc`
+
+The live capture succeeded for the checkpoint envelope and recorded:
+
+- finalized block: `2236627`
+- finalized hash: `0xea192be56ca72c6824f824abe8dc55441681ff8fe3d12cd4a6de67628b0a027b`
+- state root: `0x0d694f1102edd3214a61ace3027aaea594162680fd550aa984c075f434badef3`
+- GRANDPA set id: `3976`
+- GRANDPA authority count: `5`
+
+The same capture reported:
+
+`grandpa_proveFinality` → `unavailable`
+
+This is an infrastructure/surface limitation of the public Preprod RPC, not a finality-verifier failure.
+
+### Exact upstream wiring identified
+
+The repository already depends on the pinned `sc-consensus-grandpa-rpc` and the service already constructs:
+
+`grandpa::FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()))`
+
+The missing step is to pass these existing dependencies through `node_rpc::FullDeps` and merge the standard GRANDPA RPC:
+
+`Grandpa::new(subscription_executor, shared_authority_set, shared_voter_state, justification_stream, finality_proof_provider).into_rpc()`
+
+This is the standard API shape from the pinned `polkadot-stable2409-4` SDK. No new finality protocol or custom proof format is required.
+
+### Acceptance after upstream deployment
+
+A new real Preprod capture must show:
+
+1. `grandpa_proveFinality(block_number)` returns non-null SCALE `FinalityProof<Block::Header>`.
+2. The proof decodes independently.
+3. Its target block is bound to the captured finalized checkpoint.
+4. The embedded GRANDPA justification verifies against the authenticated authority set and set id.
+5. All required ancestry headers verify.
+6. Only after 1–5 may the result cross the IMMORTAL `VerifiedAuthoritySetTransition` boundary.
+
+Until these conditions hold, B3-A remains OPEN.
