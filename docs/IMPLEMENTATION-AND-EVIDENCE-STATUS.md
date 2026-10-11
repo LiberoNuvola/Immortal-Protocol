@@ -28,7 +28,7 @@ Una riga non deve essere considerata chiusa solo perché una CI è verde.
 | Claim / Expire | ✅ | ✅ | ✅ | 🟡 | Full refinement/evidence closure da mantenere distinta dai test locali |
 | Genesis transition | ✅ | ✅ | ✅ | 🟡 | Observation binding + real-ledger transition proof |
 | Beacon B1 | ✅ | ✅ | ✅ | 🟡 | Provenance/evidence depends on configured authority model |
-| Beacon B3 / Materios / GRANDPA | ✅ target architecture | ✅ scaffolding | 🟢 B3-B verifier + B3-A capture | 🟡 B3-B real state proof; B3-A finality proof absent | B3-A finality/authority provenance and B3-C remain OPEN |
+| Beacon B3 / Materios / GRANDPA | ✅ target architecture | ✅ proof boundary + Adapter transport | 🟢 B3-B verifier + GRANDPA decoder/verifier + B3-A capture | 🟡 B3-B real state proof; B3-A real finality/transition witness absent | Real GRANDPA/authority provenance and B3-C remain OPEN |
 | Governance finalization | ✅ | ✅ | ✅ | 🟡 | Canonicalization record identity/replay binding remains OPEN |
 
 ## IMMORTAL
@@ -113,6 +113,8 @@ Relevant proof surfaces:
 
 `verifier-b3-03b.ts` remains fail-closed when ancestry is not verified.
 
+The standard Substrate GRANDPA evidence route is now implemented in IMMORTAL: the Adapter can consume the standard FRNK justification carrier from chain_getBlock, independently decode FinalityProof/GrandpaJustification SCALE, verify signatures/quorum/ancestry against an authenticated authority state, and bind that result to a verified authority transition's fromSetId. This is an implementation/refinement closure of the local proof boundary, not a claim that a real Materios transition witness has been captured.
+
 Current status: the architecture and trust boundary are established, but publisher-independent B3 authority/finality provenance is not to be called complete until the full proof path is available and verified.
 
 ### New upstream Materios provenance evidence surface (2026-09-24)
@@ -168,7 +170,7 @@ Only steps 1–4 should never be presented as proof of real on-chain execution w
 | B3-B state authentication | PRE-RICH / Materios | CLOSED | Real finalized-state StorageProof independently verified |
 | B3 publisher-independent authority provenance | PRE-RICH / Materios | OPEN | Verified finality + authority-selection proof chain |
 | Authority-regime provenance | PRE-RICH / Materios | OPEN | Verified proof binds normal L1/Ariadne regime vs explicit pinned-committee regime |
-| GRANDPA ancestry production proof | Evidence | OPEN | Complete cryptographic/finality verification path |
+| GRANDPA ancestry production proof | Evidence | IMPLEMENTED / REAL WITNESS OPEN | Complete real Materios justification capture and independent verification |
 | P2.8 typed Ledger Reveal evaluation | Adapter / Evidence | IN PROGRESS | Complete typed report from exact evidence |
 | IMMORTAL↔Cardano semantic equivalence | Adapter / Conformance | OPEN by item | Action-by-action equivalence or explicit justified boundary |
 | Genesis observation binding | PRE-RICH / Adapter | OPEN | Authenticated observation + real transition evidence |
