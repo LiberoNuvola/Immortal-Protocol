@@ -205,3 +205,76 @@ No reward should be allowed to consume protected value merely because the algori
 6. Keep all numeric values and concrete reward percentages OPEN until evidence supports them.
 
 **No economic or governance policy is changed by this front.**
+
+## 2026-10-11 — Generalized derivation + contributor reward credential boundary
+
+The adaptive-incentive research is now extended from a single Fee Function laboratory to a common **derivation boundary** reused by fee, governance, reward and future policy-parameter candidates.
+
+The common shape is:
+
+`CertifiedState + DeclaredRule/Function + EvidenceContract → DerivedResult`
+
+while keeping four distinct authorities:
+
+- **Constitution / normative rules:** defines domain, invariants and non-bypassable bounds;
+- **Governance / profile:** authorizes the derivation function and its limits;
+- **Algorithm:** computes deterministic results inside that domain;
+- **Adapter:** realizes/settles the result on a concrete chain.
+
+This is a generalization of the existing Fee/Reward research, not a new execution engine. The algorithm may generate candidates across multiple functions, but each candidate remains subject to the relevant authorization and evidence contract.
+
+### Candidate function families
+
+The same boundary can cover, without making them canonically equivalent:
+
+- `EconomicFeeTarget(S,A)`;
+- `RewardBudget(S)`;
+- `CodeContributionReward(C,E)`;
+- `ReviewReward(C,E)`;
+- governance membership/eligibility functions;
+- future profile-controlled adaptive parameters;
+- candidate protocol/adapter policies where the governing contract explicitly permits derivation.
+
+The algorithm therefore becomes a **candidate derivation / certification engine**, not a universal policy authority.
+
+### Contributor reward and NFT boundary
+
+The existing repository research supports a reward for **verified contribution**, with the evidence chain:
+
+`Contribution → Build/CI evidence → review/acceptance → canonical contribution record → reward eligibility`.
+
+A separate **Contributor Reward NFT** is now recorded as a research candidate, but is not treated as an already-canonical protocol primitive. The architecture must distinguish:
+
+1. **Contribution credential:** an NFT-like on-chain or otherwise persistent certificate that attests to a verified contribution record;
+2. **Economic reward:** a separately authorized reward calculated from the contribution record and a certified reward budget;
+3. **Governance authority:** never implied solely by holding the credential or receiving a reward.
+
+The NFT therefore must not become, by existence alone, a source of economic entitlement, governance weight, Treasury authority or evidence authority.
+
+Open design questions remain: whether the credential is transferable, whether it carries any explicit utility, which on-chain identity is canonical, how corrections/revocations are represented, and whether the economic reward is settled directly or through a claim path. No answer is frozen by this update.
+
+### Treasury-funded contributor rewards
+
+The intended accounting boundary remains:
+
+`RevenueReceived → AccountingClassification → Protected/Reserved/Available → CertifiedRewardBudget → RewardAllocation`
+
+The Treasury supplies an **authenticated accounting amount**; the reward algorithm must not decide how much Treasury value becomes distributable. ProtectedCapital and mandatory obligations remain prior constraints.
+
+A contribution reward therefore cannot be funded merely because Treasury balance exists, and a reward NFT cannot be used to bypass the Economic Gate.
+
+### Research status
+
+**Generalized derivation boundary:** CONCEPTUAL / RESEARCH — reusable across candidate functions.
+
+**Code/review contribution reward:** OPEN.
+
+**Contributor Reward NFT:** RESEARCH CANDIDATE / NOT CANONICAL.
+
+**Treasury → certified reward budget:** OPEN.
+
+**Economic reward → NFT credential linkage:** OPEN.
+
+**Anti-Sybil / anti-collusion / anti-Goodhart:** OPEN.
+
+**No change to current governance or economic policy.**
