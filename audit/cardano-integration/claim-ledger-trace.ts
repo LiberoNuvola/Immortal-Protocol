@@ -298,22 +298,45 @@ function claimContextShapeMismatch(error: unknown): boolean {
     message.includes('Expected type ByteString, got VCon(Data')
 }
 
-function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Array<{
+async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Promise<Array<{
   redeemer_tag: string
   redeemer_index: number
   ex_units: { mem: number; steps: number }
-}> {
+}>> {
   // This is only a transaction-construction fallback for the documented
   // Scalus/Yaci context-shape failure. The final Cardano ledger submission is
   // still authoritative and each positive/negative Claim is verified there.
-  // Keep the sum below the active transaction limits and record the budget as
-  // a fallback, never as a measured execution result.
-  const limits = (protocolParameters as any).maxTxExecutionUnits
-  const maxMemory = Number(limits?.memory ?? limits?.mem)
-  const maxSteps = Number(limits?.steps)
+  // The Lucid Blockfrost provider omits maxTxExecutionUnits in this Yaci setup,
+  // so read the active node values from its protocol-parameters endpoint rather
+  // than inventing budgets or reusing a budget from a different transition.
+  const response = await fetch(API + '/epochs/latest/parameters')
+  const raw = await response.text()
+  if (!response.ok) {
+    throw new Error(
+      'Claim fallback could not read active protocol parameters (HTTP ' +
+      response.status + '): ' + raw.slice(0, 1200),
+    )
+  }
+  let active: Record<string, unknown>
+  try {
+    active = JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    throw new Error('Claim fallback received invalid protocol-parameters JSON: ' + raw.slice(0, 1200))
+  }
+  const normalizedLimits = (protocolParameters as any).maxTxExecutionUnits
+  const maxMemory = Number(
+    active.max_tx_ex_mem ?? active.maxTxExMem ??
+    normalizedLimits?.memory ?? normalizedLimits?.mem,
+  )
+  const maxSteps = Number(
+    active.max_tx_ex_steps ?? active.maxTxExSteps ?? normalizedLimits?.steps,
+  )
   if (!Number.isSafeInteger(maxMemory) || maxMemory <= 0 ||
       !Number.isSafeInteger(maxSteps) || maxSteps <= 0) {
-    throw new Error('Claim evaluator fallback requires valid active maxTxExecutionUnits')
+    throw new Error(
+      'Claim fallback requires active max_tx_ex_mem/max_tx_ex_steps; available keys=' +
+      Object.keys(active).sort().join(','),
+    )
   }
 
   const description = describeTx(cbor)
@@ -355,6 +378,11 @@ function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number)
     txSha256: description.txSha256,
     reason: 'Yaci Scalus KnownTypeUnliftingError: PubKeyHash/ByteString context representation',
     source: 'active maxTxExecutionUnits; 45% per spending redeemer, 90% aggregate',
+    protocolParametersEndpoint: API + '/epochs/latest/parameters',
+    activeProtocolParameters: {
+      max_tx_ex_mem: String(maxMemory),
+      max_tx_ex_steps: String(maxSteps),
+    },
     protocolExecutionLimits: { memory: maxMemory, steps: maxSteps },
     assignedPerRedeemer: perRedeemer,
     redeemers: result.map((r) => ({
@@ -389,7 +417,7 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
     // budgeting even when those reference UTxOs are present; the node's actual
     // submission remains mandatory and authoritative for every Claim result.
     if (claimContextShapeMismatch(error)) {
-      return boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
+      return await boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
     }
     throw error
   }
