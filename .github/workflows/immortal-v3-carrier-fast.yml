@@ -42,7 +42,7 @@ jobs:
 
       - name: Restore V3 Plutus artifact cache
         id: v3-artifact-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             plutus/out/v3EconomicStateCarrier.plutus.json
@@ -98,10 +98,20 @@ jobs:
           if-no-files-found: ignore
 
       - name: Verify V3 Plutus artifact
+        id: verify-v3-artifact
         run: |
           test -s plutus/out/v3EconomicStateCarrier.plutus.json
           test -s plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
           node -e "for (const f of ['v3EconomicStateCarrier.plutus.json','v3EconomicStateCarrierMintPolicy.plutus.json']) { const a=require('./plutus/out/'+f); if(a.type!=='PlutusScriptV2'||!a.cborHex) process.exit(1); } console.log('V3 artifacts ready')"
+
+      - name: Save verified V3 Plutus artifact cache
+        if: steps.v3-artifact-cache.outputs.cache-hit != 'true' && steps.verify-v3-artifact.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            plutus/out/v3EconomicStateCarrier.plutus.json
+            plutus/out/v3EconomicStateCarrierMintPolicy.plutus.json
+          key: v3-carrier-${{ hashFiles('PRE-RICH/onchain/V3EconomicStateCarrier.hs', 'PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs', 'plutus/*.cabal', '.github/actions/setup-plutus/action.yml', 'package-lock.json') }}
 
       - name: Install pinned Yaci DevKit
         run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
