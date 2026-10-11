@@ -229,6 +229,19 @@ test-suite governance-phase6-tests
         pre-rich-plutus
     default-language: Haskell2010
 
+test-suite ag01-governability-conformance-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: ../IMMORTAL/governance
+    main-is: AG01GovernabilityConformanceTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        base16-bytestring,
+        bytestring,
+        cryptohash-sha256,
+        text,
+        pre-rich-plutus
+    default-language: Haskell2010
+
 test-suite legacy-adapter-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
