@@ -37,7 +37,7 @@ main = do
 
   assert "AG-08 unregistered ruleset is rejected"
     (not (canonicalGovernanceEventValid rules Nothing
-      (valid { rulesetVersion = 2 })))
+      (valid { RulesetRegistry.rulesetVersion = 2 })))
 
   let badPredecessor =
         committed
