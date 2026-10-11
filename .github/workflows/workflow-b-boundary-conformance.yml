@@ -36,6 +36,16 @@ jobs:
         run: node audit/algorithmic-governability/exp-04-profile-composition-boundary.mjs
       - name: EXP-05 contingent claims boundary
         run: node audit/algorithmic-governability/exp-05-contingent-claims-boundary.mjs
+      - name: EXP-08 netting and offset boundary
+        run: node audit/algorithmic-governability/exp-08-netting-offset-boundary.mjs
+      - name: EXP-09 obligation transfer boundary
+        run: node audit/algorithmic-governability/exp-09-obligation-transfer-novation-boundary.mjs
+      - name: EXP-10 explicit risk budget boundary
+        run: node audit/algorithmic-governability/exp-10-explicit-risk-budget-boundary.mjs
+      - name: EXP-11 deterministic allocation boundary
+        run: node audit/algorithmic-governability/exp-11-deterministic-auction-allocation-boundary.mjs
+      - name: EXP-12 observer authority split boundary
+        run: node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
       - name: Install Node test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: EXP-07 canonical hysteresis conformance
