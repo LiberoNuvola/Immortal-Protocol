@@ -113,6 +113,10 @@ jobs:
         working-directory: plutus
         run: cabal test governance-phase6-tests
 
+      - name: AG-01 governability conformance
+        working-directory: plutus
+        run: cabal test ag01-governability-conformance-tests
+
       - name: Legacy adapter conformance
         working-directory: plutus
         run: cabal test legacy-adapter-tests
