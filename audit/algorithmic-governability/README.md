@@ -51,6 +51,7 @@ These expansions are not a second governance system and do not create new econom
 | B3-A witness packet | checkpoint/transition/execution/selection bindings | real cryptographic witness + independent finality/authority verification |
 | B3-C RootProof | checkpoint/stateRoot/storage/semantic bindings | real storage proof + complete B3-A/B relation |
 | B5/B6 action evidence | Issue/Reveal/Claim/Expire packet completeness | real ledger-aligned action equivalence |
+| Action evidence integrity | state/action/adapter/ledger/provenance digest binding | real witness digest verification |
 | Midnight/Moriarty adapter research | Intent → chain-neutral admission → Moriarty semantic mapping → Midnight execution | real Midnight deployment, proof/evidence binding and admission correspondence |
 | Moriarty source-language correspondence | OwnerIntent/source/authority → explicit IMMORTAL projection; no schema equivalence | real source-to-admission and ledger binding |
 | Adapter maturity | explicit distinction: Cardano concrete, Reference replay-only, Midnight/research and other adapters research-only | real non-Cardano execution/settlement evidence |
