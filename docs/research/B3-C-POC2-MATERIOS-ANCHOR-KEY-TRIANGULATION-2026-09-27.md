@@ -1,7 +1,7 @@
 # B3-C PoC-2 — Materios AnchorRecord Key Triangulation
 
 **Date:** 2026-09-27  
-**Status:** 🟡 exact storage schema identified / 🔴 canonical checkpoint-to-anchor binding remains open  
+**Status:** 🟢 raw storage-key construction executable / 🔴 canonical checkpoint-to-anchor binding remains open  
 **Scope:** PRE-RICH B3-C evidence boundary; non-normative research note.
 
 ## 1. Result
@@ -62,6 +62,15 @@ Twox128("OrinqReceipts")
 where `anchorId` is the SCALE-encoded H256 key (32 bytes). This follows the FRAME storage-prefix and `Blake2_128Concat` rules; it is a key-construction rule, not evidence that the selected `anchorId` is canonical for a Beacon round.
 
 This removes the remaining **raw-key construction ambiguity** for PoC-2. It does not remove the separate **semantic binding ambiguity**.
+
+## 3.2 — Executable raw-key conformance vector — 11 October 2026
+The verifier now exposes `materios_anchors_storage_key(anchor_id)` and tests the exact FRAME construction against a fixed `H256 = 0x11…11` vector.
+
+The tested construction is:
+
+`Twox128("OrinqReceipts") || Twox128("Anchors") || Blake2_128(anchorId) || anchorId`
+
+This closes the **raw storage-key construction** conformance sub-boundary for the verifier implementation. It does not close the semantic relation `checkpoint/round → canonical anchorId` and does not establish a real finalized Materios storage proof.
 
 ## 3. Independent SDK triangulation
 
