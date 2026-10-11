@@ -30,7 +30,7 @@ The IMMORTAL repository already contains:
 
 No additional selector or TypeScript authority-selection implementation is required.
 
-## 3. Current Materios blocker
+## 3. Current Materios boundary — transport is the only missing public surface
 
 The current Materios node already depends on:
 
@@ -41,15 +41,15 @@ and already constructs:
 `grandpa_block_import`
 `grandpa_link`
 
-but `partnerchain/node/src/rpc.rs` currently registers only:
+while `partnerchain/node/src/rpc.rs` currently registers only:
 
 - System RPC
 - Orinq Receipts RPC
 - MOTRA RPC
 
-The standard GRANDPA RPC module is therefore not merged into the node's public RPC surface.
+Therefore the standard GRANDPA RPC module and a B3 execution-proof RPC are **not exposed publicly**.
 
-Separately, the native Substrate client already implements:
+That is no longer treated as the primary blocker. The native Substrate client already implements:
 
 `ProofProvider::execution_proof(block_hash, method, call_data)`
 
@@ -57,7 +57,11 @@ by delegating to:
 
 `CallExecutor::prove_execution(hash, method, call_data)`
 
-The current Materios node does not expose this operation as an RPC.
+and a real Full Validator runs the concrete Materios `FullClient` locally.
+
+**Primary acquisition path:** use the real operator node locally and obtain the stored GRANDPA justification and native execution proof from the local client; export the resulting witness as an immutable evidence artifact.
+
+**Fallback only:** add public GRANDPA/proof transport to a pinned Materios node build.
 
 ## 4. Required node change A — standard GRANDPA RPC
 
@@ -202,8 +206,9 @@ Any future B3 result may be integrated elsewhere only after independent proof an
 
 **IMMORTAL evidence boundary:** READY  
 **Materios selector:** PRESENT  
-**Standard GRANDPA transport:** SPECIFIED, NOT APPLIED  
+**Full Validator operator route:** CONFIRMED IN OPERATOR KIT / EXECUTION REQUIRED  
+**Local B3 CLI:** DESIGN FROZEN, NOT YET APPLIED TO MATERIOS  
 **Native execution-proof capability:** PRESENT IN SDK / CLIENT  
-**Materios execution-proof RPC:** ABSENT  
+**Public proof RPC:** ABSENT / FALLBACK ONLY  
 **Real B3-A witness:** NOT YET MATERIALIZED  
 **B3-A:** OPEN
