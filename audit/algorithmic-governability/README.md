@@ -33,7 +33,7 @@ This lab contains support for the **IMMORTAL Expansion** research front. Its ide
 
 The **EXP-** prefix is deliberate: it prevents these generalization axes from being confused with Governance (`GOV-xx`), system closure fronts (`B4/B5/B6`), or the separate G1–G6 liveness conditions.
 
-Current bounded implementations in this branch include EXP-01-light, EXP-03-minimal, EXP-06 and EXP-07-light. The remaining EXP items stay research/open until their semantic boundary is explicitly justified.
+Current bounded implementations in this branch include **EXP-01-light, EXP-03-minimal, EXP-04 boundary, EXP-05 boundary, EXP-06 and EXP-07-light**. EXP-04 and EXP-05 are research boundaries only; their production semantics remain open. The remaining EXP items stay research/open until their semantic boundary is explicitly justified.
 
 These expansions are not a second governance system and do not create new economic authority.
 
@@ -61,6 +61,12 @@ The lab intentionally gives two monitors identical observations but different de
 
 ```bash
 node audit/algorithmic-governability/no-result-dependent-authority.mjs
+node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
+node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.mjs
+node audit/algorithmic-governability/exp-04-profile-composition-boundary.mjs
+node audit/algorithmic-governability/exp-05-contingent-claims-boundary.mjs
+node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
+npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
 ```
 
 Expected result: all assertions PASS.
@@ -72,4 +78,6 @@ Expected result: all assertions PASS.
 - no governance threshold;
 - no economic parameter;
 - no claim of cryptographic proof;
-- no substitution for AG-01 canonical replay/finality evidence.
+- no substitution for AG-01 canonical replay/finality evidence;
+- no production profile-composition engine;
+- no production contingent-claims engine.
