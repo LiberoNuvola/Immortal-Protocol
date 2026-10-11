@@ -66,6 +66,8 @@ jobs:
         run: node audit/algorithmic-governability/b3-workflow-routing-boundary.mjs
       - name: B3-A witness packet boundary
         run: node audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs
+      - name: B3 real witness promotion boundary
+        run: node audit/algorithmic-governability/b3-real-witness-promotion-boundary.mjs
       - name: B5/B6 action evidence boundary
         run: node audit/algorithmic-governability/b5-b6-action-evidence-boundary.mjs
       - name: Action evidence integrity boundary
@@ -88,6 +90,8 @@ jobs:
         run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
       - name: Contributor credential separation boundary
         run: node audit/algorithmic-governability/contributor-credential-separation-boundary.mjs
+      - name: Contributor Reward NFT anti-capture boundary
+        run: node audit/algorithmic-governability/contributor-reward-nft-boundary.mjs
       - name: Contributor reward boundary
         run: node audit/algorithmic-governability/reward-contributor-boundary.mjs
       - name: Treasury and reward accounting boundary
