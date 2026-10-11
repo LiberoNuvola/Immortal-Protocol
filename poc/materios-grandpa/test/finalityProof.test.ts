@@ -10,7 +10,6 @@ import {
 
 import {
   decodeFinalityProof,
-  FinalityProofVerificationError,
   verifyFinalityProof
 } from "../src/finalityProof.js";
 
@@ -464,39 +463,39 @@ describe("B3 standard GRANDPA FinalityProof decoder", () => {
     });
   });
 
-  it("rejects malformed embedded headers instead of accepting transport bytes", () => {
+  it("rejects truncated embedded header evidence", () => {
     const target =
       header(
-        100n,
+        101n,
         new Uint8Array(32)
+      );
+
+    const justification =
+      encodeGrandpaJustification(
+        justificationFor(
+          target
+        )
       );
 
     const encoded =
       encodeFinalityProofForTest(
         target.hash,
-        encodeGrandpaJustification(
-          justificationFor(
-            target
-          )
-        ),
-        []
+        justification,
+        [target]
       );
 
-    const corrupted =
-      Uint8Array.from(
-        encoded
+    const truncated =
+      encoded.slice(
+        0,
+        encoded.length - 1
       );
-
-    corrupted[
-      corrupted.length - 1
-    ] ^= 0x01;
 
     expect(() =>
       decodeFinalityProof(
-        corrupted
+        truncated
       )
-    ).not.toThrow(
-      FinalityProofVerificationError
+    ).toThrow(
+      /UNEXPECTED_EOF/
     );
   });
 });
