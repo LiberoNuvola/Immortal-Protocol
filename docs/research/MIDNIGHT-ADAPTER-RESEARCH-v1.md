@@ -145,7 +145,7 @@ A Midnight Adapter therefore has two different proof obligations:
 - real Midnight finality/evidence acquisition is not yet implemented;
 - the exact Moriarty source repository/integration remains open.
 
-## 12. Research status
+## 13. Research status
 
 | Item | Status |
 | --- | --- |
