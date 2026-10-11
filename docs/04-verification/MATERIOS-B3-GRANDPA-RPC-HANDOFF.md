@@ -44,7 +44,7 @@ and:
 
 `grandpa_link`.
 
-The standard SDK wiring uses:
+The standard SDK wiring would use:
 
 ```rust
 let justification_stream = grandpa_link.justification_stream();
@@ -228,13 +228,21 @@ The current Materios `node/Cargo.toml` **already contains**:
 
 so no new dependency is required in the node crate. The blocker is registration/wiring, not dependency availability.
 
+### Self-hosted route — no paid managed service required
+
+The public Materios Gateway is a separate service layer. Its published README lists billing controls for selected gateway endpoints, but it does not publish `grandpa_proveFinality` as a paid API. The Materios node itself is published as open source and the project documents running a full node locally; full-validator operation is described as invite-only. Therefore there is no evidence in the published materials that B3-A requires paying for `grandpa_proveFinality` itself.
+
+The practical non-managed route is to run a compatible Materios full node locally, wire the standard GRANDPA RPC into that node, and point the IMMORTAL Adapter at the local endpoint. This avoids dependence on the public RPC surface and does not change the cryptographic requirement: the Adapter still verifies the raw proof independently.
+
+This is an infrastructure route, not a new consensus rule and not a bypass of the B3 evidence contract.
+
 ### B3 consequence
 
-Once this wiring exists in an upstream build, the standard RPC can produce the SDK-native `FinalityProof` bytes. That still does not close B3: the IMMORTAL side must independently decode the outer proof, bind its target block/hash, decode and verify the inner GRANDPA justification against the authenticated authority-set state, and connect that finality result to the selection/enactment transition.
+Once this wiring exists in a self-hosted or upstream build, the standard RPC can produce the SDK-native `FinalityProof` bytes. That still does not close B3: the IMMORTAL side must independently decode the outer proof, bind its target block/hash, decode and verify the inner GRANDPA justification against the authenticated authority-set state, and connect that finality result to the selection/enactment transition.
 
 Status remains:
 
-**standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; real proof fixture OPEN.**
+**standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; self-hosted integration is the actionable route; real proof fixture OPEN.**
 
 ## Live Preprod finding — 2026-10-11
 
@@ -258,11 +266,9 @@ This is an infrastructure/surface limitation of the public Preprod RPC, not a fi
 
 ### Exact upstream wiring identified
 
-The repository already depends on the pinned `sc-consensus-grandpa-rpc` and the service already constructs:
+The repository already depends on the pinned `sc-consensus-grandpa-rpc`, but the current `partnerchain/node/src/service.rs` does not construct a `FinalityProofProvider` or pass GRANDPA RPC dependencies into `node_rpc::FullDeps`.
 
-`grandpa::FinalityProofProvider::new_for_service(backend.clone(), Some(shared_authority_set.clone()))`
-
-The missing step is to pass these existing dependencies through `node_rpc::FullDeps` and merge the standard GRANDPA RPC:
+The missing step is therefore both to construct the provider from the existing `grandpa_link`/backend and to pass those dependencies through `node_rpc::FullDeps`, then merge the standard GRANDPA RPC:
 
 `Grandpa::new(subscription_executor, shared_authority_set, shared_voter_state, justification_stream, finality_proof_provider).into_rpc()`
 
