@@ -681,10 +681,15 @@ validateClaim oracleState oraclePublisher datum ctx =
     maybeOwner =
       ticketOwnerPkh ticketCs ticketTn (txInfoInputs info)
 
+    -- Compare the canonical payment-key hash bytes directly. Some host-side
+    -- evaluator/provider combinations serialize PubKeyHash and BuiltinByteString
+    -- differently in the ScriptContext; comparing hashes as bytes avoids relying
+    -- on the typed PubKeyHash wrapper at this boundary.
     ownerSigned =
       case maybeOwner of
         Just pkh ->
-          txSignedBy info pkh
+          let ownerHash = getPubKeyHash pkh
+          in any (\signatory -> signatory == ownerHash) (txInfoSignatories info)
         Nothing ->
           False
 
