@@ -61,6 +61,10 @@ jobs:
       - name: Install Materios checkpoint dependencies
         run: npm ci --prefix poc/materios-checkpoint
 
+      - name: Typecheck live proof capture
+        working-directory: poc/materios-checkpoint
+        run: npm run typecheck
+
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
         run: npx tsx src/capture-storage-proof.ts
