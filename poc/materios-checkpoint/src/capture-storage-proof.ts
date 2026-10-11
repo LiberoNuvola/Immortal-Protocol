@@ -371,7 +371,9 @@ async function main(): Promise<void> {
   console.log("RPC:", RPC);
   console.log("Discovering live receipt:certified event...");
 
-  const receiptId = await waitForReceiptId();
+  const receiptId =
+    process.env.MATERIOS_RECEIPT_ID ??
+    await waitForReceiptId();
   console.log("receipt_id:", receiptId);
 
   const certification = await getCertification(receiptId);
