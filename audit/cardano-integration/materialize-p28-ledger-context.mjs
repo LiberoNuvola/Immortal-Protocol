@@ -107,10 +107,33 @@ if (new Set(transition.consumedUtxos).size !== transition.consumedUtxos.length |
 const txCbor = await requireFile(EVIDENCE_DIR + '/reveal-tx.cbor')
 const pparams = await requireFile(EVIDENCE_DIR + '/reveal-protocol-parameters.json')
 const pparamsJson = JSON.parse(pparams.toString('utf8'))
-const protocolMajor = Number(pparamsJson?.protocolVersion?.major)
-if (!Number.isInteger(protocolMajor) || protocolMajor !== 11) {
-  throw new Error('P2.8 currently requires Conway/PV11 protocol parameters; observed major=' + String(pparamsJson?.protocolVersion?.major))
+
+// Lucid's normalized Yaci response omits protocolVersion.major on this provider
+// (the cost-model arrays are still present). Qualify the era from Yaci's raw,
+// Blockfrost-compatible endpoint rather than guessing or hardcoding PV11.
+const rawPparamsResponse = await fetch(API + '/epochs/latest/parameters')
+if (!rawPparamsResponse.ok) {
+  throw new Error('Yaci /epochs/latest/parameters failed: HTTP ' + rawPparamsResponse.status)
 }
+const rawPparams = await rawPparamsResponse.json()
+const protocolMajor = Number(rawPparams?.protocol_major_ver)
+const protocolMinor = Number(rawPparams?.protocol_minor_ver)
+if (!Number.isInteger(protocolMajor) || protocolMajor !== 11) {
+  throw new Error('P2.8 currently requires Conway/PV11; raw Yaci protocol_major_ver=' + String(rawPparams?.protocol_major_ver))
+}
+if (!Number.isInteger(protocolMinor) || protocolMinor < 0) {
+  throw new Error('Yaci raw protocol_minor_ver is missing or invalid: ' + String(rawPparams?.protocol_minor_ver))
+}
+for (const model of ['PlutusV1', 'PlutusV2', 'PlutusV3']) {
+  const normalized = pparamsJson?.costModels?.[model]
+  const raw = rawPparams?.cost_models_raw?.[model]
+  if (!Array.isArray(normalized) || !Array.isArray(raw) || normalized.length !== raw.length) {
+    throw new Error('Yaci/Lucid cost-model shape mismatch for ' + model +
+      ': normalized=' + String(Array.isArray(normalized) ? normalized.length : 'missing') +
+      ', raw=' + String(Array.isArray(raw) ? raw.length : 'missing'))
+  }
+}
+await writeFile(EVIDENCE_DIR + '/protocol-parameters-raw.json', JSON.stringify(rawPparams, null, 2) + '\\n')
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
 
@@ -195,7 +218,7 @@ await writeFile(
   }, null, 2) + '\n',
 )
 
-const files = ['tx.cbor', 'utxo.json', 'pparams.json', 'epoch-info.json', 'system-start.json']
+const files = ['tx.cbor', 'utxo.json', 'pparams.json', 'protocol-parameters-raw.json', 'epoch-info.json', 'system-start.json']
 const hashes = {}
 for (const file of files) hashes[file] = sha256(await readFile(EVIDENCE_DIR + '/' + file))
 
@@ -217,6 +240,8 @@ const manifest = {
     yaci_store_api: API,
     transaction_utxos_endpoint: API + '/txs/' + txHash + '/utxos',
     protocol_parameters_file: 'reveal-protocol-parameters.json',
+    protocol_parameters_raw_endpoint: API + '/epochs/latest/parameters',
+    protocol_parameters_raw_file: 'protocol-parameters-raw.json',
     timing_file: 'yaci-devkit-info.txt',
     epoch_file: 'epoch-latest.json',
   },
@@ -225,7 +250,8 @@ const manifest = {
   sha256: hashes,
   materialization: {
     transaction: 'copied byte-for-byte from reveal-tx.cbor',
-    protocol_parameters: 'copied byte-for-byte from reveal-protocol-parameters.json',
+    protocol_parameters: 'copied byte-for-byte from reveal-protocol-parameters.json; cost-model lengths cross-checked against raw Yaci parameters',
+    protocol_parameters_raw: 'fetched directly from Yaci /epochs/latest/parameters; protocol_major_ver is the authoritative PV11 gate',
     utxo: 'fetched directly from Yaci Store for transactionRef; consumed input references cross-checked against Reveal trace',
     epoch_info: 'raw Yaci epoch/timing provenance; typed EpochInfo is constructed by the native runner',
     system_start: 'raw Yaci genesis timing provenance; typed SystemStart is constructed by the native runner',
