@@ -597,7 +597,7 @@ assertCanonicalTransitionBinding(canonicalEvidence, {
 let replayRejected = false
 let replayError = ''
 try {
-  await lucid.submitTx(signedExpire)
+  await signedExpire.submit()
 } catch (error) {
   replayRejected = true
   replayError = error instanceof Error ? error.message : String(error)
@@ -646,6 +646,7 @@ writeFileSync(
       timeMs: latestBlockTimeMs,
       slotLengthMs: 1000,
       expiresAt: expiresAt.toString(),
+      validFrom: (expiresAt + 1_000n).toString(),
       issuedAt: issuedAt.toString(),
     },
     replay: {
