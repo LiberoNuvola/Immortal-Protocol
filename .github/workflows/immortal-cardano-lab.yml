@@ -122,24 +122,26 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p audit/yaci-evidence
-          ogmios_started=0
+
+          # --enable-kupomios starts Ogmios from the ClusterStarted event.
+          # Do not call start-kupomios here: that would attempt to bind port 1337 twice.
+          admin_ready=0
           for i in $(seq 1 90); do
-            if curl --fail --silent --show-error --request POST \
-              http://localhost:10000/local-cluster/api/admin/ogmios/start-kupomios \
-              -o audit/yaci-evidence/ogmios-start.json; then
-              ogmios_started=1
+            if curl --fail --silent http://localhost:10000/local-cluster/api/admin/devnet/status \
+              -o audit/yaci-evidence/devnet-status.txt; then
+              admin_ready=1
               break
             fi
             sleep 2
           done
-          if [ "$ogmios_started" -ne 1 ]; then
-            echo "Failed to start Ogmios/Kupo through the Yaci admin API."
+          if [ "$admin_ready" -ne 1 ]; then
+            echo "Yaci DevKit admin API did not become ready."
             tail -300 audit/yaci-evidence/yaci.log || true
             exit 1
           fi
 
           ogmios_ready=0
-          for i in $(seq 1 60); do
+          for i in $(seq 1 90); do
             if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
               ogmios_ready=1
               break
@@ -147,7 +149,7 @@ jobs:
             sleep 1
           done
           if [ "$ogmios_ready" -ne 1 ]; then
-            echo "Ogmios process started but port 1337 never became reachable."
+            echo "Ogmios did not become reachable on port 1337."
             tail -300 audit/yaci-evidence/yaci.log || true
             exit 1
           fi
