@@ -375,12 +375,12 @@ if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
 }
 
-// Preserve the PRE-RICH minimum 2-hour issued-to-expiry interval, but place the
-// expiry boundary only 10 seconds behind the latest local-ledger time. This
-// keeps the EXPIRE validity lower bound inside Yaci's available era-history;
-// the local synthetic fixture does not claim a real issuance event.
+// EXPIRE evaluates pdExpiresAt against the transaction validity range; it
+// does not establish the DApp/profile expiry horizon. Keep this fixture focused
+// on the EXPIRE transition and align its expiry marker with recent Yaci time so
+// the validity lower bound remains inside the node's available era-history.
 const expiresAt = BigInt(latestBlockTimeMs) - 10_000n
-const issuedAt = expiresAt - 7_200_000n
+const issuedAt = 0n // placeholder for this synthetic pre-state, not issuance evidence
 
 const prePrizeDatum = prizeDatum(
   testPolicyId,
