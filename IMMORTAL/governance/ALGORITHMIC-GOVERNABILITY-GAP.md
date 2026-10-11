@@ -216,3 +216,82 @@ tests and reproducible evidence, that:
 > environmental adaptation remains possible within that boundary.**
 
 Until then, AG-01 remains OPEN.
+
+## 2026-10-11 — Generalized algorithmic derivation frontier
+
+The research is generalized beyond individual parameters to a reusable **candidate derivation layer**. This does not create a second protocol state machine.
+
+### 9.1 Common derivation contract
+
+For any candidate function, the boundary is:
+
+`B = (D,R,I,L,E,V,C,X)`
+
+where:
+
+- **D — Domain:** what the function is allowed to act on;
+- **R — Rule/function:** the approved derivation rule;
+- **I — Inputs:** authoritative state/environment inputs;
+- **L — Limits:** non-bypassable bounds;
+- **E — Evidence:** proof/observation requirements;
+- **V — Version:** immutable/versioned rule identity;
+- **C — Contestability:** correction/review path;
+- **X — Exit:** suspension/failure behavior.
+
+A candidate is derivable only when these elements are externally bounded and version-bound. The function itself cannot enlarge D, L, E or X.
+
+### 9.2 Candidate generation is not adoption
+
+The generalized algorithmic layer may produce:
+
+`Explore(CertifiedState, AuthorizedRuleSpace) → CandidateSet`
+
+and classify each candidate as:
+
+- **ADMISSIBLE** — all required evidence and constraints pass;
+- **REJECTED** — a required condition is false;
+- **UNVERIFIABLE** — required evidence is missing or stale.
+
+It may not convert any of these classifications directly into constitutional adoption. Adoption remains the responsibility of the existing authorized transition/governance mechanism.
+
+### 9.3 Generalization targets
+
+The current research family includes:
+
+- EconomicFeeTarget;
+- RewardBudget and contribution rewards;
+- governance membership/eligibility functions;
+- candidate adaptive policy parameters;
+- candidate rule-set/upgrade trajectories;
+- future multi-adapter derivation where the same universal function is realized by different chain adapters.
+
+The generalized layer must not erase the semantic distinction between these domains. Shared machinery is acceptable; shared authority is not.
+
+### 9.4 Contributor credential boundary
+
+A contribution credential (including a future Reward NFT) is evidence/identity infrastructure around an accepted contribution. It does not become a constitutional authority token merely because it is persistent or scarce.
+
+Required separation:
+
+`VerifiedContribution → ContributionRecord → RewardEligibility / CredentialEligibility`
+
+while:
+
+`Credential → economic authority`
+
+is **not** valid unless an explicit future normative rule establishes such a relation.
+
+### 9.5 Closure condition for generalized algorithm
+
+The generalized layer remains OPEN until it can be shown that multiple candidate functions can share:
+
+- deterministic derivation;
+- version binding;
+- bounded authority;
+- reproducible evidence;
+- contestability/correction;
+- fail-closed missing-input behavior;
+
+without allowing any candidate function to modify the rule-space that authorizes it.
+
+**Status:** GENERALIZED DERIVATION FRONT — OPEN RESEARCH / PROTOTYPE-READY.
