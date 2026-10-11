@@ -28,7 +28,7 @@ Una riga non deve essere considerata chiusa solo perché una CI è verde.
 | Claim / Expire | ✅ | ✅ | ✅ | 🟡 | Full refinement/evidence closure da mantenere distinta dai test locali |
 | Genesis transition | ✅ | ✅ | ✅ | 🟡 | Observation binding + real-ledger transition proof |
 | Beacon B1 | ✅ | ✅ | ✅ | 🟡 | Provenance/evidence depends on configured authority model |
-| Beacon B3 / Materios / GRANDPA | ✅ target architecture | ✅ scaffolding | 🟡 proof harness | 🔴 incomplete provenance | Production-grade finality/provenance proof remains OPEN |
+| Beacon B3 / Materios / GRANDPA | ✅ target architecture | ✅ scaffolding | 🟢 B3-B verifier + B3-A capture | 🟡 B3-B real state proof; B3-A finality proof absent | B3-A finality/authority provenance and B3-C remain OPEN |
 | Governance finalization | ✅ | ✅ | ✅ | 🟡 | Canonicalization record identity/replay binding remains OPEN |
 
 ## IMMORTAL
@@ -123,6 +123,7 @@ This is useful for B3 because it adds a concrete provenance surface for receipt/
 
 | New Materios surface | B3 effect |
 | --- | --- |
+| B3-B finalized StateRoot/storage proof | **CLOSED — real Preprod proof verified in CI** |
 | Receipt identity / on-chain storage | **Evidence surface strengthened** |
 | Availability certificate binding | **Evidence surface strengthened** |
 | Checkpoint leaf / Merkle inclusion | **Evidence surface strengthened** |
@@ -130,7 +131,7 @@ This is useful for B3 because it adds a concrete provenance surface for receipt/
 | Cardano L1 anchor reference | **Potentially useful evidence input** |
 | AuthoritySelectionInputs provenance | **Not proven by this surface alone** |
 | Authoritative selector execution provenance | **OPEN** |
-| GRANDPA ancestry/finality proof | **OPEN** |
+| GRANDPA ancestry/finality proof | **OPEN — public Preprod finality RPC unavailable** |
 | Publisher-independent B3 canonicality | **OPEN** |
 
 The explorer lineage is an upstream evidence source, not a replacement for the production `VerifiedAuthoritySetTransition` trust boundary or for cryptographically verified GRANDPA evidence.
@@ -164,6 +165,7 @@ Only steps 1–4 should never be presented as proof of real on-chain execution w
 
 | Residual | Layer | Status | Closure condition |
 | --- | --- | --- | --- |
+| B3-B state authentication | PRE-RICH / Materios | CLOSED | Real finalized-state StorageProof independently verified |
 | B3 publisher-independent authority provenance | PRE-RICH / Materios | OPEN | Verified finality + authority-selection proof chain |
 | Authority-regime provenance | PRE-RICH / Materios | OPEN | Verified proof binds normal L1/Ariadne regime vs explicit pinned-committee regime |
 | GRANDPA ancestry production proof | Evidence | OPEN | Complete cryptographic/finality verification path |
