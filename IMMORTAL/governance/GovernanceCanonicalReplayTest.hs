@@ -399,9 +399,18 @@ main = do
     Right _ -> error "FAIL: CANONICALIZED accepted unresolved mandatory gate"
 
   let missingConformanceCanonicalization = canonicalizationEvent { predecessor = Just "evt-adopted" }
-  case applyCanonicalEvent ruleset canonicalizedState (Just (withCommitment adoptionEvent)) (withCommitment missingConformanceCanonicalization) of
-    Left _ -> putStrLn "PASS: missing conformance predecessor blocks CANONICALIZED"
-    Right _ -> error "FAIL: CANONICALIZED bypassed conformance"
+      applicationCanonicalizationState = GovernanceState 1
+        [finalizationProposal
+          { proposalClass = Application
+          , proposalStatus = Adopted
+          , finalizationAt = Just 259400
+          }]
+        3
+  case applyCanonicalEvent ruleset applicationCanonicalizationState
+         (Just (withCommitment adoptionEvent))
+         (withCommitment missingConformanceCanonicalization) of
+    Left _ -> putStrLn "PASS: missing conformance predecessor blocks CANONICALIZED for Application"
+    Right _ -> error "FAIL: Application CANONICALIZED bypassed conformance"
 
   let earlyCanonicalization = canonicalizationEvent { eventTimestamp = 259401 }
   case applyCanonicalEvent ruleset canonicalizedState (Just (withCommitment conformanceEvent)) (withCommitment earlyCanonicalization) of
