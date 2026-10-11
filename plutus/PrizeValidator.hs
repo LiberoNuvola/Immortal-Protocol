@@ -61,6 +61,218 @@ claimAddress :: PubKeyHash -> Address
 claimAddress pkh =
   Address (PubKeyCredential pkh) Nothing
 
+{-# INLINABLE rawConstr #-}
+rawConstr :: BuiltinData -> Maybe (Integer, [BuiltinData])
+rawConstr d =
+  Builtins.matchData
+    d
+    (\tag fields -> Just (tag, fields))
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+
+{-# INLINABLE rawList #-}
+rawList :: BuiltinData -> Maybe [BuiltinData]
+rawList d =
+  Builtins.matchData
+    d
+    (\_ _ -> Nothing)
+    (\_ -> Nothing)
+    (\xs -> Just xs)
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+
+{-# INLINABLE rawField #-}
+rawField :: Integer -> [BuiltinData] -> Maybe BuiltinData
+rawField _ [] = Nothing
+rawField n (x:xs)
+  | n <= 0 = Just x
+  | otherwise = rawField (n - 1) xs
+
+{-# INLINABLE rawConstrField #-}
+rawConstrField :: Integer -> Integer -> BuiltinData -> Maybe BuiltinData
+rawConstrField expectedTag fieldIndex d =
+  case rawConstr d of
+    Just (tag, fields) ->
+      if tag == expectedTag
+        then rawField fieldIndex fields
+        else Nothing
+    Nothing -> Nothing
+
+{-# INLINABLE rawTicketOwnerHash #-}
+rawTicketOwnerHash
+  :: CurrencySymbol
+  -> TokenName
+  -> BuiltinData
+  -> Maybe BuiltinData
+rawTicketOwnerHash ticketCs ticketTn rawCtx =
+  case rawConstrField 0 0 rawCtx of
+    Nothing -> Nothing
+    Just rawInfo ->
+      case rawConstrField 0 0 rawInfo of
+        Nothing -> Nothing
+        Just rawInputsData ->
+          case rawList rawInputsData of
+            Nothing -> Nothing
+            Just rawInputs ->
+              rawTicketOwnerHashInInputs ticketCs ticketTn rawInputs
+
+{-# INLINABLE rawTicketOwnerHashInInputs #-}
+rawTicketOwnerHashInInputs
+  :: CurrencySymbol
+  -> TokenName
+  -> [BuiltinData]
+  -> Maybe BuiltinData
+rawTicketOwnerHashInInputs _ _ [] = Nothing
+rawTicketOwnerHashInInputs ticketCs ticketTn (rawInput:rest) =
+  case rawConstrField 0 1 rawInput of
+    Nothing -> Nothing
+    Just rawOut ->
+      case rawConstrField 0 1 rawOut of
+        Nothing -> Nothing
+        Just rawValue ->
+          case rawAssetAmount ticketCs ticketTn rawValue of
+            Just 1 ->
+              case rawConstrField 0 0 rawOut of
+                Nothing -> Nothing
+                Just rawAddress ->
+                  case rawConstrField 0 0 rawAddress of
+                    Just rawCredential ->
+                      case rawConstrField 0 0 rawCredential of
+                        Just rawPkh -> Just rawPkh
+                        Nothing -> Nothing
+                    Nothing -> Nothing
+            _ -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
+
+{-# INLINABLE rawAssetAmount #-}
+rawAssetAmount
+  :: CurrencySymbol
+  -> TokenName
+  -> BuiltinData
+  -> Maybe Integer
+rawAssetAmount ticketCs ticketTn rawValue =
+  case rawConstrField 0 0 rawValue of
+    Nothing -> Nothing
+    Just rawMap ->
+      case rawList rawMap of
+        Nothing -> Nothing
+        Just currencies ->
+          rawTokenAmount ticketCs ticketTn currencies
+
+{-# INLINABLE rawTokenAmount #-}
+rawTokenAmount
+  :: CurrencySymbol
+  -> TokenName
+  -> [BuiltinData]
+  -> Maybe Integer
+rawTokenAmount _ _ [] = Nothing
+rawTokenAmount ticketCs ticketTn (entry:rest) =
+  case rawConstr entry of
+    Just (0, fields) ->
+      case rawField 0 fields of
+        Just rawCs ->
+          if Builtins.equalsData rawCs (toBuiltinData ticketCs)
+            then
+              case rawField 1 fields of
+                Just rawTokensData ->
+                  case rawList rawTokensData of
+                    Just tokens -> rawTokenAmountForName ticketTn tokens
+                    Nothing -> Nothing
+                Nothing -> Nothing
+            else rawTokenAmount ticketCs ticketTn rest
+        Nothing -> Nothing
+    _ -> Nothing
+
+{-# INLINABLE rawTokenAmountForName #-}
+rawTokenAmountForName
+  :: TokenName
+  -> [BuiltinData]
+  -> Maybe Integer
+rawTokenAmountForName _ [] = Nothing
+rawTokenAmountForName ticketTn (entry:rest) =
+  case rawConstr entry of
+    Just (0, fields) ->
+      case rawField 0 fields of
+        Just rawTn ->
+          if Builtins.equalsData rawTn (toBuiltinData ticketTn)
+            then
+              case rawField 1 fields of
+                Just rawAmount ->
+                  fromBuiltinData rawAmount
+                Nothing -> Nothing
+            else rawTokenAmountForName ticketTn rest
+        Nothing -> Nothing
+    _ -> Nothing
+
+{-# INLINABLE rawSignatories #-}
+rawSignatories :: BuiltinData -> Maybe [BuiltinData]
+rawSignatories rawCtx =
+  case rawConstrField 0 0 rawCtx of
+    Nothing -> Nothing
+    Just rawInfo ->
+      case rawConstrField 0 8 rawInfo of
+        Nothing -> Nothing
+        Just rawSigs -> rawList rawSigs
+
+{-# INLINABLE rawContainsData #-}
+rawContainsData :: BuiltinData -> [BuiltinData] -> Bool
+rawContainsData _ [] = False
+rawContainsData expected (x:xs) =
+  Builtins.equalsData expected x || rawContainsData expected xs
+
+{-# INLINABLE rawOwnerSigned #-}
+rawOwnerSigned :: CurrencySymbol -> TokenName -> BuiltinData -> Bool
+rawOwnerSigned ticketCs ticketTn rawCtx =
+  case rawTicketOwnerHash ticketCs ticketTn rawCtx of
+    Nothing -> False
+    Just rawOwner ->
+      case rawSignatories rawCtx of
+        Nothing -> False
+        Just rawSigs -> rawContainsData rawOwner rawSigs
+
+{-# INLINABLE rawAddressOf #-}
+rawAddressOf :: BuiltinData -> Maybe BuiltinData
+rawAddressOf rawTxOut = rawConstrField 0 0 rawTxOut
+
+{-# INLINABLE rawOutputAtAddress #-}
+rawOutputAtAddress
+  :: BuiltinData
+  -> BuiltinData
+  -> [BuiltinData]
+  -> [TxOut]
+  -> Value
+rawOutputAtAddress _ _ [] _ = mempty
+rawOutputAtAddress _ _ _ [] = mempty
+rawOutputAtAddress expectedAddr rawOutputs (rawOut:rawRest) (out:rest) =
+  case rawAddressOf rawOut of
+    Just rawAddr ->
+      if Builtins.equalsData expectedAddr rawAddr
+        then txOutValue out <> rawOutputAtAddress expectedAddr rawOutputs rawRest rest
+        else rawOutputAtAddress expectedAddr rawOutputs rawRest rest
+    Nothing -> rawOutputAtAddress expectedAddr rawOutputs rawRest rest
+
+{-# INLINABLE rawClaimantValue #-}
+rawClaimantValue :: BuiltinData -> BuiltinData -> [TxOut] -> Value
+rawClaimantValue ownerHash rawCtx outputs =
+  let
+    rawExpectedAddress =
+      Builtins.constrData 0
+        [ Builtins.constrData 0 [ownerHash]
+        , Builtins.constrData 1 []
+        ]
+  in
+    case rawConstrField 0 0 rawCtx of
+      Nothing -> mempty
+      Just rawInfo ->
+        case rawConstrField 0 2 rawInfo of
+          Nothing -> mempty
+          Just rawOutputsData ->
+            case rawList rawOutputsData of
+              Nothing -> mempty
+              Just rawOutputs ->
+                rawOutputAtAddress rawExpectedAddress rawOutputs rawOutputs outputs
+
 {-# INLINABLE ownScriptHash #-}
 ownScriptHash :: ScriptContext -> ScriptHash
 ownScriptHash ctx =
