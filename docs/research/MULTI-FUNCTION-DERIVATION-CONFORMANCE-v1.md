@@ -68,6 +68,8 @@ Candidate generation/certification cannot itself mutate canonical state. Adoptio
 
 When a result is realized on different chains, each Adapter may change representation/serialization but must preserve the universal semantic result and rule identity.
 
+The differential fixture now includes the verified Moriarty `OwnerIntent` shape as a source/provenance layer. It requires Cardano and Midnight/Moriarty to preserve the same already-certified Issue semantics while keeping source identity and economic admission as distinct layers.
+
 ## Conformance matrix
 
 | Family | Derived object | Evidence gate | Bound gate | Authority path |
