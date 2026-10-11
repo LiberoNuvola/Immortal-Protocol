@@ -229,7 +229,9 @@ async function main(): Promise<void> {
           : []),
       ],
       open: [
-        "independent decoding and GRANDPA FinalityProof verification",
+        ...(grandpaFinalityProof.status === "unavailable"
+          ? ["real GRANDPA finality evidence unavailable at this public RPC checkpoint"]
+          : ["real GRANDPA finality evidence captured but awaiting independent verification in the finality verifier"]),
         ...(selectionInputsCommitment === null
           ? ["committee-transition activation block not identified at this checkpoint"]
           : ["authority-set transition proof"]),
