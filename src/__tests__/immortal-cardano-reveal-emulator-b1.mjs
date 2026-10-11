@@ -158,7 +158,7 @@ const playerSecret = hex(
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 );
 
-const ticketNonce = 42;
+let ticketNonce = 42;
 
 /*
  * 200 USDM sub-units = 2 RU = IMMORTAL class 1.
@@ -244,87 +244,82 @@ async function deriveSymbolsSeed(ticketSeed) {
   );
 }
 
-async function generateSymbols(symbolsSeed) {
-  const out = new Uint8Array(6);
-
-  let count = 0;
-  let hashPos = 0;
-
-  while (count < 6) {
-    if (hashPos >= 32) {
-      throw new Error(
-        "generateSymbols exhausted",
-      );
-    }
-
+// Mirror the current on-chain GameRules.hs exactly. The old fixture
+// sampled six bytes globally; the canonical profile samples two independent
+// three-symbol rows from the accepted 16-bit outcome space.
+async function rowOutcomeIndex(symbolsSeed, row) {
+  for (let attempt = 0; attempt < 256; attempt++) {
     const h = await sha256(
-      concat(
-        Uint8Array.of(count),
-        symbolsSeed,
-      ),
+      concat(Uint8Array.of(row, attempt), symbolsSeed),
     );
+    const draw = h[0] * 256 + h[1];
+    if (draw < 60_000) return draw % 20_000;
+  }
+  throw new Error("GameRules row randomness exhausted");
+}
 
-    const byte = h[hashPos];
+function rowTierFromIndex(outcome) {
+  if (outcome < 0 || outcome >= 20_000) {
+    throw new Error("GameRules row outcome index out of range");
+  }
+  if (outcome < 17_500) return 0;
+  if (outcome < 19_200) return 1;
+  if (outcome < 19_800) return 2;
+  if (outcome < 19_980) return 3;
+  if (outcome < 19_999) return 4;
+  return 5;
+}
 
-    if (byte === 255) {
-      hashPos++;
-    } else {
-      out[count] =
-        (byte % 5) + 1;
-
-      count++;
-      hashPos = 0;
-    }
+function rowSymbolsFromIndex(outcome) {
+  const rowTier = rowTierFromIndex(outcome);
+  if (rowTier > 0) {
+    return Uint8Array.of(rowTier, rowTier, rowTier);
   }
 
-  return out;
+  // Equivalent to GameRules.lossTriple: enumerate the 5x5 ordered pair
+  // space and skip the diagonal so a loss row cannot become a triple.
+  const rank = outcome % 120;
+  const first = Math.floor(rank / 24) + 1;
+  const pairRank = rank % 24;
+  const excluded = (first - 1) * 6;
+  const pairIndex = pairRank < excluded ? pairRank : pairRank + 1;
+  const second = Math.floor(pairIndex / 5) + 1;
+  const third = pairIndex % 5 + 1;
+  return Uint8Array.of(first, second, third);
+}
+
+async function generateSymbols(symbolsSeed) {
+  const row1 = rowSymbolsFromIndex(await rowOutcomeIndex(symbolsSeed, 1));
+  const row2 = rowSymbolsFromIndex(await rowOutcomeIndex(symbolsSeed, 2));
+  return concat(row1, row2);
+}
+
+function classifyRowTier(row) {
+  if (row.length < 3) return 0;
+  return row[0] === row[1] && row[1] === row[2] &&
+    row[0] >= 1 && row[0] <= 5
+    ? row[0]
+    : 0;
 }
 
 function classifyTier(symbols) {
-  if (symbols.length < 6) {
-    return 0;
-  }
-
-  for (
-    let sym = 5;
-    sym >= 1;
-    sym--
-  ) {
-    let count = 0;
-
-    for (
-      let i = 0;
-      i < 6;
-      i++
-    ) {
-      if (symbols[i] === sym) {
-        count++;
-      }
-    }
-
-    if (count >= 3) {
-      return sym;
-    }
-  }
-
-  return 0;
+  if (symbols.length < 6) return 0;
+  return Math.max(
+    classifyRowTier(symbols.slice(0, 3)),
+    classifyRowTier(symbols.slice(3, 6)),
+  );
 }
 
 function prizeAmountForTier(tier) {
-  const bases = {
-    1: 2,
-    2: 5,
-    3: 10,
-    4: 200,
-    5: 1000,
-  };
+  const bases = { 1: 2, 2: 5, 3: 10, 4: 200, 5: 1000 };
+  if (tier <= 0) return 0;
+  return Math.floor((bases[tier] * priceUsdm) / 2);
+}
 
-  if (tier <= 0) {
-    return 0;
-  }
-
-  return Math.floor(
-    (bases[tier] * priceUsdm) / 2,
+function rowPayoutTotal(row1Tier, row2Tier) {
+  return Math.min(
+    prizeAmountForTier(row1Tier) + prizeAmountForTier(row2Tier),
+    500 * priceUsdm,
   );
 }
 
@@ -340,6 +335,8 @@ function prizeDatum({
   status = 0,
   result = "",
   tier = 0,
+  row1Tier = 0,
+  row2Tier = 0,
   prizePoolHash,
 }) {
   return constr(0, [
@@ -410,6 +407,10 @@ function prizeDatum({
      * expiresAt
      */
     BigInt(4_000_000_000_000),
+
+    // Appended fields in the current PrizeDatum schema (Types.hs).
+    BigInt(row1Tier),
+    BigInt(row2Tier),
   ]);
 }
 
@@ -705,46 +706,54 @@ async function main() {
    * --------------------------------------------------------------
    */
 
-  const beacon =
-    await deriveBeacon();
+  const beacon = await deriveBeacon();
 
-  const playerCommitmentValue =
-    await playerCommitment();
+  // Select the first deterministic nonce that yields a winning fixture under
+  // the canonical two-row GameRules (the original fixed nonce 42 is a loss
+  // under the current source). Recompute both commitments for that nonce.
+  let playerCommitmentValue;
+  let ticketCommitmentValue;
+  let ticketSeed;
+  let symbolsSeed;
+  let symbols;
+  let row1Tier;
+  let row2Tier;
+  let tier;
+  let payout;
+  const fixtureNonceStart = 42;
 
-  const ticketCommitmentValue =
-    await ticketCommitment(
-      playerCommitmentValue,
-    );
-
-  const ticketSeed =
-    await deriveTicketSeed(
-      beacon,
-    );
-
-  const symbolsSeed =
-    await deriveSymbolsSeed(
-      ticketSeed,
-    );
-
-  const symbols =
-    await generateSymbols(
-      symbolsSeed,
-    );
-
-  const tier =
-    classifyTier(symbols);
-
-  const payout =
-    prizeAmountForTier(tier);
+  for (let candidateNonce = fixtureNonceStart; candidateNonce < fixtureNonceStart + 256; candidateNonce++) {
+    ticketNonce = candidateNonce;
+    playerCommitmentValue = await playerCommitment();
+    ticketCommitmentValue = await ticketCommitment(playerCommitmentValue);
+    ticketSeed = await deriveTicketSeed(beacon);
+    symbolsSeed = await deriveSymbolsSeed(ticketSeed);
+    symbols = await generateSymbols(symbolsSeed);
+    row1Tier = classifyRowTier(symbols.slice(0, 3));
+    row2Tier = classifyRowTier(symbols.slice(3, 6));
+    tier = Math.max(row1Tier, row2Tier);
+    payout = rowPayoutTotal(row1Tier, row2Tier);
+    if (payout > 0) break;
+  }
 
   if (
+    !symbols ||
+    row1Tier === undefined ||
+    row2Tier === undefined ||
     tier <= 0 ||
     payout <= 0
   ) {
-    throw new Error(
-      `Fixture generated losing ticket: tier=${tier}, payout=${payout}`,
-    );
+    throw new Error("Could not derive a winning canonical two-row Reveal fixture");
   }
+
+  console.log("P2.8-B.1 canonical Reveal fixture", JSON.stringify({
+    ticketNonce,
+    symbols: Array.from(symbols),
+    row1Tier,
+    row2Tier,
+    summaryTier: tier,
+    payoutUsdmSubunits: payout,
+  }));
 
   const digest =
     await sha256(symbolsSeed);
@@ -787,6 +796,8 @@ async function main() {
         toHex(result),
 
       tier,
+      row1Tier,
+      row2Tier,
 
       prizePoolHash:
         poolHash,
