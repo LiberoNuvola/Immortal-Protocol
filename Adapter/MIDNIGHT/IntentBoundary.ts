@@ -12,6 +12,7 @@ export type ChainNeutralEconomicAdmission = Readonly<{
   decisionReference: string
   stateHash: string
   actionFingerprint: string
+  expectedPostStateHash: string
 }>
 
 export type MidnightExecutionEnvelope = Readonly<{
@@ -21,6 +22,7 @@ export type MidnightExecutionEnvelope = Readonly<{
   admissionDecisionReference: string
   admissionStateHash: string
   actionFingerprint: string
+  expectedPostStateHash: string
   circuitName: string
   publicInputs: Readonly<{
     classId: bigint
@@ -49,6 +51,9 @@ export function prepareMidnightIssue(
   if (!/^[0-9a-fA-F]{64}$/.test(admission.actionFingerprint)) {
     throw new Error('Midnight adapter admission actionFingerprint must be a 32-byte digest')
   }
+  if (!/^[0-9a-fA-F]{64}$/.test(admission.expectedPostStateHash)) {
+    throw new Error('Midnight adapter admission expectedPostStateHash must be a 32-byte digest')
+  }
   if (!circuitName.trim()) {
     throw new Error('Midnight circuit name is required')
   }
@@ -60,6 +65,7 @@ export function prepareMidnightIssue(
     admissionDecisionReference: admission.decisionReference,
     admissionStateHash: admission.stateHash,
     actionFingerprint: admission.actionFingerprint,
+    expectedPostStateHash: admission.expectedPostStateHash,
     circuitName,
     publicInputs: Object.freeze({
       classId: intent.classId,
