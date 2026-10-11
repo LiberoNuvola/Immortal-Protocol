@@ -65,6 +65,68 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
 
+      - name: Discover latest finalized AvailabilityCertified event
+        id: certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --quiet 'substrate-interface>=1.7.0,<2.0'
+          python - <<'PY'
+          import os
+          from substrateinterface import SubstrateInterface
+
+          substrate = SubstrateInterface(
+              url=os.environ["MATERIOS_RPC_WS"],
+          )
+
+          head = substrate.get_chain_finalised_head()
+          head_number = substrate.get_block_number(head)
+
+          for number in range(head_number, max(-1, head_number - 127), -1):
+              block_hash = substrate.get_block_hash(number)
+              if not block_hash:
+                  continue
+
+              try:
+                  events = substrate.get_events(block_hash=block_hash)
+              except Exception:
+                  continue
+
+              for event in events:
+                  value = event.value
+                  if value.get("module_id") != "OrinqReceipts" or value.get("event_id") != "AvailabilityCertified":
+                      continue
+
+                  attrs = value["attributes"]
+                  receipt_id = attrs["receipt_id"]
+                  cert_hash = attrs["cert_hash"]
+
+                  if not isinstance(receipt_id, str) or not isinstance(cert_hash, str):
+                      raise SystemExit("AvailabilityCertified payload is not string-valued")
+                  if not receipt_id.startswith("0x"):
+                      receipt_id = "0x" + receipt_id
+                  if not cert_hash.startswith("0x"):
+                      cert_hash = "0x" + cert_hash
+                  if len(receipt_id) != 66 or len(cert_hash) != 66:
+                      raise SystemExit("invalid AvailabilityCertified hash length")
+
+                  with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                      out.write("receipt_id=" + receipt_id + "\n")
+                      out.write("certified_block=" + str(number) + "\n")
+                      out.write("cert_hash=" + cert_hash + "\n")
+                      out.write("block_hash=" + block_hash + "\n")
+
+                  print("receipt_id:", receipt_id)
+                  print("certified_block:", number)
+                  print("cert_hash:", cert_hash)
+                  print("block_hash:", block_hash)
+                  raise SystemExit(0)
+
+          raise SystemExit("no AvailabilityCertified event found in last 128 finalized blocks")
+          PY
+        env:
+          MATERIOS_RPC_WS: wss://materios.fluxpointstudios.com/preprod-rpc
+
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
         run: npx tsx src/capture-storage-proof.ts
@@ -72,7 +134,9 @@ jobs:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
-
+          MATERIOS_RECEIPT_ID: ${{ steps.certification.outputs.receipt_id }}
+          MATERIOS_CERTIFIED_BLOCK: ${{ steps.certification.outputs.certified_block }}
+          MATERIOS_CERT_HASH: ${{ steps.certification.outputs.cert_hash }}
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
