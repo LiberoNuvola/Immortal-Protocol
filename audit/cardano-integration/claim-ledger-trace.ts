@@ -199,10 +199,10 @@ const providerWithEvaluation = provider as Blockfrost & {
 }
 
 // Keep Yaci's raw evaluator result separate from the budget returned to Lucid.
-// The 1% margin is a transaction-construction allowance only: the trace does
-// not presume Claim's measured cost. Ledger submission remains authoritative;
-// record both values in the output if evaluation succeeds. This does not change
-// any validator or economic rule.
+// The 1% margin is a transaction-construction allowance only: Claim's measured
+// cost is recorded from this run, never inferred from the historical Reveal
+// trace. Ledger submission remains authoritative. No validator/economic rule
+// is changed by the construction margin.
 const EX_UNITS_SAFETY_MARGIN_BPS = 100
 const EX_UNITS_SAFETY_DENOMINATOR = 10_000n
 
@@ -375,6 +375,10 @@ if (referenceAddress === address) {
 const details = getAddressDetails(address)
 const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
+const referencePaymentHash = getAddressDetails(referenceAddress).paymentCredential?.hash
+if (!referencePaymentHash || referencePaymentHash === keyHash) {
+  throw new Error('reference receiver must have a different payment credential from the Claim owner')
+}
 
 const testPolicy = nativePolicy(lucid, keyHash)
 const testPolicyId = mintingPolicyToId(testPolicy)
