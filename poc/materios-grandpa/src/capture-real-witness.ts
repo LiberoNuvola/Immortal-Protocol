@@ -643,78 +643,61 @@ async function main(): Promise<void> {
     "genesis block hash",
   );
 
-  let witness:
-    | {
-        blockNumber: bigint;
-        blockHash: string;
-        header: SubstrateHeader;
-        justificationHex: string;
-        justificationSha256: string;
-      }
-    | undefined;
-
-  const justificationProbeLog: Array<{
-    blockNumber: number;
-    hash?: string;
-    hasGrandpa?: boolean;
-    error?: string;
-  }> = [];
-
-  for (const candidate of compactCandidates(finalizedHeight)) {
-    try {
-      const block = await getBlockByNumber(candidate);
-      const justificationHex = extractGrandpaJustification(
-        block.signed,
-      );
-
-      justificationProbeLog.push({
-        blockNumber: candidate,
-        hash: block.hash,
-        hasGrandpa: justificationHex !== null,
-      });
-
-      if (justificationHex !== null) {
-        const header = block.signed.block.header;
-        const blockNumber = parseBlockNumber(
-          header.number,
-          "witness header",
-        );
-
-        if (BigInt(candidate) !== blockNumber) {
-          throw new Error(
-            "block number mismatch: requested " +
-              candidate +
-              ", header " +
-              blockNumber,
-          );
-        }
-
-        witness = {
-          blockNumber,
-          blockHash: block.hash,
-          header,
-          justificationHex,
-          justificationSha256:
-            sha256Hex(justificationHex),
-        };
-        break;
-      }
-    } catch (error) {
-      justificationProbeLog.push({
-        blockNumber: candidate,
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      });
-    }
+  const finalizedHeightNumber = Number(finalizedHeight);
+  if (!Number.isSafeInteger(finalizedHeightNumber)) {
+    throw new Error("finalized height exceeds JavaScript safe integer range");
   }
 
-  if (witness === undefined) {
+  const scanStart = Math.max(
+    0,
+    finalizedHeightNumber - Math.max(1, WITNESS_LOOKBACK),
+  );
+
+  console.log(
+    "dense scan:",
+    scanStart + ".." + finalizedHeightNumber,
+    "batch=" + BLOCK_BATCH_SIZE,
+  );
+
+  const recentBlocks = await getRecentBlocks(
+    scanStart,
+    finalizedHeightNumber,
+  );
+
+  recentBlocks.sort((a, b) => b.number - a.number);
+
+  const witnessedBlocks = recentBlocks.filter(
+    (block) => extractGrandpaJustification(block.signed) !== null,
+  );
+
+  if (witnessedBlocks.length === 0) {
     throw new Error(
-      "NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_PROBE_WINDOW",
+      "NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN",
     );
   }
+
+  const firstWitness = witnessedBlocks[0]!;
+  const witnessJustification = extractGrandpaJustification(
+    firstWitness.signed,
+  );
+
+  if (witnessJustification === null) {
+    throw new Error("internal witness extraction race");
+  }
+
+  const witness = {
+    blockNumber: BigInt(firstWitness.number),
+    blockHash: firstWitness.hash,
+    header: firstWitness.signed.block.header,
+    justificationHex: witnessJustification,
+    justificationSha256: sha256Hex(witnessJustification),
+  };
+
+  console.log(
+    "found GRANDPA justification at:",
+    firstWitness.number,
+    firstWitness.hash,
+  );
 
   const authoritiesHex = await rpc<string>(
     "state_call",
