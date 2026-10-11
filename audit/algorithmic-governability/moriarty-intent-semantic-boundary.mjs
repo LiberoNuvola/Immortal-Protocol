@@ -1,46 +1,42 @@
-/**
- * Research-only Moriarty ↔ IMMORTAL Intent boundary.
+#!/usr/bin/env node
+
+const assert = (condition, message) => {
+  if (!condition) throw new Error('FAIL: ' + message)
+  console.log('PASS: ' + message)
+}
+
+/*
+ * Research-only boundary grounded in CharlesHoskinson/Moriarty
+ * moriarty-owner-intent/2 as observed at commit
+ * 3748fe8278287a3729c17c5ddc245f669e21e847.
  *
- * This file deliberately models correspondence status, not compiler semantics.
- * It must not turn a Moriarty feature into an IMMORTAL rule or an economic
- * admission decision.
+ * No Moriarty compiler semantics are reimplemented here.
  */
 
-const MORIARTY_NESTED_INTENT_FIELDS = Object.freeze([
-  'version',
-  'advertisedSourceHash',
-  'advertisedPolicyDigest',
-  'signer',
-  'nonce',
-  'preHead',
-  'notBefore',
-  'notAfter',
-  'grossCap',
-  'feeCap',
-  'netFloor',
-  'failure',
-  'observations',
-  'disclosures',
-  'retainedEffects',
-  'retainedDuties',
-  'delegation',
-  'recovery',
-  'operation',
+const MORIARTY_OWNER_INTENT_FIELDS = Object.freeze([
+  'profile',
+  'source_hash',
+  'program_hash',
+  'semantics',
+  'action',
+  'scenario_hash',
+  'assets',
+  'authority',
 ])
 
-const MORIARTY_AUTHENTICATION_SURFACE = Object.freeze([
-  'profile',
-  'core',
-  'sourceProfile',
-  'authoringProfile',
-  'agreementId',
-  'actionName',
-  'selectedActionId',
-  'sourceSha256',
-  'ownerProgramSha256',
-  'domain',
-  'asset',
-  'signature',
+const MORIARTY_AUTHORIZATION_FIELDS = Object.freeze([
+  'network',
+  'anchor',
+  'program_address',
+  'target_hash',
+  'signer',
+  'public_key_hex',
+  'scheme',
+  'nonce',
+  'predecessor',
+  'not_before',
+  'not_after',
+  'limits',
 ])
 
 const IMMORTAL_ISSUE_INTENT_KEYS = Object.freeze([
@@ -49,10 +45,8 @@ const IMMORTAL_ISSUE_INTENT_KEYS = Object.freeze([
   'price',
 ])
 
-function classifyIssueIntentAgainstMoriarty(intent) {
-  if (intent?.action !== 'Issue') {
-    throw new Error('IMMORTAL IssueIntent action mismatch')
-  }
+const classify = (intent) => {
+  if (intent?.action !== 'Issue') throw new Error('IMMORTAL IssueIntent action mismatch')
   if (typeof intent?.classId !== 'bigint' || typeof intent?.price !== 'bigint') {
     throw new Error('IMMORTAL IssueIntent numeric coordinates must remain bigint')
   }
@@ -60,18 +54,14 @@ function classifyIssueIntentAgainstMoriarty(intent) {
   return Object.freeze({
     mapped: Object.freeze(['action']),
     profileSpecific: Object.freeze(['classId', 'price']),
-    notRepresented: Object.freeze(MORIARTY_NESTED_INTENT_FIELDS),
-    authenticationSurfaceNotRepresented: Object.freeze(MORIARTY_AUTHENTICATION_SURFACE),
+    sourceIdentity: Object.freeze(MORIARTY_OWNER_INTENT_FIELDS.filter((x) => x !== 'action')),
+    authorizationIdentity: Object.freeze(MORIARTY_AUTHORIZATION_FIELDS),
     admissionPresent: false,
-    equivalentToMoriarty: false,
+    schemaEquivalent: false,
   })
 }
 
-function assert(condition, message) {
-  if (!condition) throw new Error(`FAIL: ${message}`)
-}
-
-const result = classifyIssueIntentAgainstMoriarty({
+const result = classify({
   action: 'Issue',
   classId: 3n,
   price: 5n,
@@ -83,19 +73,20 @@ assert(
   'PRE-RICH coordinates remain profile-specific',
 )
 assert(
-  result.notRepresented.includes('grossCap') &&
-    result.notRepresented.includes('netFloor') &&
-    result.notRepresented.includes('nonce') &&
-    result.notRepresented.includes('operation'),
-  'Exact Moriarty nested intent fields remain explicit mapping residue',
+  result.sourceIdentity.includes('source_hash') &&
+    result.sourceIdentity.includes('program_hash') &&
+    result.sourceIdentity.includes('scenario_hash') &&
+    result.sourceIdentity.includes('assets'),
+  'Moriarty source/program/scenario/asset identity remains explicit mapping residue',
 )
 assert(
-  result.authenticationSurfaceNotRepresented.includes('signature') &&
-    result.authenticationSurfaceNotRepresented.includes('sourceSha256') &&
-    result.authenticationSurfaceNotRepresented.includes('ownerProgramSha256'),
-  'Exact Moriarty authentication surface remains outside the current IMMORTAL IssueIntent',
+  result.authorizationIdentity.includes('nonce') &&
+    result.authorizationIdentity.includes('predecessor') &&
+    result.authorizationIdentity.includes('limits') &&
+    result.authorizationIdentity.includes('target_hash'),
+  'Moriarty authorization constraints remain explicit mapping residue',
 )
 assert(result.admissionPresent === false, 'Intent must not manufacture economic admission')
-assert(result.equivalentToMoriarty === false, 'Subset mapping must not claim schema equivalence')
+assert(result.schemaEquivalent === false, 'Current IMMORTAL IssueIntent must not claim schema equivalence with Moriarty')
 
-console.log('Moriarty/IMMORTAL Intent semantic boundary: PASS')
+console.log('ALL MORIARTY/IMMORTAL INTENT SEMANTIC BOUNDARY CHECKS PASSED')
