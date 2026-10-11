@@ -30,6 +30,8 @@ jobs:
         run: node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
       - name: EXP-01 typed obligation bucket boundary
         run: node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
+      - name: EXP-02 term structure horizon boundary
+        run: node audit/algorithmic-governability/exp-02-term-structure-horizon-boundary.mjs
       - name: EXP-03 minimal asset eligibility boundary
         run: node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.mjs
       - name: EXP-04 profile composition boundary
