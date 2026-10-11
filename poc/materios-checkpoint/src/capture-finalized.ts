@@ -263,6 +263,14 @@ async function main(): Promise<void> {
   console.log("authorities:", authorities.length);
   console.log("GRANDPA finality proof status:", grandpaFinalityProof.status);
   console.log(
+    "GRANDPA evidence source:",
+    grandpaFinalityProof.source ?? "unavailable",
+  );
+  console.log(
+    "GRANDPA evidence format:",
+    grandpaFinalityProof.format ?? "unavailable",
+  );
+  console.log(
     "selection_inputs_hash:",
     selectionInputsCommitment?.selectionInputsHash ??
       "unavailable at this finalized block",
