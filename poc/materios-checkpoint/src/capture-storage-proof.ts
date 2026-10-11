@@ -491,52 +491,83 @@ async function discoverRecentCertifiedReceipt(
 
   const candidates: ReceiptCandidate[] = [];
 
-  for (let start = 0; start < uniqueKeys.length; start += 100) {
-    const batch = uniqueKeys.slice(start, start + 100);
+  for (let start = 0; start < uniqueKeys.length; start += 500) {
+    const batch = uniqueKeys.slice(start, start + 500);
 
-    const values = await Promise.all(
-      batch.map(async (storageKey) => {
-        const storageValue =
-          await rpc.getStorage(
-            storageKey,
-            finalizedHeadHash,
-          );
-
-        if (storageValue === null) {
-          return null;
-        }
-
-        try {
-          const parsed =
-            parseReceiptRecord(storageValue);
-
-          if (
-            parsed.availabilityCertHash ===
-            "0x0000000000000000000000000000000000000000000000000000000000000000"
-          ) {
-            return null;
-          }
-
-          return {
-            receiptId: bytesToHex(
-              hexToBytes(storageKey).slice(-32),
-            ),
-            storageKey,
-            storageValue,
-            createdAtMillis:
-              parsed.createdAtMillis,
-            availabilityCertHash:
-              parsed.availabilityCertHash,
-          };
-        } catch {
-          return null;
-        }
-      }),
+    const response = await rpc.call<unknown>(
+      "state_queryStorageAt",
+      [batch, finalizedHeadHash],
     );
 
-    for (const value of values) {
-      if (value !== null) candidates.push(value);
+    if (
+      !Array.isArray(response) ||
+      response.length !== 1 ||
+      typeof response[0] !== "object" ||
+      response[0] === null ||
+      !Array.isArray(
+        (response[0] as Record<string, unknown>).changes,
+      )
+    ) {
+      throw new Error(
+        "state_queryStorageAt returned invalid receipt storage data",
+      );
     }
+
+    const changes =
+      (response[0] as Record<string, unknown>).changes;
+
+    for (const change of changes) {
+      if (
+        !Array.isArray(change) ||
+        change.length !== 2 ||
+        typeof change[0] !== "string" ||
+        typeof change[1] !== "string"
+      ) {
+        continue;
+      }
+
+      const storageKey = change[0];
+      const storageValue = change[1];
+
+      if (
+        !/^0x[0-9a-fA-F]{160}$/.test(storageKey) ||
+        !/^0x[0-9a-fA-F]+$/.test(storageValue)
+      ) {
+        continue;
+      }
+
+      try {
+        const parsed =
+          parseReceiptRecord(storageValue);
+
+        if (
+          parsed.availabilityCertHash ===
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        ) {
+          continue;
+        }
+
+        candidates.push({
+          receiptId: bytesToHex(
+            hexToBytes(storageKey).slice(-32),
+          ),
+          storageKey,
+          createdAtMillis:
+            parsed.createdAtMillis,
+          availabilityCertHash:
+            parsed.availabilityCertHash,
+        });
+      } catch {
+        // Ignore records that cannot be strictly decoded.
+      }
+    }
+
+    console.log(
+      "storage page:",
+      Math.min(start + 500, uniqueKeys.length),
+      "/",
+      uniqueKeys.length,
+    );
   }
 
   candidates.sort((a, b) =>
