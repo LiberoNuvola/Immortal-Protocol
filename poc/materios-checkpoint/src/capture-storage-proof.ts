@@ -431,28 +431,50 @@ async function discoverRecentCertifiedReceipt(
     ]),
   );
 
-  const rawKeys = await rpc.call<unknown>(
-    "state_getKeysPaged",
-    [
-      prefix,
-      2500,
-      null,
-      finalizedHeadHash,
-    ],
-  );
+  const rawKeys: string[] = [];
+  let startKey: string | null = null;
 
-  if (
-    !Array.isArray(rawKeys) ||
-    !rawKeys.every(
-      (key) =>
-        typeof key === "string" &&
-        /^0x[0-9a-fA-F]+$/.test(key),
-    )
-  ) {
-    throw new Error(
-      "state_getKeysPaged returned invalid receipt keys",
+  for (;;) {
+    const page = await rpc.call<unknown>(
+      "state_getKeysPaged",
+      [
+        prefix,
+        1000,
+        startKey,
+        finalizedHeadHash,
+      ],
     );
+
+    if (
+      !Array.isArray(page) ||
+      !page.every(
+        (key) =>
+          typeof key === "string" &&
+          /^0x[0-9a-fA-F]+$/.test(key),
+      )
+    ) {
+      throw new Error(
+        "state_getKeysPaged returned invalid receipt keys",
+      );
+    }
+
+    rawKeys.push(...(page as string[]));
+
+    if (page.length < 1000) {
+      break;
+    }
+
+    const nextStart = page[page.length - 1] as string;
+    if (nextStart === startKey) {
+      throw new Error(
+        "state_getKeysPaged pagination made no progress",
+      );
+    }
+
+    startKey = nextStart;
   }
+
+  const uniqueKeys = [...new Set(rawKeys)];
 
   console.log(
     "finalized_head:",
@@ -464,13 +486,13 @@ async function discoverRecentCertifiedReceipt(
   );
   console.log(
     "receipt_keys:",
-    rawKeys.length,
+    uniqueKeys.length,
   );
 
   const candidates: ReceiptCandidate[] = [];
 
-  for (let start = 0; start < rawKeys.length; start += 250) {
-    const batch = rawKeys.slice(start, start + 250);
+  for (let start = 0; start < uniqueKeys.length; start += 100) {
+    const batch = uniqueKeys.slice(start, start + 100);
 
     const values = await Promise.all(
       batch.map(async (storageKey) => {
