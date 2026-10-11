@@ -694,21 +694,152 @@ async function main(): Promise<void> {
     "B3-B live storage proof capture",
   );
   console.log("RPC:", RPC);
-  console.log(
-    "Discovering a recent certified receipt from finalized state...",
-  );
 
-  const discovered =
-    await discoverRecentCertifiedReceipt(rpc);
+  const envReceiptId =
+    process.env.MATERIOS_RECEIPT_ID;
+  const envCertifiedBlock =
+    process.env.MATERIOS_CERTIFIED_BLOCK;
+  const envCertHash =
+    process.env.MATERIOS_CERT_HASH;
 
-  const receiptId =
-    discovered.receiptId;
-  const certification =
-    discovered.certification;
-  const storageKey =
-    discovered.storageKey;
-  const storageValue =
-    discovered.storageValue;
+  let receiptId: string;
+  let certification: {
+    block: number;
+    hash: string;
+    certHash: string;
+    signers: number;
+  };
+  let storageKey: string;
+  let storageValue: string;
+
+  if (
+    envReceiptId &&
+    envCertifiedBlock &&
+    envCertHash
+  ) {
+    const block = Number(
+      BigInt(envCertifiedBlock),
+    );
+
+    if (
+      !Number.isSafeInteger(block) ||
+      block < 0 ||
+      !/^0x[0-9a-fA-F]{64}$/.test(envReceiptId) ||
+      !/^0x[0-9a-fA-F]{64}$/.test(envCertHash)
+    ) {
+      throw new Error(
+        "invalid chain-event certification inputs",
+      );
+    }
+
+    receiptId = envReceiptId;
+    certification = {
+      block,
+      hash: await rpc.call<string>(
+        "chain_getBlockHash",
+        [block],
+      ),
+      certHash: envCertHash,
+      signers: 0,
+    };
+    storageKey = receiptStorageKey(
+      receiptId,
+    );
+
+    const chainHeader =
+      await rpc.getHeader(
+        certification.hash,
+      );
+    const chainFinalized =
+      await rpc.getFinalizedHead();
+    const chainFinalizedHeader =
+      await rpc.getHeader(
+        chainFinalized,
+      );
+
+    const finalizedBlock =
+      Number(
+        BigInt(
+          chainFinalizedHeader.number,
+        ),
+      );
+
+    if (
+      !Number.isSafeInteger(finalizedBlock) ||
+      finalizedBlock < block
+    ) {
+      throw new Error(
+        "certification block is not covered by finalized head",
+      );
+    }
+
+    storageValue =
+      (await rpc.getStorage(
+        storageKey,
+        certification.hash,
+      )) ?? "";
+
+    if (!storageValue) {
+      throw new Error(
+        "receipt storage is absent at certification block",
+      );
+    }
+
+    const parsed =
+      parseReceiptRecord(
+        storageValue,
+      );
+
+    if (
+      parsed.availabilityCertHash.toLowerCase() !==
+      certification.certHash.toLowerCase()
+    ) {
+      throw new Error(
+        "AvailabilityCertified cert_hash does not match ReceiptRecord availability_cert_hash",
+      );
+    }
+
+    certification =
+      {
+        ...certification,
+        hash: certification.hash,
+      };
+
+    console.log(
+      "using on-chain AvailabilityCertified event:",
+      receiptId,
+    );
+    console.log(
+      "certified_block:",
+      certification.block,
+    );
+    console.log(
+      "certified_hash:",
+      certification.hash,
+    );
+    console.log(
+      "cert_hash:",
+      certification.certHash,
+    );
+
+    void chainHeader;
+  } else {
+    console.log(
+      "Discovering a recent certified receipt from finalized state...",
+    );
+
+    const discovered =
+      await discoverRecentCertifiedReceipt(rpc);
+
+    receiptId =
+      discovered.receiptId;
+    certification =
+      discovered.certification;
+    storageKey =
+      discovered.storageKey;
+    storageValue =
+      discovered.storageValue;
+  }
 
   const header =
     await rpc.getHeader(
