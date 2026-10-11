@@ -190,7 +190,9 @@ const bootstrap = await lucid
     { inline: Data.to(oracleDatum) } as any,
   )
   .addSigner(address)
-  .complete()
+  // Bootstrap only creates the local trace fixtures; use provider/ledger
+  // evaluation rather than the stale legacy Lucid cost-model vector.
+  .complete({ localUPLCEval: false })
 
 const bootstrapSigned = await bootstrap.sign().complete()
 const bootstrapHash = await bootstrapSigned.submit()
