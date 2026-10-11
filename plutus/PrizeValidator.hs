@@ -245,9 +245,9 @@ rawClaimantValue :: BuiltinData -> BuiltinData -> [TxOut] -> Value
 rawClaimantValue ownerHash rawCtx outputs =
   let
     rawExpectedAddress =
-      Builtins.constrData 0
-        [ Builtins.constrData 0 [ownerHash]
-        , Builtins.constrData 1 []
+      Builtins.mkConstr 0
+        [ Builtins.mkConstr 0 [ownerHash]
+        , Builtins.mkConstr 1 []
         ]
   in
     case rawConstrField 0 0 rawCtx of
