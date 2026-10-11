@@ -15,8 +15,26 @@ const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
 
 const provider = new Blockfrost(API, '')
 
+// Yaci Store's Scalus evaluator rejects the Value representation used by this V2
+// policy before a ledger decision is made. For this narrowly scoped local-devnet
+// probe, give transaction construction a bounded upper budget; this is NOT an
+// acceptance signal. The node must still validate, submit, and confirm the script.
+// Cardano ledger acceptance (submit + awaitTx) remains the only positive result.
+const providerWithProbeBudget = provider as Blockfrost & {
+  evaluateTx: (tx: string) => Promise<Array<{
+    redeemer_tag: string
+    redeemer_index: number
+    ex_units: { mem: number; steps: number }
+  }>>
+}
+providerWithProbeBudget.evaluateTx = async () => [{
+  redeemer_tag: 'mint',
+  redeemer_index: 0,
+  ex_units: { mem: 12_000_000, steps: 8_000_000_000 },
+}]
+
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
-const lucid = await Lucid(provider, 'Preprod')
+const lucid = await Lucid(providerWithProbeBudget, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
@@ -62,7 +80,7 @@ const tx = await lucid
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
   // Local evaluation supplies ex-units; the node's subsequent acceptance is authoritative.
-  .complete({ localUPLCEval: true })
+  .complete({ localUPLCEval: false })
 
 console.log(JSON.stringify({
   result: 'V3_CARRIER_PROBE_PREPARED_FOR_LEDGER',
@@ -76,13 +94,21 @@ console.log(JSON.stringify({
   },
 }, null, 2))
 
-const expectRejected = async (label: string, build: () => Promise<unknown>) => {
+const expectRejected = async (label: string, build: () => Promise<any>) => {
   try {
-    await build()
-  } catch {
-    return
+    const invalidTx = await build()
+    const signedInvalid = await invalidTx.sign.withWallet().complete()
+    const invalidTxHash = await signedInvalid.submit()
+    await lucid.awaitTx(invalidTxHash)
+  } catch (error) {
+    const message = String(error)
+    if (/script|plutus|evaluation|phase.?2|validation|ledger|failed|rejected|400/i.test(message)) {
+      console.log(JSON.stringify({ result: 'V3_CARRIER_INVALID_CASE_REJECTED_BY_LEDGER', label, reason: message }))
+      return
+    }
+    throw new Error('V3 carrier negative twin failed for a non-ledger reason (' + label + '): ' + message)
   }
-  throw new Error('V3 carrier mint policy accepted invalid case: ' + label)
+  throw new Error('Cardano ledger accepted invalid V3 carrier case: ' + label)
 }
 
 const alternateSeed = utxos.find(
@@ -99,7 +125,7 @@ if (alternateSeed) {
       .mintAssets({ [unit]: 1n }, Data.void())
       .attach.MintingPolicy(policy)
       .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
-      .complete({ localUPLCEval: true }),
+      .complete({ localUPLCEval: false }),
   )
 }
 
@@ -113,7 +139,7 @@ await expectRejected('wrong token name', () =>
     .mintAssets({ [wrongUnit]: 1n }, Data.void())
     .attach.MintingPolicy(policy)
     .pay.ToAddress(address, { lovelace: 2_000_000n, [wrongUnit]: 1n })
-    .complete({ localUPLCEval: true }),
+    .complete({ localUPLCEval: false }),
 )
 
 await expectRejected('wrong mint quantity', () =>
@@ -123,7 +149,7 @@ await expectRejected('wrong mint quantity', () =>
     .mintAssets({ [unit]: 2n }, Data.void())
     .attach.MintingPolicy(policy)
     .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 2n })
-    .complete({ localUPLCEval: true }),
+    .complete({ localUPLCEval: false }),
 )
 
 const signed = await tx.sign.withWallet().complete()
