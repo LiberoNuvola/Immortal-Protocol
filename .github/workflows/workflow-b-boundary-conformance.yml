@@ -103,6 +103,8 @@ jobs:
         run: npx vitest run Adapter/MIDNIGHT/ExecutionEvidenceBoundary.test.ts
       - name: Contributor credential separation boundary
         run: node audit/algorithmic-governability/contributor-credential-separation-boundary.mjs
+      - name: Contributor credential transferability independence boundary
+        run: node audit/algorithmic-governability/contributor-credential-transferability-independence-boundary.mjs
       - name: Contributor Reward NFT anti-capture boundary
         run: node audit/algorithmic-governability/contributor-reward-nft-boundary.mjs
       - name: Contributor reward boundary
