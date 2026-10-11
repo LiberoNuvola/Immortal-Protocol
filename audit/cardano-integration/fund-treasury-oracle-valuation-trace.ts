@@ -24,10 +24,13 @@ import {
   Lucid,
   Blockfrost,
   getAddressDetails,
-  nativeScriptFromJson,
+  scriptFromNative,
+  mintingPolicyToId,
+  validatorToScriptHash,
+  validatorToAddress,
   type Script,
   type UTxO,
-} from 'lucid-cardano'
+} from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -60,7 +63,7 @@ function hashJson(value: unknown): string {
 }
 
 function nativePolicy(keyHash: string): Script {
-  return nativeScriptFromJson({
+  return scriptFromNative({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as any)
@@ -94,21 +97,199 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid.new(provider, 'Preprod')
-lucid.selectWalletFromSeed(SEED)
 
-const address = await lucid.wallet.address()
+type EvaluationUTxO = {
+  txHash: string
+  outputIndex: number
+  address: string
+  assets: Record<string, bigint>
+  datumHash?: string
+  datum?: string
+  scriptRef?: { type: string; script: string }
+}
+type EvaluationRedeemer = {
+  redeemer_tag: string
+  redeemer_index: number
+  ex_units: { mem: number; steps: number }
+}
+
+let fundTreasuryEvaluationEvidence: {
+  measured: EvaluationRedeemer[]
+  budgeted: EvaluationRedeemer[]
+  safetyMarginBps: number
+} | null = null
+
+const EX_UNITS_SAFETY_MARGIN_BPS = 100
+const EX_UNITS_SAFETY_DENOMINATOR = 10_000n
+
+function withExUnitsSafetyMargin(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Yaci returned invalid execution units: ' + String(value))
+  }
+  return Number(
+    (BigInt(value) * BigInt(EX_UNITS_SAFETY_DENOMINATOR + BigInt(EX_UNITS_SAFETY_MARGIN_BPS))
+      + EX_UNITS_SAFETY_DENOMINATOR - 1n) / EX_UNITS_SAFETY_DENOMINATOR,
+  )
+}
+
+const evaluateYaciTx = async (
+  tx: string,
+  additionalUTxOs: EvaluationUTxO[] = [],
+): Promise<EvaluationRedeemer[]> => {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
+    throw new Error(
+      `Yaci transaction evaluation received non-hex transaction CBOR: ${cbor.slice(0, 80)}`,
+    )
+  }
+
+  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
+    { txId: utxo.txHash, index: utxo.outputIndex },
+    {
+      address: utxo.address,
+      value: {
+        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
+        ...Object.entries(utxo.assets)
+          .filter(([unit]) => unit !== 'lovelace')
+          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
+            const policyId = unit.slice(0, 56)
+            const assetName = unit.slice(56)
+            assets[policyId] ??= {}
+            assets[policyId][assetName] = Number(amount)
+            return assets
+          }, {}),
+      },
+      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
+      ...(utxo.datum ? { datum: utxo.datum } : {}),
+      ...(utxo.scriptRef
+        ? {
+            script: {
+              [utxo.scriptRef.type === 'PlutusV1'
+                ? 'plutus:v1'
+                : utxo.scriptRef.type === 'PlutusV3'
+                  ? 'plutus:v3'
+                  : 'plutus:v2']: utxo.scriptRef.script,
+            },
+          }
+        : {}),
+    },
+  ])
+
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cbor,
+      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
+    }),
+  })
+  const rawResponse = await response.text()
+  let result: {
+    fault?: unknown
+    result?: {
+      EvaluationResult?: Record<string, { memory: number; steps: number }>
+    }
+    message?: string
+  }
+  try {
+    result = JSON.parse(rawResponse) as typeof result
+  } catch {
+    result = { message: rawResponse }
+  }
+
+  if (!response.ok || result.fault || !result.result?.EvaluationResult) {
+    throw new Error(
+      `Yaci transaction evaluation failed (HTTP ${response.status}): ${rawResponse.slice(0, 4000)}`,
+    )
+  }
+
+  return Object.entries(result.result.EvaluationResult).map(([pointer, data]) => {
+    const [redeemer_tag, redeemer_index] = pointer.split(':')
+    return {
+      redeemer_tag,
+      redeemer_index: Number(redeemer_index),
+      ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
+    }
+  })
+}
+
+const providerWithEvaluation = provider as Blockfrost & {
+  evaluateTx: (tx: string, additionalUTxOs?: EvaluationUTxO[]) => Promise<EvaluationRedeemer[]>
+}
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  console.log('[FT-DIAG] provider.evaluateTx override invoked')
+  const measured = await evaluateYaciTx(tx, additionalUTxOs)
+  const budgeted = measured.map((redeemer) => ({
+    ...redeemer,
+    ex_units: {
+      mem: withExUnitsSafetyMargin(redeemer.ex_units.mem),
+      steps: withExUnitsSafetyMargin(redeemer.ex_units.steps),
+    },
+  }))
+
+  if (
+    budgeted.length !== 1 ||
+    budgeted[0].redeemer_tag !== 'spend' ||
+    budgeted[0].redeemer_index !== 0
+  ) {
+    throw new Error(
+      'FundTreasury expected exactly one spending redeemer at index 0; got ' +
+      JSON.stringify(budgeted),
+    )
+  }
+
+  fundTreasuryEvaluationEvidence = {
+    measured,
+    budgeted,
+    safetyMarginBps: EX_UNITS_SAFETY_MARGIN_BPS,
+  }
+  console.log(JSON.stringify({
+    fundTreasuryDiag: 'yaci-evaluate',
+    measured,
+    budgeted,
+    safetyMarginBps: EX_UNITS_SAFETY_MARGIN_BPS,
+  }))
+  return budgeted
+}
+
+// Preprod's time/slot mapping does not match this local Yaci devnet.
+// Anchor Lucid's validity interval to the devnet's latest block instead.
+const DEVNET_SLOT_LENGTH_MS = 1000
+const latestBlock = await (await fetch(API + '/blocks/latest')).json() as {
+  slot: number
+  time: number
+}
+if (!Number.isSafeInteger(latestBlock.slot) || latestBlock.slot < 0 ||
+    !Number.isSafeInteger(latestBlock.time) || latestBlock.time <= 0) {
+  throw new Error('Yaci /blocks/latest lacks slot/time: ' + JSON.stringify(latestBlock))
+}
+const devnetSlotConfig = {
+  zeroTime: latestBlock.time * 1000,
+  zeroSlot: latestBlock.slot,
+  slotLength: DEVNET_SLOT_LENGTH_MS,
+}
+const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: devnetSlotConfig })
+lucid.selectWallet.fromSeed(SEED)
+
+const address = await lucid.wallet().address()
 const details = getAddressDetails(address)
-const keyHash = details.paymentCredential?.hash
+const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
 const testPolicy = nativePolicy(keyHash)
-const testPolicyId = lucid.utils.mintingPolicyToId(testPolicy)
+const testPolicyId = mintingPolicyToId(testPolicy)
 const oracleStateUnit = testPolicyId + ORACLE_STATE_TOKEN_NAME_HEX
 const poolUnit = testPolicyId + POOL_TOKEN_NAME_HEX
 
 const scripts = buildScriptsFromLucid(
-  lucid,
+  {
+    ...lucid,
+    utils: {
+      validatorToScriptHash,
+      mintingPolicyToId,
+      validatorToAddress: (script: Script) => validatorToAddress('Preprod', script),
+    },
+  },
   undefined,
   keyHash,
   testPolicyId,
@@ -195,7 +376,7 @@ console.log('[FT-DIAG] before bootstrap .complete(localUPLCEval=false)')
 const bootstrap = await bootstrapBuilder.complete({ localUPLCEval: false })
 console.log('[FT-DIAG] after bootstrap .complete')
 
-const bootstrapSigned = await bootstrap.sign().complete()
+const bootstrapSigned = await bootstrap.sign.withWallet().complete({ localUPLCEval: false })
 console.log('[FT-DIAG] before bootstrap submit')
 const bootstrapHash = await bootstrapSigned.submit()
 console.log('[FT-DIAG] bootstrap submit returned hash=' + bootstrapHash)
@@ -247,27 +428,9 @@ assertExecutableLiquidityMatchesAuthenticatedPool(
   preLiquidity,
 )
 
-// Yaci Store's Scalus evaluator currently fails at CostModel operation 166
-// before submission. Assign an in-bounds construction budget only for this
-// diagnostic trace; the Cardano ledger remains authoritative for validation.
-// This transaction contains exactly one Plutus spending redeemer (B1PrizePool).
-type FundTreasuryEvaluation = {
-  redeemer_tag: string
-  redeemer_index: number
-  ex_units: { mem: number; steps: number }
-}
-const fundEvaluator = provider as unknown as {
-  evaluateTx: (tx: string) => Promise<FundTreasuryEvaluation[]>
-}
-fundEvaluator.evaluateTx = async (_tx: string) => {
-  console.log('[FT-DIAG] provider.evaluateTx override invoked')
-  return [{
-  redeemer_tag: 'spend',
-  redeemer_index: 0,
-  ex_units: { mem: 13_000_000, steps: 9_000_000_000 },
-  }]
-}
-
+// Use the same explicit Yaci evaluation path as the validated Reveal trace.
+// The raw evaluation is retained and a 1% engineering margin is applied only
+// to the transaction-building budget; ledger submission remains authoritative.
 console.log('[FT-DIAG] before FundTreasury .complete(localUPLCEval=false)')
 const fund = await lucid
   .newTx()
@@ -290,7 +453,7 @@ const fund = await lucid
   .complete({ localUPLCEval: false })
 console.log('[FT-DIAG] after FundTreasury .complete')
 
-const signed = await fund.sign().complete()
+const signed = await fund.sign.withWallet().complete({ localUPLCEval: false })
 const txCbor = signed.toCBOR()
 console.log('[FT-DIAG] before FundTreasury submit')
 const txHash = await signed.submit()
@@ -348,11 +511,13 @@ const evidence = {
   txCbor,
   action: 'FundTreasury',
   transactionBuildBudget: {
-    source: 'bounded test-harness assignment; not a measured execution cost',
+    source: 'Yaci evaluation result with 100 bps safety margin; not a ledger cost measurement',
+    evaluationEndpoint: API + '/utils/txs/evaluate/utxos',
     redeemerTag: 'spend',
     redeemerIndex: 0,
-    mem: 13_000_000,
-    steps: 9_000_000_000,
+    yaciMeasuredExUnits: fundTreasuryEvaluationEvidence?.measured ?? null,
+    yaciBudgetedExUnits: fundTreasuryEvaluationEvidence?.budgeted ?? null,
+    safetyMarginBps: fundTreasuryEvaluationEvidence?.safetyMarginBps ?? null,
     ledgerValidationAuthoritative: true,
   },
   preState: {
