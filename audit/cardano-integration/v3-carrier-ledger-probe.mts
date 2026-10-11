@@ -1,8 +1,9 @@
 /** Ledger-native V3 carrier mint probe against the local Yaci Conway devnet.
- * V3 mint policy now validates the exact singleton Value without flattenValue; this comment
- * intentionally keeps the Cardano integration-lab path in the workflow trigger set.
- * Intentionally bypasses Lucid UPLC evaluation: the signed transaction is submitted
- * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
+ * Local Lucid UPLC evaluation estimates execution units for transaction construction.
+ * The probe passes only when the signed transaction is submitted and accepted by the
+ * actual Yaci Cardano node (submit + awaitTx), which remains the final acceptance check.
+ * Avoid the Yaci Store Scalus evaluation endpoint here: its observed evaluation failure
+ * is not proof that the Cardano ledger rejects this policy.
  */
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -14,91 +15,8 @@ const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
 
 const provider = new Blockfrost(API, '')
 
-// Yaci Store exposes the Blockfrost-compatible JSON evaluator, while the pinned
-// lab provider needs the evaluator method supplied explicitly.
-const providerWithEvaluation = provider as Blockfrost & {
-  evaluateTx: (tx: string, additionalUTxOs?: Array<{
-    txHash: string
-    outputIndex: number
-    address: string
-    assets: Record<string, bigint>
-    datumHash?: string
-    datum?: string
-    scriptRef?: { type: string; script: string }
-  }>) => Promise<Array<{
-    redeemer_tag: string
-    redeemer_index: number
-    ex_units: { mem: number; steps: number }
-  }>>
-}
-
-providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
-  // Lucid's Provider contract supplies transaction CBOR as hex. Yaci's JSON
-  // evaluator decodes this field as hex, so reject malformed input locally.
-  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
-  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
-    throw new Error(
-      `Yaci transaction evaluation received non-hex transaction CBOR: ${cbor.slice(0, 80)}`,
-    )
-  }
-
-  const additionalUtxoSet = additionalUTxOs.map((utxo) => [
-    { txId: utxo.txHash, index: utxo.outputIndex },
-    {
-      address: utxo.address,
-      value: {
-        ada: { lovelace: Number(utxo.assets.lovelace ?? 0n) },
-        ...Object.entries(utxo.assets)
-          .filter(([unit]) => unit !== 'lovelace')
-          .reduce<Record<string, Record<string, number>>>((assets, [unit, amount]) => {
-            const policyId = unit.slice(0, 56)
-            const assetName = unit.slice(56)
-            assets[policyId] ??= {}
-            assets[policyId][assetName] = Number(amount)
-            return assets
-          }, {}),
-      },
-      ...(utxo.datumHash ? { datumHash: utxo.datumHash } : {}),
-      ...(utxo.datum ? { datum: utxo.datum } : {}),
-    },
-  ])
-
-  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      cbor,
-      ...(additionalUtxoSet.length ? { additionalUtxoSet } : {}),
-    }),
-  })
-  const result = await response.json() as {
-    fault?: unknown
-    result?: {
-      EvaluationResult?: Record<string, { memory: number; steps: number }>
-    }
-    message?: string
-  }
-
-  if (!response.ok || result.fault || !result.result?.EvaluationResult) {
-    throw new Error(
-      `Yaci transaction evaluation failed (HTTP ${response.status}): ${result.message ?? JSON.stringify(result)}`,
-    )
-  }
-
-  return Object.entries(result.result.EvaluationResult).map(
-    ([pointer, data]) => {
-      const [redeemer_tag, redeemer_index] = pointer.split(':')
-      return {
-        redeemer_tag,
-        redeemer_index: Number(redeemer_index),
-        ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
-      }
-    },
-  )
-}
-
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
-const lucid = await Lucid(providerWithEvaluation, 'Preprod')
+const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
@@ -143,7 +61,8 @@ const tx = await lucid
   .mintAssets({ [unit]: 1n }, Data.void())
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
-  .complete({ localUPLCEval: false })
+  // Local evaluation supplies ex-units; the node's subsequent acceptance is authoritative.
+  .complete({ localUPLCEval: true })
 
 console.log(JSON.stringify({
   result: 'V3_CARRIER_PROBE_PREPARED_FOR_LEDGER',
