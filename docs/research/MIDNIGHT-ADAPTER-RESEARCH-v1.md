@@ -15,13 +15,15 @@ IMMORTAL Intent → chain-neutral Economic Admission → Midnight Adapter → Co
 
 The repository currently has one concrete adapter: Cardano. Midnight is a second-adapter research candidate, not a production adapter.
 
-## 2. Miroarty / Compact source note
+## 2. Moriarty / Compact source note
 
-The project history refers to a language named Miroarty as the source of the Intent concept. That name could not be verified in the current GitHub repository, connected Notion pages, searched Library material, or the public web sources reviewed on 2026-10-11. No source attribution is therefore claimed here.
+The historical reference is **Moriarty** (not “Miroarty”). Charles Hoskinson has described Moriarty as a **Turing-incomplete intent language for the planned Midnight DeFi kernel**, with formal/small-step semantics; he has also reported a loan contract compiling to Midnight's zkIR and a transaction validating on Midnight Preview. citeturn514964search12turn514964search4
+
+This directly confirms the architectural relevance of Moriarty to the Intent concept being studied here. The exact source repository is not yet bound into this IMMORTAL repository as a dependency, so the research remains source-attribution-aware rather than treating Moriarty as a production dependency.
 
 Midnight's documented smart-contract language is Compact. The current official documentation describes Compact as a strongly typed, bounded language for smart contracts, with public ledger state, zero-knowledge circuits, and TypeScript-supplied witnesses.
 
-Until the exact Miroarty reference is recovered, the IMMORTAL layer remains language-neutral and Compact is treated only as the concrete Midnight target language.
+IMMORTAL remains language-neutral: Moriarty is the recovered conceptual/source-language reference for Intent, while Compact remains the currently verified concrete Midnight target language.
 
 ## 3. Existing Intent
 
@@ -155,7 +157,7 @@ A Midnight Adapter therefore has two different proof obligations:
 | Production Midnight Adapter | NOT STARTED |
 | Real Midnight deployment | NOT STARTED |
 | Chain-neutral admission interface extraction | OPEN |
-| Miroarty source mapping | UNRESOLVED |
+| Moriarty conceptual mapping | VERIFIED; repository integration OPEN |
 
 ## 13. Non-regression
 
