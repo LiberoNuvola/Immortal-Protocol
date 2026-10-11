@@ -12,6 +12,11 @@ const isDigest = (value) => typeof value === 'string' && /^[0-9a-fA-F]{64}$/.tes
 
 const readRepoFile = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8')
 
+const withoutComments = (source) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
+
 const prepare = (intent, admission, circuitName = 'issue') => {
   if (!admission || admission.admitted !== true) return 'UNVERIFIABLE'
   if (admission.actionClass !== intent.action) return 'REJECTED'
@@ -77,20 +82,22 @@ assert(
 
 const midnightIntentSource = readRepoFile('Adapter/MIDNIGHT/IntentBoundary.ts')
 const midnightEvidenceSource = readRepoFile('Adapter/MIDNIGHT/ExecutionEvidenceBoundary.ts')
+const midnightIntentCode = withoutComments(midnightIntentSource)
+const midnightEvidenceCode = withoutComments(midnightEvidenceSource)
 
 assert(
   midnightIntentSource.includes('export type ChainNeutralEconomicAdmission'),
   'Midnight adapter exposes a chain-neutral admission type',
 )
 assert(
-  !midnightIntentSource.includes('Adapter/CARDANO') &&
-    !midnightEvidenceSource.includes('Adapter/CARDANO'),
-  'Midnight adapter surface has no direct Cardano runtime import',
+  !midnightIntentCode.includes('Adapter/CARDANO') &&
+    !midnightEvidenceCode.includes('Adapter/CARDANO'),
+  'Midnight adapter code has no direct Cardano runtime import',
 )
 assert(
-  !midnightIntentSource.includes('EconomicAdmissionWitness') &&
-    !midnightEvidenceSource.includes('EconomicAdmissionWitness'),
-  'Midnight adapter surface does not import the Cardano-specific EconomicAdmissionWitness',
+  !midnightIntentCode.includes('EconomicAdmissionWitness') &&
+    !midnightEvidenceCode.includes('EconomicAdmissionWitness'),
+  'Midnight adapter code does not import the Cardano-specific EconomicAdmissionWitness',
 )
 
 console.log('ALL MIDNIGHT INTENT ADAPTER BOUNDARY CHECKS PASSED')
