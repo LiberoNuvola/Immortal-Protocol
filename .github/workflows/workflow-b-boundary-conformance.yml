@@ -28,6 +28,10 @@ jobs:
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
       - name: G6 evidence catalog boundary
         run: node audit/algorithmic-governability/evidence-catalog-boundary.mjs
+      - name: Typed obligation bucket boundary
+        run: node audit/algorithmic-governability/typed-obligation-buckets-boundary.mjs
+      - name: G7 canonical hysteresis conformance
+        run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
       - name: Contributor reward boundary
         run: node audit/algorithmic-governability/reward-contributor-boundary.mjs
       - name: Treasury and reward accounting boundary
