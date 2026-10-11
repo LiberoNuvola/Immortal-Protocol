@@ -139,9 +139,9 @@ rawTicketOwnerHashInInputs ticketCs ticketTn (rawInput:rest) =
                 Just rawAddress ->
                   case rawConstrField 0 0 rawAddress of
                     Just rawCredential ->
-                      case rawConstrField 0 0 rawCredential of
-                        Just rawPkh -> Just rawPkh
-                        Nothing -> Nothing
+                      case rawConstr rawCredential of
+                        Just (0, fields) -> rawField 0 fields
+                        _ -> Nothing
                     Nothing -> Nothing
             _ -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
 
@@ -152,13 +152,15 @@ rawAssetAmount
   -> BuiltinData
   -> Maybe Integer
 rawAssetAmount ticketCs ticketTn rawValue =
-  case rawConstrField 0 0 rawValue of
-    Nothing -> Nothing
-    Just rawMap ->
-      case rawList rawMap of
+  case rawConstr rawValue of
+    Just (0, fields) ->
+      case rawField 0 fields of
+        Just rawMapData ->
+          case rawList rawMapData of
+            Just currencies -> rawTokenAmount ticketCs ticketTn currencies
+            Nothing -> Nothing
         Nothing -> Nothing
-        Just currencies ->
-          rawTokenAmount ticketCs ticketTn currencies
+    _ -> Nothing
 
 {-# INLINABLE rawTokenAmount #-}
 rawTokenAmount
@@ -198,8 +200,7 @@ rawTokenAmountForName ticketTn (entry:rest) =
           if Builtins.equalsData rawTn (toBuiltinData ticketTn)
             then
               case rawField 1 fields of
-                Just rawAmount ->
-                  fromBuiltinData rawAmount
+                Just rawAmount -> fromBuiltinData rawAmount
                 Nothing -> Nothing
             else rawTokenAmountForName ticketTn rest
         Nothing -> Nothing
@@ -238,19 +239,18 @@ rawAddressOf rawTxOut = rawConstrField 0 0 rawTxOut
 {-# INLINABLE rawOutputAtAddress #-}
 rawOutputAtAddress
   :: BuiltinData
-  -> BuiltinData
   -> [BuiltinData]
   -> [TxOut]
   -> Value
-rawOutputAtAddress _ _ [] _ = mempty
-rawOutputAtAddress _ _ _ [] = mempty
-rawOutputAtAddress expectedAddr rawOutputs (rawOut:rawRest) (out:rest) =
+rawOutputAtAddress _ [] _ = mempty
+rawOutputAtAddress _ _ [] = mempty
+rawOutputAtAddress expectedAddr (rawOut:rawRest) (out:rest) =
   case rawAddressOf rawOut of
     Just rawAddr ->
       if Builtins.equalsData expectedAddr rawAddr
-        then txOutValue out <> rawOutputAtAddress expectedAddr rawOutputs rawRest rest
-        else rawOutputAtAddress expectedAddr rawOutputs rawRest rest
-    Nothing -> rawOutputAtAddress expectedAddr rawOutputs rawRest rest
+        then txOutValue out <> rawOutputAtAddress expectedAddr rawRest rest
+        else rawOutputAtAddress expectedAddr rawRest rest
+    Nothing -> rawOutputAtAddress expectedAddr rawRest rest
 
 {-# INLINABLE rawClaimantValue #-}
 rawClaimantValue :: BuiltinData -> BuiltinData -> [TxOut] -> Value
@@ -270,114 +270,7 @@ rawClaimantValue ownerHash rawCtx outputs =
           Just rawOutputsData ->
             case rawList rawOutputsData of
               Nothing -> mempty
-              Just rawOutputs ->
-                rawOutputAtAddress rawExpectedAddress rawOutputs rawOutputs outputs
-
-{-# INLINABLE ownScriptHash #-}
-ownScriptHash :: ScriptContext -> ScriptHash
-ownScriptHash ctx =
-  case findOwnInput ctx of
-    Just i ->
-      case addressCredential (txOutAddress (txInInfoResolved i)) of
-        ScriptCredential h ->
-          h
-        _ ->
-          traceError "Prize: own input is not script"
-    Nothing ->
-      traceError "Prize: missing own input"
-
-{-# INLINABLE ownInputResolved #-}
-ownInputResolved :: ScriptContext -> TxOut
-ownInputResolved ctx =
-  case findOwnInput ctx of
-    Just i ->
-      txInInfoResolved i
-    Nothing ->
-      traceError "Prize: missing own input"
-
-{-# INLINABLE countOwnScriptInputs #-}
-countOwnScriptInputs :: ScriptContext -> Integer
-countOwnScriptInputs ctx =
-  go (txInfoInputs (scriptContextTxInfo ctx))
-  where
-    thisHash = ownScriptHash ctx
-    go [] = 0
-    go (i:is) =
-      case addressCredential (txOutAddress (txInInfoResolved i)) of
-        ScriptCredential h
-          | h == thisHash ->
-              1 + go is
-        _ ->
-          go is
-
-{-# INLINABLE countOwnScriptOutputs #-}
-countOwnScriptOutputs :: ScriptContext -> Integer
-countOwnScriptOutputs ctx =
-  go (txInfoOutputs (scriptContextTxInfo ctx))
-  where
-    thisHash = ownScriptHash ctx
-    go [] = 0
-    go (o:os) =
-      case addressCredential (txOutAddress o) of
-        ScriptCredential h
-          | h == thisHash ->
-              1 + go os
-        _ ->
-          go os
-
--- | Direct Value lookup with the same zero-on-missing semantics as
--- the canonical Ledger API helper. B1PrizePool uses this explicit traversal
--- to avoid a ByteString/Data representation mismatch in the compiled lookup.
-{-# INLINABLE assetAmount #-}
-assetAmount :: Value -> CurrencySymbol -> TokenName -> Integer
-assetAmount value cs tn =
-  case AssocMap.lookup cs (getValue value) of
-    Nothing -> 0
-    Just tokens ->
-      case AssocMap.lookup tn tokens of
-        Nothing -> 0
-        Just amount -> amount
-
-{-# INLINABLE ticketOwnerPkh #-}
-ticketOwnerPkh
-  :: CurrencySymbol
-  -> TokenName
-  -> [TxInInfo]
-  -> Maybe PubKeyHash
-ticketOwnerPkh _ _ [] = Nothing
-ticketOwnerPkh cs tn (i:is) =
-  let resolved = txInInfoResolved i
-  in
-    if assetAmount (txOutValue resolved) cs tn == 1
-      then
-        case addressCredential (txOutAddress resolved) of
-          PubKeyCredential pkh ->
-            Just pkh
-          _ ->
-            Nothing
-      else
-        ticketOwnerPkh cs tn is
-
-{-# INLINABLE sumToAddress #-}
-sumToAddress
-  :: Address
-  -> (Value -> Integer)
-  -> [TxOut]
-  -> Integer
-sumToAddress _ _ [] = 0
-sumToAddress addr pick (o:os) =
-  if txOutAddress o == addr
-    then pick (txOutValue o) + sumToAddress addr pick os
-    else sumToAddress addr pick os
-
--- | Sum Value of all outputs to a specific address.
-{-# INLINABLE sumValuesToAddress #-}
-sumValuesToAddress :: Address -> [TxOut] -> Value
-sumValuesToAddress _ [] = mempty
-sumValuesToAddress addr (o:os) =
-  if txOutAddress o == addr
-    then txOutValue o <> sumValuesToAddress addr os
-    else sumValuesToAddress addr os
+              Just rawOutputs -> rawOutputAtAddress rawExpectedAddress rawOutputs outputs
 
 {-# INLINABLE continuingScriptOuts #-}
 continuingScriptOuts :: ScriptHash -> [TxOut] -> [TxOut]
@@ -880,9 +773,10 @@ validateClaim
   :: OracleStateId
   -> PubKeyHash
   -> PrizeDatum
+  -> BuiltinData
   -> ScriptContext
   -> Bool
-validateClaim oracleState oraclePublisher datum ctx =
+validateClaim oracleState oraclePublisher datum rawCtx ctx =
   let
     info = scriptContextTxInfo ctx
     prizePoolBs = pdPrizePoolHash datum
@@ -893,35 +787,19 @@ validateClaim oracleState oraclePublisher datum ctx =
     maybeOwner =
       ticketOwnerPkh ticketCs ticketTn (txInfoInputs info)
 
-    -- Owner authorization is checked at the pubkey-input boundary above:
-    -- maybeOwner exists only when the ticket NFT is in a PubKeyCredential UTxO.
-    -- Compare that credential's hash with the transaction signatories using
-    -- BuiltinByteString equality, avoiding PubKeyHash wrapper unlifting.
-    ownerSigned =
-      case maybeOwner of
-        Just pkh ->
-          contains (getPubKeyHash pkh) (txInfoSignatories info)
-        Nothing ->
-          False
+    ownerSigned = rawOwnerSigned ticketCs ticketTn rawCtx
 
-    contains :: BuiltinByteString -> [PubKeyHash] -> Bool
-    contains _ [] = False
-    contains ownerHash (signatory:rest) =
-      if getPubKeyHash signatory == ownerHash
-        then True
-        else contains ownerHash rest
+    rawOwner =
+      rawTicketOwnerHash ticketCs ticketTn rawCtx
 
-    claimantAddr =
-      case maybeOwner of
-        Just pkh ->
-          claimAddress pkh
-        Nothing ->
-          traceError "Prize: ticket not in pubkey UTxO"
-
-    -- C-03: Oracle-based settlement verification.
-    -- Compute USDM value of all assets paid to claimant.
-    -- No unit mismatch: USDM value of settlement >= pdPrizeAmount (USDM sub-units).
-    claimantValue = sumValuesToAddress claimantAddr (txInfoOutputs info)
+    -- C-03: Oracle-based settlement verification. Sum every output to the
+    -- ticket owner's enterprise address by comparing the raw Plutus Data
+    -- representation, avoiding typed Address/PubKeyHash equality at this
+    -- evaluator boundary.
+    claimantValue =
+      case rawOwner of
+        Just ownerHash -> rawClaimantValue ownerHash rawCtx (txInfoOutputs info)
+        Nothing -> mempty
     paidUsdm =
       Economic.totalUsdmValue
         info
@@ -1013,6 +891,7 @@ mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
         (unsafeFromBuiltinData oracleStateData)
         oraclePublisher
         datum
+        (toBuiltinData ctx)
         ctx
     Expire ->
       validateExpire datum ctx
@@ -1028,15 +907,29 @@ wrap
   -> BuiltinData
   -> BuiltinUnit
 wrap regHash table oracleState oraclePublisher d r ctx =
-  check
-    (mkValidator
-      regHash
-      table
-      oracleState
-      oraclePublisher
-      (unsafeFromBuiltinData d)
-      (unsafeFromBuiltinData r)
-      (unsafeFromBuiltinData ctx))
+  let
+    action = unsafeFromBuiltinData r
+    decodedCtx = unsafeFromBuiltinData ctx
+    result =
+      case action of
+        Claim ->
+          validateClaim
+            (unsafeFromBuiltinData oracleState)
+            oraclePublisher
+            (unsafeFromBuiltinData d)
+            ctx
+            decodedCtx
+        _ ->
+          mkValidator
+            regHash
+            table
+            oracleState
+            oraclePublisher
+            (unsafeFromBuiltinData d)
+            action
+            decodedCtx
+  in
+    check result
 
 compiledValidatorFactory
   :: CompiledCode
