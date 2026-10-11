@@ -255,6 +255,7 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
 // Preprod's time/slot mapping does not match this local Yaci devnet.
 // Anchor Lucid's validity interval to the devnet's latest block instead.
 const DEVNET_SLOT_LENGTH_MS = 1000
+const FUND_TREASURY_VALIDITY_WINDOW_MS = 30_000
 const latestBlock = await (await fetch(API + '/blocks/latest')).json() as {
   slot: number
   time: number
@@ -263,11 +264,29 @@ if (!Number.isSafeInteger(latestBlock.slot) || latestBlock.slot < 0 ||
     !Number.isSafeInteger(latestBlock.time) || latestBlock.time <= 0) {
   throw new Error('Yaci /blocks/latest lacks slot/time: ' + JSON.stringify(latestBlock))
 }
+// Yaci Store deployments may expose block time in seconds or milliseconds.
+// Normalize once, then use this same chain-derived anchor for slot mapping,
+// Oracle timestamp and transaction validity; do not mix it with wall-clock time.
+const latestBlockTimeMs = latestBlock.time < 100_000_000_000
+  ? latestBlock.time * 1000
+  : latestBlock.time
+if (!Number.isSafeInteger(latestBlockTimeMs) || latestBlockTimeMs <= 0) {
+  throw new Error('Yaci /blocks/latest has an invalid normalized time: ' + JSON.stringify(latestBlock))
+}
 const devnetSlotConfig = {
-  zeroTime: latestBlock.time * 1000,
+  zeroTime: latestBlockTimeMs,
   zeroSlot: latestBlock.slot,
   slotLength: DEVNET_SLOT_LENGTH_MS,
 }
+const now = BigInt(latestBlockTimeMs)
+console.log(JSON.stringify({
+  fundTreasuryTimeAnchor: 'yaci-latest-block',
+  latestBlockSlot: latestBlock.slot,
+  latestBlockTimeRaw: latestBlock.time,
+  latestBlockTimeMs,
+  slotLengthMs: DEVNET_SLOT_LENGTH_MS,
+  validityWindowMs: FUND_TREASURY_VALIDITY_WINDOW_MS,
+}))
 const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: devnetSlotConfig })
 lucid.selectWallet.fromSeed(SEED)
 
@@ -301,8 +320,6 @@ const scripts = buildScriptsFromLucid(
 if (!scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive B1PrizePool address')
 }
-
-const now = BigInt(Date.now())
 
 // OracleDatum:
 //   assetPolicy, assetName, price, timestamp, publisher
@@ -447,7 +464,7 @@ const fund = await lucid
   )
   .addSigner(address)
   .validFrom(Number(now))
-  .validTo(Number(now + 3_600_000n))
+  .validTo(Number(now + BigInt(FUND_TREASURY_VALIDITY_WINDOW_MS)))
   // Use the bounded construction budget above; only ledger submission and
   // the observed post-state below determine whether FundTreasury succeeds.
   .complete({ localUPLCEval: false })
