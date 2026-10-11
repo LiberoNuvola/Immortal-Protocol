@@ -53,6 +53,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Probe Materios public bootnode RPC surface
+        run: bash audit/materios-b3/probe-bootnode-rpc.sh
+
       - name: Capture live Materios GRANDPA justification
         run: node audit/materios-b3/grandpa-live-witness.mjs
         env:
