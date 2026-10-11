@@ -36,7 +36,7 @@ import { defaultPrizeTable } from '../../src/gameRules'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 const SEED =
-  'test test test test test test test test test test test test test test test test test test test test test test test test test sauce'
+  'test test test test test test test test test test test test test test test test test test test test test test test sauce'
 
 const PRICE_USDM = 100n
 const TOTAL_LIQUIDITY_USDM = 100_000n
