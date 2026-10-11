@@ -5,17 +5,20 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - work/immortal-green-closure
     paths:
       - "poc/materios-execution-verifier/**"
+      - "poc/materios-checkpoint/**"
       - ".github/workflows/materios-b3-execution-verifier.yml"
   pull_request:
     branches:
       - b1-hardening
     paths:
       - "poc/materios-execution-verifier/**"
+      - "poc/materios-checkpoint/**"
       - ".github/workflows/materios-b3-execution-verifier.yml"
 
 jobs:
@@ -41,3 +44,51 @@ jobs:
 
       - name: Run verifier tests
         run: cargo test
+
+  live-storage-proof:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Materios checkpoint dependencies
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - name: Capture live Preprod storage proof
+        working-directory: poc/materios-checkpoint
+        run: npx tsx src/capture-storage-proof.ts
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
+          MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
+          RECEIPT_TIMEOUT_MS: "120000"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Native verification of live storage proof
+        run: >
+          cargo run --manifest-path poc/materios-execution-verifier/Cargo.toml
+          --bin verify-storage-proof --
+          poc/materios-checkpoint/out/b3b-state-root.hex
+          poc/materios-checkpoint/out/b3b-storage-key.hex
+          poc/materios-checkpoint/out/b3b-storage-value.hex
+          poc/materios-checkpoint/out/b3b-proof-scale.hex
+
+      - name: Upload B3-B live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3b-live-storage-proof
+          path: poc/materios-checkpoint/out/
+          if-no-files-found: error
