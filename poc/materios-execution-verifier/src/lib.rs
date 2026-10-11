@@ -1,6 +1,6 @@
 mod storage;
 
-pub use storage::{verify_storage_proof, StorageProofInput};
+pub use storage::{materios_anchors_storage_key, verify_storage_proof, StorageProofInput};
 
 use codec::Decode;
 use sc_executor::WasmExecutor;
