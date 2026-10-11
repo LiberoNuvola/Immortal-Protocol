@@ -64,6 +64,8 @@ jobs:
         run: node audit/algorithmic-governability/moriarty-intent-semantic-boundary.mjs
       - name: Moriarty Intent identity binding boundary
         run: node audit/algorithmic-governability/moriarty-intent-identity-binding-boundary.mjs
+      - name: Moriarty IMMORTAL Intent correspondence boundary
+        run: node audit/algorithmic-governability/moriarty-immortal-intent-correspondence-boundary.mjs
       - name: Install Node test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: EXP-07 canonical hysteresis conformance
