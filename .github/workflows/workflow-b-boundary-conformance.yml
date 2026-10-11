@@ -58,6 +58,8 @@ jobs:
         run: node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
       - name: B3-C RootProof verification boundary
         run: node audit/algorithmic-governability/b3-c-rootproof-boundary.mjs
+      - name: B3 workflow routing boundary
+        run: node audit/algorithmic-governability/b3-workflow-routing-boundary.mjs
       - name: B3-A witness packet boundary
         run: node audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs
       - name: B5/B6 action evidence boundary
@@ -66,6 +68,8 @@ jobs:
         run: node audit/algorithmic-governability/action-evidence-integrity-boundary.mjs
       - name: Midnight adapter Intent boundary
         run: node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
+      - name: Midnight execution and evidence boundary
+        run: node audit/algorithmic-governability/midnight-execution-evidence-boundary.mjs
       - name: Moriarty IMMORTAL Intent semantic boundary
         run: node audit/algorithmic-governability/moriarty-intent-semantic-boundary.mjs
       - name: Moriarty Intent identity binding boundary

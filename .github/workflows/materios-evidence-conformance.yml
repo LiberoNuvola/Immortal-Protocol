@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     branches:
-      - work/immortal-green-closure
+      - work/b3-materios-provenance-evidence
     paths:
       - "poc/materios-checkpoint/src/canonicalEvidence.ts"
       - "poc/materios-checkpoint/src/capture-finalized.ts"
