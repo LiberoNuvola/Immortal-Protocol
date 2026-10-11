@@ -132,6 +132,315 @@ jobs:
           tail -300 audit/yaci-evidence/yaci.log || true
           exit 1
 
+      - name: Start and qualify Ogmios evaluator before Yaci Store
+        run: |
+          set -euo pipefail
+          mkdir -p audit/yaci-evidence
+          store_config="$HOME/.yaci-cli/components/store/config/application.properties"
+          if [ ! -f "$store_config" ]; then
+            echo "Generated Yaci Store configuration not found: $store_config"
+            find "$HOME/.yaci-cli" -path '*/store/config/application.properties' -print || true
+            exit 1
+          fi
+
+          # DevKit beta5 starts Store before the post-start Ogmios event. Stop Store,
+          # start Ogmios, then start Store again so it binds to Ogmios from process start.
+          curl --fail --silent --show-error --request POST \
+            http://localhost:10000/local-cluster/api/admin/yaci-store/stop \
+            -o audit/yaci-evidence/yaci-store-stop.json
+          store_stopped=0
+          for i in $(seq 1 60); do
+            if ! timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null; then
+              store_stopped=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$store_stopped" -ne 1 ]; then
+            echo "Yaci Store did not release port 8080 after stop."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          ogmios_started=0
+          for i in $(seq 1 60); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/ogmios/start-ogmios \
+              -o audit/yaci-evidence/ogmios-start.json; then
+              ogmios_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ogmios_started" -ne 1 ]; then
+            echo "Failed to start Ogmios through the Yaci admin API."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          ogmios_ready=0
+          for i in $(seq 1 60); do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
+              ogmios_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ogmios_ready" -ne 1 ]; then
+            echo "Ogmios did not become reachable on port 1337."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          store_started=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/yaci-store/start \
+              -o audit/yaci-evidence/yaci-store-restart.json; then
+              store_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_started" -ne 1 ]; then
+            echo "Failed to start Yaci Store after Ogmios became reachable."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          store_ready=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-rebound.json; then
+              store_ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_ready" -ne 1 ]; then
+            echo "Yaci Store did not become ready after restart."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          if ! grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios
+      - name: Rebind Yaci Store evaluator to Ogmios
+        run: |
+          set -euo pipefail
+          mkdir -p audit/yaci-evidence
+
+          admin_ready=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:10000/local-cluster/api/admin/devnet/status \
+              -o audit/yaci-evidence/devnet-status.txt; then
+              admin_ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$admin_ready" -ne 1 ]; then
+            echo "Yaci DevKit admin API did not become ready."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
+            echo "Unexpected Ogmios listener before explicit start; refusing ambiguous evaluator binding."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          ogmios_started=0
+          for i in $(seq 1 60); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/ogmios/start-ogmios \
+              -o audit/yaci-evidence/ogmios-start.json; then
+              ogmios_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ogmios_started" -ne 1 ]; then
+            echo "Failed to start Ogmios through the Yaci admin API."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          ogmios_ready=0
+          for i in $(seq 1 60); do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
+              ogmios_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ogmios_ready" -ne 1 ]; then
+            echo "Ogmios did not become reachable on port 1337."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST \
+            http://localhost:10000/local-cluster/api/admin/yaci-store/stop \
+            -o audit/yaci-evidence/yaci-store-stop.json
+
+          store_stopped=0
+          for i in $(seq 1 60); do
+            if ! timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null; then
+              store_stopped=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$store_stopped" -ne 1 ]; then
+            echo "Yaci Store did not release port 8080 after stop."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST \
+            http://localhost:10000/local-cluster/api/admin/yaci-store/start \
+            -o audit/yaci-evidence/yaci-store-restart.json
+
+          store_ready=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-rebound.json; then
+              store_ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_ready" -ne 1 ]; then
+            echo "Yaci Store did not become ready after restart."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          store_config="$HOME/.yaci-cli/components/store/config/application.properties"
+          if [ ! -f "$store_config" ]; then
+            echo "Generated Yaci Store configuration not found: $store_config"
+            find "$HOME/.yaci-cli" -path '*/store/config/application.properties' -print || true
+            exit 1
+          fi
+          if ! grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios$' "$store_config"; then
+            echo "Yaci Store config does not confirm the Ogmios evaluator."
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config" || true
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+          {
+            echo "YACI_STORE_EVALUATOR=ogmios"
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config"
+          } | tee audit/yaci-evidence/evaluator-mode.txt
+
+      - name: Derive funded CI test wallet
+        id: wallet
+        run: |
+          address="$(node audit/cardano-integration/create-test-wallet.mjs)"
+          echo "address=$address" >> "$GITHUB_OUTPUT"
+
+      - name: Record devnet information
+        run: |
+          {
+            echo "branch=work/immortal-green-closure"
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "yaci=0.12.0-beta5"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "test_address=${{ steps.wallet.outputs.address }}"
+          } | tee audit/yaci-evidence/manifest.txt
+      - name: Record non-destructive Yaci cluster context
+        run: |
+          {
+            echo "store_url=http://localhost:8080/api/v1/"
+            echo "node_port=3001"
+            echo "submit_url=http://localhost:8090"
+            echo "epoch_latest=$(curl --fail --silent http://localhost:8080/api/v1/epochs/latest)"
+          } | tee audit/yaci-evidence/yaci-devkit-info.txt
+
+      - name: Execute real Cardano ledger smoke transaction
+        run: node audit/cardano-integration/ledger-smoke.mjs
+
+      - name: Probe current Yaci cost models with Lucid Evolution
+        run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
+
+      - name: Execute V3 carrier against native Cardano ledger
+        run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
+
+      - name: Execute real economic Reveal transition trace
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+
+      - name: Execute real FundTreasury canonical Oracle valuation trace
+        run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
+
+      - name: Execute real TicketIssued 500x solvency boundary trace
+        run: node --import tsx/esm audit/cardano-integration/ticket-issued-solvency-boundary-trace.ts
+
+      - name: Execute real economic Expire transition trace
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      # Isolated Claim conformance fixture; not a production Issue-admission witness.
+      - name: Execute real economic Claim transition trace
+        run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
+
+      - name: Materialize raw Yaci ledger context for P2.8
+        run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
+
+      - name: Run native Yaci UTxO decoder conformance
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal update
+          cabal run yaci-utxo-test
+
+      - name: Run P2.8 ledger evidence gate against this lab packet
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence --evaluate
+
+      - name: Measure script and transaction resource footprint
+        run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
+
+      - name: Run existing pure invariant suite
+        run: npx tsx src/__tests__/b1-invariants.test.ts
+      - name: Run economic admission provenance negative twins
+        run: npx tsx src/__tests__/economic-admission-input-binding.test.ts
+      - name: Run PrizeValidator row-tier immutability guard
+        run: npx tsx src/__tests__/prize-validator-row-tier-immutability.test.ts
+      - name: Run Claim settlement-address binding guard
+        run: npx vitest run src/__tests__/claim-settlement-address.test.ts
+
+      - name: Run predeploy structural gate
+        run: npm run test:predeploy
+
+      - name: Print resource audit summary
+        if: always()
+        run: cat audit/yaci-evidence/resource-audit.json 2>/dev/null || true
+
+      - name: Preserve devnet evidence and logs
+        if: always()
+        run: |
+          curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
+          tail -500 audit/yaci-evidence/yaci.log || true
+
+      - name: Upload laboratory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-lab-evidence
+          path: audit/yaci-evidence/
+ "$store_config"; then
+            echo "Yaci Store config does not confirm the Ogmios evaluator."
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config" || true
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+          {
+            echo "YACI_STORE_EVALUATOR=ogmios"
+            grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config"
+          } | tee audit/yaci-evidence/evaluator-mode.txt
+
+
       - name: Rebind Yaci Store evaluator to Ogmios
         run: |
           set -euo pipefail
