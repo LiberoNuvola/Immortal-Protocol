@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Workflow B harness coverage guard
+        run: node audit/algorithmic-governability/workflow-b-harness-coverage-boundary.mjs
       - name: IMMORTAL generalized derivation boundary
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
       - name: EXP-06 evidence catalog boundary
