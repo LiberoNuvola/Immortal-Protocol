@@ -66,6 +66,24 @@ jobs:
       - name: Build and export fresh Plutus artifacts
         run: cabal run exe:export-scripts
 
+      - name: Bind fresh Plutus artifacts to emulator consumers
+        run: |
+          set -euo pipefail
+          files=(
+            prizeValidatorFactory.plutus.json
+            b1PrizePoolFactory.plutus.json
+            beaconRegistry.plutus.json
+            counterValidator.plutus.json
+            treasury.plutus.json
+          )
+          for file in "${files[@]}"; do
+            test -s "plutus/out/$file"
+            cp "plutus/out/$file" "src/plutusScripts/$file"
+            cmp -s "plutus/out/$file" "src/plutusScripts/$file"
+            echo "BOUND_FRESH_PLUTUS_ARTIFACT=$file"
+            sha256sum "plutus/out/$file" "src/plutusScripts/$file"
+          done
+
       - name: Save Cabal/Plutus build state
         if: always() && steps.plutus-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
