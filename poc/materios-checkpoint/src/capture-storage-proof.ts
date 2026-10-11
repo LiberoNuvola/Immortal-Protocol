@@ -348,6 +348,16 @@ type ReceiptCandidate = {
   availabilityCertHash: string;
 };
 
+function parsedAvailabilityCertHashIsNonZero(
+  storageValue: string,
+): boolean {
+  const parsed = parseReceiptRecord(storageValue);
+  return (
+    parsed.availabilityCertHash !==
+    "0x0000000000000000000000000000000000000000000000000000000000000000"
+  );
+}
+
 function parseReceiptRecord(
   storageValue: string,
 ): {
@@ -912,14 +922,17 @@ async function main(): Promise<void> {
         proofScaleHex,
     },
     transport_checks: {
-      block_hash_matches_indexer:
-        true,
-      block_hash_matches_chain_getBlockHash:
-        true,
-      finalized_head_covers_certified_block:
+      finalized_head_covers_observed_block:
         true,
       storage_value_present:
         true,
+      storage_key_derived_from_receipt_id:
+        true,
+      receipt_state_has_nonzero_availability_cert_hash:
+        parsedAvailabilityCertHashIsNonZero(storageValue),
+      proof_at_matches_observed_block_hash:
+        readProof.at.toLowerCase() ===
+        certification.hash.toLowerCase(),
       storage_key_bytes:
         hexToBytes(storageKey).length,
       storage_value_bytes:
