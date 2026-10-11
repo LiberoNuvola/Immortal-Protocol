@@ -102,7 +102,7 @@ const expectRejected = async (label: string, build: () => Promise<any>) => {
     await lucid.awaitTx(invalidTxHash)
   } catch (error) {
     const message = String(error)
-    if (/script|plutus|evaluation|phase.?2|validation|ledger|failed|rejected|400/i.test(message)) {
+    if (/script execution|script failure|plutus|EvaluationFailure|phase.?2|ledger.{0,30}reject|transaction.{0,30}reject|HTTP 400|Bad Request|ScriptFailure|ScriptNotValidating|ValidationTagMismatch/i.test(message)) {
       console.log(JSON.stringify({ result: 'V3_CARRIER_INVALID_CASE_REJECTED_BY_LEDGER', label, reason: message }))
       return
     }
