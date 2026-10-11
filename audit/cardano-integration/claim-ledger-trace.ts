@@ -289,9 +289,103 @@ const evaluateYaciTx = async (
   )
 }
 
+const claimEvaluationFallbacks: Array<Record<string, unknown>> = []
+
+function claimContextShapeMismatch(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Yaci transaction evaluation failed') &&
+    message.includes('KnownTypeUnliftingError') &&
+    message.includes('Expected type ByteString, got VCon(Data')
+}
+
+function boundedClaimFallbackExUnits(cbor: string): Array<{
+  redeemer_tag: string
+  redeemer_index: number
+  ex_units: { mem: number; steps: number }
+}> {
+  // This is only a transaction-construction fallback for the documented
+  // Scalus/Yaci context-shape failure. The final Cardano ledger submission is
+  // still authoritative and each positive/negative Claim is verified there.
+  // Keep the sum below the active transaction limits and record the budget as
+  // a fallback, never as a measured execution result.
+  const limits = (protocolParameters as any).maxTxExecutionUnits
+  const maxMemory = Number(limits?.memory ?? limits?.mem)
+  const maxSteps = Number(limits?.steps)
+  if (!Number.isSafeInteger(maxMemory) || maxMemory <= 0 ||
+      !Number.isSafeInteger(maxSteps) || maxSteps <= 0) {
+    throw new Error('Claim evaluator fallback requires valid active maxTxExecutionUnits')
+  }
+
+  const description = describeTx(cbor)
+  const spendingRedeemers = description.redeemers.filter((r) => r.tag === 0)
+  if (spendingRedeemers.length !== 2) {
+    throw new Error(
+      'Claim evaluator fallback expected exactly two spending redeemers; found ' +
+      spendingRedeemers.length,
+    )
+  }
+
+  // Two spending validators are exercised atomically. Allocate 45% of each
+  // active transaction budget to each redeemer (90% total); the node's
+  // validation result, not this allowance, determines Claim conformance.
+  const perRedeemer = {
+    mem: Math.floor(maxMemory * 0.45),
+    steps: Math.floor(maxSteps * 0.45),
+  }
+  const tagNames: Record<number, string> = {
+    0: 'spend',
+    1: 'mint',
+    2: 'certificate',
+    3: 'withdrawal',
+    4: 'vote',
+    5: 'propose',
+  }
+  const result = spendingRedeemers.map((r) => {
+    const redeemer_tag = tagNames[r.tag]
+    if (!redeemer_tag) {
+      throw new Error('Unsupported Claim redeemer tag: ' + r.tag)
+    }
+    return {
+      redeemer_tag,
+      redeemer_index: r.index,
+      ex_units: { ...perRedeemer },
+    }
+  })
+  claimEvaluationFallbacks.push({
+    txSha256: description.txSha256,
+    reason: 'Yaci Scalus KnownTypeUnliftingError: PubKeyHash/ByteString context representation',
+    source: 'active maxTxExecutionUnits; 45% per spending redeemer, 90% aggregate',
+    protocolExecutionLimits: { memory: maxMemory, steps: maxSteps },
+    assignedPerRedeemer: perRedeemer,
+    redeemers: result.map((r) => ({
+      tag: r.redeemer_tag,
+      index: r.redeemer_index,
+      exUnits: r.ex_units,
+    })),
+    ledgerSubmissionRemainsAuthoritative: true,
+  })
+  console.log(JSON.stringify({
+    claimDiag: 'scalus-context-shape-fallback',
+    txSha256: description.txSha256,
+    protocolExecutionLimits: { memory: maxMemory, steps: maxSteps },
+    assignedPerRedeemer: perRedeemer,
+    redeemerIndexes: result.map((r) => r.redeemer_index),
+    ledgerSubmissionRemainsAuthoritative: true,
+  }))
+  return result
+}
+
 providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
-  const measured = await evaluateYaciTx(cbor, additionalUTxOs)
+  let measured: Awaited<ReturnType<typeof evaluateYaciTx>>
+  try {
+    measured = await evaluateYaciTx(cbor, additionalUTxOs)
+  } catch (error) {
+    if (additionalUTxOs.length === 0 && claimContextShapeMismatch(error)) {
+      return boundedClaimFallbackExUnits(cbor)
+    }
+    throw error
+  }
   const budgeted = measured.map((redeemer) => ({
     ...redeemer,
     ex_units: {
@@ -1099,6 +1193,7 @@ const evidence = {
     ticketNftQuantityAtWallet: ticketQuantity.toString(),
   },
   negativeTwins: negativeResults,
+  evaluatorFallbacks: claimEvaluationFallbacks,
   replay: {
     rejected: replayRejected,
     error: replayError,
@@ -1148,5 +1243,6 @@ console.log(JSON.stringify({
   row2Tier: ROW2_TIER,
   ticketQuantity: ticketQuantity.toString(),
   negativeTwinsRejected: negativeResults.length,
+  evaluatorFallbacks: claimEvaluationFallbacks.length,
   replayRejected,
 }, null, 2))
