@@ -6,10 +6,13 @@ on:
     paths:
       - 'audit/algorithmic-governability/**'
       - 'docs/research/**'
+      - 'Adapter/MIDNIGHT/**'
       - '.github/workflows/workflow-b-boundary-conformance.yml'
   pull_request:
     paths:
       - 'audit/algorithmic-governability/**'
+      - 'docs/research/**'
+      - 'Adapter/MIDNIGHT/**'
       - '.github/workflows/workflow-b-boundary-conformance.yml'
   workflow_dispatch:
 
@@ -94,6 +97,8 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: EXP-07 canonical hysteresis conformance
         run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
+      - name: Midnight TypeScript execution/evidence conformance
+        run: npx vitest run Adapter/MIDNIGHT/ExecutionEvidenceBoundary.test.ts
       - name: Contributor credential separation boundary
         run: node audit/algorithmic-governability/contributor-credential-separation-boundary.mjs
       - name: Contributor Reward NFT anti-capture boundary
