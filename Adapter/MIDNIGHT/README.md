@@ -16,4 +16,4 @@ IMMORTAL IssueIntent
 
 Important: this surface does not define a production economic rule, a new authority path, or a new settlement policy.
 
-Historical source note: the project refers to a language named Miroarty as the origin of the Intent concept, but that source has not yet been recovered or externally verified. Compact is the currently verified Midnight language target.
+Source-grounded note: the historical language is **Moriarty**. The public repository **CharlesHoskinson/Moriarty** describes it as a permissionless language of provable financial intention for Midnight and separates Intent from candidate Plan execution. It is an external research reference here, not an IMMORTAL production dependency. Compact remains the currently verified concrete Midnight smart-contract language target.
