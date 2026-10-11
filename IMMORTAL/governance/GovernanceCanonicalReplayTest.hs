@@ -220,10 +220,12 @@ main = do
                   , eventTimestamp = 100
                   , eventPayload = PayloadStatusChanged 1 Proposed 100
                   , predecessor = Nothing })
-  assert "future ruleset rejected before effective timestamp"
+  assert
     (not (canonicalGovernanceEventValid rulesetV2 Nothing futureRulesetEvent))
-  assert "ruleset accepted at effective timestamp"
+    "future ruleset rejected before effective timestamp"
+  assert
     (canonicalGovernanceEventValid rulesetV2 Nothing activeRulesetEvent)
+    "ruleset accepted at effective timestamp"
 
   let duplicateIdEvent =
         withCommitment (event2 { eventId = eventId event1 })
