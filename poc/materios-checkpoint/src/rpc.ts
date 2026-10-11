@@ -316,13 +316,6 @@ return requireHex(value, `state_call(${method})`);
 
 
 }
-export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
-
-export type ChainBlockJustifications = {
-  readonly blockNumber: string;
-  readonly justifications: string[];
-};
-
 /**
  * Read a GRANDPA justification already attached to an exact block.
  *
@@ -397,6 +390,14 @@ async getGrandpaJustificationAtBlock(
   return grandpa[0] ?? null;
 }
 
+export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
+
+export type ChainBlockJustifications = {
+  readonly blockNumber: string;
+  readonly justifications: string[];
+};
+
+}
 
 export type SubstrateHeader = {
 parentHash: string;
