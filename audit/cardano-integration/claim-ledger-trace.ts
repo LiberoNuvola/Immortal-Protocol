@@ -795,8 +795,10 @@ async function buildClaimTx(variant: ClaimVariant) {
   // matching output, while PrizeValidator sums outputs before valuation and
   // must reject the resulting aggregate overpayment.
   if (variant.extraSettlementOutput) {
-    // 0.1 ADA above min-UTxO has positive economic value when included in the
-    // aggregate claimant Value (which excludes min-UTxO only once).
+    // PrizeValidator first combines claimant outputs with sumValuesToAddress;
+    // totalUsdmValue then subtracts min-UTxO once from the aggregate. Therefore
+    // this second 1.7 ADA output makes the aggregate payout exceed the exact
+    // first output, while B1's per-output check still accepts that first output.
     builder = builder.pay.ToAddress(
       claimantAddress,
       { lovelace: MIN_UTXO_LOVELACE + 100_000n },
