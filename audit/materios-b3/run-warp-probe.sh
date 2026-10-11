@@ -10,6 +10,11 @@ cat >"$WORK/registrations.json" <<'EOF'
 EOF
 export USE_MAIN_CHAIN_FOLLOWER_MOCK=true
 export MAIN_CHAIN_FOLLOWER_MOCK_REGISTRATIONS_FILE="$WORK/registrations.json"
+export MC__FIRST_EPOCH_TIMESTAMP_MILLIS="1596059091000"
+export MC__EPOCH_DURATION_MILLIS="432000000"
+export MC__FIRST_EPOCH_NUMBER="208"
+export MC__FIRST_SLOT_NUMBER="4492800"
+export MC__SLOT_DURATION_MILLIS="1000"
 
 echo "=== BINARY ==="
 "$WORK/bin/materios-node" --version
