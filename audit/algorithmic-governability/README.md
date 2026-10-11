@@ -67,6 +67,11 @@ node audit/algorithmic-governability/exp-03-minimal-asset-eligibility-boundary.m
 node audit/algorithmic-governability/exp-04-profile-composition-boundary.mjs
 node audit/algorithmic-governability/exp-05-contingent-claims-boundary.mjs
 node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
+node audit/algorithmic-governability/exp-08-netting-offset-boundary.mjs
+node audit/algorithmic-governability/exp-09-obligation-transfer-novation-boundary.mjs
+node audit/algorithmic-governability/exp-10-explicit-risk-budget-boundary.mjs
+node audit/algorithmic-governability/exp-11-deterministic-auction-allocation-boundary.mjs
+node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
 npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
 ```
 
