@@ -34,16 +34,16 @@ obligation is genuinely uncovered.
 
 | AG | Requirement | Existing executable evidence | Remaining closure |
 |---|---|---|---|
-| AG-01 | Candidate cannot self-authorize | actor/event matrix + negative role mismatch test | add explicit negative candidate-path vector |
+| AG-01 | Candidate cannot self-authorize | actor/event matrix + negative role mismatch test | candidate-path vector now present; real governance replay remains open |
 | AG-02 | Candidate cannot weaken an invariant | governance gate + state/lifecycle validation surfaces | adversarial invariant weakening vector |
 | AG-03 | Environment is input, not authority | canonical event payload + replay | explicit environment-derived candidate vector |
-| AG-04 | Ruleset identity is bound to decision | ruleset compatibility + commitment checks | independent replay vector with mutated commitment/version |
+| AG-04 | Ruleset identity is bound to decision | ruleset compatibility + commitment checks + mutated commitment/version negative tests | independent second replay artifact remains open |
 | AG-05 | Amendment distinct from operational adaptation | immutable RulesetRegistry + amendment requirement tests | explicit operational-vs-amendment replay trace |
-| AG-06 | Verified candidate becomes canonical only through atomic transition | canonical replay + dedicated lifecycle handlers | full candidate→canonical negative/positive trace |
+| AG-06 | Verified candidate becomes canonical only through atomic transition | canonical replay + lifecycle handlers + direct-adoption/predecessor negative test | full candidate→canonical positive trace remains open |
 | AG-07 | Deterministic replay | canonical replay deterministic test | independent second implementation/replay artifact |
 | AG-08 | Stale/incompatible ruleset rejected | ruleset version/commitment validation | stale-effective-time vector |
 | AG-09 | Application policy cannot silently become universal law | state/profile ownership map | executable profile-boundary mutation test |
-| AG-10 | External authority/provenance explicit | evidenceRefs + authorization + canonical event | provenance-required end-to-end replay vector |
+| AG-10 | External authority/provenance explicit | evidenceRefs + authorization + canonical event + missing-evidence negative test | end-to-end provenance replay remains open |
 
 ## Immediate executable delta
 
@@ -106,3 +106,23 @@ AG-01 can move from OPEN only when:
 are all present for AG-01..AG-10, with no result-dependent self-promotion path.
 
 Current status: **OPEN / executable negative evidence advancing**.
+
+
+## 2026-10-11 — executable negative matrix status
+
+The dedicated AG01GovernabilityConformanceTest.hs now exercises the currently
+recoverable negative vectors without introducing new governance rules:
+
+- self-authorization / actor-class mismatch;
+- mutated ruleset commitment;
+- unregistered ruleset version;
+- predecessor mismatch;
+- operational lifecycle event attempting a collapsed canonical transition;
+- retagged event/payload mismatch;
+- missing evidence;
+- direct adoption bypassing its required predecessor.
+
+These vectors establish **bounded executable evidence** for the existing authority
+boundary. They do not close AG-01..AG-10 as a constitutional/conformance whole.
+
+**Current status: executable negative matrix PRESENT; full AG-01 closure OPEN.**
