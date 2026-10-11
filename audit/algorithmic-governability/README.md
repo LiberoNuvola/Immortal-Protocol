@@ -80,7 +80,10 @@ The lab intentionally gives two monitors identical observations but different de
 
 ## Run
 
+Workflow B also contains a self-check that every `.mjs` harness in this directory is registered exactly once in the workflow.
+
 ```bash
+node audit/algorithmic-governability/workflow-b-harness-coverage-boundary.mjs
 node audit/algorithmic-governability/no-result-dependent-authority.mjs
 node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
 node audit/algorithmic-governability/exp-01-seniority-order-boundary.mjs
