@@ -14,7 +14,8 @@ diff --git a/partnerchain/node/src/rpc.rs b/partnerchain/node/src/rpc.rs
 @@
  use std::sync::Arc;
  
--use jsonrpsee::RpcModule;
++use codec::Encode;
++use jsonrpsee::RpcModule;
 +use jsonrpsee::{types::ErrorObjectOwned, RpcModule};
  use materios_runtime::{opaque::Block, AccountId, Nonce};
 +use sc_client_api::ProofProvider;
