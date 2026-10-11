@@ -13,7 +13,7 @@ import PlutusLedgerApi.V1.Scripts (Datum (..))
 import PlutusLedgerApi.V1.Tx (TxId (..), TxOutRef (..))
 import PlutusLedgerApi.V1.Time (POSIXTime (..))
 import PlutusLedgerApi.V1.Interval (interval)
-import PlutusLedgerApi.V1.Value (CurrencySymbol (..), TokenName (..), singleton)
+import PlutusLedgerApi.V1.Value (CurrencySymbol (..), TokenName (..), adaSymbol, adaToken, singleton)
 import PlutusLedgerApi.V2.Contexts (TxInInfo (..), TxInfo (..))
 import PlutusLedgerApi.V2.Tx (OutputDatum (..), TxOut (..))
 import PlutusTx (toBuiltinData)
@@ -23,6 +23,7 @@ import PlutusTx.Prelude (BuiltinByteString)
 
 import Economic
   ( oraclePriceFor
+  , poolUsdmValue
   )
 
 import OracleTypes
@@ -39,7 +40,8 @@ data Case = Case
 main :: IO ()
 main = do
   outcomes <- traverse runCase cases
-  if and outcomes then pure () else exitFailure
+  poolOutcome <- runPoolSingletonZeroCase
+  if and outcomes && poolOutcome then pure () else exitFailure
 
 runCase :: Case -> IO Bool
 runCase testCase = do
@@ -66,6 +68,49 @@ runCase testCase = do
           (transactionInfo (caseReferences testCase))
           assetPolicy
           assetName)
+
+-- Regression for poolUsdmValue's singleton subtraction. The raw Plutus
+-- Value map may retain POOL=0 after subtracting the singleton. That zero entry
+-- must not require an oracle price; only the non-zero ADA balance is valued.
+runPoolSingletonZeroCase :: IO Bool
+runPoolSingletonZeroCase = do
+  result <- try evaluatePoolValue :: IO (Either SomeException Integer)
+  let passed =
+        case result of
+          Right actual -> actual == 3_400_000
+          Left _ -> False
+  putStrLn (prefix passed <> "pool singleton subtraction skips zero-quantity oracle lookup")
+  pure passed
+  where
+    poolPolicy = bytes "pool-policy"
+    poolName = bytes "pool-token"
+    oracleReferences =
+      [ referenceInput 0
+          (oracleOutputForAsset
+            1
+            statePolicy
+            stateName
+            (bytes "")
+            (bytes "")
+            authorizedPublisher
+            now
+            price)
+      ]
+    poolValue =
+      singleton adaSymbol adaToken 5_000_000
+        <> singleton
+             (CurrencySymbol poolPolicy)
+             (TokenName poolName)
+             1
+    evaluatePoolValue =
+      evaluate
+        (poolUsdmValue
+          (transactionInfo oracleReferences)
+          oracleState
+          authorizedPublisher
+          poolPolicy
+          poolName
+          poolValue)
 
 prefix :: Bool -> String
 prefix passed = if passed then "PASS " else "FAIL "
