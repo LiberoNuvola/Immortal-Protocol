@@ -204,7 +204,7 @@ jobs:
       - name: Run PrizeValidator row-tier immutability guard
         run: npx tsx src/__tests__/prize-validator-row-tier-immutability.test.ts
       - name: Run Claim settlement-address binding guard
-        run: npx tsx src/__tests__/claim-settlement-address.test.ts
+        run: npx vitest run src/__tests__/claim-settlement-address.test.ts
 
       - name: Run predeploy structural gate
         run: npm run test:predeploy
