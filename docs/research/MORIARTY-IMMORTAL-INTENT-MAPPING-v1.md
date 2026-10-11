@@ -57,19 +57,17 @@ It is therefore an **application-level transition request**, not a full Moriarty
 
 ## 5. Important non-equivalences
 
-The current IMMORTAL `IssueIntent` does **not** carry the richer Moriarty semantics described by MIL/1, including:
+The current IMMORTAL `IssueIntent` does **not** carry the richer Moriarty semantics described by MIL/1 and the signed-intent protocol, including nested intent fields such as:
 
-- domain-qualified clocks and validity windows;
-- structured asset identity and representation;
-- gross debit / fee / net outcome bounds;
-- observations and trust classes;
-- authorities, budgets and revocation;
-- replay identity and nonce/head controls;
-- complete effects;
-- persistent duties / liabilities;
-- recovery and partial-completion semantics;
-- canonical encoding and authenticated intent digest;
-- declared residue.
+- `version`, `advertisedSourceHash`, `advertisedPolicyDigest`;
+- `signer`, `nonce`, `preHead`;
+- `notBefore`, `notAfter`;
+- `grossCap`, `feeCap`, `netFloor`;
+- `failure`, `observations`, `disclosures`;
+- `retainedEffects`, `retainedDuties`, `delegation`, `recovery`, `operation`;
+- the surrounding authentication surface: `profile`, `core`, `sourceProfile`, `authoringProfile`, `agreementId`, `actionName`, `selectedActionId`, `sourceSha256`, `ownerProgramSha256`, `domain`, `asset`, `signature`.
+
+These exact fields are now treated as source-grounded mapping residue rather than reconstructed shorthand such as `validity` or `canonicalDigest`.
 
 These are not missing implementation bugs to patch into `IssueIntent` automatically. They are a **mapping/research boundary**. Some are application/profile concerns, some belong to a future universal Intent contract, and some are execution/proof obligations.
 
