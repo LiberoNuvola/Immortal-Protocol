@@ -97,6 +97,40 @@ jobs:
         working-directory: poc/materios-grandpa
         run: npm run typecheck
 
+      - name: Compare public Materios RPC justification retention
+        env:
+          MATERIOS_RPC_PRIMARY: https://materios.fluxpointstudios.com/rpc
+          MATERIOS_RPC_LEGACY: https://materios.fluxpointstudios.com/preprod-rpc
+        run: |
+          node <<'NODE'
+          const urls = [process.env.MATERIOS_RPC_PRIMARY, process.env.MATERIOS_RPC_LEGACY];
+          async function rpc(url, method, params=[]) {
+            const r = await fetch(url, {
+              method: 'POST',
+              headers: {'content-type':'application/json'},
+              body: JSON.stringify({jsonrpc:'2.0',id:1,method,params}),
+            });
+            const b = await r.json();
+            if (b.error) throw new Error(String(b.error.code) + ' ' + String(b.error.message));
+            return b.result;
+          }
+          for (const url of urls) {
+            try {
+              const tip = await rpc(url, 'chain_getFinalizedHead');
+              const block = await rpc(url, 'chain_getBlock', [tip]);
+              const js = block && block.justifications;
+              console.log(JSON.stringify({
+                url,
+                finalizedHead: tip,
+                justificationsKind: js === null ? 'null' : Array.isArray(js) ? 'array' : typeof js,
+                justificationCount: Array.isArray(js) ? js.length : null,
+                engines: Array.isArray(js) ? js.map(x => x && x[0]) : null
+              }));
+            } catch (e) {
+              console.log(JSON.stringify({url,error:String(e)}));
+            }
+          }
+          NODE
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
         run: npx tsx src/capture-real-witness.ts
