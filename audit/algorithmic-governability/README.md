@@ -48,6 +48,9 @@ These expansions are not a second governance system and do not create new econom
 | Treasury → reward accounting | certified budget ≤ observed available revenue | normative reward-budget semantics and source classification |
 | Multi-adapter semantics | same certified semantic result across encodings | real adapter differential evidence on concrete actions |
 | Permissionless liveness | safe stall, stale-state rejection, single transition | action-specific real liveness witnesses |
+| B3-A witness packet | checkpoint/transition/execution/selection bindings | real cryptographic witness + independent finality/authority verification |
+| B3-C RootProof | checkpoint/stateRoot/storage/semantic bindings | real storage proof + complete B3-A/B relation |
+| B5/B6 action evidence | Issue/Reveal/Claim/Expire packet completeness | real ledger-aligned action equivalence |
 | Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
 | Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
 
