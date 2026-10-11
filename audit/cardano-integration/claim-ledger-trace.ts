@@ -599,8 +599,10 @@ const bootstrap = await lucid
     address,
     { lovelace: 2_000_000n, [ticketUnit]: 1n },
   )
+  // Keep the Oracle reference input outside the spending wallet address,
+  // so Lucid coin selection cannot select it as a normal funding input.
   .pay.ToAddressWithData(
-    address,
+    referenceAddress,
     { kind: 'inline', value: Data.to(oracleDatum) },
     { lovelace: 2_000_000n, [oracleStateUnit]: 1n },
   )
@@ -631,7 +633,8 @@ const walletUtxos = await lucid.utxosAt(address)
 const ticketUtxo = walletUtxos.find((u) =>
   u.txHash === bootstrapHash && u.assets[ticketUnit] === 1n,
 )
-const oracleUtxo = walletUtxos.find((u) =>
+const oracleReferenceUtxos = await lucid.utxosAt(referenceAddress)
+const oracleUtxo = oracleReferenceUtxos.find((u) =>
   u.txHash === bootstrapHash && u.assets[oracleStateUnit] === 1n,
 )
 const prizeUtxo = prizeUtxos.find((u) =>
@@ -789,9 +792,12 @@ async function buildClaimTx(variant: ClaimVariant) {
   // the first settlement output exact. B1's per-output check passes its first
   // matching output, while PrizeValidator's aggregate equality must reject it.
   if (variant.extraSettlementOutput) {
+    // Each ADA output has its own min-UTxO deduction in totalUsdmValue.
+    // A bare min-UTxO output has zero economic value, so add 0.1 ADA above
+    // the minimum to make the aggregate valuation strictly exceed the payout.
     builder = builder.pay.ToAddress(
       claimantAddress,
-      { lovelace: MIN_UTXO_LOVELACE },
+      { lovelace: MIN_UTXO_LOVELACE + 100_000n },
     ) as any
   }
 
