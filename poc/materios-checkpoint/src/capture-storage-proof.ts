@@ -301,17 +301,27 @@ async function getCertification(
       const certHash = body.cert_hash;
       const signers = body.signer_count;
 
+      if (typeof block !== "number" || !Number.isSafeInteger(block) || block < 0) {
+        throw new Error("indexer certified_at_block is invalid");
+      }
       if (
-        !Number.isSafeInteger(block) ||
-        block < 0 ||
         typeof hash !== "string" ||
-        !/^0x[0-9a-fA-F]{64}$/.test(hash) ||
+        !/^0x[0-9a-fA-F]{64}$/.test(hash)
+      ) {
+        throw new Error("indexer certified_at_hash is invalid");
+      }
+      if (
         typeof certHash !== "string" ||
-        !/^0x[0-9a-fA-F]+$/.test(certHash) ||
+        !/^0x[0-9a-fA-F]+$/.test(certHash)
+      ) {
+        throw new Error("indexer cert_hash is invalid");
+      }
+      if (
+        typeof signers !== "number" ||
         !Number.isSafeInteger(signers) ||
         signers < 0
       ) {
-        throw new Error("indexer returned malformed certification");
+        throw new Error("indexer signer_count is invalid");
       }
 
       return { block, hash, certHash, signers };
