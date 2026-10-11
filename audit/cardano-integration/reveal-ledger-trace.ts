@@ -364,6 +364,18 @@ console.log(JSON.stringify({
 lucid.selectWallet.fromSeed(SEED)
 
 const address = await lucid.wallet().address()
+
+// Keep reference-script UTxOs outside the spending wallet's coin-selection
+// address. Otherwise they can be selected as funding inputs while also being
+// supplied to readFrom(), invalidating the intended reference-script binding.
+const referenceLucid = await Lucid(providerWithEvaluation, 'Preprod', {
+  slotConfig: devnetSlotConfig,
+})
+referenceLucid.selectWallet.fromSeed(SEED, { accountIndex: 1 })
+const referenceAddress = await referenceLucid.wallet().address()
+if (referenceAddress === address) {
+  throw new Error('reference-script receiver must be isolated from the spending wallet')
+}
 const details = getAddressDetails(address)
 const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
@@ -623,7 +635,7 @@ const preStateFingerprint = hashJson({
 // Publish the two validator scripts as reference-script UTxOs before building Reveal.
 const prizeReferenceTx = await lucid
   .newTx()
-  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
+  .pay.ToAddressWithData(referenceAddress, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
   .complete({ localUPLCEval: false })
 const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const prizeReferenceHash = await prizeReferenceSigned.submit()
@@ -631,13 +643,13 @@ await lucid.awaitTx(prizeReferenceHash)
 
 const poolReferenceTx = await lucid
   .newTx()
-  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
+  .pay.ToAddressWithData(referenceAddress, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool)
   .complete({ localUPLCEval: false })
 const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete({ localUPLCEval: false })
 const poolReferenceHash = await poolReferenceSigned.submit()
 await lucid.awaitTx(poolReferenceHash)
 
-const referenceUtxos = await lucid.utxosAt(address)
+const referenceUtxos = await lucid.utxosAt(referenceAddress)
 const prizeReferenceUtxo = referenceUtxos.find((u) => u.txHash === prizeReferenceHash)
 const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceHash)
 if (!prizeReferenceUtxo || !poolReferenceUtxo) {
