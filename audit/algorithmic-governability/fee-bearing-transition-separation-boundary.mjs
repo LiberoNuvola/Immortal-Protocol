@@ -7,6 +7,7 @@ const assert = (condition, message) => {
 
 const candidate = Object.freeze({
   action: 'A',
+  canonicalTransitionId: 'transition-1',
   economicStateHash: 'state-1',
   economicFeeTarget: 'target-opaque',
   settlementAmount: 'amount-opaque',
@@ -36,6 +37,7 @@ assert(
 
 const commit = (transition) => {
   if (transition.safe !== true) return 'REJECTED'
+  if (!transition.canonicalTransitionId) return 'REJECTED'
   if (transition.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
   if (transition.conversionStatus !== 'VALID') return 'REJECTED'
   return 'COMMITTED'
@@ -93,15 +95,16 @@ assert(
 
 const feeOnlyCommit = Object.freeze({
   ...candidate,
+  canonicalTransitionId: '',
   action: 'NO_CANONICAL_TRANSITION',
 })
 assert(
-  commit(feeOnlyCommit) === 'COMMITTED',
-  'fee validity alone is not treated as a canonical transition witness',
+  commit(feeOnlyCommit) === 'REJECTED',
+  'fee validity alone cannot be treated as a canonical transition witness',
 )
 assert(
-  feeOnlyCommit.action === 'NO_CANONICAL_TRANSITION',
-  'the conformance boundary keeps fee observation distinct from the application transition identity',
+  feeOnlyCommit.canonicalTransitionId === '',
+  'the conformance boundary requires an independent canonical transition identity',
 )
 
 console.log('ALL FEE-BEARING TRANSITION SEPARATION CHECKS PASSED')
