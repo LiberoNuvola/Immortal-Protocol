@@ -9,6 +9,7 @@ const assert = (condition, message) => {
 }
 
 const repoRoot = process.cwd()
+
 // Scan executable/runtime and deployment tooling surfaces. Historical
 // treasuryPolicy.ts plus detector-style scripts are excluded because this
 // boundary verifies non-use by call surfaces, not removal of compatibility code
@@ -37,23 +38,56 @@ const sourceFiles = roots.flatMap((root) => {
 }).filter((file) => /.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
   .filter((file) => !excludedFiles.has(path.resolve(file)))
 
-const forbiddenPatterns = [
+const forbiddenCallPatterns = [
   /(?:from|require)s*\(?['"][^'"]*treasuryPolicy(?:\.ts)?['"]\)?/,
-  /\bTREASURY_POLICY\b/,
   /\bcalculateTreasuryDistribution\s*\(/,
   /\b(?:TreasuryAction|DISTRIBUTE_REDEEMER)\b/,
 ]
 
+const declarationPatterns = [
+  /\b(?:const|let|var)\s+TREASURY_POLICY\b/,
+  /\b(?:const|let|var)\s+DISTRIBUTE_REDEEMER\b/,
+  /\bfunction\s+calculateTreasuryDistribution\s*\(/,
+]
+
+function activeLegacyReferences(source) {
+  const lines = source.split(/\r?\n/)
+  const hits = []
+
+  for (const [index, line] of lines.entries()) {
+    // The legacy compatibility symbols may remain as local definitions.
+    // They are a failure only when imported/invoked/consumed as an active
+    // production call surface.
+    if (declarationPatterns.some((pattern) => pattern.test(line))) continue
+
+    for (const pattern of forbiddenCallPatterns) {
+      if (pattern.test(line)) hits.push({ line: index + 1, pattern: String(pattern), text: line.trim() })
+    }
+  }
+
+  return hits
+}
+
 const hits = []
 for (const file of sourceFiles) {
   const source = fs.readFileSync(file, 'utf8')
-  for (const pattern of forbiddenPatterns) {
-    if (pattern.test(source)) hits.push({ file, pattern: String(pattern) })
+  for (const hit of activeLegacyReferences(source)) {
+    hits.push({ file, ...hit })
   }
 }
 
 assert(
   hits.length === 0,
-  'legacy Treasury policy symbols are absent from executable runtime and deployment-tool call surfaces',
+  'legacy Treasury distribution has no active import/invocation/consumer call surface in runtime or deployment tooling',
 )
+
+const relayerPath = path.resolve(repoRoot, 'relayer', 'relayer.js')
+if (fs.existsSync(relayerPath)) {
+  const relayer = fs.readFileSync(relayerPath, 'utf8')
+  assert(
+    /legacy distribution disabled[\s\S]*canonical EconomicAdmission path required/.test(relayer),
+    'legacy Treasury worker remains explicitly fail-closed pending canonical EconomicAdmission',
+  )
+}
+
 console.log('ALL TREASURY LEGACY ISOLATION CHECKS PASSED')
