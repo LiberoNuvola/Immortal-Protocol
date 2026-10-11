@@ -185,7 +185,7 @@ function extractGrandpaJustification(
     throw new Error("multiple GRANDPA justifications on one block");
   }
 
-  return matches.length === 1 ? matches[0][1].toLowerCase() : null;
+  return matches.length === 1 ? matches[0]![1].toLowerCase() : null;
 }
 
 function extractSelectionInputsHash(
@@ -269,6 +269,9 @@ function decodeAuthorityList(hex: string): {
     }
 
     const first = bytes[offset];
+    if (first === undefined) {
+      throw new Error("authority list: compact EOF");
+    }
     const mode = first & 3;
 
     if (mode === 0) {
@@ -281,8 +284,8 @@ function decodeAuthorityList(hex: string): {
         throw new Error("authority list: compact EOF");
       }
       const value =
-        (BigInt(bytes[offset]) |
-          (BigInt(bytes[offset + 1]) << 8n)) >>
+        (BigInt(bytes[offset]!) |
+          (BigInt(bytes[offset + 1]!) << 8n)) >>
         2n;
       offset += 2;
       return value;
@@ -293,10 +296,10 @@ function decodeAuthorityList(hex: string): {
         throw new Error("authority list: compact EOF");
       }
       const value =
-        (BigInt(bytes[offset]) |
-          (BigInt(bytes[offset + 1]) << 8n) |
-          (BigInt(bytes[offset + 2]) << 16n) |
-          (BigInt(bytes[offset + 3]) << 24n)) >>
+        (BigInt(bytes[offset]!) |
+          (BigInt(bytes[offset + 1]!) << 8n) |
+          (BigInt(bytes[offset + 2]!) << 16n) |
+          (BigInt(bytes[offset + 3]!) << 24n)) >>
         2n;
       offset += 4;
       return value;
@@ -310,7 +313,7 @@ function decodeAuthorityList(hex: string): {
     let value = 0n;
     for (let i = 0; i < byteLength; i += 1) {
       value |=
-        BigInt(bytes[offset + 1 + i]) <<
+        BigInt(bytes[offset + 1 + i]!) <<
         BigInt(8 * i);
     }
     offset += 1 + byteLength;
@@ -334,7 +337,7 @@ function decodeAuthorityList(hex: string): {
 
     let weight = 0n;
     for (let j = 0; j < 8; j += 1) {
-      weight |= BigInt(bytes[offset + j]) << BigInt(8 * j);
+      weight |= BigInt(bytes[offset + j]!) << BigInt(8 * j);
     }
     offset += 8;
 
@@ -359,7 +362,7 @@ function decodeSetId(hex: string): bigint {
 
   let value = 0n;
   for (let i = 0; i < 8; i += 1) {
-    value |= BigInt(bytes[i]) << BigInt(8 * i);
+    value |= BigInt(bytes[i]!) << BigInt(8 * i);
   }
   return value;
 }
