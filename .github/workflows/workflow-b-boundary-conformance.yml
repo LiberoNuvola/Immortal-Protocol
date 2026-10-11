@@ -1,0 +1,36 @@
+name: Workflow B Boundary Conformance
+
+on:
+  push:
+    branches: [work/b3-materios-provenance-evidence]
+    paths:
+      - 'audit/algorithmic-governability/**'
+      - 'docs/research/**'
+      - '.github/workflows/workflow-b-boundary-conformance.yml'
+  pull_request:
+    paths:
+      - 'audit/algorithmic-governability/**'
+      - '.github/workflows/workflow-b-boundary-conformance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boundary-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generalized derivation boundary
+        run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
+      - name: Contributor reward boundary
+        run: node audit/algorithmic-governability/reward-contributor-boundary.mjs
+      - name: Treasury and reward accounting boundary
+        run: node audit/algorithmic-governability/reward-treasury-boundary.mjs
+      - name: Multi-adapter semantic boundary
+        run: node audit/algorithmic-governability/multi-adapter-semantic-boundary.mjs
+      - name: Permissionless liveness and replay boundary
+        run: node audit/algorithmic-governability/permissionless-liveness-boundary.mjs
