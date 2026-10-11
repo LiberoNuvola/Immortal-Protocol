@@ -118,6 +118,8 @@ async function main(): Promise<void> {
   let grandpaFinalityProof: {
     status: "captured" | "unavailable";
     proof_hex: string | null;
+    source?: "grandpa_proveFinality" | "chain_getBlock";
+    format?: "FinalityProof" | "GrandpaJustification";
     error?: string;
   } = {
     status: "unavailable",
@@ -126,23 +128,56 @@ async function main(): Promise<void> {
 
   try {
     const proof = await rpc.getGrandpaFinalityProof(Number(blockNumber));
-    if (proof === null) {
-      grandpaFinalityProof = {
-        status: "unavailable",
-        proof_hex: null,
-      };
-    } else {
+    if (proof !== null) {
       grandpaFinalityProof = {
         status: "captured",
         proof_hex: proof,
+        source: "grandpa_proveFinality",
+        format: "FinalityProof",
       };
+    } else {
+      const justification =
+        await rpc.getGrandpaJustificationAtBlock(finalizedHash);
+      if (justification !== null) {
+        grandpaFinalityProof = {
+          status: "captured",
+          proof_hex: justification,
+          source: "chain_getBlock",
+          format: "GrandpaJustification",
+        };
+      }
     }
   } catch (error) {
-    grandpaFinalityProof = {
-      status: "unavailable",
-      proof_hex: null,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    try {
+      const justification =
+        await rpc.getGrandpaJustificationAtBlock(finalizedHash);
+      if (justification !== null) {
+        grandpaFinalityProof = {
+          status: "captured",
+          proof_hex: justification,
+          source: "chain_getBlock",
+          format: "GrandpaJustification",
+          error: error instanceof Error ? error.message : String(error),
+        };
+      } else {
+        grandpaFinalityProof = {
+          status: "unavailable",
+          proof_hex: null,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    } catch (fallbackError) {
+      grandpaFinalityProof = {
+        status: "unavailable",
+        proof_hex: null,
+        error:
+          (error instanceof Error ? error.message : String(error)) +
+          "; chain_getBlock fallback: " +
+          (fallbackError instanceof Error
+            ? fallbackError.message
+            : String(fallbackError)),
+      };
+    }
   }
 
   const packet = {
@@ -188,7 +223,7 @@ async function main(): Promise<void> {
           : []),
         "GRANDPA authority list read at the exact finalized hash",
         "GRANDPA set id read at the exact finalized hash",
-        "standard grandpa_proveFinality transport queried for the finalized block number; raw bytes are untrusted evidence",
+        "standard GRANDPA finality evidence queried from the exact checkpoint; raw bytes are untrusted evidence",
         ...(selectionInputsCommitment !== null
           ? ["SessionCommitteeManagement::set selection commitment extracted from this block"]
           : []),
