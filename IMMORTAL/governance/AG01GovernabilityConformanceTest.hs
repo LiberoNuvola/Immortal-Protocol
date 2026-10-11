@@ -66,4 +66,21 @@ main = do
     (not (eventSchemaValid
       (valid { eventType = EStatusChanged })))
 
+
+  assert "AG-10 missing evidence is rejected"
+    (not (canonicalGovernanceEventValid rules Nothing
+      (valid { evidenceRefs = [] })))
+
+  let directAdoption =
+        committed
+          (CanonicalEvent "ag-evt-adopt" 1 1 EAdoptionRecorded System 1
+            (PayloadAdoptionRecorded 1 1) "" (Just "ag-evt-1")
+            [EvidenceRef "ag-e4"] AcceptedEvent)
+
+  assert "AG-06 adoption cannot bypass its required predecessor state"
+    (case replayCanonical rules emptyState [valid, directAdoption] of
+       Left _ -> True
+       Right _ -> False)
+
+
   putStrLn "AG-01 EXECUTABLE GOVERNABILITY NEGATIVE MATRIX PASSED"
