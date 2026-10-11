@@ -197,6 +197,8 @@ jobs:
         run: npx tsx src/__tests__/b1-invariants.test.ts
       - name: Run economic admission provenance negative twins
         run: npx tsx src/__tests__/economic-admission-input-binding.test.ts
+      - name: Run PrizeValidator row-tier immutability guard
+        run: npx tsx src/__tests__/prize-validator-row-tier-immutability.test.ts
 
       - name: Run predeploy structural gate
         run: npm run test:predeploy
