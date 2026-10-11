@@ -383,6 +383,87 @@ export async function collectCommitteeExecutionEvidence(
   return { blockHash, header, runtimeCodeHex, execution }
 }
 
+export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
+
+export type ChainBlockJustifications = {
+  readonly blockNumber: string;
+  readonly justifications: string[];
+};
+
+/**
+ * Read a GRANDPA justification already attached to an exact block.
+ *
+ * This uses standard Substrate chain_getBlock rather than any Materios-specific
+ * RPC. The node may return null when that block has no stored justification.
+ * Only the GRANDPA engine (FRNK) is accepted, and multiple GRANDPA entries are
+ * rejected rather than guessed.
+ */
+async getGrandpaJustificationAtBlock(
+  at: string,
+): Promise<string | null> {
+  const hash = requireHash(at, "chain_getBlock block hash");
+  const value = await this.call<unknown>("chain_getBlock", [hash]);
+
+  if (typeof value !== "object" || value === null) {
+    throw new Error("chain_getBlock: invalid signed block object");
+  }
+
+  const root = value as Record<string, unknown>;
+  const block = root.block;
+  if (typeof block !== "object" || block === null) {
+    throw new Error("chain_getBlock: missing block payload");
+  }
+
+  const header = (block as Record<string, unknown>).header;
+  if (typeof header !== "object" || header === null) {
+    throw new Error("chain_getBlock: missing block header");
+  }
+
+  const blockNumber = (header as Record<string, unknown>).number;
+  if (typeof blockNumber !== "string" || !/^0x[0-9a-fA-F]+$/.test(blockNumber)) {
+    throw new Error("chain_getBlock: invalid block number");
+  }
+
+  const raw = root.justifications;
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+
+  if (!Array.isArray(raw)) {
+    throw new Error("chain_getBlock: justifications must be an array or null");
+  }
+
+  const grandpa: string[] = [];
+
+  for (let i = 0; i < raw.length; i += 1) {
+    const entry = raw[i];
+    if (!Array.isArray(entry) || entry.length !== 2) {
+      throw new Error(`chain_getBlock: invalid justification entry[${i}]`);
+    }
+
+    const engineId = entry[0];
+    const justification = entry[1];
+
+    if (typeof engineId !== "string" || !/^0x[0-9a-fA-F]{8}$/.test(engineId)) {
+      throw new Error(`chain_getBlock: invalid justification engine id[${i}]`);
+    }
+
+    if (typeof justification !== "string" || !/^0x[0-9a-fA-F]+$/.test(justification)) {
+      throw new Error(`chain_getBlock: invalid justification bytes[${i}]`);
+    }
+
+    if (engineId.toLowerCase() === GRANDPA_ENGINE_ID_HEX) {
+      grandpa.push(justification);
+    }
+  }
+
+  if (grandpa.length > 1) {
+    throw new Error("chain_getBlock: multiple GRANDPA justifications");
+  }
+
+  return grandpa[0] ?? null;
+}
+
 export type StorageReadProofResponse = {
   at: string;
   proof: string[];
