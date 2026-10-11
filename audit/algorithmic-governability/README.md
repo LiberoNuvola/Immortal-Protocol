@@ -51,7 +51,7 @@ These expansions are not a second governance system and do not create new econom
 | B3-A witness packet | checkpoint/transition/execution/selection bindings | real cryptographic witness + independent finality/authority verification |
 | B3-C RootProof | checkpoint/stateRoot/storage/semantic bindings | real storage proof + complete B3-A/B relation |
 | B5/B6 action evidence | Issue/Reveal/Claim/Expire packet completeness | real ledger-aligned action equivalence |
-| Midnight adapter | Intent → chain-neutral admission → Midnight execution boundary | real Midnight deployment and admission binding |
+| Midnight/Moriarty adapter research | Intent → chain-neutral admission → Moriarty semantic mapping → Midnight execution | real Midnight deployment, proof/evidence binding and admission correspondence |
 | Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
 | Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
 
@@ -94,6 +94,8 @@ node audit/algorithmic-governability/exp-09-obligation-transfer-novation-boundar
 node audit/algorithmic-governability/exp-10-explicit-risk-budget-boundary.mjs
 node audit/algorithmic-governability/exp-11-deterministic-auction-allocation-boundary.mjs
 node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
+node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
+node audit/algorithmic-governability/moriarty-intent-semantic-boundary.mjs
 npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
 ```
 
