@@ -189,7 +189,9 @@ The existing verifier's current trust boundary still requires a verified authori
 - IMMORTAL transport client: **IMPLEMENTED**
 - Upstream Materios node exposing standard GRANDPA RPC: **NOT PRESENT IN CURRENT `main` RPC ASSEMBLY**
 - Upstream RPC patch: **DEFINED / NOT APPLIED**
-- Independent GRANDPA decode/verification: **IN PROGRESS**
+- Independent GRANDPA SCALE decoding: **IMPLEMENTED**
+- Independent GRANDPA signature/quorum/ancestry verification: **IMPLEMENTED against authenticated authority state**
+- Standard outer FinalityProof decoding + checkpoint bridge verification: **IMPLEMENTED**
 - Canonical authority-set provenance: **OPEN**
 - Real finalized Materios proof fixture: **OPEN**
 
