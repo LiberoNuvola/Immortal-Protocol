@@ -458,6 +458,61 @@ if (!walletUtxos.some((u) => u.assets[ticketUnit] === 1n)) {
 const prizeUtxo = prizeUtxos.find((u) => u.assets.lovelace === 3_000_000n) as UTxO
 const poolUtxo = poolUtxos.find((u) => u.assets[poolUnit] === 1n) as UTxO
 
+// EXPIRE must use the same reference-script architecture as the canonical
+// Reveal path. Attaching both parameterized validators inline creates a
+// 26,189-byte transaction and violates Cardano's observed 16,384-byte limit.
+const prizeReferenceTx = await lucid
+  .newTx()
+  .pay.ToAddressWithData(
+    address,
+    undefined,
+    { lovelace: 2_000_000n },
+    scripts.prizeValidator as Script,
+  )
+  .complete({ localUPLCEval: false })
+const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
+const prizeReferenceHash = await prizeReferenceSigned.submit()
+await lucid.awaitTx(prizeReferenceHash)
+
+const poolReferenceTx = await lucid
+  .newTx()
+  .pay.ToAddressWithData(
+    address,
+    undefined,
+    { lovelace: 2_000_000n },
+    scripts.b1PrizePool as Script,
+  )
+  .complete({ localUPLCEval: false })
+const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
+const poolReferenceHash = await poolReferenceSigned.submit()
+await lucid.awaitTx(poolReferenceHash)
+
+const referenceUtxos = await lucid.utxosAt(address)
+const prizeReferenceUtxo = referenceUtxos.find((u) => u.txHash === prizeReferenceHash)
+const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceHash)
+if (!prizeReferenceUtxo || !poolReferenceUtxo) {
+  throw new Error('EXPIRE reference-script UTxOs were not materialized on Yaci')
+}
+
+// Preserve the exact ledger output references while repairing only a missing
+// provider-decoded scriptRef property, as in the existing Reveal trace.
+const prizeReferenceInput = {
+  ...prizeReferenceUtxo,
+  scriptRef: prizeReferenceUtxo.scriptRef ?? scripts.prizeValidator,
+}
+const poolReferenceInput = {
+  ...poolReferenceUtxo,
+  scriptRef: poolReferenceUtxo.scriptRef ?? scripts.b1PrizePool,
+}
+if (
+  validatorToScriptHash(prizeReferenceInput.scriptRef as Script) !==
+    validatorToScriptHash(scripts.prizeValidator as Script) ||
+  validatorToScriptHash(poolReferenceInput.scriptRef as Script) !==
+    validatorToScriptHash(scripts.b1PrizePool as Script)
+) {
+  throw new Error('EXPIRE reference-script hash mismatch')
+}
+
 const nonLovelacePrizeAssets = Object.entries(prizeUtxo.assets).filter(
   ([unit, quantity]) => unit !== 'lovelace' && quantity !== 0n,
 )
@@ -482,10 +537,9 @@ console.log(JSON.stringify({
 }))
 const expireTx = await lucid
   .newTx()
+  .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(3)))
-  .attach.SpendingValidator(scripts.prizeValidator as Script)
   .collectFrom([poolUtxo], Data.to(c(4)))
-  .attach.SpendingValidator(scripts.b1PrizePool as Script)
   .pay.ToAddress(address, {
     lovelace: prizeUtxo.assets.lovelace ?? 0n,
   })
