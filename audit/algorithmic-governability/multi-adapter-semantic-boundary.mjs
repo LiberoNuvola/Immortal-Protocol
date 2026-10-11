@@ -25,14 +25,14 @@ const cardanoAdapter = (x) => Object.freeze({
   ruleVersion: x.ruleVersion,
 })
 
-const otherAdapter = (x) => Object.freeze({
-  chain: 'adapter-b',
+const moriartyAdapter = (x) => Object.freeze({
+  chain: 'midnight-moriarty',
   payload: { amount: x.semanticResult.amount, unit: x.semanticResult.unit },
   ruleVersion: x.ruleVersion,
 })
 
 const a = cardanoAdapter(certifiedResult)
-const b = otherAdapter(certifiedResult)
+const b = moriartyAdapter(certifiedResult)
 
 assert(a.ruleVersion === b.ruleVersion, 'adapters preserve universal rule identity')
 assert(a.payload.amount === b.payload.amount, 'adapters preserve the same certified semantic amount')
@@ -57,10 +57,10 @@ const verifySemanticEquivalence = (adapter, expected) => {
 }
 
 assert(verifySemanticEquivalence(a, certifiedResult), 'Cardano adapter preserves the universal semantic result')
-assert(verifySemanticEquivalence(b, certifiedResult), 'adapter-b preserves the universal semantic result')
+assert(verifySemanticEquivalence(b, certifiedResult), 'Midnight/Moriarty adapter preserves the universal semantic result')
 
 const tampered = Object.freeze({
-  ...otherAdapter(certifiedResult),
+  ...moriartyAdapter(certifiedResult),
   payload: { amount: 8n, unit: 'U' },
 })
 assert(!verifySemanticEquivalence(tampered, certifiedResult), 'adapter semantic mutation is rejected by equivalence checking')
