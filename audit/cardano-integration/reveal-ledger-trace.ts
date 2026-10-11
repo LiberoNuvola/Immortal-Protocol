@@ -203,7 +203,38 @@ const providerWithEvaluation = provider as Blockfrost & {
   }>>
 }
 
-providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+// Yaci's first evaluation under-declared the final Reveal context by 438 memory
+// and 105,090 steps per redeemer (about 0.019%) in run #1595. Keep the raw
+// evaluator result separate from the budget returned to Lucid, and apply a
+// small engineering margin so fee/body finalization cannot leave a redeemer
+// just below the cost of its final ledger context. This does not change any
+// validator or economic rule; the final preflight below verifies coverage and
+// checks the aggregate against the active protocol limits.
+const EX_UNITS_SAFETY_MARGIN_BPS = 100
+const EX_UNITS_SAFETY_DENOMINATOR = 10_000n
+
+function withExUnitsSafetyMargin(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Yaci returned invalid execution units: ' + String(value))
+  }
+  return Number(
+    (BigInt(value) * BigInt(EX_UNITS_SAFETY_DENOMINATOR + BigInt(EX_UNITS_SAFETY_MARGIN_BPS)) 
+      + EX_UNITS_SAFETY_DENOMINATOR - 1n) / EX_UNITS_SAFETY_DENOMINATOR,
+  )
+}
+
+const evaluateYaciTx = async (
+  tx: string,
+  additionalUTxOs: Array<{
+    txHash: string
+    outputIndex: number
+    address: string
+    assets: Record<string, bigint>
+    datumHash?: string
+    datum?: string
+    scriptRef?: { type: string; script: string }
+  }> = [],
+) => {
   const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
   if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
     throw new Error(
@@ -271,7 +302,7 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
     )
   }
 
-  const evaluated = Object.entries(result.result.EvaluationResult).map(
+  return Object.entries(result.result.EvaluationResult).map(
     ([pointer, data]) => {
       const [redeemer_tag, redeemer_index] = pointer.split(':')
       return {
@@ -281,10 +312,28 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
       }
     },
   )
-  if (evaluated.length > 0) {
-    console.log(JSON.stringify({ revealDiag: 'yaci-evaluate', tx: describeTx(cbor), yaciExUnits: evaluated }))
+}
+
+providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  const measured = await evaluateYaciTx(cbor, additionalUTxOs)
+  const budgeted = measured.map((redeemer) => ({
+    ...redeemer,
+    ex_units: {
+      mem: withExUnitsSafetyMargin(redeemer.ex_units.mem),
+      steps: withExUnitsSafetyMargin(redeemer.ex_units.steps),
+    },
+  }))
+  if (measured.length > 0) {
+    console.log(JSON.stringify({
+      revealDiag: 'yaci-evaluate',
+      tx: describeTx(cbor),
+      yaciMeasuredExUnits: measured,
+      yaciBudgetedExUnits: budgeted,
+      safetyMarginBps: EX_UNITS_SAFETY_MARGIN_BPS,
+    }))
   }
-  return evaluated
+  return budgeted
 }
 
 // validTo() converts ms to slots with this table; the 'Preprod' default does not match the devnet genesis.
@@ -639,8 +688,60 @@ const reveal = await lucid
 {
   const builtCbor = reveal.toCBOR()
   writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
-  const reEvaluated = await providerWithEvaluation.evaluateTx(builtCbor, []).catch((e: unknown) => String(e).slice(0, 600))
-  console.log(JSON.stringify({ revealDiag: 'final-built', tx: describeTx(builtCbor), yaciReEvaluationOfFinal: reEvaluated }))
+  const reEvaluated = await evaluateYaciTx(builtCbor, []).catch((e: unknown) => ({ evaluationError: String(e).slice(0, 600) }))
+  const finalDescription = describeTx(builtCbor)
+  const finalMeasured = Array.isArray(reEvaluated) ? reEvaluated : []
+  const budgetCoverage = finalMeasured.map((measured) => {
+    const assigned = finalDescription.redeemers.find(
+      (r) => r.tag === 0 && r.index === measured.redeemer_index,
+    )
+    return {
+      redeemer_tag: measured.redeemer_tag,
+      redeemer_index: measured.redeemer_index,
+      measured: measured.ex_units,
+      assigned: assigned ? { mem: Number(assigned.mem), steps: Number(assigned.steps) } : null,
+      covered: Boolean(
+        assigned &&
+        Number(assigned.mem) >= measured.ex_units.mem &&
+        Number(assigned.steps) >= measured.ex_units.steps,
+      ),
+    }
+  })
+  const maxTxExecutionUnits = (protocolParameters as any).maxTxExecutionUnits
+  const maxMemory = Number(maxTxExecutionUnits?.memory ?? maxTxExecutionUnits?.mem)
+  const maxSteps = Number(maxTxExecutionUnits?.steps)
+  const assignedTotals = finalDescription.redeemers.reduce(
+    (totals, r) => ({ mem: totals.mem + Number(r.mem), steps: totals.steps + Number(r.steps) }),
+    { mem: 0, steps: 0 },
+  )
+  const withinProtocolExecutionLimits =
+    Number.isFinite(maxMemory) && Number.isFinite(maxSteps)
+      ? assignedTotals.mem <= maxMemory && assignedTotals.steps <= maxSteps
+      : null
+  const budgetCovered = finalMeasured.length > 0 &&
+    budgetCoverage.length === finalMeasured.length &&
+    budgetCoverage.every((entry) => entry.covered)
+  console.log(JSON.stringify({
+    revealDiag: 'final-built',
+    tx: finalDescription,
+    yaciMeasuredExUnitsOfFinal: reEvaluated,
+    budgetCoverage,
+    assignedTotals,
+    protocolExecutionLimits: Number.isFinite(maxMemory) && Number.isFinite(maxSteps)
+      ? { memory: maxMemory, steps: maxSteps }
+      : null,
+    withinProtocolExecutionLimits,
+    budgetCovered,
+  }))
+  if (!Array.isArray(reEvaluated)) {
+    throw new Error('Final Reveal preflight could not obtain Yaci execution-unit measurements')
+  }
+  if (!budgetCovered) {
+    throw new Error('Final Reveal redeemer execution-unit budgets do not cover final-context evaluation')
+  }
+  if (withinProtocolExecutionLimits === false) {
+    throw new Error('Final Reveal execution-unit budgets exceed active protocol limits')
+  }
 }
 
 let signedReveal: any = null
