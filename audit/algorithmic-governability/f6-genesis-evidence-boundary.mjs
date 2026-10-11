@@ -8,8 +8,8 @@ const genesisAdmission=(o)=>{
   if(o.duplicateOrConcurrent) return 'REJECTED'
   if(o.bootstrapValueInPrizePool) return 'REJECTED'
   if(o.verifiedFresh!==true) return 'UNVERIFIABLE'
-  if(o.bootstrapQualified!==true) return 'ADMISSIBLE'
-  return 'NOT_ADMISSIBLE'
+  if(o.bootstrapQualified!==true) return 'NOT_ADMISSIBLE'
+  return 'ADMISSIBLE'
 }
 
 const valid={
