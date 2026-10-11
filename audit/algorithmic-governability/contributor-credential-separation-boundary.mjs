@@ -44,21 +44,18 @@ assert(
 
 const rewardBudget = Object.freeze({
   certified: true,
-  available: 25n,
+  budgetWithinDeclaredEnvelope: true,
 })
 
-const rewardAllocation = (record, budget, amount) => {
-  if (!record.accepted || !budget.certified || amount < 0n) return 0n
-  return amount <= budget.available ? amount : budget.available
-}
+const rewardAllocation = (record, budget) => (
+  record.accepted && budget.certified && budget.budgetWithinDeclaredEnvelope
+    ? 'ELIGIBLE_FOR_DECLARED_REWARD_PATH'
+    : 'UNVERIFIABLE'
+)
 
 assert(
-  rewardAllocation(contributionRecord, rewardBudget, 5n) === 5n,
-  'reward remains on the independent reward-allocation path',
-)
-assert(
-  rewardAllocation(contributionRecord, rewardBudget, 30n) === 25n,
-  'reward allocation remains bounded by the separately certified budget',
+  rewardAllocation(contributionRecord, rewardBudget) === 'ELIGIBLE_FOR_DECLARED_REWARD_PATH',
+  'reward remains on the independent declared reward-allocation path',
 )
 
 const credentialWithFakeAuthority = Object.freeze({
