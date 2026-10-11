@@ -176,4 +176,36 @@ assert(
   'complete RegistryPublish evidence is admissible to the evidence boundary',
 )
 
+const evidenceMetadata = Object.freeze({
+  sourceReference: 'source:001',
+  observationReference: 'observation:001',
+  evidenceDigest: 'dd'.repeat(32),
+  evidenceVersion: 'evidence-v1',
+  verificationStatus: 'VERIFIED',
+})
+
+const verifyEvidenceMetadata = (meta) => {
+  if (!meta || meta.verificationStatus !== 'VERIFIED') return 'UNVERIFIABLE'
+  if (!meta.sourceReference || !meta.observationReference || !meta.evidenceVersion) return 'UNVERIFIABLE'
+  if (!/^[0-9a-fA-F]{64}$/.test(meta.evidenceDigest)) return 'UNVERIFIABLE'
+  return 'ADMISSIBLE'
+}
+
+assert(
+  verifyEvidenceMetadata(evidenceMetadata) === 'ADMISSIBLE',
+  'verified evidence metadata is admissible only with explicit provenance and digest identity',
+)
+assert(
+  verifyEvidenceMetadata({ ...evidenceMetadata, evidenceDigest: 'ee'.repeat(32) }) === 'ADMISSIBLE',
+  'a distinct evidence digest remains independently identifiable',
+)
+assert(
+  verifyEvidenceMetadata({ ...evidenceMetadata, verificationStatus: 'UNVERIFIED' }) === 'UNVERIFIABLE',
+  'unverified evidence cannot be promoted by the catalog',
+)
+assert(
+  verifyEvidenceMetadata({ ...evidenceMetadata, evidenceDigest: 'not-a-digest' }) === 'UNVERIFIABLE',
+  'malformed evidence digest fails closed',
+)
+
 console.log('ALL EXP-06 EVIDENCE CATALOG CHECKS PASSED')
