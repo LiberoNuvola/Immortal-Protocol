@@ -6,69 +6,187 @@ const assert = (condition, message) => {
 }
 
 /*
- * Toy transport boundary only.
- * The universal layer receives an already-certified semantic result; this test
- * does not invent an economic derivation formula.
+ * Differential boundary only.
+ *
+ * This fixture uses the verified Moriarty OwnerIntent/Authorization shape as
+ * source-language input, projects it into the existing chain-neutral IMMORTAL
+ * IssueIntent coordinates, and then sends the same already-certified semantic
+ * result through two chain-specific encodings:
+ *   - Cardano
+ *   - Midnight/Moriarty
+ *
+ * It does not reimplement Moriarty semantics, derive economics, authenticate
+ * ledger state, or claim production adapter equivalence.
  */
-const certifiedResult = Object.freeze({
-  ruleVersion: 'universal-rule-v1',
-  semanticResult: Object.freeze({
-    kind: 'settlement-target',
-    amount: 7n,
-    unit: 'U',
+
+const moriartyOwnerIntent = Object.freeze({
+  profile: 'moriarty-owner-intent/2',
+  source_hash: '11'.repeat(32),
+  program_hash: '22'.repeat(32),
+  semantics: 'moriarty-native-semantics-v1',
+  action: 'Issue',
+  scenario_hash: '33'.repeat(32),
+  assets: Object.freeze(['USDM']),
+  authority: Object.freeze({
+    network: 'midnight-preview',
+    anchor: 'anchor-1',
+    program_address: 'program-1',
+    target_hash: '44'.repeat(32),
+    signer: 'signer-1',
+    public_key_hex: '55'.repeat(32),
+    scheme: 'SchnorrBip340',
+    nonce: 7,
+    predecessor: 'head-6',
+    not_before: 100,
+    not_after: 200,
+    limits: Object.freeze([Object.freeze({
+      asset: 'USDM',
+      beneficiary: 'pool',
+      gross_cap: 1000,
+      fee_cap: 10,
+      net_floor: 1,
+      liability_cap: 100,
+    })]),
   }),
 })
 
-const cardanoAdapter = (x) => Object.freeze({
-  chain: 'cardano',
-  payload: { amount: x.semanticResult.amount, unit: x.semanticResult.unit },
-  ruleVersion: x.ruleVersion,
+const immortalIntent = Object.freeze({
+  action: 'Issue',
+  classId: 3n,
+  price: 5n,
 })
 
-const moriartyAdapter = (x) => Object.freeze({
-  chain: 'midnight-moriarty',
-  payload: { amount: x.semanticResult.amount, unit: x.semanticResult.unit },
-  ruleVersion: x.ruleVersion,
+const certifiedAdmission = Object.freeze({
+  admitted: true,
+  actionClass: 'Issue',
+  decisionReference: 'admission:issue-001',
+  stateHash: '66'.repeat(32),
+  actionFingerprint: '77'.repeat(32),
+  ruleVersion: 'pre-rich-economic-rule-v1',
 })
 
-const a = cardanoAdapter(certifiedResult)
-const b = moriartyAdapter(certifiedResult)
+const semanticResult = Object.freeze({
+  action: immortalIntent.action,
+  classId: immortalIntent.classId,
+  price: immortalIntent.price,
+  ruleVersion: certifiedAdmission.ruleVersion,
+  admissionDecisionReference: certifiedAdmission.decisionReference,
+})
 
-assert(a.ruleVersion === b.ruleVersion, 'adapters preserve universal rule identity')
-assert(a.payload.amount === b.payload.amount, 'adapters preserve the same certified semantic amount')
-assert(a.payload.unit === b.payload.unit, 'adapters preserve the same certified semantic unit')
-assert(a.chain !== b.chain, 'adapter encodings remain chain-specific')
-
-const semanticFromAdapter = (adapter) => {
-  if (!adapter?.payload || typeof adapter.payload.amount !== 'bigint') return null
+const projectMoriartyToImmortal = (ownerIntent, intent) => {
+  if (ownerIntent.action !== intent.action) return null
+  if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return null
+  if (!ownerIntent.authority?.nonce || !ownerIntent.authority?.predecessor) return null
+  if (!Array.isArray(ownerIntent.assets) || ownerIntent.assets.length === 0) return null
   return Object.freeze({
-    amount: adapter.payload.amount,
-    unit: adapter.payload.unit,
+    intent,
+    sourceBinding: Object.freeze({
+      profile: ownerIntent.profile,
+      sourceHash: ownerIntent.source_hash,
+      programHash: ownerIntent.program_hash,
+      semantics: ownerIntent.semantics,
+      scenarioHash: ownerIntent.scenario_hash,
+      nonce: ownerIntent.authority.nonce,
+      predecessor: ownerIntent.authority.predecessor,
+    }),
   })
 }
 
-const verifySemanticEquivalence = (adapter, expected) => {
-  const actual = semanticFromAdapter(adapter)
-  return (
-    adapter.ruleVersion === expected.ruleVersion &&
-    actual?.amount === expected.semanticResult.amount &&
-    actual?.unit === expected.semanticResult.unit
-  )
-}
+const projected = projectMoriartyToImmortal(moriartyOwnerIntent, immortalIntent)
+assert(projected !== null, 'Moriarty OwnerIntent can be explicitly projected into IMMORTAL IssueIntent')
+assert(projected.intent.action === semanticResult.action, 'projection preserves the action')
+assert(projected.intent.classId === semanticResult.classId, 'projection preserves PRE-RICH class coordinate')
+assert(projected.intent.price === semanticResult.price, 'projection preserves PRE-RICH price coordinate')
+assert(projected.sourceBinding.sourceHash === moriartyOwnerIntent.source_hash, 'projection preserves Moriarty source identity')
+assert(projected.sourceBinding.nonce === moriartyOwnerIntent.authority.nonce, 'projection preserves Moriarty nonce')
+assert(projected.sourceBinding.predecessor === moriartyOwnerIntent.authority.predecessor, 'projection preserves Moriarty predecessor')
 
-assert(verifySemanticEquivalence(a, certifiedResult), 'Cardano adapter preserves the universal semantic result')
-assert(verifySemanticEquivalence(b, certifiedResult), 'Midnight/Moriarty adapter preserves the universal semantic result')
-
-const tampered = Object.freeze({
-  ...moriartyAdapter(certifiedResult),
-  payload: { amount: 8n, unit: 'U' },
+const cardanoAdapter = (result) => Object.freeze({
+  chain: 'cardano',
+  payload: Object.freeze({
+    action: result.action,
+    classId: result.classId,
+    price: result.price,
+  }),
+  ruleVersion: result.ruleVersion,
+  admissionDecisionReference: result.admissionDecisionReference,
 })
-assert(!verifySemanticEquivalence(tampered, certifiedResult), 'adapter semantic mutation is rejected by equivalence checking')
+
+const midnightMoriartyAdapter = (result, sourceBinding) => Object.freeze({
+  chain: 'midnight-moriarty',
+  payload: Object.freeze({
+    action: result.action,
+    classId: result.classId,
+    price: result.price,
+  }),
+  ruleVersion: result.ruleVersion,
+  admissionDecisionReference: result.admissionDecisionReference,
+  sourceBinding,
+})
+
+const cardano = cardanoAdapter(semanticResult)
+const midnight = midnightMoriartyAdapter(semanticResult, projected.sourceBinding)
+
+const normalize = (adapter) => Object.freeze({
+  action: adapter.payload.action,
+  classId: adapter.payload.classId,
+  price: adapter.payload.price,
+  ruleVersion: adapter.ruleVersion,
+  admissionDecisionReference: adapter.admissionDecisionReference,
+})
+
+const cardanoSemantic = normalize(cardano)
+const midnightSemantic = normalize(midnight)
+
+assert(JSON.stringify(cardanoSemantic, (_, value) =>
+  typeof value === 'bigint' ? value.toString() : value
+) === JSON.stringify(midnightSemantic, (_, value) =>
+  typeof value === 'bigint' ? value.toString() : value
+), 'Cardano and Midnight preserve the same certified semantic result')
+assert(cardano.chain !== midnight.chain, 'adapter encodings remain chain-specific')
+assert(midnight.sourceBinding.sourceHash === moriartyOwnerIntent.source_hash,
+  'Midnight encoding retains the distinct Moriarty source binding')
+assert(!('sourceBinding' in cardano),
+  'Cardano adapter need not inherit Midnight source metadata')
+assert(certifiedAdmission.admitted === true,
+  'differential comparison starts from an already-admitted result')
+
+const tamperedPrice = Object.freeze({
+  ...midnight,
+  payload: Object.freeze({ ...midnight.payload, price: 6n }),
+})
+assert(
+  JSON.stringify(normalize(tamperedPrice), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
+    JSON.stringify(cardanoSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
+  'Midnight semantic mutation is detected')
+  
+const tamperedAction = Object.freeze({
+  ...cardano,
+  payload: Object.freeze({ ...cardano.payload, action: 'Claim' }),
+})
+assert(
+  JSON.stringify(normalize(tamperedAction), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
+    JSON.stringify(midnightSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
+  'Cardano action mutation is detected')
 
 const missingRule = Object.freeze({
-  ...b,
+  ...midnight,
   ruleVersion: '',
 })
-assert(!verifySemanticEquivalence(missingRule, certifiedResult), 'missing universal rule identity cannot pass equivalence')
+assert(
+  JSON.stringify(normalize(missingRule), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
+    JSON.stringify(cardanoSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
+  'missing universal rule identity cannot pass differential equivalence')
 
-console.log('ALL MULTI-ADAPTER SEMANTIC BOUNDARY CHECKS PASSED')
+const alteredSource = Object.freeze({
+  ...midnight.sourceBinding,
+  sourceHash: '88'.repeat(32),
+})
+const alteredMidnight = Object.freeze({
+  ...midnight,
+  sourceBinding: alteredSource,
+})
+assert(alteredMidnight.sourceBinding.sourceHash !== moriartyOwnerIntent.source_hash,
+  'Moriarty source-identity mutation remains observable')
+
+console.log('ALL MORIARTY-AWARE MULTI-ADAPTER DIFFERENTIAL CHECKS PASSED')
