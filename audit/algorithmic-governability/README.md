@@ -96,6 +96,7 @@ node audit/algorithmic-governability/exp-11-deterministic-auction-allocation-bou
 node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mjs
 node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
 node audit/algorithmic-governability/moriarty-intent-semantic-boundary.mjs
+node audit/algorithmic-governability/moriarty-intent-identity-binding-boundary.mjs
 npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
 ```
 
