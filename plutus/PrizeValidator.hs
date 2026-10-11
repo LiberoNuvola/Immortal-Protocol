@@ -338,8 +338,8 @@ identityFieldsEq a b =
   && pdPrizePoolHash a == pdPrizePoolHash b
   && pdIssuedAt a == pdIssuedAt b
   && pdExpiresAt a == pdExpiresAt b
-  && pdRow1Tier a == pdRow1Tier b
-  && pdRow2Tier a == pdRow2Tier b
+  -- pdRow1Tier / pdRow2Tier are mutable Reveal outputs. Their canonical
+  -- values are independently checked against GameRules in validateReveal.
 
 -- ============================================================
 -- Registry reference
