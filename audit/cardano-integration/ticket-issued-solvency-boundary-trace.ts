@@ -41,9 +41,101 @@ function poolDatum(prizeHash: string, liquidity: bigint, reserve: bigint, count:
 }
 const wallet = JSON.parse(readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'))
 const provider = new Blockfrost(API, '')
+type EvaluationRedeemer = {
+  redeemer_tag: string
+  redeemer_index: number
+  ex_units: { mem: number; steps: number }
+}
+type YaciEvaluationResult = {
+  fault?: unknown
+  result?: { EvaluationResult?: Record<string, { memory: number; steps: number }> }
+  message?: string
+}
+const EX_UNITS_MARGIN_BPS = 100
+const EX_UNITS_DENOMINATOR = 10_000n
+let expectedNegativeIssueBuild = false
+let usedPreviousBudgetForNegative = false
+let lastValidIssueBudgets: EvaluationRedeemer[] | null = null
+
+function withExUnitsMargin(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Yaci returned invalid execution units: ' + String(value))
+  }
+  return Number(
+    (BigInt(value) * (EX_UNITS_DENOMINATOR + BigInt(EX_UNITS_MARGIN_BPS))
+      + EX_UNITS_DENOMINATOR - 1n) / EX_UNITS_DENOMINATOR,
+  )
+}
+
+async function evaluateWithYaci(tx: string): Promise<EvaluationRedeemer[]> {
+  const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  if (!/^[0-9a-fA-F]+$/.test(cbor) || cbor.length % 2 !== 0) {
+    throw new Error('Yaci received invalid transaction CBOR: ' + cbor.slice(0, 80))
+  }
+  const response = await fetch(API + '/utils/txs/evaluate/utxos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cbor }),
+  })
+  const raw = await response.text()
+  let parsed: YaciEvaluationResult
+  try {
+    parsed = JSON.parse(raw) as YaciEvaluationResult
+  } catch {
+    parsed = { message: raw }
+  }
+  if (!response.ok || parsed.fault || !parsed.result?.EvaluationResult) {
+    throw new Error(
+      `Yaci evaluation failed (HTTP ${response.status}): ${raw.slice(0, 2500)}`,
+    )
+  }
+  return Object.entries(parsed.result.EvaluationResult).map(([pointer, data]) => {
+    const [redeemer_tag, redeemer_index] = pointer.split(':')
+    return {
+      redeemer_tag,
+      redeemer_index: Number(redeemer_index),
+      ex_units: { mem: Number(data.memory), steps: Number(data.steps) },
+    }
+  })
+}
+
+const providerWithEvaluation = provider as Blockfrost & {
+  evaluateTx: (tx: string, additionalUTxOs?: any[]) => Promise<EvaluationRedeemer[]>
+}
+providerWithEvaluation.evaluateTx = async (tx, _additionalUTxOs = []) => {
+  try {
+    const measured = await evaluateWithYaci(tx)
+    const budgeted = measured.map((item) => ({
+      ...item,
+      ex_units: {
+        mem: withExUnitsMargin(item.ex_units.mem),
+        steps: withExUnitsMargin(item.ex_units.steps),
+      },
+    }))
+    if (
+      budgeted.length !== 1 ||
+      budgeted[0].redeemer_tag !== 'spend' ||
+      budgeted[0].redeemer_index !== 0
+    ) {
+      throw new Error('T3 expected one Pool spending redeemer at index 0; got ' + JSON.stringify(budgeted))
+    }
+    lastValidIssueBudgets = budgeted
+    return budgeted
+  } catch (error) {
+    if (!expectedNegativeIssueBuild || !lastValidIssueBudgets) throw error
+    usedPreviousBudgetForNegative = true
+    console.log(JSON.stringify({
+      event: 'T3_EXPECTED_NEGATIVE_REUSED_VALID_ISSUE_BUDGET',
+      basis: 'latest Yaci-measured accepted Issue budget plus 1% margin',
+      budgets: lastValidIssueBudgets,
+      evaluationError: error instanceof Error ? error.message.slice(0, 1000) : String(error).slice(0, 1000),
+    }))
+    return lastValidIssueBudgets
+  }
+}
 const latest = await (await fetch(API + '/blocks/latest')).json() as { slot: number; time: number }
 if (!Number.isSafeInteger(latest.slot) || !Number.isSafeInteger(latest.time)) throw new Error('Yaci latest block lacks slot/time')
-const lucid = await Lucid(provider, 'Preprod', { slotConfig: { zeroTime: latest.time * 1000, zeroSlot: latest.slot, slotLength: 1000 } })
+const lucid = await Lucid(providerWithEvaluation, 'Preprod', { slotConfig: { zeroTime: latest.time * 1000, zeroSlot: latest.slot, slotLength: 1000 } })
 lucid.selectWallet.fromSeed(SEED)
 const address = await lucid.wallet().address()
 const keyHash = getAddressDetails(address).paymentCredential?.hash
@@ -114,6 +206,7 @@ let rejectionStage = ''
 let rejectionError = ''
 let ninthTxHash: string | null = null
 try {
+  expectedNegativeIssueBuild = true
   rejectionStage = 'build'
   const tx = await lucid.newTx()
     .collectFrom([pool], Data.to(c(1, [PRICE_USDM])))
@@ -140,8 +233,11 @@ const poolAfterNinthAttempt = await lucid.utxosAt(scripts.b1PrizePoolAddress)
 if (!poolAfterNinthAttempt.some(u => ref(u) === ref(pool))) {
   throw new Error('T3 FAIL: Pool input was consumed; ninth Issue may have landed despite the reported error')
 }
-if (!/script|validator|B1PrizePool|Plutus|evaluation|execution unit|rejected/i.test(rejectionError)) {
-  throw new Error('T3 inconclusive: rejection did not identify an on-chain script failure: ' + rejectionError)
+if (/execution went over budget|execution budget|budget (?:exceeded|exhausted)|execution units? (?:limit|budget)|exceeded.{0,30}budget/i.test(rejectionError)) {
+  throw new Error('T3 inconclusive: ninth Issue failed due to execution budget, not a demonstrated solvency rejection: ' + rejectionError.slice(0, 1800))
+}
+if (!/PlutusFailure|PlutusV[12] script failed|failed script execution|validator failure|script failure|script failed/i.test(rejectionError)) {
+  throw new Error('T3 inconclusive: rejection did not identify an on-chain script failure: ' + rejectionError.slice(0, 1800))
 }
 const evidence = {
   fixture: 'T3-B1-TICKET-ISSUED-500X-BOUNDARY',
@@ -159,6 +255,8 @@ const evidence = {
   ninthExposureSubunits: (500n * 9n * PRICE_USDM).toString(),
   ninthRejected,
   rejectionStage,
+  expectedNegativeBudgetFallbackUsed: usedPreviousBudgetForNegative,
+  lastValidIssueBudgets,
   rejectionError,
   ninthTxHash,
   finalPoolReference: ref(pool),
