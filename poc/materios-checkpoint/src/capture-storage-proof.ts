@@ -371,7 +371,7 @@ function parseReceiptRecord(
       offset += 32;
     } else if (flag !== 0) {
       throw new Error(
-        \`ReceiptRecord option flag is invalid: \${flag}\`,
+        `ReceiptRecord option flag is invalid: ${flag}`,
       );
     }
   }
@@ -619,7 +619,7 @@ async function main(): Promise<void> {
     "0x26aa394eea5630e07c48ae0c9558cef7"
   ) {
     throw new Error(
-      \`Twox128 self-check failed: got \${systemPrefix}\`,
+      `Twox128 self-check failed: got ${systemPrefix}`,
     );
   }
 
@@ -632,7 +632,7 @@ async function main(): Promise<void> {
 
   if (knownReceiptKey !== expectedReceiptKey) {
     throw new Error(
-      \`receipt storage key self-check failed: got \${knownReceiptKey}\`,
+      `receipt storage key self-check failed: got ${knownReceiptKey}`,
     );
   }
 
@@ -682,7 +682,7 @@ async function main(): Promise<void> {
       certification.block
   ) {
     throw new Error(
-      \`certified block \${certification.block} is ahead of finalized head \${finalizedBlockNumber}\`,
+      `certified block ${certification.block} is ahead of finalized head ${finalizedBlockNumber}`,
     );
   }
 
@@ -772,7 +772,7 @@ async function main(): Promise<void> {
       {
         ...evidence,
         evidence_sha256:
-          \`0x\${evidenceSha256}\`,
+          `0x${evidenceSha256}`,
       },
       null,
       2,
@@ -826,7 +826,7 @@ async function main(): Promise<void> {
   );
   console.log(
     "evidence_sha256:",
-    \`0x\${evidenceSha256}\`,
+    `0x${evidenceSha256}`,
   );
   console.log("capture: PASS");
 }
