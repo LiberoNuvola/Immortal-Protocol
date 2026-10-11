@@ -782,9 +782,9 @@ async function buildClaimTx(variant: ClaimVariant) {
         [poolUnit]: 1n,
       },
     )
-    // PrizeValidator's claimAddress is payment-credential-only. Return the
-    // ticket NFT to the owner's original wallet/base address, which has the
-    // same payment credential but is not the exact settlement address.
+    // PrizeValidator's claimAddress is payment-credential-only. Settlement
+    // goes to that enterprise address; a valid Claim returns the ticket NFT
+    // to the owner's original wallet/base address, kept economically separate.
     .pay.ToAddress(
       claimantAddress,
       { lovelace: settlementLovelace },
