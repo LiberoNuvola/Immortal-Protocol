@@ -58,6 +58,8 @@ jobs:
         run: node audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs
       - name: B5/B6 action evidence boundary
         run: node audit/algorithmic-governability/b5-b6-action-evidence-boundary.mjs
+      - name: Midnight adapter Intent boundary
+        run: node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
       - name: Install Node test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: EXP-07 canonical hysteresis conformance
