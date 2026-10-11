@@ -514,7 +514,7 @@ async function discoverRecentCertifiedReceipt(
     }
 
     const changes =
-      (response[0] as Record<string, unknown>).changes;
+      (response[0] as Record<string, unknown>).changes as unknown[];
 
     for (const change of changes) {
       if (
