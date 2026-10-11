@@ -103,10 +103,8 @@ jobs:
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/rpc
           MATERIOS_CHAIN_ID: materios_preprod_v6
-          MATERIOS_GRANDPA_PERIOD: 512
-          MATERIOS_SLOTS_PER_EPOCH: 600
-          MATERIOS_JUSTIFICATION_LOOKBACK: 8
-          MATERIOS_TRANSITION_LOOKBACK_EPOCHS: 12
+          MATERIOS_WITNESS_LOOKBACK: 768
+          MATERIOS_BLOCK_BATCH_SIZE: 64
 
       - name: Upload real GRANDPA witness
         if: always()
