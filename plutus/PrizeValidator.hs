@@ -62,6 +62,91 @@ claimAddress :: PubKeyHash -> Address
 claimAddress pkh =
   Address (PubKeyCredential pkh) Nothing
 
+-- Restored local helpers: the raw-Data Claim rewrite removed these definitions,
+-- but Sync/Reveal/Expire/Claim still depend on them.
+{-# INLINABLE ownScriptHash #-}
+ownScriptHash :: ScriptContext -> ScriptHash
+ownScriptHash ctx =
+  case findOwnInput ctx of
+    Just i ->
+      case addressCredential (txOutAddress (txInInfoResolved i)) of
+        ScriptCredential h ->
+          h
+        _ ->
+          traceError "Prize: own input is not script"
+    Nothing ->
+      traceError "Prize: missing own input"
+
+{-# INLINABLE ownInputResolved #-}
+ownInputResolved :: ScriptContext -> TxOut
+ownInputResolved ctx =
+  case findOwnInput ctx of
+    Just i ->
+      txInInfoResolved i
+    Nothing ->
+      traceError "Prize: missing own input"
+
+{-# INLINABLE countOwnScriptInputs #-}
+countOwnScriptInputs :: ScriptContext -> Integer
+countOwnScriptInputs ctx =
+  go (txInfoInputs (scriptContextTxInfo ctx))
+  where
+    thisHash = ownScriptHash ctx
+    go [] = 0
+    go (i:is) =
+      case addressCredential (txOutAddress (txInInfoResolved i)) of
+        ScriptCredential h
+          | h == thisHash ->
+              1 + go is
+        _ ->
+          go is
+
+{-# INLINABLE countOwnScriptOutputs #-}
+countOwnScriptOutputs :: ScriptContext -> Integer
+countOwnScriptOutputs ctx =
+  go (txInfoOutputs (scriptContextTxInfo ctx))
+  where
+    thisHash = ownScriptHash ctx
+    go [] = 0
+    go (o:os) =
+      case addressCredential (txOutAddress o) of
+        ScriptCredential h
+          | h == thisHash ->
+              1 + go os
+        _ ->
+          go os
+
+-- Direct Value lookup with zero-on-missing semantics.
+{-# INLINABLE assetAmount #-}
+assetAmount :: Value -> CurrencySymbol -> TokenName -> Integer
+assetAmount value cs tn =
+  case AssocMap.lookup cs (getValue value) of
+    Nothing -> 0
+    Just tokens ->
+      case AssocMap.lookup tn tokens of
+        Nothing -> 0
+        Just amount -> amount
+
+{-# INLINABLE ticketOwnerPkh #-}
+ticketOwnerPkh
+  :: CurrencySymbol
+  -> TokenName
+  -> [TxInInfo]
+  -> Maybe PubKeyHash
+ticketOwnerPkh _ _ [] = Nothing
+ticketOwnerPkh cs tn (i:is) =
+  let resolved = txInInfoResolved i
+  in
+    if assetAmount (txOutValue resolved) cs tn == 1
+      then
+        case addressCredential (txOutAddress resolved) of
+          PubKeyCredential pkh ->
+            Just pkh
+          _ ->
+            Nothing
+      else
+        ticketOwnerPkh cs tn is
+
 {-# INLINABLE rawConstr #-}
 rawConstr :: BuiltinData -> Maybe (Integer, [BuiltinData])
 rawConstr d =
