@@ -9,9 +9,10 @@ const assert = (condition, message) => {
 }
 
 const repoRoot = process.cwd()
-// Scan executable/runtime and deployment tooling surfaces. The legacy
-// treasuryPolicy.ts definition itself is intentionally excluded because this
-// boundary verifies non-use, not removal of historical compatibility code.
+// Scan executable/runtime and deployment tooling surfaces. Historical
+// treasuryPolicy.ts and this harness are excluded because this boundary
+// verifies non-use by call surfaces, not removal of compatibility code or the
+// literal patterns embedded in the detector itself.
 const roots = ['src', 'relayer', 'web', 'scripts']
 
 function walk(dir) {
@@ -27,8 +28,9 @@ function walk(dir) {
 const sourceFiles = roots.flatMap((root) => {
   const abs = path.join(repoRoot, root)
   return fs.existsSync(abs) ? walk(abs) : []
-}).filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
+}).filter((file) => /.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
   .filter((file) => !file.endsWith(path.join('src', 'treasuryPolicy.ts')))
+  .filter((file) => !file.endsWith(path.join('audit', 'algorithmic-governability', 'treasury-legacy-isolation.mjs')))
 
 const forbiddenPatterns = [
   /(?:from|require)\s*\(?['"][^'"]*treasuryPolicy(?:\.ts)?['"]\)?/,
@@ -45,5 +47,8 @@ for (const file of sourceFiles) {
   }
 }
 
-assert(hits.length === 0, 'legacy Treasury policy symbols are absent from executable runtime and deployment-tool call surfaces')
+assert(
+  hits.length === 0,
+  'legacy Treasury policy symbols are absent from executable runtime and deployment-tool call surfaces',
+)
 console.log('ALL TREASURY LEGACY ISOLATION CHECKS PASSED')
