@@ -1,9 +1,23 @@
 use codec::{Decode, Encode};
-use sp_core::Blake2Hasher;
+use sp_core::{hashing::{blake2_128, twox_128}, Blake2Hasher};
 use sp_runtime::StateVersion;
 use sp_state_machine::{
     backend::Backend, prove_read, read_proof_check, InMemoryBackend, StorageProof,
 };
+
+/// Construct the exact raw FRAME StorageMap key for Materios
+/// `OrinqReceipts::Anchors<H256>`.
+///
+/// This is a storage-schema construction helper only. It does not decide
+/// whether the selected anchor is canonical for any checkpoint or round.
+pub fn materios_anchors_storage_key(anchor_id: [u8; 32]) -> Vec<u8> {
+    let mut key = Vec::with_capacity(16 + 16 + 16 + 32);
+    key.extend_from_slice(&twox_128(b"OrinqReceipts"));
+    key.extend_from_slice(&twox_128(b"Anchors"));
+    key.extend_from_slice(&blake2_128(&anchor_id));
+    key.extend_from_slice(&anchor_id);
+    key
+}
 
 /// Inputs required to independently verify one Substrate storage read proof.
 ///
@@ -74,6 +88,16 @@ mod tests {
             proof.encode(),
             root.into(),
         )
+    }
+
+    #[test]
+    fn constructs_exact_materios_anchors_storage_key() {
+        let anchor_id = [0x11; 32];
+        let key = materios_anchors_storage_key(anchor_id);
+        assert_eq!(
+            hex::encode(key),
+            "f2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb27f9c299f1d9bbe856fbf2c98f0f914351111111111111111111111111111111111111111111111111111111111111111"
+        );
     }
 
     #[test]
