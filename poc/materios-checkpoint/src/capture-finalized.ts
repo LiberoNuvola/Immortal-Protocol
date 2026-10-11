@@ -68,8 +68,19 @@ async function main(): Promise<void> {
       error instanceof Error ? error.message : String(error);
   }
 
-  const selectionInputsCommitment =
-    await rpc.getSelectionInputsCommitment(finalizedHash);
+  let selectionInputsCommitment: {
+    extrinsicIndex: number;
+    extrinsicHex: string;
+    selectionInputsHash: string;
+  } | null = null;
+
+  try {
+    selectionInputsCommitment =
+      await rpc.getSelectionInputsCommitment(finalizedHash);
+  } catch {
+    // A normal finalized block need not be a committee-transition block.
+    // Transition evidence remains an explicit open obligation.
+  }
 
   const authoritiesHex = await rpc.stateCall(
     "GrandpaApi_grandpa_authorities",
@@ -156,11 +167,17 @@ async function main(): Promise<void> {
       })),
       finality_proof: grandpaFinalityProof,
     },
-    selection_inputs_commitment: {
-      extrinsic_index: selectionInputsCommitment.extrinsicIndex,
-      extrinsic_hex: selectionInputsCommitment.extrinsicHex,
-      selection_inputs_hash: selectionInputsCommitment.selectionInputsHash,
-    },
+    selection_inputs_commitment:
+      selectionInputsCommitment === null
+        ? null
+        : {
+            extrinsic_index:
+              selectionInputsCommitment.extrinsicIndex,
+            extrinsic_hex:
+              selectionInputsCommitment.extrinsicHex,
+            selection_inputs_hash:
+              selectionInputsCommitment.selectionInputsHash,
+          },
     scope: {
       verified: [
         "finalized head hash obtained from chain_getFinalizedHead",
@@ -172,10 +189,15 @@ async function main(): Promise<void> {
         "GRANDPA authority list read at the exact finalized hash",
         "GRANDPA set id read at the exact finalized hash",
         "standard grandpa_proveFinality transport queried for the finalized block number; raw bytes are untrusted evidence",
+        ...(selectionInputsCommitment !== null
+          ? ["SessionCommitteeManagement::set selection commitment extracted from this block"]
+          : []),
       ],
       open: [
         "independent decoding and GRANDPA FinalityProof verification",
-        "authority-set transition proof",
+        ...(selectionInputsCommitment === null
+          ? ["committee-transition activation block not identified at this checkpoint"]
+          : ["authority-set transition proof"]),
         "cryptographic runtime execution proof",
         "WASM source reproducibility proof",
         "M6 composition proof",
