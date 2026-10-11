@@ -353,22 +353,22 @@ const bootstrapBuilder = lucid
     },
     Data.void(),
   )
-  .attachMintingPolicy(testPolicy)
-  .payToContract(
+  .attach.MintingPolicy(testPolicy)
+  .pay.ToContract(
     scripts.b1PrizePoolAddress,
-    { inline: Data.to(prePoolDatum) },
+    { kind: 'inline', value: Data.to(prePoolDatum) },
     {
       lovelace: INITIAL_POOL_LOVELACE,
       [poolUnit]: 1n,
     },
   )
-  .payToAddress(
+  .pay.ToAddressWithData(
     address,
+    { kind: 'inline', value: Data.to(oracleDatum) },
     {
       lovelace: 2_000_000n,
       [oracleStateUnit]: 1n,
     },
-    { inline: Data.to(oracleDatum) } as any,
   )
   .addSigner(address)
 
@@ -435,11 +435,11 @@ console.log('[FT-DIAG] before FundTreasury .complete(localUPLCEval=false)')
 const fund = await lucid
   .newTx()
   .collectFrom([poolInput], Data.to(c(0)))
-  .attachSpendingValidator(scripts.b1PrizePool as Script)
-  .addReferenceInput(oracleRef)
-  .payToContract(
+  .attach.SpendingValidator(scripts.b1PrizePool as Script)
+  .readFrom([oracleRef])
+  .pay.ToContract(
     scripts.b1PrizePoolAddress as string,
-    { inline: Data.to(postPoolDatum) },
+    { kind: 'inline', value: Data.to(postPoolDatum) },
     {
       lovelace: FUNDED_POOL_LOVELACE,
       [poolUnit]: 1n,
