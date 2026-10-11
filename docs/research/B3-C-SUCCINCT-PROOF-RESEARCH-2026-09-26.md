@@ -139,3 +139,38 @@ The correct current statement remains:
   https://mithril.network/doc/next/mithril/advanced/mithril-protocol/aggregation/
 - Halo2:
   https://github.com/zcash/halo2
+
+
+## 2026-10-11 — Parallel execution update after live Materios RPC probe
+
+A live external probe against both documented public endpoints produced the following evidence for the historical target block 1856408:
+
+- `chain_getHeader(target)` succeeds and returns the expected historical block number;
+- `state_getRuntimeVersion(target)`, `state_getStorage(key,target)` and `state_getReadProof([key],target)` fail with `State already discarded`;
+- `chain_getBlock(target)` succeeds but exposes no GRANDPA justification;
+- `grandpa_proveFinality` is not exposed;
+- `materios_b3_calculateCommitteeProof` is not exposed.
+
+This is now a **live capability result**, not an architectural inference. It confirms that the documented public RPC surface cannot, by itself, materialize the historical B3 state/proof witness required for the target checkpoint.
+
+The result does **not** establish that Materios lacks another archive/full-node backend. The remaining acquisition route is the real operator/full-validator client described in the B3-A handoff.
+
+### What can proceed without the real witness
+
+The following B3-C work is independent of the missing live storage proof and may proceed now:
+
+1. finalize the RootProof public-input contract without selecting a proof system;
+2. specify the independent storage-verifier interface and its fail-closed error classes;
+3. build synthetic/adversarial verifier vectors for root/key/value/proof mutation, explicitly labelled as parser/conformance tests rather than production evidence;
+4. define the benchmark harness that will measure proof bytes, public inputs, verifier footprint, execution cost and transaction encoding overhead once a real vector exists;
+5. compare native Plutus verification versus succinct-proof verification only after the full relation is materialized.
+
+No synthetic vector may be promoted to a real B3 claim, and no proof-system selection is frozen by this update.
+
+### External corroboration for the research direction
+
+Current Polkadot documentation describes light clients as a trust-minimized alternative to blind JSON-RPC use: they verify state through cryptographic proofs and can verify GRANDPA finality justifications. This reinforces the architectural separation already used here between remote data transport and independent verification. citeturn635557search0turn635557search4
+
+Current Mithril documentation shows production-oriented aggregation infrastructure and documents recursive SNARK aggregation as a way to compress verification of a certificate chain into one recursive aggregate. This remains an adjacent engineering reference, not a Materios proof authority and not a B3 system selection. citeturn635557search1turn635557search3turn635557search5
+
+**Updated status:** B3-C research can advance in parallel; production closure still depends on B3-A/B3-B real evidence.
