@@ -151,16 +151,51 @@ jobs:
           curl --fail --silent --show-error --request POST \
             http://localhost:10000/local-cluster/api/admin/yaci-store/stop \
             -o audit/yaci-evidence/yaci-store-stop.json
+          port_free() { ! timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null; }
           store_stopped=0
           for i in $(seq 1 60); do
-            if ! timeout 1 bash -c '</dev/tcp/127.0.0.1/8080' 2>/dev/null; then
+            if port_free; then
               store_stopped=1
               break
             fi
             sleep 1
           done
           if [ "$store_stopped" -ne 1 ]; then
-            echo "Yaci Store did not release port 8080 after stop."
+            echo "Yaci Store still owns port 8080 after admin stop; collecting owner evidence."
+            {
+              echo "== admin stop response"
+              cat audit/yaci-evidence/yaci-store-stop.json || true
+              echo
+              echo "== listener on 8080"
+              (command -v fuser >/dev/null && fuser -v -n tcp 8080) 2>&1 || true
+              echo "== socket table"
+              (command -v ss >/dev/null && ss -ltnp '( sport = :8080 )') 2>&1 || true
+            } | tee audit/yaci-evidence/yaci-store-stop-diagnostics.txt
+
+            # Only terminate a listener when its command line identifies it as
+            # Yaci/Store. Never kill an unrelated process merely because it
+            # happens to own port 8080.
+            if command -v fuser >/dev/null; then
+              for pid in $(fuser -n tcp 8080 2>/dev/null || true); do
+                cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+                if printf '%s' "$cmdline" | grep -Eiq 'yaci|yaci-store|store.*jar'; then
+                  echo "Sending TERM to confirmed Yaci Store listener pid=$pid"
+                  kill -TERM "$pid" 2>/dev/null || true
+                else
+                  echo "Refusing to terminate unconfirmed listener pid=$pid cmd=$cmdline"
+                fi
+              done
+            fi
+            for i in $(seq 1 15); do
+              if port_free; then
+                store_stopped=1
+                break
+              fi
+              sleep 1
+            done
+          fi
+          if [ "$store_stopped" -ne 1 ]; then
+            echo "Yaci Store did not release port 8080 after guarded shutdown."
             tail -300 audit/yaci-evidence/yaci.log || true
             exit 1
           fi
