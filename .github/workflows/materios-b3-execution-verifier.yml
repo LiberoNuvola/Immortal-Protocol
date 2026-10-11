@@ -65,23 +65,6 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
 
-      - name: Select recent certified receipt
-        id: receipt
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          recent_receipt="0xb157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009"
-          url="https://materios.fluxpointstudios.com/preprod-events/receipt-attestors?receiptId=$recent_receipt"
-
-          body=$(curl -fsS --max-time 15 "$url")
-          certified=$(printf '%s' "$body" | sed -n 's/.*"certified":\(true\|false\).*/\1/p')
-
-          test "$certified" = "true"
-
-          echo "Using recent certified receipt: $recent_receipt"
-          echo "receipt_id=$recent_receipt" >> "$GITHUB_OUTPUT"
-
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
         run: npx tsx src/capture-storage-proof.ts
@@ -89,8 +72,6 @@ jobs:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
-          MATERIOS_RECEIPT_ID: ${{ steps.receipt.outputs.receipt_id }}
-          RECEIPT_TIMEOUT_MS: "120000"
 
       - uses: dtolnay/rust-toolchain@stable
 
