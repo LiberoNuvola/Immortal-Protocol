@@ -45,6 +45,30 @@ jobs:
       - name: Run verifier tests
         run: cargo test
 
+
+  live-grandpa-witness:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Capture live Materios GRANDPA justification
+        run: node audit/materios-b3/grandpa-live-witness.mjs
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_ALT_RPC: https://materios.fluxpointstudios.com/rpc
+          MATERIOS_GRANDPA_SCAN_BLOCKS: "1024"
+          MATERIOS_GRANDPA_BATCH_SIZE: "32"
+
+      - name: Upload live GRANDPA witness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3a-grandpa-live-witness
+          path: audit/materios-b3/out/MateriosGrandpaLiveWitness.json
+          if-no-files-found: error
+
   finalized-state-capture:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
