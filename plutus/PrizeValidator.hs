@@ -681,17 +681,23 @@ validateClaim oracleState oraclePublisher datum ctx =
     maybeOwner =
       ticketOwnerPkh ticketCs ticketTn (txInfoInputs info)
 
-    -- Compare the canonical payment-key hash bytes directly. Some host-side
-    -- evaluator/provider combinations serialize PubKeyHash and BuiltinByteString
-    -- differently in the ScriptContext; comparing hashes as bytes avoids relying
-    -- on the typed PubKeyHash wrapper at this boundary.
+    -- Owner authorization is checked at the pubkey-input boundary above:
+    -- maybeOwner exists only when the ticket NFT is in a PubKeyCredential UTxO.
+    -- Compare that credential's hash with the transaction signatories using
+    -- BuiltinByteString equality, avoiding PubKeyHash wrapper unlifting.
     ownerSigned =
       case maybeOwner of
         Just pkh ->
-          let ownerHash = getPubKeyHash pkh
-          in any (\signatory -> signatory == ownerHash) (txInfoSignatories info)
+          contains (getPubKeyHash pkh) (txInfoSignatories info)
         Nothing ->
           False
+
+    contains :: BuiltinByteString -> [PubKeyHash] -> Bool
+    contains _ [] = False
+    contains ownerHash (signatory:rest) =
+      if getPubKeyHash signatory == ownerHash
+        then True
+        else contains ownerHash rest
 
     claimantAddr =
       case maybeOwner of
