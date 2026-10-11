@@ -57,28 +57,24 @@ The verifier should preserve the existing decomposition rather than collapse it 
 
 The verifier must stop on the first failed mandatory relation.
 
-## 4. Fail-closed classes
+## 4. Fail-closed classification boundary
 
-The implementation-facing error taxonomy should distinguish at least:
+The verifier must distinguish, at minimum, the failure categories already established by the B3 decomposition:
 
-- `MALFORMED_PACKET`
-- `CHECKPOINT_MISMATCH`
-- `HEADER_STATE_ROOT_MISMATCH`
-- `RUNTIME_IDENTITY_MISMATCH`
-- `FINALITY_UNVERIFIED`
-- `AUTHORITY_PROVENANCE_UNVERIFIED`
-- `ANCESTRY_UNVERIFIED`
-- `STORAGE_KEY_MISMATCH`
-- `STORAGE_PROOF_MALFORMED`
-- `STORAGE_PROOF_ROOT_MISMATCH`
-- `STORAGE_VALUE_MISMATCH`
-- `STORAGE_VALUE_DECODE_FAILURE`
-- `SEMANTIC_BINDING_UNVERIFIED`
-- `STALE_CONTEXT`
-- `REPLAY_DETECTED`
-- `DOMAIN_VERSION_MISMATCH`
+- malformed or incomplete evidence packet;
+- checkpoint/header mismatch;
+- state-root mismatch;
+- runtime identity mismatch where runtime binding is required;
+- finality/authority/ancestry verification failure;
+- storage-key mismatch;
+- malformed or invalid storage proof;
+- proof/root mismatch;
+- authenticated value mismatch or decode/version failure;
+- semantic checkpoint/anchor binding failure;
+- stale/replayed evidence;
+- protocol/domain-version incompatibility.
 
-The exact serialized error representation remains an implementation choice unless already fixed elsewhere; the important invariant is fail-closed classification rather than silent fallback.
+These are **conceptual failure categories only**. They are not new normative error-code names and do not freeze a serialized API. The concrete error representation remains an implementation detail unless separately established by the canonical specification.
 
 ## 5. Adversarial vector contract
 
