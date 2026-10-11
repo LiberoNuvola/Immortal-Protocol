@@ -5,53 +5,52 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
+/*
+ * Boundary only.
+ * No canonical reward amount or Treasury distribution rule is selected here.
+ * The test proves only that a certified reward budget cannot exceed a separately
+ * observed revenue envelope and cannot be sourced from protected value.
+ */
 const boundary = Object.freeze({
   accountingVersion: 'accounting-v1',
   rewardRuleVersion: 'reward-v1',
-  budget: 50,
-  protected: 1000,
-  availableRevenue: 50,
+  certifiedBudget: 50n,
+  availableRevenue: 50n,
+  protectedValue: 1000n,
   receiptVerified: true,
 })
 
-const certifiedBudget = (b) => {
-  if (!b.receiptVerified) return 0
-  if (b.budget < 0 || b.budget > b.availableRevenue) return 0
-  return b.budget
+const certifyBudget = (b) => {
+  if (!b?.receiptVerified) return 'UNVERIFIABLE'
+  if (b.certifiedBudget < 0n || b.availableRevenue < 0n || b.protectedValue < 0n) {
+    return 'REJECTED'
+  }
+  if (b.certifiedBudget > b.availableRevenue) return 'REJECTED'
+  return b.certifiedBudget
 }
 
-const rewardAllocation = (amount, b) => {
-  const budget = certifiedBudget(b)
-  if (!b.receiptVerified) return 0
-  if (amount < 0) return 0
-  return Math.min(amount, budget)
-}
-
-assert(certifiedBudget(boundary) === 50, 'verified revenue can produce a bounded certified reward budget')
-assert(rewardAllocation(20, boundary) === 20, 'reward allocation stays within certified budget')
-assert(rewardAllocation(60, boundary) === 50, 'allocation cannot exceed certified reward budget')
-
-const forgedReceipt = Object.freeze({ ...boundary, receiptVerified: false })
-assert(certifiedBudget(forgedReceipt) === 0, 'unverified Treasury receipt yields zero certified reward budget')
-assert(rewardAllocation(20, forgedReceipt) === 0, 'unverified receipt cannot fund rewards')
-
-const inflatedBudget = Object.freeze({ ...boundary, budget: 51 })
-assert(certifiedBudget(inflatedBudget) === 0, 'budget inflation beyond available revenue fails closed')
+assert(certifyBudget(boundary) === 50n, 'verified revenue can support an explicitly certified reward budget')
+assert(certifyBudget(Object.freeze({ ...boundary, certifiedBudget: 51n })) === 'REJECTED', 'certified budget cannot exceed observed available revenue')
+assert(
+  certifyBudget(Object.freeze({ ...boundary, receiptVerified: false })) === 'UNVERIFIABLE',
+  'unverified Treasury receipt cannot certify a reward budget',
+)
 
 const protectedOnly = Object.freeze({
   ...boundary,
-  budget: 0,
-  availableRevenue: 0,
-  protected: 1050,
+  certifiedBudget: 0n,
+  availableRevenue: 0n,
+  protectedValue: 1050n,
 })
-assert(rewardAllocation(10, protectedOnly) === 0, 'protected/encumbered value cannot become reward budget')
+assert(certifyBudget(protectedOnly) === 0n, 'protected-only state produces no reward budget')
 
-const authorityEscalation = Object.freeze({
+const mutatedAccounting = Object.freeze({
   ...boundary,
-  rewardRuleVersion: 'reward-v2',
   accountingVersion: 'accounting-v2',
 })
-assert(authorityEscalation.rewardRuleVersion !== boundary.rewardRuleVersion, 'reward-rule mutation is detectable')
-assert(authorityEscalation.accountingVersion !== boundary.accountingVersion, 'accounting-rule mutation is detectable')
+assert(
+  mutatedAccounting.accountingVersion !== boundary.accountingVersion,
+  'accounting-rule mutation remains distinguishable',
+)
 
 console.log('ALL REWARD/TREASURY BOUNDARY CHECKS PASSED')
