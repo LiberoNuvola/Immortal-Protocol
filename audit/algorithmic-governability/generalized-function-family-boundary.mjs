@@ -19,6 +19,7 @@ const derive = (boundary, certifiedInput) => {
     status: 'ADMISSIBLE',
     family: boundary.domain,
     ruleVersion: boundary.ruleVersion,
+    evidenceContract: boundary.evidenceContract,
     value: certifiedInput,
   })
 }
@@ -31,6 +32,7 @@ for (const boundary of [fee, reward, governance]) {
   const result = derive(boundary, 7)
   assert(result.status === 'ADMISSIBLE', `${boundary.domain} candidate is admissible inside its own boundary`)
   assert(result.ruleVersion === boundary.ruleVersion, `${boundary.domain} result retains rule identity`)
+  assert(result.evidenceContract === boundary.evidenceContract, `${boundary.domain} result retains evidence-contract identity`)
   assert(result.family === boundary.domain, `${boundary.domain} result retains domain identity`)
 }
 
@@ -41,6 +43,7 @@ const crossFamily = Object.freeze({
   ...reward,
   domain: fee.domain,
   ruleVersion: fee.ruleVersion,
+  evidenceContract: fee.evidenceContract,
 })
 
 assert(crossFamily.domain !== reward.domain, 'cross-family mutation is distinguishable')
