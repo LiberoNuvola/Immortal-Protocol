@@ -5,6 +5,11 @@ mkdir -p "$WORK/db" "$WORK/bin"
 curl -fsSL https://materios.fluxpointstudios.com/releases/materios-node-v6-x86_64-linux -o "$WORK/bin/materios-node"
 curl -fsSL https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json -o "$WORK/chain-spec-v6-raw.json"
 chmod +x "$WORK/bin/materios-node"
+cat >"$WORK/registrations.json" <<'EOF'
+[]
+EOF
+export USE_MAIN_CHAIN_FOLLOWER_MOCK=true
+export MAIN_CHAIN_FOLLOWER_MOCK_REGISTRATIONS_FILE="$WORK/registrations.json"
 
 echo "=== BINARY ==="
 "$WORK/bin/materios-node" --version
@@ -16,7 +21,7 @@ echo "=== START WARP NODE ==="
 PID=$!
 trap 'kill "$PID" 2>/dev/null || true' EXIT
 
-for i in $(seq 1 30); do
+for i in $(seq 1 60); do
   sleep 2
   if ! kill -0 "$PID" 2>/dev/null; then break; fi
   echo "--- poll $i ---"
