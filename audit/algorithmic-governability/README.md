@@ -98,6 +98,7 @@ node audit/algorithmic-governability/exp-12-observer-authority-split-boundary.mj
 node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
 node audit/algorithmic-governability/moriarty-intent-semantic-boundary.mjs
 node audit/algorithmic-governability/moriarty-intent-identity-binding-boundary.mjs
+node audit/algorithmic-governability/moriarty-immortal-intent-correspondence-boundary.mjs
 npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
 ```
 
