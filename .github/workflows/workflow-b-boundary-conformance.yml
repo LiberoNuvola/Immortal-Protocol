@@ -68,6 +68,8 @@ jobs:
         run: node audit/algorithmic-governability/action-evidence-integrity-boundary.mjs
       - name: Midnight adapter Intent boundary
         run: node audit/algorithmic-governability/midnight-adapter-intent-boundary.mjs
+      - name: Bitcoin L1 evidence envelope boundary
+        run: node audit/algorithmic-governability/bitcoin-l1-evidence-envelope-boundary.mjs
       - name: Midnight execution and evidence boundary
         run: node audit/algorithmic-governability/midnight-execution-evidence-boundary.mjs
       - name: Moriarty IMMORTAL Intent semantic boundary
