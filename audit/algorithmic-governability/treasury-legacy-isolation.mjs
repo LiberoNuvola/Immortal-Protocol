@@ -24,7 +24,7 @@ function walk(dir) {
 const sourceFiles = roots.flatMap((root) => {
   const abs = path.join(repoRoot, root)
   return fs.existsSync(abs) ? walk(abs) : []
-}).filter((file) => /.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
+}).filter((file) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file))
   .filter((file) => !file.endsWith(path.join('src', 'treasuryPolicy.ts')))
 
 const forbiddenPatterns = [
