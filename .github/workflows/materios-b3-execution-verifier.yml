@@ -82,14 +82,22 @@ jobs:
           head = substrate.get_chain_finalised_head()
           head_number = substrate.get_block_number(head)
 
-          for number in range(head_number, max(-1, head_number - 127), -1):
+          errors = 0
+          first_errors = []
+
+          for number in range(head_number, max(-1, head_number - 255), -1):
               block_hash = substrate.get_block_hash(number)
               if not block_hash:
                   continue
 
               try:
                   events = substrate.get_events(block_hash=block_hash)
-              except Exception:
+              except Exception as exc:
+                  errors += 1
+                  if len(first_errors) < 3:
+                      first_errors.append(
+                          f"{number}: {type(exc).__name__}: {exc}"
+                      )
                   continue
 
               for event in events:
@@ -122,10 +130,15 @@ jobs:
                   print("block_hash:", block_hash)
                   raise SystemExit(0)
 
-          raise SystemExit("no AvailabilityCertified event found in last 128 finalized blocks")
+          print("event_decode_errors:", errors)
+          for message in first_errors:
+              print("event_decode_error:", message)
+          raise SystemExit(
+              "no AvailabilityCertified event found in last 256 finalized blocks"
+          )
           PY
         env:
-          MATERIOS_RPC_WS: wss://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_RPC_WS: https://materios.fluxpointstudios.com/preprod-rpc
 
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
