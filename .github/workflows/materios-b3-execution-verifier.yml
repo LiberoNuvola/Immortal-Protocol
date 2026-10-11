@@ -82,59 +82,99 @@ jobs:
           head = substrate.get_chain_finalised_head()
           head_number = substrate.get_block_number(head)
 
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+
           errors = 0
           first_errors = []
+          found = []
 
-          for number in range(head_number, max(-1, head_number - 255), -1):
+          def scan(number):
               block_hash = substrate.get_block_hash(number)
               if not block_hash:
-                  continue
+                  return None
 
               try:
                   events = substrate.get_events(block_hash=block_hash)
               except Exception as exc:
-                  errors += 1
-                  if len(first_errors) < 3:
-                      first_errors.append(
-                          f"{number}: {type(exc).__name__}: {exc}"
-                      )
-                  continue
+                  return ("error", number, type(exc).__name__, str(exc))
 
               for event in events:
                   value = event.value
-                  if value.get("module_id") != "OrinqReceipts" or value.get("event_id") != "AvailabilityCertified":
+                  if (
+                      value.get("module_id") == "OrinqReceipts"
+                      and value.get("event_id") == "AvailabilityCertified"
+                  ):
+                      attrs = value["attributes"]
+                      receipt_id = attrs["receipt_id"]
+                      cert_hash = attrs["cert_hash"]
+
+                      if not isinstance(receipt_id, str) or not isinstance(cert_hash, str):
+                          return ("bad", number, "", "non-string AvailabilityCertified payload")
+
+                      if not receipt_id.startswith("0x"):
+                          receipt_id = "0x" + receipt_id
+                      if not cert_hash.startswith("0x"):
+                          cert_hash = "0x" + cert_hash
+
+                      if len(receipt_id) != 66 or len(cert_hash) != 66:
+                          return ("bad", number, "", "invalid AvailabilityCertified hash length")
+
+                      return ("found", number, receipt_id, cert_hash, block_hash)
+
+              return None
+
+          start_block = max(0, head_number - 1023)
+
+          with ThreadPoolExecutor(max_workers=16) as pool:
+              futures = [
+                  pool.submit(scan, number)
+                  for number in range(head_number, start_block - 1, -1)
+              ]
+
+              for future in as_completed(futures):
+                  result = future.result()
+                  if result is None:
                       continue
 
-                  attrs = value["attributes"]
-                  receipt_id = attrs["receipt_id"]
-                  cert_hash = attrs["cert_hash"]
+                  if result[0] == "error":
+                      errors += 1
+                      if len(first_errors) < 5:
+                          first_errors.append(
+                              f"{result[1]}: {result[2]}: {result[3]}"
+                          )
+                      continue
 
-                  if not isinstance(receipt_id, str) or not isinstance(cert_hash, str):
-                      raise SystemExit("AvailabilityCertified payload is not string-valued")
-                  if not receipt_id.startswith("0x"):
-                      receipt_id = "0x" + receipt_id
-                  if not cert_hash.startswith("0x"):
-                      cert_hash = "0x" + cert_hash
-                  if len(receipt_id) != 66 or len(cert_hash) != 66:
-                      raise SystemExit("invalid AvailabilityCertified hash length")
+                  if result[0] == "found":
+                      found.append(result)
+                      print(
+                          "found AvailabilityCertified:",
+                          result[1],
+                          result[2],
+                          result[3],
+                      )
+                      break
 
-                  with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-                      out.write("receipt_id=" + receipt_id + "\n")
-                      out.write("certified_block=" + str(number) + "\n")
-                      out.write("cert_hash=" + cert_hash + "\n")
-                      out.write("block_hash=" + block_hash + "\n")
+          if found:
+              _, number, receipt_id, cert_hash, block_hash = found[0]
 
-                  print("receipt_id:", receipt_id)
-                  print("certified_block:", number)
-                  print("cert_hash:", cert_hash)
-                  print("block_hash:", block_hash)
-                  raise SystemExit(0)
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("receipt_id=" + receipt_id + "\n")
+                  out.write("certified_block=" + str(number) + "\n")
+                  out.write("cert_hash=" + cert_hash + "\n")
+                  out.write("block_hash=" + block_hash + "\n")
+
+              print("receipt_id:", receipt_id)
+              print("certified_block:", number)
+              print("cert_hash:", cert_hash)
+              print("block_hash:", block_hash)
+              raise SystemExit(0)
 
           print("event_decode_errors:", errors)
           for message in first_errors:
               print("event_decode_error:", message)
+
           raise SystemExit(
-              "no AvailabilityCertified event found in last 256 finalized blocks"
+              "no AvailabilityCertified event found in last 1024 finalized blocks"
           )
           PY
         env:
