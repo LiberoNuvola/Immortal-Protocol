@@ -12,6 +12,7 @@ on:
     paths:
       - "poc/materios-execution-verifier/**"
       - "poc/materios-checkpoint/**"
+      - "poc/materios-grandpa/**"
       - ".github/workflows/materios-b3-execution-verifier.yml"
   pull_request:
     branches:
@@ -74,6 +75,45 @@ jobs:
         with:
           name: materios-b3a-finalized-state-capture
           path: poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
+          if-no-files-found: error
+
+
+  real-grandpa-witness:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install GRANDPA verifier dependencies
+        run: npm install --prefix poc/materios-grandpa
+
+      - name: Typecheck GRANDPA verifier
+        working-directory: poc/materios-grandpa
+        run: npm run typecheck
+
+      - name: Capture and verify real Materios GRANDPA witness
+        working-directory: poc/materios-grandpa
+        run: npx tsx src/capture-real-witness.ts
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/rpc
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+          MATERIOS_GRANDPA_PERIOD: 512
+          MATERIOS_SLOTS_PER_EPOCH: 600
+          MATERIOS_JUSTIFICATION_LOOKBACK: 8
+          MATERIOS_TRANSITION_LOOKBACK_EPOCHS: 12
+
+      - name: Upload real GRANDPA witness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-real-grandpa-witness
+          path: poc/materios-grandpa/out/MateriosRealGrandpaWitness.json
           if-no-files-found: error
 
   live-storage-proof:
