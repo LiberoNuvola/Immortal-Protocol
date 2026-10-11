@@ -38,28 +38,24 @@ mkPolicy seed tokenName _ ctx =
     && txInfoMint info == expected
 
 {-# INLINABLE wrap #-}
--- The factory is parameterized off-chain with Plutus Data constants.
--- Decode those constants at the boundary before calling the typed policy logic.
--- This keeps the mint predicate unchanged while making the applied parameters
--- match the UPLC factory ABI used by Lucid's applyParamsToScript.
 wrap
-  :: BuiltinData
-  -> BuiltinData
+  :: TxOutRef
+  -> TokenName
   -> BuiltinData
   -> BuiltinData
   -> BuiltinUnit
-wrap seedData tokenNameData _ ctx =
+wrap seed tokenName _ ctx =
   check
     (mkPolicy
-      (unsafeFromBuiltinData seedData)
-      (unsafeFromBuiltinData tokenNameData)
+      seed
+      tokenName
       ()
       (unsafeFromBuiltinData ctx))
 
 compiledPolicyFactory
   :: CompiledCode
-       ( BuiltinData
-         -> BuiltinData
+       ( TxOutRef
+         -> TokenName
          -> BuiltinData
          -> BuiltinData
          -> BuiltinUnit

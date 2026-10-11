@@ -126,6 +126,9 @@ jobs:
       - name: Derive funded CI test wallet
         run: node audit/cardano-integration/create-test-wallet.mjs
 
+      - name: Execute real Cardano ledger smoke transaction
+        run: node audit/cardano-integration/ledger-smoke.mjs
+
       - name: Execute V3 carrier against native Cardano ledger
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 

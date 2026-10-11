@@ -81,7 +81,7 @@ jobs:
             ~/.cabal/packages
             ~/.cabal/store
             dist-newstyle
-          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', 'plutus/**/*.hs', 'plutus/**/*.lhs') }}
+          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
 
       - name: Record generated artifact hashes
         run: |
