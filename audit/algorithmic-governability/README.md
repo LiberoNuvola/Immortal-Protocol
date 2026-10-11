@@ -53,6 +53,7 @@ These expansions are not a second governance system and do not create new econom
 | B5/B6 action evidence | Issue/Reveal/Claim/Expire packet completeness | real ledger-aligned action equivalence |
 | Midnight/Moriarty adapter research | Intent → chain-neutral admission → Moriarty semantic mapping → Midnight execution | real Midnight deployment, proof/evidence binding and admission correspondence |
 | Moriarty source-language correspondence | OwnerIntent/source/authority → explicit IMMORTAL projection; no schema equivalence | real source-to-admission and ledger binding |
+| Adapter maturity | explicit distinction: Cardano concrete, Reference replay-only, Midnight/research and other adapters research-only | real non-Cardano execution/settlement evidence |
 | Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
 | Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
 
@@ -84,6 +85,7 @@ Workflow B also contains a self-check that every `.mjs` harness in this director
 
 ```bash
 node audit/algorithmic-governability/workflow-b-harness-coverage-boundary.mjs
+node audit/algorithmic-governability/adapter-maturity-registry-boundary.mjs
 node audit/algorithmic-governability/no-result-dependent-authority.mjs
 node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
 node audit/algorithmic-governability/exp-01-seniority-order-boundary.mjs
