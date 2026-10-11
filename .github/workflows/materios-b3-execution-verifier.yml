@@ -92,5 +92,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: materios-b3b-live-storage-proof
-          path: poc/materios-checkpoint/out/
+          path: |
+            poc/materios-checkpoint/out/MateriosB3BLiveStorageProof.json
+            poc/materios-checkpoint/out/b3b-state-root.hex
+            poc/materios-checkpoint/out/b3b-storage-key.hex
+            poc/materios-checkpoint/out/b3b-storage-value.hex
+            poc/materios-checkpoint/out/b3b-proof-scale.hex
           if-no-files-found: error
