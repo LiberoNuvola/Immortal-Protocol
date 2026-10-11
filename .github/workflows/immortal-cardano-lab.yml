@@ -109,11 +109,71 @@ jobs:
       - name: Install pinned Yaci DevKit
         run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
 
-      - name: Start isolated Cardano devnet
+      - name: Start isolated Cardano devnet with Ogmios first
         run: |
           mkdir -p audit/yaci-evidence
-          nohup yaci-devkit up --enable-yaci-store --enable-kupomios > audit/yaci-evidence/yaci.log 2>&1 &
+          # Yaci DevKit 0.12.0-beta5 disables Ogmios when --enable-yaci-store is
+          # supplied. Start Kupomios first, then start Yaci Store via its admin API
+          # so it selects the Ogmios evaluator rather than the Scalus fallback.
+          nohup yaci-devkit up --enable-kupomios > audit/yaci-evidence/yaci.log 2>&1 &
           echo $! > audit/yaci-evidence/yaci.pid
+
+      - name: Start Yaci Store after Ogmios
+        run: |
+          set -euo pipefail
+          mkdir -p audit/yaci-evidence
+          ogmios_started=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/ogmios/start-kupomios \
+              -o audit/yaci-evidence/ogmios-start.json; then
+              ogmios_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ogmios_started" -ne 1 ]; then
+            echo "Failed to start Ogmios/Kupo through the Yaci admin API."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          ogmios_ready=0
+          for i in $(seq 1 60); do
+            if timeout 1 bash -c '</dev/tcp/127.0.0.1/1337' 2>/dev/null; then
+              ogmios_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ogmios_ready" -ne 1 ]; then
+            echo "Ogmios process started but port 1337 never became reachable."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          store_started=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent --show-error --request POST \
+              http://localhost:10000/local-cluster/api/admin/yaci-store/start \
+              -o audit/yaci-evidence/yaci-store-start.json; then
+              store_started=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$store_started" -ne 1 ]; then
+            echo "Failed to start Yaci Store after Ogmios became reachable."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+
+          if ! grep -q "Yaci Store tx evaluator mode: ogmios" audit/yaci-evidence/yaci.log; then
+            echo "Refusing to continue: Yaci Store did not confirm the Ogmios evaluator."
+            tail -300 audit/yaci-evidence/yaci.log || true
+            exit 1
+          fi
+          echo "YACI_STORE_EVALUATOR=ogmios" | tee audit/yaci-evidence/evaluator-mode.txt
 
       - name: Wait for Yaci Store
         run: |
