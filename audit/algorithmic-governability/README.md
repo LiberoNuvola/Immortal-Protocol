@@ -57,6 +57,7 @@ These expansions are not a second governance system and do not create new econom
 | Adapter maturity | explicit distinction: Cardano concrete, Reference replay-only, Midnight/research and other adapters research-only | real non-Cardano execution/settlement evidence |
 | Competing-monitor epistemic | same RawObservation → distinct monitor metrics → contestability | production monitor-selection procedure |
 | Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
+| AG-01 executable wiring | canonical Haskell test + Cabal suite + bounded matrix linkage | Haskell CI execution and full governance replay evidence |
 | Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
 
 These are boundary/conformance surfaces, not claims of production closure. They must not be used to infer missing economic rules.
