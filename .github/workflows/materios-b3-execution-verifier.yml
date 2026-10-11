@@ -65,22 +65,22 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
 
-      - name: Discover live receipt via Firehose
+      - name: Select recent certified receipt
         id: receipt
         shell: bash
         run: |
-          set -uo pipefail
-          line=$(curl -N -sS --max-time 30 \
-            -H "Accept: text/event-stream" \
-            https://materios.fluxpointstudios.com/api/firehose/stream \
-            | grep -m1 '"kind":"receipt:certified"' || true)
+          set -euo pipefail
 
-          receipt_id=$(printf '%s' "$line" \
-            | sed -n 's/.*"receiptId":"\([^"]*\)".*/\1/p')
+          recent_receipt="0xb157c4ba8101f972b1850f1aaa3f7c9a034c385b73386ce841f8a1217c1ba009"
+          url="https://materios.fluxpointstudios.com/preprod-events/receipt-attestors?receiptId=$recent_receipt"
 
-          test -n "$receipt_id"
-          echo "receipt_id=$receipt_id" >> "$GITHUB_OUTPUT"
-          echo "receipt_id=$receipt_id"
+          body=$(curl -fsS --max-time 15 "$url")
+          certified=$(printf '%s' "$body" | sed -n 's/.*"certified":\(true\|false\).*/\1/p')
+
+          test "$certified" = "true"
+
+          echo "Using recent certified receipt: $recent_receipt"
+          echo "receipt_id=$recent_receipt" >> "$GITHUB_OUTPUT"
 
       - name: Capture live Preprod storage proof
         working-directory: poc/materios-checkpoint
