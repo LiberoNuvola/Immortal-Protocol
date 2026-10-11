@@ -1,0 +1,187 @@
+# MATERIOS B3 — operator patchset v1
+#
+# Target: Flux-Point-Studios/materios, main branch as inspected 2026-10-11.
+# Purpose: expose evidence transport only.
+# Scope: standard GRANDPA finality proof RPC + narrow native execution-proof RPC.
+# Explicitly out of scope: selector logic, consensus semantics, V3, Reveal, economics.
+#
+# Apply against the exact Materios revision used for the evidence run.
+# The operator MUST build and smoke-test the result before using it for evidence.
+
+diff --git a/partnerchain/node/src/rpc.rs b/partnerchain/node/src/rpc.rs
+--- a/partnerchain/node/src/rpc.rs
++++ b/partnerchain/node/src/rpc.rs
+@@
+ use std::sync::Arc;
+ 
+-use jsonrpsee::RpcModule;
++use jsonrpsee::{types::ErrorObjectOwned, RpcModule};
+ use materios_runtime::{opaque::Block, AccountId, Nonce};
++use sc_client_api::ProofProvider;
++use sc_consensus_grandpa::{
++	FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
++};
++use sc_rpc::SubscriptionTaskExecutor;
+ use sc_transaction_pool_api::TransactionPool;
+ use sp_api::ProvideRuntimeApi;
++use sp_core::Bytes;
+ use sp_blockchain::{Error as BlockchainError, HeaderBackend, HeaderMetadata};
++use sp_runtime::traits::{Block as BlockT, NumberFor};
+ 
++/// GRANDPA RPC dependencies.
++pub struct GrandpaDeps<B> {
++    /// Shared voter state. Must be the same instance/state family used by the GRANDPA voter.
++    pub shared_voter_state: SharedVoterState,
++    /// Current authoritative GRANDPA set.
++    pub shared_authority_set:
++        SharedAuthoritySet<<Block as BlockT>::Hash, NumberFor<Block>>,
++    /// Stream of real GRANDPA justifications.
++    pub justification_stream: GrandpaJustificationStream<Block>,
++    /// Subscription executor supplied by sc-service.
++    pub subscription_executor: SubscriptionTaskExecutor,
++    /// Standard SDK finality-proof provider backed by the node backend.
++    pub finality_provider: Arc<FinalityProofProvider<B, Block>>,
++}
++
+ /// Full client dependencies.
+-pub struct FullDeps<C, P> {
++pub struct FullDeps<C, P, B> {
+     /// The client instance to use.
+     pub client: Arc<C>,
+     /// Transaction pool instance.
+     pub pool: Arc<P>,
++    /// GRANDPA RPC dependencies.
++    pub grandpa: GrandpaDeps<B>,
+ }
+ 
+ /// Instantiate all full RPC extensions.
+-pub fn create_full<C, P>(
+-    deps: FullDeps<C, P>,
++pub fn create_full<C, P, B>(
++    deps: FullDeps<C, P, B>,
+ ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
+ where
+     C: ProvideRuntimeApi<Block>
+         + HeaderBackend<Block>
+         + HeaderMetadata<Block, Error = BlockchainError>
++        + ProofProvider<Block>
+         + Send
+         + Sync
+         + 'static,
+@@
+     C::Api: orinq_receipts_primitives::OrinqReceiptsApi<Block, AccountId>,
+     C::Api: motra_primitives::MotraApi<Block>,
+     C::Api: sp_block_builder::BlockBuilder<Block>,
+     P: TransactionPool + Send + Sync + 'static,
++    B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+ {
+     use motra_rpc::MotraRpcApiServer;
+     use orinq_receipts_rpc::{OrinqReceipts, OrinqReceiptsApiServer};
+     use substrate_frame_rpc_system::{System, SystemApiServer};
+ 
+     let mut module = RpcModule::new(());
+-    let FullDeps { client, pool } = deps;
++    let FullDeps { client, pool, grandpa } = deps;
+ 
+     module.merge(System::new(client.clone(), pool).into_rpc())?;
+     module.merge(OrinqReceipts::new(client.clone()).into_rpc())?;
+-    module.merge(motra_rpc::MotraRpc::new(client).into_rpc())?;
++    module.merge(motra_rpc::MotraRpc::new(client.clone()).into_rpc())?;
++    module.merge(
++        sc_consensus_grandpa_rpc::Grandpa::new(
++            grandpa.subscription_executor,
++            grandpa.shared_authority_set,
++            grandpa.shared_voter_state,
++            grandpa.justification_stream,
++            grandpa.finality_provider,
++        )
++        .into_rpc(),
++    )?;
++
++    // B3 evidence transport: execute the canonical Materios committee Runtime API
++    // through the node's native ProofProvider. No selector logic is reimplemented here.
++    //
++    // Params:
++    //   [block_hash, call_data_hex]
++    //
++    // The RPC name fixes the runtime API method. The caller cannot substitute a
++    // different runtime method. The result is returned as exact SCALE bytes and
++    // the StorageProof as exact SCALE-encoded bytes.
++    let proof_client = client.clone();
++    module.register_blocking_method(
++        "materios_b3_calculateCommitteeProof",
++        move |params, _context, _extensions| {
++            let (block_hash, call_data): (<Block as BlockT>::Hash, Bytes) =
++                params.parse()?;
++            let (result, proof) = proof_client
++                .execution_proof(
++                    block_hash,
++                    "SessionValidatorManagementApi_calculate_committee",
++                    &call_data.0,
++                )
++                .map_err(|err| ErrorObjectOwned::owned(
++                    -32001,
++                    err.to_string(),
++                    None::<()>,
++                ))?;
++
++            Ok::<_, ErrorObjectOwned>((Bytes::from(result), Bytes::from(proof.encode())))
++        },
++    )?;
+ 
+     Ok(module)
+ }
+diff --git a/partnerchain/node/src/service.rs b/partnerchain/node/src/service.rs
+--- a/partnerchain/node/src/service.rs
++++ b/partnerchain/node/src/service.rs
+@@
+-use sc_consensus_grandpa::SharedVoterState;
++use sc_consensus_grandpa::SharedVoterState;
+@@
+ 	let prometheus_registry = config.prometheus_registry().cloned();
+ 
++	// Shared GRANDPA state for both the voter and the standard RPC proof surface.
++	// These objects are derived from the same grandpa_link used by consensus.
++	let justification_stream = grandpa_link.justification_stream();
++	let shared_authority_set = grandpa_link.shared_authority_set().clone();
++	let shared_voter_state = SharedVoterState::empty();
++	let finality_proof_provider =
++		sc_consensus_grandpa::FinalityProofProvider::new_for_service(
++			backend.clone(),
++			Some(shared_authority_set.clone()),
++		);
++
+ 	// RPC extensions (preserving existing Materios RPCs)
+ 	let rpc_extensions_builder = {
+ 		let client = client.clone();
+ 		let pool = transaction_pool.clone();
++		let grandpa_shared_authority_set = shared_authority_set.clone();
++		let grandpa_shared_voter_state = shared_voter_state.clone();
++		let grandpa_justification_stream = justification_stream.clone();
++		let grandpa_finality_proof_provider = finality_proof_provider.clone();
+ 
+-		Box::new(move |_| {
++		Box::new(move |subscription_executor| {
+ 			let deps = crate::rpc::FullDeps {
+ 				client: client.clone(),
+ 				pool: pool.clone(),
++				grandpa: crate::rpc::GrandpaDeps {
++					shared_voter_state: grandpa_shared_voter_state.clone(),
++					shared_authority_set: grandpa_shared_authority_set.clone(),
++					justification_stream: grandpa_justification_stream.clone(),
++					subscription_executor: subscription_executor.clone(),
++					finality_provider: grandpa_finality_proof_provider.clone(),
++				},
+ 			};
+ 			crate::rpc::create_full(deps).map_err(Into::into)
+ 		})
+@@
+ 			voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
+ 			prometheus_registry,
+-			shared_voter_state: SharedVoterState::empty(),
++			shared_voter_state,
+ 			telemetry: telemetry.as_ref().map(|x| x.handle()),
+ 			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
+ 		};
+ 
+*** End Patch
