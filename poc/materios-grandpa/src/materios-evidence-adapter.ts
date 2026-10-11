@@ -7,7 +7,11 @@ import {
   verifyActivationBlockBinding,
   verifySelectionInputsCommitment
 } from "./authority-transition.js";
-import type { TrustedAuthorityState, GrandpaAuthority } from "./authority.js";
+import {
+  trustedAuthorityStateFromVerifiedTransition,
+  type TrustedAuthorityState,
+  type GrandpaAuthority
+} from "./authority.js";
 import type { CanonicalCheckpoint } from "./verifier.js";
 import type { Ed25519Verifier } from "./crypto.js";
 import {
@@ -90,30 +94,25 @@ export async function verifyMateriosFinalityAgainstTransition(
     checkpoint
   );
 
+  try {
+    trustedAuthorityStateFromVerifiedTransition(
+      currentTrusted,
+      transition
+    );
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "FINALITY_AUTHORITY_TRANSITION_MISMATCH"
+    );
+  }
+
   if (
     currentTrusted.setId !==
     statement.fromSetId
   ) {
     throw new Error(
       "FINALITY_AUTHORITY_SET_MISMATCH"
-    );
-  }
-
-  if (
-    currentTrusted.chainId !==
-    statement.chainId
-  ) {
-    throw new Error(
-      "FINALITY_AUTHORITY_CHAIN_MISMATCH"
-    );
-  }
-
-  if (
-    currentTrusted.genesisHash.length !==
-    statement.genesisHash.length
-  ) {
-    throw new Error(
-      "FINALITY_AUTHORITY_GENESIS_MISMATCH"
     );
   }
 
