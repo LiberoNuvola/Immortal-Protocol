@@ -957,8 +957,8 @@ if (
   throw new Error('Claim unexpectedly changed unresolved reserve/count')
 }
 
-const poolOutputLovelace = postPool.assets.lovelace ?? 0n
-if (POOL_LOVELACE - poolOutputLovelace !== PRIZE_AMOUNT * 1_000_000n / ADA_PRICE_USDM_SUBUNITS) {
+const observedPoolOutputLovelace = postPool.assets.lovelace ?? 0n
+if (POOL_LOVELACE - observedPoolOutputLovelace !== PRIZE_AMOUNT * 1_000_000n / ADA_PRICE_USDM_SUBUNITS) {
   throw new Error('Claim physical Pool value delta does not equal the exact payout')
 }
 
@@ -1037,7 +1037,7 @@ const evidence = {
     pendingLiabilitiesBefore: PRIZE_AMOUNT.toString(),
     pendingLiabilitiesAfter: postLiabilities.toString(),
     physicalPoolInputLovelace: POOL_LOVELACE.toString(),
-    physicalPoolOutputLovelace: poolOutputLovelace.toString(),
+    physicalPoolOutputLovelace: observedPoolOutputLovelace.toString(),
     payoutLovelaceToClaimAddress: payoutLovelace.toString(),
     ticketNftQuantityAtWallet: ticketQuantity.toString(),
   },
