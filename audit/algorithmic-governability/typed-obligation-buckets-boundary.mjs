@@ -34,9 +34,9 @@ const complete = Object.freeze({
 assert(hasAllComponents(complete), 'all existing ProtectedCapital interface components are represented explicitly')
 assert(protectedCapital(complete) === 44n, 'explicit components compose without hidden or implicit amounts')
 
-const missing = Object.freeze({
+const missing = {
   ...complete,
-})
+}
 delete missing.reserveProtection
 assert(!hasAllComponents(missing), 'missing protected component is detectable')
 assert(Object.prototype.hasOwnProperty.call(missing, 'reserveProtection') === false, 'missing component is not silently represented as zero')
