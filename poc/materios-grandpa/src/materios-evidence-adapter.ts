@@ -7,8 +7,14 @@ import {
   verifyActivationBlockBinding,
   verifySelectionInputsCommitment
 } from "./authority-transition.js";
-import type { GrandpaAuthority } from "./authority.js";
+import type { TrustedAuthorityState, GrandpaAuthority } from "./authority.js";
 import type { CanonicalCheckpoint } from "./verifier.js";
+import type { Ed25519Verifier } from "./crypto.js";
+import {
+  type GrandpaFinalityProof,
+  type FinalityProofVerificationResult,
+  verifyFinalityProof
+} from "./finalityProof.js";
 
 const HASH_LENGTH = 32;
 const MAX_JSON_BYTES = 32 * 1024 * 1024;
@@ -53,6 +59,85 @@ export interface MateriosEvidenceAdapter {
     proofVerifier: AuthoritySetTransitionProofVerifier,
     executionProofVerifier: MateriosExecutionProofVerifier
   ) => Promise<VerifiedAuthoritySetTransition>;
+}
+
+export interface VerifiedMateriosFinalityBoundary {
+  readonly transition: VerifiedAuthoritySetTransition;
+  readonly finality: FinalityProofVerificationResult;
+}
+
+/**
+ * Finality may cross the Materios evidence boundary only after the authority
+ * transition has already crossed its own proof boundary.
+ *
+ * The GRANDPA justification for the activation checkpoint must be validated
+ * against the pre-transition authority state identified by fromSetId. We
+ * deliberately do not use the newly activated committee as the signer set for
+ * the block that establishes its activation.
+ */
+export async function verifyMateriosFinalityAgainstTransition(
+  checkpoint: CanonicalCheckpoint,
+  proof: GrandpaFinalityProof,
+  currentTrusted: TrustedAuthorityState,
+  transition: VerifiedAuthoritySetTransition,
+  crypto: Ed25519Verifier
+): Promise<VerifiedMateriosFinalityBoundary> {
+  const statement =
+    transition.publicStatement;
+
+  verifyActivationBlockBinding(
+    statement,
+    checkpoint
+  );
+
+  if (
+    currentTrusted.setId !==
+    statement.fromSetId
+  ) {
+    throw new Error(
+      "FINALITY_AUTHORITY_SET_MISMATCH"
+    );
+  }
+
+  if (
+    currentTrusted.chainId !==
+    statement.chainId
+  ) {
+    throw new Error(
+      "FINALITY_AUTHORITY_CHAIN_MISMATCH"
+    );
+  }
+
+  if (
+    currentTrusted.genesisHash.length !==
+    statement.genesisHash.length
+  ) {
+    throw new Error(
+      "FINALITY_AUTHORITY_GENESIS_MISMATCH"
+    );
+  }
+
+  const finality =
+    await verifyFinalityProof(
+      checkpoint,
+      proof,
+      currentTrusted,
+      crypto
+    );
+
+  if (
+    finality.finalizedBlock.setId !==
+    statement.fromSetId
+  ) {
+    throw new Error(
+      "FINALITY_RESULT_SET_ID_MISMATCH"
+    );
+  }
+
+  return {
+    transition,
+    finality
+  };
 }
 
 /**
