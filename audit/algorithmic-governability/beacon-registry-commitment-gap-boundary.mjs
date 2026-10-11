@@ -19,7 +19,7 @@ const datumEnd = types.indexOf('PlutusTx.unstableMakeIsData \'\'BeaconRegistryDa
 assert(datumStart >= 0 && datumEnd > datumStart, 'BeaconRegistryDatum declaration is locatable')
 
 const datumBlock = types.slice(datumStart, datumEnd)
-const datumFields = [...datumBlock.matchAll(/^\s*,?\s*(br[A-Z][A-Za-z0-9_]*)\s+::/gm)].map((m) => m[1])
+const datumFields = [...datumBlock.matchAll(/^\s*[{,]\s*(br[A-Z][A-Za-z0-9_]*)\s+::/gm)].map((m) => m[1])
 
 assert(datumFields.length === 7, 'current canonical BeaconRegistryDatum remains the known seven-field schema')
 assert(!datumBlock.includes('brGameRoundCommitment'), 'GameRoundCommitment is not silently represented as an on-chain registry datum field')
