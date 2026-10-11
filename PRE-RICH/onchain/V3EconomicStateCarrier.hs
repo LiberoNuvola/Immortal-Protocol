@@ -43,6 +43,8 @@ data V3EconomicStateAction
       , v3PreStateHash      :: BuiltinByteString
       , v3ActionFingerprint :: BuiltinByteString
       , v3PostStateHash     :: BuiltinByteString
+      , v3ClassId            :: Integer
+      , v3Price              :: Integer
       }
 
 PlutusTx.unstableMakeIsData ''V3EconomicStateAction
@@ -207,17 +209,37 @@ sameStateIdentity before after =
 bindingFieldValid :: BuiltinByteString -> Bool
 bindingFieldValid field = lengthOfByteString field > 0
 
+{-# INLINABLE hashFieldValid #-}
+hashFieldValid :: BuiltinByteString -> Bool
+hashFieldValid field = lengthOfByteString field == 32
+
+{-# INLINABLE canonicalIssuePrice #-}
+canonicalIssuePrice :: Integer -> Integer
+canonicalIssuePrice classId =
+  if classId == 0 then 1
+  else if classId == 1 then 2
+  else if classId == 2 then 3
+  else if classId == 3 then 5
+  else if classId == 4 then 10
+  else if classId == 5 then 25
+  else if classId == 6 then 50
+  else if classId == 7 then 100
+  else 0
+
 {-# INLINABLE bindingEnvelopeValid #-}
 bindingEnvelopeValid :: V3EconomicStateAction -> Bool
 bindingEnvelopeValid action =
   case action of
-    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash ->
+    AdvanceV3State actionClass decisionRef observationRef preHash actionHash postHash classId price ->
          (actionClass == "Issue" || actionClass == "Reveal" || actionClass == "Claim" || actionClass == "Expire")
       && bindingFieldValid decisionRef
       && bindingFieldValid observationRef
-      && bindingFieldValid preHash
-      && bindingFieldValid actionHash
-      && bindingFieldValid postHash
+      && hashFieldValid preHash
+      && hashFieldValid actionHash
+      && hashFieldValid postHash
+      && classId >= 0
+      && classId < 8
+      && (actionClass /= "Issue" || price == canonicalIssuePrice classId)
 
 {-# INLINABLE mkValidator #-}
 mkValidator
@@ -249,7 +271,7 @@ mkValidator carrierPolicy carrierName datum action ctx =
          Nothing -> False
          Just after ->
            case action of
-             AdvanceV3State _ _ _ _ _ _ ->
+             AdvanceV3State _ _ _ _ _ _ _ _ ->
                sameStateIdentity datum after
            && bindingEnvelopeValid action
 

@@ -844,6 +844,7 @@ export async function loadCertifiedTicketState(opts: {
   const commitment = bytesField(datum.fields[4])
   const gameVersion = bytesField(datum.fields[5])
   const result = bytesField(datum.fields[11])
+  const materiosContext = bytesField(datum.fields[17])
 
   if (
     priceUsdm === null ||
@@ -856,7 +857,8 @@ export async function loadCertifiedTicketState(opts: {
     row2Tier === null ||
     commitment === null ||
     gameVersion === null ||
-    result === null
+    result === null ||
+    materiosContext === null
   ) {
     throw new Error('Certified ticket PrizeDatum has incomplete state')
   }
@@ -883,6 +885,7 @@ export async function loadCertifiedTicketState(opts: {
       row1Tier: BigInt(row1Tier),
       row2Tier: BigInt(row2Tier),
       beaconTarget: JSON.stringify(target),
+      materiosContext,
     },
     purchaseTxHash,
     verificationReference: purchaseTxHash

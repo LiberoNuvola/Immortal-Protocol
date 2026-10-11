@@ -4,32 +4,46 @@ import ui from './ui'
 import { loadCertifiedTicketState } from './gameFlow'
 import { mountCertifiedTicket3D } from './ticket3d'
 import { TICKET_POLICY_ID } from './config'
-import adSlots, {
-  AD_SLOT_PACKAGES,
-  calculateAdTotalUsd,
-  formatUsd,
-  getExpiryDateFromPackage,
-  getPackageById,
-} from './adSlots'
+import { PRE_RICH_CANONICAL_PRICES } from '../PRE-RICH/src/PreRichCardanoObservationProjection'
+import adSlots from './adSlots'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div class="app-shell dapp-shell">
+  <div class="app-shell dapp-shell prerich-game-shell">
     <header class="dapp-header">
-      <div class="dapp-brand-lockup">
-        <img class="dapp-immortal-mark" src="/immortal-mark.svg" alt="IMMORTAL Protocol">
-        <div><span class="dapp-kicker">IMMORTAL / PRE-RICH</span>
-        <h1>The application layer.</h1>
-        <div class="dapp-product-line"><strong>PRE-RICH</strong><span>powered by IMMORTAL</span></div>
-        <p>Connect your Cardano wallet, observe the current Preprod state, and follow the ticket lifecycle. Economic admission remains fail-closed until its authoritative producer is available.</p></div>
+      <div class="dapp-brand-lockup prerich-brand">
+        <div class="prerich-logo">PRE<span>-</span>RICH</div>
+        <div>
+          <span class="dapp-kicker">PRE-RICH · SCRATCH & WIN</span>
+          <h1>Scratch. Reveal. Win.</h1>
+          <div class="dapp-product-line"><strong>POWERED BY IMMORTAL</strong><span>Cardano · Preprod</span></div>
+          <p>A meme-token scratch ticket backed by verifiable on-chain rules. Play first; open the verification drawer whenever you want to inspect what happened.</p>
+        </div>
       </div>
       <div class="dapp-header__actions">
+        <a class="dapp-about-link" href="./web/ecosystem.html">Cos’è PRE-RICH? →</a>
         <span class="network-pill">CARDANO · PREPROD</span>
         <button id="connect" class="primary-action">Connect Wallet</button>
         <button id="change-wallet" class="secondary-action" hidden>Change Wallet</button>
       </div>
     </header>
 
-    <section class="dapp-grid">
+    <section class="game-hero dapp-card">
+      <div class="game-hero__copy">
+        <span class="hero-badge">PRE-RICH · LIVE TEST ENVIRONMENT</span>
+        <h2>Pick a class. Buy a ticket. Scratch to reveal.</h2>
+        <p>The winning outcome is not exposed by the interface before the canonical reveal transition. The game experience stays simple; the evidence remains inspectable.</p>
+        <div class="game-hero__actions">
+          <a class="secondary-action" href="#play">How it works</a>
+          <button id="open-verify" class="secondary-action" type="button">Verify everything</button>
+        </div>
+      </div>
+      <div class="game-hero__art" aria-hidden="true">
+        <div class="coin-stack"><span></span><span></span><span></span></div>
+        <div class="scratch-preview"><b>PRE-RICH</b><small>SCRATCH & WIN</small></div>
+      </div>
+    </section>
+
+    <section class="dapp-grid" id="play">
       <article class="dapp-card wallet-card">
         <div class="dapp-card__head"><span class="dapp-label">01 · IDENTITY</span><span id="wallet-state-badge" class="state-badge">NOT CONNECTED</span></div>
         <div class="wallet-panel">
@@ -40,86 +54,79 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </article>
 
       <article class="dapp-card readiness-card">
-        <div class="dapp-card__head"><span class="dapp-label">02 · EXECUTION READINESS</span><span class="state-badge observing">OBSERVE</span></div>
+        <div class="dapp-card__head"><span class="dapp-label">02 · GAME READINESS</span><span class="state-badge observing">READY TO OBSERVE</span></div>
         <div class="readiness-list">
           <div><span>Network</span><b>Preprod</b></div>
           <div><span>Wallet</span><b id="readiness-wallet">Not connected</b></div>
           <div><span>Economic admission</span><b>Producer required</b></div>
           <div><span>Submission</span><b>Wallet → Cardano Adapter</b></div>
         </div>
-        <div class="gate-note"><strong>BUY TICKET IS FAIL-CLOSED</strong><span>No synthetic EEV, ProtectedCapital, viability or admission witness is created in the browser.</span></div>
+        <div class="gate-note"><strong>FAIR PLAY BOUNDARY</strong><span>The browser never invents economic admission. A ticket can be issued only when the authoritative economic boundary approves it.</span></div>
       </article>
     </section>
 
-    <section class="lifecycle-card">
-      <div class="dapp-card__head"><span class="dapp-label">03 · USER JOURNEY</span><a href="/first-user.html">Full first-user path →</a></div>
+    <section class="lifecycle-card game-lifecycle">
+      <div class="dapp-card__head"><span class="dapp-label">HOW YOUR TICKET WORKS</span><a href="/first-user.html">Technical path →</a></div>
       <div class="lifecycle">
-        <div class="lifecycle-step active"><span>01</span><b>CONNECT</b><small>CIP-30</small></div><i>→</i>
-        <div class="lifecycle-step"><span>02</span><b>OBSERVE</b><small>Preprod state</small></div><i>→</i>
-        <div class="lifecycle-step locked"><span>03</span><b>ISSUE</b><small>Economic admission</small></div><i>→</i>
-        <div class="lifecycle-step locked"><span>04</span><b>REVEAL</b><small>Beacon + scripts</small></div><i>→</i>
-        <div class="lifecycle-step locked"><span>05</span><b>EVIDENCE</b><small>Bound witness</small></div>
+        <div class="lifecycle-step active"><span>01</span><b>BUY</b><small>Wallet signature</small></div><i>→</i>
+        <div class="lifecycle-step"><span>02</span><b>GET TICKET</b><small>NFT in wallet</small></div><i>→</i>
+        <div class="lifecycle-step"><span>03</span><b>SYNC</b><small>Finality</small></div><i>→</i>
+        <div class="lifecycle-step"><span>04</span><b>SCRATCH</b><small>Reveal</small></div><i>→</i>
+        <div class="lifecycle-step"><span>05</span><b>CLAIM</b><small>Winner only</small></div>
       </div>
     </section>
 
     <section class="dapp-grid">
-      <article class="dapp-card ticket-card">
-        <div class="dapp-card__head"><span class="dapp-label">04 · CERTIFIED TICKET</span><span class="state-badge">WAITING</span></div>
-        <p>Only an observed and identity-certified PrizeDatum is rendered as a canonical ticket.</p>
+      <article class="dapp-card ticket-card my-ticket-card">
+        <div class="dapp-card__head"><span class="dapp-label">MY TICKET</span><span class="state-badge">ON-CHAIN</span></div>
+        <p>Your PRE-RICH NFT is the ticket. The visual surface is only the game interface; the canonical state lives on Cardano.</p>
         <div id="ticket-3d"><div class="slot-status">No canonical ticket loaded.</div></div>
       </article>
 
-      <article class="dapp-card ad-card">
-        <div class="dapp-card__head"><span class="dapp-label">05 · AD SLOTS</span><span class="state-badge observing">OPTIONAL</span></div>
-        <p>Low-entry packages with fixed duration and explicit automatic expiry.</p>
-        <div id="slot-packages" class="slot-packages"></div>
-        <div id="slot-status" class="slot-status">No slot selected.</div>
+      <article class="dapp-card class-card">
+        <div class="dapp-card__head"><span class="dapp-label">TICKET CLASSES</span><span class="state-badge observing">CHOOSE YOUR ENTRY</span></div>
+        <p>All eight canonical classes are shown before purchase. Which classes are saleable is determined by the authoritative class state, not by the browser.</p>
       </article>
+      <div class="class-explain">
+        <div><b>8 CANONICAL CLASSES</b><small>1 · 2 · 3 · 5 · 10 · 25 · 50 · 100 USDM</small></div>
+        <div><b>CLASS STATE</b><small>Activation and saleability follow observed protocol state.</small></div>
+        <div><b>NFT TICKET</b><small>Issued class and price are printed dynamically on the ticket.</small></div>
+      </div>
     </section>
 
     <section class="purchase-console dapp-card">
-      <div class="dapp-card__head"><span class="dapp-label">06 · ISSUE CONSOLE</span><span id="issue-gate-state" class="state-badge">GATE LOCKED</span></div>
+      <div class="dapp-card__head"><span class="dapp-label">PLAY · BUY YOUR TICKET</span><span id="issue-gate-state" class="state-badge">GATE LOCKED</span></div>
       <div class="purchase-console__grid">
         <div>
           <span class="dapp-label">SELECTED CLASS</span>
           <h2 id="selected-class">Genesis / 1 USDM</h2>
-          <p id="selected-class-note">Application price profile. Selection does not constitute economic admission.</p>
-          <div class="price-ladder" id="price-ladder">
-            <button type="button" data-price="1" class="price-choice selected" aria-pressed="true">1</button>
-            <button type="button" data-price="2" class="price-choice" aria-pressed="false">2</button>
-            <button type="button" data-price="3" class="price-choice" aria-pressed="false">3</button>
-            <button type="button" data-price="5" class="price-choice" aria-pressed="false">5</button>
-            <button type="button" data-price="10" class="price-choice" aria-pressed="false">10</button>
-            <button type="button" data-price="25" class="price-choice" aria-pressed="false">25</button>
-            <button type="button" data-price="50" class="price-choice" aria-pressed="false">50</button>
-            <button type="button" data-price="100" class="price-choice" aria-pressed="false">100</button>
-          </div>
+          <p id="selected-class-note">Choose the ticket you want. The final purchase remains subject to the authoritative PRE-RICH economic gate.</p>
+          <div class="price-ladder" id="price-ladder"></div>
         </div>
-        <div class="admission-checklist">
-          <div><span>Application class</span><b>PROFILE DATA</b></div>
-          <div><span>Oracle / EEV</span><b>AUTHORITY REQUIRED</b></div>
-          <div><span>Protected capital</span><b>AUTHORITY REQUIRED</b></div>
-          <div><span>Executable liquidity</span><b>OBSERVE + VERIFY</b></div>
-          <div><span>Economic Gate</span><b id="gate-check">LOCKED</b></div>
+        <div class="admission-checklist game-checklist">
+          <div><span>Selected ticket</span><b id="game-class">CLASS 0 · GENESIS · 1 USDM</b></div>
+          <div><span>Prize eligibility</span><b id="game-eligibility">AWAITING OBSERVATION</b></div>
+          <div><span>Economic admission</span><b id="gate-check">LOCKED</b></div>
+          <div><span>Wallet signature</span><b id="game-signature">REQUIRED</b></div>
         </div>
       </div>
       <div class="purchase-console__footer">
-        <span>Browser role: select + observe + request execution.</span>
-        <span>Economic role: authoritative producer only.</span>
+        <span>Play surface: simple.</span>
+        <span>Verification surface: complete.</span>
       </div>
     </section>
 
-    <section class="transaction-preview dapp-card">
+    <section class="transaction-preview dapp-card verify-panel" id="verify-panel">
       <div class="dapp-card__head">
-        <span class="dapp-label">07 · TRANSACTION PREVIEW</span>
+        <span class="dapp-label">VERIFY EVERYTHING</span>
         <span id="preview-state" class="state-badge">NOT READY</span>
       </div>
       <div class="preview-intro">
         <div>
-          <h2>Review before signing.</h2>
-          <p>The preview describes the requested transition. It does not authorize it and it does not replace the authoritative Economic Gate.</p>
+          <h2>Everything the game knows — and nothing it invents.</h2>
+          <p>Open this panel when you want the engineering view: observed state, admission, transaction construction and canonical evidence.</p>
         </div>
-        <div class="preview-warning">WALLET SIGNATURE REQUIRED</div>
+        <div class="preview-warning">PLAYER ACTION STILL REQUIRES WALLET SIGNATURE</div>
       </div>
       <div class="preview-grid">
         <div class="preview-section">
@@ -153,9 +160,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </div>
     </section>
 
-    <section class="dapp-actions">
-      <button id="buy" class="primary-action" disabled>Buy Ticket — admission unavailable</button>
-      <button id="claim" class="secondary-action" disabled>Claim Prize — verification required</button>
+    <section class="dapp-actions game-actions">
+      <button id="buy" class="primary-action game-buy" disabled>Buy Ticket — connect wallet</button>
+      <button id="claim" class="secondary-action game-claim" disabled>Claim Prize — winner only</button>
     </section>
 
     <div id="wallet-picker" class="wallet-picker" hidden>
@@ -168,47 +175,48 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <small class="wallet-picker__hint">Preprod only · no seed phrase or private key is requested.</small>
       </section>
     </div>
-    <div id="status" class="dapp-status">Ready. Connect a Preprod wallet to begin observation.</div>
+    <section class="how-to-play dapp-card">
+      <div class="dapp-card__head"><span class="dapp-label">HOW TO PLAY</span><span class="state-badge observing">PRE-RICH</span></div>
+      <div class="how-to-play__grid"><div><b>1 · CONNECT</b><span>Use a CIP-30 Cardano wallet.</span></div><div><b>2 · CHOOSE</b><span>Pick the ticket class you want.</span></div><div><b>3 · BUY</b><span>Approve the transaction in your wallet.</span></div><div><b>4 · SCRATCH</b><span>Reveal only after the canonical lifecycle allows it.</span></div><div><b>5 · WIN</b><span>Claim a verified payout when your ticket is a winner.</span></div></div>
+      <details class="fairness-note"><summary>Why cannot the game show the prize immediately?</summary><p>The interface does not decide or display a winning result before the protocol's reveal/finality path. That keeps the game visual separate from the source of truth.</p></details>
+    </section>
+    <section id="status" class="dapp-status">Ready. Connect a Preprod wallet to play PRE-RICH.</section>
   </div>
 `
 const status = (msg: string) => { const el = document.getElementById('status'); if (el) el.textContent = msg }
-const slotStatus = (msg: string) => { const el = document.getElementById('slot-status'); if (el) el.textContent = msg }
-
-const renderAdPackages = () => {
-  const container = document.getElementById('slot-packages')
-  if (!container) return
-
-  container.innerHTML = AD_SLOT_PACKAGES.map((pkg) => {
-    const total = calculateAdTotalUsd(pkg.id)
-    const expiry = getExpiryDateFromPackage(pkg.id)
-    return `
-      <button class="slot-package" data-package-id="${pkg.id}">
-        <span class="slot-package__title">${pkg.label}</span>
-        <span class="slot-package__meta">${pkg.hours}h · ${formatUsd(total)}</span>
-        <span class="slot-package__meta">Auto-expiry: ${expiry.toLocaleString()}</span>
-      </button>
-    `
-  }).join('')
-
-  container.querySelectorAll<HTMLButtonElement>('.slot-package').forEach((button) => {
-    button.addEventListener('click', () => {
-      const packageId = button.dataset.packageId as any
-      const pkg = getPackageById(packageId)
-      const total = calculateAdTotalUsd(pkg.id)
-      const expiry = getExpiryDateFromPackage(pkg.id)
-      slotStatus(`${pkg.label}: ${formatUsd(total)} · slot stays active until ${expiry.toLocaleString()}`)
-      status(`Selected ad package: ${pkg.label} (${formatUsd(total)})`)
-    })
+let selectedIssuePrice = Number(PRE_RICH_CANONICAL_PRICES[0])
+const classIdForPrice = (price: number) => PRE_RICH_CANONICAL_PRICES.findIndex((value) => Number(value) === price)
+const issueClassNameForPrice = (price: number) => {
+  const classId = classIdForPrice(price)
+  if (classId === 0) return 'Genesis · Class 0'
+  return classId >= 0 ? 'Class ' + classId : 'Application class'
+}
+const buildPriceLadder = () => {
+  const ladder = document.getElementById('price-ladder')
+  if (!ladder) return
+  ladder.replaceChildren()
+  PRE_RICH_CANONICAL_PRICES.forEach((priceValue, classId) => {
+    const price = Number(priceValue)
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'price-choice' + (classId === 0 ? ' selected' : '')
+    button.dataset.price = String(price)
+    button.setAttribute('aria-pressed', String(classId === 0))
+    const classLine = document.createElement('span')
+    classLine.className = 'price-choice__class'
+    classLine.textContent = 'CLASS ' + classId
+    const priceLine = document.createElement('strong')
+    priceLine.textContent = price + ' USDM'
+    const noteLine = document.createElement('small')
+    noteLine.textContent = classId === 0 ? 'GENESIS' : 'LADDER'
+    button.append(classLine, priceLine, noteLine)
+    ladder.appendChild(button)
   })
 }
-
-renderAdPackages()
-
-let selectedIssuePrice = 1
-const issueClassNames: Record<number, string> = {1:'Genesis',2:'Class 2',3:'Class 3',5:'Class 4',10:'Class 5',25:'Class 6',50:'Class 7',100:'Class 8'}
+buildPriceLadder()
 
 const syncPreview = () => {
-  const name = issueClassNames[selectedIssuePrice] || 'Application class'
+  const name = issueClassNameForPrice(selectedIssuePrice)
   const connectedWallet = connected ? 'CONNECTED' : 'NOT CONNECTED'
   const ready = connected
   const setText = (id: string, value: string) => { const el = document.getElementById(id); if (el) el.textContent = value }
@@ -231,7 +239,7 @@ document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((button) =
     document.querySelectorAll('.price-choice').forEach((b) => b.classList.remove('selected'))
     button.classList.add('selected')
     document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((b) => b.setAttribute('aria-pressed', String(b === button)))
-    const name = issueClassNames[selectedIssuePrice] || 'Application class'
+    const name = issueClassNameForPrice(selectedIssuePrice)
     const title = document.getElementById('selected-class')
     if (title) title.textContent = name + ' / ' + selectedIssuePrice + ' USDM'
     syncPreview()
@@ -390,6 +398,10 @@ connectBtn?.addEventListener('click', async () => {
     return
   }
   openWalletPicker()
+})
+
+document.getElementById('open-verify')?.addEventListener('click', () => {
+  document.getElementById('verify-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 })
 
 changeWalletBtn?.addEventListener('click', openWalletPicker)
