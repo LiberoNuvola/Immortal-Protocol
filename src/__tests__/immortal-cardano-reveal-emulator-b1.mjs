@@ -958,6 +958,8 @@ async function main() {
           assets: u.assets,
           scriptRef: u.scriptRef,
         })),
+        (_key, value) => typeof value === "bigint" ? value.toString() : value,
+        2,
       ),
     );
     throw new Error("Expected both PRE-RICH reference script UTxOs");
