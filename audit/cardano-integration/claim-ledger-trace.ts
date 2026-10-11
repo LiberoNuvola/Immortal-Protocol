@@ -14,37 +14,19 @@ import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prize
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
-  generateSymbols,
-  classifyRowTier,
   rowPayoutTotal,
 } from '../../src/gameRules'
-import {
-  deriveBeacon,
-  deriveSymbolsSeed,
-  deriveTicketSeed,
-  encodeBeaconTarget,
-  field,
-  fromHex,
-  playerCommitment,
-  sha256,
-  ticketCommitment,
-  toHex,
-} from '../../src/beacon'
+import { toHex } from '../../src/beacon'
 import {
   assertCardanoObservedTransitionBinding,
   type CardanoObservedTransitionEvidence,
 } from '../../Adapter/CARDANO/observation/CardanoObservedTransitionEvidence'
-import {
-  assertExecutableLiquidityMatchesAuthenticatedPool,
-  type ExecutableLiquidityObservation,
-} from '../../Adapter/CARDANO/observation/ExecutableLiquidityObservation'
 
 const API = 'http://127.0.0.1:8080/api/v1'
 const SEED =
   'test test test test test test test test test test test test test test test test test test test test test test test sauce'
 
 const PRICE_USDM = 100n
-const TOTAL_LIQUIDITY_USDM = 100_000n
 const TICKET_NAME_HEX = '52462d5245414c2d52455645414c'
 const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45' // ORACLE
 const MAINCHAIN_REF = new Uint8Array(32)
@@ -360,6 +342,9 @@ console.log(JSON.stringify({
 lucid.selectWallet.fromSeed(SEED)
 
 const address = await lucid.wallet().address()
+if (wallet.address !== address) {
+  throw new Error('Claim fixture wallet file address does not match the configured Yaci test seed')
+}
 
 // Keep reference-script UTxOs outside the spending wallet's coin-selection
 // address. Otherwise they can be selected as funding inputs while also being
@@ -931,9 +916,20 @@ if (negativeResults.length !== 4) {
 }
 
 const validTx = await buildClaimTx({ label: 'valid-claim' })
-const signedClaim = await validTx.sign.withWallet().complete({ localUPLCEval: false })
+let signedClaim: any = null
+const executionAdapter = createCardanoExecutionAdapter({
+  signTx: async (tx: unknown) => {
+    signedClaim = await (tx as any).sign.withWallet().complete({ localUPLCEval: false })
+    return signedClaim
+  },
+  submitTx: async (signedTx: unknown) => (signedTx as any).submit(),
+})
+const submission = await executionAdapter.submitInfrastructure(validTx)
+const txHash = submission.transactionRef
+if (!signedClaim) {
+  throw new Error('Claim execution adapter did not retain the signed transaction')
+}
 const txCbor = signedClaim.toCBOR()
-const txHash = await signedClaim.submit()
 await lucid.awaitTx(txHash)
 
 let replayRejected = false
@@ -1026,6 +1022,31 @@ const actionFingerprint = hashJson({
   oracleReference: ref(oracleUtxo as UTxO),
 })
 
+const observedEvidence: CardanoObservedTransitionEvidence = {
+  evidenceId: hashJson({
+    fixtureId: 'C3-YACI-CLAIM-001',
+    actionFingerprint,
+    preStateFingerprint,
+    postStateFingerprint,
+    transactionRef: txHash,
+  }),
+  fixtureId: 'C3-YACI-CLAIM-001',
+  actionClass: 'CLAIM',
+  environment: 'local-yaci-devnet',
+  preStateObservationFingerprint: preStateFingerprint,
+  postStateObservationFingerprint: postStateFingerprint,
+  actionObservationFingerprint: actionFingerprint,
+  transactionRef: txHash,
+}
+assertCardanoObservedTransitionBinding(observedEvidence, {
+  actionClass: 'CLAIM',
+  environment: 'local-yaci-devnet',
+  preStateObservationFingerprint: preStateFingerprint,
+  postStateObservationFingerprint: postStateFingerprint,
+  actionObservationFingerprint: actionFingerprint,
+  transactionRef: txHash,
+})
+
 const evidence = {
   purpose: 'C3 real-local-yaci-cardano-claim-conformance',
   claimFixture: 'synthetic-revealed-state-not-production-issue-or-reveal-evidence',
@@ -1066,6 +1087,7 @@ const evidence = {
     poolRef: ref(postPool),
     fingerprint: postStateFingerprint,
   },
+  observedCardanoTransitionEvidence: observedEvidence,
   accounting: {
     poolInputLiquidityUsdmSubunits: PRE_POOL_LIQUIDITY.toString(),
     poolOutputLiquidityUsdmSubunits: postLiquidity.toString(),
