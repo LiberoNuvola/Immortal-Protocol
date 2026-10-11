@@ -24,17 +24,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Generalized derivation boundary
+      - name: IMMORTAL generalized derivation boundary
         run: node audit/algorithmic-governability/generalized-function-family-boundary.mjs
-      - name: G6 evidence catalog boundary
-        run: node audit/algorithmic-governability/evidence-catalog-boundary.mjs
-      - name: Typed obligation bucket boundary
-        run: node audit/algorithmic-governability/typed-obligation-buckets-boundary.mjs
-      - name: G3 minimal asset eligibility boundary
+      - name: EXP-06 evidence catalog boundary
+        run: node audit/algorithmic-governability/exp-06-evidence-catalog-boundary.mjs
+      - name: EXP-01 typed obligation bucket boundary
+        run: node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
+      - name: EXP-03 minimal asset eligibility boundary
         run: node audit/algorithmic-governability/g3-minimal-asset-eligibility-boundary.mjs
       - name: Install Node test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: G7 canonical hysteresis conformance
+      - name: EXP-07 canonical hysteresis conformance
         run: npx vitest run src/__tests__/preRichHysteresis.test.ts PRE-RICH/tests/conformance/PreRichHysteresisBinding.test.ts
       - name: Contributor credential separation boundary
         run: node audit/algorithmic-governability/contributor-credential-separation-boundary.mjs
