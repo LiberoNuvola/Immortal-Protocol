@@ -72,6 +72,16 @@ jobs:
           path: audit/materios-b3/out/MateriosGrandpaLiveWitness.json
           if-no-files-found: error
 
+  warp-grandpa-probe:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe GRANDPA warp sync from Materios bootnode
+        run: bash audit/materios-b3/run-warp-probe.sh
+
   finalized-state-capture:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
