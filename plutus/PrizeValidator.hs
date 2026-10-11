@@ -16,6 +16,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude hiding (unless)
+import qualified PlutusTx.Builtins as Builtins
 import qualified PlutusTx.AssocMap as AssocMap
 import qualified Economic
 
@@ -145,6 +146,17 @@ rawTicketOwnerHashInInputs ticketCs ticketTn (rawInput:rest) =
                     Nothing -> Nothing
             _ -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
 
+{-# INLINABLE rawMapPairs #-}
+rawMapPairs :: BuiltinData -> Maybe [(BuiltinData, BuiltinData)]
+rawMapPairs d =
+  Builtins.matchData
+    d
+    (\_ _ -> Nothing)
+    (\entries -> Just entries)
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+    (\_ -> Nothing)
+
 {-# INLINABLE rawAssetAmount #-}
 rawAssetAmount
   :: CurrencySymbol
@@ -152,59 +164,35 @@ rawAssetAmount
   -> BuiltinData
   -> Maybe Integer
 rawAssetAmount ticketCs ticketTn rawValue =
-  case rawConstr rawValue of
-    Just (0, fields) ->
-      case rawField 0 fields of
-        Just rawMapData ->
-          case rawList rawMapData of
-            Just currencies -> rawTokenAmount ticketCs ticketTn currencies
-            Nothing -> Nothing
-        Nothing -> Nothing
-    _ -> Nothing
+  case rawMapPairs rawValue of
+    Just currencies -> rawTokenAmount ticketCs ticketTn currencies
+    Nothing -> Nothing
 
 {-# INLINABLE rawTokenAmount #-}
 rawTokenAmount
   :: CurrencySymbol
   -> TokenName
-  -> [BuiltinData]
+  -> [(BuiltinData, BuiltinData)]
   -> Maybe Integer
 rawTokenAmount _ _ [] = Nothing
-rawTokenAmount ticketCs ticketTn (entry:rest) =
-  case rawConstr entry of
-    Just (0, fields) ->
-      case rawField 0 fields of
-        Just rawCs ->
-          if Builtins.equalsData rawCs (toBuiltinData ticketCs)
-            then
-              case rawField 1 fields of
-                Just rawTokensData ->
-                  case rawList rawTokensData of
-                    Just tokens -> rawTokenAmountForName ticketTn tokens
-                    Nothing -> Nothing
-                Nothing -> Nothing
-            else rawTokenAmount ticketCs ticketTn rest
+rawTokenAmount ticketCs ticketTn ((rawCs, rawTokensData):rest) =
+  if Builtins.equalsData rawCs (toBuiltinData ticketCs)
+    then
+      case rawMapPairs rawTokensData of
+        Just tokens -> rawTokenAmountForName ticketTn tokens
         Nothing -> Nothing
-    _ -> Nothing
+    else rawTokenAmount ticketCs ticketTn rest
 
 {-# INLINABLE rawTokenAmountForName #-}
 rawTokenAmountForName
   :: TokenName
-  -> [BuiltinData]
+  -> [(BuiltinData, BuiltinData)]
   -> Maybe Integer
 rawTokenAmountForName _ [] = Nothing
-rawTokenAmountForName ticketTn (entry:rest) =
-  case rawConstr entry of
-    Just (0, fields) ->
-      case rawField 0 fields of
-        Just rawTn ->
-          if Builtins.equalsData rawTn (toBuiltinData ticketTn)
-            then
-              case rawField 1 fields of
-                Just rawAmount -> fromBuiltinData rawAmount
-                Nothing -> Nothing
-            else rawTokenAmountForName ticketTn rest
-        Nothing -> Nothing
-    _ -> Nothing
+rawTokenAmountForName ticketTn ((rawTn, rawAmount):rest) =
+  if Builtins.equalsData rawTn (toBuiltinData ticketTn)
+    then fromBuiltinData rawAmount
+    else rawTokenAmountForName ticketTn rest
 
 {-# INLINABLE rawSignatories #-}
 rawSignatories :: BuiltinData -> Maybe [BuiltinData]
