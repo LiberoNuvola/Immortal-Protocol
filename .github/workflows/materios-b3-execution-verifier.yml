@@ -45,6 +45,37 @@ jobs:
       - name: Run verifier tests
         run: cargo test
 
+  finalized-state-capture:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Materios checkpoint dependencies
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - name: Capture finalized Materios checkpoint
+        working-directory: poc/materios-checkpoint
+        run: npm run capture:finalized
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+
+      - name: Upload finalized-state evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3a-finalized-state-capture
+          path: poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
+          if-no-files-found: error
+
   live-storage-proof:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
