@@ -462,12 +462,12 @@ await lucid.awaitTx(bootstrapHash)
 
 const prizeUtxos = await waitFor(
   () => lucid.utxosAt(scripts.prizeAddress as string),
-  (xs) => xs.some((u) => u.assets.lovelace === 3_000_000n),
+  (xs) => xs.some((u) => u.txHash === bootstrapHash && u.assets.lovelace === 3_000_000n),
   'bootstrapped expired Prize UTxO',
 )
 const poolUtxos = await waitFor(
   () => lucid.utxosAt(scripts.b1PrizePoolAddress as string),
-  (xs) => xs.some((u) => u.assets[poolUnit] === 1n),
+  (xs) => xs.some((u) => u.txHash === bootstrapHash && u.assets[poolUnit] === 1n),
   'bootstrapped B1PrizePool UTxO',
 )
 const walletUtxos = await lucid.utxosAt(address)
@@ -475,8 +475,15 @@ if (!walletUtxos.some((u) => u.assets[ticketUnit] === 1n)) {
   throw new Error('ticket NFT was not delivered to the holder')
 }
 
-const prizeUtxo = prizeUtxos.find((u) => u.assets.lovelace === 3_000_000n) as UTxO
-const poolUtxo = poolUtxos.find((u) => u.assets[poolUnit] === 1n) as UTxO
+const prizeUtxo = prizeUtxos.find(
+  (u) => u.txHash === bootstrapHash && u.assets.lovelace === 3_000_000n,
+)
+const poolUtxo = poolUtxos.find(
+  (u) => u.txHash === bootstrapHash && u.assets[poolUnit] === 1n,
+)
+if (!prizeUtxo || !poolUtxo) {
+  throw new Error('EXPIRE bootstrap did not materialize its exact Prize and Pool outpoints')
+}
 
 // EXPIRE must use the same reference-script architecture as the canonical
 // Reveal path. Attaching both parameterized validators inline creates a
@@ -591,12 +598,17 @@ const postPool = postPoolUtxos.find(
   (u) => u.txHash === txHash && u.assets[poolUnit] === 1n,
 ) as UTxO
 
-const remainingPrizeOutputs = (await lucid.utxosAt(
+// Check only outputs created by this EXPIRE transaction. Another trace may
+// legitimately leave a separate Prize UTxO at the same validator address.
+const expirePrizeOutputs = (await lucid.utxosAt(
   scripts.prizeAddress as string,
-)).filter((u) => u.assets.lovelace === 3_000_000n)
+)).filter((u) => u.txHash === txHash)
 
-if (remainingPrizeOutputs.length !== 0) {
-  throw new Error('EXPIRE unexpectedly left a continuing Prize UTxO')
+if (expirePrizeOutputs.length !== 0) {
+  throw new Error(
+    'EXPIRE unexpectedly created a continuing Prize output: ' +
+    expirePrizeOutputs.map(ref).join(', '),
+  )
 }
 
 const postPoolFields = datumFields(postPool)
