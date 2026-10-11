@@ -76,4 +76,52 @@ assert(selfExpansion.domain !== fee.domain, 'self-expanded domain is distinguish
 assert(selfExpansion.ruleVersion !== fee.ruleVersion, 'self-expanded rule identity is distinguishable')
 assert(selfExpansion.boundContract !== fee.boundContract, 'self-expanded bounds identity is distinguishable')
 
+import fs from 'node:fs'
+import path from 'node:path'
+
+const repoRoot = process.cwd()
+const expCatalog = [
+  ['01', 'EXP-01-SENIORITY-ORDER-BOUNDARY-v1.md'],
+  ['02', 'EXP-02-TERM-STRUCTURE-HORIZON-BOUNDARY-v1.md'],
+  ['03', 'EXP-03-ASSET-ELIGIBILITY-BOUNDARY-v1.md'],
+  ['04', 'EXP-04-COMPOSITION-OF-PROFILES-BOUNDARY-v1.md'],
+  ['05', 'EXP-05-ABSTRACT-CONTINGENT-CLAIMS-BOUNDARY-v1.md'],
+  ['06', ''],
+  ['07', 'EXP-07-REGIME-STRESS-CONFORMANCE-v1.md'],
+  ['08', 'EXP-08-NETTING-OFFSET-BOUNDARY-v1.md'],
+  ['09', 'EXP-09-OBLIGATION-TRANSFER-NOVATION-BOUNDARY-v1.md'],
+  ['10', 'EXP-10-EXPLICIT-RISK-BUDGET-BOUNDARY-v1.md'],
+  ['11', 'EXP-11-DETERMINISTIC-AUCTION-ALLOCATION-BOUNDARY-v1.md'],
+  ['12', 'EXP-12-OBSERVER-AUTHORITY-SPLIT-BOUNDARY-v1.md'],
+]
+
+const researchDir = path.join(repoRoot, 'docs', 'research')
+const auditDir = path.join(repoRoot, 'audit', 'algorithmic-governability')
+
+for (const [id, docName] of expCatalog) {
+  const prefix = `EXP-${id}`
+  const docCandidates = fs.existsSync(researchDir)
+    ? fs.readdirSync(researchDir).filter(name => name.startsWith(prefix) && name.endsWith('.md'))
+    : []
+  assert(docCandidates.length > 0, `${prefix} has a research contract`)
+
+  const harnessCandidates = fs.existsSync(auditDir)
+    ? fs.readdirSync(auditDir).filter(name => name.startsWith(`exp-${id}-`) && name.endsWith('.mjs'))
+    : []
+  const vitestFallback = id === '07'
+    ? fs.existsSync(path.join(repoRoot, 'src', '__tests__', 'preRichHysteresis.test.ts')) &&
+      fs.existsSync(path.join(repoRoot, 'PRE-RICH', 'tests', 'conformance', 'PreRichHysteresisBinding.test.ts'))
+    : false
+  assert(harnessCandidates.length > 0 || vitestFallback, `${prefix} has an executable conformance surface`)
+
+  if (docName) {
+    assert(docCandidates.includes(docName), `${prefix} canonical research filename is present`)
+  }
+}
+
+assert(
+  expCatalog.length === 12,
+  'EXP catalog covers exactly EXP-01 through EXP-12',
+)
+
 console.log('ALL GENERALIZED FUNCTION FAMILY CHECKS PASSED')
