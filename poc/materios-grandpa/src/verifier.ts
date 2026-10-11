@@ -84,6 +84,24 @@ export interface VerificationOptions {
 }
 
 /**
+ * Verify that every GRANDPA precommit target is structurally connected to the
+ * commit target through the supplied vote ancestry headers.
+ *
+ * This is deliberately exported for FinalityProof verification; it does not
+ * alter the existing verifier's authority-set trust boundary.
+ */
+export function verifyJustificationAncestry(
+  justification: GrandpaJustification
+): void {
+  verifyPrecommitAncestry(
+    justification.votesAncestries,
+    justification.commit.precommits,
+    justification.commit.targetHash,
+    justification.commit.targetNumber
+  );
+}
+
+/**
  * Verify the ancestry semantics of a GRANDPA justification.
  *
  * Materios uses the standard Substrate GRANDPA justification shape:
