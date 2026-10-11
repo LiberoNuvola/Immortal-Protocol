@@ -298,7 +298,7 @@ function claimContextShapeMismatch(error: unknown): boolean {
     message.includes('Expected type ByteString, got VCon(Data')
 }
 
-function boundedClaimFallbackExUnits(cbor: string): Array<{
+function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Array<{
   redeemer_tag: string
   redeemer_index: number
   ex_units: { mem: number; steps: number }
@@ -362,10 +362,12 @@ function boundedClaimFallbackExUnits(cbor: string): Array<{
       index: r.redeemer_index,
       exUnits: r.ex_units,
     })),
+    additionalUTxOsSuppliedByLucid: additionalUTxOsCount,
     ledgerSubmissionRemainsAuthoritative: true,
   })
   console.log(JSON.stringify({
     claimDiag: 'scalus-context-shape-fallback',
+    additionalUTxOsSuppliedByLucid: additionalUTxOsCount,
     txSha256: description.txSha256,
     protocolExecutionLimits: { memory: maxMemory, steps: maxSteps },
     assignedPerRedeemer: perRedeemer,
@@ -381,8 +383,13 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   try {
     measured = await evaluateYaciTx(cbor, additionalUTxOs)
   } catch (error) {
-    if (additionalUTxOs.length === 0 && claimContextShapeMismatch(error)) {
-      return boundedClaimFallbackExUnits(cbor)
+    // Lucid supplies reference-input UTxOs here when a transaction uses readFrom().
+    // They are already bound into the CBOR transaction. For this one exact
+    // Scalus PubKeyHash/ByteString context-shape failure, bypass evaluator-based
+    // budgeting even when those reference UTxOs are present; the node's actual
+    // submission remains mandatory and authoritative for every Claim result.
+    if (claimContextShapeMismatch(error)) {
+      return boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
     }
     throw error
   }
