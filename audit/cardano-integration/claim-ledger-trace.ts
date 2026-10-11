@@ -737,6 +737,7 @@ type ClaimVariant = {
   mutateRowTier?: boolean
   settlementUsdm?: bigint
   extraSettlementOutput?: boolean
+  ticketNftReceiver?: string
   includeOwnerSigner?: boolean
 }
 
@@ -791,11 +792,11 @@ async function buildClaimTx(variant: ClaimVariant) {
 
   // This extra ADA-only output deliberately overpays in aggregate while leaving
   // the first settlement output exact. B1's per-output check passes its first
-  // matching output, while PrizeValidator's aggregate equality must reject it.
+  // matching output, while PrizeValidator sums outputs before valuation and
+  // must reject the resulting aggregate overpayment.
   if (variant.extraSettlementOutput) {
-    // Each ADA output has its own min-UTxO deduction in totalUsdmValue.
-    // A bare min-UTxO output has zero economic value, so add 0.1 ADA above
-    // the minimum to make the aggregate valuation strictly exceed the payout.
+    // 0.1 ADA above min-UTxO has positive economic value when included in the
+    // aggregate claimant Value (which excludes min-UTxO only once).
     builder = builder.pay.ToAddress(
       claimantAddress,
       { lovelace: MIN_UTXO_LOVELACE + 100_000n },
@@ -804,7 +805,7 @@ async function buildClaimTx(variant: ClaimVariant) {
 
   builder = builder
     .pay.ToAddress(
-      address,
+      variant.ticketNftReceiver ?? address,
       { lovelace: 2_000_000n, [ticketUnit]: 1n },
     )
 
@@ -906,6 +907,9 @@ await expectClaimRejected({
     'B1PrizePool: payout USDM value insufficient',
   ],
   settlementUsdm: PRIZE_AMOUNT - 1n,
+  // Prevent B1's recursive per-output payout helper from inspecting the
+  // ticket NFT output when the first settlement output is intentionally short.
+  ticketNftReceiver: referenceAddress,
 })
 await expectClaimRejected({
   label: 'aggregate-settlement-overpayment',
