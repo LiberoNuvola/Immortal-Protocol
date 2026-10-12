@@ -73,7 +73,7 @@ CASES = [
     Case("claim_extra_protected_cost", "claim",
          State(10, 2, 1, 20, 5, 5, 8, 2), 49, False, 0,
          "Increasing mandatory future costs raises ProtectedCapital to 55."),
-    Case("expire_positive_surplus", "expire", BASE, 75, True, 25,
+    Case("expire_positive_surplus", "expire", BASE, 75, True, 30,
          "Surplus is EEV minus ProtectedCapital when positive."),
 ]
 
