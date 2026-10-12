@@ -19,7 +19,8 @@ The script emits `aegis-immortal-adaptive-experiment-report.json` and checks:
 - stress or weak reserve can reject a scenario the fixed cap accepts;
 - invalid/unqualified evidence closes admission;
 - favourable conditions do not override the calculated cap;
-- each decision includes an explanatory reason.
+- each decision includes an explanatory reason;
+- contraction is immediate while recovery is staged after repeated safe observations (hysteresis smoke test).
 
 ## Important limitations
 
@@ -32,7 +33,7 @@ The 33% baseline is source-grounded; the adaptive policy is not. No conclusion a
 ### Track A — Dynamic admission policy
 1. Specify canonical state inputs and authoritative sources.
 2. Define policy versioning, bounds, monotonic safety properties, and explicit reasons for each admission decision.
-3. Add hysteresis / staged recovery so capacity does not oscillate on small state changes.
+3. The offline harness now smoke-tests immediate contraction and staged recovery after repeated safe observations; this is illustrative, not a calibrated policy.
 4. Differentially test against Aegis's actual `underwrite_ok` semantics and validator context.
 
 ### Track B — Capital and reserve protection
