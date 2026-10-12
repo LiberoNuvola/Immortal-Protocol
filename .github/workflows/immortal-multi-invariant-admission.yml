@@ -1,0 +1,31 @@
+name: IMMORTAL Multi-Invariant Admission Prototype
+
+on:
+  push:
+    branches:
+      - b1-hardening
+    paths:
+      - "scripts/immortal-multi-invariant-admission.py"
+      - "docs/research/IMMORTAL-MULTI-INVARIANT-ADMISSION-PROTOTYPE-v1.md"
+      - ".github/workflows/immortal-multi-invariant-admission.yml"
+  pull_request:
+    paths:
+      - "scripts/immortal-multi-invariant-admission.py"
+      - "docs/research/IMMORTAL-MULTI-INVARIANT-ADMISSION-PROTOTYPE-v1.md"
+      - ".github/workflows/immortal-multi-invariant-admission.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-prototype:
+    name: Multi-invariant economic admission (offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run synthetic multi-invariant cases
+        run: python scripts/immortal-multi-invariant-admission.py
