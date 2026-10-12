@@ -1,0 +1,79 @@
+{
+  "schema": "aegis-immortal-v8-accounting-fixture-v1",
+  "fixture_id": "AEGIS-V8-UNDERWRITE-ACCOUNTING-HAPPY-001",
+  "purpose": "Source-grounded fixture for Aegis V8 pure underwrite_ok accounting predicate; not a full transaction/validator fixture.",
+  "source": {
+    "repository": "realdecimalist/aegis-contracts",
+    "branch": "main",
+    "commit": "6549246ff053457c93e6d68e44791efa2ef2f972",
+    "file": "contracts/lib/aegis/vault.ak",
+    "file_blob_sha": "4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb",
+    "test_name": "underwrite_happy_path",
+    "predicate": "underwrite_ok"
+  },
+  "units": {
+    "monetary": "lovelace",
+    "lp_supply_and_marker_mint": "integer token quantities",
+    "min_utxo": "lovelace"
+  },
+  "pre_state": {
+    "lp_supply": 1000000000,
+    "active_coverage": 0,
+    "reserve": 0,
+    "registry_nft": "fixture-only: aa"
+  },
+  "predicate_arguments": {
+    "coverage": 300000000,
+    "premium": 30000000,
+    "net_growth": 29000000,
+    "own_lovelace": 1002000000,
+    "cont_lovelace": 731000000,
+    "marker_minted": 1,
+    "policy_lovelace": 300000000,
+    "min_utxo": 2000000
+  },
+  "post_state": {
+    "lp_supply": 1000000000,
+    "active_coverage": 300000000,
+    "reserve": 0,
+    "registry_nft": "fixture-only: aa"
+  },
+  "derived_checks": {
+    "continuation_equation": {
+      "expression": "own_lovelace + net_growth - coverage",
+      "expected": 731000000,
+      "actual_cont_lovelace": 731000000,
+      "pass": true
+    },
+    "post_backing": {
+      "expression": "max(0, cont_lovelace - min_utxo - reserve)",
+      "expected": 729000000
+    },
+    "post_pool_total": {
+      "expression": "post_backing + post_active_coverage",
+      "expected": 1029000000
+    },
+    "accumulation_cap": {
+      "expression": "post_active_coverage * 3 <= post_pool_total",
+      "left": 900000000,
+      "right": 1029000000,
+      "pass": true
+    },
+    "policy_funding": {
+      "expression": "policy_lovelace >= coverage",
+      "left": 300000000,
+      "right": 300000000,
+      "pass": true
+    }
+  },
+  "expected": {
+    "aegis_underwrite_ok": true,
+    "immortal_projection": "UNVERIFIABLE"
+  },
+  "limitations": [
+    "This fixture copies the arguments from the source test underwrite_happy_path and makes the derived arithmetic explicit.",
+    "It does not execute Aiken and does not validate the full pool_vault transaction branch.",
+    "It does not establish any equivalence between Aegis lovelace/accounting fields and IMMORTAL EEV, unresolved reserve, worst-case exposure, or ProtectedCapital.",
+    "registry_nft is only a placeholder needed to document the VaultState shape; the pure predicate's equations do not inspect its value."
+  ]
+}
