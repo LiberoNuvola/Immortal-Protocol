@@ -1,0 +1,31 @@
+name: Aegis-IMMORTAL Adaptive Admission Experiment
+
+on:
+  push:
+    branches:
+      - b1-hardening
+    paths:
+      - "scripts/aegis-immortal-adaptive-experiment.py"
+      - "docs/research/AEGIS-IMMORTAL-ADAPTIVE-ADMISSION-EXPERIMENT-v1.md"
+      - ".github/workflows/aegis-immortal-adaptive-experiment.yml"
+  pull_request:
+    paths:
+      - "scripts/aegis-immortal-adaptive-experiment.py"
+      - "docs/research/AEGIS-IMMORTAL-ADAPTIVE-ADMISSION-EXPERIMENT-v1.md"
+      - ".github/workflows/aegis-immortal-adaptive-experiment.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-experiment:
+    name: Synthetic adaptive-admission scenarios (not on-chain)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run illustrative comparison
+        run: python scripts/aegis-immortal-adaptive-experiment.py
