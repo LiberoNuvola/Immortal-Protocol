@@ -2,8 +2,9 @@
 
 **Status:** research fixture contract; not certified and not a deployment claim.
 **Target integration branch:** `b1-hardening`
-**Aegis source inspected:** `realdecimalist/aegis-contracts` `main` at `6549246ff053457c93e6d68e44791efa2ef2f972`.
-**Universal kernel source:** imported from `work/b3-materios-provenance-evidence`; see `UniversalEconomicState` and `UniversalEconomicKernel`.
+**Aegis source inspected:** `realdecimalist/aegis-contracts` `main`; source anchors below are file blob SHAs, not a claim about a pinned repository HEAD.
+**Aegis source anchors:** `contracts/validators/pool_vault.ak` blob `b36f7579bf81fc82a84841718f91cd0cfd3245cd`; `contracts/lib/aegis/vault.ak` blob `4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb`; `contracts/lib/aegis/test_helpers/fixtures.ak` blob `e5c54c0fcc8ac931ea170799ce61fac415ef1485`.
+**Universal kernel source:** imported from `work/b3-materios-provenance-evidence`; on `b1-hardening`, `UniversalEconomicState.hs` blob `f89fe04c8aad8ca9c5e544fa9c145a38d157826f` and `UniversalEconomicKernel.hs` blob `cd304c26c5ae9795cf5a1c4f8ca5cf9a8bf65785`.
 
 ## 1. Purpose and boundary
 
@@ -70,4 +71,4 @@ The bridge is not ready to certify until:
 - positive and adversarial cases execute in CI;
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
-**Current result:** the universal state and kernel have been imported and their local kernel test suite has been registered. The Aegis transition bridge remains research-only until the mapping and runnable differential fixtures are completed and executed.
+**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`. The suite has not been executed in this environment. The Aegis transition bridge remains research-only until the mapping and runnable differential fixtures are completed and executed.
