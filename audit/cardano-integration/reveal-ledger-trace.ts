@@ -676,28 +676,39 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
-// Lucid Evolution 0.6.5 resolves collectFrom through PartialPlutusWitness.new_script,
-// which embeds the validator bytes even when the same script is present in readFrom.
-// CML supports a hash-only reference witness. Restrict this adaptation to the two
-// reference scripts whose on-ledger hashes were verified immediately above.
+// Lucid Evolution's TxUtils.toPartial constructs the witness through
+// PartialPlutusWitness.new(PlutusScriptWitness.new_script(script), redeemer).
+// Intercept that exact boundary: replacing PlutusScriptWitness.new_script alone
+// is not sufficient in this runtime (run #1694 produced no interception log).
+// Restrict the hash-only conversion to the two verified reference-script hashes.
 const referenceScriptHashes = new Set([expectedPrizeHash, expectedPoolHash])
 const plutusWitnessFactory = (CML as any).PlutusScriptWitness
-const originalNewScriptWitness = plutusWitnessFactory.new_script
-if (typeof plutusWitnessFactory.new_ref !== 'function' ||
-    typeof originalNewScriptWitness !== 'function') {
-  throw new Error('CML does not expose PlutusScriptWitness.new_ref/new_script')
+const partialWitnessFactory = (CML as any).PartialPlutusWitness
+const originalNewPartialWitness = partialWitnessFactory?.new
+const newReferenceWitness = plutusWitnessFactory?.new_ref
+if (typeof originalNewPartialWitness !== 'function' ||
+    typeof newReferenceWitness !== 'function') {
+  throw new Error('CML does not expose PartialPlutusWitness.new and PlutusScriptWitness.new_ref')
 }
-plutusWitnessFactory.new_script = (script: any) => {
-  const scriptHash = script.hash()
-  if (referenceScriptHashes.has(scriptHash.to_hex())) {
+let referenceWitnessInterceptions = 0
+partialWitnessFactory.new = (witness: any, redeemer: any) => {
+  const scriptHash = witness.hash()
+  const hashHex = scriptHash.to_hex()
+  if (referenceScriptHashes.has(hashHex)) {
+    referenceWitnessInterceptions += 1
     console.log(JSON.stringify({
       revealDiag: 'reference-script-witness',
       mode: 'hash-only',
-      scriptHash: scriptHash.to_hex(),
+      scriptHash: hashHex,
+      interception: referenceWitnessInterceptions,
     }))
-    return plutusWitnessFactory.new_ref(scriptHash)
+    return originalNewPartialWitness.call(
+      partialWitnessFactory,
+      newReferenceWitness.call(plutusWitnessFactory, scriptHash),
+      redeemer,
+    )
   }
-  return originalNewScriptWitness.call(plutusWitnessFactory, script)
+  return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
 }
 
 // Reference-script spending: readFrom supplies the validator scripts from
