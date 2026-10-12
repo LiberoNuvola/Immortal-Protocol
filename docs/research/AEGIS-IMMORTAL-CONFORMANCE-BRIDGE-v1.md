@@ -2,7 +2,7 @@
 
 **Status:** research fixture contract; not certified and not a deployment claim.
 **Target integration branch:** `b1-hardening`
-**Aegis source inspected:** `realdecimalist/aegis-contracts` `main`; source anchors below are file blob SHAs, not a claim about a pinned repository HEAD.
+**Aegis source inspected:** `realdecimalist/aegis-contracts` `main` at commit `6549246ff053457c93e6d68e44791efa2ef2f972`; file blob SHAs below identify the inspected source.
 **Aegis source anchors:** `contracts/validators/pool_vault.ak` blob `b36f7579bf81fc82a84841718f91cd0cfd3245cd`; `contracts/lib/aegis/vault.ak` blob `4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb`; `contracts/lib/aegis/test_helpers/fixtures.ak` blob `e5c54c0fcc8ac931ea170799ce61fac415ef1485`.
 **Universal kernel source:** imported from `work/b3-materios-provenance-evidence`; on `b1-hardening`, `UniversalEconomicState.hs` blob `f89fe04c8aad8ca9c5e544fa9c145a38d157826f` and `UniversalEconomicKernel.hs` blob `cd304c26c5ae9795cf5a1c4f8ca5cf9a8bf65785`.
 
@@ -74,7 +74,11 @@ The following Aegis artifacts were inspected on `main`:
 
 **Compatibility finding:** the symbolic JSON fixtures use the older `PoolDatum` shape (`total_liquidity`, `active_coverage`, `lp_supply`) and the legacy ProcessClaim/Underwrite flow. The currently inspected V8 `pool_vault.ak` uses `VaultState` with `lp_supply`, `active_coverage`, `reserve`, and a registry NFT; its Underwrite/Claim/Expire arms call the pure predicates in `aegis/vault.ak`. Therefore these JSON fixtures are useful as adversarial intent/reference examples, but **must not be presented as direct fixtures for the current V8 validator** or fed into a differential harness without an explicit version adapter.
 
-The next runnable bridge should extract or add Aiken-native tests against the current V8 predicates, preserving each actual precondition and transition equation. Only then should a neutral IMMORTAL projection be applied, with the economic mapping kept `UNVERIFIABLE` until a qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
+**Current-V8 discovery:** the current `pool_vault.ak` does contain wired `Underwrite`, `Claim`, and `Expire` arms that call `underwrite_ok`, `claim_ok`, and `expire_ok`. This is more specific than the stale WIP wording in the introductory comments of `vault.ak`. The validator arms are present in the inspected commit; this inspection is not a claim that Aiken tests or a full transaction simulation were executed.
+
+A first source-grounded accounting fixture has now been added at `docs/research/fixtures/AEGIS-V8-UNDERWRITE-ACCOUNTING-HAPPY-001.json`. It pins the Aegis repository commit, source blob, and existing `underwrite_happy_path` test, and records the exact predicate inputs plus the continuation, backing, pool-total, cap, and policy-funding arithmetic. It is explicitly a **pure accounting-predicate fixture**, not a full validator transaction fixture; its IMMORTAL projection is `UNVERIFIABLE` pending the qualified-value profile.
+
+Next, add similarly sourced Claim and Expire accounting fixtures and adversarial variants, then execute the Aiken suite in a suitable environment. Only after that should a neutral IMMORTAL projection be applied, with economic mapping kept `UNVERIFIABLE` until the qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
 
 ## 6. Exit criteria
 
@@ -85,4 +89,4 @@ The bridge is not ready to certify until:
 - positive and adversarial cases execute in CI;
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
-**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`. The suite has not been executed in this environment. Aegis source fixtures have been located and their legacy/V8 schema mismatch recorded; the bridge remains research-only until current-V8 fixtures, an approved mapping, and a runnable differential harness are completed and executed.
+**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. One current-V8 Underwrite accounting fixture is now recorded. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until Claim/Expire and adversarial fixtures, a successful test run, an approved mapping, and a runnable differential harness are completed.
