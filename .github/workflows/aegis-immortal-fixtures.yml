@@ -1,0 +1,33 @@
+name: Aegis-IMMORTAL Fixture Consistency
+
+on:
+  push:
+    branches:
+      - b1-hardening
+    paths:
+      - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "scripts/aegis_immortal_fixture_harness.py"
+      - ".github/workflows/aegis-immortal-fixtures.yml"
+  pull_request:
+    paths:
+      - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "scripts/aegis_immortal_fixture_harness.py"
+      - ".github/workflows/aegis-immortal-fixtures.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixture-consistency:
+    name: Fixture arithmetic and invariant consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Aegis V8 bridge fixtures
+        run: python scripts/aegis_immortal_fixture_harness.py
