@@ -695,6 +695,12 @@ const referenceWitnessHashes: string[] = []
 partialWitnessFactory.new = (witness: any, redeemer: any) => {
   const scriptHash = witness.hash()
   const hashHex = scriptHash.to_hex()
+  console.log(JSON.stringify({
+    revealDiag: 'partial-plutus-witness-observed',
+    scriptHash: hashHex,
+    targetReferenceScript: referenceScriptHashes.has(hashHex),
+    expectedReferenceHashes: [...referenceScriptHashes].sort(),
+  }))
   if (referenceScriptHashes.has(hashHex)) {
     referenceWitnessInterceptions += 1
     referenceWitnessHashes.push(hashHex)
@@ -716,7 +722,7 @@ partialWitnessFactory.new = (witness: any, redeemer: any) => {
 // Reference-script spending: readFrom supplies the validator scripts from
 // their on-chain UTxOs. Do not attach either validator here, because attach
 // embeds the script witness and defeats the P2.8 transaction-size remediation.
-const reveal = await lucid
+const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
@@ -733,7 +739,20 @@ const reveal = await lucid
   )
   .addSigner(address)
   .validTo(Number(revealValidTo()))
-  .complete({ localUPLCEval: false })
+
+let reveal: any
+try {
+  reveal = await revealBuilder.complete({ localUPLCEval: false })
+} catch (error) {
+  console.log(JSON.stringify({
+    revealDiag: 'reference-script-complete-failed',
+    referenceWitnessInterceptions,
+    referenceWitnessHashes,
+    expectedReferenceHashes: [...referenceScriptHashes].sort(),
+    error: String(error),
+  }))
+  throw error
+}
 
 {
   const builtCbor = reveal.toCBOR()
