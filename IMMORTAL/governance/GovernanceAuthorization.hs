@@ -7,7 +7,7 @@ module GovernanceAuthorization
 
 import Governance
 import GovernanceEventSchema
-import RulesetRegistry
+import RulesetRegistry hiding (rulesetVersion)
 
 authorizationValid :: CanonicalEvent -> Bool
 authorizationValid e =
