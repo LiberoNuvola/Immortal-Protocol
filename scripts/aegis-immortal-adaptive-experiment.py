@@ -54,7 +54,7 @@ def recover_cap(current_cap: float, candidate_cap: float, consecutive_safe: int,
         return current_cap, "no expansion required"
     if consecutive_safe < required_safe:
         return current_cap, "recovery held: insufficient consecutive safe observations"
-    return min(candidate_cap, current_cap + step), "staged recovery: one bounded step"
+    return round(min(candidate_cap, current_cap + step), 6), "staged recovery: one bounded step"
 
 
 def run_case(s: Scenario) -> dict:
