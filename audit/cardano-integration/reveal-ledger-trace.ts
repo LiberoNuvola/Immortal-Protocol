@@ -691,11 +691,13 @@ if (typeof originalNewPartialWitness !== 'function' ||
   throw new Error('CML does not expose PartialPlutusWitness.new and PlutusScriptWitness.new_ref')
 }
 let referenceWitnessInterceptions = 0
+const referenceWitnessHashes: string[] = []
 partialWitnessFactory.new = (witness: any, redeemer: any) => {
   const scriptHash = witness.hash()
   const hashHex = scriptHash.to_hex()
   if (referenceScriptHashes.has(hashHex)) {
     referenceWitnessInterceptions += 1
+    referenceWitnessHashes.push(hashHex)
     console.log(JSON.stringify({
       revealDiag: 'reference-script-witness',
       mode: 'hash-only',
@@ -735,6 +737,50 @@ const reveal = await lucid
 
 {
   const builtCbor = reveal.toCBOR()
+
+  // Fail closed before Yaci evaluation/sign/submit unless the actual serialized
+  // transaction proves both reference witnesses were intercepted and no Plutus
+  // validator bytecode remains embedded in the witness set.
+  const builtTx = CML.Transaction.from_cbor_hex(builtCbor)
+  const builtWitnessSet = builtTx.witness_set()
+  const embeddedScriptCounts = Object.fromEntries(
+    (['plutus_v1_scripts', 'plutus_v2_scripts', 'plutus_v3_scripts'] as const).map((method) => {
+      const collection = (builtWitnessSet as any)[method]?.()
+      if (collection == null) return [method, 0]
+      if (typeof collection.len !== 'function') {
+        throw new Error('Cannot inspect serialized Reveal witness collection: ' + method)
+      }
+      return [method, Number(collection.len())]
+    }),
+  )
+  const embeddedScriptTotal = Object.values(embeddedScriptCounts).reduce(
+    (total, count) => total + Number(count), 0,
+  )
+  const builtTxBytes = Buffer.from(builtCbor, 'hex').length
+  const expectedReferenceHashes = [...referenceScriptHashes].sort()
+  const interceptedReferenceHashes = [...new Set(referenceWitnessHashes)].sort()
+  const preflightEvidence = {
+    revealDiag: 'reference-script-preflight',
+    expectedReferenceHashes,
+    interceptedReferenceHashes,
+    interceptionCount: referenceWitnessInterceptions,
+    embeddedScriptCounts,
+    embeddedScriptTotal,
+    bytes: builtTxBytes,
+    maxTxSize: protocolParameters.maxTxSize ?? null,
+  }
+  console.log(JSON.stringify(preflightEvidence))
+  if (referenceWitnessInterceptions !== 2 ||
+      interceptedReferenceHashes.length !== 2 ||
+      expectedReferenceHashes.some((hash, index) => interceptedReferenceHashes[index] !== hash)) {
+    throw new Error('Reveal reference-script preflight failed: both expected script hashes were not intercepted exactly')
+  }
+  if (embeddedScriptTotal !== 0) {
+    throw new Error('Reveal reference-script preflight failed: serialized witness set still embeds Plutus scripts')
+  }
+  if (typeof protocolParameters.maxTxSize !== 'number' || builtTxBytes > protocolParameters.maxTxSize) {
+    throw new Error('Reveal reference-script preflight failed: serialized transaction exceeds or cannot verify maxTxSize')
+  }
   writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
   const reEvaluated = await evaluateYaciTx(builtCbor, []).catch((e: unknown) => ({ evaluationError: String(e).slice(0, 600) }))
   const finalDescription = describeTx(builtCbor)
