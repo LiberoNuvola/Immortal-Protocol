@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Synthetic cross-transition contract test for IMMORTAL's existing EconomicGate.
+"""Cross-transition synthetic tests for IMMORTAL's universal kernel.
 
-This mirrors the visible predicate interface for research fixtures only. It
-does not execute Haskell/Plutus, establish a profile mapping, or prove adapter
-conformance. Candidate post-states are synthetic and transition deltas are not
-normative application semantics.
+This mirrors only the kernel predicates present on b1-hardening:
+protectedCapital, rawSurplus, nonNegativeState, solvencyInvariant.
+EconomicGate.hs is not present in the b1-hardening cabal module inventory, so
+this test deliberately does not claim to execute or mirror that separate gate.
+It is not Haskell/Plutus execution, adapter conformance, or production evidence.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 
@@ -31,141 +32,101 @@ class State:
             + self.mandatory_future_costs + self.additional_protected_capital
         )
 
+    def raw_surplus(self, eev: int) -> int:
+        return max(0, eev - self.protected_capital())
+
     def non_negative(self) -> bool:
         return all(v >= 0 for v in asdict(self).values())
 
-    def solvency(self, eev: int) -> bool:
+    def solvency_invariant(self, eev: int) -> bool:
         return eev >= 0 and self.non_negative() and eev >= self.protected_capital()
-
-
-@dataclass(frozen=True)
-class GateInput:
-    authoritative_truth_verified: bool
-    eev_fresh: bool
-    obligations_complete: bool
-    eev: int
-    available_liquidity: int
-    required_liquidity: int
-    safe_post_state: bool
-    all_successors_in_certified_kernel: bool
 
 
 @dataclass(frozen=True)
 class Case:
     name: str
-    transition: str
-    candidate: State
-    gate: GateInput
-    expected_economic_gate: bool
-    expected_execution_admissible: bool
+    transition_family: str
+    state: State
+    eev: int
+    expected_solvent: bool
+    expected_surplus: int
     explanation: str
 
 
-def evaluate(candidate: State, g: GateInput) -> dict:
-    checks = {
-        "authoritative_truth_verified": g.authoritative_truth_verified,
-        "eev_fresh": g.eev_fresh,
-        "obligations_complete": g.obligations_complete,
-        "available_liquidity_nonnegative": g.available_liquidity >= 0,
-        "required_liquidity_nonnegative": g.required_liquidity >= 0,
-        "required_liquidity_within_available": g.required_liquidity <= g.available_liquidity,
-        "candidate_solvency": candidate.solvency(g.eev),
-        "safe_post_state": g.safe_post_state,
-        "all_successors_in_certified_kernel": g.all_successors_in_certified_kernel,
-    }
-    economic_gate = all(checks[k] for k in list(checks)[:7])
-    viability_gate = g.safe_post_state and g.all_successors_in_certified_kernel
-    return {
-        "economic_gate": economic_gate,
-        "viability_gate": viability_gate,
-        "execution_admissible": economic_gate and viability_gate,
-        "failed_checks": [k for k, passed in checks.items() if not passed],
-        "protected_capital": candidate.protected_capital(),
-        "eev": g.eev,
-        "headroom": g.eev - candidate.protected_capital(),
-        "checks": checks,
-    }
-
-
-BASE = State(
-    crystallized_liabilities=10, unresolved_reserve=5, unresolved_ticket_count=2,
-    worst_case_exposure=20, safety_capital=5, reserve_protection=5,
-    mandatory_future_costs=3, additional_protected_capital=2,
-)
-GOOD = GateInput(True, True, True, 60, 20, 10, True, True)
-
+BASE = State(10, 2, 1, 20, 5, 5, 3, 2)
 CASES = [
-    Case("underwrite_safe_candidate", "underwrite", BASE, GOOD, True, True,
-         "Synthetic post-state inside the declared protected-capital boundary."),
-    Case("underwrite_exposure_over_economic_value", "underwrite",
-         State(10, 5, 3, 40, 5, 5, 3, 2),
-         GateInput(True, True, True, 60, 20, 10, True, True), False, False,
-         "Increased worst-case exposure makes ProtectedCapital exceed EEV."),
-    Case("claim_requires_unavailable_liquidity", "claim", BASE,
-         GateInput(True, True, True, 60, 4, 8, True, True), False, False,
-         "A solvent candidate still fails the separate immediate-liquidity condition."),
-    Case("expire_no_immediate_liquidity", "expire", BASE,
-         GateInput(True, True, True, 60, 0, 0, True, True), True, True,
-         "A zero-immediate-liquidity action is not forced to show positive surplus."),
-    Case("claim_stale_eev", "claim", BASE,
-         GateInput(True, False, True, 60, 20, 10, True, True), False, False,
-         "Stale EEV evidence blocks admission."),
-    Case("expire_incomplete_obligations", "expire", BASE,
-         GateInput(True, True, False, 60, 0, 0, True, True), False, False,
-         "An incomplete obligation inventory blocks admission."),
-    Case("safe_economic_gate_but_viability_unproven", "underwrite", BASE,
-         GateInput(True, True, True, 60, 20, 10, True, False), True, False,
-         "Immediate economic safety alone is insufficient when successor closure is not established."),
-    Case("negative_state_component", "claim",
-         State(10, 5, 2, -1, 5, 5, 3, 2), GOOD, False, False,
-         "The universal state predicate rejects a negative component."),
-    Case("unverified_authoritative_truth", "underwrite", BASE,
-         GateInput(False, True, True, 60, 20, 10, True, True), False, False,
-         "The gate does not manufacture truth; missing verification fails closed."),
+    Case("underwrite_safe_candidate", "underwrite", BASE, 60, True, 10,
+         "Protected capital is 50 and EEV is 60."),
+    Case("claim_exact_solvency_boundary", "claim", BASE, 50, True, 0,
+         "Exact EEV == ProtectedCapital is solvent; RawSurplus is zero."),
+    Case("expire_below_protected_capital", "expire", BASE, 49, False, 0,
+         "EEV below protected capital violates solvency."),
+    Case("underwrite_negative_exposure", "underwrite",
+         State(10, 2, 1, -1, 5, 5, 3, 2), 60, False, 0,
+         "A negative state component fails nonNegativeState."),
+    Case("claim_negative_eev", "claim", BASE, -1, False, 0,
+         "Negative EEV fails solvency even when other state fields are valid."),
+    Case("expire_all_zero", "expire", State(), 0, True, 0,
+         "The zero state is non-negative and solvent at EEV zero."),
+    Case("underwrite_surplus_clamped", "underwrite", BASE, 45, False, 0,
+         "RawSurplus is clamped at zero; it does not make an insolvent state solvent."),
+    Case("claim_extra_protected_cost", "claim",
+         State(10, 2, 1, 20, 5, 5, 8, 2), 60, False, 0,
+         "Increasing mandatory future costs raises ProtectedCapital to 55."),
+    Case("expire_positive_surplus", "expire", BASE, 75, True, 25,
+         "Surplus is EEV minus ProtectedCapital when positive."),
 ]
 
 
 def main() -> None:
     results = []
+    checks = 0
     for c in CASES:
-        result = evaluate(c.candidate, c.gate)
-        assert result["economic_gate"] is c.expected_economic_gate, (c.name, result)
-        assert result["execution_admissible"] is c.expected_execution_admissible, (c.name, result)
-        result.update({"scenario": c.name, "transition_family": c.transition, "explanation": c.explanation})
-        results.append(result)
-
-    # Explicitly verify that the gate accepts zero required liquidity for an
-    # expiry-like action, and that execution admissibility adds the viability gate.
-    assert next(r for r in results if r["scenario"] == "expire_no_immediate_liquidity")["economic_gate"]
-    assert not next(r for r in results if r["scenario"] == "safe_economic_gate_but_viability_unproven")["execution_admissible"]
+        pc = c.state.protected_capital()
+        surplus = c.state.raw_surplus(c.eev)
+        nonnegative = c.state.non_negative()
+        solvent = c.state.solvency_invariant(c.eev)
+        assert solvent is c.expected_solvent, (c.name, solvent, pc)
+        checks += 1
+        assert surplus == c.expected_surplus, (c.name, surplus, c.expected_surplus)
+        checks += 1
+        assert nonnegative is all(v >= 0 for v in asdict(c.state).values())
+        checks += 1
+        # RawSurplus is not a solvency predicate: show the distinction explicitly.
+        if c.eev < pc:
+            assert surplus == 0 and not solvent
+            checks += 1
+        results.append({
+            "scenario": c.name,
+            "transition_family_label": c.transition_family,
+            "protected_capital": pc,
+            "eev": c.eev,
+            "raw_surplus": surplus,
+            "non_negative_state": nonnegative,
+            "solvency_invariant": solvent,
+            "explanation": c.explanation,
+        })
 
     report = {
-        "schema": "immortal-economic-gate-cross-transition-contract-test-v1",
-        "classification": "SYNTHETIC_PYTHON_MIRROR_NOT_HASKELL_OR_PLUTUS_EXECUTION",
+        "schema": "immortal-universal-kernel-cross-transition-contract-test-v2",
+        "classification": "SYNTHETIC_PYTHON_MIRROR_NOT_HASKELL_PLUTUS_EXECUTION",
+        "reference_branch": "b1-hardening",
+        "reference_source": "IMMORTAL/kernel/UniversalEconomicKernel.hs and IMMORTAL/state/UniversalEconomicState.hs",
+        "note": "EconomicGate.hs is not in the b1-hardening module inventory inspected for this test; only universal-kernel predicates are mirrored.",
         "case_count": len(results),
-        "assertions_passed": 2 * len(CASES) + 2,
-        "reference_contract": [
-            "EconomicGate.economicGate",
-            "EconomicGate.viabilityGate",
-            "EconomicGate.executionAdmissible",
-            "UniversalEconomicKernel.protectedCapital",
-            "UniversalEconomicKernel.nonNegativeState",
-            "UniversalEconomicKernel.solvencyInvariant",
-        ],
-        "transition_families": ["underwrite", "claim", "expire"],
+        "assertions_passed": checks,
         "results": results,
         "limits": [
-            "Python mirrors the inspected predicate shape; Haskell/Plutus was not executed.",
-            "All states and values are synthetic and do not represent Aegis datum fields.",
-            "Transition-family labels do not define application-specific transition semantics.",
-            "No adapter conformance, production safety, or deployment claim follows.",
+            "Python mirrors the universal-kernel arithmetic; Haskell/Plutus was not executed.",
+            "Transition-family labels are test labels, not definitions of application transition deltas.",
+            "No Aegis field mapping, adapter conformance, production policy, or deployment claim follows.",
         ],
     }
     out = Path("immortal-economic-gate-cross-transition-report.json")
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"PASS: {len(results)} cases; {report['assertions_passed']} assertions")
+    print(f"PASS: {len(results)} cases; {checks} assertions")
     for r in results:
-        print(f"{r['scenario']}: economic={r['economic_gate']} execution={r['execution_admissible']} failed={','.join(r['failed_checks']) or 'NONE'}")
+        print(f"{r['scenario']}: PC={r['protected_capital']} EEV={r['eev']} surplus={r['raw_surplus']} solvent={r['solvency_invariant']}")
     print(f"Report: {out}")
 
 
