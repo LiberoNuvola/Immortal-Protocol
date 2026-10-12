@@ -62,6 +62,20 @@ Compare after every transition. A final-state-only comparison can hide divergenc
 7. A projection that makes the same obligation appear in both unresolved reserve and worst-case exposure.
 8. Any post-state where EEV is below ProtectedCapital, once the profile has authoritatively defined EEV.
 
+## 7. Source-grounded fixture inventory and compatibility gate
+
+The following Aegis artifacts were inspected on `main`:
+
+- `contracts/lib/aegis/test_helpers/security_tests.ak`, blob `97a77c1dc86aed96c5494aa854af4d23e92c2635`: Aiken-native regression tests. Its A-001 case explicitly checks that Claim payout equals the consumed policy's `coverage_amount` and that the policy targets the pool being drained.
+- `docs/audit/round-9-T2/symbolic_executor/tests/fixtures/underwrite_positive.json`, blob `aeb93446488878e93ccb4f45fd62813fb28fe625`.
+- `docs/audit/round-9-T2/symbolic_executor/tests/fixtures/underwrite_negative_A024_negative_coverage.json`, blob `1228ca8c3504555a685a8657ef77a2c5abac924b`.
+- `docs/audit/round-9-T2/symbolic_executor/tests/fixtures/process_claim_positive.json`, blob `b537409679d618c4d0073d250fa6a9717a7c2115`.
+- `docs/audit/round-9-T2/symbolic_executor/tests/fixtures/process_claim_negative_overpayment.json`, blob `0de7accf9982aa21f7a9724aa2ee2b3f595e1616`.
+
+**Compatibility finding:** the symbolic JSON fixtures use the older `PoolDatum` shape (`total_liquidity`, `active_coverage`, `lp_supply`) and the legacy ProcessClaim/Underwrite flow. The currently inspected V8 `pool_vault.ak` uses `VaultState` with `lp_supply`, `active_coverage`, `reserve`, and a registry NFT; its Underwrite/Claim/Expire arms call the pure predicates in `aegis/vault.ak`. Therefore these JSON fixtures are useful as adversarial intent/reference examples, but **must not be presented as direct fixtures for the current V8 validator** or fed into a differential harness without an explicit version adapter.
+
+The next runnable bridge should extract or add Aiken-native tests against the current V8 predicates, preserving each actual precondition and transition equation. Only then should a neutral IMMORTAL projection be applied, with the economic mapping kept `UNVERIFIABLE` until a qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
+
 ## 6. Exit criteria
 
 The bridge is not ready to certify until:
@@ -71,4 +85,4 @@ The bridge is not ready to certify until:
 - positive and adversarial cases execute in CI;
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
-**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`. The suite has not been executed in this environment. The Aegis transition bridge remains research-only until the mapping and runnable differential fixtures are completed and executed.
+**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`. The suite has not been executed in this environment. Aegis source fixtures have been located and their legacy/V8 schema mismatch recorded; the bridge remains research-only until current-V8 fixtures, an approved mapping, and a runnable differential harness are completed and executed.
