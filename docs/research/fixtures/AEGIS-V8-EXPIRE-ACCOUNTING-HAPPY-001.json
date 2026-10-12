@@ -1,0 +1,69 @@
+{
+  "schema": "aegis-immortal-v8-accounting-fixture-v1",
+  "source": {
+    "repository": "realdecimalist/aegis-contracts",
+    "branch": "main",
+    "commit": "6549246ff053457c93e6d68e44791efa2ef2f972",
+    "file": "contracts/lib/aegis/vault.ak",
+    "file_blob_sha": "4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb",
+    "test_name": "expire_returns_coverage_and_burns_marker",
+    "predicate": "expire_ok"
+  },
+  "units": {
+    "monetary": "lovelace",
+    "token_quantities": "integer token quantities"
+  },
+  "fixture_id": "AEGIS-V8-EXPIRE-ACCOUNTING-HAPPY-001",
+  "purpose": "Source-grounded fixture for the Aegis V8 pure expire_ok accounting predicate; not a full transaction/validator fixture.",
+  "pre_state": {
+    "lp_supply": 1000,
+    "active_coverage": 200000000,
+    "reserve": 10000000
+  },
+  "predicate_arguments": {
+    "coverage": 50000000,
+    "own_lovelace": 100000000,
+    "cont_lovelace": 150000000,
+    "policy_lovelace": 50000000,
+    "marker_minted": -1
+  },
+  "post_state": {
+    "lp_supply": 1000,
+    "active_coverage": 150000000,
+    "reserve": 10000000
+  },
+  "derived_checks": {
+    "continuation_equation": {
+      "expression": "own_lovelace + policy_lovelace",
+      "expected": 150000000,
+      "actual": 150000000,
+      "pass": true
+    },
+    "active_coverage_delta": {
+      "expression": "old_active_coverage - coverage",
+      "expected": 150000000,
+      "actual": 150000000,
+      "pass": true
+    },
+    "lp_supply_unchanged": true,
+    "reserve_unchanged": true,
+    "payout": {
+      "expected": 0,
+      "note": "Expire returns policy-held lovelace to the pool; no payout is specified by this predicate fixture."
+    },
+    "marker_burn": {
+      "expected": -1,
+      "actual": -1,
+      "pass": true
+    }
+  },
+  "expected": {
+    "aegis_expire_ok": true,
+    "immortal_projection": "UNVERIFIABLE"
+  },
+  "limitations": [
+    "Arguments are copied from the source test expire_returns_coverage_and_burns_marker.",
+    "The predicate fixture does not prove the validator's time-bound condition; the full validator arm separately checks expiry against the transaction validity range.",
+    "This is not an executed Aiken result and does not authorize an IMMORTAL economic mapping."
+  ]
+}
