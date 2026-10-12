@@ -1,0 +1,72 @@
+{
+  "schema": "aegis-immortal-v8-accounting-fixture-v1",
+  "fixture_id": "AEGIS-V8-ACCOUNTING-ADVERSARIAL-001",
+  "purpose": "Source-grounded negative cases for current Aegis V8 pure accounting predicates. These are expected rejection cases, not executed test results.",
+  "source": {
+    "repository": "realdecimalist/aegis-contracts",
+    "branch": "main",
+    "commit": "6549246ff053457c93e6d68e44791efa2ef2f972",
+    "file": "contracts/lib/aegis/vault.ak",
+    "file_blob_sha": "4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb"
+  },
+  "units": {
+    "monetary": "lovelace",
+    "token_quantities": "integer token quantities"
+  },
+  "cases": [
+    {
+      "case_id": "CLAIM-UNDERPAY-REJECT",
+      "source_test": "claim_rejects_payout_not_equal_coverage",
+      "predicate": "claim_ok",
+      "pre_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 300000000,
+        "reserve": 0
+      },
+      "predicate_arguments": {
+        "payout": 299999999,
+        "policy_coverage": 300000000,
+        "own_lovelace": 731000000,
+        "cont_lovelace": 731000001,
+        "policy_lovelace": 300000000,
+        "marker_minted": -1
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 1,
+        "reserve": 0
+      },
+      "violated_invariant": "payout must equal policy coverage",
+      "expected": "REJECT"
+    },
+    {
+      "case_id": "EXPIRE-SKIM-REJECT",
+      "source_test": "expire_rejects_skimmed_return",
+      "predicate": "expire_ok",
+      "pre_state": {
+        "lp_supply": 1000,
+        "active_coverage": 200000000,
+        "reserve": 10000000
+      },
+      "predicate_arguments": {
+        "coverage": 50000000,
+        "own_lovelace": 100000000,
+        "cont_lovelace": 149000000,
+        "policy_lovelace": 50000000,
+        "marker_minted": -1
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000,
+        "active_coverage": 150000000,
+        "reserve": 10000000
+      },
+      "violated_invariant": "continuation lovelace must equal own_lovelace + policy_lovelace (150000000)",
+      "expected": "REJECT"
+    }
+  ],
+  "limitations": [
+    "Inputs are taken from named tests in the pinned source file.",
+    "Expected rejection is derived from the named test assertions and predicate invariants; this JSON has not been consumed by an executable harness.",
+    "IMMORTAL projection remains UNVERIFIABLE until the qualified-value profile is approved."
+  ]
+}
