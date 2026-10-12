@@ -83,6 +83,40 @@ jobs:
           sudo ldconfig
           echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+      - name: Install Cardano libblst dependency
+        shell: bash
+        run: |
+          # Pin the Cardano-reviewed blst source revision corresponding to v0.3.15.
+          # cardano-crypto-class requires pkg-config package libblst >= 0.3.14.
+          BLST_REV="6d960cd05d6fe2b5bc9ba161edf0c1a131b87c4c"
+          BLST_VERSION="0.3.15"
+          git clone https://github.com/supranational/blst "$RUNNER_TEMP/blst"
+          git -C "$RUNNER_TEMP/blst" checkout --detach "$BLST_REV"
+          test "$(git -C "$RUNNER_TEMP/blst" rev-parse HEAD)" = "$BLST_REV"
+          cd "$RUNNER_TEMP/blst"
+          ./build.sh
+          sudo install -D -m 0644 libblst.a /usr/local/lib/libblst.a
+          sudo install -D -m 0644 bindings/blst.h /usr/local/include/blst.h
+          sudo install -D -m 0644 bindings/blst_aux.h /usr/local/include/blst_aux.h
+          sudo install -D -m 0644 bindings/blst.hpp /usr/local/include/blst.hpp
+          sudo install -d -m 0755 /usr/local/lib/pkgconfig
+          cat > "$RUNNER_TEMP/libblst.pc" <<EOF
+          prefix=/usr/local
+          exec_prefix=\${prefix}
+          libdir=\${exec_prefix}/lib
+          includedir=\${prefix}/include
+          Name: libblst
+          Description: Multilingual BLS12-381 signature library
+          URL: https://github.com/supranational/blst
+          Version: ${BLST_VERSION}
+          Cflags: -I\${includedir}
+          Libs: -L\${libdir} -lblst
+          EOF
+          sudo install -m 0644 "$RUNNER_TEMP/libblst.pc" /usr/local/lib/pkgconfig/libblst.pc
+          sudo ldconfig
+          pkg-config --modversion libblst
+          pkg-config --atleast-version=0.3.14 libblst
+          pkg-config --cflags --libs libblst
       - name: Update package index
         run: cabal update
       - name: Build universal economic kernel test target
