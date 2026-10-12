@@ -8,7 +8,7 @@ compares it to Aegis's source-inspected fixed 33% local cap.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 import json
 from pathlib import Path
 
@@ -43,6 +43,18 @@ def adaptive_cap(s: Scenario) -> tuple[float, str]:
     if s.reserve_adequacy >= 1.2 and s.capital_headroom >= 1.2 and s.stress != "high":
         return 0.33, "normal: adequate reserve and capital headroom"
     return 0.25, "cautious: conditions do not justify expansion"
+
+
+def recover_cap(current_cap: float, candidate_cap: float, consecutive_safe: int,
+               required_safe: int = 2, step: float = 0.08) -> tuple[float, str]:
+    """Illustrative hysteresis: contract immediately, recover gradually."""
+    if candidate_cap < current_cap:
+        return candidate_cap, "immediate contraction"
+    if candidate_cap <= current_cap:
+        return current_cap, "no expansion required"
+    if consecutive_safe < required_safe:
+        return current_cap, "recovery held: insufficient consecutive safe observations"
+    return min(candidate_cap, current_cap + step), "staged recovery: one bounded step"
 
 
 def run_case(s: Scenario) -> dict:
@@ -98,13 +110,28 @@ def main() -> None:
     assert not stress["dynamic_accept"] and stress["fixed_accept"]
     assert invalid["illustrative_dynamic_cap"] == 0 and not invalid["dynamic_accept"]
 
+    # Hysteresis/recovery checks: immediate contraction, no one-snapshot rebound,
+    # then a bounded step after repeated safe observations.
+    contraction = recover_cap(0.33, 0.15, 0)
+    held_recovery = recover_cap(0.15, 0.40, 1)
+    staged_recovery = recover_cap(0.15, 0.40, 2)
+    assert contraction[0] == 0.15 and contraction[1] == "immediate contraction"
+    assert held_recovery[0] == 0.15
+    assert staged_recovery[0] == 0.23
+
     report = {
         "schema": "aegis-immortal-adaptive-admission-experiment-v1",
         "classification": "ILLUSTRATIVE_OFFCHAIN_EXPERIMENT_NOT_PRODUCTION_POLICY",
         "fixed_cap_source": "Aegis V8 source-inspected local 33% cap; source commit documented in bridge",
         "dynamic_policy": "experiment-only thresholds; not approved or proposed as production constants",
         "case_count": len(results),
-        "checks_passed": 3 * len(CASES) + 3,
+        "checks_passed": 3 * len(CASES) + 6,
+        "hysteresis_checks": {
+            "contraction": {"cap": contraction[0], "reason": contraction[1]},
+            "single_safe_observation": {"cap": held_recovery[0], "reason": held_recovery[1]},
+            "two_safe_observations": {"cap": staged_recovery[0], "reason": staged_recovery[1]},
+            "classification": "illustrative mechanism only; thresholds and recovery cadence unapproved",
+        },
         "results": results,
         "limits": [
             "No Aiken predicate or Cardano transaction was executed.",
