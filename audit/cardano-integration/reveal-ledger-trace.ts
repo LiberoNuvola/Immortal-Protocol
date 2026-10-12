@@ -676,6 +676,30 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
+// Lucid Evolution 0.6.5 resolves collectFrom through PartialPlutusWitness.new_script,
+// which embeds the validator bytes even when the same script is present in readFrom.
+// CML supports a hash-only reference witness. Restrict this adaptation to the two
+// reference scripts whose on-ledger hashes were verified immediately above.
+const referenceScriptHashes = new Set([expectedPrizeHash, expectedPoolHash])
+const plutusWitnessFactory = (CML as any).PlutusScriptWitness
+const originalNewScriptWitness = plutusWitnessFactory.new_script
+if (typeof plutusWitnessFactory.new_ref !== 'function' ||
+    typeof originalNewScriptWitness !== 'function') {
+  throw new Error('CML does not expose PlutusScriptWitness.new_ref/new_script')
+}
+plutusWitnessFactory.new_script = (script: any) => {
+  const scriptHash = script.hash()
+  if (referenceScriptHashes.has(scriptHash.to_hex())) {
+    console.log(JSON.stringify({
+      revealDiag: 'reference-script-witness',
+      mode: 'hash-only',
+      scriptHash: scriptHash.to_hex(),
+    }))
+    return plutusWitnessFactory.new_ref(scriptHash)
+  }
+  return originalNewScriptWitness.call(plutusWitnessFactory, script)
+}
+
 // Reference-script spending: readFrom supplies the validator scripts from
 // their on-chain UTxOs. Do not attach either validator here, because attach
 // embeds the script witness and defeats the P2.8 transaction-size remediation.
