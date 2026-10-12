@@ -81,20 +81,48 @@ def check_single(path: Path, data: dict) -> int:
 
 def check_adversarial(path: Path, data: dict) -> int:
     require(data.get("schema") == SCHEMA, f"{path.name}: unsupported/missing schema")
+    source = data.get("source", {})
+    require(source.get("repository") == "realdecimalist/aegis-contracts",
+            f"{path.name}: unexpected source repository")
+    require(source.get("commit") == "6549246ff053457c93e6d68e44791efa2ef2f972",
+            f"{path.name}: source commit is not pinned to the inspected revision")
+    require(source.get("file_blob_sha") == "4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb",
+            f"{path.name}: source blob is not pinned to the inspected revision")
     cases = data.get("cases")
     require(isinstance(cases, list) and cases, f"{path.name}: cases missing")
     for case in cases:
         cid = case["case_id"]
+        source_test = case["source_test"]
         args = case["predicate_arguments"]
-        if case["predicate"] == "claim_ok":
-            require(args["payout"] != args["policy_coverage"],
-                    f"{cid}: fixture no longer violates payout equality")
-        elif case["predicate"] == "expire_ok":
-            require(args["cont_lovelace"] != args["own_lovelace"] + args["policy_lovelace"],
-                    f"{cid}: fixture no longer violates continuation equation")
-        else:
-            raise AssertionError(f"{cid}: unsupported adversarial predicate")
+        pre = case["pre_state"]
+        post = case["attempted_post_state"]
         require(case["expected"] == "REJECT", f"{cid}: expected result must be REJECT")
+
+        if source_test == "claim_rejects_payout_not_equal_coverage":
+            violated = args["payout"] != args["policy_coverage"]
+        elif source_test == "claim_reserve_draw_is_capped_at_reserve":
+            expected_reserve = pre["reserve"] - min(args["payout"], pre["reserve"])
+            violated = post["reserve"] != expected_reserve
+        elif source_test == "claim_requires_marker_burn":
+            violated = args["marker_minted"] != -1
+        elif source_test == "expire_rejects_skimmed_return":
+            violated = args["cont_lovelace"] != args["own_lovelace"] + args["policy_lovelace"]
+        elif source_test == "expire_rejects_reserve_touched":
+            violated = post["reserve"] != pre["reserve"]
+        elif source_test == "expire_rejects_no_marker_burn":
+            violated = args["marker_minted"] != -1
+        elif source_test == "expire_rejects_over_release":
+            coverage = args["coverage"]
+            violated = (
+                coverage <= 0
+                or coverage > pre["active_coverage"]
+                or post["active_coverage"] < 0
+            )
+        else:
+            raise AssertionError(f"{cid}: source test is not explicitly handled: {source_test!r}")
+
+        require(violated, f"{cid}: fixture no longer violates the invariant associated with {source_test}")
+        require(case.get("violated_invariant"), f"{cid}: violated_invariant explanation missing")
     return len(cases)
 
 
