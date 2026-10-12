@@ -1,0 +1,70 @@
+name: Aegis Pinned Aiken Baseline
+
+on:
+  push:
+    branches: [b1-hardening]
+    paths:
+      - ".github/workflows/aegis-pinned-aiken.yml"
+      - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
+      - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "scripts/aegis_immortal_fixture_harness.py"
+  pull_request:
+    paths:
+      - ".github/workflows/aegis-pinned-aiken.yml"
+      - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
+      - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "scripts/aegis_immortal_fixture_harness.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aegis-pinned-aiken-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aiken-baseline:
+    name: Pinned Aegis source — aiken check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IMMORTAL
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Aegis source
+        uses: actions/checkout@v4
+        with:
+          repository: realdecimalist/aegis-contracts
+          ref: 6549246ff053457c93e6d68e44791efa2ef2f972
+          path: aegis-contracts
+          persist-credentials: false
+
+      - name: Install Aiken v1.1.22
+        uses: aiken-lang/setup-aiken@v1
+        with:
+          version: v1.1.22
+
+      - name: Verify pinned source identity
+        working-directory: aegis-contracts
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          expected="6549246ff053457c93e6d68e44791efa2ef2f972"
+          echo "Aegis source commit: $actual"
+          test "$actual" = "$expected"
+
+      - name: Run Aiken test suite
+        working-directory: aegis-contracts/contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          aiken check 2>&1 | tee ../../aegis-aiken-check.log
+
+      - name: Upload Aiken log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-aiken-baseline-${{ github.run_id }}
+          path: aegis-aiken-check.log
+          if-no-files-found: ignore
+          retention-days: 14
