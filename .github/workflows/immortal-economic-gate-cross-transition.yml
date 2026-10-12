@@ -61,7 +61,16 @@ jobs:
           cd "$RUNNER_TEMP/libsodium"
           git checkout "$REV"
           ./autogen.sh
-          ./configure
+          # Upstream autogen.sh can leave config.sub missing when build-aux/config.sub
+          # was absent before the script's update step. Fetch both GNU detection helpers
+          # directly into the paths configure expects.
+          mkdir -p build-aux
+          curl -fsSL https://git.savannah.gnu.org/cgit/config.git/plain/config.guess -o build-aux/config.guess
+          curl -fsSL https://git.savannah.gnu.org/cgit/config.git/plain/config.sub -o build-aux/config.sub
+          chmod +x build-aux/config.guess build-aux/config.sub
+          test -s build-aux/config.guess
+          test -s build-aux/config.sub
+          ./configure --prefix=/usr/local
           make -j2
           make check
           sudo make install
