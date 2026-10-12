@@ -79,11 +79,14 @@ The following Aegis artifacts were inspected on `main`:
 A first set of source-grounded accounting fixtures has now been added under `docs/research/fixtures/`:
 
 - `AEGIS-V8-UNDERWRITE-ACCOUNTING-HAPPY-001.json` — source test `underwrite_happy_path`, including continuation, backing, pool-total, accumulation-cap, and policy-funding arithmetic.
-- `AEGIS-V8-CLAIM-ACCOUNTING-HAPPY-001.json` — source test `claim_happy_path`, including payout equality, active-coverage reduction, reserve draw, and marker burn.
+- `AEGIS-V8-CLAIM-ACCOUNTING-HAPPY-001.json` — source test `claim_happy_path`, including payout equality, active-coverage reduction, zero-reserve draw, and marker burn.
+- `AEGIS-V8-CLAIM-RESERVE-FIRST-001.json` — source test `claim_draws_reserve_first`, exercising `min(payout, reserve)` and the reserve reduction.
 - `AEGIS-V8-EXPIRE-ACCOUNTING-HAPPY-001.json` — source test `expire_returns_coverage_and_burns_marker`, including full policy return, coverage release, unchanged reserve/supply, and marker burn.
 - `AEGIS-V8-ACCOUNTING-ADVERSARIAL-001.json` — negative Claim-underpayment and Expire-skim cases sourced from `claim_rejects_payout_not_equal_coverage` and `expire_rejects_skimmed_return`.
 
 Each pins the Aegis repository commit and source blob. These are **source-grounded predicate-accounting fixtures**, not full validator transaction fixtures, and the JSON has not yet been consumed by a runnable harness. Their IMMORTAL projection remains `UNVERIFIABLE` pending the qualified-value profile.
+
+**Source-comment inconsistency to resolve:** around `claim_ok`, a comment says reserve-first handling is not modelled and Claim stays fail-closed, but the current function body computes `from_reserve = min(payout, reserve)` and enforces `nr == reserve - from_reserve`; current validator code also contains a Claim arm invoking `claim_ok`. This discrepancy is recorded as a source-documentation issue, not silently interpreted as a behavioral failure or proof that the full transaction path passes.
 
 Next, wire these fixtures into an executable harness and execute the Aiken suite in a suitable environment. Expand adversarial cases around reserve deltas, marker quantities, and over-release, then apply a neutral IMMORTAL projection only after the qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
 
@@ -96,4 +99,4 @@ The bridge is not ready to certify until:
 - positive and adversarial cases execute in CI;
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
-**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. Current-V8 Underwrite, Claim, Expire, and two adversarial accounting cases are recorded as JSON fixtures; no runnable harness has consumed them yet. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until Claim/Expire and adversarial fixtures, a successful test run, an approved mapping, and a runnable differential harness are completed.
+**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. Current-V8 Underwrite, Claim (including reserve-first), Expire, and two adversarial accounting cases are recorded as JSON fixtures; no runnable harness has consumed them yet. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until Claim/Expire and adversarial fixtures, a successful test run, an approved mapping, and a runnable differential harness are completed.
