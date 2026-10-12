@@ -49,11 +49,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Cabal package index and compiled dependencies
+        id: cabal-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            ~/.ghc
+          key: ${{ runner.os }}-ghc-9.6.7-cabal-3.12.1.0-${{ hashFiles('plutus/pre-rich-plutus.cabal', 'cabal.project') }}
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: "9.6.7"
           cabal-version: "3.12.1.0"
-          cabal-update: true
+          cabal-update: false
+      - name: Update Hackage index on cache miss
+        if: steps.cabal-cache.outputs.cache-hit != 'true'
+        working-directory: plutus
+        run: cabal update
       - name: Install Cardano libsodium VRF dependency
         run: |
           sudo apt-get update
