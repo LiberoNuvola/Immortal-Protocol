@@ -112,6 +112,15 @@ jobs:
           pkg-config --modversion libblst
           pkg-config --atleast-version=0.3.14 libblst
           pkg-config --cflags --libs libblst
+      - name: Install Cardano libsecp256k1 dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecp256k1-dev
+          # cardano-crypto-class enables secp256k1-support by default and
+          # requires the real pkg-config package; do not mask it with a stub.
+          pkg-config --modversion libsecp256k1
+          pkg-config --exists libsecp256k1
+
       - name: Update package index
         run: cabal update
       - name: Build universal economic kernel test target
