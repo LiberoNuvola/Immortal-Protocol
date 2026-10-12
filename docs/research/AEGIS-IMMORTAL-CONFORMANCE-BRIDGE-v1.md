@@ -76,9 +76,16 @@ The following Aegis artifacts were inspected on `main`:
 
 **Current-V8 discovery:** the current `pool_vault.ak` does contain wired `Underwrite`, `Claim`, and `Expire` arms that call `underwrite_ok`, `claim_ok`, and `expire_ok`. This is more specific than the stale WIP wording in the introductory comments of `vault.ak`. The validator arms are present in the inspected commit; this inspection is not a claim that Aiken tests or a full transaction simulation were executed.
 
-A first source-grounded accounting fixture has now been added at `docs/research/fixtures/AEGIS-V8-UNDERWRITE-ACCOUNTING-HAPPY-001.json`. It pins the Aegis repository commit, source blob, and existing `underwrite_happy_path` test, and records the exact predicate inputs plus the continuation, backing, pool-total, cap, and policy-funding arithmetic. It is explicitly a **pure accounting-predicate fixture**, not a full validator transaction fixture; its IMMORTAL projection is `UNVERIFIABLE` pending the qualified-value profile.
+A first set of source-grounded accounting fixtures has now been added under `docs/research/fixtures/`:
 
-Next, add similarly sourced Claim and Expire accounting fixtures and adversarial variants, then execute the Aiken suite in a suitable environment. Only after that should a neutral IMMORTAL projection be applied, with economic mapping kept `UNVERIFIABLE` until the qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
+- `AEGIS-V8-UNDERWRITE-ACCOUNTING-HAPPY-001.json` — source test `underwrite_happy_path`, including continuation, backing, pool-total, accumulation-cap, and policy-funding arithmetic.
+- `AEGIS-V8-CLAIM-ACCOUNTING-HAPPY-001.json` — source test `claim_happy_path`, including payout equality, active-coverage reduction, reserve draw, and marker burn.
+- `AEGIS-V8-EXPIRE-ACCOUNTING-HAPPY-001.json` — source test `expire_returns_coverage_and_burns_marker`, including full policy return, coverage release, unchanged reserve/supply, and marker burn.
+- `AEGIS-V8-ACCOUNTING-ADVERSARIAL-001.json` — negative Claim-underpayment and Expire-skim cases sourced from `claim_rejects_payout_not_equal_coverage` and `expire_rejects_skimmed_return`.
+
+Each pins the Aegis repository commit and source blob. These are **source-grounded predicate-accounting fixtures**, not full validator transaction fixtures, and the JSON has not yet been consumed by a runnable harness. Their IMMORTAL projection remains `UNVERIFIABLE` pending the qualified-value profile.
+
+Next, wire these fixtures into an executable harness and execute the Aiken suite in a suitable environment. Expand adversarial cases around reserve deltas, marker quantities, and over-release, then apply a neutral IMMORTAL projection only after the qualified-value profile is approved. No Aegis source files have been modified by this bridge work.
 
 ## 6. Exit criteria
 
@@ -89,4 +96,4 @@ The bridge is not ready to certify until:
 - positive and adversarial cases execute in CI;
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
-**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. One current-V8 Underwrite accounting fixture is now recorded. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until Claim/Expire and adversarial fixtures, a successful test run, an approved mapping, and a runnable differential harness are completed.
+**Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. Current-V8 Underwrite, Claim, Expire, and two adversarial accounting cases are recorded as JSON fixtures; no runnable harness has consumed them yet. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until Claim/Expire and adversarial fixtures, a successful test run, an approved mapping, and a runnable differential harness are completed.
