@@ -89,7 +89,7 @@ CASES = [
              "Fail-closed when authoritative economic evidence is not qualified."),
     Scenario("capital_headroom_weak", 27, 100, 1.1, .9, "medium", True, .25, False, True,
              "Contraction when capital headroom is weak."),
-    Scenario("adverse_ratio", 38, 100, 1.7, 1.8, "low", True, .40, False, False,
+    Scenario("adverse_ratio", 42, 100, 1.7, 1.8, "low", True, .40, False, False,
              "Even favourable state cannot admit a transition exceeding its adaptive cap."),
 ]
 
