@@ -676,13 +676,14 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
+// Reference-script spending: readFrom supplies the validator scripts from
+// their on-chain UTxOs. Do not attach either validator here, because attach
+// embeds the script witness and defeats the P2.8 transaction-size remediation.
 const reveal = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
-  .attach.SpendingValidator(scripts.prizeValidator)
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
-  .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
