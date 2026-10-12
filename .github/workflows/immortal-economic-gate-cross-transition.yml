@@ -61,15 +61,20 @@ jobs:
           cd "$RUNNER_TEMP/libsodium"
           git checkout "$REV"
           ./autogen.sh
-          # Upstream autogen.sh can leave config.sub missing when build-aux/config.sub
-          # was absent before the script's update step. Fetch both GNU detection helpers
-          # directly into the paths configure expects.
+          # autogen.sh normally downloads GNU config.guess/config.sub. Only use a
+          # fallback mirror if either helper is absent; avoid making a healthy setup
+          # depend on the Savannah endpoint being available.
           mkdir -p build-aux
-          curl -fsSL https://git.savannah.gnu.org/cgit/config.git/plain/config.guess -o build-aux/config.guess
-          curl -fsSL https://git.savannah.gnu.org/cgit/config.git/plain/config.sub -o build-aux/config.sub
+          if [ ! -s build-aux/config.guess ]; then
+            curl --retry 3 --retry-all-errors -fsSL https://raw.githubusercontent.com/gcc-mirror/config/master/config.guess -o build-aux/config.guess
+          fi
+          if [ ! -s build-aux/config.sub ]; then
+            curl --retry 3 --retry-all-errors -fsSL https://raw.githubusercontent.com/gcc-mirror/config/master/config.sub -o build-aux/config.sub
+          fi
           chmod +x build-aux/config.guess build-aux/config.sub
           test -s build-aux/config.guess
           test -s build-aux/config.sub
+          ./build-aux/config.sub x86_64-pc-linux-gnu >/dev/null
           ./configure --prefix=/usr/local
           make -j2
           make check
