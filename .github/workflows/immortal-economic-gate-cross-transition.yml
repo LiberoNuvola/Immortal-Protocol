@@ -54,27 +54,22 @@ jobs:
       - name: Install Cardano libsodium VRF dependency
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf automake build-essential libtool pkg-config
+          sudo apt-get install -y autoconf automake autotools-dev build-essential libtool pkg-config
           REV="$(curl -fsSL https://github.com/input-output-hk/iohk-nix/releases/latest/download/INFO | awk '$1 == "debian.libsodium-vrf.deb" { print $2 }' | sed -E 's/.*-([[:xdigit:]]+)\.deb/\1/')"
           test -n "$REV"
           git clone https://github.com/IntersectMBO/libsodium "$RUNNER_TEMP/libsodium"
           cd "$RUNNER_TEMP/libsodium"
           git checkout "$REV"
           ./autogen.sh
-          # autogen.sh normally downloads GNU config.guess/config.sub. Only use a
-          # fallback mirror if either helper is absent; avoid making a healthy setup
-          # depend on the Savannah endpoint being available.
+          # Use Ubuntu's packaged GNU config helpers. The prior network fallback
+          # could save an HTML error page as config.sub; validate by executing it.
           mkdir -p build-aux
-          if [ ! -s build-aux/config.guess ]; then
-            curl --retry 3 --retry-all-errors -fsSL https://raw.githubusercontent.com/gcc-mirror/config/master/config.guess -o build-aux/config.guess
-          fi
-          if [ ! -s build-aux/config.sub ]; then
-            curl --retry 3 --retry-all-errors -fsSL https://raw.githubusercontent.com/gcc-mirror/config/master/config.sub -o build-aux/config.sub
-          fi
-          chmod +x build-aux/config.guess build-aux/config.sub
-          test -s build-aux/config.guess
-          test -s build-aux/config.sub
-          ./build-aux/config.sub x86_64-pc-linux-gnu >/dev/null
+          test -x /usr/share/misc/config.guess
+          test -x /usr/share/misc/config.sub
+          install -m 0755 /usr/share/misc/config.guess build-aux/config.guess
+          install -m 0755 /usr/share/misc/config.sub build-aux/config.sub
+          ./build-aux/config.guess
+          test "$(./build-aux/config.sub x86_64-pc-linux-gnu)" = "x86_64-pc-linux-gnu"
           ./configure --prefix=/usr/local
           make -j2
           make check
