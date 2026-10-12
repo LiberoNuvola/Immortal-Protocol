@@ -1,0 +1,76 @@
+{
+  "schema": "aegis-immortal-v8-accounting-fixture-v1",
+  "source": {
+    "repository": "realdecimalist/aegis-contracts",
+    "branch": "main",
+    "commit": "6549246ff053457c93e6d68e44791efa2ef2f972",
+    "file": "contracts/lib/aegis/vault.ak",
+    "file_blob_sha": "4f3f948ec2cd25a4b2669b0ee8938c83a44bd5cb",
+    "test_name": "claim_happy_path",
+    "predicate": "claim_ok"
+  },
+  "units": {
+    "monetary": "lovelace",
+    "token_quantities": "integer token quantities"
+  },
+  "fixture_id": "AEGIS-V8-CLAIM-ACCOUNTING-HAPPY-001",
+  "purpose": "Source-grounded fixture for the Aegis V8 pure claim_ok accounting predicate; not a full transaction/validator fixture.",
+  "pre_state": {
+    "lp_supply": 1000000000,
+    "active_coverage": 300000000,
+    "reserve": 0
+  },
+  "predicate_arguments": {
+    "payout": 300000000,
+    "policy_coverage": 300000000,
+    "own_lovelace": 731000000,
+    "cont_lovelace": 731000000,
+    "policy_lovelace": 300000000,
+    "marker_minted": -1
+  },
+  "post_state": {
+    "lp_supply": 1000000000,
+    "active_coverage": 0,
+    "reserve": 0
+  },
+  "derived_checks": {
+    "payout_equals_policy_coverage": {
+      "left": 300000000,
+      "right": 300000000,
+      "pass": true
+    },
+    "continuation_equation": {
+      "expression": "own_lovelace + policy_lovelace - payout",
+      "expected": 731000000,
+      "actual": 731000000,
+      "pass": true
+    },
+    "active_coverage_delta": {
+      "expression": "old_active_coverage - payout",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    "lp_supply_unchanged": true,
+    "reserve_draw": {
+      "expression": "min(payout, old_reserve)",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    "marker_burn": {
+      "expected": -1,
+      "actual": -1,
+      "pass": true
+    }
+  },
+  "expected": {
+    "aegis_claim_ok": true,
+    "immortal_projection": "UNVERIFIABLE"
+  },
+  "limitations": [
+    "Arguments are copied from the source test claim_happy_path.",
+    "This is a pure accounting-predicate fixture, not a full transaction/validator fixture and not an executed Aiken result.",
+    "It does not authorize treating Aegis fields as IMMORTAL EEV or ProtectedCapital components."
+  ]
+}
