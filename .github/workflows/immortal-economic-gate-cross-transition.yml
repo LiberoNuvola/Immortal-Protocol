@@ -51,6 +51,7 @@ jobs:
         with:
           ghc-version: "9.6.7"
           cabal-version: "3.12.1.0"
+          cabal-update: true
       - name: Install Cardano libsodium VRF dependency
         run: |
           sudo apt-get update
@@ -121,23 +122,6 @@ jobs:
           pkg-config --modversion libsecp256k1
           pkg-config --exists libsecp256k1
 
-      - name: Update package index
-        shell: bash
-        run: |
-          # Hackage's signed mirror list can select a mirror that intermittently
-          # returns HTTP 403. Retry the index update without disabling repository
-          # security or continuing with a partial package index.
-          for attempt in 1 2 3; do
-            if cabal update; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              echo "cabal update attempt $attempt failed; retrying in $((attempt * 10)) seconds."
-              sleep $((attempt * 10))
-            fi
-          done
-          echo "cabal update failed after 3 attempts." >&2
-          exit 1
       - name: Build universal economic kernel test target
         working-directory: plutus
         run: cabal build universal-economic-kernel-tests
