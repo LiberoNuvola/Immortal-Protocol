@@ -51,6 +51,24 @@ jobs:
         with:
           ghc-version: "9.6.7"
           cabal-version: "3.12.1.0"
+      - name: Install Cardano libsodium VRF dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake build-essential libtool pkg-config
+          REV="$(curl -fsSL https://github.com/input-output-hk/iohk-nix/releases/latest/download/INFO | awk '$1 == "debian.libsodium-vrf.deb" { print $2 }' | sed -E 's/.*-([[:xdigit:]]+)\.deb/\1/')"
+          test -n "$REV"
+          git clone https://github.com/IntersectMBO/libsodium "$RUNNER_TEMP/libsodium"
+          cd "$RUNNER_TEMP/libsodium"
+          git checkout "$REV"
+          ./autogen.sh
+          ./configure
+          make -j2
+          make check
+          sudo make install
+          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/cardano-libsodium.conf
+          sudo ldconfig
+          echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
       - name: Update package index
         run: cabal update
       - name: Build universal economic kernel test target
