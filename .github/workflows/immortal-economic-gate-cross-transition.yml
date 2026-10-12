@@ -1,4 +1,4 @@
-name: IMMORTAL Economic Gate Cross-Transition Contract Test
+name: IMMORTAL Universal Kernel Cross-Transition Contract Test
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - "docs/research/IMMORTAL-ECONOMIC-GATE-CROSS-TRANSITION-TEST-v1.md"
       - ".github/workflows/immortal-economic-gate-cross-transition.yml"
   pull_request:
+    branches:
+      - b1-hardening
     paths:
       - "scripts/immortal-economic-gate-cross-transition.py"
       - "docs/research/IMMORTAL-ECONOMIC-GATE-CROSS-TRANSITION-TEST-v1.md"
@@ -19,13 +21,13 @@ permissions:
   contents: read
 
 jobs:
-  contract-test:
-    name: Cross-transition economic gate contract (offline)
+  universal-kernel-contract:
+    name: Universal-kernel arithmetic contract (offline)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run synthetic cross-transition contract cases
+      - name: Run synthetic universal-kernel cases
         run: python scripts/immortal-economic-gate-cross-transition.py
