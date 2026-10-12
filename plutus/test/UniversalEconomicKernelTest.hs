@@ -1,7 +1,7 @@
 module Main where
 
 import Prelude
-  ( IO, Bool (..), Integer, String, putStrLn, error, (==), not, (++), negate )
+  ( IO, Bool (..), Integer, String, putStrLn, error, (==), not, (++), negate, (>>=) )
 import UniversalEconomicKernel
 import UniversalEconomicState
 
