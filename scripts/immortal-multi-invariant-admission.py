@@ -81,8 +81,8 @@ def evaluate(s: EconomicState) -> dict:
 CASES = [
     EconomicState("favourable_incremental_capacity", 100, 30, 15, 10, 20, 15, .40, True, "low", True, ()),
     EconomicState("fixed_cap_passes_but_reserve_floor_fails", 100, 25, 8, 10, 10, 5, .33, True, "low", False, ("RESERVE_FLOOR_BREACH",)),
-    EconomicState("fixed_cap_passes_but_protected_capital_fails", 100, 70, 15, 10, 20, 15, .33, True, "low", False, ("PROTECTED_CAPITAL_OR_OBLIGATION_SHORTFALL",)),
-    EconomicState("fixed_cap_passes_but_dynamic_cap_fails", 100, 30, 15, 10, 20, 15, .30, True, "medium", False, ("DYNAMIC_COVERAGE_LIMIT_BREACH",)),
+    EconomicState("fixed_cap_passes_but_protected_capital_fails", 100, 80, 15, 10, 15, 10, .33, True, "low", False, ("PROTECTED_CAPITAL_OR_OBLIGATION_SHORTFALL",)),
+    EconomicState("fixed_cap_passes_but_dynamic_cap_fails", 100, 30, 15, 10, 15, 10, .20, True, "medium", False, ("DYNAMIC_COVERAGE_LIMIT_BREACH",)),
     EconomicState("high_stress_requires_contracted_cap", 100, 30, 15, 10, 10, 10, .25, True, "high", False, ("HIGH_STRESS_CAP_NOT_CONTRACTED",)),
     EconomicState("unqualified_evidence", 100, 30, 15, 10, 10, 5, .40, False, "low", False, ("EVIDENCE_NOT_QUALIFIED",)),
     EconomicState("all_invariants_pass", 100, 30, 15, 10, 20, 10, .33, True, "medium", True, ()),
