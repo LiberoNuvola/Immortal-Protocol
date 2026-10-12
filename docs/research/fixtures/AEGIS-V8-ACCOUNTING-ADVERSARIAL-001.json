@@ -62,6 +62,128 @@
       },
       "violated_invariant": "continuation lovelace must equal own_lovelace + policy_lovelace (150000000)",
       "expected": "REJECT"
+    },
+    {
+      "case_id": "CLAIM-RESERVE-OVERDRAW-REJECT",
+      "source_test": "claim_reserve_draw_is_capped_at_reserve",
+      "predicate": "claim_ok",
+      "pre_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 300000000,
+        "reserve": 500000000
+      },
+      "predicate_arguments": {
+        "payout": 300000000,
+        "policy_coverage": 300000000,
+        "own_lovelace": 831000000,
+        "cont_lovelace": 831000000,
+        "policy_lovelace": 300000000,
+        "marker_minted": -1
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 0,
+        "reserve": 199000000
+      },
+      "violated_invariant": "new reserve must equal old reserve - min(payout, old reserve), which is 200000000",
+      "expected": "REJECT"
+    },
+    {
+      "case_id": "CLAIM-MARKER-NOT-BURNED-REJECT",
+      "source_test": "claim_requires_marker_burn",
+      "predicate": "claim_ok",
+      "pre_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 300000000,
+        "reserve": 0
+      },
+      "predicate_arguments": {
+        "payout": 300000000,
+        "policy_coverage": 300000000,
+        "own_lovelace": 731000000,
+        "cont_lovelace": 731000000,
+        "policy_lovelace": 300000000,
+        "marker_minted": 0
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000000000,
+        "active_coverage": 0,
+        "reserve": 0
+      },
+      "violated_invariant": "Claim must burn exactly one marker (marker_minted = -1)",
+      "expected": "REJECT"
+    },
+    {
+      "case_id": "EXPIRE-RESERVE-DELTA-REJECT",
+      "source_test": "expire_rejects_reserve_touched",
+      "predicate": "expire_ok",
+      "pre_state": {
+        "lp_supply": 1000,
+        "active_coverage": 200000000,
+        "reserve": 10000000
+      },
+      "predicate_arguments": {
+        "coverage": 50000000,
+        "own_lovelace": 100000000,
+        "cont_lovelace": 150000000,
+        "policy_lovelace": 50000000,
+        "marker_minted": -1
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000,
+        "active_coverage": 150000000,
+        "reserve": 9000000
+      },
+      "violated_invariant": "Expire must leave reserve unchanged",
+      "expected": "REJECT"
+    },
+    {
+      "case_id": "EXPIRE-MARKER-NOT-BURNED-REJECT",
+      "source_test": "expire_rejects_no_marker_burn",
+      "predicate": "expire_ok",
+      "pre_state": {
+        "lp_supply": 1000,
+        "active_coverage": 200000000,
+        "reserve": 10000000
+      },
+      "predicate_arguments": {
+        "coverage": 50000000,
+        "own_lovelace": 100000000,
+        "cont_lovelace": 150000000,
+        "policy_lovelace": 50000000,
+        "marker_minted": 0
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000,
+        "active_coverage": 150000000,
+        "reserve": 10000000
+      },
+      "violated_invariant": "Expire must burn exactly one marker (marker_minted = -1)",
+      "expected": "REJECT"
+    },
+    {
+      "case_id": "EXPIRE-OVER-RELEASE-REJECT",
+      "source_test": "expire_rejects_over_release",
+      "predicate": "expire_ok",
+      "pre_state": {
+        "lp_supply": 1000,
+        "active_coverage": 40000000,
+        "reserve": 10000000
+      },
+      "predicate_arguments": {
+        "coverage": 50000000,
+        "own_lovelace": 100000000,
+        "cont_lovelace": 150000000,
+        "policy_lovelace": 50000000,
+        "marker_minted": -1
+      },
+      "attempted_post_state": {
+        "lp_supply": 1000,
+        "active_coverage": -10000000,
+        "reserve": 10000000
+      },
+      "violated_invariant": "coverage must be positive and no greater than old active coverage; new active coverage cannot be negative",
+      "expected": "REJECT"
     }
   ],
   "limitations": [
