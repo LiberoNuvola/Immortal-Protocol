@@ -7,14 +7,14 @@ on:
       - ".github/workflows/aegis-pinned-aiken.yml"
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
-      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
       - "scripts/aegis_immortal_fixture_harness.py"
   pull_request:
     paths:
       - ".github/workflows/aegis-pinned-aiken.yml"
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
-      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
       - "scripts/aegis_immortal_fixture_harness.py"
   workflow_dispatch:
 
@@ -63,14 +63,16 @@ jobs:
           set -o pipefail
           aiken build 2>&1 | tee ../../aegis-aiken-build.log
 
-      - name: Apply diagnostic tests to disposable checkout
-        working-directory: aegis-contracts
+      - name: Append diagnostic tests to disposable checkout
+        working-directory: aegis-contracts/contracts
         shell: bash
         run: |
           set -euo pipefail
-          patch_file="$GITHUB_WORKSPACE/docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
-          patch --dry-run --fuzz=0 -p1 -i "$patch_file"
-          patch --fuzz=0 -p1 -i "$patch_file"
+          snippet="$GITHUB_WORKSPACE/docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
+          test -s "$snippet"
+          cat "$snippet" >> validators/pool_vault.ak
+          grep -q 'sv_underwrite_enforces_in_rail_utilisation_bps' validators/pool_vault.ak
+          grep -q 'sv_underwrite_enforces_in_rail_max_coverage_ratio' validators/pool_vault.ak
 
       - name: Assert the two governed-parameter gaps are reproduced
         working-directory: aegis-contracts/contracts
