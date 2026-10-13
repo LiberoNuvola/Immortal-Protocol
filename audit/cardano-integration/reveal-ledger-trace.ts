@@ -686,13 +686,24 @@ const plutusWitnessFactory = (CML as any).PlutusScriptWitness
 const partialWitnessFactory = (CML as any).PartialPlutusWitness
 const originalNewPartialWitness = partialWitnessFactory?.new
 const newReferenceWitness = plutusWitnessFactory?.new_ref
+const partialNewDescriptor = Object.getOwnPropertyDescriptor(partialWitnessFactory, 'new')
 if (typeof originalNewPartialWitness !== 'function' ||
-    typeof newReferenceWitness !== 'function') {
-  throw new Error('CML does not expose PartialPlutusWitness.new and PlutusScriptWitness.new_ref')
+    typeof newReferenceWitness !== 'function' ||
+    !partialNewDescriptor) {
+  throw new Error('CML does not expose an inspectable PartialPlutusWitness.new and PlutusScriptWitness.new_ref')
 }
+console.log(JSON.stringify({
+  revealDiag: 'reference-witness-hook-before',
+  partialWitnessNewWritable: partialNewDescriptor.writable ?? null,
+  partialWitnessNewConfigurable: partialNewDescriptor.configurable,
+  partialWitnessNewHasGetter: typeof partialNewDescriptor.get === 'function',
+  partialWitnessNewHasSetter: typeof partialNewDescriptor.set === 'function',
+  cmlType: typeof CML,
+  factoryType: typeof partialWitnessFactory,
+}))
 let referenceWitnessInterceptions = 0
 const referenceWitnessHashes: string[] = []
-partialWitnessFactory.new = (witness: any, redeemer: any) => {
+const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
   const scriptHash = witness.hash()
   const hashHex = scriptHash.to_hex()
   console.log(JSON.stringify({
@@ -718,6 +729,15 @@ partialWitnessFactory.new = (witness: any, redeemer: any) => {
   }
   return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
 }
+Object.defineProperty(partialWitnessFactory, 'new', {
+  ...partialNewDescriptor,
+  value: wrappedNewPartialWitness,
+})
+console.log(JSON.stringify({
+  revealDiag: 'reference-witness-hook-installed',
+  installed: partialWitnessFactory.new === wrappedNewPartialWitness,
+  sameFactory: partialWitnessFactory === (CML as any).PartialPlutusWitness,
+}))
 
 // Attach the validator identities so Lucid constructs the partial Plutus
 // witnesses. The guarded PartialPlutusWitness.new interception above converts
