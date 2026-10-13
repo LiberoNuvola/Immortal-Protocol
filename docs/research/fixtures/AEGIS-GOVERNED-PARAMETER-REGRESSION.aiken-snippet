@@ -1,0 +1,78 @@
+/// Differential regression: a valid, tighter utilization budget must affect
+/// the sale decision. 90M coverage / 307.6M post-trade book is below the
+/// compiled 1/3 cap but above the configured 25% cap. The default-config
+/// control proves that the fixture itself is a valid Underwrite.
+test sv_underwrite_enforces_in_rail_utilisation_bps() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 90_000_000, 10_000_000)
+  let cfg = sv_config([sv_mandate(sv_ada_nft())])
+  let b = cfg.budgets
+  let pd = PolicyDatum {
+    ..sv_underwrite_policy_datum(),
+    coverage_amount: 90_000_000,
+  }
+  let tx = sv_underwrite_tx(
+    300_000_000,
+    old,
+    230_000_000,
+    new,
+    90_000_000,
+    pd,
+    100_000_000,
+    100_000_000,
+    sv_underwrite_terms(90_000_000),
+    1,
+  )
+  and {
+    sv_run_underwrite(old, 90_000_000, 20_000_000, tx),
+    !sv_run_underwrite(
+      old,
+      90_000_000,
+      20_000_000,
+      sv_with_registry_cfg(
+        tx,
+        UnderwriteConfig {
+          ..cfg,
+          budgets: Budgets { ..b, utilisation_bps: 2_500 },
+        },
+      ),
+    ),
+  }
+}
+
+/// Differential regression: max_coverage_ratio in the registry must be the
+/// ratio used by Underwrite, not the compiled fallback. The 2x limit is inside
+/// the current governance rail; 50M coverage / 19.6M net premium is > 2x.
+test sv_underwrite_enforces_in_rail_max_coverage_ratio() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 50_000_000, 10_000_000)
+  let cfg = sv_config([sv_mandate(sv_ada_nft())])
+  let b = cfg.budgets
+  let tx = sv_underwrite_tx(
+    300_000_000,
+    old,
+    270_000_000,
+    new,
+    50_000_000,
+    sv_underwrite_policy_datum(),
+    100_000_000,
+    100_000_000,
+    sv_underwrite_terms(50_000_000),
+    1,
+  )
+  and {
+    sv_run_underwrite(old, 50_000_000, 20_000_000, tx),
+    !sv_run_underwrite(
+      old,
+      50_000_000,
+      20_000_000,
+      sv_with_registry_cfg(
+        tx,
+        UnderwriteConfig {
+          ..cfg,
+          budgets: Budgets { ..b, max_coverage_ratio: 2 },
+        },
+      ),
+    ),
+  }
+}
