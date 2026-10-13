@@ -80,7 +80,7 @@ jobs:
         run: |
           set +e
           aiken check -m "sv_underwrite_enforces_in_rail" 2>&1 | tee ../../aegis-aiken-differential-check.log
-          check_status=\${PIPESTATUS[0]}
+          check_status=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$check_status" > "$GITHUB_WORKSPACE/aegis-aiken-differential-exit-code.txt"
           python3 - "$GITHUB_WORKSPACE/aegis-aiken-differential-check.log" "$GITHUB_WORKSPACE/aegis-aiken-differential-summary.json" "$GITHUB_STEP_SUMMARY" "$check_status" <<'PY'
