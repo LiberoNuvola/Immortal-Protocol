@@ -676,80 +676,15 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
-// Lucid Evolution's TxUtils.toPartial constructs the witness through
-// PartialPlutusWitness.new(PlutusScriptWitness.new_script(script), redeemer).
-// Intercept that exact boundary: replacing PlutusScriptWitness.new_script alone
-// is not sufficient in this runtime (run #1694 produced no interception log).
-// Restrict the hash-only conversion to the two verified reference-script hashes.
-const referenceScriptHashes = new Set([expectedPrizeHash, expectedPoolHash])
-const plutusWitnessFactory = (CML as any).PlutusScriptWitness
-const partialWitnessFactory = (CML as any).PartialPlutusWitness
-const originalNewPartialWitness = partialWitnessFactory?.new
-const newReferenceWitness = plutusWitnessFactory?.new_ref
-const partialNewDescriptor = Object.getOwnPropertyDescriptor(partialWitnessFactory, 'new')
-if (typeof originalNewPartialWitness !== 'function' ||
-    typeof newReferenceWitness !== 'function' ||
-    !partialNewDescriptor) {
-  throw new Error('CML does not expose an inspectable PartialPlutusWitness.new and PlutusScriptWitness.new_ref')
-}
-console.log(JSON.stringify({
-  revealDiag: 'reference-witness-hook-before',
-  partialWitnessNewWritable: partialNewDescriptor.writable ?? null,
-  partialWitnessNewConfigurable: partialNewDescriptor.configurable,
-  partialWitnessNewHasGetter: typeof partialNewDescriptor.get === 'function',
-  partialWitnessNewHasSetter: typeof partialNewDescriptor.set === 'function',
-  cmlType: typeof CML,
-  factoryType: typeof partialWitnessFactory,
-}))
-let referenceWitnessInterceptions = 0
-const referenceWitnessHashes: string[] = []
-const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
-  const scriptHash = witness.hash()
-  const hashHex = scriptHash.to_hex()
-  console.log(JSON.stringify({
-    revealDiag: 'partial-plutus-witness-observed',
-    scriptHash: hashHex,
-    targetReferenceScript: referenceScriptHashes.has(hashHex),
-    expectedReferenceHashes: [...referenceScriptHashes].sort(),
-  }))
-  if (referenceScriptHashes.has(hashHex)) {
-    referenceWitnessInterceptions += 1
-    referenceWitnessHashes.push(hashHex)
-    console.log(JSON.stringify({
-      revealDiag: 'reference-script-witness',
-      mode: 'hash-only',
-      scriptHash: hashHex,
-      interception: referenceWitnessInterceptions,
-    }))
-    return originalNewPartialWitness.call(
-      partialWitnessFactory,
-      newReferenceWitness.call(plutusWitnessFactory, scriptHash),
-      redeemer,
-    )
-  }
-  return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
-}
-Object.defineProperty(partialWitnessFactory, 'new', {
-  ...partialNewDescriptor,
-  value: wrappedNewPartialWitness,
-})
-console.log(JSON.stringify({
-  revealDiag: 'reference-witness-hook-installed',
-  installed: partialWitnessFactory.new === wrappedNewPartialWitness,
-  sameFactory: partialWitnessFactory === (CML as any).PartialPlutusWitness,
-}))
-
-// Attach the validator identities so Lucid constructs the partial Plutus
-// witnesses. The guarded PartialPlutusWitness.new interception above converts
-// these two verified hashes to reference witnesses; this preserves the script
-// semantics while keeping validator bytes out of the Reveal transaction.
+// Use the on-chain reference scripts directly. In Lucid Evolution, readFrom()
+// makes each reference UTxO available for script resolution; attaching the
+// validators here would embed their full bytecode and defeat the size reduction.
+// The hashes above were checked against the scriptRefs on these exact UTxOs.
 const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
-  .attach.SpendingValidator(scripts.prizeValidator)
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
-  .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
