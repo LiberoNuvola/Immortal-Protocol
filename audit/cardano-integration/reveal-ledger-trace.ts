@@ -719,14 +719,17 @@ partialWitnessFactory.new = (witness: any, redeemer: any) => {
   return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
 }
 
-// Reference-script spending: readFrom supplies the validator scripts from
-// their on-chain UTxOs. Do not attach either validator here, because attach
-// embeds the script witness and defeats the P2.8 transaction-size remediation.
+// Attach the validator identities so Lucid constructs the partial Plutus
+// witnesses. The guarded PartialPlutusWitness.new interception above converts
+// these two verified hashes to reference witnesses; this preserves the script
+// semantics while keeping validator bytes out of the Reveal transaction.
 const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
+  .attach.SpendingValidator(scripts.prizeValidator)
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
+  .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
