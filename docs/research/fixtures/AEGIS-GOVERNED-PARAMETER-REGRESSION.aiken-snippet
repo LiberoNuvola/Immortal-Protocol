@@ -1,17 +1,13 @@
-/// Differential regression: a valid, tighter utilization budget must affect
-/// the sale decision. 90M coverage / 307.6M post-trade book is below the
-/// compiled 1/3 cap but above the configured 25% cap. The default-config
-/// control proves that the fixture itself is a valid Underwrite.
-test sv_underwrite_enforces_in_rail_utilisation_bps() {
+/// Diagnostic helper: coverage above the configured 25% limit but inside
+/// the source's fixed one-third cap.
+fn sv_underwrite_diagnostic_utilisation_tx() -> Transaction {
   let old = sv_state(1000, 0, 10_000_000)
   let new = sv_state(1000, 90_000_000, 10_000_000)
-  let cfg = sv_config([sv_mandate(sv_ada_nft())])
-  let b = cfg.budgets
   let pd = PolicyDatum {
     ..sv_underwrite_policy_datum(),
     coverage_amount: 90_000_000,
   }
-  let tx = sv_underwrite_tx(
+  sv_underwrite_tx(
     300_000_000,
     old,
     230_000_000,
@@ -23,32 +19,43 @@ test sv_underwrite_enforces_in_rail_utilisation_bps() {
     sv_underwrite_terms(90_000_000),
     1,
   )
-  and {
-    sv_run_underwrite(old, 90_000_000, 20_000_000, tx),
-    !sv_run_underwrite(
-      old,
-      90_000_000,
-      20_000_000,
-      sv_with_registry_cfg(
-        tx,
-        UnderwriteConfig {
-          ..cfg,
-          budgets: Budgets { ..b, utilisation_bps: 2_500 },
-        },
-      ),
-    ),
-  }
 }
 
-/// Differential regression: max_coverage_ratio in the registry must be the
-/// ratio used by Underwrite, not the compiled fallback. The 2x limit is inside
-/// the current governance rail; 50M coverage / 19.6M net premium is > 2x.
-test sv_underwrite_enforces_in_rail_max_coverage_ratio() {
+/// Independent control: this transaction must sell under the default config.
+test sv_underwrite_governed_parameter_utilisation_anchor_green() {
   let old = sv_state(1000, 0, 10_000_000)
-  let new = sv_state(1000, 50_000_000, 10_000_000)
+  sv_run_underwrite(
+    old,
+    90_000_000,
+    20_000_000,
+    sv_underwrite_diagnostic_utilisation_tx(),
+  )
+}
+
+/// With an in-rail 25% configuration, the same transaction must be refused.
+test sv_underwrite_governed_parameter_utilisation_2500_refuses() {
+  let old = sv_state(1000, 0, 10_000_000)
   let cfg = sv_config([sv_mandate(sv_ada_nft())])
   let b = cfg.budgets
-  let tx = sv_underwrite_tx(
+  !sv_run_underwrite(
+    old,
+    90_000_000,
+    20_000_000,
+    sv_with_registry_cfg(
+      sv_underwrite_diagnostic_utilisation_tx(),
+      UnderwriteConfig {
+        ..cfg,
+        budgets: Budgets { ..b, utilisation_bps: 2_500 },
+      },
+    ),
+  )
+}
+
+/// Diagnostic helper: 50M coverage divided by the net 19.6M premium is > 2x.
+fn sv_underwrite_diagnostic_ratio_tx() -> Transaction {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 50_000_000, 10_000_000)
+  sv_underwrite_tx(
     300_000_000,
     old,
     270_000_000,
@@ -60,19 +67,34 @@ test sv_underwrite_enforces_in_rail_max_coverage_ratio() {
     sv_underwrite_terms(50_000_000),
     1,
   )
-  and {
-    sv_run_underwrite(old, 50_000_000, 20_000_000, tx),
-    !sv_run_underwrite(
-      old,
-      50_000_000,
-      20_000_000,
-      sv_with_registry_cfg(
-        tx,
-        UnderwriteConfig {
-          ..cfg,
-          budgets: Budgets { ..b, max_coverage_ratio: 2 },
-        },
-      ),
+}
+
+/// Independent control: the same transaction must sell under the default 50x ratio.
+test sv_underwrite_governed_parameter_ratio_anchor_green() {
+  let old = sv_state(1000, 0, 10_000_000)
+  sv_run_underwrite(
+    old,
+    50_000_000,
+    20_000_000,
+    sv_underwrite_diagnostic_ratio_tx(),
+  )
+}
+
+/// With an in-rail 2x configuration, the same transaction must be refused.
+test sv_underwrite_governed_parameter_ratio_2x_refuses() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let cfg = sv_config([sv_mandate(sv_ada_nft())])
+  let b = cfg.budgets
+  !sv_run_underwrite(
+    old,
+    50_000_000,
+    20_000_000,
+    sv_with_registry_cfg(
+      sv_underwrite_diagnostic_ratio_tx(),
+      UnderwriteConfig {
+        ..cfg,
+        budgets: Budgets { ..b, max_coverage_ratio: 2 },
+      },
     ),
-  }
+  )
 }

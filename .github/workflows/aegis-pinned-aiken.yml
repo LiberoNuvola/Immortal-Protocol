@@ -71,15 +71,15 @@ jobs:
           snippet="$GITHUB_WORKSPACE/docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
           test -s "$snippet"
           cat "$snippet" >> validators/pool_vault.ak
-          grep -q 'sv_underwrite_enforces_in_rail_utilisation_bps' validators/pool_vault.ak
-          grep -q 'sv_underwrite_enforces_in_rail_max_coverage_ratio' validators/pool_vault.ak
+          grep -q 'sv_underwrite_governed_parameter_utilisation_anchor_green' validators/pool_vault.ak
+          grep -q 'sv_underwrite_governed_parameter_ratio_anchor_green' validators/pool_vault.ak
 
       - name: Assert the two governed-parameter gaps are reproduced
         working-directory: aegis-contracts/contracts
         shell: bash
         run: |
           set +e
-          aiken check -m "sv_underwrite_enforces_in_rail" 2>&1 | tee ../../aegis-aiken-differential-check.log
+          aiken check -m "sv_underwrite_governed_parameter" 2>&1 | tee ../../aegis-aiken-differential-check.log
           check_status=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$check_status" > "$GITHUB_WORKSPACE/aegis-aiken-differential-exit-code.txt"
@@ -98,8 +98,8 @@ jobs:
           report, _ = json.JSONDecoder().raw_decode(raw[marker.start():])
           summary = report.get("summary", {})
           expected = {
-              ("pool_vault", "sv_underwrite_enforces_in_rail_utilisation_bps"),
-              ("pool_vault", "sv_underwrite_enforces_in_rail_max_coverage_ratio"),
+              ("pool_vault", "sv_underwrite_governed_parameter_utilisation_2500_refuses"),
+              ("pool_vault", "sv_underwrite_governed_parameter_ratio_2x_refuses"),
           }
           failed = set()
           for module in report.get("modules", []):
@@ -121,16 +121,16 @@ jobs:
               raise SystemExit(f"Aiken returned unexpected exit code {status}; this is not classified as a parameter gap.")
           if failed != expected:
               raise SystemExit(f"Unexpected test failure set. Expected exactly {sorted(expected)}, got {sorted(failed)}.")
-          if summary.get("failed") != 2 or summary.get("total") != 2 or summary.get("passed") != 0:
-              raise SystemExit(f"Unexpected filtered test totals: {summary}; expected exactly 2 selected tests, both failing on the current pinned source.")
+          if summary.get("failed") != 2 or summary.get("total") != 4 or summary.get("passed") != 2:
+              raise SystemExit(f"Unexpected filtered test totals: {summary}; expected 4 selected tests, 2 green controls and exactly 2 parameter-refusal failures.")
           report_md = (
               "### Aiken governed-parameter differential diagnostic\n\n"
               "- Full baseline: 1,162/1,162 passed in the previous run for the same immutable AEGIS commit.\n"
               "- Aiken build: passed in this run before the temporary overlay.\n"
-              "- Temporary overlay: exactly two expected economic assertions fail.\n"
+              "- Temporary overlay: both default-config anchors pass; exactly two tighter-config refusal assertions fail.\n"
               "- Finding: current pinned source does not apply the in-rail utilisation_bps "
               "and max_coverage_ratio values to the Underwrite decisions.\n"
-              "- Both overlay tests contain a green default-config control; no source changes were made to upstream AEGIS.\n"
+              "- Any failing anchor or unrelated test fails this diagnostic; upstream AEGIS remains unchanged.\n"
           )
           with Path(summary_path).open("a", encoding="utf-8") as handle:
               handle.write(report_md)
