@@ -1,4 +1,4 @@
-name: Aegis Pinned Aiken Baseline
+name: Aegis Pinned Aiken Baseline + Parameter Diagnostics
 
 on:
   push:
@@ -7,12 +7,14 @@ on:
       - ".github/workflows/aegis-pinned-aiken.yml"
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
       - "scripts/aegis_immortal_fixture_harness.py"
   pull_request:
     paths:
       - ".github/workflows/aegis-pinned-aiken.yml"
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
       - "scripts/aegis_immortal_fixture_harness.py"
   workflow_dispatch:
 
@@ -20,13 +22,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: aegis-pinned-aiken-${{ github.ref }}
+  group: aegis-pinned-aiken-\${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   aiken-baseline:
-    name: Pinned Aegis source — aiken check
+    name: Pinned Aegis — baseline, build, parameter-gap diagnostic
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout IMMORTAL
         uses: actions/checkout@v4
@@ -53,18 +56,102 @@ jobs:
           echo "Aegis source commit: $actual"
           test "$actual" = "$expected"
 
-      - name: Run Aiken test suite
+      - name: Run pinned Aiken baseline
         working-directory: aegis-contracts/contracts
         shell: bash
         run: |
           set -o pipefail
           aiken check 2>&1 | tee ../../aegis-aiken-check.log
 
-      - name: Upload Aiken log
+      - name: Build Aiken validators
+        working-directory: aegis-contracts/contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          aiken build 2>&1 | tee ../../aegis-aiken-build.log
+
+      - name: Apply diagnostic tests to disposable checkout
+        working-directory: aegis-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch_file="$GITHUB_WORKSPACE/docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.patch"
+          patch --dry-run --fuzz=0 -p1 -i "$patch_file"
+          patch --fuzz=0 -p1 -i "$patch_file"
+
+      - name: Assert the two governed-parameter gaps are reproduced
+        working-directory: aegis-contracts/contracts
+        shell: bash
+        run: |
+          set +e
+          aiken check 2>&1 | tee ../../aegis-aiken-differential-check.log
+          check_status=\${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$check_status" > "$GITHUB_WORKSPACE/aegis-aiken-differential-exit-code.txt"
+          python3 - "$GITHUB_WORKSPACE/aegis-aiken-differential-check.log" "$GITHUB_WORKSPACE/aegis-aiken-differential-summary.json" "$GITHUB_STEP_SUMMARY" "$check_status" <<'PY'
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          log_path, out_path, summary_path, status_raw = sys.argv[1:]
+          raw = Path(log_path).read_text(encoding="utf-8", errors="replace")
+          status = int(status_raw)
+          marker = re.search(r'(?m)^\{\s*\n\s*"seed"\s*:', raw)
+          if not marker:
+              raise SystemExit("No structured Aiken test report found; do not classify this as an expected regression.")
+          report, _ = json.JSONDecoder().raw_decode(raw[marker.start():])
+          summary = report.get("summary", {})
+          expected = {
+              ("pool_vault", "sv_underwrite_enforces_in_rail_utilisation_bps"),
+              ("pool_vault", "sv_underwrite_enforces_in_rail_max_coverage_ratio"),
+          }
+          failed = set()
+          for module in report.get("modules", []):
+              module_name = module.get("name", "").split("/")[-1]
+              for test in module.get("tests", []):
+                  if test.get("status") not in ("pass", "passed"):
+                      failed.add((module_name, test.get("title", "")))
+          result = {
+              "diagnostic": "expected-gap-reproduction",
+              "aiken_exit_code": status,
+              "summary": summary,
+              "failed_tests": [{"module": m, "test": t} for m, t in sorted(failed)],
+              "expected_failed_tests": [{"module": m, "test": t} for m, t in sorted(expected)],
+          }
+          Path(out_path).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+          if status == 0:
+              raise SystemExit("The overlay unexpectedly passed. Confirm whether the source behavior changed or the tests are not exercising the intended predicate.")
+          if status != 1:
+              raise SystemExit(f"Aiken returned unexpected exit code {status}; this is not classified as a parameter gap.")
+          if failed != expected:
+              raise SystemExit(f"Unexpected test failure set. Expected exactly {sorted(expected)}, got {sorted(failed)}.")
+          if summary.get("failed") != 2 or summary.get("total") != 1164 or summary.get("passed") != 1162:
+              raise SystemExit(f"Unexpected test totals: {summary}; expected 1164 total, 1162 pass, 2 fail.")
+          report_md = (
+              "### Aiken governed-parameter differential diagnostic\n\n"
+              "- Baseline suite and Aiken build: passed before overlay.\n"
+              "- Temporary overlay: exactly two expected economic assertions fail.\n"
+              "- Finding: current pinned source does not apply the in-rail utilisation_bps "
+              "and max_coverage_ratio values to the Underwrite decisions.\n"
+              "- All other 1,162 tests passed; no source changes were made to upstream AEGIS.\n"
+          )
+          with Path(summary_path).open("a", encoding="utf-8") as handle:
+              handle.write(report_md)
+          print(report_md)
+          print(json.dumps(result, indent=2))
+          PY
+
+      - name: Upload Aiken build and differential evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aegis-aiken-baseline-${{ github.run_id }}
-          path: aegis-aiken-check.log
-          if-no-files-found: ignore
+          name: aegis-aiken-extended-\${{ github.run_id }}
+          path: |
+            aegis-aiken-check.log
+            aegis-aiken-build.log
+            aegis-aiken-differential-check.log
+            aegis-aiken-differential-summary.json
+            aegis-aiken-differential-exit-code.txt
+          if-no-files-found: warn
           retention-days: 14
