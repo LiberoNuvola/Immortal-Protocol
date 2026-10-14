@@ -12,6 +12,8 @@ on:
       - "scripts/test-jev-verification-registry-generator.mjs"
       - "scripts/jev-materios-evidence-ingress.mjs"
       - "scripts/test-jev-materios-evidence-ingress.mjs"
+      - "scripts/build-jev-materios-registry.mjs"
+      - "scripts/test-jev-materios-registry-pipeline.mjs"
       - ".github/workflows/jev-verification-registry.yml"
   workflow_dispatch:
 
@@ -37,5 +39,7 @@ jobs:
         run: node scripts/test-jev-verification-registry-generator.mjs
       - name: Test Materios evidence ingress and fail-closed boundaries
         run: node scripts/test-jev-materios-evidence-ingress.mjs
+      - name: Test Materios ingress-to-registry pipeline
+        run: node scripts/test-jev-materios-registry-pipeline.mjs
       - name: Validate historical run 1718 registry fixture
         run: node scripts/validate-jev-verification-registry.mjs audit/jev/registry-run-1718-attempt-2.json
