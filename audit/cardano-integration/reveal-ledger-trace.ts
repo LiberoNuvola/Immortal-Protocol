@@ -13,6 +13,7 @@
 
 import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
+import * as RawCML from '@anastasia-labs/cardano-multiplatform-lib-nodejs'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
@@ -676,15 +677,64 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
-// Use the on-chain reference scripts directly. In Lucid Evolution, readFrom()
-// makes each reference UTxO available for script resolution; attaching the
-// validators here would embed their full bytecode and defeat the size reduction.
-// The hashes above were checked against the scriptRefs on these exact UTxOs.
+// Lucid Evolution 0.6.5 resolves a validator from readFrom(), but its
+// Collect.toPartial() still constructs PlutusScriptWitness.new_script(script).
+// Convert only the two verified script hashes to reference witnesses at the
+// exact PartialPlutusWitness boundary. Patch the raw CML module used internally
+// by Lucid, rather than relying on the CML re-export from the public package.
+const referenceScriptHashes = new Set([expectedPrizeHash, expectedPoolHash])
+const plutusWitnessFactory = (RawCML as any).PlutusScriptWitness
+const partialWitnessFactory = (RawCML as any).PartialPlutusWitness
+const originalNewPartialWitness = partialWitnessFactory?.new
+const newReferenceWitness = plutusWitnessFactory?.new_ref
+const partialNewDescriptor = partialWitnessFactory
+  ? Object.getOwnPropertyDescriptor(partialWitnessFactory, 'new')
+  : undefined
+if (typeof originalNewPartialWitness !== 'function' ||
+    typeof newReferenceWitness !== 'function' ||
+    !partialNewDescriptor ||
+    (partialNewDescriptor.writable !== true && partialNewDescriptor.configurable !== true)) {
+  throw new Error('CML reference-witness hook is not safely patchable')
+}
+let referenceWitnessInterceptions = 0
+const referenceWitnessHashes: string[] = []
+const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
+  const hashHex = witness.hash().to_hex()
+  if (referenceScriptHashes.has(hashHex)) {
+    referenceWitnessInterceptions += 1
+    referenceWitnessHashes.push(hashHex)
+    console.log(JSON.stringify({
+      revealDiag: 'reference-script-witness',
+      mode: 'hash-only',
+      scriptHash: hashHex,
+      interception: referenceWitnessInterceptions,
+    }))
+    return originalNewPartialWitness.call(
+      partialWitnessFactory,
+      newReferenceWitness.call(plutusWitnessFactory, witness.hash()),
+      redeemer,
+    )
+  }
+  return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
+}
+Object.defineProperty(partialWitnessFactory, 'new', {
+  ...partialNewDescriptor,
+  value: wrappedNewPartialWitness,
+})
+console.log(JSON.stringify({
+  revealDiag: 'reference-witness-hook-installed',
+  installed: partialWitnessFactory.new === wrappedNewPartialWitness,
+  module: '@anastasia-labs/cardano-multiplatform-lib-nodejs',
+  expectedReferenceHashes: [...referenceScriptHashes].sort(),
+}))
+
 const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
+  .attach.SpendingValidator(scripts.prizeValidator)
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
+  .attach.SpendingValidator(scripts.b1PrizePool)
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
