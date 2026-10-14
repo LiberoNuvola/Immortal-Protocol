@@ -366,6 +366,10 @@ jobs:
           curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
           tail -500 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-final-tail.log || true
 
+      - name: Test evidence packet redaction and provenance
+        if: always()
+        run: node scripts/test-evidence-packet.mjs
+
       - name: Build sanitized provenance-bound evidence packet
         if: always()
         run: |
