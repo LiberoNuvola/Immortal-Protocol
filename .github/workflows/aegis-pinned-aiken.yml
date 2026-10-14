@@ -1,4 +1,4 @@
-name: Aegis Pinned Aiken Baseline + Parameter Diagnostics
+name: Aegis Pinned Aiken Candidate — Build + Governed Parameters
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
       - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-CANDIDATE.py"
       - "scripts/aegis_immortal_fixture_harness.py"
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - "docs/research/AEGIS-IMMORTAL-CONFORMANCE-BRIDGE-v1.md"
       - "docs/research/fixtures/AEGIS-V8-*.json"
       - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-REGRESSION.aiken-snippet"
+      - "docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-CANDIDATE.py"
       - "scripts/aegis_immortal_fixture_harness.py"
   workflow_dispatch:
 
@@ -27,7 +29,7 @@ concurrency:
 
 jobs:
   aiken-baseline:
-    name: Pinned Aegis — baseline, build, parameter-gap diagnostic
+    name: Pinned Aegis — candidate patch, build, regression suite
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -56,7 +58,14 @@ jobs:
           echo "Aegis source commit: $actual"
           test "$actual" = "$expected"
 
-      - name: Build Aiken validators
+      - name: Apply candidate fix to disposable checkout
+        working-directory: aegis-contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/docs/research/fixtures/AEGIS-GOVERNED-PARAMETER-CANDIDATE.py" --root "$GITHUB_WORKSPACE/aegis-contracts/contracts" 2>&1 | tee "$GITHUB_WORKSPACE/aegis-parameter-candidate-apply.log"
+
+      - name: Build Aiken validators with candidate fix
         working-directory: aegis-contracts/contracts
         shell: bash
         run: |
@@ -74,13 +83,13 @@ jobs:
           grep -q 'sv_underwrite_governed_parameter_utilisation_anchor_green' validators/pool_vault.ak
           grep -q 'sv_underwrite_governed_parameter_ratio_anchor_green' validators/pool_vault.ak
 
-      - name: Assert the two governed-parameter gaps are reproduced
+      - name: Verify four governed-parameter regression tests
         working-directory: aegis-contracts/contracts
         shell: bash
         run: |
           set +e
           aiken check -m "sv_underwrite_governed_parameter" 2>&1 | tee ../../aegis-aiken-differential-check.log
-          check_status=${PIPESTATUS[0]}
+          check_status=\${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$check_status" > "$GITHUB_WORKSPACE/aegis-aiken-differential-exit-code.txt"
           python3 - "$GITHUB_WORKSPACE/aegis-aiken-differential-check.log" "$GITHUB_WORKSPACE/aegis-aiken-differential-summary.json" "$GITHUB_STEP_SUMMARY" "$check_status" <<'PY'
@@ -94,43 +103,45 @@ jobs:
           status = int(status_raw)
           marker = re.search(r'(?m)^\{\s*\n\s*"seed"\s*:', raw)
           if not marker:
-              raise SystemExit("No structured Aiken test report found; do not classify this as an expected regression.")
+              raise SystemExit("No structured Aiken test report found.")
           report, _ = json.JSONDecoder().raw_decode(raw[marker.start():])
           summary = report.get("summary", {})
           expected = {
+              ("pool_vault", "sv_underwrite_governed_parameter_utilisation_anchor_green"),
               ("pool_vault", "sv_underwrite_governed_parameter_utilisation_2500_refuses"),
+              ("pool_vault", "sv_underwrite_governed_parameter_ratio_anchor_green"),
               ("pool_vault", "sv_underwrite_governed_parameter_ratio_2x_refuses"),
           }
-          failed = set()
+          observed = {}
           for module in report.get("modules", []):
               module_name = module.get("name", "").split("/")[-1]
               for test in module.get("tests", []):
-                  if test.get("status") not in ("pass", "passed"):
-                      failed.add((module_name, test.get("title", "")))
+                  observed[(module_name, test.get("title", ""))] = test.get("status")
           result = {
-              "diagnostic": "expected-gap-reproduction",
+              "diagnostic": "candidate-parameter-regression",
               "aiken_exit_code": status,
               "summary": summary,
-              "failed_tests": [{"module": m, "test": t} for m, t in sorted(failed)],
-              "expected_failed_tests": [{"module": m, "test": t} for m, t in sorted(expected)],
+              "tests": [
+                  {"module": module, "test": title, "status": observed.get((module, title), "missing")}
+                  for module, title in sorted(expected)
+              ],
           }
           Path(out_path).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-          if status == 0:
-              raise SystemExit("The overlay unexpectedly passed. Confirm whether the source behavior changed or the tests are not exercising the intended predicate.")
-          if status != 1:
-              raise SystemExit(f"Aiken returned unexpected exit code {status}; this is not classified as a parameter gap.")
-          if failed != expected:
-              raise SystemExit(f"Unexpected test failure set. Expected exactly {sorted(expected)}, got {sorted(failed)}.")
-          if summary.get("failed") != 2 or summary.get("total") != 4 or summary.get("passed") != 2:
-              raise SystemExit(f"Unexpected filtered test totals: {summary}; expected 4 selected tests, 2 green controls and exactly 2 parameter-refusal failures.")
+          if status != 0:
+              raise SystemExit(f"Focused Aiken tests failed with exit code {status}.")
+          if set(observed) != expected:
+              raise SystemExit(f"Unexpected filtered test set. Expected exactly {sorted(expected)}, got {sorted(observed)}.")
+          if any(observed[key] not in ("pass", "passed") for key in expected):
+              raise SystemExit(f"One or more candidate regressions did not pass: {result['tests']}")
+          if summary.get("failed") != 0 or summary.get("total") != 4 or summary.get("passed") != 4:
+              raise SystemExit(f"Unexpected focused totals: {summary}; expected 4/4 passed.")
           report_md = (
-              "### Aiken governed-parameter differential diagnostic\n\n"
-              "- Full baseline: 1,162/1,162 passed in the previous run for the same immutable AEGIS commit.\n"
-              "- Aiken build: passed in this run before the temporary overlay.\n"
-              "- Temporary overlay: both default-config anchors pass; exactly two tighter-config refusal assertions fail.\n"
-              "- Finding: current pinned source does not apply the in-rail utilisation_bps "
-              "and max_coverage_ratio values to the Underwrite decisions.\n"
-              "- Any failing anchor or unrelated test fails this diagnostic; upstream AEGIS remains unchanged.\n"
+              "### Governed-parameter candidate: focused conformance\n\n"
+              "- The pinned AEGIS baseline previously passed 1,162/1,162 tests on the same immutable source commit.\n"
+              "- The candidate Aiken build passed before the diagnostic tests were appended.\n"
+              "- The default-config utilization and ratio controls passed.\n"
+              "- The configured 25% utilization and 2x ratio refusal tests both passed.\n"
+              "- Candidate edits were applied only to this disposable CI checkout; upstream AEGIS was not modified.\n"
           )
           with Path(summary_path).open("a", encoding="utf-8") as handle:
               handle.write(report_md)
@@ -138,16 +149,53 @@ jobs:
           print(json.dumps(result, indent=2))
           PY
 
+      - name: Run full Aiken suite with candidate
+        working-directory: aegis-contracts/contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          aiken check 2>&1 | tee ../../aegis-aiken-candidate-full-check.log
+
+      - name: Assert complete candidate suite is green
+        shell: bash
+        run: |
+          python3 - "$GITHUB_WORKSPACE/aegis-aiken-candidate-full-check.log" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          log_path, summary_path = sys.argv[1:]
+          raw = Path(log_path).read_text(encoding="utf-8", errors="replace")
+          marker = re.search(r'(?m)^\{\s*\n\s*"seed"\s*:', raw)
+          if not marker:
+              raise SystemExit("No structured full-suite Aiken report found.")
+          report, _ = json.JSONDecoder().raw_decode(raw[marker.start():])
+          summary = report.get("summary", {})
+          if summary.get("total") != 1166 or summary.get("passed") != 1166 or summary.get("failed") != 0:
+              raise SystemExit(f"Candidate full-suite did not meet expected 1,166/1,166: {summary}")
+          report_md = (
+              "### Candidate full Aiken suite\n\n"
+              "- Result: 1,166/1,166 passed, including the four added governed-parameter cases.\n"
+              "- No failures were hidden or treated as expected in this full-suite run.\n"
+          )
+          with Path(summary_path).open("a", encoding="utf-8") as handle:
+              handle.write(report_md)
+          print(report_md)
+          print(json.dumps(summary, indent=2))
+          PY
+
       - name: Upload Aiken build and differential evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aegis-aiken-extended-${{ github.run_id }}
+          name: aegis-aiken-candidate-${{ github.run_id }}
           path: |
-            aegis-aiken-check.log
+            aegis-parameter-candidate-apply.log
             aegis-aiken-build.log
             aegis-aiken-differential-check.log
             aegis-aiken-differential-summary.json
             aegis-aiken-differential-exit-code.txt
+            aegis-aiken-candidate-full-check.log
           if-no-files-found: warn
           retention-days: 14
