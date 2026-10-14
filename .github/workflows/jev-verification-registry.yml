@@ -1,0 +1,31 @@
+name: JEV Verification Registry Contract
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/jev/**"
+      - "scripts/validate-jev-verification-registry.mjs"
+      - "scripts/test-jev-verification-registry.mjs"
+      - ".github/workflows/jev-verification-registry.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout audited branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test registry validation and negative cases
+        run: node scripts/test-jev-verification-registry.mjs
