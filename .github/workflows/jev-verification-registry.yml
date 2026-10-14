@@ -8,6 +8,8 @@ on:
       - "audit/jev/**"
       - "scripts/validate-jev-verification-registry.mjs"
       - "scripts/test-jev-verification-registry.mjs"
+      - "scripts/jev-verification-registry-generator.mjs"
+      - "scripts/test-jev-verification-registry-generator.mjs"
       - ".github/workflows/jev-verification-registry.yml"
   workflow_dispatch:
 
@@ -29,5 +31,7 @@ jobs:
           node-version: "22"
       - name: Test registry validation and negative cases
         run: node scripts/test-jev-verification-registry.mjs
+      - name: Test isolated registry generator and fail-closed mapping
+        run: node scripts/test-jev-verification-registry-generator.mjs
       - name: Validate historical run 1718 registry fixture
         run: node scripts/validate-jev-verification-registry.mjs audit/jev/registry-run-1718-attempt-2.json
