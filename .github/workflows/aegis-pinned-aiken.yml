@@ -133,14 +133,15 @@ jobs:
               raise SystemExit(f"Unexpected filtered test set. Expected exactly {sorted(expected)}, got {sorted(observed)}.")
           if any(observed[key] not in ("pass", "passed") for key in expected):
               raise SystemExit(f"One or more candidate regressions did not pass: {result['tests']}")
-          if summary.get("failed") != 0 or summary.get("total") != 4 or summary.get("passed") != 4:
-              raise SystemExit(f"Unexpected focused totals: {summary}; expected 4/4 passed.")
+          if summary.get("failed") != 0 or summary.get("total") != 6 or summary.get("passed") != 6:
+              raise SystemExit(f"Unexpected focused totals: {summary}; expected 6/6 passed.")
           report_md = (
               "### Governed-parameter candidate: focused conformance\n\n"
               "- The pinned AEGIS baseline previously passed 1,162/1,162 tests on the same immutable source commit.\n"
               "- The candidate Aiken build passed before the diagnostic tests were appended.\n"
               "- The default-config utilization and ratio controls passed.\n"
               "- The configured 25% utilization and 2x ratio refusal tests both passed.\n"
+              "- Exact one-third boundary: the legacy helper accepts, 3333 bps rejects, and 3334 bps accepts; the validator-level transaction confirms the governed 3333-bps refusal.\n"
               "- Candidate edits were applied only to this disposable CI checkout; upstream AEGIS was not modified.\n"
           )
           with Path(summary_path).open("a", encoding="utf-8") as handle:
@@ -172,11 +173,11 @@ jobs:
               raise SystemExit("No structured full-suite Aiken report found.")
           report, _ = json.JSONDecoder().raw_decode(raw[marker.start():])
           summary = report.get("summary", {})
-          if summary.get("total") != 1166 or summary.get("passed") != 1166 or summary.get("failed") != 0:
-              raise SystemExit(f"Candidate full-suite did not meet expected 1,166/1,166: {summary}")
+          if summary.get("total") != 1168 or summary.get("passed") != 1168 or summary.get("failed") != 0:
+              raise SystemExit(f"Candidate full-suite did not meet expected 1,168/1,168: {summary}")
           report_md = (
               "### Candidate full Aiken suite\n\n"
-              "- Result: 1,166/1,166 passed, including the four added governed-parameter cases.\n"
+              "- Result: 1,168/1,168 passed, including four governed-parameter tests and two exact-boundary tests.\n"
               "- No failures were hidden or treated as expected in this full-suite run.\n"
           )
           with Path(summary_path).open("a", encoding="utf-8") as handle:
