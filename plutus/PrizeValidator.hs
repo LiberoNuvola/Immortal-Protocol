@@ -983,29 +983,6 @@ mkValidator regHash table oracleStateData oraclePublisher datum action ctx =
       validateExpire datum ctx
 
 
--- The compiled wrapper handles Claim separately with the original raw context.
--- Its non-Claim branch must not link the Claim implementation a second time:
--- doing so bloats the shared PrizeValidator beyond Cardano's transaction-size
--- limit even though the wrapper never routes Claim through this dispatcher.
-{-# INLINABLE mkValidatorNonClaim #-}
-mkValidatorNonClaim
-  :: ScriptHash
-  -> PrizeTable
-  -> PrizeDatum
-  -> PrizeAction
-  -> ScriptContext
-  -> Bool
-mkValidatorNonClaim regHash table datum action ctx =
-  case action of
-    SyncBeacon ->
-      validateSyncBeacon regHash datum ctx
-    Reveal playerSecret ->
-      validateReveal table datum playerSecret ctx
-    Claim ->
-      False
-    Expire ->
-      validateExpire datum ctx
-
 {-# INLINABLE wrap #-}
 wrap
   :: ScriptHash
@@ -1019,6 +996,7 @@ wrap
 wrap regHash table oracleState oraclePublisher d r ctx =
   let
     action = unsafeFromBuiltinData r
+    datum = unsafeFromBuiltinData d
     decodedCtx = unsafeFromBuiltinData ctx
     result =
       case action of
@@ -1026,16 +1004,15 @@ wrap regHash table oracleState oraclePublisher d r ctx =
           validateClaim
             (unsafeFromBuiltinData oracleState)
             oraclePublisher
-            (unsafeFromBuiltinData d)
+            datum
             ctx
             decodedCtx
-        _ ->
-          mkValidatorNonClaim
-            regHash
-            table
-            (unsafeFromBuiltinData d)
-            action
-            decodedCtx
+        SyncBeacon ->
+          validateSyncBeacon regHash datum decodedCtx
+        Reveal playerSecret ->
+          validateReveal table datum playerSecret decodedCtx
+        Expire ->
+          validateExpire datum decodedCtx
   in
     check result
 
