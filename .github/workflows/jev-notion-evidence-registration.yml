@@ -1,0 +1,43 @@
+name: JEV Notion Evidence Registration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  register-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout evidence publisher
+        uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Test Notion evidence ledger publisher
+        run: node scripts/test-notion-evidence-ledger.mjs
+
+      - name: Register existing run #1718 evidence
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_EVIDENCE_PAGE_ID: "3e2c4454-d6d5-819c-bec1-c6edede714b3"
+          GITHUB_REPOSITORY: "LiberoNuvola/Immortal-Protocol"
+          GITHUB_WORKFLOW: "IMMORTAL Cardano Integration Lab"
+          GITHUB_REF: "refs/heads/work/immortal-green-closure"
+          GITHUB_SHA: "e6909bcd83d4a833ecbb9f1efbdea6630873d9f1"
+          GITHUB_RUN_ID: "38615595908"
+          GITHUB_RUN_NUMBER: "1718"
+          GITHUB_RUN_ATTEMPT: "1"
+          GITHUB_EVENT_NAME: "push"
+          RUN_URL: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908"
+          ARTIFACT_URL: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908/artifacts/11920216812"
+          ARTIFACT_DIGEST: "sha256:86e7a34bd91d7e0b29c21625aaa67861fc1263589df7bc581e39875e53224344"
+          LAB_JOB_STATUS: "failure"
+        run: node scripts/register-evidence-in-notion.mjs
