@@ -114,3 +114,26 @@ B-R1 is not implementation-closed until all of the following are true:
 - Do not invent a universal combined reserve formula, confidence threshold, haircut, coefficient, or fallback.
 - Do not change V3 Carrier, Reveal validator semantics, or Cardano transaction construction as part of B-R1.
 - Do not create a new branch for this work.
+
+
+## 9. Current implementation mapping (verified on branch)
+
+| Contract element | Existing implementation | Coverage / gap |
+|---|---|---|
+| Profile identity | PRE-RICH EconomicProfile has epVersion and class prices | Version exists, but no cryptographic/profile evidence binding is carried by the universal state |
+| Deterministic bound | PreRichEconomicProjection.foldClassesSeen multiplies class price × unresolved count × epMaxNormalPayoutMultiplier | Present for PRE-RICH; remains the existing deterministic path |
+| Universal protected components | UniversalEconomicState carries liabilities, unresolved accounting reserve/count, worst-case exposure, safety capital, reserve protection, future costs and additional protected capital | Accounting state exists; no first-class ProtectionRequirement or provenance partition |
+| Statistical assessment | No statistical assessment record in UniversalEconomicState or PreRichEconomicAdmission | Missing from the inspected execution path |
+| Risk mode / applicability | No mode/status identifying deterministic, statistical, both, or explicitly not applicable | Missing |
+| Evidence provenance/freshness | EconomicGateInput carries truthVerified, EEVFresh and obligationsComplete booleans | Generic gate attestations exist; they do not identify risk assessment source, model, horizon or confidence |
+| Candidate trajectory binding | PreRichEconomicAdmission carries action and candidate V3/universal states | Candidate is represented, but no risk-output reference is bound to it |
+| Protection Requirement | No typed result between projection and ProtectedCapital | Missing B-R1 interface |
+| Economic Gate | economicGate checks authoritative truth, EEV freshness, obligation completeness, liquidity and solvency | Existing downstream gate; it consumes the state but does not derive the risk requirement |
+| Viability | viabilityGate requires safe post-state and all Ω successors inside the certified kernel | Explicit Boolean boundary exists; certificate provenance/completeness remains external |
+| Atomic execution | Admission returns a witness; commit/history are downstream | Not part of B-R1 and not proven by this audit |
+
+### Mapping conclusion
+
+The minimum safe next implementation is **not** to add a statistical number directly to UniversalEconomicState. First define the typed assessment/result boundary and how it is bound to the profile and candidate trajectory. Then connect the resulting requirement to the existing projection/ProtectedCapital path. Until an applicable profile supplies authorized statistical semantics, the bridge must preserve the current deterministic PRE-RICH bound and return a fail-closed outcome for any attempted regime switch that would weaken it.
+
+This mapping is based on the named files above and is not a claim that no prototype exists anywhere else in the repository.
