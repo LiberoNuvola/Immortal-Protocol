@@ -699,10 +699,9 @@ if (typeof originalNewPartialWitness !== 'function' ||
 let referenceWitnessInterceptions = 0
 const referenceWitnessHashes: string[] = []
 const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
-  // PartialPlutusWitness.new receives a PlutusScriptWitness, not a PlutusScript.
-  // Resolve the script variant before asking it for the ledger script hash.
-  const script = witness?.as_script?.()
-  const hash = script?.hash?.()
+  // CML PlutusScriptWitness exposes hash() directly for both embedded and
+  // reference variants; do not call enum accessors that are not in the pinned API.
+  const hash = witness?.hash?.()
   const hashHex = hash?.to_hex?.()
   if (hashHex && referenceScriptHashes.has(hashHex)) {
     referenceWitnessInterceptions += 1
