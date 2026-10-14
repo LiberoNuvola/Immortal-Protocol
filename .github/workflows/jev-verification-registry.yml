@@ -15,6 +15,7 @@ on:
       - "scripts/build-jev-materios-registry.mjs"
       - "scripts/test-jev-materios-registry-pipeline.mjs"
       - ".github/workflows/jev-verification-registry.yml"
+      - ".github/workflows/jev-materios-live-ingress.yml"
   workflow_dispatch:
 
 permissions:
