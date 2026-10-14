@@ -1,0 +1,67 @@
+{
+  "schema": "immortal.jev-verification-registry.v1",
+  "registryVersion": "0.1",
+  "generatedAt": "2026-10-14T18:59:05Z",
+  "subject": {
+    "repository": "LiberoNuvola/Immortal-Protocol",
+    "commitSha": "e6909bcd83d4a833ecbb9f1efbdea6630873d9f1",
+    "ref": "refs/heads/work/immortal-green-closure",
+    "workflowRunId": "38615595908",
+    "workflowRunUrl": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908",
+    "runAttempt": 2,
+    "executionContext": "devnet"
+  },
+  "checks": [
+    {
+      "checkId": "V3.CARRIER.LEDGER",
+      "requirementRef": "IMMORTAL Cardano Integration Lab / Execute V3 carrier against native Cardano ledger",
+      "result": "PASS",
+      "evidenceRefs": [
+        {
+          "kind": "workflow-run",
+          "uri": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908"
+        },
+        {
+          "kind": "artifact",
+          "uri": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908/artifacts/11921211399",
+          "sha256": "sha256:677a314be714e1caf0da4d513e221d13dd41a2239c569c7a463da3bc33236919",
+          "note": "Evidence artifact from attempt 2; inspect the packet for step-level details."
+        }
+      ],
+      "limitations": [
+        "The V3 carrier step passing does not prove Reveal success or overall Integration Lab success.",
+        "This observation is from Yaci devnet and does not establish Preprod/mainnet behavior."
+      ]
+    },
+    {
+      "checkId": "REVEAL.TX.SIZE",
+      "requirementRef": "Cardano transaction size limit for this integration path: 16384 bytes",
+      "result": "FAIL",
+      "evidenceRefs": [
+        {
+          "kind": "workflow-run",
+          "uri": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908"
+        },
+        {
+          "kind": "artifact",
+          "uri": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908/artifacts/11921211399",
+          "sha256": "sha256:677a314be714e1caf0da4d513e221d13dd41a2239c569c7a463da3bc33236919",
+          "note": "Run attempt 2 evidence packet; transaction size and step outcome must be checked against the packet logs."
+        }
+      ],
+      "observedValue": 18051,
+      "expectedValue": 16384,
+      "limitations": [
+        "This records the observed size-limit failure; it does not establish the root cause.",
+        "This is a devnet integration observation, not a Preprod/mainnet transaction result.",
+        "No Reveal or V3 semantics are changed by this registry entry."
+      ]
+    }
+  ],
+  "overallResult": "FAIL",
+  "notes": [
+    "Historical registry fixture based on Integration Lab run #1718, attempt 2, commit e6909bcd83d4a833ecbb9f1efbdea6630873d9f1.",
+    "Overall result refers to this Integration Lab execution, not a certification of the whole IMMORTAL protocol.",
+    "The values are recorded from the run evidence and must be rechecked against the linked artifact before using this entry as a formal attestation."
+  ]
+}
