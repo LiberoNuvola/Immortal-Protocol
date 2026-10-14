@@ -103,7 +103,7 @@ test sv_underwrite_governed_parameter_ratio_2x_refuses() {
 /// while 3333 basis points is strictly below one third. This is intentional:
 /// production applies the configured integer bps exactly, without an implicit
 /// exception for the genesis value.
-test sv_underwrite_exact_one_third_distinguishes_legacy_and_governed_caps() {
+test sv_underwrite_governed_parameter_exact_one_third_boundary() {
   let old = sv_state(1000, 0, 10_000_000)
   let new = sv_state(1000, 90_000_000, 10_000_000)
   and {
@@ -152,7 +152,7 @@ test sv_underwrite_exact_one_third_distinguishes_legacy_and_governed_caps() {
 
 /// Validator-level proof that the exact one-third transaction is rejected by
 /// the genesis registry's 3333-bps setting after the candidate is wired in.
-test sv_underwrite_governed_3333_refuses_exact_one_third_boundary() {
+test sv_underwrite_governed_parameter_3333_refuses_exact_one_third_boundary() {
   let old = sv_state(1000, 0, 10_000_000)
   let new = sv_state(1000, 90_000_000, 10_000_000)
   let pd =
