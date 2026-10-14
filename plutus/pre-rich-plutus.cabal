@@ -31,6 +31,7 @@ library
         EconomicGate
         EconomicKernel
         UniversalEconomicKernel
+        RiskProtectionBridge
         EconomicTransitionV3
         RefinementV3
         GoldenVectors
@@ -345,6 +346,15 @@ test-suite reference-adapter-tests
 executable reference-adapter-golden
     hs-source-dirs: ../Adapter/REFERENCE/export
     main-is: ReferenceAdapterGolden.hs
+    build-depends:
+        base ^>=4.18.2,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite risk-protection-bridge-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: RiskProtectionBridgeTest.hs
     build-depends:
         base ^>=4.18.2,
         pre-rich-plutus
