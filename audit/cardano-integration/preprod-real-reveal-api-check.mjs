@@ -12,6 +12,8 @@ const auditPackage = JSON.parse(await readFile('audit/cardano-integration/packag
 const forbidden = [
   '.attachMintingPolicy(',
   '.attachSpendingValidator(',
+  '.attach.SpendingValidator(',
+  '.attach.MintingPolicy(',
   '.payToContract(',
   '.payToAddressWithData(',
   '.sign().complete()',
@@ -23,6 +25,7 @@ const malformed = [
 ]
 const hits = forbidden.filter(token => source.includes(token))
 const malformedHits = malformed.filter(token => source.includes(token))
+const referenceReadPresent = source.includes('.readFrom([prizeReferenceUtxo, poolReferenceUtxo])')
 
 const rootLucidVersion = rootPackage.dependencies?.['@lucid-evolution/lucid']
 const auditLucidVersion = auditPackage.dependencies?.['@lucid-evolution/lucid']
@@ -36,6 +39,9 @@ if (rootLucidVersion !== auditLucidVersion) {
   )
 }
 
+if (!referenceReadPresent) {
+  throw new Error('Real Preprod Reveal must read both deployed reference-script UTxOs')
+}
 if (hits.length || malformedHits.length) {
   throw new Error(
     'Legacy or malformed Lucid Evolution transaction shape remains in ' + path +
