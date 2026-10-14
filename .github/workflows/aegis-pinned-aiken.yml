@@ -83,7 +83,7 @@ jobs:
           grep -q 'sv_underwrite_governed_parameter_utilisation_anchor_green' validators/pool_vault.ak
           grep -q 'sv_underwrite_governed_parameter_ratio_anchor_green' validators/pool_vault.ak
 
-      - name: Verify four governed-parameter regression tests
+      - name: Verify six governed-parameter and boundary regression tests
         working-directory: aegis-contracts/contracts
         shell: bash
         run: |
