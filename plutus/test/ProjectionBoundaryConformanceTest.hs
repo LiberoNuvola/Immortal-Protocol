@@ -58,6 +58,16 @@ main = do
     Just projected -> do
       assert (UniversalKernel.protectedCapital projected == 2809) "projected ProtectedCapital counts liabilities, exposure and protected components once"
       assert (UniversalKernel.rawSurplus 4000 projected == 1191) "projected RawSurplus matches exact universal formula"
+      assert
+        (UniversalKernel.protectedCapital
+          (projected { uesUnresolvedReserve = 999999 })
+          == UniversalKernel.protectedCapital projected)
+        "unresolved ticket accounting reserve is not substituted for worst-case exposure"
+      assert
+        (UniversalKernel.protectedCapital
+          (projected { uesWorstCaseExposure = 0 })
+          == UniversalKernel.protectedCapital projected - uesWorstCaseExposure projected)
+        "worst-case exposure remains an explicit ProtectedCapital component"
 
   -- Transition-level differential evidence:
   -- PRE-RICH V3 may contain classes/control/Jackpot, but the universal boundary
