@@ -310,9 +310,11 @@ jobs:
         run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
 
       - name: Execute V3 carrier against native Cardano ledger
+        id: jev_v3_carrier
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
       - name: Execute real economic Reveal transition trace
+        id: jev_reveal
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
       - name: Execute real FundTreasury canonical Oracle valuation trace
@@ -377,6 +379,53 @@ jobs:
       - name: Test Notion evidence ledger publisher
         if: always()
         run: node scripts/test-notion-evidence-ledger.mjs
+
+      - name: Generate JEV Verification Registry from actual step outcomes
+        if: always()
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          V3_CARRIER_OUTCOME: ${{ steps.jev_v3_carrier.outcome || 'unknown' }}
+          REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const outcome = (v) => ['success','failure','cancelled','skipped'].includes(v) ? v : 'unknown';
+          const metadata = {
+            repository: process.env.GITHUB_REPOSITORY,
+            commitSha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            workflowRunUrl: process.env.RUN_URL,
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            executionContext: 'devnet',
+          };
+          const evidenceRefs = [{ kind: 'workflow-run', uri: process.env.RUN_URL }];
+          const checks = [
+            {
+              checkId: 'V3.CARRIER.LEDGER',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute V3 carrier against native Cardano ledger',
+              stepOutcome: outcome(process.env.V3_CARRIER_OUTCOME),
+              evidenceRefs,
+              limitations: ['This result applies only to this step, commit, run attempt, and devnet context. It is not a Preprod or mainnet qualification.'],
+            },
+            {
+              checkId: 'REVEAL.TRACE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute real economic Reveal transition trace',
+              stepOutcome: outcome(process.env.REVEAL_OUTCOME),
+              evidenceRefs,
+              limitations: ['This step outcome does not independently establish root cause or authorize a protocol-wide GREEN declaration.'],
+            },
+          ];
+          await fs.mkdir('audit/yaci-evidence', { recursive: true });
+          await fs.writeFile('audit/yaci-evidence/jev-registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\\n');
+          NODE
+          node scripts/jev-verification-registry-generator.mjs audit/yaci-evidence/jev-registry-input.json audit/yaci-evidence/verification-registry.json
 
       - name: Build sanitized provenance-bound evidence packet
         if: always()
