@@ -190,3 +190,45 @@ test sv_underwrite_governed_parameter_3333_refuses_exact_one_third_boundary() {
   }
 }
 
+
+/// A configured ratio above the historic 50x constant must actually widen the
+/// production envelope, within Registry's 200x rail. Coverage / NET premium is
+/// 1.5B / 19.6M ~= 76.53x: legacy/default 50x refuses; governed 100x admits.
+test sv_underwrite_governed_parameter_ratio_100_allows_above_legacy_50x() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 1_500_000_000, 10_000_000)
+  let pd =
+    PolicyDatum {
+      ..sv_underwrite_policy_datum(),
+      coverage_amount: 1_500_000_000,
+    }
+  let tx = sv_underwrite_tx(
+    6_000_000_000,
+    old,
+    4_520_000_000,
+    new,
+    1_500_000_000,
+    pd,
+    100_000_000,
+    100_000_000,
+    sv_underwrite_terms(1_500_000_000),
+    1,
+  )
+  let cfg = sv_config([sv_mandate(sv_ada_nft())])
+  let b = cfg.budgets
+  and {
+    !sv_run_underwrite(old, 1_500_000_000, 20_000_000, tx),
+    sv_run_underwrite(
+      old,
+      1_500_000_000,
+      20_000_000,
+      sv_with_registry_cfg(
+        tx,
+        UnderwriteConfig {
+          ..cfg,
+          budgets: Budgets { ..b, max_coverage_ratio: 100 },
+        },
+      ),
+    ),
+  }
+}
