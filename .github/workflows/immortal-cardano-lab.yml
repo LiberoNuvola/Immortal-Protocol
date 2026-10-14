@@ -132,7 +132,7 @@ jobs:
             sleep 2
           done
           echo "YACI_STORE_INITIAL_READY=0" | tee audit/yaci-evidence/bootstrap.txt
-          tail -300 audit/yaci-evidence/yaci.log || true
+          tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
           exit 1
 
       - name: Start and qualify Ogmios evaluator before Yaci Store
@@ -196,7 +196,7 @@ jobs:
           fi
           if [ "$store_stopped" -ne 1 ]; then
             echo "Yaci Store did not release port 8080 after guarded shutdown."
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
 
@@ -212,7 +212,7 @@ jobs:
           done
           if [ "$ogmios_started" -ne 1 ]; then
             echo "Failed to start Ogmios through the Yaci admin API."
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
 
@@ -226,7 +226,7 @@ jobs:
           done
           if [ "$ogmios_ready" -ne 1 ]; then
             echo "Ogmios did not become reachable on port 1337."
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
 
@@ -242,7 +242,7 @@ jobs:
           done
           if [ "$store_started" -ne 1 ]; then
             echo "Failed to start Yaci Store after Ogmios became reachable."
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
 
@@ -256,14 +256,14 @@ jobs:
           done
           if [ "$store_ready" -ne 1 ]; then
             echo "Yaci Store did not become ready after restart."
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
 
           if ! grep -Eq '^store\.submit\.tx-evaluator-mode=ogmios$' "$store_config"; then
             echo "Yaci Store config does not confirm the Ogmios evaluator."
             grep -E '^(store\.submit\.tx-evaluator-mode|store\.cardano\.ogmios-url)=' "$store_config" || true
-            tail -300 audit/yaci-evidence/yaci.log || true
+            tail -300 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-diagnostic-tail.log || true
             exit 1
           fi
           {
@@ -364,12 +364,19 @@ jobs:
         if: always()
         run: |
           curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
-          tail -500 audit/yaci-evidence/yaci.log || true
+          tail -500 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-final-tail.log || true
 
-      - name: Upload laboratory evidence
+      - name: Build sanitized provenance-bound evidence packet
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf audit/evidence-packet
+          node scripts/build-evidence-packet.mjs audit/yaci-evidence audit/evidence-packet
+
+      - name: Upload laboratory evidence packet
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: immortal-cardano-lab-evidence
-          path: audit/yaci-evidence/
+          path: audit/evidence-packet/
           if-no-files-found: warn
