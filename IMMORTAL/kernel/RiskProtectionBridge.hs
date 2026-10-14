@@ -73,7 +73,7 @@ deriveProtectionRequirement profile expectedTrajectoryId projectedWorstCase asse
   | raProfileVersion assessment /= epVersion profile = Left ProfileVersionMismatch
   | expectedTrajectoryId < 0 || raTrajectoryId assessment < 0
       || raTrajectoryId assessment /= expectedTrajectoryId = Left InvalidTrajectoryId
-  | raEvidenceStatus assessment /= RiskEvidenceVerified = Left MissingOrInvalidEvidence
+  | not (riskEvidenceVerified (raEvidenceStatus assessment)) = Left MissingOrInvalidEvidence
   | projectedWorstCase < 0 = Left DeterministicAssessmentMismatch
   | otherwise =
       case raMode assessment of
@@ -97,3 +97,9 @@ deriveProtectionRequirement profile expectedTrajectoryId projectedWorstCase asse
                               exposure)
         StatisticalOnly -> Left UnsupportedRiskMode
         DeterministicAndStatistical -> Left UnsupportedRiskMode
+
+{-# INLINABLE riskEvidenceVerified #-}
+riskEvidenceVerified :: EvidenceStatus -> Bool
+riskEvidenceVerified RiskEvidenceVerified = True
+riskEvidenceVerified RiskEvidenceMissing = False
+riskEvidenceVerified RiskEvidenceInvalid = False
