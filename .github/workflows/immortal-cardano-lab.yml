@@ -423,7 +423,7 @@ jobs:
             },
           ];
           await fs.mkdir('audit/yaci-evidence', { recursive: true });
-          await fs.writeFile('audit/yaci-evidence/jev-registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\\n');
+          await fs.writeFile('audit/yaci-evidence/jev-registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\n');
           NODE
           node scripts/jev-verification-registry-generator.mjs audit/yaci-evidence/jev-registry-input.json audit/yaci-evidence/verification-registry.json
 
