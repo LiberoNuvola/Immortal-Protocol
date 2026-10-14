@@ -103,9 +103,9 @@ B-R1 is not implementation-closed until all of the following are true:
 
 ## 7. Current status and next action
 
-**Current status:** the repository has a deterministic worst-case path and a regression test proving that uesUnresolvedReserve is not substituted for uesWorstCaseExposure. That test does not implement or prove the risk-assessment → protection-requirement bridge.
+**Current status:** the repository has a deterministic worst-case path, the projection-boundary regression test, and a typed B-R1 bridge scaffold with a focused test suite registered in Cabal. The bridge currently accepts only a verified deterministic assessment exactly matching the projected exposure and fails closed for statistical-only or combined modes. It is not yet wired into PreRichEconomicAdmission, so this does not close B-R1 end-to-end.
 
-**Next action:** map each contract field to existing repository types and provenance sources; identify what can be reused and what is genuinely absent. Then add the smallest typed interface and focused conformance tests only where the canonical profile supplies sufficient semantics. If a needed policy rule is absent, keep the affected path fail-closed and record the decision as open rather than inventing it.
+**Next action:** bind the bridge to the authoritative trajectory/provenance source and the existing projection/admission path, without inventing missing evidence. Before wiring it, verify how a stable candidate trajectory identity is produced and authenticated in the actual caller. Keep statistical/combined modes fail-closed until a canonical profile rule authorizes them. Run the registered test suite when CI credits are available.
 
 ## 8. Explicit non-goals
 
@@ -123,11 +123,11 @@ B-R1 is not implementation-closed until all of the following are true:
 | Profile identity | PRE-RICH EconomicProfile has epVersion and class prices | Version exists, but no cryptographic/profile evidence binding is carried by the universal state |
 | Deterministic bound | PreRichEconomicProjection.foldClassesSeen multiplies class price × unresolved count × epMaxNormalPayoutMultiplier | Present for PRE-RICH; remains the existing deterministic path |
 | Universal protected components | UniversalEconomicState carries liabilities, unresolved accounting reserve/count, worst-case exposure, safety capital, reserve protection, future costs and additional protected capital | Accounting state exists; no first-class ProtectionRequirement or provenance partition |
-| Statistical assessment | No statistical assessment record in UniversalEconomicState or PreRichEconomicAdmission | Missing from the inspected execution path |
+| Statistical assessment | No statistical assessment record in UniversalEconomicState or PreRichEconomicAdmission | Missing from the runtime execution path; the new bridge scaffold rejects statistical modes until a canonical rule exists |
 | Risk mode / applicability | No mode/status identifying deterministic, statistical, both, or explicitly not applicable | Missing |
 | Evidence provenance/freshness | EconomicGateInput carries truthVerified, EEVFresh and obligationsComplete booleans | Generic gate attestations exist; they do not identify risk assessment source, model, horizon or confidence |
 | Candidate trajectory binding | PreRichEconomicAdmission carries action and candidate V3/universal states | Candidate is represented, but no risk-output reference is bound to it |
-| Protection Requirement | No typed result between projection and ProtectedCapital | Missing B-R1 interface |
+| Protection Requirement | New IMMORTAL/kernel/RiskProtectionBridge.hs defines a typed ProtectionRequirement and fail-closed derivation for deterministic-only mode | Interface scaffold exists; it is not yet wired into projection/admission or ProtectedCapital |
 | Economic Gate | economicGate checks authoritative truth, EEV freshness, obligation completeness, liquidity and solvency | Existing downstream gate; it consumes the state but does not derive the risk requirement |
 | Viability | viabilityGate requires safe post-state and all Ω successors inside the certified kernel | Explicit Boolean boundary exists; certificate provenance/completeness remains external |
 | Atomic execution | Admission returns a witness; commit/history are downstream | Not part of B-R1 and not proven by this audit |
@@ -137,3 +137,17 @@ B-R1 is not implementation-closed until all of the following are true:
 The minimum safe next implementation is **not** to add a statistical number directly to UniversalEconomicState. First define the typed assessment/result boundary and how it is bound to the profile and candidate trajectory. Then connect the resulting requirement to the existing projection/ProtectedCapital path. Until an applicable profile supplies authorized statistical semantics, the bridge must preserve the current deterministic PRE-RICH bound and return a fail-closed outcome for any attempted regime switch that would weaken it.
 
 This mapping is based on the named files above and is not a claim that no prototype exists anywhere else in the repository.
+
+
+## 10. Implementation increment — typed fail-closed scaffold
+
+Added `IMMORTAL/kernel/RiskProtectionBridge.hs` and registered it as an exposed Cabal module, with `plutus/test/RiskProtectionBridgeTest.hs` registered as `risk-protection-bridge-tests`.
+
+The scaffold:
+- accepts only a verified deterministic assessment;
+- binds assessment profile version and candidate trajectory ID to the caller's expected values;
+- requires the assessment's deterministic exposure to equal the exposure already derived by `projectPreRichState`;
+- rejects statistical-only and combined modes, any unexpected statistical value, and any undeclared combination-rule version;
+- does not mutate the current projection, profile, kernel, admission, V3 Carrier, or Reveal semantics.
+
+**Important:** the suite has been registered but not executed. The bridge is not yet consumed by the live admission path; this is an interface/conformance increment, not B-R1 closure.
