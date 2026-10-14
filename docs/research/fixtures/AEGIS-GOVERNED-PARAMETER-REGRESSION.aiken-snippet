@@ -169,6 +169,24 @@ test sv_underwrite_governed_parameter_3333_refuses_exact_one_third_boundary() {
     sv_underwrite_terms(90_000_000),
     1,
   )
-  !sv_run_underwrite(old, 90_000_000, 20_000_000, tx)
+  let cfg = sv_config([sv_mandate(sv_ada_nft())])
+  let b = cfg.budgets
+  and {
+    // Genesis (3333 bps) refuses at the exact-third boundary.
+    !sv_run_underwrite(old, 90_000_000, 20_000_000, tx),
+    // At 3334 bps, this same transaction must be admissible, isolating the cap.
+    sv_run_underwrite(
+      old,
+      90_000_000,
+      20_000_000,
+      sv_with_registry_cfg(
+        tx,
+        UnderwriteConfig {
+          ..cfg,
+          budgets: Budgets { ..b, utilisation_bps: 3_334 },
+        },
+      ),
+    ),
+  }
 }
 
