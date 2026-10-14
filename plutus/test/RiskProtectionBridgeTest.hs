@@ -9,6 +9,7 @@ import Prelude
   , Maybe (Just, Nothing)
   , String
   , (==)
+  , (++)
   , (&&)
   , error
   , putStrLn
