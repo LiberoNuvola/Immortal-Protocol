@@ -1,6 +1,11 @@
 name: JEV Notion Evidence Registration
 
 on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - ".github/workflows/jev-notion-evidence-registration.yml"
   workflow_dispatch:
 
 permissions:
