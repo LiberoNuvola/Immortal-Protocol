@@ -1,0 +1,97 @@
+name: JEV Materios Live Checkpoint Ingress
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_age_seconds:
+        description: "Optional maximum checkpoint observation age in seconds; blank disables freshness enforcement"
+        required: false
+        type: string
+        default: ""
+      rpc_endpoint:
+        description: "Materios Preprod RPC endpoint (must be an approved endpoint; do not include credentials)"
+        required: false
+        type: string
+        default: "https://materios.fluxpointstudios.com/preprod-rpc"
+
+permissions:
+  contents: read
+
+jobs:
+  live-checkpoint-ingress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout audited branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install PoC-0 dependencies
+        working-directory: poc/materios-checkpoint
+        run: npm install --ignore-scripts
+      - name: Extract checkpoint from Materios Preprod
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_RPC: "${{ inputs.rpc_endpoint }}"
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+        run: npm run poc0
+      - name: Prepare JEV metadata
+        env:
+          GITHUB_SHA: "${{ github.sha }}"
+          GITHUB_REF: "${{ github.ref }}"
+          GITHUB_RUN_ID: "${{ github.run_id }}"
+          GITHUB_RUN_ATTEMPT: "${{ github.run_attempt }}"
+          GITHUB_SERVER_URL: "${{ github.server_url }}"
+          GITHUB_REPOSITORY: "${{ github.repository }}"
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const metadata = {
+            repository: process.env.GITHUB_REPOSITORY,
+            commitSha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            executionContext: 'preprod',
+            workflowRunId: Number(process.env.GITHUB_RUN_ID),
+            workflowRunUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT)
+          };
+          fs.writeFileSync('jev-metadata.json', JSON.stringify(metadata, null, 2) + '\n', { flag: 'wx' });
+          NODE
+      - name: Build observation-only JEV registry
+        continue-on-error: true
+        env:
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MAX_AGE_SECONDS: "${{ inputs.max_age_seconds }}"
+        run: |
+          args=(
+            --checkpoint poc/materios-checkpoint/out/CanonicalCheckpoint.json
+            --metadata jev-metadata.json
+            --source-uri "$RUN_URL"
+            --expected-chain-id materios_preprod_v6
+            --output jev-materios-registry.json
+          )
+          if [ -n "$MAX_AGE_SECONDS" ]; then
+            args+=(--max-age-seconds "$MAX_AGE_SECONDS")
+          fi
+          node scripts/build-jev-materios-registry.mjs "${args[@]}"
+      - name: Upload checkpoint and JEV registry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-materios-live-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            poc/materios-checkpoint/out/CanonicalCheckpoint.json
+            jev-materios-registry.json
+            jev-metadata.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Report verification boundary
+        if: always()
+        run: |
+          echo "This workflow only extracts and records a Materios checkpoint observation."
+          echo "It does not independently verify GRANDPA finality, storage proofs, or canonicality."
+          echo "A NOT_RUN overall registry is expected until independent verifiers provide evidence."
