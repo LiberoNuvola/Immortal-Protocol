@@ -98,3 +98,77 @@ test sv_underwrite_governed_parameter_ratio_2x_refuses() {
     ),
   )
 }
+
+/// The historical accounting predicate accepts the exact one-third point,
+/// while 3333 basis points is strictly below one third. This is intentional:
+/// production applies the configured integer bps exactly, without an implicit
+/// exception for the genesis value.
+test sv_underwrite_exact_one_third_distinguishes_legacy_and_governed_caps() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 90_000_000, 10_000_000)
+  and {
+    // post_total = (cont - min_utxo - reserve) + active_coverage
+    //            = 180M + 90M = 270M; coverage * 3 = post_total.
+    underwrite_ok(
+      old,
+      new,
+      90_000_000,
+      20_000_000,
+      19_600_000,
+      260_400_000 + min_utxo_lovelace,
+      190_000_000 + min_utxo_lovelace,
+      1,
+      90_000_000,
+      min_utxo_lovelace,
+    ),
+    !underwrite_ok_with_utilisation(
+      old,
+      new,
+      90_000_000,
+      20_000_000,
+      19_600_000,
+      260_400_000 + min_utxo_lovelace,
+      190_000_000 + min_utxo_lovelace,
+      1,
+      90_000_000,
+      min_utxo_lovelace,
+      3_333,
+    ),
+    underwrite_ok_with_utilisation(
+      old,
+      new,
+      90_000_000,
+      20_000_000,
+      19_600_000,
+      260_400_000 + min_utxo_lovelace,
+      190_000_000 + min_utxo_lovelace,
+      1,
+      90_000_000,
+      min_utxo_lovelace,
+      3_334,
+    ),
+  }
+}
+
+/// Validator-level proof that the exact one-third transaction is rejected by
+/// the genesis registry's 3333-bps setting after the candidate is wired in.
+test sv_underwrite_governed_3333_refuses_exact_one_third_boundary() {
+  let old = sv_state(1000, 0, 10_000_000)
+  let new = sv_state(1000, 90_000_000, 10_000_000)
+  let pd =
+    PolicyDatum { ..sv_underwrite_policy_datum(), coverage_amount: 90_000_000 }
+  let tx = sv_underwrite_tx(
+    260_400_000 + min_utxo_lovelace,
+    old,
+    190_400_000 + min_utxo_lovelace,
+    new,
+    90_000_000,
+    pd,
+    100_000_000,
+    100_000_000,
+    sv_underwrite_terms(90_000_000),
+    1,
+  )
+  !sv_run_underwrite(old, 90_000_000, 20_000_000, tx)
+}
+
