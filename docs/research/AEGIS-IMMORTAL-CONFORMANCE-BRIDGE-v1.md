@@ -100,3 +100,13 @@ The bridge is not ready to certify until:
 - mismatches are classified as reference, fixture, projection, adapter, or chain-evidence defects.
 
 **Current result:** the universal state and kernel have been imported and the kernel test suite is registered on `b1-hardening`; its explicit Prelude import was corrected, but the suite has not been executed here because this environment cannot resolve `github.com` to clone the repository. Current-V8 Underwrite, Claim (including reserve-first), Expire, and two adversarial accounting cases are recorded as JSON fixtures. A fixture-consistency harness has been committed at `scripts/aegis_immortal_fixture_harness.py`, and a dedicated GitHub Actions workflow has passed on the expanded fixtures (11 fixtures/cases, 26 checks); it is not a differential harness or an Aiken test. Aegis source fixtures have a pinned source commit and their legacy/V8 schema mismatch is documented; the bridge remains research-only until the harness is executed, Aiken predicates/validator tests run, an approved economic mapping exists, and a genuine differential harness is completed.
+
+## 8. Governed utilisation boundary — explicit compatibility decision
+
+The pinned source sets genesis `utilisation_bps = 3333`, while the legacy accounting predicate enforced `active_coverage * 3 <= post_total`. These are not mathematically identical: 3333 bps means 33.33%, which is slightly below an exact third (33.333…%). At a post-trade total of 270,000,000 lovelace, an exact-third book of 90,000,000 lovelace satisfies the legacy predicate but fails the governed 3333-bps predicate; the governed maximum at that total is 89,991,000 lovelace. The difference is 9,000 lovelace (0.009 ADA).
+
+The candidate deliberately does **not** add a special case that silently treats 3333 as one third. The production path enforces the registry value as integer basis points; the legacy helper is retained only for compatibility tests and is not called by the production Underwrite branch. The candidate CI now includes:
+- a predicate-level boundary test proving legacy exact-third acceptance, 3333-bps refusal, and 3334-bps acceptance;
+- a validator-level transaction test proving the genesis 3333-bps configuration refuses the exact-third transaction.
+
+This is a documented, tested behavior change at the genesis boundary, not a claim of bit-for-bit economic compatibility. Whether genesis should instead be represented as 3334 bps or another governance-approved value is a separate calibration decision; the candidate does not make that decision silently. The differential test suite must be green before considering promotion. No upstream Aegis source or deployed script is changed by this research fixture.
