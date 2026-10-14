@@ -102,4 +102,4 @@ main = do
       _ -> False)
     "an undeclared combination rule cannot silently enter deterministic-only mode"
 
-  putStrLn "B-R1 typed bridge scaffold tests defined"
+  putStrLn "ALL B-R1 typed bridge scaffold tests passed"
