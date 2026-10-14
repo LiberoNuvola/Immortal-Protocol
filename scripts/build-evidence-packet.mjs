@@ -34,6 +34,7 @@ const secretPatterns = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/gi,
   /\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g,
 ];
+const ansiEscapePattern = /\u001b\[[0-?]*[ -/]*[@-~]/g;
 const textExtensions = new Set([
   ".txt", ".log", ".json", ".jsonl", ".yaml", ".yml", ".toml", ".md",
   ".csv", ".tsv", ".xml", ".html", ".js", ".mjs", ".ts", ".hs", ".conf",
@@ -62,7 +63,18 @@ async function walk(dir, relative = "") {
     let redactions = 0;
     if (textExtensions.has(ext) || !raw.includes(0)) {
       let text = raw.toString("utf8");
-      for (const pattern of secretPatterns) {
+      // Detect the secret-bearing line with ANSI controls stripped, then redact
+      // that whole original line (including any color codes).
+      text = text.replace(/[^\r\n]*(?:\r?\n|$)/g, (line) => {
+        if (!line) return line;
+        const normalized = line.replace(ansiEscapePattern, "");
+        if (/\b(?:mnemonic|recovery phrase|seed phrase)\b/i.test(normalized)) {
+          redactions += 1;
+          return "[REDACTED_SECRET]" + (line.endsWith("\n") ? "\n" : "");
+        }
+        return line;
+      });
+      for (const pattern of secretPatterns.filter((p) => !p.source.includes("mnemonic|recovery phrase|seed phrase"))) {
         text = text.replace(pattern, (match) => {
           redactions += 1;
           return "[REDACTED_SECRET]";
