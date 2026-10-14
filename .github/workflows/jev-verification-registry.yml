@@ -29,3 +29,5 @@ jobs:
           node-version: "22"
       - name: Test registry validation and negative cases
         run: node scripts/test-jev-verification-registry.mjs
+      - name: Validate historical run 1718 registry fixture
+        run: node scripts/validate-jev-verification-registry.mjs audit/jev/registry-run-1718-attempt-2.json
