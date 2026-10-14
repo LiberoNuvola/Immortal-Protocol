@@ -30,6 +30,7 @@ const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 const secretPatterns = [
   /\b(?:ed25519e_sk1|addr_sk1|stake_sk1|payment_sk1|stake_xsk1|addr_xsk1|root_xsk1)[a-z0-9]+/gi,
   /\b(?:xprv|private[_ -]?key)\s*[:=]\s*[^\s,;]+/gi,
+  /^[^\r\n]*\b(?:mnemonic|recovery phrase|seed phrase)\b[^\r\n]*$/gim,
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/gi,
   /\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g,
 ];
