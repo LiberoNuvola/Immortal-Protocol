@@ -699,8 +699,12 @@ if (typeof originalNewPartialWitness !== 'function' ||
 let referenceWitnessInterceptions = 0
 const referenceWitnessHashes: string[] = []
 const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
-  const hashHex = witness.hash().to_hex()
-  if (referenceScriptHashes.has(hashHex)) {
+  // PartialPlutusWitness.new receives a PlutusScriptWitness, not a PlutusScript.
+  // Resolve the script variant before asking it for the ledger script hash.
+  const script = witness?.as_script?.()
+  const hash = script?.hash?.()
+  const hashHex = hash?.to_hex?.()
+  if (hashHex && referenceScriptHashes.has(hashHex)) {
     referenceWitnessInterceptions += 1
     referenceWitnessHashes.push(hashHex)
     console.log(JSON.stringify({
@@ -711,7 +715,7 @@ const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: an
     }))
     return originalNewPartialWitness.call(
       partialWitnessFactory,
-      newReferenceWitness.call(plutusWitnessFactory, witness.hash()),
+      newReferenceWitness.call(plutusWitnessFactory, hash),
       redeemer,
     )
   }
