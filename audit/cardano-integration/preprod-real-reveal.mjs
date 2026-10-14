@@ -248,13 +248,14 @@ await writeFile(EVIDENCE_DIR + '/cml-prize-datum-probe.json', JSON.stringify({ s
 // Provider-native UTxOs from getUtxosByOutRef are passed untouched to Collect.
 let reveal = await lucid.newTx()
   .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
-  .readFrom([prizeReferenceUtxo])
-  .attach.SpendingValidator(scripts.prizeValidator)
+  // Both validators are resolved from deployed reference-script UTxOs.
+  // Do not attach either validator here: that embeds inline witnesses and
+  // recreates the transaction-size failure this path is meant to prevent.
+  .readFrom([prizeReferenceUtxo, poolReferenceUtxo])
   .complete({ localUPLCEval: false })
 
 reveal = await reveal
   .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
-  .attach.SpendingValidator(scripts.b1PrizePool)
   .complete({ localUPLCEval: false })
 
 reveal = await reveal
