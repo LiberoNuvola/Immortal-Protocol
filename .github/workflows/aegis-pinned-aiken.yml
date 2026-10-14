@@ -111,6 +111,8 @@ jobs:
               ("pool_vault", "sv_underwrite_governed_parameter_utilisation_2500_refuses"),
               ("pool_vault", "sv_underwrite_governed_parameter_ratio_anchor_green"),
               ("pool_vault", "sv_underwrite_governed_parameter_ratio_2x_refuses"),
+              ("pool_vault", "sv_underwrite_governed_parameter_exact_one_third_boundary"),
+              ("pool_vault", "sv_underwrite_governed_parameter_3333_refuses_exact_one_third_boundary"),
           }
           observed = {}
           for module in report.get("modules", []):
