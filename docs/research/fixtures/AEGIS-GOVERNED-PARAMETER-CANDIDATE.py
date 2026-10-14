@@ -43,20 +43,17 @@ def main() -> int:
 
     # 1. Expose an exact parameterized coverage/premium predicate while
     # preserving the old 50x helper for legacy default-profile unit tests.
-    old_pricing = """/// Verify that the coverage-to-premium ratio does not exceed the maximum.
-/// Maximum ratio is 50x (coverage cannot be more than 50x the premium).
-/// This prevents extremely leveraged policies that could drain the pool.
-///
-/// Use multiplication-style comparison instead of integer
-/// division. The previous coverage / premium <= 50 truncated, allowing
-/// coverage = premium * 50 + 1 to slip through (e.g., premium=2 ADA,
-/// coverage=100.000001 ADA -> 100_000_001 / 2_000_000 = 50 truncated,
-/// passes). Multiplication-form is exact: coverage <= premium * 50.
-pub fn is_ratio_acceptable(premium: Int, coverage: Int) -> Bool {
+    # Replace only the function definition, not its surrounding prose: exact
+    # Unicode punctuation in upstream comments is intentionally left untouched.
+    old_pricing = """pub fn is_ratio_acceptable(premium: Int, coverage: Int) -> Bool {
   premium > 0 && coverage <= premium * max_coverage_ratio
 }
 """
-    new_pricing = """/// Exact governed coverage/premium predicate used by the immutable vault.
+    new_pricing = """pub fn is_ratio_acceptable(premium: Int, coverage: Int) -> Bool {
+  is_ratio_acceptable_with_limit(premium, coverage, max_coverage_ratio)
+}
+
+/// Exact governed coverage/premium predicate used by the immutable vault.
 /// Multiplication avoids integer-division truncation at the configured boundary.
 pub fn is_ratio_acceptable_with_limit(
   premium: Int,
@@ -65,12 +62,6 @@ pub fn is_ratio_acceptable_with_limit(
 ) -> Bool {
   premium > 0 && max_coverage_ratio_b > 0
     && coverage <= premium * max_coverage_ratio_b
-}
-
-/// Legacy default-profile helper. The production Underwrite path passes the
-/// registry's rail-checked budgets.max_coverage_ratio explicitly instead.
-pub fn is_ratio_acceptable(premium: Int, coverage: Int) -> Bool {
-  is_ratio_acceptable_with_limit(premium, coverage, max_coverage_ratio)
 }
 """
     pricing = replace_once(pricing, old_pricing, new_pricing, "pricing ratio predicate")
