@@ -35,8 +35,29 @@ jobs:
       - name: Report compiler version
         run: aiken --version
 
+      # Cache key includes every source, lock/config file and this workflow.
+      # An exact hit means these exact inputs already passed check + build.
+      - name: Restore validated Aiken artifacts
+        id: aiken-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            poc/aiken-reveal-parity/.aiken
+            poc/aiken-reveal-parity/build
+            poc/aiken-reveal-parity/plutus.json
+          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', '.github/workflows/aiken-reveal-parity.yml') }}
+
+      - name: Reuse validated artifacts
+        if: steps.aiken-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Exact source/config/workflow hash already passed aiken check and aiken build."
+          test -f plutus.json
+          echo "Reusing cached compiler artifacts; no rebuild required."
+
       - name: Run parity tests
+        if: steps.aiken-cache.outputs.cache-hit != 'true'
         run: aiken check
 
       - name: Compile package
+        if: steps.aiken-cache.outputs.cache-hit != 'true'
         run: aiken build
