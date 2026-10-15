@@ -26,6 +26,12 @@ assert.match(JSON.stringify(blocks), /0123456789abcdef/);
 assert.match(JSON.stringify(blocks), /sha256:abc123/);
 assert.match(JSON.stringify(blocks), /does not imply that the Integration Lab passed/);
 
+const promptBlocks = buildEvidenceBlocks(baseEnv, "JEV OPERATIONAL PROMPT\nInspect run evidence; do not infer root cause.");
+assert.equal(promptBlocks.length, 8);
+assert.match(JSON.stringify(promptBlocks), /JEV operational prompt — run #1714/);
+assert.match(JSON.stringify(promptBlocks), /do not infer root cause/);
+assert.ok(promptBlocks.every((block) => JSON.stringify(block).length < 5000));
+
 let called = false;
 const success = await registerEvidenceInNotion({
   env: { ...baseEnv },
@@ -46,7 +52,23 @@ const success = await registerEvidenceInNotion({
   },
 });
 assert.equal(called, true);
-assert.deepEqual(success, { skipped: false, blockCount: 6 });
+assert.deepEqual(success, { skipped: false, blockCount: 6, promptRegistered: false });
+
+const promptResult = await registerEvidenceInNotion({
+  env: { ...baseEnv, JEV_OPERATIONAL_PROMPT: "Inspect run evidence; do not infer root cause." },
+  log: () => {},
+  fetchImpl: async (_url, options) => {
+    const sent = JSON.parse(options.body);
+    assert.equal(sent.children.length, 8);
+    assert.match(JSON.stringify(sent.children), /do not infer root cause/);
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ results: sent.children.map((_, i) => ({ id: String(i) })) }),
+    };
+  },
+});
+assert.deepEqual(promptResult, { skipped: false, blockCount: 8, promptRegistered: true });
 
 let skipLogged = "";
 const skipped = await registerEvidenceInNotion({
