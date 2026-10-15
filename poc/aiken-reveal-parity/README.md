@@ -2,11 +2,15 @@
 
 **Status:** isolated first-stage parity harness; not a production validator and not deployable.
 
-This package starts a controlled Aiken implementation path for Cardano without changing the IMMORTAL normative kernel, the existing Haskell validator, V3, Reveal semantics, or any deployed artifact.
+This package starts a controlled Aiken implementation path for Cardano without changing the IMMORTAL normative kernel, the existing Haskell validator, V3 carrier, Reveal semantics, or any deployed artifact.
 
 ## Why this exists
 
 The current Integration Lab failed at Reveal with a transaction size of 18,051 bytes against Cardano's 16,384-byte limit. The run's diagnostic output confirmed the reference-script publication path was reached. Aiken is being evaluated as an alternative implementation language for the Cardano on-chain validator, not as a change to IMMORTAL's economic rules.
+
+## Important compatibility constraint
+
+Aiken currently supports Plutus V3 only. The existing Haskell Reveal validator is explicitly compiled as Plutus V2. Therefore an Aiken port is **not a drop-in language replacement**: a complete Aiken Reveal implementation would be a Plutus V3 script and must pass a separately gated V2-to-V3 compatibility review, including target-ledger support, context encoding, cost model, transaction behavior, and datum/redeemer compatibility. The existing V3 carrier is not being changed by this experiment.
 
 ## Current scope
 
@@ -34,14 +38,15 @@ No production artifact may be switched to this package until the complete behavi
 
 ## Reproducibility
 
-Compiler is pinned to Aiken `v1.1.22`; the package targets Plutus V2 to match the current Reveal implementation. CI runs `aiken check` and `aiken build` only. It does not deploy, mint, or submit transactions.
+Compiler is pinned to Aiken `v1.1.22`; this isolated harness targets Plutus V3 because Aiken does not support V2. This target-version difference must remain explicit in every size/cost comparison. CI runs `aiken check` and `aiken build` only. It does not deploy, mint, or submit transactions.
 
 ## Acceptance gates
 
 - All Aiken parity tests pass.
 - Fixed vectors from Haskell and Aiken produce identical outputs.
 - Negative tests reject the same invalid states.
-- Compiled script and complete transaction sizes are measured against the current baseline.
-- CPU and memory costs are recorded.
+- V2-to-V3 compatibility review passes for the intended target ledger.
+- Compiled script and complete transaction sizes are measured against the current baseline, with script versions labelled.
+- CPU and memory costs are recorded with their cost model/version.
 - Yaci ledger integration passes.
-- IMMORTAL economic invariants and V3 remain unchanged.
+- IMMORTAL economic invariants and the existing V3 carrier remain unchanged.
