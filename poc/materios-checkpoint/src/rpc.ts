@@ -10,6 +10,13 @@ import { extractSelectionInputsCommitment, type SelectionInputsCommitment } from
 
 export type JsonRpcId = number | string;
 
+export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
+
+export type ChainBlockJustifications = {
+  readonly blockNumber: string;
+  readonly justifications: string[];
+};
+
 type JsonRpcError = {
 code: number;
 message: string;
@@ -316,14 +323,6 @@ return requireHex(value, `state_call(${method})`);
 
 
 }
-}
-
-export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
-
-export type ChainBlockJustifications = {
-  readonly blockNumber: string;
-  readonly justifications: string[];
-};
 
 /**
  * Read a GRANDPA justification already attached to an exact block.
@@ -398,7 +397,7 @@ async getGrandpaJustificationAtBlock(
 
   return grandpa[0] ?? null;
 }
-
+}
 
 export type SubstrateHeader = {
 parentHash: string;
