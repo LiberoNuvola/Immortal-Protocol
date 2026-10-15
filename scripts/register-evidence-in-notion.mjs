@@ -123,10 +123,25 @@ export async function registerEvidenceInNotion({
 
   const pageId = env.NOTION_EVIDENCE_PAGE_ID || DEFAULT_PAGE_ID;
   let operationalPrompt = env.JEV_OPERATIONAL_PROMPT || "";
+  let promptReadError = "";
   if (!operationalPrompt && env.JEV_OPERATIONAL_PROMPT_PATH) {
-    operationalPrompt = await readFileImpl(env.JEV_OPERATIONAL_PROMPT_PATH, "utf8");
+    try {
+      operationalPrompt = await readFileImpl(env.JEV_OPERATIONAL_PROMPT_PATH, "utf8");
+    } catch (error) {
+      promptReadError = error && typeof error === "object" && "code" in error ? String(error.code) : "read-error";
+      log("JEV operational prompt unavailable; preserving evidence registration (" + promptReadError + ").");
+    }
   }
   const blocks = buildEvidenceBlocks(env, operationalPrompt);
+  if (!operationalPrompt.trim() && env.JEV_PROMPT_STATUS && env.JEV_PROMPT_STATUS !== "success") {
+    blocks.push({
+      object: "block",
+      type: "paragraph",
+      paragraph: {
+        rich_text: [richText("JEV operational prompt not published: generation step status " + env.JEV_PROMPT_STATUS + (promptReadError ? " (" + promptReadError + ")" : "") + ". Evidence registration succeeded or failed independently; investigate prompt generation before claiming the loop is complete.")],
+      },
+    });
+  }
   const response = await fetchImpl("https://api.notion.com/v1/blocks/" + pageId + "/children", {
     method: "PATCH",
     headers: {
