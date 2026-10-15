@@ -114,7 +114,7 @@ jobs:
               limitations,
             },
           ];
-          await fs.writeFile('jev-evidence/registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\\n');
+          await fs.writeFile('jev-evidence/registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\n');
           NODE
           node ../../scripts/jev-verification-registry-generator.mjs jev-evidence/registry-input.json jev-evidence/verification-registry.json
           node ../../scripts/build-jev-operational-prompt.mjs jev-evidence/verification-registry.json jev-evidence/operational-prompt.md
