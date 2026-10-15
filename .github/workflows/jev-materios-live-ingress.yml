@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout audited branch
+      - name: Checkout workflow-triggering commit
         uses: actions/checkout@v4
         with:
-          ref: work/immortal-green-closure
+          ref: ${{ github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
