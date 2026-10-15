@@ -62,18 +62,14 @@ jobs:
           set +e
           printf 'AIKEN_COMMAND=aiken check\nAIKEN_VERSION=' > aiken-check.log
           aiken --version >> aiken-check.log 2>&1
-          RUST_BACKTRACE=full aiken check > aiken-check.stdout.log 2> aiken-check.stderr.log
+          script -qec 'RUST_BACKTRACE=full aiken check' /dev/null > aiken-check.tty.log 2>&1
           status=$?
           {
             printf '\nAIKEN_CHECK_EXIT=%s\n' "$status"
-            printf 'AIKEN_CHECK_STDOUT_BYTES='
-            wc -c < aiken-check.stdout.log
-            printf 'AIKEN_CHECK_STDERR_BYTES='
-            wc -c < aiken-check.stderr.log
-            printf '\n--- stdout ---\n'
-            cat aiken-check.stdout.log
-            printf '\n--- stderr ---\n'
-            cat aiken-check.stderr.log
+            printf 'AIKEN_CHECK_TTY_LOG_BYTES='
+            wc -c < aiken-check.tty.log
+            printf '\n--- pseudo-terminal output ---\n'
+            cat aiken-check.tty.log
           } >> aiken-check.log
           cat aiken-check.log
           exit "$status"
@@ -84,20 +80,16 @@ jobs:
         shell: bash
         run: |
           set +e
-          RUST_BACKTRACE=full aiken build > aiken-build.stdout.log 2> aiken-build.stderr.log
+          script -qec 'RUST_BACKTRACE=full aiken build' /dev/null > aiken-build.tty.log 2>&1
           status=$?
           {
             printf 'AIKEN_COMMAND=aiken build\nAIKEN_VERSION='
             aiken --version
             printf 'AIKEN_BUILD_EXIT=%s\n' "$status"
-            printf 'AIKEN_BUILD_STDOUT_BYTES='
-            wc -c < aiken-build.stdout.log
-            printf 'AIKEN_BUILD_STDERR_BYTES='
-            wc -c < aiken-build.stderr.log
-            printf '\n--- stdout ---\n'
-            cat aiken-build.stdout.log
-            printf '\n--- stderr ---\n'
-            cat aiken-build.stderr.log
+            printf 'AIKEN_BUILD_TTY_LOG_BYTES='
+            wc -c < aiken-build.tty.log
+            printf '\n--- pseudo-terminal output ---\n'
+            cat aiken-build.tty.log
           } > aiken-build.log
           cat aiken-build.log
           exit "$status"
@@ -130,7 +122,7 @@ jobs:
           (
             cd "$smoke_dir"
             aiken --version
-            RUST_BACKTRACE=full aiken check
+            script -qec 'RUST_BACKTRACE=full aiken check' /dev/null
           ) > aiken-smoke.stdout.log 2> aiken-smoke.stderr.log
           status=$?
           {
@@ -181,7 +173,7 @@ jobs:
           (
             cd "$smoke_dir"
             aiken --version
-            RUST_BACKTRACE=full aiken check
+            script -qec 'RUST_BACKTRACE=full aiken check' /dev/null
           ) > aiken-stdlib-smoke.stdout.log 2> aiken-stdlib-smoke.stderr.log
           status=$?
           {
@@ -235,7 +227,7 @@ jobs:
           (
             cd "$smoke_dir"
             aiken --version
-            RUST_BACKTRACE=full aiken check
+            script -qec 'RUST_BACKTRACE=full aiken check' /dev/null
           ) > aiken-stdlib-compat.stdout.log 2> aiken-stdlib-compat.stderr.log
           status=$?
           {
@@ -321,9 +313,11 @@ jobs:
             poc/aiken-reveal-parity/aiken-check.log
             poc/aiken-reveal-parity/aiken-check.stdout.log
             poc/aiken-reveal-parity/aiken-check.stderr.log
+            poc/aiken-reveal-parity/aiken-check.tty.log
             poc/aiken-reveal-parity/aiken-build.log
             poc/aiken-reveal-parity/aiken-build.stdout.log
             poc/aiken-reveal-parity/aiken-build.stderr.log
+            poc/aiken-reveal-parity/aiken-build.tty.log
             poc/aiken-reveal-parity/aiken-smoke.log
             poc/aiken-reveal-parity/aiken-smoke.stdout.log
             poc/aiken-reveal-parity/aiken-smoke.stderr.log
