@@ -13,11 +13,14 @@
 
 import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, applyParamsToScript as evolutionApplyParamsToScript, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
-import * as RawCML from '@anastasia-labs/cardano-multiplatform-lib-nodejs'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
+import {
+  assertRevealUsesReferenceScripts,
+  bindPublishedReferenceScript,
+} from './revealReferenceScripts'
 import {
   defaultPrizeTable,
   generateSymbols,
@@ -656,88 +659,35 @@ const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceH
 if (!prizeReferenceUtxo || !poolReferenceUtxo) {
   throw new Error('reference-script UTxOs were not materialized on Yaci')
 }
-// Some provider versions rehydrate a valid reference-script output without
-// decoding scriptRef. Restore only the already-known script bytes on the local
-// UTxO object; the selected output remains the exact Yaci ledger output.
-const prizeReferenceInput = {
-  ...prizeReferenceUtxo,
-  scriptRef: (prizeReferenceUtxo as any).scriptRef ?? scripts.prizeValidator,
-}
-const poolReferenceInput = {
-  ...poolReferenceUtxo,
-  scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
-}
 
-const expectedPrizeHash = validatorToScriptHash(scripts.prizeValidator as Script)
-const expectedPoolHash = validatorToScriptHash(scripts.b1PrizePool as Script)
-if (validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
-  throw new Error('PrizeValidator reference script hash mismatch')
-}
-if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
-  throw new Error('B1PrizePool reference script hash mismatch')
-}
-
-// Lucid Evolution 0.6.5 resolves a validator from readFrom(), but its
-// Collect.toPartial() still constructs PlutusScriptWitness.new_script(script).
-// Convert only the two verified script hashes to reference witnesses at the
-// exact PartialPlutusWitness boundary. Patch the raw CML module used internally
-// by Lucid, rather than relying on the CML re-export from the public package.
-const referenceScriptHashes = new Set([expectedPrizeHash, expectedPoolHash])
-const plutusWitnessFactory = (RawCML as any).PlutusScriptWitness
-const partialWitnessFactory = (RawCML as any).PartialPlutusWitness
-const originalNewPartialWitness = partialWitnessFactory?.new
-const newReferenceWitness = plutusWitnessFactory?.new_ref
-const partialNewDescriptor = partialWitnessFactory
-  ? Object.getOwnPropertyDescriptor(partialWitnessFactory, 'new')
-  : undefined
-if (typeof originalNewPartialWitness !== 'function' ||
-    typeof newReferenceWitness !== 'function' ||
-    !partialNewDescriptor ||
-    (partialNewDescriptor.writable !== true && partialNewDescriptor.configurable !== true)) {
-  throw new Error('CML reference-witness hook is not safely patchable')
-}
-let referenceWitnessInterceptions = 0
-const referenceWitnessHashes: string[] = []
-const wrappedNewPartialWitness = function (this: any, witness: any, redeemer: any) {
-  // CML PlutusScriptWitness exposes hash() directly for both embedded and
-  // reference variants; do not call enum accessors that are not in the pinned API.
-  const hash = witness?.hash?.()
-  const hashHex = hash?.to_hex?.()
-  if (hashHex && referenceScriptHashes.has(hashHex)) {
-    referenceWitnessInterceptions += 1
-    referenceWitnessHashes.push(hashHex)
-    console.log(JSON.stringify({
-      revealDiag: 'reference-script-witness',
-      mode: 'hash-only',
-      scriptHash: hashHex,
-      interception: referenceWitnessInterceptions,
-    }))
-    return originalNewPartialWitness.call(
-      partialWitnessFactory,
-      newReferenceWitness.call(plutusWitnessFactory, hash),
-      redeemer,
-    )
-  }
-  return originalNewPartialWitness.call(partialWitnessFactory, witness, redeemer)
-}
-Object.defineProperty(partialWitnessFactory, 'new', {
-  ...partialNewDescriptor,
-  value: wrappedNewPartialWitness,
+// Bind each reference UTxO to the exact accepted publication transaction.
+// The helper verifies transaction body hash, output index/address and expected
+// script bytes from CBOR before populating scriptRef as a local resolution hint.
+const prizeReferenceInput = bindPublishedReferenceScript({
+  purpose: 'PrizeValidator',
+  publishedTxCbor: prizeReferenceSigned.toCBOR(),
+  expectedScript: scripts.prizeValidator,
+  referenceAddress,
+  utxo: prizeReferenceUtxo,
 })
-console.log(JSON.stringify({
-  revealDiag: 'reference-witness-hook-installed',
-  installed: partialWitnessFactory.new === wrappedNewPartialWitness,
-  module: '@anastasia-labs/cardano-multiplatform-lib-nodejs',
-  expectedReferenceHashes: [...referenceScriptHashes].sort(),
-}))
+const poolReferenceInput = bindPublishedReferenceScript({
+  purpose: 'B1PrizePool',
+  publishedTxCbor: poolReferenceSigned.toCBOR(),
+  expectedScript: scripts.b1PrizePool,
+  referenceAddress,
+  utxo: poolReferenceUtxo,
+})
+
+const prizeRevealRedeemer = Data.to(c(1, [toHex(playerSecret)]))
+const poolRevealRedeemer = Data.to(c(2, [PRICE_USDM]))
+const postPrizeDatumCbor = Data.to(postPrizeDatum)
+const postPoolDatumCbor = Data.to(postPoolDatum)
 
 const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
-  .collectFrom([prizeUtxo], Data.to(c(1, [toHex(playerSecret)])))
-  .attach.SpendingValidator(scripts.prizeValidator)
-  .collectFrom([poolUtxo], Data.to(c(2, [PRICE_USDM])))
-  .attach.SpendingValidator(scripts.b1PrizePool)
+  .collectFrom([prizeUtxo], prizeRevealRedeemer)
+  .collectFrom([poolUtxo], poolRevealRedeemer)
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
@@ -751,66 +701,46 @@ const revealBuilder = lucid
   .addSigner(address)
   .validTo(Number(revealValidTo()))
 
-let reveal: any
-try {
-  reveal = await revealBuilder.complete({ localUPLCEval: false })
-} catch (error) {
-  console.log(JSON.stringify({
-    revealDiag: 'reference-script-complete-failed',
-    referenceWitnessInterceptions,
-    referenceWitnessHashes,
-    expectedReferenceHashes: [...referenceScriptHashes].sort(),
-    error: String(error),
-  }))
-  throw error
-}
+const reveal: any = await revealBuilder.complete({ localUPLCEval: false })
 
 {
   const builtCbor = reveal.toCBOR()
-
-  // Fail closed before Yaci evaluation/sign/submit unless the actual serialized
-  // transaction proves both reference witnesses were intercepted and no Plutus
-  // validator bytecode remains embedded in the witness set.
-  const builtTx = CML.Transaction.from_cbor_hex(builtCbor)
-  const builtWitnessSet = builtTx.witness_set()
-  const embeddedScriptCounts = Object.fromEntries(
-    (['plutus_v1_scripts', 'plutus_v2_scripts', 'plutus_v3_scripts'] as const).map((method) => {
-      const collection = (builtWitnessSet as any)[method]?.()
-      if (collection == null) return [method, 0]
-      if (typeof collection.len !== 'function') {
-        throw new Error('Cannot inspect serialized Reveal witness collection: ' + method)
-      }
-      return [method, Number(collection.len())]
-    }),
-  )
-  const embeddedScriptTotal = Object.values(embeddedScriptCounts).reduce(
-    (total, count) => total + Number(count), 0,
-  )
-  const builtTxBytes = Buffer.from(builtCbor, 'hex').length
-  const expectedReferenceHashes = [...referenceScriptHashes].sort()
-  const interceptedReferenceHashes = [...new Set(referenceWitnessHashes)].sort()
-  const preflightEvidence = {
+  if (typeof protocolParameters.maxTxSize !== 'number') {
+    throw new Error('Reveal reference-script preflight cannot verify active maxTxSize')
+  }
+  const preflightEvidence = assertRevealUsesReferenceScripts(builtCbor, {
+    maxTxSize: protocolParameters.maxTxSize,
+    references: [
+      { txHash: prizeReferenceHash, index: prizeReferenceUtxo.outputIndex },
+      { txHash: poolReferenceHash, index: poolReferenceUtxo.outputIndex },
+    ],
+    spends: [
+      {
+        txHash: prizeUtxo.txHash,
+        index: prizeUtxo.outputIndex,
+        redeemerCbor: prizeRevealRedeemer,
+      },
+      {
+        txHash: poolUtxo.txHash,
+        index: poolUtxo.outputIndex,
+        redeemerCbor: poolRevealRedeemer,
+      },
+    ],
+    outputs: [
+      {
+        address: scripts.prizeAddress as string,
+        inlineDatumCbor: postPrizeDatumCbor,
+      },
+      {
+        address: scripts.b1PrizePoolAddress as string,
+        inlineDatumCbor: postPoolDatumCbor,
+      },
+    ],
+  })
+  console.log(JSON.stringify({
     revealDiag: 'reference-script-preflight',
-    expectedReferenceHashes,
-    interceptedReferenceHashes,
-    interceptionCount: referenceWitnessInterceptions,
-    embeddedScriptCounts,
-    embeddedScriptTotal,
-    bytes: builtTxBytes,
-    maxTxSize: protocolParameters.maxTxSize ?? null,
-  }
-  console.log(JSON.stringify(preflightEvidence))
-  if (referenceWitnessInterceptions !== 2 ||
-      interceptedReferenceHashes.length !== 2 ||
-      expectedReferenceHashes.some((hash, index) => interceptedReferenceHashes[index] !== hash)) {
-    throw new Error('Reveal reference-script preflight failed: both expected script hashes were not intercepted exactly')
-  }
-  if (embeddedScriptTotal !== 0) {
-    throw new Error('Reveal reference-script preflight failed: serialized witness set still embeds Plutus scripts')
-  }
-  if (typeof protocolParameters.maxTxSize !== 'number' || builtTxBytes > protocolParameters.maxTxSize) {
-    throw new Error('Reveal reference-script preflight failed: serialized transaction exceeds or cannot verify maxTxSize')
-  }
+    ...preflightEvidence,
+  }))
   writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
   const reEvaluated = await evaluateYaciTx(builtCbor, []).catch((e: unknown) => ({ evaluationError: String(e).slice(0, 600) }))
   const finalDescription = describeTx(builtCbor)
