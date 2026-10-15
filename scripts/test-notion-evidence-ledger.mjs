@@ -70,6 +70,23 @@ const promptResult = await registerEvidenceInNotion({
 });
 assert.deepEqual(promptResult, { skipped: false, blockCount: 8, promptRegistered: true });
 
+const promptMissing = await registerEvidenceInNotion({
+  env: { ...baseEnv, JEV_OPERATIONAL_PROMPT_PATH: "missing-prompt.md", JEV_PROMPT_STATUS: "failure" },
+  log: () => {},
+  readFileImpl: async () => { const error = new Error("missing"); error.code = "ENOENT"; throw error; },
+  fetchImpl: async (_url, options) => {
+    const sent = JSON.parse(options.body);
+    assert.equal(sent.children.length, 7);
+    assert.match(JSON.stringify(sent.children), /operational prompt not published/i);
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ results: sent.children.map((_, i) => ({ id: String(i) })) }),
+    };
+  },
+});
+assert.deepEqual(promptMissing, { skipped: false, blockCount: 7, promptRegistered: false });
+
 let skipLogged = "";
 const skipped = await registerEvidenceInNotion({
   env: { ...baseEnv, NOTION_API_KEY: "" },
