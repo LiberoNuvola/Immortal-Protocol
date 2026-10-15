@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
 
 const NOTION_VERSION = "2022-06-28";
 const DEFAULT_PAGE_ID = "3e2c4454-d6d5-819c-bec1-c6edede714b3";
@@ -9,7 +10,13 @@ function richText(content, url) {
   return { type: "text", text };
 }
 
-export function buildEvidenceBlocks(env) {
+function splitText(value, max = 1800) {
+  const chunks = [];
+  for (let offset = 0; offset < value.length; offset += max) chunks.push(value.slice(offset, offset + max));
+  return chunks.length ? chunks : [""];
+}
+
+export function buildEvidenceBlocks(env, operationalPrompt = "") {
   const runId = env.GITHUB_RUN_ID;
   const runUrl = env.RUN_URL;
   const artifactUrl = env.ARTIFACT_URL;
@@ -26,7 +33,7 @@ export function buildEvidenceBlocks(env) {
   const branch = env.GITHUB_REF || "unknown";
   const attempt = env.GITHUB_RUN_ATTEMPT || "1";
 
-  return [
+  const blocks = [
     {
       object: "block",
       type: "heading_3",
@@ -83,11 +90,29 @@ export function buildEvidenceBlocks(env) {
       },
     },
   ];
+
+  const prompt = typeof operationalPrompt === "string" ? operationalPrompt.trim() : "";
+  if (prompt) {
+    blocks.push({
+      object: "block",
+      type: "heading_3",
+      heading_3: { rich_text: [richText("JEV operational prompt — run #" + runNumber)] },
+    });
+    for (const chunk of splitText(prompt)) {
+      blocks.push({
+        object: "block",
+        type: "paragraph",
+        paragraph: { rich_text: [richText(chunk)] },
+      });
+    }
+  }
+  return blocks;
 }
 
 export async function registerEvidenceInNotion({
   env = process.env,
   fetchImpl = fetch,
+  readFileImpl = readFile,
   log = console.log,
 } = {}) {
   const token = env.NOTION_API_KEY;
@@ -97,7 +122,11 @@ export async function registerEvidenceInNotion({
   }
 
   const pageId = env.NOTION_EVIDENCE_PAGE_ID || DEFAULT_PAGE_ID;
-  const blocks = buildEvidenceBlocks(env);
+  let operationalPrompt = env.JEV_OPERATIONAL_PROMPT || "";
+  if (!operationalPrompt && env.JEV_OPERATIONAL_PROMPT_PATH) {
+    operationalPrompt = await readFileImpl(env.JEV_OPERATIONAL_PROMPT_PATH, "utf8");
+  }
+  const blocks = buildEvidenceBlocks(env, operationalPrompt);
   const response = await fetchImpl("https://api.notion.com/v1/blocks/" + pageId + "/children", {
     method: "PATCH",
     headers: {
@@ -125,7 +154,7 @@ export async function registerEvidenceInNotion({
   }
 
   log("Notion evidence ledger updated with run #" + (env.GITHUB_RUN_NUMBER || env.GITHUB_RUN_ID) + ".");
-  return { skipped: false, blockCount: payload.results.length };
+  return { skipped: false, blockCount: payload.results.length, promptRegistered: Boolean(operationalPrompt.trim()) };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
