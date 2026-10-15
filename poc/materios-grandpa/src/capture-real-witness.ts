@@ -596,6 +596,104 @@ async function getBlockByNumber(
   return { hash, signed };
 }
 
+async function waitForJustificationNotification(
+  timeoutMs = 120_000,
+): Promise<{ blockHash: string; justificationHex: string }> {
+  const endpoint =
+    process.env.MATERIOS_WS_RPC ??
+    RPC.replace(/^https:/, "wss:").replace(/^http:/, "ws:");
+
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    let subscribed = false;
+    const socket = new WebSocket(endpoint);
+    const timeout = setTimeout(() => {
+      finish(new Error("GRANDPA_WEBSOCKET_JUSTIFICATION_TIMEOUT"));
+    }, timeoutMs);
+
+    function finish(error?: Error, result?: { blockHash: string; justificationHex: string }): void {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      try { socket.close(); } catch {}
+      if (error) reject(error);
+      else if (result) resolve(result);
+      else reject(new Error("GRANDPA_WEBSOCKET_EMPTY_RESULT"));
+    }
+
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({
+        jsonrpc: "2.0",
+        id: 7001,
+        method: "grandpa_subscribeJustifications",
+        params: [],
+      }));
+    });
+
+    socket.addEventListener("message", (event) => {
+      let message: any;
+      try {
+        message = JSON.parse(String(event.data));
+      } catch {
+        finish(new Error("GRANDPA_WEBSOCKET_INVALID_JSON"));
+        return;
+      }
+
+      if (message?.id === 7001) {
+        if (message.error) {
+          finish(new Error(
+            "grandpa_subscribeJustifications: " +
+            String(message.error.code) + " " +
+            String(message.error.message),
+          ));
+          return;
+        }
+        subscribed = true;
+        console.log("GRANDPA justification subscription accepted");
+        return;
+      }
+
+      if (message?.method !== "grandpa_justifications") return;
+      const result = message?.params?.result;
+      const blockHash =
+        Array.isArray(result) ? result[0] :
+        result && typeof result === "object" ? result.block :
+        undefined;
+      const justificationHex =
+        Array.isArray(result) ? result[1] :
+        result && typeof result === "object" ? result.justification :
+        undefined;
+
+      if (
+        !subscribed ||
+        typeof blockHash !== "string" ||
+        !/^0x[0-9a-fA-F]{64}$/.test(blockHash) ||
+        typeof justificationHex !== "string" ||
+        !/^0x[0-9a-fA-F]+$/.test(justificationHex) ||
+        (justificationHex.length - 2) % 2 !== 0
+      ) {
+        finish(new Error("GRANDPA_WEBSOCKET_MALFORMED_JUSTIFICATION_NOTIFICATION"));
+        return;
+      }
+
+      finish(undefined, {
+        blockHash: blockHash.toLowerCase(),
+        justificationHex: justificationHex.toLowerCase(),
+      });
+    });
+
+    socket.addEventListener("error", () => {
+      finish(new Error("GRANDPA_WEBSOCKET_CONNECTION_ERROR: " + endpoint));
+    });
+
+    socket.addEventListener("close", () => {
+      if (!settled) {
+        finish(new Error("GRANDPA_WEBSOCKET_CLOSED_BEFORE_JUSTIFICATION"));
+      }
+    });
+  });
+}
+
 async function getHeader(
   hash: string,
 ): Promise<SubstrateHeader> {
@@ -701,76 +799,109 @@ async function main(): Promise<void> {
     witnessSource = "chain_getBlock.justifications";
   } else {
     console.log("dense scan found no attached justification; probing grandpa_proveFinality");
-    const encodedProof = await rpc<unknown>(
-      "grandpa_proveFinality",
-      [finalizedHeightNumber],
-    );
+    let encodedProof: unknown = null;
+    try {
+      encodedProof = await rpc<unknown>(
+        "grandpa_proveFinality",
+        [finalizedHeightNumber],
+      );
+    } catch (error) {
+      const message = String(error);
+      if (!message.includes("-32601 Method not found")) throw error;
+      console.log("grandpa_proveFinality is not exposed; trying GRANDPA justification subscription");
+    }
 
     if (
-      typeof encodedProof !== "string" ||
-      !/^0x[0-9a-fA-F]+$/.test(encodedProof) ||
-      (encodedProof.length - 2) % 2 !== 0
+      typeof encodedProof === "string" &&
+      /^0x[0-9a-fA-F]+$/.test(encodedProof) &&
+      (encodedProof.length - 2) % 2 === 0
     ) {
-      throw new Error(
-        "NO_REAL_GRANDPA_JUSTIFICATION_FOUND: grandpa_proveFinality returned no encoded proof",
+      const proofReader = new ScaleReader(hexToBytes(encodedProof, "grandpa_proveFinality"));
+      const proofBlockHash = "0x" + bytesToHex(proofReader.readBytes(32));
+      const justificationLength = proofReader.readCompact();
+      if (
+        justificationLength <= 0n ||
+        justificationLength > BigInt(proofReader.remaining) ||
+        justificationLength > 16n * 1024n * 1024n
+      ) {
+        throw new Error("grandpa_proveFinality returned invalid justification length");
+      }
+      const proofJustification = proofReader.readBytes(Number(justificationLength));
+      const unknownHeaderCount = proofReader.readCompact();
+      if (unknownHeaderCount > 10_000n) {
+        throw new Error("grandpa_proveFinality returned too many unknown headers");
+      }
+      const proofHeaders = [];
+      for (let i = 0n; i < unknownHeaderCount; i += 1n) {
+        proofHeaders.push(decodeMateriosHeaderFromReader(proofReader));
+      }
+      proofReader.assertEof();
+
+      const proofHeader = await getHeader(proofBlockHash);
+      const proofBlockNumber = parseBlockNumber(
+        proofHeader.number,
+        "grandpa_proveFinality target block number",
+      );
+      const proofBlock = await rpc<SignedBlock>("chain_getBlock", [proofBlockHash]);
+      if (!proofBlock?.block?.header) {
+        throw new Error("grandpa_proveFinality target header unavailable");
+      }
+      if (parseBlockNumber(proofBlock.block.header.number, "proof target header number") !== proofBlockNumber) {
+        throw new Error("grandpa_proveFinality target header number mismatch");
+      }
+      const decodedProofJustification = decodeGrandpaJustification(proofJustification);
+      if (
+        decodedProofJustification.commit.targetNumber !== proofBlockNumber ||
+        "0x" + bytesToHex(decodedProofJustification.commit.targetHash) !== proofBlockHash
+      ) {
+        throw new Error("grandpa_proveFinality proof target does not match justification commit");
+      }
+
+      witness = {
+        blockNumber: proofBlockNumber,
+        blockHash: proofBlockHash,
+        header: proofBlock.block.header,
+        justificationHex: "0x" + bytesToHex(proofJustification),
+        justificationSha256: sha256Hex("0x" + bytesToHex(proofJustification)),
+      };
+      witnessSource = "grandpa_proveFinality";
+      console.log(
+        "decoded GRANDPA finality proof:",
+        "target=" + proofBlockNumber.toString(),
+        "unknownHeaders=" + proofHeaders.length,
+        "justificationBytes=" + proofJustification.length,
+      );
+    } else {
+      const liveWitness = await waitForJustificationNotification();
+      const liveHeader = await getHeader(liveWitness.blockHash);
+      const liveBlockNumber = parseBlockNumber(
+        liveHeader.number,
+        "GRANDPA subscription target block number",
+      );
+      const liveJustification = decodeGrandpaJustification(
+        hexToBytes(liveWitness.justificationHex, "GRANDPA subscription justification"),
+      );
+      if (
+        liveJustification.commit.targetNumber !== liveBlockNumber ||
+        "0x" + bytesToHex(liveJustification.commit.targetHash) !== liveWitness.blockHash
+      ) {
+        throw new Error("GRANDPA subscription target does not match justification commit");
+      }
+
+      witness = {
+        blockNumber: liveBlockNumber,
+        blockHash: liveWitness.blockHash,
+        header: liveHeader,
+        justificationHex: liveWitness.justificationHex,
+        justificationSha256: sha256Hex(liveWitness.justificationHex),
+      };
+      witnessSource = "grandpa_subscribeJustifications";
+      console.log(
+        "captured live GRANDPA justification:",
+        liveBlockNumber.toString(),
+        liveWitness.blockHash,
       );
     }
-
-    const proofReader = new ScaleReader(hexToBytes(encodedProof, "grandpa_proveFinality"));
-    const proofBlockHash = "0x" + bytesToHex(proofReader.readBytes(32));
-    const justificationLength = proofReader.readCompact();
-    if (
-      justificationLength <= 0n ||
-      justificationLength > BigInt(proofReader.remaining) ||
-      justificationLength > 16n * 1024n * 1024n
-    ) {
-      throw new Error("grandpa_proveFinality returned invalid justification length");
-    }
-    const proofJustification = proofReader.readBytes(Number(justificationLength));
-    const unknownHeaderCount = proofReader.readCompact();
-    if (unknownHeaderCount > 10_000n) {
-      throw new Error("grandpa_proveFinality returned too many unknown headers");
-    }
-    const proofHeaders = [];
-    for (let i = 0n; i < unknownHeaderCount; i += 1n) {
-      proofHeaders.push(decodeMateriosHeaderFromReader(proofReader));
-    }
-    proofReader.assertEof();
-
-    const proofHeader = await getHeader(proofBlockHash);
-    const proofBlockNumber = parseBlockNumber(
-      proofHeader.number,
-      "grandpa_proveFinality target block number",
-    );
-    const proofBlock = await rpc<SignedBlock>("chain_getBlock", [proofBlockHash]);
-    if (!proofBlock?.block?.header) {
-      throw new Error("grandpa_proveFinality target header unavailable");
-    }
-    if (parseBlockNumber(proofBlock.block.header.number, "proof target header number") !== proofBlockNumber) {
-      throw new Error("grandpa_proveFinality target header number mismatch");
-    }
-    const decodedProofJustification = decodeGrandpaJustification(proofJustification);
-    if (
-      decodedProofJustification.commit.targetNumber !== proofBlockNumber ||
-      "0x" + bytesToHex(decodedProofJustification.commit.targetHash) !== proofBlockHash
-    ) {
-      throw new Error("grandpa_proveFinality proof target does not match justification commit");
-    }
-
-    witness = {
-      blockNumber: proofBlockNumber,
-      blockHash: proofBlockHash,
-      header: proofBlock.block.header,
-      justificationHex: "0x" + bytesToHex(proofJustification),
-      justificationSha256: sha256Hex("0x" + bytesToHex(proofJustification)),
-    };
-    witnessSource = "grandpa_proveFinality";
-    console.log(
-      "decoded GRANDPA finality proof:",
-      "target=" + proofBlockNumber.toString(),
-      "unknownHeaders=" + proofHeaders.length,
-      "justificationBytes=" + proofJustification.length,
-    );
   }
 
   console.log(
