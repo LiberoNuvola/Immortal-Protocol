@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 import {
   decodeGrandpaJustification,
 } from "./grandpa.js";
+import { decodeMateriosHeaderFromReader } from "./ancestry.js";
 import {
   verifyFinality,
 } from "./verifier.js";
@@ -32,6 +33,7 @@ import {
 } from "./crypto.js";
 import {
   bytesToHex,
+  ScaleReader,
 } from "./scale.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -670,33 +672,112 @@ async function main(): Promise<void> {
     (block) => extractGrandpaJustification(block.signed) !== null,
   );
 
-  if (witnessedBlocks.length === 0) {
-    throw new Error(
-      "NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN",
+  let witness: {
+    blockNumber: bigint;
+    blockHash: string;
+    header: SubstrateHeader;
+    justificationHex: string;
+    justificationSha256: string;
+  };
+  let witnessSource: "chain_getBlock.justifications" | "grandpa_proveFinality";
+
+  if (witnessedBlocks.length > 0) {
+    const firstWitness = witnessedBlocks[0]!;
+    const witnessJustification = extractGrandpaJustification(
+      firstWitness.signed,
+    );
+
+    if (witnessJustification === null) {
+      throw new Error("internal witness extraction race");
+    }
+
+    witness = {
+      blockNumber: BigInt(firstWitness.number),
+      blockHash: firstWitness.hash,
+      header: firstWitness.signed.block.header,
+      justificationHex: witnessJustification,
+      justificationSha256: sha256Hex(witnessJustification),
+    };
+    witnessSource = "chain_getBlock.justifications";
+  } else {
+    console.log("dense scan found no attached justification; probing grandpa_proveFinality");
+    const encodedProof = await rpc<unknown>(
+      "grandpa_proveFinality",
+      [finalizedHeightNumber],
+    );
+
+    if (
+      typeof encodedProof !== "string" ||
+      !/^0x[0-9a-fA-F]+$/.test(encodedProof) ||
+      (encodedProof.length - 2) % 2 !== 0
+    ) {
+      throw new Error(
+        "NO_REAL_GRANDPA_JUSTIFICATION_FOUND: grandpa_proveFinality returned no encoded proof",
+      );
+    }
+
+    const proofReader = new ScaleReader(hexToBytes(encodedProof, "grandpa_proveFinality"));
+    const proofBlockHash = "0x" + bytesToHex(proofReader.readBytes(32));
+    const justificationLength = proofReader.readCompact();
+    if (
+      justificationLength <= 0n ||
+      justificationLength > BigInt(proofReader.remaining) ||
+      justificationLength > 16n * 1024n * 1024n
+    ) {
+      throw new Error("grandpa_proveFinality returned invalid justification length");
+    }
+    const proofJustification = proofReader.readBytes(Number(justificationLength));
+    const unknownHeaderCount = proofReader.readCompact();
+    if (unknownHeaderCount > 10_000n) {
+      throw new Error("grandpa_proveFinality returned too many unknown headers");
+    }
+    const proofHeaders = [];
+    for (let i = 0n; i < unknownHeaderCount; i += 1n) {
+      proofHeaders.push(decodeMateriosHeaderFromReader(proofReader));
+    }
+    proofReader.assertEof();
+
+    const proofHeader = await getHeader(proofBlockHash);
+    const proofBlockNumber = parseBlockNumber(
+      proofHeader.number,
+      "grandpa_proveFinality target block number",
+    );
+    const proofBlock = await rpc<SignedBlock>("chain_getBlock", [proofBlockHash]);
+    if (!proofBlock?.block?.header) {
+      throw new Error("grandpa_proveFinality target header unavailable");
+    }
+    if (parseBlockNumber(proofBlock.block.header.number, "proof target header number") !== proofBlockNumber) {
+      throw new Error("grandpa_proveFinality target header number mismatch");
+    }
+    const decodedProofJustification = decodeGrandpaJustification(proofJustification);
+    if (
+      decodedProofJustification.commit.targetNumber !== proofBlockNumber ||
+      "0x" + bytesToHex(decodedProofJustification.commit.targetHash) !== proofBlockHash
+    ) {
+      throw new Error("grandpa_proveFinality proof target does not match justification commit");
+    }
+
+    witness = {
+      blockNumber: proofBlockNumber,
+      blockHash: proofBlockHash,
+      header: proofBlock.block.header,
+      justificationHex: "0x" + bytesToHex(proofJustification),
+      justificationSha256: sha256Hex("0x" + bytesToHex(proofJustification)),
+    };
+    witnessSource = "grandpa_proveFinality";
+    console.log(
+      "decoded GRANDPA finality proof:",
+      "target=" + proofBlockNumber.toString(),
+      "unknownHeaders=" + proofHeaders.length,
+      "justificationBytes=" + proofJustification.length,
     );
   }
 
-  const firstWitness = witnessedBlocks[0]!;
-  const witnessJustification = extractGrandpaJustification(
-    firstWitness.signed,
-  );
-
-  if (witnessJustification === null) {
-    throw new Error("internal witness extraction race");
-  }
-
-  const witness = {
-    blockNumber: BigInt(firstWitness.number),
-    blockHash: firstWitness.hash,
-    header: firstWitness.signed.block.header,
-    justificationHex: witnessJustification,
-    justificationSha256: sha256Hex(witnessJustification),
-  };
-
   console.log(
-    "found GRANDPA justification at:",
-    firstWitness.number,
-    firstWitness.hash,
+    "found GRANDPA justification via:",
+    witnessSource,
+    witness.blockNumber.toString(),
+    witness.blockHash,
   );
 
   const authoritiesHex = await rpc<string>(
