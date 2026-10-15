@@ -198,6 +198,60 @@ jobs:
           cat aiken-stdlib-smoke.log
           exit "$status"
 
+      - name: Compare stdlib compatibility with its declared compiler
+        id: aiken-stdlib-compat
+        if: always() && steps.aiken-cache.outputs.cache-hit != 'true'
+        uses: aiken-lang/setup-aiken@v1
+        with:
+          version: v1.1.21
+
+      - name: Run stdlib smoke test on declared compiler version
+        id: aiken-stdlib-compat-check
+        if: always() && steps.aiken-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set +e
+          smoke_dir="$(mktemp -d)"
+          mkdir -p "$smoke_dir/lib"
+          cat > "$smoke_dir/aiken.toml" <<'TOML'
+          name = "immortal/aiken-stdlib-compat"
+          version = "0.0.0"
+          compiler = "v1.1.21"
+          plutus = "v3"
+          license = "Apache-2.0"
+          description = "Aiken stdlib/compiler compatibility diagnostic."
+          [[dependencies]]
+          name = "aiken-lang/stdlib"
+          version = "v3.1.0"
+          source = "github"
+          TOML
+          cat > "$smoke_dir/lib/smoke.ak" <<'AIKEN'
+          use aiken/list
+
+          test identity_smoke() {
+            list.length([42]) == 1
+          }
+          AIKEN
+          (
+            cd "$smoke_dir"
+            aiken --version
+            RUST_BACKTRACE=full aiken check
+          ) > aiken-stdlib-compat.stdout.log 2> aiken-stdlib-compat.stderr.log
+          status=$?
+          {
+            printf 'AIKEN_STDLIB_COMPAT_EXIT=%s\n' "$status"
+            printf 'AIKEN_STDLIB_COMPAT_STDOUT_BYTES='
+            wc -c < aiken-stdlib-compat.stdout.log
+            printf 'AIKEN_STDLIB_COMPAT_STDERR_BYTES='
+            wc -c < aiken-stdlib-compat.stderr.log
+            printf '\n--- stdout ---\n'
+            cat aiken-stdlib-compat.stdout.log
+            printf '\n--- stderr ---\n'
+            cat aiken-stdlib-compat.stderr.log
+          } > aiken-stdlib-compat.log
+          cat aiken-stdlib-compat.log
+          exit "$status"
+
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
       # only for the exact source/config/workflow hash in the cache key above.
       - name: Generate JEV registry for Aiken parity
@@ -276,4 +330,7 @@ jobs:
             poc/aiken-reveal-parity/aiken-stdlib-smoke.log
             poc/aiken-reveal-parity/aiken-stdlib-smoke.stdout.log
             poc/aiken-reveal-parity/aiken-stdlib-smoke.stderr.log
+            poc/aiken-reveal-parity/aiken-stdlib-compat.log
+            poc/aiken-reveal-parity/aiken-stdlib-compat.stdout.log
+            poc/aiken-reveal-parity/aiken-stdlib-compat.stderr.log
           if-no-files-found: warn
