@@ -60,11 +60,22 @@ jobs:
         shell: bash
         run: |
           set +e
-          RUST_BACKTRACE=full aiken check 2>&1 | tee aiken-check.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ] && [ ! -s aiken-check.log ]; then
-            echo "AIKEN_CHECK_EXIT=$status; compiler emitted no stdout/stderr diagnostic." | tee aiken-check.log
-          fi
+          printf 'AIKEN_COMMAND=aiken check\\nAIKEN_VERSION=' > aiken-check.log
+          aiken --version >> aiken-check.log 2>&1
+          RUST_BACKTRACE=full aiken check > aiken-check.stdout.log 2> aiken-check.stderr.log
+          status=$?
+          {
+            printf '\\nAIKEN_CHECK_EXIT=%s\\n' "$status"
+            printf 'AIKEN_CHECK_STDOUT_BYTES='
+            wc -c < aiken-check.stdout.log
+            printf 'AIKEN_CHECK_STDERR_BYTES='
+            wc -c < aiken-check.stderr.log
+            printf '\\n--- stdout ---\\n'
+            cat aiken-check.stdout.log
+            printf '\\n--- stderr ---\\n'
+            cat aiken-check.stderr.log
+          } >> aiken-check.log
+          cat aiken-check.log
           exit "$status"
 
       - name: Compile package
@@ -147,5 +158,7 @@ jobs:
             poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
             poc/aiken-reveal-parity/jev-evidence/registry-input.json
             poc/aiken-reveal-parity/aiken-check.log
+            poc/aiken-reveal-parity/aiken-check.stdout.log
+            poc/aiken-reveal-parity/aiken-check.stderr.log
             poc/aiken-reveal-parity/aiken-build.log
           if-no-files-found: warn
