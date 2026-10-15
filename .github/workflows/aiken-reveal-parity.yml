@@ -44,6 +44,42 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Setup canonical Plutus toolchain for schema fixtures
+        id: haskell-toolchain
+        uses: ./.github/actions/setup-plutus
+        continue-on-error: true
+        with:
+          update-hackage: "false"
+
+      - name: Restore Haskell build cache for schema fixtures
+        if: always() && steps.haskell-toolchain.outcome == 'success'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: aiken-reveal-haskell-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+          restore-keys: |
+            aiken-reveal-haskell-${{ runner.os }}-
+            plutus-build-${{ runner.os }}-
+
+      - name: Generate canonical Haskell Plutus Data fixtures
+        id: haskell-fixtures
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.haskell-toolchain.outcome }}" != "success" ]; then
+            echo "Canonical Haskell toolchain setup did not succeed; fixture generation is blocked."
+            exit 1
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/poc/aiken-reveal-parity/jev-evidence"
+          cabal run exe:reveal-schema-fixtures -- "$GITHUB_WORKSPACE/poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json"
+          test -s "$GITHUB_WORKSPACE/poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json"
+          node -e 'const f=require(process.argv[1]); const expected=["PrizeDatum.pending","PrizeAction.SyncBeacon","PrizeAction.Reveal","PrizeAction.Claim","PrizeAction.Expire","BeaconTarget","B1PrizePoolDatum"]; if(f.schema!=="pre-rich-reveal-plutus-data-v1" || expected.some(k=>typeof f.fixtures?.[k]!=="string" || !/^[0-9a-f]+$/.test(f.fixtures[k]))) process.exit(1); console.log("Validated canonical Haskell fixture shape: "+expected.length+" Plutus Data encodings.")' "$GITHUB_WORKSPACE/poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json"
+
       - name: Install pinned Aiken
         uses: aiken-lang/setup-aiken@v1
         with:
@@ -276,6 +312,7 @@ jobs:
           CACHE_HIT: ${{ steps.aiken-cache.outputs.cache-hit || 'false' }}
           AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
+          HASKELL_FIXTURE_OUTCOME: ${{ steps.haskell-fixtures.outcome || 'unknown' }}
         run: |
           set -euo pipefail
           mkdir -p jev-evidence
@@ -296,7 +333,15 @@ jobs:
           const limitations = cacheHit
             ? ['Exact source/config/workflow hash matched the CI cache; PASS reflects previously validated artifacts, not a fresh compiler execution in this run.', 'This is an isolated Aiken parity harness, not full Reveal validator parity or protocol-wide GREEN.']
             : ['This result applies only to this commit, workflow run, and isolated Aiken harness.', 'This harness is not a deployable validator and does not establish full Reveal parity.'];
+          const fixtureOutcome = outcome(process.env.HASKELL_FIXTURE_OUTCOME);
           const checks = [
+            {
+              checkId: 'HASKELL.REVEAL.SCHEMA.FIXTURES',
+              requirementRef: 'Canonical Haskell Types.hs / Plutus Data schema fixtures',
+              stepOutcome: fixtureOutcome,
+              evidenceRefs,
+              limitations: ['Schema serialization only; does not establish Reveal behavior or Haskell/Aiken semantic parity.', 'Fixture generation requires the canonical Plutus toolchain; no hand-copied fixture is accepted.'],
+            },
             {
               checkId: 'AIKEN.REVEAL.CHECK',
               requirementRef: 'Aiken Reveal parity harness / aiken check',
@@ -330,6 +375,7 @@ jobs:
             poc/aiken-reveal-parity/jev-evidence/verification-registry.json
             poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
             poc/aiken-reveal-parity/jev-evidence/registry-input.json
+            poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json
             poc/aiken-reveal-parity/aiken-check.log
             poc/aiken-reveal-parity/aiken-check.stdout.log
             poc/aiken-reveal-parity/aiken-check.stderr.log
