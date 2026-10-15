@@ -60,35 +60,46 @@ jobs:
         shell: bash
         run: |
           set +e
-          printf 'AIKEN_COMMAND=aiken check\\nAIKEN_VERSION=' > aiken-check.log
+          printf 'AIKEN_COMMAND=aiken check\nAIKEN_VERSION=' > aiken-check.log
           aiken --version >> aiken-check.log 2>&1
           RUST_BACKTRACE=full aiken check > aiken-check.stdout.log 2> aiken-check.stderr.log
           status=$?
           {
-            printf '\\nAIKEN_CHECK_EXIT=%s\\n' "$status"
+            printf '\nAIKEN_CHECK_EXIT=%s\n' "$status"
             printf 'AIKEN_CHECK_STDOUT_BYTES='
             wc -c < aiken-check.stdout.log
             printf 'AIKEN_CHECK_STDERR_BYTES='
             wc -c < aiken-check.stderr.log
-            printf '\\n--- stdout ---\\n'
+            printf '\n--- stdout ---\n'
             cat aiken-check.stdout.log
-            printf '\\n--- stderr ---\\n'
+            printf '\n--- stderr ---\n'
             cat aiken-check.stderr.log
           } >> aiken-check.log
           cat aiken-check.log
           exit "$status"
 
-      - name: Compile package
+      - name: Compile package independently of check result
         id: aiken-build
-        if: steps.aiken-cache.outputs.cache-hit != 'true'
+        if: always() && steps.aiken-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set +e
-          RUST_BACKTRACE=full aiken build 2>&1 | tee aiken-build.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ] && [ ! -s aiken-build.log ]; then
-            echo "AIKEN_BUILD_EXIT=$status; compiler emitted no stdout/stderr diagnostic." | tee aiken-build.log
-          fi
+          RUST_BACKTRACE=full aiken build > aiken-build.stdout.log 2> aiken-build.stderr.log
+          status=$?
+          {
+            printf 'AIKEN_COMMAND=aiken build\nAIKEN_VERSION='
+            aiken --version
+            printf 'AIKEN_BUILD_EXIT=%s\n' "$status"
+            printf 'AIKEN_BUILD_STDOUT_BYTES='
+            wc -c < aiken-build.stdout.log
+            printf 'AIKEN_BUILD_STDERR_BYTES='
+            wc -c < aiken-build.stderr.log
+            printf '\n--- stdout ---\n'
+            cat aiken-build.stdout.log
+            printf '\n--- stderr ---\n'
+            cat aiken-build.stderr.log
+          } > aiken-build.log
+          cat aiken-build.log
           exit "$status"
 
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
@@ -161,4 +172,6 @@ jobs:
             poc/aiken-reveal-parity/aiken-check.stdout.log
             poc/aiken-reveal-parity/aiken-check.stderr.log
             poc/aiken-reveal-parity/aiken-build.log
+            poc/aiken-reveal-parity/aiken-build.stdout.log
+            poc/aiken-reveal-parity/aiken-build.stderr.log
           if-no-files-found: warn
