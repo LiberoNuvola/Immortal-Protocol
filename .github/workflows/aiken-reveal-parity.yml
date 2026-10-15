@@ -102,6 +102,51 @@ jobs:
           cat aiken-build.log
           exit "$status"
 
+      - name: Isolate Aiken compiler with dependency-free smoke package
+        id: aiken-smoke
+        if: always() && steps.aiken-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set +e
+          smoke_dir="$(mktemp -d)"
+          mkdir -p "$smoke_dir/lib"
+          cat > "$smoke_dir/aiken.toml" <<'TOML'
+          name = "immortal/aiken-compiler-smoke"
+          version = "0.0.0"
+          compiler = "v1.1.22"
+          plutus = "v3"
+          license = "Apache-2.0"
+          description = "Dependency-free Aiken compiler diagnostic."
+          TOML
+          cat > "$smoke_dir/lib/smoke.ak" <<'AIKEN'
+          pub fn identity(value: Int) -> Int {
+            value
+          }
+
+          test identity_smoke() {
+            identity(42) == 42
+          }
+          AIKEN
+          (
+            cd "$smoke_dir"
+            aiken --version
+            RUST_BACKTRACE=full aiken check
+          ) > aiken-smoke.stdout.log 2> aiken-smoke.stderr.log
+          status=$?
+          {
+            printf 'AIKEN_SMOKE_EXIT=%s\n' "$status"
+            printf 'AIKEN_SMOKE_STDOUT_BYTES='
+            wc -c < aiken-smoke.stdout.log
+            printf 'AIKEN_SMOKE_STDERR_BYTES='
+            wc -c < aiken-smoke.stderr.log
+            printf '\n--- stdout ---\n'
+            cat aiken-smoke.stdout.log
+            printf '\n--- stderr ---\n'
+            cat aiken-smoke.stderr.log
+          } > aiken-smoke.log
+          cat aiken-smoke.log
+          exit "$status"
+
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
       # only for the exact source/config/workflow hash in the cache key above.
       - name: Generate JEV registry for Aiken parity
@@ -174,4 +219,7 @@ jobs:
             poc/aiken-reveal-parity/aiken-build.log
             poc/aiken-reveal-parity/aiken-build.stdout.log
             poc/aiken-reveal-parity/aiken-build.stderr.log
+            poc/aiken-reveal-parity/aiken-smoke.log
+            poc/aiken-reveal-parity/aiken-smoke.stdout.log
+            poc/aiken-reveal-parity/aiken-smoke.stderr.log
           if-no-files-found: warn
