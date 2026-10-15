@@ -701,22 +701,31 @@ const revealBuilder = lucid
   .addSigner(address)
   .validTo(Number(revealValidTo()))
 
-// Diagnostic-only bypass of Lucid's early size guard: this permits serialization
-// for inspection, but the authoritative ledger maxTxSize remains enforced below
-// before signing or submission. No transaction built this way can pass preflight
-// if its actual CBOR exceeds the active protocol limit.
-const canonicalGetProtocolParameters = providerWithEvaluation.getProtocolParameters.bind(providerWithEvaluation)
-const diagnosticBuilderMaxTxSize = 100_000
-let reveal: any
-try {
-  ;(providerWithEvaluation as any).getProtocolParameters = async () => ({
-    ...(await canonicalGetProtocolParameters()),
-    maxTxSize: diagnosticBuilderMaxTxSize,
-  })
-  reveal = await revealBuilder.complete({ localUPLCEval: false })
-} finally {
-  ;(providerWithEvaluation as any).getProtocolParameters = canonicalGetProtocolParameters
+// Emit binding evidence before Lucid completes the transaction. This is deliberately
+// diagnostic-only: it does not modify protocol parameters or bypass Lucid's size guard.
+const describeReferenceBinding = (purpose: string, utxo: UTxO) => {
+  const scriptRef = utxo.scriptRef
+  if (!scriptRef) {
+    throw new Error(purpose + ': validated reference input lost its scriptRef binding')
+  }
+  return {
+    purpose,
+    outRef: utxo.txHash.toLowerCase() + '#' + utxo.outputIndex,
+    scriptType: scriptRef.type,
+    scriptBytes: Buffer.from(scriptRef.script, 'hex').length,
+    scriptHash: validatorToScriptHash(scriptRef).toLowerCase(),
+  }
 }
+console.log(JSON.stringify({
+  revealDiag: 'reference-script-bindings-before-complete',
+  protocolMaxTxSize: protocolParameters.maxTxSize ?? null,
+  referenceBindings: [
+    describeReferenceBinding('PrizeValidator', prizeReferenceInput),
+    describeReferenceBinding('B1PrizePool', poolReferenceInput),
+  ],
+}, null, 2))
+
+const reveal: any = await revealBuilder.complete({ localUPLCEval: false })
 
 {
   const builtCbor = reveal.toCBOR()
