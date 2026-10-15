@@ -57,12 +57,28 @@ jobs:
       - name: Run parity tests
         id: aiken-check
         if: steps.aiken-cache.outputs.cache-hit != 'true'
-        run: aiken check
+        shell: bash
+        run: |
+          set +e
+          RUST_BACKTRACE=full aiken check 2>&1 | tee aiken-check.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ] && [ ! -s aiken-check.log ]; then
+            echo "AIKEN_CHECK_EXIT=$status; compiler emitted no stdout/stderr diagnostic." | tee aiken-check.log
+          fi
+          exit "$status"
 
       - name: Compile package
         id: aiken-build
         if: steps.aiken-cache.outputs.cache-hit != 'true'
-        run: aiken build
+        shell: bash
+        run: |
+          set +e
+          RUST_BACKTRACE=full aiken build 2>&1 | tee aiken-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ] && [ ! -s aiken-build.log ]; then
+            echo "AIKEN_BUILD_EXIT=$status; compiler emitted no stdout/stderr diagnostic." | tee aiken-build.log
+          fi
+          exit "$status"
 
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
       # only for the exact source/config/workflow hash in the cache key above.
@@ -130,4 +146,6 @@ jobs:
             poc/aiken-reveal-parity/jev-evidence/verification-registry.json
             poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
             poc/aiken-reveal-parity/jev-evidence/registry-input.json
-          if-no-files-found: error
+            poc/aiken-reveal-parity/aiken-check.log
+            poc/aiken-reveal-parity/aiken-build.log
+          if-no-files-found: warn
