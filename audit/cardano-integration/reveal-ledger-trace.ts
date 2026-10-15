@@ -637,6 +637,31 @@ const preStateFingerprint = hashJson({
 })
 
 // Publish the two validator scripts as reference-script UTxOs before building Reveal.
+// CIP-33 only helps after a script has been published. If a script itself is
+// already larger than maxTxSize, its publication transaction cannot fit because
+// the output wrapper and transaction body add bytes. Record this boundary before
+// attempting publication so the evidence distinguishes publication failure from
+// Reveal-spend failure.
+console.log(JSON.stringify({
+  revealDiag: 'reference-script-publication-plan',
+  activeMaxTxSize: protocolParameters.maxTxSize ?? null,
+  scripts: [
+    {
+      purpose: 'PrizeValidator',
+      scriptBytes: Buffer.from(scripts.prizeValidator.script, 'hex').length,
+      scriptBytesAloneFits: typeof protocolParameters.maxTxSize === 'number'
+        ? Buffer.from(scripts.prizeValidator.script, 'hex').length <= protocolParameters.maxTxSize
+        : null,
+    },
+    {
+      purpose: 'B1PrizePool',
+      scriptBytes: Buffer.from(scripts.b1PrizePool.script, 'hex').length,
+      scriptBytesAloneFits: typeof protocolParameters.maxTxSize === 'number'
+        ? Buffer.from(scripts.b1PrizePool.script, 'hex').length <= protocolParameters.maxTxSize
+        : null,
+    },
+  ],
+}, null, 2))
 const prizeReferenceTx = await lucid
   .newTx()
   .pay.ToAddressWithData(referenceAddress, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator)
