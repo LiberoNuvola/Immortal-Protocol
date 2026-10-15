@@ -777,7 +777,7 @@ async function main(): Promise<void> {
     justificationHex: string;
     justificationSha256: string;
   };
-  let witnessSource: "chain_getBlock.justifications" | "grandpa_proveFinality";
+  let witnessSource: "chain_getBlock.justifications" | "grandpa_proveFinality" | "grandpa_subscribeJustifications";
 
   if (witnessedBlocks.length > 0) {
     const firstWitness = witnessedBlocks[0]!;
