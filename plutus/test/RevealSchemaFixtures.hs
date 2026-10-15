@@ -9,6 +9,7 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=), object)
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
@@ -27,7 +28,7 @@ hexData :: PlutusTx.ToData a => a -> String
 hexData value =
   let encoded = Builtins.serialiseData (PlutusTx.toBuiltinData value)
       bytes = Builtins.fromBuiltin encoded
-  in show (TE.decodeUtf8 (B16.encode bytes))
+  in T.unpack (TE.decodeUtf8 (B16.encode bytes))
 
 sampleTarget :: BeaconTarget
 sampleTarget =
