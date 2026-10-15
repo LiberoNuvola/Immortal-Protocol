@@ -18,12 +18,13 @@ The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken pack
 - `lib/immortal/beacon.ak`: Haskell-compatible field encoding, player/ticket commitments, beacon derivation, ticket seed and symbols seed.
 - `lib/immortal/game_rules.ak`: row outcome rejection sampling, tier boundaries, deterministic row-symbol construction and summary tier.
 - `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
+- `lib/immortal/reveal_context.ak`: first typed-context increment over Aiken's actual `cardano/transaction` types. It resolves the own input by output reference, derives the spent Prize script credential, checks unique Prize input/continuing output, compares actual typed `Value` equality, and checks exactly one PrizePool input/output by configured script hash. This is still a structural guard, not a complete Reveal validator; datum/redeemer decoding and all Reveal semantics remain unimplemented.
 
 The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
 
 ## Not implemented yet
 
-1. Decode and validate the actual Plutus V3 transaction context, including input/output identity, datum decoding, unique Prize and PrizePool UTxOs, and actual value preservation.
+1. Decode and validate PrizeDatum, B1PrizePoolDatum and the Reveal redeemer from the actual Plutus V3 transaction context; bind the pool hash from authenticated datum/configuration rather than an untrusted caller; verify unique Prize and PrizePool UTxOs and actual value preservation.
 2. Wire the existing beacon, player secret, ticket commitment, generated result, payout and pool predicates into the validator.
 3. Build cross-language fixtures from Haskell and negative twins.
 4. Compile the complete validator and measure script size, full transaction size, CPU and memory against a version-labelled baseline.
