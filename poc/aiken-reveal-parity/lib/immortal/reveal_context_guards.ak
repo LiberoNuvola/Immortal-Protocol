@@ -241,6 +241,25 @@ test pool_accepts_consistent_reveal_transition() {
   reveal_pool_transition_is_valid(350, #"06", pool_before, pool_after)
 }
 
+test pool_accepts_zero_payout_for_a_revealed_loss() {
+  let loss_after =
+    RevealPoolState {
+      ..pool_before,
+      unresolved_reserve: 400,
+      unresolved_ticket_count: 7,
+    }
+  reveal_pool_transition_is_valid(0, #"06", pool_before, loss_after)
+}
+
+test pool_rejects_negative_payout() {
+  !reveal_pool_transition_is_valid(-1, #"06", pool_before, pool_after)
+}
+
+test pool_rejects_input_prize_hash_mismatch() {
+  let changed = RevealPoolState { ..pool_before, prize_hash: #"ff" }
+  !reveal_pool_transition_is_valid(350, #"06", changed, pool_after)
+}
+
 test pool_rejects_payout_above_effective_pool() {
   !reveal_pool_transition_is_valid(100_000, #"06", pool_before, pool_after)
 }
