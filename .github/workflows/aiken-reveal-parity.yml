@@ -160,7 +160,7 @@ jobs:
           source = "github"
           TOML
           cat > "$smoke_dir/lib/smoke.ak" <<'AIKEN'
-          use aiken/list
+          use aiken/collection/list
 
           pub fn identity(value: Int) -> Int {
             value
@@ -218,7 +218,7 @@ jobs:
           source = "github"
           TOML
           cat > "$smoke_dir/lib/smoke.ak" <<'AIKEN'
-          use aiken/list
+          use aiken/collection/list
 
           test identity_smoke() {
             list.length([42]) == 1
