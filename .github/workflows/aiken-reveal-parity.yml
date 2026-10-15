@@ -6,10 +6,22 @@ on:
       - work/immortal-green-closure
     paths:
       - "poc/aiken-reveal-parity/**"
+      - "scripts/jev-verification-registry-generator.mjs"
+      - "scripts/test-jev-verification-registry-generator.mjs"
+      - "scripts/build-jev-operational-prompt.mjs"
+      - "scripts/test-jev-operational-prompt.mjs"
+      - "scripts/register-evidence-in-notion.mjs"
+      - "scripts/test-notion-evidence-ledger.mjs"
       - ".github/workflows/aiken-reveal-parity.yml"
   pull_request:
     paths:
       - "poc/aiken-reveal-parity/**"
+      - "scripts/jev-verification-registry-generator.mjs"
+      - "scripts/test-jev-verification-registry-generator.mjs"
+      - "scripts/build-jev-operational-prompt.mjs"
+      - "scripts/test-jev-operational-prompt.mjs"
+      - "scripts/register-evidence-in-notion.mjs"
+      - "scripts/test-notion-evidence-ledger.mjs"
       - ".github/workflows/aiken-reveal-parity.yml"
   workflow_dispatch:
 
@@ -26,6 +38,11 @@ jobs:
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
+
+      - name: Setup Node for JEV evidence registration
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Install pinned Aiken
         uses: aiken-lang/setup-aiken@v1
@@ -247,6 +264,7 @@ jobs:
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
       # only for the exact source/config/workflow hash in the cache key above.
       - name: Generate JEV registry for Aiken parity
+        id: jev-generation
         if: always()
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -300,8 +318,10 @@ jobs:
           node ../../scripts/build-jev-operational-prompt.mjs jev-evidence/verification-registry.json jev-evidence/operational-prompt.md
           node ../../scripts/test-jev-verification-registry-generator.mjs
           node ../../scripts/test-jev-operational-prompt.mjs
+          node ../../scripts/test-notion-evidence-ledger.mjs
 
       - name: Upload JEV Aiken evidence
+        id: evidence-upload
         if: always() && hashFiles('poc/aiken-reveal-parity/jev-evidence/verification-registry.json') != ''
         uses: actions/upload-artifact@v4
         with:
@@ -328,3 +348,28 @@ jobs:
             poc/aiken-reveal-parity/aiken-stdlib-compat.stdout.log
             poc/aiken-reveal-parity/aiken-stdlib-compat.stderr.log
           if-no-files-found: warn
+
+      - name: Register Aiken JEV evidence in Notion
+        if: always() && steps.evidence-upload.outcome == 'success' && secrets.NOTION_API_KEY != ''
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_EVIDENCE_PAGE_ID: "3e2c4454-d6d5-819c-bec1-c6edede714b3"
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARTIFACT_URL: ${{ steps.evidence-upload.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence-upload.outputs.artifact-digest }}
+          LAB_JOB_STATUS: ${{ job.status }}
+          JEV_OPERATIONAL_PROMPT_PATH: jev-evidence/operational-prompt.md
+          JEV_PROMPT_STATUS: ${{ steps.jev-generation.outcome || 'unknown' }}
+        run: node ../../scripts/register-evidence-in-notion.mjs
+
+      - name: Report Notion registration skipped without secret
+        if: always() && steps.evidence-upload.outcome == 'success' && secrets.NOTION_API_KEY == ''
+        run: echo "JEV evidence artifact uploaded, but Notion registration was NOT_RUN because NOTION_API_KEY is unavailable in this event context."
