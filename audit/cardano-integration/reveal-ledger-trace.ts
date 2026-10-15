@@ -701,10 +701,60 @@ const revealBuilder = lucid
   .addSigner(address)
   .validTo(Number(revealValidTo()))
 
-const reveal: any = await revealBuilder.complete({ localUPLCEval: false })
+// Diagnostic-only bypass of Lucid's early size guard: this permits serialization
+// for inspection, but the authoritative ledger maxTxSize remains enforced below
+// before signing or submission. No transaction built this way can pass preflight
+// if its actual CBOR exceeds the active protocol limit.
+const canonicalGetProtocolParameters = providerWithEvaluation.getProtocolParameters.bind(providerWithEvaluation)
+const diagnosticBuilderMaxTxSize = 100_000
+let reveal: any
+try {
+  ;(providerWithEvaluation as any).getProtocolParameters = async () => ({
+    ...(await canonicalGetProtocolParameters()),
+    maxTxSize: diagnosticBuilderMaxTxSize,
+  })
+  reveal = await revealBuilder.complete({ localUPLCEval: false })
+} finally {
+  ;(providerWithEvaluation as any).getProtocolParameters = canonicalGetProtocolParameters
+}
 
 {
   const builtCbor = reveal.toCBOR()
+  const diagnosticTx = CML.Transaction.from_cbor_hex(builtCbor)
+  const diagnosticWitnessSet = diagnosticTx.witness_set()
+  const diagnosticScriptCount = (method: string): number => {
+    const collection = (diagnosticWitnessSet as any)[method]?.()
+    if (collection == null) return 0
+    if (typeof collection.len !== 'function') {
+      throw new Error('Cannot inspect serialized Plutus witness collection: ' + method)
+    }
+    return Number(collection.len())
+  }
+  const diagnosticReferenceInputs: string[] = []
+  const referenceCollection = diagnosticTx.body().reference_inputs?.()
+  if (referenceCollection) {
+    for (let i = 0; i < Number(referenceCollection.len()); i++) {
+      const input = referenceCollection.get(i)
+      diagnosticReferenceInputs.push(input.transaction_id().to_hex().toLowerCase() + '#' + Number(input.index()))
+    }
+  }
+  const diagnosticEmbeddedScriptCounts = {
+    plutus_v1: diagnosticScriptCount('plutus_v1_scripts'),
+    plutus_v2: diagnosticScriptCount('plutus_v2_scripts'),
+    plutus_v3: diagnosticScriptCount('plutus_v3_scripts'),
+  }
+  console.log(JSON.stringify({
+    revealDiag: 'reference-script-raw-cbor',
+    bytes: builtCbor.length / 2,
+    activeMaxTxSize: protocolParameters.maxTxSize ?? null,
+    diagnosticBuilderMaxTxSize,
+    referenceInputs: diagnosticReferenceInputs.sort(),
+    embeddedScriptCounts: diagnosticEmbeddedScriptCounts,
+    embeddedScriptTotal: Object.values(diagnosticEmbeddedScriptCounts).reduce((sum, count) => sum + count, 0),
+  }, null, 2))
+  // Preserve the unsigned prebuilt transaction for evidence even when the
+  // strict, real-ledger size gate below rejects it.
+  writeFileSync('audit/yaci-evidence/reveal-tx-prebuilt.cbor', Buffer.from(builtCbor, 'hex'))
   if (typeof protocolParameters.maxTxSize !== 'number') {
     throw new Error('Reveal reference-script preflight cannot verify active maxTxSize')
   }
