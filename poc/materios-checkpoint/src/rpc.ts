@@ -316,6 +316,8 @@ return requireHex(value, `state_call(${method})`);
 
 
 }
+}
+
 export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
 
 export type ChainBlockJustifications = {
