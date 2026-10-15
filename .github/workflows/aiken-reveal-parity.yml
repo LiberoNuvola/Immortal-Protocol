@@ -6,6 +6,8 @@ on:
       - work/immortal-green-closure
     paths:
       - "poc/aiken-reveal-parity/**"
+      - "plutus/pre-rich-plutus.cabal"
+      - "plutus/test/RevealSchemaFixtures.hs"
       - "scripts/jev-verification-registry-generator.mjs"
       - "scripts/test-jev-verification-registry-generator.mjs"
       - "scripts/build-jev-operational-prompt.mjs"
@@ -17,6 +19,8 @@ on:
   pull_request:
     paths:
       - "poc/aiken-reveal-parity/**"
+      - "plutus/pre-rich-plutus.cabal"
+      - "plutus/test/RevealSchemaFixtures.hs"
       - "scripts/jev-verification-registry-generator.mjs"
       - "scripts/test-jev-verification-registry-generator.mjs"
       - "scripts/build-jev-operational-prompt.mjs"
