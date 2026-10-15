@@ -1034,6 +1034,7 @@ async function main(): Promise<void> {
       state_root: finalizedHeader.stateRoot,
     },
     witness: {
+      source: witnessSource,
       block_number: witness.blockNumber.toString(),
       block_hash: witness.blockHash,
       parent_hash: witness.header.parentHash,
