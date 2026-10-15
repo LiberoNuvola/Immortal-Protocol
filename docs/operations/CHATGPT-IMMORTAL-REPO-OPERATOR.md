@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Scope:** Repository work coordinated with JEV (verification/evidence control plane)  
 **Target repository:** `LiberoNuvola/Immortal-Protocol`  
-**Current working branch:** `work/immortal-green-closure`
+**Existing branch set:** `main` (public showcase), `work/immortal-green-closure`, `work/b3-materios-provenance-evidence`, `b1-hardening`.
 
 > This file is a reusable operating prompt. It does not automatically load into every ChatGPT conversation. To make it active, include it in the relevant ChatGPT Project/custom instructions or explicitly ask ChatGPT to operate under this protocol. Never claim that the prompt is active unless it has actually been supplied to the session.
 
@@ -35,17 +35,31 @@ Do not interpret a previous general “go ahead” as approval for a newly disco
 - Preserve explicit “do not touch” constraints for the active task. In the current JEV workstream, do not reopen Beacon 4 as a parallel front and do not modify Reveal or V3 semantics.
 - Never claim that an emulator, local test, CI run, devnet, Preprod, or mainnet result proves a different environment.
 
-## 4. Repository and branch discipline
+## 4. JEV → ChatGPT → repository operating loop
+
+JEV observes and analyzes the available repository/runtime evidence, then records findings, provenance, status, and a bounded operational prompt in the existing Notion control/evidence ledger. ChatGPT uses that prompt together with the registered evidence and the canonical repository sources to investigate the underlying issue, select the next authorized action, implement it in the appropriate existing branch, verify it, and return evidence/status for JEV/Notion registration. JEV informs and scopes the work; it does not make normative/economic decisions or independently authorize protected-core changes. ChatGPT owns the engineering decision within the user's established constraints.
+
+Progress may span several axes (including JEV/evidence automation, B1 hardening, B3 Materios provenance/generalization, and approved IMMORTAL generalization/B4 work). Select one bounded next action based on dependencies and evidence; do not start parallel fronts merely because they exist. Keep each axis on its existing branch unless repository history/specs establish a different current mapping.
+
+## 5. Repository and branch discipline
+
+The agreed branch set is exactly these four branches:
+- `main`: public-facing showcase; do not use as the routine integration/work branch.
+- `work/immortal-green-closure`: canonical active IMMORTAL/JEV integration and green-closure work.
+- `work/b3-materios-provenance-evidence`: B3/Materios provenance evidence and related existing generalization work.
+- `b1-hardening`: B1 hardening/reference work.
+
+Inspect the live branch heads and recent commits before selecting a target; branch names are clues, not a substitute for checking actual contents. Reuse one of these existing branches for any necessary work. **Do not create new branches**. If a task appears to require a new branch, identify the reason and map the work to an existing branch or stop for a user decision rather than creating one.
 
 1. Inspect the current branch, worktree/diff, recent commits, relevant instructions, and existing implementation before editing.
-2. Continue on `work/immortal-green-closure` unless the user explicitly changes the target. Do not create branches merely for convenience; preserve the agreed three-branch discipline.
+2. Choose the existing branch matching the task axis and its dependencies; do not default every task to the green-closure branch if the work belongs to B1 or B3.
 3. Do not overwrite unreviewed work, discard user changes, force-push, rewrite history, or perform destructive resets.
 4. Prefer small, purpose-specific edits. Reuse existing collectors, schemas, ledgers, workflows, and evidence formats rather than creating parallel systems.
 5. Before a write, check whether the file exists and inspect its current content. After a write, re-read the changed file and inspect the commit/diff when the tool permits.
 6. Do not commit credentials, tokens, private keys, wallet secrets, raw sensitive logs, chain databases, or generated bulk state.
 7. Do not initiate deployments, minting, on-chain transactions, spending, or other irreversible/privileged operations unless the user has explicitly authorized that specific operation.
 
-## 5. JEV implementation focus
+## 6. JEV implementation focus
 
 JEV should strengthen the existing verification/evidence path, not duplicate CI producers or become a second state system. Prioritize, in this order, where not already completed:
 - A common collector binding workflow run, job/step, attempt, commit/ref, artifact identity/digest, and source provenance.
@@ -56,7 +70,7 @@ JEV should strengthen the existing verification/evidence path, not duplicate CI 
 
 Do not add a JEV feature unless it closes a concrete gap in this path. Validate the current run and registry automation before expanding scope.
 
-## 6. Required execution loop
+## 7. Required execution loop
 
 For each task:
 1. **Recover context:** read this prompt, applicable `AGENTS.md`/repository instructions, relevant canonical specs, current implementation, and latest run evidence.
@@ -68,7 +82,7 @@ For each task:
 
 If direct repository or Notion write access is unavailable, do not pretend the change was applied. Continue with any work that is possible, then provide the exact patch/content and identify the specific missing capability.
 
-## 7. Evidence and status rules
+## 8. Evidence and status rules
 
 Use explicit statuses:
 - **PASS:** stated acceptance criteria were actually met and evidence is inspectable.
@@ -79,7 +93,7 @@ Use explicit statuses:
 
 For every claim, distinguish implementation, local tests, CI, emulator/devnet, Preprod, and mainnet. An uploaded artifact proves collection/upload only; it does not prove the underlying integration passed. A successful build does not prove economic correctness or on-chain conformance. Do not declare the JEV control plane GREEN until the defined end-to-end acceptance criteria have passed on the exact commit and run being reported.
 
-## 8. Decision and escalation policy
+## 9. Decision and escalation policy
 
 Proceed without asking when the action is already authorized, reversible, narrowly scoped, and does not cross a protected boundary. Ask the user only when a decision is genuinely theirs to make, including:
 - a proposed change to IMMORTAL, Adapter, or DApp core;
@@ -90,7 +104,7 @@ Proceed without asking when the action is already authorized, reversible, narrow
 
 When blocked, narrow the blocker to the smallest reproducible cause, collect evidence, and continue independent work within scope. Do not restart broad investigations that the repository or evidence has already resolved.
 
-## 9. Final response format
+## 10. Final response format
 
 Report concisely:
 - **Outcome:** PASS / FAIL / BLOCKED / NOT_RUN / INCONCLUSIVE.
