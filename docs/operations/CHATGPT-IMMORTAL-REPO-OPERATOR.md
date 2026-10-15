@@ -35,7 +35,39 @@ Do not interpret a previous general “go ahead” as approval for a newly disco
 - Preserve explicit “do not touch” constraints for the active task. In the current JEV workstream, do not reopen Beacon 4 as a parallel front and do not modify Reveal or V3 semantics.
 - Never claim that an emulator, local test, CI run, devnet, Preprod, or mainnet result proves a different environment.
 
-## 4. JEV → ChatGPT → repository operating loop
+## 4. Normative triangulation: repository ↔ Notion
+
+Use GitHub and Notion as linked but non-interchangeable control surfaces. The goal is to answer both **what governs the protocol** and **what work is actually being performed and verified** without creating competing sources of truth.
+
+### Authority rule
+
+- **Normative authority:** the canonical, versioned specifications in the repository, interpreted through the repository's explicit authority hierarchy and any approved normative decisions recorded in Notion. Follow `docs/README.md`, `docs/DOCUMENTATION-AUTHORITY-MATRIX.md` and the applicable source documents; do not treat a status page, roadmap, implementation note, test or evidence packet as a new normative rule.
+- **Notion normative references:** use the existing Notion constitutional/specification/decision pages to locate and understand approved decisions and their rationale. Link the exact page or decision where possible. Notion coordination text does not silently supersede the repository's canonical normative files; if a material conflict remains after applying the documented hierarchy, stop and ask the user rather than choosing a new rule.
+- **Implementation truth:** GitHub files, branch heads, commits and diffs establish what code/documentation is present. A planned task in Notion does not prove implementation; a commit does not by itself prove the intended behavior.
+- **Execution/evidence truth:** GitHub Actions runs, job logs, artifacts, digests and any explicitly identified ledger observations establish what was actually executed and observed. Notion is the navigable ledger that links those facts; it must preserve exact provenance and limitations.
+- **Work coordination:** Notion work-program/status pages explain why an axis is active, its scope, dependencies, acceptance criteria and next step. Every active work item should point to its GitHub branch/path/commit/PR/run where available; the repository operator should read that mapping before choosing work.
+
+### Required triangulation for each bounded task
+
+Before implementation, reconcile these three views:
+
+1. **Normative reference:** exact canonical repository path(s), plus the related Notion decision/specification page(s) when available.
+2. **Work-in-progress reference:** relevant Notion work item/status and the matching existing GitHub branch, files, recent commits and current residual.
+3. **Verification reference:** acceptance criteria and the actual test/workflow/run/artifact evidence, including environment, commit, attempt, digest and limitations.
+
+After implementation, update the existing Notion record with the GitHub commit and changed paths, the exact verification evidence and outcome, what remains open, and the next bounded action. Where a run/packet is registered automatically, verify that the registration actually succeeded; do not create a duplicate ledger entry.
+
+If one side is missing, stale or inconsistent, record that explicitly and investigate before claiming closure. Never infer a normative decision from implementation, infer implementation from a Notion task, or infer success from artifact upload alone. Keep statuses distinct (PASS/FAIL/BLOCKED/NOT_RUN/INCONCLUSIVE) and do not promote evidence beyond its execution environment.
+
+### Stable navigation anchors
+
+- Repository documentation authority and canonical paths: [docs/README.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/README.md) and [Documentation Authority Matrix](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/DOCUMENTATION-AUTHORITY-MATRIX.md).
+- Non-normative implementation/evidence overview: [IMPLEMENTATION-AND-EVIDENCE-STATUS.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/IMPLEMENTATION-AND-EVIDENCE-STATUS.md).
+- Active operating protocol: [this prompt](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/operations/CHATGPT-IMMORTAL-REPO-OPERATOR.md).
+- Existing Notion control/evidence ledger: [IMMORTAL — Autonomous Verification Control Plane v0.1](https://app.notion.com/p/3e2c4454d6d5819cbec1c6edede714b3).
+- Existing work axes: [work/immortal-green-closure](https://github.com/LiberoNuvola/Immortal-Protocol/tree/work/immortal-green-closure), [work/b3-materios-provenance-evidence](https://github.com/LiberoNuvola/Immortal-Protocol/tree/work/b3-materios-provenance-evidence), [b1-hardening](https://github.com/LiberoNuvola/Immortal-Protocol/tree/b1-hardening), and [main](https://github.com/LiberoNuvola/Immortal-Protocol/tree/main) (showcase only).
+
+## 5. JEV → ChatGPT → repository operating loop
 
 JEV observes and analyzes the available repository/runtime evidence, then records findings, provenance, status, and a bounded operational prompt in the existing Notion control/evidence ledger. ChatGPT uses that prompt together with the registered evidence and the canonical repository sources to investigate the underlying issue, select the next authorized action, implement it in the appropriate existing branch, verify it, and return evidence/status for JEV/Notion registration. JEV informs and scopes the work; it does not make normative/economic decisions or independently authorize protected-core changes. ChatGPT owns the engineering decision within the user's established constraints.
 
