@@ -80,23 +80,23 @@ pub fn continuing_value_preserved(
 /// Mirrors PrizeValidator.identityFieldsEq. Reveal result/tier/payout are
 /// intentionally excluded because Reveal is the one transition that writes
 /// those fields. This record contains only immutable identity fields.
-pub fn identity_fields_preserved(before: RevealIdentity, after: RevealIdentity) -> Bool {
-  before.ticket_policy == after.ticket_policy
-    && before.ticket_name == after.ticket_name
-    && before.player_commitment == after.player_commitment
-    && before.price_usdm == after.price_usdm
-    && before.commitment == after.commitment
-    && before.game_version == after.game_version
-    && before.ticket_nonce == after.ticket_nonce
-    && before.payment_policy == after.payment_policy
-    && before.payment_name == after.payment_name
-    && before.target_network_id == after.target_network_id
-    && before.target_round == after.target_round
-    && before.target_mainchain_ref == after.target_mainchain_ref
-    && before.target_version == after.target_version
-    && before.prize_pool_hash == after.prize_pool_hash
-    && before.issued_at == after.issued_at
-    && before.expires_at == after.expires_at
+pub fn identity_fields_preserved(old_identity: RevealIdentity, new_identity: RevealIdentity) -> Bool {
+  old_identity.ticket_policy == new_identity.ticket_policy
+    && old_identity.ticket_name == new_identity.ticket_name
+    && old_identity.player_commitment == new_identity.player_commitment
+    && old_identity.price_usdm == new_identity.price_usdm
+    && old_identity.commitment == new_identity.commitment
+    && old_identity.game_version == new_identity.game_version
+    && old_identity.ticket_nonce == new_identity.ticket_nonce
+    && old_identity.payment_policy == new_identity.payment_policy
+    && old_identity.payment_name == new_identity.payment_name
+    && old_identity.target_network_id == new_identity.target_network_id
+    && old_identity.target_round == new_identity.target_round
+    && old_identity.target_mainchain_ref == new_identity.target_mainchain_ref
+    && old_identity.target_version == new_identity.target_version
+    && old_identity.prize_pool_hash == new_identity.prize_pool_hash
+    && old_identity.issued_at == new_identity.issued_at
+    && old_identity.expires_at == new_identity.expires_at
 }
 
 /// Mirrors the Reveal branch of validateReveal's poolOk. Input count,
@@ -105,21 +105,17 @@ pub fn identity_fields_preserved(before: RevealIdentity, after: RevealIdentity) 
 pub fn reveal_pool_transition_is_valid(
   payout: Int,
   expected_prize_hash: ByteArray,
-  before: RevealPoolState,
-  after: RevealPoolState,
+  old_pool: RevealPoolState,
+  new_pool: RevealPoolState,
 ) -> Bool {
   payout >= 0
-    && after.prize_hash == expected_prize_hash
-    && before.prize_hash == expected_prize_hash
-    && payout
-      <= before.total_liquidity
-        - before.pending_liabilities
-        - before.unresolved_reserve
-        - before.locked_jackpot
-    && after.pending_liabilities == before.pending_liabilities + payout
-    && after.unresolved_reserve < before.unresolved_reserve
-    && after.total_liquidity == before.total_liquidity
-    && after.unresolved_ticket_count == before.unresolved_ticket_count - 1
+    && new_pool.prize_hash == expected_prize_hash
+    && old_pool.prize_hash == expected_prize_hash
+    && payout <= (old_pool.total_liquidity - old_pool.pending_liabilities - old_pool.unresolved_reserve - old_pool.locked_jackpot)
+    && new_pool.pending_liabilities == old_pool.pending_liabilities + payout
+    && new_pool.unresolved_reserve < old_pool.unresolved_reserve
+    && new_pool.total_liquidity == old_pool.total_liquidity
+    && new_pool.unresolved_ticket_count == old_pool.unresolved_ticket_count - 1
 }
 
 const identity_fixture =
