@@ -42,5 +42,13 @@ assert.ok(prompt.length < 7001);
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [] }), /non-empty array/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [{ checkId: "X", result: "UNKNOWN", evidenceRefs: [], limitations: [] }] }), /invalid checkId\/result/);
+assert.throws(
+  () => buildOperationalPrompt({
+    subject: registry.subject,
+    overallResult: "PASS",
+    checks: [{ checkId: "OVERSIZE.CHECK", result: "PASS", evidenceRefs: ["https://example.com/evidence"], limitations: ["x".repeat(8000)] }],
+  }),
+  /refusing to truncate safety boundaries/,
+);
 
 console.log("JEV operational prompt generator tests passed.");
