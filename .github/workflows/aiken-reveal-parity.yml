@@ -55,9 +55,79 @@ jobs:
           echo "Reusing cached compiler artifacts; no rebuild required."
 
       - name: Run parity tests
+        id: aiken-check
         if: steps.aiken-cache.outputs.cache-hit != 'true'
         run: aiken check
 
       - name: Compile package
+        id: aiken-build
         if: steps.aiken-cache.outputs.cache-hit != 'true'
         run: aiken build
+
+      # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
+      # only for the exact source/config/workflow hash in the cache key above.
+      - name: Generate JEV registry for Aiken parity
+        if: always()
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CACHE_HIT: ${{ steps.aiken-cache.outputs.cache-hit || 'false' }}
+          AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
+          AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
+        run: |
+          set -euo pipefail
+          mkdir -p jev-evidence
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const outcome = (v) => ['success','failure','cancelled','skipped'].includes(v) ? v : 'unknown';
+          const cacheHit = process.env.CACHE_HIT === 'true';
+          const metadata = {
+            repository: process.env.GITHUB_REPOSITORY,
+            commitSha: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            workflowRunUrl: process.env.RUN_URL,
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            executionContext: 'static-analysis',
+          };
+          const evidenceRefs = [{ kind: 'workflow-run', uri: process.env.RUN_URL }];
+          const limitations = cacheHit
+            ? ['Exact source/config/workflow hash matched the CI cache; PASS reflects previously validated artifacts, not a fresh compiler execution in this run.', 'This is an isolated Aiken parity harness, not full Reveal validator parity or protocol-wide GREEN.']
+            : ['This result applies only to this commit, workflow run, and isolated Aiken harness.', 'This harness is not a deployable validator and does not establish full Reveal parity.'];
+          const checks = [
+            {
+              checkId: 'AIKEN.REVEAL.CHECK',
+              requirementRef: 'Aiken Reveal parity harness / aiken check',
+              stepOutcome: cacheHit ? 'success' : outcome(process.env.AIKEN_CHECK_OUTCOME),
+              evidenceRefs,
+              limitations,
+            },
+            {
+              checkId: 'AIKEN.REVEAL.BUILD',
+              requirementRef: 'Aiken Reveal parity harness / aiken build',
+              stepOutcome: cacheHit ? 'success' : outcome(process.env.AIKEN_BUILD_OUTCOME),
+              evidenceRefs,
+              limitations,
+            },
+          ];
+          await fs.writeFile('jev-evidence/registry-input.json', JSON.stringify({ metadata, checks }, null, 2) + '\\n');
+          NODE
+          node ../../scripts/jev-verification-registry-generator.mjs jev-evidence/registry-input.json jev-evidence/verification-registry.json
+          node ../../scripts/build-jev-operational-prompt.mjs jev-evidence/verification-registry.json jev-evidence/operational-prompt.md
+          node ../../scripts/test-jev-verification-registry-generator.mjs
+          node ../../scripts/test-jev-operational-prompt.mjs
+
+      - name: Upload JEV Aiken evidence
+        if: always() && hashFiles('poc/aiken-reveal-parity/jev-evidence/verification-registry.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-aiken-reveal-parity-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            poc/aiken-reveal-parity/jev-evidence/verification-registry.json
+            poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
+            poc/aiken-reveal-parity/jev-evidence/registry-input.json
+          if-no-files-found: error
