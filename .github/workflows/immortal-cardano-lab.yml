@@ -20,6 +20,8 @@ on:
       - "scripts/test-evidence-packet.mjs"
       - "scripts/register-evidence-in-notion.mjs"
       - "scripts/test-notion-evidence-ledger.mjs"
+      - "scripts/build-jev-operational-prompt.mjs"
+      - "scripts/test-jev-operational-prompt.mjs"
   pull_request:
     branches:
       - main
@@ -427,6 +429,14 @@ jobs:
           NODE
           node scripts/jev-verification-registry-generator.mjs audit/yaci-evidence/jev-registry-input.json audit/yaci-evidence/verification-registry.json
 
+      - name: Generate JEV operational prompt from validated registry
+        if: always() && hashFiles('audit/yaci-evidence/verification-registry.json') != ''
+        run: node scripts/build-jev-operational-prompt.mjs audit/yaci-evidence/verification-registry.json audit/yaci-evidence/operational-prompt.md
+
+      - name: Test JEV operational prompt generator
+        if: always()
+        run: node scripts/test-jev-operational-prompt.mjs
+
       - name: Build sanitized provenance-bound evidence packet
         if: always()
         run: |
@@ -460,4 +470,5 @@ jobs:
           ARTIFACT_URL: ${{ steps.evidence-upload.outputs.artifact-url }}
           ARTIFACT_DIGEST: ${{ steps.evidence-upload.outputs.artifact-digest }}
           LAB_JOB_STATUS: ${{ job.status }}
+          JEV_OPERATIONAL_PROMPT_PATH: audit/yaci-evidence/operational-prompt.md
         run: node scripts/register-evidence-in-notion.mjs
