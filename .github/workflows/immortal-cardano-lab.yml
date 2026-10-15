@@ -430,6 +430,7 @@ jobs:
           node scripts/jev-verification-registry-generator.mjs audit/yaci-evidence/jev-registry-input.json audit/yaci-evidence/verification-registry.json
 
       - name: Generate JEV operational prompt from validated registry
+        id: jev-prompt
         if: always() && hashFiles('audit/yaci-evidence/verification-registry.json') != ''
         run: node scripts/build-jev-operational-prompt.mjs audit/yaci-evidence/verification-registry.json audit/yaci-evidence/operational-prompt.md
 
@@ -471,4 +472,5 @@ jobs:
           ARTIFACT_DIGEST: ${{ steps.evidence-upload.outputs.artifact-digest }}
           LAB_JOB_STATUS: ${{ job.status }}
           JEV_OPERATIONAL_PROMPT_PATH: audit/yaci-evidence/operational-prompt.md
+          JEV_PROMPT_STATUS: ${{ steps.jev-prompt.outcome || 'unknown' }}
         run: node scripts/register-evidence-in-notion.mjs
