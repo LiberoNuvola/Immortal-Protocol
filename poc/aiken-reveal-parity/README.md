@@ -6,44 +6,40 @@ This package starts a controlled Aiken implementation path for Cardano without c
 
 ## Why this exists
 
-The current Integration Lab failed at Reveal with a transaction size of 18,051 bytes against Cardano's 16,384-byte limit. Aiken is being evaluated as an alternative implementation language for the Cardano on-chain validator, not as a change to IMMORTAL's economic rules.
+The Integration Lab previously failed at Reveal with a transaction size of 18,051 bytes against Cardano's 16,384-byte limit. Aiken is being evaluated as an alternative implementation language for the Cardano on-chain validator, not as a change to IMMORTAL's economic rules.
 
-## Important compatibility constraint
+## Compatibility constraint
 
-Aiken currently supports Plutus V3 only. The existing Haskell Reveal validator is explicitly compiled as Plutus V2. Therefore an Aiken port is **not a drop-in language replacement**: a complete Aiken Reveal implementation would be a Plutus V3 script and must pass a separately gated V2-to-V3 compatibility review, including target-ledger support, context encoding, cost model, transaction behavior, and datum/redeemer compatibility. The existing V3 carrier is not being changed by this experiment.
+The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken package targets Plutus V3 because the pinned Aiken compiler does not support Plutus V2. It is not a drop-in replacement: a complete port must pass a separately gated V2-to-V3 compatibility review covering target-ledger support, context encoding, cost model, transaction behavior, and datum/redeemer compatibility. The existing V3 carrier is not changed by this experiment.
 
 ## Current scope
 
-- `lib/immortal/reveal_rules.ak` mirrors `GameRules.classifyRowTier`, `prizeAmountForTier`, `rowPayoutTotal` (including the existing 500x cap), and the pure PrizePool accounting checks used by Reveal.
-- `lib/immortal/beacon.ak` ports the current `Beacon.hs` field encoding, player/ticket commitments, beacon derivation, ticket seed, and symbols seed.
-- `lib/immortal/game_rules.ak` ports row outcome rejection sampling, tier boundaries, deterministic row-symbol construction, and the six-symbol summary tier.
-- `lib/immortal/reveal_context_guards.ak` ports pure parity seams for finite validity bounds, unique input/output counts, and immutable Prize datum identity fields. These functions do not yet decode or validate a real Cardano transaction context.
-- Fixed SHA-256 and game-rule test vectors plus negative guard cases cover byte encoding, hash outputs, rejection sampling, row generation, expiry boundaries, and identity preservation. They do not yet establish full validator equivalence.
+- `lib/immortal/reveal_rules.ak`: current tier classification, prize formula, 500x payout cap and basic pool accounting predicate.
+- `lib/immortal/beacon.ak`: Haskell-compatible field encoding, player/ticket commitments, beacon derivation, ticket seed and symbols seed.
+- `lib/immortal/game_rules.ak`: row outcome rejection sampling, tier boundaries, deterministic row-symbol construction and summary tier.
+- `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
 
-The prize table values and formulas are copied from the current Haskell source. They are not new economic decisions.
+The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
 
-## Explicitly not implemented yet
+## Not implemented yet
 
-This is **not yet a port of the full Reveal validator**. Remaining work includes:
+1. Decode and validate the actual Plutus V3 transaction context, including input/output identity, datum decoding, unique Prize and PrizePool UTxOs, and actual value preservation.
+2. Wire the existing beacon, player secret, ticket commitment, generated result, payout and pool predicates into the validator.
+3. Build cross-language fixtures from Haskell and negative twins.
+4. Compile the complete validator and measure script size, full transaction size, CPU and memory against a version-labelled baseline.
 
-1. Aiken decoding and validation of the actual Plutus V3 transaction context, including unique Prize/PrizePool input/output checks, datum decoding, continuing output identity and value preservation.
-2. Exact Reveal-specific checks for beacon, player secret, ticket commitment, generated result, prize amount, and atomic PrizePool accounting, wired to the real context.
-3. Cross-language fixtures generated from the Haskell implementation and full negative twins.
-4. Compiled validator and full transaction size/cost measurements; pure modules are not a meaningful replacement-size comparison.
-
-No production artifact may be switched to this package until the complete behavior is tested against Haskell vectors and native-ledger integration tests.
+No production artifact may be switched to this package until full behavior passes Haskell differential tests and native-ledger integration tests.
 
 ## CI artifact reuse
 
-The Aiken workflow caches validated build outputs with a key derived from the manifest/lockfile, all Aiken source files, and the workflow itself. An exact key hit reuses previously successful artifacts and skips both `aiken check` and `aiken build`; a relevant source/config/workflow change creates a new key and reruns both. The cache is saved only after a successful job. Compiler remains pinned to `v1.1.22`.
+The Aiken workflow caches build outputs using a key derived from the manifest/lockfile, Aiken source files and workflow. An exact key hit reuses the previously successful artifacts and skips both `aiken check` and `aiken build`; any relevant input change creates a new key and runs both. The cache is saved only after a successful job. Compiler remains pinned to `v1.1.22`.
 
-## Reproducibility and acceptance gates
+## Acceptance gates
 
-- All Aiken parity tests pass on a cache miss; an exact cache hit references the same previously validated source/config hash.
-- Fixed vectors from Haskell and Aiken produce identical outputs.
-- Negative tests reject the same invalid states.
+- Parity tests pass on a cache miss; an exact cache hit references identical previously validated inputs.
+- Haskell/Aiken vectors match and negative tests reject the same invalid states.
 - V2-to-V3 compatibility review passes for the intended target ledger.
-- Compiled script and complete transaction sizes are measured against the current baseline, with script versions labelled.
+- Compiled script and complete transaction sizes are measured against the baseline, with versions labelled.
 - CPU and memory costs are recorded with their cost model/version.
 - Yaci ledger integration passes.
 - IMMORTAL economic invariants and the existing V3 carrier remain unchanged.

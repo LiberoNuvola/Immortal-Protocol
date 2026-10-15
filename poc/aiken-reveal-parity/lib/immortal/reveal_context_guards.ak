@@ -1,6 +1,6 @@
 /// Pure transaction-context guards extracted from PrizeValidator.hs.
-/// These predicates do not decode Cardano ScriptContext; they are the
-/// parity seam for differential fixtures before wiring a full V3 validator.
+/// These predicates do not decode Cardano ScriptContext; they are parity
+/// seams for differential fixtures before wiring a full V3 validator.
 
 pub type RevealIdentity {
   RevealIdentity {
@@ -20,6 +20,20 @@ pub type RevealIdentity {
     prize_pool_hash: ByteArray,
     issued_at: Int,
     expires_at: Int,
+  }
+}
+
+/// Relevant B1PrizePool datum fields read by validateReveal.
+pub type RevealPoolState {
+  RevealPoolState {
+    total_liquidity: Int,
+    pending_liabilities: Int,
+    unresolved_reserve: Int,
+    unresolved_ticket_count: Int,
+    locked_jackpot: Int,
+    jackpot_threshold: Int,
+    suspended_classes: Int,
+    prize_hash: ByteArray,
   }
 }
 
@@ -53,6 +67,16 @@ pub fn no_continuing_prize_output(count: Int) -> Bool {
   count == 0
 }
 
+/// The serialized value encodings are supplied by fixtures. This predicate
+/// models valuePreserved's equality check, not Cardano Value decoding.
+pub fn continuing_value_preserved(
+  continuing_output_count: Int,
+  input_value: ByteArray,
+  output_value: ByteArray,
+) -> Bool {
+  continuing_output_count == 1 && input_value == output_value
+}
+
 /// Mirrors PrizeValidator.identityFieldsEq. Reveal result/tier/payout are
 /// intentionally excluded because Reveal is the one transition that writes
 /// those fields. This record contains only immutable identity fields.
@@ -75,6 +99,29 @@ pub fn identity_fields_preserved(before: RevealIdentity, after: RevealIdentity) 
     && before.expires_at == after.expires_at
 }
 
+/// Mirrors the Reveal branch of validateReveal's poolOk. Input count,
+/// output uniqueness, datum decoding, and actual UTxO association remain
+/// responsibilities of the future transaction-context validator.
+pub fn reveal_pool_transition_is_valid(
+  payout: Int,
+  expected_prize_hash: ByteArray,
+  before: RevealPoolState,
+  after: RevealPoolState,
+) -> Bool {
+  payout >= 0
+    && after.prize_hash == expected_prize_hash
+    && before.prize_hash == expected_prize_hash
+    && payout
+      <= before.total_liquidity
+        - before.pending_liabilities
+        - before.unresolved_reserve
+        - before.locked_jackpot
+    && after.pending_liabilities == before.pending_liabilities + payout
+    && after.unresolved_reserve < before.unresolved_reserve
+    && after.total_liquidity == before.total_liquidity
+    && after.unresolved_ticket_count == before.unresolved_ticket_count - 1
+}
+
 const identity_fixture =
   RevealIdentity {
     ticket_policy: #"a1",
@@ -93,6 +140,30 @@ const identity_fixture =
     prize_pool_hash: #"06",
     issued_at: 1_000,
     expires_at: 9_000,
+  }
+
+const pool_before =
+  RevealPoolState {
+    total_liquidity: 100_000,
+    pending_liabilities: 1_000,
+    unresolved_reserve: 500,
+    unresolved_ticket_count: 8,
+    locked_jackpot: 2_000,
+    jackpot_threshold: 5_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
+  }
+
+const pool_after =
+  RevealPoolState {
+    total_liquidity: 100_000,
+    pending_liabilities: 1_350,
+    unresolved_reserve: 400,
+    unresolved_ticket_count: 7,
+    locked_jackpot: 2_000,
+    jackpot_threshold: 5_000,
+    suspended_classes: 0,
+    prize_hash: #"06",
   }
 
 test reveal_accepts_finite_upper_bound_before_expiry() {
@@ -149,6 +220,13 @@ test expire_requires_no_continuing_prize_output() {
     && !no_continuing_prize_output(1)
 }
 
+test value_is_preserved_only_for_single_equal_value_output() {
+  continuing_value_preserved(1, #"0102", #"0102")
+    && !continuing_value_preserved(1, #"0102", #"0103")
+    && !continuing_value_preserved(2, #"0102", #"0102")
+    && !continuing_value_preserved(0, #"0102", #"0102")
+}
+
 test identity_fields_are_preserved() {
   identity_fields_preserved(identity_fixture, identity_fixture)
 }
@@ -161,4 +239,37 @@ test identity_fields_reject_changed_ticket_name() {
 test identity_fields_reject_changed_expiry() {
   let changed = RevealIdentity { ..identity_fixture, expires_at: 9_001 }
   !identity_fields_preserved(identity_fixture, changed)
+}
+
+test pool_accepts_consistent_reveal_transition() {
+  reveal_pool_transition_is_valid(350, #"06", pool_before, pool_after)
+}
+
+test pool_rejects_payout_above_effective_pool() {
+  !reveal_pool_transition_is_valid(100_000, #"06", pool_before, pool_after)
+}
+
+test pool_rejects_wrong_liability_delta() {
+  let changed = RevealPoolState { ..pool_after, pending_liabilities: 1_351 }
+  !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
+}
+
+test pool_rejects_reserve_that_does_not_decrease() {
+  let changed = RevealPoolState { ..pool_after, unresolved_reserve: 500 }
+  !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
+}
+
+test pool_rejects_changed_liquidity() {
+  let changed = RevealPoolState { ..pool_after, total_liquidity: 99_999 }
+  !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
+}
+
+test pool_rejects_wrong_unresolved_count() {
+  let changed = RevealPoolState { ..pool_after, unresolved_ticket_count: 8 }
+  !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
+}
+
+test pool_rejects_prize_hash_mismatch() {
+  let changed = RevealPoolState { ..pool_after, prize_hash: #"ff" }
+  !reveal_pool_transition_is_valid(350, #"06", pool_before, changed)
 }
