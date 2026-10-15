@@ -350,7 +350,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Register Aiken JEV evidence in Notion
-        if: always() && steps.evidence-upload.outcome == 'success' && secrets.NOTION_API_KEY != ''
+        if: always() && steps.evidence-upload.outcome == 'success'
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_EVIDENCE_PAGE_ID: "3e2c4454-d6d5-819c-bec1-c6edede714b3"
@@ -370,6 +370,3 @@ jobs:
           JEV_PROMPT_STATUS: ${{ steps.jev-generation.outcome || 'unknown' }}
         run: node ../../scripts/register-evidence-in-notion.mjs
 
-      - name: Report Notion registration skipped without secret
-        if: always() && steps.evidence-upload.outcome == 'success' && secrets.NOTION_API_KEY == ''
-        run: echo "JEV evidence artifact uploaded, but Notion registration was NOT_RUN because NOTION_API_KEY is unavailable in this event context."
