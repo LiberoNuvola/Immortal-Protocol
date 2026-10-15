@@ -32,6 +32,29 @@ The guard module tests logical predicates only. It does **not** decode a real Ca
 
 No production artifact may be switched to this package until full behavior passes Haskell differential tests and native-ledger integration tests.
 
+## Differential parity status (2026-10-15)
+
+The successful Aiken CI run validates the isolated Aiken package only. It is not yet a Haskell-vs-Aiken differential test. Current paired semantic references are:
+
+| Behavior | Canonical Haskell reference | Aiken seam | Current evidence |
+|---|---|---|---|
+| Row outcome boundaries and rejection sampling | `plutus/GameRules.hs` | `lib/immortal/game_rules.ak` | Fixed-vector tests exist on both sides; automated single-source fixture consumption is still missing |
+| Prize tier and payout formula / 500x cap | `plutus/GameRules.hs` | `lib/immortal/reveal_rules.ak` | Aiken tests and Haskell golden-vector assertions; shared fixture runner still missing |
+| Reveal validity upper bound | `plutus/PrizeValidator.hs` (`claimBeforeExpiry`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level boundary tests only |
+| Reveal pool accounting | `plutus/PrizeValidator.hs` (`validateReveal.poolOk`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level positive/negative tests only |
+| Typed Cardano context, unique inputs/outputs, continuing value | `plutus/PrizeValidator.hs` | `lib/immortal/reveal_context.ak` | Structural typed-context guard only; not full validator parity |
+| Datum/redeemer serialization | `plutus/Types.hs` | `lib/immortal/reveal_types.ak` | Field order documented, but no generated Haskell CBOR/Plutus Data fixture is consumed by Aiken yet |
+
+### Next acceptance gate
+
+1. Produce versioned golden fixtures from the canonical Haskell implementation (do not manually infer expected values): successful Reveal, zero-payout/loss Reveal, expiry boundary, and one negative twin for each failed guard.
+2. Include the pre/post PrizeDatum and B1PrizePool datum fields, the relevant transaction-context counts/value-preservation facts, computed beacon/commitment/result, payout, and rejection classification.
+3. Make the Aiken workflow consume the exact same fixture artifact and compare each field/decision. The Haskell fixture producer must be run and its source revision recorded; no independent hand-copied constants may be called differential evidence.
+4. Add Plutus Data/CBOR round-trip vectors for `PrizeDatum`, `PrizeAction`, `BeaconTarget`, and `B1PrizePoolDatum` before attempting validator wiring.
+5. Keep full validator equivalence, V2-to-V3 compatibility, size/cost measurement, and Yaci integration as separate gates.
+
+Current run status must therefore be reported as **Aiken isolated check/build PASS; Haskell/Aiken differential parity NOT YET RUN**. No validator deployment or protocol-wide GREEN claim follows from this result.
+
 ## CI artifact reuse
 
 The Aiken workflow caches build outputs using a key derived from the manifest/lockfile, Aiken source files and workflow. An exact key hit reuses the previously successful artifacts and skips both `aiken check` and `aiken build`; any relevant input change creates a new key and runs both. The cache is saved only after a successful job. Compiler remains pinned to `v1.1.22`.
