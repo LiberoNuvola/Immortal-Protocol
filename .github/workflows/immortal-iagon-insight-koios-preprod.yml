@@ -1,0 +1,61 @@
+name: IMMORTAL Iagon Insight vs Koios Preprod Evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      b1_pool_address:
+        description: "Exact deployed B1 PrizePool script address on Cardano Preprod"
+        required: true
+        type: string
+      pool_token_unit:
+        description: "B1 PrizePool singleton unit: 56-char policy ID + hex asset name"
+        required: true
+        type: string
+      usdm_asset_unit:
+        description: "Canonical USDM unit: 56-char policy ID + hex asset name"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare-providers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout workflow-triggering commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate required secret without printing it
+        env:
+          IAGON_INSIGHT_API_KEY: ${{ secrets.IAGON_INSIGHT_API_KEY }}
+        run: |
+          if [ -z "$IAGON_INSIGHT_API_KEY" ]; then
+            echo "::error::Missing Actions secret IAGON_INSIGHT_API_KEY. Add the key in repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - name: Compare exact address UTxOs from Insight and Koios
+        env:
+          IAGON_INSIGHT_API_KEY: ${{ secrets.IAGON_INSIGHT_API_KEY }}
+          B1_POOL_ADDRESS: ${{ inputs.b1_pool_address }}
+          POOL_TOKEN_UNIT: ${{ inputs.pool_token_unit }}
+          USDM_ASSET_UNIT: ${{ inputs.usdm_asset_unit }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: node scripts/compare-iagon-insight-koios-preprod.mjs
+      - name: Upload comparison evidence for JEV ingress
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-iagon-insight-koios-preprod-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/iagon-insight-koios/
+          if-no-files-found: warn
+          retention-days: 90
