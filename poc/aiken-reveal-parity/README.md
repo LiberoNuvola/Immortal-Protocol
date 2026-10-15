@@ -14,12 +14,9 @@ Aiken currently supports Plutus V3 only. The existing Haskell Reveal validator i
 
 ## Current scope
 
-`lib/immortal/reveal_rules.ak` mirrors a small, testable subset of the existing Haskell implementation:
-
-- `GameRules.classifyRowTier`
-- `GameRules.prizeAmountForTier`
-- `GameRules.rowPayoutTotal`, including the existing 500x cap
-- the pure PrizePool accounting equalities/inequalities checked by Reveal
+- `lib/immortal/reveal_rules.ak` mirrors `GameRules.classifyRowTier`, `prizeAmountForTier`, `rowPayoutTotal` (including the existing 500x cap), and the pure PrizePool accounting checks used by Reveal.
+- `lib/immortal/beacon.ak` ports the current `Beacon.hs` field encoding, player/ticket commitments, beacon derivation, ticket seed, and symbols seed.
+- Fixed SHA-256 test vectors guard the byte encoding and hash outputs. These vectors are independent constants and do not yet establish full validator equivalence.
 
 The prize table values and formulas are copied from the current Haskell source. They are not new economic decisions.
 
@@ -27,12 +24,10 @@ The prize table values and formulas are copied from the current Haskell source. 
 
 This is **not yet a port of the full Reveal validator**. In particular, the next parity work must port and verify:
 
-1. byte-for-byte commitment encoding and player commitment checks;
-2. beacon re-derivation and Materios context binding;
-3. ticket seed and symbol seed derivation;
-4. deterministic row generation and row-tier/result encoding;
-5. datum identity and continuing-output checks;
-6. unique Prize and PrizePool input/output checks, value preservation, expiry, and transaction-context bindings.
+1. deterministic row generation and row-tier/result encoding;
+2. datum identity and continuing-output checks;
+3. unique Prize and PrizePool input/output checks, value preservation, expiry, and transaction-context bindings;
+4. cross-language fixtures generated from the Haskell implementation and full negative twins.
 
 No production artifact may be switched to this package until the complete behavior is tested against Haskell vectors and native-ledger integration tests.
 
