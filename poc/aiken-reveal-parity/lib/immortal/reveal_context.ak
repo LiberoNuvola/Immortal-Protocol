@@ -3,7 +3,7 @@ use aiken/crypto.{ScriptHash}
 use cardano/address.{Script, VerificationKey}
 use cardano/transaction
 use cardano/transaction.{Input, Output, OutputReference, Transaction}
-use immortal/reveal_types.{PrizeDatum}
+use immortal/reveal_types.{BeaconPending, BeaconTarget, Pending, PrizeDatum}
 
 /// Counts transaction inputs whose payment credential is the given script hash.
 fn count_script_inputs(inputs: List<Input>, script_hash: ScriptHash) -> Int {
@@ -92,16 +92,16 @@ test empty_transaction_fails_closed() {
       prize_amount: 0,
       payment_policy: #"",
       payment_name: #"",
-      status: immortal/reveal_types.Pending,
+      status: Pending,
       result: #"",
       prize_tier: 0,
-      beacon_target: immortal/reveal_types.BeaconTarget {
+      beacon_target: BeaconTarget {
         network_id: 0,
         round: 0,
         mainchain_ref: #"",
         version: #"",
       },
-      beacon_status: immortal/reveal_types.BeaconPending,
+      beacon_status: BeaconPending,
       beacon_value: #"",
       mc_hash: #"",
       materios_context: #"",
