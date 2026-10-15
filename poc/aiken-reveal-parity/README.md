@@ -1,8 +1,8 @@
 # PRE-RICH Reveal — Aiken parity prototype
 
-**Status:** isolated first-stage parity harness; not a production validator and not deployable.
+**Status:** isolated parity harness; not a production validator and not deployable.
 
-This package starts a controlled Aiken implementation path for Cardano without changing the IMMORTAL normative kernel, the existing Haskell validator, V3 carrier, Reveal semantics, or any deployed artifact.
+This package starts a controlled Aiken implementation path for Cardano without changing the IMMORTAL normative kernel, the existing Haskell validator, the existing V3 carrier, Reveal semantics, or any deployed artifact.
 
 ## Why this exists
 
@@ -16,7 +16,8 @@ Aiken currently supports Plutus V3 only. The existing Haskell Reveal validator i
 
 - `lib/immortal/reveal_rules.ak` mirrors `GameRules.classifyRowTier`, `prizeAmountForTier`, `rowPayoutTotal` (including the existing 500x cap), and the pure PrizePool accounting checks used by Reveal.
 - `lib/immortal/beacon.ak` ports the current `Beacon.hs` field encoding, player/ticket commitments, beacon derivation, ticket seed, and symbols seed.
-- Fixed SHA-256 test vectors guard the byte encoding and hash outputs. These vectors are independent constants and do not yet establish full validator equivalence.
+- `lib/immortal/game_rules.ak` ports row outcome rejection sampling, tier boundaries, deterministic row-symbol construction, and the six-symbol summary tier.
+- Fixed SHA-256 and game-rule test vectors guard byte encoding, hash outputs, rejection sampling, and row generation. These vectors are independent constants and do not yet establish full validator equivalence.
 
 The prize table values and formulas are copied from the current Haskell source. They are not new economic decisions.
 
@@ -24,10 +25,9 @@ The prize table values and formulas are copied from the current Haskell source. 
 
 This is **not yet a port of the full Reveal validator**. In particular, the next parity work must port and verify:
 
-1. deterministic row generation and row-tier/result encoding;
-2. datum identity and continuing-output checks;
-3. unique Prize and PrizePool input/output checks, value preservation, expiry, and transaction-context bindings;
-4. cross-language fixtures generated from the Haskell implementation and full negative twins.
+1. datum identity and continuing-output checks;
+2. unique Prize and PrizePool input/output checks, value preservation, expiry, and transaction-context bindings;
+3. cross-language fixtures generated from the Haskell implementation and full negative twins.
 
 No production artifact may be switched to this package until the complete behavior is tested against Haskell vectors and native-ledger integration tests.
 
