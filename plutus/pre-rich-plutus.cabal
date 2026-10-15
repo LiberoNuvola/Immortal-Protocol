@@ -371,6 +371,7 @@ executable reveal-schema-fixtures
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        text,
         pre-rich-plutus
     default-language: Haskell2010
     ghc-options: -Wall
