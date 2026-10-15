@@ -35,7 +35,7 @@ export function buildOperationalPrompt(registry) {
     return `- ${c.checkId}: ${c.result}; evidence: ${refs}; limitations: ${limits}`;
   }).join("\n");
   const run = subject.workflowRunUrl || subject.workflowRunId || "not supplied";
-  return [
+  const prompt = [
     "JEV OPERATIONAL PROMPT — generated from a validated verification registry",
     `Repository: ${subject.repository}`,
     `Branch/ref: ${subject.ref}`,
@@ -53,7 +53,9 @@ export function buildOperationalPrompt(registry) {
     "Hard boundaries: do not work on Materios while it is paused; do not start other branches before JEV end-to-end autonomy is verified; do not create branches; do not modify IMMORTAL, Cardano Adapter, or DApp cores, economic/normative rules, Reveal semantics, or V3 semantics; do not deploy, mint, spend, or submit on-chain transactions. Do not claim PASS without observed evidence. Escalate only for a material decision or an unavoidable permission/credential blocker.",
     "",
     `Registry check summary: ${failures.length} check(s) are not PASS. This registry is scoped evidence and does not certify protocol-wide GREEN.`
-  ].join("\n").slice(0, 7000) + "\n";
+  ].join("\n") + "\n";
+  if (prompt.length > 7000) throw new Error("generated operational prompt exceeds 7000 characters; refusing to truncate safety boundaries");
+  return prompt;
 }
 
 async function main() {
