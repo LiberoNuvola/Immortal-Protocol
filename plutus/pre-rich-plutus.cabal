@@ -359,3 +359,18 @@ test-suite risk-protection-bridge-tests
         base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
+
+executable reveal-schema-fixtures
+    hs-source-dirs: test
+    main-is: RevealSchemaFixtures.hs
+    build-depends:
+        base ^>=4.18.2,
+        aeson,
+        bytestring,
+        base16-bytestring,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0,
+        plutus-tx ^>=1.67.0.0,
+        pre-rich-plutus
+    default-language: Haskell2010
+    ghc-options: -Wall
