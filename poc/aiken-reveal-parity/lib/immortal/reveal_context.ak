@@ -3,6 +3,7 @@ use aiken/crypto.{ScriptHash}
 use cardano/address.{Script, VerificationKey}
 use cardano/transaction
 use cardano/transaction.{Input, Output, OutputReference, Transaction}
+use immortal/reveal_types.{PrizeDatum}
 
 /// Counts transaction inputs whose payment credential is the given script hash.
 fn count_script_inputs(inputs: List<Input>, script_hash: ScriptHash) -> Int {
@@ -41,32 +42,30 @@ fn unique_script_output(outputs: List<Output>, script_hash: ScriptHash) -> Optio
   }
 }
 
-/// Structural Reveal guard over a real Aiken Cardano Transaction context.
+/// Structural Reveal guard over Aiken's typed Cardano transaction and Prize datum.
+/// The PrizePool hash is sourced from the decoded PrizeDatum, not supplied as a
+/// separate caller-controlled argument.
 ///
-/// This is intentionally NOT a complete validator: it does not decode PrizeDatum,
-/// B1PrizePoolDatum or the Reveal redeemer, nor verify commitments, symbols, payout,
-/// validity bounds, or pool accounting deltas. Those must be wired before parity
-/// or deployability can be claimed.
+/// Still intentionally incomplete: it does not decode/validate pool datums,
+/// redeemer semantics, commitments, payout, or pool accounting deltas.
 pub fn reveal_context_structure_is_valid(
   tx: Transaction,
   own_ref: OutputReference,
-  expected_pool_hash: ScriptHash,
+  datum: PrizeDatum,
 ) -> Bool {
+  let expected_pool_hash = datum.prize_pool_hash
   when tx.inputs |> list.find(fn(input) { input.output_reference == own_ref }) is {
     None -> False
     Some(own_input) ->
       when own_input.output.address.payment_credential is {
         Script(own_script_hash) ->
           and {
-            // The spending input and continuing Prize output must be unambiguous.
             count_script_inputs(tx.inputs, own_script_hash) == 1,
             count_script_outputs(tx.outputs, own_script_hash) == 1,
-            // Use Cardano's typed Value equality, not serialized fixture bytes.
             when unique_script_output(tx.outputs, own_script_hash) is {
               Some(continuing) -> continuing.value == own_input.output.value
               None -> False
             },
-            // PrizePool must be spent and continued exactly once.
             count_script_inputs(tx.inputs, expected_pool_hash) == 1,
             count_script_outputs(tx.outputs, expected_pool_hash) == 1,
           }
@@ -82,6 +81,35 @@ test empty_transaction_fails_closed() {
       transaction_id: transaction.placeholder.id,
       output_index: 0,
     },
-    #"",
+    PrizeDatum {
+      ticket_policy: #"",
+      ticket_name: #"",
+      player_commitment: #"",
+      price_usdm: 0,
+      commitment: #"",
+      game_version: #"",
+      ticket_nonce: 0,
+      prize_amount: 0,
+      payment_policy: #"",
+      payment_name: #"",
+      status: immortal/reveal_types.Pending,
+      result: #"",
+      prize_tier: 0,
+      beacon_target: immortal/reveal_types.BeaconTarget {
+        network_id: 0,
+        round: 0,
+        mainchain_ref: #"",
+        version: #"",
+      },
+      beacon_status: immortal/reveal_types.BeaconPending,
+      beacon_value: #"",
+      mc_hash: #"",
+      materios_context: #"",
+      prize_pool_hash: #"",
+      issued_at: 0,
+      expires_at: 0,
+      row1_tier: 0,
+      row2_tier: 0,
+    },
   )
 }
