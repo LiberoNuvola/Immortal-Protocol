@@ -88,15 +88,15 @@ export function bindPublishedReferenceScript(
     throw new Error(purpose + ': reference output index is outside the publishing transaction')
   }
   const output = outputs.get(utxo.outputIndex)
-  const address = output.address().to_bech32()
-  if (address !== referenceAddress) {
-    throw new Error(purpose + ': reference output address mismatch')
-  }
-
   const outputCbor = output.to_cbor_hex().toLowerCase()
   const expectedScriptCbor = normalizeHex(expectedScript.script)
   if (!expectedScriptCbor || !outputCbor.includes(expectedScriptCbor)) {
-    throw new Error(purpose + ': publishing transaction output has no matching reference script')
+    throw new Error(purpose + ': reference script hash mismatch or no reference script at selected output')
+  }
+
+  const address = output.address().to_bech32()
+  if (address !== referenceAddress) {
+    throw new Error(purpose + ': reference address mismatch')
   }
 
   if (utxo.scriptRef) {
