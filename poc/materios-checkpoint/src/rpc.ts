@@ -397,7 +397,7 @@ async getGrandpaJustificationAtBlock(
 
   return grandpa[0] ?? null;
 }
-}
+
 
 export type SubstrateHeader = {
 parentHash: string;
