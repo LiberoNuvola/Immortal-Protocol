@@ -6,12 +6,13 @@ use cardano/transaction
 use immortal/reveal_context.{reveal_context_structure_is_valid}
 use immortal/reveal_context_guards.{RevealPoolState}
 use immortal/reveal_transition.{reveal_state_transition_is_valid}
+use immortal/reveal_rules.{PrizeTable}
 use immortal/reveal_types
 
 /// Canonical default prize table used by the current Haskell fixture producer.
 /// This entrypoint is an isolated Plutus V3 prototype, not a deployable replacement.
 const prize_table =
-  immortal/reveal_rules.PrizeTable {
+  PrizeTable {
     tier_1: 2,
     tier_2: 5,
     tier_3: 10,
