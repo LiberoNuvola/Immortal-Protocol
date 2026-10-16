@@ -259,7 +259,7 @@ for (const [name, item] of cases) {
     '}',
   ].join('\n'));
   const invoke = (txExpr, secretExpr) =>
-    'reveal_transaction.reveal_transaction.reveal_transaction_is_valid(' + txExpr + ', ' + prefix + '_own_ref(), '
+    'reveal_transaction.reveal_transaction_is_valid(' + txExpr + ', ' + prefix + '_own_ref(), '
       + prefix + '_input_datum(), ' + secretExpr + ')';
   contextTests.push(test(prefix + '_complete_context_accepts_canonical_fixture',
     invoke(prefix + '_tx()', '#"' + secret + '"')));
