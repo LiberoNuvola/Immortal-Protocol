@@ -61,11 +61,14 @@ const cryptoKeys = [
   'playerSecretHex', 'ticketIdHex', 'mainchainRefHex', 'mcHashHex',
   'materiosContextHex', 'gameVersionHex', 'targetEncodedHex',
   'playerCommitmentHex', 'ticketCommitmentHex', 'beaconHex',
-  'ticketSeedHex', 'symbolsSeedHex', 'symbolsHex',
+  'ticketSeedHex', 'symbolsSeedHex', 'symbolsHex', 'resultDigestHex',
 ];
 if (!crypto || cryptoKeys.some((key) => typeof crypto[key] !== 'string'
     || !/^(?:[0-9a-f]{2})+$/.test(crypto[key]))) {
   throw new Error('Missing or malformed canonical Haskell crypto fixtures');
+}
+if (!Number.isInteger(crypto.row1OutcomeIndex) || !Number.isInteger(crypto.row2OutcomeIndex)) {
+  throw new Error('Missing or malformed canonical Haskell row outcome fixtures');
 }
 const required = [
   'PrizeDatum.pending',
@@ -88,9 +91,11 @@ for (const key of required) {
 const source = `// GENERATED IN CI from canonical Haskell Plutus Data and semantic fixtures.
 // Do not hand-edit or commit this file; the workflow recreates it per run.
 use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
+use aiken/crypto
+use aiken/primitive/bytearray
 use immortal/reveal_rules.{PrizeTable, classify_row_tier, prize_amount_for_tier, row_payout_total}
-use immortal/beacon.{BeaconTarget, derive_beacon, derive_symbols_seed, derive_ticket_seed, encode_beacon_target, player_commitment, ticket_commitment}
-use immortal/game_rules.{generate_symbols}
+use immortal/beacon.{BeaconTarget, derive_beacon, derive_symbols_seed, derive_ticket_seed, encode_beacon_target, field, player_commitment, ticket_commitment}
+use immortal/game_rules.{generate_symbols, row_outcome_index}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -235,7 +240,26 @@ test haskell_crypto_symbols_seed() {
 test haskell_crypto_generated_symbols() {
   generate_symbols(#"${crypto.symbolsSeedHex}") == #"${crypto.symbolsHex}"
 }
+
+test haskell_crypto_row_one_outcome_index() {
+  row_outcome_index(#"${crypto.symbolsSeedHex}", 1) == ${crypto.row1OutcomeIndex}
+}
+
+test haskell_crypto_row_two_outcome_index() {
+  row_outcome_index(#"${crypto.symbolsSeedHex}", 2) == ${crypto.row2OutcomeIndex}
+}
+
+test haskell_crypto_result_binding_digest() {
+  let symbols_seed = #"${crypto.symbolsSeedHex}"
+  let symbols = #"${crypto.symbolsHex}"
+  crypto.sha2_256(
+    bytearray.concat(
+      field(crypto.sha2_256(symbols_seed)),
+      field(symbols),
+    ),
+  ) == #"${crypto.resultDigestHex}"
+}
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven serialization, five row-tier, five prize amount, four payout, and seven crypto differential tests from canonical Haskell fixtures.');
+console.log('Generated seven serialization, five row-tier, five prize amount, four payout, and ten crypto differential tests from canonical Haskell fixtures.');
