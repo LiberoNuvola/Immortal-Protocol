@@ -115,6 +115,155 @@ for (const key of required) {
   }
 }
 
+
+const transitionFixtures = document.transitionFixtures;
+if (!transitionFixtures || !transitionFixtures.successfulReveal || !transitionFixtures.zeroPayoutLoss || !transitionFixtures.expiryBoundary) {
+  throw new Error('Missing canonical Reveal transition or expiry-boundary fixtures');
+}
+
+const hexField = (value, label) => {
+  if (typeof value !== 'string' || !/^(?:[0-9a-f]{2})*$/.test(value)) {
+    throw new Error('Malformed hex field: ' + label);
+  }
+  return value;
+};
+const intField = (value, label) => {
+  if (!Number.isSafeInteger(value)) throw new Error('Malformed integer field: ' + label);
+  return value;
+};
+const statusIndex = (value, label) => {
+  const indices = { Pending: 0, Revealed: 1, Claimed: 2 };
+  if (!(value in indices)) throw new Error('Malformed status field: ' + label);
+  return indices[value];
+};
+const beaconStatusIndex = (value, label) => {
+  const indices = { BeaconPending: 0, BeaconReady: 1 };
+  if (!(value in indices)) throw new Error('Malformed beacon status field: ' + label);
+  return indices[value];
+};
+function prizeDatumDataExpr(snapshot, label) {
+  if (!snapshot || typeof snapshot !== 'object') throw new Error('Missing datum snapshot: ' + label);
+  const expectedHex = hexField(snapshot.dataHex, label + '.dataHex');
+  const v = snapshot.fields;
+  if (!v || typeof v !== 'object') throw new Error('Missing datum fields: ' + label);
+  const bytes = (key) => 'b_data(#"' + hexField(v[key], label + '.' + key) + '")';
+  const integer = (key) => 'i_data(' + intField(v[key], label + '.' + key) + ')';
+  const target = v.beaconTarget;
+  if (!target || typeof target !== 'object') throw new Error('Missing beacon target: ' + label);
+  const targetExpr = 'constr_data(0, ['
+    + 'i_data(' + intField(target.networkId, label + '.networkId') + '), '
+    + 'i_data(' + intField(target.round, label + '.round') + '), '
+    + 'b_data(#"' + hexField(target.mainchainRefHex, label + '.mainchainRefHex') + '"), '
+    + 'b_data(#"' + hexField(target.versionHex, label + '.versionHex') + '")'
+    + '])';
+  const expr = 'constr_data(0, ['
+    + [bytes('ticketPolicyHex'), bytes('ticketNameHex'), bytes('playerCommitmentHex'),
+       integer('priceUsdm'), bytes('commitmentHex'), bytes('gameVersionHex'),
+       integer('ticketNonce'), integer('prizeAmount'), bytes('paymentPolicyHex'),
+       bytes('paymentNameHex'),
+       'constr_data(' + statusIndex(v.status, label + '.status') + ', [])',
+       bytes('resultHex'), integer('prizeTier'), targetExpr,
+       'constr_data(' + beaconStatusIndex(v.beaconStatus, label + '.beaconStatus') + ', [])',
+       bytes('beaconValueHex'), bytes('mcHashHex'), bytes('materiosContextHex'),
+       bytes('prizePoolHashHex'), integer('issuedAt'), integer('expiresAt'),
+       integer('row1Tier'), integer('row2Tier')].join(', ')
+    + '])';
+  return { expr, expectedHex, fields: v };
+}
+function poolDatumDataExpr(snapshot, label) {
+  if (!snapshot || typeof snapshot !== 'object') throw new Error('Missing pool snapshot: ' + label);
+  const expectedHex = hexField(snapshot.dataHex, label + '.dataHex');
+  const v = snapshot.fields;
+  if (!v || typeof v !== 'object') throw new Error('Missing pool fields: ' + label);
+  const integer = (key) => 'i_data(' + intField(v[key], label + '.' + key) + ')';
+  const prizeHash = hexField(v.prizeHashHex, label + '.prizeHashHex');
+  const expr = 'constr_data(0, ['
+    + [integer('totalLiquidity'), integer('pendingLiabilities'), integer('unresolvedReserve'),
+       integer('unresolvedTicketCount'), integer('lockedJackpot'), integer('jackpotThreshold'),
+       integer('suspendedClasses'), 'b_data(#"' + prizeHash + '")'].join(', ')
+    + '])';
+  return { expr, expectedHex, fields: v };
+}
+function poolStateExpr(snapshot, label) {
+  const s = poolDatumDataExpr(snapshot, label).fields;
+  return 'RevealPoolState { '
+    + 'total_liquidity: ' + intField(s.totalLiquidity, label + '.totalLiquidity') + ', '
+    + 'pending_liabilities: ' + intField(s.pendingLiabilities, label + '.pendingLiabilities') + ', '
+    + 'unresolved_reserve: ' + intField(s.unresolvedReserve, label + '.unresolvedReserve') + ', '
+    + 'unresolved_ticket_count: ' + intField(s.unresolvedTicketCount, label + '.unresolvedTicketCount') + ', '
+    + 'locked_jackpot: ' + intField(s.lockedJackpot, label + '.lockedJackpot') + ', '
+    + 'jackpot_threshold: ' + intField(s.jackpotThreshold, label + '.jackpotThreshold') + ', '
+    + 'suspended_classes: ' + intField(s.suspendedClasses, label + '.suspendedClasses') + ', '
+    + 'prize_hash: #' + '"' + hexField(s.prizeHashHex, label + '.prizeHashHex') + '"'
+    + ' }';
+}
+const transitionCases = [
+  ['successful_reveal', transitionFixtures.successfulReveal, true],
+  ['zero_payout_loss', transitionFixtures.zeroPayoutLoss, false],
+];
+const transitionTests = transitionCases.map(([name, item, shouldWin]) => {
+  if (!item || item.name !== name) throw new Error('Malformed transition fixture: ' + name);
+  const input = prizeDatumDataExpr(item.inputPrizeDatum, name + '.inputPrizeDatum');
+  const output = prizeDatumDataExpr(item.outputPrizeDatum, name + '.outputPrizeDatum');
+  const poolBefore = poolDatumDataExpr(item.poolBefore, name + '.poolBefore');
+  const poolAfter = poolDatumDataExpr(item.poolAfter, name + '.poolAfter');
+  const payout = intField(item.payout, name + '.payout');
+  const row1Tier = intField(item.row1Tier, name + '.row1Tier');
+  const row2Tier = intField(item.row2Tier, name + '.row2Tier');
+  if (input.fields.status !== 'Pending' || output.fields.status !== 'Revealed') {
+    throw new Error('Transition fixtures must encode Pending -> Revealed: ' + name);
+  }
+  if (intField(output.fields.prizeAmount, name + '.output prize amount') !== payout) {
+    throw new Error('Transition payout does not equal output datum amount: ' + name);
+  }
+  if (intField(output.fields.row1Tier, name + '.output row1 tier') !== row1Tier
+      || intField(output.fields.row2Tier, name + '.output row2 tier') !== row2Tier) {
+    throw new Error('Transition row tiers do not match output datum: ' + name);
+  }
+  if (shouldWin ? payout <= 0 : payout !== 0) {
+    throw new Error('Unexpected payout class for transition fixture: ' + name);
+  }
+  if (hexField(poolBefore.fields.prizeHashHex, name + '.pool prize hash')
+      !== hexField(input.fields.prizePoolHashHex, name + '.input pool hash')) {
+    throw new Error('Prize datum and pool fixture hash are not linked: ' + name);
+  }
+  const table = 'PrizeTable { tier_1: 2, tier_2: 5, tier_3: 10, tier_4: 200, tier_5: 1000 }';
+  return [
+    `test haskell_transition_${name}_input_datum_serialisation() { serialise_data(${input.expr}) == #"${input.expectedHex}" }`,
+    `test haskell_transition_${name}_output_datum_serialisation() { serialise_data(${output.expr}) == #"${output.expectedHex}" }`,
+    `test haskell_transition_${name}_pool_before_serialisation() { serialise_data(${poolBefore.expr}) == #"${poolBefore.expectedHex}" }`,
+    `test haskell_transition_${name}_pool_after_serialisation() { serialise_data(${poolAfter.expr}) == #"${poolAfter.expectedHex}" }`,
+    `test haskell_transition_${name}_payout_matches_canonical_rows() { row_payout_total(${table}, ${row1Tier}, ${row2Tier}, 100) == ${payout} }`,
+    `test haskell_transition_${name}_pool_accounting_matches_canonical_snapshots() { reveal_pool_transition_is_valid(${payout}, #"${poolBefore.fields.prizeHashHex}", ${poolStateExpr(item.poolBefore, name + '.poolBefore')}, ${poolStateExpr(item.poolAfter, name + '.poolAfter')}) }`,
+  ].join(String.fromCharCode(10));
+}).join(String.fromCharCode(10));
+const expiry = transitionFixtures.expiryBoundary;
+const expiryValue = (key) => intField(expiry[key], 'expiryBoundary.' + key);
+if (expiryValue('revealUpperEqual') !== expiryValue('expiresAt')
+    || expiryValue('expireLowerEqual') !== expiryValue('expiresAt')) {
+  throw new Error('Expiry boundary fixtures must share the exact expiry instant');
+}
+const expiryTests = `
+test haskell_expiry_reveal_accepts_before_boundary() {
+  reveal_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('revealUpperBefore')}))
+}
+test haskell_expiry_reveal_accepts_exact_boundary() {
+  reveal_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('revealUpperEqual')}))
+}
+test haskell_expiry_reveal_rejects_after_boundary() {
+  !reveal_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('revealUpperAfter')}))
+}
+test haskell_expiry_expire_rejects_before_boundary() {
+  !expire_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('expireLowerBefore')}))
+}
+test haskell_expiry_expire_accepts_exact_boundary() {
+  expire_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('expireLowerEqual')}))
+}
+test haskell_expiry_expire_accepts_after_boundary() {
+  expire_window_open(${expiryValue('expiresAt')}, Some(${expiryValue('expireLowerAfter')}))
+}
+`;
+
 // All expected CBOR is generated from canonical Types.hs in this workflow run.
 // These expressions mirror only the declared Plutus Data constructor/field
 // layout; they do not implement or claim Reveal validator semantic parity.
@@ -126,6 +275,7 @@ use aiken/primitive/bytearray
 use immortal/reveal_rules.{PrizeTable, classify_row_tier, prize_amount_for_tier, row_payout_total}
 use immortal/beacon.{BeaconTarget, derive_beacon, derive_symbols_seed, derive_ticket_seed, encode_beacon_target, field, player_commitment, ticket_commitment}
 use immortal/game_rules.{generate_symbols, row_outcome_index}
+use immortal/reveal_context_guards.{RevealPoolState, expire_window_open, reveal_pool_transition_is_valid, reveal_window_open}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -202,6 +352,10 @@ ${rowTierTests}
 ${prizeAmountTests}
 ${semanticTests}
 ${symbolsVectorTests}
+
+${transitionTests}
+
+${expiryTests}
 
 test haskell_crypto_player_commitment() {
   player_commitment(42, 7, #"${crypto.playerSecretHex}") == #"${crypto.playerCommitmentHex}"
