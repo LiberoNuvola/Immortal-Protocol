@@ -6,7 +6,7 @@ if (!fixturePath || !outputPath) {
   throw new Error('Usage: node generate-aiken-schema-fixture-tests.mjs <fixture.json> <output.ak>');
 }
 const document = JSON.parse(await fs.readFile(fixturePath, 'utf8'));
-if (document.schema !== 'pre-rich-reveal-plutus-data-v1') {
+if (document.schema !== 'pre-rich-reveal-plutus-data-v2') {
   throw new Error(`Unsupported fixture schema: ${document.schema}`);
 }
 const fixtures = document.fixtures ?? {};
