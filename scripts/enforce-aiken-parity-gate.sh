@@ -8,7 +8,7 @@ outcome() {
   esac
 }
 
-CACHE_HIT="$(outcome "${CACHE_HIT:-false}")"
+case "${CACHE_HIT:-false}" in true|false) ;; *) CACHE_HIT=false ;; esac
 HASKELL_FIXTURE_OUTCOME="$(outcome "${HASKELL_FIXTURE_OUTCOME:-unknown}")"
 AIKEN_FIXTURE_TESTS_OUTCOME="$(outcome "${AIKEN_FIXTURE_TESTS_OUTCOME:-unknown}")"
 AIKEN_FIXTURE_PARITY_OUTCOME="$(outcome "${AIKEN_FIXTURE_PARITY_OUTCOME:-unknown}")"
