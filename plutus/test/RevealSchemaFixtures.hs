@@ -16,7 +16,7 @@ import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
 import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, field, playerCommitment, ticketCommitment)
-import GameRules (classifyRowTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowOutcomeIndex, rowPayoutTotal)
+import GameRules (classifyRowTier, classifyTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowOutcomeIndex, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -135,6 +135,202 @@ symbolsVectorCase name seedBytes =
               seed)
       in Builtins.indexByteString digest 0 * 256 + Builtins.indexByteString digest 1
 
+rawBytes :: [Integer] -> Builtins.BuiltinByteString
+rawBytes bytes = Builtins.toBuiltin (BS.pack (map fromInteger bytes))
+
+statusName :: PrizeStatus -> String
+statusName status = case status of
+  Pending -> "Pending"
+  Revealed -> "Revealed"
+  Claimed -> "Claimed"
+
+beaconStatusName :: BeaconStatus -> String
+beaconStatusName status = case status of
+  BeaconPending -> "BeaconPending"
+  BeaconReady -> "BeaconReady"
+
+prizeDatumSnapshot :: PrizeDatum -> Aeson.Value
+prizeDatumSnapshot d =
+  object
+    [ "dataHex" .= hexData d
+    , "fields" .= object
+        [ "ticketPolicyHex" .= hexBuiltin (pdTicketPolicy d)
+        , "ticketNameHex" .= hexBuiltin (pdTicketName d)
+        , "playerCommitmentHex" .= hexBuiltin (pdPlayerCommitment d)
+        , "priceUsdm" .= pdPriceUsdm d
+        , "commitmentHex" .= hexBuiltin (pdCommitment d)
+        , "gameVersionHex" .= hexBuiltin (pdGameVersion d)
+        , "ticketNonce" .= pdTicketNonce d
+        , "prizeAmount" .= pdPrizeAmount d
+        , "paymentPolicyHex" .= hexBuiltin (pdPaymentPolicy d)
+        , "paymentNameHex" .= hexBuiltin (pdPaymentName d)
+        , "status" .= statusName (pdStatus d)
+        , "resultHex" .= hexBuiltin (pdResult d)
+        , "prizeTier" .= pdPrizeTier d
+        , "beaconTarget" .= object
+            [ "networkId" .= btNetworkId (pdBeaconTarget d)
+            , "round" .= btRound (pdBeaconTarget d)
+            , "mainchainRefHex" .= hexBuiltin (btMainchainRef (pdBeaconTarget d))
+            , "versionHex" .= hexBuiltin (btVersion (pdBeaconTarget d))
+            ]
+        , "beaconStatus" .= beaconStatusName (pdBeaconStatus d)
+        , "beaconValueHex" .= hexBuiltin (pdBeaconValue d)
+        , "mcHashHex" .= hexBuiltin (pdMcHash d)
+        , "materiosContextHex" .= hexBuiltin (pdMateriosContext d)
+        , "prizePoolHashHex" .= hexBuiltin (pdPrizePoolHash d)
+        , "issuedAt" .= pdIssuedAt d
+        , "expiresAt" .= pdExpiresAt d
+        , "row1Tier" .= pdRow1Tier d
+        , "row2Tier" .= pdRow2Tier d
+        ]
+    ]
+
+poolDatumSnapshot :: B1PrizePoolDatum -> Aeson.Value
+poolDatumSnapshot d =
+  let ScriptHash prizeHash = ppPrizeHash d
+  in object
+    [ "dataHex" .= hexData d
+    , "fields" .= object
+        [ "totalLiquidity" .= ppTotalLiquidity d
+        , "pendingLiabilities" .= ppPendingLiabilities d
+        , "unresolvedReserve" .= ppUnresolvedReserve d
+        , "unresolvedTicketCount" .= ppUnresolvedTicketCount d
+        , "lockedJackpot" .= ppLockedJackpot d
+        , "jackpotThreshold" .= ppJackpotThreshold d
+        , "suspendedClasses" .= ppSuspendedClasses d
+        , "prizeHashHex" .= hexBuiltin prizeHash
+        ]
+    ]
+
+-- Construct transition snapshots from the canonical Haskell crypto and game
+-- functions. This deliberately does not evaluate mkValidator/ScriptContext.
+scenarioForSecret
+  :: [Integer]
+  -> (PrizeDatum, PrizeDatum, B1PrizePoolDatum, B1PrizePoolDatum, Integer, Integer, Integer)
+scenarioForSecret secretBytes =
+  let
+    secret = rawBytes secretBytes
+    ticketId = rawBytes [222, 173, 190, 239]
+    mainchainRef = rawBytes [1, 2, 3]
+    mcHash = rawBytes [17, 34, 51, 68]
+    materiosContext = rawBytes [85, 102, 119]
+    gameVersion = "classic-6-v1"
+    target = BeaconTarget
+      { btNetworkId = 0
+      , btRound = 42
+      , btMainchainRef = mainchainRef
+      , btVersion = "v1"
+      }
+    player = playerCommitment 42 7 secret
+    targetEncoded = encodeBeaconTarget target
+    ticket = ticketCommitment ticketId player gameVersion 7 100 targetEncoded
+    beacon = deriveBeacon 0 42 mainchainRef mcHash materiosContext "v1"
+    ticketSeed = deriveTicketSeed 42 7 secret beacon gameVersion
+    symbolsSeed = deriveSymbolsSeed ticketSeed
+    symbols = generateSymbols symbolsSeed
+    symbolsBytes = Builtins.fromBuiltin symbols
+    row1Tier = classifyRowTier (Builtins.toBuiltin (BS.take 3 symbolsBytes))
+    row2Tier = classifyRowTier (Builtins.toBuiltin (BS.drop 3 symbolsBytes))
+    summaryTier = classifyTier symbols
+    payout = rowPayoutTotal defaultPrizeTable row1Tier row2Tier 100
+    result = Builtins.sha2_256
+      (Builtins.appendByteString
+        (field (Builtins.sha2_256 symbolsSeed))
+        (field symbols))
+    inputDatum = PrizeDatum
+      { pdTicketPolicy = rawBytes [161]
+      , pdTicketName = ticketId
+      , pdPlayerCommitment = player
+      , pdPriceUsdm = 100
+      , pdCommitment = ticket
+      , pdGameVersion = gameVersion
+      , pdTicketNonce = 7
+      , pdPrizeAmount = 0
+      , pdPaymentPolicy = rawBytes [4]
+      , pdPaymentName = rawBytes [5]
+      , pdStatus = Pending
+      , pdResult = Builtins.emptyByteString
+      , pdPrizeTier = 0
+      , pdBeaconTarget = target
+      , pdBeaconStatus = BeaconReady
+      , pdBeaconValue = beacon
+      , pdMcHash = mcHash
+      , pdMateriosContext = materiosContext
+      , pdPrizePoolHash = rawBytes [6]
+      , pdIssuedAt = 1000
+      , pdExpiresAt = 9000
+      , pdRow1Tier = 0
+      , pdRow2Tier = 0
+      }
+    outputDatum = inputDatum
+      { pdStatus = Revealed
+      , pdPrizeAmount = payout
+      , pdResult = result
+      , pdPrizeTier = summaryTier
+      , pdRow1Tier = row1Tier
+      , pdRow2Tier = row2Tier
+      }
+    poolBefore = B1PrizePoolDatum
+      { ppTotalLiquidity = 100000
+      , ppPendingLiabilities = 1000
+      , ppUnresolvedReserve = 500
+      , ppUnresolvedTicketCount = 8
+      , ppLockedJackpot = 2000
+      , ppJackpotThreshold = 5000
+      , ppSuspendedClasses = 0
+      , ppPrizeHash = ScriptHash (rawBytes [6])
+      }
+    poolAfter = poolBefore
+      { ppPendingLiabilities = ppPendingLiabilities poolBefore + payout
+      , ppUnresolvedReserve = ppUnresolvedReserve poolBefore - 100
+      , ppUnresolvedTicketCount = ppUnresolvedTicketCount poolBefore - 1
+      }
+  in (inputDatum, outputDatum, poolBefore, poolAfter, payout, row1Tier, row2Tier)
+
+transitionCase :: String -> [Integer] -> Aeson.Value
+transitionCase name secretBytes =
+  let (inputDatum, outputDatum, poolBefore, poolAfter, payout, row1Tier, row2Tier) =
+        scenarioForSecret secretBytes
+  in object
+       [ "name" .= name
+       , "inputPrizeDatum" .= prizeDatumSnapshot inputDatum
+       , "outputPrizeDatum" .= prizeDatumSnapshot outputDatum
+       , "poolBefore" .= poolDatumSnapshot poolBefore
+       , "poolAfter" .= poolDatumSnapshot poolAfter
+       , "payout" .= payout
+       , "row1Tier" .= row1Tier
+       , "row2Tier" .= row2Tier
+       ]
+
+transitionFixtures :: Aeson.Value
+transitionFixtures =
+  let
+    winningSecret = head
+      [ [first, 187, 204, 221]
+      | first <- [0 .. 255]
+      , let (_, _, _, _, payout, _, _) = scenarioForSecret [first, 187, 204, 221]
+      , payout > 0
+      ]
+    losingSecret = head
+      [ [first, 187, 204, 221]
+      | first <- [0 .. 255]
+      , let (_, _, _, _, payout, _, _) = scenarioForSecret [first, 187, 204, 221]
+      , payout == 0
+      ]
+  in object
+       [ "successfulReveal" .= transitionCase "successful_reveal" winningSecret
+       , "zeroPayoutLoss" .= transitionCase "zero_payout_loss" losingSecret
+       , "expiryBoundary" .= object
+           [ "expiresAt" .= (9000 :: Integer)
+           , "revealUpperBefore" .= (8999 :: Integer)
+           , "revealUpperEqual" .= (9000 :: Integer)
+           , "revealUpperAfter" .= (9001 :: Integer)
+           , "expireLowerBefore" .= (8999 :: Integer)
+           , "expireLowerEqual" .= (9000 :: Integer)
+           , "expireLowerAfter" .= (9001 :: Integer)
+           ]
+       ]
+
 cryptoFixtures :: Aeson.Value
 cryptoFixtures =
   let raw bytes = Builtins.toBuiltin (BS.pack bytes)
@@ -200,6 +396,7 @@ main = do
                 , "B1PrizePoolDatum" .= hexData samplePoolDatum
                 ]
           , "cryptoFixtures" .= cryptoFixtures
+          , "transitionFixtures" .= transitionFixtures
           , "semanticFixtures" .=
               object
                 [ "rowTierCases" .=
