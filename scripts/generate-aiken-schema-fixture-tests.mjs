@@ -168,72 +168,72 @@ ${prizeAmountTests}
 ${semanticTests}
 
 test haskell_crypto_player_commitment() {
-  player_commitment(42, 7, #"\${crypto.playerSecretHex}") == #"\${crypto.playerCommitmentHex}"
+  player_commitment(42, 7, #"${crypto.playerSecretHex}") == #"${crypto.playerCommitmentHex}"
 }
 
 test haskell_crypto_beacon_target_encoding() {
   encode_beacon_target(BeaconTarget {
     network_id: 0,
     round_id: 42,
-    mainchain_ref: #"\${crypto.mainchainRefHex}",
+    mainchain_ref: #"${crypto.mainchainRefHex}",
     version: "v1",
-  }) == #"\${crypto.targetEncodedHex}"
+  }) == #"${crypto.targetEncodedHex}"
 }
 
 test haskell_crypto_ticket_commitment() {
-  let player = player_commitment(42, 7, #"\${crypto.playerSecretHex}")
+  let player = player_commitment(42, 7, #"${crypto.playerSecretHex}")
   let target = encode_beacon_target(BeaconTarget {
     network_id: 0,
     round_id: 42,
-    mainchain_ref: #"\${crypto.mainchainRefHex}",
+    mainchain_ref: #"${crypto.mainchainRefHex}",
     version: "v1",
   })
   ticket_commitment(
-    #"\${crypto.ticketIdHex}",
+    #"${crypto.ticketIdHex}",
     player,
-    #"\${crypto.gameVersionHex}",
+    #"${crypto.gameVersionHex}",
     7,
     100,
     target,
-  ) == #"\${crypto.ticketCommitmentHex}"
+  ) == #"${crypto.ticketCommitmentHex}"
 }
 
 test haskell_crypto_beacon_derivation() {
   derive_beacon(
     0, 42,
-    #"\${crypto.mainchainRefHex}",
-    #"\${crypto.mcHashHex}",
-    #"\${crypto.materiosContextHex}",
+    #"${crypto.mainchainRefHex}",
+    #"${crypto.mcHashHex}",
+    #"${crypto.materiosContextHex}",
     "v1",
-  ) == #"\${crypto.beaconHex}"
+  ) == #"${crypto.beaconHex}"
 }
 
 test haskell_crypto_ticket_seed() {
   let beacon = derive_beacon(
     0, 42,
-    #"\${crypto.mainchainRefHex}",
-    #"\${crypto.mcHashHex}",
-    #"\${crypto.materiosContextHex}",
+    #"${crypto.mainchainRefHex}",
+    #"${crypto.mcHashHex}",
+    #"${crypto.materiosContextHex}",
     "v1",
   )
-  derive_ticket_seed(42, 7, #"\${crypto.playerSecretHex}", beacon, #"\${crypto.gameVersionHex}")
-    == #"\${crypto.ticketSeedHex}"
+  derive_ticket_seed(42, 7, #"${crypto.playerSecretHex}", beacon, #"${crypto.gameVersionHex}")
+    == #"${crypto.ticketSeedHex}"
 }
 
 test haskell_crypto_symbols_seed() {
   let beacon = derive_beacon(
     0, 42,
-    #"\${crypto.mainchainRefHex}",
-    #"\${crypto.mcHashHex}",
-    #"\${crypto.materiosContextHex}",
+    #"${crypto.mainchainRefHex}",
+    #"${crypto.mcHashHex}",
+    #"${crypto.materiosContextHex}",
     "v1",
   )
-  let ticket_seed = derive_ticket_seed(42, 7, #"\${crypto.playerSecretHex}", beacon, #"\${crypto.gameVersionHex}")
-  derive_symbols_seed(ticket_seed) == #"\${crypto.symbolsSeedHex}"
+  let ticket_seed = derive_ticket_seed(42, 7, #"${crypto.playerSecretHex}", beacon, #"${crypto.gameVersionHex}")
+  derive_symbols_seed(ticket_seed) == #"${crypto.symbolsSeedHex}"
 }
 
 test haskell_crypto_generated_symbols() {
-  generate_symbols(#"\${crypto.symbolsSeedHex}") == #"\${crypto.symbolsHex}"
+  generate_symbols(#"${crypto.symbolsSeedHex}") == #"${crypto.symbolsHex}"
 }
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
