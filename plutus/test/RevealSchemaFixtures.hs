@@ -174,6 +174,7 @@ main = do
                 , "BeaconTarget" .= hexData sampleTarget
                 , "B1PrizePoolDatum" .= hexData samplePoolDatum
                 ]
+          , "cryptoFixtures" .= cryptoFixtures
           , "semanticFixtures" .=
               object
                 [ "rowTierCases" .=
