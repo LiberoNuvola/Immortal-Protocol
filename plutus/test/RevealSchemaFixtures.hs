@@ -15,7 +15,7 @@ import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
-import GameRules (classifyRowTier, defaultPrizeTable, rowPayoutTotal)
+import GameRules (classifyRowTier, defaultPrizeTable, prizeAmountForTier, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -92,6 +92,15 @@ rowTierCase name symbols =
        , "expectedTier" .= classifyRowTier row
        ]
 
+prizeAmountCase :: String -> Integer -> Integer -> Aeson.Value
+prizeAmountCase name tier price =
+  object
+    [ "name" .= name
+    , "tier" .= tier
+    , "priceUsdm" .= price
+    , "expectedAmount" .= prizeAmountForTier defaultPrizeTable tier price
+    ]
+
 payoutCase :: String -> Integer -> Integer -> Integer -> Aeson.Value
 payoutCase name row1Tier row2Tier price =
   object
@@ -131,6 +140,13 @@ main = do
                     , rowTierCase "mixed_row_loss" [1, 2, 1]
                     , rowTierCase "out_of_range_symbol_loss" [6, 6, 6]
                     , rowTierCase "short_row_loss" [2, 2]
+                    ]
+                , "prizeAmountCases" .=
+                    [ prizeAmountCase "tier_one_odd_price" 1 101
+                    , prizeAmountCase "tier_four" 4 100
+                    , prizeAmountCase "tier_five" 5 100
+                    , prizeAmountCase "invalid_tier" 6 100
+                    , prizeAmountCase "zero_price" 5 0
                     ]
                 , "payoutCases" .=
                     [ payoutCase "loss_zero_payout" 0 0 100
