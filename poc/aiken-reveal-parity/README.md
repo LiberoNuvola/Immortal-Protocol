@@ -18,16 +18,16 @@ The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken pack
 - `lib/immortal/beacon.ak`: Haskell-compatible field encoding, player/ticket commitments, beacon derivation, ticket seed and symbols seed.
 - `lib/immortal/game_rules.ak`: row outcome rejection sampling, tier boundaries, deterministic row-symbol construction and summary tier.
 - `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
-- `lib/immortal/reveal_types.ak`: Aiken data declarations matching the Haskell `PrizeDatum`, `PrizeAction`, `BeaconTarget`, status enums and `B1PrizePoolDatum` constructor/field order. These declarations are a schema port. The CI generates canonical Haskell Plutus Data fixtures and Aiken tests for seven initial constructor/layout examples plus Haskell-derived winning and zero-payout-loss Pending-to-Revealed snapshots, PrizePool before/after snapshots, payout/accounting predicates, and expiry-boundary vectors. These are serialization and pure-predicate checks; they do not invoke the full Haskell validator against a real or constructed `ScriptContext`.
+- `lib/immortal/reveal_types.ak` and `lib/immortal/reveal_transition.ak`: Aiken datum types and a pure Reveal state-transition predicate composed from canonical beacon, game, payout, identity, expiry and PrizePool rules. CI builds generated positive/negative transition tests from Haskell-produced winning/loss snapshots. Separately, the Haskell producer executes the compiled Plutus V2 validator against synthetic `ScriptContext` values; neither harness submits a ledger-valid transaction.
 - `lib/immortal/reveal_context.ak`: typed-context guard over Aiken's actual `cardano/transaction` types. It resolves the own input by output reference, derives the spent Prize script credential, checks unique Prize input/continuing output, compares actual typed `Value` equality, and checks exactly one PrizePool input/output using the pool hash carried in the typed Prize datum. This is still a structural guard, not a complete Reveal validator; pool datum decoding and all Reveal semantics remain unimplemented.
 
 The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
 
 ## Not implemented yet
 
-1. Add Haskell/Aiken serialization fixtures proving the typed datum declarations decode the exact existing CBOR schema; decode and validate B1PrizePoolDatum from the unique matching pool input/output and verify the datum hash binding.
-2. Wire the existing beacon, player secret, ticket commitment, generated result, payout and pool predicates into the validator.
-3. Build cross-language fixtures from Haskell and negative twins.
+1. Decode `B1PrizePoolDatum` from the unique matching typed transaction input/output and verify the datum hash binding.
+2. Wire the state-transition predicate into a complete Aiken validator entrypoint that consumes the typed transaction context and redeemer.
+3. Continue adding canonical Haskell/Aiken differential fixtures and negative twins for every guard.
 4. Compile the complete validator and measure script size, full transaction size, CPU and memory against a version-labelled baseline.
 
 No production artifact may be switched to this package until full behavior passes Haskell differential tests and native-ledger integration tests.
