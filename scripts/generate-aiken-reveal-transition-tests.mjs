@@ -253,13 +253,13 @@ for (const [name, item] of cases) {
   contextTests.push(test(prefix + '_complete_context_rejects_wrong_secret',
     '!' + invoke(prefix + '_tx()', '#"00000000"')));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_pool_output',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { outputs: list.take(tx.outputs, 1), ..tx }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { tx | outputs: list.take(tx.outputs, 1) }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_input',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: tx.inputs ++ list.drop(tx.inputs, 1), ..tx }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { tx | inputs: tx.inputs ++ list.drop(tx.inputs, 1) }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: list.drop(tx.inputs, 1), ..tx }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { tx | inputs: list.drop(tx.inputs, 1) }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
 }
 
