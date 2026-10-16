@@ -15,7 +15,8 @@ import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
-import GameRules (classifyRowTier, defaultPrizeTable, prizeAmountForTier, rowPayoutTotal)
+import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, playerCommitment, ticketCommitment)
+import GameRules (classifyRowTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -25,6 +26,9 @@ import Types
   , PrizeDatum (..)
   , PrizeStatus (..)
   )
+
+hexBuiltin :: Builtins.BuiltinByteString -> String
+hexBuiltin bytes = T.unpack (TE.decodeUtf8 (B16.encode (Builtins.fromBuiltin bytes)))
 
 hexData :: PlutusTx.ToData a => a -> String
 hexData value =
@@ -110,6 +114,44 @@ payoutCase name row1Tier row2Tier price =
     , "priceUsdm" .= price
     , "expectedPayout" .= rowPayoutTotal defaultPrizeTable row1Tier row2Tier price
     ]
+
+cryptoFixtures :: Aeson.Value
+cryptoFixtures =
+  let raw bytes = Builtins.toBuiltin (BS.pack bytes)
+      playerSecret = raw [170, 187, 204, 221]
+      ticketId = raw [222, 173, 190, 239]
+      mainchainRef = raw [1, 2, 3]
+      mcHash = raw [17, 34, 51, 68]
+      materiosContext = raw [85, 102, 119]
+      gameVersion = "classic-6-v1"
+      target = BeaconTarget
+        { btNetworkId = 0
+        , btRound = 42
+        , btMainchainRef = mainchainRef
+        , btVersion = "v1"
+        }
+      player = playerCommitment 42 7 playerSecret
+      targetEncoded = encodeBeaconTarget target
+      ticket = ticketCommitment ticketId player gameVersion 7 100 targetEncoded
+      beacon = deriveBeacon 0 42 mainchainRef mcHash materiosContext "v1"
+      ticketSeed = deriveTicketSeed 42 7 playerSecret beacon gameVersion
+      symbolsSeed = deriveSymbolsSeed ticketSeed
+      symbols = generateSymbols symbolsSeed
+  in object
+       [ "playerSecretHex" .= ("aabbccdd" :: String)
+       , "ticketIdHex" .= ("deadbeef" :: String)
+       , "mainchainRefHex" .= ("010203" :: String)
+       , "mcHashHex" .= ("11223344" :: String)
+       , "materiosContextHex" .= ("556677" :: String)
+       , "gameVersionHex" .= ("636c61737369632d362d7631" :: String)
+       , "targetEncodedHex" .= hexBuiltin targetEncoded
+       , "playerCommitmentHex" .= hexBuiltin player
+       , "ticketCommitmentHex" .= hexBuiltin ticket
+       , "beaconHex" .= hexBuiltin beacon
+       , "ticketSeedHex" .= hexBuiltin ticketSeed
+       , "symbolsSeedHex" .= hexBuiltin symbolsSeed
+       , "symbolsHex" .= hexBuiltin symbols
+       ]
 
 main :: IO ()
 main = do
