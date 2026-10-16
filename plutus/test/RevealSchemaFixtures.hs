@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- Test-only fixture producer. Values and Plutus Data encodings come from the
--- canonical Types.hs declarations; this executable does not evaluate validator
--- behavior and is not a production artifact.
+-- Test-only fixture producer and canonical Plutus V2 CEK conformance harness.
+-- Fixtures use canonical Types.hs/GameRules/Beacon functions. No production
+-- validator or protocol rule is changed by this executable.
 module Main where
 
 import qualified Data.Aeson as Aeson
@@ -14,7 +14,20 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
+import PlutusTx.Test (EvalResult (..), evaluateCompiledCode)
+import PlutusLedgerApi.V1.Address (Address (..))
+import PlutusLedgerApi.V1.Credential (Credential (..))
+import PlutusLedgerApi.V1.Crypto (PubKeyHash (..))
+import PlutusLedgerApi.V1.Interval (interval)
+import PlutusLedgerApi.V1.Scripts (Datum (..))
+import PlutusLedgerApi.V1.Time (POSIXTime (..))
+import PlutusLedgerApi.V1.Tx (TxId (..), TxOutRef (..))
+import PlutusLedgerApi.V1.Value (Value, CurrencySymbol (..), TokenName (..), adaSymbol, adaToken, singleton)
 import PlutusLedgerApi.V2 (ScriptHash (..))
+import PlutusLedgerApi.V2.Contexts (ScriptContext (..), ScriptPurpose (..), TxInInfo (..), TxInfo (..))
+import PlutusLedgerApi.V2.Tx (OutputDatum (..), TxOut (..))
+import qualified PlutusTx.AssocMap as AssocMap
+import PrizeValidator (compiledValidatorFactory)
 import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, field, playerCommitment, ticketCommitment)
 import GameRules (classifyRowTier, classifyTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowOutcomeIndex, rowPayoutTotal)
 import System.Environment (getArgs)
@@ -334,6 +347,157 @@ transitionFixtures =
            ]
        ]
 
+
+-- Evaluate the compiled Plutus V2 script wrapper with typed fixture arguments.
+-- Right means the on-chain CEK evaluation returned successfully; Left means
+-- the validator rejected/errored. The test-only context is not a ledger submission.
+applyValidatorParameters datum secret context =
+  let
+    configured0 = PlutusTx.unsafeApplyCode compiledValidatorFactory
+      (PlutusTx.liftCodeDef (ScriptHash (rawBytes [10])))
+    configured1 = PlutusTx.unsafeApplyCode configured0
+      (PlutusTx.liftCodeDef defaultPrizeTable)
+    configured2 = PlutusTx.unsafeApplyCode configured1
+      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData (0 :: Integer)))
+    configured3 = PlutusTx.unsafeApplyCode configured2
+      (PlutusTx.liftCodeDef (PubKeyHash (rawBytes [11])))
+    configured4 = PlutusTx.unsafeApplyCode configured3
+      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData datum))
+    configured5 = PlutusTx.unsafeApplyCode configured4
+      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData (Reveal secret)))
+  in PlutusTx.unsafeApplyCode configured5
+       (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData context))
+
+evaluateCanonicalReveal datum secret context =
+  case evalResult (evaluateCompiledCode (applyValidatorParameters datum secret context)) of
+    Right _ -> True
+    Left _ -> False
+
+scriptOut :: ScriptHash -> Value -> PlutusTx.BuiltinData -> TxOut
+scriptOut hash value datum =
+  TxOut
+    (Address (ScriptCredential hash) Nothing)
+    value
+    (OutputDatum (Datum datum))
+    Nothing
+
+makeRevealContext
+  :: PrizeDatum -> PrizeDatum -> B1PrizePoolDatum -> B1PrizePoolDatum
+  -> Integer -> Int -> Int -> Int -> Bool -> ScriptContext
+makeRevealContext inputDatum outputDatum poolBefore poolAfter upperBound poolInputCount poolOutputCount prizeOutputCount preservePrizeValue =
+  let
+    prizeScriptHash = ScriptHash (rawBytes [6])
+    poolScriptHash = ScriptHash (rawBytes [9])
+    ownRef = TxOutRef (TxId (rawBytes [42])) 0
+    poolValue = singleton adaSymbol adaToken 10_000_000
+    prizeInputValue =
+      singleton adaSymbol adaToken 5_000_000
+        <> singleton (CurrencySymbol (rawBytes [161]))
+             (TokenName (pdTicketName inputDatum)) 1
+    prizeOutputValue =
+      if preservePrizeValue
+        then prizeInputValue
+        else prizeInputValue <> singleton adaSymbol adaToken 1
+    poolInputOut = scriptOut poolScriptHash poolValue (PlutusTx.toBuiltinData poolBefore)
+    poolOutput = scriptOut poolScriptHash poolValue (PlutusTx.toBuiltinData poolAfter)
+    prizeInputOut = scriptOut prizeScriptHash prizeInputValue (PlutusTx.toBuiltinData inputDatum)
+    prizeOutput = scriptOut prizeScriptHash prizeOutputValue (PlutusTx.toBuiltinData outputDatum)
+    poolInputs =
+      [ TxInInfo (TxOutRef (TxId (rawBytes [43])) (fromIntegral index)) poolInputOut
+      | index <- [1 .. poolInputCount]
+      ]
+    inputs = TxInInfo ownRef prizeInputOut : poolInputs
+    outputs = replicate prizeOutputCount prizeOutput <> replicate poolOutputCount poolOutput
+    info =
+      TxInfo
+        inputs
+        []
+        outputs
+        mempty
+        mempty
+        []
+        AssocMap.empty
+        (interval (POSIXTime 1000) (POSIXTime upperBound))
+        []
+        AssocMap.empty
+        AssocMap.empty
+        (TxId (rawBytes [44]))
+  in ScriptContext info (Spending ownRef)
+
+data ValidatorOutcome = ValidatorOutcome
+  { validatorCaseName :: String
+  , validatorExpectedAccepted :: Bool
+  , validatorActualAccepted :: Bool
+  }
+  deriving Show
+
+validatorOutcome name expected secretBytes upperBound inputDatum outputDatum poolBefore poolAfter poolInputCount poolOutputCount prizeOutputCount preservePrizeValue =
+  let context = makeRevealContext inputDatum outputDatum poolBefore poolAfter upperBound poolInputCount poolOutputCount prizeOutputCount preservePrizeValue
+      actual = evaluateCanonicalReveal inputDatum (rawBytes secretBytes) context
+  in ValidatorOutcome name expected actual
+
+winningSecret :: [Integer]
+winningSecret = head
+  [ [first, 187, 204, 221]
+  | first <- [0 .. 255]
+  , let (_, _, _, _, payout, _, _) = scenarioForSecret [first, 187, 204, 221]
+  , payout > 0
+  ]
+
+losingSecret :: [Integer]
+losingSecret = head
+  [ [first, 187, 204, 221]
+  | first <- [0 .. 255]
+  , let (_, _, _, _, payout, _, _) = scenarioForSecret [first, 187, 204, 221]
+  , payout == 0
+  ]
+
+validatorOutcomes :: [ValidatorOutcome]
+validatorOutcomes =
+  let
+    (winInput, winOutput, winPoolBefore, winPoolAfter, _, _, _) = scenarioForSecret winningSecret
+    (lossInput, lossOutput, lossPoolBefore, lossPoolAfter, _, _, _) = scenarioForSecret losingSecret
+    badPoolAfter = winPoolAfter { ppPendingLiabilities = ppPendingLiabilities winPoolAfter + 1 }
+    badIdentityOutput = winOutput { pdTicketNonce = pdTicketNonce winOutput + 1 }
+    badPoolHashAfter = winPoolAfter { ppPrizeHash = ScriptHash (rawBytes [99]) }
+  in
+    [ validatorOutcome "successful_reveal" True winningSecret 9000 winInput winOutput winPoolBefore winPoolAfter 1 1 1 True
+    , validatorOutcome "zero_payout_loss" True losingSecret 9000 lossInput lossOutput lossPoolBefore lossPoolAfter 1 1 1 True
+    , validatorOutcome "wrong_player_secret_rejected" False [0, 0, 0, 0] 9000 winInput winOutput winPoolBefore winPoolAfter 1 1 1 True
+    , validatorOutcome "reveal_after_expiry_rejected" False winningSecret 9001 winInput winOutput winPoolBefore winPoolAfter 1 1 1 True
+    , validatorOutcome "wrong_pool_liability_delta_rejected" False winningSecret 9000 winInput winOutput winPoolBefore badPoolAfter 1 1 1 True
+    , validatorOutcome "changed_prize_identity_rejected" False winningSecret 9000 winInput badIdentityOutput winPoolBefore winPoolAfter 1 1 1 True
+    , validatorOutcome "prize_value_not_preserved_rejected" False winningSecret 9000 winInput winOutput winPoolBefore winPoolAfter 1 1 1 False
+    , validatorOutcome "duplicate_pool_input_rejected" False winningSecret 9000 winInput winOutput winPoolBefore winPoolAfter 2 1 1 True
+    , validatorOutcome "missing_pool_output_rejected" False winningSecret 9000 winInput winOutput winPoolBefore winPoolAfter 1 0 1 True
+    , validatorOutcome "duplicate_prize_output_rejected" False winningSecret 9000 winInput winOutput winPoolBefore winPoolAfter 1 1 2 True
+    , validatorOutcome "pool_script_hash_binding_rejected" False winningSecret 9000 winInput winOutput winPoolBefore badPoolHashAfter 1 1 1 True
+    ]
+
+validatorEvaluationsFixture :: Aeson.Value
+validatorEvaluationsFixture =
+  object
+    [ "engine" .= ("Plutus V2 CEK via compiledValidatorFactory" :: String)
+    , "cases" .=
+        [ object
+            [ "name" .= validatorCaseName outcome
+            , "expectedAccepted" .= validatorExpectedAccepted outcome
+            , "actualAccepted" .= validatorActualAccepted outcome
+            ]
+        | outcome <- validatorOutcomes
+        ]
+    ]
+
+requireExpectedValidatorOutcome :: ValidatorOutcome -> IO ()
+requireExpectedValidatorOutcome outcome =
+  if validatorExpectedAccepted outcome == validatorActualAccepted outcome
+    then putStrLn ("PASS canonical Plutus V2 validator: " <> validatorCaseName outcome)
+    else fail
+      ( "FAIL canonical Plutus V2 validator: " <> validatorCaseName outcome
+          <> " expected=" <> show (validatorExpectedAccepted outcome)
+          <> " actual=" <> show (validatorActualAccepted outcome)
+      )
+
 cryptoFixtures :: Aeson.Value
 cryptoFixtures =
   let raw bytes = Builtins.toBuiltin (BS.pack bytes)
@@ -400,6 +564,7 @@ main = do
                 ]
           , "cryptoFixtures" .= cryptoFixtures
           , "transitionFixtures" .= transitionFixtures
+          , "validatorEvaluations" .= validatorEvaluationsFixture
           , "semanticFixtures" .=
               object
                 [ "rowTierCases" .=
@@ -430,5 +595,6 @@ main = do
                     ]
                 ]
           ]
+  mapM_ requireExpectedValidatorOutcome validatorOutcomes
   BSL.writeFile outputPath (Aeson.encode fixture <> "\n")
   putStrLn ("Wrote canonical Haskell Plutus Data fixtures: " <> outputPath)
