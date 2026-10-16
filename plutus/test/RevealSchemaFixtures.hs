@@ -7,6 +7,7 @@ module Main where
 
 import qualified Data.Aeson as Aeson
 import Data.Aeson ((.=), object)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
@@ -14,7 +15,7 @@ import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
-import GameRules (defaultPrizeTable, rowPayoutTotal)
+import GameRules (classifyRowTier, defaultPrizeTable, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -81,6 +82,16 @@ samplePoolDatum =
     , ppPrizeHash = ScriptHash "06"
     }
 
+rowTierCase :: String -> [Integer] -> Aeson.Value
+rowTierCase name symbols =
+  let rowBytes = BS.pack (map fromInteger symbols)
+      row = Builtins.toBuiltin rowBytes
+  in object
+       [ "name" .= name
+       , "rowHex" .= T.unpack (TE.decodeUtf8 (B16.encode rowBytes))
+       , "expectedTier" .= classifyRowTier row
+       ]
+
 payoutCase :: String -> Integer -> Integer -> Integer -> Aeson.Value
 payoutCase name row1Tier row2Tier price =
   object
@@ -114,7 +125,14 @@ main = do
                 ]
           , "semanticFixtures" .=
               object
-                [ "payoutCases" .=
+                [ "rowTierCases" .=
+                    [ rowTierCase "tier_one_triple" [1, 1, 1]
+                    , rowTierCase "tier_five_triple" [5, 5, 5]
+                    , rowTierCase "mixed_row_loss" [1, 2, 1]
+                    , rowTierCase "out_of_range_symbol_loss" [6, 6, 6]
+                    , rowTierCase "short_row_loss" [2, 2]
+                    ]
+                , "payoutCases" .=
                     [ payoutCase "loss_zero_payout" 0 0 100
                     , payoutCase "single_tier_one_win" 1 0 100
                     , payoutCase "tier_one_and_two_win" 1 2 100
