@@ -56,6 +56,17 @@ test haskell_semantic_payout_${item.name}() {
   ) == ${item.expectedPayout}
 }
 `).join(String.fromCharCode(10));
+const crypto = document.cryptoFixtures;
+const cryptoKeys = [
+  'playerSecretHex', 'ticketIdHex', 'mainchainRefHex', 'mcHashHex',
+  'materiosContextHex', 'gameVersionHex', 'targetEncodedHex',
+  'playerCommitmentHex', 'ticketCommitmentHex', 'beaconHex',
+  'ticketSeedHex', 'symbolsSeedHex', 'symbolsHex',
+];
+if (!crypto || cryptoKeys.some((key) => typeof crypto[key] !== 'string'
+    || !/^(?:[0-9a-f]{2})+$/.test(crypto[key]))) {
+  throw new Error('Missing or malformed canonical Haskell crypto fixtures');
+}
 const required = [
   'PrizeDatum.pending',
   'PrizeAction.SyncBeacon',
@@ -78,6 +89,8 @@ const source = `// GENERATED IN CI from canonical Haskell Plutus Data and semant
 // Do not hand-edit or commit this file; the workflow recreates it per run.
 use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
 use immortal/reveal_rules.{PrizeTable, classify_row_tier, prize_amount_for_tier, row_payout_total}
+use immortal/beacon.{BeaconTarget, derive_beacon, derive_symbols_seed, derive_ticket_seed, encode_beacon_target, player_commitment, ticket_commitment}
+use immortal/game_rules.{generate_symbols}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -153,7 +166,76 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
 ${rowTierTests}
 ${prizeAmountTests}
 ${semanticTests}
+
+test haskell_crypto_player_commitment() {
+  player_commitment(42, 7, #"\${crypto.playerSecretHex}") == #"\${crypto.playerCommitmentHex}"
+}
+
+test haskell_crypto_beacon_target_encoding() {
+  encode_beacon_target(BeaconTarget {
+    network_id: 0,
+    round_id: 42,
+    mainchain_ref: #"\${crypto.mainchainRefHex}",
+    version: "v1",
+  }) == #"\${crypto.targetEncodedHex}"
+}
+
+test haskell_crypto_ticket_commitment() {
+  let player = player_commitment(42, 7, #"\${crypto.playerSecretHex}")
+  let target = encode_beacon_target(BeaconTarget {
+    network_id: 0,
+    round_id: 42,
+    mainchain_ref: #"\${crypto.mainchainRefHex}",
+    version: "v1",
+  })
+  ticket_commitment(
+    #"\${crypto.ticketIdHex}",
+    player,
+    #"\${crypto.gameVersionHex}",
+    7,
+    100,
+    target,
+  ) == #"\${crypto.ticketCommitmentHex}"
+}
+
+test haskell_crypto_beacon_derivation() {
+  derive_beacon(
+    0, 42,
+    #"\${crypto.mainchainRefHex}",
+    #"\${crypto.mcHashHex}",
+    #"\${crypto.materiosContextHex}",
+    "v1",
+  ) == #"\${crypto.beaconHex}"
+}
+
+test haskell_crypto_ticket_seed() {
+  let beacon = derive_beacon(
+    0, 42,
+    #"\${crypto.mainchainRefHex}",
+    #"\${crypto.mcHashHex}",
+    #"\${crypto.materiosContextHex}",
+    "v1",
+  )
+  derive_ticket_seed(42, 7, #"\${crypto.playerSecretHex}", beacon, #"\${crypto.gameVersionHex}")
+    == #"\${crypto.ticketSeedHex}"
+}
+
+test haskell_crypto_symbols_seed() {
+  let beacon = derive_beacon(
+    0, 42,
+    #"\${crypto.mainchainRefHex}",
+    #"\${crypto.mcHashHex}",
+    #"\${crypto.materiosContextHex}",
+    "v1",
+  )
+  let ticket_seed = derive_ticket_seed(42, 7, #"\${crypto.playerSecretHex}", beacon, #"\${crypto.gameVersionHex}")
+  derive_symbols_seed(ticket_seed) == #"\${crypto.symbolsSeedHex}"
+}
+
+test haskell_crypto_generated_symbols() {
+  generate_symbols(#"\${crypto.symbolsSeedHex}") == #"\${crypto.symbolsHex}"
+}
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven Aiken serialization parity tests, five row-tier differential tests, five prize amount differential tests, and four payout differential tests from canonical Haskell fixtures.');
+console.log('Generated seven serialization, five row-tier, five prize amount, four payout, and seven crypto differential tests from canonical Haskell fixtures.');
