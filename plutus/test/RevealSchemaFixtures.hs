@@ -14,6 +14,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
+import qualified PlutusTx.Lift as Lift
+import PlutusCore.Version (plcVersion100)
 import PlutusTx.Test (EvalResult (..), evaluateCompiledCode)
 import PlutusLedgerApi.V1.Address (Address (..))
 import PlutusLedgerApi.V1.Credential (Credential (..))
@@ -354,19 +356,19 @@ transitionFixtures =
 applyValidatorParameters datum secret context =
   let
     configured0 = PlutusTx.unsafeApplyCode compiledValidatorFactory
-      (PlutusTx.liftCodeDef (ScriptHash (rawBytes [10])))
+      (Lift.liftCode plcVersion100 (ScriptHash (rawBytes [10])))
     configured1 = PlutusTx.unsafeApplyCode configured0
-      (PlutusTx.liftCodeDef defaultPrizeTable)
+      (Lift.liftCode plcVersion100 defaultPrizeTable)
     configured2 = PlutusTx.unsafeApplyCode configured1
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData (0 :: Integer)))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData (0 :: Integer)))
     configured3 = PlutusTx.unsafeApplyCode configured2
-      (PlutusTx.liftCodeDef (PubKeyHash (rawBytes [11])))
+      (Lift.liftCode plcVersion100 (PubKeyHash (rawBytes [11])))
     configured4 = PlutusTx.unsafeApplyCode configured3
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData datum))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData datum))
     configured5 = PlutusTx.unsafeApplyCode configured4
-      (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData (Reveal secret)))
+      (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData (Reveal secret)))
   in PlutusTx.unsafeApplyCode configured5
-       (PlutusTx.liftCodeDef (PlutusTx.toBuiltinData context))
+       (Lift.liftCode plcVersion100 (PlutusTx.toBuiltinData context))
 
 evaluateCanonicalReveal datum secret context =
   case evalResult (evaluateCompiledCode (applyValidatorParameters datum secret context)) of
