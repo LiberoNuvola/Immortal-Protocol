@@ -11,6 +11,18 @@ if (document.schema !== 'pre-rich-reveal-plutus-data-v1') {
 }
 const fixtures = document.fixtures ?? {};
 const semanticFixtures = document.semanticFixtures ?? {};
+const rowTierCases = semanticFixtures.rowTierCases;
+if (!Array.isArray(rowTierCases) || rowTierCases.length !== 5) {
+  throw new Error('Expected exactly five canonical Haskell row-tier fixtures');
+}
+for (const [index, item] of rowTierCases.entries()) {
+  if (!item || typeof item.name !== 'string' || !/^[a-z0-9_]+$/.test(item.name)
+      || typeof item.rowHex !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(item.rowHex)
+      || !Number.isInteger(item.expectedTier)) {
+    throw new Error('Malformed semantic row-tier fixture at index ' + index);
+  }
+}
+const rowTierTests = rowTierCases.map((item) => '\ntest haskell_semantic_row_tier_' + item.name + '() {\n  classify_row_tier(#"' + item.rowHex + '") == ' + item.expectedTier + '\n}\n').join(String.fromCharCode(10));
 const payoutCases = semanticFixtures.payoutCases;
 if (!Array.isArray(payoutCases) || payoutCases.length !== 4) {
   throw new Error('Expected exactly four canonical Haskell semantic payout fixtures');
@@ -53,7 +65,7 @@ for (const key of required) {
 const source = `// GENERATED IN CI from canonical Haskell Plutus Data and semantic fixtures.
 // Do not hand-edit or commit this file; the workflow recreates it per run.
 use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
-use immortal/reveal_rules.{PrizeTable, row_payout_total}
+use immortal/reveal_rules.{PrizeTable, classify_row_tier, row_payout_total}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -126,8 +138,9 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
   ])) == #"${fixtures['B1PrizePoolDatum']}"
 }
 
+${rowTierTests}
 ${semanticTests}
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven Aiken serialization parity tests and four payout differential tests from canonical Haskell fixtures.');
+console.log('Generated seven Aiken serialization parity tests, five row-tier differential tests, and four payout differential tests from canonical Haskell fixtures.');
