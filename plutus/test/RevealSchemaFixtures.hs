@@ -125,7 +125,15 @@ symbolsVectorCase name seedBytes =
        , "symbolsHex" .= hexBuiltin symbols
        , "row1OutcomeIndex" .= rowOutcomeIndex seed 1
        , "row2OutcomeIndex" .= rowOutcomeIndex seed 2
+       , "row1FirstDraw" .= firstDraw seed 1
        ]
+  where
+    firstDraw seed row =
+      let digest = Builtins.sha2_256
+            (Builtins.appendByteString
+              (Builtins.consByteString row (Builtins.consByteString 0 Builtins.emptyByteString))
+              seed)
+      in Builtins.indexByteString digest 0 * 256 + Builtins.indexByteString digest 1
 
 cryptoFixtures :: Aeson.Value
 cryptoFixtures =
