@@ -181,7 +181,7 @@ const contextHelpers = [
     '    treasury_donation: tx.treasury_donation,',
     '  }',
     '}',
-  ].join('\\n'),
+  ].join('\n'),
 ];
 const contextTests = [];
 for (const [name, item] of cases) {
