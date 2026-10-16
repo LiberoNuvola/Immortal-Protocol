@@ -256,7 +256,7 @@ scenarioForSecret secretBytes =
       , pdBeaconValue = beacon
       , pdMcHash = mcHash
       , pdMateriosContext = materiosContext
-      , pdPrizePoolHash = rawBytes [6]
+      , pdPrizePoolHash = rawBytes [9]
       , pdIssuedAt = 1000
       , pdExpiresAt = 9000
       , pdRow1Tier = 0
@@ -291,12 +291,15 @@ transitionCase :: String -> [Integer] -> Aeson.Value
 transitionCase name secretBytes =
   let (inputDatum, outputDatum, poolBefore, poolAfter, payout, row1Tier, row2Tier) =
         scenarioForSecret secretBytes
+      ScriptHash ownPrizeHash = ppPrizeHash poolBefore
   in object
        [ "name" .= name
        , "inputPrizeDatum" .= prizeDatumSnapshot inputDatum
        , "outputPrizeDatum" .= prizeDatumSnapshot outputDatum
        , "poolBefore" .= poolDatumSnapshot poolBefore
        , "poolAfter" .= poolDatumSnapshot poolAfter
+       , "expectedPoolScriptHashHex" .= hexBuiltin (pdPrizePoolHash inputDatum)
+       , "expectedOwnPrizeScriptHashHex" .= hexBuiltin ownPrizeHash
        , "payout" .= payout
        , "row1Tier" .= row1Tier
        , "row2Tier" .= row2Tier
