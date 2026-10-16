@@ -77,7 +77,7 @@ for (const key of required) {
 const source = `// GENERATED IN CI from canonical Haskell Plutus Data and semantic fixtures.
 // Do not hand-edit or commit this file; the workflow recreates it per run.
 use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
-use immortal/reveal_rules.{PrizeTable, classify_row_tier, row_payout_total}
+use immortal/reveal_rules.{PrizeTable, classify_row_tier, prize_amount_for_tier, row_payout_total}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
