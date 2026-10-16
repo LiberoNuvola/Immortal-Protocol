@@ -253,13 +253,13 @@ for (const [name, item] of cases) {
   contextTests.push(test(prefix + '_complete_context_rejects_wrong_secret',
     '!' + invoke(prefix + '_tx()', '#"00000000"')));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_pool_output',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { ..tx, outputs: list.take(tx.outputs, 1) }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: tx.inputs, reference_inputs: tx.reference_inputs, outputs: list.take(tx.outputs, 1), fee: tx.fee, mint: tx.mint, certificates: tx.certificates, withdrawals: tx.withdrawals, validity_range: tx.validity_range, extra_signatories: tx.extra_signatories, redeemers: tx.redeemers, datums: tx.datums, id: tx.id, votes: tx.votes, proposal_procedures: tx.proposal_procedures, current_treasury_amount: tx.current_treasury_amount, treasury_donation: tx.treasury_donation }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_input',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { ..tx, inputs: tx.inputs ++ list.drop(tx.inputs, 1) }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: tx.inputs ++ list.drop(tx.inputs, 1), reference_inputs: tx.reference_inputs, outputs: tx.outputs, fee: tx.fee, mint: tx.mint, certificates: tx.certificates, withdrawals: tx.withdrawals, validity_range: tx.validity_range, extra_signatories: tx.extra_signatories, redeemers: tx.redeemers, datums: tx.datums, id: tx.id, votes: tx.votes, proposal_procedures: tx.proposal_procedures, current_treasury_amount: tx.current_treasury_amount, treasury_donation: tx.treasury_donation }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { ..tx, inputs: list.drop(tx.inputs, 1) }\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: list.drop(tx.inputs, 1), reference_inputs: tx.reference_inputs, outputs: tx.outputs, fee: tx.fee, mint: tx.mint, certificates: tx.certificates, withdrawals: tx.withdrawals, validity_range: tx.validity_range, extra_signatories: tx.extra_signatories, redeemers: tx.redeemers, datums: tx.datums, id: tx.id, votes: tx.votes, proposal_procedures: tx.proposal_procedures, current_treasury_amount: tx.current_treasury_amount, treasury_donation: tx.treasury_donation }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
 }
 
