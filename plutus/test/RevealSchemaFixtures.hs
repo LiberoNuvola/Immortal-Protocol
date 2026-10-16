@@ -385,7 +385,7 @@ main = do
         _ -> "reveal-schema-fixtures.json"
       fixture =
         object
-          [ "schema" .= ("pre-rich-reveal-plutus-data-v1" :: String)
+          [ "schema" .= ("pre-rich-reveal-plutus-data-v2" :: String)
           , "producer" .= ("plutus/test/RevealSchemaFixtures.hs" :: String)
           , "canonicalSource" .= ("plutus/Types.hs" :: String)
           , "fixtures" .=
