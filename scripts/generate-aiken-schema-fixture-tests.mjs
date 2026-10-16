@@ -223,9 +223,14 @@ const transitionTests = transitionCases.map(([name, item, shouldWin]) => {
   if (shouldWin ? payout <= 0 : payout !== 0) {
     throw new Error('Unexpected payout class for transition fixture: ' + name);
   }
-  if (hexField(poolBefore.fields.prizeHashHex, name + '.pool prize hash')
-      !== hexField(input.fields.prizePoolHashHex, name + '.input pool hash')) {
-    throw new Error('Prize datum and pool fixture hash are not linked: ' + name);
+  const expectedPoolScriptHash = hexField(item.expectedPoolScriptHashHex, name + '.expectedPoolScriptHashHex');
+  const expectedOwnPrizeScriptHash = hexField(item.expectedOwnPrizeScriptHashHex, name + '.expectedOwnPrizeScriptHashHex');
+  if (hexField(input.fields.prizePoolHashHex, name + '.input pool hash') !== expectedPoolScriptHash) {
+    throw new Error('Prize datum does not point to the expected PrizePool script hash: ' + name);
+  }
+  if (hexField(poolBefore.fields.prizeHashHex, name + '.pool prize hash') !== expectedOwnPrizeScriptHash
+      || hexField(poolAfter.fields.prizeHashHex, name + '.pool-after prize hash') !== expectedOwnPrizeScriptHash) {
+    throw new Error('PrizePool datum does not preserve the expected Prize validator hash: ' + name);
   }
   const table = 'PrizeTable { tier_1: 2, tier_2: 5, tier_3: 10, tier_4: 200, tier_5: 1000 }';
   return [
