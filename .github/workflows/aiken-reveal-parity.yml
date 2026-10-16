@@ -377,7 +377,7 @@ jobs:
               requirementRef: 'Canonical Haskell Types.hs / Plutus Data schema fixtures',
               stepOutcome: fixtureOutcome,
               evidenceRefs,
-              limitations: ['Schema serialization only; does not establish Reveal behavior or Haskell/Aiken semantic parity.', 'Fixture generation requires the canonical Plutus toolchain; no hand-copied fixture is accepted.'],
+              limitations: ['Includes selected Plutus Data encodings and 11 synthetic-context CEK executions of the compiled Plutus V2 validator; it does not establish native-ledger validity, current ledger cost-model feasibility, V2-to-V3 compatibility, or full Haskell/Aiken validator parity.', 'Fixture generation requires the canonical Plutus toolchain; no hand-copied fixture is accepted.'],
             },
             {
               checkId: 'HASKELL.REVEAL.VALIDATOR.CEK',
