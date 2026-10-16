@@ -116,8 +116,6 @@ test empty_transaction_fails_closed() {
   )
 }
 
-
-
 // Synthetic typed transaction fixtures for the context guard.
 // These exercise Aiken's actual cardano/transaction structures, but are not
 // serialized ledger transactions and do not replace Yaci/native-ledger tests.
@@ -202,13 +200,26 @@ test typed_context_accepts_unique_prize_and_pool_with_preserved_value() {
     context_fixture_pool_hash,
     pool_value,
   )
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [own_input, pool_input],
+    reference_inputs: [],
     outputs: [
       context_fixture_output(context_fixture_own_hash, own_value),
       context_fixture_output(context_fixture_pool_hash, pool_value),
     ],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
@@ -217,17 +228,30 @@ test typed_context_rejects_duplicate_pool_input() {
   let own_ref = context_fixture_own_ref()
   let own_value = assets.from_lovelace(5_000_000)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [
       context_fixture_input(own_ref, context_fixture_own_hash, own_value),
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
       context_fixture_input(context_fixture_pool_ref(2), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [
       context_fixture_output(context_fixture_own_hash, own_value),
       context_fixture_output(context_fixture_pool_hash, pool_value),
     ],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
@@ -236,13 +260,26 @@ test typed_context_rejects_missing_pool_output() {
   let own_ref = context_fixture_own_ref()
   let own_value = assets.from_lovelace(5_000_000)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [
       context_fixture_input(own_ref, context_fixture_own_hash, own_value),
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [context_fixture_output(context_fixture_own_hash, own_value)],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
@@ -251,17 +288,30 @@ test typed_context_rejects_duplicate_prize_output() {
   let own_ref = context_fixture_own_ref()
   let own_value = assets.from_lovelace(5_000_000)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [
       context_fixture_input(own_ref, context_fixture_own_hash, own_value),
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [
       context_fixture_output(context_fixture_own_hash, own_value),
       context_fixture_output(context_fixture_own_hash, own_value),
       context_fixture_output(context_fixture_pool_hash, pool_value),
     ],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
@@ -269,18 +319,31 @@ test typed_context_rejects_duplicate_prize_output() {
 test typed_context_rejects_changed_prize_value() {
   let own_ref = context_fixture_own_ref()
   let own_value = assets.from_lovelace(5_000_000)
-  let changed_value = assets.from_lovelace(5_000_001)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let changed_value = assets.from_lovelace(5_000_001)
+  let tx = Transaction {
     inputs: [
       context_fixture_input(own_ref, context_fixture_own_hash, own_value),
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [
       context_fixture_output(context_fixture_own_hash, changed_value),
       context_fixture_output(context_fixture_pool_hash, pool_value),
     ],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
@@ -289,29 +352,56 @@ test typed_context_rejects_pool_hash_not_bound_by_datum() {
   let own_ref = context_fixture_own_ref()
   let own_value = assets.from_lovelace(5_000_000)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [
       context_fixture_input(own_ref, context_fixture_own_hash, own_value),
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [
       context_fixture_output(context_fixture_own_hash, own_value),
       context_fixture_output(context_fixture_pool_hash, pool_value),
     ],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(#"08"))
 }
 
 test typed_context_rejects_missing_own_input() {
   let own_ref = context_fixture_own_ref()
+  let own_value = assets.from_lovelace(5_000_000)
   let pool_value = assets.from_lovelace(10_000_000)
-  let tx = {
-    ..transaction.placeholder,
+  let tx = Transaction {
     inputs: [
       context_fixture_input(context_fixture_pool_ref(1), context_fixture_pool_hash, pool_value),
     ],
+    reference_inputs: [],
     outputs: [context_fixture_output(context_fixture_pool_hash, pool_value)],
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
   }
   !reveal_context_structure_is_valid(tx, own_ref, context_fixture_datum(context_fixture_pool_hash))
 }
