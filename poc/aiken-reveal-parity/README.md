@@ -57,11 +57,11 @@ This is stronger evidence than pure predicate tests, but is **not full Haskell/A
 4. Measure the compiled validator and complete transaction size, CPU, and memory against version-labelled baselines. The previously observed Reveal transaction-size blocker remains unresolved by this harness.
 5. Expand datum/redeemer serialization states and round-trip/decoder checks; record canonical source revision and fixture schema version in evidence.
 
-Current status: **synthetic-context Plutus V2 CEK conformance PASS for 11 representative cases; selected Haskell-to-Aiken fixture/predicate parity PASS; full Haskell/Aiken validator equivalence, native-ledger/Yaci parity, V2-to-V3 compatibility, and transaction-size closure NOT YET ESTABLISHED**. No validator deployment or protocol-wide GREEN claim follows from this evidence.
+Latest completed CI run [#78](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38945687007) passed the 75-test Aiken suite, 11 synthetic-context Plutus V2 CEK cases from the canonical Haskell producer, and 134 JEV checks (0 errors). Schema-v3 fixtures and the Haskell-driven state-transition test generator were exercised; the fail-closed parity evidence gate passed. Full Haskell/Aiken validator equivalence, native-ledger/Yaci parity, V2-to-V3 compatibility, and transaction-size closure remain NOT YET ESTABLISHED. No validator deployment or protocol-wide GREEN claim follows from this evidence.
 
 ## CI artifact reuse
 
-The Aiken workflow caches build outputs using a key derived from the manifest/lockfile, Aiken source files and workflow. An exact key hit reuses the previously successful artifacts and skips both `aiken check` and `aiken build`; any relevant input change creates a new key and runs both. The cache is saved only after a successful job. Compiler remains pinned to `v1.1.22`.
+The Aiken workflow caches build outputs using a key derived from the manifest/lockfile, Aiken source files, both fixture generators, and workflow. An exact key hit reuses previously validated artifacts and skips the separate full `aiken check` logging step and `aiken build`; the fixture-driven `aiken check` still runs on every generated fixture set. Relevant input changes create a new key. The cache is saved only after a successful job. Compiler remains pinned to `v1.1.22`.
 
 ## Acceptance gates
 

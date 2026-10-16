@@ -126,7 +126,7 @@ jobs:
             poc/aiken-reveal-parity/.aiken
             poc/aiken-reveal-parity/build
             poc/aiken-reveal-parity/plutus.json
-          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/generate-aiken-schema-fixture-tests.mjs', '.github/workflows/aiken-reveal-parity.yml') }}
+          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/generate-aiken-schema-fixture-tests.mjs', 'scripts/generate-aiken-reveal-transition-tests.mjs', '.github/workflows/aiken-reveal-parity.yml') }}
 
       - name: Reuse validated artifacts
         if: steps.aiken-cache.outputs.cache-hit == 'true'
