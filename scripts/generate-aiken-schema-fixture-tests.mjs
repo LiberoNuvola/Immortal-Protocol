@@ -31,7 +31,7 @@ test haskell_semantic_payout_${item.name}() {
     ${item.priceUsdm},
   ) == ${item.expectedPayout}
 }
-`).join('\\n');
+`).join(String.fromCharCode(10));
 const required = [
   'PrizeDatum.pending',
   'PrizeAction.SyncBeacon',
