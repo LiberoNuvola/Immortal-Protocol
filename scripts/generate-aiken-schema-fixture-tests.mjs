@@ -56,6 +56,23 @@ test haskell_semantic_payout_${item.name}() {
   ) == ${item.expectedPayout}
 }
 `).join(String.fromCharCode(10));
+const symbolsVectorCases = semanticFixtures.symbolsVectorCases;
+if (!Array.isArray(symbolsVectorCases) || symbolsVectorCases.length !== 3) {
+  throw new Error('Expected exactly three canonical Haskell generated-symbol vectors');
+}
+for (const [index, item] of symbolsVectorCases.entries()) {
+  if (!item || typeof item.name !== 'string' || !/^[a-z0-9_]+$/.test(item.name)
+      || typeof item.seedHex !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(item.seedHex)
+      || typeof item.symbolsHex !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(item.symbolsHex)
+      || !Number.isInteger(item.row1OutcomeIndex) || !Number.isInteger(item.row2OutcomeIndex)) {
+    throw new Error('Malformed generated-symbol vector at index ' + index);
+  }
+}
+const symbolsVectorTests = symbolsVectorCases.map((item) => `
+test haskell_crypto_generated_symbols_${item.name}() {
+  generate_symbols(#"${item.seedHex}") == #"${item.symbolsHex}"
+}
+`).join(String.fromCharCode(10));
 const crypto = document.cryptoFixtures;
 const cryptoKeys = [
   'playerSecretHex', 'ticketIdHex', 'mainchainRefHex', 'mcHashHex',
@@ -171,6 +188,7 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
 ${rowTierTests}
 ${prizeAmountTests}
 ${semanticTests}
+${symbolsVectorTests}
 
 test haskell_crypto_player_commitment() {
   player_commitment(42, 7, #"${crypto.playerSecretHex}") == #"${crypto.playerCommitmentHex}"
@@ -262,4 +280,4 @@ test haskell_crypto_result_binding_digest() {
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven serialization, five row-tier, five prize amount, four payout, and ten crypto differential tests from canonical Haskell fixtures.');
+console.log('Generated seven serialization, five row-tier, five prize amount, four payout, three extra symbol-vector, and ten crypto differential tests from canonical Haskell fixtures.');
