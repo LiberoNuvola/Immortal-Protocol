@@ -52,37 +52,37 @@ test beacon_target_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [
     i_data(0),
     i_data(42),
-    b_data(#[1, 2, 3]),
-    b_data(#[118, 49]),
+    b_data(#[0x01, 0x02, 0x03]),
+    b_data(#[0x76, 0x31]),
   ])) == #"${fixtures['BeaconTarget']}"
 }
 
 test pending_prize_datum_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [
-    b_data(#[161]),
-    b_data(#[1]),
-    b_data(#[2]),
+    b_data(#[0xa1]),
+    b_data(#[0x01]),
+    b_data(#[0x02]),
     i_data(100),
-    b_data(#[3]),
+    b_data(#[0x03]),
     b_data(#"636c61737369632d362d7631"),
     i_data(7),
     i_data(0),
-    b_data(#[4]),
-    b_data(#[5]),
+    b_data(#[0x04]),
+    b_data(#[0x05]),
     constr_data(0, []),
     b_data(#""),
     i_data(0),
     constr_data(0, [
       i_data(0),
       i_data(42),
-      b_data(#[1, 2, 3]),
-      b_data(#[118, 49]),
+      b_data(#[0x01, 0x02, 0x03]),
+      b_data(#[0x76, 0x31]),
     ]),
     constr_data(1, []),
-    b_data(#[6]),
-    b_data(#[7]),
-    b_data(#[8]),
-    b_data(#[9]),
+    b_data(#[0x06]),
+    b_data(#[0x07]),
+    b_data(#[0x08]),
+    b_data(#[0x09]),
     i_data(1000),
     i_data(9000),
     i_data(0),
@@ -99,7 +99,7 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
     i_data(2000),
     i_data(5000),
     i_data(0),
-    b_data(#[6]),
+    b_data(#[0x06]),
   ])) == #"${fixtures['B1PrizePoolDatum']}"
 }
 `;
