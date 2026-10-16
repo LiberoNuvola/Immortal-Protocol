@@ -15,8 +15,8 @@ import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
-import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, playerCommitment, ticketCommitment)
-import GameRules (classifyRowTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowPayoutTotal)
+import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, field, playerCommitment, ticketCommitment)
+import GameRules (classifyRowTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowOutcomeIndex, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -137,6 +137,8 @@ cryptoFixtures =
       ticketSeed = deriveTicketSeed 42 7 playerSecret beacon gameVersion
       symbolsSeed = deriveSymbolsSeed ticketSeed
       symbols = generateSymbols symbolsSeed
+      resultDigest = Builtins.sha2_256
+        (Builtins.appendByteString (field (Builtins.sha2_256 symbolsSeed)) (field symbols))
   in object
        [ "playerSecretHex" .= ("aabbccdd" :: String)
        , "ticketIdHex" .= ("deadbeef" :: String)
@@ -151,6 +153,9 @@ cryptoFixtures =
        , "ticketSeedHex" .= hexBuiltin ticketSeed
        , "symbolsSeedHex" .= hexBuiltin symbolsSeed
        , "symbolsHex" .= hexBuiltin symbols
+       , "row1OutcomeIndex" .= rowOutcomeIndex symbolsSeed 1
+       , "row2OutcomeIndex" .= rowOutcomeIndex symbolsSeed 2
+       , "resultDigestHex" .= hexBuiltin resultDigest
        ]
 
 main :: IO ()
