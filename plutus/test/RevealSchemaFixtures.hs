@@ -115,6 +115,18 @@ payoutCase name row1Tier row2Tier price =
     , "expectedPayout" .= rowPayoutTotal defaultPrizeTable row1Tier row2Tier price
     ]
 
+symbolsVectorCase :: String -> [Integer] -> Aeson.Value
+symbolsVectorCase name seedBytes =
+  let seed = Builtins.toBuiltin (BS.pack (map fromInteger seedBytes))
+      symbols = generateSymbols seed
+  in object
+       [ "name" .= name
+       , "seedHex" .= T.unpack (TE.decodeUtf8 (B16.encode (BS.pack (map fromInteger seedBytes))))
+       , "symbolsHex" .= hexBuiltin symbols
+       , "row1OutcomeIndex" .= rowOutcomeIndex seed 1
+       , "row2OutcomeIndex" .= rowOutcomeIndex seed 2
+       ]
+
 cryptoFixtures :: Aeson.Value
 cryptoFixtures =
   let raw bytes = Builtins.toBuiltin (BS.pack bytes)
@@ -201,6 +213,11 @@ main = do
                     , payoutCase "single_tier_one_win" 1 0 100
                     , payoutCase "tier_one_and_two_win" 1 2 100
                     , payoutCase "maximum_payout_cap" 4 5 100
+                    ]
+                , "symbolsVectorCases" .=
+                    [ symbolsVectorCase "alternate_seed_a" [0, 1, 2, 3, 4, 5, 6, 7]
+                    , symbolsVectorCase "alternate_seed_b" [255, 0, 128, 64, 32, 16, 8, 4]
+                    , symbolsVectorCase "alternate_seed_c" [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
                     ]
                 ]
           ]
