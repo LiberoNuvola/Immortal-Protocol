@@ -1,7 +1,6 @@
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
-use cardano/address.{Script, VerificationKey}
-use cardano/address as address
+use cardano/address.{Script, VerificationKey, from_script}
 use cardano/assets as assets
 use cardano/transaction
 use cardano/transaction.{Input, Output, OutputReference, Transaction}
@@ -122,7 +121,7 @@ test empty_transaction_fails_closed() {
 
 fn context_fixture_output(script_hash: ScriptHash, value: assets.Value) -> Output {
   Output {
-    address: address.from_script(script_hash),
+    address: from_script(script_hash),
     value,
     datum: transaction.NoDatum,
     reference_script: None,
