@@ -269,7 +269,7 @@ for (const [name, item] of cases) {
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = transaction.Transaction { inputs: tx.inputs, reference_inputs: tx.reference_inputs, outputs: list.take(tx.outputs, 1), fee: tx.fee, mint: tx.mint, certificates: tx.certificates, withdrawals: tx.withdrawals, validity_range: tx.validity_range, extra_signatories: tx.extra_signatories, redeemers: tx.redeemers, datums: tx.datums, id: tx.id, votes: tx.votes, proposal_procedures: tx.proposal_procedures, current_treasury_amount: tx.current_treasury_amount, treasury_donation: tx.treasury_donation }\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_input',
-    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, tx.inputs ++ list.drop(tx.inputs, 1))\n  !'
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.concat([tx.inputs, list.drop(tx.inputs, 1)]))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.drop(tx.inputs, 1))\n  !'
