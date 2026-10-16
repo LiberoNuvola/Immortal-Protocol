@@ -10,6 +10,28 @@ if (document.schema !== 'pre-rich-reveal-plutus-data-v1') {
   throw new Error(`Unsupported fixture schema: ${document.schema}`);
 }
 const fixtures = document.fixtures ?? {};
+const semanticFixtures = document.semanticFixtures ?? {};
+const payoutCases = semanticFixtures.payoutCases;
+if (!Array.isArray(payoutCases) || payoutCases.length !== 4) {
+  throw new Error('Expected exactly four canonical Haskell semantic payout fixtures');
+}
+for (const [index, item] of payoutCases.entries()) {
+  if (!item || typeof item.name !== 'string' || !/^[a-z0-9_]+$/.test(item.name)
+      || !Number.isInteger(item.row1Tier) || !Number.isInteger(item.row2Tier)
+      || !Number.isInteger(item.priceUsdm) || !Number.isInteger(item.expectedPayout)) {
+    throw new Error(`Malformed semantic payout fixture at index ${index}`);
+  }
+}
+const semanticTests = payoutCases.map((item) => `
+test haskell_semantic_payout_${item.name}() {
+  row_payout_total(
+    PrizeTable { tier_1: 2, tier_2: 5, tier_3: 10, tier_4: 200, tier_5: 1000 },
+    ${item.row1Tier},
+    ${item.row2Tier},
+    ${item.priceUsdm},
+  ) == ${item.expectedPayout}
+}
+`).join('\\n');
 const required = [
   'PrizeDatum.pending',
   'PrizeAction.SyncBeacon',
@@ -28,9 +50,10 @@ for (const key of required) {
 // All expected CBOR is generated from canonical Types.hs in this workflow run.
 // These expressions mirror only the declared Plutus Data constructor/field
 // layout; they do not implement or claim Reveal validator semantic parity.
-const source = `// GENERATED IN CI from canonical Haskell Plutus Data fixtures.
+const source = `// GENERATED IN CI from canonical Haskell Plutus Data and semantic fixtures.
 // Do not hand-edit or commit this file; the workflow recreates it per run.
 use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
+use immortal/reveal_rules.{PrizeTable, row_payout_total}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -102,7 +125,9 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
     b_data(#"3036"),
   ])) == #"${fixtures['B1PrizePoolDatum']}"
 }
+
+${semanticTests}
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven Aiken serialization parity tests from canonical Haskell fixtures (four actions and three datum shapes).');
+console.log('Generated seven Aiken serialization parity tests and four payout differential tests from canonical Haskell fixtures.');
