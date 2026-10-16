@@ -23,6 +23,18 @@ for (const [index, item] of rowTierCases.entries()) {
   }
 }
 const rowTierTests = rowTierCases.map((item) => '\ntest haskell_semantic_row_tier_' + item.name + '() {\n  classify_row_tier(#"' + item.rowHex + '") == ' + item.expectedTier + '\n}\n').join(String.fromCharCode(10));
+const prizeAmountCases = semanticFixtures.prizeAmountCases;
+if (!Array.isArray(prizeAmountCases) || prizeAmountCases.length !== 5) {
+  throw new Error('Expected exactly five canonical Haskell prize amount fixtures');
+}
+for (const [index, item] of prizeAmountCases.entries()) {
+  if (!item || typeof item.name !== 'string' || !/^[a-z0-9_]+$/.test(item.name)
+      || !Number.isInteger(item.tier) || !Number.isInteger(item.priceUsdm)
+      || !Number.isInteger(item.expectedAmount)) {
+    throw new Error('Malformed prize amount fixture at index ' + index);
+  }
+}
+const prizeAmountTests = prizeAmountCases.map((item) => '\ntest haskell_semantic_prize_amount_' + item.name + '() {\n  prize_amount_for_tier(PrizeTable { tier_1: 2, tier_2: 5, tier_3: 10, tier_4: 200, tier_5: 1000 }, ' + item.tier + ', ' + item.priceUsdm + ') == ' + item.expectedAmount + '\n}\n').join(String.fromCharCode(10));
 const payoutCases = semanticFixtures.payoutCases;
 if (!Array.isArray(payoutCases) || payoutCases.length !== 4) {
   throw new Error('Expected exactly four canonical Haskell semantic payout fixtures');
@@ -139,8 +151,9 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
 }
 
 ${rowTierTests}
+${prizeAmountTests}
 ${semanticTests}
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven Aiken serialization parity tests, five row-tier differential tests, and four payout differential tests from canonical Haskell fixtures.');
+console.log('Generated seven Aiken serialization parity tests, five row-tier differential tests, five prize amount differential tests, and four payout differential tests from canonical Haskell fixtures.');
