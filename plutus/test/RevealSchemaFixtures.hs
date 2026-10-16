@@ -309,6 +309,7 @@ transitionCase name secretBytes =
       ScriptHash ownPrizeHash = ppPrizeHash poolBefore
   in object
        [ "name" .= name
+       , "playerSecretHex" .= hexBuiltin (rawBytes secretBytes)
        , "inputPrizeDatum" .= prizeDatumSnapshot inputDatum
        , "outputPrizeDatum" .= prizeDatumSnapshot outputDatum
        , "poolBefore" .= poolDatumSnapshot poolBefore
@@ -551,7 +552,7 @@ main = do
         _ -> "reveal-schema-fixtures.json"
       fixture =
         object
-          [ "schema" .= ("pre-rich-reveal-plutus-data-v2" :: String)
+          [ "schema" .= ("pre-rich-reveal-plutus-data-v3" :: String)
           , "producer" .= ("plutus/test/RevealSchemaFixtures.hs" :: String)
           , "canonicalSource" .= ("plutus/Types.hs" :: String)
           , "fixtures" .=
