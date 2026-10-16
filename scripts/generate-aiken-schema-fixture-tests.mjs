@@ -30,7 +30,7 @@ for (const key of required) {
 // layout; they do not implement or claim Reveal validator semantic parity.
 const source = `// GENERATED IN CI from canonical Haskell Plutus Data fixtures.
 // Do not hand-edit or commit this file; the workflow recreates it per run.
-use aiken/builtin.{b_data, constr_data, int_data, serialise_data}
+use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
@@ -50,8 +50,8 @@ test expire_serialisation_matches_haskell_fixture() {
 
 test beacon_target_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [
-    int_data(0),
-    int_data(42),
+    i_data(0),
+    i_data(42),
     b_data(#"010203"),
     b_data(#"7631"),
   ])) == #"${fixtures['BeaconTarget']}"
@@ -62,19 +62,19 @@ test pending_prize_datum_serialisation_matches_haskell_fixture() {
     b_data(#"a1"),
     b_data(#"01"),
     b_data(#"02"),
-    int_data(100),
+    i_data(100),
     b_data(#"03"),
     b_data(#"636c61737369632d362d7631"),
-    int_data(7),
-    int_data(0),
+    i_data(7),
+    i_data(0),
     b_data(#"04"),
     b_data(#"05"),
     constr_data(0, []),
     b_data(#""),
-    int_data(0),
+    i_data(0),
     constr_data(0, [
-      int_data(0),
-      int_data(42),
+      i_data(0),
+      i_data(42),
       b_data(#"010203"),
       b_data(#"7631"),
     ]),
@@ -83,22 +83,22 @@ test pending_prize_datum_serialisation_matches_haskell_fixture() {
     b_data(#"07"),
     b_data(#"08"),
     b_data(#"09"),
-    int_data(1000),
-    int_data(9000),
-    int_data(0),
-    int_data(0),
+    i_data(1000),
+    i_data(9000),
+    i_data(0),
+    i_data(0),
   ])) == #"${fixtures['PrizeDatum.pending']}"
 }
 
 test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
   serialise_data(constr_data(0, [
-    int_data(100000),
-    int_data(1000),
-    int_data(500),
-    int_data(8),
-    int_data(2000),
-    int_data(5000),
-    int_data(0),
+    i_data(100000),
+    i_data(1000),
+    i_data(500),
+    i_data(8),
+    i_data(2000),
+    i_data(5000),
+    i_data(0),
     b_data(#"06"),
   ])) == #"${fixtures['B1PrizePoolDatum']}"
 }
