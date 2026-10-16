@@ -226,7 +226,7 @@ main = do
                     [ symbolsVectorCase "alternate_seed_a" [0, 1, 2, 3, 4, 5, 6, 7]
                     , symbolsVectorCase "alternate_seed_b" [255, 0, 128, 64, 32, 16, 8, 4]
                     , symbolsVectorCase "alternate_seed_c" [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
-                    , symbolsVectorCase "rejection_retry_seed" [0, 0, 0, 1]
+                    , symbolsVectorCase "rejection_retry_seed" [0, 0, 0, 6]
                     ]
                 ]
           ]
