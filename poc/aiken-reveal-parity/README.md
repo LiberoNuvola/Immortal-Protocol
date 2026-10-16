@@ -18,7 +18,7 @@ The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken pack
 - `lib/immortal/beacon.ak`: Haskell-compatible field encoding, player/ticket commitments, beacon derivation, ticket seed and symbols seed.
 - `lib/immortal/game_rules.ak`: row outcome rejection sampling, tier boundaries, deterministic row-symbol construction and summary tier.
 - `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
-- `lib/immortal/reveal_types.ak`: Aiken data declarations matching the Haskell `PrizeDatum`, `PrizeAction`, `BeaconTarget`, status enums and `B1PrizePoolDatum` constructor/field order. These declarations are a schema port only; cross-language serialization fixtures are still required.
+- `lib/immortal/reveal_types.ak`: Aiken data declarations matching the Haskell `PrizeDatum`, `PrizeAction`, `BeaconTarget`, status enums and `B1PrizePoolDatum` constructor/field order. These declarations are a schema port. The CI now generates canonical Haskell Plutus Data fixtures and creates Aiken tests that compare seven serialized constructor/layout examples against those exact fixtures; this validates those examples, not every possible datum.
 - `lib/immortal/reveal_context.ak`: typed-context guard over Aiken's actual `cardano/transaction` types. It resolves the own input by output reference, derives the spent Prize script credential, checks unique Prize input/continuing output, compares actual typed `Value` equality, and checks exactly one PrizePool input/output using the pool hash carried in the typed Prize datum. This is still a structural guard, not a complete Reveal validator; pool datum decoding and all Reveal semantics remain unimplemented.
 
 The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
@@ -32,9 +32,9 @@ The guard module tests logical predicates only. It does **not** decode a real Ca
 
 No production artifact may be switched to this package until full behavior passes Haskell differential tests and native-ledger integration tests.
 
-## Differential parity status (2026-10-15)
+## Differential parity status (2026-10-16)
 
-The successful Aiken CI run validates the isolated Aiken package only. It is not yet a Haskell-vs-Aiken differential test. Current paired semantic references are:
+The latest CI run (#55) passed the isolated Aiken check/build, canonical Haskell fixture generation, generated fixture-driven Aiken tests, and fail-closed evidence gate. The workflow records a JEV evidence artifact and updates the Notion ledger. This is **partial Haskell-to-Aiken differential evidence** for selected Plutus Data encodings, pure semantic vectors, and crypto derivations; it is not full Reveal validator parity. Current paired references and remaining gaps are:
 
 | Behavior | Canonical Haskell reference | Aiken seam | Current evidence |
 |---|---|---|---|
@@ -43,17 +43,17 @@ The successful Aiken CI run validates the isolated Aiken package only. It is not
 | Reveal validity upper bound | `plutus/PrizeValidator.hs` (`claimBeforeExpiry`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level boundary tests only |
 | Reveal pool accounting | `plutus/PrizeValidator.hs` (`validateReveal.poolOk`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level positive/negative tests only |
 | Typed Cardano context, unique inputs/outputs, continuing value | `plutus/PrizeValidator.hs` | `lib/immortal/reveal_context.ak` | Structural typed-context guard only; not full validator parity |
-| Datum/redeemer serialization | `plutus/Types.hs` | `lib/immortal/reveal_types.ak` | Field order documented, but no generated Haskell CBOR/Plutus Data fixture is consumed by Aiken yet |
+| Datum/redeemer serialization | `plutus/Types.hs` | `lib/immortal/reveal_types.ak` | CI-generated Haskell fixtures are consumed by generated Aiken tests for `PrizeDatum.pending`, all four `PrizeAction` constructors, `BeaconTarget`, and `B1PrizePoolDatum`; broader datum/state coverage and full round-trip coverage remain open |
 
 ### Next acceptance gate
 
-1. Produce versioned golden fixtures from the canonical Haskell implementation (do not manually infer expected values): successful Reveal, zero-payout/loss Reveal, expiry boundary, and one negative twin for each failed guard.
-2. Include the pre/post PrizeDatum and B1PrizePool datum fields, the relevant transaction-context counts/value-preservation facts, computed beacon/commitment/result, payout, and rejection classification.
-3. Make the Aiken workflow consume the exact same fixture artifact and compare each field/decision. The Haskell fixture producer must be run and its source revision recorded; no independent hand-copied constants may be called differential evidence.
-4. Add Plutus Data/CBOR round-trip vectors for `PrizeDatum`, `PrizeAction`, `BeaconTarget`, and `B1PrizePoolDatum` before attempting validator wiring.
+1. Extend the canonical Haskell producer with versioned end-to-end transition fixtures: successful Reveal, zero-payout/loss Reveal, expiry boundary, and one negative twin for each failed guard.
+2. Include pre/post `PrizeDatum` and `B1PrizePoolDatum` fields, relevant transaction-context counts/value-preservation facts, computed beacon/commitment/result, payout, and rejection classification.
+3. Make Aiken consume the exact same fixture artifact and compare each field/decision. Record the Haskell source revision and fixture schema version; never treat hand-copied constants as differential evidence.
+4. Expand serialization coverage to additional datum states and round-trip/decoder checks before validator wiring.
 5. Keep full validator equivalence, V2-to-V3 compatibility, size/cost measurement, and Yaci integration as separate gates.
 
-Current run status must therefore be reported as **Aiken isolated check/build PASS; Haskell/Aiken differential parity NOT YET RUN**. No validator deployment or protocol-wide GREEN claim follows from this result.
+Current evidence is **partial differential parity PASS** for selected serialization, crypto, and pure semantic vectors; **full Reveal transition parity NOT YET RUN**. No validator deployment or protocol-wide GREEN claim follows from this result.
 
 ## CI artifact reuse
 
