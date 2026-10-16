@@ -447,4 +447,4 @@ test haskell_crypto_result_binding_digest() {
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven serialization, five row-tier, five prize amount, four payout, four symbol-vector sets with outcome-index checks, and ten crypto differential tests from canonical Haskell fixtures.');
+console.log('Generated schema serialization, Haskell-derived win/loss transition snapshots, expiry-boundary vectors, semantic vectors, and crypto differential tests from canonical Haskell fixtures.');
