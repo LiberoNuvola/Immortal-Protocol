@@ -389,9 +389,9 @@ makeRevealContext inputDatum outputDatum poolBefore poolAfter upperBound poolInp
     prizeScriptHash = ScriptHash (rawBytes [6])
     poolScriptHash = ScriptHash (rawBytes [9])
     ownRef = TxOutRef (TxId (rawBytes [42])) 0
-    poolValue = singleton adaSymbol adaToken 10_000_000
+    poolValue = singleton adaSymbol adaToken 10000000
     prizeInputValue =
-      singleton adaSymbol adaToken 5_000_000
+      singleton adaSymbol adaToken 5000000
         <> singleton (CurrencySymbol (rawBytes [161]))
              (TokenName (pdTicketName inputDatum)) 1
     prizeOutputValue =
