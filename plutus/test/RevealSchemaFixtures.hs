@@ -14,6 +14,7 @@ import qualified Data.Text.Encoding as TE
 import qualified PlutusTx
 import qualified PlutusTx.Builtins as Builtins
 import PlutusLedgerApi.V2 (ScriptHash (..))
+import GameRules (defaultPrizeTable, rowPayoutTotal)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -80,6 +81,16 @@ samplePoolDatum =
     , ppPrizeHash = ScriptHash "06"
     }
 
+payoutCase :: String -> Integer -> Integer -> Integer -> Aeson.Value
+payoutCase name row1Tier row2Tier price =
+  object
+    [ "name" .= name
+    , "row1Tier" .= row1Tier
+    , "row2Tier" .= row2Tier
+    , "priceUsdm" .= price
+    , "expectedPayout" .= rowPayoutTotal defaultPrizeTable row1Tier row2Tier price
+    ]
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -100,6 +111,15 @@ main = do
                 , "PrizeAction.Expire" .= hexData Expire
                 , "BeaconTarget" .= hexData sampleTarget
                 , "B1PrizePoolDatum" .= hexData samplePoolDatum
+                ]
+          , "semanticFixtures" .=
+              object
+                [ "payoutCases" .=
+                    [ payoutCase "loss_zero_payout" 0 0 100
+                    , payoutCase "single_tier_one_win" 1 0 100
+                    , payoutCase "tier_one_and_two_win" 1 2 100
+                    , payoutCase "maximum_payout_cap" 4 5 100
+                    ]
                 ]
           ]
   BSL.writeFile outputPath (Aeson.encode fixture <> "\n")
