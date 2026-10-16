@@ -34,26 +34,30 @@ No production artifact may be switched to this package until full behavior passe
 
 ## Differential parity status (2026-10-16)
 
-The latest completed CI run (#55) passed the original isolated Aiken check/build, seven initial Haskell-derived serialization fixtures, semantic vectors, and the fail-closed evidence gate. Newer commits add Haskell-derived winning/loss transition snapshots and expiry-boundary vectors; their status must be established by the CI run for those commits. Even when those tests pass, the evidence is **partial Haskell-to-Aiken parity** for selected Plutus Data encodings and pure predicates, not full Reveal validator parity. Current paired references and remaining gaps are:
+CI run [#71](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38944055843) passed the canonical Haskell fixture producer, the compiled Plutus V2 CEK harness, generated Haskell-to-Aiken fixtures, Aiken tests, and the fail-closed JEV evidence gate. The producer evaluated the actual `compiledValidatorFactory` from `plutus/PrizeValidator.hs` against test-only synthetic `ScriptContext` values. All 11 outcomes matched expectations: two accepted Reveal paths (positive payout and zero-payout loss) and nine representative rejected cases (wrong secret, expiry, liability delta, changed identity, value preservation, duplicate pool input, missing pool output, duplicate Prize output, and pool script-hash binding).
+
+The run reports **61 Aiken tests passed, 0 failed**, **120 JEV checks passed, 0 failed**, an uploaded evidence artifact, a Notion ledger update, and `PARITY_EVIDENCE_GATE=success`.
+
+This is stronger evidence than pure predicate tests, but is **not full Haskell/Aiken validator equivalence**: the Haskell CEK run uses synthetic contexts rather than a ledger-valid transaction, while the Aiken harness still does not implement/evaluate the entire Reveal validator. Current paired references and remaining gaps are:
 
 | Behavior | Canonical Haskell reference | Aiken seam | Current evidence |
 |---|---|---|---|
-| Row outcome boundaries and rejection sampling | `plutus/GameRules.hs` | `lib/immortal/game_rules.ak` | Fixed-vector tests exist on both sides; automated single-source fixture consumption is still missing |
-| Prize tier and payout formula / 500x cap | `plutus/GameRules.hs` | `lib/immortal/reveal_rules.ak` | Aiken tests and Haskell golden-vector assertions; shared fixture runner still missing |
-| Reveal validity upper bound | `plutus/PrizeValidator.hs` (`claimBeforeExpiry`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level boundary tests only |
-| Reveal pool accounting | `plutus/PrizeValidator.hs` (`validateReveal.poolOk`) | `lib/immortal/reveal_context_guards.ak` | Predicate-level positive/negative tests only |
-| Typed Cardano context, unique inputs/outputs, continuing value | `plutus/PrizeValidator.hs` | `lib/immortal/reveal_context.ak` | Structural typed-context guard only; not full validator parity |
-| Datum/redeemer serialization | `plutus/Types.hs` | `lib/immortal/reveal_types.ak` | CI-generated Haskell fixtures are consumed by generated Aiken tests for `PrizeDatum.pending`, all four `PrizeAction` constructors, `BeaconTarget`, and `B1PrizePoolDatum`; broader datum/state coverage and full round-trip coverage remain open |
+| Row outcome boundaries and rejection sampling | `plutus/GameRules.hs` | `lib/immortal/game_rules.ak` | Canonical Haskell vectors are generated in CI and consumed by Aiken tests, including rejection-sampling and row outcome indices |
+| Prize tier and payout formula / 500x cap | `plutus/GameRules.hs` | `lib/immortal/reveal_rules.ak` | Canonical Haskell prize/payout vectors are consumed by Aiken tests; the shared vector checks cover the listed formula and cap cases, not the complete on-chain transition |
+| Reveal validity upper bound | `plutus/PrizeValidator.hs` (`claimBeforeExpiry`) | `lib/immortal/reveal_context_guards.ak` | Exact-before/equal/after pure boundary vectors plus CEK accept/reject coverage at the expiry cutoff |
+| Reveal pool accounting | `plutus/PrizeValidator.hs` (`validateReveal.poolOk`) | `lib/immortal/reveal_context_guards.ak` | Haskell-derived before/after pool snapshots, Aiken accounting-predicate tests, and CEK positive/negative pool-accounting cases |
+| Typed Cardano context, unique inputs/outputs, continuing value | `plutus/PrizeValidator.hs` | `lib/immortal/reveal_context.ak` | Actual compiled Haskell validator is CEK-tested against synthetic contexts for representative guards; Aiken still has structural context guards rather than the complete validator |
+| Datum/redeemer serialization | `plutus/Types.hs` | `lib/immortal/reveal_types.ak` | CI-generated fixtures cover `PrizeDatum.pending`, all `PrizeAction` constructors, `BeaconTarget`, `B1PrizePoolDatum`, and generated before/after transition snapshots; more states and full round trips remain open |
 
 ### Next acceptance gate
 
-1. Construct test-only `ScriptContext` fixtures and exercise the canonical `PrizeValidator.mkValidator` for valid Reveal and negative twins for every failed guard. Current transition fixtures calculate and serialize canonical state snapshots but deliberately do not claim to invoke the validator.
-2. Extend the Haskell/Aiken shared schema with relevant transaction-context counts, value-preservation facts, and explicit expected accept/reject classifications produced by the canonical validator evaluation.
-3. Record the Haskell source revision and fixture schema version; never treat hand-copied constants as differential evidence.
-4. Expand serialization coverage to additional datum states and round-trip/decoder checks before validator wiring.
-5. Keep full validator equivalence, V2-to-V3 compatibility, size/cost measurement, and Yaci integration as separate gates.
+1. Port the full Reveal decision to Aiken against the same canonical fixture schema, then compare accept/reject decisions and datum/pool effects to the 11 Haskell CEK outcomes. The current Aiken harness does not yet claim this parity.
+2. Build ledger-valid Cardano/Yaci integration transactions with datum/redeemer/context encodings and test the same positive and negative twins at the native ledger boundary.
+3. Keep the Plutus V2 to Aiken/Plutus V3 compatibility review separate; the existing V3 carrier remains unchanged.
+4. Measure the compiled validator and complete transaction size, CPU, and memory against version-labelled baselines. The previously observed Reveal transaction-size blocker remains unresolved by this harness.
+5. Expand datum/redeemer serialization states and round-trip/decoder checks; record canonical source revision and fixture schema version in evidence.
 
-Current evidence remains **partial differential parity** for selected serialization, crypto, derived win/loss state snapshots, accounting predicates, and expiry boundaries; **full validator-evaluated Reveal parity is NOT YET RUN**. No validator deployment or protocol-wide GREEN claim follows from these tests.
+Current status: **synthetic-context Plutus V2 CEK conformance PASS for 11 representative cases; selected Haskell-to-Aiken fixture/predicate parity PASS; full Haskell/Aiken validator equivalence, native-ledger/Yaci parity, V2-to-V3 compatibility, and transaction-size closure NOT YET ESTABLISHED**. No validator deployment or protocol-wide GREEN claim follows from this evidence.
 
 ## CI artifact reuse
 
