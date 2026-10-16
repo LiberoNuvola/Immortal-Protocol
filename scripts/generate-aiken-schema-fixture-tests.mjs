@@ -57,14 +57,15 @@ test haskell_semantic_payout_${item.name}() {
 }
 `).join(String.fromCharCode(10));
 const symbolsVectorCases = semanticFixtures.symbolsVectorCases;
-if (!Array.isArray(symbolsVectorCases) || symbolsVectorCases.length !== 3) {
-  throw new Error('Expected exactly three canonical Haskell generated-symbol vectors');
+if (!Array.isArray(symbolsVectorCases) || symbolsVectorCases.length !== 4) {
+  throw new Error('Expected exactly four canonical Haskell generated-symbol vectors');
 }
 for (const [index, item] of symbolsVectorCases.entries()) {
   if (!item || typeof item.name !== 'string' || !/^[a-z0-9_]+$/.test(item.name)
       || typeof item.seedHex !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(item.seedHex)
       || typeof item.symbolsHex !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(item.symbolsHex)
-      || !Number.isInteger(item.row1OutcomeIndex) || !Number.isInteger(item.row2OutcomeIndex)) {
+      || !Number.isInteger(item.row1OutcomeIndex) || !Number.isInteger(item.row2OutcomeIndex)
+      || !Number.isInteger(item.row1FirstDraw) || item.row1FirstDraw < 0 || item.row1FirstDraw > 65535) {
     throw new Error('Malformed generated-symbol vector at index ' + index);
   }
 }
@@ -72,7 +73,19 @@ const symbolsVectorTests = symbolsVectorCases.map((item) => `
 test haskell_crypto_generated_symbols_${item.name}() {
   generate_symbols(#"${item.seedHex}") == #"${item.symbolsHex}"
 }
+
+test haskell_crypto_row_one_outcome_${item.name}() {
+  row_outcome_index(#"${item.seedHex}", 1) == ${item.row1OutcomeIndex}
+}
+
+test haskell_crypto_row_two_outcome_${item.name}() {
+  row_outcome_index(#"${item.seedHex}", 2) == ${item.row2OutcomeIndex}
+}
 `).join(String.fromCharCode(10));
+const rejectionRetry = symbolsVectorCases.find((item) => item.name === 'rejection_retry_seed');
+if (!rejectionRetry || rejectionRetry.row1FirstDraw < 60000 || rejectionRetry.row1OutcomeIndex < 0 || rejectionRetry.row1OutcomeIndex >= 20000) {
+  throw new Error('Rejection-sampling fixture must prove first draw rejected and subsequent outcome valid');
+}
 const crypto = document.cryptoFixtures;
 const cryptoKeys = [
   'playerSecretHex', 'ticketIdHex', 'mainchainRefHex', 'mcHashHex',
@@ -280,4 +293,4 @@ test haskell_crypto_result_binding_digest() {
 `;
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated seven serialization, five row-tier, five prize amount, four payout, three extra symbol-vector, and ten crypto differential tests from canonical Haskell fixtures.');
+console.log('Generated seven serialization, five row-tier, five prize amount, four payout, four symbol-vector sets with outcome-index checks, and ten crypto differential tests from canonical Haskell fixtures.');
