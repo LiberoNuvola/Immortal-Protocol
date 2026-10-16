@@ -450,3 +450,26 @@ jobs:
           JEV_PROMPT_STATUS: ${{ steps.jev-generation.outcome || 'unknown' }}
         run: node ../../scripts/register-evidence-in-notion.mjs
 
+      # Fail the job if required parity evidence was skipped or its producer failed.
+      # Diagnostic/smoke steps may be fail-soft, but they cannot turn missing parity
+      # evidence into a successful CI result.
+      - name: Enforce parity evidence gate
+        if: always()
+        env:
+          CACHE_HIT: ${{ steps.aiken-cache.outputs.cache-hit || 'false' }}
+          HASKELL_FIXTURE_OUTCOME: ${{ steps.haskell-fixtures.outcome || 'unknown' }}
+          AIKEN_FIXTURE_TESTS_OUTCOME: ${{ steps.aiken-fixture-tests.outcome || 'unknown' }}
+          AIKEN_FIXTURE_PARITY_OUTCOME: ${{ steps.aiken-fixture-parity.outcome || 'unknown' }}
+          AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
+          AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$HASKELL_FIXTURE_OUTCOME" = success || { echo "BLOCKED: canonical Haskell fixtures did not succeed ($HASKELL_FIXTURE_OUTCOME)"; exit 1; }
+          test "$AIKEN_FIXTURE_TESTS_OUTCOME" = success || { echo "BLOCKED: Aiken test generation did not succeed ($AIKEN_FIXTURE_TESTS_OUTCOME)"; exit 1; }
+          test "$AIKEN_FIXTURE_PARITY_OUTCOME" = success || { echo "BLOCKED: Haskell-to-Aiken parity was not executed successfully ($AIKEN_FIXTURE_PARITY_OUTCOME)"; exit 1; }
+          if [ "$CACHE_HIT" != true ]; then
+            test "$AIKEN_CHECK_OUTCOME" = success || { echo "BLOCKED: Aiken check did not succeed ($AIKEN_CHECK_OUTCOME)"; exit 1; }
+            test "$AIKEN_BUILD_OUTCOME" = success || { echo "BLOCKED: Aiken build did not succeed ($AIKEN_BUILD_OUTCOME)"; exit 1; }
+          fi
+          echo "PARITY_EVIDENCE_GATE=success"
