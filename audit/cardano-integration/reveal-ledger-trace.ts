@@ -841,7 +841,6 @@ const reveal: any = await revealBuilder.complete({ localUPLCEval: false })
     revealDiag: 'reference-script-raw-cbor',
     bytes: builtCbor.length / 2,
     activeMaxTxSize: protocolParameters.maxTxSize ?? null,
-    diagnosticBuilderMaxTxSize,
     referenceInputs: diagnosticReferenceInputs.sort(),
     embeddedScriptCounts: diagnosticEmbeddedScriptCounts,
     embeddedScriptTotal: Object.values(diagnosticEmbeddedScriptCounts).reduce((sum, count) => sum + count, 0),
