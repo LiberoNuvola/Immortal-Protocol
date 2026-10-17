@@ -152,6 +152,10 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
 const certifyCandidate = (boundary, candidate) => {
   if (!candidate || candidate.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
   if (candidate.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
+  if (
+    candidate.evidenceContract !== boundary.evidenceContract ||
+    candidate.boundContract !== boundary.boundContract
+  ) return { status: 'REJECTED' }
   if (candidate.evidenceVerified !== true) return { status: 'UNVERIFIABLE' }
   if (candidate.withinDeclaredBounds !== true) return { status: 'REJECTED' }
   return Object.freeze({
@@ -159,6 +163,7 @@ const certifyCandidate = (boundary, candidate) => {
     family: boundary.domain,
     ruleVersion: boundary.ruleVersion,
     evidenceContract: boundary.evidenceContract,
+    boundContract: boundary.boundContract,
     value: candidate.value,
   })
 }
@@ -178,6 +183,8 @@ assert(
   certifyCandidate(reward, {
     domain: 'reward',
     ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'bounds-reward-v1',
     evidenceVerified: true,
     withinDeclaredBounds: true,
     value: 7,
@@ -187,6 +194,8 @@ assert(
 const certified = certifyCandidate(reward, {
   domain: 'reward',
   ruleVersion: 'reward-v1',
+  evidenceContract: 'evidence-reward-v1',
+  boundContract: 'bounds-reward-v1',
   evidenceVerified: true,
   withinDeclaredBounds: true,
   value: 7,
@@ -195,6 +204,30 @@ assert(adopt(certified, 'existing-authorized-path').status === 'ADOPTED',
   'adoption requires an existing authorized path')
 assert(adopt(certified, 'algorithm-decides').status === 'UNVERIFIABLE',
   'the derivation engine cannot self-authorize adoption')
+assert(
+  certifyCandidate(reward, {
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'other-evidence-v1',
+    boundContract: 'bounds-reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }).status === 'REJECTED',
+  'candidate certification cannot substitute another evidence contract',
+)
+assert(
+  certifyCandidate(reward, {
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'other-bounds-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }).status === 'REJECTED',
+  'candidate certification cannot substitute another declared-bound contract',
+)
 assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
 
 assert(
