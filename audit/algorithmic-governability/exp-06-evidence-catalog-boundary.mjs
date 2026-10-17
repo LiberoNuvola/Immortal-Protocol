@@ -122,9 +122,20 @@ const requiredActions = [
   'RegistryPublish',
 ]
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
+const isPresentEvidenceValue = (value) =>
+  value != null && !(typeof value === 'string' && value.trim().length === 0)
+
 const evaluate = (entry, observed) => {
-  if (!entry || !observed) return 'UNVERIFIABLE'
-  if (entry.required.some((field) => observed[field] == null || observed[field] === '')) {
+  if (!isRecord(entry) || !isRecord(observed)) return 'UNVERIFIABLE'
+  if (!Array.isArray(entry.required) ||
+      entry.required.some((field) => typeof field !== 'string' || !isPresentEvidenceValue(observed[field]))) {
     return entry.missingResult
   }
   if (observed.invalidEvidence === true) return entry.invalidResult
@@ -175,6 +186,25 @@ for (const action of requiredActions) {
 }
 
 assert(evaluate(catalog.Issue, null) === 'UNVERIFIABLE', 'absent action evidence is unverifiable')
+
+for (const malformed of [undefined, true, 7, 'evidence', [], new Date(0)]) {
+  assert(
+    evaluate(catalog.Issue, malformed) === 'UNVERIFIABLE',
+    'non-record observed evidence container fails closed',
+  )
+}
+const forgedEvidenceArray = []
+Object.assign(forgedEvidenceArray, Object.fromEntries(
+  catalog.Issue.required.map((field) => [field, `present:${field}`]),
+))
+assert(
+  evaluate(catalog.Issue, forgedEvidenceArray) === 'UNVERIFIABLE',
+  'array with forged required evidence properties cannot be admissible',
+)
+assert(
+  evaluate(catalog.Issue, { ...Object.fromEntries(catalog.Issue.required.map((field) => [field, `present:${field}`])), canonicalPreState: '   ' }) === 'UNVERIFIABLE',
+  'whitespace-only required evidence fails closed',
+)
 
 const issueEvidence = Object.fromEntries(
   catalog.Issue.required.map((field) => [field, `present:${field}`]),
