@@ -60,7 +60,7 @@ const hasNonBlankString = (value) =>
 
 const isUtcTimestamp = (value) =>
   typeof value === 'string' &&
-  /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$/.test(value) &&
+  /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/.test(value) &&
   Number.isFinite(Date.parse(value))
 
 const r4Classes = new Set(Array.from({ length: 10 }, (_, i) => `FM${i + 1}`))
