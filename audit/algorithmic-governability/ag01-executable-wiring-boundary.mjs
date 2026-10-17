@@ -48,8 +48,9 @@ assert(suiteBlock.includes('hs-source-dirs: ../IMMORTAL/governance'),
 assert(matrix.includes('AG-01') && matrix.includes('OPEN'),
   'AG-01 matrix remains explicitly classified as conformance work rather than silently promoted to closure')
 assert(
-  matrix.includes('No') || matrix.includes('not'),
-  'AG-01 matrix retains explicit non-claim / bounded-evidence language',
+  matrix.includes('They do not prove:') &&
+    matrix.includes('Full AG-01..AG-10 closure remains OPEN'),
+  'AG-01 matrix retains explicit non-claim language and keeps full closure OPEN',
 )
 
 console.log('ALL AG-01 EXECUTABLE WIRING BOUNDARY CHECKS PASSED')
