@@ -32,7 +32,7 @@ const validatePacket = (p) => {
   if (!isDigest(p.ledgerState?.transactionHash)) return false
   if (!isDigest(p.postState?.fingerprint)) return false
   if (!isDigest(p.evidenceProvenance?.sourceCommit)) return false
-  if (!p.evidenceProvenance?.observationRef) return false
+  if (typeof p.evidenceProvenance?.observationRef !== 'string' || p.evidenceProvenance.observationRef.trim().length === 0) return false
   return true
 }
 
@@ -51,6 +51,8 @@ const cases = [
   ['missing action-parameter binding', { actionParameters: undefined }],
   ['malformed post-state digest', { postState: { fingerprint: 'bad' } }],
   ['missing provenance observation', { evidenceProvenance: { sourceCommit: '77'.repeat(32) } }],
+  ['blank provenance observation', { evidenceProvenance: { sourceCommit: '77'.repeat(32), observationRef: '   ' } }],
+  ['non-string provenance observation', { evidenceProvenance: { sourceCommit: '77'.repeat(32), observationRef: 17 } }],
   ['unknown action', { action: 'Unknown' }],
 ]
 
