@@ -5,6 +5,19 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
+const hasOwnDataProperties = (record, fields) => {
+  if (record === null || typeof record !== 'object' || Array.isArray(record)) return false
+  const prototype = Object.getPrototypeOf(record)
+  if (prototype !== Object.prototype && prototype !== null) return false
+  return fields.every((field) => {
+    const descriptor = Object.getOwnPropertyDescriptor(record, field)
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  })
+}
+
+const CANONICAL_FIELDS = ['condition', 'evidenceFresh', 'canonicalVersion', 'transitionApplied']
+const CANDIDATE_FIELDS = ['invoker', 'transitionRef', 'expectedVersion']
+
 const initial = Object.freeze({
   condition: true,
   evidenceFresh: false,
@@ -13,6 +26,7 @@ const initial = Object.freeze({
 })
 
 const attempt = (s, invoker, expectedVersion) => {
+  if (!hasOwnDataProperties(s, CANONICAL_FIELDS)) return { status: 'UNVERIFIABLE', state: s }
   if (!invoker) return { ...s, status: 'SAFE_STALL' }
   if (expectedVersion !== s.canonicalVersion) return { ...s, status: 'STALE_STATE' }
   if (!s.condition || !s.evidenceFresh || s.transitionApplied) {
@@ -58,10 +72,10 @@ assert(replay.canonicalVersion === 8, 'replay attempt leaves canonical state unc
  * it is not evidence that a deployed ledger implements this path correctly.
  */
 const commitCandidate = (canonical, candidate) => {
-  if (!canonical || typeof canonical !== 'object' || Array.isArray(canonical)) {
+  if (!hasOwnDataProperties(canonical, CANONICAL_FIELDS)) {
     return { status: 'UNVERIFIABLE', state: canonical }
   }
-  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+  if (!hasOwnDataProperties(candidate, CANDIDATE_FIELDS)) {
     return { status: 'INVALID_CANDIDATE', state: canonical }
   }
   if (typeof candidate.invoker !== 'string' || candidate.invoker.trim() === '') {
@@ -121,6 +135,52 @@ for (const malformedCanonical of [null, undefined, 'state', 5, []]) {
   assert(rejected.status === 'UNVERIFIABLE', `malformed canonical state (${String(malformedCanonical)}) cannot be committed against`)
   assert(rejected.state === malformedCanonical, 'malformed canonical state is not replaced or synthesized')
 }
+
+
+let canonicalGetterCalled = false
+const accessorCanonical = { ...freshState }
+Object.defineProperty(accessorCanonical, 'evidenceFresh', {
+  enumerable: true,
+  get() {
+    canonicalGetterCalled = true
+    return true
+  },
+})
+const accessorCanonicalResult = commitCandidate(accessorCanonical, concurrentCandidateA)
+assert(accessorCanonicalResult.status === 'UNVERIFIABLE',
+  'accessor-backed canonical state is unverifiable')
+assert(canonicalGetterCalled === false,
+  'canonical-state validation does not execute accessors')
+
+let candidateGetterCalled = false
+const accessorCandidate = { ...concurrentCandidateA }
+Object.defineProperty(accessorCandidate, 'expectedVersion', {
+  enumerable: true,
+  get() {
+    candidateGetterCalled = true
+    return freshState.canonicalVersion
+  },
+})
+const accessorCandidateResult = commitCandidate(freshState, accessorCandidate)
+assert(accessorCandidateResult.status === 'INVALID_CANDIDATE',
+  'accessor-backed keeper candidate is rejected')
+assert(candidateGetterCalled === false,
+  'keeper-candidate validation does not execute accessors')
+
+let attemptGetterCalled = false
+const accessorAttemptState = { ...freshState }
+Object.defineProperty(accessorAttemptState, 'condition', {
+  enumerable: true,
+  get() {
+    attemptGetterCalled = true
+    return true
+  },
+})
+const accessorAttemptResult = attempt(accessorAttemptState, 'keeper-x', 7)
+assert(accessorAttemptResult.status === 'UNVERIFIABLE',
+  'accessor-backed state cannot authorize a permissionless transition')
+assert(attemptGetterCalled === false,
+  'permissionless attempt validation does not execute state accessors')
 
 const raceWinner = commitCandidate(freshState, concurrentCandidateA)
 assert(raceWinner.status === 'APPLIED', 'first eligible keeper wins commit-time version revalidation')
