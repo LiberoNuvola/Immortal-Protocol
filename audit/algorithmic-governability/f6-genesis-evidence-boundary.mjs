@@ -62,6 +62,13 @@ for (const field of riskEvidenceFields) {
   )
 }
 
+for (const field of riskEvidenceFields) {
+  assert(
+    genesisAdmission({ ...valid, [field]: true }) === 'REJECTED',
+    `positive risk evidence ${field} is rejected`,
+  )
+}
+
 assert(genesisAdmission({...valid,bootstrapQualified:false})==='NOT_ADMISSIBLE','explicitly unqualified Genesis candidate is not admissible')
 assert(genesisAdmission({...valid,bootstrapQualified:null})==='UNVERIFIABLE','unknown bootstrap qualification is not treated as a negative result')
 assert(genesisAdmission({...valid,bootstrapQualified:'true'})==='UNVERIFIABLE','untyped bootstrap qualification fails closed')
