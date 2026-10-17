@@ -5,6 +5,12 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const families = [
   'EXP-01', 'EXP-02', 'EXP-03', 'EXP-04', 'EXP-05', 'EXP-06',
   'EXP-07', 'EXP-08', 'EXP-09', 'EXP-10', 'EXP-11', 'EXP-12',
@@ -19,7 +25,7 @@ const boundary = (family) => Object.freeze({
 })
 
 const derive = (b, input) => {
-  if (!input || input.evidenceValid !== true) return { status: 'UNVERIFIABLE' }
+  if (!isRecord(input) || input.evidenceValid !== true) return { status: 'UNVERIFIABLE' }
   if (input.withinDeclaredBounds !== true) return { status: 'REJECTED' }
   return Object.freeze({
     status: 'ADMISSIBLE',
@@ -33,9 +39,7 @@ const derive = (b, input) => {
 }
 
 const adopt = (candidate, canonicalState, expectedBoundary) => {
-  const matchesBoundary = candidate &&
-    typeof candidate === 'object' &&
-    !Array.isArray(candidate) &&
+  const matchesBoundary = isRecord(candidate) &&
     candidate.status === 'ADMISSIBLE' &&
     candidate.domain === expectedBoundary.domain &&
     candidate.ruleVersion === expectedBoundary.ruleVersion &&
@@ -51,7 +55,18 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
 
-for (const malformedCandidate of [null, undefined, 'candidate', 7, []]) {
+const inheritedEvidence = Object.create({ value: 1, evidenceValid: true, withinDeclaredBounds: true })
+assert(derive(boundary('EXP-01'), inheritedEvidence).status === 'UNVERIFIABLE',
+  'inherited evidence properties cannot certify an EXP result')
+assert(derive(boundary('EXP-01'), new Date()).status === 'UNVERIFIABLE',
+  'non-record evidence containers cannot certify an EXP result')
+
+const inheritedCandidate = Object.create({
+  status: 'ADMISSIBLE',
+  ...boundary('EXP-01'),
+})
+
+for (const malformedCandidate of [null, undefined, 'candidate', 7, [], inheritedCandidate, new Date()]) {
   const afterMalformedAdopt = adopt(malformedCandidate, canonicalBefore, boundary('EXP-01'))
   assert(afterMalformedAdopt.adopted === null, `malformed candidate (${String(malformedCandidate)}) cannot be adopted`)
   assert(afterMalformedAdopt.version === canonicalBefore.version, 'malformed candidate cannot change canonical version')
