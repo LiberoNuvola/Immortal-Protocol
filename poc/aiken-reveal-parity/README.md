@@ -29,7 +29,7 @@ The typed-context entrypoint and representative adversarial tests now exist in t
 
 1. Expand canonical Haskell/Aiken differential fixtures across all datum/redeemer states and edge cases; compare full validator decisions and state effects, not only serialization or pure predicates.
 2. Verify hashed-datum resolution and datum-witness binding against canonical, ledger-valid transaction fixtures.
-3. Build and submit ledger-valid positive and negative twins through Yaci/native-ledger validation.
+3. Complete ledger-valid positive, nonzero-payout, and adversarial twins through Yaci/native-ledger validation. A loss and a nonzero-payout Reveal have now passed the integrated Aiken V3 + real B1PrizePool V2 fixture; the wrong-secret rejection so far uses a test-only pool stub, so the integrated negative case remains open.
 4. Review the production Haskell Plutus V2 to Aiken Plutus V3 compatibility boundary separately. Aiken's current package target does not make this a drop-in replacement.
 5. Measure compiled script size and complete transaction size, CPU, and memory against a version-labelled baseline. The historical 16,384-byte Reveal transaction blocker is not closed by passing this harness.
 6. Preserve the existing Haskell validator, IMMORTAL economic rules, and V3 carrier until all acceptance gates pass and an explicit migration decision is made.
@@ -56,7 +56,7 @@ This is stronger evidence than pure predicate tests, but is **not full Haskell/A
 ### Next acceptance gate
 
 1. Port the full Reveal decision to Aiken against the same canonical fixture schema, then compare accept/reject decisions and datum/pool effects to the 11 Haskell CEK outcomes. The current Aiken harness does not yet claim this parity.
-2. Build ledger-valid Cardano/Yaci integration transactions with datum/redeemer/context encodings and test the same positive and negative twins at the native ledger boundary.
+2. Extend local Yaci testing to a wrong-secret transaction using the integrated Aiken V3 Reveal and the real B1PrizePool V2 validator, then compare positive/negative decisions and state effects to canonical Haskell results. The integrated zero-payout and nonzero-payout cases now pass; the standalone wrong-secret twin still uses a test-only pool stub.
 3. Keep the Plutus V2 to Aiken/Plutus V3 compatibility review separate; the existing V3 carrier remains unchanged.
 4. Measure the compiled validator and complete transaction size, CPU, and memory against version-labelled baselines. The previously observed Reveal transaction-size blocker remains unresolved by this harness.
 5. Expand datum/redeemer serialization states and round-trip/decoder checks; record canonical source revision and fixture schema version in evidence.
@@ -77,7 +77,7 @@ The Aiken workflow caches build outputs using a key derived from the manifest/lo
 - Yaci ledger integration passes.
 - IMMORTAL economic invariants and the existing V3 carrier remain unchanged.
 
-CI does not deploy, mint, or submit transactions.
+CI may publish scripts and submit fixture-only transactions to an ephemeral local Yaci Conway ledger for conformance evidence. It does not deploy or submit production tickets on Cardano Preprod/mainnet, and these local fixtures do not establish production USDM/oracle qualification.
 
 ## Compiled script-size checkpoint (2026-10-17)
 
@@ -94,3 +94,35 @@ Interpretation: the compiled script alone is below the transaction ceiling, so i
 
 Build and serialize a ledger-valid Aiken V3 reference-script publication transaction and a positive/negative Reveal pair in the controlled Yaci/Conway lab. Capture the actual final CBOR byte lengths, reference-script bindings, execution units and node acceptance/rejection, then compare the same semantic cases against the canonical Haskell CEK fixture. Do this in the isolated Aiken path: do not change the existing V3 carrier, Haskell Reveal validator, economic semantics, or the 16,384-byte limit.
 
+
+
+## Integrated local Yaci checkpoint (2026-10-17, run #1778)
+
+Evidence: [IMMORTAL Cardano Integration Lab run #1778](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39022514833), commit [`0a1d783`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/0a1d78321095ffd5d82bca144fc4998ee8e7cd75). The JEV registry and sanitized evidence artifact were uploaded and registered in Notion by the workflow.
+
+### Passed in the isolated candidate path
+
+- Aiken Reveal V3 compiled with Aiken v1.1.22; the target remains explicitly Plutus V3.
+- The Aiken reference-script publication was accepted by local Yaci and bound to the exact output UTxO. The Aiken spend entrypoint is 5,502 bytes; the signed publication transaction was 5,809 bytes.
+- The integrated Reveal transaction used the Aiken V3 PrizeValidator reference script and the real parameterized Plutus V2 B1PrizePool validator, bound to the Aiken PrizeValidator hash. The signed transaction was **1,245 bytes** against the observed 16,384-byte limit.
+- The integrated fixture used deterministic ticket nonce 7, producing a nonzero payout of **200 sub-units** (tier 1 on each row). Yaci confirmed the transaction, observed Prize and Pool outputs, and the replay was rejected.
+- A separate isolated probe also passed a zero-payout loss and wrong-secret rejection. Caveat: the standalone wrong-secret case uses a **test-only pool stub**, not the real B1PrizePool validator. The integrated path has therefore proved real-pool acceptance for loss and win, but not yet an integrated wrong-secret rejection using the real pool.
+
+Integrated winning Reveal transaction: `c85513e887853d050388ab6f526ee9c27a0b91a5b785db1699efe33a5bb1acea`. Evidence artifact: [`immortal-cardano-lab-evidence`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39022514833/artifacts/12096873041), SHA-256 `64d18b359cea468f87dc2bb0c5aacc6b3f9b734eca3da67812f068b29afb3f9f`.
+
+### Still open — do not infer production readiness
+
+- **Canonical Reveal V2 still fails.** The same run reports the parameterized Haskell PrizeValidator at 17,954 bytes and the complete transaction at 18,051 bytes, exceeding the fixed 16,384-byte ceiling. The overall Cardano Lab therefore correctly remains FAIL.
+- **Full Haskell/Aiken equivalence is not established.** The local Yaci fixture proves only the exercised states. More datum/redeemer edge cases, cross-implementation decision/state-effect comparisons, and an integrated wrong-secret rejection using the actual B1PrizePool validator remain required.
+- **Execution-cost qualification is incomplete.** Yaci/Lucid reported ExUnits and the assigned budgets covered those measured values, but the evidence did not expose the protocol execution ceilings in that run. Do not mark CPU/memory limits qualified from those figures alone.
+- **No production economic source was qualified by this fixture.** Liquidity is a synthetic test asset with identity-only 1:1 fixture valuation; `productionOracleQualified=false`. This is not authenticated canonical USDM evidence, does not close the EEV blocker, and is not a Preprod/mainnet test.
+- **V2/V3 compatibility and migration remain open.** The modern pinned Aiken compiler's isolated V2-target probe failed; the production Haskell validator remains the canonical V2 reference. The working Aiken candidate is V3 and must not be substituted into production without an explicit migration decision and full acceptance evidence.
+- The existing V3 carrier, IMMORTAL economic semantics, canonical Haskell validator, and 16,384-byte size ceiling remain unchanged. The gate to production remains closed.
+
+### Next acceptance gate
+
+1. Add a negative twin to the integrated Aiken V3 + B1PrizePool V2 local-Yaci path and prove that the wrong-secret transaction reaches ledger submission and is rejected.
+2. Preserve the Haskell V2 CEK fixtures as the behavior reference and broaden differential coverage for all relevant datum/redeemer states, including accounting and state effects.
+3. Capture resource usage plus active protocol execution limits from an authoritative source, then qualify CPU/memory separately from transaction size.
+4. Define and evidence the production economic input/USDM source independently of this synthetic fixture; do not reuse this run as an EEV certificate.
+5. Keep canonical V2 failure visible until a behavior-preserving implementation fits the hard limit. No branch, adapter, carrier, or economic-rule change is implied by this experiment.
