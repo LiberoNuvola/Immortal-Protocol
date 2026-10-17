@@ -938,10 +938,11 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
     -- In Plutus V2 the raw credential field is BuiltinData wrapping a
     -- bytestring; comparing it to typed PubKeyHash via equalsByteString caused
     -- a Data/ByteString mismatch in the Yaci/Scalus evaluator.
+    -- Keep signature membership on the raw BuiltinData representation:
+    -- the Yaci/Scalus Plutus V2 evaluator currently exposes signatories as Data
+    -- at this boundary, while txSignedBy lowers to equalsByteString.
     ownerSigned =
-      case maybeOwner of
-        Nothing -> False
-        Just ownerHash -> txSignedBy info ownerHash
+      rawOwnerSigned ticketCs ticketTn rawCtx
 
     -- C-03: Oracle-based settlement verification. Construct the canonical
     -- enterprise address from the typed PubKeyHash before comparing raw address
