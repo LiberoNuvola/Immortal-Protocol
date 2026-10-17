@@ -126,3 +126,12 @@ Integrated winning Reveal transaction: `c85513e887853d050388ab6f526ee9c27a0b91a5
 3. Capture resource usage plus active protocol execution limits from an authoritative source, then qualify CPU/memory separately from transaction size.
 4. Define and evidence the production economic input/USDM source independently of this synthetic fixture; do not reuse this run as an EEV certificate.
 5. Keep canonical V2 failure visible until a behavior-preserving implementation fits the hard limit. No branch, adapter, carrier, or economic-rule change is implied by this experiment.
+
+
+## Claim migration checkpoint (2026-10-17)
+
+The first isolated Aiken Claim parity seam is in `lib/immortal/claim_transition.ak`. It encodes the state/accounting invariants shared by `PrizeValidator.validateClaim` and B1PrizePool's `TicketClaimed` branch: Revealed → Claimed, positive frozen payout, finite upper validity bound, immutable Prize identity/result/tiers, exactly one Prize and pool input/output, exact reductions in liquidity and pending liabilities, unchanged reserve/count/jackpot configuration, and the pool's basic post-transition solvency inequality.
+
+**This is not yet a migrated or deployable Claim validator.** Owner signature, exact oracle-valued settlement, actual UTxO/datum resolution, continuing-value equality, and the complete B1 pool context must still be wired to Aiken's typed transaction context and proven with Haskell differential fixtures and ledger-valid Yaci twins. The three external booleans in the parity seam are intentionally explicit; they are not evidence that those checks have already been implemented.
+
+The existing `validators/reveal.ak` entrypoint and the production Haskell validators are unchanged. The fixed 16,384-byte ceiling remains in force. Before choosing Aiken as the fix, the Claim reference-CBOR diagnostic must establish whether the 16,461-byte transaction actually embeds Plutus scripts or whether its size is dominated by redeemers/datums/other witnesses. A smaller compiled script alone does not prove the complete Claim transaction will fit.
