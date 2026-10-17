@@ -35,6 +35,22 @@ const b = Object.freeze({
 
 assert(compose([a, b]) === 'ADMISSIBLE', 'orthogonal declared profiles compose without ambiguity')
 assert(compose([a]) === 'ADMISSIBLE', 'a single explicit profile remains valid')
+assert(compose(null) === 'UNVERIFIABLE', 'non-array profile collections fail closed')
+
+const delimiterA = Object.freeze({
+  id: 'delimiter-a',
+  domain: 'a',
+  version: 1,
+  parameters: { 'b:c': 1 },
+})
+const delimiterB = Object.freeze({
+  id: 'delimiter-b',
+  domain: 'a:b',
+  version: 1,
+  parameters: { c: 2 },
+})
+assert(compose([delimiterA, delimiterB]) === 'ADMISSIBLE',
+  'distinct domain/parameter tuples do not collide through delimiter concatenation')
 assert(
   compose([{ id: 'profile-a', domain: 'economics-a', version: 0, parameters: {} }]) === 'UNVERIFIABLE',
   'invalid profile version fails closed',
