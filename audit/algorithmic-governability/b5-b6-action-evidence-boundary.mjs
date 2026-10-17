@@ -35,8 +35,9 @@ const isPresent = (value) =>
   !(typeof value === 'string' && value.trim() === '')
 
 const isComplete = (action, packet) => {
+  if (!Object.hasOwn(actionCatalog, action)) return false
+  if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return false
   const required = actionCatalog[action]
-  if (!required || !packet) return false
   return required.every((field) => isPresent(packet[field]))
 }
 
@@ -67,6 +68,13 @@ for (const [action, fields] of Object.entries(actionCatalog)) {
 
 assert(!isComplete('Unknown', completePacket(['evidenceProvenance'])), 'unknown action cannot pass the evidence boundary')
 assert(!isComplete('Issue', null), 'absent action packet is incomplete')
+
+for (const inheritedAction of ['toString', 'constructor', '__proto__']) {
+  assert(!isComplete(inheritedAction, completePacket(['evidenceProvenance'])), `inherited property ${inheritedAction} is not a declared action`)
+}
+for (const malformedPacket of [undefined, 'packet', 7, []]) {
+  assert(!isComplete('Issue', malformedPacket), `malformed packet (${String(malformedPacket)}) is incomplete`)
+}
 
 
 
