@@ -15,12 +15,18 @@ const componentOrder = [
 ]
 
 const hasAllComponents = (w) =>
+  Boolean(w) &&
   componentOrder.every((field) =>
-    Object.prototype.hasOwnProperty.call(w, field),
+    Object.prototype.hasOwnProperty.call(w, field) &&
+    typeof w[field] === 'bigint',
   )
 
+// Compose only the six declared buckets. Metadata or unknown fields must
+// never enter the economic sum; incomplete/wrongly typed inputs stay invalid.
 const protectedCapital = (w) =>
-  Object.values(w).reduce((sum, value) => sum + value, 0n)
+  hasAllComponents(w)
+    ? componentOrder.reduce((sum, field) => sum + w[field], 0n)
+    : null
 
 const complete = Object.freeze({
   crystallizedLiabilities: 10n,
@@ -39,6 +45,7 @@ const missing = {
 }
 delete missing.reserveProtection
 assert(!hasAllComponents(missing), 'missing protected component is detectable')
+assert(protectedCapital(missing) === null, 'missing bucket cannot be silently treated as zero')
 assert(Object.prototype.hasOwnProperty.call(missing, 'reserveProtection') === false, 'missing component is not silently represented as zero')
 
 const zeroed = Object.freeze({
@@ -47,6 +54,22 @@ const zeroed = Object.freeze({
 })
 assert(hasAllComponents(zeroed), 'zero is distinguishable from a missing component')
 assert(protectedCapital(zeroed) === 40n, 'component mutation changes the composed protected amount')
+const metadataAugmented = Object.freeze({
+  ...complete,
+  profileMultiplier: 999n,
+})
+assert(hasAllComponents(metadataAugmented), 'declared buckets remain explicit alongside unrelated metadata')
+assert(
+  protectedCapital(metadataAugmented) === protectedCapital(complete),
+  'unrelated profile metadata is never included in the ProtectedCapital sum',
+)
+
+const wronglyTyped = Object.freeze({
+  ...complete,
+  reserveProtection: 4,
+})
+assert(!hasAllComponents(wronglyTyped), 'a number cannot silently replace a typed bigint bucket')
+assert(protectedCapital(wronglyTyped) === null, 'wrongly typed bucket set fails closed')
 
 const tamperedProfile = Object.freeze({
   ...complete,
