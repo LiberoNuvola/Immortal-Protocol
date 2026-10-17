@@ -64,7 +64,7 @@ const isUtcTimestamp = (value) => {
     return false
   }
   const parsed = Date.parse(value)
-  return Number.isFinite(parsed) && new Date(parsed).toISOString().replace(/\\.000Z$/, 'Z') === value
+  return Number.isFinite(parsed) && new Date(parsed).toISOString().replace(/\.000Z$/, 'Z') === value
 }
 
 const r4Classes = new Set(Array.from({ length: 10 }, (_, i) => `FM${i + 1}`))
