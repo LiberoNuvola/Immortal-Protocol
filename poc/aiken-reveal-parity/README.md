@@ -78,3 +78,19 @@ The Aiken workflow caches build outputs using a key derived from the manifest/lo
 - IMMORTAL economic invariants and the existing V3 carrier remain unchanged.
 
 CI does not deploy, mint, or submit transactions.
+
+## Compiled script-size checkpoint (2026-10-17)
+
+CI run [#120](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39011176926) measured the compiled Aiken `reveal.pre_rich_reveal.spend` entrypoint at **5,502 bytes**. Evidence:
+
+- Validator hash: `0fc30c0b1779b0cf028b3b523f710757696a5ec108d419ff2ba8da82`
+- SHA-256 of decoded `compiledCode` bytes: `75ec3a7574dc754774942b7e056dedf28e8b9750ad7e1755cb347b3935ee278a`
+- Cardano transaction size ceiling used by the measurement: **16,384 bytes**
+- JEV artifact: [`jev-aiken-reveal-parity-39011176926-1`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39011176926/artifacts/12092194510), SHA-256 `9d2792cd6e9677ccbc463d61e81454afdad550b672862772816a2f1c75763ea7`
+
+Interpretation: the compiled script alone is below the transaction ceiling, so it is not disqualified by that simple lower-bound test. This is **not** a transaction-size pass. The measurement explicitly records complete transaction CBOR size, CPU/memory, and native-ledger acceptance as not measured; the deployment gate remains closed. It also does not establish behavioral equivalence between this Plutus V3 prototype and the current Plutus V2 validator.
+
+### Next gate
+
+Build and serialize a ledger-valid Aiken V3 reference-script publication transaction and a positive/negative Reveal pair in the controlled Yaci/Conway lab. Capture the actual final CBOR byte lengths, reference-script bindings, execution units and node acceptance/rejection, then compare the same semantic cases against the canonical Haskell CEK fixture. Do this in the isolated Aiken path: do not change the existing V3 carrier, Haskell Reveal validator, economic semantics, or the 16,384-byte limit.
+
