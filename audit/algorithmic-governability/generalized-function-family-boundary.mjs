@@ -20,12 +20,26 @@ const makeBoundary = (family, version) => Object.freeze({
 })
 
 const derive = (boundary, certifiedInput) => {
-  if (!certifiedInput || certifiedInput.withinDeclaredBounds == null) {
+  if (!certifiedInput) return { status: 'UNVERIFIABLE' }
+
+  const requiredBindings = ['domain', 'ruleVersion', 'evidenceContract', 'boundContract']
+  if (requiredBindings.some((field) =>
+    typeof certifiedInput[field] !== 'string' || certifiedInput[field].trim() === '',
+  )) return { status: 'UNVERIFIABLE' }
+  if (typeof certifiedInput.evidenceVerified !== 'boolean' ||
+      typeof certifiedInput.withinDeclaredBounds !== 'boolean') {
     return { status: 'UNVERIFIABLE' }
   }
-  if (certifiedInput.domain && certifiedInput.domain !== boundary.domain) return { status: 'REJECTED' }
-  if (certifiedInput.ruleVersion && certifiedInput.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
+
+  if (
+    certifiedInput.domain !== boundary.domain ||
+    certifiedInput.ruleVersion !== boundary.ruleVersion ||
+    certifiedInput.evidenceContract !== boundary.evidenceContract ||
+    certifiedInput.boundContract !== boundary.boundContract
+  ) return { status: 'REJECTED' }
+  if (certifiedInput.evidenceVerified !== true) return { status: 'UNVERIFIABLE' }
   if (certifiedInput.withinDeclaredBounds !== true) return { status: 'REJECTED' }
+
   return Object.freeze({
     status: 'ADMISSIBLE',
     family: boundary.domain,
@@ -36,12 +50,23 @@ const derive = (boundary, certifiedInput) => {
   })
 }
 
+const certifiedDerivationInput = (boundary, overrides = {}) => ({
+  domain: boundary.domain,
+  ruleVersion: boundary.ruleVersion,
+  evidenceContract: boundary.evidenceContract,
+  boundContract: boundary.boundContract,
+  evidenceVerified: true,
+  withinDeclaredBounds: true,
+  value: 7,
+  ...overrides,
+})
+
 const fee = makeBoundary('fee', 'fee-v1')
 const reward = makeBoundary('reward', 'reward-v1')
 const governance = makeBoundary('governance', 'governance-v1')
 
 for (const boundary of [fee, reward, governance]) {
-  const result = derive(boundary, { value: 7, withinDeclaredBounds: true })
+  const result = derive(boundary, certifiedDerivationInput(boundary))
   assert(result.status === 'ADMISSIBLE', `${boundary.domain} candidate is admissible inside its declared boundary`)
   assert(result.ruleVersion === boundary.ruleVersion, `${boundary.domain} result retains rule identity`)
   assert(result.evidenceContract === boundary.evidenceContract, `${boundary.domain} result retains evidence-contract identity`)
@@ -50,8 +75,34 @@ for (const boundary of [fee, reward, governance]) {
 }
 
 assert(derive(fee, null).status === 'UNVERIFIABLE', 'missing required certification fails closed')
+
 assert(
-  derive(reward, { value: 7, withinDeclaredBounds: false }).status === 'REJECTED',
+  derive(fee, { value: 7, withinDeclaredBounds: true }).status === 'UNVERIFIABLE',
+  'missing version-bound derivation identity remains unverifiable',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { ruleVersion: undefined })).status === 'UNVERIFIABLE',
+  'missing rule version cannot inherit identity from the boundary',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { evidenceVerified: undefined })).status === 'UNVERIFIABLE',
+  'missing evidence verification cannot be inferred from bounds',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { evidenceVerified: false })).status === 'UNVERIFIABLE',
+  'explicitly unverified derivation evidence remains unverifiable',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { evidenceContract: 'other-evidence-v1' })).status === 'REJECTED',
+  'derivation evidence cannot be rebound to another evidence contract',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { boundContract: 'other-bounds-v1' })).status === 'REJECTED',
+  'derivation cannot substitute another declared-bound contract',
+)
+
+assert(
+  derive(reward, certifiedDerivationInput(reward, { withinDeclaredBounds: false })).status === 'REJECTED',
   'explicit declared-bound violation is rejected without defining a numeric threshold',
 )
 
@@ -147,11 +198,11 @@ assert(adopt(certified, 'algorithm-decides').status === 'UNVERIFIABLE',
 assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
 
 assert(
-  derive(reward, { domain: 'fee', value: 7, withinDeclaredBounds: true }).status === 'REJECTED',
+  derive(reward, certifiedDerivationInput(reward, { domain: 'fee' })).status === 'REJECTED',
   'a candidate from another function family cannot cross the reward boundary',
 )
 assert(
-  derive(reward, { domain: 'reward', ruleVersion: 'fee-v1', value: 7, withinDeclaredBounds: true }).status === 'REJECTED',
+  derive(reward, certifiedDerivationInput(reward, { ruleVersion: 'fee-v1' })).status === 'REJECTED',
   'a result bound to another rule version cannot cross the reward boundary',
 )
 
