@@ -14,19 +14,33 @@ const componentOrder = [
   'additionalProtected',
 ]
 
-const hasAllComponents = (w) =>
-  Boolean(w) &&
-  componentOrder.every((field) =>
-    Object.prototype.hasOwnProperty.call(w, field) &&
-    typeof w[field] === 'bigint',
-  )
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
+const readBuckets = (w) => {
+  if (!isRecord(w)) return null
+  const values = []
+  for (const field of componentOrder) {
+    const descriptor = Object.getOwnPropertyDescriptor(w, field)
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value') ||
+        typeof descriptor.value !== 'bigint') return null
+    values.push(descriptor.value)
+  }
+  return values
+}
+
+const hasAllComponents = (w) => readBuckets(w) !== null
 
 // Compose only the six declared buckets. Metadata or unknown fields must
 // never enter the economic sum; incomplete/wrongly typed inputs stay invalid.
-const protectedCapital = (w) =>
-  hasAllComponents(w)
-    ? componentOrder.reduce((sum, field) => sum + w[field], 0n)
-    : null
+const protectedCapital = (w) => {
+  const values = readBuckets(w)
+  return values === null ? null : values.reduce((sum, amount) => sum + amount, 0n)
+}
 
 const complete = Object.freeze({
   crystallizedLiabilities: 10n,
@@ -70,6 +84,19 @@ const wronglyTyped = Object.freeze({
 })
 assert(!hasAllComponents(wronglyTyped), 'a number cannot silently replace a typed bigint bucket')
 assert(protectedCapital(wronglyTyped) === null, 'wrongly typed bucket set fails closed')
+let bucketGetterCalls = 0
+const accessorBuckets = { ...complete }
+Object.defineProperty(accessorBuckets, 'safetyCapital', {
+  get() { bucketGetterCalls += 1; return 3n },
+})
+assert(
+  !hasAllComponents(accessorBuckets) && protectedCapital(accessorBuckets) === null && bucketGetterCalls === 0,
+  'accessor-backed protected bucket fails closed without executing getters',
+)
+assert(
+  protectedCapital(Object.create(complete)) === null,
+  'inherited protected buckets cannot satisfy the canonical component set',
+)
 
 const tamperedProfile = Object.freeze({
   ...complete,
