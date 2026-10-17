@@ -1,26 +1,41 @@
 #!/usr/bin/env node
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
+const readOwnData = (record, key) => {
+  if (!isRecord(record)) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : undefined
+}
+
 const authorize = (observation, authority) => {
-  if (
-    !observation?.verified ||
-    typeof observation.observationId !== 'string' ||
-    typeof observation.evidenceRef !== 'string'
-  ) {
-    return 'UNVERIFIABLE'
-  }
+  if (!isRecord(observation) || !isRecord(authority)) return 'UNVERIFIABLE'
+
+  const verified = readOwnData(observation, 'verified')
+  const observationId = readOwnData(observation, 'observationId')
+  const evidenceRef = readOwnData(observation, 'evidenceRef')
+  const authorized = readOwnData(authority, 'authorized')
+  const authorityReference = readOwnData(authority, 'authorityReference')
 
   if (
-    !authority?.authorized ||
-    typeof authority.authorityReference !== 'string'
-  ) {
-    return 'UNVERIFIABLE'
-  }
+    verified !== true ||
+    typeof observationId !== 'string' ||
+    typeof evidenceRef !== 'string'
+  ) return 'UNVERIFIABLE'
 
-  return Object.freeze({
-    observationId: observation.observationId,
-    evidenceRef: observation.evidenceRef,
-    authorityReference: authority.authorityReference,
-  })
+  if (
+    authorized !== true ||
+    typeof authorityReference !== 'string'
+  ) return 'UNVERIFIABLE'
+
+  return Object.freeze({ observationId, evidenceRef, authorityReference })
 }
 
 const assert = (condition, message) => {
@@ -67,6 +82,27 @@ assert(
 assert(
   authorize(observation, Object.freeze({ authorized: true })) === 'UNVERIFIABLE',
   'authority without an explicit authorization reference cannot cross the boundary',
+)
+let fieldGetterCalls = 0
+const accessorObservation = { observationId: 'obs-v1', evidenceRef: 'evidence-obs-v1' }
+Object.defineProperty(accessorObservation, 'verified', {
+  get() { fieldGetterCalls += 1; return true },
+})
+assert(
+  authorize(accessorObservation, authority) === 'UNVERIFIABLE' && fieldGetterCalls === 0,
+  'accessor-backed observation verification fails closed without invoking its getter',
+)
+assert(
+  authorize(Object.create(observation), authority) === 'UNVERIFIABLE',
+  'inherited observation identity cannot cross the authority boundary',
+)
+const accessorAuthority = { authorityReference: 'authority-v1' }
+Object.defineProperty(accessorAuthority, 'authorized', {
+  get() { fieldGetterCalls += 1; return true },
+})
+assert(
+  authorize(observation, accessorAuthority) === 'UNVERIFIABLE' && fieldGetterCalls === 0,
+  'accessor-backed authority cannot self-authorize through a getter',
 )
 
 const alteredObservation = Object.freeze({
