@@ -11,6 +11,14 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataProperties = (record, fields) => {
+  if (!isRecord(record)) return false
+  return fields.every((field) => {
+    const descriptor = Object.getOwnPropertyDescriptor(record, field)
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  })
+}
+
 const families = [
   'EXP-01', 'EXP-02', 'EXP-03', 'EXP-04', 'EXP-05', 'EXP-06',
   'EXP-07', 'EXP-08', 'EXP-09', 'EXP-10', 'EXP-11', 'EXP-12',
@@ -25,7 +33,10 @@ const boundary = (family) => Object.freeze({
 })
 
 const derive = (b, input) => {
-  if (!isRecord(input) || input.evidenceValid !== true) return { status: 'UNVERIFIABLE' }
+  if (!hasOwnDataProperties(input, ['value', 'evidenceValid', 'withinDeclaredBounds'])) {
+    return { status: 'UNVERIFIABLE' }
+  }
+  if (input.evidenceValid !== true) return { status: 'UNVERIFIABLE' }
   if (input.withinDeclaredBounds !== true) return { status: 'REJECTED' }
   return Object.freeze({
     status: 'ADMISSIBLE',
@@ -39,7 +50,12 @@ const derive = (b, input) => {
 }
 
 const adopt = (candidate, canonicalState, expectedBoundary) => {
-  const matchesBoundary = isRecord(candidate) &&
+  if (!hasOwnDataProperties(canonicalState, ['version', 'adopted'])) {
+    return { version: undefined, adopted: null }
+  }
+  const matchesBoundary = hasOwnDataProperties(candidate, [
+    'status', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract', 'adoptionPath',
+  ]) &&
     candidate.status === 'ADMISSIBLE' &&
     candidate.domain === expectedBoundary.domain &&
     candidate.ruleVersion === expectedBoundary.ruleVersion &&
@@ -52,6 +68,51 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
     adopted: matchesBoundary ? candidate : null,
   }
 }
+
+
+let evidenceGetterCalled = false
+const accessorEvidence = { value: 1, evidenceValid: true, withinDeclaredBounds: true }
+Object.defineProperty(accessorEvidence, 'evidenceValid', {
+  enumerable: true,
+  get() {
+    evidenceGetterCalled = true
+    return true
+  },
+})
+assert(derive(boundary('EXP-01'), accessorEvidence).status === 'UNVERIFIABLE',
+  'accessor-backed EXP evidence cannot certify a result')
+assert(evidenceGetterCalled === false,
+  'EXP evidence validation does not execute accessors')
+
+let candidateGetterCalled = false
+const accessorCandidate = { status: 'ADMISSIBLE', ...boundary('EXP-01') }
+Object.defineProperty(accessorCandidate, 'ruleVersion', {
+  enumerable: true,
+  get() {
+    candidateGetterCalled = true
+    return boundary('EXP-01').ruleVersion
+  },
+})
+const accessorAdoption = adopt(accessorCandidate, { version: 'canonical-v1', adopted: null }, boundary('EXP-01'))
+assert(accessorAdoption.adopted === null,
+  'accessor-backed EXP candidate cannot be adopted')
+assert(candidateGetterCalled === false,
+  'EXP adoption validation does not execute candidate accessors')
+
+let canonicalGetterCalled = false
+const accessorCanonical = { version: 'canonical-v1', adopted: null }
+Object.defineProperty(accessorCanonical, 'version', {
+  enumerable: true,
+  get() {
+    canonicalGetterCalled = true
+    return 'canonical-v1'
+  },
+})
+const canonicalGuardResult = adopt(null, accessorCanonical, boundary('EXP-01'))
+assert(canonicalGuardResult.adopted === null,
+  'accessor-backed canonical state cannot be mutated by adoption')
+assert(canonicalGetterCalled === false,
+  'canonical-state guard does not execute accessors')
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
 
