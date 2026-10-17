@@ -61,6 +61,16 @@ const hasOwnArrayDataElements = (array) => Array.isArray(array) &&
     return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
   }).every(Boolean)
 
+const matchesExpectedArray = (array, expected) => {
+  if (!Array.isArray(array) || array.length !== expected.length ||
+      !hasOwnArrayDataElements(array)) return false
+  for (let index = 0; index < expected.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(array, String(index))
+    if (descriptor.value !== expected[index]) return false
+  }
+  return true
+}
+
 const adopt = (candidate, certified, boundary) => {
   if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate)) return null
   const domain = ownDataValue(candidate, 'domain')
@@ -87,10 +97,7 @@ const adopt = (candidate, certified, boundary) => {
   if (safeSetDescriptor) {
     if (!Object.prototype.hasOwnProperty.call(safeSetDescriptor, 'value')) return null
     const safeSet = safeSetDescriptor.value
-    if (!Array.isArray(safeSet) ||
-        safeSet.length !== boundary.safeSet.length ||
-        !hasOwnArrayDataElements(safeSet) ||
-        safeSet.some((value, index) => value !== boundary.safeSet[index])) return null
+    if (!matchesExpectedArray(safeSet, boundary.safeSet)) return null
   }
   return candidate
 }
@@ -152,6 +159,19 @@ Object.defineProperty(accessorSafeSet, '0', {
 assert(
   adopt({ ...validCandidate, safeSet: accessorSafeSet }, { status: 'admissible' }, immutableBoundary) === null && candidateGetterCalls === 0,
   'accessor-backed safe-set entries cannot influence adoption',
+)
+let safeSetOverrideCalls = 0
+const overriddenSafeSet = [...immutableBoundary.safeSet]
+Object.defineProperty(overriddenSafeSet, 'some', {
+  value() {
+    safeSetOverrideCalls += 1
+    return false
+  },
+})
+assert(
+  adopt({ ...validCandidate, safeSet: overriddenSafeSet }, { status: 'admissible' }, immutableBoundary) === null &&
+    safeSetOverrideCalls === 0,
+  'caller-overridden array methods cannot influence safe-set validation or execute during adoption',
 )
 
 const authorityEscalationCandidate = Object.freeze({
