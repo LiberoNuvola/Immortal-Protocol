@@ -25,7 +25,7 @@ try {
     return spawnSync(process.execPath, [analyzer, config, blueprint, report], { encoding: "utf8" });
   }
 
-  const below = run("ab".repeat(100));
+  const below = await run("ab".repeat(100));
   assert.equal(below.status, 0, below.stderr);
   const measured = JSON.parse(await fs.readFile(report, "utf8"));
   assert.equal(measured.targetLanguageVersion, "v3");
@@ -35,7 +35,7 @@ try {
   assert.equal(measured.fullTransactionSize, "NOT_MEASURED");
   assert.equal(measured.deploymentGateClosed, true);
 
-  const atLimit = run("ab".repeat(16_384));
+  const atLimit = await run("ab".repeat(16_384));
   assert.notEqual(atLimit.status, 0, "A script at the transaction byte ceiling must fail closed");
   const impossible = JSON.parse(await fs.readFile(report, "utf8"));
   assert.equal(impossible.result, "IMPOSSIBLE_UNDER_TRANSACTION_SIZE_LIMIT");
