@@ -8,20 +8,37 @@ const assert = (condition, message) => {
 // This is a conformance model only; the concrete asset set remains profile-scoped.
 // Require the already-authorized profile to declare identity, evidence contract and
 // valuation/settlement source without inferring any valuation or liquidity properties.
-const evaluateEligibility = (profile, observation) => {
-  if (!profile || !observation) return 'UNVERIFIABLE'
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
 
+const readOwnData = (record, key) => {
+  if (!isRecord(record)) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : undefined
+}
+
+const evaluateEligibility = (profile, observation) => {
+  if (!isRecord(profile) || !isRecord(observation)) return 'UNVERIFIABLE'
+
+  const profileValues = {}
   for (const field of ['assetIdentity', 'evidenceContract', 'valuationSettlementSource']) {
-    if (typeof profile[field] !== 'string' || profile[field].trim().length === 0) {
-      return 'UNVERIFIABLE'
-    }
+    const value = readOwnData(profile, field)
+    if (typeof value !== 'string' || value.trim().length === 0) return 'UNVERIFIABLE'
+    profileValues[field] = value
   }
 
-  if (typeof observation.assetIdentity !== 'string' || observation.assetIdentity.trim().length === 0) {
+  const observedIdentity = readOwnData(observation, 'assetIdentity')
+  if (typeof observedIdentity !== 'string' || observedIdentity.trim().length === 0) {
     return 'UNVERIFIABLE'
   }
-  if (observation.evidencePresent !== true) return 'UNVERIFIABLE'
-  if (profile.assetIdentity !== observation.assetIdentity) return 'REJECTED'
+  if (readOwnData(observation, 'evidencePresent') !== true) return 'UNVERIFIABLE'
+  if (profileValues.assetIdentity !== observedIdentity) return 'REJECTED'
   return 'ADMISSIBLE'
 }
 
@@ -78,6 +95,27 @@ assert(
 assert(
   evaluateEligibility(authorizedProfile, null) === 'UNVERIFIABLE',
   'absent asset observation fails closed',
+)
+let eligibilityGetterCalls = 0
+const accessorProfile = { ...authorizedProfile }
+Object.defineProperty(accessorProfile, 'assetIdentity', {
+  get() { eligibilityGetterCalls += 1; return 'asset-profile-v1' },
+})
+assert(
+  evaluateEligibility(accessorProfile, matchingObservation) === 'UNVERIFIABLE' && eligibilityGetterCalls === 0,
+  'accessor-backed profile identity fails closed without executing getters',
+)
+assert(
+  evaluateEligibility(Object.create(authorizedProfile), matchingObservation) === 'UNVERIFIABLE',
+  'inherited profile fields cannot establish asset eligibility',
+)
+const accessorObservation = { assetIdentity: 'asset-profile-v1' }
+Object.defineProperty(accessorObservation, 'evidencePresent', {
+  get() { eligibilityGetterCalls += 1; return true },
+})
+assert(
+  evaluateEligibility(authorizedProfile, accessorObservation) === 'UNVERIFIABLE' && eligibilityGetterCalls === 0,
+  'accessor-backed evidence flag cannot establish asset eligibility',
 )
 
 const admitted = {
