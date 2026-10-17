@@ -306,9 +306,9 @@ jobs:
             echo "epoch_latest=$(curl --fail --silent http://localhost:8080/api/v1/epochs/latest)"
           } | tee audit/yaci-evidence/yaci-devkit-info.txt
 
-      # Isolated candidate only: build and publish the Aiken Plutus V3 Reveal
-      # script on the local Yaci Conway ledger. This does not replace the Haskell
-      # Plutus V2 validator or modify the existing V3 carrier.
+      # Aiken Plutus V3 is the active Reveal implementation candidate. The
+      # existing V3 carrier is a separate component and remains unchanged. The
+      # Haskell Reveal trace is no longer the blocking integration path.
       - name: Install pinned Aiken for isolated Reveal candidate
         id: aiken-setup
         uses: aiken-lang/setup-aiken@v1
@@ -350,10 +350,10 @@ jobs:
         id: jev_v3_carrier
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
-      # Experimental candidate: same fixture schema, but the Prize spend uses
-      # the isolated Aiken Plutus V3 entrypoint and a pool validator bound to its hash.
-      # It is deliberately non-blocking; the canonical Haskell V2 trace still runs.
-      - name: Execute isolated Aiken V3 Reveal candidate on native Cardano ledger
+      # Preflight the Aiken V3 implementation on native Yaci. This remains
+      # non-blocking because the active economic trace below repeats the path
+      # with its own fixture and is the authoritative Reveal integration result.
+      - name: Preflight Aiken V3 Reveal on native Cardano ledger
         id: aiken_reveal_spend
         if: always() && steps.aiken_ref_publish.outcome == 'success'
         continue-on-error: true
@@ -361,8 +361,10 @@ jobs:
           IMMORTAL_REVEAL_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
-      - name: Execute real economic Reveal transition trace
+      - name: Execute active Aiken V3 economic Reveal transition trace
         id: jev_reveal
+        env:
+          IMMORTAL_REVEAL_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
 
       - name: Execute real FundTreasury canonical Oracle valuation trace
@@ -471,10 +473,14 @@ jobs:
             },
             {
               checkId: 'REVEAL.TRACE',
-              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute real economic Reveal transition trace',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute active Aiken Plutus V3 economic Reveal transition against local Yaci',
               stepOutcome: outcome(process.env.REVEAL_OUTCOME),
               evidenceRefs,
-              limitations: ['This step outcome does not independently establish root cause or authorize a protocol-wide GREEN declaration.'],
+              limitations: [
+                'The active Reveal path is the isolated Aiken Plutus V3 validator paired with the parameterized B1PrizePool Plutus V2 validator.',
+                'This local Yaci result is not Preprod/mainnet qualification and does not by itself establish full Haskell/Aiken semantic parity.',
+                'The existing V3 carrier and economic rules are unchanged; the Haskell Reveal trace is not the blocking integration path.',
+              ],
             },
             {
               checkId: 'AIKEN.REVEAL.V3.TOOLCHAIN_SETUP',
