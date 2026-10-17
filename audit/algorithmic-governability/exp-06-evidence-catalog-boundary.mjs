@@ -142,6 +142,11 @@ const readOwnData = (record, key) => {
   return descriptor.value
 }
 
+const hasOwnDataFields = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
 const evaluate = (entry, observed) => {
   if (!isRecord(entry) || !isRecord(observed)) return 'UNVERIFIABLE'
   const required = readOwnData(entry, 'required')
@@ -301,7 +306,16 @@ const evidenceMetadata = Object.freeze({
 })
 
 const verifyEvidenceMetadata = (meta) => {
-  if (!meta || meta.verificationStatus !== 'VERIFIED') return 'UNVERIFIABLE'
+  if (!isRecord(meta)) return 'UNVERIFIABLE'
+  const fields = [
+    'verificationStatus',
+    'sourceReference',
+    'observationReference',
+    'evidenceVersion',
+    'evidenceDigest',
+  ]
+  if (!hasOwnDataFields(meta, fields)) return 'UNVERIFIABLE'
+  if (meta.verificationStatus !== 'VERIFIED') return 'UNVERIFIABLE'
   if (!meta.sourceReference || !meta.observationReference || !meta.evidenceVersion) return 'UNVERIFIABLE'
   if (!/^[0-9a-fA-F]{64}$/.test(meta.evidenceDigest)) return 'UNVERIFIABLE'
   return 'ADMISSIBLE'
@@ -322,6 +336,31 @@ assert(
 assert(
   verifyEvidenceMetadata({ ...evidenceMetadata, evidenceDigest: 'not-a-digest' }) === 'UNVERIFIABLE',
   'malformed evidence digest fails closed',
+)
+
+let metadataGetterCalls = 0
+const accessorBackedMetadata = {
+  sourceReference: evidenceMetadata.sourceReference,
+  observationReference: evidenceMetadata.observationReference,
+  evidenceDigest: evidenceMetadata.evidenceDigest,
+  evidenceVersion: evidenceMetadata.evidenceVersion,
+  get verificationStatus() {
+    metadataGetterCalls += 1
+    return 'VERIFIED'
+  },
+}
+assert(
+  verifyEvidenceMetadata(accessorBackedMetadata) === 'UNVERIFIABLE',
+  'accessor-backed evidence metadata fails closed',
+)
+assert(
+  metadataGetterCalls === 0,
+  'evidence metadata accessors are rejected without executing getters',
+)
+const inheritedMetadata = Object.create(evidenceMetadata)
+assert(
+  verifyEvidenceMetadata(inheritedMetadata) === 'UNVERIFIABLE',
+  'inherited evidence metadata cannot establish provenance',
 )
 
 console.log('ALL EXP-06 EVIDENCE CATALOG CHECKS PASSED')
