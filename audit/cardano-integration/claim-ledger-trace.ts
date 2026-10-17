@@ -943,10 +943,11 @@ async function buildClaimTx(variant: ClaimVariant) {
   let builder = lucid
     .newTx()
     .readFrom([prizeReferenceInput, poolReferenceInput, oracleUtxo as UTxO])
+    // The validated script witnesses are supplied by the reference-script UTxOs
+    // included above. Do not attach the full validator bytes to this transaction:
+    // Claim must stay under Cardano's 16,384-byte transaction limit.
     .collectFrom([prizeUtxo as UTxO], Data.to(c(2)))
-    .attach.SpendingValidator(scripts.prizeValidator as Script)
     .collectFrom([poolUtxo as UTxO], Data.to(c(3, [PRIZE_AMOUNT])))
-    .attach.SpendingValidator(scripts.b1PrizePool as Script)
     .collectFrom([ticketUtxo as UTxO])
     .pay.ToContract(
       scripts.prizeAddress as string,
