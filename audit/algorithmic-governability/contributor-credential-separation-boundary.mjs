@@ -24,6 +24,7 @@ const contributionRecord = Object.freeze({
 const credential = Object.freeze({
   kind: 'ContributorCredential',
   contributionId: contributionRecord.contributionId,
+  contributorId: contributionRecord.contributorId,
   evidenceRef: contributionRecord.evidenceRef,
   evidenceContractVersion: contributionRecord.evidenceContractVersion,
   ruleVersion: contributionRecord.ruleVersion,
@@ -32,6 +33,7 @@ const credential = Object.freeze({
 const credentialEligible = (record, candidate) => (
   record.accepted === true &&
   candidate.contributionId === record.contributionId &&
+  candidate.contributorId === record.contributorId &&
   candidate.evidenceRef === record.evidenceRef &&
   candidate.evidenceContractVersion === record.evidenceContractVersion &&
   candidate.ruleVersion === record.ruleVersion
@@ -41,6 +43,20 @@ assert(
   credentialEligible(contributionRecord, credential),
   'credential eligibility is bound to the accepted ContributionRecord and evidence identity',
 )
+
+assert(
+  credential.contributorId === contributionRecord.contributorId,
+  'credential eligibility is bound to contributor identity',
+)
+assert(
+  credentialEligible(contributionRecord, { ...credential, contributorId: 'identity-other' }) === false,
+  'credential cannot transfer an accepted ContributionRecord to a different contributor identity',
+)
+assert(
+  credentialEligible(contributionRecord, { ...credential, contributorId: undefined }) === false,
+  'missing contributor identity cannot qualify a credential',
+)
+
 
 const rewardBudget = Object.freeze({
   certified: true,
