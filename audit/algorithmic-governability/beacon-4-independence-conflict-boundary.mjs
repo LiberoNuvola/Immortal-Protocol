@@ -3,27 +3,64 @@
 const assert=(c,m)=>{if(!c)throw new Error(`FAIL: ${m}`);console.log(`PASS: ${m}`)}
 
 const pathRiskFields = ['replay', 'stale', 'malformed']
+const requiredPathFields = ['id', 'result', 'independenceDemonstrated', ...pathRiskFields]
+const INVALID = Symbol('invalid-own-data')
+
+const isRecord=(value)=>{
+  if(value===null || typeof value!=='object' || Array.isArray(value)) return false
+  const prototype=Object.getPrototypeOf(value)
+  return prototype===Object.prototype || prototype===null
+}
+
+const readOwnData=(record,field)=>{
+  const descriptor=Object.getOwnPropertyDescriptor(record,field)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor,'value')
+    ? descriptor.value
+    : INVALID
+}
 
 const reconcile=(paths,modeCommitted)=>{
   if(modeCommitted!=='B4') return 'UNVERIFIABLE'
-  if(!Array.isArray(paths) || paths.length < 2) return 'NO_CANONICAL_RESULT'
+  if(!Array.isArray(paths)) return 'NO_CANONICAL_RESULT'
 
-  for (const path of paths) {
-    if(!path || typeof path.id!=='string' || path.id.trim()==='' ||
-       typeof path.result!=='string' || path.result.trim()==='') {
-      return 'NO_CANONICAL_RESULT'
-    }
-    if(pathRiskFields.some((field)=>typeof path[field] !== 'boolean')) {
-      return 'NO_CANONICAL_RESULT'
-    }
-    if(pathRiskFields.some((field)=>path[field] === true)) return 'REJECT'
-    if(path.independenceDemonstrated !== true) return 'NO_CANONICAL_RESULT'
+  const lengthDescriptor=Object.getOwnPropertyDescriptor(paths,'length')
+  if(!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor,'value') ||
+     !Number.isSafeInteger(lengthDescriptor.value) || lengthDescriptor.value<2) {
+    return 'NO_CANONICAL_RESULT'
   }
 
-  const identifiers = paths.map(path => path.id)
+  const canonicalPaths=[]
+  for(let index=0;index<lengthDescriptor.value;index+=1) {
+    const itemDescriptor=Object.getOwnPropertyDescriptor(paths,String(index))
+    if(!itemDescriptor || !Object.prototype.hasOwnProperty.call(itemDescriptor,'value')) {
+      return 'NO_CANONICAL_RESULT'
+    }
+    const path=itemDescriptor.value
+    if(!isRecord(path)) return 'NO_CANONICAL_RESULT'
+
+    const values=Object.create(null)
+    for(const field of requiredPathFields) {
+      const value=readOwnData(path,field)
+      if(value===INVALID) return 'NO_CANONICAL_RESULT'
+      values[field]=value
+    }
+    if(typeof values.id!=='string' || values.id.trim()==='' ||
+       typeof values.result!=='string' || values.result.trim()==='') {
+      return 'NO_CANONICAL_RESULT'
+    }
+    if(pathRiskFields.some((field)=>typeof values[field] !== 'boolean')) {
+      return 'NO_CANONICAL_RESULT'
+    }
+    if(pathRiskFields.some((field)=>values[field] === true)) return 'REJECT'
+    if(values.independenceDemonstrated !== true) return 'NO_CANONICAL_RESULT'
+    canonicalPaths.push(Object.freeze(values))
+  }
+
+  const identifiers = canonicalPaths.map(path => path.id)
   if(new Set(identifiers).size !== identifiers.length) return 'NO_CANONICAL_RESULT'
 
-  const conflicts=paths.some(p=>p.result!==paths[0].result)
+  const firstResult=canonicalPaths[0].result
+  const conflicts=canonicalPaths.some(path=>path.result!==firstResult)
   if(conflicts) return 'CONFLICT/NO_CANONICAL_RESULT'
   return 'CANDIDATE_CANONICAL_RESULT'
 }
@@ -71,5 +108,20 @@ assert(
   'blank proof result cannot yield a candidate canonical result',
 )
 
+let getterCalls=0
+const accessorPath={...base[0]}
+Object.defineProperty(accessorPath,'result',{enumerable:true,get(){getterCalls+=1;return 'R1'}})
+assert(reconcile([accessorPath,base[1]],'B4')==='NO_CANONICAL_RESULT' && getterCalls===0,
+  'accessor-backed proof fields fail closed without executing getters')
+
+const sparsePaths=[base[0],base[1]]
+delete sparsePaths[0]
+assert(reconcile(sparsePaths,'B4')==='NO_CANONICAL_RESULT',
+  'sparse proof-path arrays cannot create a canonical candidate')
+
+const iteratorPaths=[...base]
+iteratorPaths[Symbol.iterator]=()=>{throw new Error('caller iterator must not execute')}
+assert(reconcile(iteratorPaths,'B4')==='CANDIDATE_CANONICAL_RESULT',
+  'caller-supplied proof-path iterator is ignored')
 
 console.log('ALL BEACON 4 INDEPENDENCE/CONFLICT BOUNDARY CHECKS PASSED')
