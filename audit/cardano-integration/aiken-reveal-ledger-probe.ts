@@ -410,11 +410,38 @@ let negativeResult: Record<string, unknown> = { outcome: 'not_tested' }
 let negativeStage = 'build'
 let negativeOutcomeForJev = 'failure'
 try {
-  const maxEx = (protocolParameters as any).maxTxExecutionUnits ?? (protocolParameters as any).maxTxExUnits ?? {}
-  const maxMem = Number(maxEx.memory ?? maxEx.mem ?? maxEx.maxMemory)
-  const maxSteps = Number(maxEx.steps ?? maxEx.maxSteps)
+  // Lucid Evolution's Blockfrost adapter returns maxTxSize/cost models here but
+  // can omit the execution-unit ceilings. Read the active local Yaci Store
+  // protocol-parameter endpoint directly instead of guessing or hardcoding limits.
+  const rawParamsResponse = await fetch(API + '/epochs/latest/parameters')
+  if (!rawParamsResponse.ok) {
+    fail('Cannot read active Yaci protocol parameters for the negative twin: HTTP ' + rawParamsResponse.status)
+  }
+  const rawParams = await rawParamsResponse.json() as Record<string, any>
+  const maxEx = (protocolParameters as any).maxTxExecutionUnits ??
+    (protocolParameters as any).maxTxExUnits ??
+    rawParams.maxTxExecutionUnits ??
+    rawParams.maxTxExUnits ??
+    {}
+  const firstPositiveFinite = (...values: unknown[]) => {
+    for (const value of values) {
+      const parsed = typeof value === 'number' ? value :
+        typeof value === 'string' && value.trim() ? Number(value) : NaN
+      if (Number.isFinite(parsed) && parsed > 0 && Number.isSafeInteger(parsed)) return parsed
+    }
+    return NaN
+  }
+  const maxMem = firstPositiveFinite(
+    maxEx.memory, maxEx.mem, maxEx.maxMemory,
+    rawParams.max_tx_ex_mem, rawParams.maxTxExMem, rawParams.max_tx_execution_memory,
+  )
+  const maxSteps = firstPositiveFinite(
+    maxEx.steps, maxEx.maxSteps,
+    rawParams.max_tx_ex_steps, rawParams.maxTxExSteps, rawParams.max_tx_execution_steps,
+  )
   if (!Number.isFinite(maxMem) || !Number.isFinite(maxSteps) || maxMem <= 0 || maxSteps <= 0) {
-    fail('Cannot construct an in-limit diagnostic ExUnits budget from active Yaci protocol parameters')
+    fail('Cannot construct an in-limit diagnostic ExUnits budget from active Yaci protocol parameters; keys=' +
+      Object.keys(rawParams).sort().join(','))
   }
   const mockMem = Math.floor(maxMem * 0.45)
   const mockSteps = Math.floor(maxSteps * 0.45)
@@ -458,7 +485,7 @@ try {
       outcome: ledgerRejected ? 'rejected_by_native_ledger' : 'rejected_before_native_ledger_submission',
       stage: negativeStage,
       error: message,
-      diagnosticExUnits: { perScriptMemory: mockMem, perScriptSteps: mockSteps, maxTxMemory: maxMem, maxTxSteps: maxSteps },
+      diagnosticExUnits: { perScriptMemory: mockMem, perScriptSteps: mockSteps, maxTxMemory: maxMem, maxTxSteps: maxSteps, source: API + '/epochs/latest/parameters' },
       limitation: 'Diagnostic ExUnits were supplied only to construct the intentional invalid twin; no cost-model or successful-negative execution-cost claim is made.',
     }
   } finally {
