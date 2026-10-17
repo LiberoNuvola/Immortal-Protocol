@@ -83,4 +83,27 @@ main = do
        Right _ -> False)
 
 
+  -- AG-02: an application-level gate cannot weaken the existing constitutional gates.
+  let weakenedKernelGates = GateResult True True False True
+  assert "AG-02 constitutional invariant cannot be weakened by application gate"
+    (not (gatesPassed ConstitutionalKernel weakenedKernelGates))
+
+  -- AG-03: an environment-supplied timestamp is an input, not authority to skip lifecycle timing.
+  let environmentTimedProposal = proposal
+        { proposalStatus = CommunityReview
+        , communityReviewOpenedAt = Just 100
+        }
+  assert "AG-03 environment timestamp cannot bypass the review interval"
+    (not (statusChangeAllowed environmentTimedProposal Voting
+      (100 + communityReviewSeconds - 1)))
+  assert "AG-03 transition becomes time-eligible only at the declared boundary"
+    (statusChangeAllowed environmentTimedProposal Voting
+      (100 + communityReviewSeconds))
+
+  -- AG-09: application policy remains profile-scoped; it does not replace kernel-class gates.
+  assert "AG-09 Application requires its own conformance gate"
+    (not (gatesPassed Application (GateResult True True True False)))
+  assert "AG-09 application gate is not silently imposed as universal law"
+    (gatesPassed VerificationTooling (GateResult True True True False))
+
   putStrLn "AG-01 EXECUTABLE GOVERNABILITY NEGATIVE MATRIX PASSED"
