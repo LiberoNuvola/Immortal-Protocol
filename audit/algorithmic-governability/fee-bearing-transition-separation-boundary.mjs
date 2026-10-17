@@ -39,6 +39,9 @@ const commit = (transition) => {
   if (!transition || typeof transition !== 'object') return 'REJECTED'
   if (transition.safe !== true) return 'REJECTED'
   if (typeof transition.canonicalTransitionId !== 'string' || transition.canonicalTransitionId.trim() === '') return 'REJECTED'
+  if (typeof transition.action !== 'string' || transition.action.trim() === '') return 'REJECTED'
+  if (typeof transition.economicStateHash !== 'string' || transition.economicStateHash.trim() === '') return 'REJECTED'
+  if (typeof transition.economicFeeTarget !== 'string' || transition.economicFeeTarget.trim() === '') return 'REJECTED'
   if (transition.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
   if (transition.conversionStatus !== 'VALID') return 'REJECTED'
   return 'COMMITTED'
@@ -50,6 +53,12 @@ assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: '   ' })) ===
   'blank canonical transition identity cannot authorize commitment')
 assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: 17 })) === 'REJECTED',
   'non-string canonical transition identity cannot authorize commitment')
+assert(commit(Object.freeze({ ...candidate, action: '' })) === 'REJECTED',
+  'blank action identity cannot authorize commitment')
+assert(commit(Object.freeze({ ...candidate, economicStateHash: '   ' })) === 'REJECTED',
+  'blank economic state identity cannot authorize commitment')
+assert(commit(Object.freeze({ ...candidate, economicFeeTarget: null })) === 'REJECTED',
+  'missing economic fee target cannot authorize commitment')
 
 assert(commit(candidate) === 'COMMITTED', 'valid fee-bearing transition can commit')
 assert(
