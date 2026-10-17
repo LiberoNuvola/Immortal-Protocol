@@ -20,6 +20,20 @@ const matrix = fs.readFileSync(matrixPath, 'utf8')
 assert(testSource.includes('AG-01 EXECUTABLE GOVERNABILITY NEGATIVE MATRIX PASSED'),
   'AG-01 executable negative conformance test is present')
 
+const requiredNegativeVectors = [
+  'AG-01 candidate cannot self-authorize',
+  'AG-04 ruleset commitment is bound',
+  'AG-08 unregistered ruleset is rejected',
+  'AG-07 predecessor mismatch is rejected',
+  'AG-05 lifecycle amendment/adaptation boundary is preserved',
+  'AG-03 payload and event type cannot be retagged',
+  'AG-10 missing evidence is rejected',
+  'AG-06 adoption cannot bypass its required predecessor state',
+]
+for (const vector of requiredNegativeVectors) {
+  assert(testSource.includes(vector), `AG-01 negative vector remains wired: ${vector}`)
+}
+
 const suite = 'test-suite ag01-governability-conformance-tests'
 const suiteStart = cabal.indexOf(suite)
 assert(suiteStart >= 0, 'AG-01 test suite is declared in the Cabal package')
