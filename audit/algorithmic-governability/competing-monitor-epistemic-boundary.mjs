@@ -93,11 +93,14 @@ const admissibleSelection = Object.freeze({
   source: 'predeclared-contract',
 })
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const authorizeSelection = (candidate, declaredContract) => {
-  if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate) ||
-      declaredContract === null || typeof declaredContract !== 'object' || Array.isArray(declaredContract)) {
-    return 'UNVERIFIABLE'
-  }
+  if (!isRecord(candidate) || !isRecord(declaredContract)) return 'UNVERIFIABLE'
   if (candidate.selector !== declaredContract.metricSelector ||
       candidate.authority !== declaredContract.authority ||
       candidate.source !== 'predeclared-contract') {
@@ -114,5 +117,7 @@ for (const malformed of [null, undefined, true, 1, 'selection', []]) {
   assert(authorizeSelection(malformed, contract) === 'UNVERIFIABLE', 'malformed selector candidate fails closed')
 }
 assert(authorizeSelection(admissibleSelection, []) === 'UNVERIFIABLE', 'malformed predeclared contract fails closed')
+assert(authorizeSelection(admissibleSelection, new Date()) === 'UNVERIFIABLE', 'non-record contract object fails closed')
+assert(authorizeSelection(new Date(), contract) === 'UNVERIFIABLE', 'non-record selector candidate fails closed')
 
 console.log('ALL COMPETING-MONITOR EPISTEMIC NON-SOVEREIGNTY CHECKS PASSED')
