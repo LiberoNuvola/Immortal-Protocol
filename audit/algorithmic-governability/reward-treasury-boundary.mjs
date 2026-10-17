@@ -145,4 +145,43 @@ assert(
   'adversarial result-dependent authority mutations remain distinguishable',
 )
 
+
+/*
+ * Certified budget -> allocation bound.
+ * This exercises the already documented invariant RewardAllocation <= RewardBudget.
+ * It adds no allocation formula and does not create a budget from Treasury balance.
+ */
+const authorizeAllocation = (certification, certifiedBudget, allocation) => {
+  if (certification !== 'CERTIFIED') return 'UNVERIFIABLE'
+  if (!Number.isFinite(certifiedBudget) || !Number.isFinite(allocation)) return 'UNVERIFIABLE'
+  if (certifiedBudget < 0 || allocation < 0) return 'REJECTED'
+  if (allocation > certifiedBudget) return 'REJECTED'
+  return 'AUTHORIZED_WITHIN_CERTIFIED_BUDGET'
+}
+
+assert(
+  authorizeAllocation('CERTIFIED', 100, 100) === 'AUTHORIZED_WITHIN_CERTIFIED_BUDGET',
+  'allocation equal to a certified budget remains within the declared envelope',
+)
+assert(
+  authorizeAllocation('CERTIFIED', 100, 101) === 'REJECTED',
+  'reward allocation cannot exceed the certified reward budget',
+)
+assert(
+  authorizeAllocation('CERTIFIED', 0, 1) === 'REJECTED',
+  'zero certified reward budget cannot authorize a positive allocation',
+)
+assert(
+  authorizeAllocation('UNVERIFIABLE', 100, 1) === 'UNVERIFIABLE',
+  'uncertified budget cannot authorize a reward allocation',
+)
+assert(
+  authorizeAllocation('CERTIFIED', null, 1) === 'UNVERIFIABLE',
+  'missing certified budget amount leaves allocation authorization unverifiable',
+)
+assert(
+  authorizeAllocation('CERTIFIED', 100, null) === 'UNVERIFIABLE',
+  'missing allocation amount leaves allocation authorization unverifiable',
+)
+
 console.log('ALL REWARD/TREASURY BOUNDARY CHECKS PASSED')
