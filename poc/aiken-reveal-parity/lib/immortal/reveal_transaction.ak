@@ -102,7 +102,13 @@ pub fn reveal_transaction_is_valid(
       Some(own_input) ->
         when own_input.output.address.payment_credential is {
           Script(own_script_hash) -> {
-            expect Some(raw_own_datum) = datum_data(tx, own_input.output)
+            // Reject missing or duplicate continuing Prize outputs before expect-based resolution.
+            if list.length(list.filter(tx.outputs, fn(output) {
+              output.address.payment_credential == Script(own_script_hash)
+            })) != 1 {
+              False
+            } else {
+              expect Some(raw_own_datum) = datum_data(tx, own_input.output)
             expect resolved_input_datum: reveal_types.PrizeDatum = raw_own_datum
             expect Some(prize_output) = only_script_output(tx.outputs, own_script_hash)
             expect Some(raw_prize_output_datum) = datum_data(tx, prize_output)
@@ -126,6 +132,7 @@ pub fn reveal_transaction_is_valid(
                 pool_state(pool_after_datum),
                 own_script_hash,
               ),
+              }
             }
           }
           _ -> False
