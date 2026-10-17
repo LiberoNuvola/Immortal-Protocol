@@ -23,7 +23,13 @@ const readOwnData = (record, key) => {
 const order = (obligations) => {
   if (!Array.isArray(obligations)) return 'UNVERIFIABLE'
   const normalized = []
-  for (const obligation of obligations) {
+  // Avoid invoking a caller-supplied iterator or accessor-backed array entry.
+  for (let index = 0; index < obligations.length; index += 1) {
+    const element = Object.getOwnPropertyDescriptor(obligations, String(index))
+    if (!element || !Object.prototype.hasOwnProperty.call(element, 'value')) {
+      return 'UNVERIFIABLE'
+    }
+    const obligation = element.value
     const id = readOwnData(obligation, 'id')
     const type = readOwnData(obligation, 'type')
     const seniorityRank = readOwnData(obligation, 'seniorityRank')
@@ -68,6 +74,20 @@ assert(
   order([{ id: 'o1', type: 'typed-a', seniorityRank: Number.MAX_SAFE_INTEGER + 1 }]) === 'UNVERIFIABLE',
   'unsafe integer ranks are not accepted as deterministic seniority values',
 )
+let iteratorCalls = 0
+const customIteratorObligations = [{ id: 'o1', type: 'typed-a', seniorityRank: 1 }]
+Object.defineProperty(customIteratorObligations, Symbol.iterator, {
+  value: function* () {
+    iteratorCalls += 1
+    yield { id: 'attacker', type: 'typed-x', seniorityRank: 0 }
+  },
+})
+assert(order(customIteratorObligations)[0].id === 'o1' && iteratorCalls === 0,
+  'seniority ordering reads own indexed obligations without invoking a caller-supplied iterator')
+const sparseObligations = []
+sparseObligations.length = 1
+assert(order(sparseObligations) === 'UNVERIFIABLE',
+  'sparse obligation arrays fail closed')
 
 const independent = Object.freeze({
   id: 'o1',
