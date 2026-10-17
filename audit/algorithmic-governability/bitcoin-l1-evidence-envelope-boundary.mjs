@@ -40,6 +40,12 @@ const classify = (obs) => {
   if (!obs) return 'UNVERIFIABLE'
   if (!hasText(obs.sourceReference) || !hasText(obs.txRef) || !hasText(obs.blockRef)) return 'UNVERIFIABLE'
   if (!isDigest(obs.expectedPostStateDigest) || !isDigest(obs.observedPostStateDigest)) return 'UNVERIFIABLE'
+  // The research state machine declares PENDING / INCLUDED / ACCEPTED and
+  // the envelope currently models STABLE / REORGED. Unknown labels fail closed.
+  if (!['PENDING', 'INCLUDED', 'ACCEPTED'].includes(obs.observationStatus)) return 'UNVERIFIABLE'
+  if (!['STABLE', 'REORGED'].includes(obs.reorgStatus)) return 'UNVERIFIABLE'
+  if (!['OBSERVED', 'FINALITY_POLICY_SATISFIED'].includes(obs.confirmationState)) return 'UNVERIFIABLE'
+  if (obs.observationStatus === 'PENDING') return 'UNVERIFIABLE'
   if (obs.reorgStatus === 'REORGED') return 'INVALIDATED'
   if (obs.observationStatus === 'INCLUDED' && !obs.immortalAdmissionReference) {
     return 'REJECTED_FOR_IMMORTAL_EXECUTION'
@@ -111,6 +117,26 @@ assert(
 assert(
   classify(envelope({ observedPostStateDigest: 'not-a-digest' })) === 'UNVERIFIABLE',
   'malformed observed post-state digest fails closed',
+)
+
+assert(
+  classify(envelope({ observationStatus: 'UNKNOWN' })) === 'UNVERIFIABLE',
+  'unknown observation status cannot be promoted to an admissible observation',
+)
+
+assert(
+  classify(envelope({ observationStatus: 'PENDING' })) === 'UNVERIFIABLE',
+  'pending observation cannot be treated as admissible evidence',
+)
+
+assert(
+  classify(envelope({ reorgStatus: 'MAYBE' })) === 'UNVERIFIABLE',
+  'unknown reorg status fails closed',
+)
+
+assert(
+  classify(envelope({ confirmationState: 'FINAL' })) === 'UNVERIFIABLE',
+  'undeclared confirmation state cannot satisfy the finality boundary',
 )
 
 console.log('ALL BITCOIN L1 EVIDENCE ENVELOPE BOUNDARY CHECKS PASSED')
