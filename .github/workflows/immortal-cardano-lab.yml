@@ -433,6 +433,7 @@ jobs:
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
           AIKEN_LEDGER_POSITIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.positive_outcome || 'unknown' }}
           AIKEN_LEDGER_NEGATIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.negative_outcome || 'unknown' }}
+          AIKEN_LEDGER_WINNING_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.winning_outcome || 'unknown' }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
@@ -497,6 +498,17 @@ jobs:
                 'This uses synthetic datum values and lovelace, plus a test-only always-true pool stub.',
                 'It does not qualify the production B1PrizePool validator or establish full Haskell/Aiken equivalence.',
                 'This result is local Yaci Conway evidence only and does not authorize Preprod/mainnet deployment.',
+              ],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.LEDGER.WINNING_TWIN',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute deterministic non-zero-payout Aiken Reveal fixture through native Yaci ledger',
+              stepOutcome: outcome(process.env.AIKEN_LEDGER_WINNING_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This is one deterministic synthetic tier-1/tier-1 fixture, not exhaustive differential coverage.',
+                'The PrizePool spend is a test-only stub and the transaction does not represent a production ticket or qualified USDM balance.',
+                'This isolated V3 test does not establish compatibility with the canonical production Plutus V2 validator.',
               ],
             },
             {
