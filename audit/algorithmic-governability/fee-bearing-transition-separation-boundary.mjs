@@ -47,14 +47,19 @@ const commit = (transition) => {
     'safe', 'canonicalTransitionId', 'action', 'economicStateHash',
     'economicFeeTarget', 'feeReferenceStatus', 'conversionStatus',
   ]
-  if (!requiredOwnFields.every((field) => Object.hasOwn(transition, field))) return 'REJECTED'
-  if (transition.safe !== true) return 'REJECTED'
-  if (typeof transition.canonicalTransitionId !== 'string' || transition.canonicalTransitionId.trim() === '') return 'REJECTED'
-  if (typeof transition.action !== 'string' || transition.action.trim() === '') return 'REJECTED'
-  if (typeof transition.economicStateHash !== 'string' || transition.economicStateHash.trim() === '') return 'REJECTED'
-  if (typeof transition.economicFeeTarget !== 'string' || transition.economicFeeTarget.trim() === '') return 'REJECTED'
-  if (transition.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
-  if (transition.conversionStatus !== 'VALID') return 'REJECTED'
+  const values = Object.create(null)
+  for (const field of requiredOwnFields) {
+    const descriptor = Object.getOwnPropertyDescriptor(transition, field)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) return 'REJECTED'
+    values[field] = descriptor.value
+  }
+  if (values.safe !== true) return 'REJECTED'
+  if (typeof values.canonicalTransitionId !== 'string' || values.canonicalTransitionId.trim() === '') return 'REJECTED'
+  if (typeof values.action !== 'string' || values.action.trim() === '') return 'REJECTED'
+  if (typeof values.economicStateHash !== 'string' || values.economicStateHash.trim() === '') return 'REJECTED'
+  if (typeof values.economicFeeTarget !== 'string' || values.economicFeeTarget.trim() === '') return 'REJECTED'
+  if (values.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
+  if (values.conversionStatus !== 'VALID') return 'REJECTED'
   return 'COMMITTED'
 }
 
@@ -96,6 +101,23 @@ assert(commit(Object.freeze({ ...candidate, economicFeeTarget: null })) === 'REJ
   'missing economic fee target cannot authorize commitment')
 
 assert(commit(candidate) === 'COMMITTED', 'valid fee-bearing transition can commit')
+let transitionGetterCalls = 0
+const accessorTransition = { ...candidate }
+Object.defineProperty(accessorTransition, 'safe', {
+  get() { transitionGetterCalls += 1; return true },
+})
+assert(
+  commit(accessorTransition) === 'REJECTED' && transitionGetterCalls === 0,
+  'accessor-backed safety flag cannot authorize commitment or execute its getter',
+)
+const accessorFeeReference = { ...candidate }
+Object.defineProperty(accessorFeeReference, 'feeReferenceStatus', {
+  get() { transitionGetterCalls += 1; return 'VALID' },
+})
+assert(
+  commit(accessorFeeReference) === 'REJECTED' && transitionGetterCalls === 0,
+  'accessor-backed fee reference cannot influence the commitment decision',
+)
 assert(
   commit(Object.freeze({ ...candidate, feeReferenceStatus: 'INVALID' })) === 'SAFE_STALL',
   'invalid fee reference cannot authorize commitment and enters safe failure',
