@@ -12,7 +12,7 @@ const root = process.cwd()
 const adapterRoot = join(root, 'Adapter')
 const names = readdirSync(adapterRoot).filter((name) => statSync(join(adapterRoot, name)).isDirectory())
 
-const expected = new Set(['CARDANO','REFERENCE','MIDNIGHT','BITCOIN','COSMOS','ETHEREUM','SOLANA'])
+const expected = new Set(['CARDANO','REFERENCE','MIDNIGHT','BITCOIN','COSMOS','ETHEREUM','SOLANA','SUBSTRATE'])
 for (const name of expected) assert(names.includes(name), name + ' adapter surface is explicitly accounted for')
 const isRegisteredAdapterSurface = (name) => expected.has(name)
 for (const name of names) {
@@ -36,7 +36,7 @@ assert(midnightEntries.includes('IntentBoundary.ts'), 'Midnight Intent boundary 
 const referenceText = readFileSync(join(adapterRoot, 'REFERENCE', 'ReferenceAdapter.hs'), 'utf8')
 assert(referenceText.includes('replayValid'), 'Reference adapter is a semantic replay/reference implementation')
 
-for (const name of ['BITCOIN','COSMOS','ETHEREUM','SOLANA']) {
+for (const name of ['BITCOIN','COSMOS','ETHEREUM','SOLANA','SUBSTRATE']) {
   const entries = readdirSync(join(adapterRoot, name))
   assert(entries.length === 1 && entries[0] === 'docs', name + ' contains only research docs in the current adapter tree')
 }
