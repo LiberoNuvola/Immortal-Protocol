@@ -132,7 +132,7 @@ assert(
   'non-boolean trigger output cannot establish a claim',
 )
 assert(
-  establishClaim({ ...spec, payoffFunction: () => { throw new Error('payoff failure') } }, {}, {}) === 'UNVERIFIABLE',
+  establishClaim({ ...spec, payoffFunction: () => { throw new Error('payoff failure') } }, {}, { eligible: true }) === 'UNVERIFIABLE',
   'payoff evaluation failure remains unverifiable rather than escaping the boundary',
 )
 
