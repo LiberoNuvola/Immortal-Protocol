@@ -1037,7 +1037,46 @@ async function buildClaimTx(variant: ClaimVariant) {
 // Opt-in Claim CBOR diagnosis. The raised maxTxSize above is construction-only:
 // this path never signs, submits, or waits for the candidate transaction.
 if (claimReferenceDiagnostic) {
-  const diagnosticTx = await buildClaimTx({ label: 'reference-diagnostic' })
+  // Preserve evidence even when Lucid rejects the candidate inside complete()
+  // before it can expose a Tx object/CBOR. This is the critical failure mode
+  // the original diagnostic path did not report with enough context.
+  let diagnosticTx: any
+  try {
+    diagnosticTx = await buildClaimTx({ label: 'reference-diagnostic' })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const activeMaxTxSize = Number(
+      activeProtocolParameters?.maxTxSize ??
+      activeProtocolParameters?.max_tx_size ??
+      16_384,
+    )
+    const failure = {
+      claimDiag: 'reference-cbor-construction-failed',
+      diagnosticOnly: true,
+      signed: false,
+      submitted: false,
+      stage: 'Lucid complete() before CBOR serialization',
+      actualProtocolMaxTxSize: activeMaxTxSize,
+      constructionMaxTxSize: 30_000,
+      providerProtocolParameterKeys: activeProtocolParameters
+        ? Object.keys(activeProtocolParameters).sort()
+        : [],
+      providerReportedMaxTxSize: activeProtocolParameters?.maxTxSize ?? null,
+      providerReportedMax_tx_size: activeProtocolParameters?.max_tx_size ?? null,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      error: message.slice(0, 5000),
+      nextEvidenceRequired: 'Determine whether Lucid cached the active maxTxSize or rejected construction for a different reason.',
+    }
+    console.error('[CLAIM-DIAGNOSTIC-CONSTRUCTION-FAILURE] ' + JSON.stringify(failure))
+    writeFileSync(
+      'audit/yaci-evidence/claim-cbor-construction-failure.json',
+      JSON.stringify(failure, null, 2),
+    )
+    throw new Error(
+      'Claim diagnostic could not reach CBOR serialization; failure evidence written to audit/yaci-evidence/claim-cbor-construction-failure.json: ' +
+      message.slice(0, 1200),
+    )
+  }
   const cbor = diagnosticTx.toCBOR()
   const parsed = CML.Transaction.from_cbor_hex(cbor)
   const body: any = parsed.body()
