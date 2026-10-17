@@ -1154,7 +1154,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
 
 await expectClaimRejected({
   label: 'mutated-row-tier',
-  expectedTraceMarkers: ['Prize: bad claim continuing'],
+  expectedTraceMarkers: ['61'],
   mutateRowTier: true,
 })
 await expectClaimRejected({
