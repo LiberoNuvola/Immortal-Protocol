@@ -33,7 +33,27 @@ const boundary = (family) => Object.freeze({
 })
 
 const derive = (b, input) => {
-  if (!hasOwnDataProperties(input, ['value', 'evidenceValid', 'withinDeclaredBounds'])) {
+  const required = [
+    'domain', 'ruleVersion', 'evidenceContract', 'boundContract',
+    'value', 'evidenceValid', 'withinDeclaredBounds',
+  ]
+  if (!hasOwnDataProperties(input, required)) {
+    return { status: 'UNVERIFIABLE' }
+  }
+  for (const field of ['domain', 'ruleVersion', 'evidenceContract', 'boundContract']) {
+    if (typeof input[field] !== 'string' || input[field].trim() === '') {
+      return { status: 'UNVERIFIABLE' }
+    }
+  }
+  if (input.domain !== b.domain ||
+      input.ruleVersion !== b.ruleVersion ||
+      input.evidenceContract !== b.evidenceContract ||
+      input.boundContract !== b.boundContract) {
+    return { status: 'REJECTED' }
+  }
+  if (input.value === undefined || input.value === null) return { status: 'UNVERIFIABLE' }
+  if (typeof input.evidenceValid !== 'boolean' ||
+      typeof input.withinDeclaredBounds !== 'boolean') {
     return { status: 'UNVERIFIABLE' }
   }
   if (input.evidenceValid !== true) return { status: 'UNVERIFIABLE' }
@@ -48,6 +68,17 @@ const derive = (b, input) => {
     value: input.value,
   })
 }
+
+const derivationInput = (b, overrides = {}) => ({
+  domain: b.domain,
+  ruleVersion: b.ruleVersion,
+  evidenceContract: b.evidenceContract,
+  boundContract: b.boundContract,
+  value: 1,
+  evidenceValid: true,
+  withinDeclaredBounds: true,
+  ...overrides,
+})
 
 const adopt = (candidate, canonicalState, expectedBoundary) => {
   if (!hasOwnDataProperties(canonicalState, ['version', 'adopted'])) {
@@ -71,7 +102,7 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
 
 
 let evidenceGetterCalled = false
-const accessorEvidence = { value: 1, evidenceValid: true, withinDeclaredBounds: true }
+const accessorEvidence = derivationInput(boundary('EXP-01'))
 Object.defineProperty(accessorEvidence, 'evidenceValid', {
   enumerable: true,
   get() {
@@ -116,7 +147,7 @@ assert(canonicalGetterCalled === false,
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
 
-const inheritedEvidence = Object.create({ value: 1, evidenceValid: true, withinDeclaredBounds: true })
+const inheritedEvidence = Object.create(derivationInput(boundary('EXP-01')))
 assert(derive(boundary('EXP-01'), inheritedEvidence).status === 'UNVERIFIABLE',
   'inherited evidence properties cannot certify an EXP result')
 assert(derive(boundary('EXP-01'), new Date()).status === 'UNVERIFIABLE',
@@ -135,7 +166,7 @@ for (const malformedCandidate of [null, undefined, 'candidate', 7, [], inherited
 
 for (const family of families) {
   const b = boundary(family)
-  const ok = derive(b, { value: 1, evidenceValid: true, withinDeclaredBounds: true })
+  const ok = derive(b, derivationInput(b))
   assert(ok.status === 'ADMISSIBLE', `${family} admits a certified in-bound result`)
   assert(ok.domain === family, `${family} retains domain identity`)
   assert(ok.ruleVersion === b.ruleVersion, `${family} retains rule identity`)
@@ -143,10 +174,10 @@ for (const family of families) {
   assert(ok.boundContract === b.boundContract, `${family} retains bound identity`)
   assert(ok.adoptionPath === b.adoptionPath, `${family} retains adoption-path identity`)
 
-  const missing = derive(b, { value: 1, evidenceValid: false, withinDeclaredBounds: true })
+  const missing = derive(b, derivationInput(b, { evidenceValid: false }))
   assert(missing.status === 'UNVERIFIABLE', `${family} fails closed on invalid evidence`)
 
-  const rejected = derive(b, { value: 1, evidenceValid: true, withinDeclaredBounds: false })
+  const rejected = derive(b, derivationInput(b, { withinDeclaredBounds: false }))
   assert(rejected.status === 'REJECTED', `${family} rejects an explicit bound violation`)
 
   const afterCertify = canonicalBefore
@@ -162,6 +193,32 @@ for (const family of families) {
     assert(afterForgedAdopt.version === canonicalBefore.version, `${family} forged ${field} cannot change canonical version`)
   }
 }
+
+const missingIdentity = derive(boundary('EXP-01'), {
+  value: 1, evidenceValid: true, withinDeclaredBounds: true,
+})
+assert(missingIdentity.status === 'UNVERIFIABLE',
+  'derivation cannot silently inherit missing family and rule identity')
+
+const crossedInput = derivationInput(boundary('EXP-10'), {
+  domain: 'EXP-01',
+})
+assert(derive(boundary('EXP-10'), crossedInput).status === 'REJECTED',
+  'cross-family derivation input is rejected before certification')
+
+let derivationIdentityGetterCalled = false
+const accessorIdentityInput = derivationInput(boundary('EXP-01'))
+Object.defineProperty(accessorIdentityInput, 'ruleVersion', {
+  enumerable: true,
+  get() {
+    derivationIdentityGetterCalled = true
+    return boundary('EXP-01').ruleVersion
+  },
+})
+assert(derive(boundary('EXP-01'), accessorIdentityInput).status === 'UNVERIFIABLE',
+  'accessor-backed rule identity cannot enter derivation')
+assert(derivationIdentityGetterCalled === false,
+  'derivation identity validation does not execute accessors')
 
 const reward = boundary('EXP-10')
 const other = boundary('EXP-01')
