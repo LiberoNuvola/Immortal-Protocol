@@ -29,13 +29,46 @@ const actionCatalog = Object.freeze({
 const completePacket = (fields) =>
   Object.fromEntries(fields.map((field) => [field, 'evidence:' + field]))
 
+const isPresent = (value) =>
+  value !== undefined &&
+  value !== null &&
+  !(typeof value === 'string' && value.trim() === '')
+
 const isComplete = (action, packet) => {
   const required = actionCatalog[action]
   if (!required || !packet) return false
-  return required.every((field) => packet[field] !== undefined && packet[field] !== '')
+  return required.every((field) => isPresent(packet[field]))
 }
 
 assert(Object.keys(actionCatalog).length === 4, 'B5/B6 action catalog is exactly Issue/Reveal/Claim/Expire')
+
+for (const [action, fields] of Object.entries(actionCatalog)) {
+  const complete = completePacket(fields)
+
+  for (const field of fields) {
+    const missing = { ...complete }
+    delete missing[field]
+    assert(!isComplete(action, missing), `${action}: missing required field ${field} is incomplete`)
+
+    assert(
+      !isComplete(action, { ...complete, [field]: null }),
+      `${action}: null required field ${field} is incomplete`,
+    )
+    assert(
+      !isComplete(action, { ...complete, [field]: '' }),
+      `${action}: blank required field ${field} is incomplete`,
+    )
+    assert(
+      !isComplete(action, { ...complete, [field]: '   ' }),
+      `${action}: whitespace-only required field ${field} is incomplete`,
+    )
+  }
+}
+
+assert(!isComplete('Unknown', completePacket(['evidenceProvenance'])), 'unknown action cannot pass the evidence boundary')
+assert(!isComplete('Issue', null), 'absent action packet is incomplete')
+
+
 
 for (const [action, fields] of Object.entries(actionCatalog)) {
   const packet = completePacket(fields)
