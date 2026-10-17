@@ -14,6 +14,7 @@ pub fn claim_state_transition_is_valid(
   old_pool: B1PrizePoolDatum,
   next_pool: B1PrizePoolDatum,
   own_script_hash: ScriptHash,
+  pool_script_hash: ScriptHash,
   finite_upper_bound: Option<Int>,
   owner_signed: Bool,
   exact_payout_verified: Bool,
@@ -43,6 +44,7 @@ pub fn claim_state_transition_is_valid(
       && old_prize.mc_hash == next_prize.mc_hash
       && old_prize.materios_context == next_prize.materios_context
       && old_prize.prize_pool_hash == next_prize.prize_pool_hash
+      && old_prize.prize_pool_hash == pool_script_hash
       && old_prize.issued_at == next_prize.issued_at
       && old_prize.expires_at == next_prize.expires_at
       && old_prize.row1_tier == next_prize.row1_tier
