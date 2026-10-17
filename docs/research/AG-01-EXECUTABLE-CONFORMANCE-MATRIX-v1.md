@@ -35,14 +35,14 @@ obligation is genuinely uncovered.
 | AG | Requirement | Existing executable evidence | Remaining closure |
 |---|---|---|---|
 | AG-01 | Candidate cannot self-authorize | actor/event matrix + negative role mismatch test | candidate-path vector now present; real governance replay remains open |
-| AG-02 | Candidate cannot weaken an invariant | governance gate + state/lifecycle validation surfaces | adversarial invariant weakening vector |
-| AG-03 | Environment is input, not authority | canonical event payload + replay | explicit environment-derived candidate vector |
+| AG-02 | Candidate cannot weaken an invariant | governance gate + state/lifecycle validation surfaces | **adversarial invariant-weakening vector added**; independent replay remains open |
+| AG-03 | Environment is input, not authority | canonical event payload + replay + lifecycle timing boundary | **environment-timestamp timing vector added**; full environment-derived candidate/replay trace remains open |
 | AG-04 | Ruleset identity is bound to decision | ruleset compatibility + commitment checks + mutated commitment/version negative tests | independent second replay artifact remains open |
 | AG-05 | Amendment distinct from operational adaptation | immutable RulesetRegistry + amendment requirement tests | explicit operational-vs-amendment replay trace |
 | AG-06 | Verified candidate becomes canonical only through atomic transition | canonical replay + lifecycle handlers + direct-adoption/predecessor negative test | full candidate→canonical positive trace remains open |
 | AG-07 | Deterministic replay | canonical replay deterministic test | independent second implementation/replay artifact |
 | AG-08 | Stale/incompatible ruleset rejected | ruleset version/commitment validation | stale-effective-time vector |
-| AG-09 | Application policy cannot silently become universal law | state/profile ownership map | executable profile-boundary mutation test |
+| AG-09 | Application policy cannot silently become universal law | state/profile ownership map + class-scoped gate assertions | **profile-scope assertions added**; explicit profile-boundary mutation/replay remains open |
 | AG-10 | External authority/provenance explicit | evidenceRefs + authorization + canonical event + missing-evidence negative test | end-to-end provenance replay remains open |
 
 ## Immediate executable delta
@@ -126,3 +126,16 @@ These vectors establish **bounded executable evidence** for the existing authori
 boundary. They do not close AG-01..AG-10 as a constitutional/conformance whole.
 
 **Current status: executable negative matrix PRESENT; full AG-01 closure OPEN.**
+
+
+## 2026-10-17 — AG-02 / AG-03 / AG-09 bounded vectors
+
+The dedicated Haskell conformance test now additionally checks:
+
+- AG-02: an application-level gate cannot make a constitutional-kernel gate set pass when an existing required kernel gate is false;
+- AG-03: an environment-supplied timestamp cannot skip the declared community-review interval, and becomes time-eligible only at the existing boundary;
+- AG-09: the Application conformance gate remains scoped to Application, while the existing VerificationTooling profile does not silently inherit that application-specific gate.
+
+These assertions exercise existing `gatesPassed` and `statusChangeAllowed` semantics. They introduce no new thresholds or policy. They are bounded executable vectors, not proof of complete environment provenance, profile ownership across every module, or deployed governance.
+
+**Status: AG-02/AG-03/AG-09 targeted vectors added; CI verification pending. Full AG-01..AG-10 closure remains OPEN.**
