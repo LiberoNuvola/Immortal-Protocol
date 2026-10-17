@@ -189,12 +189,20 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
   // therefore emit PARTIAL coverage only; a caller-supplied label cannot prove
   // that the entire authorized search space was explored.
   if (coverage !== 'PARTIAL') return { status: 'UNVERIFIABLE' }
+  const observedCandidates = []
+  for (let index = 0; index < candidates.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(candidates, String(index))
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
+      return { status: 'UNVERIFIABLE' }
+    }
+    observedCandidates.push(descriptor.value)
+  }
   return Object.freeze({
     status: 'CANDIDATE_SET',
     family: boundary.domain,
     ruleVersion: boundary.ruleVersion,
     evidenceContract: boundary.evidenceContract,
-    candidates: Object.freeze([...candidates]),
+    candidates: Object.freeze(observedCandidates),
     coverage: 'PARTIAL',
   })
 }
@@ -276,6 +284,38 @@ assert(exploreGetterCalled === false,
 assert(explore(reward, { domain: 'reward' }, null).status === 'UNVERIFIABLE',
   'non-array candidate collections cannot enter exploration')
 assert(search.candidates.length === 2, 'candidate set records the portion actually explored')
+let candidateIteratorCalls = 0
+const iteratorControlledCandidates = ['candidate-1', 'candidate-2']
+iteratorControlledCandidates[Symbol.iterator] = function* () {
+  candidateIteratorCalls += 1
+  yield 'forged-candidate'
+}
+const iteratorControlledSearch = explore(
+  reward, { domain: 'reward' }, iteratorControlledCandidates, 'PARTIAL',
+)
+assert(iteratorControlledSearch.status === 'CANDIDATE_SET' &&
+  iteratorControlledSearch.candidates[0] === 'candidate-1' &&
+  iteratorControlledSearch.candidates[1] === 'candidate-2',
+  'exploration copies candidates from own indexed data descriptors')
+assert(candidateIteratorCalls === 0,
+  'exploration does not invoke caller-controlled candidate iterators')
+const sparseCandidates = []
+sparseCandidates.length = 1
+assert(explore(reward, { domain: 'reward' }, sparseCandidates).status === 'UNVERIFIABLE',
+  'sparse candidate arrays fail closed during exploration')
+const accessorCandidates = ['candidate-1']
+let candidateGetterCalls = 0
+Object.defineProperty(accessorCandidates, '0', {
+  enumerable: true,
+  configurable: true,
+  get() {
+    candidateGetterCalls += 1
+    return 'candidate-1'
+  },
+})
+assert(explore(reward, { domain: 'reward' }, accessorCandidates).status === 'UNVERIFIABLE' &&
+  candidateGetterCalls === 0,
+  'accessor-backed candidate entries fail closed without invoking getters')
 const searchClaim = Object.freeze({ ...search, coverage: 'COMPLETE' })
 assert(searchClaim.coverage !== search.coverage, 'complete coverage cannot be inherited from a partial search')
 
