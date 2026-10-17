@@ -14,10 +14,15 @@ const names = readdirSync(adapterRoot).filter((name) => statSync(join(adapterRoo
 
 const expected = new Set(['CARDANO','REFERENCE','MIDNIGHT','BITCOIN','COSMOS','ETHEREUM','SOLANA'])
 for (const name of expected) assert(names.includes(name), name + ' adapter surface is explicitly accounted for')
+for (const name of names) {
+  assert(expected.has(name), name + ' adapter surface has an explicit maturity classification')
+}
 
 assert(names.includes('CARDANO'), 'Cardano adapter surface exists')
 assert(names.includes('MIDNIGHT'), 'Midnight research surface exists')
 assert(names.includes('REFERENCE'), 'reference replay surface exists')
+
+assert(![...names, 'UNREGISTERED_ADAPTER'].some((name) => !expected.has(name) && names.includes(name)), 'unregistered adapter surfaces cannot silently pass maturity accounting')
 
 const cardanoEntries = readdirSync(join(adapterRoot, 'CARDANO'))
 assert(cardanoEntries.includes('runtime') && cardanoEntries.includes('observation') && cardanoEntries.includes('serialization'),
