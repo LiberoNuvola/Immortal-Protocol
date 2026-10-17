@@ -34,6 +34,12 @@ on:
       - "PRE-RICH/onchain/**"
       - ".github/workflows/**"
   workflow_dispatch:
+    inputs:
+      claim_reference_diagnostic:
+        description: "Serialize Claim CBOR for size/reference-script diagnosis only; never signs or submits Claim"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   devnet-integration:
@@ -380,6 +386,8 @@ jobs:
 
       # Isolated Claim conformance fixture; not a production Issue-admission witness.
       - name: Execute real economic Claim transition trace
+        env:
+          CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
       - name: Materialize raw Yaci ledger context for P2.8
