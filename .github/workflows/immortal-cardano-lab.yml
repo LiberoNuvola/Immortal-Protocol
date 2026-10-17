@@ -350,6 +350,17 @@ jobs:
         id: jev_v3_carrier
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
+      # Experimental candidate: same fixture schema, but the Prize spend uses
+      # the isolated Aiken Plutus V3 entrypoint and a pool validator bound to its hash.
+      # It is deliberately non-blocking; the canonical Haskell V2 trace still runs.
+      - name: Execute isolated Aiken V3 Reveal candidate on native Cardano ledger
+        id: aiken_reveal_spend
+        if: always() && steps.aiken_ref_publish.outcome == 'success'
+        continue-on-error: true
+        env:
+          IMMORTAL_REVEAL_AIKEN_V3: "1"
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+
       - name: Execute real economic Reveal transition trace
         id: jev_reveal
         run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
@@ -431,6 +442,7 @@ jobs:
           AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-reveal-build.outcome || 'unknown' }}
           AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
+          AIKEN_REVEAL_SPEND_OUTCOME: ${{ steps.aiken_reveal_spend.outcome || 'unknown' }}
           AIKEN_LEDGER_POSITIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.positive_outcome || 'unknown' }}
           AIKEN_LEDGER_NEGATIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.negative_outcome || 'unknown' }}
           AIKEN_LEDGER_WINNING_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.winning_outcome || 'unknown' }}
@@ -487,6 +499,17 @@ jobs:
                 'This checks only the publication transaction, script binding, and size on the local Yaci Conway devnet.',
                 'It does not execute Reveal or establish compatibility with the canonical production Plutus V2 validator.',
                 'The publication evidence is not Preprod/mainnet qualification and does not authorize deployment.',
+              ],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.SPEND.CANDIDATE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute isolated Aiken V3 Reveal candidate against local Yaci Conway ledger',
+              stepOutcome: outcome(process.env.AIKEN_REVEAL_SPEND_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This candidate uses the isolated Aiken Plutus V3 validator and a test B1PrizePool bound to its script hash.',
+                'A pass would establish only this fixture path on this local Yaci run, not full equivalence to canonical Haskell Plutus V2.',
+                'A failure must be diagnosed from the candidate transaction/context and does not alter the canonical validator or existing V3 carrier.',
               ],
             },
             {
