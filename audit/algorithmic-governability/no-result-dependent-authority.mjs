@@ -51,6 +51,13 @@ const adopt = (candidate, certified, boundary) => {
   if (!certified || certified.status !== 'admissible') return null
   if (candidate.domain !== boundary.domain) return null
   if (candidate.evidenceContract !== boundary.evidenceContract) return null
+  if (Object.hasOwn(candidate, 'authority') && candidate.authority !== boundary.authority) return null
+  if (Object.hasOwn(candidate, 'ruleVersion') && candidate.ruleVersion !== boundary.ruleVersion) return null
+  if (Object.hasOwn(candidate, 'coverage') && candidate.coverage !== boundary.coverage) return null
+  if (Object.hasOwn(candidate, 'safeSet') &&
+      (!Array.isArray(candidate.safeSet) ||
+       candidate.safeSet.length !== boundary.safeSet.length ||
+       candidate.safeSet.some((value, index) => value !== boundary.safeSet[index]))) return null
   return candidate
 }
 
@@ -81,6 +88,31 @@ const validCandidate = Object.freeze({
 assert(
   adopt(validCandidate, { status: 'admissible' }, immutableBoundary) === validCandidate,
   'admissible candidate remains adoptable without escalating authority',
+)
+
+const authorityEscalationCandidate = Object.freeze({
+  ...validCandidate,
+  authority: 'authority-derived-from-result',
+})
+assert(
+  adopt(authorityEscalationCandidate, { status: 'admissible' }, immutableBoundary) === null,
+  'candidate cannot smuggle result-dependent authority through adoption',
+)
+const ruleVersionEscalationCandidate = Object.freeze({
+  ...validCandidate,
+  ruleVersion: 'rule-derived-from-result',
+})
+assert(
+  adopt(ruleVersionEscalationCandidate, { status: 'admissible' }, immutableBoundary) === null,
+  'candidate cannot smuggle a result-dependent rule version through adoption',
+)
+const safeSetWideningCandidate = Object.freeze({
+  ...validCandidate,
+  safeSet: Object.freeze(['SAFE', 'RECOVERABLE', 'UNBOUNDED']),
+})
+assert(
+  adopt(safeSetWideningCandidate, { status: 'admissible' }, immutableBoundary) === null,
+  'candidate cannot smuggle a widened safe set through adoption',
 )
 
 const recoveryAttempt = Object.freeze({
