@@ -35,7 +35,7 @@ for (const [name, overrides, expected] of [
   ["gate self-test failed", { GATE_TESTS_OUTCOME: "failure" }, /gate self-tests/],
   ["check failed without cache", { AIKEN_CHECK_OUTCOME: "failure" }, /Aiken check/],
   ["build failed without cache", { AIKEN_BUILD_OUTCOME: "failure" }, /Aiken build/],
-  ["size measurement failed", { AIKEN_SIZE_OUTCOME: "failure" }, /script-size lower-bound measurement/],
+  ["size measurement failed", { AIKEN_SIZE_OUTCOME: "failure" }, /compiled-script lower-bound measurement/],
 ]) {
   const result = run(overrides);
   assert.notEqual(result.status, 0, `Expected fail-closed result for: ${name}`);
