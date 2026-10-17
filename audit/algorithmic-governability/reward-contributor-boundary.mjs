@@ -63,13 +63,13 @@ assert(admission.evidenceContract === boundary.evidenceContract, 'eligibility re
 assert(admission.contributionId === contribution.contributionId, 'eligibility remains bound to the contribution identity')
 assert(admission.contributorIdentity === contribution.contributor, 'eligibility retains the contributor identity from the accepted record')
 
-for (const malformed of [null, undefined, true, 1, 'contribution', [], Object.create(null)]) {
+for (const malformed of [null, undefined, true, 1, 'contribution', [], Object.create(null), new Date(0)]) {
   assert(
     rewardEligibility(malformed, boundary) === 'UNVERIFIABLE',
     'malformed contribution container fails closed',
   )
 }
-for (const malformed of [null, undefined, true, 1, 'boundary', []]) {
+for (const malformed of [null, undefined, true, 1, 'boundary', [], new Date(0)]) {
   assert(
     rewardEligibility(contribution, malformed) === 'UNVERIFIABLE',
     'malformed reward-boundary container fails closed',
@@ -77,6 +77,12 @@ for (const malformed of [null, undefined, true, 1, 'boundary', []]) {
 }
 const arrayRecord = []
 Object.assign(arrayRecord, contribution)
+const dateRecord = new Date(0)
+Object.assign(dateRecord, contribution)
+assert(
+  rewardEligibility(dateRecord, boundary) === 'UNVERIFIABLE',
+  'Date object with forged contribution-shaped properties cannot qualify',
+)
 assert(
   rewardEligibility(arrayRecord, boundary) === 'UNVERIFIABLE',
   'array with forged contribution-shaped properties cannot qualify',
