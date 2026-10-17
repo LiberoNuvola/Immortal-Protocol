@@ -145,6 +145,37 @@ for (const action of requiredActions) {
   assert(entry.invalidResult === 'REJECTED', `${action} invalid evidence is rejected`)
 }
 
+// Exhaustively test the catalog contract: every required field must be present,
+// and explicit invalidity must reject for every action (not only selected examples).
+for (const action of requiredActions) {
+  const entry = catalog[action]
+  const completeEvidence = Object.fromEntries(
+    entry.required.map((field) => [field, `present:${field}`]),
+  )
+
+  for (const field of entry.required) {
+    const missingField = { ...completeEvidence }
+    delete missingField[field]
+    assert(
+      evaluate(entry, missingField) === 'UNVERIFIABLE',
+      `${action}: missing required field ${field} fails closed`,
+    )
+
+    const blankField = { ...completeEvidence, [field]: '' }
+    assert(
+      evaluate(entry, blankField) === 'UNVERIFIABLE',
+      `${action}: blank required field ${field} fails closed`,
+    )
+  }
+
+  assert(
+    evaluate(entry, { ...completeEvidence, invalidEvidence: true }) === 'REJECTED',
+    `${action}: explicitly invalid evidence is rejected`,
+  )
+}
+
+assert(evaluate(catalog.Issue, null) === 'UNVERIFIABLE', 'absent action evidence is unverifiable')
+
 const issueEvidence = Object.fromEntries(
   catalog.Issue.required.map((field) => [field, `present:${field}`]),
 )
