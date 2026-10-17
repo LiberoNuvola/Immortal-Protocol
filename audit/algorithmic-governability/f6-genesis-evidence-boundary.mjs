@@ -18,15 +18,22 @@ const isRecord=(value)=>{
   return prototype===Object.prototype || prototype===null
 }
 
-const hasOwn=(value,field)=>Object.prototype.hasOwnProperty.call(value,field)
+const hasOwnData=(value,field)=>{
+  const descriptor=Object.getOwnPropertyDescriptor(value,field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor,'value'))
+}
 
 const genesisAdmission=(o)=>{
   if(!isRecord(o)) return 'UNVERIFIABLE'
-  for (const field of ['treasuryIdentity','preAssetIdentity','oracleIdentity']) {
-    if(!hasOwn(o,field) || typeof o[field] !== 'string' || o[field].trim().length === 0) return 'UNVERIFIABLE'
+  const requiredIdentityFields=['treasuryIdentity','preAssetIdentity','oracleIdentity']
+  const requiredEvidenceFields=[...riskEvidenceFields,'verifiedFresh','bootstrapQualified']
+  // Validate descriptors before reading values: own accessors are not evidence
+  // and must not execute while evaluating a Genesis admission candidate.
+  for (const field of [...requiredIdentityFields,...requiredEvidenceFields]) {
+    if(!hasOwnData(o,field)) return 'UNVERIFIABLE'
   }
-  for (const field of [...riskEvidenceFields,'verifiedFresh','bootstrapQualified']) {
-    if(!hasOwn(o,field)) return 'UNVERIFIABLE'
+  for (const field of requiredIdentityFields) {
+    if(typeof o[field] !== 'string' || o[field].trim().length === 0) return 'UNVERIFIABLE'
   }
   // Unknown flags are not evidence that a risk is absent.
   if(riskEvidenceFields.some((field)=>typeof o[field] !== 'boolean')) return 'UNVERIFIABLE'
@@ -52,6 +59,15 @@ assert(genesisAdmission({...valid,duplicateOrConcurrent:true})==='REJECTED','dup
 assert(genesisAdmission({...valid,bootstrapValueInPrizePool:true})==='REJECTED','bootstrap value is not treated as PrizePool liquidity')
 assert(genesisAdmission({...valid,oracleIdentity:null})==='UNVERIFIABLE','missing oracle identity fails closed')
 assert(genesisAdmission({...valid,verifiedFresh:false})==='UNVERIFIABLE','unverified valuation fails closed')
+let genesisGetterCalls=0
+const accessorIdentity={...valid}
+Object.defineProperty(accessorIdentity,'treasuryIdentity',{enumerable:true,get(){genesisGetterCalls+=1;return valid.treasuryIdentity}})
+assert(genesisAdmission(accessorIdentity)==='UNVERIFIABLE' && genesisGetterCalls===0,
+  'accessor-backed Treasury identity fails closed without executing getter')
+const accessorRisk={...valid}
+Object.defineProperty(accessorRisk,'stale',{enumerable:true,get(){genesisGetterCalls+=1;return false}})
+assert(genesisAdmission(accessorRisk)==='UNVERIFIABLE' && genesisGetterCalls===0,
+  'accessor-backed risk flag fails closed without executing getter')
 
 assert(genesisAdmission(null)==='UNVERIFIABLE','absent Genesis observation fails closed')
 for (const malformed of [undefined, 'observation', 7, [], new Date()]) {
