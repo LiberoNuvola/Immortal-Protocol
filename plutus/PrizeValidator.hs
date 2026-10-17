@@ -55,6 +55,70 @@ import OracleTypes
 
 -- ============================================================
 -- Helpers
+-- Compact trace labels keep the shared V2 validator publishable under Cardano's
+-- transaction-size ceiling. These labels change diagnostics only, not predicates.
+-- Trace-label dictionary (code = original diagnostic):
+--   01 = Prize: own input is not script
+--   02 = Prize: missing own input
+--   03 = Prize: B1PrizePool input missing
+--   04 = Prize: registry ref missing
+--   05 = Prize: not pending sync
+--   06 = Prize: already synced
+--   07 = Prize: registry not ready
+--   08 = Prize: round mismatch
+--   09 = Prize: target mismatch
+--   10 = Prize: empty registry R
+--   11 = Prize: multi input
+--   12 = Prize: value not preserved (sync)
+--   13 = Prize: bad sync continuing
+--   14 = Prize: B1PrizePool output missing
+--   15 = Prize: pool prize hash mismatch
+--   16 = Prize: input pool prize hash mismatch
+--   17 = Prize: payout exceeds effective pool
+--   18 = Prize: pool liabilities wrong
+--   19 = Prize: pool reserve must decrease
+--   20 = Prize: pool liquidity unchanged
+--   21 = Prize: pool count wrong
+--   22 = Prize: reveal window closed
+--   23 = Prize: already revealed
+--   24 = Prize: beacon not ready
+--   25 = Prize: empty beacon
+--   26 = Prize: beacon rederive mismatch
+--   27 = Prize: bad player secret
+--   28 = Prize: bad ticket commitment
+--   29 = Prize: bad symbols len
+--   30 = Prize: multi pool input
+--   31 = Prize: value not preserved (reveal)
+--   32 = Prize: bad reveal continuing
+--   33 = Prize: pool accounting wrong
+--   34 = Prize: pool prize hash changed on expire
+--   35 = Prize: pool liquidity changed on expire
+--   36 = Prize: pool liabilities changed on expire
+--   37 = Prize: pool reserve release
+--   38 = Prize: pool reserve non-negative
+--   39 = Prize: pool count release
+--   40 = Prize: pool locked Jackpot changed
+--   41 = Prize: pool Jackpot floor changed
+--   42 = Prize: pool suspended classes changed
+--   43 = Prize: pool prize hash changed
+--   44 = Prize: no continuing PrizeDatum on expire
+--   45 = Prize: not pending
+--   46 = Prize: beacon state invalid
+--   47 = Prize: invalid ticket price
+--   48 = Prize: prize amount must be zero
+--   49 = Prize: expiry not reached
+--   50 = Prize: pool input count
+--   51 = Prize: pool liquidity wrong
+--   52 = Prize: pool reserve unchanged
+--   53 = Prize: pool count unchanged
+--   54 = Prize: owner sig
+--   55 = Prize: not revealed
+--   56 = Prize: already claimed
+--   57 = Prize: zero prize
+--   58 = Prize: claim window closed
+--   59 = Prize: payout
+--   60 = Prize: value not preserved (claim)
+--   61 = Prize: bad claim continuing
 -- ============================================================
 
 {-# INLINABLE claimAddress #-}
@@ -73,9 +137,9 @@ ownScriptHash ctx =
         ScriptCredential h ->
           h
         _ ->
-          traceError "Prize: own input is not script"
+          traceError "01"
     Nothing ->
-      traceError "Prize: missing own input"
+      traceError "02"
 
 {-# INLINABLE ownInputResolved #-}
 ownInputResolved :: ScriptContext -> TxOut
@@ -84,7 +148,7 @@ ownInputResolved ctx =
     Just i ->
       txInInfoResolved i
     Nothing ->
-      traceError "Prize: missing own input"
+      traceError "02"
 
 {-# INLINABLE countOwnScriptInputs #-}
 countOwnScriptInputs :: ScriptContext -> Integer
@@ -470,7 +534,7 @@ readPoolInput :: TxInfo -> BuiltinByteString -> B1PrizePoolDatum
 readPoolInput info poolHashB = go (txInfoInputs info)
   where
     poolHash = ScriptHash poolHashB
-    go [] = traceError "Prize: B1PrizePool input missing"
+    go [] = traceError "03"
     go (i:is) =
       case addressCredential (txOutAddress (txInInfoResolved i)) of
         ScriptCredential h
@@ -602,7 +666,7 @@ validateSyncBeacon regHash datum ctx =
   in
     case readRegistry regHash info of
       Nothing ->
-        traceIfFalse "Prize: registry ref missing" False
+        traceIfFalse "04" False
 
       Just reg ->
         let
@@ -622,15 +686,15 @@ validateSyncBeacon regHash datum ctx =
                 && lengthOfByteString (pdResult n) == 0
                 && pdPrizeTier n == 0
         in
-             traceIfFalse "Prize: not pending sync" (pdStatus datum == Pending)
-          && traceIfFalse "Prize: already synced" (pdBeaconStatus datum == BeaconPending)
-          && traceIfFalse "Prize: registry not ready" (brStatus reg == BeaconReady)
-          && traceIfFalse "Prize: round mismatch" (brRound reg == btRound target)
-          && traceIfFalse "Prize: target mismatch" (sameTarget (brTarget reg) target)
-          && traceIfFalse "Prize: empty registry R" (lengthOfByteString (brBeaconValue reg) > 0)
-          && traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
-          && traceIfFalse "Prize: value not preserved (sync)" (valuePreserved ctx)
-          && traceIfFalse "Prize: bad sync continuing" nextOk
+             traceIfFalse "05" (pdStatus datum == Pending)
+          && traceIfFalse "06" (pdBeaconStatus datum == BeaconPending)
+          && traceIfFalse "07" (brStatus reg == BeaconReady)
+          && traceIfFalse "08" (brRound reg == btRound target)
+          && traceIfFalse "09" (sameTarget (brTarget reg) target)
+          && traceIfFalse "10" (lengthOfByteString (brBeaconValue reg) > 0)
+          && traceIfFalse "11" (countOwnScriptInputs ctx == 1)
+          && traceIfFalse "12" (valuePreserved ctx)
+          && traceIfFalse "13" nextOk
 
 -- ============================================================
 -- Reveal
@@ -727,48 +791,48 @@ validateReveal table datum playerSecret ctx =
     poolOk =
       case findB1PrizePoolOutput info prizePoolBs of
         Nothing ->
-          traceIfFalse "Prize: B1PrizePool output missing" False
+          traceIfFalse "14" False
         Just poolOut ->
           let
             poolIn = readPoolInput info prizePoolBs
             newReserve = ppUnresolvedReserve poolOut
             oldReserve = ppUnresolvedReserve poolIn
           in
-               traceIfFalse "Prize: pool prize hash mismatch"
+               traceIfFalse "15"
                  (ppPrizeHash poolOut == ownPrizeHash)
-            && traceIfFalse "Prize: input pool prize hash mismatch"
+            && traceIfFalse "16"
                  (ppPrizeHash poolIn == ownPrizeHash)
-            && traceIfFalse "Prize: payout exceeds effective pool"
+            && traceIfFalse "17"
                  (amountUsdm
                     <= ppTotalLiquidity poolIn
                       - ppPendingLiabilities poolIn
                       - ppUnresolvedReserve poolIn
                       - ppLockedJackpot poolIn)
-            && traceIfFalse "Prize: pool liabilities wrong"
+            && traceIfFalse "18"
                  (ppPendingLiabilities poolOut
                     == ppPendingLiabilities poolIn + amountUsdm)
-            && traceIfFalse "Prize: pool reserve must decrease"
+            && traceIfFalse "19"
                  (newReserve < oldReserve)
-            && traceIfFalse "Prize: pool liquidity unchanged"
+            && traceIfFalse "20"
                  (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
-            && traceIfFalse "Prize: pool count wrong"
+            && traceIfFalse "21"
                  (ppUnresolvedTicketCount poolOut
                     == ppUnresolvedTicketCount poolIn - 1)
     in
-       traceIfFalse "Prize: reveal window closed"
+       traceIfFalse "22"
          (claimBeforeExpiry (pdExpiresAt datum) info)
-    && traceIfFalse "Prize: already revealed" (pdStatus datum == Pending)
-    && traceIfFalse "Prize: beacon not ready" (pdBeaconStatus datum == BeaconReady)
-    && traceIfFalse "Prize: empty beacon" (lengthOfByteString beaconValue > 0)
-    && traceIfFalse "Prize: beacon rederive mismatch" (beaconValue == expectedR)
-    && traceIfFalse "Prize: bad player secret" (expectedPlayerCommitment == pdPlayerCommitment datum)
-    && traceIfFalse "Prize: bad ticket commitment" (ticketBinding == pdCommitment datum)
-    && traceIfFalse "Prize: bad symbols len" (lengthOfByteString expectedSymbols == 6)
-    && traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
-    && traceIfFalse "Prize: multi pool input" (countPoolInputs info prizePoolBs == 1)
-    && traceIfFalse "Prize: value not preserved (reveal)" (valuePreserved ctx)
-    && traceIfFalse "Prize: bad reveal continuing" nextOk
-    && traceIfFalse "Prize: pool accounting wrong" poolOk
+    && traceIfFalse "23" (pdStatus datum == Pending)
+    && traceIfFalse "24" (pdBeaconStatus datum == BeaconReady)
+    && traceIfFalse "25" (lengthOfByteString beaconValue > 0)
+    && traceIfFalse "26" (beaconValue == expectedR)
+    && traceIfFalse "27" (expectedPlayerCommitment == pdPlayerCommitment datum)
+    && traceIfFalse "28" (ticketBinding == pdCommitment datum)
+    && traceIfFalse "29" (lengthOfByteString expectedSymbols == 6)
+    && traceIfFalse "11" (countOwnScriptInputs ctx == 1)
+    && traceIfFalse "30" (countPoolInputs info prizePoolBs == 1)
+    && traceIfFalse "31" (valuePreserved ctx)
+    && traceIfFalse "32" nextOk
+    && traceIfFalse "33" poolOk
 
 -- ============================================================
 -- Expire
@@ -792,7 +856,7 @@ validateExpire datum ctx =
     poolOk =
       case findB1PrizePoolOutput info prizePoolBs of
         Nothing ->
-          traceIfFalse "Prize: B1PrizePool output missing" False
+          traceIfFalse "14" False
         Just poolOut ->
           let
             poolIn = readPoolInput info prizePoolBs
@@ -802,45 +866,45 @@ validateExpire datum ctx =
             expectedCount =
               ppUnresolvedTicketCount poolIn - 1
           in
-               traceIfFalse "Prize: pool prize hash mismatch"
+               traceIfFalse "15"
                  (ppPrizeHash poolOut == ownPrizeHash)
-            && traceIfFalse "Prize: input pool prize hash mismatch"
+            && traceIfFalse "16"
                  (ppPrizeHash poolIn == ownPrizeHash)
-            && traceIfFalse "Prize: pool prize hash changed on expire"
+            && traceIfFalse "34"
                  (ppPrizeHash poolOut == ppPrizeHash poolIn)
-            && traceIfFalse "Prize: pool liquidity changed on expire"
+            && traceIfFalse "35"
                  (ppTotalLiquidity poolOut == ppTotalLiquidity poolIn)
-            && traceIfFalse "Prize: pool liabilities changed on expire"
+            && traceIfFalse "36"
                  (ppPendingLiabilities poolOut == ppPendingLiabilities poolIn)
-            && traceIfFalse "Prize: pool reserve release"
+            && traceIfFalse "37"
                  (ppUnresolvedReserve poolOut == expectedReserve)
-            && traceIfFalse "Prize: pool reserve non-negative"
+            && traceIfFalse "38"
                  (expectedReserve >= 0)
-            && traceIfFalse "Prize: pool count release"
+            && traceIfFalse "39"
                  (ppUnresolvedTicketCount poolOut == expectedCount)
-            && traceIfFalse "Prize: pool locked Jackpot changed"
+            && traceIfFalse "40"
                  (ppLockedJackpot poolOut == ppLockedJackpot poolIn)
-            && traceIfFalse "Prize: pool Jackpot floor changed"
+            && traceIfFalse "41"
                  (ppJackpotThreshold poolOut == ppJackpotThreshold poolIn)
-            && traceIfFalse "Prize: pool suspended classes changed"
+            && traceIfFalse "42"
                  (ppSuspendedClasses poolOut == ppSuspendedClasses poolIn)
-            && traceIfFalse "Prize: pool prize hash changed"
+            && traceIfFalse "43"
                  (ppPrizeHash poolOut == ppPrizeHash poolIn)
 
   in
-       traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
-    && traceIfFalse "Prize: no continuing PrizeDatum on expire"
+       traceIfFalse "11" (countOwnScriptInputs ctx == 1)
+    && traceIfFalse "44"
          (countOwnScriptOutputs ctx == 0)
-    && traceIfFalse "Prize: not pending" (pdStatus datum == Pending)
-    && traceIfFalse "Prize: beacon state invalid"
+    && traceIfFalse "45" (pdStatus datum == Pending)
+    && traceIfFalse "46"
          (pdBeaconStatus datum == BeaconPending
             || pdBeaconStatus datum == BeaconReady)
-    && traceIfFalse "Prize: invalid ticket price" (pdPriceUsdm datum > 0)
-    && traceIfFalse "Prize: prize amount must be zero" (pdPrizeAmount datum == 0)
-    && traceIfFalse "Prize: expiry not reached"
+    && traceIfFalse "47" (pdPriceUsdm datum > 0)
+    && traceIfFalse "48" (pdPrizeAmount datum == 0)
+    && traceIfFalse "49"
          (expireAtOrAfter (pdExpiresAt datum) info)
-    && traceIfFalse "Prize: pool input count" (countPoolInputs info prizePoolBs == 1)
-    && traceIfFalse "Prize: pool accounting wrong" poolOk
+    && traceIfFalse "50" (countPoolInputs info prizePoolBs == 1)
+    && traceIfFalse "33" poolOk
 
 -- ============================================================
 -- Claim
@@ -918,38 +982,38 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
     poolOk =
       case findB1PrizePoolOutput info prizePoolBs of
         Nothing ->
-          traceIfFalse "Prize: B1PrizePool output missing" False
+          traceIfFalse "14" False
         Just poolOut ->
           let
             poolIn = readPoolInput info prizePoolBs
           in
-               traceIfFalse "Prize: pool prize hash mismatch"
+               traceIfFalse "15"
                  (ppPrizeHash poolOut == ownPrizeHash)
-            && traceIfFalse "Prize: input pool prize hash mismatch"
+            && traceIfFalse "16"
                  (ppPrizeHash poolIn == ownPrizeHash)
-            && traceIfFalse "Prize: pool liquidity wrong"
+            && traceIfFalse "51"
                  (ppTotalLiquidity poolOut
                     == ppTotalLiquidity poolIn - payout)
-            && traceIfFalse "Prize: pool liabilities wrong"
+            && traceIfFalse "18"
                  (ppPendingLiabilities poolOut
                     == ppPendingLiabilities poolIn - payout)
-            && traceIfFalse "Prize: pool reserve unchanged"
+            && traceIfFalse "52"
                  (ppUnresolvedReserve poolOut == ppUnresolvedReserve poolIn)
-            && traceIfFalse "Prize: pool count unchanged"
+            && traceIfFalse "53"
                  (ppUnresolvedTicketCount poolOut
                     == ppUnresolvedTicketCount poolIn)
   in
-       traceIfFalse "Prize: owner sig" ownerSigned
-    && traceIfFalse "Prize: not revealed" (pdStatus datum == Revealed)
-    && traceIfFalse "Prize: already claimed" (pdStatus datum /= Claimed)
-    && traceIfFalse "Prize: multi input" (countOwnScriptInputs ctx == 1)
-    && traceIfFalse "Prize: multi pool input" (countPoolInputs info prizePoolBs == 1)
-    && traceIfFalse "Prize: zero prize" (pdPrizeAmount datum > 0)
-    && traceIfFalse "Prize: claim window closed" (claimBeforeExpiry (pdExpiresAt datum) info)
-    && traceIfFalse "Prize: payout" paid
-    && traceIfFalse "Prize: value not preserved (claim)" (valuePreserved ctx)
-    && traceIfFalse "Prize: bad claim continuing" nextOk
-    && traceIfFalse "Prize: pool accounting wrong" poolOk
+       traceIfFalse "54" ownerSigned
+    && traceIfFalse "55" (pdStatus datum == Revealed)
+    && traceIfFalse "56" (pdStatus datum /= Claimed)
+    && traceIfFalse "11" (countOwnScriptInputs ctx == 1)
+    && traceIfFalse "30" (countPoolInputs info prizePoolBs == 1)
+    && traceIfFalse "57" (pdPrizeAmount datum > 0)
+    && traceIfFalse "58" (claimBeforeExpiry (pdExpiresAt datum) info)
+    && traceIfFalse "59" paid
+    && traceIfFalse "60" (valuePreserved ctx)
+    && traceIfFalse "61" nextOk
+    && traceIfFalse "33" poolOk
     -- NFT burn is NOT required (constitution: keep after claim).
 
 -- ============================================================
