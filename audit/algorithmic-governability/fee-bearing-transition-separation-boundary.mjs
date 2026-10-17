@@ -35,8 +35,19 @@ assert(
   'total-cost observation preserves the two independent cost components',
 )
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const commit = (transition) => {
-  if (!transition || typeof transition !== 'object') return 'REJECTED'
+  if (!isRecord(transition)) return 'REJECTED'
+  const requiredOwnFields = [
+    'safe', 'canonicalTransitionId', 'action', 'economicStateHash',
+    'economicFeeTarget', 'feeReferenceStatus', 'conversionStatus',
+  ]
+  if (!requiredOwnFields.every((field) => Object.hasOwn(transition, field))) return 'REJECTED'
   if (transition.safe !== true) return 'REJECTED'
   if (typeof transition.canonicalTransitionId !== 'string' || transition.canonicalTransitionId.trim() === '') return 'REJECTED'
   if (typeof transition.action !== 'string' || transition.action.trim() === '') return 'REJECTED'
@@ -49,6 +60,30 @@ const commit = (transition) => {
 
 assert(commit(null) === 'REJECTED', 'absent transition candidate is rejected')
 assert(commit(undefined) === 'REJECTED', 'undefined transition candidate is rejected')
+assert(commit([]) === 'REJECTED', 'array transition candidate is rejected')
+assert(commit(new Date()) === 'REJECTED', 'Date transition candidate is rejected')
+const inheritedSafe = Object.assign(Object.create({ safe: true }), {
+  canonicalTransitionId: candidate.canonicalTransitionId,
+  action: candidate.action,
+  economicStateHash: candidate.economicStateHash,
+  economicFeeTarget: candidate.economicFeeTarget,
+  feeReferenceStatus: candidate.feeReferenceStatus,
+  conversionStatus: candidate.conversionStatus,
+})
+assert(commit(inheritedSafe) === 'REJECTED', 'inherited safety flag cannot authorize transition commitment')
+const inheritedIdentity = Object.assign(Object.create({
+  canonicalTransitionId: candidate.canonicalTransitionId,
+}), {
+  safe: true,
+  action: candidate.action,
+  economicStateHash: candidate.economicStateHash,
+  economicFeeTarget: candidate.economicFeeTarget,
+  feeReferenceStatus: candidate.feeReferenceStatus,
+  conversionStatus: candidate.conversionStatus,
+})
+assert(commit(inheritedIdentity) === 'REJECTED', 'inherited canonical transition identity cannot authorize commitment')
+const forgedDate = Object.assign(new Date(), candidate)
+assert(commit(forgedDate) === 'REJECTED', 'Date instance with forged transition fields cannot authorize commitment')
 assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: '   ' })) === 'REJECTED',
   'blank canonical transition identity cannot authorize commitment')
 assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: 17 })) === 'REJECTED',
