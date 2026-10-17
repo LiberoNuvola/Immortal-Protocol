@@ -25,11 +25,20 @@ const isRecord = (value) => {
 
 const hasOwn = (value, field) => Object.hasOwn(value, field)
 
+const ownData = (value, field) => {
+  if (!isRecord(value) || !hasOwn(value, field)) return false
+  const descriptor = Object.getOwnPropertyDescriptor(value, field)
+  return !!descriptor && hasOwn(descriptor, 'value')
+}
+
 const hasPacketShape = (packet) => {
   if (!isRecord(packet)) return false
-  if (!requiredPacketFields.every((field) => hasOwn(packet, field) && isRecord(packet[field]))) return false
+  if (!requiredPacketFields.every((field) => ownData(packet, field))) return false
+  if (!requiredPacketFields.every((field) => isRecord(Object.getOwnPropertyDescriptor(packet, field).value))) return false
 
-  const { checkpoint, authorityTransition, executionProof, selectionCommitment } = packet
+  const { checkpoint, authorityTransition, executionProof, selectionCommitment } = Object.fromEntries(
+    requiredPacketFields.map((field) => [field, Object.getOwnPropertyDescriptor(packet, field).value]),
+  )
 
   // Required fields are own data properties: inherited values and accessors
   // are not accepted as evidence supplied by the packet.
@@ -116,6 +125,16 @@ assert(hasPacketShape(positive), 'B3-A packet with all own typed fields is shape
 for (const malformed of [null, undefined, true, 1, 'packet', [], new Date()]) {
   assert(!hasPacketShape(malformed), 'malformed top-level packet container is rejected')
 }
+for (const field of requiredPacketFields) {
+  const accessorPacket = { ...positive }
+  Object.defineProperty(accessorPacket, field, {
+    enumerable: true,
+    configurable: true,
+    get: () => positive[field],
+  })
+  assert(!hasPacketShape(accessorPacket), 'accessor-backed ' + field + ' cannot satisfy packet contract')
+}
+
 for (const field of requiredPacketFields) {
   const missing = { ...positive }
   delete missing[field]
