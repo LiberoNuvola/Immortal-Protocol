@@ -28,7 +28,9 @@ const credential=Object.freeze({
 })
 
 const eligible=(r,c)=>{
-  if(r?.accepted !== true || r?.verified !== true) return 'UNVERIFIABLE'
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return 'UNVERIFIABLE'
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return 'UNVERIFIABLE'
+  if(r.accepted !== true || r.verified !== true) return 'UNVERIFIABLE'
 
   for(const field of ['contributionId','contributorId','evidenceRef','evidenceContract','ruleVersion']){
     if(!hasNonBlankString(r?.[field])) return 'UNVERIFIABLE'
@@ -41,6 +43,13 @@ const eligible=(r,c)=>{
 }
 
 assert(eligible(record,credential)==='ELIGIBLE','credential binds to verified contribution, contributor, evidence and rule identity')
+
+for (const malformedRecord of [null, undefined, 'record', 3, []]) {
+  assert(eligible(malformedRecord, credential)==='UNVERIFIABLE', `malformed contribution record (${String(malformedRecord)}) fails closed`)
+}
+for (const malformedCredential of [null, undefined, 'credential', 3, []]) {
+  assert(eligible(record, malformedCredential)==='UNVERIFIABLE', `malformed credential (${String(malformedCredential)}) fails closed`)
+}
 assert(!('rewardBudget' in credential),'credential does not carry an implicit reward budget')
 assert(!('governanceAuthority' in credential),'credential does not carry implicit governance authority')
 assert(!('treasuryAuthority' in credential),'credential does not carry implicit Treasury authority')
