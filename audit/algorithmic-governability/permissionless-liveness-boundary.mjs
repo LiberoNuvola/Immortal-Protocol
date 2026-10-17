@@ -58,7 +58,10 @@ assert(replay.canonicalVersion === 8, 'replay attempt leaves canonical state unc
  * it is not evidence that a deployed ledger implements this path correctly.
  */
 const commitCandidate = (canonical, candidate) => {
-  if (!candidate || typeof candidate !== 'object') {
+  if (!canonical || typeof canonical !== 'object' || Array.isArray(canonical)) {
+    return { status: 'UNVERIFIABLE', state: canonical }
+  }
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
     return { status: 'INVALID_CANDIDATE', state: canonical }
   }
   if (typeof candidate.invoker !== 'string' || candidate.invoker.trim() === '') {
@@ -111,6 +114,12 @@ for (const candidate of invalidCandidates) {
   const rejected = commitCandidate(freshState, candidate)
   assert(rejected.status === 'INVALID_CANDIDATE', 'malformed candidate identity/version is rejected')
   assert(rejected.state.canonicalVersion === freshState.canonicalVersion, 'invalid candidate leaves canonical version unchanged')
+}
+
+for (const malformedCanonical of [null, undefined, 'state', 5, []]) {
+  const rejected = commitCandidate(malformedCanonical, concurrentCandidateA)
+  assert(rejected.status === 'UNVERIFIABLE', `malformed canonical state (${String(malformedCanonical)}) cannot be committed against`)
+  assert(rejected.state === malformedCanonical, 'malformed canonical state is not replaced or synthesized')
 }
 
 const raceWinner = commitCandidate(freshState, concurrentCandidateA)
