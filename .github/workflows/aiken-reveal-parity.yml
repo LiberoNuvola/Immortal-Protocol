@@ -18,6 +18,7 @@ on:
       - "scripts/test-aiken-parity-gate.mjs"
       - "scripts/measure-aiken-validator-size.mjs"
       - "scripts/test-measure-aiken-validator-size.mjs"
+      - "scripts/probe-aiken-v2-compatibility.sh"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
       - "scripts/generate-aiken-reveal-mutation-tests.mjs"
@@ -38,6 +39,7 @@ on:
       - "scripts/test-aiken-parity-gate.mjs"
       - "scripts/measure-aiken-validator-size.mjs"
       - "scripts/test-measure-aiken-validator-size.mjs"
+      - "scripts/probe-aiken-v2-compatibility.sh"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
       - "scripts/generate-aiken-reveal-mutation-tests.mjs"
@@ -205,6 +207,13 @@ jobs:
           set -euo pipefail
           mkdir -p jev-evidence
           node ../../scripts/measure-aiken-validator-size.mjs aiken.toml plutus.json jev-evidence/aiken-script-size.json
+
+      - name: Probe isolated Plutus V2 compilation compatibility
+        id: aiken-v2-probe
+        if: always() && (steps.aiken-cache.outputs.cache-hit == 'true' || steps.aiken-build.outcome == 'success')
+        continue-on-error: true
+        shell: bash
+        run: bash ../../scripts/probe-aiken-v2-compatibility.sh
 
       - name: Isolate Aiken compiler with dependency-free smoke package
         id: aiken-smoke
@@ -380,6 +389,7 @@ jobs:
           AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
           AIKEN_SIZE_OUTCOME: ${{ steps.aiken-resource.outcome || 'unknown' }}
+          AIKEN_V2_PROBE_OUTCOME: ${{ steps.aiken-v2-probe.outcome || 'unknown' }}
           HASKELL_FIXTURE_OUTCOME: ${{ steps.haskell-fixtures.outcome || 'unknown' }}
           AIKEN_FIXTURE_PARITY_OUTCOME: ${{ steps.aiken-fixture-parity.outcome || 'unknown' }}
         run: |
@@ -449,6 +459,24 @@ jobs:
               limitations: ['Synthetic typed Aiken transactions and pure transition predicates only; this does not establish native-ledger validity, current cost-model feasibility, transaction-size feasibility, or full Haskell/Aiken validator equivalence.', 'Characterization cases preserve observed Haskell behavior and are not endorsements of unconstrained fields as normative policy.'],
             },
             {
+              checkId: 'AIKEN.REVEAL.PLUTUS_V2.COMPATIBILITY_PROBE',
+              requirementRef: 'Determine whether the isolated Aiken Reveal source compiles for Plutus V2 while preserving the canonical Plutus V3 parity harness',
+              stepOutcome: outcome(process.env.AIKEN_V2_PROBE_OUTCOME),
+              evidenceRefs,
+              observedValue: await (async () => {
+                try {
+                  return JSON.parse(await fs.readFile('jev-evidence/aiken-v2-compatibility.json', 'utf8'));
+                } catch {
+                  return { status: 'unavailable' };
+                }
+              })(),
+              expectedValue: 'Compile-only diagnostic; success does not establish Haskell parity, native-ledger acceptance, cost-model compatibility, or production readiness.',
+              limitations: [
+                'The probe uses a temporary copy and does not change the canonical V3 package or production validator.',
+                'A successful build is not proof of semantic or ledger equivalence.',
+              ],
+            },
+            {
               checkId: 'AIKEN.REVEAL.SCRIPT.SIZE.LOWER_BOUND',
               requirementRef: 'Compiled Aiken Reveal script lower bound against the 16,384-byte Cardano transaction limit',
               stepOutcome: outcome(process.env.AIKEN_SIZE_OUTCOME),
@@ -507,6 +535,8 @@ jobs:
           path: |
             poc/aiken-reveal-parity/jev-evidence/verification-registry.json
             poc/aiken-reveal-parity/jev-evidence/aiken-script-size.json
+            poc/aiken-reveal-parity/jev-evidence/aiken-v2-compatibility.json
+            poc/aiken-reveal-parity/aiken-v2-compatibility.log
             poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
             poc/aiken-reveal-parity/jev-evidence/registry-input.json
             poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json
