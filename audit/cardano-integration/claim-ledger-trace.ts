@@ -1106,11 +1106,18 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     const rejectedByLedger =
       phase === 'ledger submission' &&
       /HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message)
+    const explicitPlutusFailure =
+      phase === 'ledger submission' &&
+      /The PlutusV[123] script failed/.test(message)
 
-    // Do not turn network/configuration failures, unrelated evaluator errors,
-    // or generic 4xx responses into a PASS. The log must identify the expected
-    // validator branch for this negative twin.
-    if ((!rejectedByYaciEvaluation && !rejectedByLedger) || !expectedMarker) {
+    // The native Cardano ledger error includes the failing script bytes but
+    // does not reliably surface Plutus trace strings. Accept a negative twin
+    // only when Yaci evaluation identifies the expected marker, or ledger
+    // submission explicitly reports Plutus script failure. Record which level
+    // of evidence was actually available; never label an unobserved trace as
+    // branch-confirmed.
+    if ((!rejectedByYaciEvaluation && !rejectedByLedger) ||
+        (!expectedMarker && !explicitPlutusFailure)) {
       throw new Error(
         'Negative twin "' + variant.label +
         '" did not prove its expected on-chain rejection (' + phase +
@@ -1118,12 +1125,16 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
         '): ' + message,
       )
     }
+    const branchEvidence = expectedMarker
+      ? 'expected-trace-observed'
+      : 'ledger-plutus-failure-trace-unavailable'
 
     negativeResults.push({
       label: variant.label,
       rejected: true,
       rejectedAt: rejectedByYaciEvaluation ? 'Yaci Plutus evaluation' : 'Yaci ledger submission',
       expectedTraceMarker: expectedMarker,
+      branchEvidence,
       txCborSha256: cborHash,
       error: message.slice(0, 2500),
     })
@@ -1132,6 +1143,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
       rejected: true,
       rejectedAt: rejectedByYaciEvaluation ? 'Yaci Plutus evaluation' : 'Yaci ledger submission',
       expectedTraceMarker: expectedMarker,
+      branchEvidence,
       txCborSha256: cborHash,
       error: message.slice(0, 900),
     }))
