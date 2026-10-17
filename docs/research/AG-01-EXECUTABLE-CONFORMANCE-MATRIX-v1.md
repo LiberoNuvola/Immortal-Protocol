@@ -138,7 +138,7 @@ The dedicated Haskell conformance test now additionally checks:
 
 These assertions exercise existing `gatesPassed` and `statusChangeAllowed` semantics. They introduce no new thresholds or policy. They are bounded executable vectors, not proof of complete environment provenance, profile ownership across every module, or deployed governance.
 
-**Status: AG-02/AG-03/AG-09 targeted vectors added; CI verification pending. Full AG-01..AG-10 closure remains OPEN.**
+**Status: AG-02/AG-03/AG-09 targeted vectors added and verified by dedicated Haskell conformance run #5 (SUCCESS; commit `57f186ed6c8f80437d4c76f5afd0c9147b992e67`). Full AG-01..AG-10 closure remains OPEN.**
 
 
 ## 2026-10-17 — AG-01 dedicated run #5 result
