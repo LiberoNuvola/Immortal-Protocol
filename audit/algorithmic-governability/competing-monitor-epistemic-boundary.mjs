@@ -93,7 +93,26 @@ const admissibleSelection = Object.freeze({
   source: 'predeclared-contract',
 })
 
+const authorizeSelection = (candidate, declaredContract) => {
+  if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate) ||
+      declaredContract === null || typeof declaredContract !== 'object' || Array.isArray(declaredContract)) {
+    return 'UNVERIFIABLE'
+  }
+  if (candidate.selector !== declaredContract.metricSelector ||
+      candidate.authority !== declaredContract.authority ||
+      candidate.source !== 'predeclared-contract') {
+    return 'REJECTED'
+  }
+  return 'AUTHORIZED'
+}
+
 assert(admissibleSelection.authority === contract.authority, 'only the predeclared contract supplies normative selector authority')
 assert(admissibleSelection.source === 'predeclared-contract', 'normative selection remains independent of monitor output')
+assert(authorizeSelection(admissibleSelection, contract) === 'AUTHORIZED', 'predeclared selector candidate is authorized')
+assert(authorizeSelection(attemptedPromotion, contract) === 'REJECTED', 'result-dependent selector/authority promotion is actively rejected')
+for (const malformed of [null, undefined, true, 1, 'selection', []]) {
+  assert(authorizeSelection(malformed, contract) === 'UNVERIFIABLE', 'malformed selector candidate fails closed')
+}
+assert(authorizeSelection(admissibleSelection, []) === 'UNVERIFIABLE', 'malformed predeclared contract fails closed')
 
 console.log('ALL COMPETING-MONITOR EPISTEMIC NON-SOVEREIGNTY CHECKS PASSED')
