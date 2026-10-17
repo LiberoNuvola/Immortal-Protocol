@@ -85,3 +85,119 @@ pub fn claim_state_transition_is_valid(
     pool_accounting_preserved,
   }
 }
+
+
+// Canonical synthetic Claim state used only by this pure transition test seam.
+fn claim_prize(status: immortal_reveal_status, row1_tier: Int) -> PrizeDatum {
+  PrizeDatum {
+    ticket_policy: #"a1",
+    ticket_name: #"01",
+    player_commitment: #"02",
+    price_usdm: 100,
+    commitment: #"03",
+    game_version: "classic-6-v1",
+    ticket_nonce: 7,
+    prize_amount: 200,
+    payment_policy: #"04",
+    payment_name: #"05",
+    status,
+    result: #"010203",
+    prize_tier: 3,
+    beacon_target: immortal_reveal_types.BeaconTarget {
+      network_id: 0,
+      round: 42,
+      mainchain_ref: #"010203",
+      version: #"7631",
+    },
+    beacon_status: immortal_reveal_types.BeaconPending,
+    beacon_value: #"06",
+    mc_hash: #"07",
+    materios_context: #"08",
+    prize_pool_hash: #"aa",
+    issued_at: 1_000,
+    expires_at: 9_000,
+    row1_tier,
+    row2_tier: 2,
+  }
+}
+
+fn claim_pool(liquidity: Int, liabilities: Int) -> B1PrizePoolDatum {
+  B1PrizePoolDatum {
+    total_liquidity: liquidity,
+    pending_liabilities: liabilities,
+    unresolved_reserve: 100,
+    unresolved_ticket_count: 4,
+    locked_jackpot: 50,
+    jackpot_threshold: 500,
+    suspended_classes: 0,
+    prize_hash: #"bb",
+  }
+}
+
+fn run_claim_transition(
+  next_row1_tier: Int,
+  owner_signed: Bool,
+  payout_verified: Bool,
+  value_preserved: Bool,
+  upper_bound: Option<Int>,
+  pool_inputs: Int,
+  next_liquidity: Int,
+  next_liabilities: Int,
+) -> Bool {
+  claim_state_transition_is_valid(
+    claim_prize(immortal_reveal_types.Revealed, 1),
+    claim_prize(immortal_reveal_types.Claimed, next_row1_tier),
+    claim_pool(10_000, 200),
+    claim_pool(next_liquidity, next_liabilities),
+    #"bb",
+    #"aa",
+    upper_bound,
+    owner_signed,
+    payout_verified,
+    value_preserved,
+    1,
+    pool_inputs,
+    1,
+    1,
+  )
+}
+
+test claim_accepts_exact_state_and_accounting_transition() {
+  run_claim_transition(1, True, True, True, Some(9_000), 1, 9_800, 0)
+}
+
+test claim_rejects_missing_owner_signature() {
+  !run_claim_transition(1, False, True, True, Some(9_000), 1, 9_800, 0)
+}
+
+test claim_rejects_unqualified_or_inexact_settlement() {
+  !run_claim_transition(1, True, False, True, Some(9_000), 1, 9_800, 0)
+}
+
+test claim_rejects_changed_prize_value() {
+  !run_claim_transition(1, True, True, False, Some(9_000), 1, 9_800, 0)
+}
+
+test claim_rejects_expiry_after_deadline() {
+  !run_claim_transition(1, True, True, True, Some(9_001), 1, 9_800, 0)
+}
+
+test claim_rejects_unbounded_validity_interval() {
+  !run_claim_transition(1, True, True, True, None, 1, 9_800, 0)
+}
+
+test claim_rejects_mutated_row_tier() {
+  !run_claim_transition(2, True, True, True, Some(9_000), 1, 9_800, 0)
+}
+
+test claim_rejects_duplicate_pool_inputs() {
+  !run_claim_transition(1, True, True, True, Some(9_000), 2, 9_800, 0)
+}
+
+test claim_rejects_wrong_pool_liquidity_delta() {
+  !run_claim_transition(1, True, True, True, Some(9_000), 1, 9_799, 0)
+}
+
+test claim_rejects_wrong_pool_liability_delta() {
+  !run_claim_transition(1, True, True, True, Some(9_000), 1, 9_800, 1)
+}
