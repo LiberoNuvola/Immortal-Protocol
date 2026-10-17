@@ -32,6 +32,7 @@ import qualified PlutusTx.AssocMap as AssocMap
 import PrizeValidator (compiledValidatorFactory)
 import Beacon (deriveBeacon, deriveSymbolsSeed, deriveTicketSeed, encodeBeaconTarget, field, playerCommitment, ticketCommitment)
 import GameRules (classifyRowTier, classifyTier, defaultPrizeTable, generateSymbols, prizeAmountForTier, rowOutcomeIndex, rowPayoutTotal)
+import Data.List (intercalate)
 import System.Environment (getArgs)
 import Types
   ( BeaconStatus (..)
@@ -477,6 +478,198 @@ validatorOutcomes =
     , validatorOutcome "pool_script_hash_binding_rejected" False winningSecret 9000 winInput winOutput winPoolBefore badPoolHashAfter 1 1 1 True
     ]
 
+-- ============================================================
+-- Single-fault differential mutation cases
+-- ============================================================
+--
+-- Each case starts from a canonical scenario (valid Reveal), applies exactly
+-- one typed change, and is evaluated by the compiled Plutus V2 validator on the
+-- same synthetic context as the cases above. The JSON carries the COMPLETE
+-- mutated datum/pool snapshots plus the CEK decision, so the Aiken generator
+-- never re-applies mutation semantics: it consumes the same data.
+--
+-- "characterization" marks cases whose expected decision documents what the
+-- current validator does (not what the specification necessarily requires).
+-- They exist so that any Haskell/Aiken divergence is visible; they are not a
+-- statement that the behaviour is desirable.
+
+data MutationCase = MutationCase
+  { mutName :: String
+  , mutGroup :: String
+  , mutExpectedAccepted :: Bool
+  , mutCharacterization :: Bool
+  , mutSecret :: [Integer]
+  , mutUpperBound :: Integer
+  , mutInput :: PrizeDatum
+  , mutOutput :: PrizeDatum
+  , mutPoolBefore :: B1PrizePoolDatum
+  , mutPoolAfter :: B1PrizePoolDatum
+  }
+
+appendOneByte :: Builtins.BuiltinByteString -> Builtins.BuiltinByteString
+appendOneByte b = Builtins.appendByteString b (rawBytes [1])
+
+-- First secret of each distinct (row1Tier,row2Tier) outcome reachable by the
+-- canonical scenario, so that positive cases exercise every tier pair found.
+distinctTierSecrets :: [([Integer], Integer, Integer)]
+distinctTierSecrets = go [] [0 .. 255]
+  where
+    go _ [] = []
+    go seen (first : rest) =
+      let secret = [first, 187, 204, 221]
+          (_, _, _, _, _, r1, r2) = scenarioForSecret secret
+      in if (r1, r2) `elem` seen
+           then go seen rest
+           else (secret, r1, r2) : go ((r1, r2) : seen) rest
+
+mutationCases :: [MutationCase]
+mutationCases =
+  let
+    (winInput, winOutput, winBefore, winAfter, _, _, _) = scenarioForSecret winningSecret
+    base name group expected =
+      MutationCase name group expected False winningSecret 9000 winInput winOutput winBefore winAfter
+    outputCase name f = (base ("output_" <> name) "output_field" False) { mutOutput = f winOutput }
+    inputCase name f = (base ("input_" <> name) "input_field" False) { mutInput = f winInput }
+    poolAfterCase name expected f =
+      (base ("pool_after_" <> name) "pool_after" expected) { mutPoolAfter = f winAfter }
+    characterize c = c { mutCharacterization = True }
+    tgt = pdBeaconTarget
+
+    outputCases =
+      [ outputCase "ticket_policy" (\d -> d { pdTicketPolicy = appendOneByte (pdTicketPolicy d) })
+      , outputCase "ticket_name" (\d -> d { pdTicketName = appendOneByte (pdTicketName d) })
+      , outputCase "player_commitment" (\d -> d { pdPlayerCommitment = appendOneByte (pdPlayerCommitment d) })
+      , outputCase "price_usdm" (\d -> d { pdPriceUsdm = pdPriceUsdm d + 1 })
+      , outputCase "commitment" (\d -> d { pdCommitment = appendOneByte (pdCommitment d) })
+      , outputCase "game_version" (\d -> d { pdGameVersion = appendOneByte (pdGameVersion d) })
+      , outputCase "ticket_nonce" (\d -> d { pdTicketNonce = pdTicketNonce d + 1 })
+      , outputCase "prize_amount" (\d -> d { pdPrizeAmount = pdPrizeAmount d + 1 })
+      , outputCase "payment_policy" (\d -> d { pdPaymentPolicy = appendOneByte (pdPaymentPolicy d) })
+      , outputCase "payment_name" (\d -> d { pdPaymentName = appendOneByte (pdPaymentName d) })
+      , outputCase "status_stays_pending" (\d -> d { pdStatus = Pending })
+      , outputCase "status_claimed" (\d -> d { pdStatus = Claimed })
+      , outputCase "result" (\d -> d { pdResult = appendOneByte (pdResult d) })
+      , outputCase "prize_tier" (\d -> d { pdPrizeTier = pdPrizeTier d + 1 })
+      , outputCase "target_network_id" (\d -> d { pdBeaconTarget = (tgt d) { btNetworkId = btNetworkId (tgt d) + 1 } })
+      , outputCase "target_round" (\d -> d { pdBeaconTarget = (tgt d) { btRound = btRound (tgt d) + 1 } })
+      , outputCase "target_mainchain_ref" (\d -> d { pdBeaconTarget = (tgt d) { btMainchainRef = appendOneByte (btMainchainRef (tgt d)) } })
+      , outputCase "target_version" (\d -> d { pdBeaconTarget = (tgt d) { btVersion = appendOneByte (btVersion (tgt d)) } })
+      , outputCase "beacon_status_pending" (\d -> d { pdBeaconStatus = BeaconPending })
+      , outputCase "beacon_value" (\d -> d { pdBeaconValue = appendOneByte (pdBeaconValue d) })
+      , outputCase "mc_hash" (\d -> d { pdMcHash = appendOneByte (pdMcHash d) })
+      , outputCase "materios_context" (\d -> d { pdMateriosContext = appendOneByte (pdMateriosContext d) })
+      , outputCase "prize_pool_hash" (\d -> d { pdPrizePoolHash = appendOneByte (pdPrizePoolHash d) })
+      , outputCase "issued_at" (\d -> d { pdIssuedAt = pdIssuedAt d + 1 })
+      , outputCase "expires_at" (\d -> d { pdExpiresAt = pdExpiresAt d + 1 })
+      , outputCase "row1_tier" (\d -> d { pdRow1Tier = pdRow1Tier d + 1 })
+      , outputCase "row2_tier" (\d -> d { pdRow2Tier = pdRow2Tier d + 1 })
+      ]
+
+    inputCases =
+      [ inputCase "already_revealed" (\d -> d { pdStatus = Revealed })
+      , inputCase "beacon_pending" (\d -> d { pdBeaconStatus = BeaconPending })
+      , inputCase "beacon_empty" (\d -> d { pdBeaconValue = Builtins.emptyByteString })
+      , inputCase "beacon_not_rederivable" (\d -> d { pdBeaconValue = appendOneByte (pdBeaconValue d) })
+      , inputCase "ticket_commitment" (\d -> d { pdCommitment = appendOneByte (pdCommitment d) })
+      , inputCase "player_commitment" (\d -> d { pdPlayerCommitment = appendOneByte (pdPlayerCommitment d) })
+      ]
+
+    poolAfterCases =
+      [ poolAfterCase "total_liquidity_changed" False (\p -> p { ppTotalLiquidity = ppTotalLiquidity p + 1 })
+      , poolAfterCase "liabilities_short_by_one" False (\p -> p { ppPendingLiabilities = ppPendingLiabilities p - 1 })
+      , poolAfterCase "reserve_not_decreased" False (\p -> p { ppUnresolvedReserve = ppUnresolvedReserve winBefore })
+      , poolAfterCase "reserve_increased" False (\p -> p { ppUnresolvedReserve = ppUnresolvedReserve winBefore + 1 })
+      , poolAfterCase "ticket_count_unchanged" False (\p -> p { ppUnresolvedTicketCount = ppUnresolvedTicketCount winBefore })
+      , poolAfterCase "prize_hash_other" False (\p -> p { ppPrizeHash = ScriptHash (rawBytes [99]) })
+      -- Characterization: validateReveal does not constrain these pool fields
+      -- (validateExpire does). The pool validator may constrain them; unverified.
+      , characterize (poolAfterCase "locked_jackpot_changed" True (\p -> p { ppLockedJackpot = ppLockedJackpot p + 1 }))
+      , characterize (poolAfterCase "jackpot_threshold_changed" True (\p -> p { ppJackpotThreshold = ppJackpotThreshold p + 1 }))
+      , characterize (poolAfterCase "suspended_classes_changed" True (\p -> p { ppSuspendedClasses = ppSuspendedClasses p + 1 }))
+      ]
+
+    -- Payout must be affordable: shrink total liquidity (before and after, so
+    -- the liquidity-unchanged rule is not the one under test) until the
+    -- effective pool is zero while the winning payout is positive.
+    exhaustedLiquidity =
+      let l = ppPendingLiabilities winBefore + ppUnresolvedReserve winBefore + ppLockedJackpot winBefore
+      in (base "pool_effective_liquidity_exhausted" "pool_before" False)
+           { mutPoolBefore = winBefore { ppTotalLiquidity = l }
+           , mutPoolAfter = winAfter { ppTotalLiquidity = l }
+           }
+    inputPoolHashOther =
+      (base "pool_before_prize_hash_other" "pool_before" False)
+        { mutPoolBefore = winBefore { ppPrizeHash = ScriptHash (rawBytes [99]) } }
+
+    baselines =
+      [ base "baseline_winning_reveal" "baseline" True
+      , (base "baseline_zero_payout_reveal" "baseline" True)
+          { mutSecret = losingSecret
+          , mutInput = let (i, _, _, _, _, _, _) = scenarioForSecret losingSecret in i
+          , mutOutput = let (_, o, _, _, _, _, _) = scenarioForSecret losingSecret in o
+          , mutPoolBefore = let (_, _, b, _, _, _, _) = scenarioForSecret losingSecret in b
+          , mutPoolAfter = let (_, _, _, a, _, _, _) = scenarioForSecret losingSecret in a
+          }
+      , (base "boundary_upper_equal_expiry" "boundary" True) { mutUpperBound = 9000 }
+      , (base "boundary_upper_one_before_expiry" "boundary" True) { mutUpperBound = 8999 }
+      , (base "boundary_upper_one_after_expiry" "boundary" False) { mutUpperBound = 9001 }
+      ]
+
+    tierGrid =
+      [ MutationCase
+          ("positive_tier_pair_" <> show r1 <> "_" <> show r2) "tier_grid" True False secret 9000 i o b a
+      | (secret, r1, r2) <- distinctTierSecrets
+      , let (i, o, b, a, _, _, _) = scenarioForSecret secret
+      ]
+  in baselines ++ outputCases ++ inputCases ++ poolAfterCases
+       ++ [exhaustedLiquidity, inputPoolHashOther] ++ tierGrid
+
+mutationActualAccepted :: MutationCase -> Bool
+mutationActualAccepted c =
+  evaluateCanonicalReveal
+    (mutInput c)
+    (rawBytes (mutSecret c))
+    (makeRevealContext (mutInput c) (mutOutput c) (mutPoolBefore c) (mutPoolAfter c)
+       (mutUpperBound c) 1 1 1 True)
+
+mutationEvaluationsFixture :: Aeson.Value
+mutationEvaluationsFixture =
+  object
+    [ "schema" .= ("pre-rich-reveal-mutation-cases-v1" :: String)
+    , "engine" .= ("Plutus V2 CEK via compiledValidatorFactory" :: String)
+    , "baseOwnPrizeScriptHashHex" .= hexBuiltin (rawBytes [6])
+    , "basePoolScriptHashHex" .= hexBuiltin (rawBytes [9])
+    , "cases" .=
+        [ object
+            [ "name" .= mutName c
+            , "group" .= mutGroup c
+            , "characterization" .= mutCharacterization c
+            , "expectedAccepted" .= mutExpectedAccepted c
+            , "actualAccepted" .= mutationActualAccepted c
+            , "playerSecretHex" .= hexBuiltin (rawBytes (mutSecret c))
+            , "upperBound" .= mutUpperBound c
+            , "inputPrizeDatum" .= prizeDatumSnapshot (mutInput c)
+            , "outputPrizeDatum" .= prizeDatumSnapshot (mutOutput c)
+            , "poolBefore" .= poolDatumSnapshot (mutPoolBefore c)
+            , "poolAfter" .= poolDatumSnapshot (mutPoolAfter c)
+            ]
+        | c <- mutationCases
+        ]
+    ]
+
+-- Report every mismatch before failing, so one run lists all divergences.
+requireExpectedMutationOutcomes :: IO ()
+requireExpectedMutationOutcomes =
+  let mismatches =
+        [ mutName c <> " expected=" <> show (mutExpectedAccepted c)
+            <> " actual=" <> show (mutationActualAccepted c)
+        | c <- mutationCases
+        , mutExpectedAccepted c /= mutationActualAccepted c
+        ]
+  in if null mismatches
+       then putStrLn ("PASS canonical Plutus V2 mutation cases: " <> show (length mutationCases))
+       else fail ("FAIL canonical Plutus V2 mutation cases:\n  " <> intercalate "\n  " mismatches)
+
 validatorEvaluationsFixture :: Aeson.Value
 validatorEvaluationsFixture =
   object
@@ -568,6 +761,7 @@ main = do
           , "cryptoFixtures" .= cryptoFixtures
           , "transitionFixtures" .= transitionFixtures
           , "validatorEvaluations" .= validatorEvaluationsFixture
+          , "mutationEvaluations" .= mutationEvaluationsFixture
           , "semanticFixtures" .=
               object
                 [ "rowTierCases" .=
@@ -599,5 +793,6 @@ main = do
                 ]
           ]
   mapM_ requireExpectedValidatorOutcome validatorOutcomes
+  requireExpectedMutationOutcomes
   BSL.writeFile outputPath (Aeson.encode fixture <> "\n")
   putStrLn ("Wrote canonical Haskell Plutus Data fixtures: " <> outputPath)
