@@ -9,7 +9,15 @@
 
 const HEX32 = /^[0-9a-fA-F]{64}$/
 
-function bindIntentIdentities({ immortalIntentFingerprint, moriartyProgramFingerprint, actionFingerprint, admissionDecisionReference, action }) {
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+function bindIntentIdentities(input) {
+  if (!isRecord(input)) throw new Error('Intent identity binding input must be a record')
+  const { immortalIntentFingerprint, moriartyProgramFingerprint, actionFingerprint, admissionDecisionReference, action } = input
   if (!HEX32.test(immortalIntentFingerprint)) {
     throw new Error('IMMORTAL intent fingerprint must be a 32-byte digest')
   }
@@ -82,5 +90,21 @@ try {
   rejected = true
 }
 assert(rejected, 'Missing admission reference cannot cross the binding boundary')
+
+for (const malformed of [null, undefined, 'input', 7, [], Object.assign([], {
+  immortalIntentFingerprint: '11'.repeat(32),
+  moriartyProgramFingerprint: '22'.repeat(32),
+  actionFingerprint: '33'.repeat(32),
+  admissionDecisionReference: 'admission:example',
+  action: 'Issue',
+})]) {
+  rejected = false
+  try {
+    bindIntentIdentities(malformed)
+  } catch (error) {
+    rejected = error instanceof Error && error.message === 'Intent identity binding input must be a record'
+  }
+  assert(rejected, 'Malformed identity binding container is rejected explicitly')
+}
 
 console.log('MRY-2/MRY-3 Intent identity binding boundary: PASS')
