@@ -131,6 +131,20 @@ const wallet = JSON.parse(
 )
 const provider = new Blockfrost(API, '')
 
+// Opt-in diagnostic-only construction allowance. The active node limit is captured
+// unchanged; this mode may serialize an oversized candidate for inspection but
+// exits before signing or submission. It never changes the ledger's protocol rules.
+const claimReferenceDiagnostic = process.env.CLAIM_REFERENCE_DIAGNOSTIC === '1'
+const getActiveProtocolParameters = provider.getProtocolParameters.bind(provider)
+let activeProtocolParameters: any = null
+provider.getProtocolParameters = async (...args: any[]) => {
+  const params = await getActiveProtocolParameters(...args as [])
+  activeProtocolParameters = params
+  return claimReferenceDiagnostic
+    ? { ...params, maxTxSize: Math.max(Number(params.maxTxSize ?? params.max_tx_size ?? 0), 30_000) }
+    : params
+}
+
 // Yaci Store exposes the Blockfrost-compatible JSON evaluator, while the
 // pinned Lucid Evolution provider needs evaluateTx supplied explicitly.
 // Diagnostics only: tx shape and redeemer ExUnits, to compare evaluated vs final vs submitted tx.
@@ -1009,6 +1023,57 @@ async function buildClaimTx(variant: ClaimVariant) {
     .validFrom(latestBlockTimeMs + 1_000)
     .validTo(latestBlockTimeMs + 120_000)
     .complete({ localUPLCEval: false })
+}
+
+// Opt-in Claim CBOR diagnosis. The raised maxTxSize above is construction-only:
+// this path never signs, submits, or waits for the candidate transaction.
+if (claimReferenceDiagnostic) {
+  const diagnosticTx = await buildClaimTx({ label: 'reference-diagnostic' })
+  const cbor = diagnosticTx.toCBOR()
+  const parsed = CML.Transaction.from_cbor_hex(cbor)
+  const body: any = parsed.body()
+  const witness: any = parsed.witness_set()
+  const scriptsByVersion = {
+    plutusV1: witness.plutus_v1_scripts()?.len() ?? 0,
+    plutusV2: witness.plutus_v2_scripts()?.len() ?? 0,
+    plutusV3: witness.plutus_v3_scripts()?.len() ?? 0,
+  }
+  const refs: string[] = []
+  const referenceInputs = body.reference_inputs?.()
+  if (referenceInputs) {
+    for (let i = 0; i < referenceInputs.len(); i++) {
+      const input = referenceInputs.get(i)
+      refs.push(input.transaction_id().to_hex() + '#' + input.index())
+    }
+  }
+  const spendingInputs: string[] = []
+  const inputs = body.inputs()
+  for (let i = 0; i < inputs.len(); i++) {
+    const input = inputs.get(i)
+    spendingInputs.push(input.transaction_id().to_hex() + '#' + input.index())
+  }
+  const bytes = Buffer.from(cbor, 'hex')
+  writeFileSync('audit/yaci-evidence/claim-tx-prebuilt-diagnostic.cbor', bytes)
+  const summary = {
+    claimDiag: 'reference-script-final-cbor',
+    diagnosticOnly: true,
+    signed: false,
+    submitted: false,
+    actualProtocolMaxTxSize: Number(activeProtocolParameters?.maxTxSize ?? activeProtocolParameters?.max_tx_size ?? 16_384),
+    constructionMaxTxSize: 30_000,
+    serializedBytes: bytes.length,
+    overActualLimit: bytes.length > Number(activeProtocolParameters?.maxTxSize ?? activeProtocolParameters?.max_tx_size ?? 16_384),
+    referenceInputs: refs,
+    spendingInputs,
+    embeddedPlutusScripts: scriptsByVersion,
+    embeddedPlutusScriptTotal: scriptsByVersion.plutusV1 + scriptsByVersion.plutusV2 + scriptsByVersion.plutusV3,
+    redeemers: describeTx(cbor).redeemers,
+    txSha256: describeTx(cbor).txSha256,
+    bodyHash: describeTx(cbor).bodyHash,
+    cborArtifact: 'audit/yaci-evidence/claim-tx-prebuilt-diagnostic.cbor',
+  }
+  console.log('[CLAIM-DIAGNOSTIC-ONLY] ' + JSON.stringify(summary))
+  process.exit(0)
 }
 
 const negativeResults: Array<Record<string, unknown>> = []
