@@ -49,6 +49,12 @@ assert(
 const cases = [
   ['malformed pre-state digest', { canonicalPreState: { fingerprint: 'bad' } }],
   ['missing action-parameter binding', { actionParameters: undefined }],
+  ['missing candidate-post-state binding', { candidatePostState: undefined }],
+  ['missing adapter-input binding', { adapterInput: undefined }],
+  ['missing ledger transaction identity', { ledgerState: { transactionHash: undefined } }],
+  ['malformed ledger transaction digest', { ledgerState: { transactionHash: 'xyz' } }],
+  ['missing provenance source commit', { evidenceProvenance: { observationRef: 'obs:issue-001' } }],
+  ['malformed provenance source commit digest', { evidenceProvenance: { sourceCommit: 'not-a-digest', observationRef: 'obs:issue-001' } }],
   ['malformed post-state digest', { postState: { fingerprint: 'bad' } }],
   ['missing provenance observation', { evidenceProvenance: { sourceCommit: '77'.repeat(32) } }],
   ['blank provenance observation', { evidenceProvenance: { sourceCommit: '77'.repeat(32), observationRef: '   ' } }],
