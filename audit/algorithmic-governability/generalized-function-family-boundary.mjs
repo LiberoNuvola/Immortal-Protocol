@@ -182,7 +182,9 @@ assert(selfExpansion.boundContract !== fee.boundContract, 'self-expanded bounds 
  * never mutates canonical state.
  */
 const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => {
-  if (!certifiedState || certifiedState.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  if (!hasOwnDataProperties(certifiedState, ['domain']) ||
+      certifiedState.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  if (!Array.isArray(candidates)) return { status: 'UNVERIFIABLE' }
   return Object.freeze({
     status: 'CANDIDATE_SET',
     family: boundary.domain,
@@ -230,14 +232,41 @@ const certifyCandidate = (boundary, candidate) => {
   })
 }
 
-const adopt = (certifiedResult, authorization) => {
-  if (certifiedResult?.status !== 'ADMISSIBLE') return { status: 'UNVERIFIABLE' }
+const adopt = (certifiedResult, authorization, expectedBoundary) => {
+  const resultFields = ['status', 'family', 'ruleVersion', 'evidenceContract', 'boundContract', 'value']
+  const boundaryFields = ['domain', 'ruleVersion', 'evidenceContract', 'boundContract']
+  if (!hasOwnDataProperties(certifiedResult, resultFields) ||
+      !hasOwnDataProperties(expectedBoundary, boundaryFields)) return { status: 'UNVERIFIABLE' }
   if (authorization !== 'existing-authorized-path') return { status: 'UNVERIFIABLE' }
+  if (certifiedResult.status !== 'ADMISSIBLE' ||
+      certifiedResult.family !== expectedBoundary.domain ||
+      certifiedResult.ruleVersion !== expectedBoundary.ruleVersion ||
+      certifiedResult.evidenceContract !== expectedBoundary.evidenceContract ||
+      certifiedResult.boundContract !== expectedBoundary.boundContract ||
+      certifiedResult.value === undefined || certifiedResult.value === null) {
+    return { status: 'UNVERIFIABLE' }
+  }
   return Object.freeze({ status: 'ADOPTED', semanticResult: certifiedResult })
 }
 
 const search = explore(reward, { domain: 'reward' }, ['candidate-1', 'candidate-2'], 'PARTIAL')
 assert(search.coverage === 'PARTIAL', 'partial search coverage is explicit')
+
+let exploreGetterCalled = false
+const accessorCertifiedState = {}
+Object.defineProperty(accessorCertifiedState, 'domain', {
+  enumerable: true,
+  get() {
+    exploreGetterCalled = true
+    return 'reward'
+  },
+})
+assert(explore(reward, accessorCertifiedState, []).status === 'UNVERIFIABLE',
+  'accessor-backed exploration state cannot enter candidate discovery')
+assert(exploreGetterCalled === false,
+  'exploration state validation does not execute accessors')
+assert(explore(reward, { domain: 'reward' }, null).status === 'UNVERIFIABLE',
+  'non-array candidate collections cannot enter exploration')
 assert(search.candidates.length === 2, 'candidate set records the portion actually explored')
 const searchClaim = Object.freeze({ ...search, coverage: 'COMPLETE' })
 assert(searchClaim.coverage !== search.coverage, 'complete coverage cannot be inherited from a partial search')
@@ -285,10 +314,29 @@ const certified = certifyCandidate(reward, {
   withinDeclaredBounds: true,
   value: 7,
 })
-assert(adopt(certified, 'existing-authorized-path').status === 'ADOPTED',
-  'adoption requires an existing authorized path')
-assert(adopt(certified, 'algorithm-decides').status === 'UNVERIFIABLE',
+assert(adopt(certified, 'existing-authorized-path', reward).status === 'ADOPTED',
+  'adoption requires an existing authorized path and matching family identity')
+assert(adopt(certified, 'algorithm-decides', reward).status === 'UNVERIFIABLE',
   'the derivation engine cannot self-authorize adoption')
+assert(adopt({ status: 'ADMISSIBLE' }, 'existing-authorized-path', reward).status === 'UNVERIFIABLE',
+  'status alone cannot authorize adoption without a complete certified result')
+assert(adopt({ ...certified, family: 'fee' }, 'existing-authorized-path', reward).status === 'UNVERIFIABLE',
+  'adoption rejects a certified result from another family')
+assert(adopt({ ...certified, ruleVersion: 'other-v2' }, 'existing-authorized-path', reward).status === 'UNVERIFIABLE',
+  'adoption rejects a result bound to another rule version')
+let adoptStatusGetterCalled = false
+const accessorAdoptResult = { ...certified }
+Object.defineProperty(accessorAdoptResult, 'status', {
+  enumerable: true,
+  get() {
+    adoptStatusGetterCalled = true
+    return 'ADMISSIBLE'
+  },
+})
+assert(adopt(accessorAdoptResult, 'existing-authorized-path', reward).status === 'UNVERIFIABLE',
+  'accessor-backed certification cannot pass adoption')
+assert(adoptStatusGetterCalled === false,
+  'adoption validation does not execute certification accessors')
 assert(
   certifyCandidate(reward, {
     domain: 'reward',
