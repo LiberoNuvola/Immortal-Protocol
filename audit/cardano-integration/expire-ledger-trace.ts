@@ -25,9 +25,9 @@ import {
   type UTxO,
 } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 
-import { buildScriptsFromLucid } from '../../src/loadValidator'
+import { buildB1PrizePool, buildScriptsFromLucid } from '../../src/loadValidator'
 import {
   assertCanonicalTransitionBinding,
   type CanonicalTransitionEvidence,
@@ -392,6 +392,59 @@ const scripts = buildScriptsFromLucid(
   testPolicyId,
   poolTokenNameHex,
 )
+
+/**
+ * Select the Aiken Plutus V3 Expire implementation only when explicitly enabled
+ * by the local integration workflow. The existing B1PrizePool validator remains
+ * Plutus V2 and is rebound to the selected Prize validator hash.
+ */
+const aikenExpireV3 = process.env.IMMORTAL_EXPIRE_AIKEN_V3 === '1'
+if (aikenExpireV3) {
+  const blueprint = JSON.parse(readFileSync('poc/aiken-reveal-parity/plutus.json', 'utf8')) as {
+    preamble?: { plutusVersion?: string }
+    validators?: Array<{ title?: string; compiledCode?: string; hash?: string }>
+  }
+  if (blueprint.preamble?.plutusVersion !== 'v3') {
+    throw new Error('Aiken Expire requires a Plutus V3 blueprint')
+  }
+  const matches = (blueprint.validators ?? []).filter(v => v.title === 'reveal.pre_rich_reveal.spend')
+  if (matches.length !== 1 || !matches[0].compiledCode || !matches[0].hash) {
+    throw new Error('Expected one compiled Aiken Prize validator for Expire')
+  }
+  const aikenPrizeScript = { type: 'PlutusV3', script: matches[0].compiledCode } as Script
+  const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
+  if (aikenPrizeHash !== matches[0].hash.toLowerCase()) {
+    throw new Error('Aiken blueprint and Lucid V3 Expire hashes do not match')
+  }
+  const aikenBoundPoolScript = buildB1PrizePool(
+    aikenPrizeHash,
+    keyHash,
+    testPolicyId,
+    ORACLE_STATE_TOKEN_NAME_HEX,
+    testPolicyId,
+    poolTokenNameHex,
+  ) as unknown as Script
+  const aikenBoundPoolHash = validatorToScriptHash(aikenBoundPoolScript).toLowerCase()
+  Object.assign(scripts, {
+    prizeValidator: aikenPrizeScript,
+    prizeHash: aikenPrizeHash,
+    b1PrizePool: aikenBoundPoolScript,
+    b1PrizePoolHash: aikenBoundPoolHash,
+    prizeAddress: validatorToAddress('Preprod', aikenPrizeScript),
+    b1PrizePoolAddress: validatorToAddress('Preprod', aikenBoundPoolScript),
+  })
+  console.log(JSON.stringify({
+    aikenExpireDiag: 'aiken-v3-selected',
+    plutusVersion: 'v3',
+    aikenPrizeHash,
+    aikenPrizeScriptBytes: Buffer.from(aikenPrizeScript.script, 'hex').length,
+    boundPoolHash: aikenBoundPoolHash,
+    boundPoolScriptType: aikenBoundPoolScript.type,
+    boundPoolScriptBytes: Buffer.from(aikenBoundPoolScript.script, 'hex').length,
+    transactionSizeLimitBytes: 16384,
+    localOnly: true,
+  }, null, 2))
+}
 
 if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
