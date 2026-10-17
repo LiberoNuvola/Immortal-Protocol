@@ -10,6 +10,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/**"
+      - "poc/aiken-reveal-parity/**"
       - "src/**"
       - "plutus/**"
       - "Adapter/**"
@@ -305,6 +306,34 @@ jobs:
             echo "epoch_latest=$(curl --fail --silent http://localhost:8080/api/v1/epochs/latest)"
           } | tee audit/yaci-evidence/yaci-devkit-info.txt
 
+      # Isolated candidate only: build and publish the Aiken Plutus V3 Reveal
+      # script on the local Yaci Conway ledger. This does not replace the Haskell
+      # Plutus V2 validator or modify the existing V3 carrier.
+      - name: Install pinned Aiken for isolated Reveal candidate
+        id: aiken-setup
+        uses: aiken-lang/setup-aiken@v1
+        continue-on-error: true
+        with:
+          version: v1.1.22
+
+      - name: Build isolated Aiken Reveal V3 candidate
+        id: aiken-reveal-build
+        if: always() && steps.aiken-setup.outcome == 'success'
+        continue-on-error: true
+        working-directory: poc/aiken-reveal-parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          aiken --version
+          aiken build
+          test -s plutus.json
+
+      - name: Publish Aiken V3 Reveal reference script on local Yaci
+        id: aiken_ref_publish
+        if: always() && steps.aiken-reveal-build.outcome == 'success'
+        continue-on-error: true
+        run: node --import tsx/esm audit/cardano-integration/aiken-reference-script-publication-probe.ts
+
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
 
@@ -393,6 +422,9 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           V3_CARRIER_OUTCOME: ${{ steps.jev_v3_carrier.outcome || 'unknown' }}
           REVEAL_OUTCOME: ${{ steps.jev_reveal.outcome || 'unknown' }}
+          AIKEN_SETUP_OUTCOME: ${{ steps.aiken-setup.outcome || 'unknown' }}
+          AIKEN_BUILD_OUTCOME: ${{ steps.aiken-reveal-build.outcome || 'unknown' }}
+          AIKEN_PUBLICATION_OUTCOME: ${{ steps.aiken_ref_publish.outcome || 'unknown' }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
@@ -422,6 +454,31 @@ jobs:
               stepOutcome: outcome(process.env.REVEAL_OUTCOME),
               evidenceRefs,
               limitations: ['This step outcome does not independently establish root cause or authorize a protocol-wide GREEN declaration.'],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.TOOLCHAIN_SETUP',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Install pinned Aiken toolchain for isolated Reveal candidate',
+              stepOutcome: outcome(process.env.AIKEN_SETUP_OUTCOME),
+              evidenceRefs,
+              limitations: ['This diagnostic candidate is isolated and does not replace the canonical Haskell Plutus V2 validator or alter the existing V3 carrier.'],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.CANDIDATE_BUILD',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Build isolated Aiken Plutus V3 Reveal candidate',
+              stepOutcome: outcome(process.env.AIKEN_BUILD_OUTCOME),
+              evidenceRefs,
+              limitations: ['Successful compilation is not proof of Haskell parity, native-ledger spend acceptance, or protocol deployment readiness.'],
+            },
+            {
+              checkId: 'AIKEN.REVEAL.V3.REFERENCE_SCRIPT_PUBLICATION',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Publish Aiken Reveal V3 reference script on local Yaci Conway ledger',
+              stepOutcome: outcome(process.env.AIKEN_PUBLICATION_OUTCOME),
+              evidenceRefs,
+              limitations: [
+                'This checks only the publication transaction, script binding, and size on the local Yaci Conway devnet.',
+                'It does not execute Reveal or establish compatibility with the canonical production Plutus V2 validator.',
+                'The publication evidence is not Preprod/mainnet qualification and does not authorize deployment.',
+              ],
             },
           ];
           await fs.mkdir('audit/yaci-evidence', { recursive: true });
