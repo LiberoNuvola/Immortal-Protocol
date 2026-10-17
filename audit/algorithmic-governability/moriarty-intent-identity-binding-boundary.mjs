@@ -15,8 +15,19 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataProperties = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
 function bindIntentIdentities(input) {
-  if (!isRecord(input)) throw new Error('Intent identity binding input must be a record')
+  const requiredFields = [
+    'immortalIntentFingerprint', 'moriartyProgramFingerprint', 'actionFingerprint',
+    'admissionDecisionReference', 'action',
+  ]
+  if (!hasOwnDataProperties(input, requiredFields)) {
+    throw new Error('Intent identity binding input must contain own data properties')
+  }
   const { immortalIntentFingerprint, moriartyProgramFingerprint, actionFingerprint, admissionDecisionReference, action } = input
   if (!HEX32.test(immortalIntentFingerprint)) {
     throw new Error('IMMORTAL intent fingerprint must be a 32-byte digest')
@@ -106,5 +117,46 @@ for (const malformed of [null, undefined, 'input', 7, [], Object.assign([], {
   }
   assert(rejected, 'Malformed identity binding container is rejected explicitly')
 }
+
+let identityGetterCalled = false
+const accessorIdentity = {
+  immortalIntentFingerprint: '11'.repeat(32),
+  moriartyProgramFingerprint: '22'.repeat(32),
+  actionFingerprint: '33'.repeat(32),
+  admissionDecisionReference: 'admission:example',
+  action: 'Issue',
+}
+Object.defineProperty(accessorIdentity, 'actionFingerprint', {
+  enumerable: true,
+  get() {
+    identityGetterCalled = true
+    return '33'.repeat(32)
+  },
+})
+rejected = false
+try {
+  bindIntentIdentities(accessorIdentity)
+} catch (error) {
+  rejected = error instanceof Error &&
+    error.message === 'Intent identity binding input must contain own data properties'
+}
+assert(rejected, 'Accessor-backed identity fields are rejected')
+assert(identityGetterCalled === false, 'Identity binding does not execute input accessors')
+
+const inheritedIdentity = Object.create({
+  immortalIntentFingerprint: '11'.repeat(32),
+  moriartyProgramFingerprint: '22'.repeat(32),
+  actionFingerprint: '33'.repeat(32),
+  admissionDecisionReference: 'admission:example',
+  action: 'Issue',
+})
+rejected = false
+try {
+  bindIntentIdentities(inheritedIdentity)
+} catch (error) {
+  rejected = error instanceof Error &&
+    error.message === 'Intent identity binding input must contain own data properties'
+}
+assert(rejected, 'Inherited identity fields cannot cross the binding boundary')
 
 console.log('MRY-2/MRY-3 Intent identity binding boundary: PASS')
