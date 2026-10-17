@@ -10,6 +10,12 @@ const assert = (condition, message) => {
 
 const isDigest = (value) => typeof value === 'string' && /^[0-9a-fA-F]{64}$/.test(value)
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const readRepoFile = (relativePath) => readFileSync(resolve(process.cwd(), relativePath), 'utf8')
 
 const withoutComments = (source) =>
@@ -18,7 +24,8 @@ const withoutComments = (source) =>
     .replace(/\/\/.*$/gm, '')
 
 const prepare = (intent, admission, circuitName = 'issue') => {
-  if (!admission || admission.admitted !== true) return 'UNVERIFIABLE'
+  if (!isRecord(intent) || !isRecord(admission)) return 'UNVERIFIABLE'
+  if (admission.admitted !== true) return 'UNVERIFIABLE'
   if (admission.actionClass !== intent.action) return 'REJECTED'
   if (typeof admission.decisionReference !== 'string' || !admission.decisionReference.trim()) return 'UNVERIFIABLE'
   if (!isDigest(admission.stateHash) || !isDigest(admission.actionFingerprint)) return 'UNVERIFIABLE'
@@ -55,6 +62,12 @@ assert(envelope.privateWitnessRefs.length === 0, 'private witness references rem
 assert(envelope.circuitName === 'issue', 'execution target is explicit')
 
 assert(prepare(intent, undefined) === 'UNVERIFIABLE', 'missing admission fails closed')
+for (const malformed of [null, undefined, 'intent', 7, [], Object.assign([], intent)]) {
+  assert(prepare(malformed, admission) === 'UNVERIFIABLE', 'malformed Intent container fails closed')
+}
+for (const malformed of [null, undefined, 'admission', 7, [], Object.assign([], admission)]) {
+  assert(prepare(intent, malformed) === 'UNVERIFIABLE', 'malformed admission container fails closed')
+}
 assert(
   prepare(Object.freeze({ ...intent, action: 'Reveal' }), admission) === 'REJECTED',
   'Intent/admission action mismatch is rejected',
