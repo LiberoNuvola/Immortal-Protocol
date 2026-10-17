@@ -306,6 +306,19 @@ for (const [name, item] of cases) {
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.drop(tx.inputs, 1))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_duplicate_own_input',
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.concat(tx.inputs, list.take(tx.inputs, 1)))\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_changed_prize_value',
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_outputs(tx, ['
+      + prefix + '_prize_output(' + prefix + '_output_datum(), assets.from_lovelace(5_000_001)), '
+      + prefix + '_pool_output(' + prefix + '_pool_after(), assets.from_lovelace(10_000_000))])\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_changed_prize_result',
+    '{\n  let tx = ' + prefix + '_tx()\n  let changed_datum = reveal_types.PrizeDatum { ..' + prefix + '_output_datum(), result: #"" }\n  let damaged = context_tx_with_outputs(tx, ['
+      + prefix + '_prize_output(changed_datum, assets.from_lovelace(5_000_000)), '
+      + prefix + '_pool_output(' + prefix + '_pool_after(), assets.from_lovelace(10_000_000))])\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
 }
 
 let source = await fs.readFile(outputPath, 'utf8');
@@ -344,4 +357,4 @@ if (source.includes('haskell_context_successful_reveal_tx()')) {
 source = source.replace(endAnchor, generatedTests.join('\n') + '\n' + endAnchor);
 source += '\n' + contextHelpers.join('\n') + '\n' + contextTests.join('\n');
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated 14 pure state-transition tests plus 18 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
+console.log('Generated 14 pure state-transition tests plus 24 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
