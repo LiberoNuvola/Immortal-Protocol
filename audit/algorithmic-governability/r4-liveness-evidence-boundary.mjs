@@ -58,10 +58,14 @@ for (const field of riskEvidenceFields) {
 const hasNonBlankString = (value) =>
   typeof value === 'string' && value.trim().length > 0
 
-const isUtcTimestamp = (value) =>
-  typeof value === 'string' &&
-  /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/.test(value) &&
-  Number.isFinite(Date.parse(value))
+const isUtcTimestamp = (value) => {
+  if (typeof value !== 'string' ||
+      !/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/.test(value)) {
+    return false
+  }
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value
+}
 
 const r4Classes = new Set(Array.from({ length: 10 }, (_, i) => `FM${i + 1}`))
 
@@ -124,6 +128,10 @@ assert(
 assert(
   validateEvidencePacket({ ...evidencePacket, observedAt: '17/10/2026 08:30' }) === 'NOT_DISCHARGED',
   'non-canonical observation timestamp leaves incident evidence incomplete',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, observedAt: '2026-02-30T08:30:00Z' }) === 'NOT_DISCHARGED',
+  'calendar-invalid UTC timestamp cannot be normalized into accepted observation evidence',
 )
 assert(
   validateEvidencePacket({ ...evidencePacket, r4Classification: 'FM11' }) === 'NOT_DISCHARGED',
