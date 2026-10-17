@@ -99,11 +99,28 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const INVALID_FIELD = Symbol('invalid-own-data-field')
+const readOwnData = (record, field) => {
+  if (!isRecord(record)) return INVALID_FIELD
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : INVALID_FIELD
+}
+
 const authorizeSelection = (candidate, declaredContract) => {
   if (!isRecord(candidate) || !isRecord(declaredContract)) return 'UNVERIFIABLE'
-  if (candidate.selector !== declaredContract.metricSelector ||
-      candidate.authority !== declaredContract.authority ||
-      candidate.source !== 'predeclared-contract') {
+  const selector = readOwnData(candidate, 'selector')
+  const authority = readOwnData(candidate, 'authority')
+  const source = readOwnData(candidate, 'source')
+  const declaredSelector = readOwnData(declaredContract, 'metricSelector')
+  const declaredAuthority = readOwnData(declaredContract, 'authority')
+  if ([selector, authority, source, declaredSelector, declaredAuthority].includes(INVALID_FIELD)) {
+    return 'UNVERIFIABLE'
+  }
+  if (selector !== declaredSelector ||
+      authority !== declaredAuthority ||
+      source !== 'predeclared-contract') {
     return 'REJECTED'
   }
   return 'AUTHORIZED'
@@ -112,6 +129,27 @@ const authorizeSelection = (candidate, declaredContract) => {
 assert(admissibleSelection.authority === contract.authority, 'only the predeclared contract supplies normative selector authority')
 assert(admissibleSelection.source === 'predeclared-contract', 'normative selection remains independent of monitor output')
 assert(authorizeSelection(admissibleSelection, contract) === 'AUTHORIZED', 'predeclared selector candidate is authorized')
+let selectionGetterCalls = 0
+const accessorSelection = { ...admissibleSelection }
+Object.defineProperty(accessorSelection, 'authority', {
+  get() { selectionGetterCalls += 1; return contract.authority },
+})
+assert(
+  authorizeSelection(accessorSelection, contract) === 'UNVERIFIABLE' && selectionGetterCalls === 0,
+  'accessor-backed selector authority fails closed without executing getters',
+)
+const accessorContract = { ...contract }
+Object.defineProperty(accessorContract, 'metricSelector', {
+  get() { selectionGetterCalls += 1; return contract.metricSelector },
+})
+assert(
+  authorizeSelection(admissibleSelection, accessorContract) === 'UNVERIFIABLE' && selectionGetterCalls === 0,
+  'accessor-backed normative selector fails closed without executing getters',
+)
+assert(
+  authorizeSelection(Object.create(admissibleSelection), contract) === 'UNVERIFIABLE',
+  'inherited selector fields cannot authorize a monitor selection',
+)
 assert(authorizeSelection(attemptedPromotion, contract) === 'REJECTED', 'result-dependent selector/authority promotion is actively rejected')
 for (const malformed of [null, undefined, true, 1, 'selection', []]) {
   assert(authorizeSelection(malformed, contract) === 'UNVERIFIABLE', 'malformed selector candidate fails closed')
