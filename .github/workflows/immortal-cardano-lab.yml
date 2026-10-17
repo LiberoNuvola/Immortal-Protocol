@@ -386,15 +386,16 @@ jobs:
 
       # Isolated Claim conformance fixture; not a production Issue-admission witness.
       - name: Execute real economic Claim transition trace
+        id: claim_trace
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
-      # If the normal Claim build is rejected by the Cardano size ceiling, rerun
-      # the same fixture in construction-only mode to emit final CBOR diagnostics.
-      # This mode never signs or submits a transaction and does not alter protocol limits.
+      # If the normal Claim build fails, rerun the same fixture construction-only
+      # to emit CBOR diagnostics. Never signs/submits; unrelated failures must
+      # not trigger this fallback.
       - name: Diagnose Claim CBOR after normal build failure
-        if: failure() && github.event.inputs.claim_reference_diagnostic != 'true'
+        if: steps.claim_trace.outcome == 'failure' && github.event.inputs.claim_reference_diagnostic != 'true'
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: "1"
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
