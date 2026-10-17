@@ -125,6 +125,8 @@ const midnightMoriartyAdapter = (result, sourceBinding) => Object.freeze({
   }),
   ruleVersion: result.ruleVersion,
   admissionDecisionReference: result.admissionDecisionReference,
+  stateHash: result.stateHash,
+  actionFingerprint: result.actionFingerprint,
   sourceBinding,
 })
 
