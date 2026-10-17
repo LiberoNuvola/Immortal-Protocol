@@ -185,13 +185,17 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
   if (!hasOwnDataProperties(certifiedState, ['domain']) ||
       certifiedState.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
   if (!Array.isArray(candidates)) return { status: 'UNVERIFIABLE' }
+  // This harness has no independently verifiable completeness witness. It may
+  // therefore emit PARTIAL coverage only; a caller-supplied label cannot prove
+  // that the entire authorized search space was explored.
+  if (coverage !== 'PARTIAL') return { status: 'UNVERIFIABLE' }
   return Object.freeze({
     status: 'CANDIDATE_SET',
     family: boundary.domain,
     ruleVersion: boundary.ruleVersion,
     evidenceContract: boundary.evidenceContract,
     candidates: Object.freeze([...candidates]),
-    coverage,
+    coverage: 'PARTIAL',
   })
 }
 
@@ -251,6 +255,10 @@ const adopt = (certifiedResult, authorization, expectedBoundary) => {
 
 const search = explore(reward, { domain: 'reward' }, ['candidate-1', 'candidate-2'], 'PARTIAL')
 assert(search.coverage === 'PARTIAL', 'partial search coverage is explicit')
+assert(explore(reward, { domain: 'reward' }, ['candidate-1'], 'COMPLETE').status === 'UNVERIFIABLE',
+  'exploration cannot self-certify complete coverage without an independent completeness witness')
+assert(explore(reward, { domain: 'reward' }, ['candidate-1'], 'PARTIAL').coverage === 'PARTIAL',
+  'exploration retains partial coverage when no completeness proof exists')
 
 let exploreGetterCalled = false
 const accessorCertifiedState = {}
