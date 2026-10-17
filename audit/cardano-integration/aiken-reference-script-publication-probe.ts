@@ -127,10 +127,19 @@ if (bodyHash !== submittedTxHash) {
 }
 await lucid.awaitTx(submittedTxHash)
 
-const candidateUtxos = await lucid.utxosAt(referenceAddress)
-const publishedUtxo = candidateUtxos.find((utxo) => utxo.txHash.toLowerCase() === submittedTxHash)
+// Yaci's transaction acceptance can precede address-UTxO indexing. Poll the
+// indexer for the exact submitted output instead of treating a short indexing
+// delay as a missing ledger output. This also gives the following smoke step
+// time to observe the wallet change output before it selects fresh inputs.
+let publishedUtxo: UTxO | undefined
+for (let attempt = 0; attempt < 30; attempt += 1) {
+  const candidateUtxos = await lucid.utxosAt(referenceAddress)
+  publishedUtxo = candidateUtxos.find((utxo) => utxo.txHash.toLowerCase() === submittedTxHash)
+  if (publishedUtxo) break
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+}
 if (!publishedUtxo) {
-  fail('Accepted Aiken reference-script transaction did not materialize its output UTxO')
+  fail('Accepted Aiken reference-script transaction output was not indexed within 30 seconds')
 }
 const boundUtxo = bindPublishedReferenceScript({
   purpose: 'PrizeValidator',
