@@ -97,28 +97,29 @@ pub fn expire_transaction_is_valid(
             when only_script_output(tx.outputs, pool_hash) is {
               Some(pool_output) ->
                 when datum_data(tx, pool_input.output) is {
-                  Some(raw_before) ->
-                    when raw_before is {
-                      before: B1PrizePoolDatum -> when datum_data(tx, pool_output) is {
-                        Some(raw_after) -> when raw_after is {
-                          after: B1PrizePoolDatum ->
-                            and {
-                              before.prize_hash == prize_hash,
-                              after.prize_hash == prize_hash,
-                              after.prize_hash == before.prize_hash,
-                              after.total_liquidity == before.total_liquidity,
-                              after.pending_liabilities == before.pending_liabilities,
-                              before.unresolved_reserve >= input_datum.price_usdm,
-                              after.unresolved_reserve == before.unresolved_reserve - input_datum.price_usdm,
-                              before.unresolved_ticket_count > 0,
-                              after.unresolved_ticket_count == before.unresolved_ticket_count - 1,
-                              after.locked_jackpot == before.locked_jackpot,
-                              after.jackpot_threshold == before.jackpot_threshold,
-                              after.suspended_classes == before.suspended_classes,
+                  Some(raw_before) -> {
+                    expect before: B1PrizePoolDatum = raw_before
+                    when datum_data(tx, pool_output) is {
+                      Some(raw_after) -> {
+                        expect after: B1PrizePoolDatum = raw_after
+                        and {
+                          before.prize_hash == prize_hash,
+                          after.prize_hash == prize_hash,
+                          after.prize_hash == before.prize_hash,
+                          after.total_liquidity == before.total_liquidity,
+                          after.pending_liabilities == before.pending_liabilities,
+                          before.unresolved_reserve >= input_datum.price_usdm,
+                          after.unresolved_reserve == before.unresolved_reserve - input_datum.price_usdm,
+                          before.unresolved_ticket_count > 0,
+                          after.unresolved_ticket_count == before.unresolved_ticket_count - 1,
+                          after.locked_jackpot == before.locked_jackpot,
+                          after.jackpot_threshold == before.jackpot_threshold,
+                          after.suspended_classes == before.suspended_classes,
                         }
                       }
                       None -> False
                     }
+                  }
                   None -> False
                 }
               None -> False
