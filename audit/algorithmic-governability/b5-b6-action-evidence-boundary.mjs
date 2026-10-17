@@ -40,11 +40,20 @@ const isPresent = (value) =>
   value !== null &&
   !(typeof value === 'string' && value.trim() === '')
 
+const ownData = (record, field) => {
+  if (!isRecord(record) || !Object.hasOwn(record, field)) return false
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return !!descriptor && Object.hasOwn(descriptor, 'value')
+}
+
 const isComplete = (action, packet) => {
   if (!Object.hasOwn(actionCatalog, action)) return false
   if (!isRecord(packet)) return false
   const required = actionCatalog[action]
-  return required.every((field) => Object.hasOwn(packet, field) && isPresent(packet[field]))
+  return required.every((field) => {
+    if (!ownData(packet, field)) return false
+    return isPresent(Object.getOwnPropertyDescriptor(packet, field).value)
+  })
 }
 
 assert(Object.keys(actionCatalog).length === 4, 'B5/B6 action catalog is exactly Issue/Reveal/Claim/Expire')
@@ -88,6 +97,14 @@ for (const [action, fields] of Object.entries(actionCatalog)) {
   const packet = Object.assign(Object.create(prototypeEvidence), completePacket(fields))
   delete packet[inheritedField]
   assert(!isComplete(action, packet), `${action}: inherited ${inheritedField} cannot satisfy required evidence`)
+
+  const accessorPacket = completePacket(fields)
+  Object.defineProperty(accessorPacket, inheritedField, {
+    enumerable: true,
+    configurable: true,
+    get: () => 'accessor-evidence',
+  })
+  assert(!isComplete(action, accessorPacket), `${action}: accessor-backed ${inheritedField} cannot satisfy required evidence`)
 }
 
 const datePacket = new Date()
