@@ -27,7 +27,14 @@ const allocate = (candidates, budget, rule) => {
   if (budget < 0n || readOwnData(rule, 'kind') !== 'declared-v1') return 'UNVERIFIABLE'
 
   const normalized = []
-  for (const candidate of candidates) {
+  // Read caller-supplied arrays by own indexed data descriptors. Do not dispatch
+  // a potentially overridden Symbol.iterator or invoke accessor-backed entries.
+  for (let index = 0; index < candidates.length; index += 1) {
+    const element = Object.getOwnPropertyDescriptor(candidates, String(index))
+    if (!element || !Object.prototype.hasOwnProperty.call(element, 'value')) {
+      return 'UNVERIFIABLE'
+    }
+    const candidate = element.value
     const id = readOwnData(candidate, 'id')
     const rank = readOwnData(candidate, 'rank')
     const requested = readOwnData(candidate, 'requested')
@@ -84,5 +91,20 @@ assert(
   allocate([Object.create({ id: 'a', rank: 1, requested: 10n })], 20n, { kind: 'declared-v1' }) === 'UNVERIFIABLE',
   'inherited candidate fields cannot enter allocation',
 )
+let iteratorCalls = 0
+const customIteratorCandidates = [{ id: 'a', rank: 1, requested: 10n }]
+Object.defineProperty(customIteratorCandidates, Symbol.iterator, {
+  value: function* () {
+    iteratorCalls += 1
+    yield { id: 'attacker', rank: 0, requested: 20n }
+  },
+})
+const customIteratorResult = allocate(customIteratorCandidates, 20n, { kind: 'declared-v1' })
+assert(customIteratorResult[0].id === 'a' && iteratorCalls === 0,
+  'allocation reads own indexed candidates without invoking a caller-supplied iterator')
+const sparseCandidates = []
+sparseCandidates.length = 1
+assert(allocate(sparseCandidates, 20n, { kind: 'declared-v1' }) === 'UNVERIFIABLE',
+  'sparse candidate arrays fail closed without iterator-based omission')
 
 console.log('ALL EXP-11 DETERMINISTIC ALLOCATION BOUNDARY CHECKS PASSED')
