@@ -88,7 +88,7 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
     'status', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract', 'adoptionPath', 'value',
   ]
   if (!hasOwnDataProperties(candidate, requiredCandidateFields)) {
-    return { ...canonicalState, adopted: null }
+    return { version: canonicalState.version, adopted: null }
   }
   const matchesBoundary =
     candidate.status === 'ADMISSIBLE' &&
@@ -164,6 +164,11 @@ assert(unrelatedGetterResult.adopted !== null,
   'valid adoption preserves its intended result when unrelated metadata exists')
 assert(unrelatedCanonicalGetterCalled === false,
   'adoption does not execute unrelated canonical-state getters while copying state')
+const malformedCandidateResult = adopt(null, canonicalWithExtraGetter, boundary('EXP-01'))
+assert(malformedCandidateResult.version === 'canonical-v1' && malformedCandidateResult.adopted === null,
+  'malformed candidate preserves canonical version without adoption')
+assert(unrelatedCanonicalGetterCalled === false,
+  'malformed-candidate fallback does not execute unrelated canonical-state getters')
 
 let statusGetterCalled = false
 const accessorStatusCandidate = { status: 'ADMISSIBLE', ...boundary('EXP-01'), value: 1 }
