@@ -48,7 +48,7 @@ assert(suiteBlock.includes('hs-source-dirs: ../IMMORTAL/governance'),
 assert(matrix.includes('AG-01') && matrix.includes('OPEN'),
   'AG-01 matrix remains explicitly classified as conformance work rather than silently promoted to closure')
 assert(
-  matrix.includes('They do not prove:') &&
+  matrix.includes('It does not prove:') &&
     matrix.includes('Full AG-01..AG-10 closure remains OPEN'),
   'AG-01 matrix retains explicit non-claim language and keeps full closure OPEN',
 )
