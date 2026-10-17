@@ -25,15 +25,26 @@ const initial = Object.freeze({
   transitionApplied: false,
 })
 
+const canonicalSnapshot = (s) => ({
+  condition: s.condition,
+  evidenceFresh: s.evidenceFresh,
+  canonicalVersion: s.canonicalVersion,
+  transitionApplied: s.transitionApplied,
+})
+
 const attempt = (s, invoker, expectedVersion) => {
   if (!hasOwnDataProperties(s, CANONICAL_FIELDS)) return { status: 'UNVERIFIABLE', state: s }
-  if (!invoker) return { ...s, status: 'SAFE_STALL' }
-  if (expectedVersion !== s.canonicalVersion) return { ...s, status: 'STALE_STATE' }
+  if (!invoker) return { ...canonicalSnapshot(s), status: 'SAFE_STALL' }
+  if (typeof invoker !== 'string' || invoker.trim() === '' ||
+      !Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
+    return { ...canonicalSnapshot(s), status: 'UNVERIFIABLE' }
+  }
+  if (expectedVersion !== s.canonicalVersion) return { ...canonicalSnapshot(s), status: 'STALE_STATE' }
   if (!s.condition || !s.evidenceFresh || s.transitionApplied) {
-    return { ...s, status: 'UNVERIFIABLE' }
+    return { ...canonicalSnapshot(s), status: 'UNVERIFIABLE' }
   }
   return {
-    ...s,
+    ...canonicalSnapshot(s),
     condition: false,
     transitionApplied: true,
     canonicalVersion: s.canonicalVersion + 1,
@@ -57,6 +68,23 @@ const freshState = Object.freeze({ ...initial, evidenceFresh: true })
 const applied = attempt(freshState, 'keeper-b', 7)
 assert(applied.status === 'APPLIED', 'fresh evidence allows permissionless invocation')
 assert(applied.canonicalVersion === 8, 'successful transition increments canonical version exactly once')
+assert(attempt(freshState, { keeper: 'forged' }, 7).status === 'UNVERIFIABLE',
+  'non-string keeper identity cannot invoke a permissionless transition')
+assert(attempt(freshState, 'keeper-b', '7').status === 'UNVERIFIABLE',
+  'non-numeric expected version cannot invoke a permissionless transition')
+let unrelatedAttemptGetterCalls = 0
+const stateWithUnrelatedGetter = { ...freshState }
+Object.defineProperty(stateWithUnrelatedGetter, 'unrelatedMetadata', {
+  enumerable: true,
+  get() {
+    unrelatedAttemptGetterCalls += 1
+    return 'must-not-run'
+  },
+})
+assert(attempt(stateWithUnrelatedGetter, 'keeper-b', 7).status === 'APPLIED',
+  'valid liveness transition proceeds with unrelated metadata present')
+assert(unrelatedAttemptGetterCalls === 0,
+  'liveness transition does not execute unrelated canonical metadata getters')
 
 const duplicate = attempt(applied, 'keeper-c', 7)
 assert(duplicate.status === 'STALE_STATE', 'duplicate invocation against prior version is rejected')
@@ -96,10 +124,10 @@ const commitCandidate = (canonical, candidate) => {
   return {
     status: 'APPLIED',
     state: Object.freeze({
-      ...canonical,
       condition: false,
-      transitionApplied: true,
+      evidenceFresh: canonical.evidenceFresh,
       canonicalVersion: canonical.canonicalVersion + 1,
+      transitionApplied: true,
     }),
   }
 }
@@ -166,6 +194,20 @@ assert(accessorCandidateResult.status === 'INVALID_CANDIDATE',
   'accessor-backed keeper candidate is rejected')
 assert(candidateGetterCalled === false,
   'keeper-candidate validation does not execute accessors')
+let unrelatedCommitGetterCalls = 0
+const canonicalWithUnrelatedGetter = { ...freshState }
+Object.defineProperty(canonicalWithUnrelatedGetter, 'unrelatedMetadata', {
+  enumerable: true,
+  get() {
+    unrelatedCommitGetterCalls += 1
+    return 'must-not-run'
+  },
+})
+const safeCommit = commitCandidate(canonicalWithUnrelatedGetter, concurrentCandidateA)
+assert(safeCommit.status === 'APPLIED' && safeCommit.state.canonicalVersion === 8,
+  'commit-time liveness revalidation succeeds with unrelated metadata present')
+assert(unrelatedCommitGetterCalls === 0,
+  'commit-time state construction does not execute unrelated canonical metadata getters')
 
 let attemptGetterCalled = false
 const accessorAttemptState = { ...freshState }
