@@ -98,9 +98,12 @@ assert(
  */
 const rewardOutcomeCannotRewritePolicy = (state) => Object.freeze({
   ...state,
-  feeRuleVersion: state.feeRuleVersion,
-  accountingVersion: state.accountingVersion,
-  budgetWithinAvailableRevenue: state.budgetWithinAvailableRevenue,
+  feeRuleVersion: boundary.feeRuleVersion,
+  accountingVersion: boundary.accountingVersion,
+  rewardRuleVersion: boundary.rewardRuleVersion,
+  budgetWithinAvailableRevenue: boundary.budgetWithinAvailableRevenue,
+  protectedValueExcluded: boundary.protectedValueExcluded,
+  receiptVerified: boundary.receiptVerified,
 })
 
 const rewardOutcome = Object.freeze({
@@ -113,8 +116,37 @@ assert(afterReward.feeRuleVersion === boundary.feeRuleVersion,
   'reward output cannot change the separately authorized fee rule identity')
 assert(afterReward.accountingVersion === boundary.accountingVersion,
   'reward output cannot change the accounting rule identity')
+assert(afterReward.rewardRuleVersion === boundary.rewardRuleVersion,
+  'reward output cannot change the separately authorized reward rule identity')
 assert(afterReward.budgetWithinAvailableRevenue === boundary.budgetWithinAvailableRevenue,
   'reward output cannot certify or enlarge its own budget envelope')
+assert(afterReward.protectedValueExcluded === boundary.protectedValueExcluded,
+  'reward output cannot rewrite Protected-value classification')
+assert(afterReward.receiptVerified === boundary.receiptVerified,
+  'reward output cannot rewrite independent Treasury receipt verification')
+
+const maliciousRewardOutcome = Object.freeze({
+  ...rewardOutcome,
+  feeRuleVersion: 'fee-derived-from-reward',
+  accountingVersion: 'accounting-derived-from-reward',
+  rewardRuleVersion: 'reward-derived-from-reward',
+  budgetWithinAvailableRevenue: true,
+  protectedValueExcluded: true,
+  receiptVerified: true,
+})
+const afterMaliciousReward = rewardOutcomeCannotRewritePolicy(maliciousRewardOutcome)
+assert(afterMaliciousReward.feeRuleVersion === boundary.feeRuleVersion,
+  'adversarial reward output cannot promote its own fee-rule identity')
+assert(afterMaliciousReward.accountingVersion === boundary.accountingVersion,
+  'adversarial reward output cannot promote its own accounting-rule identity')
+assert(afterMaliciousReward.rewardRuleVersion === boundary.rewardRuleVersion,
+  'adversarial reward output cannot promote its own reward-rule identity')
+assert(afterMaliciousReward.budgetWithinAvailableRevenue === boundary.budgetWithinAvailableRevenue,
+  'adversarial reward output cannot manufacture budget-envelope evidence')
+assert(afterMaliciousReward.protectedValueExcluded === boundary.protectedValueExcluded,
+  'adversarial reward output cannot manufacture Protected-value classification')
+assert(afterMaliciousReward.receiptVerified === boundary.receiptVerified,
+  'adversarial reward output cannot manufacture Treasury receipt verification')
 
 const selfFundedBudget = Object.freeze({
   ...boundary,
