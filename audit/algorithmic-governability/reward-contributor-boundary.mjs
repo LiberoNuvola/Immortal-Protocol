@@ -25,9 +25,17 @@ const contribution = Object.freeze({
   evidenceRef: 'ci-review-001',
 })
 
+const hasNonBlankString = (value) =>
+  typeof value === 'string' && value.trim().length > 0
+
 const rewardEligibility = (c, b) => {
-  if (!b?.ruleVersion || !b?.evidenceContract || !b?.authority) return 'UNVERIFIABLE'
-  if (!c?.accepted || !c?.verified || !c?.evidenceRef) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(b?.ruleVersion) ||
+      !hasNonBlankString(b?.evidenceContract) ||
+      !hasNonBlankString(b?.authority)) return 'UNVERIFIABLE'
+  if (c?.accepted !== true || c?.verified !== true) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(c?.contributionId) || !hasNonBlankString(c?.evidenceRef)) {
+    return 'UNVERIFIABLE'
+  }
   return Object.freeze({
     eligible: true,
     contributionId: c.contributionId,
@@ -42,6 +50,32 @@ assert(admission.eligible === true, 'verified accepted contribution can enter re
 assert(admission.ruleVersion === boundary.ruleVersion, 'eligibility retains the declared reward rule identity')
 assert(admission.evidenceContract === boundary.evidenceContract, 'eligibility retains the declared evidence contract')
 assert(admission.contributionId === contribution.contributionId, 'eligibility remains bound to the contribution identity')
+
+assert(
+  rewardEligibility({ ...contribution, accepted: 'true' }, boundary) === 'UNVERIFIABLE',
+  'truthy non-boolean acceptance cannot qualify a contribution',
+)
+assert(
+  rewardEligibility({ ...contribution, verified: 1 }, boundary) === 'UNVERIFIABLE',
+  'untyped verification cannot qualify a contribution',
+)
+assert(
+  rewardEligibility({ ...contribution, contributionId: '' }, boundary) === 'UNVERIFIABLE',
+  'missing contribution identity fails closed',
+)
+assert(
+  rewardEligibility({ ...contribution, contributionId: '   ' }, boundary) === 'UNVERIFIABLE',
+  'blank contributor-record identity remains unverifiable',
+)
+assert(
+  rewardEligibility({ ...contribution, evidenceRef: '   ' }, boundary) === 'UNVERIFIABLE',
+  'blank evidence reference remains unverifiable',
+)
+assert(
+  rewardEligibility(contribution, { ...boundary, authority: '   ' }) === 'UNVERIFIABLE',
+  'blank declared authority reference cannot authorize reward eligibility',
+)
+
 
 const forged = Object.freeze({
   ...contribution,
