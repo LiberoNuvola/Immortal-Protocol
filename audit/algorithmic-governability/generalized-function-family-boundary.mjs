@@ -21,6 +21,9 @@ const makeBoundary = (family, version) => Object.freeze({
 
 const derive = (boundary, certifiedInput) => {
   if (!certifiedInput) return { status: 'UNVERIFIABLE' }
+  if (!Object.prototype.hasOwnProperty.call(certifiedInput, 'value') || certifiedInput.value === undefined) {
+    return { status: 'UNVERIFIABLE' }
+  }
 
   const requiredBindings = ['domain', 'ruleVersion', 'evidenceContract', 'boundContract']
   if (requiredBindings.some((field) =>
@@ -75,6 +78,14 @@ for (const boundary of [fee, reward, governance]) {
 }
 
 assert(derive(fee, null).status === 'UNVERIFIABLE', 'missing required certification fails closed')
+assert(
+  derive(fee, certifiedDerivationInput(fee, { value: undefined })).status === 'UNVERIFIABLE',
+  'missing derived value cannot be certified as admissible',
+)
+assert(
+  derive(fee, (() => { const input = certifiedDerivationInput(fee); delete input.value; return input })()).status === 'UNVERIFIABLE',
+  'absent derived-value field remains unverifiable',
+)
 
 assert(
   derive(fee, { value: 7, withinDeclaredBounds: true }).status === 'UNVERIFIABLE',
@@ -151,6 +162,9 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
 
 const certifyCandidate = (boundary, candidate) => {
   if (!candidate || candidate.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  if (!Object.prototype.hasOwnProperty.call(candidate, 'value') || candidate.value === undefined) {
+    return { status: 'UNVERIFIABLE' }
+  }
   if (candidate.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
   if (
     candidate.evidenceContract !== boundary.evidenceContract ||
@@ -229,6 +243,14 @@ assert(
   'candidate certification cannot substitute another declared-bound contract',
 )
 assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
+assert(
+  certifyCandidate(reward, { domain: 'reward', ruleVersion: 'reward-v1', evidenceContract: 'evidence-reward-v1', boundContract: 'bounds-reward-v1', evidenceVerified: true, withinDeclaredBounds: true }).status === 'UNVERIFIABLE',
+  'candidate without a derived value cannot be certified',
+)
+assert(
+  certifyCandidate(reward, { domain: 'reward', ruleVersion: 'reward-v1', evidenceContract: 'evidence-reward-v1', boundContract: 'bounds-reward-v1', evidenceVerified: true, withinDeclaredBounds: true, value: undefined }).status === 'UNVERIFIABLE',
+  'candidate with undefined derived value remains unverifiable',
+)
 
 assert(
   derive(reward, certifiedDerivationInput(reward, { domain: 'fee' })).status === 'REJECTED',
