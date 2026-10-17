@@ -47,8 +47,23 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataProperties = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
+const hasOwnArrayDataElements = (array) => Array.isArray(array) &&
+  Array.from({ length: array.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(array, String(index))
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  }).every(Boolean)
+
 const projectToImmortalIssue = (ownerIntent) => {
-  if (!isRecord(ownerIntent)) return 'UNVERIFIABLE'
+  if (!hasOwnDataProperties(ownerIntent, [
+    'profile', 'source_hash', 'program_hash', 'semantics', 'action', 'scenario_hash', 'assets', 'authority',
+  ])) return 'UNVERIFIABLE'
+  if (!hasOwnDataProperties(ownerIntent.authority, ['nonce', 'predecessor'])) return 'UNVERIFIABLE'
+  if (!hasOwnArrayDataElements(ownerIntent.assets)) return 'UNVERIFIABLE'
   if (ownerIntent.action !== 'Issue') return 'REJECTED'
   if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return 'UNVERIFIABLE'
   if (!isRecord(ownerIntent.authority)) return 'UNVERIFIABLE'
@@ -106,6 +121,49 @@ for (const assets of [['USDM', 7], ['USDM', null], ['  ']]) {
   assert(projectToImmortalIssue(candidate) === 'UNVERIFIABLE',
     'malformed asset identifiers fail closed')
 }
+
+let sourceGetterCalled = false
+const accessorOwnerIntent = { ...moriartyOwnerIntent }
+Object.defineProperty(accessorOwnerIntent, 'source_hash', {
+  enumerable: true,
+  get() {
+    sourceGetterCalled = true
+    return moriartyOwnerIntent.source_hash
+  },
+})
+assert(projectToImmortalIssue(accessorOwnerIntent) === 'UNVERIFIABLE',
+  'accessor-backed source identity fails closed')
+assert(sourceGetterCalled === false,
+  'OwnerIntent projection does not execute source accessors')
+
+let authorityGetterCalled = false
+const accessorAuthorityIntent = structuredClone(moriartyOwnerIntent)
+Object.defineProperty(accessorAuthorityIntent.authority, 'nonce', {
+  enumerable: true,
+  get() {
+    authorityGetterCalled = true
+    return moriartyOwnerIntent.authority.nonce
+  },
+})
+assert(projectToImmortalIssue(accessorAuthorityIntent) === 'UNVERIFIABLE',
+  'accessor-backed authority identity fails closed')
+assert(authorityGetterCalled === false,
+  'OwnerIntent projection does not execute authority accessors')
+
+let assetGetterCalled = false
+const accessorAssetsIntent = structuredClone(moriartyOwnerIntent)
+Object.defineProperty(accessorAssetsIntent.assets, '0', {
+  enumerable: true,
+  configurable: true,
+  get() {
+    assetGetterCalled = true
+    return 'USDM'
+  },
+})
+assert(projectToImmortalIssue(accessorAssetsIntent) === 'UNVERIFIABLE',
+  'accessor-backed asset entries fail closed')
+assert(assetGetterCalled === false,
+  'OwnerIntent projection does not execute asset accessors')
 
 const missingAuthority = structuredClone(moriartyOwnerIntent)
 missingAuthority.authority.predecessor = ''
