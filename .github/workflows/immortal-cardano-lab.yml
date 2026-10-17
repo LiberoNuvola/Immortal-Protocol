@@ -390,6 +390,15 @@ jobs:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
+      # If the normal Claim build is rejected by the Cardano size ceiling, rerun
+      # the same fixture in construction-only mode to emit final CBOR diagnostics.
+      # This mode never signs or submits a transaction and does not alter protocol limits.
+      - name: Diagnose Claim CBOR after normal build failure
+        if: failure() && github.event.inputs.claim_reference_diagnostic != 'true'
+        env:
+          CLAIM_REFERENCE_DIAGNOSTIC: "1"
+        run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
+
       - name: Materialize raw Yaci ledger context for P2.8
         run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
 
