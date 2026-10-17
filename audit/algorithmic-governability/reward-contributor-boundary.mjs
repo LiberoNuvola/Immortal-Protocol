@@ -28,7 +28,15 @@ const contribution = Object.freeze({
 const hasNonBlankString = (value) =>
   typeof value === 'string' && value.trim().length > 0
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
 const rewardEligibility = (c, b) => {
+  if (!isRecord(c) || !isRecord(b)) return 'UNVERIFIABLE'
   if (!hasNonBlankString(b?.ruleVersion) ||
       !hasNonBlankString(b?.evidenceContract) ||
       !hasNonBlankString(b?.authority)) return 'UNVERIFIABLE'
@@ -54,6 +62,25 @@ assert(admission.ruleVersion === boundary.ruleVersion, 'eligibility retains the 
 assert(admission.evidenceContract === boundary.evidenceContract, 'eligibility retains the declared evidence contract')
 assert(admission.contributionId === contribution.contributionId, 'eligibility remains bound to the contribution identity')
 assert(admission.contributorIdentity === contribution.contributor, 'eligibility retains the contributor identity from the accepted record')
+
+for (const malformed of [null, undefined, true, 1, 'contribution', [], Object.create(null)]) {
+  assert(
+    rewardEligibility(malformed, boundary) === 'UNVERIFIABLE',
+    'malformed contribution container fails closed',
+  )
+}
+for (const malformed of [null, undefined, true, 1, 'boundary', []]) {
+  assert(
+    rewardEligibility(contribution, malformed) === 'UNVERIFIABLE',
+    'malformed reward-boundary container fails closed',
+  )
+}
+const arrayRecord = []
+Object.assign(arrayRecord, contribution)
+assert(
+  rewardEligibility(arrayRecord, boundary) === 'UNVERIFIABLE',
+  'array with forged contribution-shaped properties cannot qualify',
+)
 
 assert(
   rewardEligibility({ ...contribution, accepted: 'true' }, boundary) === 'UNVERIFIABLE',
