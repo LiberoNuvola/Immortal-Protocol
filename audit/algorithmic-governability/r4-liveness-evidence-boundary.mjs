@@ -9,12 +9,30 @@ const riskEvidenceFields = [
   'missingObligationsAsSurplus',
 ]
 
+const ownDataValue = (record, field) => {
+  if (record === null || typeof record !== 'object' || Array.isArray(record)) return undefined
+  const prototype = Object.getPrototypeOf(record)
+  if (prototype !== Object.prototype && prototype !== null) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : undefined
+}
+
 const progressGate=(e)=>{
-  if(!e || e.condition!==true || e.observableEvent!==true) return 'NOT_DISCHARGED'
-  if(riskEvidenceFields.some((field)=>typeof e[field] !== 'boolean')) return 'NOT_DISCHARGED'
-  if(riskEvidenceFields.some((field)=>e[field] === true)) return 'REJECT'
-  if(e.revalidated!==true) return 'NOT_DISCHARGED'
-  if(e.atomic!==true) return 'NOT_DISCHARGED'
+  if (e === null || typeof e !== 'object' || Array.isArray(e)) return 'NOT_DISCHARGED'
+  const requiredFields = ['condition', 'observableEvent', 'revalidated', 'atomic', ...riskEvidenceFields]
+  const values = Object.create(null)
+  for (const field of requiredFields) {
+    const descriptor = Object.getOwnPropertyDescriptor(e, field)
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return 'NOT_DISCHARGED'
+    values[field] = descriptor.value
+  }
+  if(values.condition!==true || values.observableEvent!==true) return 'NOT_DISCHARGED'
+  if(riskEvidenceFields.some((field)=>typeof values[field] !== 'boolean')) return 'NOT_DISCHARGED'
+  if(riskEvidenceFields.some((field)=>values[field] === true)) return 'REJECT'
+  if(values.revalidated!==true) return 'NOT_DISCHARGED'
+  if(values.atomic!==true) return 'NOT_DISCHARGED'
   return 'DISCHARGED'
 }
 
@@ -31,6 +49,13 @@ assert(progressGate({...valid,missingObligationsAsSurplus:true})==='REJECT','mis
 assert(progressGate({...valid,revalidated:false})==='NOT_DISCHARGED','missing commit-time revalidation leaves progress not discharged')
 assert(progressGate({...valid,atomic:false})==='NOT_DISCHARGED','non-atomic transition leaves progress not discharged')
 assert(progressGate({condition:true,observableEvent:true})==='NOT_DISCHARGED','deployment claims cannot discharge from partial evidence')
+let progressGetterCalls = 0
+const accessorProgress = { ...valid }
+Object.defineProperty(accessorProgress, 'condition', {
+  get() { progressGetterCalls += 1; return true },
+})
+assert(progressGate(accessorProgress)==='NOT_DISCHARGED' && progressGetterCalls===0,
+  'accessor-backed progress evidence fails closed without executing getters')
 
 assert(progressGate({...valid,condition:'true'})==='NOT_DISCHARGED','truthy non-boolean condition is not accepted as observed evidence')
 assert(progressGate({...valid,observableEvent:1})==='NOT_DISCHARGED','non-boolean observable event is not accepted as evidence')
@@ -77,6 +102,26 @@ const isRecord = (value) => {
 
 const validateEvidencePacket = (p) => {
   if (!isRecord(p)) return 'NOT_DISCHARGED'
+  const requiredFields = [
+    'canonicalPreStateRef',
+    'expectedEligibleAction',
+    'gateResult',
+    'finalOutcome',
+    'sourceRef',
+    'toolchainRef',
+    'runtimeRef',
+    'authoritativeInputRefs',
+    'observedAt',
+    'gateEvaluatedAt',
+    'r4Classification',
+    'recoveryAction',
+  ]
+  const values = Object.create(null)
+  for (const field of requiredFields) {
+    const descriptor = Object.getOwnPropertyDescriptor(p, field)
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return 'NOT_DISCHARGED'
+    values[field] = descriptor.value
+  }
   for (const field of [
     'canonicalPreStateRef',
     'expectedEligibleAction',
@@ -86,19 +131,20 @@ const validateEvidencePacket = (p) => {
     'toolchainRef',
     'runtimeRef',
   ]) {
-    if (!hasNonBlankString(p[field])) return 'NOT_DISCHARGED'
+    if (!hasNonBlankString(values[field])) return 'NOT_DISCHARGED'
   }
-  if (!Array.isArray(p.authoritativeInputRefs) ||
-      p.authoritativeInputRefs.length === 0 ||
-      p.authoritativeInputRefs.some(ref => !hasNonBlankString(ref))) {
+  const refs = values.authoritativeInputRefs
+  if (!Array.isArray(refs) || refs.length === 0) return 'NOT_DISCHARGED'
+  for (let index = 0; index < refs.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(refs, String(index))
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value') ||
+        !hasNonBlankString(descriptor.value)) return 'NOT_DISCHARGED'
+  }
+  if (!isUtcTimestamp(values.observedAt) || !isUtcTimestamp(values.gateEvaluatedAt)) {
     return 'NOT_DISCHARGED'
   }
-  if (!isUtcTimestamp(p.observedAt) || !isUtcTimestamp(p.gateEvaluatedAt)) {
-    return 'NOT_DISCHARGED'
-  }
-  if (!r4Classes.has(p.r4Classification)) return 'NOT_DISCHARGED'
-  if (!Object.prototype.hasOwnProperty.call(p, 'recoveryAction')) return 'NOT_DISCHARGED'
-  if (p.recoveryAction !== null && !hasNonBlankString(p.recoveryAction)) {
+  if (!r4Classes.has(values.r4Classification)) return 'NOT_DISCHARGED'
+  if (values.recoveryAction !== null && !hasNonBlankString(values.recoveryAction)) {
     return 'NOT_DISCHARGED'
   }
   return 'PACKET_SHAPE_COMPLETE'
@@ -151,6 +197,26 @@ assert(
   validateEvidencePacket({ ...evidencePacket, runtimeRef: ' ' }) === 'NOT_DISCHARGED',
   'missing runtime provenance leaves incident evidence incomplete',
 )
+let packetGetterCalls = 0
+const accessorPacket = { ...evidencePacket }
+Object.defineProperty(accessorPacket, 'gateResult', {
+  get() { packetGetterCalls += 1; return 'REJECT' },
+})
+assert(validateEvidencePacket(accessorPacket)==='NOT_DISCHARGED' && packetGetterCalls===0,
+  'accessor-backed incident metadata fails closed without executing getters')
+const accessorRefs = ['fixture:expiry-observation-1']
+Object.defineProperty(accessorRefs, 'some', {
+  value() { packetGetterCalls += 1; return false },
+})
+assert(validateEvidencePacket({ ...evidencePacket, authoritativeInputRefs: accessorRefs })==='PACKET_SHAPE_COMPLETE' && packetGetterCalls===0,
+  'caller-overridden array methods cannot influence authoritative-input validation')
+const accessorRefElement = []
+accessorRefElement.length = 1
+Object.defineProperty(accessorRefElement, '0', {
+  get() { packetGetterCalls += 1; return 'fixture:expiry-observation-1' },
+})
+assert(validateEvidencePacket({ ...evidencePacket, authoritativeInputRefs: accessorRefElement })==='NOT_DISCHARGED' && packetGetterCalls===0,
+  'accessor-backed authoritative-input entries fail closed without executing getters')
 
 for (const malformed of [null, undefined, 'packet', 7, [], Object.assign([], evidencePacket)]) {
   assert(validateEvidencePacket(malformed) === 'NOT_DISCHARGED',
