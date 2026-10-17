@@ -933,22 +933,23 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
     rawOwner =
       rawTicketOwnerHash ticketCs ticketTn rawCtx
 
-    -- Reuse the already-derived owner instead of traversing raw inputs twice.
+    -- Derive the owner's PubKeyHash from the typed TxInfo, then use the
+    -- raw context only to match the exact enterprise settlement address.
+    -- In Plutus V2 the raw credential field is BuiltinData wrapping a
+    -- bytestring; comparing it to typed PubKeyHash via equalsByteString caused
+    -- a Data/ByteString mismatch in the Yaci/Scalus evaluator.
     ownerSigned =
-      case rawOwner of
+      case maybeOwner of
         Nothing -> False
-        Just ownerHash ->
-          case rawSignatories rawCtx of
-            Nothing -> False
-            Just rawSigs -> rawContainsData ownerHash rawSigs
+        Just ownerHash -> txSignedBy info ownerHash
 
-    -- C-03: Oracle-based settlement verification. Sum every output to the
-    -- ticket owner's enterprise address by comparing the raw Plutus Data
-    -- representation, avoiding typed Address/PubKeyHash equality at this
-    -- evaluator boundary.
+    -- C-03: Oracle-based settlement verification. Construct the canonical
+    -- enterprise address from the typed PubKeyHash before comparing raw address
+    -- Data, so the credential is encoded once as PubKeyHash Data.
     claimantValue =
-      case rawOwner of
-        Just ownerHash -> rawClaimantValue ownerHash rawCtx (txInfoOutputs info)
+      case maybeOwner of
+        Just ownerHash ->
+          rawClaimantValue (toBuiltinData ownerHash) rawCtx (txInfoOutputs info)
         Nothing -> mempty
     paidUsdm =
       Economic.totalUsdmValue
