@@ -1205,7 +1205,25 @@ const executionAdapter = createCardanoExecutionAdapter({
   },
   submitTx: async (signedTx: unknown) => (signedTx as any).submit(),
 })
-const submission = await executionAdapter.submitInfrastructure(validTx)
+let submission: { transactionRef: string }
+try {
+  submission = await executionAdapter.submitInfrastructure(validTx)
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  const signedCbor = signedClaim ? (signedClaim as any).toCBOR() as string : null
+  const txBytes = signedCbor ? Buffer.from(signedCbor, 'hex') : null
+  const txSummary = signedCbor ? describeTx(signedCbor) : null
+  console.error('[CLAIM-POSITIVE-SUBMISSION-FAILURE] ' + JSON.stringify({
+    stage: signedClaim ? 'ledger-submission' : 'signing-or-submission',
+    serializedBytes: txBytes?.length ?? null,
+    txSha256: txSummary?.txSha256 ?? null,
+    bodyHash: txSummary?.bodyHash ?? null,
+    redeemers: txSummary?.redeemers ?? null,
+    scriptFailureVersion: message.match(/The PlutusV[123] script failed/)?.[0] ?? null,
+    error: message.slice(0, 1800),
+  }))
+  throw error
+}
 const txHash = submission.transactionRef
 if (!signedClaim) {
   throw new Error('Claim execution adapter did not retain the signed transaction')
