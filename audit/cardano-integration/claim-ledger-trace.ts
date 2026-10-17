@@ -17,6 +17,7 @@ import {
   rowPayoutTotal,
 } from '../../src/gameRules'
 import { toHex } from '../../src/beacon'
+import { bindPublishedReferenceScript } from './revealReferenceScripts'
 import {
   assertCardanoObservedTransitionBinding,
   type CardanoObservedTransitionEvidence,
@@ -881,18 +882,27 @@ const poolReferenceUtxo = referenceUtxos.find((u) => u.txHash === poolReferenceH
 if (!prizeReferenceUtxo || !poolReferenceUtxo) {
   throw new Error('Claim reference-script UTxOs were not materialized on Yaci')
 }
-const prizeReferenceInput = {
-  ...prizeReferenceUtxo,
-  scriptRef: (prizeReferenceUtxo as any).scriptRef ?? scripts.prizeValidator,
-}
-const poolReferenceInput = {
-  ...poolReferenceUtxo,
-  scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
-}
+// Bind each reference input to the exact accepted publishing transaction CBOR.
+// Provider-side scriptRef metadata alone is not proof that the expected bytes
+// were published at this output index and address.
+const prizeReferenceInput = bindPublishedReferenceScript({
+  purpose: 'PrizeValidator',
+  publishedTxCbor: prizeReferenceSigned.toCBOR(),
+  expectedScript: scripts.prizeValidator as Script,
+  referenceAddress,
+  utxo: prizeReferenceUtxo,
+})
+const poolReferenceInput = bindPublishedReferenceScript({
+  purpose: 'B1PrizePool',
+  publishedTxCbor: poolReferenceSigned.toCBOR(),
+  expectedScript: scripts.b1PrizePool as Script,
+  referenceAddress,
+  utxo: poolReferenceUtxo,
+})
 if (
-  validatorToScriptHash((prizeReferenceInput as any).scriptRef) !==
+  validatorToScriptHash(prizeReferenceInput.scriptRef as Script) !==
     validatorToScriptHash(scripts.prizeValidator as Script) ||
-  validatorToScriptHash((poolReferenceInput as any).scriptRef) !==
+  validatorToScriptHash(poolReferenceInput.scriptRef as Script) !==
     validatorToScriptHash(scripts.b1PrizePool as Script)
 ) {
   throw new Error('Claim reference-script hash mismatch')
