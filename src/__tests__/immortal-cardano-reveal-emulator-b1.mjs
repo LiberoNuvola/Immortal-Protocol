@@ -852,6 +852,7 @@ async function main() {
    * The validators are executed by the subsequent Reveal tx.
    */
 
+  console.log("P2.8-B.1 stage: setup-tx-complete:start");
   const setupTx =
     await lucid
       .newTx()
@@ -891,19 +892,25 @@ async function main() {
       )
 
       .complete();
+  console.log("P2.8-B.1 stage: setup-tx-complete:done");
 
+  console.log("P2.8-B.1 stage: setup-tx-sign:start");
   const setupSigned =
     await setupTx
       .sign()
       .complete();
 
+  console.log("P2.8-B.1 stage: setup-tx-sign:done");
+  console.log("P2.8-B.1 stage: setup-tx-submit:start");
   const setupHash =
     await setupSigned.submit();
 
   await emulator.awaitTx(
     setupHash,
   );
+  console.log("P2.8-B.1 stage: setup-tx-submit:done");
 
+  console.log("P2.8-B.1 stage: prize-reference-complete:start");
   const prizeReferenceTx =
     await lucid
       .newTx()
@@ -914,10 +921,14 @@ async function main() {
       )
       .complete();
 
+  console.log("P2.8-B.1 stage: prize-reference-complete:done");
+  console.log("P2.8-B.1 stage: prize-reference-submit:start");
   const prizeReferenceSigned = await prizeReferenceTx.sign().complete();
   const prizeReferenceHash = await prizeReferenceSigned.submit();
   await emulator.awaitTx(prizeReferenceHash);
+  console.log("P2.8-B.1 stage: prize-reference-submit:done");
 
+  console.log("P2.8-B.1 stage: pool-reference-complete:start");
   const poolReferenceTx =
     await lucid
       .newTx()
@@ -928,9 +939,12 @@ async function main() {
       )
       .complete();
 
+  console.log("P2.8-B.1 stage: pool-reference-complete:done");
+  console.log("P2.8-B.1 stage: pool-reference-submit:start");
   const poolReferenceSigned = await poolReferenceTx.sign().complete();
   const poolReferenceHash = await poolReferenceSigned.submit();
   await emulator.awaitTx(poolReferenceHash);
+  console.log("P2.8-B.1 stage: pool-reference-submit:done");
 
   /*
    * --------------------------------------------------------------
