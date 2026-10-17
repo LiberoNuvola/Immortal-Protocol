@@ -32,17 +32,27 @@ const derive = (b, input) => {
   })
 }
 
-const adopt = (candidate, canonicalState) => ({
-  ...canonicalState,
-  adopted: candidate && typeof candidate === 'object' && !Array.isArray(candidate) && candidate.status === 'ADMISSIBLE'
-    ? candidate
-    : null,
-})
+const adopt = (candidate, canonicalState, expectedBoundary) => {
+  const matchesBoundary = candidate &&
+    typeof candidate === 'object' &&
+    !Array.isArray(candidate) &&
+    candidate.status === 'ADMISSIBLE' &&
+    candidate.domain === expectedBoundary.domain &&
+    candidate.ruleVersion === expectedBoundary.ruleVersion &&
+    candidate.evidenceContract === expectedBoundary.evidenceContract &&
+    candidate.boundContract === expectedBoundary.boundContract &&
+    candidate.adoptionPath === expectedBoundary.adoptionPath
+
+  return {
+    ...canonicalState,
+    adopted: matchesBoundary ? candidate : null,
+  }
+}
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
 
 for (const malformedCandidate of [null, undefined, 'candidate', 7, []]) {
-  const afterMalformedAdopt = adopt(malformedCandidate, canonicalBefore)
+  const afterMalformedAdopt = adopt(malformedCandidate, canonicalBefore, boundary('EXP-01'))
   assert(afterMalformedAdopt.adopted === null, `malformed candidate (${String(malformedCandidate)}) cannot be adopted`)
   assert(afterMalformedAdopt.version === canonicalBefore.version, 'malformed candidate cannot change canonical version')
 }
@@ -66,8 +76,15 @@ for (const family of families) {
   const afterCertify = canonicalBefore
   assert(afterCertify.adopted === null, `${family} certification alone does not mutate canonical state`)
 
-  const afterAdopt = adopt(ok, canonicalBefore)
+  const afterAdopt = adopt(ok, canonicalBefore, b)
   assert(afterAdopt.adopted === ok, `${family} adoption is an explicit separate operation`)
+
+  for (const field of ['domain', 'ruleVersion', 'evidenceContract', 'boundContract', 'adoptionPath']) {
+    const forged = Object.freeze({ ...ok, [field]: `forged-${field}` })
+    const afterForgedAdopt = adopt(forged, canonicalBefore, b)
+    assert(afterForgedAdopt.adopted === null, `${family} adoption rejects candidate-mutated ${field}`)
+    assert(afterForgedAdopt.version === canonicalBefore.version, `${family} forged ${field} cannot change canonical version`)
+  }
 }
 
 const reward = boundary('EXP-10')
