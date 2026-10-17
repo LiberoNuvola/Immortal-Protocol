@@ -55,11 +55,13 @@ assert(
   'a rejected transfer leaves the canonical contribution identity unchanged',
 )
 
-const rewardEligibility = (r, credential) => (
-  r.accepted === true &&
-  r.verified === true &&
-  credential.contributionId === r.contributionId
-)
+const rewardEligibility = (r, credential) => {
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return false
+  if (!credential || typeof credential !== 'object' || Array.isArray(credential)) return false
+  return r.accepted === true &&
+    r.verified === true &&
+    credential.contributionId === r.contributionId
+}
 
 assert(
   rewardEligibility(record, authorizedTransfer) === true,
@@ -69,6 +71,13 @@ assert(
   rewardEligibility(record, rejectedTransfer) === true,
   'transfer rejection does not rewrite contribution semantics',
 )
+
+for (const malformedRecord of [null, undefined, 'record', 4, []]) {
+  assert(rewardEligibility(malformedRecord, issued) === false, `malformed record (${String(malformedRecord)}) fails closed`)
+}
+for (const malformedCredential of [null, undefined, 'credential', 4, []]) {
+  assert(rewardEligibility(record, malformedCredential) === false, `malformed credential (${String(malformedCredential)}) fails closed`)
+}
 
 const authorityFree = (credential) => ({
   governanceAuthority: credential.governanceAuthority ?? null,
