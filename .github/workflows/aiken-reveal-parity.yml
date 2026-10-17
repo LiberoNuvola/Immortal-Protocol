@@ -16,6 +16,8 @@ on:
       - "scripts/test-notion-evidence-ledger.mjs"
       - "scripts/enforce-aiken-parity-gate.sh"
       - "scripts/test-aiken-parity-gate.mjs"
+      - "scripts/measure-aiken-validator-size.mjs"
+      - "scripts/test-measure-aiken-validator-size.mjs"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
       - "scripts/generate-aiken-reveal-mutation-tests.mjs"
@@ -34,6 +36,8 @@ on:
       - "scripts/test-notion-evidence-ledger.mjs"
       - "scripts/enforce-aiken-parity-gate.sh"
       - "scripts/test-aiken-parity-gate.mjs"
+      - "scripts/measure-aiken-validator-size.mjs"
+      - "scripts/test-measure-aiken-validator-size.mjs"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
       - "scripts/generate-aiken-reveal-mutation-tests.mjs"
@@ -136,7 +140,7 @@ jobs:
             poc/aiken-reveal-parity/.aiken
             poc/aiken-reveal-parity/build
             poc/aiken-reveal-parity/plutus.json
-          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/generate-aiken-schema-fixture-tests.mjs', 'scripts/generate-aiken-reveal-transition-tests.mjs', 'scripts/generate-aiken-reveal-mutation-tests.mjs', 'scripts/lib/aiken-datum-exprs.mjs', 'poc/aiken-reveal-parity/lib/immortal/generated_schema_fixture_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_mutation_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_transition_tests.ak', 'plutus/test/RevealSchemaFixtures.hs', 'plutus/PrizeValidator.hs', 'plutus/Types.hs', 'plutus/GameRules.hs', 'plutus/Beacon.hs', '.github/workflows/aiken-reveal-parity.yml') }}
+          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/measure-aiken-validator-size.mjs', 'scripts/test-measure-aiken-validator-size.mjs', 'scripts/generate-aiken-schema-fixture-tests.mjs', 'scripts/generate-aiken-reveal-transition-tests.mjs', 'scripts/generate-aiken-reveal-mutation-tests.mjs', 'scripts/lib/aiken-datum-exprs.mjs', 'poc/aiken-reveal-parity/lib/immortal/generated_schema_fixture_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_mutation_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_transition_tests.ak', 'plutus/test/RevealSchemaFixtures.hs', 'plutus/PrizeValidator.hs', 'plutus/Types.hs', 'plutus/GameRules.hs', 'plutus/Beacon.hs', '.github/workflows/aiken-reveal-parity.yml') }}
 
       - name: Reuse validated artifacts
         if: steps.aiken-cache.outputs.cache-hit == 'true'
@@ -192,6 +196,15 @@ jobs:
           } > aiken-build.log
           cat aiken-build.log
           exit "$status"
+
+      - name: Measure compiled Aiken Reveal script size lower bound
+        id: aiken-resource
+        if: always() && (steps.aiken-cache.outputs.cache-hit == 'true' || steps.aiken-build.outcome == 'success')
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p jev-evidence
+          node ../../scripts/measure-aiken-validator-size.mjs aiken.toml plutus.json jev-evidence/aiken-script-size.json
 
       - name: Isolate Aiken compiler with dependency-free smoke package
         id: aiken-smoke
@@ -347,7 +360,9 @@ jobs:
         id: parity-gate-tests
         if: always()
         shell: bash
-        run: node ../../scripts/test-aiken-parity-gate.mjs
+        run: |
+          node ../../scripts/test-aiken-parity-gate.mjs
+          node ../../scripts/test-measure-aiken-validator-size.mjs
 
       # JEV evidence is emitted even when Aiken fails. A cache hit is accepted
       # only for the exact source/config/workflow hash in the cache key above.
@@ -364,6 +379,7 @@ jobs:
           CACHE_HIT: ${{ steps.aiken-cache.outputs.cache-hit || 'false' }}
           AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
+          AIKEN_SIZE_OUTCOME: ${{ steps.aiken-resource.outcome || 'unknown' }}
           HASKELL_FIXTURE_OUTCOME: ${{ steps.haskell-fixtures.outcome || 'unknown' }}
           AIKEN_FIXTURE_PARITY_OUTCOME: ${{ steps.aiken-fixture-parity.outcome || 'unknown' }}
         run: |
@@ -433,6 +449,33 @@ jobs:
               limitations: ['Synthetic typed Aiken transactions and pure transition predicates only; this does not establish native-ledger validity, current cost-model feasibility, transaction-size feasibility, or full Haskell/Aiken validator equivalence.', 'Characterization cases preserve observed Haskell behavior and are not endorsements of unconstrained fields as normative policy.'],
             },
             {
+              checkId: 'AIKEN.REVEAL.SCRIPT.SIZE.LOWER_BOUND',
+              requirementRef: 'Compiled Aiken Reveal script lower bound against the 16,384-byte Cardano transaction limit',
+              stepOutcome: outcome(process.env.AIKEN_SIZE_OUTCOME),
+              evidenceRefs,
+              observedValue: await (async () => {
+                try {
+                  const report = JSON.parse(await fs.readFile('jev-evidence/aiken-script-size.json', 'utf8'));
+                  return {
+                    targetLanguageVersion: report.targetLanguageVersion,
+                    transactionSizeLimitBytes: report.transactionSizeLimitBytes,
+                    validators: report.validators,
+                    fullTransactionSize: report.fullTransactionSize,
+                    result: report.result,
+                    deploymentGateClosed: report.deploymentGateClosed,
+                  };
+                } catch {
+                  return { status: 'unavailable' };
+                }
+              })(),
+              expectedValue: 'The compiled script alone is strictly below 16,384 bytes; this is only a lower bound and never a full transaction/deployability pass.',
+              limitations: [
+                'This check measures compiledCode bytes only; complete reference-script publication and Reveal transaction CBOR sizes are still unmeasured.',
+                'Passing this lower-bound measurement does not establish native-ledger acceptance, CPU/memory feasibility, or actual transaction-size compliance.',
+                'The Aiken prototype targets Plutus V3 while the existing Haskell Reveal validator targets Plutus V2. The language-version compatibility gate remains open.',
+              ],
+            },
+            {
               checkId: 'AIKEN.REVEAL.CHECK',
               requirementRef: 'Aiken Reveal parity harness / aiken check',
               stepOutcome: cacheHit ? 'success' : outcome(process.env.AIKEN_CHECK_OUTCOME),
@@ -463,6 +506,7 @@ jobs:
           name: jev-aiken-reveal-parity-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             poc/aiken-reveal-parity/jev-evidence/verification-registry.json
+            poc/aiken-reveal-parity/jev-evidence/aiken-script-size.json
             poc/aiken-reveal-parity/jev-evidence/operational-prompt.md
             poc/aiken-reveal-parity/jev-evidence/registry-input.json
             poc/aiken-reveal-parity/jev-evidence/reveal-schema-fixtures.json
@@ -517,6 +561,7 @@ jobs:
           AIKEN_FIXTURE_PARITY_OUTCOME: ${{ steps.aiken-fixture-parity.outcome || 'unknown' }}
           AIKEN_CHECK_OUTCOME: ${{ steps.aiken-check.outcome || 'unknown' }}
           AIKEN_BUILD_OUTCOME: ${{ steps.aiken-build.outcome || 'unknown' }}
+          AIKEN_SIZE_OUTCOME: ${{ steps.aiken-resource.outcome || 'unknown' }}
           GATE_TESTS_OUTCOME: ${{ steps.parity-gate-tests.outcome || 'unknown' }}
         shell: bash
         run: bash ../../scripts/enforce-aiken-parity-gate.sh
