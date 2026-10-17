@@ -483,8 +483,11 @@ async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: n
   return result
 }
 
+let lastClaimAdditionalUTxOs: Parameters<typeof evaluateYaciTx>[1] = []
+
 providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
   const cbor = tx.startsWith('0x') ? tx.slice(2) : tx
+  lastClaimAdditionalUTxOs = additionalUTxOs
   let measured: Awaited<ReturnType<typeof evaluateYaciTx>>
   try {
     measured = await evaluateYaciTx(cbor, additionalUTxOs)
@@ -1204,11 +1207,14 @@ const executionAdapter = createCardanoExecutionAdapter({
     // Evaluate before submit: a rejected ledger submission throws inside submitInfrastructure
     // and otherwise prevents us from collecting Ogmios per-redeemer diagnostics.
     try {
-      const evaluated = await providerWithEvaluation.evaluateTx(signedClaim.toCBOR())
-      console.log('[CLAIM-POSITIVE-EVALUATION] ' + JSON.stringify({ result: evaluated }).slice(0, 3500))
+      const evaluated = await evaluateYaciTx(
+        signedClaim.toCBOR(),
+        lastClaimAdditionalUTxOs,
+      )
+      console.log('[CLAIM-POSITIVE-RAW-EVALUATION] ' + JSON.stringify({ result: evaluated }).slice(0, 3500))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      console.error('[CLAIM-POSITIVE-EVALUATION-FAILURE] ' + JSON.stringify({
+      console.error('[CLAIM-POSITIVE-RAW-EVALUATION-FAILURE] ' + JSON.stringify({
         scriptFailureVersion: message.match(/The PlutusV[123] script failed/)?.[0] ?? null,
         expectedClaimMarkers: [
           'Prize: claim prize input must be Revealed',
