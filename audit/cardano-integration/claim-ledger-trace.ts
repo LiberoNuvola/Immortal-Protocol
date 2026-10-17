@@ -141,7 +141,13 @@ provider.getProtocolParameters = async (...args: any[]) => {
   const params = await getActiveProtocolParameters()
   activeProtocolParameters = params
   return claimReferenceDiagnostic
-    ? { ...params, maxTxSize: Math.max(Number(params.maxTxSize ?? params.max_tx_size ?? 0), 30_000) }
+    ? {
+        ...params,
+        // Lucid/provider versions differ on protocol-parameter casing. Override
+        // both aliases for local CBOR construction only; ledger parameters stay untouched.
+        maxTxSize: Math.max(Number(params.maxTxSize ?? params.max_tx_size ?? 0), 30_000),
+        max_tx_size: Math.max(Number(params.max_tx_size ?? params.maxTxSize ?? 0), 30_000),
+      }
     : params
 }
 
