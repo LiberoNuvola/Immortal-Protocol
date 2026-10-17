@@ -15,7 +15,7 @@ import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNati
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
+import { beaconRegistryValidator, buildB1PrizePool, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   assertRevealUsesReferenceScripts,
@@ -406,6 +406,66 @@ const scripts = buildScriptsFromLucid(
   testPolicyId,
   poolTokenNameHex,
 )
+
+/**
+ * Explicitly isolated acceptance experiment. When enabled by the lab only,
+ * route this fixture through the Aiken Plutus V3 candidate and re-parameterize
+ * the existing B1PrizePool Plutus V2 script to bind its prize hash to the
+ * candidate's actual script hash. Default behavior remains the canonical
+ * Haskell Plutus V2 trace; no production source or V3 carrier is replaced.
+ */
+const aikenRevealV3Candidate = process.env.IMMORTAL_REVEAL_AIKEN_V3 === '1'
+if (aikenRevealV3Candidate) {
+  const blueprint = JSON.parse(readFileSync('poc/aiken-reveal-parity/plutus.json', 'utf8')) as {
+    preamble?: { plutusVersion?: string }
+    validators?: Array<{ title?: string; compiledCode?: string; hash?: string }>
+  }
+  if (blueprint.preamble?.plutusVersion !== 'v3') {
+    throw new Error('Aiken Reveal candidate fixture requires a Plutus V3 blueprint')
+  }
+  const matches = (blueprint.validators ?? []).filter(v => v.title === 'reveal.pre_rich_reveal.spend')
+  if (matches.length !== 1 || !matches[0].compiledCode || !matches[0].hash) {
+    throw new Error('Expected one compiled Aiken Reveal spend validator in the blueprint')
+  }
+  const aikenPrizeScript = {
+    type: 'PlutusV3',
+    script: matches[0].compiledCode,
+  } as Script
+  const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
+  if (aikenPrizeHash !== matches[0].hash.toLowerCase()) {
+    throw new Error('Aiken blueprint and Lucid V3 candidate hashes do not match')
+  }
+  const aikenBoundPoolScript = buildB1PrizePool(
+    aikenPrizeHash,
+    keyHash,
+    fixtureOracleStatePolicyId,
+    ORACLE_STATE_TOKEN_NAME_HEX,
+    testPolicyId,
+    poolTokenNameHex,
+  ) as unknown as Script
+  const aikenBoundPoolHash = validatorToScriptHash(aikenBoundPoolScript).toLowerCase()
+  Object.assign(scripts, {
+    prizeValidator: aikenPrizeScript,
+    prizeHash: aikenPrizeHash,
+    b1PrizePool: aikenBoundPoolScript,
+    b1PrizePoolHash: aikenBoundPoolHash,
+    prizeAddress: validatorToAddress('Preprod', aikenPrizeScript),
+    b1PrizePoolAddress: validatorToAddress('Preprod', aikenBoundPoolScript),
+  })
+  console.log(JSON.stringify({
+    aikenRevealDiag: 'isolated-candidate-selected',
+    canonicalHaskellValidatorModified: false,
+    existingV3CarrierModified: false,
+    plutusVersion: 'v3',
+    aikenPrizeHash,
+    aikenPrizeScriptBytes: Buffer.from(aikenPrizeScript.script, 'hex').length,
+    boundPoolHash: aikenBoundPoolHash,
+    boundPoolScriptType: aikenBoundPoolScript.type,
+    boundPoolScriptBytes: Buffer.from(aikenBoundPoolScript.script, 'hex').length,
+    transactionSizeLimitBytes: protocolParameters.maxTxSize,
+    warning: 'Experimental local Yaci path only; not production semantic equivalence or deployment qualification.',
+  }, null, 2))
+}
 
 if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
