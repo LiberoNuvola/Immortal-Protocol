@@ -85,39 +85,51 @@ pub fn reveal_transaction_is_valid(
   input_datum: reveal_types.PrizeDatum,
   player_secret: ByteArray,
 ) -> Bool {
-  when transaction.find_input(tx.inputs, own_ref) is {
-    None -> False
-    Some(own_input) ->
-      when own_input.output.address.payment_credential is {
-        Script(own_script_hash) -> {
-          let pool_hash = input_datum.prize_pool_hash
-          expect Some(raw_own_datum) = datum_data(tx, own_input.output)
-          expect resolved_input_datum: reveal_types.PrizeDatum = raw_own_datum
-          expect Some(prize_output) = only_script_output(tx.outputs, own_script_hash)
-          expect Some(raw_prize_output_datum) = datum_data(tx, prize_output)
-          expect output_datum: reveal_types.PrizeDatum = raw_prize_output_datum
-          expect Some(pool_input) = only_script_input(tx.inputs, pool_hash)
-          expect Some(raw_pool_before) = datum_data(tx, pool_input.output)
-          expect pool_before_datum: reveal_types.B1PrizePoolDatum = raw_pool_before
-          expect Some(pool_output) = only_script_output(tx.outputs, pool_hash)
-          expect Some(raw_pool_after) = datum_data(tx, pool_output)
-          expect pool_after_datum: reveal_types.B1PrizePoolDatum = raw_pool_after
-          and {
-            resolved_input_datum == input_datum,
-            reveal_context_structure_is_valid(tx, own_ref, input_datum),
-            reveal_state_transition_is_valid(
-              prize_table,
-              input_datum,
-              output_datum,
-              player_secret,
-              finite_upper_bound(tx),
-              pool_state(pool_before_datum),
-              pool_state(pool_after_datum),
-              own_script_hash,
-            ),
+  // Guard cardinality before any expect-based datum resolution. Invalid or
+  // ambiguous contexts return False rather than relying on a script abort.
+  let pool_hash = input_datum.prize_pool_hash
+  if list.length(list.filter(tx.inputs, fn(input) {
+    input.output.address.payment_credential == Script(pool_hash)
+  })) != 1 {
+    False
+  } else if list.length(list.filter(tx.outputs, fn(output) {
+    output.address.payment_credential == Script(pool_hash)
+  })) != 1 {
+    False
+  } else {
+    when transaction.find_input(tx.inputs, own_ref) is {
+      None -> False
+      Some(own_input) ->
+        when own_input.output.address.payment_credential is {
+          Script(own_script_hash) -> {
+            expect Some(raw_own_datum) = datum_data(tx, own_input.output)
+            expect resolved_input_datum: reveal_types.PrizeDatum = raw_own_datum
+            expect Some(prize_output) = only_script_output(tx.outputs, own_script_hash)
+            expect Some(raw_prize_output_datum) = datum_data(tx, prize_output)
+            expect output_datum: reveal_types.PrizeDatum = raw_prize_output_datum
+            expect Some(pool_input) = only_script_input(tx.inputs, pool_hash)
+            expect Some(raw_pool_before) = datum_data(tx, pool_input.output)
+            expect pool_before_datum: reveal_types.B1PrizePoolDatum = raw_pool_before
+            expect Some(pool_output) = only_script_output(tx.outputs, pool_hash)
+            expect Some(raw_pool_after) = datum_data(tx, pool_output)
+            expect pool_after_datum: reveal_types.B1PrizePoolDatum = raw_pool_after
+            and {
+              resolved_input_datum == input_datum,
+              reveal_context_structure_is_valid(tx, own_ref, input_datum),
+              reveal_state_transition_is_valid(
+                prize_table,
+                input_datum,
+                output_datum,
+                player_secret,
+                finite_upper_bound(tx),
+                pool_state(pool_before_datum),
+                pool_state(pool_after_datum),
+                own_script_hash,
+              ),
+            }
           }
+          _ -> False
         }
-        _ -> False
-      }
+    }
   }
 }
