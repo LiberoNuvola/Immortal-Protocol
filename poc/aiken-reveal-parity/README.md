@@ -19,16 +19,20 @@ The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken pack
 - `lib/immortal/game_rules.ak`: row outcome rejection sampling, tier boundaries, deterministic row-symbol construction and summary tier.
 - `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
 - `lib/immortal/reveal_types.ak` and `lib/immortal/reveal_transition.ak`: Aiken datum types and a pure Reveal state-transition predicate composed from canonical beacon, game, payout, identity, expiry and PrizePool rules. CI builds generated positive/negative transition tests from Haskell-produced winning/loss snapshots. Separately, the Haskell producer executes the compiled Plutus V2 validator against synthetic `ScriptContext` values; neither harness submits a ledger-valid transaction.
-- `lib/immortal/reveal_context.ak`: typed-context guard over Aiken's actual `cardano/transaction` types. It resolves the own input by output reference, derives the spent Prize script credential, checks unique Prize input/continuing output, compares actual typed `Value` equality, and checks exactly one PrizePool input/output using the pool hash carried in the typed Prize datum. This is still a structural guard, not a complete Reveal validator; pool datum decoding and all Reveal semantics remain unimplemented.
+- `lib/immortal/reveal_context.ak`: typed-context guards over Aiken's actual `cardano/transaction` types. `lib/immortal/reveal_transaction.ak` now wires those guards to datum resolution, unique Prize/PrizePool inputs and outputs, the canonical pure Reveal transition predicate, and pool before/after accounting. The entrypoint is a complete isolated prototype over Aiken's typed transaction context, but it is not yet proven equivalent to the production Haskell validator or validated against ledger-valid transactions.
 
 The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
 
-## Not implemented yet
+## Remaining acceptance gates
 
-1. Decode `B1PrizePoolDatum` from the unique matching typed transaction input/output and verify the datum hash binding.
-2. Wire the state-transition predicate into a complete Aiken validator entrypoint that consumes the typed transaction context and redeemer.
-3. Continue adding canonical Haskell/Aiken differential fixtures and negative twins for every guard.
-4. Compile the complete validator and measure script size, full transaction size, CPU and memory against a version-labelled baseline.
+The typed-context entrypoint and representative adversarial tests now exist in the isolated Aiken prototype. The following gates remain open before this can be considered a rewrite candidate:
+
+1. Expand canonical Haskell/Aiken differential fixtures across all datum/redeemer states and edge cases; compare full validator decisions and state effects, not only serialization or pure predicates.
+2. Verify hashed-datum resolution and datum-witness binding against canonical, ledger-valid transaction fixtures.
+3. Build and submit ledger-valid positive and negative twins through Yaci/native-ledger validation.
+4. Review the production Haskell Plutus V2 to Aiken Plutus V3 compatibility boundary separately. Aiken's current package target does not make this a drop-in replacement.
+5. Measure compiled script size and complete transaction size, CPU, and memory against a version-labelled baseline. The historical 16,384-byte Reveal transaction blocker is not closed by passing this harness.
+6. Preserve the existing Haskell validator, IMMORTAL economic rules, and V3 carrier until all acceptance gates pass and an explicit migration decision is made.
 
 No production artifact may be switched to this package until full behavior passes Haskell differential tests and native-ledger integration tests.
 
@@ -57,7 +61,7 @@ This is stronger evidence than pure predicate tests, but is **not full Haskell/A
 4. Measure the compiled validator and complete transaction size, CPU, and memory against version-labelled baselines. The previously observed Reveal transaction-size blocker remains unresolved by this harness.
 5. Expand datum/redeemer serialization states and round-trip/decoder checks; record canonical source revision and fixture schema version in evidence.
 
-Latest completed CI run [#78](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38945687007) passed the 75-test Aiken suite, 11 synthetic-context Plutus V2 CEK cases from the canonical Haskell producer, and 134 JEV checks (0 errors). Schema-v3 fixtures and the Haskell-driven state-transition test generator were exercised; the fail-closed parity evidence gate passed. Full Haskell/Aiken validator equivalence, native-ledger/Yaci parity, V2-to-V3 compatibility, and transaction-size closure remain NOT YET ESTABLISHED. No validator deployment or protocol-wide GREEN claim follows from this evidence.
+Latest completed CI run [#103](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38998330279) passed the serialization parity tests, Aiken checks/build, smoke tests, fail-closed evidence gate, and JEV/Notion evidence registration. The follow-up run for commit [`91b02c0`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/91b02c0f6d0255a17bd24d7663aa184531021e60), [run #104](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38998685445), also completed successfully after adding adversarial cases for duplicate continuing Prize outputs and changed PrizePool accounting (14 pure transition tests plus 18 complete typed-context tests generated from canonical winning/loss fixtures). These runs establish that the isolated harness compiles and its included tests pass; they do not establish full Haskell/Aiken validator equivalence, native-ledger/Yaci parity, V2-to-V3 compatibility, or closure of the 16,384-byte transaction-size blocker. No validator deployment or protocol-wide GREEN claim follows from this evidence.
 
 ## CI artifact reuse
 
