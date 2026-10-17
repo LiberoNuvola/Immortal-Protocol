@@ -20,7 +20,9 @@ const ownDataValue = (record, field) => {
 }
 
 const progressGate=(e)=>{
-  if (!isRecord(e)) return 'NOT_DISCHARGED'
+  if (e === null || typeof e !== 'object' || Array.isArray(e)) return 'NOT_DISCHARGED'
+  const prototype = Object.getPrototypeOf(e)
+  if (prototype !== Object.prototype && prototype !== null) return 'NOT_DISCHARGED'
   const requiredFields = ['condition', 'observableEvent', 'revalidated', 'atomic', ...riskEvidenceFields]
   const values = Object.create(null)
   for (const field of requiredFields) {
