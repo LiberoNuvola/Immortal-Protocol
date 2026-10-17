@@ -21,7 +21,7 @@ const makeBoundary = (family, version) => Object.freeze({
 
 const derive = (boundary, certifiedInput) => {
   if (!certifiedInput) return { status: 'UNVERIFIABLE' }
-  if (!Object.prototype.hasOwnProperty.call(certifiedInput, 'value') || certifiedInput.value === undefined) {
+  if (!Object.prototype.hasOwnProperty.call(certifiedInput, 'value') || (certifiedInput.value === undefined || certifiedInput.value === null)) {
     return { status: 'UNVERIFIABLE' }
   }
 
@@ -81,6 +81,10 @@ assert(derive(fee, null).status === 'UNVERIFIABLE', 'missing required certificat
 assert(
   derive(fee, certifiedDerivationInput(fee, { value: undefined })).status === 'UNVERIFIABLE',
   'missing derived value cannot be certified as admissible',
+)
+assert(
+  derive(fee, certifiedDerivationInput(fee, { value: null })).status === 'UNVERIFIABLE',
+  'null derived value cannot be certified as admissible',
 )
 assert(
   derive(fee, (() => { const input = certifiedDerivationInput(fee); delete input.value; return input })()).status === 'UNVERIFIABLE',
@@ -162,7 +166,7 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
 
 const certifyCandidate = (boundary, candidate) => {
   if (!candidate || candidate.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
-  if (!Object.prototype.hasOwnProperty.call(candidate, 'value') || candidate.value === undefined) {
+  if (!Object.prototype.hasOwnProperty.call(candidate, 'value') || (candidate.value === undefined || candidate.value === null)) {
     return { status: 'UNVERIFIABLE' }
   }
   if (candidate.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
@@ -250,6 +254,10 @@ assert(
 assert(
   certifyCandidate(reward, { domain: 'reward', ruleVersion: 'reward-v1', evidenceContract: 'evidence-reward-v1', boundContract: 'bounds-reward-v1', evidenceVerified: true, withinDeclaredBounds: true, value: undefined }).status === 'UNVERIFIABLE',
   'candidate with undefined derived value remains unverifiable',
+)
+assert(
+  certifyCandidate(reward, { domain: 'reward', ruleVersion: 'reward-v1', evidenceContract: 'evidence-reward-v1', boundContract: 'bounds-reward-v1', evidenceVerified: true, withinDeclaredBounds: true, value: null }).status === 'UNVERIFIABLE',
+  'candidate with null derived value remains unverifiable',
 )
 
 assert(
