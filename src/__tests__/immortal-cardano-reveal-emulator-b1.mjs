@@ -509,7 +509,7 @@ async function main() {
           address: walletAddress,
 
           assets: {
-            lovelace: 100_000_000n,
+            lovelace: 300_000_000n,
 
             [ticketPolicy + ticketName]:
               1n,
