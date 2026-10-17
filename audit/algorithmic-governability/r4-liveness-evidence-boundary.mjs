@@ -20,13 +20,13 @@ const ownDataValue = (record, field) => {
 }
 
 const progressGate=(e)=>{
-  if (e === null || typeof e !== 'object' || Array.isArray(e)) return 'NOT_DISCHARGED'
+  if (!isRecord(e)) return 'NOT_DISCHARGED'
   const requiredFields = ['condition', 'observableEvent', 'revalidated', 'atomic', ...riskEvidenceFields]
   const values = Object.create(null)
   for (const field of requiredFields) {
-    const descriptor = Object.getOwnPropertyDescriptor(e, field)
-    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return 'NOT_DISCHARGED'
-    values[field] = descriptor.value
+    const value = ownDataValue(e, field)
+    if (value === undefined) return 'NOT_DISCHARGED'
+    values[field] = value
   }
   if(values.condition!==true || values.observableEvent!==true) return 'NOT_DISCHARGED'
   if(riskEvidenceFields.some((field)=>typeof values[field] !== 'boolean')) return 'NOT_DISCHARGED'
