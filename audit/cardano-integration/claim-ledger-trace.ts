@@ -138,7 +138,7 @@ const claimReferenceDiagnostic = process.env.CLAIM_REFERENCE_DIAGNOSTIC === '1'
 const getActiveProtocolParameters = provider.getProtocolParameters.bind(provider)
 let activeProtocolParameters: any = null
 provider.getProtocolParameters = async (...args: any[]) => {
-  const params = await getActiveProtocolParameters(...args as [])
+  const params = await getActiveProtocolParameters()
   activeProtocolParameters = params
   return claimReferenceDiagnostic
     ? { ...params, maxTxSize: Math.max(Number(params.maxTxSize ?? params.max_tx_size ?? 0), 30_000) }
