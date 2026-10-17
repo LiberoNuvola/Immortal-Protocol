@@ -71,6 +71,8 @@ const semanticResult = Object.freeze({
   price: immortalIntent.price,
   ruleVersion: certifiedAdmission.ruleVersion,
   admissionDecisionReference: certifiedAdmission.decisionReference,
+  stateHash: certifiedAdmission.stateHash,
+  actionFingerprint: certifiedAdmission.actionFingerprint,
 })
 
 const projectMoriartyToImmortal = (ownerIntent, intent) => {
@@ -110,6 +112,8 @@ const cardanoAdapter = (result) => Object.freeze({
   }),
   ruleVersion: result.ruleVersion,
   admissionDecisionReference: result.admissionDecisionReference,
+  stateHash: result.stateHash,
+  actionFingerprint: result.actionFingerprint,
 })
 
 const midnightMoriartyAdapter = (result, sourceBinding) => Object.freeze({
@@ -133,6 +137,8 @@ const normalize = (adapter) => Object.freeze({
   price: adapter.payload.price,
   ruleVersion: adapter.ruleVersion,
   admissionDecisionReference: adapter.admissionDecisionReference,
+  stateHash: adapter.stateHash,
+  actionFingerprint: adapter.actionFingerprint,
 })
 
 const cardanoSemantic = normalize(cardano)
@@ -144,6 +150,14 @@ assert(JSON.stringify(cardanoSemantic, (_, value) =>
   typeof value === 'bigint' ? value.toString() : value
 ), 'Cardano and Midnight preserve the same certified semantic result')
 assert(cardano.chain !== midnight.chain, 'adapter encodings remain chain-specific')
+assert(cardano.stateHash === certifiedAdmission.stateHash,
+  'Cardano semantic evidence retains the certified source-state hash')
+assert(midnight.stateHash === certifiedAdmission.stateHash,
+  'Midnight semantic evidence retains the certified source-state hash')
+assert(cardano.actionFingerprint === certifiedAdmission.actionFingerprint,
+  'Cardano semantic evidence retains the certified action fingerprint')
+assert(midnight.actionFingerprint === certifiedAdmission.actionFingerprint,
+  'Midnight semantic evidence retains the certified action fingerprint')
 assert(midnight.sourceBinding.sourceHash === moriartyOwnerIntent.source_hash,
   'Midnight encoding retains the distinct Moriarty source binding')
 assert(!('sourceBinding' in cardano),
@@ -159,6 +173,24 @@ assert(
   JSON.stringify(normalize(tamperedPrice), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
     JSON.stringify(cardanoSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
   'Midnight semantic mutation is detected')
+
+const tamperedStateHash = Object.freeze({
+  ...midnight,
+  stateHash: '99'.repeat(32),
+})
+assert(
+  JSON.stringify(normalize(tamperedStateHash), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
+    JSON.stringify(cardanoSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
+  'state-hash mutation remains visible in cross-adapter comparison')
+
+const tamperedActionFingerprint = Object.freeze({
+  ...midnight,
+  actionFingerprint: 'aa'.repeat(32),
+})
+assert(
+  JSON.stringify(normalize(tamperedActionFingerprint), (_, value) => typeof value === 'bigint' ? value.toString() : value) !==
+    JSON.stringify(cardanoSemantic, (_, value) => typeof value === 'bigint' ? value.toString() : value),
+  'action-fingerprint mutation remains visible in cross-adapter comparison')
   
 const tamperedAction = Object.freeze({
   ...cardano,
