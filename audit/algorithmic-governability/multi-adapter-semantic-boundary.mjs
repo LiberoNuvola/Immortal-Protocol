@@ -81,8 +81,27 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataProperties = (record, fields) => {
+  if (!isRecord(record)) return false
+  return fields.every((field) => {
+    const descriptor = Object.getOwnPropertyDescriptor(record, field)
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  })
+}
+
+const hasOwnArrayDataElements = (array) => Array.isArray(array) &&
+  Array.from({ length: array.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(array, String(index))
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  }).every(Boolean)
+
 const projectMoriartyToImmortal = (ownerIntent, intent) => {
-  if (!isRecord(ownerIntent) || !isRecord(intent)) return null
+  if (!hasOwnDataProperties(ownerIntent, [
+    'profile', 'source_hash', 'program_hash', 'semantics', 'action', 'scenario_hash', 'assets', 'authority',
+  ])) return null
+  if (!hasOwnDataProperties(intent, ['action', 'classId', 'price'])) return null
+  if (!hasOwnDataProperties(ownerIntent.authority, ['nonce', 'predecessor'])) return null
+  if (!hasOwnArrayDataElements(ownerIntent.assets)) return null
   if (ownerIntent.action !== intent.action) return null
   if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return null
   if (!isRecord(ownerIntent.authority) || !ownerIntent.authority.nonce || !ownerIntent.authority.predecessor) return null
@@ -254,7 +273,9 @@ const sourceBindingMatches = (actual, expected) => {
     ['nonce', null],
     ['predecessor', null],
   ]
-  if (!actual || typeof actual !== 'object') return false
+  if (!hasOwnDataProperties(actual, fields.map(([actualField]) => actualField))) return false
+  if (!hasOwnDataProperties(expected, ['profile', 'source_hash', 'program_hash', 'semantics', 'scenario_hash', 'authority'])) return false
+  if (!hasOwnDataProperties(expected.authority, ['nonce', 'predecessor'])) return false
   return fields.every(([actualField, expectedField]) => {
     const expectedValue = expectedField === null
       ? expected.authority?.[actualField]
@@ -277,5 +298,69 @@ assert(!sourceBindingMatches({ ...midnight.sourceBinding, predecessor: '' }, mor
   'missing source predecessor fails source-binding equivalence')
 assert(!sourceBindingMatches(null, moriartyOwnerIntent),
   'missing source binding fails source-binding equivalence')
+
+
+let ownerActionGetterCalled = false
+const accessorOwnerIntent = { ...moriartyOwnerIntent }
+Object.defineProperty(accessorOwnerIntent, 'action', {
+  enumerable: true,
+  get() {
+    ownerActionGetterCalled = true
+    return 'Issue'
+  },
+})
+assert(projectMoriartyToImmortal(accessorOwnerIntent, immortalIntent) === null,
+  'accessor-backed Moriarty source fields are rejected before projection')
+assert(ownerActionGetterCalled === false,
+  'projection does not execute an accessor while validating source identity')
+
+let intentPriceGetterCalled = false
+const accessorIntent = { ...immortalIntent }
+Object.defineProperty(accessorIntent, 'price', {
+  enumerable: true,
+  get() {
+    intentPriceGetterCalled = true
+    return 5n
+  },
+})
+assert(projectMoriartyToImmortal(moriartyOwnerIntent, accessorIntent) === null,
+  'accessor-backed IMMORTAL intent fields are rejected before projection')
+assert(intentPriceGetterCalled === false,
+  'projection does not execute an accessor while validating the IMMORTAL intent')
+
+const accessorAuthority = { ...moriartyOwnerIntent.authority }
+Object.defineProperty(accessorAuthority, 'nonce', {
+  enumerable: true,
+  get() { return 7 },
+})
+assert(projectMoriartyToImmortal(
+  { ...moriartyOwnerIntent, authority: accessorAuthority },
+  immortalIntent,
+) === null, 'accessor-backed authority nonce is rejected before projection')
+
+const accessorAssets = ['USDM']
+Object.defineProperty(accessorAssets, '0', {
+  enumerable: true,
+  configurable: true,
+  get() { return 'USDM' },
+})
+assert(projectMoriartyToImmortal(
+  { ...moriartyOwnerIntent, assets: accessorAssets },
+  immortalIntent,
+) === null, 'accessor-backed asset array elements are rejected before projection')
+
+let sourceBindingGetterCalled = false
+const accessorSourceBinding = { ...midnight.sourceBinding }
+Object.defineProperty(accessorSourceBinding, 'sourceHash', {
+  enumerable: true,
+  get() {
+    sourceBindingGetterCalled = true
+    return moriartyOwnerIntent.source_hash
+  },
+})
+assert(!sourceBindingMatches(accessorSourceBinding, moriartyOwnerIntent),
+  'accessor-backed source binding is rejected')
+assert(sourceBindingGetterCalled === false,
+  'source-binding comparison does not execute accessors')
 
 console.log('ALL MORIARTY-AWARE MULTI-ADAPTER DIFFERENTIAL CHECKS PASSED')
