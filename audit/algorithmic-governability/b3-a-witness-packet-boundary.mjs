@@ -82,6 +82,17 @@ const hasPacketShape = (packet) => {
   if (!Number.isSafeInteger(authorityTransition.protocolVersion) || authorityTransition.protocolVersion < 1) return false
   if (!Number.isSafeInteger(executionProof.version) || executionProof.version < 1) return false
 
+  // Enforce the declared identity bindings in the packet itself, not only in
+  // separate fixture assertions. All compared fields above are own data properties.
+  if (authorityTransition.activationBlock.hash !== checkpoint.blockHash) return false
+  if (authorityTransition.activationBlock.number !== checkpoint.blockNumber) return false
+  if (selectionCommitment.blockHash !== checkpoint.blockHash) return false
+  if (selectionCommitment.blockNumber !== checkpoint.blockNumber) return false
+  if (selectionCommitment.selectionInputsHash !== authorityTransition.selectionInputsHash) return false
+  if (executionProof.chainId !== checkpoint.chainId) return false
+  if (executionProof.blockHash !== checkpoint.blockHash) return false
+  if (executionProof.proofSystem !== authorityTransition.proofSystem) return false
+
   return true
 }
 
@@ -185,6 +196,21 @@ assert(
     positive.executionProof.proofSystem === positive.authorityTransition.proofSystem,
   'execution proof is explicitly bound to checkpoint identity and proof-system identity',
 )
+
+for (const [label, mutate] of [
+  ['authority activation hash mismatch', (p) => { p.authorityTransition.activationBlock.hash = 'other-block' }],
+  ['authority activation number mismatch', (p) => { p.authorityTransition.activationBlock.number = '1856409' }],
+  ['selection checkpoint hash mismatch', (p) => { p.selectionCommitment.blockHash = 'other-block' }],
+  ['selection checkpoint number mismatch', (p) => { p.selectionCommitment.blockNumber = '1856409' }],
+  ['selection input hash mismatch', (p) => { p.selectionCommitment.selectionInputsHash = 'other-selection' }],
+  ['execution chain mismatch', (p) => { p.executionProof.chainId = 'other-chain' }],
+  ['execution checkpoint mismatch', (p) => { p.executionProof.blockHash = 'other-block' }],
+  ['execution proof-system mismatch', (p) => { p.executionProof.proofSystem = 'other-proof-system' }],
+]) {
+  const copy = structuredClone(positive)
+  mutate(copy)
+  assert(!hasPacketShape(copy), label + ' is rejected by the packet contract')
+}
 
 for (const mutation of [
   (p) => { p.checkpoint.chainId = '' },
