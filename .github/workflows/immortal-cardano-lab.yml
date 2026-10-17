@@ -387,7 +387,7 @@ jobs:
       # Isolated Claim conformance fixture; not a production Issue-admission witness.
       - name: Execute real economic Claim transition trace
         env:
-          CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
+          CLAIM_REFERENCE_DIAGNOSTIC: "1" # TEMPORARY: one-run CBOR diagnosis; revert to workflow_dispatch input after collecting evidence
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
       - name: Materialize raw Yaci ledger context for P2.8
