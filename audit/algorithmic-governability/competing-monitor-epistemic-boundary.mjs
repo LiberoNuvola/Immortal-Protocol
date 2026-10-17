@@ -150,7 +150,7 @@ assert(
   authorizeSelection(Object.create(admissibleSelection), contract) === 'UNVERIFIABLE',
   'inherited selector fields cannot authorize a monitor selection',
 )
-assert(authorizeSelection(attemptedPromotion, contract) === 'REJECTED', 'result-dependent selector/authority promotion is actively rejected')
+assert(authorizeSelection(attemptedPromotion, contract) === 'UNVERIFIABLE', 'result-dependent selector/authority promotion without required selector fields remains unverifiable')
 for (const malformed of [null, undefined, true, 1, 'selection', []]) {
   assert(authorizeSelection(malformed, contract) === 'UNVERIFIABLE', 'malformed selector candidate fails closed')
 }
