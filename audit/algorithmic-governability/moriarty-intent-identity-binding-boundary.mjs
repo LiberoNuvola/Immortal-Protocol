@@ -25,6 +25,7 @@ function bindIntentIdentities(input) {
     'immortalIntentFingerprint', 'moriartyProgramFingerprint', 'actionFingerprint',
     'admissionDecisionReference', 'action',
   ]
+  if (!isRecord(input)) throw new Error('Intent identity binding input must be a record')
   if (!hasOwnDataProperties(input, requiredFields)) {
     throw new Error('Intent identity binding input must contain own data properties')
   }
