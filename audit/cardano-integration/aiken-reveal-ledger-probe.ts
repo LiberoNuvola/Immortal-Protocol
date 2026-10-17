@@ -580,8 +580,8 @@ try {
   const originalEvaluateTx = evaluateProvider.evaluateTx.bind(provider)
   evaluateProvider.evaluateTx = async (tx: string) => {
     const indices = inputIndicesFor(tx, [
-      { txHash: prizes[1].txHash, outputIndex: prizes[1].outputIndex },
-      { txHash: pools[1].txHash, outputIndex: pools[1].outputIndex },
+      { txHash: prizes[2].txHash, outputIndex: prizes[2].outputIndex },
+      { txHash: pools[2].txHash, outputIndex: pools[2].outputIndex },
     ])
     if (indices.length !== 2) fail('Could not locate both script input indices for the negative twin')
     return indices.map((redeemer_index) => ({
@@ -591,7 +591,7 @@ try {
     }))
   }
   try {
-    const negative = await buildReveal(prizes[1], pools[1], WRONG_SECRET)
+    const negative = await buildReveal(prizes[2], pools[2], WRONG_SECRET, lossFixture)
     const unsignedCbor = negative.toCBOR()
     const size = bytes(unsignedCbor)
     if (size > maxTxSize) fail('Wrong-secret twin exceeds maxTxSize: ' + size + ' > ' + maxTxSize)
@@ -628,10 +628,11 @@ try {
 }
 
 const overall = positiveResult.outcome === 'accepted_by_native_ledger' &&
+  winningResult.outcome === 'accepted_by_native_ledger' &&
   negativeResult.outcome === 'rejected_by_native_ledger' ? 'PASS' : 'FAIL'
 const report = {
   schema: 'immortal-aiken-reveal-ledger-probe-v1',
-  workflowStage: 'isolated-aiken-v3-ledger-positive-negative-twins',
+  workflowStage: 'isolated-aiken-v3-ledger-loss-win-and-negative-twins',
   network: 'local-yaci-conway',
   validator: {
     title: REVEAL_TITLE,
@@ -651,6 +652,13 @@ const report = {
     inputDatumEncoding: 'inline',
     outputDatumEncoding: 'inline',
     syntheticOnly: true,
+    fixtureCases: {
+      lossTicketNonce: lossFixture.ticketNonce.toString(),
+      lossPayoutSubunits: lossFixture.payout.toString(),
+      winningTicketNonce: winningFixture.ticketNonce.toString(),
+      winningPayoutSubunits: winningFixture.payout.toString(),
+      negativeTwinUsesLossFixture: true,
+    },
   },
   protocol: {
     maxTxSize,
@@ -658,12 +666,14 @@ const report = {
     negativeTwinExecutionUnits: 'diagnostic in-limit budget only; not resource qualification',
   },
   positive: positiveResult,
+  winning: winningResult,
   negative: negativeResult,
   overallResult: overall,
   productionMigration: 'NOT_AUTHORIZED',
   deploymentGateClosed: true,
   limitations: [
     'This is an isolated Aiken Plutus V3 fixture, not the production Haskell Plutus V2 validator.',
+    'It covers a zero-payout loss and one deterministic tier-1/tier-1 non-zero-payout vector; it is not full differential test coverage.',
     'The PrizePool validator is a test-only always-true stub; this does not qualify the production B1PrizePool validator.',
     'Fixture datum values and lovelace are synthetic and must not be represented as qualified USDM or an issued production ticket.',
     'A negative twin counts as a native-ledger rejection only if the submission stage is reached and the ledger rejects the transaction.',
@@ -675,9 +685,11 @@ writeFileSync(EVIDENCE_PATH, JSON.stringify(report, null, 2) + '\n')
 
 if (process.env.GITHUB_OUTPUT) {
   const jevPositive = positiveResult.outcome === 'accepted_by_native_ledger' ? 'success' : 'failure'
+  const jevWinning = winningResult.outcome === 'accepted_by_native_ledger' ? 'success' : 'failure'
   const jevNegative = negativeOutcomeForJev
   writeFileSync(process.env.GITHUB_OUTPUT, [
     'positive_outcome=' + jevPositive,
+    'winning_outcome=' + jevWinning,
     'negative_outcome=' + jevNegative,
     'overall_result=' + overall,
   ].join('\n') + '\n', { flag: 'a' })
