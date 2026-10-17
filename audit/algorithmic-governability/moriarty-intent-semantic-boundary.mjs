@@ -45,8 +45,15 @@ const IMMORTAL_ISSUE_INTENT_KEYS = Object.freeze([
   'price',
 ])
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const classify = (intent) => {
-  if (intent?.action !== 'Issue') throw new Error('IMMORTAL IssueIntent action mismatch')
+  if (!isRecord(intent)) throw new Error('IMMORTAL IssueIntent must be a record')
+  if (intent.action !== 'Issue') throw new Error('IMMORTAL IssueIntent action mismatch')
   if (typeof intent?.classId !== 'bigint' || typeof intent?.price !== 'bigint') {
     throw new Error('IMMORTAL IssueIntent numeric coordinates must remain bigint')
   }
@@ -88,5 +95,19 @@ assert(
 )
 assert(result.admissionPresent === false, 'Intent must not manufacture economic admission')
 assert(result.schemaEquivalent === false, 'Current IMMORTAL IssueIntent must not claim schema equivalence with Moriarty')
+
+for (const malformed of [null, undefined, 'intent', 7, [], Object.assign([], {
+  action: 'Issue',
+  classId: 3n,
+  price: 5n,
+})]) {
+  let rejected = false
+  try {
+    classify(malformed)
+  } catch (error) {
+    rejected = error instanceof Error && error.message === 'IMMORTAL IssueIntent must be a record'
+  }
+  assert(rejected, 'malformed IssueIntent container is explicitly rejected')
+}
 
 console.log('ALL MORIARTY/IMMORTAL INTENT SEMANTIC BOUNDARY CHECKS PASSED')
