@@ -182,6 +182,18 @@ const contextHelpers = [
     '  }',
     '}',
   ].join('\n'),
+  [
+    'fn context_tx_with_outputs(tx: transaction.Transaction, outputs: List<transaction.Output>) -> transaction.Transaction {',
+    '  transaction.Transaction {',
+    '    inputs: tx.inputs, reference_inputs: tx.reference_inputs, outputs,',
+    '    fee: tx.fee, mint: tx.mint, certificates: tx.certificates, withdrawals: tx.withdrawals,',
+    '    validity_range: tx.validity_range, extra_signatories: tx.extra_signatories,',
+    '    redeemers: tx.redeemers, datums: tx.datums, id: tx.id, votes: tx.votes,',
+    '    proposal_procedures: tx.proposal_procedures, current_treasury_amount: tx.current_treasury_amount,',
+    '    treasury_donation: tx.treasury_donation,',
+    '  }',
+    '}',
+  ].join('\\n'),
 ];
 const contextTests = [];
 for (const [name, item] of cases) {
@@ -271,6 +283,12 @@ for (const [name, item] of cases) {
   contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.concat(tx.inputs, list.drop(tx.inputs, 1)))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_missing_pool_input',
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.take(tx.inputs, 1))\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_output',
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_outputs(tx, list.concat(tx.outputs, list.drop(tx.outputs, 1)))\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.drop(tx.inputs, 1))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
@@ -312,4 +330,4 @@ if (source.includes('haskell_context_successful_reveal_tx()')) {
 source = source.replace(endAnchor, generatedTests.join('\n') + '\n' + endAnchor);
 source += '\n' + contextHelpers.join('\n') + '\n' + contextTests.join('\n');
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated 14 pure state-transition tests plus 10 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
+console.log('Generated 14 pure state-transition tests plus 14 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
