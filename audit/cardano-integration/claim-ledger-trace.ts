@@ -1204,7 +1204,7 @@ const executionAdapter = createCardanoExecutionAdapter({
     // Evaluate before submit: a rejected ledger submission throws inside submitInfrastructure
     // and otherwise prevents us from collecting Ogmios per-redeemer diagnostics.
     try {
-      const evaluated = await (lucid.provider as any).evaluateTx(signedClaim.toCBOR())
+      const evaluated = await providerWithEvaluation.evaluateTx(signedClaim.toCBOR())
       console.log('[CLAIM-POSITIVE-EVALUATION] ' + JSON.stringify({ result: evaluated }).slice(0, 3500))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
