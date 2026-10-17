@@ -5,23 +5,79 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
-const evaluateEligibility = (profileIdentity, observedIdentity, evidencePresent) => {
-  if (!evidencePresent) return 'UNVERIFIABLE'
-  if (profileIdentity !== observedIdentity) return 'REJECTED'
+// This is a conformance model only; the concrete asset set remains profile-scoped.
+// Require the already-authorized profile to declare identity, evidence contract and
+// valuation/settlement source without inferring any valuation or liquidity properties.
+const evaluateEligibility = (profile, observation) => {
+  if (!profile || !observation) return 'UNVERIFIABLE'
+
+  for (const field of ['assetIdentity', 'evidenceContract', 'valuationSettlementSource']) {
+    if (typeof profile[field] !== 'string' || profile[field].trim().length === 0) {
+      return 'UNVERIFIABLE'
+    }
+  }
+
+  if (typeof observation.assetIdentity !== 'string' || observation.assetIdentity.trim().length === 0) {
+    return 'UNVERIFIABLE'
+  }
+  if (observation.evidencePresent !== true) return 'UNVERIFIABLE'
+  if (profile.assetIdentity !== observation.assetIdentity) return 'REJECTED'
   return 'ADMISSIBLE'
 }
 
+const authorizedProfile = Object.freeze({
+  assetIdentity: 'asset-profile-v1',
+  evidenceContract: 'asset-evidence-contract-v1',
+  valuationSettlementSource: 'profile-defined-source-v1',
+})
+const matchingObservation = Object.freeze({
+  assetIdentity: 'asset-profile-v1',
+  evidencePresent: true,
+})
+
 assert(
-  evaluateEligibility('asset-profile-v1', 'asset-profile-v1', true) === 'ADMISSIBLE',
-  'matching authorized asset identity is admissible',
+  evaluateEligibility(authorizedProfile, matchingObservation) === 'ADMISSIBLE',
+  'profile-scoped identity with explicit evidence and source contract is admissible',
 )
 assert(
-  evaluateEligibility('asset-profile-v1', 'asset-other-v1', true) === 'REJECTED',
+  evaluateEligibility(authorizedProfile, { ...matchingObservation, assetIdentity: 'asset-other-v1' }) === 'REJECTED',
   'mismatched asset identity is rejected',
 )
 assert(
-  evaluateEligibility('asset-profile-v1', 'asset-profile-v1', false) === 'UNVERIFIABLE',
+  evaluateEligibility(authorizedProfile, { ...matchingObservation, evidencePresent: false }) === 'UNVERIFIABLE',
   'missing asset evidence fails closed',
+)
+
+for (const field of ['assetIdentity', 'evidenceContract', 'valuationSettlementSource']) {
+  const missing = { ...authorizedProfile }
+  delete missing[field]
+  assert(
+    evaluateEligibility(missing, matchingObservation) === 'UNVERIFIABLE',
+    `missing profile field ${field} fails closed`,
+  )
+
+  const blank = { ...authorizedProfile, [field]: '' }
+  assert(
+    evaluateEligibility(blank, matchingObservation) === 'UNVERIFIABLE',
+    `blank profile field ${field} fails closed`,
+  )
+}
+
+assert(
+  evaluateEligibility({ ...authorizedProfile, assetIdentity: '' }, matchingObservation) === 'UNVERIFIABLE',
+  'empty declared asset identity is unverifiable',
+)
+assert(
+  evaluateEligibility(authorizedProfile, { ...matchingObservation, assetIdentity: '' }) === 'UNVERIFIABLE',
+  'empty observed asset identity is unverifiable',
+)
+assert(
+  evaluateEligibility(null, matchingObservation) === 'UNVERIFIABLE',
+  'absent authorized profile fails closed',
+)
+assert(
+  evaluateEligibility(authorizedProfile, null) === 'UNVERIFIABLE',
+  'absent asset observation fails closed',
 )
 
 const admitted = {
