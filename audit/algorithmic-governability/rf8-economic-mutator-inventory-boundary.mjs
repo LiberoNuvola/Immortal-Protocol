@@ -80,7 +80,7 @@ assert(
   'registry publication remains an infrastructure/control submission path',
 )
 assert(
-  /return signAndSubmitTx\(lucid, tx\)/.test(createRound),
+  /const txHash\s*=\s*await signAndSubmitTx\(lucid, tx\)/.test(createRound),
   'pending-round creation remains an infrastructure/control submission path',
 )
 
