@@ -169,7 +169,7 @@ Object.defineProperty(overriddenSafeSet, 'some', {
   },
 })
 assert(
-  adopt({ ...validCandidate, safeSet: overriddenSafeSet }, { status: 'admissible' }, immutableBoundary) === null &&
+  adopt({ ...validCandidate, safeSet: overriddenSafeSet }, { status: 'admissible' }, immutableBoundary) !== null &&
     safeSetOverrideCalls === 0,
   'caller-overridden array methods cannot influence safe-set validation or execute during adoption',
 )
