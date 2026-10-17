@@ -32,9 +32,14 @@ const envelope = (overrides = {}) => Object.freeze({
   ...overrides,
 })
 
+const isDigest = (value) => typeof value === 'string' && /^[0-9a-fA-F]{64}$/.test(value)
+
+const hasText = (value) => typeof value === 'string' && value.trim().length > 0
+
 const classify = (obs) => {
   if (!obs) return 'UNVERIFIABLE'
-  if (!obs.sourceReference || !obs.txRef || !obs.blockRef) return 'UNVERIFIABLE'
+  if (!hasText(obs.sourceReference) || !hasText(obs.txRef) || !hasText(obs.blockRef)) return 'UNVERIFIABLE'
+  if (!isDigest(obs.expectedPostStateDigest) || !isDigest(obs.observedPostStateDigest)) return 'UNVERIFIABLE'
   if (obs.reorgStatus === 'REORGED') return 'INVALIDATED'
   if (obs.observationStatus === 'INCLUDED' && !obs.immortalAdmissionReference) {
     return 'REJECTED_FOR_IMMORTAL_EXECUTION'
@@ -86,6 +91,26 @@ assert(
 assert(
   classify(envelope({ sourceReference: '' })) === 'UNVERIFIABLE',
   'missing Bitcoin observation provenance fails closed',
+)
+
+assert(
+  classify(envelope({ sourceReference: '   ' })) === 'UNVERIFIABLE',
+  'blank Bitcoin observation provenance fails closed',
+)
+
+assert(
+  classify(envelope({ txRef: null })) === 'UNVERIFIABLE',
+  'non-string transaction reference fails closed',
+)
+
+assert(
+  classify(envelope({ expectedPostStateDigest: undefined, observedPostStateDigest: undefined })) === 'UNVERIFIABLE',
+  'missing expected and observed post-state digests cannot compare equal by absence',
+)
+
+assert(
+  classify(envelope({ observedPostStateDigest: 'not-a-digest' })) === 'UNVERIFIABLE',
+  'malformed observed post-state digest fails closed',
 )
 
 console.log('ALL BITCOIN L1 EVIDENCE ENVELOPE BOUNDARY CHECKS PASSED')
