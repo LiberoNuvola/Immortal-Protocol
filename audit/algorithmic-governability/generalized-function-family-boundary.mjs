@@ -259,19 +259,51 @@ assert(
 )
 assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
 assert(
-  certifyCandidate(reward, { ...certified.semanticResult, withinDeclaredBounds: null }).status === 'UNVERIFIABLE',
+  certifyCandidate(reward, { ...{
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'bounds-reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }, withinDeclaredBounds: null }).status === 'UNVERIFIABLE',
   'unknown declared-bound evidence remains unverifiable rather than being classified as a proven violation',
 )
 assert(
-  certifyCandidate(reward, { ...certified.semanticResult, withinDeclaredBounds: 'true' }).status === 'UNVERIFIABLE',
+  certifyCandidate(reward, { ...{
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'bounds-reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }, withinDeclaredBounds: 'true' }).status === 'UNVERIFIABLE',
   'string-valued declared-bound evidence is not treated as a typed boolean',
 )
 assert(
-  certifyCandidate(reward, { ...certified.semanticResult, evidenceVerified: null }).status === 'UNVERIFIABLE',
+  certifyCandidate(reward, { ...{
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'bounds-reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }, evidenceVerified: null }).status === 'UNVERIFIABLE',
   'unknown evidence-verification state remains unverifiable',
 )
 assert(
-  certifyCandidate(reward, { ...certified.semanticResult, evidenceContract: ' ' }).status === 'UNVERIFIABLE',
+  certifyCandidate(reward, { ...{
+    domain: 'reward',
+    ruleVersion: 'reward-v1',
+    evidenceContract: 'evidence-reward-v1',
+    boundContract: 'bounds-reward-v1',
+    evidenceVerified: true,
+    withinDeclaredBounds: true,
+    value: 7,
+  }, evidenceContract: ' ' }).status === 'UNVERIFIABLE',
   'blank candidate evidence identity remains unverifiable',
 )
 
