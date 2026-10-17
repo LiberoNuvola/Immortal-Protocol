@@ -26,6 +26,7 @@ const fixture={
   sourceReference:'fixture://b3-a',
   verificationReference:'fixture-verifier',
   synthetic:true,
+  selfAttestedAuthority:false,
   proofMaterial:'FIXTURE',
   independentVerification:'VERIFIED',
 }
@@ -45,6 +46,7 @@ const incomplete={
   sourceReference:'materios://observation',
   verificationReference:'verifier-001',
   synthetic:false,
+  selfAttestedAuthority:false,
   proofMaterial:'REAL_PROOF',
   independentVerification:'UNKNOWN',
 }
@@ -54,6 +56,7 @@ const claimOnlyCandidate={
   sourceReference:'materios://observation',
   verificationReference:'verifier-001',
   synthetic:false,
+  selfAttestedAuthority:false,
   proofMaterial:'REAL_PROOF',
   independentVerification:'VERIFIED',
 }
