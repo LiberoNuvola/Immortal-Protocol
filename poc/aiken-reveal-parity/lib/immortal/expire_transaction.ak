@@ -47,6 +47,24 @@ fn finite_lower_bound(tx: transaction.Transaction) -> Option<Int> {
   }
 }
 
+fn own_datum_matches(
+  tx: transaction.Transaction,
+  own_ref: transaction.OutputReference,
+  expected: PrizeDatum,
+) -> Bool {
+  when transaction.find_input(tx.inputs, own_ref) is {
+    Some(input) ->
+      when datum_data(tx, input.output) is {
+        Some(raw) -> {
+          expect decoded: PrizeDatum = raw
+          decoded == expected
+        }
+        None -> False
+      }
+    None -> False
+  }
+}
+
 /// Implements the existing PrizeValidator.validateExpire state transition.
 /// It consumes the Prize datum (no continuing Prize output) and releases exactly
 /// one ticket price from unresolved reserve and one unresolved ticket count.
@@ -80,6 +98,7 @@ pub fn expire_transaction_is_valid(
         output.address.payment_credential == Script(pool_hash)
       })
       and {
+        own_datum_matches(tx, own_ref, input_datum),
         list.length(prize_inputs) == 1,
         list.length(prize_outputs) == 0,
         list.length(pool_inputs) == 1,
