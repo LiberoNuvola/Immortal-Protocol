@@ -151,11 +151,11 @@ for (const [name, item] of cases) {
 }
 
 
-function poolDatum(snapshot, label) {
+function poolDatum(snapshot, label, overrides = {}) {
   if (!snapshot || typeof snapshot !== 'object' || !snapshot.fields) {
     throw new Error('Missing B1PrizePool datum snapshot: ' + label);
   }
-  const v = snapshot.fields;
+  const v = { ...snapshot.fields, ...overrides };
   const n = (key) => String(integer(v[key], label + '.' + key));
   return 'reveal_types.B1PrizePoolDatum { '
     + 'total_liquidity: ' + n('totalLiquidity') + ', '
@@ -203,6 +203,9 @@ for (const [name, item] of cases) {
   const output = prizeDatum(item.outputPrizeDatum, name + '.contextOutput');
   const before = poolDatum(item.poolBefore, name + '.contextPoolBefore');
   const after = poolDatum(item.poolAfter, name + '.contextPoolAfter');
+  const changedPoolAccounting = poolDatum(item.poolAfter, name + '.contextChangedPoolAccounting', {
+    pendingLiabilities: integer(item.poolAfter.fields.pendingLiabilities, name + '.pendingLiabilities') + 1,
+  });
   const poolHash = hex(item.inputPrizeDatum.fields.prizePoolHashHex, name + '.contextPoolHash');
   const expiry = integer(item.inputPrizeDatum.fields.expiresAt, name + '.contextExpiry');
   const prefix = 'haskell_context_' + name;
@@ -296,12 +299,9 @@ for (const [name, item] of cases) {
       + prefix + '_pool_output(' + prefix + '_pool_after(), assets.from_lovelace(10_000_000))])\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_changed_pool_accounting',
-    '{\n  let tx = ' + prefix + '_tx()\n  let changed_pool = reveal_types.B1PrizePoolDatum { '
-      + 'total_liquidity: ' + '0' + ', pending_liabilities: ' + '1' + ', unresolved_reserve: 0, '
-      + 'unresolved_ticket_count: 0, locked_jackpot: 0, jackpot_threshold: 0, suspended_classes: 0, '
-      + 'prize_hash: #"' + poolHash + '" }\n  let damaged = context_tx_with_outputs(tx, ['
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_outputs(tx, ['
       + prefix + '_prize_output(' + prefix + '_output_datum(), assets.from_lovelace(5_000_000)), '
-      + prefix + '_pool_output(changed_pool, assets.from_lovelace(10_000_000))])\n  !'
+      + prefix + '_pool_output(' + changedPoolAccounting + ', assets.from_lovelace(10_000_000))])\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.drop(tx.inputs, 1))\n  !'
