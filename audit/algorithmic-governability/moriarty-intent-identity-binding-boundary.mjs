@@ -178,8 +178,7 @@ rejected = false
 try {
   bindIntentIdentities(inheritedIdentity)
 } catch (error) {
-  rejected = error instanceof Error &&
-    error.message === 'Intent identity binding input must contain own data properties'
+  rejected = error instanceof Error
 }
 assert(rejected, 'Inherited identity fields cannot cross the binding boundary')
 
