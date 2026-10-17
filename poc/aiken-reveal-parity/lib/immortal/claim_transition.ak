@@ -3,7 +3,7 @@
 /// owner-signature, oracle payout valuation, actual UTxO discovery, and value
 /// preservation must be supplied by a typed-context entrypoint before deployment.
 use aiken/crypto.{ScriptHash}
-use immortal/reveal_types.{Claimed, PrizeDatum, Revealed, B1PrizePoolDatum}
+use immortal/reveal_types.{BeaconPending, BeaconTarget, Claimed, PrizeDatum, PrizeStatus, Revealed, B1PrizePoolDatum}
 
 /// Mirrors the Claim transition's datum and accounting invariants. External
 /// booleans are deliberately explicit so a test cannot accidentally imply that
@@ -88,7 +88,7 @@ pub fn claim_state_transition_is_valid(
 
 
 // Canonical synthetic Claim state used only by this pure transition test seam.
-fn claim_prize(status: immortal_reveal_status, row1_tier: Int) -> PrizeDatum {
+fn claim_prize(status: PrizeStatus, row1_tier: Int) -> PrizeDatum {
   PrizeDatum {
     ticket_policy: #"a1",
     ticket_name: #"01",
@@ -103,13 +103,13 @@ fn claim_prize(status: immortal_reveal_status, row1_tier: Int) -> PrizeDatum {
     status,
     result: #"010203",
     prize_tier: 3,
-    beacon_target: immortal_reveal_types.BeaconTarget {
+    beacon_target: BeaconTarget {
       network_id: 0,
       round: 42,
       mainchain_ref: #"010203",
       version: #"7631",
     },
-    beacon_status: immortal_reveal_types.BeaconPending,
+    beacon_status: BeaconPending,
     beacon_value: #"06",
     mc_hash: #"07",
     materios_context: #"08",
@@ -145,8 +145,8 @@ fn run_claim_transition(
   next_liabilities: Int,
 ) -> Bool {
   claim_state_transition_is_valid(
-    claim_prize(immortal_reveal_types.Revealed, 1),
-    claim_prize(immortal_reveal_types.Claimed, next_row1_tier),
+    claim_prize(Revealed, 1),
+    claim_prize(Claimed, next_row1_tier),
     claim_pool(10_000, 200),
     claim_pool(next_liquidity, next_liabilities),
     #"bb",
