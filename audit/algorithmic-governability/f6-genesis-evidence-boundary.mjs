@@ -12,10 +12,21 @@ const riskEvidenceFields = [
   'bootstrapValueInPrizePool',
 ]
 
+const isRecord=(value)=>{
+  if(value===null || typeof value!=='object' || Array.isArray(value)) return false
+  const prototype=Object.getPrototypeOf(value)
+  return prototype===Object.prototype || prototype===null
+}
+
+const hasOwn=(value,field)=>Object.prototype.hasOwnProperty.call(value,field)
+
 const genesisAdmission=(o)=>{
-  if(!o) return 'UNVERIFIABLE'
+  if(!isRecord(o)) return 'UNVERIFIABLE'
   for (const field of ['treasuryIdentity','preAssetIdentity','oracleIdentity']) {
-    if(typeof o[field] !== 'string' || o[field].trim().length === 0) return 'UNVERIFIABLE'
+    if(!hasOwn(o,field) || typeof o[field] !== 'string' || o[field].trim().length === 0) return 'UNVERIFIABLE'
+  }
+  for (const field of [...riskEvidenceFields,'verifiedFresh','bootstrapQualified']) {
+    if(!hasOwn(o,field)) return 'UNVERIFIABLE'
   }
   // Unknown flags are not evidence that a risk is absent.
   if(riskEvidenceFields.some((field)=>typeof o[field] !== 'boolean')) return 'UNVERIFIABLE'
@@ -43,6 +54,19 @@ assert(genesisAdmission({...valid,oracleIdentity:null})==='UNVERIFIABLE','missin
 assert(genesisAdmission({...valid,verifiedFresh:false})==='UNVERIFIABLE','unverified valuation fails closed')
 
 assert(genesisAdmission(null)==='UNVERIFIABLE','absent Genesis observation fails closed')
+for (const malformed of [undefined, 'observation', 7, [], new Date()]) {
+  assert(genesisAdmission(malformed)==='UNVERIFIABLE',
+    `non-record Genesis observation (${String(malformed)}) fails closed`)
+}
+const inheritedObservation=Object.create(valid)
+assert(genesisAdmission(inheritedObservation)==='UNVERIFIABLE',
+  'inherited Genesis identities and risk flags cannot certify admission')
+const inheritedRisk=Object.create(valid)
+Object.defineProperty(inheritedRisk,'treasuryIdentity',{value:'treasury-1',enumerable:true})
+Object.defineProperty(inheritedRisk,'preAssetIdentity',{value:'pre-1',enumerable:true})
+Object.defineProperty(inheritedRisk,'oracleIdentity',{value:'oracle-1',enumerable:true})
+assert(genesisAdmission(inheritedRisk)==='UNVERIFIABLE',
+  'inherited risk-evidence flags cannot be treated as evidence of safety')
 assert(genesisAdmission({...valid,treasuryIdentity:'   '})==='UNVERIFIABLE','blank Treasury identity fails closed')
 
 for (const field of riskEvidenceFields) {
