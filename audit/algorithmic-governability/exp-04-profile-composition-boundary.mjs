@@ -12,7 +12,7 @@ const compose = (profiles) => {
       return 'UNVERIFIABLE'
     }
     for (const key of Object.keys(profile.parameters ?? {})) {
-      const qualified = `${profile.domain}:${key}`
+      const qualified = JSON.stringify([profile.domain, key])
       if (seen.has(qualified)) return 'REJECTED'
       seen.add(qualified)
     }
