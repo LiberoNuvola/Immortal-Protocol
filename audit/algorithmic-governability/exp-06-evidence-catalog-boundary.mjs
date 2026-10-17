@@ -132,13 +132,38 @@ const isRecord = (value) =>
 const isPresentEvidenceValue = (value) =>
   value != null && !(typeof value === 'string' && value.trim().length === 0)
 
+const INVALID_FIELD = Symbol('invalid-own-data-field')
+
+const readOwnData = (record, key) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) {
+    return INVALID_FIELD
+  }
+  return descriptor.value
+}
+
 const evaluate = (entry, observed) => {
   if (!isRecord(entry) || !isRecord(observed)) return 'UNVERIFIABLE'
-  if (!Array.isArray(entry.required) ||
-      entry.required.some((field) => typeof field !== 'string' || !isPresentEvidenceValue(observed[field]))) {
-    return entry.missingResult
+  const required = readOwnData(entry, 'required')
+  const missingResult = readOwnData(entry, 'missingResult')
+  const invalidResult = readOwnData(entry, 'invalidResult')
+  if (!Array.isArray(required) ||
+      typeof missingResult !== 'string' ||
+      typeof invalidResult !== 'string') return 'UNVERIFIABLE'
+
+  for (const field of required) {
+    if (typeof field !== 'string') return 'UNVERIFIABLE'
+    const value = readOwnData(observed, field)
+    if (value === INVALID_FIELD || !isPresentEvidenceValue(value)) return missingResult
   }
-  if (observed.invalidEvidence === true) return entry.invalidResult
+
+  const invalidEvidence = readOwnData(observed, 'invalidEvidence')
+  if (invalidEvidence === true) return invalidResult
+  if (invalidEvidence === INVALID_FIELD) {
+    // Absence is allowed, but an accessor must not be invoked to infer validity.
+    const descriptor = Object.getOwnPropertyDescriptor(observed, 'invalidEvidence')
+    if (descriptor) return 'UNVERIFIABLE'
+  }
   return 'ADMISSIBLE'
 }
 
@@ -204,6 +229,36 @@ assert(
 assert(
   evaluate(catalog.Issue, { ...Object.fromEntries(catalog.Issue.required.map((field) => [field, `present:${field}`])), canonicalPreState: '   ' }) === 'UNVERIFIABLE',
   'whitespace-only required evidence fails closed',
+)
+const inheritedEvidence = Object.create(Object.fromEntries(
+  catalog.Issue.required.map((field) => [field, `present:${field}`]),
+))
+assert(
+  evaluate(catalog.Issue, inheritedEvidence) === 'UNVERIFIABLE',
+  'inherited required evidence cannot satisfy the evidence catalog',
+)
+let evidenceGetterCalls = 0
+const accessorEvidence = Object.fromEntries(
+  catalog.Issue.required.filter((field) => field !== 'canonicalPreState').map((field) => [field, `present:${field}`]),
+)
+Object.defineProperty(accessorEvidence, 'canonicalPreState', {
+  get() { evidenceGetterCalls += 1; return 'present:canonicalPreState' },
+  enumerable: true,
+})
+assert(
+  evaluate(catalog.Issue, accessorEvidence) === 'UNVERIFIABLE' && evidenceGetterCalls === 0,
+  'accessor-backed required evidence is unverifiable without executing its getter',
+)
+const invalidEvidenceAccessor = Object.fromEntries(
+  catalog.Issue.required.map((field) => [field, `present:${field}`]),
+)
+Object.defineProperty(invalidEvidenceAccessor, 'invalidEvidence', {
+  get() { evidenceGetterCalls += 1; return false },
+  enumerable: true,
+})
+assert(
+  evaluate(catalog.Issue, invalidEvidenceAccessor) === 'UNVERIFIABLE' && evidenceGetterCalls === 0,
+  'accessor-backed validity metadata cannot be used to infer admissibility',
 )
 
 const issueEvidence = Object.fromEntries(
