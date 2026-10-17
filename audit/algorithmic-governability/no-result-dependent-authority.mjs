@@ -45,19 +45,53 @@ assert(
   'adversarial result-dependent evidence-contract mutation is distinguishable',
 )
 
+const INVALID = Symbol('invalid-own-data-field')
+const ownDataValue = (record, field) => {
+  if (record === null || typeof record !== 'object' || Array.isArray(record)) return INVALID
+  const prototype = Object.getPrototypeOf(record)
+  if (prototype !== Object.prototype && prototype !== null) return INVALID
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : INVALID
+}
+const hasOwnArrayDataElements = (array) => Array.isArray(array) &&
+  Array.from({ length: array.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(array, String(index))
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  }).every(Boolean)
+
 const adopt = (candidate, certified, boundary) => {
-  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null
-  if (boundary.coverage !== 'COMPLETE' && candidate.claimsCompleteUniverse) return null
-  if (!certified || certified.status !== 'admissible') return null
-  if (candidate.domain !== boundary.domain) return null
-  if (candidate.evidenceContract !== boundary.evidenceContract) return null
-  if (Object.hasOwn(candidate, 'authority') && candidate.authority !== boundary.authority) return null
-  if (Object.hasOwn(candidate, 'ruleVersion') && candidate.ruleVersion !== boundary.ruleVersion) return null
-  if (Object.hasOwn(candidate, 'coverage') && candidate.coverage !== boundary.coverage) return null
-  if (Object.hasOwn(candidate, 'safeSet') &&
-      (!Array.isArray(candidate.safeSet) ||
-       candidate.safeSet.length !== boundary.safeSet.length ||
-       candidate.safeSet.some((value, index) => value !== boundary.safeSet[index]))) return null
+  if (candidate === null || typeof candidate !== 'object' || Array.isArray(candidate)) return null
+  const domain = ownDataValue(candidate, 'domain')
+  const evidenceContract = ownDataValue(candidate, 'evidenceContract')
+  const claimsCompleteUniverse = ownDataValue(candidate, 'claimsCompleteUniverse')
+  const certifiedStatus = ownDataValue(certified, 'status')
+  if (domain === INVALID || evidenceContract === INVALID || claimsCompleteUniverse === INVALID ||
+      certifiedStatus === INVALID) return null
+  if (boundary.coverage !== 'COMPLETE' && claimsCompleteUniverse) return null
+  if (certifiedStatus !== 'admissible') return null
+  if (domain !== boundary.domain) return null
+  if (evidenceContract !== boundary.evidenceContract) return null
+  for (const [field, expected] of [
+    ['authority', boundary.authority],
+    ['ruleVersion', boundary.ruleVersion],
+    ['coverage', boundary.coverage],
+  ]) {
+    const descriptor = Object.getOwnPropertyDescriptor(candidate, field)
+    if (descriptor) {
+      if (!Object.prototype.hasOwnProperty.call(descriptor, 'value') || descriptor.value !== expected) return null
+    }
+  }
+  const safeSetDescriptor = Object.getOwnPropertyDescriptor(candidate, 'safeSet')
+  if (safeSetDescriptor) {
+    if (!Object.prototype.hasOwnProperty.call(safeSetDescriptor, 'value')) return null
+    const safeSet = safeSetDescriptor.value
+    if (!Array.isArray(safeSet) ||
+        safeSet.length !== boundary.safeSet.length ||
+        !hasOwnArrayDataElements(safeSet) ||
+        safeSet.some((value, index) => value !== boundary.safeSet[index])) return null
+  }
   return candidate
 }
 
@@ -88,6 +122,36 @@ const validCandidate = Object.freeze({
 assert(
   adopt(validCandidate, { status: 'admissible' }, immutableBoundary) === validCandidate,
   'admissible candidate remains adoptable without escalating authority',
+)
+let candidateGetterCalls = 0
+const accessorCandidate = { ...validCandidate }
+Object.defineProperty(accessorCandidate, 'domain', {
+  get() { candidateGetterCalls += 1; return immutableBoundary.domain },
+})
+assert(
+  adopt(accessorCandidate, { status: 'admissible' }, immutableBoundary) === null && candidateGetterCalls === 0,
+  'accessor-backed candidate domain fails closed without executing getters',
+)
+const accessorCertified = {}
+Object.defineProperty(accessorCertified, 'status', {
+  get() { candidateGetterCalls += 1; return 'admissible' },
+})
+assert(
+  adopt(validCandidate, accessorCertified, immutableBoundary) === null && candidateGetterCalls === 0,
+  'accessor-backed certification status cannot authorize adoption',
+)
+assert(
+  adopt(Object.create(validCandidate), { status: 'admissible' }, immutableBoundary) === null,
+  'inherited candidate fields cannot authorize adoption',
+)
+const accessorSafeSet = [...immutableBoundary.safeSet]
+Object.defineProperty(accessorSafeSet, '0', {
+  configurable: true,
+  get() { candidateGetterCalls += 1; return 'SAFE' },
+})
+assert(
+  adopt({ ...validCandidate, safeSet: accessorSafeSet }, { status: 'admissible' }, immutableBoundary) === null && candidateGetterCalls === 0,
+  'accessor-backed safe-set entries cannot influence adoption',
 )
 
 const authorityEscalationCandidate = Object.freeze({
