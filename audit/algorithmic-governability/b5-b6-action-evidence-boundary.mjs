@@ -47,7 +47,7 @@ const ownData = (record, field) => {
 }
 
 const isComplete = (action, packet) => {
-  if (!Object.hasOwn(actionCatalog, action)) return false
+  if (typeof action !== 'string' || !Object.hasOwn(actionCatalog, action)) return false
   if (!isRecord(packet)) return false
   const required = actionCatalog[action]
   return required.every((field) => {
@@ -82,6 +82,17 @@ for (const [action, fields] of Object.entries(actionCatalog)) {
 }
 
 assert(!isComplete('Unknown', completePacket(['evidenceProvenance'])), 'unknown action cannot pass the evidence boundary')
+let actionCoercionCalls = 0
+const malformedAction = {
+  [Symbol.toPrimitive]() {
+    actionCoercionCalls += 1
+    return 'Issue'
+  },
+}
+assert(!isComplete(malformedAction, completePacket(actionCatalog.Issue)),
+  'non-string action identifiers cannot pass the evidence boundary')
+assert(actionCoercionCalls === 0,
+  'action validation does not invoke caller-controlled key coercion')
 assert(!isComplete('Issue', null), 'absent action packet is incomplete')
 
 for (const inheritedAction of ['toString', 'constructor', '__proto__']) {
