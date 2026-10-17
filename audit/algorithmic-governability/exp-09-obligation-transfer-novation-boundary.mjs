@@ -23,6 +23,9 @@ const transfer = (obligation, source, destination, authorization) => {
       typeof obligation.amount !== 'bigint' ||
       typeof source !== 'string' || !source.trim() ||
       typeof destination !== 'string' || !destination.trim()) return 'UNVERIFIABLE'
+  // Match the existing EXP-08 obligation boundary: only positive, established
+  // amounts can be netted or novated; do not silently transfer zero/negative claims.
+  if (obligation.amount <= 0n) return 'REJECTED'
   if (source === destination) return 'REJECTED'
   return Object.freeze({
     obligationId: obligation.id,
@@ -47,6 +50,14 @@ assert(
 assert(
   transfer({ ...obligation, amount: 125 }, 'party-a', 'party-b', { authorized: true }) === 'UNVERIFIABLE',
   'non-BigInt obligation amount fails closed',
+)
+assert(
+  transfer({ ...obligation, amount: 0n }, 'party-a', 'party-b', { authorized: true }) === 'REJECTED',
+  'zero-value obligation cannot be novated',
+)
+assert(
+  transfer({ ...obligation, amount: -1n }, 'party-a', 'party-b', { authorized: true }) === 'REJECTED',
+  'negative obligation amount cannot be novated',
 )
 assert(
   transfer(obligation, '', 'party-b', { authorized: true }) === 'UNVERIFIABLE',
