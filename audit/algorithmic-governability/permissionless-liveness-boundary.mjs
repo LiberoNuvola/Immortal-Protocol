@@ -58,6 +58,18 @@ assert(replay.canonicalVersion === 8, 'replay attempt leaves canonical state unc
  * it is not evidence that a deployed ledger implements this path correctly.
  */
 const commitCandidate = (canonical, candidate) => {
+  if (!candidate || typeof candidate !== 'object') {
+    return { status: 'INVALID_CANDIDATE', state: canonical }
+  }
+  if (typeof candidate.invoker !== 'string' || candidate.invoker.trim() === '') {
+    return { status: 'INVALID_CANDIDATE', state: canonical }
+  }
+  if (typeof candidate.transitionRef !== 'string' || candidate.transitionRef.trim() === '') {
+    return { status: 'INVALID_CANDIDATE', state: canonical }
+  }
+  if (!Number.isSafeInteger(candidate.expectedVersion) || candidate.expectedVersion < 0) {
+    return { status: 'INVALID_CANDIDATE', state: canonical }
+  }
   if (candidate.expectedVersion !== canonical.canonicalVersion) {
     return { status: 'STALE_STATE', state: canonical }
   }
@@ -85,6 +97,21 @@ const concurrentCandidateB = Object.freeze({
   transitionRef: 'transition-001',
   expectedVersion: freshState.canonicalVersion,
 })
+
+const invalidCandidates = [
+  null,
+  {},
+  { ...concurrentCandidateA, invoker: '   ' },
+  { ...concurrentCandidateA, transitionRef: '' },
+  { ...concurrentCandidateA, expectedVersion: '7' },
+  { ...concurrentCandidateA, expectedVersion: -1 },
+  { ...concurrentCandidateA, expectedVersion: Number.MAX_SAFE_INTEGER + 1 },
+]
+for (const candidate of invalidCandidates) {
+  const rejected = commitCandidate(freshState, candidate)
+  assert(rejected.status === 'INVALID_CANDIDATE', 'malformed candidate identity/version is rejected')
+  assert(rejected.state.canonicalVersion === freshState.canonicalVersion, 'invalid candidate leaves canonical version unchanged')
+}
 
 const raceWinner = commitCandidate(freshState, concurrentCandidateA)
 assert(raceWinner.status === 'APPLIED', 'first eligible keeper wins commit-time version revalidation')
