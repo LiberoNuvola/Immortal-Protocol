@@ -928,16 +928,56 @@ async function main() {
   await emulator.awaitTx(prizeReferenceHash);
   console.log("P2.8-B.1 stage: prize-reference-submit:done");
 
+  console.log("P2.8-B.1 stage: pool-reference-wallet-utxos:inspect");
+  try {
+    if (typeof lucid.wallet.getUtxos === "function") {
+      const walletUtxosBeforePoolReference = await lucid.wallet.getUtxos();
+      console.log(
+        "P2.8-B.1 wallet UTxOs before pool reference",
+        JSON.stringify(
+          walletUtxosBeforePoolReference.map((utxo) => ({
+            txHash: utxo.txHash,
+            outputIndex: utxo.outputIndex,
+            assets: utxo.assets,
+          })),
+          (_key, value) => typeof value === "bigint" ? value.toString() : value,
+          2,
+        ),
+      );
+    } else {
+      console.log(
+        "P2.8-B.1 wallet UTxO inspection unavailable",
+        Object.keys(lucid.wallet ?? {}),
+      );
+    }
+  } catch (diagnosticError) {
+    console.log(
+      "P2.8-B.1 wallet UTxO inspection failed",
+      diagnosticError instanceof Error ? diagnosticError.stack : String(diagnosticError),
+    );
+  }
+
   console.log("P2.8-B.1 stage: pool-reference-complete:start");
-  const poolReferenceTx =
-    await lucid
-      .newTx()
-      .payToAddressWithData(
-        referenceAddress,
-        { scriptRef: poolScript },
-        { lovelace: 2_000_000n },
-      )
-      .complete();
+  let poolReferenceTx;
+  try {
+    poolReferenceTx =
+      await lucid
+        .newTx()
+        .payToAddressWithData(
+          referenceAddress,
+          { scriptRef: poolScript },
+          { lovelace: 2_000_000n },
+        )
+        .complete();
+  } catch (poolReferenceBuildError) {
+    console.error(
+      "P2.8-B.1 pool-reference-complete error details",
+      poolReferenceBuildError instanceof Error
+        ? poolReferenceBuildError.stack
+        : String(poolReferenceBuildError),
+    );
+    throw poolReferenceBuildError;
+  }
 
   console.log("P2.8-B.1 stage: pool-reference-complete:done");
   console.log("P2.8-B.1 stage: pool-reference-submit:start");
@@ -1603,7 +1643,7 @@ main().catch((error) => {
     "P2.8-B.1 FAILED",
   );
 
-  console.error(error);
+  console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
 
   process.exitCode = 1;
 });
