@@ -51,4 +51,91 @@ for (const field of riskEvidenceFields) {
 }
 
 
+/*
+ * Evidence-packet shape from R4-LIVENESS-EVIDENCE-MATRIX-v1.
+ * Shape validation is not deployment evidence and does not prove progress.
+ */
+const hasNonBlankString = (value) =>
+  typeof value === 'string' && value.trim().length > 0
+
+const isUtcTimestamp = (value) =>
+  typeof value === 'string' &&
+  /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$/.test(value) &&
+  Number.isFinite(Date.parse(value))
+
+const r4Classes = new Set(Array.from({ length: 10 }, (_, i) => `FM${i + 1}`))
+
+const validateEvidencePacket = (p) => {
+  if (!p || typeof p !== 'object') return 'NOT_DISCHARGED'
+  for (const field of [
+    'canonicalPreStateRef',
+    'expectedEligibleAction',
+    'gateResult',
+    'finalOutcome',
+    'sourceRef',
+    'toolchainRef',
+    'runtimeRef',
+  ]) {
+    if (!hasNonBlankString(p[field])) return 'NOT_DISCHARGED'
+  }
+  if (!Array.isArray(p.authoritativeInputRefs) ||
+      p.authoritativeInputRefs.length === 0 ||
+      p.authoritativeInputRefs.some(ref => !hasNonBlankString(ref))) {
+    return 'NOT_DISCHARGED'
+  }
+  if (!isUtcTimestamp(p.observedAt) || !isUtcTimestamp(p.gateEvaluatedAt)) {
+    return 'NOT_DISCHARGED'
+  }
+  if (!r4Classes.has(p.r4Classification)) return 'NOT_DISCHARGED'
+  if (!Object.prototype.hasOwnProperty.call(p, 'recoveryAction')) return 'NOT_DISCHARGED'
+  if (p.recoveryAction !== null && !hasNonBlankString(p.recoveryAction)) {
+    return 'NOT_DISCHARGED'
+  }
+  return 'PACKET_SHAPE_COMPLETE'
+}
+
+const evidencePacket = Object.freeze({
+  canonicalPreStateRef: 'fixture:pre-state-7',
+  expectedEligibleAction: 'Expire',
+  authoritativeInputRefs: Object.freeze(['fixture:expiry-observation-1']),
+  observedAt: '2026-10-17T08:30:00Z',
+  gateEvaluatedAt: '2026-10-17T08:30:01Z',
+  gateResult: 'REJECT',
+  r4Classification: 'FM1',
+  recoveryAction: null,
+  finalOutcome: 'SAFE_STALL',
+  sourceRef: 'commit:fixture-source',
+  toolchainRef: 'node-22',
+  runtimeRef: 'fixture-runtime-v1',
+})
+
+assert(
+  validateEvidencePacket(evidencePacket) === 'PACKET_SHAPE_COMPLETE',
+  'R4 incident packet binds state, action, inputs, timestamps, classification, outcome and provenance',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, canonicalPreStateRef: '' }) === 'NOT_DISCHARGED',
+  'missing canonical pre-state reference leaves incident evidence incomplete',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, authoritativeInputRefs: [] }) === 'NOT_DISCHARGED',
+  'empty authoritative-input references cannot support an incident classification',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, observedAt: '17/10/2026 08:30' }) === 'NOT_DISCHARGED',
+  'non-canonical observation timestamp leaves incident evidence incomplete',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, r4Classification: 'FM11' }) === 'NOT_DISCHARGED',
+  'incident classification must use the existing FM1-FM10 taxonomy',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, recoveryAction: undefined }) === 'NOT_DISCHARGED',
+  'recovery disposition must be explicit even when no recovery was taken',
+)
+assert(
+  validateEvidencePacket({ ...evidencePacket, runtimeRef: ' ' }) === 'NOT_DISCHARGED',
+  'missing runtime provenance leaves incident evidence incomplete',
+)
+
 console.log('ALL R4 LIVENESS/SAFE-STALL BOUNDARY CHECKS PASSED')
