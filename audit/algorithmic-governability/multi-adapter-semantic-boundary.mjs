@@ -220,7 +220,39 @@ const alteredMidnight = Object.freeze({
   ...midnight,
   sourceBinding: alteredSource,
 })
-assert(alteredMidnight.sourceBinding.sourceHash !== moriartyOwnerIntent.source_hash,
-  'Moriarty source-identity mutation remains observable')
+
+const sourceBindingMatches = (actual, expected) => {
+  const fields = [
+    ['profile', 'profile'],
+    ['sourceHash', 'source_hash'],
+    ['programHash', 'program_hash'],
+    ['semantics', 'semantics'],
+    ['scenarioHash', 'scenario_hash'],
+    ['nonce', null],
+    ['predecessor', null],
+  ]
+  if (!actual || typeof actual !== 'object') return false
+  return fields.every(([actualField, expectedField]) => {
+    const expectedValue = expectedField === null
+      ? moriartyOwnerIntent.authority[actualField]
+      : moriartyOwnerIntent[expectedField]
+    const actualValue = actual[actualField]
+    if (typeof expectedValue === 'string') {
+      return typeof actualValue === 'string' &&
+        actualValue.trim() !== '' &&
+        actualValue === expectedValue
+    }
+    return actualValue === expectedValue
+  })
+}
+
+assert(sourceBindingMatches(midnight.sourceBinding, moriartyOwnerIntent),
+  'Midnight source binding matches the originating Moriarty identity and predecessor')
+assert(!sourceBindingMatches(alteredMidnight.sourceBinding, moriartyOwnerIntent),
+  'mutated Moriarty source identity fails source-binding equivalence')
+assert(!sourceBindingMatches({ ...midnight.sourceBinding, predecessor: '' }, moriartyOwnerIntent),
+  'missing source predecessor fails source-binding equivalence')
+assert(!sourceBindingMatches(null, moriartyOwnerIntent),
+  'missing source binding fails source-binding equivalence')
 
 console.log('ALL MORIARTY-AWARE MULTI-ADAPTER DIFFERENTIAL CHECKS PASSED')
