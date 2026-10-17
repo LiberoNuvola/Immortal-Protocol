@@ -234,8 +234,8 @@ const sourceBindingMatches = (actual, expected) => {
   if (!actual || typeof actual !== 'object') return false
   return fields.every(([actualField, expectedField]) => {
     const expectedValue = expectedField === null
-      ? moriartyOwnerIntent.authority[actualField]
-      : moriartyOwnerIntent[expectedField]
+      ? expected.authority?.[actualField]
+      : expected[expectedField]
     const actualValue = actual[actualField]
     if (typeof expectedValue === 'string') {
       return typeof actualValue === 'string' &&
