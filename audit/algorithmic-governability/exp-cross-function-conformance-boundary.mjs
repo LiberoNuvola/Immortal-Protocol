@@ -34,10 +34,18 @@ const derive = (b, input) => {
 
 const adopt = (candidate, canonicalState) => ({
   ...canonicalState,
-  adopted: candidate.status === 'ADMISSIBLE' ? candidate : null,
+  adopted: candidate && typeof candidate === 'object' && !Array.isArray(candidate) && candidate.status === 'ADMISSIBLE'
+    ? candidate
+    : null,
 })
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
+
+for (const malformedCandidate of [null, undefined, 'candidate', 7, []]) {
+  const afterMalformedAdopt = adopt(malformedCandidate, canonicalBefore)
+  assert(afterMalformedAdopt.adopted === null, `malformed candidate (${String(malformedCandidate)}) cannot be adopted`)
+  assert(afterMalformedAdopt.version === canonicalBefore.version, 'malformed candidate cannot change canonical version')
+}
 
 for (const family of families) {
   const b = boundary(family)
