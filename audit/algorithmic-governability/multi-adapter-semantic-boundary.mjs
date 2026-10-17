@@ -75,11 +75,19 @@ const semanticResult = Object.freeze({
   actionFingerprint: certifiedAdmission.actionFingerprint,
 })
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const projectMoriartyToImmortal = (ownerIntent, intent) => {
+  if (!isRecord(ownerIntent) || !isRecord(intent)) return null
   if (ownerIntent.action !== intent.action) return null
   if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return null
-  if (!ownerIntent.authority?.nonce || !ownerIntent.authority?.predecessor) return null
+  if (!isRecord(ownerIntent.authority) || !ownerIntent.authority.nonce || !ownerIntent.authority.predecessor) return null
   if (!Array.isArray(ownerIntent.assets) || ownerIntent.assets.length === 0) return null
+  if (!ownerIntent.assets.every((asset) => typeof asset === 'string' && asset.trim().length > 0)) return null
   return Object.freeze({
     intent,
     sourceBinding: Object.freeze({
@@ -95,6 +103,21 @@ const projectMoriartyToImmortal = (ownerIntent, intent) => {
 }
 
 const projected = projectMoriartyToImmortal(moriartyOwnerIntent, immortalIntent)
+assert(projectMoriartyToImmortal(null, immortalIntent) === null,
+  'missing Moriarty OwnerIntent is rejected at the projection boundary')
+assert(projectMoriartyToImmortal(Object.assign([], moriartyOwnerIntent), immortalIntent) === null,
+  'array with forged OwnerIntent properties is rejected')
+assert(projectMoriartyToImmortal(moriartyOwnerIntent, null) === null,
+  'missing IMMORTAL Intent is rejected at the projection boundary')
+for (const candidate of [
+  { ...moriartyOwnerIntent, authority: null },
+  { ...moriartyOwnerIntent, authority: [] },
+  { ...moriartyOwnerIntent, assets: ['USDM', 7] },
+  { ...moriartyOwnerIntent, assets: ['  '] },
+]) {
+  assert(projectMoriartyToImmortal(candidate, immortalIntent) === null,
+    'malformed authority or asset container is rejected')
+}
 assert(projected !== null, 'Moriarty OwnerIntent can be explicitly projected into IMMORTAL IssueIntent')
 assert(projected.intent.action === semanticResult.action, 'projection preserves the action')
 assert(projected.intent.classId === semanticResult.classId, 'projection preserves PRE-RICH class coordinate')
