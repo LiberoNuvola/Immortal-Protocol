@@ -18,7 +18,8 @@ try {
   async function run(codeHex) {
     await fs.writeFile(blueprint, JSON.stringify({
       validators: [
-        { title: "pre_rich_reveal.spend", hash: "abc123", compiledCode: codeHex },
+        { title: "reveal.pre_rich_reveal.spend", hash: "abc123", compiledCode: codeHex },
+        { title: "reveal.pre_rich_reveal.else", hash: "abcdef", compiledCode: "aa".repeat(120) },
         { title: "unrelated.validator", hash: "def456", compiledCode: "deadbeef" },
       ],
     }));
@@ -44,7 +45,7 @@ try {
   const missing = spawnSync(process.execPath, [analyzer, config, blueprint, report], { encoding: "utf8" });
   assert.notEqual(missing.status, 0, "Missing target validator must fail closed");
 
-  await fs.writeFile(blueprint, JSON.stringify({ validators: [{ title: "pre_rich_reveal.spend", compiledCode: "xyz" }] }));
+  await fs.writeFile(blueprint, JSON.stringify({ validators: [{ title: "reveal.pre_rich_reveal.spend", compiledCode: "xyz" }] }));
   const malformed = spawnSync(process.execPath, [analyzer, config, blueprint, report], { encoding: "utf8" });
   assert.notEqual(malformed.status, 0, "Malformed compiledCode must fail closed");
 
