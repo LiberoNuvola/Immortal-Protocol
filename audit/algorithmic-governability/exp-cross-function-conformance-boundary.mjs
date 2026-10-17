@@ -84,9 +84,13 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
   if (!hasOwnDataProperties(canonicalState, ['version', 'adopted'])) {
     return { version: undefined, adopted: null }
   }
-  const matchesBoundary = hasOwnDataProperties(candidate, [
-    'status', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract', 'adoptionPath',
-  ]) &&
+  const requiredCandidateFields = [
+    'status', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract', 'adoptionPath', 'value',
+  ]
+  if (!hasOwnDataProperties(candidate, requiredCandidateFields)) {
+    return { ...canonicalState, adopted: null }
+  }
+  const matchesBoundary =
     candidate.status === 'ADMISSIBLE' &&
     candidate.domain === expectedBoundary.domain &&
     candidate.ruleVersion === expectedBoundary.ruleVersion &&
@@ -144,6 +148,20 @@ assert(canonicalGuardResult.adopted === null,
   'accessor-backed canonical state cannot be mutated by adoption')
 assert(canonicalGetterCalled === false,
   'canonical-state guard does not execute accessors')
+
+let statusGetterCalled = false
+const accessorStatusCandidate = { status: 'ADMISSIBLE', ...boundary('EXP-01'), value: 1 }
+Object.defineProperty(accessorStatusCandidate, 'status', {
+  enumerable: true,
+  get() {
+    statusGetterCalled = true
+    return 'ADMISSIBLE'
+  },
+})
+assert(adopt(accessorStatusCandidate, { version: 'canonical-v1', adopted: null }, boundary('EXP-01')).adopted === null,
+  'accessor-backed status cannot pass the adoption boundary')
+assert(statusGetterCalled === false,
+  'adoption validation does not execute the status accessor')
 
 const canonicalBefore = Object.freeze({ version: 'canonical-v1', adopted: null })
 
