@@ -5,16 +5,38 @@ const assert = (condition, message) => {
   console.log('PASS: ' + message)
 }
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
+const readOwnData = (record, key) => {
+  if (!isRecord(record)) return undefined
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? descriptor.value
+    : undefined
+}
+
 const order = (obligations) => {
   if (!Array.isArray(obligations)) return 'UNVERIFIABLE'
+  const normalized = []
   for (const obligation of obligations) {
-    if (!obligation?.id || !obligation?.type || !Number.isInteger(obligation.seniorityRank)) {
+    const id = readOwnData(obligation, 'id')
+    const type = readOwnData(obligation, 'type')
+    const seniorityRank = readOwnData(obligation, 'seniorityRank')
+    if (typeof id !== 'string' || id.trim().length === 0 ||
+        typeof type !== 'string' || type.trim().length === 0 ||
+        !Number.isSafeInteger(seniorityRank)) {
       return 'UNVERIFIABLE'
     }
+    normalized.push({ id, type, seniorityRank })
   }
-  const ranks = obligations.map((o) => o.seniorityRank)
+  const ranks = normalized.map((o) => o.seniorityRank)
   if (new Set(ranks).size !== ranks.length) return 'UNRESOLVED'
-  return [...obligations].sort((a, b) => a.seniorityRank - b.seniorityRank)
+  return normalized.sort((a, b) => a.seniorityRank - b.seniorityRank)
 }
 
 const obligations = [
@@ -28,6 +50,23 @@ assert(order([{ id: 'o1', type: 'typed-a' }]) === 'UNVERIFIABLE', 'missing senio
 assert(
   order([{ id: 'o1', type: 'typed-a', seniorityRank: 1 }, { id: 'o2', type: 'typed-b', seniorityRank: 1 }]) === 'UNRESOLVED',
   'equal seniority does not acquire an implicit caller/iteration tie-break',
+)
+let getterCalls = 0
+const accessorObligation = { id: 'o1', type: 'typed-a' }
+Object.defineProperty(accessorObligation, 'seniorityRank', {
+  get() { getterCalls += 1; return 1 },
+})
+assert(
+  order([accessorObligation]) === 'UNVERIFIABLE' && getterCalls === 0,
+  'accessor-backed seniority fails closed without executing getters',
+)
+assert(
+  order([Object.create({ id: 'o1', type: 'typed-a', seniorityRank: 1 })]) === 'UNVERIFIABLE',
+  'inherited obligation identity cannot enter seniority ordering',
+)
+assert(
+  order([{ id: 'o1', type: 'typed-a', seniorityRank: Number.MAX_SAFE_INTEGER + 1 }]) === 'UNVERIFIABLE',
+  'unsafe integer ranks are not accepted as deterministic seniority values',
 )
 
 const independent = Object.freeze({
