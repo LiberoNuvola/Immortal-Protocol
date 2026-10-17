@@ -33,12 +33,15 @@ const rewardEligibility = (c, b) => {
       !hasNonBlankString(b?.evidenceContract) ||
       !hasNonBlankString(b?.authority)) return 'UNVERIFIABLE'
   if (c?.accepted !== true || c?.verified !== true) return 'UNVERIFIABLE'
-  if (!hasNonBlankString(c?.contributionId) || !hasNonBlankString(c?.evidenceRef)) {
+  if (!hasNonBlankString(c?.contributionId) ||
+      !hasNonBlankString(c?.contributor) ||
+      !hasNonBlankString(c?.evidenceRef)) {
     return 'UNVERIFIABLE'
   }
   return Object.freeze({
     eligible: true,
     contributionId: c.contributionId,
+    contributorIdentity: c.contributor,
     evidenceRef: c.evidenceRef,
     ruleVersion: b.ruleVersion,
     evidenceContract: b.evidenceContract,
@@ -50,6 +53,7 @@ assert(admission.eligible === true, 'verified accepted contribution can enter re
 assert(admission.ruleVersion === boundary.ruleVersion, 'eligibility retains the declared reward rule identity')
 assert(admission.evidenceContract === boundary.evidenceContract, 'eligibility retains the declared evidence contract')
 assert(admission.contributionId === contribution.contributionId, 'eligibility remains bound to the contribution identity')
+assert(admission.contributorIdentity === contribution.contributor, 'eligibility retains the contributor identity from the accepted record')
 
 assert(
   rewardEligibility({ ...contribution, accepted: 'true' }, boundary) === 'UNVERIFIABLE',
@@ -62,6 +66,14 @@ assert(
 assert(
   rewardEligibility({ ...contribution, contributionId: '' }, boundary) === 'UNVERIFIABLE',
   'missing contribution identity fails closed',
+)
+assert(
+  rewardEligibility({ ...contribution, contributor: '' }, boundary) === 'UNVERIFIABLE',
+  'missing contributor identity fails closed',
+)
+assert(
+  rewardEligibility({ ...contribution, contributor: '   ' }, boundary) === 'UNVERIFIABLE',
+  'blank contributor identity remains unverifiable',
 )
 assert(
   rewardEligibility({ ...contribution, contributionId: '   ' }, boundary) === 'UNVERIFIABLE',
