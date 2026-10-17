@@ -39,7 +39,7 @@ const sourceFiles = roots.flatMap((root) => {
   .filter((file) => !excludedFiles.has(path.resolve(file)))
 
 const forbiddenCallPatterns = [
-  /(?:from|require)s*\(?['"][^'"]*treasuryPolicy(?:\.ts)?['"]\)?/,
+  /(?:from|require)\s*\(?['"][^'"]*treasuryPolicy(?:\.ts)?['"]\)?/,
   /\bcalculateTreasuryDistribution\s*\(/,
   /\b(?:TreasuryAction|DISTRIBUTE_REDEEMER)\b/,
 ]
@@ -67,6 +67,19 @@ function activeLegacyReferences(source) {
 
   return hits
 }
+
+assert(
+  activeLegacyReferences("import { calculateTreasuryDistribution } from './treasuryPolicy'").length > 0,
+  'legacy Treasury policy ES-module imports are detected',
+)
+assert(
+  activeLegacyReferences("const legacy = require('./treasuryPolicy.ts')").length > 0,
+  'legacy Treasury policy CommonJS imports are detected',
+)
+assert(
+  activeLegacyReferences("import { submitEconomic } from './economicAdapter'").length === 0,
+  'unrelated economic adapter imports do not trigger the legacy detector',
+)
 
 const hits = []
 for (const file of sourceFiles) {
