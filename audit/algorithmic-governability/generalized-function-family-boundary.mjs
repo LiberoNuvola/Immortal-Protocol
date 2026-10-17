@@ -165,12 +165,23 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
 }
 
 const certifyCandidate = (boundary, candidate) => {
-  if (!candidate || candidate.domain !== boundary.domain) return { status: 'UNVERIFIABLE' }
+  if (!candidate || typeof candidate !== 'object') return { status: 'UNVERIFIABLE' }
   if (!Object.prototype.hasOwnProperty.call(candidate, 'value') || (candidate.value === undefined || candidate.value === null)) {
     return { status: 'UNVERIFIABLE' }
   }
-  if (candidate.ruleVersion !== boundary.ruleVersion) return { status: 'REJECTED' }
+
+  const requiredBindings = ['domain', 'ruleVersion', 'evidenceContract', 'boundContract']
+  if (requiredBindings.some((field) =>
+    typeof candidate[field] !== 'string' || candidate[field].trim() === '',
+  )) return { status: 'UNVERIFIABLE' }
+  if (typeof candidate.evidenceVerified !== 'boolean' ||
+      typeof candidate.withinDeclaredBounds !== 'boolean') {
+    return { status: 'UNVERIFIABLE' }
+  }
+
   if (
+    candidate.domain !== boundary.domain ||
+    candidate.ruleVersion !== boundary.ruleVersion ||
     candidate.evidenceContract !== boundary.evidenceContract ||
     candidate.boundContract !== boundary.boundContract
   ) return { status: 'REJECTED' }
@@ -247,6 +258,23 @@ assert(
   'candidate certification cannot substitute another declared-bound contract',
 )
 assert(!('adopted' in certified), 'certification does not mutate canonical adoption state')
+assert(
+  certifyCandidate(reward, { ...certified.semanticResult, withinDeclaredBounds: null }).status === 'UNVERIFIABLE',
+  'unknown declared-bound evidence remains unverifiable rather than being classified as a proven violation',
+)
+assert(
+  certifyCandidate(reward, { ...certified.semanticResult, withinDeclaredBounds: 'true' }).status === 'UNVERIFIABLE',
+  'string-valued declared-bound evidence is not treated as a typed boolean',
+)
+assert(
+  certifyCandidate(reward, { ...certified.semanticResult, evidenceVerified: null }).status === 'UNVERIFIABLE',
+  'unknown evidence-verification state remains unverifiable',
+)
+assert(
+  certifyCandidate(reward, { ...certified.semanticResult, evidenceContract: ' ' }).status === 'UNVERIFIABLE',
+  'blank candidate evidence identity remains unverifiable',
+)
+
 assert(
   certifyCandidate(reward, { domain: 'reward', ruleVersion: 'reward-v1', evidenceContract: 'evidence-reward-v1', boundContract: 'bounds-reward-v1', evidenceVerified: true, withinDeclaredBounds: true }).status === 'UNVERIFIABLE',
   'candidate without a derived value cannot be certified',
