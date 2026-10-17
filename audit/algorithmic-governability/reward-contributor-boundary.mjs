@@ -35,15 +35,22 @@ const isRecord = (value) =>
   (Object.getPrototypeOf(value) === Object.prototype ||
    Object.getPrototypeOf(value) === null)
 
+const hasOwnDataFields = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
 const rewardEligibility = (c, b) => {
-  if (!isRecord(c) || !isRecord(b)) return 'UNVERIFIABLE'
-  if (!hasNonBlankString(b?.ruleVersion) ||
-      !hasNonBlankString(b?.evidenceContract) ||
-      !hasNonBlankString(b?.authority)) return 'UNVERIFIABLE'
-  if (c?.accepted !== true || c?.verified !== true) return 'UNVERIFIABLE'
-  if (!hasNonBlankString(c?.contributionId) ||
-      !hasNonBlankString(c?.contributor) ||
-      !hasNonBlankString(c?.evidenceRef)) {
+  const contributionFields = ['accepted', 'verified', 'contributionId', 'contributor', 'evidenceRef']
+  const boundaryFields = ['ruleVersion', 'evidenceContract', 'authority']
+  if (!hasOwnDataFields(c, contributionFields) || !hasOwnDataFields(b, boundaryFields)) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(b.ruleVersion) ||
+      !hasNonBlankString(b.evidenceContract) ||
+      !hasNonBlankString(b.authority)) return 'UNVERIFIABLE'
+  if (c.accepted !== true || c.verified !== true) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(c.contributionId) ||
+      !hasNonBlankString(c.contributor) ||
+      !hasNonBlankString(c.evidenceRef)) {
     return 'UNVERIFIABLE'
   }
   return Object.freeze({
@@ -120,6 +127,21 @@ assert(
   rewardEligibility(contribution, { ...boundary, authority: '   ' }) === 'UNVERIFIABLE',
   'blank declared authority reference cannot authorize reward eligibility',
 )
+let rewardGetterCalls = 0
+const accessorContribution = { ...contribution }
+Object.defineProperty(accessorContribution, 'verified', {
+  enumerable: true,
+  get() { rewardGetterCalls += 1; return true },
+})
+assert(rewardEligibility(accessorContribution, boundary) === 'UNVERIFIABLE' && rewardGetterCalls === 0,
+  'accessor-backed contribution verification fails closed without executing getter')
+const accessorBoundary = { ...boundary }
+Object.defineProperty(accessorBoundary, 'authority', {
+  enumerable: true,
+  get() { rewardGetterCalls += 1; return boundary.authority },
+})
+assert(rewardEligibility(contribution, accessorBoundary) === 'UNVERIFIABLE' && rewardGetterCalls === 0,
+  'accessor-backed reward authority fails closed without executing getter')
 
 
 const forged = Object.freeze({
