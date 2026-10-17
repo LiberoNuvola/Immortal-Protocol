@@ -6,7 +6,9 @@ const assert = (condition, message) => {
 }
 
 const admitExposure = (budget, realizedExposure, requested) => {
-  if (budget == null || realizedExposure == null || requested == null) return 'UNVERIFIABLE'
+  if (typeof budget !== 'bigint' ||
+      typeof realizedExposure !== 'bigint' ||
+      typeof requested !== 'bigint') return 'UNVERIFIABLE'
   if (budget < 0n || realizedExposure < 0n || requested < 0n) return 'REJECTED'
   return realizedExposure + requested <= budget
 }
@@ -22,6 +24,21 @@ assert(
 assert(
   admitExposure(null, 40n, 10n) === 'UNVERIFIABLE',
   'missing budget is not converted into zero or unlimited budget',
+)
+for (const malformed of [
+  [100, 40n, 10n],
+  [100n, 40, 10n],
+  [100n, 40n, '10'],
+  ['100', 40n, 10n],
+]) {
+  assert(
+    admitExposure(...malformed) === 'UNVERIFIABLE',
+    'non-BigInt risk-budget values fail closed without coercion',
+  )
+}
+assert(
+  admitExposure(100n, -1n, 10n) === 'REJECTED',
+  'negative realized exposure remains rejected',
 )
 
 const separated = Object.freeze({
