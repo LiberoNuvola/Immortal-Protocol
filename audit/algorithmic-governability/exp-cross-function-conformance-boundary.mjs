@@ -162,7 +162,7 @@ const unrelatedGetterResult = adopt(certifyCandidate(boundary('EXP-01'), derivat
   canonicalWithExtraGetter, boundary('EXP-01'))
 assert(unrelatedGetterResult.adopted !== null,
   'valid adoption preserves its intended result when unrelated metadata exists')
-assert(unrelatedGetterCalled === false,
+assert(unrelatedCanonicalGetterCalled === false,
   'adoption does not execute unrelated canonical-state getters while copying state')
 
 let statusGetterCalled = false
