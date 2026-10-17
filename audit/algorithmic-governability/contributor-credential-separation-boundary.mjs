@@ -30,18 +30,45 @@ const credential = Object.freeze({
   ruleVersion: contributionRecord.ruleVersion,
 })
 
-const credentialEligible = (record, candidate) => (
-  record.accepted === true &&
-  candidate.contributionId === record.contributionId &&
-  candidate.contributorId === record.contributorId &&
-  candidate.evidenceRef === record.evidenceRef &&
-  candidate.evidenceContractVersion === record.evidenceContractVersion &&
-  candidate.ruleVersion === record.ruleVersion
-)
+const credentialEligible = (record, candidate) => {
+  if (!record || !candidate || typeof record !== 'object' || typeof candidate !== 'object') return false
+  if (record.accepted !== true) return false
+
+  const identityFields = [
+    'contributionId',
+    'contributorId',
+    'evidenceRef',
+    'evidenceContractVersion',
+    'ruleVersion',
+  ]
+  for (const field of identityFields) {
+    if (typeof record[field] !== 'string' || record[field].trim() === '') return false
+    if (typeof candidate[field] !== 'string' || candidate[field].trim() === '') return false
+    if (candidate[field] !== record[field]) return false
+  }
+  return true
+}
 
 assert(
   credentialEligible(contributionRecord, credential),
   'credential eligibility is bound to the accepted ContributionRecord and evidence identity',
+)
+
+assert(
+  credentialEligible(contributionRecord, null) === false,
+  'missing credential candidate fails closed without throwing',
+)
+assert(
+  credentialEligible(null, credential) === false,
+  'missing ContributionRecord fails closed without throwing',
+)
+assert(
+  credentialEligible(contributionRecord, { ...credential, evidenceRef: '  ' }) === false,
+  'blank evidence reference cannot qualify a credential',
+)
+assert(
+  credentialEligible(contributionRecord, { ...credential, ruleVersion: '' }) === false,
+  'missing rule version cannot qualify a credential',
 )
 
 assert(
