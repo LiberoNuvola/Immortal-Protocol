@@ -105,6 +105,7 @@ function prizeDatum(
   beaconHex: string,
   issuedAt: bigint,
   expiresAt: bigint,
+  ticketNonce: bigint,
   status: 'pending' | 'revealed',
   resultHex = '',
   payout = 0n,
@@ -119,7 +120,7 @@ function prizeDatum(
     PRICE_USDM,
     commitmentHex,
     toHex(GAME_VERSION),
-    1n,
+    ticketNonce,
     payout,
     '',
     '',
@@ -242,35 +243,55 @@ const issuedAt = now
 const expiresAt = now + 3_600_000n
 const validTo = Number(now + 120_000n)
 
-const beaconValue = await deriveBeacon(0, 0, MAINCHAIN_REF, MC_HASH, MATERIOS_CONTEXT, GAME_VERSION)
-const playerCommitmentHex = toHex(await playerCommitment(0, 1, GOOD_SECRET))
-const commitmentHex = toHex(await ticketCommitment(
-  fromHex(TICKET_NAME_HEX),
-  fromHex(playerCommitmentHex),
-  GAME_VERSION,
-  1,
-  Number(PRICE_USDM),
-  encodeBeaconTarget({ networkId: 0, round: 0, mainchainRef: MAINCHAIN_REF, version: GAME_VERSION }),
-))
-const ticketSeed = await deriveTicketSeed(0, 1, GOOD_SECRET, beaconValue, GAME_VERSION)
-const symbolsSeed = await deriveSymbolsSeed(ticketSeed)
-const symbols = await generateSymbols(symbolsSeed)
-const digest = await sha256(symbolsSeed)
-const expectedResult = await sha256(new Uint8Array([...field(digest), ...field(symbols)]))
-const row1Tier = classifyRowTier(symbols.slice(0, 3))
-const row2Tier = classifyRowTier(symbols.slice(3, 6))
-const prizeTier = classifyTier(symbols)
-const payout = BigInt(rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(PRICE_USDM)))
-
-const pendingPrizeDatum = prizeDatum(
-  poolHash, playerCommitmentHex, commitmentHex, toHex(beaconValue), issuedAt, expiresAt, 'pending',
-)
-const revealedPrizeDatum = prizeDatum(
-  poolHash, playerCommitmentHex, commitmentHex, toHex(beaconValue), issuedAt, expiresAt,
-  'revealed', toHex(expectedResult), payout, prizeTier, row1Tier, row2Tier,
-)
-const pendingPoolDatum = poolDatum(revealHash, 0n, FIXTURE_RESERVE, 1n)
-const revealedPoolDatum = poolDatum(revealHash, payout, 0n, 0n)
+async function prepareFixture(ticketNonce: bigint, poolHash: string, revealHashValue: string, issuedAt: bigint, expiresAt: bigint) {
+  const beaconValue = await deriveBeacon(0, 0, MAINCHAIN_REF, MC_HASH, MATERIOS_CONTEXT, GAME_VERSION)
+  const playerCommitmentHex = toHex(await playerCommitment(0, Number(ticketNonce), GOOD_SECRET))
+  const commitmentHex = toHex(await ticketCommitment(
+    fromHex(TICKET_NAME_HEX),
+    fromHex(playerCommitmentHex),
+    GAME_VERSION,
+    Number(ticketNonce),
+    Number(PRICE_USDM),
+    encodeBeaconTarget({ networkId: 0, round: 0, mainchainRef: MAINCHAIN_REF, version: GAME_VERSION }),
+  ))
+  const ticketSeed = await deriveTicketSeed(0, Number(ticketNonce), GOOD_SECRET, beaconValue, GAME_VERSION)
+  const symbolsSeed = await deriveSymbolsSeed(ticketSeed)
+  const symbols = await generateSymbols(symbolsSeed)
+  const digest = await sha256(symbolsSeed)
+  const expectedResult = await sha256(new Uint8Array([...field(digest), ...field(symbols)]))
+  const row1Tier = classifyRowTier(symbols.slice(0, 3))
+  const row2Tier = classifyRowTier(symbols.slice(3, 6))
+  const prizeTier = classifyTier(symbols)
+  const payout = BigInt(rowPayoutTotal(defaultPrizeTable, row1Tier, row2Tier, Number(PRICE_USDM)))
+  return {
+    ticketNonce,
+    beaconValue,
+    playerCommitmentHex,
+    commitmentHex,
+    symbols,
+    expectedResult,
+    row1Tier,
+    row2Tier,
+    prizeTier,
+    payout,
+    pendingPrizeDatum: prizeDatum(
+      poolHash, playerCommitmentHex, commitmentHex, toHex(beaconValue), issuedAt, expiresAt,
+      ticketNonce, 'pending',
+    ),
+    revealedPrizeDatum: prizeDatum(
+      poolHash, playerCommitmentHex, commitmentHex, toHex(beaconValue), issuedAt, expiresAt,
+      ticketNonce, 'revealed', toHex(expectedResult), payout, prizeTier, row1Tier, row2Tier,
+    ),
+    pendingPoolDatum: poolDatum(revealHashValue, 0n, FIXTURE_RESERVE, 1n),
+    revealedPoolDatum: poolDatum(revealHashValue, payout, 0n, 0n),
+  }
+}
+const lossFixture = await prepareFixture(1n, poolHash, revealHash, issuedAt, expiresAt)
+// Deterministic vector under the existing canonical seed algorithm: nonce 7
+// yields tier 1 on both rows; this is a test fixture, not an economic parameter.
+const winningFixture = await prepareFixture(7n, poolHash, revealHash, issuedAt, expiresAt)
+if (lossFixture.payout !== 0n) fail('Loss fixture nonce unexpectedly produced a prize payout')
+if (winningFixture.payout <= 0n) fail('Winning fixture nonce did not produce a positive payout')
 
 console.log(JSON.stringify({
   aikenRevealDiag: 'fixture-plan',
