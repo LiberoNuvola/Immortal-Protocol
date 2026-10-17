@@ -947,6 +947,89 @@ const reveal: any = await revealBuilder.complete({ localUPLCEval: false })
   }
 }
 
+// Integrated negative twin: submit a wrong-secret Reveal against the same real B1PrizePool V2
+// fixture before submitting the valid transaction. Reuse the already measured successful
+// transaction's ExUnit budgets only to construct the adversarial CBOR; the local ledger must
+// execute the wrong-secret transaction and reject it. This runs only for the isolated Aiken V3
+// candidate, never for the canonical Haskell path or the existing V3 carrier.
+if (aikenRevealV3Candidate) {
+  const validBudgetReference = describeTx(reveal.toCBOR())
+  const originalEvaluateTx = providerWithEvaluation.evaluateTx
+  const wrongSecret = fromHex('02'.repeat(32))
+  let wrongSecretTxBytes: number | null = null
+  let wrongSecretRejected = false
+  let wrongSecretRejection = ''
+  try {
+    providerWithEvaluation.evaluateTx = async () => validBudgetReference.redeemers.map((r) => ({
+      redeemer_tag: String(r.tag),
+      redeemer_index: r.index,
+      ex_units: { mem: Number(r.mem), steps: Number(r.steps) },
+    }))
+    const wrongSecretReveal = await lucid
+      .newTx()
+      .readFrom([prizeReferenceInput, poolReferenceInput])
+      .collectFrom([prizeUtxo], Data.to(c(1, [toHex(wrongSecret)])))
+      .collectFrom([poolUtxo], poolRevealRedeemer)
+      .pay.ToContract(
+        scripts.prizeAddress as string,
+        { kind: 'inline', value: Data.to(postPrizeDatum) },
+        prizeUtxo.assets,
+      )
+      .pay.ToContract(
+        scripts.b1PrizePoolAddress as string,
+        { kind: 'inline', value: Data.to(postPoolDatum) },
+        poolUtxo.assets,
+      )
+      .addSigner(address)
+      .validTo(Number(revealValidTo()))
+      .complete({ localUPLCEval: false })
+    const wrongSecretCbor = wrongSecretReveal.toCBOR()
+    wrongSecretTxBytes = Buffer.from(wrongSecretCbor, 'hex').length
+    if (typeof protocolParameters.maxTxSize !== 'number' || wrongSecretTxBytes > protocolParameters.maxTxSize) {
+      throw new Error('Wrong-secret twin cannot test validator rejection: transaction size is unqualified or exceeds maxTxSize')
+    }
+    const wrongSecretSigned = await wrongSecretReveal.sign.withWallet().complete({ localUPLCEval: false })
+    console.log(JSON.stringify({
+      aikenRevealDiag: 'wrong-secret-ledger-submission',
+      validatorPath: 'isolated-aiken-v3-plus-real-b1-prize-pool-v2',
+      wrongSecretHex: toHex(wrongSecret),
+      tx: describeTx(wrongSecretSigned.toCBOR()),
+      submissionAttempted: true,
+      note: 'ExUnits copied from the valid twin for construction only; acceptance/rejection is decided by Yaci ledger validation.',
+    }, null, 2))
+    try {
+      await wrongSecretSigned.submit()
+    } catch (error) {
+      wrongSecretRejected = true
+      wrongSecretRejection = error instanceof Error ? error.message : String(error)
+    }
+    if (!wrongSecretRejected) {
+      throw new Error('Wrong-secret Reveal was unexpectedly accepted by the integrated Yaci ledger')
+    }
+    if (!/script|plutus|phase.?2|evaluation|validation|validator/i.test(wrongSecretRejection)) {
+      throw new Error('Wrong-secret transaction was rejected, but evidence does not classify the error as validator/ledger validation: ' + wrongSecretRejection.slice(0, 1200))
+    }
+    const stillUnspentPrize = await lucid.utxosAt(scripts.prizeAddress as string)
+    const stillUnspentPool = await lucid.utxosAt(scripts.b1PrizePoolAddress as string)
+    if (!stillUnspentPrize.some((u) => ref(u) === ref(prizeUtxo)) ||
+        !stillUnspentPool.some((u) => ref(u) === ref(poolUtxo))) {
+      throw new Error('Wrong-secret rejection did not preserve the original Prize and B1PrizePool UTxOs')
+    }
+    console.log(JSON.stringify({
+      aikenRevealDiag: 'wrong-secret-ledger-rejected',
+      txBytes: wrongSecretTxBytes,
+      maxTxSize: protocolParameters.maxTxSize,
+      rejected: wrongSecretRejected,
+      rejection: wrongSecretRejection.slice(0, 1200),
+      originalInputsPreserved: true,
+      canonicalHaskellValidatorModified: false,
+      existingV3CarrierModified: false,
+    }, null, 2))
+  } finally {
+    providerWithEvaluation.evaluateTx = originalEvaluateTx
+  }
+}
+
 let signedReveal: any = null
 /*
  * Audit harness only: this trace measures a real Yaci ledger realization.
