@@ -30,8 +30,14 @@ const credential = Object.freeze({
   ruleVersion: contributionRecord.ruleVersion,
 })
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const credentialEligible = (record, candidate) => {
-  if (!record || !candidate || typeof record !== 'object' || typeof candidate !== 'object') return false
+  if (!isRecord(record) || !isRecord(candidate)) return false
   if (record.accepted !== true) return false
 
   const identityFields = [
@@ -61,6 +67,18 @@ assert(
 assert(
   credentialEligible(null, credential) === false,
   'missing ContributionRecord fails closed without throwing',
+)
+assert(
+  credentialEligible(Object.assign([], contributionRecord), credential) === false,
+  'array with forged ContributionRecord fields cannot qualify a credential',
+)
+assert(
+  credentialEligible(contributionRecord, Object.assign([], credential)) === false,
+  'array with forged credential fields cannot qualify a credential',
+)
+assert(
+  credentialEligible(contributionRecord, new Date()) === false,
+  'non-record credential object cannot qualify a credential',
 )
 assert(
   credentialEligible(contributionRecord, { ...credential, evidenceRef: '  ' }) === false,
