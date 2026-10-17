@@ -155,9 +155,9 @@ Object.defineProperty(accessorEveryAssets, 'every', {
   },
 })
 assert(
-  projectMoriartyToImmortal({ ...moriartyOwnerIntent, assets: accessorEveryAssets }, immortalIntent) === null &&
+  projectMoriartyToImmortal({ ...moriartyOwnerIntent, assets: accessorEveryAssets }, immortalIntent) !== null &&
     assetsEveryGetterCalls === 0,
-  'accessor-backed array methods cannot bypass asset validation or execute during projection',
+  'valid asset data is checked without dispatching an accessor-backed array method',
 )
 assert(projected !== null, 'Moriarty OwnerIntent can be explicitly projected into IMMORTAL IssueIntent')
 assert(projected.intent.action === semanticResult.action, 'projection preserves the action')
