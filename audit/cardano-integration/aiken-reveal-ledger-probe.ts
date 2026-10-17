@@ -17,6 +17,7 @@ import {
   Blockfrost,
   Lucid,
   validatorToScriptHash,
+  validatorToAddress,
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
@@ -231,8 +232,10 @@ if (validatorToScriptHash(revealReferenceInput.scriptRef as Script).toLowerCase(
 const protocolParameters = await provider.getProtocolParameters()
 const maxTxSize = Number(protocolParameters.maxTxSize)
 if (!Number.isSafeInteger(maxTxSize) || maxTxSize <= 0) fail('Yaci protocol maxTxSize is unavailable')
-const revealAddress = lucid.utils.validatorToAddress(revealScript)
-const poolAddress = lucid.utils.validatorToAddress(poolScript)
+// Lucid Evolution 0.6.5 exposes address derivation as a top-level helper,
+ // unlike the legacy lucid.utils facade.
+const revealAddress = validatorToAddress('Preprod', revealScript)
+const poolAddress = validatorToAddress('Preprod', poolScript)
 const walletAddress = await lucid.wallet().address()
 const now = BigInt(Date.now())
 const issuedAt = now
