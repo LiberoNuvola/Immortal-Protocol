@@ -139,3 +139,10 @@ The dedicated Haskell conformance test now additionally checks:
 These assertions exercise existing `gatesPassed` and `statusChangeAllowed` semantics. They introduce no new thresholds or policy. They are bounded executable vectors, not proof of complete environment provenance, profile ownership across every module, or deployed governance.
 
 **Status: AG-02/AG-03/AG-09 targeted vectors added; CI verification pending. Full AG-01..AG-10 closure remains OPEN.**
+
+
+## 2026-10-17 — AG-01 dedicated run #5 result
+
+- Dedicated Haskell conformance run #5: **SUCCESS** — https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39020146220, commit `57f186ed6c8f80437d4c76f5afd0c9147b992e67`.
+- This confirms the targeted AG-02/AG-03/AG-09 assertions compile and pass against the existing `gatesPassed` and `statusChangeAllowed` implementation.
+- Scope remains bounded: it does not close the full AG-01..AG-10 matrix, prove independent canonical replay, or demonstrate deployed governance.
