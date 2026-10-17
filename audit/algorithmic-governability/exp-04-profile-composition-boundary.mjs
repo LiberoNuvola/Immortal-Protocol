@@ -6,6 +6,7 @@ const assert = (condition, message) => {
 }
 
 const compose = (profiles) => {
+  if (!Array.isArray(profiles)) return 'UNVERIFIABLE'
   const seen = new Set()
   for (const profile of profiles) {
     if (!profile || !profile.id || !Number.isInteger(profile.version) || profile.version <= 0) {
