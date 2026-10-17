@@ -158,7 +158,7 @@ Object.defineProperty(canonicalWithExtraGetter, 'unrelatedMetadata', {
     return 'must-not-run'
   },
 })
-const unrelatedGetterResult = adopt(certifyCandidate(boundary('EXP-01'), derivationInput(boundary('EXP-01'))),
+const unrelatedGetterResult = adopt(derive(boundary('EXP-01'), derivationInput(boundary('EXP-01'))),
   canonicalWithExtraGetter, boundary('EXP-01'))
 assert(unrelatedGetterResult.adopted !== null,
   'valid adoption preserves its intended result when unrelated metadata exists')
