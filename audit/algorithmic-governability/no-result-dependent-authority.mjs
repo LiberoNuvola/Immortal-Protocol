@@ -46,6 +46,7 @@ assert(
 )
 
 const adopt = (candidate, certified, boundary) => {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null
   if (boundary.coverage !== 'COMPLETE' && candidate.claimsCompleteUniverse) return null
   if (!certified || certified.status !== 'admissible') return null
   if (candidate.domain !== boundary.domain) return null
@@ -63,6 +64,13 @@ assert(
   adopt(partialCandidate, { status: 'admissible' }, immutableBoundary) === null,
   'partial search cannot be adopted as a complete normative universe',
 )
+
+for (const malformedCandidate of [null, undefined, 'candidate', 7, []]) {
+  assert(
+    adopt(malformedCandidate, { status: 'admissible' }, immutableBoundary) === null,
+    `malformed candidate (${String(malformedCandidate)}) is rejected without throwing`,
+  )
+}
 
 const validCandidate = Object.freeze({
   domain: immutableBoundary.domain,
