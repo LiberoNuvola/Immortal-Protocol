@@ -36,17 +36,24 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataFields = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
+const identityFields = [
+  'contributionId',
+  'contributorId',
+  'evidenceRef',
+  'evidenceContractVersion',
+  'ruleVersion',
+]
+
 const credentialEligible = (record, candidate) => {
-  if (!isRecord(record) || !isRecord(candidate)) return false
+  if (!hasOwnDataFields(record, ['accepted', ...identityFields])) return false
+  if (!hasOwnDataFields(candidate, identityFields)) return false
   if (record.accepted !== true) return false
 
-  const identityFields = [
-    'contributionId',
-    'contributorId',
-    'evidenceRef',
-    'evidenceContractVersion',
-    'ruleVersion',
-  ]
   for (const field of identityFields) {
     if (typeof record[field] !== 'string' || record[field].trim() === '') return false
     if (typeof candidate[field] !== 'string' || candidate[field].trim() === '') return false
@@ -80,6 +87,34 @@ assert(
   credentialEligible(contributionRecord, new Date()) === false,
   'non-record credential object cannot qualify a credential',
 )
+
+let recordGetterCalls = 0
+const accessorBackedRecord = {
+  ...contributionRecord,
+  get accepted() {
+    recordGetterCalls += 1
+    return true
+  },
+}
+assert(
+  credentialEligible(accessorBackedRecord, credential) === false,
+  'accessor-backed ContributionRecord fields fail closed',
+)
+assert(recordGetterCalls === 0, 'ContributionRecord accessors are rejected without executing getters')
+
+let candidateGetterCalls = 0
+const accessorBackedCredential = {
+  ...credential,
+  get evidenceRef() {
+    candidateGetterCalls += 1
+    return contributionRecord.evidenceRef
+  },
+}
+assert(
+  credentialEligible(contributionRecord, accessorBackedCredential) === false,
+  'accessor-backed credential identity fields fail closed',
+)
+assert(candidateGetterCalls === 0, 'credential accessors are rejected without executing getters')
 assert(
   credentialEligible(contributionRecord, { ...credential, evidenceRef: '  ' }) === false,
   'blank evidence reference cannot qualify a credential',
