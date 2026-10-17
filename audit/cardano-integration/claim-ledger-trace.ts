@@ -1103,12 +1103,13 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     const rejectedByYaciEvaluation =
       message.includes('Yaci transaction evaluation failed') ||
       message.includes('Yaci evaluation failed')
-    const rejectedByLedger =
-      phase === 'ledger submission' &&
-      /HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message)
     const explicitPlutusFailure =
       phase === 'ledger submission' &&
       /The PlutusV[123] script failed/.test(message)
+    const rejectedByLedger =
+      phase === 'ledger submission' &&
+      (/HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message) ||
+        explicitPlutusFailure)
 
     // The native Cardano ledger error includes the failing script bytes but
     // does not reliably surface Plutus trace strings. Accept a negative twin
