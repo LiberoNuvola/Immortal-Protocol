@@ -41,11 +41,20 @@ const moriartyOwnerIntent = Object.freeze({
   }),
 })
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const projectToImmortalIssue = (ownerIntent) => {
-  if (!ownerIntent || ownerIntent.action !== 'Issue') return 'REJECTED'
+  if (!isRecord(ownerIntent)) return 'UNVERIFIABLE'
+  if (ownerIntent.action !== 'Issue') return 'REJECTED'
   if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return 'UNVERIFIABLE'
-  if (!ownerIntent.authority || !ownerIntent.authority.nonce || !ownerIntent.authority.predecessor) return 'UNVERIFIABLE'
+  if (!isRecord(ownerIntent.authority)) return 'UNVERIFIABLE'
+  if (!ownerIntent.authority.nonce || !ownerIntent.authority.predecessor) return 'UNVERIFIABLE'
   if (!Array.isArray(ownerIntent.assets) || ownerIntent.assets.length === 0) return 'UNVERIFIABLE'
+  if (!ownerIntent.assets.every((asset) => typeof asset === 'string' && asset.trim().length > 0)) return 'UNVERIFIABLE'
 
   /*
    * These are application coordinates. They are supplied by a separately
@@ -78,6 +87,25 @@ assert(mapped.sourceIdentity.programHash === moriartyOwnerIntent.program_hash, '
 assert(mapped.sourceIdentity.scenarioHash === moriartyOwnerIntent.scenario_hash, 'scenario identity remains bound')
 assert(mapped.sourceIdentity.nonce === moriartyOwnerIntent.authority.nonce, 'nonce is not silently discarded')
 assert(mapped.sourceIdentity.predecessor === moriartyOwnerIntent.authority.predecessor, 'predecessor is not silently discarded')
+
+for (const malformed of [null, undefined, 'owner-intent', 7, [], Object.assign([], moriartyOwnerIntent)]) {
+  assert(projectToImmortalIssue(malformed) === 'UNVERIFIABLE',
+    'malformed OwnerIntent container fails closed')
+}
+
+for (const malformed of [null, undefined, 'authority', 7, [], Object.assign([], moriartyOwnerIntent.authority)]) {
+  const candidate = structuredClone(moriartyOwnerIntent)
+  candidate.authority = malformed
+  assert(projectToImmortalIssue(candidate) === 'UNVERIFIABLE',
+    'malformed authority container fails closed')
+}
+
+for (const assets of [['USDM', 7], ['USDM', null], ['  ']]) {
+  const candidate = structuredClone(moriartyOwnerIntent)
+  candidate.assets = assets
+  assert(projectToImmortalIssue(candidate) === 'UNVERIFIABLE',
+    'malformed asset identifiers fail closed')
+}
 
 const missingAuthority = structuredClone(moriartyOwnerIntent)
 missingAuthority.authority.predecessor = ''
