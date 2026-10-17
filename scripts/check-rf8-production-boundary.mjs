@@ -9,7 +9,7 @@ const allowedDirectSubmission = new Set([
 ])
 
 const roots = ['src', 'Adapter/CARDANO', 'relayer']
-const directCall = /\.(?:signTx|submitTx)\s*\(/
+const directCall = /\.(?:signTx|submitTx|signAndSubmitTx)\s*\(/
 
 function walk(root) {
   if (!existsSync(root)) return []
