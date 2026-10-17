@@ -414,9 +414,9 @@ jobs:
               requirementRef: 'Haskell Plutus V2 CEK single-fault mutations evaluated by Aiken transition and transaction predicates',
               stepOutcome: outcome(process.env.AIKEN_FIXTURE_PARITY_OUTCOME),
               evidenceRefs,
-              observedValue: (() => {
+              observedValue: await (async () => {
                 try {
-                  const fixture = JSON.parse(require('node:fs').readFileSync('jev-evidence/reveal-schema-fixtures.json', 'utf8'));
+                  const fixture = JSON.parse(await fs.readFile('jev-evidence/reveal-schema-fixtures.json', 'utf8'));
                   const cases = fixture.mutationEvaluations?.cases;
                   return Array.isArray(cases) ? {
                     canonicalCekCases: cases.length,
