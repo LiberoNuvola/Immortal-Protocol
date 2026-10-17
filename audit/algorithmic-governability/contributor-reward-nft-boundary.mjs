@@ -33,18 +33,25 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataFields = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
+const identityFields = ['contributionId','contributorId','evidenceRef','evidenceContract','ruleVersion']
+
 const eligible=(r,c)=>{
-  if (!isRecord(r)) return 'UNVERIFIABLE'
-  if (!isRecord(c)) return 'UNVERIFIABLE'
+  if (!hasOwnDataFields(r, ['accepted', 'verified', ...identityFields])) return 'UNVERIFIABLE'
+  if (!hasOwnDataFields(c, ['credentialId', ...identityFields])) return 'UNVERIFIABLE'
   if(r.accepted !== true || r.verified !== true) return 'UNVERIFIABLE'
 
-  for(const field of ['contributionId','contributorId','evidenceRef','evidenceContract','ruleVersion']){
-    if(!hasNonBlankString(r?.[field])) return 'UNVERIFIABLE'
-    if(!hasNonBlankString(c?.[field])) return 'UNVERIFIABLE'
+  for(const field of identityFields){
+    if(!hasNonBlankString(r[field])) return 'UNVERIFIABLE'
+    if(!hasNonBlankString(c[field])) return 'UNVERIFIABLE'
     if(c[field] !== r[field]) return 'UNVERIFIABLE'
   }
 
-  if(!hasNonBlankString(c?.credentialId)) return 'UNVERIFIABLE'
+  if(!hasNonBlankString(c.credentialId)) return 'UNVERIFIABLE'
   return 'ELIGIBLE'
 }
 
@@ -58,6 +65,28 @@ for (const malformedCredential of [null, undefined, 'credential', 3, [], Object.
 }
 assert(eligible(Object.assign([], record), credential)==='UNVERIFIABLE',
   'array with forged contribution fields cannot qualify')
+
+let contributionGetterCalls = 0
+const accessorRecord = { ...record }
+Object.defineProperty(accessorRecord, 'verified', {
+  enumerable: true,
+  get() { contributionGetterCalls += 1; return true },
+})
+assert(eligible(accessorRecord, credential)==='UNVERIFIABLE',
+  'accessor-backed contribution evidence fails closed')
+assert(contributionGetterCalls === 0,
+  'contribution accessors are rejected without executing getters')
+
+let credentialGetterCalls = 0
+const accessorCredential = { ...credential }
+Object.defineProperty(accessorCredential, 'evidenceRef', {
+  enumerable: true,
+  get() { credentialGetterCalls += 1; return record.evidenceRef },
+})
+assert(eligible(record, accessorCredential)==='UNVERIFIABLE',
+  'accessor-backed credential evidence fails closed')
+assert(credentialGetterCalls === 0,
+  'credential accessors are rejected without executing getters')
 assert(!('rewardBudget' in credential),'credential does not carry an implicit reward budget')
 assert(!('governanceAuthority' in credential),'credential does not carry implicit governance authority')
 assert(!('treasuryAuthority' in credential),'credential does not carry implicit Treasury authority')
