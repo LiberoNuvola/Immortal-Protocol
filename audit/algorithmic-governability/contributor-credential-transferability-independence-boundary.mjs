@@ -61,8 +61,14 @@ const isRecord = (value) => {
   return prototype === Object.prototype || prototype === null
 }
 
+const hasOwnDataFields = (record, fields) => isRecord(record) && fields.every((field) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+})
+
 const rewardEligibility = (r, credential) => {
-  if (!isRecord(r) || !isRecord(credential)) return false
+  if (!hasOwnDataFields(r, ['accepted', 'verified', 'contributionId'])) return false
+  if (!hasOwnDataFields(credential, ['contributionId'])) return false
   return r.accepted === true &&
     r.verified === true &&
     credential.contributionId === r.contributionId
@@ -85,6 +91,32 @@ for (const malformedCredential of [null, undefined, 'credential', 4, [], Object.
 }
 assert(rewardEligibility(Object.assign([], record), issued) === false,
   'array with forged ContributionRecord fields fails closed')
+
+let recordGetterCalls = 0
+const accessorBackedRecord = {
+  ...record,
+  get verified() {
+    recordGetterCalls += 1
+    return true
+  },
+}
+assert(rewardEligibility(accessorBackedRecord, issued) === false,
+  'accessor-backed ContributionRecord evidence fails closed')
+assert(recordGetterCalls === 0,
+  'ContributionRecord accessors are rejected without executing getters')
+
+let credentialGetterCalls = 0
+const accessorBackedCredential = {
+  ...issued,
+  get contributionId() {
+    credentialGetterCalls += 1
+    return record.contributionId
+  },
+}
+assert(rewardEligibility(record, accessorBackedCredential) === false,
+  'accessor-backed credential contribution identity fails closed')
+assert(credentialGetterCalls === 0,
+  'credential accessors are rejected without executing getters')
 
 const authorityFree = (credential) => ({
   governanceAuthority: credential.governanceAuthority ?? null,
