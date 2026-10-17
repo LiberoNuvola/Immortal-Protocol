@@ -23,8 +23,21 @@ const packet = Object.freeze({
 
 const isDigest = (value) => typeof value === 'string' && DIGEST32.test(value)
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
 const validatePacket = (p) => {
-  if (!p || !['Issue','Reveal','Claim','Expire'].includes(p.action)) return false
+  if (!isRecord(p) || !['Issue','Reveal','Claim','Expire'].includes(p.action)) return false
+  for (const field of [
+    'canonicalPreState','actionParameters','candidatePostState',
+    'adapterInput','ledgerState','postState','evidenceProvenance',
+  ]) {
+    if (!isRecord(p[field])) return false
+  }
   if (!isDigest(p.canonicalPreState?.fingerprint)) return false
   if (!isDigest(p.actionParameters?.fingerprint)) return false
   if (!isDigest(p.candidatePostState?.fingerprint)) return false
@@ -37,6 +50,22 @@ const validatePacket = (p) => {
 }
 
 assert(validatePacket(packet), 'action evidence packet contains bound state/input/ledger/provenance identities')
+
+for (const malformed of [null, undefined, true, 1, 'packet', []]) {
+  assert(!validatePacket(malformed), 'malformed action packet container fails closed')
+}
+for (const field of [
+  'canonicalPreState','actionParameters','candidatePostState',
+  'adapterInput','ledgerState','postState','evidenceProvenance',
+]) {
+  const arrayField = []
+  Object.assign(arrayField, packet[field])
+  assert(!validatePacket({ ...packet, [field]: arrayField }), field + ' array container cannot masquerade as a record')
+}
+const arrayPacket = []
+Object.assign(arrayPacket, packet)
+assert(!validatePacket(arrayPacket), 'array carrying forged packet properties cannot cross the evidence boundary')
+
 assert(
   packet.canonicalPreState.fingerprint !== packet.candidatePostState.fingerprint,
   'pre-state and candidate-post-state remain distinct evidence identities',
