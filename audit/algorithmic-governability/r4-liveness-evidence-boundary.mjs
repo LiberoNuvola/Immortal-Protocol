@@ -69,8 +69,14 @@ const isUtcTimestamp = (value) => {
 
 const r4Classes = new Set(Array.from({ length: 10 }, (_, i) => `FM${i + 1}`))
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const validateEvidencePacket = (p) => {
-  if (!p || typeof p !== 'object') return 'NOT_DISCHARGED'
+  if (!isRecord(p)) return 'NOT_DISCHARGED'
   for (const field of [
     'canonicalPreStateRef',
     'expectedEligibleAction',
@@ -145,5 +151,10 @@ assert(
   validateEvidencePacket({ ...evidencePacket, runtimeRef: ' ' }) === 'NOT_DISCHARGED',
   'missing runtime provenance leaves incident evidence incomplete',
 )
+
+for (const malformed of [null, undefined, 'packet', 7, [], Object.assign([], evidencePacket)]) {
+  assert(validateEvidencePacket(malformed) === 'NOT_DISCHARGED',
+    'malformed R4 evidence-packet container fails closed')
+}
 
 console.log('ALL R4 LIVENESS/SAFE-STALL BOUNDARY CHECKS PASSED')
