@@ -302,16 +302,38 @@ console.log(JSON.stringify({
   maxTxSize,
   network: 'local-yaci-conway',
   fixtureDisclaimer: 'synthetic test-only datum and lovelace; not a production ticket, pool, USDM balance, or deployment',
-  expected: { payout: payout.toString(), prizeTier, row1Tier, row2Tier, symbols: toHex(symbols), resultHex: toHex(expectedResult) },
+  loss: {
+    ticketNonce: lossFixture.ticketNonce.toString(),
+    payout: lossFixture.payout.toString(),
+    prizeTier: lossFixture.prizeTier,
+    row1Tier: lossFixture.row1Tier,
+    row2Tier: lossFixture.row2Tier,
+    symbols: toHex(lossFixture.symbols),
+    resultHex: toHex(lossFixture.expectedResult),
+  },
+  winning: {
+    ticketNonce: winningFixture.ticketNonce.toString(),
+    payout: winningFixture.payout.toString(),
+    prizeTier: winningFixture.prizeTier,
+    row1Tier: winningFixture.row1Tier,
+    row2Tier: winningFixture.row2Tier,
+    symbols: toHex(winningFixture.symbols),
+    resultHex: toHex(winningFixture.expectedResult),
+  },
 }, null, 2))
 
-// Make two independent Prize/Pool pairs. The negative twin has a different
-// source pair so it cannot contaminate the positive transaction's evidence.
+if (winningFixture.payout !== 200n || winningFixture.row1Tier !== 1 || winningFixture.row2Tier !== 1) {
+  fail('Winning fixture diverged from the fixed canonical tier-1/tier-1 payout vector')
+}
+
+// Three independent Prize/Pool pairs: valid loss, valid non-zero payout, wrong-secret negative twin.
 const bootstrap = await lucid.newTx()
-  .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(pendingPrizeDatum) }, { lovelace: FIXTURE_LOVELACE })
-  .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(pendingPrizeDatum) }, { lovelace: FIXTURE_LOVELACE })
-  .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(pendingPoolDatum) }, { lovelace: FIXTURE_LOVELACE })
-  .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(pendingPoolDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(lossFixture.pendingPrizeDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(winningFixture.pendingPrizeDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(lossFixture.pendingPrizeDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(lossFixture.pendingPoolDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(winningFixture.pendingPoolDatum) }, { lovelace: FIXTURE_LOVELACE })
+  .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(lossFixture.pendingPoolDatum) }, { lovelace: FIXTURE_LOVELACE })
   .addSigner(walletAddress)
   .complete({ localUPLCEval: false })
 const bootstrapSigned = await bootstrap.sign.withWallet().complete({ localUPLCEval: false })
@@ -320,31 +342,119 @@ await lucid.awaitTx(bootstrapHash)
 
 const prizeFixtures = await waitFor(
   () => lucid.utxosAt(revealAddress),
-  (items) => items.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).length >= 2,
-  'two Aiken Reveal fixture UTxOs',
+  (items) => items.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).length >= 3,
+  'three Aiken Reveal fixture UTxOs',
 )
 const poolFixtures = await waitFor(
   () => lucid.utxosAt(poolAddress),
-  (items) => items.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).length >= 2,
-  'two Aiken pool-stub fixture UTxOs',
+  (items) => items.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).length >= 3,
+  'three Aiken pool-stub fixture UTxOs',
 )
 const prizes = prizeFixtures.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).sort((a,b) => a.outputIndex-b.outputIndex)
 const pools = poolFixtures.filter((u) => u.txHash.toLowerCase() === bootstrapHash.toLowerCase()).sort((a,b) => a.outputIndex-b.outputIndex)
-if (prizes.length !== 2 || pools.length !== 2) {
-  fail('Could not resolve exactly two independent fixture input pairs')
+if (prizes.length !== 3 || pools.length !== 3) {
+  fail('Could not resolve exactly three independent Prize/Pool fixture pairs')
 }
 
-async function buildReveal(prizeUtxo: UTxO, poolUtxo: UTxO, secret: Uint8Array) {
+async function buildReveal(prizeUtxo: UTxO, poolUtxo: UTxO, secret: Uint8Array, fixture: Awaited<ReturnType<typeof prepareFixture>>) {
   return lucid.newTx()
     .readFrom([revealReferenceInput])
     .collectFrom([prizeUtxo], Data.to(c(1, [toHex(secret)])))
     .collectFrom([poolUtxo], Data.to(c(0)))
     .attach.SpendingValidator(poolScript)
-    .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(revealedPrizeDatum) }, { lovelace: prizeUtxo.assets.lovelace ?? FIXTURE_LOVELACE })
-    .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(revealedPoolDatum) }, { lovelace: poolUtxo.assets.lovelace ?? FIXTURE_LOVELACE })
+    .pay.ToContract(revealAddress, { kind: 'inline', value: Data.to(fixture.revealedPrizeDatum) }, { lovelace: prizeUtxo.assets.lovelace ?? FIXTURE_LOVELACE })
+    .pay.ToContract(poolAddress, { kind: 'inline', value: Data.to(fixture.revealedPoolDatum) }, { lovelace: poolUtxo.assets.lovelace ?? FIXTURE_LOVELACE })
     .addSigner(walletAddress)
     .validTo(validTo)
     .complete({ localUPLCEval: false })
+}
+
+async function submitValidReveal(
+  prizeUtxo: UTxO,
+  poolUtxo: UTxO,
+  fixture: Awaited<ReturnType<typeof prepareFixture>>,
+  caseLabel: string,
+) {
+  const valid = await buildReveal(prizeUtxo, poolUtxo, GOOD_SECRET, fixture)
+  const unsignedCbor = valid.toCBOR()
+  const unsignedBytes = bytes(unsignedCbor)
+  if (unsignedBytes > maxTxSize) fail(caseLabel + ' unsigned Reveal tx exceeds maxTxSize: ' + unsignedBytes + ' > ' + maxTxSize)
+  const unsignedTx = CML.Transaction.from_cbor_hex(unsignedCbor)
+  const scriptCounts = embeddedScriptCounts(unsignedCbor)
+  const actualReferences = unsignedTx.body().reference_inputs?.()
+  let sawRevealReference = false
+  if (actualReferences) {
+    for (let i=0;i<Number(actualReferences.len());i+=1) {
+      const input=actualReferences.get(i)
+      if (input.transaction_id().to_hex().toLowerCase() === publication.publicationTransactionId.toLowerCase() &&
+          Number(input.index()) === publication.referenceUtxo.outputIndex) sawRevealReference = true
+    }
+  }
+  if (!sawRevealReference) fail(caseLabel + ' CBOR omits the qualified Reveal reference input')
+  if (scriptCounts.plutus_v1 !== 0 || scriptCounts.plutus_v2 !== 0 || scriptCounts.plutus_v3 !== 1) {
+    fail(caseLabel + ' expected only the test-only pool stub in embedded PlutusV3 witnesses, got ' + JSON.stringify(scriptCounts))
+  }
+  const cborTx = CML.Transaction.from_cbor_hex(unsignedCbor)
+  const rs: any = cborTx.witness_set().redeemers()
+  const redeemers: Array<{tag:number;index:number;mem:string;steps:string}>=[]
+  const legacy=rs?.as_arr_legacy_redeemer?.()
+  if(legacy) for(let i=0;i<legacy.len();i+=1){const x=legacy.get(i);redeemers.push({tag:Number(x.tag()),index:Number(x.index()),mem:x.ex_units().mem().toString(),steps:x.ex_units().steps().toString()})}
+  const map=rs?.as_map_redeemer_key_to_redeemer_val?.()
+  if(map){const keys=map.keys();for(let i=0;i<keys.len();i+=1){const k=keys.get(i);const x=map.get(k);if(x)redeemers.push({tag:Number(k.tag()),index:Number(k.index()),mem:x.ex_units().mem().toString(),steps:x.ex_units().steps().toString()})}}
+  const signed = await valid.sign.withWallet().complete({ localUPLCEval: false })
+  const signedCbor = signed.toCBOR()
+  const signedBytes = bytes(signedCbor)
+  if (signedBytes > maxTxSize) fail(caseLabel + ' signed Reveal exceeds maxTxSize: ' + signedBytes + ' > ' + maxTxSize)
+  const txHash = await signed.submit()
+  await lucid.awaitTx(txHash)
+  const postPrize = await waitFor(
+    () => lucid.utxosAt(revealAddress),
+    (items) => items.some((u) => u.txHash.toLowerCase() === txHash.toLowerCase()),
+    caseLabel + ' accepted Prize output',
+  )
+  const postPool = await waitFor(
+    () => lucid.utxosAt(poolAddress),
+    (items) => items.some((u) => u.txHash.toLowerCase() === txHash.toLowerCase()),
+    caseLabel + ' updated Pool output',
+  )
+  if (!postPrize.some((u) => u.txHash.toLowerCase() === txHash.toLowerCase()) ||
+      !postPool.some((u) => u.txHash.toLowerCase() === txHash.toLowerCase())) {
+    fail(caseLabel + ' did not materialize both continuing outputs')
+  }
+  return {
+    outcome: 'accepted_by_native_ledger',
+    case: caseLabel,
+    transactionId: txHash,
+    ticketNonce: fixture.ticketNonce.toString(),
+    payout: fixture.payout.toString(),
+    prizeTier: fixture.prizeTier,
+    row1Tier: fixture.row1Tier,
+    row2Tier: fixture.row2Tier,
+    symbols: toHex(fixture.symbols),
+    unsignedTransactionBytes: unsignedBytes,
+    signedTransactionBytes: signedBytes,
+    maxTxSize,
+    embeddedScriptCounts: scriptCounts,
+    revealReference: ref(revealReferenceInput),
+    spentPrize: ref(prizeUtxo),
+    spentPool: ref(poolUtxo),
+    continuingPrizeObserved: true,
+    continuingPoolObserved: true,
+    executionUnits: redeemers,
+  }
+}
+
+let positiveResult: Record<string, unknown> = { outcome: 'failure' }
+let winningResult: Record<string, unknown> = { outcome: 'failure' }
+try {
+  positiveResult = await submitValidReveal(prizes[0], pools[0], lossFixture, 'valid_zero_payout_loss')
+} catch (error) {
+  positiveResult = { outcome: 'failure', error: (error instanceof Error ? error.message : String(error)).slice(0, 1800) }
+}
+try {
+  winningResult = await submitValidReveal(prizes[1], pools[1], winningFixture, 'valid_nonzero_payout_win')
+} catch (error) {
+  winningResult = { outcome: 'failure', error: (error instanceof Error ? error.message : String(error)).slice(0, 1800) }
 }
 
 let positiveResult: Record<string, unknown> = { outcome: 'failure' }
