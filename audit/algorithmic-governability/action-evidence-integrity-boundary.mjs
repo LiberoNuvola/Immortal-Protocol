@@ -30,22 +30,45 @@ const isRecord = (value) =>
   (Object.getPrototypeOf(value) === Object.prototype ||
    Object.getPrototypeOf(value) === null)
 
+const ownData = (record, field) => {
+  if (!isRecord(record) || !Object.hasOwn(record, field)) return false
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return !!descriptor && Object.hasOwn(descriptor, 'value')
+}
+
+const dataValue = (record, field) => Object.getOwnPropertyDescriptor(record, field).value
+
 const validatePacket = (p) => {
-  if (!isRecord(p) || !['Issue','Reveal','Claim','Expire'].includes(p.action)) return false
-  for (const field of [
+  if (!isRecord(p) || !ownData(p, 'action') || !['Issue','Reveal','Claim','Expire'].includes(dataValue(p, 'action'))) return false
+  const containers = [
     'canonicalPreState','actionParameters','candidatePostState',
     'adapterInput','ledgerState','postState','evidenceProvenance',
-  ]) {
-    if (!isRecord(p[field])) return false
+  ]
+  if (!containers.every((field) => ownData(p, field) && isRecord(dataValue(p, field)))) return false
+
+  const requiredNested = {
+    canonicalPreState: ['fingerprint'],
+    actionParameters: ['fingerprint'],
+    candidatePostState: ['fingerprint'],
+    adapterInput: ['fingerprint'],
+    ledgerState: ['transactionHash'],
+    postState: ['fingerprint'],
+    evidenceProvenance: ['sourceCommit', 'observationRef'],
   }
-  if (!isDigest(p.canonicalPreState?.fingerprint)) return false
-  if (!isDigest(p.actionParameters?.fingerprint)) return false
-  if (!isDigest(p.candidatePostState?.fingerprint)) return false
-  if (!isDigest(p.adapterInput?.fingerprint)) return false
-  if (!isDigest(p.ledgerState?.transactionHash)) return false
-  if (!isDigest(p.postState?.fingerprint)) return false
-  if (!isDigest(p.evidenceProvenance?.sourceCommit)) return false
-  if (typeof p.evidenceProvenance?.observationRef !== 'string' || p.evidenceProvenance.observationRef.trim().length === 0) return false
+  for (const [container, fields] of Object.entries(requiredNested)) {
+    const record = dataValue(p, container)
+    if (!fields.every((field) => ownData(record, field))) return false
+  }
+
+  if (!isDigest(dataValue(dataValue(p, 'canonicalPreState'), 'fingerprint'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'actionParameters'), 'fingerprint'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'candidatePostState'), 'fingerprint'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'adapterInput'), 'fingerprint'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'ledgerState'), 'transactionHash'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'postState'), 'fingerprint'))) return false
+  if (!isDigest(dataValue(dataValue(p, 'evidenceProvenance'), 'sourceCommit'))) return false
+  const observationRef = dataValue(dataValue(p, 'evidenceProvenance'), 'observationRef')
+  if (typeof observationRef !== 'string' || observationRef.trim().length === 0) return false
   return true
 }
 
@@ -65,6 +88,30 @@ for (const field of [
 const arrayPacket = []
 Object.assign(arrayPacket, packet)
 assert(!validatePacket(arrayPacket), 'array carrying forged packet properties cannot cross the evidence boundary')
+
+const accessorTopLevel = { ...packet }
+Object.defineProperty(accessorTopLevel, 'canonicalPreState', {
+  enumerable: true,
+  configurable: true,
+  get: () => packet.canonicalPreState,
+})
+assert(!validatePacket(accessorTopLevel), 'accessor-backed top-level evidence container is rejected')
+
+const accessorNested = { ...packet, canonicalPreState: { ...packet.canonicalPreState } }
+Object.defineProperty(accessorNested.canonicalPreState, 'fingerprint', {
+  enumerable: true,
+  configurable: true,
+  get: () => packet.canonicalPreState.fingerprint,
+})
+assert(!validatePacket(accessorNested), 'accessor-backed nested fingerprint is rejected')
+
+const accessorAction = { ...packet }
+Object.defineProperty(accessorAction, 'action', {
+  enumerable: true,
+  configurable: true,
+  get: () => 'Issue',
+})
+assert(!validatePacket(accessorAction), 'accessor-backed action discriminator is rejected')
 
 assert(
   packet.canonicalPreState.fingerprint !== packet.candidatePostState.fingerprint,
