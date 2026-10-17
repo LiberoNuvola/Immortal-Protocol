@@ -2,12 +2,26 @@
 
 const assert=(c,m)=>{if(!c)throw new Error(`FAIL: ${m}`);console.log(`PASS: ${m}`)}
 
+const riskEvidenceFields = [
+  'stale',
+  'malformed',
+  'wrongAsset',
+  'wrongTreasury',
+  'notProtocolControlled',
+  'duplicateOrConcurrent',
+  'bootstrapValueInPrizePool',
+]
+
 const genesisAdmission=(o)=>{
-  if(!o?.treasuryIdentity||!o?.preAssetIdentity||!o?.oracleIdentity) return 'UNVERIFIABLE'
-  if(o.stale||o.malformed||o.wrongAsset||o.wrongTreasury||o.notProtocolControlled) return 'REJECTED'
-  if(o.duplicateOrConcurrent) return 'REJECTED'
-  if(o.bootstrapValueInPrizePool) return 'REJECTED'
+  if(!o) return 'UNVERIFIABLE'
+  for (const field of ['treasuryIdentity','preAssetIdentity','oracleIdentity']) {
+    if(typeof o[field] !== 'string' || o[field].trim().length === 0) return 'UNVERIFIABLE'
+  }
+  // Unknown flags are not evidence that a risk is absent.
+  if(riskEvidenceFields.some((field)=>typeof o[field] !== 'boolean')) return 'UNVERIFIABLE'
+  if(riskEvidenceFields.some((field)=>o[field] === true)) return 'REJECTED'
   if(o.verifiedFresh!==true) return 'UNVERIFIABLE'
+  if(typeof o.bootstrapQualified !== 'boolean') return 'UNVERIFIABLE'
   if(o.bootstrapQualified!==true) return 'NOT_ADMISSIBLE'
   return 'ADMISSIBLE'
 }
@@ -27,5 +41,30 @@ assert(genesisAdmission({...valid,duplicateOrConcurrent:true})==='REJECTED','dup
 assert(genesisAdmission({...valid,bootstrapValueInPrizePool:true})==='REJECTED','bootstrap value is not treated as PrizePool liquidity')
 assert(genesisAdmission({...valid,oracleIdentity:null})==='UNVERIFIABLE','missing oracle identity fails closed')
 assert(genesisAdmission({...valid,verifiedFresh:false})==='UNVERIFIABLE','unverified valuation fails closed')
+
+assert(genesisAdmission(null)==='UNVERIFIABLE','absent Genesis observation fails closed')
+assert(genesisAdmission({...valid,treasuryIdentity:'   '})==='UNVERIFIABLE','blank Treasury identity fails closed')
+
+for (const field of riskEvidenceFields) {
+  const missing = { ...valid }
+  delete missing[field]
+  assert(
+    genesisAdmission(missing)==='UNVERIFIABLE',
+    `unknown Treasury/oracle risk evidence ${field} leaves admission unverifiable`,
+  )
+  assert(
+    genesisAdmission({ ...valid, [field]: null })==='UNVERIFIABLE',
+    `null Treasury/oracle risk evidence ${field} is not evidence of safety`,
+  )
+  assert(
+    genesisAdmission({ ...valid, [field]: 'false' })==='UNVERIFIABLE',
+    `untyped Treasury/oracle risk evidence ${field} is not admissible`,
+  )
+}
+
+assert(genesisAdmission({...valid,bootstrapQualified:false})==='NOT_ADMISSIBLE','explicitly unqualified Genesis candidate is not admissible')
+assert(genesisAdmission({...valid,bootstrapQualified:null})==='UNVERIFIABLE','unknown bootstrap qualification is not treated as a negative result')
+assert(genesisAdmission({...valid,bootstrapQualified:'true'})==='UNVERIFIABLE','untyped bootstrap qualification fails closed')
+
 
 console.log('ALL F6 GENESIS EVIDENCE BOUNDARY CHECKS PASSED')
