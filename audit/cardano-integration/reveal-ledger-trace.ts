@@ -92,6 +92,7 @@ function prizeDatum(
   playerCommitmentHex: string,
   commitmentHex: string,
   beaconValueHex: string,
+  ticketNonce: bigint,
   issuedAt: bigint,
   expiresAt: bigint,
 ): any {
@@ -102,7 +103,7 @@ function prizeDatum(
     PRICE_USDM,
     commitmentHex,
     toHex(GAME_VERSION),
-    1n,
+    ticketNonce,
     0n,
     '',
     '',
@@ -516,6 +517,10 @@ const revealValidTo = () => {
   return near < expiresAt ? near : expiresAt
 }
 const playerSecret = fromHex('01'.repeat(32))
+// The integrated Aiken candidate uses the same deterministic winning nonce as
+// aiken-reveal-ledger-probe.ts so the real B1PrizePool validator sees a nonzero
+// payout. Keep the canonical Haskell trace's historical nonce unchanged.
+const fixtureTicketNonce = aikenRevealV3Candidate ? 7n : 1n
 
 const beaconValue = await deriveBeacon(
   0,
@@ -526,14 +531,14 @@ const beaconValue = await deriveBeacon(
   GAME_VERSION,
 )
 const playerCommitmentHex = toHex(
-  await playerCommitment(0, 1, playerSecret),
+  await playerCommitment(0, Number(fixtureTicketNonce), playerSecret),
 )
 const commitmentHex = toHex(
   await ticketCommitment(
     new TextEncoder().encode('RF-REAL-REVEAL'),
     fromHex(playerCommitmentHex),
     GAME_VERSION,
-    1,
+    Number(fixtureTicketNonce),
     Number(PRICE_USDM),
     encodeBeaconTarget({
       networkId: 0,
@@ -546,7 +551,7 @@ const commitmentHex = toHex(
 
 const ticketSeed = await deriveTicketSeed(
   0,
-  1,
+  Number(fixtureTicketNonce),
   playerSecret,
   beaconValue,
   GAME_VERSION,
@@ -570,6 +575,7 @@ const prePrizeDatum = prizeDatum(
   playerCommitmentHex,
   commitmentHex,
   toHex(beaconValue),
+  fixtureTicketNonce,
   issuedAt,
   expiresAt,
 )
@@ -581,7 +587,7 @@ const postPrizeDatum = c(0, [
   PRICE_USDM,
   commitmentHex,
   toHex(GAME_VERSION),
-  1n,
+  fixtureTicketNonce,
   payout,
   '',
   '',
