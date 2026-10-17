@@ -20,10 +20,19 @@ const boundary = Object.freeze({
   rewardOutcome: 0,
 })
 
+const hasNonBlankString = (value) =>
+  typeof value === 'string' && value.trim().length > 0
+
 const certifyBudget = (b) => {
-  if (!b?.receiptVerified) return 'UNVERIFIABLE'
+  if (!b) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(b.accountingVersion) ||
+      !hasNonBlankString(b.rewardRuleVersion) ||
+      !hasNonBlankString(b.feeRuleVersion)) return 'UNVERIFIABLE'
+  if (typeof b.receiptVerified !== 'boolean') return 'UNVERIFIABLE'
+  if (b.receiptVerified !== true) return 'UNVERIFIABLE'
+  if (typeof b.protectedValueExcluded !== 'boolean') return 'UNVERIFIABLE'
   if (b.protectedValueExcluded !== true) return 'REJECTED'
-  if (b.budgetWithinAvailableRevenue == null) return 'UNVERIFIABLE'
+  if (typeof b.budgetWithinAvailableRevenue !== 'boolean') return 'UNVERIFIABLE'
   if (b.budgetWithinAvailableRevenue !== true) return 'REJECTED'
   return 'CERTIFIED'
 }
@@ -42,6 +51,34 @@ assert(
   certifyBudget(Object.freeze({ ...boundary, protectedValueExcluded: false })) === 'REJECTED',
   'Protected value cannot be treated as reward budget',
 )
+
+assert(
+  certifyBudget(Object.freeze({ ...boundary, receiptVerified: 'true' })) === 'UNVERIFIABLE',
+  'string-valued receipt verification cannot certify a reward budget',
+)
+assert(
+  certifyBudget(Object.freeze({ ...boundary, receiptVerified: null })) === 'UNVERIFIABLE',
+  'unknown receipt verification cannot certify a reward budget',
+)
+assert(
+  certifyBudget(Object.freeze({ ...boundary, budgetWithinAvailableRevenue: 'true' })) === 'UNVERIFIABLE',
+  'string-valued budget-envelope evidence remains unverifiable',
+)
+assert(
+  certifyBudget(Object.freeze({ ...boundary, budgetWithinAvailableRevenue: null })) === 'UNVERIFIABLE',
+  'unknown budget-envelope evidence remains unverifiable',
+)
+assert(
+  certifyBudget(Object.freeze({ ...boundary, protectedValueExcluded: null })) === 'UNVERIFIABLE',
+  'unknown Protected-value classification is not treated as a proven violation or as safety',
+)
+for (const field of ['accountingVersion', 'rewardRuleVersion', 'feeRuleVersion']) {
+  assert(
+    certifyBudget(Object.freeze({ ...boundary, [field]: '' })) === 'UNVERIFIABLE',
+    `missing ${field} leaves budget certification unverifiable`,
+  )
+}
+
 
 const mutatedAccounting = Object.freeze({
   ...boundary,
