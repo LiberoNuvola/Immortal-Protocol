@@ -19,10 +19,11 @@ if (!Array.isArray(blueprint.validators)) {
 }
 const matches = blueprint.validators.filter((validator) =>
   typeof validator?.title === "string"
-  && /(^|\.)pre_rich_reveal(\.|$)/.test(validator.title)
+  && /(^|\.)pre_rich_reveal\.spend$/.test(validator.title)
 );
 if (matches.length !== 1) {
-  throw new Error(`Expected exactly one pre_rich_reveal validator in plutus.json; found ${matches.length}`);
+  const candidates = blueprint.validators.map((validator) => validator?.title).filter((title) => typeof title === "string" && /pre_rich_reveal/.test(title));
+  throw new Error(`Expected exactly one pre_rich_reveal spend validator in plutus.json; found ${matches.length}; candidates=${JSON.stringify(candidates)}`);
 }
 
 const measured = matches.map((validator) => {
