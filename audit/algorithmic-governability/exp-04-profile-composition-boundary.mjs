@@ -18,7 +18,11 @@ const isRecord = (value) => value !== null && typeof value === 'object' &&
 const compose = (profiles) => {
   if (!Array.isArray(profiles)) return 'UNVERIFIABLE'
   const seen = new Set()
-  for (const profile of profiles) {
+  // Index only own data elements; do not invoke a caller-controlled iterator.
+  for (let index = 0; index < profiles.length; index += 1) {
+    const element = Object.getOwnPropertyDescriptor(profiles, String(index))
+    if (!element || !Object.prototype.hasOwnProperty.call(element, 'value')) return 'UNVERIFIABLE'
+    const profile = element.value
     if (!isRecord(profile)) return 'UNVERIFIABLE'
     const id = ownDataField(profile, 'id')
     const domain = ownDataField(profile, 'domain')
@@ -55,6 +59,20 @@ const b = Object.freeze({
 assert(compose([a, b]) === 'ADMISSIBLE', 'orthogonal declared profiles compose without ambiguity')
 assert(compose([a]) === 'ADMISSIBLE', 'a single explicit profile remains valid')
 assert(compose(null) === 'UNVERIFIABLE', 'non-array profile collections fail closed')
+let profileIteratorCalls = 0
+const customIteratorProfiles = [a, b]
+Object.defineProperty(customIteratorProfiles, Symbol.iterator, {
+  value: function* () {
+    profileIteratorCalls += 1
+    yield conflicting
+  },
+})
+assert(compose(customIteratorProfiles) === 'ADMISSIBLE' && profileIteratorCalls === 0,
+  'profile composition reads own indexed profiles without invoking a caller-supplied iterator')
+const sparseProfiles = []
+sparseProfiles.length = 1
+assert(compose(sparseProfiles) === 'UNVERIFIABLE',
+  'sparse profile collections fail closed')
 
 let getterExecuted = false
 const accessorProfile = {
