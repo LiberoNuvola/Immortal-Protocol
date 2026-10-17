@@ -5,15 +5,33 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
+const ownDataField = (record, key) => {
+  const descriptor = Object.getOwnPropertyDescriptor(record, key)
+  return descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value')
+    ? { present: true, value: descriptor.value }
+    : { present: false, value: undefined }
+}
+
+const isRecord = (value) => value !== null && typeof value === 'object' &&
+  (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)
+
 const compose = (profiles) => {
   if (!Array.isArray(profiles)) return 'UNVERIFIABLE'
   const seen = new Set()
   for (const profile of profiles) {
-    if (!profile || !profile.id || !Number.isInteger(profile.version) || profile.version <= 0) {
+    if (!isRecord(profile)) return 'UNVERIFIABLE'
+    const id = ownDataField(profile, 'id')
+    const domain = ownDataField(profile, 'domain')
+    const version = ownDataField(profile, 'version')
+    const parameters = ownDataField(profile, 'parameters')
+    if (!id.present || typeof id.value !== 'string' || !id.value.trim() ||
+        !domain.present || typeof domain.value !== 'string' || !domain.value.trim() ||
+        !version.present || !Number.isInteger(version.value) || version.value <= 0 ||
+        !parameters.present || !isRecord(parameters.value)) {
       return 'UNVERIFIABLE'
     }
-    for (const key of Object.keys(profile.parameters ?? {})) {
-      const qualified = JSON.stringify([profile.domain, key])
+    for (const key of Object.keys(parameters.value)) {
+      const qualified = JSON.stringify([domain.value, key])
       if (seen.has(qualified)) return 'REJECTED'
       seen.add(qualified)
     }
@@ -37,6 +55,28 @@ const b = Object.freeze({
 assert(compose([a, b]) === 'ADMISSIBLE', 'orthogonal declared profiles compose without ambiguity')
 assert(compose([a]) === 'ADMISSIBLE', 'a single explicit profile remains valid')
 assert(compose(null) === 'UNVERIFIABLE', 'non-array profile collections fail closed')
+
+let getterExecuted = false
+const accessorProfile = {
+  id: 'accessor-profile',
+  version: 1,
+  parameters: {},
+  get domain() {
+    getterExecuted = true
+    return 'economics-a'
+  },
+}
+assert(compose([accessorProfile]) === 'UNVERIFIABLE',
+  'accessor-backed identity fields are rejected without evaluation')
+assert(getterExecuted === false, 'profile validation never executes identity getters')
+
+const inheritedIdentity = Object.assign(Object.create({ id: 'inherited-id' }), {
+  domain: 'economics-a',
+  version: 1,
+  parameters: {},
+})
+assert(compose([inheritedIdentity]) === 'UNVERIFIABLE',
+  'inherited profile identity fields are rejected')
 
 const delimiterA = Object.freeze({
   id: 'delimiter-a',
