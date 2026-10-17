@@ -18,6 +18,8 @@ on:
       - "scripts/test-aiken-parity-gate.mjs"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
+      - "scripts/generate-aiken-reveal-mutation-tests.mjs"
+      - "scripts/lib/aiken-datum-exprs.mjs"
       - ".github/workflows/aiken-reveal-parity.yml"
   pull_request:
     paths:
@@ -34,6 +36,8 @@ on:
       - "scripts/test-aiken-parity-gate.mjs"
       - "scripts/generate-aiken-schema-fixture-tests.mjs"
       - "scripts/generate-aiken-reveal-transition-tests.mjs"
+      - "scripts/generate-aiken-reveal-mutation-tests.mjs"
+      - "scripts/lib/aiken-datum-exprs.mjs"
       - ".github/workflows/aiken-reveal-parity.yml"
   workflow_dispatch:
 
@@ -112,6 +116,12 @@ jobs:
             jev-evidence/reveal-schema-fixtures.json \
             lib/immortal/generated_schema_fixture_tests.ak
           test -s lib/immortal/generated_schema_fixture_tests.ak
+          # Single-fault differential cases: expected decisions are the compiled
+          # Plutus V2 CEK results recorded by the Haskell producer.
+          node ../../scripts/generate-aiken-reveal-mutation-tests.mjs \
+            jev-evidence/reveal-schema-fixtures.json \
+            lib/immortal/generated_reveal_mutation_tests.ak
+          test -s lib/immortal/generated_reveal_mutation_tests.ak
 
       - name: Report compiler version
         run: aiken --version
@@ -126,7 +136,7 @@ jobs:
             poc/aiken-reveal-parity/.aiken
             poc/aiken-reveal-parity/build
             poc/aiken-reveal-parity/plutus.json
-          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/generate-aiken-schema-fixture-tests.mjs', 'scripts/generate-aiken-reveal-transition-tests.mjs', '.github/workflows/aiken-reveal-parity.yml') }}
+          key: aiken-reveal-parity-v1-${{ runner.os }}-${{ hashFiles('poc/aiken-reveal-parity/aiken.toml', 'poc/aiken-reveal-parity/aiken.lock', 'poc/aiken-reveal-parity/lib/**/*.ak', 'poc/aiken-reveal-parity/validators/**/*.ak', 'scripts/generate-aiken-schema-fixture-tests.mjs', 'scripts/generate-aiken-reveal-transition-tests.mjs', 'scripts/generate-aiken-reveal-mutation-tests.mjs', 'scripts/lib/aiken-datum-exprs.mjs', 'poc/aiken-reveal-parity/lib/immortal/generated_schema_fixture_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_mutation_tests.ak', 'poc/aiken-reveal-parity/lib/immortal/generated_reveal_transition_tests.ak', 'plutus/test/RevealSchemaFixtures.hs', 'plutus/PrizeValidator.hs', 'plutus/Types.hs', 'plutus/GameRules.hs', 'plutus/Beacon.hs', '.github/workflows/aiken-reveal-parity.yml') }}
 
       - name: Reuse validated artifacts
         if: steps.aiken-cache.outputs.cache-hit == 'true'
