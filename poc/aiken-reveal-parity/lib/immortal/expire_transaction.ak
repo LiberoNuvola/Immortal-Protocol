@@ -115,12 +115,9 @@ pub fn expire_transaction_is_valid(
                               after.locked_jackpot == before.locked_jackpot,
                               after.jackpot_threshold == before.jackpot_threshold,
                               after.suspended_classes == before.suspended_classes,
-                            }
-                          _ -> False
                         }
-                        None -> False
                       }
-                      _ -> False
+                      None -> False
                     }
                   None -> False
                 }
