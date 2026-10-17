@@ -12,6 +12,16 @@ const assert = (condition, message) => {
  * externally declared boolean fact so this harness tests ownership/fail-closed
  * behavior without creating a policy threshold.
  */
+const hasOwnDataProperties = (record, fields) => {
+  if (record === null || typeof record !== 'object' || Array.isArray(record)) return false
+  const prototype = Object.getPrototypeOf(record)
+  if (prototype !== Object.prototype && prototype !== null) return false
+  return fields.every((field) => {
+    const descriptor = Object.getOwnPropertyDescriptor(record, field)
+    return Boolean(descriptor && Object.prototype.hasOwnProperty.call(descriptor, 'value'))
+  })
+}
+
 const makeBoundary = (family, version) => Object.freeze({
   domain: family,
   ruleVersion: version,
@@ -20,8 +30,12 @@ const makeBoundary = (family, version) => Object.freeze({
 })
 
 const derive = (boundary, certifiedInput) => {
-  if (!certifiedInput) return { status: 'UNVERIFIABLE' }
-  if (!Object.prototype.hasOwnProperty.call(certifiedInput, 'value') || (certifiedInput.value === undefined || certifiedInput.value === null)) {
+  const requiredFields = [
+    'value', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract',
+    'evidenceVerified', 'withinDeclaredBounds',
+  ]
+  if (!hasOwnDataProperties(certifiedInput, requiredFields)) return { status: 'UNVERIFIABLE' }
+  if (certifiedInput.value === undefined || certifiedInput.value === null) {
     return { status: 'UNVERIFIABLE' }
   }
 
@@ -63,6 +77,21 @@ const certifiedDerivationInput = (boundary, overrides = {}) => ({
   value: 7,
   ...overrides,
 })
+
+
+let deriveGetterCalled = false
+const accessorDerivation = certifiedDerivationInput({ domain: 'fee', ruleVersion: 'fee-v1', evidenceContract: 'evidence-fee-v1', boundContract: 'bounds-fee-v1' })
+Object.defineProperty(accessorDerivation, 'evidenceVerified', {
+  enumerable: true,
+  get() {
+    deriveGetterCalled = true
+    return true
+  },
+})
+assert(derive(makeBoundary('fee', 'fee-v1'), accessorDerivation).status === 'UNVERIFIABLE',
+  'accessor-backed generalized derivation input remains unverifiable')
+assert(deriveGetterCalled === false,
+  'generalized derivation validation does not execute accessors')
 
 const fee = makeBoundary('fee', 'fee-v1')
 const reward = makeBoundary('reward', 'reward-v1')
@@ -165,8 +194,12 @@ const explore = (boundary, certifiedState, candidates, coverage = 'PARTIAL') => 
 }
 
 const certifyCandidate = (boundary, candidate) => {
-  if (!candidate || typeof candidate !== 'object') return { status: 'UNVERIFIABLE' }
-  if (!Object.prototype.hasOwnProperty.call(candidate, 'value') || (candidate.value === undefined || candidate.value === null)) {
+  const requiredFields = [
+    'value', 'domain', 'ruleVersion', 'evidenceContract', 'boundContract',
+    'evidenceVerified', 'withinDeclaredBounds',
+  ]
+  if (!hasOwnDataProperties(candidate, requiredFields)) return { status: 'UNVERIFIABLE' }
+  if (candidate.value === undefined || candidate.value === null) {
     return { status: 'UNVERIFIABLE' }
   }
 
@@ -208,6 +241,29 @@ assert(search.coverage === 'PARTIAL', 'partial search coverage is explicit')
 assert(search.candidates.length === 2, 'candidate set records the portion actually explored')
 const searchClaim = Object.freeze({ ...search, coverage: 'COMPLETE' })
 assert(searchClaim.coverage !== search.coverage, 'complete coverage cannot be inherited from a partial search')
+
+let certifyGetterCalled = false
+const accessorCandidate = {
+  domain: 'reward',
+  ruleVersion: 'reward-v1',
+  evidenceContract: 'evidence-reward-v1',
+  boundContract: 'bounds-reward-v1',
+  evidenceVerified: true,
+  withinDeclaredBounds: true,
+  value: 7,
+}
+Object.defineProperty(accessorCandidate, 'withinDeclaredBounds', {
+  enumerable: true,
+  get() {
+    certifyGetterCalled = true
+    return true
+  },
+})
+assert(certifyCandidate(reward, accessorCandidate).status === 'UNVERIFIABLE',
+  'accessor-backed generalized candidate cannot be certified')
+assert(certifyGetterCalled === false,
+  'generalized candidate certification does not execute accessors')
+
 assert(
   certifyCandidate(reward, {
     domain: 'reward',
