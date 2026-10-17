@@ -1229,6 +1229,25 @@ if (!signedClaim) {
   throw new Error('Claim execution adapter did not retain the signed transaction')
 }
 const txCbor = signedClaim.toCBOR()
+try {
+  const evaluated = await (lucid.provider as any).evaluateTx(txCbor)
+  console.log('[CLAIM-POSITIVE-EVALUATION] ' + JSON.stringify({
+    result: evaluated,
+  }).slice(0, 3500))
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  console.error('[CLAIM-POSITIVE-EVALUATION-FAILURE] ' + JSON.stringify({
+    scriptFailureVersion: message.match(/The PlutusV[123] script failed/)?.[0] ?? null,
+    expectedClaimMarkers: [
+      'Prize: claim prize input must be Revealed',
+      'Prize: payout',
+      'B1PrizePool: accounting must match actual value',
+      'B1PrizePool: liquidity must increase',
+      'B1PrizePool: owner not signed',
+    ].filter((marker) => message.includes(marker)),
+    error: message.slice(0, 2400),
+  }))
+}
 await lucid.awaitTx(txHash)
 
 let replayRejected = false
