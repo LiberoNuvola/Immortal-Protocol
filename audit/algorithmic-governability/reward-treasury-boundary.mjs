@@ -23,22 +23,54 @@ const boundary = Object.freeze({
 const hasNonBlankString = (value) =>
   typeof value === 'string' && value.trim().length > 0
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+const ownData = (record, field) => {
+  if (!isRecord(record) || !Object.hasOwn(record, field)) return false
+  const descriptor = Object.getOwnPropertyDescriptor(record, field)
+  return !!descriptor && Object.hasOwn(descriptor, 'value')
+}
+
+const dataValue = (record, field) => Object.getOwnPropertyDescriptor(record, field).value
+
 const certifyBudget = (b) => {
-  if (!b) return 'UNVERIFIABLE'
-  if (!hasNonBlankString(b.accountingVersion) ||
-      !hasNonBlankString(b.rewardRuleVersion) ||
-      !hasNonBlankString(b.feeRuleVersion)) return 'UNVERIFIABLE'
-  if (typeof b.receiptVerified !== 'boolean') return 'UNVERIFIABLE'
-  if (b.receiptVerified !== true) return 'UNVERIFIABLE'
-  if (typeof b.protectedValueExcluded !== 'boolean') return 'UNVERIFIABLE'
-  if (b.protectedValueExcluded !== true) return 'REJECTED'
-  if (typeof b.budgetWithinAvailableRevenue !== 'boolean') return 'UNVERIFIABLE'
-  if (b.budgetWithinAvailableRevenue !== true) return 'REJECTED'
+  if (!isRecord(b)) return 'UNVERIFIABLE'
+  const fields = [
+    'accountingVersion','rewardRuleVersion','feeRuleVersion',
+    'receiptVerified','protectedValueExcluded','budgetWithinAvailableRevenue',
+  ]
+  if (!fields.every((field) => ownData(b, field))) return 'UNVERIFIABLE'
+  if (!hasNonBlankString(dataValue(b, 'accountingVersion')) ||
+      !hasNonBlankString(dataValue(b, 'rewardRuleVersion')) ||
+      !hasNonBlankString(dataValue(b, 'feeRuleVersion'))) return 'UNVERIFIABLE'
+  if (typeof dataValue(b, 'receiptVerified') !== 'boolean') return 'UNVERIFIABLE'
+  if (dataValue(b, 'receiptVerified') !== true) return 'UNVERIFIABLE'
+  if (typeof dataValue(b, 'protectedValueExcluded') !== 'boolean') return 'UNVERIFIABLE'
+  if (dataValue(b, 'protectedValueExcluded') !== true) return 'REJECTED'
+  if (typeof dataValue(b, 'budgetWithinAvailableRevenue') !== 'boolean') return 'UNVERIFIABLE'
+  if (dataValue(b, 'budgetWithinAvailableRevenue') !== true) return 'REJECTED'
   return 'CERTIFIED'
 }
 
 assert(certifyBudget(boundary) === 'CERTIFIED',
   'verified revenue/accounting evidence can certify a reward budget boundary')
+
+assert(certifyBudget(null) === 'UNVERIFIABLE', 'null Treasury budget packet is unverifiable')
+assert(certifyBudget([]) === 'UNVERIFIABLE', 'array Treasury budget packet is unverifiable')
+const inheritedBudget = Object.assign(Object.create({ accountingVersion: boundary.accountingVersion }), boundary)
+delete inheritedBudget.accountingVersion
+assert(certifyBudget(inheritedBudget) === 'UNVERIFIABLE', 'inherited accounting version cannot certify a budget')
+const accessorBudget = { ...boundary }
+Object.defineProperty(accessorBudget, 'receiptVerified', {
+  enumerable: true,
+  configurable: true,
+  get: () => true,
+})
+assert(certifyBudget(accessorBudget) === 'UNVERIFIABLE', 'accessor-backed receipt verification cannot certify a budget')
 assert(
   certifyBudget(Object.freeze({ ...boundary, budgetWithinAvailableRevenue: false })) === 'REJECTED',
   'reward budget cannot exceed the separately observed available revenue envelope',
