@@ -36,8 +36,14 @@ const isDigest = (value) => typeof value === 'string' && /^[0-9a-fA-F]{64}$/.tes
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0
 
+const isRecord = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const classify = (obs) => {
-  if (!obs) return 'UNVERIFIABLE'
+  if (!isRecord(obs)) return 'UNVERIFIABLE'
   if (!hasText(obs.sourceReference) || !hasText(obs.txRef) || !hasText(obs.blockRef)) return 'UNVERIFIABLE'
   if (!isDigest(obs.expectedPostStateDigest) || !isDigest(obs.observedPostStateDigest)) return 'UNVERIFIABLE'
   // The research state machine declares PENDING / INCLUDED / ACCEPTED and
@@ -66,6 +72,14 @@ assert(
   classify(envelope()) === 'ADMISSIBLE_OBSERVATION',
   'complete Bitcoin evidence envelope is admissible as an observation',
 )
+
+for (const malformed of [null, undefined, 'observation', 7, []]) {
+  assert(classify(malformed) === 'UNVERIFIABLE', `malformed Bitcoin observation container (${String(malformed)}) fails closed`)
+}
+const forgedArrayObservation = []
+Object.assign(forgedArrayObservation, envelope())
+assert(classify(forgedArrayObservation) === 'UNVERIFIABLE',
+  'array with forged evidence-envelope fields cannot become an admissible observation')
 
 assert(
   classify(envelope({ immortalAdmissionReference: '' })) === 'REJECTED_FOR_IMMORTAL_EXECUTION',
