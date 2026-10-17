@@ -29,6 +29,12 @@ const actionCatalog = Object.freeze({
 const completePacket = (fields) =>
   Object.fromEntries(fields.map((field) => [field, 'evidence:' + field]))
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const isPresent = (value) =>
   value !== undefined &&
   value !== null &&
@@ -36,9 +42,9 @@ const isPresent = (value) =>
 
 const isComplete = (action, packet) => {
   if (!Object.hasOwn(actionCatalog, action)) return false
-  if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return false
+  if (!isRecord(packet)) return false
   const required = actionCatalog[action]
-  return required.every((field) => isPresent(packet[field]))
+  return required.every((field) => Object.hasOwn(packet, field) && isPresent(packet[field]))
 }
 
 assert(Object.keys(actionCatalog).length === 4, 'B5/B6 action catalog is exactly Issue/Reveal/Claim/Expire')
@@ -72,9 +78,21 @@ assert(!isComplete('Issue', null), 'absent action packet is incomplete')
 for (const inheritedAction of ['toString', 'constructor', '__proto__']) {
   assert(!isComplete(inheritedAction, completePacket(['evidenceProvenance'])), `inherited property ${inheritedAction} is not a declared action`)
 }
-for (const malformedPacket of [undefined, 'packet', 7, []]) {
+for (const malformedPacket of [undefined, 'packet', 7, [], new Date()]) {
   assert(!isComplete('Issue', malformedPacket), `malformed packet (${String(malformedPacket)}) is incomplete`)
 }
+
+for (const [action, fields] of Object.entries(actionCatalog)) {
+  const inheritedField = fields[0]
+  const prototypeEvidence = { [inheritedField]: 'inherited-evidence' }
+  const packet = Object.assign(Object.create(prototypeEvidence), completePacket(fields))
+  delete packet[inheritedField]
+  assert(!isComplete(action, packet), `${action}: inherited ${inheritedField} cannot satisfy required evidence`)
+}
+
+const datePacket = new Date()
+Object.assign(datePacket, completePacket(actionCatalog.Issue))
+assert(!isComplete('Issue', datePacket), 'Date instance with forged evidence fields is not an evidence packet')
 
 
 
