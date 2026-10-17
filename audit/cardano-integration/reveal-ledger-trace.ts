@@ -961,7 +961,7 @@ if (aikenRevealV3Candidate) {
   let wrongSecretRejection = ''
   try {
     providerWithEvaluation.evaluateTx = async () => validBudgetReference.redeemers.map((r) => ({
-      redeemer_tag: String(r.tag),
+      redeemer_tag: (['spend', 'mint', 'certificate', 'withdrawal', 'vote', 'propose'] as const)[Number(r.tag)] ?? 'unknown',
       redeemer_index: r.index,
       ex_units: { mem: Number(r.mem), steps: Number(r.steps) },
     }))
