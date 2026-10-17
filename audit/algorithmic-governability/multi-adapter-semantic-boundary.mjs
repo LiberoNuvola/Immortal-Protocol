@@ -101,12 +101,20 @@ const projectMoriartyToImmortal = (ownerIntent, intent) => {
   ])) return null
   if (!hasOwnDataProperties(intent, ['action', 'classId', 'price'])) return null
   if (!hasOwnDataProperties(ownerIntent.authority, ['nonce', 'predecessor'])) return null
-  if (!hasOwnArrayDataElements(ownerIntent.assets)) return null
+  const assets = ownerIntent.assets
+  if (!Array.isArray(assets) || !hasOwnArrayDataElements(assets)) return null
   if (ownerIntent.action !== intent.action) return null
   if (!ownerIntent.source_hash || !ownerIntent.program_hash || !ownerIntent.scenario_hash) return null
   if (!isRecord(ownerIntent.authority) || !ownerIntent.authority.nonce || !ownerIntent.authority.predecessor) return null
-  if (!Array.isArray(ownerIntent.assets) || ownerIntent.assets.length === 0) return null
-  if (!ownerIntent.assets.every((asset) => typeof asset === 'string' && asset.trim().length > 0)) return null
+  if (assets.length === 0) return null
+  // Read validated own data descriptors directly; never dispatch through a
+  // caller-supplied array method such as an accessor-backed every property.
+  for (let index = 0; index < assets.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(assets, String(index))
+    if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return null
+    const asset = descriptor.value
+    if (typeof asset !== 'string' || asset.trim().length === 0) return null
+  }
   return Object.freeze({
     intent,
     sourceBinding: Object.freeze({
@@ -137,6 +145,20 @@ for (const candidate of [
   assert(projectMoriartyToImmortal(candidate, immortalIntent) === null,
     'malformed authority or asset container is rejected')
 }
+let assetsEveryGetterCalls = 0
+const accessorEveryAssets = ['USDM']
+Object.defineProperty(accessorEveryAssets, 'every', {
+  configurable: true,
+  get() {
+    assetsEveryGetterCalls += 1
+    return () => true
+  },
+})
+assert(
+  projectMoriartyToImmortal({ ...moriartyOwnerIntent, assets: accessorEveryAssets }, immortalIntent) === null &&
+    assetsEveryGetterCalls === 0,
+  'accessor-backed array methods cannot bypass asset validation or execute during projection',
+)
 assert(projected !== null, 'Moriarty OwnerIntent can be explicitly projected into IMMORTAL IssueIntent')
 assert(projected.intent.action === semanticResult.action, 'projection preserves the action')
 assert(projected.intent.classId === semanticResult.classId, 'projection preserves PRE-RICH class coordinate')
