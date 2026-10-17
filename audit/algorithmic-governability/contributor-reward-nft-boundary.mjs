@@ -5,9 +5,14 @@ const assert=(condition,message)=>{
   console.log(`PASS: ${message}`)
 }
 
+const hasNonBlankString = (value) =>
+  typeof value === 'string' && value.trim().length > 0
+
 const record=Object.freeze({
   contributionId:'c-001',
+  contributorId:'identity-1',
   evidenceRef:'evidence-001',
+  evidenceContract:'contribution-evidence-v1',
   accepted:true,
   verified:true,
   ruleVersion:'credential-v1',
@@ -16,19 +21,26 @@ const record=Object.freeze({
 const credential=Object.freeze({
   credentialId:'cred-001',
   contributionId:record.contributionId,
+  contributorId:record.contributorId,
   evidenceRef:record.evidenceRef,
+  evidenceContract:record.evidenceContract,
   ruleVersion:record.ruleVersion,
 })
 
 const eligible=(r,c)=>{
-  if(!r?.accepted||!r?.verified) return 'UNVERIFIABLE'
-  if(c.contributionId!==r.contributionId||c.evidenceRef!==r.evidenceRef||c.ruleVersion!==r.ruleVersion){
-    return 'UNVERIFIABLE'
+  if(r?.accepted !== true || r?.verified !== true) return 'UNVERIFIABLE'
+
+  for(const field of ['contributionId','contributorId','evidenceRef','evidenceContract','ruleVersion']){
+    if(!hasNonBlankString(r?.[field])) return 'UNVERIFIABLE'
+    if(!hasNonBlankString(c?.[field])) return 'UNVERIFIABLE'
+    if(c[field] !== r[field]) return 'UNVERIFIABLE'
   }
+
+  if(!hasNonBlankString(c?.credentialId)) return 'UNVERIFIABLE'
   return 'ELIGIBLE'
 }
 
-assert(eligible(record,credential)==='ELIGIBLE','credential binds to verified contribution identity')
+assert(eligible(record,credential)==='ELIGIBLE','credential binds to verified contribution, contributor, evidence and rule identity')
 assert(!('rewardBudget' in credential),'credential does not carry an implicit reward budget')
 assert(!('governanceAuthority' in credential),'credential does not carry implicit governance authority')
 assert(!('treasuryAuthority' in credential),'credential does not carry implicit Treasury authority')
@@ -36,8 +48,26 @@ assert(!('treasuryAuthority' in credential),'credential does not carry implicit 
 const forged=Object.freeze({...credential,contributionId:'c-999'})
 assert(eligible(record,forged)==='UNVERIFIABLE','credential cannot point at another contribution')
 
+const forgedContributor=Object.freeze({...credential,contributorId:'identity-999'})
+assert(eligible(record,forgedContributor)==='UNVERIFIABLE','credential cannot rebind a contribution to another contributor')
+
+const forgedEvidenceContract=Object.freeze({...credential,evidenceContract:'other-evidence-v9'})
+assert(eligible(record,forgedEvidenceContract)==='UNVERIFIABLE','credential cannot substitute another evidence-contract version')
+
+const missingEvidence=Object.freeze({...credential,evidenceRef:'  '})
+assert(eligible(record,missingEvidence)==='UNVERIFIABLE','blank evidence reference leaves credential eligibility unverifiable')
+
+const missingCredentialId=Object.freeze({...credential,credentialId:''})
+assert(eligible(record,missingCredentialId)==='UNVERIFIABLE','credential without a stable credential identity remains unverifiable')
+
 const revoked=Object.freeze({...record,accepted:false})
 assert(eligible(revoked,credential)==='UNVERIFIABLE','revoked/corrected contribution cannot retain eligibility')
+
+const truthyAcceptance=Object.freeze({...record,accepted:'true'})
+assert(eligible(truthyAcceptance,credential)==='UNVERIFIABLE','truthy non-boolean acceptance cannot qualify a contribution')
+
+const truthyVerification=Object.freeze({...record,verified:1})
+assert(eligible(truthyVerification,credential)==='UNVERIFIABLE','untyped verification cannot qualify a contribution')
 
 const selfAuthorized=Object.freeze({...credential,authority:'self-issued'})
 assert(!('authority' in credential),'canonical credential has no self-authorizing authority field')
