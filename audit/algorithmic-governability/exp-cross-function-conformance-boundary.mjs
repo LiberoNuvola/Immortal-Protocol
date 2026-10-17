@@ -99,7 +99,7 @@ const adopt = (candidate, canonicalState, expectedBoundary) => {
     candidate.adoptionPath === expectedBoundary.adoptionPath
 
   return {
-    ...canonicalState,
+    version: canonicalState.version,
     adopted: matchesBoundary ? candidate : null,
   }
 }
@@ -148,6 +148,22 @@ assert(canonicalGuardResult.adopted === null,
   'accessor-backed canonical state cannot be mutated by adoption')
 assert(canonicalGetterCalled === false,
   'canonical-state guard does not execute accessors')
+
+let unrelatedCanonicalGetterCalled = false
+const canonicalWithExtraGetter = { version: 'canonical-v1', adopted: null }
+Object.defineProperty(canonicalWithExtraGetter, 'unrelatedMetadata', {
+  enumerable: true,
+  get() {
+    unrelatedCanonicalGetterCalled = true
+    return 'must-not-run'
+  },
+})
+const unrelatedGetterResult = adopt(certifyCandidate(boundary('EXP-01'), derivationInput(boundary('EXP-01'))),
+  canonicalWithExtraGetter, boundary('EXP-01'))
+assert(unrelatedGetterResult.adopted !== null,
+  'valid adoption preserves its intended result when unrelated metadata exists')
+assert(unrelatedGetterCalled === false,
+  'adoption does not execute unrelated canonical-state getters while copying state')
 
 let statusGetterCalled = false
 const accessorStatusCandidate = { status: 'ADMISSIBLE', ...boundary('EXP-01'), value: 1 }
