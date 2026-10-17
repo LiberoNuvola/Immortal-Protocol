@@ -289,6 +289,20 @@ for (const [name, item] of cases) {
   contextTests.push(test(prefix + '_complete_context_rejects_duplicate_pool_output',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_outputs(tx, list.concat(tx.outputs, list.drop(tx.outputs, 1)))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_duplicate_prize_output',
+    '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_outputs(tx, ['
+      + prefix + '_prize_output(' + prefix + '_output_datum(), assets.from_lovelace(5_000_000)), '
+      + prefix + '_prize_output(' + prefix + '_output_datum(), assets.from_lovelace(5_000_000)), '
+      + prefix + '_pool_output(' + prefix + '_pool_after(), assets.from_lovelace(10_000_000))])\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
+  contextTests.push(test(prefix + '_complete_context_rejects_changed_pool_accounting',
+    '{\n  let tx = ' + prefix + '_tx()\n  let changed_pool = reveal_types.B1PrizePoolDatum { '
+      + 'total_liquidity: ' + '0' + ', pending_liabilities: ' + '1' + ', unresolved_reserve: 0, '
+      + 'unresolved_ticket_count: 0, locked_jackpot: 0, jackpot_threshold: 0, suspended_classes: 0, '
+      + 'prize_hash: #"' + poolHash + '" }\n  let damaged = context_tx_with_outputs(tx, ['
+      + prefix + '_prize_output(' + prefix + '_output_datum(), assets.from_lovelace(5_000_000)), '
+      + prefix + '_pool_output(changed_pool, assets.from_lovelace(10_000_000))])\n  !'
+      + invoke('damaged', '#"' + secret + '"') + '\n}'));
   contextTests.push(test(prefix + '_complete_context_rejects_missing_own_input',
     '{\n  let tx = ' + prefix + '_tx()\n  let damaged = context_tx_with_inputs(tx, list.drop(tx.inputs, 1))\n  !'
       + invoke('damaged', '#"' + secret + '"') + '\n}'));
@@ -330,4 +344,4 @@ if (source.includes('haskell_context_successful_reveal_tx()')) {
 source = source.replace(endAnchor, generatedTests.join('\n') + '\n' + endAnchor);
 source += '\n' + contextHelpers.join('\n') + '\n' + contextTests.join('\n');
 await fs.writeFile(outputPath, source, 'utf8');
-console.log('Generated 14 pure state-transition tests plus 14 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
+console.log('Generated 14 pure state-transition tests plus 18 complete typed-transaction-context tests from canonical Haskell winning/loss snapshots.');
