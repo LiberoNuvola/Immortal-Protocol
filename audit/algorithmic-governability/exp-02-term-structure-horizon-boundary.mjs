@@ -5,9 +5,23 @@ const assert = (condition, message) => {
   console.log(`PASS: ${message}`)
 }
 
+const isRecord = (value) =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  (Object.getPrototypeOf(value) === Object.prototype ||
+   Object.getPrototypeOf(value) === null)
+
 const evaluateHorizon = (observation, requestedHorizon) => {
-  if (!observation?.horizon || !requestedHorizon) return 'UNVERIFIABLE'
-  if (observation.horizon !== requestedHorizon) return 'REJECTED'
+  if (!isRecord(observation) ||
+      typeof requestedHorizon !== 'string' ||
+      requestedHorizon.trim().length === 0) return 'UNVERIFIABLE'
+  const descriptor = Object.getOwnPropertyDescriptor(observation, 'horizon')
+  if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, 'value') ||
+      typeof descriptor.value !== 'string' || descriptor.value.trim().length === 0) {
+    return 'UNVERIFIABLE'
+  }
+  if (descriptor.value !== requestedHorizon) return 'REJECTED'
   return 'ADMISSIBLE'
 }
 
@@ -22,6 +36,27 @@ assert(
 assert(
   evaluateHorizon({ amount: 10n }, 'H1') === 'UNVERIFIABLE',
   'missing horizon evidence fails closed',
+)
+assert(
+  evaluateHorizon({ horizon: '   ' }, 'H1') === 'UNVERIFIABLE',
+  'blank observed horizon fails closed',
+)
+assert(
+  evaluateHorizon({ horizon: 'H1' }, '   ') === 'UNVERIFIABLE',
+  'blank requested horizon fails closed',
+)
+let horizonGetterCalls = 0
+const accessorHorizon = {}
+Object.defineProperty(accessorHorizon, 'horizon', {
+  get() { horizonGetterCalls += 1; return 'H1' },
+})
+assert(
+  evaluateHorizon(accessorHorizon, 'H1') === 'UNVERIFIABLE' && horizonGetterCalls === 0,
+  'accessor-backed horizon fails closed without executing getters',
+)
+assert(
+  evaluateHorizon(Object.create({ horizon: 'H1' }), 'H1') === 'UNVERIFIABLE',
+  'inherited horizon evidence cannot be accepted',
 )
 
 const temporalFacts = Object.freeze({
