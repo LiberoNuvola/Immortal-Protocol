@@ -6,6 +6,9 @@
 {-# LANGUAGE ViewPatterns        #-}
 -- PlutusScriptV2 must not use UPLC 1.1.0 `case` on builtin pairs/lists.
 {-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:target-version=1.0.0 #-}
+-- Size-budget experiment: avoid duplicating large constants at every call site.
+-- This changes compilation strategy only, not Reveal or economic source semantics.
+{-# OPTIONS_GHC -fplugin-opt Plinth.Plugin:no-inline-constants #-}
 
 module PrizeValidator
   ( mkValidator
