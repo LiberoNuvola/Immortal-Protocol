@@ -36,12 +36,20 @@ assert(
 )
 
 const commit = (transition) => {
+  if (!transition || typeof transition !== 'object') return 'REJECTED'
   if (transition.safe !== true) return 'REJECTED'
-  if (!transition.canonicalTransitionId) return 'REJECTED'
+  if (typeof transition.canonicalTransitionId !== 'string' || transition.canonicalTransitionId.trim() === '') return 'REJECTED'
   if (transition.feeReferenceStatus !== 'VALID') return 'SAFE_STALL'
   if (transition.conversionStatus !== 'VALID') return 'REJECTED'
   return 'COMMITTED'
 }
+
+assert(commit(null) === 'REJECTED', 'absent transition candidate is rejected')
+assert(commit(undefined) === 'REJECTED', 'undefined transition candidate is rejected')
+assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: '   ' })) === 'REJECTED',
+  'blank canonical transition identity cannot authorize commitment')
+assert(commit(Object.freeze({ ...candidate, canonicalTransitionId: 17 })) === 'REJECTED',
+  'non-string canonical transition identity cannot authorize commitment')
 
 assert(commit(candidate) === 'COMMITTED', 'valid fee-bearing transition can commit')
 assert(
