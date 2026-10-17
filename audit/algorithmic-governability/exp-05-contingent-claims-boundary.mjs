@@ -56,11 +56,17 @@ const establishClaim = (spec, event, state) => {
 }
 
 const settleEstablishedClaim = (claim, mutableState) => {
-  if (!claim || typeof claim.entitlement !== 'bigint') return 'UNVERIFIABLE'
+  if (!isRecord(claim)) return 'UNVERIFIABLE'
+  const entitlement = readOwnData(claim, 'entitlement')
+  const settlementAsset = readOwnData(claim, 'settlementAsset')
+  if (typeof entitlement !== 'bigint' || entitlement < 0n ||
+      typeof settlementAsset !== 'string' || settlementAsset.trim().length === 0) {
+    return 'UNVERIFIABLE'
+  }
   // mutableState is deliberately ignored: settlement consumes the
   // established entitlement rather than recomputing a payout.
   void mutableState
-  return claim.entitlement
+  return entitlement
 }
 
 const spec = Object.freeze({
@@ -81,6 +87,23 @@ assert(established.entitlement === 75n, 'established entitlement records the der
 assert(
   settleEstablishedClaim(established, { eligible: true, baseAmount: 1 }) === 75n,
   'settlement uses established entitlement and does not recompute mutable state',
+)
+let settlementGetterCalls = 0
+const accessorClaim = { settlementAsset: 'reference-unit' }
+Object.defineProperty(accessorClaim, 'entitlement', {
+  get() { settlementGetterCalls += 1; return 75n },
+})
+assert(
+  settleEstablishedClaim(accessorClaim, {}) === 'UNVERIFIABLE' && settlementGetterCalls === 0,
+  'accessor-backed entitlement cannot be settled and its getter is not executed',
+)
+assert(
+  settleEstablishedClaim(Object.create(established), {}) === 'UNVERIFIABLE',
+  'inherited claim entitlement cannot cross the settlement boundary',
+)
+assert(
+  settleEstablishedClaim({ settlementAsset: 'reference-unit', entitlement: -1n }, {}) === 'UNVERIFIABLE',
+  'negative established entitlement cannot cross the settlement boundary',
 )
 
 const capped = establishClaim(
