@@ -30,16 +30,16 @@ function bindIntentIdentities(input) {
     throw new Error('Intent identity binding input must contain own data properties')
   }
   const { immortalIntentFingerprint, moriartyProgramFingerprint, actionFingerprint, admissionDecisionReference, action } = input
-  if (!HEX32.test(immortalIntentFingerprint)) {
+  if (typeof immortalIntentFingerprint !== 'string' || !HEX32.test(immortalIntentFingerprint)) {
     throw new Error('IMMORTAL intent fingerprint must be a 32-byte digest')
   }
-  if (!HEX32.test(moriartyProgramFingerprint)) {
+  if (typeof moriartyProgramFingerprint !== 'string' || !HEX32.test(moriartyProgramFingerprint)) {
     throw new Error('Moriarty program identity must be a 32-byte digest')
   }
-  if (!HEX32.test(actionFingerprint)) {
+  if (typeof actionFingerprint !== 'string' || !HEX32.test(actionFingerprint)) {
     throw new Error('Admission action fingerprint must be a 32-byte digest')
   }
-  if (!admissionDecisionReference?.trim()) {
+  if (typeof admissionDecisionReference !== 'string' || admissionDecisionReference.trim() === '') {
     throw new Error('Admission decision reference is required')
   }
   if (action !== 'Issue') {
@@ -118,6 +118,29 @@ for (const malformed of [null, undefined, 'input', 7, [], Object.assign([], {
   }
   assert(rejected, 'Malformed identity binding container is rejected explicitly')
 }
+
+let coercionGetterCalled = false
+const coercionValue = {}
+Object.defineProperty(coercionValue, Symbol.toPrimitive, {
+  get() {
+    coercionGetterCalled = true
+    return () => '33'.repeat(32)
+  },
+})
+rejected = false
+try {
+  bindIntentIdentities({
+    immortalIntentFingerprint: '11'.repeat(32),
+    moriartyProgramFingerprint: '22'.repeat(32),
+    actionFingerprint: coercionValue,
+    admissionDecisionReference: 'admission:example',
+    action: 'Issue',
+  })
+} catch (error) {
+  rejected = error instanceof Error && error.message === 'Admission action fingerprint must be a 32-byte digest'
+}
+assert(rejected, 'Non-string identity values are rejected before coercion')
+assert(coercionGetterCalled === false, 'Identity validation does not invoke nested coercion hooks')
 
 let identityGetterCalled = false
 const accessorIdentity = {
