@@ -27,9 +27,15 @@ const credential=Object.freeze({
   ruleVersion:record.ruleVersion,
 })
 
+const isRecord = (value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const eligible=(r,c)=>{
-  if (!r || typeof r !== 'object' || Array.isArray(r)) return 'UNVERIFIABLE'
-  if (!c || typeof c !== 'object' || Array.isArray(c)) return 'UNVERIFIABLE'
+  if (!isRecord(r)) return 'UNVERIFIABLE'
+  if (!isRecord(c)) return 'UNVERIFIABLE'
   if(r.accepted !== true || r.verified !== true) return 'UNVERIFIABLE'
 
   for(const field of ['contributionId','contributorId','evidenceRef','evidenceContract','ruleVersion']){
@@ -47,9 +53,11 @@ assert(eligible(record,credential)==='ELIGIBLE','credential binds to verified co
 for (const malformedRecord of [null, undefined, 'record', 3, []]) {
   assert(eligible(malformedRecord, credential)==='UNVERIFIABLE', `malformed contribution record (${String(malformedRecord)}) fails closed`)
 }
-for (const malformedCredential of [null, undefined, 'credential', 3, []]) {
+for (const malformedCredential of [null, undefined, 'credential', 3, [], Object.assign([], credential), new Date()]) {
   assert(eligible(record, malformedCredential)==='UNVERIFIABLE', `malformed credential (${String(malformedCredential)}) fails closed`)
 }
+assert(eligible(Object.assign([], record), credential)==='UNVERIFIABLE',
+  'array with forged contribution fields cannot qualify')
 assert(!('rewardBudget' in credential),'credential does not carry an implicit reward budget')
 assert(!('governanceAuthority' in credential),'credential does not carry implicit governance authority')
 assert(!('treasuryAuthority' in credential),'credential does not carry implicit Treasury authority')
