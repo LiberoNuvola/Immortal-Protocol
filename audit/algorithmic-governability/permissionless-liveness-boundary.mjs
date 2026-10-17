@@ -52,4 +52,54 @@ const replay = attempt(applied, 'keeper-d', 8)
 assert(replay.status === 'UNVERIFIABLE', 'same transition cannot be replayed at the current version')
 assert(replay.canonicalVersion === 8, 'replay attempt leaves canonical state unchanged')
 
+/*
+ * Commit-time revalidation fixture for competing permissionless keepers.
+ * This models the existing canonical-version/atomic-transition requirement;
+ * it is not evidence that a deployed ledger implements this path correctly.
+ */
+const commitCandidate = (canonical, candidate) => {
+  if (candidate.expectedVersion !== canonical.canonicalVersion) {
+    return { status: 'STALE_STATE', state: canonical }
+  }
+  if (!canonical.condition || !canonical.evidenceFresh || canonical.transitionApplied) {
+    return { status: 'UNVERIFIABLE', state: canonical }
+  }
+  return {
+    status: 'APPLIED',
+    state: Object.freeze({
+      ...canonical,
+      condition: false,
+      transitionApplied: true,
+      canonicalVersion: canonical.canonicalVersion + 1,
+    }),
+  }
+}
+
+const concurrentCandidateA = Object.freeze({
+  invoker: 'keeper-a',
+  transitionRef: 'transition-001',
+  expectedVersion: freshState.canonicalVersion,
+})
+const concurrentCandidateB = Object.freeze({
+  invoker: 'keeper-b',
+  transitionRef: 'transition-001',
+  expectedVersion: freshState.canonicalVersion,
+})
+
+const raceWinner = commitCandidate(freshState, concurrentCandidateA)
+assert(raceWinner.status === 'APPLIED', 'first eligible keeper wins commit-time version revalidation')
+assert(raceWinner.state.canonicalVersion === 8, 'first concurrent candidate increments canonical version once')
+
+const raceLoser = commitCandidate(raceWinner.state, concurrentCandidateB)
+assert(raceLoser.status === 'STALE_STATE', 'competing keeper is rejected after canonical state advances')
+assert(raceLoser.state.canonicalVersion === 8, 'losing concurrent candidate cannot increment canonical version twice')
+assert(raceLoser.state.transitionApplied === true, 'losing candidate preserves the already-committed transition')
+
+const staleEvidenceCandidate = commitCandidate(
+  Object.freeze({ ...freshState, evidenceFresh: false }),
+  concurrentCandidateA,
+)
+assert(staleEvidenceCandidate.status === 'UNVERIFIABLE', 'commit-time revalidation rejects evidence that is no longer fresh')
+assert(staleEvidenceCandidate.state.canonicalVersion === freshState.canonicalVersion, 'failed commit-time revalidation leaves canonical version unchanged')
+
 console.log('ALL PERMISSIONLESS LIVENESS BOUNDARY CHECKS PASSED')
