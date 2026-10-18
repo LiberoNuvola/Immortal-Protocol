@@ -263,3 +263,11 @@ Key open reconciliation items:
 - EffectivePool, EEV, ProtectedCapital and buffer remain distinct.
 
 PA2 and PA7 remain open. No definitive V3→R1 binding, live EEV observation, S0, Ω-completeness claim or C6 certification is produced by this gate.
+
+
+### CI verification after the initial checker defects
+
+- Run #16: **FAIL**, commit \`b331e28b4636873ab0fd5970cad26896887e5b03\`; the audit step caught an over-broad contingency guard and a malformed source anchor.
+- Follow-up commit: \`9716c3ad6c80bffcd5769c5f440ae72d0dbadde7\`.
+- Run [#17](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150614492): **SUCCESS** on that exact commit; source snapshot gates and inventory gate passed; combined Node tests: **40/40 pass, 0 fail**.
+- This result covers the bounded source-pinned register checker only. PA2/PA7, A4↔L3 profile refinement, authenticated EEV/S0, Ω completeness and full R1 binding remain open.

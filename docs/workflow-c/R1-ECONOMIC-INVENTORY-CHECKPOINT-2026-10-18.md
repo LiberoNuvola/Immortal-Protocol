@@ -74,4 +74,4 @@ node --test test/check-r1-economic-inventory.test.mjs
 node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs
 \`\`\`
 
-These are reproduction commands, not evidence that the follow-up commit has passed.
+Observed evidence: run #17 passed on `9716c3ad6c80bffcd5769c5f440ae72d0dbadde7`. The report/matrix-only update is a later commit and will have its own CI result because their paths are included in the workflow filter.

@@ -14,6 +14,8 @@ on:
       - scripts/check-r1-economic-inventory.mjs
       - test/check-r1-economic-inventory.test.mjs
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
+      - docs/workflow-c/R1-ECONOMIC-INVENTORY-CHECKPOINT-2026-10-18.md
+      - docs/workflow-c/C6-ACTION-SPACE-MATRIX-2026-10-18.md
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
@@ -40,6 +42,8 @@ on:
       - scripts/check-r1-economic-inventory.mjs
       - test/check-r1-economic-inventory.test.mjs
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
+      - docs/workflow-c/R1-ECONOMIC-INVENTORY-CHECKPOINT-2026-10-18.md
+      - docs/workflow-c/C6-ACTION-SPACE-MATRIX-2026-10-18.md
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
