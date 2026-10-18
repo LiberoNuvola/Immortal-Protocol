@@ -49,6 +49,39 @@ The B3 workstream describes derivation contracts, evidence provenance, proof pac
 - **C6-B — substantive semantics:** identify an already-authorized transition relation that admits a concrete inductive/non-vacuous witness. If the current normative corpus does not define such a relation, stop for an architecture decision. Do not synthesize an action, threshold, coefficient, or rule.
 - **C6-C — evidence binding:** bind the profile and certificate to immutable source/version identifiers, canonical inputs, evidence digests and a checker result. The checker must derive the result rather than trust asserted booleans.
 
+
+## QNE candidate screen against the existing normative delta algebra
+
+R1's T-MARGIN is a **conditional certificate construction**, not a universal witness: its profile must prove both safety sufficiency (S1) and QNE for an action available at every certified state and every ω in the authoritative envelope. R8's singleton recipe is stricter: the state must remain exactly unchanged for every permitted environment event. Workflow C does not promote either recipe to an existing universal IMMORTAL action.
+
+The R7 accounting deltas are useful constraints, but the delta list alone does not establish QNE:
+
+| Existing delta | Why it cannot currently discharge universal QNE |
+|---|---|
+| `settle: L1/L2 → L4` | Requires a valid, available right and atomic settlement; not available at every canonical state. A proof must also cover every Ω successor and all coupled EEV/liability changes. |
+| `expire: L1/L2/L3 → L5` | Requires the relevant expiry condition; cannot be assumed available in every state. Expiry semantics cannot be repurposed as a general-purpose safety action. |
+| `resolve: L3 → L1/L5` | Worst-case resolution may crystallize an obligation; R7 does not prove the protection buffer is non-decreasing for all Ω outcomes. |
+| `verify: A3 → A1/A2` | Depends on authoritative evidence arriving and being accepted; Ω includes external-truth failure/staleness and this is not an always-available action. |
+| `stale: A1/A2 → A3` | Can reduce EEV and therefore erode the buffer; it is an environmental/state effect, not a QNE witness. |
+| `realise: A4 → A1/A2/∅` | May yield no executable value and is coupled to liability resolution; no general non-erosion theorem is supplied. |
+| `represent: ∅ → L1/L2/L3` | Creates a represented commitment and can increase ProtectedCapital; not generally non-eroding. |
+
+This screen is not a proof that no profile-specific QNE exists. It establishes only that **the current universal accounting-delta list does not itself discharge QNE**. A profile may prove a substantive, already-authorized action is non-eroding on a declared subset, or identify an existing authorized regime where obligations and valuations are stable; it must show availability, acceptance, Safe preservation, and closure under every Ω successor.
+
+A generic `NoOp`, rejection, or label such as `SAFE STALL` is not introduced as an economic action. A quiescent-state construction is admissible only if its semantics are already authorized and its environment-stability claim is proved, not assumed.
+
+## C6-B exit question
+
+For the proposed profile, produce a source-backed answer to all of these:
+1. What existing normative action is the witness selector allowed to choose?
+2. Is it in A(S) and accepted whenever the certificate requires it?
+3. Does it preserve `Rep` and `b = EEV − ProtectedCapital` for every ω in the authoritative Ω?
+4. Is Ω complete for the published perimeter E, or soundly over-approximated?
+5. Is there a concrete canonical S0 with χ(S0)=1 and a reproducible derivation?
+6. Is the result a substantive economic continuation, or only a safety/non-vacuity witness with no progress claim?
+
+Until these are answered from authorized semantics and evidence, C6-B/C8 remain BLOCKED. This is an open proof obligation, not a reason to alter the normative corpus.
+
 ## C6 exit evidence
 
 C6 can be marked CLOSED only when:
