@@ -594,3 +594,17 @@ Use **Actions → IMMORTAL Cardano Preprod Context → Run workflow** on `work/i
 
 **Status after this source audit:** an existing read-only observation route is identified, but its runtime result remains UNOBSERVED in this session. V3↔B2 atomic contraction binding remains OPEN and C6 remains NOT CERTIFIED. No code, tests, CI, or on-chain state was changed.
 
+## B2 deployment and permissionless-contraction audit (2026-10-18)
+
+A second source-level check inspected `pre-rich-b2-control-preprod.yml`, `scripts/deployPreRichControlCarrier.mts`, and `PRE-RICH/onchain/PreRichControlCarrier.hs` on `work/immortal-green-closure`.
+
+- The B2 deployment workflow is a **deployment**, not an observation. It deterministically selects a wallet UTxO with at least 5 ADA and passes that reference to the deployment script. The script mints and submits a new B2 singleton, then writes `audit/preprod-issue/b2-control-deployment.json`. It does not first prove that the canonical singleton is absent or reconcile a prior deployment record. Therefore, do not rerun it as a way to discover an existing B2 identity; first recover any prior Actions artifact/transaction reference and inspect current Preprod state.
+- The B2 validator's `mkValidator` requires `authoritySigned configuredAuthority` for every transition. `ContractControl` checks that the new current class is not greater than the previous current class, preserves `HighestClassEverActivated`, and requires non-empty decision/observation references; it does not itself recompute an economic contraction-eligibility predicate from V3 per-class state. Thus the current source does not demonstrate permissionless contraction. The references are only required to be non-empty at this validator boundary.
+- The V3 Issue-binding gap record says the Issue transaction does not yet consume/continue the V3 carrier. The inspected sources therefore still do not establish an atomic transaction that updates V3 economic state and B2 class control together, rejects stale/competing state, and independently validates contraction eligibility.
+- The workflow's deployment script records a control authority payment-key hash (defaulting to the deploying wallet if no explicit authority is supplied). This is a configured signing authority, not a permissionless predicate. Removing that requirement would be a normative/security change and is **not** justified by this source audit alone.
+
+### Disposition
+
+B2 currently has a deployable singleton and a constrained state-transition validator at source level, but the audited code does not yet demonstrate the required permissionless, state-derived contraction transition or its atomic synchronization with V3. No deployment was run; no code or tests were changed or executed. The deployment JSON files were absent from the reviewed closure-branch source snapshot, which does not prove absence of on-chain deployment or downloadable workflow artifacts.
+
+Next evidence order: (1) retrieve existing B2/V3 deployment artifacts and run references; (2) observe exact live singleton UTxOs without minting replacements; (3) reconcile the approved transition source and permissionless requirement with the validator; (4) only then define the minimal authorized refinement and its positive/negative conformance tests. Keep V3 and Reveal semantics untouched. C6 remains **NOT CERTIFIED**.
