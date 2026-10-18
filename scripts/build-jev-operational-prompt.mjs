@@ -30,7 +30,13 @@ export function buildOperationalPrompt(registry) {
 
   const failures = registry.checks.filter((c) => c.result !== "PASS");
   const checksText = registry.checks.map((c) => {
-    const refs = c.evidenceRefs.map((e) => typeof e === "string" ? e : (e.uri || e.path || JSON.stringify(e))).join(", ") || "no evidence reference";
+    // This workflow usually attaches every scoped check to the same run URL.
+    // Show that URL in the header once and abbreviate only exact repeats here;
+    // distinct artifact/log URLs stay visible.
+    const refs = c.evidenceRefs.map((e) => {
+      const uri = typeof e === "string" ? e : (e.uri || e.path || JSON.stringify(e));
+      return subject.workflowRunUrl && uri === subject.workflowRunUrl ? "this run" : uri;
+    }).join(", ") || "no evidence reference";
     const limits = c.limitations.join("; ") || "none recorded";
     return `- ${c.checkId}: ${c.result}; evidence: ${refs}; limitations: ${limits}`;
   }).join("\n");

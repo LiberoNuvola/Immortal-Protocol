@@ -39,6 +39,20 @@ assert.match(prompt, /do not start other branches/i);
 assert.match(prompt, /38615595908/);
 assert.ok(prompt.length < 7001);
 
+// A run may expose many scoped checks. Repeating the same run URL in every
+// check used to push the generated operational prompt over its 7,000-char cap.
+const manyChecks = structuredClone(registry);
+manyChecks.checks = Array.from({ length: 30 }, (_, index) => ({
+  checkId: "SYNTHETIC.CHECK." + String(index).padStart(2, "0"),
+  result: "PASS",
+  evidenceRefs: [{ kind: "workflow-run", uri: registry.subject.workflowRunUrl }],
+  limitations: ["Scoped to this check only."],
+}));
+const manyPrompt = buildOperationalPrompt(manyChecks);
+assert.ok(manyPrompt.length < 7001, "many checks with one shared run URL should fit the prompt budget");
+assert.match(manyPrompt, /evidence: this run/);
+assert.match(manyPrompt, /Hard boundaries:/);
+
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [] }), /non-empty array/);
 assert.throws(() => buildOperationalPrompt({ subject: registry.subject, checks: [{ checkId: "X", result: "UNKNOWN", evidenceRefs: [], limitations: [] }] }), /invalid checkId\/result/);
