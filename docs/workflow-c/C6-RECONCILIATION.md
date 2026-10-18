@@ -470,3 +470,35 @@ It does not prove that the current `ContractControl` validator can simply remove
 5. Keep Beacon/Materios outside this change: neither is a substitute for the class predicate or a reason to require a privileged tx signer.
 
 **Status:** prior art found; B2-specific proof and conformance remain missing. No code change, CI run, or deployment performed. This section is a reconciliation finding, not a canonical amendment or authorization to alter the validator.
+
+## B2 class-contraction predicate audit — exact boundary (2026-10-18)
+
+### Canonical application semantics recovered
+
+The current `PRE-RICH/docs/GAME-ECONOMY.md` labels its application baseline CLOSED and says:
+- saleability derives from verified post-sale economic state; no administrator manually enables an economically unsafe class;
+- `CurrentActiveClass` may contract while `HighestClassEverActivated` is monotonic;
+- contraction follows the existing ladder `100 → 50 → 25 → 10 → 5 → 3 → 2 → 1 → HALT`;
+- worst-case exposure is class-aware, with `WorstCaseExposure(P,N) = 500 × P × N`; aggregate unresolved count alone is insufficient when ticket prices differ;
+- the application hysteresis semantics are closed at `KA=8`, `KC=4`, `KD=4`.
+
+The archived `docs/archive/architecture-spec.md` further states that `CurrentActiveClass` is state-derived and may decrease when economic safety requires contraction, and that class exposure must be derived per class and consistent with aggregate unresolved reserve.
+
+### What the audit did not find
+
+These sources establish the economic constraints and desired outcome, but the reviewed active files do **not** expose a single reusable, authenticated `classContractionEligible(state) → nextClass` function that the B2 validator can call or independently reproduce. The closed parameter values alone do not specify the full on-chain predicate, the authoritative per-class state source, or the binding between a referenced decision/observation and the exact state snapshot.
+
+`PreRichControlCarrier.hs` currently checks only that `ContractControl`'s decision and observation byte strings are non-empty; it does not validate them against canonical per-class counts/exposure, EEV, ProtectedCapital, saleability, or a current authenticated snapshot. The separate `PreRichLifecycleTransition.hs` is a pure regime helper and does not close this evidence boundary.
+
+### Safe conclusion / implementation gate
+
+Do **not** implement permissionless contraction by simply deleting `authoritySigned`, by trusting an off-chain class recommendation, or by inventing a threshold from `KA/KC/KD`. The exact missing artifact is an authenticated, reproducible binding from the existing closed PRE-RICH economic semantics to the B2 state transition:
+
+1. identify the canonical on-chain source for per-class unresolved counts/exposure and all economic values required by the existing gate;
+2. reuse the existing approved saleability/hysteresis derivation without redefining its thresholds;
+3. bind the decision and observation references to the same current state/version and verify their authenticity/freshness on-chain;
+4. derive the permitted contraction result from that state, rather than accept caller-selected `newCurrent`;
+5. keep any tx submitter permissionless, while preserving singleton consumption, version/nonce increments, token/value invariants and monotone historical maximum;
+6. demonstrate positive and adversarial ledger traces, including stale state, under-protected post-state, invalid evidence, and competing spends.
+
+**Disposition:** implementation remains blocked at the predicate/evidence binding, not at the permissionless invocation concept. No code change, test run, CI dispatch or deployment performed. This is a source-audit finding, not a change to closed economic semantics.
