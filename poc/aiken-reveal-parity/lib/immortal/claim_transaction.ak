@@ -460,11 +460,11 @@ test claim_oracle_timestamp_rejects_future_value() {
 }
 
 test claim_oracle_timestamp_accepts_exact_max_age() {
-  valid_oracle_timestamp(6_400, 10_000)
+  valid_oracle_timestamp(0, 3_600_000)
 }
 
 test claim_oracle_timestamp_rejects_stale_value() {
-  !valid_oracle_timestamp(6_399, 10_000)
+  !valid_oracle_timestamp(0, 3_600_001)
 }
 
 fn claim_test_oracle(
