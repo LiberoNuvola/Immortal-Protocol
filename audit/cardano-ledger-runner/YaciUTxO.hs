@@ -7,7 +7,7 @@ module YaciUTxO
 import Cardano.Ledger.Address (decodeAddrEither)
 import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Conway (ConwayEra)
-import Cardano.Ledger.BaseTypes (StrictMaybe (..))
+import Cardano.Ledger.BaseTypes (StrictMaybe (..), TxIx (..))
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Mary.Value
   ( AssetName (..)
@@ -23,7 +23,7 @@ import Cardano.Ledger.Plutus.Data
   , makeBinaryData
   )
 import Cardano.Ledger.State (UTxO (..))
-import Cardano.Ledger.TxIn (TxIn)
+import Cardano.Ledger.TxIn (TxId, TxIn (..), parseTxId)
 import Data.Aeson
   ( Value (..)
   , eitherDecodeStrict'
@@ -64,7 +64,8 @@ parseInput value = do
     else pure ()
 
   let refText = txHash <> "#" <> Text.pack (show outputIndex)
-  txIn <- parseNative "TxIn" (String refText)
+  (txId, txIx) <- parseTxId refText
+  let txIn = TxIn txId (TxIx txIx)
 
   addressHex <- textField value "ledger_address_hex"
   addressBytes <- decodeHexText "ledger_address_hex" addressHex
