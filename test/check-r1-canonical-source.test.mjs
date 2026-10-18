@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractActionConstructors, extractRecordFields, gitBlobSha } from '../scripts/check-r1-canonical-source.mjs';
 
-test('extracts only the four existing normative V3 action constructors', () => {
+test('extracts the four existing normative V3 action constructors', () => {
   const source = `data V3Action
   = Issue TicketClass Integer
   | Reveal TicketClass Integer
@@ -13,7 +13,7 @@ test('extracts only the four existing normative V3 action constructors', () => {
   assert.deepEqual(extractActionConstructors(source), ['Issue', 'Reveal', 'Claim', 'Expire']);
 });
 
-test('fails closed if a new action appears in the declaration', () => {
+test('detects an invented action instead of silently ignoring it', () => {
   const source = `data V3Action
   = Issue TicketClass Integer
   | Reveal TicketClass Integer
@@ -22,9 +22,8 @@ test('fails closed if a new action appears in the declaration', () => {
   | NoOp
 
 {-# INLINABLE transition #-}`;
-  assert.deepEqual(extractActionConstructors(source), ['Issue', 'Reveal', 'Claim', 'Expire']);
-  // The source-contract guard compares the complete parsed constructor set against the baseline.
-  assert.notDeepEqual(extractActionConstructors(source), ['Issue', 'Reveal', 'Claim', 'Expire', 'NoOp']);
+  assert.deepEqual(extractActionConstructors(source), ['Issue', 'Reveal', 'Claim', 'Expire', 'NoOp']);
+  assert.notDeepEqual(extractActionConstructors(source), ['Issue', 'Reveal', 'Claim', 'Expire']);
 });
 
 test('extracts typed fields from a canonical record', () => {
