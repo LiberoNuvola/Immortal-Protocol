@@ -23,7 +23,7 @@ import Cardano.Ledger.Plutus.Data
   , makeBinaryData
   )
 import Cardano.Ledger.State (UTxO (..))
-import Cardano.Ledger.TxIn (TxId, TxIn (..), parseTxId)
+import Cardano.Ledger.TxIn (TxId, TxIn (..))
 import Data.Aeson
   ( Value (..)
   , eitherDecodeStrict'
@@ -64,8 +64,8 @@ parseInput value = do
     else pure ()
 
   let refText = txHash <> "#" <> Text.pack (show outputIndex)
-  (txId, txIx) <- parseTxId refText
-  let txIn = TxIn txId (TxIx txIx)
+  txId <- parseNative "TxId" (String txHash)
+  let txIn = TxIn txId (TxIx (fromIntegral outputIndex))
 
   addressHex <- textField value "ledger_address_hex"
   addressBytes <- decodeHexText "ledger_address_hex" addressHex
