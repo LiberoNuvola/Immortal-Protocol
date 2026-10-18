@@ -93,3 +93,18 @@ C6 can be marked CLOSED only when:
 - the independent checker and reproducible evidence packet pass.
 
 Until then, status remains NOT CERTIFIED.
+
+## Additional source-grounded check — PRE-RICH lifecycle QNE helper (2026-10-18)
+
+The lifecycle helper on `work/immortal-green-closure` was inspected directly. It is a real **PRE-RICH lifecycle transition**, not a disguised economic no-op: `EnterQuiescent` changes `Active → Quiescent`, and `MaintainQuiescent` increments `transitionNonce` while remaining `Quiescent`. The module comments explicitly separate this lifecycle state from the V3 economic state and say that neither operation changes an economic V3 field.
+
+That makes the helper a legitimate candidate to investigate at the **application/regime layer**, but it does not close C6-B:
+
+1. **Action availability is regime-limited.** `EnterQuiescent` is available only from `Active`; `MaintainQuiescent` only from `Quiescent`. The code does not establish an action available at every state in a proposed universal `K_c`.
+2. **Economic stability is not implied by unchanged V3 fields.** EEV and ProtectedCapital are external verified inputs. Their values can change across environmental successors even if this lifecycle operation leaves V3 fields untouched.
+3. **The QNE function checks supplied witnesses, not the authoritative envelope itself.** `qneAcrossOmega` rejects an empty witness list and checks each supplied witness for non-negative EEV/protected capital, non-decreasing buffer, representation preservation and safety. Its own comment assigns the caller responsibility for proving the list soundly over-approximates authoritative Ω. No such proof is supplied by this helper.
+4. **Acceptance compatibility remains separate.** `lifecycleActionAvailable` checks whether the lifecycle transition is defined; it does not, by itself, discharge the universal model's `Accept(S,a)` / VC4 obligation or bind the transition to a complete chain-independent `T`.
+
+**Result:** do not discard this helper, but do not promote it into the universal IMMORTAL action algebra. The strongest supported conclusion is: *a concrete PRE-RICH lifecycle candidate and a QNE-checking predicate exist; the universal QNE proof is still open*. The missing evidence is an authoritative Ω binding/over-approximation proof, an explicit refinement into the canonical economic transition relation, acceptance compatibility, and proof of `Rep`/buffer preservation over every successor in the declared perimeter.
+
+This finding is source review only; it does not claim that the helper's tests or a formal proof have passed, and it does not change any normative semantics.
