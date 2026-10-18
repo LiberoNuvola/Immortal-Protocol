@@ -10,7 +10,7 @@ use aiken/interval
 use cardano/address.{Script, VerificationKey, from_verification_key}
 use cardano/assets
 use cardano/transaction
-use immortal/reveal_types.{B1PrizePoolDatum, Claimed, PrizeDatum, Revealed}
+use immortal/reveal_types.{B1PrizePoolDatum, BeaconReady, BeaconTarget, Claimed, PrizeDatum, Revealed}
 
 const usdm_precision = 1_000_000
 const ada_min_utxo_lovelace = 1_600_000
@@ -505,5 +505,48 @@ test claim_oracle_rejects_negative_price() {
     #"USDM",
     #"bb",
     9_000,
+  )
+}
+
+test claim_context_rejects_missing_prize_input() {
+  !claim_transaction_is_valid(
+    transaction.placeholder,
+    transaction.OutputReference {
+      transaction_id: transaction.placeholder.id,
+      output_index: 0,
+    },
+    PrizeDatum {
+      ticket_policy: #"a1",
+      ticket_name: #"01",
+      player_commitment: #"02",
+      price_usdm: 100,
+      commitment: #"03",
+      game_version: "v1",
+      ticket_nonce: 1,
+      prize_amount: 200,
+      payment_policy: #"04",
+      payment_name: #"05",
+      status: Revealed,
+      result: #"0607",
+      prize_tier: 1,
+      beacon_target: BeaconTarget {
+        network_id: 0,
+        round: 42,
+        mainchain_ref: #"010203",
+        version: #"7631",
+      },
+      beacon_status: BeaconReady,
+      beacon_value: #"08",
+      mc_hash: #"09",
+      materios_context: #"0a",
+      prize_pool_hash: #"0b",
+      issued_at: 1_000,
+      expires_at: 9_000,
+      row1_tier: 1,
+      row2_tier: 0,
+    },
+    #"aa",
+    #"4f5241434c45",
+    #"bb",
   )
 }
