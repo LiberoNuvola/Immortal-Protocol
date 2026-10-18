@@ -212,6 +212,14 @@ optionalTextField value key = do
     Just (String t) -> Right (Just t)
     Just _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
 
+parseInteger :: String -> Text -> Either String Integer
+parseInteger label input =
+  case TR.signed TR.decimal input of
+    Left err -> Left ("INVALID_INTEGER:" <> label <> ":" <> err)
+    Right (n, rest)
+      | Text.null rest -> Right n
+      | otherwise -> Left ("INVALID_INTEGER:" <> label <> ":trailing characters")
+
 integerValueField :: Aeson.Value -> Text -> Either String Integer
 integerValueField value key = do
   v <- objectField value key
