@@ -211,3 +211,90 @@ These sources provide the closure obligation, not the missing profile-specific u
 ### Updated conclusion
 
 The current branch can establish a **bounded application submission path map** for Issue/Reveal/Claim/Expire and identify several adapter/evidence seams. It cannot derive an authoritative exhaustive production entry-point universe from a complete normative manifest, and it cannot prove Ω, EEV/Accept authority, complete ticket universe, L6 emptiness, or V3-to-ledger refinement universally. No code/test modification is justified without first authorizing and binding the missing profile/domain contract. PA2 and PA7 remain OPEN; C14, C17, C5b/C18, R1 E1–E8 and R7 PA1–PA7 remain not discharged.
+
+
+## 12. Minimum falsifiable closure plan and authority register — 2026-10-18
+
+This section records additional direct reads from the authorized branch and converts the identified gaps into an ordered evidence plan. It does not change normative rules, claim profile completeness, or treat this audit as PA7.
+
+### 12.1 Authority register: what exists and what it authorizes
+
+The blob SHAs below are the current authorized-branch file blobs read during this pass. “Normative” means the file explicitly declares that status; the GitHub read establishes content and location, not separate cryptographic proof of governance approval or deployment binding.
+
+| Source | Blob SHA | Declared authority/status | What it authorizes | What it does not establish |
+|---|---|---|---|---|
+| `docs/00-normative/01_CONSTITUTION_FINAL.md` | `744357df17bd07972dcbeeadbd752fb2e740e196` | Normative, root authority, v3.0.0 | Ω is complete only relative to declared perimeter E; live viability needs deployment-bound S0 ∈ Kc; implementation conformance is not a theorem. | PRE-RICH's concrete E, S0, Kc, or approval provenance. |
+| `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md` | `a549e35855509aa32ce6462d638aa17d54cd1e6a` | Normative, v3.0.0 | Accept requires complete, verified, fresh authoritative inputs and exhaustive obligation/exposure accounting; accepted transitions use authoritative Ω or sound over-approximation; coupled deltas commit atomically. | The concrete PRE-RICH event domain, action inventory, or evidence of each committed transaction's refinement. |
+| `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` | `269dd421aaeebdb9b9176d7d0957914976bb77f8` | Normative, v3.0.0 | C5b/C-EXEC, C14 Ω, C15 S0, C17 partition, C18 exactly-one canonical transition refinement. | That the current deployment satisfies those obligations. |
+| `docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md` | `1543ee6b0de15f491eddb872fb6f7d6df7a5f7f3` | Normative, v3.0.0 | Ω completeness relative to E; thirteen required contract elements; authority, event domain, actor independence, adversaries, repetition, correlation, timing, concurrency, liquidity/oracle failures, boundary, unknown events, failure behaviour; anti-circularity. | That a real PRE-RICH Env exists or covers real permitted events. |
+| `docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md` | `17a30c6db680987c615ee334d6cf0cb2adbc5db0` | Normative, certification layer, v3.0.0 | P1–P8 evidence package; containment rather than equality; fail-closed options on discovery; explicit statement that no document can prove Env matches the whole world. | Any actual deployment P1–P8 package; real-adapter conformance is explicitly not discharged here. |
+| `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md` | `9ebe7c55fb5de26aa9c8e1d0f17e466c91855c3e` | Normative, certification layer, v3.0.0 | PC1–PC7; A1–A5/L1–L6 semantics; A4↔L3 contingency link; separate ℌ; permitted deltas; conditional conservation; PA1–PA7 profile obligations. | Exhaustiveness of the PRE-RICH content universe. It explicitly says profile exhaustiveness requires PA1–PA7. |
+| `docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md` | `882fe7c64166ca1e394bf6e96bec9ebf90f7e6f8` | Audit record, v3.0.0 | Records missing artifacts: R2 lacks RF1–RF11 deployment evidence, R3 lacks real Env/P1–P8, R7 lacks PA2 and PA7, R1/R9 lack profile/deployment evidence. | A normative substitute, an approved profile manifest, or proof any obligation has since been discharged. |
+| `docs/01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md` | `aef619695dda73599a9eb67e0195388e44913f68` | Audit record, v3.0.0 | Separates model proof from deployment conformance; R2 not dischargeable from theory alone, R3 instance partial, R7 partial. | Runtime or on-chain conformance. |
+| `docs/01-formal-records/08_FORMAL_PROOF_REGISTER_FINAL.md` | `3cda86558f5a70950fbc52e2354d3970d7eb22e6` | Proof register, v3.0.0 | Labels T8 as conditional on implementation evidence; T10/P1–P8 as profile/adapter obligation; PC1–PC7/PA1–PA7 as profile obligation. | An instantiated proof or authenticated evidence for this deployment. |
+| This audit | `c00ab943f575d355f2e24a315e1347aef4119226` | Audit record | Existing source-to-transition findings and bounded path evidence. | Independent review or exhaustive source closure. |
+
+**Authority finding:** the repository contains normative general rules for the accounting partition and Ω contract. The missing authority is not another generic theorem. It is the *approved PRE-RICH profile instantiation*: the closed economic-content and event domain, the procedure for discovering/classifying new content, and its binding to the actual implementation and deployment. No authorized profile manifest or governance decision was found in the files inspected that completes those items. A file's “Normative” label alone does not identify the authorized decision-maker or prove that a new profile decision has been approved.
+
+### 12.2 Explicit unresolved normative decisions (do not infer)
+
+1. **Closed economic-content universe:** approve the complete PRE-RICH classes of assets, economic rights, commitments/future obligations, ticket states, event types, and historical facts; define the classification rule for an element not yet enumerated; and define how the inventory is extracted from all protocol/application entry points and ledger state. This is the missing authority required by PA1/PA2 and C17.
+2. **CAR applicability:** R7 normatively defines L2 as CAR, and the canonical transition spec requires atomicity for any affected CAR component. The unresolved question is whether/how CAR is instantiated by this PRE-RICH profile and which concrete content is in its scope. Do not infer “not applicable” from the absence of a runtime field, nor map it to another cell by analogy.
+3. **Additional protected fields:** assign `SafetyCapital`, `ReserveProtection`, `MandatoryFutureCosts`, Jackpot-related amounts, and other observed fields to canonical economic content/cells only where an approved profile rule establishes their identity, disjointness, valuation and transition effects. Implementation names are not an authority for cell classification.
+4. **A4↔L3 and ℌ:** specify the identity key and paired atomic transition evidence linking each contingent asset to its unresolved exposure; specify historical monotone facts recorded in ℌ and prove disjointness from current assets and commitments.
+5. **L6 emptiness:** define the authoritative inventory/extraction and rejection procedure that makes an unrepresented commitment block execution, then demonstrate it on every executable transition path. Conservation over already-recorded cells is insufficient (T-CONS-GAP).
+6. **Env/Ω/S0/deployment binding:** declare Env and exclusions, the authoritative Ω producer, P1–P8, abstraction over-approximation if applicable, discovery/fail-closed and recertification rules, real S0 ∈ Kc, and exact deployment/version/address references. The authority to approve the profile declaration must be identified through an existing authorized governance process; no specific actor or approved decision was established by this source review.
+7. **PA7 independence:** identify a reviewer/process independent of the author of the domain inventory and evidence packet, with a reproducible review record and explicit unresolved findings. This audit cannot self-certify PA7 by writing this section.
+
+These are blockers, not invitations to invent decisions in code. The general normative documents establish the requirements and evidence shape; they do not silently instantiate PRE-RICH.
+
+### 12.3 Ordered minimum closure sequence
+
+The sequence below is dependency-ordered, not a new normative priority system.
+
+| Step | Required artifact/action | Falsifiable acceptance condition | Gate effect if absent |
+|---|---|---|---|
+| 0 | Identify the existing authorized profile/governance approval process and approved PRE-RICH profile decision, or obtain that decision through the authorized process. | An independently identifiable approved decision fixes profile scope and authority; proposed material is not treated as approved. | PA2/PA7 remain BLOCKED by authority. |
+| 1 | Publish the profile's closed economic-content inventory and extraction/classification procedure (PA1/PA2). | Each discovered asset/right/commitment/event/ticket state/history item maps to exactly one authorized class/cell or is explicitly rejected as outside the approved perimeter; unknown classes cannot silently pass. | PA2 and C17 remain OPEN. |
+| 2 | Resolve CAR applicability, add-on field classification, A4↔L3 identity/pairing, ℌ disjointness, expiry/settlement/history and L6 enforcement in the approved profile. | PA3/PA5/PA6 can be traced to approved definitions and executable rejection/transition behavior; no analogy-only mapping. | R7 PA3/PA5/PA6 remain OPEN; do not use conservation as a substitute. |
+| 3 | Derive a complete source-to-transition inventory from the repository's actual tree and executable surfaces, not from a hand-maintained list alone; include app, adapter, scripts, relayer, validators, generated artifacts, CI/runtime entry points and externally callable submission interfaces that actually exist. | A reproducible scanner/inventory has declared roots and exclusions; every economic submit/mutator resolves to a single canonical action and exactly one T transition under ρ, or is shown non-economic with evidence. RF1–RF11 and C5b/C18 are reconciled. | R2, C5b/C18 remain OPEN. Existing RF8 scan is bounded to `src/`. |
+| 4 | Bind the approved profile to real deployment evidence: EEV EV1–EV7, authoritative B1 PrizePool UTxO and canonical USDM identity, freshness/snapshot slot, S0, Kc certificate E1–E8, Env/Ω P1–P8, contract/version/address/transaction references. | Independent reproduction reaches the same verified source facts from the referenced deployment; hashes/fingerprints are checked as integrity links, not treated as truth/authenticity by themselves. | R1/R3/R8/R9 and C14/C15/C16 remain OPEN or BLOCKED as applicable. |
+| 5 | Only after Steps 0–4, implement minimum automatic controls justified by the approved profile: full-root mutation-boundary scan, exact transition mapping/refinement checks, class-universe coverage, L6 fail-closed regressions and omission mutations. | Deliberately injected unclassified rights, unpaired A4/L3, bypass submitter, missing refinement, wrong-ticket terminal settlement, narrowed Ω and false provenance each fail for the specific authorized reason; existing tests remain intact. | Static tests remain bounded evidence, not closure. |
+| 6 | Complete PA1–PA6 evidence and submit the packet to a separate reviewer for PA7. | Reviewer can reproduce the inventory and challenge omissions; review outcome, dissent, exceptions and residual risks are recorded. | PA7 remains OPEN until actual independent review occurs. |
+
+### 12.4 Adversarial falsification matrix
+
+These are proposed falsification experiments, not findings of live exploits. Do not add implementation tests for a proposed classification until the corresponding profile rule is approved.
+
+| Hypothesis being challenged | Counterexample / reproducible mutation | Expected evidence if the control is valid | Current status |
+|---|---|---|---|
+| Every economic right is classified | Add a new right-bearing NFT/datum field or class row without updating the approved universe. | Inventory extraction detects it; admission rejects or requires approved reclassification; PA2 review records the outcome. | NOT RUN — no approved exhaustive profile inventory. |
+| Every commitment is represented | Add an obligation X while leaving all recorded cells and their deltas unchanged. | PC2/L6 check rejects; a conservation-only check is expected to pass and therefore is not accepted as the control. | OPEN — T-CONS-GAP is proved; profile detector not evidenced. |
+| Every mutator uses one economic boundary | Place a direct signer/submitter in a production root outside `src/`, or call the adapter without the economic path. | Full-root scan and runtime/API boundary test fail with a path and symbol; exceptions require an explicit normative non-economic classification. | PARTIAL — current RF8 scan covers `src/` only. |
+| Each committed step refines exactly one T | Produce a transaction/evidence pair with matching caller-supplied fingerprints but no derivation to canonical pre/post state. | Refinement verifier fails despite matching hashes; each accepted ledger step has one and only one T witness. | NOT RUN — current fingerprint binding does not prove truth/refinement. |
+| Terminal state belongs to the correct ticket | Replay a Claim/Expire/settlement datum against another ticket identity or repeat a terminal action. | Ticket identity, owner/rights, expiry finality and exactly-once settlement checks reject the mutation. | PARTIAL — refinement modules exist; universal call-path invocation is not established. |
+| Ω covers all events admitted by Env | Remove a permitted event class or correlated combination from Ω while leaving the Env declaration unchanged. | P1–P5/abstraction evidence detects under-approximation or admission fails; unknown event follows the approved fail-closed procedure. | NOT RUN — no real PRE-RICH P1–P8 package. |
+| Evidence provenance is authentic | Replace a source reference, deployment address, snapshot slot or producer identity while retaining a syntactically valid digest/fingerprint. | Verification resolves the reference to the authoritative source and checks signature/identity/slot/version bindings; schema validation alone fails to satisfy the test. | NOT RUN — no complete deployment-bound evidence packet reviewed here. |
+
+### 12.5 Verification performed in this pass
+
+- Re-read the authorized branch's Constitution, State Transition Specification, Conformance Specification, Ω contract, R3 perimeter specification, R7 accounting certification, Residual Obligation Register, Closure Matrix and Formal Proof Register. Blob SHAs are recorded in §12.1.
+- Compared the authorized branch to the previous HEAD: branch is identical to `f5de317e0a9158dc1aac4883312414608e22187f`; compared with `eedf13e7afbcb996d8d2aeec531a078637613047`, it is ahead by one commit and that commit modifies only this audit report (+53/−0 before this addendum).
+- Queried combined commit status for `f5de317e…` and `eedf13e…`; both returned empty status arrays. Queried the connector's commit-associated workflow-run endpoint for both; it returned no runs. That endpoint is documented as PR-triggered-only, so this does not establish that no Actions run exists. No CI pass for the current SHA is established by these responses.
+- No build, local test, formal proof-assistant execution, deployment observation, live UTxO verification, on-chain transaction or manual workflow dispatch was performed in this pass.
+
+### 12.6 Status after this addendum
+
+| Gate / property | Status | Reason |
+|---|---|---|
+| Normative general accounting rules PC1–PC7 and T-CONS-GAP | VERIFIED | Normative definitions and the omission theorem are present in R7; the theorem remains conditional on profile obligations. |
+| PRE-RICH economic universe / PA2 | BLOCKED | No approved exhaustive profile inventory/classification procedure found. |
+| Independent PA7 | BLOCKED | Requires the approved inventory and a separate reviewer; neither can be replaced by this audit. |
+| R7 as a whole | PARTIAL | General accounting semantics exist; profile instantiation, PA2/PA7 and related PA evidence remain outstanding. |
+| R3 / Ω for real PRE-RICH Env | BLOCKED | General contract and P1–P8 schema exist; real Env and deployment evidence do not. |
+| R1 / certified Kc | BLOCKED | Concrete profile certificate E1–E8 not evidenced here. |
+| C5b/C18 / execution refinement | PARTIAL | Application paths are mapped in bounded scope; complete source universe and per-commit canonical refinement are not proved. |
+| EEV / S0 / live deployment binding | BLOCKED | No complete authoritative EV1–EV7 + S0 + deployment-bound evidence packet verified here. |
+| Independent review package | PARTIAL | This report provides reproducible source references and falsification plan; it is not the independent review outcome. |
+
+**Stop condition:** the next required step is not another code-level guess or a self-declared manifest. It is an identifiable authorized PRE-RICH profile/governance decision covering the economic universe, CAR applicability and classification procedure. Until that exists, do not invent mappings or claim PA2/PA7 closure. Once approved, the subsequent technical inventory, deployment evidence and independent PA7 review can proceed without changing V3/Issue/Reveal/Claim/Expire semantics.
