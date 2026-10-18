@@ -1279,7 +1279,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     const rejectedByLedger =
       phase === 'ledger submission' &&
       (/HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message) ||
-        explicitPlutusFailure)
+        explicitScriptFailure)
 
     // The native Cardano ledger error includes the failing script bytes but
     // does not reliably surface Plutus trace strings. Accept a negative twin
