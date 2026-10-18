@@ -135,3 +135,29 @@ The first isolated Aiken Claim parity seam is in `lib/immortal/claim_transition.
 **This is not yet a migrated or deployable Claim validator.** Owner signature, exact oracle-valued settlement, actual UTxO/datum resolution, continuing-value equality, and the complete B1 pool context must still be wired to Aiken's typed transaction context and proven with Haskell differential fixtures and ledger-valid Yaci twins. The three external booleans in the parity seam are intentionally explicit; they are not evidence that those checks have already been implemented.
 
 The existing `validators/reveal.ak` entrypoint and the production Haskell validators are unchanged. The fixed 16,384-byte ceiling remains in force. Before choosing Aiken as the fix, the Claim reference-CBOR diagnostic must establish whether the 16,461-byte transaction actually embeds Plutus scripts or whether its size is dominated by redeemers/datums/other witnesses. A smaller compiled script alone does not prove the complete Claim transaction will fit.
+
+## Claim migration gate — 2026-10-18
+
+### Confirmed blocker
+
+The Claim Integration Lab trace currently fails before it constructs the Claim spending transaction. It first tries to publish the parameterized Haskell `PrizeValidator` as a reference script. The normal Lucid construction path reports 16,461 bytes against the unchanged 16,384-byte Cardano transaction limit. The diagnostic-only path can serialize a candidate, but ledger submission rejects the 16,525-byte signed transaction. This diagnostic allowance is not a protocol-limit change and is not a successful Claim test.
+
+### Validator-hash coupling
+
+A standalone Aiken Claim script cannot be substituted into the existing flow without a coordinated migration: `PrizeDatum.prize_pool_hash` and `B1PrizePoolDatum.prize_hash` bind the ticket and pool to the same Prize validator hash. A second Claim-only script would break this binding unless the datum/address/parameter deployment is redesigned coherently. Any migration candidate must therefore establish one canonical parameterized Prize validator hash and use it consistently for Reveal, Claim, Expire, pool datum bindings, reference scripts, and test fixtures.
+
+### Claim implementation acceptance gates
+
+The current `claim_transition.ak` is a pure predicate seam, not a transaction validator. Its booleans for owner signature, exact payout, and value preservation are caller-supplied and cannot be treated as on-chain proof. A production candidate must, at minimum:
+
+1. Resolve exactly one own Prize input and its datum; resolve exactly one B1 PrizePool input and its datum, and their required continuing outputs.
+2. Verify the owner signature from the actual transaction signatories, not a supplied boolean.
+3. Verify the canonical finite upper validity bound against the existing expiry rule.
+4. Verify the exact settlement asset/amount and recipient from transaction outputs, and preserve the Prize output value as required by the existing Claim semantics.
+5. Authenticate any oracle state and publisher required by the existing economic predicate, including asset identity and freshness; do not replace this with an unqualified payout boolean or an invented direct-USDM valuation.
+6. Preserve the existing Prize datum identity and exact PrizePool accounting deltas; reject missing or duplicate inputs/outputs and malformed/unbounded contexts.
+7. Wire the opt-in Claim trace so it chooses the candidate validator **before** reference-script publication, avoiding publication of the oversized Haskell PrizeValidator on that route.
+8. Pass Aiken tests, canonical Haskell differential fixtures, ledger-valid Yaci/native-ledger positive and adversarial twins, and measured script/transaction size checks. Keep the 16,384-byte limit unchanged.
+
+Until these gates pass, this package remains an isolated migration prototype. No production validator selection, deployment, or GREEN status is implied by this note.
+
