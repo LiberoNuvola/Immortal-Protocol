@@ -1,6 +1,6 @@
 name: Workflow C Structural Check
 
-on:
+"on":
   push:
     branches:
       - "release/public-main-curated-2026-09-24"
@@ -13,8 +13,7 @@ on:
     paths:
       - "docs/workflow-c/**"
       - ".github/workflows/workflow-c-structural-check.yml"
-  workflow_dispatch:
-
+  workflow_dispatch: {}
 permissions:
   contents: read
 
