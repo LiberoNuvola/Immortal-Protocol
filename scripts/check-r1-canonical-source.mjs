@@ -12,26 +12,44 @@ const EXPECTED = {
   'IMMORTAL/kernel/EconomicGate.hs': '8b8a06b4af1e2b5f4bac4f5faaa24f279d551127'
 };
 
+const EXPECTED_ACTIONS = ['Issue', 'Reveal', 'Claim', 'Expire'];
+const EXPECTED_V3_FIELDS = [
+  'v3CrystallizedLiabilities','v3UnresolvedReserve','v3UnresolvedTicketCount',
+  'v3SafetyCapital','v3ReserveProtection','v3MandatoryFutureCosts',
+  'v3Classes','v3Control','v3Jackpot'
+];
+const EXPECTED_UNIVERSAL_FIELDS = [
+  'uesCrystallizedLiabilities','uesUnresolvedReserve','uesUnresolvedTicketCount',
+  'uesWorstCaseExposure','uesSafetyCapital','uesReserveProtection',
+  'uesMandatoryFutureCosts','uesAdditionalProtectedCapital'
+];
+
 export function gitBlobSha(content) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
   return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 }
 
 export function extractActionConstructors(source) {
-  const match = source.match(/data\\s+V3Action\\s*([\\s\\S]*?)(?=\\n\\{-#|\\n\\n)/);
+  const match = source.match(/data\s+V3Action\s*([\s\S]*?)(?=\n\{-#|\n\n)/);
   if (!match) throw new Error('V3Action declaration not found');
-  return [...match[1].matchAll(/(?:^|\\n)\\s*[=|]\\s*(Issue|Reveal|Claim|Expire)\\b/g)].map(m => m[1]);
+  return [...match[1].matchAll(/(?:^|\n)\s*[=|]\s*([A-Z][A-Za-z0-9_]*)\b/g)].map(m => m[1]);
 }
 
 export function extractRecordFields(source, typeName, prefix) {
-  const escaped = typeName.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-  const match = source.match(new RegExp(`data\\\\s+${escaped}\\\\s*=\\\\s*${escaped}\\\\s*\\\\{([\\\\s\\\\S]*?)\\\\n\\\\s*\\\\}`));
-  if (!match) throw new Error(`${typeName} record declaration not found`);
-  return [...match[1].matchAll(new RegExp(`(?:^|\\\\n)\\\\s*,?\\\\s*(${prefix}\\\\w+)\\\\s*::\\\\s*([^\\\\n]+)`, 'g'))]
-    .map(m => ({ name: m[1], type: m[2].trim() }));
+  const declaration = `data ${typeName} = ${typeName}`;
+  const start = source.indexOf(declaration);
+  if (start < 0) throw new Error(`${typeName} record declaration not found`);
+  const open = source.indexOf('{', start + declaration.length);
+  const close = source.indexOf('}', open + 1);
+  if (open < 0 || close < 0) throw new Error(`${typeName} record braces not found`);
+  const body = source.slice(open + 1, close);
+  return body.split(/\r?\n/).map(line => {
+    const match = line.match(/^\s*,?\s*([A-Za-z][A-Za-z0-9_]*)\s*::\s*(.*?)\s*$/);
+    return match ? { name: match[1], type: match[2] } : null;
+  }).filter(field => field && field.name.startsWith(prefix));
 }
 
-function fieldsOfFunction(source, signature, endMarker) {
+function functionBody(source, signature, endMarker) {
   const start = source.indexOf(signature);
   if (start < 0) throw new Error(`missing function signature: ${signature}`);
   const end = source.indexOf(endMarker, start);
@@ -39,7 +57,7 @@ function fieldsOfFunction(source, signature, endMarker) {
   return source.slice(start, end);
 }
 
-export function extractCanonicalContract(sources) {
+export function extractCanonicalContract(sources, root = process.cwd()) {
   const transition = sources['IMMORTAL/kernel/EconomicTransitionV3.hs'];
   const v3State = sources['IMMORTAL/state/EconomicStateV3.hs'];
   const v3Kernel = sources['IMMORTAL/kernel/EconomicKernel.hs'];
@@ -49,25 +67,15 @@ export function extractCanonicalContract(sources) {
   const actions = extractActionConstructors(transition);
   const v3Fields = extractRecordFields(v3State, 'V3EconomicState', 'v3');
   const universalFields = extractRecordFields(universalState, 'UniversalEconomicState', 'ues');
-  const v3Pc = fieldsOfFunction(v3Kernel, 'protectedCapital ::', '{-# INLINABLE rawSurplus #-}');
-  const universalPc = fieldsOfFunction(universalKernel, 'protectedCapital ::', '{-# INLINABLE rawSurplus #-}');
-  if (actions.join(',') !== 'Issue,Reveal,Claim,Expire') {
+  const v3Pc = functionBody(v3Kernel, 'protectedCapital ::', '{-# INLINABLE rawSurplus #-}');
+  const universalPc = functionBody(universalKernel, 'protectedCapital ::', '{-# INLINABLE rawSurplus #-}');
+  if (actions.join(',') !== EXPECTED_ACTIONS.join(',')) {
     throw new Error(`unexpected V3 action constructors: ${actions.join(',')}`);
   }
-  const expectedV3Fields = [
-    'v3CrystallizedLiabilities','v3UnresolvedReserve','v3UnresolvedTicketCount',
-    'v3SafetyCapital','v3ReserveProtection','v3MandatoryFutureCosts',
-    'v3Classes','v3Control','v3Jackpot'
-  ];
-  const expectedUniversalFields = [
-    'uesCrystallizedLiabilities','uesUnresolvedReserve','uesUnresolvedTicketCount',
-    'uesWorstCaseExposure','uesSafetyCapital','uesReserveProtection',
-    'uesMandatoryFutureCosts','uesAdditionalProtectedCapital'
-  ];
-  if (v3Fields.map(f => f.name).join(',') !== expectedV3Fields.join(',')) {
+  if (v3Fields.map(f => f.name).join(',') !== EXPECTED_V3_FIELDS.join(',')) {
     throw new Error('V3EconomicState field set/order drifted; review mapping before changing the baseline');
   }
-  if (universalFields.map(f => f.name).join(',') !== expectedUniversalFields.join(',')) {
+  if (universalFields.map(f => f.name).join(',') !== EXPECTED_UNIVERSAL_FIELDS.join(',')) {
     throw new Error('UniversalEconomicState field set/order drifted; review mapping before changing the baseline');
   }
   const requiredV3Pc = ['v3CrystallizedLiabilities','worstCaseExposure','v3SafetyCapital','v3ReserveProtection','v3MandatoryFutureCosts','jsLockedAmount'];
@@ -81,7 +89,7 @@ export function extractCanonicalContract(sources) {
     v3ProtectedCapitalTerms: requiredV3Pc,
     universalProtectedCapitalTerms: requiredUniversalPc,
     gateHasCallerSuppliedOmegaClosureFlag: /allOmegaSuccessorsInCertifiedKernel/.test(gate),
-    projectionPresentOnDestination: existsSync(join(process.cwd(), 'PRE-RICH/onchain/PreRichEconomicProjection.hs')),
+    projectionPresentOnDestination: existsSync(join(root, 'PRE-RICH/onchain/PreRichEconomicProjection.hs')),
     mappingConclusion: 'STRUCTURAL_CONTRACT_ONLY; no source projection is present on the authorized branch, and this check does not establish semantic equivalence or deployment conformance'
   };
 }
@@ -104,7 +112,7 @@ export function verifySourceRoot(root) {
   }
   let contract = null;
   if (errors.length === 0) {
-    try { contract = extractCanonicalContract(sources); }
+    try { contract = extractCanonicalContract(sources, root); }
     catch (e) { errors.push(e.message); }
   }
   return {
@@ -127,6 +135,6 @@ export function verifySourceRoot(root) {
 if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
   const root = process.argv[2] ? resolve(process.argv[2]) : process.cwd();
   const result = verifySourceRoot(root);
-  process.stdout.write(JSON.stringify(result, null, 2) + '\\n');
+  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
   if (!result.ok) process.exitCode = 1;
 }
