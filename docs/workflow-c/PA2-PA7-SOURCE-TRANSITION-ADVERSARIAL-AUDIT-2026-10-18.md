@@ -158,3 +158,56 @@ node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-so
 Run #25 passed on SHA `279ee036fcfafcbd3a360070d01f15b78bc82675`, but that run establishes only mechanical checks and 48/48 bounded Node tests. No local test, Haskell/Cabal build, formal proof-assistant run, adapter end-to-end test, live observation, deployment-authenticity check or on-chain S0 was performed as part of this audit.
 
 **Conclusion:** the next blocker is not another registry row. It is an authoritative closed universe of economic rights and transition entry points, followed by normative classification of PC add-ons, deployment-bound Ω/EEV/S0 evidence, and genuinely independent PA7 review. Keep the gates open until these artifacts exist.
+
+
+## 11. Supplemental authorized-branch entry-point trace — 2026-10-18
+
+This section extends the same audit artifact with additional direct path tracing after the original commit. It does not change the verdict or claim complete call-graph closure.
+
+### Exact runtime and call-site sources read
+
+The following current-branch sources were inspected directly:
+
+| Path | Blob SHA | Observed role | Trace result |
+|---|---|---|---|
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | `67ba372b5f1357b02c73a5f45e6107011b1ce9ed` | Common Cardano sign/submit adapter | `submitEconomic` validates an admission witness then calls the infrastructure submit method; infrastructure submit itself performs `signTx` and `submitTx`. |
+| `Adapter/CARDANO/runtime/EconomicAdmission.ts` | `38b73a608639e9bc1426b21766e9a0b69040ddf9` | Runtime admission witness validator | Checks witness shape, action class, pre/post/action digests, source input set, authenticated Pool reference/value correlation and observed liquidity amount. It does not independently recompute economic state, derive EEV, or prove Ω. |
+| `src/txHelpers.ts` | `9a335b507a41cc5c5ba00567f2ee57e03da02f42` | Generic and economic submission helpers | `signAndSubmitTx` uses `submitInfrastructure`; `signAndSubmitEconomicTx` uses `submitEconomic`. The helper surface itself remains callable by application modules. |
+| `src/mint.ts` | `d1642d233e4fddf0ce17b5a0c4c19b7e9e93e099` | Issue transaction construction | The inspected flow builds Counter spend, ticket mint, B1 PrizePool reservation/continuation, Treasury payment, pending PrizeDatum and ticket delivery in one candidate transaction; submission calls `submitEconomic(..., 'Issue')`. It requires a supplied admission witness and issuance-expiry inputs. |
+| `src/gameFlow.ts` | `8afabe9f2f2b29eaa76abc5e49e2dc3ef53ba966` | SyncBeacon + Reveal/Claim/Expire | Exported canonical economic orchestrators are `revealPrize`, `claimPrize`, `expirePrize`; direct submission call-sites for those actions use `signAndSubmitEconomicTx` with their respective action class. `syncBeacon` uses generic `signAndSubmitTx`, consistent with its Beacon/registry support role rather than direct liability settlement. |
+| `src/claim.ts` | `3efb4b3168613e69e73de4b420194ec3a70f4a9d` | Claim UI compatibility wrapper | Requires a non-empty exact settlement value and supplied admission; delegates to canonical `gameFlow.claimPrize`. |
+| `src/claimFlow.ts` | `ebf13f88de7494b675b11292c06164892e3ae93e` | Legacy Claim facade | Requires settlement value and admission; delegates to canonical Claim; has no fixed-quantity fallback. |
+| `src/registryFlow.ts` | `42be0fec8c3d75d7a567bfea31c4e716234513d7` | Beacon registry publisher | Publishes a ready Beacon through the generic infrastructure helper; it is not itself proof that economics are admitted. |
+| `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` | `a73f343ad12186e3d5fc7f31802b4202c899f29f` | Admission ↔ canonical evidence binding | Compares action, pre-state and post-state fingerprints; the module explicitly does not compute economic truth or fingerprints. |
+| `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` | `4c5f81a76edb14dbcf59412c6b0500c749264883` | Evidence packet structure | Validates non-empty fields, digest syntax and transaction ref; schema validation does not prove that the evidence is true or corresponds to deployed code. |
+| `Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.ts` | `87721fe1bc2abc98ba129c7dd13af7bc0707e624` | Observed transition packet | Records observed pre/post UTxO fingerprints and transaction refs; it explicitly distinguishes these from canonical V3-state fingerprints. |
+
+### What the existing path guards really establish
+
+`src/__tests__/rf8-submission-boundary.test.ts` (blob `f741dc01bad30466d469ed333c33bfce772086ba`) recursively scans TypeScript files under `src/` for direct `.signTx()` / `.submitTx()` calls, permits the shared `src/txHelpers.ts` boundary, and checks known Mint/Reveal/Claim/Expire orchestrators for use of the economic submission path.
+
+This is meaningful evidence for that declared scan root and those expected call-sites. It is not a whole-repository call-graph proof: it does not scan all relevant roots such as `relayer/`, `audit/`, `plutus/`, scripts or generated/runtime entry points; it also does not prove that a transaction passed to `submitEconomic` was computed from the witness's fingerprints, nor that every external invocation of the adapter uses that entry point. A second script named `scripts/check-economic-mutator-surface.mjs` and a broader RF8 source checker were found in the read-only commit `765af53acec61746af0dc9117db93bbe8bbffe77`, but those files are not present in the authorized branch's `scripts/` directory at this audit head and have not been counted as active gate coverage.
+
+The existing `EconomicAdmission.test.ts` exercises missing/malformed admission, mismatched action class, input/source mismatch, liquidity overstatement, duplicate UTxO observation, freshness and Pool-reference/value mismatch. These are useful negative cases for the helper contracts. They are not proof that all production transaction constructors have been identified or that an admission witness originates in an authoritative economic producer.
+
+### Reproducible omission counterexamples (scope-bounded)
+
+1. **Scan-root omission:** the test's enumerator is rooted at `src/`; an additional direct signer/submission call inserted under a different production root would not be visited by that particular test. This is a control-scope counterexample, not evidence that a current live economic mutation presently bypasses the adapter.
+2. **Admission witness non-derivation:** the adapter witness validator accepts a structurally valid `admitted: true` object if its fields and associated observed liquidity satisfy local checks. It does not recompute `Accept`, `ProtectedCapital`, `T`, or `Ω`. Therefore the existence of the runtime witness schema is not itself proof that an authoritative producer generated the witness. The repository's own PRE-RICH Issue provenance records the authoritative Issue producer boundary as an open item; until that producer and its evidence binding are proved, tests that construct sample witnesses remain synthetic.
+3. **Transition packet binding limit:** canonical evidence binding checks equal fingerprints and action class, while observed Cardano evidence fingerprints UTxOs/datums separately from canonical V3-state identity. No source read here proves a universal refinement relation `ρ` linking every committed transaction to exactly one canonical `T(S,a,ω)`.
+4. **Environmental delta omission:** V3 `Issue/Reveal/Claim/Expire` do not encode the R7 `stale/verify/realise` deltas; the EEV observation/freshness boundary can change admissibility with unchanged V3 aggregate state. The R3 worksheet's thirteen elements all remain OPEN for the concrete profile.
+
+### Normative basis for the blocker (not an invented requirement)
+
+The gap is already specified by the controlling normative sources:
+- Constitution `docs/00-normative/01_CONSTITUTION_FINAL.md` §6: Ω completeness relative to declared perimeter E is a profile/adapter admission obligation, not a theorem.
+- `docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md` §§2, 4, 8: defines successor containment, requires the 13 contract elements, and forbids using the Ω completeness claim as its own evidence.
+- `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md` §§1–3: every committed action must satisfy `Accept`, be related to canonical `T), stay inside Ω/Kc, and commit atomically.
+- `docs/00-normative/07_CONFORMANCE_SPECIFICATION_FINAL.md` C5b/C18: every committed implementation step must relate to exactly one canonical transition; no unrelated committed step is permitted.
+- `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md` PA2/PA7: the profile must enumerate all created economic content exactly once and undergo an adversarial omission review.
+
+These sources provide the closure obligation, not the missing profile-specific universe itself. No current normative file establishes a closed manifest of every code path, event class, asset/right schema and transition origin for this deployed PRE-RICH profile.
+
+### Updated conclusion
+
+The current branch can establish a **bounded application submission path map** for Issue/Reveal/Claim/Expire and identify several adapter/evidence seams. It cannot derive an authoritative exhaustive production entry-point universe from a complete normative manifest, and it cannot prove Ω, EEV/Accept authority, complete ticket universe, L6 emptiness, or V3-to-ledger refinement universally. No code/test modification is justified without first authorizing and binding the missing profile/domain contract. PA2 and PA7 remain OPEN; C14, C17, C5b/C18, R1 E1–E8 and R7 PA1–PA7 remain not discharged.
