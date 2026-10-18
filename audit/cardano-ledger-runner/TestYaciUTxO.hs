@@ -28,6 +28,7 @@ import Data.ByteString.Short (toShort)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import System.Exit (exitFailure)
+import YaciUTxO (decodeYaciUTxO)
 
 txHash :: String
 txHash = replicate 64 '0'
