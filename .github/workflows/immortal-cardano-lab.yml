@@ -71,9 +71,11 @@ jobs:
             ~/.cabal/packages
             ~/.cabal/store
             dist-newstyle
-          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+            plutus/dist-newstyle
+            audit/cardano-ledger-runner/dist-newstyle
+          key: plutus-build-v2-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
           restore-keys: |
-            plutus-build-${{ runner.os }}-
+            plutus-build-v2-${{ runner.os }}-
 
       - name: Setup canonical Plutus CI
         uses: ./.github/actions/setup-plutus
@@ -99,7 +101,9 @@ jobs:
             ~/.cabal/packages
             ~/.cabal/store
             dist-newstyle
-          key: plutus-build-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
+            plutus/dist-newstyle
+            audit/cardano-ledger-runner/dist-newstyle
+          key: plutus-build-v2-${{ runner.os }}-${{ hashFiles('**/*.cabal', 'cabal.project*', '**/*.hs', '**/*.lhs') }}
 
       - name: Record generated artifact hashes
         run: |
