@@ -513,7 +513,10 @@ async function boundedClaimFallbackExUnits(
     ledgerSubmissionRemainsAuthoritative: true,
   })
   console.log(JSON.stringify({
-    claimDiag: 'scalus-context-shape-fallback',
+    claimDiag: fallbackReason.startsWith('Aiken Claim negative twin:')
+      ? 'aiken-negative-construction-budget'
+      : 'scalus-context-shape-fallback',
+    fallbackReason,
     additionalUTxOsSuppliedByLucid: additionalUTxOsCount,
     txSha256: description.txSha256,
     protocolExecutionLimits: { memory: maxMemory, steps: maxSteps },
