@@ -21,6 +21,7 @@ import {
   mintingPolicyToId,
   validatorToScriptHash,
   validatorToAddress,
+  applyParamsToScript as evolutionApplyParamsToScript,
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
@@ -411,11 +412,19 @@ if (aikenExpireV3) {
   if (matches.length !== 1 || !matches[0].compiledCode || !matches[0].hash) {
     throw new Error('Expected one compiled Aiken Prize validator for Expire')
   }
-  const aikenPrizeScript = { type: 'PlutusV3', script: matches[0].compiledCode } as Script
-  const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
-  if (aikenPrizeHash !== matches[0].hash.toLowerCase()) {
-    throw new Error('Aiken blueprint and Lucid V3 Expire hashes do not match')
+  const aikenUnparameterizedScript = { type: 'PlutusV3', script: matches[0].compiledCode } as Script
+  const aikenBlueprintHash = validatorToScriptHash(aikenUnparameterizedScript).toLowerCase()
+  if (aikenBlueprintHash !== matches[0].hash.toLowerCase()) {
+    throw new Error('Aiken blueprint and Lucid unparameterized Expire hashes do not match')
   }
+  const aikenPrizeScript = {
+    type: 'PlutusV3',
+    script: evolutionApplyParamsToScript(
+      matches[0].compiledCode,
+      [testPolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+    ),
+  } as Script
+  const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
   const aikenBoundPoolScript = buildB1PrizePool(
     aikenPrizeHash,
     keyHash,
