@@ -389,6 +389,7 @@ jobs:
         id: claim_trace
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
+          IMMORTAL_CLAIM_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
       # If the normal Claim build fails, rerun the same fixture construction-only
