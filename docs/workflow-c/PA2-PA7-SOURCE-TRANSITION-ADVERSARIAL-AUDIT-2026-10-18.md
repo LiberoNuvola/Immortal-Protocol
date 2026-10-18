@@ -419,3 +419,60 @@ This pass adds direct evidence of an out-of-`src/` registry relayer submission p
 | EV1–EV7 | **NOT VERIFIED** | No complete authenticated deployment-bound evidence packet verified. |
 | Build/tests/CI | **NOT VERIFIED FOR THIS HEAD** | No execution was performed; queried status/workflow endpoints returned empty results with documented coverage limits. |
 
+
+
+## 15. Owner authority resolution and R7 decision proposal (2026-10-18)
+
+### 15.1 Decision authority for this project phase
+
+The project owner explicitly stated in the current Workflow C session that, because no community or other governance body currently exists, the owner is the sole normative decision authority for IMMORTAL/PRE-RICH at this stage. This resolves the prior question of *who* can approve a profile-level R7 mapping for this phase: the project owner. No committee, quorum, signer set, DAO vote, or external approval path is inferred.
+
+This is an owner instruction recorded by this working audit; it does not alter the universal model or the already-closed PRE-RICH application baseline. Technical analysis can recommend and evidence a mapping; only the owner can approve the proposed profile classification. PA7 remains an independent-review obligation and is not satisfied by owner approval or by this report.
+
+### 15.2 Proposed R7 content-to-cell mapping for owner decision
+
+The following is a **proposal for owner review, not yet an approved profile instantiation**. The classification rule is to map the underlying economic content exactly once, not to map variable names or reserve counters mechanically. Canonical R7 cells and deltas remain those in `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md` (PC1–PC7); PRE-RICH application semantics remain those in `PRE-RICH/docs/GAME-ECONOMY.md`.
+
+| Economic content / source-backed concept | Proposed R7 treatment | Boundary and evidence still required |
+|---|---|---|
+| Canonical USDM physically present in the exact qualified B1 PrizePool UTxO, verified and fresh | **A1**; included in direct-profile EEV | Exact UTxO, canonical asset identity, observation slot/freshness, deployment binding and EV1–EV7 evidence must be authenticated. Genesis Treasury is not automatically PrizePool liquidity. |
+| USDM-convertible or haircut-valued assets | **A2 only if** a declared, supported conversion/haircut valuation is actually in scope | The direct EEV profile excludes ADA/PRE liquidation, oracle-derived conversion, and invented haircuts/slippage. Do not manufacture an A2 value to fill the cell. |
+| Present but unverified or stale assets | **A3**, excluded from EEV until verified/fresh | Must distinguish actual stale/unverified holdings from assets outside the direct profile perimeter; a freshness lapse must be bound to the canonical transition/fail-closed path. |
+| Asset whose value depends on an unresolved external event | **A4**, excluded from EEV, with its economic contingency represented on the liability side as the paired **L3** exposure | Identify the event, the contingent asset and matching liability-resolution event. No such pair is presumed merely because an external dependency exists. |
+| Non-economic/informational holdings | **A5**, excluded from EEV | Do not classify every non-USDM token as A5 merely because it is excluded from this direct EEV profile. An excluded asset may require a different classification if it is stale, contingent, or otherwise economic. |
+| Accepted, crystallized/pending winning payout obligation not yet settled | **L1** | The frozen payout/right and pending amount must be bound to the canonical ticket identity and counted exactly once. |
+| Unrevealed ticket exposure by class price P and unresolved count N | **L3**, valued by the normative Ω-worst-case; PRE-RICH baseline gives `WorstCaseExposure(P,N) = 500 × P × N` | The Ω envelope must cover the authoritative event perimeter and the complete ticket/class universe. The statistical `UnresolvedReserve(N)` is not a substitute for worst-case L3 and must not be added as a second copy of the same exposure. |
+| Funded, locked Jackpot awaiting its conditional future payout | **Candidate for L2/CAR**, because R7 L2 is conditionally committed future allocation and PRE-RICH says Jackpot liquidity is protected/locked until the winning transition | **Owner decision required:** confirm this mapping and its exact boundary against L1 and L3. The application-specific label “Jackpot” is not by itself a universal classification, and the same locked amount must not be counted in multiple cells. |
+| Settled obligations | **L4** as a terminal/excluded liability category; no longer included in ProtectedCapital | Require observed, atomic settlement and exactly-once ticket/right evidence. Historical occurrence belongs in ℌ where applicable, not as a live L4 liability amount in ProtectedCapital. |
+| Expired rights/obligations | **L5** as a final/excluded liability category; no return path | Require eligibility, identity, finality and replay/non-revival evidence for each right. |
+| Any material obligation/right not representable in A/L cells | **L6 counterexample**; the creating action must be non-executable | L6 is not a reserve bucket to price and carry. PC7 requires it empty in every executable state; the current caller-supplied `obligationsComplete` flag does not prove this. |
+| Monotone history: issuance/reveal/settlement/expiry/transfer and `HighestClassEverActivated` | **ℌ**, separate from asset/liability cells and never valued in EEV or ProtectedCapital | Complete schema and ledger provenance remain to be proven. Current-state counters must not be confused with historical facts. |
+
+### 15.3 Non-cell implementation aggregates: no automatic addition to ProtectedCapital
+
+The following implementation/application quantities are **not additional R7 cells** and must not be summed into `ProtectedCapital` merely because their names contain “capital”, “reserve”, “cost”, or “Jackpot”:
+
+- `SafetyCapital`
+- `ReserveProtection`
+- `MandatoryFutureCosts`
+- `StatisticalReserve` / `UnresolvedTicketReserve`
+- `LockedJackpotLiquidity` as an implementation bucket
+
+Each amount must be traced to the underlying economic rights/commitments it represents and then classified once into L1, L2 or L3 (or shown not to be a commitment covered by R7). A computed buffer or policy guard may remain a separate control variable, but its value cannot be added to the normative R7 sum without proving distinct, non-overlapping protected content. In particular:
+
+```
+ProtectedCapital_R7 = value(L1) + value(L2) + value_worstcase_Ω(L3)
+RawSurplus          = max(0, EEV - ProtectedCapital_R7)
+```
+
+These expressions are unchanged. Statistical reserve remains a distinct statistical risk model and cannot replace deterministic Ω-worst-case exposure. Locked Jackpot liquidity is deducted exactly once in the PRE-RICH EffectivePool invariant; that application-level accounting statement does not, by itself, prove its canonical R7 cell.
+
+### 15.4 Decisions still required from the owner
+
+1. **Confirm or reject Jackpot → L2/CAR** for the funded/locked pre-payout amount, including the exact point at which a won Jackpot becomes L1.
+2. **Approve the classification principle for add-ons:** classify underlying content once; never add SafetyCapital, ReserveProtection, MandatoryFutureCosts or a statistical reserve as a second liability unless distinct content and non-overlap are demonstrated.
+3. **Confirm the direct EEV perimeter:** only verified canonical USDM in the exact qualified B1 PrizePool UTxO is A1/EEV for `PRE-RICH-EEV-USDM-DIRECT-V1`; other assets do not become A2/A5 by default.
+4. **Keep PA2 blocked until the exhaustive inventory exists:** this proposed table is not evidence that every asset, obligation, NFT/datum right, transition, relayer, adapter or external interface has been enumerated.
+5. **Keep PA7 blocked pending an independent omission review** of the completed inventory and the owner-approved mapping.
+
+No R7 cell mapping is marked approved by this section. No code or economic semantics were changed. Build, tests, CI, live S0, Ω/P1–P8, R1/Kc and EV1–EV7 remain subject to the evidence limits recorded above.
