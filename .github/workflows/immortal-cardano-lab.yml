@@ -10,6 +10,7 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/cardano-integration/**"
+      - "audit/cardano-ledger-runner/**"
       - "poc/aiken-reveal-parity/**"
       - "src/**"
       - "plutus/**"
