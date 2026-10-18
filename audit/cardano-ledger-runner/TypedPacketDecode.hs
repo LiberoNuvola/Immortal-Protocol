@@ -245,5 +245,5 @@ evaluateConwayTx ::
   UTxO ConwayEra ->
   EpochInfo (Either Text.Text) ->
   SystemStart ->
-  RedeemerReportWithLogs BabbageEra
+  RedeemerReportWithLogs ConwayEra
 evaluateConwayTx = evalTxExUnitsWithLogs
