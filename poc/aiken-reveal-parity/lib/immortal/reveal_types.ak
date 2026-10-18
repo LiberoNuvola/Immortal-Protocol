@@ -1,4 +1,5 @@
 use aiken/crypto.{ScriptHash}
+use cardano/assets.{AssetName, PolicyId}
 
 /// Wire-compatible type declarations for the existing Haskell Types.hs schema.
 /// Constructor order and field order are compatibility-sensitive. Do not reorder
@@ -26,8 +27,8 @@ pub type BeaconTarget {
 
 pub type PrizeDatum {
   PrizeDatum {
-    ticket_policy: ByteArray,
-    ticket_name: ByteArray,
+    ticket_policy: PolicyId,
+    ticket_name: AssetName,
     player_commitment: ByteArray,
     price_usdm: Int,
     commitment: ByteArray,
