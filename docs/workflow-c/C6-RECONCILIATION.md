@@ -211,3 +211,19 @@ and `plutus/pre-rich-plutus.cabal` defines that suite with `PreRichLifecycleTran
 There is now evidence of (1) intended PRE-RICH regime-chain semantics, (2) a concrete local lifecycle transition helper, and (3) a workflow configured to run its Haskell test suite. Still missing from the evidence reviewed here are: a verified successful test run; an explicit composition/refinement from the helper into the canonical application/economic transition boundary; action-specific acceptance compatibility; and a sound authoritative-Ω coverage argument proving QNE over the declared perimeter. Do not interpret the generic regime-chain diagram as proof of these operational obligations.
 
 This correction supersedes any implication that the lifecycle Haskell test is absent from all workflows. C6 remains **NOT CERTIFIED**; no code or normative semantics were changed.
+
+
+## Additional authority found in Notion T2/P0 — application-level ENTER_QUIESCENCE (2026-10-18)
+
+A targeted Notion search/fetch found an existing application-level contract that was not in the GitHub normative-file set reviewed above: **T2 — Transition Conformance Specification v0.1** (under PRE-RICH Control Center / Definitive Decision Register). Its P0 binding explicitly lists `CONTRACT_CLASS / ENTER_QUIESCENCE` and states that contraction/quiescence may be invoked permissionlessly, with class safety derived from canonical state, `HighestClassEverActivated` monotone, and stale higher-class state forbidden from authorizing an unsafe SALE. T2's common P0 contract requires a deterministic predicate, observable trigger/discovery, permissionless invocation, independent on-chain revalidation, atomic delta, idempotence/concurrency handling, stale/conflict rejection, safe-stall behavior and recovery.
+
+This materially narrows the prior finding:
+
+- **`EnterQuiescent` has an application-level normative candidate source** in T2/P0; it should not be described as wholly unauthorized at the PRE-RICH application layer.
+- **`MaintainQuiescent` is not separately named in the T2/P0 action binding found.** Its nonce-incrementing transition remains implementation-level behavior unless another approved source authorizes it.
+- The existence of the T2/P0 contract does **not** make the lifecycle action a chain-independent IMMORTAL action, and does not itself prove that the current helper conforms to every P0 requirement.
+- It also does not close the QNE certificate: the helper still takes supplied Ω witnesses, while the application contract requires an authoritative transition/evidence path; the reviewed sources do not establish the complete Ω envelope or prove buffer/Rep preservation for every successor. The action's availability/acceptance over every state in a proposed (K_c) remains unproven.
+
+The source is a Notion page marked `unverified` by the Notion integration and last edited 2026-09-14; it is treated here as an existing project specification, not as proof of implementation conformance. The repository's `PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md` separately warns not to import PRE-RICH Genesis semantics into universal IMMORTAL economics. No universal semantics are inferred from T2.
+
+**Revised next step:** compare the T2/P0 `ENTER_QUIESCENCE` contract clause-by-clause with `PreRichLifecycleTransition.hs` and its test suite; identify the already-defined canonical pre/post-state and the actual observation/transition binding; then determine whether an existing approved action is available throughout a concrete candidate (K_c). Do not treat `MaintainQuiescent` as authorized merely because its helper and tests exist. C6-B remains **BLOCKED / NOT CERTIFIED**.
