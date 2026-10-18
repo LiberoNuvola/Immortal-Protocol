@@ -580,3 +580,17 @@ A targeted source check found a deployment procedure, but not committed deployme
 
 C6 remains **NOT CERTIFIED**. This audit performed source and governance-document inspection only; no code, tests, CI run, or on-chain transaction was changed or executed.
 
+## Existing live-observation workflow identified (2026-10-18)
+
+The closure-branch workflow `.github/workflows/immortal-cardano-preprod.yml` already contains a manual-only job `preprod-v3-carrier-observation`, enabled by the `observe_v3` input. It requires the Environment `DEMETER` secrets `BLOCKFROST_PROJECT_ID`, `VITE_V3_CARRIER_ADDRESS`, `VITE_V3_CARRIER_POLICY_ID`, and `VITE_V3_CARRIER_TOKEN_NAME_HEX`, runs `audit/cardano-integration/preprod-v3-carrier-observation.mjs`, and uploads an artifact named `immortal-preprod-v3-carrier-evidence`.
+
+The probe's acceptance boundary is deliberately narrow: it checks that exactly one matching token UTxO exists at the configured address, that its reference is a valid `txHash#outputIndex`, and that a datum is present. It does **not** decode/revalidate the V3 economic datum or prove Issue binding, contraction semantics, B2 synchronization, or EEV authority. The artifact is the appropriate next evidence to retrieve, not a substitute for those later checks.
+
+The current branch's workflow is manual-only for this job. Repository source inspection cannot establish that the job has been run, that the four secrets are configured, or what it observed. The GitHub connector available during this audit did not expose a workflow-dispatch/list-runs action, so no run was launched and no artifact was retrieved. Do not infer deployment absence from this limitation.
+
+### Operational next action (no Reveal execution)
+
+Use **Actions → IMMORTAL Cardano Preprod Context → Run workflow** on `work/immortal-green-closure`; set `observe_v3=true`, `run_reveal=false`, and `bootstrap_direct_usdm=false`. This is an observation-only path; it does not deploy a contract or execute Reveal. Retrieve `immortal-preprod-v3-carrier-evidence` and record the exact singleton address, policy/token identity and UTxO reference. If the job fails at configuration validation, resolve the missing/mismatched deployment identity from an existing authoritative deployment record; do not mint a replacement singleton merely to make the probe pass.
+
+**Status after this source audit:** an existing read-only observation route is identified, but its runtime result remains UNOBSERVED in this session. V3↔B2 atomic contraction binding remains OPEN and C6 remains NOT CERTIFIED. No code, tests, CI, or on-chain state was changed.
+
