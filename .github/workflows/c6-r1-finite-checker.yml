@@ -9,6 +9,9 @@ on:
       - test/check-r1-finite-certificate.test.mjs
       - scripts/check-r1-canonical-source.mjs
       - test/check-r1-canonical-source.test.mjs
+      - scripts/check-v3-universal-projection.mjs
+      - test/check-v3-universal-projection.test.mjs
+      - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs
       - IMMORTAL/kernel/EconomicKernel.hs
@@ -48,5 +51,5 @@ jobs:
           node-version: 22
       - name: Verify canonical source snapshot and structure
         run: node scripts/check-r1-canonical-source.mjs
-      - name: Run finite R1 and source-binding regressions
-        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs
+      - name: Run finite R1, source-binding and projection regressions
+        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs
