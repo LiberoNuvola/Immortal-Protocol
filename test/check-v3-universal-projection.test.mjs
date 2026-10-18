@@ -23,7 +23,6 @@ function model() {
     eev:'1600'
   };
 }
-const clone = x => JSON.parse(JSON.stringify(x));
 
 test('projects exact canonical classes and maps Jackpot exactly once', () => {
   const out = projectV3ToUniversal(model());
@@ -86,4 +85,11 @@ test('rejects negative Jackpot locked amount instead of dropping it', () => {
 
 test('Git blob SHA uses object framing', () => {
   assert.equal(gitBlobSha('test'), '30d74d258442c7c65512eafab474568dd706c430');
+});
+
+test('source binding fails closed when canonical source files are unavailable', () => {
+  const out = verifySourceSnapshot('/definitely-not-an-immortal-checkout');
+  assert.equal(out.ok, false);
+  assert.equal(out.classification, 'SOURCE_BINDING_FAILED');
+  assert.equal(out.errors.length, 6);
 });
