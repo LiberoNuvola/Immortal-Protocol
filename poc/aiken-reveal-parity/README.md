@@ -20,6 +20,8 @@ The existing Haskell Reveal validator targets Plutus V2. The isolated Aiken pack
 - `lib/immortal/reveal_context_guards.ak`: pure parity seams for expiry bounds, unique input/output counts, immutable identity fields, continuing value equality, and Reveal PrizePool accounting deltas.
 - `lib/immortal/reveal_types.ak` and `lib/immortal/reveal_transition.ak`: Aiken datum types and a pure Reveal state-transition predicate composed from canonical beacon, game, payout, identity, expiry and PrizePool rules. CI builds generated positive/negative transition tests from Haskell-produced winning/loss snapshots. Separately, the Haskell producer executes the compiled Plutus V2 validator against synthetic `ScriptContext` values; neither harness submits a ledger-valid transaction.
 - `lib/immortal/reveal_context.ak`: typed-context guards over Aiken's actual `cardano/transaction` types. `lib/immortal/reveal_transaction.ak` now wires those guards to datum resolution, unique Prize/PrizePool inputs and outputs, the canonical pure Reveal transition predicate, and pool before/after accounting. The entrypoint is a complete isolated prototype over Aiken's typed transaction context, but it is not yet proven equivalent to the production Haskell validator or validated against ledger-valid transactions.
+- `lib/immortal/claim_transition.ak`: pure Claim state-transition predicate used for explicit parity tests; caller-supplied booleans are not on-chain evidence.
+- `lib/immortal/claim_transaction.ak`: new typed-context Claim candidate. It resolves Prize/Pool datums, checks the ticket-owner signature, aggregates outputs to the enterprise claimant address, values each non-zero asset through the configured Oracle State singleton/publisher with the existing precision, ADA min-UTxO deduction and freshness boundary, and checks the Prize/Pool Claim transition. Unit tests now cover exact settlement, expiry-bound and oracle identity/freshness/price edges. It has **not** yet been compiled or proven against ledger-valid Claim fixtures; treat it as a migration candidate only.
 
 The guard module tests logical predicates only. It does **not** decode a real Cardano transaction context, prove that a byte string is the canonical encoding of a Cardano Value, locate actual UTxOs, or establish full validator equivalence.
 
@@ -161,3 +163,12 @@ The current `claim_transition.ak` is a pure predicate seam, not a transaction va
 
 Until these gates pass, this package remains an isolated migration prototype. No production validator selection, deployment, or GREEN status is implied by this note.
 
+
+
+## Claim typed-context implementation — 2026-10-18
+
+The isolated Aiken Prize entrypoint now accepts three configuration parameters matching the Claim oracle perimeter: Oracle State policy ID, Oracle State token name, and publisher verification-key hash. The existing Reveal and Expire branches still dispatch to their pre-existing transition predicates; Claim dispatches to `claim_transaction.ak`.
+
+The local integration harness has an opt-in `IMMORTAL_CLAIM_AIKEN_V3=1` route. The workflow's Claim step now selects that route before publishing the Prize reference script, then rebinds the real Plutus V2 B1PrizePool validator to the exact parameterized Aiken Prize hash. The offchain Aiken Reveal probe, Reveal trace and Expire trace were also updated to apply identical parameters before computing the executable script hash; the publication probe verifies its materialized reference script against the **parameterized** hash.
+
+These changes address loader/hash consistency and allow the lab to exercise the candidate without first publishing the oversized Haskell PrizeValidator. They do **not** close Claim until the pinned Aiken build/check passes, the full final transaction fits the unchanged 16,384-byte limit, the real Yaci ledger accepts a valid Claim and rejects adversarial twins, and datum/oracle/pool behavior is differentially compared with the canonical Haskell V2 path. Oracle data used by the current lab is synthetic and is not production economic qualification. No production deployment or V2-to-V3 migration approval follows from this work.
