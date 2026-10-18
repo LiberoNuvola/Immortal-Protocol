@@ -7,6 +7,14 @@ on:
     paths:
       - scripts/check-r1-finite-certificate.mjs
       - test/check-r1-finite-certificate.test.mjs
+      - scripts/check-r1-canonical-source.mjs
+      - test/check-r1-canonical-source.test.mjs
+      - IMMORTAL/kernel/EconomicTransitionV3.hs
+      - IMMORTAL/state/EconomicStateV3.hs
+      - IMMORTAL/kernel/EconomicKernel.hs
+      - IMMORTAL/state/UniversalEconomicState.hs
+      - IMMORTAL/kernel/UniversalEconomicKernel.hs
+      - IMMORTAL/kernel/EconomicGate.hs
       - .github/workflows/c6-r1-finite-checker.yml
   pull_request:
     branches:
@@ -14,6 +22,14 @@ on:
     paths:
       - scripts/check-r1-finite-certificate.mjs
       - test/check-r1-finite-certificate.test.mjs
+      - scripts/check-r1-canonical-source.mjs
+      - test/check-r1-canonical-source.test.mjs
+      - IMMORTAL/kernel/EconomicTransitionV3.hs
+      - IMMORTAL/state/EconomicStateV3.hs
+      - IMMORTAL/kernel/EconomicKernel.hs
+      - IMMORTAL/state/UniversalEconomicState.hs
+      - IMMORTAL/kernel/UniversalEconomicKernel.hs
+      - IMMORTAL/kernel/EconomicGate.hs
       - .github/workflows/c6-r1-finite-checker.yml
 
 permissions:
@@ -30,5 +46,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run finite R1 checker regressions
-        run: node --test test/check-r1-finite-certificate.test.mjs
+      - name: Verify canonical source snapshot and structure
+        run: node scripts/check-r1-canonical-source.mjs
+      - name: Run finite R1 and source-binding regressions
+        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs
