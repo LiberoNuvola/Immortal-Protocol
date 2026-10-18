@@ -425,3 +425,23 @@ Authorize a B2-specific refinement with the following boundary:
 This is a **recommended architecture decision for approval**, not an assertion that the current code already satisfies it. The exact evidence format, freshness predicate and composition with the regime carrier still need to be grounded in the authorized source contract before production code is changed.
 
 **Verification status:** source inspection only. No test or deployment was executed in this pass. C6 remains **NOT CERTIFIED**; no V3, Reveal, economic constants, or Beacon semantics were changed.
+
+
+## Source triangulation — P0 execution contract versus governance authority (2026-10-18)
+
+The direct Notion source reads strengthen the intended invocation boundary but do not close the formal approval gap:
+
+- **P0 — Protocol-Level Liveness & Permissionless Execution Contract** (metadata: `unverified`) explicitly says permissionless means no privileged operator is required and any eligible subject may submit a valid transition. Its transition table marks permissionless invocation as an existing principle for both `CONTRACT_CLASS` and `ENTER_QUIESCENCE`; it separately calls out atomic `CurrentActiveClass` update, preservation of `HighestClassEverActivated`, independent on-chain revalidation, stale-state safety and recovery.
+- **GOV-02 — Authority / Permission Matrix v0.1** (metadata: `unverified`) prohibits relayer authority to alter canonical state, oracle/operator authority to define economic truth, and privileged settlement paths. It distinguishes participation/review from governance authority and canonicalization.
+- **09 — Definitive Decision Register** (metadata: `unverified`) lists class control as semantically closed, but explicitly says infinite-horizon proof and ledger conformance remain to be proven. It does not provide a B2-specific authorization for the current per-transaction signer requirement.
+- **GOV-28 — Governance Current State** (metadata: `unverified`) concerns governance decision lifecycle, witness, conformance and canonicalization gaps. The retrieved relevant sections do not define the cryptographic semantics of `PreRichControlCarrier.configuredAuthority` or authorize that signer as mandatory for class contraction.
+
+### Result of authority search
+
+No retrieved decision artifact explicitly binds all three elements needed here: (a) state-derived eligibility for `CONTRACT_CLASS / ENTER_QUIESCENCE`, (b) any distinct authorization of decision/evidence, and (c) permissionless transaction submission without a privileged per-transaction signer. The general P0/GOV-02 direction is clear in the retrieved text, but source metadata remains unverified and the B2-specific refinement is missing.
+
+### Implementation decision
+
+Do not alter `PreRichControlCarrier.hs` yet. The minimum safe implementation change cannot be selected until the canonical predicate/evidence reference and the class-to-`QUIESCENT` atomic mapping are grounded. Once approved, test at least: non-authority submitter succeeds when eligible; same submitter fails when ineligible; stale reference/UTxO fails; two competing submissions yield at most one transition; highest-ever class is unchanged on contraction; and class/regime/version/nonce update is atomic.
+
+This is a source-retrieval result, not proof that no such decision exists anywhere in the workspace. It means none was found in the searched artifacts. No tests or deployment were run. C6 remains **NOT CERTIFIED**.
