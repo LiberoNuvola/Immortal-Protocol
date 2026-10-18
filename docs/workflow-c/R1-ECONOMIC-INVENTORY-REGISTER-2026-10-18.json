@@ -928,7 +928,7 @@
     {
       "id": "expiry-policy-crystallized-at-issuance",
       "accountingKey": "lifecycle:crystallized-expiry-policy",
-      "r7Cell": "L5",
+      "r7Cell": null,
       "mappingStatus": "partial",
       "eevTreatment": "Expiry policy is not an asset; it changes claimability and may release a pending commitment.",
       "protectedCapitalTreatment": "V3 Expire is class-aggregate and carries no ticket identity/timestamp; application expiry is profile-defined and crystallized at issuance.",
@@ -970,7 +970,7 @@
     {
       "id": "ticket-identity-transfer-no-duplication",
       "accountingKey": "right:ticket-identity-and-transfer",
-      "r7Cell": "H",
+      "r7Cell": null,
       "mappingStatus": "partial",
       "eevTreatment": "Ticket identity/transfer is not itself EEV; it carries the associated economic right.",
       "protectedCapitalTreatment": "V3 aggregate contains no ticket NFT identity, ownership, commitment, gameVersion or round.",
@@ -1480,5 +1480,251 @@
     "classification": "MECHANICAL EVIDENCE — SOURCE-DERIVED COVERAGE CHECKLIST; NOT PA2/PA7 CLOSURE",
     "statement": "This checklist indexes normative transition and implementation surfaces omitted from the original 17-component register. It detects missing checklist rows and source drift; because the checklist itself is curated, a passing result does not prove exhaustive economic coverage.",
     "independentReview": "No separate human/organizational adversarial reviewer attestation is represented by this artifact."
+  },
+  "sourceCatalog": {
+    "snapshotCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+    "note": "Pinned repository source snapshot used for this audit. Blob hashes identify source contents only; they do not authenticate deployment, observation, or completeness of the source universe.",
+    "sources": [
+      {
+        "id": "R1_SPEC",
+        "path": "docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md",
+        "blobSha": "32b54c73f6676467d197e8f6635155e4752cc17e",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines R1 viability certificate obligations and VC1-VC6."
+      },
+      {
+        "id": "R7",
+        "path": "docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md",
+        "blobSha": "9ebe7c55fb5de26aa9c8e1d0f17e466c91855c3e",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines canonical A1-A5/L1-L6 accounting partition, permitted deltas and PA1-PA7."
+      },
+      {
+        "id": "EEV",
+        "path": "docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md",
+        "blobSha": "292a2adb4137209f02e5a55477a5eef676d974e9",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines authoritative EEV evidence contract and valuation perimeter."
+      },
+      {
+        "id": "OMEGA",
+        "path": "docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md",
+        "blobSha": "17a30c6db680987c615ee334d6cf0cb2adbc5db0",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines Omega completeness relative to the declared environment perimeter."
+      },
+      {
+        "id": "GAME_ECONOMY",
+        "path": "PRE-RICH/docs/GAME-ECONOMY.md",
+        "blobSha": "3431169896aea420e7f8bff3c1932abed2c358ac",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines PRE-RICH payout, reserve, Jackpot, expiry and settlement policy."
+      },
+      {
+        "id": "V3_PROFILE",
+        "path": "IMMORTAL/state/EconomicProfile.hs",
+        "blobSha": "e4eccd67bec97543b802aa15ff1b2719c9c18bde",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines canonical V3 profile parameters and class price/payout bounds."
+      },
+      {
+        "id": "V3_STATE",
+        "path": "IMMORTAL/state/EconomicStateV3.hs",
+        "blobSha": "e80ecd167fa7c473f211302eb70af444356b2b91",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines V3 aggregate, class, control and Jackpot representation."
+      },
+      {
+        "id": "V3_KERNEL",
+        "path": "IMMORTAL/kernel/EconomicKernel.hs",
+        "blobSha": "14dcc841ae5c055d522facfa60af4787132f27c3",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines V3 reserve, exposure, ProtectedCapital, effectivePool and solvency."
+      },
+      {
+        "id": "UNIVERSAL_STATE",
+        "path": "IMMORTAL/state/UniversalEconomicState.hs",
+        "blobSha": "f89fe04c8aad8ca9c5e544fa9c145a38d157826f",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines application-neutral universal economic aggregate fields."
+      },
+      {
+        "id": "UNIVERSAL_KERNEL",
+        "path": "IMMORTAL/kernel/UniversalEconomicKernel.hs",
+        "blobSha": "cd304c26c5ae9795cf5a1c4f8ca5cf9a8bf65785",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines universal ProtectedCapital, RawSurplus and solvency."
+      },
+      {
+        "id": "IMMORTAL_CONSTITUTION",
+        "path": "IMMORTAL/docs/CONSTITUTION.md",
+        "blobSha": "8c8c0436eac027ccd89139308cc375f74386e8bf",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines protocol obligations, protected capital, transitions and expiry finality."
+      },
+      {
+        "id": "PRE_RICH_CONSTITUTION",
+        "path": "PRE-RICH/docs/CONSTITUTION.md",
+        "blobSha": "009ac8f86eb9be7f3be3a27b93cbb9ba6b772483",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines PRE-RICH class, Jackpot and expiry constraints."
+      },
+      {
+        "id": "PRE_RICH_ALGORITHM",
+        "path": "PRE-RICH/docs/ECONOMIC-ALGORITHM.md",
+        "blobSha": "6b8cf1ba59c6cbd588011a14eae46464b13b3277",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines PRE-RICH economic transition procedure and reserve/exposure semantics."
+      },
+      {
+        "id": "APPLICATION_SPEC",
+        "path": "PRE-RICH/docs/APPLICATION-SPECIFICATION.md",
+        "blobSha": "341e62ef277833e044d7655b89e7b2da1a19b4ab",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "normative specification",
+        "relation": "Defines PRE-RICH ticket lifecycle, identity, settlement and transition coupling."
+      },
+      {
+        "id": "PRE_RICH_PROFILE",
+        "path": "PRE-RICH/profile/PreRichEconomicProfile.hs",
+        "blobSha": "17487e50226a63061dfbf8500130a947bf5df62c",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Instantiates the PRE-RICH Haskell economic profile."
+      },
+      {
+        "id": "V3_TRANSITION",
+        "path": "IMMORTAL/kernel/EconomicTransitionV3.hs",
+        "blobSha": "62c2980a821cdcfc33a33e15a09617256ab8753c",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines V3 Issue/Reveal/Claim/Expire aggregate transitions."
+      },
+      {
+        "id": "PRE_RICH_PROJECTION_HS",
+        "path": "PRE-RICH/profile/PreRichEconomicProjection.hs",
+        "blobSha": "22cf16232594a0e7f6c52749feaf8bf0ea6e5b13",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Projects V3 state to universal state; class completeness caveat audited."
+      },
+      {
+        "id": "PRE_RICH_ADMISSION_HS",
+        "path": "PRE-RICH/profile/PreRichEconomicAdmission.hs",
+        "blobSha": "d8360b608f3bb32b7c74000de3ca3b5e3a907a9a",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Composes transition/projection/economic gate; caller Booleans are untrusted premises."
+      },
+      {
+        "id": "ISSUE_EVIDENCE",
+        "path": "PRE-RICH/profile/PreRichIssueEvidence.ts",
+        "blobSha": "6029300879c08e56630a3a0172fef61a5e483f22",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines PRE-RICH Issue class and cap evidence validation."
+      },
+      {
+        "id": "ISSUE_REFINEMENT",
+        "path": "PRE-RICH/profile/PreRichIssueRefinement.ts",
+        "blobSha": "2cb717101adc65899e8cf14b8c390fcdec2ebe6c",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Binds Issue to ticket identity, price units, counters and reserve."
+      },
+      {
+        "id": "REVEAL_REFINEMENT",
+        "path": "PRE-RICH/profile/PreRichRevealRefinement.ts",
+        "blobSha": "c68f3861ea98bff426dddac5eb38b3349bbe180d",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Binds Reveal to Beacon/commitment/result evidence, payout and liability changes."
+      },
+      {
+        "id": "CLAIM_REFINEMENT",
+        "path": "PRE-RICH/profile/PreRichClaimRefinement.ts",
+        "blobSha": "93813d3f15bbf32f32c870d401e8a5b95822ca15",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Binds Claim to owner, frozen payout, liability reduction and retained NFT."
+      },
+      {
+        "id": "EXPIRE_REFINEMENT",
+        "path": "PRE-RICH/profile/PreRichExpireRefinement.ts",
+        "blobSha": "72598762a7a9d29d5a1ecc1a4d475c0121f4cde8",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Binds aggregate Expire to ticket identity, timestamps and reserve release."
+      },
+      {
+        "id": "EXPIRY_POLICY",
+        "path": "PRE-RICH/profile/PreRichExpiryPolicy.ts",
+        "blobSha": "883a47dfc4823ac65c9bbfb9b0354d7719e905c5",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines deterministic profile expiry horizon and issuance-time crystallization."
+      },
+      {
+        "id": "JACKPOT_POLICY",
+        "path": "PRE-RICH/profile/PreRichJackpotPolicy.ts",
+        "blobSha": "6c74d63da6f19584b8d89f5c92ccd4ae3be15786",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Defines Jackpot stable-ladder funding floor and gap."
+      },
+      {
+        "id": "CARDANO_PROJECTION",
+        "path": "PRE-RICH/profile/PreRichCardanoObservationProjection.ts",
+        "blobSha": "de8911d112187d61f781d893cbfd32b7a4372ef6",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Projects observed Cardano ticket/pool/class data to V3 monetary units."
+      },
+      {
+        "id": "ADAPTER_SPEC",
+        "path": "Adapter/CARDANO/docs/ADAPTER-SPECIFICATION.md",
+        "blobSha": "8b409e4c41ef909e1ac3cd1fe4312544d0091c88",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "adapter specification",
+        "relation": "Defines Cardano adapter observation/realization boundary; not a conformance certificate."
+      },
+      {
+        "id": "EXEC_LIQUIDITY",
+        "path": "Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts",
+        "blobSha": "f7add943fe56d19c031f2672a6d27a267d8ca970",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Validates concrete spendable UTxO sources for immediate executable liquidity."
+      },
+      {
+        "id": "CERTIFIED_TICKET",
+        "path": "PRE-RICH/profile/PreRichCertifiedTicket.ts",
+        "blobSha": "3781a07282b3fc4fdc74975f3520a7a9b0a8b4e9",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "implementation source",
+        "relation": "Binds ticket NFT identity to datum and lifecycle fields."
+      },
+      {
+        "id": "GENESIS_TRANSITION",
+        "path": "PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md",
+        "blobSha": "c95fcec801cdf54613a455ec008a936c3ec83524",
+        "sourceCommit": "2e811d7d2c84183232154f315b534e847972a42f",
+        "authority": "application specification",
+        "relation": "Documents Treasury Genesis predicate and separation from PrizePool liquidity."
+      }
+    ]
   }
 }

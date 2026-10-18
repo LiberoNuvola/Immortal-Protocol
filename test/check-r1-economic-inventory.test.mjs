@@ -16,6 +16,7 @@ test('validates pinned R7 ontology and register while explicitly not closing PA2
   assert.equal(r.classification, 'MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN');
   assert.equal(r.canonicalCellCount, 11);
   assert.equal(r.profileComponentCount, 32);
+  assert.equal(r.sourceCatalogCount, 30);
   assert.equal(r.requiredSourceSurfaceCount, 15);
   assert.equal(r.registeredSourceSurfaceCount, 15);
   assert.ok(r.unresolvedObligations.includes('PA2'));
@@ -109,4 +110,22 @@ test('does not promote a source coverage checklist into PA2/PA7 closure', () => 
   const x=registry(); x.auditBoundary.independentReview='complete';
   const r=auditInventory(x,sources()); assert.equal(r.ok,true,r.errors.join('\n'));
   assert.equal(r.closureEligible,false);
+});
+
+test('rejects missing source provenance row', () => {
+  const x=registry(); x.sourceCatalog.sources=x.sourceCatalog.sources.filter(s=>s.id!=='PRE_RICH_ADMISSION_HS');
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/sourceCatalog: missing pinned source rows:.*PRE_RICH_ADMISSION_HS/);
+});
+test('rejects source provenance with a mismatched blob hash', () => {
+  const x=registry(); x.sourceCatalog.sources.find(s=>s.id==='R7').blobSha='0'.repeat(40);
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/sourceCatalog.R7: path\/blob hash differs/);
+});
+test('rejects source provenance that assigns no authority/relation', () => {
+  const x=registry(); const row=x.sourceCatalog.sources.find(s=>s.id==='PRE_RICH_ADMISSION_HS');
+  row.authority='trust me'; row.relation='';
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/invalid authority classification/);
+  assert.match(r.errors.join('\n'),/missing relation to inventory audit/);
 });

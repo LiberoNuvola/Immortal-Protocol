@@ -36,6 +36,8 @@ export const SOURCE_PINS = Object.freeze({
   CERTIFIED_TICKET: { path: 'PRE-RICH/profile/PreRichCertifiedTicket.ts', sha: '3781a07282b3fc4fdc74975f3520a7a9b0a8b4e9' },
   GENESIS_TRANSITION: { path: 'PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md', sha: 'c95fcec801cdf54613a455ec008a936c3ec83524' }
 });
+const SOURCE_SNAPSHOT_COMMIT = '2e811d7d2c84183232154f315b534e847972a42f';
+const SOURCE_AUTHORITY_CLASSES = new Set(['normative specification','application specification','implementation source','adapter specification']);
 const CELL_IDS = ['A1','A2','A3','A4','A5','L1','L2','L3','L4','L5','L6'];
 const COMPONENT_IDS = [
   'qualified-usdm-prizepool-utxo','crystallized-winning-liabilities',
@@ -107,6 +109,34 @@ export function auditInventory(registry, sources) {
     } else {
       const actual = gitBlobSha(source);
       if (actual !== pin.sha) add('source ' + id + ': blob drift; review semantic changes before updating pins; expected ' + pin.sha + ', got ' + actual);
+    }
+  }
+
+
+  const catalog = registry.sourceCatalog;
+  if (!catalog || catalog.snapshotCommit !== SOURCE_SNAPSHOT_COMMIT) {
+    add('sourceCatalog: snapshotCommit must identify the reviewed baseline source snapshot');
+  }
+  const catalogRows = catalog?.sources;
+  if (!Array.isArray(catalogRows)) {
+    add('sourceCatalog.sources: expected pinned source provenance rows');
+  } else {
+    const catalogIds = catalogRows.map(row => row?.id);
+    const expectedIds = Object.keys(SOURCE_PINS);
+    if (!sameSet(catalogIds, expectedIds)) {
+      const missing = expectedIds.filter(id => !catalogIds.includes(id));
+      const extra = catalogIds.filter(id => !expectedIds.includes(id));
+      if (missing.length) add('sourceCatalog: missing pinned source rows: ' + missing.join(','));
+      if (extra.length) add('sourceCatalog: unreviewed source rows: ' + extra.join(','));
+      if (new Set(catalogIds).size !== catalogIds.length) add('sourceCatalog: duplicate source IDs');
+    }
+    for (const [id,pin] of Object.entries(SOURCE_PINS)) {
+      const row = catalogRows.find(candidate => candidate?.id === id);
+      if (!row) continue;
+      if (row.path !== pin.path || row.blobSha !== pin.sha) add('sourceCatalog.' + id + ': path/blob hash differs from pinned source');
+      if (row.sourceCommit !== SOURCE_SNAPSHOT_COMMIT) add('sourceCatalog.' + id + ': sourceCommit differs from reviewed baseline');
+      if (!SOURCE_AUTHORITY_CLASSES.has(row.authority)) add('sourceCatalog.' + id + ': invalid authority classification');
+      if (typeof row.relation !== 'string' || !row.relation.trim()) add('sourceCatalog.' + id + ': missing relation to inventory audit');
     }
   }
 
@@ -216,6 +246,7 @@ export function auditInventory(registry, sources) {
     sourcePins:Object.fromEntries(Object.entries(SOURCE_PINS).map(([id,p]) => [id,{path:p.path,expectedBlobSha:p.sha,actualBlobSha:typeof sources?.[id] === 'string' ? gitBlobSha(sources[id]) : null}])),
     canonicalCellCount:Array.isArray(cells) ? cells.length : 0,
     profileComponentCount:Array.isArray(components) ? components.length : 0,
+    sourceCatalogCount:Array.isArray(registry.sourceCatalog?.sources) ? registry.sourceCatalog.sources.length : 0,
     requiredSourceSurfaceCount:REQUIRED_SOURCE_SURFACES.length,
     registeredSourceSurfaceCount:Array.isArray(registry.sourceCoverage) ? registry.sourceCoverage.length : 0,
     unresolvedObligations:Array.isArray(unresolved) ? unresolved : [],
