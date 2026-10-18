@@ -116,7 +116,7 @@ This is a specification for the next implementation tranche, not a claim that su
 |---|---|---|
 | C6-A — profile architecture | Partially specified by R1/R3/R7 and V3 state/kernel; no complete profile instantiation | Normative specification + source inspection |
 | C6-B — authorized witness/action adequacy | **BLOCKED**; no universally available non-eroding authorized action demonstrated | Source-grounded action mapping |
-| C6-C — evidence binding | **BLOCKED**; gate consumes caller-provided Boolean/flags and no independent R1 checker was found on this branch | Source inspection |
+| C6-C — evidence binding | **PARTIAL / NOT CERTIFIED**; finite R1 checker and source-snapshot guard exist, but the finite model is not bound to the deployed transition relation, authoritative Accept/EEV, real Ω, or live S0 | Checker implementation + source inspection |
 | VC1 | Formula/code for local V3 transition is decidable; certificate predicate χ is not instantiated | Partial source evidence |
 | VC2 | Local solvency invariant exists; full `Safe`/Rep inclusion for a concrete profile not proved | Conditional source evidence |
 | VC3 | Four-action local transition exists; all-Ω inductiveness not proved | Unproven |
@@ -130,7 +130,7 @@ This is a specification for the next implementation tranche, not a claim that su
 
 The highest-priority blocker is **not another Boolean or a new action**. It is a profile-bound, source-authorized transition/refinement and Ω contract that can derive (rather than assert) every successor and bind authoritative EEV, obligations, acceptance and S0. The only potentially useful existing action-level result from this audit is the conditional local non-erosion property of Reveal under stable EEV and complete accounting; it is not always available and does not survive arbitrary unmodelled environment changes by assumption.
 
-Next independent work can proceed on a finite-model R1 checker and regression tests that reject caller-asserted closure and empty Ω, provided the checker labels Ω completeness as an input proof obligation rather than pretending to establish reality coverage. It must not be represented as closing C6 until the model/Env/S0 evidence is bound.
+Next work must connect the finite-model checker to a source-grounded and exhaustive V3→universal projection, then bind the derived transition/Accept relations to authoritative Env/Ω and a real S0. The source-snapshot guard added later detects drift in canonical files but does not by itself bind model rows to source semantics. Do not represent this work as closing C6 until the model/Env/S0 evidence is bound.
 
 
 ## 8. Follow-up implementation — finite R1 checker (2026-10-18)
