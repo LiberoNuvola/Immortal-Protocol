@@ -143,3 +143,20 @@ The repository contains three distinct useful pieces, but they must not be confl
 No inspected artifact composes these into a source-backed universal relation proving, for every certified state, that the selected action is available and accepted and that every authoritative Ω-successor preserves `Rep`, safety and the buffer. The remaining gap is therefore an **explicit refinement/composition proof and authoritative Ω binding**, not a missing Boolean check.
 
 No source semantics were changed. The candidate remains worth retaining for PRE-RICH regime-level work, but C6-B remains BLOCKED until the missing composition and envelope obligations are discharged.
+
+
+## Follow-up trace — canonical V3 action relation versus lifecycle helper (2026-10-18)
+
+The source trace was extended to the exact module locations for the economic action relation, gate, profile, projection and refinement contract on `work/immortal-green-closure`.
+
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` defines the concrete PRE-RICH economic action constructors `Issue`, `Reveal`, `Claim`, and `Expire`, together with `transition` and `transitionValid`. The transition function calculates a candidate V3 economic state; `transitionValid` checks profile validity, pre/post conservation, control-state validity, non-negativity and monotonic control history.
+- `IMMORTAL/state/EconomicProfile.hs` is a declarative profile of version, class prices and maximum normal payout multiplier. Its validation checks positive version, valid positive prices, non-negative multiplier and unique classes. It does not declare a universal IMMORTAL action algebra or an Ω domain.
+- `PRE-RICH/onchain/PreRichEconomicProjection.hs` maps a valid V3 state to `UniversalEconomicState` and provides `projectionBoundaryEquivalent` for selected accounting functions. Its own contract explicitly does not establish gate soundness, viability, atomicity or full Cardano/V3 equivalence.
+- `IMMORTAL/kernel/EconomicGate.hs` separates immediate economic admissibility from viability. `viabilityGate` is exactly a conjunction of the supplied `safePostState` and `allOmegaSuccessorsInCertifiedKernel` values; it does not derive either a universal transition relation or an Ω-closure proof.
+- `IMMORTAL/conformance/RefinementV3.hs` maps `ConcreteV3State` to `V3EconomicState` and checks selected invariants. It is a concrete-state refinement helper, not a proof that lifecycle actions refine into the economic V3 relation or that all adapter/environment successors are covered.
+
+**Composition finding:** the lifecycle action type is not a constructor of `V3Action`, and `PreRichLifecycleTransition.hs` deliberately defines a separate lifecycle state. The reviewed modules do not provide a composition function or refinement theorem connecting `EnterQuiescent`/`MaintainQuiescent` to `EconomicTransitionV3.transition`, nor a theorem binding the lifecycle QNE witnesses to the authoritative Ω envelope. This is the exact missing edge; it should not be filled by silently adding lifecycle actions to V3 or changing V3/Reveal semantics.
+
+**Test/workflow finding:** `plutus/test/PreRichLifecycleTransitionTest.hs` is not named in the inspected `.github/workflows/formal-mechanical-evidence.yml` steps. The inspected `.github/workflows/pre-rich-action-refinement-conformance.yml` runs a TypeScript/Vitest conformance set and TypeScript typecheck, not that Haskell lifecycle test. Thus the repository review found test source, but no evidence from these workflows that the Haskell test is executed. No test pass or CI certification is claimed.
+
+**Next proof obligation:** locate an already-authorized normative source for the lifecycle action and its acceptance rule; define the explicit refinement/composition boundary without changing economic V3 semantics; then bind each QNE witness to a complete, authority-fixed Ω envelope for the declared perimeter and independently check `Rep`, safety and buffer preservation over every successor. If the normative corpus does not authorize that composition, stop for an architecture decision. C6 remains **NOT CERTIFIED**.
