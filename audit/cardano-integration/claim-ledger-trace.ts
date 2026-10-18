@@ -311,6 +311,37 @@ const evaluateYaciTx = async (
 }
 
 const claimEvaluationFallbacks: Array<Record<string, unknown>> = []
+const claimAikenV3Mode = process.env.IMMORTAL_CLAIM_AIKEN_V3 === '1'
+let allowAikenNegativeDiagnosticBudget = false
+
+function structuredYaciScriptEvaluationFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  const prefix = 'Yaci transaction evaluation failed (HTTP 400): '
+  if (!message.startsWith(prefix)) return false
+  let outer: any
+  try {
+    outer = JSON.parse(message.slice(prefix.length))
+  } catch {
+    return false
+  }
+  if (outer?.status_code !== 400 || outer?.error !== 'Bad Request' ||
+      typeof outer?.message !== 'string') return false
+  let ogmios: any
+  try {
+    ogmios = JSON.parse(outer.message)
+  } catch {
+    return false
+  }
+  const failures = ogmios?.result?.EvaluationFailure?.data
+  return ogmios?.servicename === 'ogmios' &&
+    ogmios?.methodname === 'EvaluateTx' &&
+    Array.isArray(failures) &&
+    failures.length > 0 &&
+    failures.every((failure: any) =>
+      typeof failure?.error?.data?.validationError === 'string' &&
+      Array.isArray(failure?.error?.data?.traces),
+    )
+}
 
 function claimContextShapeMismatch(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
@@ -504,6 +535,17 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
     // budgeting even when those reference UTxOs are present; the node's actual
     // submission remains mandatory and authoritative for every Claim result.
     if (claimContextShapeMismatch(error)) {
+      return await boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
+    }
+    // Aiken returns a generic false result rather than Haskell trace markers.
+    // For deliberate negative twins only, use a bounded construction-only budget
+    // after structured Plutus evaluation failure so the native ledger gets the
+    // final decision. The flag is never enabled for the positive Claim.
+    if (
+      claimAikenV3Mode &&
+      allowAikenNegativeDiagnosticBudget &&
+      structuredYaciScriptEvaluationFailure(error)
+    ) {
       return await boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
     }
     throw error
@@ -1194,8 +1236,10 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
   let phase = 'Yaci validator evaluation during transaction completion'
   let cborHash: string | null = null
   try {
+    allowAikenNegativeDiagnosticBudget = claimAikenV3Mode
     const tx = await buildClaimTx(variant)
     const signed = await tx.sign.withWallet().complete({ localUPLCEval: false })
+    allowAikenNegativeDiagnosticBudget = false
     const cbor = signed.toCBOR()
     cborHash = createHash('sha256').update(Buffer.from(cbor, 'hex')).digest('hex')
     phase = 'ledger submission'
@@ -1204,6 +1248,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     await lucid.awaitTx(txHash)
     throw new Error('CLAIM_NEGATIVE_TWIN_ACCEPTED:' + variant.label + ':' + txHash)
   } catch (error) {
+    allowAikenNegativeDiagnosticBudget = false
     const message = error instanceof Error ? error.message : String(error)
     if (message.startsWith('CLAIM_NEGATIVE_TWIN_ACCEPTED:')) {
       throw error
