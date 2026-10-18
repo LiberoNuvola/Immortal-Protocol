@@ -570,5 +570,5 @@ test claim_context_rejects_missing_prize_input() {
 
 
 test claim_oracle_decoder_returns_none_for_malformed_data() {
-  decode_oracle_datum(Int(42)) == None
+  decode_oracle_datum(42) == None
 }
