@@ -6,6 +6,10 @@ on:
       - work/immortal-green-closure
     paths:
       - "audit/jev/**"
+      - "audit/cardano-integration/materialize-p28-ledger-context.mjs"
+      - "audit/cardano-ledger-runner/**"
+      - ".github/workflows/immortal-cardano-lab.yml"
+      - ".github/workflows/cardano-ledger-audit.yml"
       - "scripts/validate-jev-verification-registry.mjs"
       - "scripts/test-jev-verification-registry.mjs"
       - "scripts/jev-verification-registry-generator.mjs"
