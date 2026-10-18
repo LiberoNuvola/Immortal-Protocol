@@ -564,3 +564,19 @@ The implementation design must decide, against existing approved semantics, how 
 A reference input alone is not sufficient to establish freshness against concurrent changes if the referenced economic state can be spent/updated independently; the conformance design must explicitly close that race. No specific atomic wiring is selected here because the existing validator/action model does not yet demonstrate it.
 
 **Updated disposition:** canonical per-class representation FOUND in the V3 carrier; B2 contract still OPEN at canonical live-state identity, contraction predicate, and atomic cross-carrier refinement. No code/test/deployment changed or run. C6 remains **NOT CERTIFIED**.
+
+## V3 deployment identity and B2 linkage audit (2026-10-18)
+
+A targeted source check found a deployment procedure, but not committed deployment evidence at the reviewed source ref:
+
+- `scripts/deployV3Carrier.mts` describes a one-time Cardano Preprod deployment. It derives the carrier policy identity from an explicitly selected seed UTxO, requires an explicitly supplied initial datum equal to `buildPreRichPreprodInitialDatum()`, submits the transaction, checks for exactly one singleton carrier UTxO at the derived address, and emits `audit/preprod-issue/v3-carrier-deployment.json`.
+- The deployment evidence file `audit/preprod-issue/v3-carrier-deployment.json` was not present at the reviewed repository ref (GitHub contents lookup returned 404). The B2 evidence file `audit/preprod-issue/b2-control-deployment.json` was also not present at that ref. This establishes absence from that source snapshot, **not** proof that no deployment or downloadable Actions artifact exists.
+- The V3 Issue-binding gap record independently says the Issue transaction does not yet consume/continue the V3 carrier UTxO and that a canonical deployed carrier address/UTxO remains an execution prerequisite. The B2 workflow source deploys a separate B2 control singleton; that alone does not prove an atomic link to the V3 per-class state.
+- T2 defines ledger-verifiable, fail-closed transitions and class safety derived from canonical state. P0 describes permissionless invocation, independent on-chain revalidation, atomicity and stale-state rejection, but its Notion page is explicitly labelled “Draft for consolidation” and its verification state is “unverified”. It is useful as a conformance target, not evidence that every transition binding is approved or implemented.
+
+### Current conclusion
+
+**V3 source implementation exists; canonical live identity and V3↔B2 atomic contraction binding remain UNVERIFIED / OPEN.** Do not create another per-class state copy, derive class composition from B1 aggregates, or modify V3/Reveal semantics to bridge the gap. Before code changes, retrieve and validate the actual V3 and B2 Preprod deployment evidence (or establish that deployment has not happened), then map the exact on-chain input/output references and current action predicate against the approved transition source. If no canonical deployed V3 singleton exists, the existing deployment workflow is the next execution boundary—but only with its explicitly authorized initial datum and controlled deployment inputs. No deployment was run in this audit.
+
+C6 remains **NOT CERTIFIED**. This audit performed source and governance-document inspection only; no code, tests, CI run, or on-chain transaction was changed or executed.
+
