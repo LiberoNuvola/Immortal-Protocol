@@ -331,6 +331,9 @@ jobs:
         run: |
           set -euo pipefail
           aiken --version
+          # Run unit/property tests (including the new Claim context guards)
+          # before exporting the compiled validator blueprint.
+          aiken check
           aiken build
           test -s plutus.json
 
