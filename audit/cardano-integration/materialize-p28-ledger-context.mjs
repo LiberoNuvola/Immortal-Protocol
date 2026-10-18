@@ -106,6 +106,12 @@ if (new Set(transition.consumedUtxos).size !== transition.consumedUtxos.length |
 }
 
 const txCbor = await requireFile(EVIDENCE_DIR + '/reveal-tx.cbor')
+if (typeof transition.txCbor !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(transition.txCbor)) {
+  throw new Error('Reveal transition packet lacks valid transaction CBOR hex')
+}
+if (!Buffer.from(transition.txCbor, 'hex').equals(txCbor)) {
+  throw new Error('Reveal transition txCbor does not match reveal-tx.cbor byte-for-byte')
+}
 const pparams = await requireFile(EVIDENCE_DIR + '/reveal-protocol-parameters.json')
 const pparamsJson = JSON.parse(pparams.toString('utf8'))
 
@@ -416,7 +422,7 @@ await writeFile(
   }, null, 2) + '\n',
 )
 
-const files = ['tx.cbor', 'utxo.json', 'transaction-metadata.json', 'block-metadata.json', 'pparams.json', 'protocol-parameters-raw.json', 'epoch-info.json', 'system-start.json']
+const files = ['tx.cbor', 'reveal-transition.json', 'utxo.json', 'transaction-metadata.json', 'block-metadata.json', 'pparams.json', 'protocol-parameters-raw.json', 'epoch-info.json', 'system-start.json']
 const hashes = {}
 for (const file of files) hashes[file] = sha256(await readFile(EVIDENCE_DIR + '/' + file))
 

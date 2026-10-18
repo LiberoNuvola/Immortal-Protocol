@@ -56,6 +56,7 @@ artifactPaths =
 canonicalEvidence :: [FilePath]
 canonicalEvidence =
   [ "tx.cbor"
+  , "reveal-transition.json"
   , "utxo.json"
   , "transaction-metadata.json"
   , "block-metadata.json"
@@ -78,6 +79,7 @@ rawHandoffEvidence =
 hashedEvidence :: [FilePath]
 hashedEvidence =
   [ "tx.cbor"
+  , "reveal-transition.json"
   , "utxo.json"
   , "transaction-metadata.json"
   , "block-metadata.json"
@@ -315,18 +317,27 @@ verifyWorkflowBinding manifest =
 
 verifyTransactionObservation :: FilePath -> Aeson.Object -> IO (Either String ())
 verifyTransactionObservation evidenceDir manifest = do
+  txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
+  transitionBytes <- BS.readFile (evidenceDir <> "/reveal-transition.json")
   utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
   txMetadataBytes <- BS.readFile (evidenceDir <> "/transaction-metadata.json")
   blockMetadataBytes <- BS.readFile (evidenceDir <> "/block-metadata.json")
   pure $ do
+    transitionValue <- (Aeson.eitherDecodeStrict' transitionBytes :: Either String Aeson.Value)
     utxoValue <- (Aeson.eitherDecodeStrict' utxoBytes :: Either String Aeson.Value)
     txMetadataValue <- (Aeson.eitherDecodeStrict' txMetadataBytes :: Either String Aeson.Value)
     blockMetadataValue <- (Aeson.eitherDecodeStrict' blockMetadataBytes :: Either String Aeson.Value)
+    transition <- expectObject "REVEAL_TRANSITION" transitionValue
     utxoObject <- expectObject "UTXO_CONTEXT" utxoValue
     txMetadata <- expectObject "TRANSACTION_METADATA" txMetadataValue
     blockMetadata <- expectObject "BLOCK_METADATA" blockMetadataValue
 
     manifestTxHash <- manifestText manifest "transaction_hash"
+    transitionTxHash <- manifestText transition "transactionRef"
+    transitionTxCborHex <- manifestText transition "txCbor"
+    transitionTxCbor <- case B16.decode (BSC.pack transitionTxCborHex) of
+      Left _ -> Left "TRANSITION_TX_CBOR_INVALID_HEX"
+      Right bytes -> Right bytes
     utxoTxHash <- manifestText utxoObject "transactionRef"
     observation <- manifestObject manifest "transaction_observation"
     observationTxHash <- manifestText observation "transaction_hash"
@@ -351,12 +362,12 @@ verifyTransactionObservation evidenceDir manifest = do
     if length manifestTxHash /= 64 || not (all isHexDigit manifestTxHash)
       then Left "TRANSACTION_REFERENCE_INVALID"
       else pure ()
-    if any (/= map toLower manifestTxHash)
-         [ map toLower utxoTxHash
-         , map toLower observationTxHash
-         , map toLower txMetadataHash
-         ]
+    if any (\candidate -> map toLower candidate /= map toLower manifestTxHash)
+         [transitionTxHash, utxoTxHash, observationTxHash, txMetadataHash]
       then Left "TRANSACTION_REFERENCE_BINDING_MISMATCH"
+      else pure ()
+    if transitionTxCbor /= txBytes
+      then Left "TRANSITION_TX_CBOR_MISMATCH"
       else pure ()
     if slot < 0 || blockHeight < 0
       then Left "TRANSACTION_OBSERVATION_NEGATIVE_SLOT_OR_HEIGHT"
