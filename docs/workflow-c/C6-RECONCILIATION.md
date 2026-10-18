@@ -371,3 +371,28 @@ The reviewed B2 validator's mandatory `configuredAuthority` transaction signatur
 **Source-quality qualification:** the Notion fetch metadata for both T2 and P0 reports `verification.state = unverified`; P0 is titled “Draft for consolidation” and its walk reports transition-level bindings as CLOSING. They are strong evidence of the documented intended contract, but they are not proof that the transition-specific implementation is closed or that these pages have been formally promoted to verified normative status. This distinction must remain visible in any closure claim.
 
 **Operational consequence:** do not change B2 code yet. The next required artifact is an explicit, authorized transition binding/decision that preserves the documented permissionless contract and existing authority boundary; then test the concrete transaction path for any-submitter invocation, stale-state rejection, atomic class update and monotone historical maximum. Until that binding and evidence exist, this remains a conformance gap rather than a solved design.
+
+
+## Follow-up clarification — B2-Control versus Beacon track; permissionless preference (2026-10-18)
+
+A naming cross-check confirms that **B2-Control and Beacon are separate workstreams** and must not be treated as the same blocker:
+
+- **B2-Control** is the PRE-RICH authenticated class-control singleton documented in `PRE-RICH/docs/B2-AUTHENTICATED-CONTROL-DESIGN-v0.1.md` and implemented by `PRE-RICH/onchain/PreRichControlCarrier.hs`. It carries `CurrentActiveClass` / `HighestClassEverActivated` and currently requires `authoritySigned configuredAuthority` for both activation and contraction.
+- **Beacon / Beacon 4** is a separate trust/canonicality and proof-path research track. The Beacon 4 Notion page explicitly labels that work as hypothesis/open architecture, not normative, and non-blocking for the first PRE-RICH ticket. It does not provide the missing authority refinement for `ContractControl`.
+
+### Permissionless is the preferred target, not yet an approved protocol change
+
+The current design preference is to preserve **permissionless invocation** for eligible class contraction / quiescence: any eligible subject should be able to construct and submit a candidate transaction, while the on-chain validator independently checks canonical state-derived eligibility and atomically applies the transition. A submitter/relayer must not become an economic authority, and a privileged key should not be required merely to invoke an already-eligible transition.
+
+This preference is consistent with the documented intent in T2/P0, but it is **not itself a formal governance decision**. T2/P0 fetch metadata remains `unverified`, and P0 is marked “Draft for consolidation”. The sources do not yet define a canonical cryptographic format for any separate decision/evidence authorization. Therefore:
+
+- Do **not** remove `configuredAuthority` from the validator by inference alone.
+- Do **not** conflate permissionless transaction submission with permissionless economic decision-making: the chain must still independently revalidate the state-derived predicate and evidence.
+- Resolve the exact boundary between a decision/evidence witness and transaction invocation in an authorized refinement; then implement and test it.
+- Keep the separate `EnterQuiescent` helper and `ContractControl` carrier uncomposed until an approved mapping defines their atomic state transition.
+
+### Next evidence gate
+
+An approved binding must specify the eligible state-derived trigger, what (if anything) needs cryptographic authorization, how an arbitrary eligible submitter constructs/submits the transaction without a privileged per-transaction signer, and how the validator enforces freshness, stale/concurrent rejection, atomic class/regime update, and monotone `HighestClassEverActivated`. A reproducible emulator/ledger trace must then demonstrate invocation by a non-authority submitter and the negative twins.
+
+**Status unchanged:** this clarifies scope and desired direction only. No validator, Beacon, V3, Reveal, or economic semantics were changed. C6 remains **NOT CERTIFIED**; no GREEN or deployment claim is made.
