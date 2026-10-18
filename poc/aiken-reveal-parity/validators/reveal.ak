@@ -1,4 +1,5 @@
 use aiken/crypto.{VerificationKeyHash}
+use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction
 use immortal/claim_transaction
 use immortal/expire_transaction
@@ -11,8 +12,8 @@ use immortal/reveal_types
 /// and Expire continue to use their existing transition predicates unchanged.
 /// This prototype is not yet deployed or wired into the production topology.
 validator pre_rich_reveal(
-  oracle_state_policy: ByteArray,
-  oracle_state_name: ByteArray,
+  oracle_state_policy: PolicyId,
+  oracle_state_name: AssetName,
   oracle_publisher: VerificationKeyHash,
 ) {
   spend(
