@@ -229,8 +229,7 @@ const observedRefs = economicInputs.map((input) => {
   return input.tx_hash.toLowerCase() + '#' + input.output_index
 })
 const expectedRefs = transition.consumedUtxos.map((ref) => ref.toLowerCase())
-if (observedRefs.length !== expectedRefs.length ||
-    new Set(observedRefs).size !== observedRefs.length ||
+if (new Set(observedRefs).size !== observedRefs.length ||
     expectedRefs.some((ref) => !observedRefs.includes(ref))) {
   const classify = (input) => ({
     ref: typeof input.tx_hash === 'string' && Number.isSafeInteger(input.output_index)
@@ -240,13 +239,36 @@ if (observedRefs.length !== expectedRefs.length ||
     reference: input.reference === true,
     addressPresent: typeof input.address === 'string',
   })
-  throw new Error('Yaci consumed input set does not match the exact Reveal transition: ' +
+  throw new Error('Yaci consumed input set does not contain the exact Reveal transition inputs: ' +
     JSON.stringify({
       expectedRefs,
       observedRefs,
       rawInputs: utxos.inputs.map(classify),
       counts: { expected: expectedRefs.length, observedEconomic: observedRefs.length, raw: utxos.inputs.length },
     }))
+}
+
+// The transition packet records the two economic script inputs. The submitted
+// transaction may also consume wallet UTxOs for fees/change. Keep those real
+// inputs in the ledger context, but fail closed if any unrecorded extra input
+// is itself a script address (which could hide an additional script transition).
+const expectedRefSet = new Set(expectedRefs)
+const extraEconomicInputs = economicInputs.filter((input, index) => !expectedRefSet.has(observedRefs[index]))
+const scriptAddressTypes = new Set([1, 3, 5, 7])
+const unexpectedScriptInputs = extraEconomicInputs.filter((input) => {
+  if (typeof input.address !== 'string') return true
+  const addressHex = cardanoAddressToLedgerHex(input.address)
+  if (addressHex.length < 2) return true
+  const addressType = Number.parseInt(addressHex.slice(0, 1), 16) >> 4
+  return scriptAddressTypes.has(addressType)
+})
+if (unexpectedScriptInputs.length > 0) {
+  throw new Error('Reveal transaction contains unrecorded additional script inputs: ' +
+    JSON.stringify(unexpectedScriptInputs.map((input) => ({
+      tx_hash: input.tx_hash,
+      output_index: input.output_index,
+      address: input.address,
+    }))))
 }
 
 const observedWithLedgerAddresses = {
