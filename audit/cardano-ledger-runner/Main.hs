@@ -298,19 +298,19 @@ decodeTypedArtifacts evidenceDir runEvaluation = do
   epochBytes <- BS.readFile (evidenceDir <> "/epoch-info.json")
   systemStartBytes <- BS.readFile (evidenceDir <> "/system-start.json")
 
-  case decodeBabbagePParams ppBytes of
+  case decodeConwayPParams ppBytes of
     Left err -> do
       safeStall "PPARAMS_NATIVE_DECODE_FAILED"
       putStrLn ("PPARAMS_ERROR: " <> err)
 
     Right pp ->
-      case decodeBabbageTx pp txBytes of
+      case decodeConwayTx pp txBytes of
         Left err -> do
           safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
           putStrLn ("TX_ERROR: " <> err)
 
         Right tx ->
-          case decodeBabbageUTxO utxoBytes of
+          case decodeConwayUTxO utxoBytes of
             Left err -> do
               safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
               putStrLn ("UTXO_ERROR: " <> err)
