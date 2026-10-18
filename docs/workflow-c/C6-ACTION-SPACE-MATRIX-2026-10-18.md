@@ -186,3 +186,54 @@ The source guard's report explicitly states that the authorized branch has no pr
 - Local test evidence from the prior checkpoint (8/8 finite-checker tests) applies to the isolated scratch copy noted in the prior report, not to an exact execution of the remote source blob. The new source-guard tests and updated workflow have not yet been observed passing in remote CI.
 
 **Current verdict remains C6 NOT CERTIFIED.** The concrete improvement is exact-source drift detection for the canonical transition/state/kernel/gate snapshots. The principal missing artifact remains a source-grounded and exhaustive projection/model that binds actual V3 state, complete inventory, authoritative EEV, `Accept`, `T`, and Ω to a real S0.
+
+## 11. V3 → universal projection guard (continuation checkpoint)
+
+**Classification: MECHANICAL EVIDENCE + TEST EVIDENCE; not a deployment certificate.**
+
+### Source and recovered candidate
+
+The source candidate was reread on `work/immortal-green-closure` at HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob SHA remains `22cf16232594a0e7f6c52749feaf8bf0ea6e5b13`. It is **not imported**. It validates duplicate classes, class price/exposure consistency and aggregate reserve/count, but does not prove that `v3Classes` contains exactly the profile's canonical class set. This is the concrete omission the new independent guard rejects.
+
+The destination source snapshots are pinned by Git blob SHA-1 in `scripts/check-v3-universal-projection.mjs`:
+
+| Source | Blob SHA | Use in projection check |
+|---|---|---|
+| `IMMORTAL/state/EconomicProfile.hs` | `e4eccd67bec97543b802aa15ff1b2719c9c18bde` | Profile version, unique class IDs, canonical prices and payout multiplier |
+| `IMMORTAL/state/EconomicStateV3.hs` | `e80ecd167fa7c473f211302eb70af444356b2b91` | V3 aggregate, class, control and Jackpot fields |
+| `IMMORTAL/kernel/EconomicTransitionV3.hs` | `62c2980a821cdcfc33a33e15a09617256ab8753c` | Confirms the exact existing action constructors: Issue, Reveal, Claim, Expire |
+| `IMMORTAL/kernel/EconomicKernel.hs` | `14dcc841ae5c055d522facfa60af4787132f27c3` | V3 class exposure, worst-case exposure, ProtectedCapital, RawSurplus and solvency |
+| `IMMORTAL/state/UniversalEconomicState.hs` | `f89fe04c8aad8ca9c5e544fa9c145a38d157826f` | Universal aggregate fields |
+| `IMMORTAL/kernel/UniversalEconomicKernel.hs` | `cd304c26c5ae9795cf5a1c4f8ca5cf9a8bf65785` | Universal ProtectedCapital, RawSurplus and solvency |
+
+The checker refuses to treat a source drift as a valid baseline: hashes must match, and it separately checks the parsed action set, V3/universal record field sets and required ProtectedCapital terms. These pins identify source snapshots; they do not prove that a deployment runs them.
+
+### Field-by-field projection contract
+
+| V3 source | Universal target / transformation | Executable check | Residual limitation |
+|---|---|---|---|
+| `v3CrystallizedLiabilities` | Direct → `uesCrystallizedLiabilities` | Non-negative integer; included once in both PC sums | Does not authenticate completeness of liability inventory |
+| `v3UnresolvedReserve` | Direct → `uesUnresolvedReserve` | Must equal sum over exact classes of canonical price × unresolved count | Equality is conditional on profile and supplied class inventory |
+| `v3UnresolvedTicketCount` | Direct → `uesUnresolvedTicketCount` | Must equal sum of per-class unresolved counts | Does not prove ticket identity/ledger inventory |
+| `v3Classes` / `epClassPrices` / `epMaxNormalPayoutMultiplier` | Derived → `uesWorstCaseExposure = multiplier × Σ(price(class) × unresolved(class))` | Exact set equality; reject missing, duplicate and unknown classes; reject noncanonical price/exposure; check totals | Class list/profile authenticity remains external; no proof of live ticket inventory |
+| `v3SafetyCapital` | Direct → `uesSafetyCapital` | Non-negative integer; included once in PC | Source authority not authenticated |
+| `v3ReserveProtection` | Direct → `uesReserveProtection` | Non-negative integer; included once in PC | Source authority not authenticated |
+| `v3MandatoryFutureCosts` | Direct → `uesMandatoryFutureCosts` | Non-negative integer; included once in PC | PA2/PA7 economic exhaustiveness remains open |
+| `v3Jackpot.jsLockedAmount` | Direct → `uesAdditionalProtectedCapital` | Required and non-negative; output equals the source amount; PC equality check prevents omission or double count in the computed boundary | Jackpot status, threshold, cycle and lifecycle are not represented in the universal aggregate |
+| `v3Control` | No universal field | Current/highest IDs must be in profile; current active class must not exceed highest-ever-activated class | Control history and activation semantics are not projected |
+| `tcsIssued`, `tcsCap`, `tcsSaleable` | No universal field | Non-negative issued/cap and Boolean saleable shape | Application admission/cap/saleability behavior is not proven equivalent |
+| External `EEV` | Separate checker input, not a state projection | Non-negative input; buffer = EEV − ProtectedCapital; RawSurplus = max(0, buffer); solvency iff buffer ≥ 0 | EEV provenance/authenticity/freshness are **not** checked by this tool |
+
+The V3 kernel's ProtectedCapital includes the locked Jackpot; the universal kernel has no Jackpot field and sums `uesAdditionalProtectedCapital`. The checker sets that field to the locked Jackpot exactly once and independently compares the two computed ProtectedCapital sums. It does not map Jackpot lifecycle semantics.
+
+The computed **buffer** is `EEV − ProtectedCapital`; it is not the V3 `effectivePool`, which separately subtracts crystallized liabilities, unresolved reserve and locked Jackpot. These quantities must not be conflated.
+
+### Added artifacts and CI evidence
+
+- `scripts/check-v3-universal-projection.mjs` — finite projection and canonical source-snapshot guard.
+- `test/check-v3-universal-projection.test.mjs` — positive mapping case and negative cases for missing/duplicate/unknown classes, duplicate profile IDs, noncanonical class exposure, reserve/count mismatch, invalid price, invalid control history, negative Jackpot, Git blob framing, and missing source files.
+- `.github/workflows/c6-r1-finite-checker.yml` — same existing workflow now runs the source guard and all three Node test files; no duplicate workflow was created.
+
+The first CI execution `#10` at commit `e3d4df9ae9e94520bbe4b798e45d56e6401358d6` failed on the positive fixture because its declared unresolved reserve was `8`, while the class-derived canonical total was `4`. This was a fixture inconsistency, not a kernel change. The fixture was corrected to `4` in commit `0c47eeca49637338ebae4fe8fc5c071c071974ce`; the negative mismatch test still uses `7`. A new push run `#11` was observed queued immediately after that correction. Its final conclusion must be checked separately; no PASS is inferred from queueing.
+
+No Haskell normative source was changed. No deployment, transaction, mint, merge, release or manual workflow dispatch was performed.
