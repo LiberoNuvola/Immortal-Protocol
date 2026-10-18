@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/LiberoNuvola/Immortal-Protocol/blob/release/public-main-curated-2026-09-24/docs/workflow-c/profile.schema.json",
+  "title": "IMMORTAL Workflow C Reference Profile Manifest",
+  "description": "Structural schema only. Passing schema validation is not proof of economic semantics, Ω completeness, cryptographic validity, or Kc non-emptiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profileId",
+    "profileVersion",
+    "sourceCommit",
+    "claimScope",
+    "model",
+    "certificate",
+    "omegaDeclaration",
+    "initialState",
+    "evidencePacket"
+  ],
+  "properties": {
+    "profileId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profileVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "claimScope": {
+      "enum": [
+        "ABSTRACT_MODEL_ONLY",
+        "IMPLEMENTATION_REFINEMENT",
+        "CHAIN_DEPLOYMENT"
+      ]
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stateSpaceRef",
+        "actionUniverseRef",
+        "admissibleActionsRef",
+        "acceptanceRef",
+        "environmentPerimeterRef",
+        "omegaRef",
+        "transitionRef",
+        "safePredicateRef",
+        "eevContractRef"
+      ],
+      "properties": {
+        "stateSpaceRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionUniverseRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admissibleActionsRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acceptanceRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environmentPerimeterRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "omegaRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transitionRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safePredicateRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eevContractRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "certificateId",
+        "certificateVersion",
+        "characteristicPredicateRef",
+        "witnessSelectorRef",
+        "boundsRef",
+        "proofArtifacts"
+      ],
+      "properties": {
+        "certificateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "certificateVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "characteristicPredicateRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "witnessSelectorRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "boundsRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proofArtifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "omegaDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixingAuthorityRef",
+        "perimeterRef",
+        "residualRiskRef",
+        "elements",
+        "completenessEvidenceRef"
+      ],
+      "properties": {
+        "fixingAuthorityRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "perimeterRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "residualRiskRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "completenessEvidenceRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "elements": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "number",
+              "element",
+              "evidenceRef"
+            ],
+            "properties": {
+              "number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 13
+              },
+              "element": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRef": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "initialState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalStateRef",
+        "stateDigest",
+        "derivationTraceRef",
+        "chiEvaluationRef"
+      ],
+      "properties": {
+        "canonicalStateRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stateDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "derivationTraceRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "chiEvaluationRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidencePacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkerRef",
+        "checkerVersion",
+        "command",
+        "rawOutputRef",
+        "exitStatus",
+        "artifactDigests",
+        "assumptionsRef",
+        "limitationsRef"
+      ],
+      "properties": {
+        "checkerRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checkerVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "rawOutputRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exitStatus": {
+          "type": "integer"
+        },
+        "artifactDigests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "assumptionsRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitationsRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
