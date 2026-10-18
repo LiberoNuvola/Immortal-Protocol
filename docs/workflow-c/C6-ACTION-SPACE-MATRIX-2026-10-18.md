@@ -237,3 +237,14 @@ The computed **buffer** is `EEV − ProtectedCapital`; it is not the V3 `effecti
 The first CI execution `#10` at commit `e3d4df9ae9e94520bbe4b798e45d56e6401358d6` failed on the positive fixture because its declared unresolved reserve was `8`, while the class-derived canonical total was `4`. This was a fixture inconsistency, not a kernel change. The fixture was corrected to `4` in commit `0c47eeca49637338ebae4fe8fc5c071c071974ce`; the negative mismatch test still uses `7`. A new push run `#11` was observed queued immediately after that correction. Its final conclusion must be checked separately; no PASS is inferred from queueing.
 
 No Haskell normative source was changed. No deployment, transaction, mint, merge, release or manual workflow dispatch was performed.
+
+
+### Reproducibility and R1 binding boundary
+
+The projection result now carries:
+- `modelSha256`: SHA-256 of the canonicalized declared finite projection input (object keys sorted recursively);
+- `sourceContractSha256`: SHA-256 of the canonicalized set of pinned source blob identities.
+
+These digests support reproducible comparison of model and source-contract versions. They do not authenticate the input, and the projection output is **not** silently converted into the R1 checker schema. The R1 checker models R7 assets/commitments and the profile's EEV/obligation partition; there is no normative complete mapping from the richer V3 class/Jackpot state into all R7 cells in this branch. Converting it automatically would assume the still-open PA2/PA7 completeness and contingency-refinement obligations. Therefore source binding is improved, but **full R1 model binding remains UNPROVEN**.
+
+The last verified passing CI before the digest-only regression was run #14 at commit `2080e6142e7f14974322230a99935076e32ca4ba`; it passed the source snapshot checks and the then-current combined tests. Run #15 at `c9b6308c7750b886cc61549be15869e478d4fae7` was observed in progress after adding the digest stability regression. Its final result is not inferred here.
