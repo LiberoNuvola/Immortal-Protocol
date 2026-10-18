@@ -800,7 +800,7 @@
         },
         {
           "sourceId": "R7",
-          "includes": "A1…A5 are pairwise disjoint and jointly exhaustive over asset content"
+          "includes": "Verified liquid executable value"
         }
       ]
     },
@@ -1103,7 +1103,7 @@
       "sourceAnchors": [
         {
           "sourceId": "GENESIS_TRANSITION",
-          "includes": "The Genesis bootstrap is **not automatically PrizePool liquidity**"
+          "includes": "the Genesis bootstrap is **not automatically PrizePool liquidity**"
         },
         {
           "sourceId": "GAME_ECONOMY",
@@ -1422,7 +1422,7 @@
     {
       "id": "treasury-prizepool-separation",
       "sourceId": "GENESIS_TRANSITION",
-      "anchor": "The Genesis bootstrap is **not automatically PrizePool liquidity**",
+      "anchor": "the Genesis bootstrap is **not automatically PrizePool liquidity**",
       "componentIds": [
         "treasury-genesis-prizepool-separation"
       ]

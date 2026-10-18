@@ -70,7 +70,7 @@ const REQUIRED_SOURCE_SURFACES = Object.freeze([
   { id: 'ticket-transfer-identity', sourceId: 'APPLICATION_SPEC', anchor: "Tickets are transferable. Transfer preserves ticket identity, commitment, round, game configuration and future result.", componentIds: ["ticket-identity-transfer-no-duplication"] },
   { id: 'jackpot-funding-gap', sourceId: 'JACKPOT_POLICY', anchor: "const need = floor > input.lockedJackpot ? floor - input.lockedJackpot : 0n", componentIds: ["jackpot-funding-gap-and-lock"] },
   { id: 'jackpot-payout-mode', sourceId: 'GAME_ECONOMY', anchor: "The current PRE-RICH payout mode is **full current locked-balance payout exactly once**.", componentIds: ["jackpot-payout-to-crystallized-liability"] },
-  { id: 'treasury-prizepool-separation', sourceId: 'GENESIS_TRANSITION', anchor: "The Genesis bootstrap is **not automatically PrizePool liquidity**", componentIds: ["treasury-genesis-prizepool-separation"] },
+  { id: 'treasury-prizepool-separation', sourceId: 'GENESIS_TRANSITION', anchor: "the Genesis bootstrap is **not automatically PrizePool liquidity**", componentIds: ["treasury-genesis-prizepool-separation"] },
   { id: 'settlement-value-preservation', sourceId: 'GAME_ECONOMY', anchor: "verified conversion preserves the frozen USDM economic value", componentIds: ["settlement-conversion-and-units"] },
   { id: 'executable-liquidity-observation', sourceId: 'EXEC_LIQUIDITY', anchor: "declared executable liquidity does not match observed spendable UTxOs", componentIds: ["adapter-executable-liquidity-observation"] },
   { id: 'class-cap-and-saleability', sourceId: 'ISSUE_EVIDENCE', anchor: "evidence.issued < evidence.cap", componentIds: ["class-cap-saleability-control"] },
