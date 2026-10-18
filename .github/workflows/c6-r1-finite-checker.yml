@@ -21,6 +21,25 @@ on:
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
       - docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md
       - PRE-RICH/docs/GAME-ECONOMY.md
+      - PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md
+      - PRE-RICH/profile/PreRichCertifiedTicket.ts
+      - Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts
+      - Adapter/CARDANO/docs/ADAPTER-SPECIFICATION.md
+      - PRE-RICH/profile/PreRichCardanoObservationProjection.ts
+      - PRE-RICH/profile/PreRichJackpotPolicy.ts
+      - PRE-RICH/profile/PreRichExpiryPolicy.ts
+      - PRE-RICH/profile/PreRichExpireRefinement.ts
+      - PRE-RICH/profile/PreRichClaimRefinement.ts
+      - PRE-RICH/profile/PreRichRevealRefinement.ts
+      - PRE-RICH/profile/PreRichIssueRefinement.ts
+      - PRE-RICH/profile/PreRichIssueEvidence.ts
+      - PRE-RICH/profile/PreRichEconomicAdmission.hs
+      - PRE-RICH/profile/PreRichEconomicProjection.hs
+      - PRE-RICH/profile/PreRichEconomicProfile.hs
+      - PRE-RICH/docs/APPLICATION-SPECIFICATION.md
+      - PRE-RICH/docs/ECONOMIC-ALGORITHM.md
+      - PRE-RICH/docs/CONSTITUTION.md
+      - IMMORTAL/docs/CONSTITUTION.md
       - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs
@@ -49,6 +68,25 @@ on:
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
       - docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md
       - PRE-RICH/docs/GAME-ECONOMY.md
+      - PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md
+      - PRE-RICH/profile/PreRichCertifiedTicket.ts
+      - Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts
+      - Adapter/CARDANO/docs/ADAPTER-SPECIFICATION.md
+      - PRE-RICH/profile/PreRichCardanoObservationProjection.ts
+      - PRE-RICH/profile/PreRichJackpotPolicy.ts
+      - PRE-RICH/profile/PreRichExpiryPolicy.ts
+      - PRE-RICH/profile/PreRichExpireRefinement.ts
+      - PRE-RICH/profile/PreRichClaimRefinement.ts
+      - PRE-RICH/profile/PreRichRevealRefinement.ts
+      - PRE-RICH/profile/PreRichIssueRefinement.ts
+      - PRE-RICH/profile/PreRichIssueEvidence.ts
+      - PRE-RICH/profile/PreRichEconomicAdmission.hs
+      - PRE-RICH/profile/PreRichEconomicProjection.hs
+      - PRE-RICH/profile/PreRichEconomicProfile.hs
+      - PRE-RICH/docs/APPLICATION-SPECIFICATION.md
+      - PRE-RICH/docs/ECONOMIC-ALGORITHM.md
+      - PRE-RICH/docs/CONSTITUTION.md
+      - IMMORTAL/docs/CONSTITUTION.md
       - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs

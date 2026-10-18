@@ -15,7 +15,9 @@ test('validates pinned R7 ontology and register while explicitly not closing PA2
   assert.equal(r.closureEligible, false);
   assert.equal(r.classification, 'MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN');
   assert.equal(r.canonicalCellCount, 11);
-  assert.equal(r.profileComponentCount, 17);
+  assert.equal(r.profileComponentCount, 32);
+  assert.equal(r.requiredSourceSurfaceCount, 15);
+  assert.equal(r.registeredSourceSurfaceCount, 15);
   assert.ok(r.unresolvedObligations.includes('PA2'));
   assert.ok(r.unresolvedObligations.includes('PA7'));
 });
@@ -81,4 +83,30 @@ test('keeps historical ledger and RawSurplus outside the partition cells', () =>
   const x=registry(); x.derivedBoundary.isPartitionCell=true;
   const r=auditInventory(x,sources()); assert.equal(r.ok,false);
   assert.match(r.errors.join('\n'),/RawSurplus must not be a partition cell/);
+});
+
+test('rejects omission of an independently required application transition surface', () => {
+  const x=registry(); x.sourceCoverage=x.sourceCoverage.filter(s=>s.id!=='jackpot-payout-mode');
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/missing required source surfaces:.*jackpot-payout-mode/);
+});
+test('rejects source surface detached from its component mapping', () => {
+  const x=registry(); x.sourceCoverage.find(s=>s.id==='sale-coupling').componentIds=[];
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/sale-coupling: component mapping differs/);
+});
+test('rejects omitted component referenced by normative source surface', () => {
+  const x=registry(); x.profileComponents=x.profileComponents.filter(c=>c.id!=='ticket-sale-mint-payment-reservation');
+  const r=auditInventory(x,sources()); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/linked component missing from register: ticket-sale-mint-payment-reservation/);
+});
+test('rejects drift in the PRE-RICH application transition implementation', () => {
+  const s=sources(); s.REVEAL_REFINEMENT += '\n// unreviewed change\n';
+  const r=auditInventory(registry(),s); assert.equal(r.ok,false);
+  assert.match(r.errors.join('\n'),/source REVEAL_REFINEMENT: blob drift/);
+});
+test('does not promote a source coverage checklist into PA2/PA7 closure', () => {
+  const x=registry(); x.auditBoundary.independentReview='complete';
+  const r=auditInventory(x,sources()); assert.equal(r.ok,true,r.errors.join('\n'));
+  assert.equal(r.closureEligible,false);
 });

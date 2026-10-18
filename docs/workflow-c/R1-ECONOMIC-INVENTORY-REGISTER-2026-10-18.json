@@ -119,7 +119,8 @@
       "PA7",
       "EV1-EV7",
       "P1-P8",
-      "NV1-NV5"
+      "NV1-NV5",
+      "PA1"
     ],
     "closureBlockers": [
       "PA2: no authoritative exhaustive enumeration of all profile assets/commitments mapped exactly once.",
@@ -128,7 +129,9 @@
       "PA5/PA6: no proof every operation preserves permitted deltas and L6 is empty.",
       "PA7: no independent adversarial omission review.",
       "EV1-EV7 and P1-P8: no authenticated deployment EEV and complete authoritative perimeter package.",
-      "NV1-NV5: no authenticated live S0 evidence."
+      "NV1-NV5: no authenticated live S0 evidence.",
+      "PA2 adversarial-source expansion: original 17 rows omitted multiple normative application transitions and right-carrying objects, including sale coupling, frozen payout, claim/expiry, transfer identity, Jackpot funding/payout and settlement conversion.",
+      "PA7: the source-derived surface map includes 15 required normative/implementation anchors, but remains a curated checklist, not independent proof that all economic content is enumerated."
     ]
   },
   "profileComponents": [
@@ -757,6 +760,725 @@
           "includes": "`A1…A5` are pairwise disjoint and jointly exhaustive over asset content"
         }
       ]
+    },
+    {
+      "id": "ticket-sale-mint-payment-reservation",
+      "accountingKey": "transition:sale-mint-payment-reserve",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Treasury payment can change asset-side value only when canonical source UTxO and destination are classified; mint itself is not EEV.",
+      "protectedCapitalTreatment": "Creates an unresolved right and class exposure; exact R7 cells for coupled deltas are not fully bound.",
+      "bufferTreatment": "Issue adds unresolved exposure and reserve in V3; no claim that Treasury payment, ticket mint and PrizePool reserve are jointly proven by the aggregate model.",
+      "accountingRule": "Sale couples ticket mint, Treasury payment and unresolved-ticket reservation atomically or through an equivalent invariant-preserving mechanism; Treasury is not PrizePool liquidity by inference.",
+      "v3Fields": [
+        "V3Action.Issue",
+        "v3UnresolvedReserve",
+        "v3UnresolvedTicketCount",
+        "v3Classes"
+      ],
+      "universalFields": [
+        "uesUnresolvedReserve",
+        "uesUnresolvedTicketCount",
+        "uesWorstCaseExposure"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "PA6",
+        "Accept/adapter transaction binding",
+        "source/destination UTxO inventory"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "APPLICATION_SPEC",
+          "includes": "ticket mint + Treasury payment + unresolved-ticket reservation"
+        },
+        {
+          "sourceId": "V3_TRANSITION",
+          "includes": "transition profile s (Issue cid price)"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "A1…A5 are pairwise disjoint and jointly exhaustive over asset content"
+        }
+      ]
+    },
+    {
+      "id": "classic6-result-and-payout-distribution",
+      "accountingKey": "risk:classic6-two-row-payout-distribution",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset; result distribution informs the risk model but is not an asset valuation.",
+      "protectedCapitalTreatment": "The ticket-level two-row payout distribution and 500×P cap define payout outcomes; R7 L3 still requires worst-case over authoritative Ω, not merely a statistical moment.",
+      "bufferTreatment": "Statistical reserve is distinct from deterministic worst-case protection and must not replace L3.",
+      "accountingRule": "Use the current two-row Classic-6 ticket-level distribution; historical single-result moments are provenance only. No expected payout substitutes for the normative 500×P worst-case bound.",
+      "v3Fields": [
+        "epMaxNormalPayoutMultiplier",
+        "v3Classes"
+      ],
+      "universalFields": [
+        "uesWorstCaseExposure"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA4",
+        "PA7",
+        "Ω outcome perimeter",
+        "distribution-to-validator conformance"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "The current PRE-RICH game is **Classic-6 with two independent rows**."
+        },
+        {
+          "sourceId": "PRE_RICH_PROFILE",
+          "includes": "epMaxNormalPayoutMultiplier = 500"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "worst-case incremental liability over `Ω`"
+        }
+      ]
+    },
+    {
+      "id": "frozen-winning-payout",
+      "accountingKey": "liability:revealed-frozen-winning-payout",
+      "r7Cell": "L1",
+      "mappingStatus": "partial",
+      "eevTreatment": "A winning payout is not an asset; the frozen amount is an obligation once crystallized.",
+      "protectedCapitalTreatment": "V3 adds Reveal payout to aggregate crystallized liabilities, but ticket-level lifecycle and transition from contingent L3 exposure to pending L1 are not fully refined.",
+      "bufferTreatment": "Reveal reduces unresolved reserve and adds frozen payout liability; aggregate delta does not prove A4/L3 pairing or no overlap for every ticket.",
+      "accountingRule": "Freeze payout under canonical game rules, enforce 500×P cap, account for resulting liability exactly once, and do not recompute from later pool/price changes.",
+      "v3Fields": [
+        "v3CrystallizedLiabilities",
+        "v3UnresolvedReserve",
+        "v3UnresolvedTicketCount",
+        "v3Classes"
+      ],
+      "universalFields": [
+        "uesCrystallizedLiabilities",
+        "uesUnresolvedReserve",
+        "uesWorstCaseExposure"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA5",
+        "per-ticket L1/L3 refinement",
+        "double-counting proof"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "REVEAL_REFINEMENT",
+          "includes": "reveal must create the exact crystallised payout liability"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "A crystallized payout is immutable."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "A4 ↔ L3"
+        }
+      ]
+    },
+    {
+      "id": "claim-settlement-single-use",
+      "accountingKey": "transition:claim-settlement",
+      "r7Cell": "L4",
+      "mappingStatus": "partial",
+      "eevTreatment": "Settlement is an asset movement, not a new asset valuation; frozen payout cannot be recomputed from settlement asset.",
+      "protectedCapitalTreatment": "Claim reduces aggregate crystallized liabilities by exact amount; R7 terminal L4 classification is not preserved per ticket in V3 aggregate.",
+      "bufferTreatment": "Pending liability and executable liquidity must reconcile with actual settlement outputs; aggregate model alone does not bind ledger realization.",
+      "accountingRule": "Claim is single-use, equals frozen prize, and does not require NFT burn; terminal settlement is L4, not an untracked disappearance.",
+      "v3Fields": [
+        "v3CrystallizedLiabilities",
+        "V3Action.Claim"
+      ],
+      "universalFields": [
+        "uesCrystallizedLiabilities"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "adapter observed settlement",
+        "per-ticket terminal history"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "CLAIM_REFINEMENT",
+          "includes": "claim must reduce pending liability by the exact payout"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "Claims are single-use economic transitions."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Settled obligations"
+        }
+      ]
+    },
+    {
+      "id": "expiry-policy-crystallized-at-issuance",
+      "accountingKey": "lifecycle:crystallized-expiry-policy",
+      "r7Cell": "L5",
+      "mappingStatus": "partial",
+      "eevTreatment": "Expiry policy is not an asset; it changes claimability and may release a pending commitment.",
+      "protectedCapitalTreatment": "V3 Expire is class-aggregate and carries no ticket identity/timestamp; application expiry is profile-defined and crystallized at issuance.",
+      "bufferTreatment": "Reserve is released once for an unresolved expired ticket; expired unclaimed winning right is released once. Aggregate V3 does not prove per-ticket eligibility.",
+      "accountingRule": "Bind deterministic policy ID/version, issuance-state hash, issuedAt and expiresAt; do not invent a universal duration.",
+      "v3Fields": [
+        "V3Action.Expire",
+        "v3UnresolvedReserve",
+        "v3UnresolvedTicketCount",
+        "v3Classes"
+      ],
+      "universalFields": [
+        "uesUnresolvedReserve",
+        "uesUnresolvedTicketCount"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "PA6",
+        "ticket-level refinement to aggregate Expire",
+        "deployment policy version"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "EXPIRY_POLICY",
+          "includes": "expiresAt: issuedAt + first"
+        },
+        {
+          "sourceId": "EXPIRE_REFINEMENT",
+          "includes": "expire must release exactly the ticket price reserve"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Expired rights/liabilities"
+        }
+      ]
+    },
+    {
+      "id": "ticket-identity-transfer-no-duplication",
+      "accountingKey": "right:ticket-identity-and-transfer",
+      "r7Cell": "H",
+      "mappingStatus": "partial",
+      "eevTreatment": "Ticket identity/transfer is not itself EEV; it carries the associated economic right.",
+      "protectedCapitalTreatment": "V3 aggregate contains no ticket NFT identity, ownership, commitment, gameVersion or round.",
+      "bufferTreatment": "Without ticket-level identity and terminal-state reconciliation, aggregate counts cannot rule out duplicated, omitted or resurrected rights.",
+      "accountingRule": "Transfer preserves immutable policy/asset identity, commitment, round, game configuration and future result; it cannot duplicate the right; claim/expiry are terminal for the economic right.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "ticket-ledger completeness",
+        "transfer/claim/expiry refinement",
+        "deployment datum authentication"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "APPLICATION_SPEC",
+          "includes": "Tickets are transferable. Transfer preserves ticket identity, commitment, round, game configuration and future result."
+        },
+        {
+          "sourceId": "CERTIFIED_TICKET",
+          "includes": "The NFT identity is immutable: (policyId, assetName)."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "L6 is empty in every executable state"
+        }
+      ]
+    },
+    {
+      "id": "jackpot-funding-gap-and-lock",
+      "accountingKey": "jackpot:funding-gap-transition",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Funding transfers value into locked Jackpot; it is not an independent increase in EEV.",
+      "protectedCapitalTreatment": "Locked amount contributes to V3/Universal PC, but exact R7 liability cell and disjointness from L2/L3 remain unresolved.",
+      "bufferTreatment": "Funding is permitted only from RawSurplus under the closed policy; amount is the state-derived gap to current floor.",
+      "accountingRule": "Use current stable-ladder predicate and minimum state-derived funding gap; do not use historical fixed allocation percentages or scalar maturity ladder.",
+      "v3Fields": [
+        "v3Jackpot",
+        "jsLockedAmount",
+        "jsThreshold",
+        "jsStatus",
+        "jsCycle"
+      ],
+      "universalFields": [
+        "uesAdditionalProtectedCapital"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA5",
+        "Jackpot R7 classification",
+        "funding observation/transition binding"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "JACKPOT_POLICY",
+          "includes": "const need = floor > input.lockedJackpot ? floor - input.lockedJackpot : 0n"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "NewJackpot <= RawSurplus(S')"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "CAR — value conditionally committed to a future allocation"
+        }
+      ]
+    },
+    {
+      "id": "jackpot-payout-to-crystallized-liability",
+      "accountingKey": "jackpot:payout-to-pending-liability",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Payout does not create EEV; it moves value out of locked Jackpot and crystallizes the winner's claim.",
+      "protectedCapitalTreatment": "Policy pays full current locked balance exactly once; amount becomes a pending liability while Jackpot bucket decreases once. Exact disjoint R7 deltas are not bound.",
+      "bufferTreatment": "A simultaneous Jackpot decrease and liability increase may cancel at the aggregate boundary only if the same amount is counted once on each side.",
+      "accountingRule": "Payout <= locked balance; apply approved full locked-balance payout once; do not count the amount as both remaining Jackpot and a second liability.",
+      "v3Fields": [
+        "v3Jackpot",
+        "jsLockedAmount",
+        "v3CrystallizedLiabilities"
+      ],
+      "universalFields": [
+        "uesAdditionalProtectedCapital",
+        "uesCrystallizedLiabilities"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA5",
+        "Jackpot transition absent from V3Action",
+        "adapter atomicity evidence"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "The current PRE-RICH payout mode is **full current locked-balance payout exactly once**."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "ProtectedCapital(S) = value(L1) + value(L2) + value_worstcase_Ω(L3)"
+        }
+      ]
+    },
+    {
+      "id": "treasury-genesis-prizepool-separation",
+      "accountingKey": "asset:treasury-genesis-prizepool-boundary",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Verified PRE Treasury value is a Genesis predicate input; it is not automatically qualified PrizePool EEV or executable liquidity.",
+      "protectedCapitalTreatment": "No PC assignment follows merely from satisfying the Genesis bootstrap predicate; any transfer/reclassification requires a separately authorized atomic transition.",
+      "bufferTreatment": "Avoid double-counting the same Treasury balance as bootstrap evidence and PrizePool liquidity.",
+      "accountingRule": "Genesis bootstrap is evidence for a transition predicate, not an instruction to move funds or count them as PrizePool liquidity.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA1",
+        "PA2",
+        "EV1-EV7",
+        "Genesis transition ledger evidence",
+        "exact qualified PrizePool UTxO"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GENESIS_TRANSITION",
+          "includes": "The Genesis bootstrap is **not automatically PrizePool liquidity**"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "The Genesis PRE bootstrap position is not automatically PrizePool liquidity."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Verified liquid executable value"
+        }
+      ]
+    },
+    {
+      "id": "settlement-conversion-and-units",
+      "accountingKey": "settlement:frozen-usdm-value",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Only canonical USDM in exact qualified PrizePool UTxO is within PRE-RICH-EEV-USDM-DIRECT-V1; alternative-asset conversion is not included by this direct profile.",
+      "protectedCapitalTreatment": "Frozen USDM liability cannot be reduced by changing settlement asset; conversion requires validated value-preserving conversion under application profile.",
+      "bufferTreatment": "Unit conversion must preserve exact reference-unit precision; no unsupported oracle, haircut, slippage or liquidity assumption may enter direct EEV.",
+      "accountingRule": "Keep USDM subunits/reference units exact; settlement asset support/conversion evidence is separate from direct USDM EEV qualification.",
+      "v3Fields": [
+        "v3CrystallizedLiabilities",
+        "v3UnresolvedReserve",
+        "v3Jackpot"
+      ],
+      "universalFields": [
+        "uesCrystallizedLiabilities",
+        "uesUnresolvedReserve",
+        "uesAdditionalProtectedCapital"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA4",
+        "EV1-EV7",
+        "settlement asset profile",
+        "decimal/rounding evidence"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "verified conversion preserves the frozen USDM economic value"
+        },
+        {
+          "sourceId": "APPLICATION_SPEC",
+          "includes": "PRE-RICH denominates prizes in USDM."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "value_net(A2)"
+        }
+      ]
+    },
+    {
+      "id": "adapter-executable-liquidity-observation",
+      "accountingKey": "asset:observed-executable-liquidity",
+      "r7Cell": "A1",
+      "mappingStatus": "partial",
+      "eevTreatment": "Executable liquidity requires concrete spendable candidate inputs and qualified source observations; a reported total alone is insufficient.",
+      "protectedCapitalTreatment": "Liquidity evidence is not itself a liability; ring-fenced or locked UTxOs cannot back immediate executable liquidity.",
+      "bufferTreatment": "Do not conflate immediately spendable transaction liquidity with total EEV; exact source references and UTxO values must reconcile.",
+      "accountingRule": "Observe unique spendable non-ring-fenced UTxOs, bind each to candidate inputs, and require declared liquidity to equal their sum.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "EV1-EV7",
+        "P1-P8",
+        "qualified UTxO provenance",
+        "asset identity and deployment binding"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "EXEC_LIQUIDITY",
+          "includes": "duplicate executable liquidity UTxO reference"
+        },
+        {
+          "sourceId": "ADAPTER_SPEC",
+          "includes": "StateBefore/StateAfter observation"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Verified liquid executable value"
+        }
+      ]
+    },
+    {
+      "id": "class-cap-saleability-control",
+      "accountingKey": "state:class-cap-saleability",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset; issuance-control state constrains future economic actions.",
+      "protectedCapitalTreatment": "Class cap/saleability and active/highest class control new Issue; no universal field proves application admission equivalence.",
+      "bufferTreatment": "Issue can increase exposure and erode buffer; shape checks do not establish post-state safety or transition completeness.",
+      "accountingRule": "Preserve frozen class ladder, cap and active/highest invariants; no administrative flag can override economic saleability.",
+      "v3Fields": [
+        "tcsIssued",
+        "tcsCap",
+        "tcsSaleable",
+        "ecsCurrentActiveClass",
+        "ecsHighestClassEverActivated"
+      ],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "Accept equivalence",
+        "VC3",
+        "VC4",
+        "source of class caps"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "ISSUE_EVIDENCE",
+          "includes": "evidence.issued < evidence.cap"
+        },
+        {
+          "sourceId": "PRE_RICH_CONSTITUTION",
+          "includes": "`HighestClassEverActivated` is monotonic."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Historical quantities"
+        }
+      ]
+    },
+    {
+      "id": "caller-asserted-admission-premises",
+      "accountingKey": "assumption:admission-boolean-premises",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "No direct EEV value; flags are caller-supplied premises, not economic observations.",
+      "protectedCapitalTreatment": "truthVerified, eevFresh, obligationsComplete and allOmegaSuccessorsInCertifiedKernel do not independently prove truth, freshness, exhaustiveness or Ω completeness.",
+      "bufferTreatment": "No buffer credit may be granted solely because a caller sets an admission Boolean true.",
+      "accountingRule": "Treat admission Booleans as untrusted claims until each is derived from authenticated evidence or a proof over the declared domain.",
+      "v3Fields": [
+        "truthVerified",
+        "eevFresh",
+        "obligationsComplete",
+        "allOmegaSuccessorsInCertifiedKernel"
+      ],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA7",
+        "VC4",
+        "VC5",
+        "EV1-EV7",
+        "Accept/Ω authoritative binding"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "PRE_RICH_ADMISSION_HS",
+          "includes": "allOmegaSuccessorsInCertifiedKernel"
+        },
+        {
+          "sourceId": "R1_SPEC",
+          "includes": "Envelope soundness"
+        },
+        {
+          "sourceId": "OMEGA",
+          "includes": "Ω-COMPLETE(Env, Ω)"
+        }
+      ]
+    },
+    {
+      "id": "cardano-min-utxo-and-execution-costs",
+      "accountingKey": "cost:cardano-min-utxo-and-execution",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Minimum-UTxO and transaction execution requirements are not additional assets; their funding/valuation classification is not specified by direct USDM EEV profile.",
+      "protectedCapitalTreatment": "Do not silently assume minimum-UTxO, fees or execution costs are included in a PC add-on; exact mapping is unproven.",
+      "bufferTreatment": "Potential mandatory future cost treatment remains unresolved until applicable profile classifies it without double counting.",
+      "accountingRule": "Track adapter execution constraints and monetary requirements; do not assign them to L2 or MandatoryFutureCosts by analogy without normative mapping.",
+      "v3Fields": [
+        "v3MandatoryFutureCosts"
+      ],
+      "universalFields": [
+        "uesMandatoryFutureCosts"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA1",
+        "PA2",
+        "PA3",
+        "PA4",
+        "adapter cost model",
+        "double-counting analysis"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "minimum-UTxO treatment"
+        },
+        {
+          "sourceId": "ADAPTER_SPEC",
+          "includes": "transaction inputs/outputs"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "CAR — value conditionally committed to a future allocation"
+        }
+      ]
+    },
+    {
+      "id": "ticket-lifecycle-observation-coverage",
+      "accountingKey": "state:ticket-lifecycle-observation",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Ticket status and identity do not create EEV; they determine whether associated right remains unresolved, crystallized, settled or expired.",
+      "protectedCapitalTreatment": "Cardano observation projection exposes Pending/BeaconReady unresolved tickets and aggregate pending liabilities; it does not itself enumerate every transfer, revealed claimable, claimed, expired and historical record.",
+      "bufferTreatment": "Aggregate counts can reconcile locally while a right is omitted or duplicated unless authoritative ticket universe and terminal transitions are reconciled.",
+      "accountingRule": "Require complete authoritative ticket-state inventory and reconcile each economic right exactly once across unresolved, pending liability and terminal states; no inferred coverage from aggregates.",
+      "v3Fields": [
+        "v3UnresolvedTicketCount",
+        "v3CrystallizedLiabilities",
+        "v3Classes"
+      ],
+      "universalFields": [
+        "uesUnresolvedTicketCount",
+        "uesCrystallizedLiabilities"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "PA6",
+        "PA7",
+        "ticket-ledger completeness",
+        "expiry/claim transfer refinement"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "CARDANO_PROJECTION",
+          "includes": "export type ObservedTicketStatus = 'Pending' | 'BeaconReady'"
+        },
+        {
+          "sourceId": "CERTIFIED_TICKET",
+          "includes": "status: 'Pending' | 'Revealed' | 'Claimed'"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "L6 is empty in every executable state"
+        }
+      ]
     }
-  ]
+  ],
+  "sourceCoverage": [
+    {
+      "id": "sale-coupling",
+      "sourceId": "APPLICATION_SPEC",
+      "anchor": "ticket mint + Treasury payment + unresolved-ticket reservation",
+      "componentIds": [
+        "ticket-sale-mint-payment-reservation"
+      ]
+    },
+    {
+      "id": "classic6-two-row-result",
+      "sourceId": "GAME_ECONOMY",
+      "anchor": "The current PRE-RICH game is **Classic-6 with two independent rows**.",
+      "componentIds": [
+        "classic6-result-and-payout-distribution"
+      ]
+    },
+    {
+      "id": "frozen-winning-payout",
+      "sourceId": "REVEAL_REFINEMENT",
+      "anchor": "reveal must create the exact crystallised payout liability",
+      "componentIds": [
+        "frozen-winning-payout"
+      ]
+    },
+    {
+      "id": "claim-single-use",
+      "sourceId": "CLAIM_REFINEMENT",
+      "anchor": "claim must reduce pending liability by the exact payout",
+      "componentIds": [
+        "claim-settlement-single-use"
+      ]
+    },
+    {
+      "id": "expiry-crystallization",
+      "sourceId": "EXPIRY_POLICY",
+      "anchor": "expiresAt: issuedAt + first",
+      "componentIds": [
+        "expiry-policy-crystallized-at-issuance",
+        "ticket-identity-transfer-no-duplication"
+      ]
+    },
+    {
+      "id": "ticket-transfer-identity",
+      "sourceId": "APPLICATION_SPEC",
+      "anchor": "Tickets are transferable. Transfer preserves ticket identity, commitment, round, game configuration and future result.",
+      "componentIds": [
+        "ticket-identity-transfer-no-duplication"
+      ]
+    },
+    {
+      "id": "jackpot-funding-gap",
+      "sourceId": "JACKPOT_POLICY",
+      "anchor": "const need = floor > input.lockedJackpot ? floor - input.lockedJackpot : 0n",
+      "componentIds": [
+        "jackpot-funding-gap-and-lock"
+      ]
+    },
+    {
+      "id": "jackpot-payout-mode",
+      "sourceId": "GAME_ECONOMY",
+      "anchor": "The current PRE-RICH payout mode is **full current locked-balance payout exactly once**.",
+      "componentIds": [
+        "jackpot-payout-to-crystallized-liability"
+      ]
+    },
+    {
+      "id": "treasury-prizepool-separation",
+      "sourceId": "GENESIS_TRANSITION",
+      "anchor": "The Genesis bootstrap is **not automatically PrizePool liquidity**",
+      "componentIds": [
+        "treasury-genesis-prizepool-separation"
+      ]
+    },
+    {
+      "id": "settlement-value-preservation",
+      "sourceId": "GAME_ECONOMY",
+      "anchor": "verified conversion preserves the frozen USDM economic value",
+      "componentIds": [
+        "settlement-conversion-and-units"
+      ]
+    },
+    {
+      "id": "executable-liquidity-observation",
+      "sourceId": "EXEC_LIQUIDITY",
+      "anchor": "declared executable liquidity does not match observed spendable UTxOs",
+      "componentIds": [
+        "adapter-executable-liquidity-observation"
+      ]
+    },
+    {
+      "id": "class-cap-and-saleability",
+      "sourceId": "ISSUE_EVIDENCE",
+      "anchor": "evidence.issued < evidence.cap",
+      "componentIds": [
+        "class-cap-saleability-control"
+      ]
+    },
+    {
+      "id": "admission-asserted-premises",
+      "sourceId": "PRE_RICH_ADMISSION_HS",
+      "anchor": "allOmegaSuccessorsInCertifiedKernel",
+      "componentIds": [
+        "caller-asserted-admission-premises"
+      ]
+    },
+    {
+      "id": "cardano-cost-boundary",
+      "sourceId": "GAME_ECONOMY",
+      "anchor": "minimum-UTxO treatment",
+      "componentIds": [
+        "cardano-min-utxo-and-execution-costs"
+      ]
+    },
+    {
+      "id": "ticket-observed-status-domain",
+      "sourceId": "CARDANO_PROJECTION",
+      "anchor": "export type ObservedTicketStatus = 'Pending' | 'BeaconReady'",
+      "componentIds": [
+        "ticket-lifecycle-observation-coverage"
+      ]
+    }
+  ],
+  "auditBoundary": {
+    "classification": "MECHANICAL EVIDENCE — SOURCE-DERIVED COVERAGE CHECKLIST; NOT PA2/PA7 CLOSURE",
+    "statement": "This checklist indexes normative transition and implementation surfaces omitted from the original 17-component register. It detects missing checklist rows and source drift; because the checklist itself is curated, a passing result does not prove exhaustive economic coverage.",
+    "independentReview": "No separate human/organizational adversarial reviewer attestation is represented by this artifact."
+  }
 }
