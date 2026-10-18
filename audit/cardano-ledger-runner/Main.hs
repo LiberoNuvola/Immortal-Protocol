@@ -270,6 +270,7 @@ inspectManifest evidenceDir manifestPath runEvaluation = do
           putStrLn "RESULT: MANIFEST_SHA256_BINDING_VERIFIED"
           putStrLn "RESULT: WORKFLOW_COMMIT_RUN_BINDING_VERIFIED"
           putStrLn "RESULT: TRANSACTION_SLOT_TIME_BINDING_VERIFIED"
+          putStrLn "RESULT: TRANSACTION_REFERENCE_AND_CBOR_BINDING_VERIFIED"
           case KeyMap.lookup "policy" manifest of
             Just (Aeson.Object policy) ->
               case KeyMap.lookup "typed_context_ready" policy of
