@@ -259,7 +259,7 @@ const unexpectedScriptInputs = extraEconomicInputs.filter((input) => {
   if (typeof input.address !== 'string') return true
   const addressHex = cardanoAddressToLedgerHex(input.address)
   if (addressHex.length < 2) return true
-  const addressType = Number.parseInt(addressHex.slice(0, 1), 16) >> 4
+  const addressType = Number.parseInt(addressHex.slice(0, 2), 16) >> 4
   return scriptAddressTypes.has(addressType)
 })
 if (unexpectedScriptInputs.length > 0) {
