@@ -10,7 +10,11 @@ import {
   CML,
   Blockfrost,
   Lucid,
+  getAddressDetails,
+  scriptFromNative,
+  mintingPolicyToId,
   validatorToScriptHash,
+  applyParamsToScript as evolutionApplyParamsToScript,
   type Script,
 } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
@@ -22,7 +26,20 @@ const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
 const BLUEPRINT_PATH = 'poc/aiken-reveal-parity/plutus.json'
 const EVIDENCE_PATH = 'audit/yaci-evidence/aiken-reference-script-publication.json'
 const EXPECTED_TITLE = 'reveal.pre_rich_reveal.spend'
+const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45' // ORACLE
 const REFERENCE_LOVELACE = 2_000_000n
+
+type NativeScript = { type: 'sig'; keyHash: string } | {
+  type: 'all'
+  scripts: NativeScript[]
+}
+
+function nativePolicy(keyHash: string): Script {
+  return scriptFromNative({
+    type: 'all',
+    scripts: [{ type: 'sig', keyHash }],
+  } as NativeScript)
+}
 
 const fail = (message: string): never => { throw new Error(message) }
 const bytes = (cborHex: string): number => {
@@ -50,11 +67,11 @@ if (!validator.compiledCode || !validator.hash ||
   fail('Aiken blueprint spend validator has missing/malformed compiledCode or hash')
 }
 
-const script: Script = { type: 'PlutusV3', script: validator.compiledCode }
+const unparameterizedScript: Script = { type: 'PlutusV3', script: validator.compiledCode }
 const blueprintHash = validator.hash.toLowerCase()
-const lucidityHash = validatorToScriptHash(script).toLowerCase()
-if (lucidityHash !== blueprintHash) {
-  fail(`Aiken blueprint/Lucid script hash mismatch: blueprint=${blueprintHash}, Lucid=${lucidityHash}`)
+const unparameterizedHash = validatorToScriptHash(unparameterizedScript).toLowerCase()
+if (unparameterizedHash !== blueprintHash) {
+  fail(`Aiken blueprint/Lucid unparameterized script hash mismatch: blueprint=${blueprintHash}, Lucid=${unparameterizedHash}`)
 }
 
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8')) as { seed?: string }
@@ -83,6 +100,15 @@ const referenceAddress = await referenceLucid.wallet().address()
 if (signingAddress === referenceAddress) {
   fail('Reference-script receiver must be isolated from the spending wallet address')
 }
+const keyHash = getAddressDetails(signingAddress).paymentCredential?.hash
+if (!keyHash) fail('CI signing wallet has no payment key hash')
+const fixtureOracleStatePolicyId = mintingPolicyToId(nativePolicy(keyHash))
+const appliedCode = evolutionApplyParamsToScript(
+  validator.compiledCode,
+  [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+)
+const script: Script = { type: 'PlutusV3', script: appliedCode }
+const lucidityHash = validatorToScriptHash(script).toLowerCase()
 
 const protocolParameters = await provider.getProtocolParameters()
 const maxTxSize = Number(protocolParameters.maxTxSize)
@@ -94,7 +120,11 @@ console.log(JSON.stringify({
   aikenDiag: 'reference-script-publication-plan',
   validatorTitle: EXPECTED_TITLE,
   plutusVersion: 'v3',
-  validatorHash: blueprintHash,
+  blueprintUnparameterizedHash: blueprintHash,
+  oracleStatePolicyId: fixtureOracleStatePolicyId,
+  oracleStateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
+  oraclePublisherPkh: keyHash,
+  validatorHash: lucidityHash,
   compiledScriptBytes: bytes(script.script),
   maxTxSize,
   referenceAddress,
@@ -163,7 +193,11 @@ const report = {
   workflowStage: 'aiken-v3-reference-script-publication-only',
   validatorTitle: EXPECTED_TITLE,
   plutusVersion: 'v3',
-  validatorHash: blueprintHash,
+  blueprintUnparameterizedHash: blueprintHash,
+  oracleStatePolicyId: fixtureOracleStatePolicyId,
+  oracleStateTokenNameHex: ORACLE_STATE_TOKEN_NAME_HEX,
+  oraclePublisherPkh: keyHash,
+  validatorHash: lucidityHash,
   compiledScriptBytes: bytes(script.script),
   compiledScriptSha256: scriptBytesSha256,
   protocolMaxTxSize: maxTxSize,
