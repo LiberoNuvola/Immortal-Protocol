@@ -11,6 +11,14 @@ on:
       - test/check-r1-canonical-source.test.mjs
       - scripts/check-v3-universal-projection.mjs
       - test/check-v3-universal-projection.test.mjs
+      - scripts/check-r1-economic-inventory.mjs
+      - test/check-r1-economic-inventory.test.mjs
+      - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
+      - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
+      - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
+      - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
+      - docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md
+      - PRE-RICH/docs/GAME-ECONOMY.md
       - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs
@@ -29,6 +37,14 @@ on:
       - test/check-r1-canonical-source.test.mjs
       - scripts/check-v3-universal-projection.mjs
       - test/check-v3-universal-projection.test.mjs
+      - scripts/check-r1-economic-inventory.mjs
+      - test/check-r1-economic-inventory.test.mjs
+      - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
+      - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
+      - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
+      - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
+      - docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md
+      - PRE-RICH/docs/GAME-ECONOMY.md
       - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs
@@ -56,5 +72,7 @@ jobs:
         run: node scripts/check-r1-canonical-source.mjs
       - name: Verify V3/universal source snapshot
         run: node scripts/check-v3-universal-projection.mjs
-      - name: Run finite R1, source-binding and projection regressions
-        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs
+      - name: Audit source-pinned R1 economic inventory (closure remains fail-closed)
+        run: node scripts/check-r1-economic-inventory.mjs
+      - name: Run finite R1, source-binding, projection and inventory regressions
+        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs

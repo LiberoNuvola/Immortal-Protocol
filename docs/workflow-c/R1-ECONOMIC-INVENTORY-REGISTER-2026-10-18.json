@@ -1,0 +1,762 @@
+{
+  "schema": "immortal-r1-economic-inventory-register-v1",
+  "generatedAt": "2026-10-18",
+  "scope": "PRE-RICH-EEV-USDM-DIRECT-V1",
+  "classification": "MECHANICAL EVIDENCE REGISTER / NOT A COMPLETENESS CERTIFICATE",
+  "authorityNote": "R7 defines the two-sided A1-A5/L1-L6 ontology and the separate historical ledger. GAME-ECONOMY defines the PRE-RICH application baseline. Implementation fields do not outrank normative sources. This register is an evidence index, not a substitute for normative sources.",
+  "canonicalCells": [
+    {
+      "id": "A1",
+      "side": "asset",
+      "label": "Verified liquid executable value",
+      "eevTreatment": "included",
+      "protectedCapitalTreatment": "not an asset-side PC cell",
+      "transitionTreatment": "verify may enter A1; stale may leave A1"
+    },
+    {
+      "id": "A2",
+      "side": "asset",
+      "label": "Verified value subject to a declared conversion/haircut, valued net",
+      "eevTreatment": "included net of declared conversion/haircut",
+      "protectedCapitalTreatment": "not an asset-side PC cell",
+      "transitionTreatment": "verify may enter A2; stale may leave A2"
+    },
+    {
+      "id": "A3",
+      "side": "asset",
+      "label": "Value present but not verified, or stale beyond the freshness window",
+      "eevTreatment": "excluded; fail closed",
+      "protectedCapitalTreatment": "not an asset-side PC cell",
+      "transitionTreatment": "verify may leave A3"
+    },
+    {
+      "id": "A4",
+      "side": "asset",
+      "label": "Value contingent on an unresolved event",
+      "eevTreatment": "excluded on asset side",
+      "protectedCapitalTreatment": "paired contingency may appear in L3",
+      "transitionTreatment": "realise pairs with resolution of linked L3 exposure"
+    },
+    {
+      "id": "A5",
+      "side": "asset",
+      "label": "Non-economic/informational holdings",
+      "eevTreatment": "excluded",
+      "protectedCapitalTreatment": "not an asset-side PC cell",
+      "transitionTreatment": "no additional movement beyond normative R7 deltas"
+    },
+    {
+      "id": "L1",
+      "side": "liability",
+      "label": "Pending accepted obligations (due, not yet settled)",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "included",
+      "transitionTreatment": "settle to L4; expire to L5 where authorized"
+    },
+    {
+      "id": "L2",
+      "side": "liability",
+      "label": "CAR — value conditionally committed to a future allocation",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "included",
+      "transitionTreatment": "settle to L4; expire to L5 where authorized"
+    },
+    {
+      "id": "L3",
+      "side": "liability",
+      "label": "Unresolved exposure: worst-case incremental liability over Ω",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "included at Ω worst-case value",
+      "transitionTreatment": "resolve to L1 or L5; expire to L5 where authorized"
+    },
+    {
+      "id": "L4",
+      "side": "liability",
+      "label": "Settled obligations",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "excluded after settlement",
+      "transitionTreatment": "terminal settled classification under R7"
+    },
+    {
+      "id": "L5",
+      "side": "liability",
+      "label": "Expired rights/liabilities",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "excluded after final expiry",
+      "transitionTreatment": "terminal expired classification under R7"
+    },
+    {
+      "id": "L6",
+      "side": "liability",
+      "label": "Unrepresented exposure",
+      "eevTreatment": "not an asset",
+      "protectedCapitalTreatment": "not representable; creating action is not executable",
+      "transitionTreatment": "must be empty in every executable state"
+    }
+  ],
+  "historicalLedger": {
+    "id": "H",
+    "sourceSymbol": "ℌ",
+    "label": "Historical monotone quantities",
+    "separateFromAssetAndLiabilityCells": true,
+    "treatment": "Recorded but not valued; excluded from EEV and ProtectedCapital."
+  },
+  "derivedBoundary": {
+    "id": "RawSurplus",
+    "formula": "max(0, EEV - ProtectedCapital)",
+    "isPartitionCell": false,
+    "treatment": "Derived boundary between asset and liability totals; not a partition cell."
+  },
+  "profileCompleteness": {
+    "status": "UNPROVEN_PA2_PA7",
+    "statement": "This source-grounded register covers the R7 ontology and known PRE-RICH/V3 components, but does not prove that they exhaust all economic content the profile can create.",
+    "unresolvedObligations": [
+      "PA2",
+      "PA3",
+      "PA4",
+      "PA5",
+      "PA6",
+      "PA7",
+      "EV1-EV7",
+      "P1-P8",
+      "NV1-NV5"
+    ],
+    "closureBlockers": [
+      "PA2: no authoritative exhaustive enumeration of all profile assets/commitments mapped exactly once.",
+      "PA3: no complete A4↔L3 pairing/disjointness proof.",
+      "PA4: no complete valuation function for each applicable cell, including Ω-worst-case L3.",
+      "PA5/PA6: no proof every operation preserves permitted deltas and L6 is empty.",
+      "PA7: no independent adversarial omission review.",
+      "EV1-EV7 and P1-P8: no authenticated deployment EEV and complete authoritative perimeter package.",
+      "NV1-NV5: no authenticated live S0 evidence."
+    ]
+  },
+  "profileComponents": [
+    {
+      "id": "qualified-usdm-prizepool-utxo",
+      "accountingKey": "asset:qualified-usdm-prizepool-utxo",
+      "r7Cell": "A1",
+      "mappingStatus": "partial",
+      "eevTreatment": "Included only when canonical USDM is in the exact qualified B1 PrizePool UTxO and observation is authenticated.",
+      "protectedCapitalTreatment": "Asset-side EEV input, not a liability or PC add-on.",
+      "bufferTreatment": "Contributes to EEV only after source, asset identity, quantity, slot/timestamp, contract and derivation evidence qualify.",
+      "accountingRule": "Direct quantity of canonical USDM in the exact qualified UTxO; no ADA/PRE liquidation, oracle conversion, invented haircut/slippage or unproven liquidity assumption.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "EV1-EV7",
+        "authenticated S0",
+        "deployment observation"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "R7",
+          "includes": "Verified liquid executable value"
+        },
+        {
+          "sourceId": "EEV",
+          "includes": "V1 Authoritative source"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "The Genesis PRE bootstrap position is not automatically PrizePool liquidity."
+        }
+      ]
+    },
+    {
+      "id": "crystallized-winning-liabilities",
+      "accountingKey": "liability:crystallized-winning-liabilities",
+      "r7Cell": "L1",
+      "mappingStatus": "partial",
+      "eevTreatment": "Excluded from EEV; it is a commitment.",
+      "protectedCapitalTreatment": "V3 includes v3CrystallizedLiabilities in PC; exact per-ticket L1/L4/L5 lifecycle is not represented by the aggregate.",
+      "bufferTreatment": "Reduces the buffer while pending; no claim all lifecycle states can be reconstructed from the aggregate.",
+      "accountingRule": "Count a crystallized payout once while the right remains pending; settlement or final expiry must remove it exactly once.",
+      "v3Fields": [
+        "v3CrystallizedLiabilities"
+      ],
+      "universalFields": [
+        "uesCrystallizedLiabilities"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "per-ticket status/refinement",
+        "PA2",
+        "PA5"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3CrystallizedLiabilities"
+        },
+        {
+          "sourceId": "UNIVERSAL_STATE",
+          "includes": "uesCrystallizedLiabilities"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "A crystallized payout is immutable."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Pending accepted obligations (due, not yet settled)"
+        }
+      ]
+    },
+    {
+      "id": "unresolved-ticket-worst-case-exposure",
+      "accountingKey": "liability:unresolved-ticket-worst-case-exposure",
+      "r7Cell": "L3",
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset; excluded from EEV.",
+      "protectedCapitalTreatment": "V3 derives multiplier × canonical class price × unresolved count; R7 requires worst-case over authoritative Ω, which is not bound.",
+      "bufferTreatment": "Included in current V3 PC; no claim finite class sums exhaust all R1 exposure.",
+      "accountingRule": "Preserve canonical class price/unresolved relation and declared 500×P ceiling; do not infer Ω completeness from class sums.",
+      "v3Fields": [
+        "v3Classes",
+        "tcsUnresolved",
+        "tcsExposure"
+      ],
+      "universalFields": [
+        "uesWorstCaseExposure"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA7",
+        "Ω completeness",
+        "full R1 mapping"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "WorstCaseExposure(P,N) = 500 × P × N"
+        },
+        {
+          "sourceId": "V3_KERNEL",
+          "includes": "worstCaseExposure :: EconomicProfile -> V3EconomicState -> Integer"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Unresolved exposure: worst-case incremental liability over"
+        }
+      ]
+    },
+    {
+      "id": "unresolved-ticket-statistical-reserve",
+      "accountingKey": "metric:unresolved-ticket-statistical-reserve",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Not an asset; not EEV.",
+      "protectedCapitalTreatment": "Statistical reserve is not interchangeable with R7 L3 Ω-worst-case liability.",
+      "bufferTreatment": "EffectivePool subtracts reserve; ProtectedCapital uses worstCaseExposure. Keep distinct.",
+      "accountingRule": "Never map the statistical reserve to L3 solely because both concern unresolved tickets.",
+      "v3Fields": [
+        "v3UnresolvedReserve"
+      ],
+      "universalFields": [
+        "uesUnresolvedReserve"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA4"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "UnresolvedReserve(N) = N × μ + Z × σ × sqrt(N)"
+        },
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3UnresolvedReserve"
+        },
+        {
+          "sourceId": "V3_KERNEL",
+          "includes": "effectivePool eev s ="
+        }
+      ]
+    },
+    {
+      "id": "safety-capital",
+      "accountingKey": "pc-addon:safety-capital",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "Added by V3/Universal kernels, while R7's stated PC expression is L1 + L2 + worst-case L3; mapping/disjointness is unproven.",
+      "bufferTreatment": "Subtracted in implementation PC; possible overlap with L1-L3 is unresolved.",
+      "accountingRule": "Do not invent an L-cell assignment or assume disjointness from existing commitments.",
+      "v3Fields": [
+        "v3SafetyCapital"
+      ],
+      "universalFields": [
+        "uesSafetyCapital"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "double-counting analysis"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3SafetyCapital"
+        },
+        {
+          "sourceId": "UNIVERSAL_STATE",
+          "includes": "uesSafetyCapital"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "ProtectedCapital(S) = value(L1) + value(L2) + value_worstcase_Ω(L3)"
+        }
+      ]
+    },
+    {
+      "id": "reserve-protection",
+      "accountingKey": "pc-addon:reserve-protection",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "Added by V3/Universal kernels; exact R7 cell and disjointness are not established.",
+      "bufferTreatment": "Subtracted in implementation PC; overlap with L1-L3 remains unresolved.",
+      "accountingRule": "Keep the implementation field visible; do not assert complete R7 mapping without PA2/PA3/PA4.",
+      "v3Fields": [
+        "v3ReserveProtection"
+      ],
+      "universalFields": [
+        "uesReserveProtection"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "double-counting analysis"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3ReserveProtection"
+        },
+        {
+          "sourceId": "UNIVERSAL_STATE",
+          "includes": "uesReserveProtection"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "ProtectedCapital(S) = value(L1) + value(L2) + value_worstcase_Ω(L3)"
+        }
+      ]
+    },
+    {
+      "id": "mandatory-future-costs",
+      "accountingKey": "pc-addon:mandatory-future-costs",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "Added by V3/Universal kernels; no complete assignment to L1/L2/L3 is established.",
+      "bufferTreatment": "Subtracted in implementation PC; overlap with future commitments is unresolved.",
+      "accountingRule": "Do not map to L2 or another liability cell without normative definition and disjointness evidence.",
+      "v3Fields": [
+        "v3MandatoryFutureCosts"
+      ],
+      "universalFields": [
+        "uesMandatoryFutureCosts"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "double-counting analysis"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3MandatoryFutureCosts"
+        },
+        {
+          "sourceId": "UNIVERSAL_STATE",
+          "includes": "uesMandatoryFutureCosts"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "CAR — value conditionally committed to a future allocation"
+        }
+      ]
+    },
+    {
+      "id": "jackpot-locked-balance",
+      "accountingKey": "jackpot:locked-balance",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Not independently counted as EEV by the V3 projection.",
+      "protectedCapitalTreatment": "V3 includes jsLockedAmount; projection maps it once to uesAdditionalProtectedCapital. Exact R7 cell/disjointness from L2/L3 unproven.",
+      "bufferTreatment": "Reduces implementation buffer once; aggregate equality does not prove partition completeness.",
+      "accountingRule": "Keep one accounting key; do not assign an R7 cell without profile evidence.",
+      "v3Fields": [
+        "v3Jackpot",
+        "jsLockedAmount"
+      ],
+      "universalFields": [
+        "uesAdditionalProtectedCapital"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA7",
+        "R7 cell mapping"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "jsLockedAmount"
+        },
+        {
+          "sourceId": "UNIVERSAL_STATE",
+          "includes": "uesAdditionalProtectedCapital"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "Jackpot liquidity is deducted exactly once."
+        },
+        {
+          "sourceId": "R7",
+          "includes": "CAR — value conditionally committed to a future allocation"
+        }
+      ]
+    },
+    {
+      "id": "class-issuance-control-state",
+      "accountingKey": "state:class-issuance-control",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset valuation.",
+      "protectedCapitalTreatment": "Class issuance/cap/saleability and control history affect admission but are absent from UniversalEconomicState.",
+      "bufferTreatment": "Can affect future Issue availability/exposure; structural checks do not prove admission equivalence.",
+      "accountingRule": "Preserve fields; do not infer R1 transition completeness from shape checks.",
+      "v3Fields": [
+        "tcsIssued",
+        "tcsCap",
+        "tcsSaleable",
+        "ecsCurrentActiveClass",
+        "ecsHighestClassEverActivated"
+      ],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA5",
+        "Accept equivalence",
+        "VC3",
+        "VC4"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "tcsIssued"
+        },
+        {
+          "sourceId": "V3_STATE",
+          "includes": "ecsHighestClassEverActivated"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "HighestClassEverActivated"
+        }
+      ]
+    },
+    {
+      "id": "jackpot-lifecycle-state",
+      "accountingKey": "state:jackpot-lifecycle",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "Status/threshold/cycle are not independent EEV values.",
+      "protectedCapitalTreatment": "Only locked amount contributes to current V3 PC; status/threshold/cycle are absent from universal aggregate.",
+      "bufferTreatment": "Lifecycle may affect future actions; no complete R1 transition binding is asserted.",
+      "accountingRule": "Do not invent PC effects for status/threshold/cycle beyond locked amount treatment.",
+      "v3Fields": [
+        "jsStatus",
+        "jsThreshold",
+        "jsCycle"
+      ],
+      "universalFields": [],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA5",
+        "contingency refinement",
+        "VC3",
+        "VC4",
+        "VC5"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_STATE",
+          "includes": "jsThreshold"
+        },
+        {
+          "sourceId": "V3_STATE",
+          "includes": "jsStatus"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "Jackpot activation/funding/payout semantics are PRE-RICH application policy"
+        }
+      ]
+    },
+    {
+      "id": "contingency-a4-l3",
+      "accountingKey": "contingency:a4-l3-link",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "A4 is excluded from EEV while unresolved.",
+      "protectedCapitalTreatment": "Paired L3 is included at Ω worst-case value; no event-by-event PRE-RICH link proves pairing or alternative-state disjointness.",
+      "bufferTreatment": "No conservation claim for contingent outcomes until A4/L3 paired transitions are formalized.",
+      "accountingRule": "Use only R7 A4↔L3 and permitted realise/resolve deltas; invent no events or probabilities.",
+      "v3Fields": [
+        "v3Classes",
+        "v3Jackpot"
+      ],
+      "universalFields": [
+        "uesWorstCaseExposure",
+        "uesAdditionalProtectedCapital"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA5",
+        "PA7",
+        "Ω completeness"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "R7",
+          "includes": "A4 ↔ L3"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "realise"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "resolve"
+        },
+        {
+          "sourceId": "OMEGA",
+          "includes": "Ω-COMPLETE(Env, Ω)"
+        }
+      ]
+    },
+    {
+      "id": "historical-monotone-facts",
+      "accountingKey": "history:monotone-facts",
+      "r7Cell": "H",
+      "mappingStatus": "partial",
+      "eevTreatment": "Excluded; recorded but not valued.",
+      "protectedCapitalTreatment": "Excluded from ProtectedCapital; separate from asset and liability cells.",
+      "bufferTreatment": "No direct buffer contribution.",
+      "accountingRule": "Keep history in a separate ledger; do not add it to EEV or PC.",
+      "v3Fields": [
+        "ecsHighestClassEverActivated"
+      ],
+      "universalFields": [],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "complete history-ledger mapping",
+        "PA2"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "R7",
+          "includes": "Historical quantities"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "never enter `EEV` or `ProtectedCapital`"
+        },
+        {
+          "sourceId": "V3_STATE",
+          "includes": "ecsHighestClassEverActivated"
+        }
+      ]
+    },
+    {
+      "id": "unrepresented-exposure-l6",
+      "accountingKey": "guard:unrepresented-exposure-l6",
+      "r7Cell": "L6",
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "L6 cannot be silently omitted; any creating action is non-executable. V3 has no explicit universe of all possible unrepresented obligations.",
+      "bufferTreatment": "An omitted commitment can inflate RawSurplus while recorded-cell conservation still holds.",
+      "accountingRule": "Fail closed when a profile obligation cannot be represented; a finite list does not prove L6 empty.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA2",
+        "PA6",
+        "PA7"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "R7",
+          "includes": "L6 is empty in every executable state"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "an unrepresentable exposure blocks execution"
+        }
+      ]
+    },
+    {
+      "id": "car-conditional-allocation",
+      "accountingKey": "liability:car-conditional-allocation",
+      "r7Cell": "L2",
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "R7 defines CAR in L2; PRE-RICH sources do not prove every CAR commitment is represented by V3 fields or Jackpot/future-cost add-ons.",
+      "bufferTreatment": "Potential PC contribution is unresolved; do not map it to Jackpot by analogy.",
+      "accountingRule": "Keep CAR as a canonical category until profile evidence proves applicability, absence or exact representation.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA1",
+        "PA2",
+        "PA3",
+        "PA4",
+        "PA7"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "R7",
+          "includes": "CAR — value conditionally committed to a future allocation"
+        },
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "Jackpot is application-owned PRE-RICH policy"
+        }
+      ]
+    },
+    {
+      "id": "expiry-ticket-identity",
+      "accountingKey": "lifecycle:expiry-ticket-identity",
+      "r7Cell": "L5",
+      "mappingStatus": "partial",
+      "eevTreatment": "Not an asset.",
+      "protectedCapitalTreatment": "R7 L5 is excluded after final expiry; V3 Expire carries class, not ticket identity/timestamp.",
+      "bufferTreatment": "Aggregate release does not prove application expiry eligibility or one-time release.",
+      "accountingRule": "Preserve frozen expiry semantics and profile-defined lifetime; invent no universal lifetime.",
+      "v3Fields": [
+        "v3Classes",
+        "v3UnresolvedTicketCount",
+        "v3CrystallizedLiabilities"
+      ],
+      "universalFields": [
+        "uesUnresolvedReserve",
+        "uesCrystallizedLiabilities"
+      ],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA5",
+        "Accept equivalence",
+        "Ω completeness",
+        "deployment expiry profile"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "GAME_ECONOMY",
+          "includes": "The exact ticket lifetime is **not a universal IMMORTAL number**."
+        },
+        {
+          "sourceId": "V3_STATE",
+          "includes": "v3UnresolvedTicketCount"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "Expired rights/liabilities"
+        }
+      ]
+    },
+    {
+      "id": "effective-pool-vs-buffer",
+      "accountingKey": "metric:effective-pool-vs-buffer",
+      "r7Cell": null,
+      "mappingStatus": "partial",
+      "eevTreatment": "EffectivePool is derived from supplied EEV; it is not EEV.",
+      "protectedCapitalTreatment": "EffectivePool subtracts crystallized liabilities, unresolved reserve and Jackpot; V3 PC instead includes worst-case exposure and PC add-ons.",
+      "bufferTreatment": "Keep EffectivePool, EEV, PC, RawSurplus and b = EEV − PC distinct.",
+      "accountingRule": "Do not substitute EffectivePool for EEV or buffer; do not map statistical reserve to L3.",
+      "v3Fields": [
+        "effectivePool",
+        "v3CrystallizedLiabilities",
+        "v3UnresolvedReserve",
+        "v3Jackpot"
+      ],
+      "universalFields": [
+        "uesWorstCaseExposure",
+        "uesAdditionalProtectedCapital"
+      ],
+      "contingencyStatus": "not_applicable",
+      "openObligations": [
+        "PA2",
+        "PA4",
+        "full R1 mapping"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "V3_KERNEL",
+          "includes": "effectivePool eev s ="
+        },
+        {
+          "sourceId": "R7",
+          "includes": "RawSurplus(S) = max(0, EEV(S) − ProtectedCapital(S))"
+        },
+        {
+          "sourceId": "UNIVERSAL_KERNEL",
+          "includes": "rawSurplus eev s ="
+        }
+      ]
+    },
+    {
+      "id": "nonqualified-assets-outside-eev",
+      "accountingKey": "asset:nonqualified-assets-outside-eev",
+      "r7Cell": null,
+      "mappingStatus": "unmapped",
+      "eevTreatment": "Excluded from this EEV perimeter unless exact canonical USDM UTxO qualification succeeds; exclusion from EEV does not omit the asset from R7 inventory.",
+      "protectedCapitalTreatment": "No automatic PC treatment; classification in A1-A5 and any paired contingency still requires evidence.",
+      "bufferTreatment": "Cannot contribute to EEV; full asset classification remains open.",
+      "accountingRule": "No ADA/PRE liquidation, PRE→USDM oracle, Snek/Charli3 PRE valuation, unqualified asset, invented haircut/slippage or unproven liquidity.",
+      "v3Fields": [],
+      "universalFields": [],
+      "contingencyStatus": "unresolved",
+      "openObligations": [
+        "PA1",
+        "PA2",
+        "PA3",
+        "PA7",
+        "EV1-EV7"
+      ],
+      "sourceAnchors": [
+        {
+          "sourceId": "EEV",
+          "includes": "A3/A4/A5 are excluded"
+        },
+        {
+          "sourceId": "R7",
+          "includes": "A1…A5 are pairwise disjoint and jointly exhaustive over asset content"
+        }
+      ]
+    }
+  ]
+}
