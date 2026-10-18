@@ -900,7 +900,7 @@ const bootstrap = await lucid
     {
       [poolUnit]: 1n,
       [ticketUnit]: 1n,
-      [oracleStateUnit]: 1n,
+      [oracleStateUnit]: 2n,
     },
     Data.void(),
   )
@@ -922,8 +922,15 @@ const bootstrap = await lucid
     address,
     { lovelace: 2_000_000n, [ticketUnit]: 1n },
   )
-  // Keep the Oracle reference input outside the spending wallet address,
-  // so Lucid coin selection cannot select it as a normal funding input.
+  // Two fixture UTxOs deliberately carry the same singleton unit so the
+  // Claim scan can exercise malformed-first/valid-second and malformed-only
+  // reference-input cases. This is synthetic test state, not a production
+  // singleton deployment or economic qualification.
+  .pay.ToAddressWithData(
+    referenceAddress,
+    { kind: 'inline', value: Data.to(42n) },
+    { lovelace: 2_000_000n, [oracleStateUnit]: 1n },
+  )
   .pay.ToAddressWithData(
     referenceAddress,
     { kind: 'inline', value: Data.to(oracleDatum) },
@@ -957,8 +964,12 @@ const ticketUtxo = walletUtxos.find((u) =>
   u.txHash === bootstrapHash && u.assets[ticketUnit] === 1n,
 )
 const oracleReferenceUtxos = await lucid.utxosAt(referenceAddress)
+// Bootstrap output order is pool, Prize, ticket, malformed Oracle State, valid Oracle State.
+const malformedOracleUtxo = oracleReferenceUtxos.find((u) =>
+  u.txHash === bootstrapHash && u.outputIndex === 3 && u.assets[oracleStateUnit] === 1n,
+)
 const oracleUtxo = oracleReferenceUtxos.find((u) =>
-  u.txHash === bootstrapHash && u.assets[oracleStateUnit] === 1n,
+  u.txHash === bootstrapHash && u.outputIndex === 4 && u.assets[oracleStateUnit] === 1n,
 )
 const prizeUtxo = prizeUtxos.find((u) =>
   u.txHash === bootstrapHash &&
@@ -968,7 +979,7 @@ const prizeUtxo = prizeUtxos.find((u) =>
 const poolUtxo = poolUtxos.find((u) =>
   u.txHash === bootstrapHash && u.assets[poolUnit] === 1n,
 )
-if (!ticketUtxo || !oracleUtxo || !prizeUtxo || !poolUtxo) {
+if (!ticketUtxo || !oracleUtxo || !malformedOracleUtxo || !prizeUtxo || !poolUtxo) {
   throw new Error('Claim fixture did not materialize its exact bootstrap outpoints')
 }
 if (ticketUtxo.address !== address || ticketUtxo.assets[ticketUnit] !== 1n) {
@@ -984,13 +995,15 @@ const preStateFingerprint = hashJson({
   poolRef: ref(poolUtxo),
   poolDatum: poolUtxo.datum,
   ticketRef: ref(ticketUtxo),
+  malformedOracleRef: ref(malformedOracleUtxo),
   oracleRef: ref(oracleUtxo),
 })
 
 console.log('[CLAIM-DIAG] input Prize=' + ref(prizeUtxo))
 console.log('[CLAIM-DIAG] input Pool=' + ref(poolUtxo))
 console.log('[CLAIM-DIAG] owner ticket=' + ref(ticketUtxo))
-console.log('[CLAIM-DIAG] Oracle State reference=' + ref(oracleUtxo))
+console.log('[CLAIM-DIAG] malformed Oracle State reference=' + ref(malformedOracleUtxo))
+console.log('[CLAIM-DIAG] valid Oracle State reference=' + ref(oracleUtxo))
 
 // Publish both current reference scripts separately from the wallet address.
 const prizeReferenceTx = await lucid
@@ -1071,6 +1084,7 @@ type ClaimVariant = {
   extraSettlementOutput?: boolean
   ticketNftReceiver?: string
   includeOwnerSigner?: boolean
+  oracleMode?: 'malformed-then-valid' | 'malformed-only'
 }
 
 async function buildClaimTx(variant: ClaimVariant) {
@@ -1093,9 +1107,13 @@ async function buildClaimTx(variant: ClaimVariant) {
   const settlementLovelace = MIN_UTXO_LOVELACE +
     (settlementUsdm * 1_000_000n) / ADA_PRICE_USDM_SUBUNITS
 
+  const oracleInputs = variant.oracleMode === 'malformed-only'
+    ? [malformedOracleUtxo as UTxO]
+    : [malformedOracleUtxo as UTxO, oracleUtxo as UTxO]
+
   let builder = lucid
     .newTx()
-    .readFrom([prizeReferenceInput, poolReferenceInput, oracleUtxo as UTxO])
+    .readFrom([prizeReferenceInput, poolReferenceInput, ...oracleInputs])
     // The validated script witnesses are supplied by the reference-script UTxOs
     // included above. Do not attach the full validator bytes to this transaction:
     // Claim must stay under Cardano's 16,384-byte transaction limit.
@@ -1367,9 +1385,14 @@ await expectClaimRejected({
   expectedTraceMarkers: ['Prize: owner sig', 'B1PrizePool: owner not signed'],
   includeOwnerSigner: false,
 })
+await expectClaimRejected({
+  label: 'malformed-oracle-without-valid-alternative',
+  expectedTraceMarkers: ['Prize: payout', 'B1PrizePool: payout USDM value insufficient'],
+  oracleMode: 'malformed-only',
+})
 
-if (negativeResults.length !== 4) {
-  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/4 rejected')
+if (negativeResults.length !== 5) {
+  throw new Error('Claim negative twins incomplete: ' + negativeResults.length + '/5 rejected')
 }
 
 const validTx = await buildClaimTx({ label: 'valid-claim' })
