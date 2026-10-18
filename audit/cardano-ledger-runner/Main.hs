@@ -17,7 +17,7 @@ import Data.Aeson ((.=), object, toJSON)
 import Cardano.Ledger.Api (ConwayEra, PParams, Tx)
 import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.State (UTxO)
-import Cardano.Ledger.Api.Scripts.ExUnits
+import Cardano.Ledger.Alonzo.Plutus.Evaluate
   ( RedeemerReportWithLogs
   , TransactionScriptFailure (..)
   )
