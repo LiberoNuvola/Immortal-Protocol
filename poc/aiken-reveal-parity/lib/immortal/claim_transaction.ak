@@ -173,8 +173,8 @@ fn ceiling_div_nonnegative(numerator: Int, denominator: Int) -> Int {
 fn value_entries_usdm(
   entries: List<(PolicyId, AssetName, Int)>,
   tx: transaction.Transaction,
-  state_policy: ByteArray,
-  state_name: ByteArray,
+  state_policy: PolicyId,
+  state_name: AssetName,
   publisher: VerificationKeyHash,
   now: Int,
 ) -> Option<Int> {
@@ -221,8 +221,8 @@ fn value_entries_usdm(
 fn value_usdm(
   value: assets.Value,
   tx: transaction.Transaction,
-  state_policy: ByteArray,
-  state_name: ByteArray,
+  state_policy: PolicyId,
+  state_name: AssetName,
   publisher: VerificationKeyHash,
   now: Int,
 ) -> Option<Int> {
