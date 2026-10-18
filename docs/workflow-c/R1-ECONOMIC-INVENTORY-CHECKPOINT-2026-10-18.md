@@ -134,3 +134,10 @@ This is a broader and more adversarial source checklist, but it remains curated.
 - Phase G: PARTIAL — source catalog and exact source pins are present; deployment/observation provenance is absent.
 
 PA2, PA3, PA4, PA5, PA6 and PA7 remain open. No semantic kernel changes, deployment, ledger transaction, mint, merge or manual workflow dispatch occurred.
+
+
+### Final documentation CI record
+
+- Run #23: SUCCESS on d6743836f84b003ad833657faf51cc740ae19227, 48/48 Node tests; the report/matrix update was checked on its exact SHA.
+- Run #24: SUCCESS on 7ae34445db58c3eb7dcd9840c51e7019fd10851c, 48/48 Node tests; source catalog and expanded inventory gates passed.
+- The audit result remains closureEligible=false, with 32 component/boundary rows, 30 pinned source-catalog rows and 15 required source surfaces. These counts measure the reviewed checklist, not the full economic domain.
