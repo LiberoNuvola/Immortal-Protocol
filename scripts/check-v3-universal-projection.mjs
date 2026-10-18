@@ -77,8 +77,8 @@ export function projectV3ToUniversal(model) {
   if (!['JackpotInactive','JackpotLocked','JackpotPayable','JackpotClosed'].includes(status)) {
     throw new Error('state.jackpot.status: unknown canonical JackpotStatus');
   }
-  nonnegative(state.jackpot?.threshold, 'state.jackpot.threshold');
-  nonnegative(state.jackpot?.cycle, 'state.jackpot.cycle');
+  bi(state.jackpot?.threshold, 'state.jackpot.threshold');
+  bi(state.jackpot?.cycle, 'state.jackpot.cycle');
 
   if (!Array.isArray(state.classes)) throw new Error('state.classes: expected array');
   const actualIds = state.classes.map((c, i) => {
