@@ -115,6 +115,34 @@ fn valid_oracle_timestamp(timestamp: Int, now: Int) -> Bool {
   timestamp <= now && now - timestamp <= oracle_max_age_ms
 }
 
+fn oracle_quote_matches(
+  oracle: OracleDatum,
+  expected_policy: PolicyId,
+  expected_name: AssetName,
+  expected_publisher: VerificationKeyHash,
+  now: Int,
+) -> Bool {
+  oracle.asset_policy == expected_policy
+    && oracle.asset_name == expected_name
+    && oracle.publisher == expected_publisher
+    && valid_oracle_timestamp(oracle.timestamp, now)
+    && oracle.price >= 0
+}
+
+fn claim_window_open(expires_at: Int, upper_bound: Option<Int>) -> Bool {
+  when upper_bound is {
+    Some(bound) -> bound <= expires_at
+    None -> False
+  }
+}
+
+fn exact_claim_settlement(paid: Option<Int>, required: Int) -> Bool {
+  when paid is {
+    Some(amount) -> required > 0 && amount == required
+    None -> False
+  }
+}
+
 /// Search reference inputs for the configured Oracle State singleton plus a
 /// datum matching the requested asset, configured publisher, and freshness.
 fn oracle_price_for(
@@ -139,13 +167,7 @@ fn oracle_price_for(
             // Malformed datum data aborts this candidate rather than accepting
             // an unauthenticated price. Ledger-valid oracle fixtures cover schema parity.
             expect oracle: OracleDatum = raw
-            if
-              oracle.asset_policy == asset_policy
-                && oracle.asset_name == asset_name
-                && oracle.publisher == publisher
-                && valid_oracle_timestamp(oracle.timestamp, now)
-                && oracle.price >= 0
-            {
+            if oracle_quote_matches(oracle, asset_policy, asset_name, publisher, now) {
               Some(oracle.price)
             } else {
               oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
@@ -365,11 +387,7 @@ pub fn claim_transaction_is_valid(
                     }
                 }
             }
-          let expiry_ok =
-            when finite_upper_bound(tx) is {
-              Some(bound) -> bound <= input_datum.expires_at
-              None -> False
-            }
+          let expiry_ok = claim_window_open(input_datum.expires_at, finite_upper_bound(tx))
           let payment_ok =
             when ticket_owner(tx.inputs, input_datum.ticket_policy, input_datum.ticket_name) is {
               None -> False
@@ -380,17 +398,17 @@ pub fn claim_transaction_is_valid(
                   when finite_upper_bound(tx) is {
                     None -> False
                     Some(now) ->
-                      when value_usdm(
-                        claimant_value(tx.outputs, owner),
-                        tx,
-                        oracle_state_policy,
-                        oracle_state_name,
-                        oracle_publisher,
-                        now,
-                      ) is {
-                        Some(paid) -> paid == input_datum.prize_amount
-                        None -> False
-                      }
+                      exact_claim_settlement(
+                        value_usdm(
+                          claimant_value(tx.outputs, owner),
+                          tx,
+                          oracle_state_policy,
+                          oracle_state_name,
+                          oracle_publisher,
+                          now,
+                        ),
+                        input_datum.prize_amount,
+                      )
                   }
                 }
             }
@@ -430,4 +448,62 @@ test claim_oracle_timestamp_accepts_exact_max_age() {
 
 test claim_oracle_timestamp_rejects_stale_value() {
   !valid_oracle_timestamp(6_399, 10_000)
+}
+
+fn claim_test_oracle(
+  policy: PolicyId,
+  name: AssetName,
+  price: Int,
+  timestamp: Int,
+  publisher: VerificationKeyHash,
+) -> OracleDatum {
+  OracleDatum {
+    asset_policy: policy,
+    asset_name: name,
+    price,
+    timestamp,
+    publisher,
+  }
+}
+
+test claim_window_accepts_exact_expiry_bound() {
+  claim_window_open(9_000, Some(9_000))
+}
+
+test claim_window_accepts_before_expiry() {
+  claim_window_open(9_000, Some(8_999))
+}
+
+test claim_window_rejects_after_expiry() {
+  !claim_window_open(9_000, Some(9_001))
+}
+
+test claim_window_rejects_unbounded_upper_interval() {
+  !claim_window_open(9_000, None)
+}
+
+test claim_settlement_requires_exact_positive_value() {
+  exact_claim_settlement(Some(200), 200)
+    && !exact_claim_settlement(Some(199), 200)
+    && !exact_claim_settlement(Some(201), 200)
+    && !exact_claim_settlement(None, 200)
+    && !exact_claim_settlement(Some(0), 0)
+}
+
+test claim_oracle_requires_asset_identity_and_publisher() {
+  let oracle = claim_test_oracle(#"aa", #"USDM", 12, 9_000, #"bb")
+  oracle_quote_matches(oracle, #"aa", #"USDM", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"ab", #"USDM", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"aa", #"OTHER", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"aa", #"USDM", #"bc", 9_000)
+}
+
+test claim_oracle_rejects_negative_price() {
+  !oracle_quote_matches(
+    claim_test_oracle(#"aa", #"USDM", -1, 9_000, #"bb"),
+    #"aa",
+    #"USDM",
+    #"bb",
+    9_000,
+  )
 }
