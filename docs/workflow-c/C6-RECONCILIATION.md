@@ -160,3 +160,28 @@ The source trace was extended to the exact module locations for the economic act
 **Test/workflow finding:** `plutus/test/PreRichLifecycleTransitionTest.hs` is not named in the inspected `.github/workflows/formal-mechanical-evidence.yml` steps. The inspected `.github/workflows/pre-rich-action-refinement-conformance.yml` runs a TypeScript/Vitest conformance set and TypeScript typecheck, not that Haskell lifecycle test. Thus the repository review found test source, but no evidence from these workflows that the Haskell test is executed. No test pass or CI certification is claimed.
 
 **Next proof obligation:** locate an already-authorized normative source for the lifecycle action and its acceptance rule; define the explicit refinement/composition boundary without changing economic V3 semantics; then bind each QNE witness to a complete, authority-fixed Ω envelope for the declared perimeter and independently check `Rep`, safety and buffer preservation over every successor. If the normative corpus does not authorize that composition, stop for an architecture decision. C6 remains **NOT CERTIFIED**.
+
+
+## Normative-source trace — is the lifecycle QNE action already authorized? (2026-10-18)
+
+The normative-source pass covered the Constitution, Universal Economic Model, Economic Kernel, State & Transition Specification, Ω Completeness Contract, Liveness & Progress Specification, and Non-Vacuity/Initial-State Certification.
+
+### What is authorized at the abstract level
+
+The normative corpus defines the abstract action/acceptance/transition contract:
+- `A(S)` is the set of candidate admissible actions, `Accept(S,a)` requires an action in that set plus complete, verified and fresh authoritative inputs, and `T(S,a,ω)` is total on accepted inputs.
+- `K_c` must satisfy CK1–CK8; CK3 requires every authoritative Ω-successor of a witnessing action to remain in `K_c`, and CK3′ adds acceptance compatibility for non-blocking certification.
+- Ω completeness is relative to a published environment perimeter `E`; completeness of a concrete adapter/profile requires evidence and cannot be inferred from a unit-test witness list.
+- R8/T-NV-SUFF gives a **conditional construction** for a true quiescent singleton: a safe state and an available action whose transition returns exactly that state for every `ω ∈ Ω(S,a)`. QNE separately requires an available action whose protection buffer does not erode for every authoritative successor.
+
+### What the normative corpus does not authorize by name
+
+In the inspected normative files, `EnterQuiescent`, `MaintainQuiescent`, and the PRE-RICH `Quiescent` regime are not defined as canonical IMMORTAL actions or given an explicit `Accept(S,a)` rule. The normative contracts define what any proposed action must satisfy; they do not, by themselves, authorize this application-specific lifecycle helper as the universal witness.
+
+The generic rejection/safe-stall policy is not a substitute for that witness: the normative sources explicitly distinguish safety from viability and progress. Nor does incrementing a lifecycle nonce establish R8's exact state equality, because the lifecycle state changes and environmental changes to EEV/ProtectedCapital remain possible.
+
+### Decision
+
+**No source-backed authorization edge was found for promoting the PRE-RICH lifecycle helper to the universal IMMORTAL action algebra.** This is a bounded review of the named normative source files, not a claim that every repository file has been exhaustively reviewed.
+
+Therefore the next step is not to alter code or manufacture an action. It is to identify an existing authoritative application/profile contract that authorizes this lifecycle transition and defines its acceptance and refinement semantics. If no such source exists, record an architecture decision before composition. In either case, a separate proof must bind the deployment's full authoritative Ω envelope to the declared perimeter and establish CK3/CK3′, non-vacuity at concrete `S0`, and the required `Rep`/buffer preservation. C6 remains **NOT CERTIFIED**.
