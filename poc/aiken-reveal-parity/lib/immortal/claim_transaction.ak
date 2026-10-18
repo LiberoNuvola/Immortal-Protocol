@@ -491,18 +491,18 @@ test claim_settlement_requires_exact_positive_value() {
 }
 
 test claim_oracle_requires_asset_identity_and_publisher() {
-  let oracle = claim_test_oracle(#"aa", #"USDM", 12, 9_000, #"bb")
-  oracle_quote_matches(oracle, #"aa", #"USDM", #"bb", 9_000)
-    && !oracle_quote_matches(oracle, #"ab", #"USDM", #"bb", 9_000)
-    && !oracle_quote_matches(oracle, #"aa", #"OTHER", #"bb", 9_000)
-    && !oracle_quote_matches(oracle, #"aa", #"USDM", #"bc", 9_000)
+  let oracle = claim_test_oracle(#"aa", #"5553444d", 12, 9_000, #"bb")
+  oracle_quote_matches(oracle, #"aa", #"5553444d", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"ab", #"5553444d", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"aa", #"4f54484552", #"bb", 9_000)
+    && !oracle_quote_matches(oracle, #"aa", #"5553444d", #"bc", 9_000)
 }
 
 test claim_oracle_rejects_negative_price() {
   !oracle_quote_matches(
-    claim_test_oracle(#"aa", #"USDM", -1, 9_000, #"bb"),
+    claim_test_oracle(#"aa", #"5553444d", -1, 9_000, #"bb"),
     #"aa",
-    #"USDM",
+    #"5553444d",
     #"bb",
     9_000,
   )
