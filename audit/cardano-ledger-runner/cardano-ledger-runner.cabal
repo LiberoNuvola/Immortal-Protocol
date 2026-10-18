@@ -39,6 +39,7 @@ executable yaci-utxo-test
     , text
     , aeson
     , cardano-ledger-babbage ==1.14.0.0
+    , cardano-ledger-conway ==1.23.0.0
     , cardano-ledger-core ==1.21.0.0
     , cardano-ledger-mary ==1.11.0.0
     , cardano-ledger-binary ==1.9.1.0
