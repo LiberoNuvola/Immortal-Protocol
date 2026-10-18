@@ -1,0 +1,39 @@
+name: Workflow C Structural Check
+
+on:
+  push:
+    branches:
+      - "release/public-main-curated-2026-09-24"
+    paths:
+      - "docs/workflow-c/**"
+      - ".github/workflows/workflow-c-structural-check.yml"
+  pull_request:
+    branches:
+      - "release/public-main-curated-2026-09-24"
+    paths:
+      - "docs/workflow-c/**"
+      - ".github/workflows/workflow-c-structural-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structural-manifest-check:
+    name: Structural manifest contract (not economic certification)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate profile schema JSON syntax
+        run: node -e "JSON.parse(require('node:fs').readFileSync('docs/workflow-c/profile.schema.json', 'utf8')); console.log('profile.schema.json: valid JSON')"
+      - name: Run structural checker tests
+        run: node --test docs/workflow-c/validate-profile-manifest.test.mjs
+      - name: Record evidence boundary
+        run: |
+          echo "PASS means manifest structure tests passed on synthetic fixtures."
+          echo "This workflow does not establish VC2/VC3, Ω completeness, cryptographic validity, or Kc non-emptiness."
