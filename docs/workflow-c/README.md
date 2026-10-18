@@ -81,6 +81,19 @@ The following artifacts are relevant inputs, not by themselves closure evidence:
 - `docs/research/GENERALIZED-DERIVATION-CONTRACT-v1.md` (on the B3 workstream)
 - B3 witness/root-proof boundary tests and Materios proof handoff documents (on the B3 workstream)
 
+## Current executable structural gate
+
+A small independent manifest checker and adversarial unit tests are included:
+
+```bash
+node --test docs/workflow-c/validate-profile-manifest.test.mjs
+node docs/workflow-c/validate-profile-manifest.mjs path/to/profile-manifest.json
+```
+
+The first command tests manifest-structure handling using synthetic fixtures. The second validates a supplied manifest's required fields, source/digest formats and the 13 numbered Ω checklist elements. **Neither command proves the economic model, VC2/VC3, Ω completeness, cryptographic validity, or non-emptiness of Kc.** The current tests deliberately use unresolved placeholder references to test structure only.
+
+See `C0-C5-SOURCE-MAP.md`, `REFERENCE-PROFILE-CONTRACT.md`, and `C7-OMEGA-WORKSHEET.md` for the current reconciliation.
+
 ## Evidence vocabulary
 
 - **SPECIFICATION:** normative or architectural contract is written down.
