@@ -28,6 +28,16 @@ export function gitBlobSha(content) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
   return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 }
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+function sha256Canonical(value) {
+  return createHash('sha256').update(canonical(value)).digest('hex');
+}
 const isInt = n => typeof n === 'string' && /^-?(0|[1-9][0-9]*)$/.test(n);
 const bi = (n, path) => {
   if (!isInt(n)) throw new Error(`${path}: expected canonical decimal string`);
@@ -152,6 +162,8 @@ export function projectV3ToUniversal(model) {
   const buffer = eevValue - v3ProtectedCapital;
   return {
     schema: 'immortal-v3-universal-projection-v1',
+    modelSha256: sha256Canonical(model),
+    sourceContractSha256: sha256Canonical(SOURCE_BLOBS),
     classification: 'FINITE_PROJECTION_VALID_RELATIVE_TO_DECLARED_PROFILE_AND_STATE',
     profileVersion: profile.version,
     canonicalClassIds: [...prices.keys()],
