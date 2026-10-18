@@ -121,7 +121,7 @@ main = do
   badQuantity <- mutated "malformed quantity" "\"quantity\": \"2000000\"" "\"quantity\": \"two-million\""
   assertLeft "malformed quantity is rejected" "INVALID_INTEGER:quantity" (decodeYaciUTxO (B8.pack badQuantity))
 
-  missingAmount <- mutated "missing amount" "\"amount\": [{\"unit\": \"lovelace\", \"quantity\": \"2000000\"}],\n" ""
+  missingAmount <- mutated "missing amount" "\"amount\": [{\"unit\": \"lovelace\", \"quantity\": \"2000000\"}]," ""
   assertLeft "missing required amount is rejected" "MISSING_FIELD:amount" (decodeYaciUTxO (B8.pack missingAmount))
 
   badDatum <- mutated "invalid inline datum hex" "\"inline_datum\": null" "\"inline_datum\": \"zz\""
