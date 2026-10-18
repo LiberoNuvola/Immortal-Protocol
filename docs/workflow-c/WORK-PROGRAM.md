@@ -13,7 +13,7 @@ This file tracks the work programme. It is not a new normative specification.
 | C6 | Reference profile and action-space adequacy | Profile + explicit transition relation + non-vacuity argument | **BLOCKED / NOT CERTIFIED** |
 | C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
 | C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
-| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Open; structural tests alone insufficient |
+| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Structural manifest checker and adversarial tests drafted; not executed; it does not check economic predicates |
 | C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | Open; packet must be generated from the actual checker run |
 
 ## Execution order
@@ -23,7 +23,7 @@ This file tracks the work programme. It is not a new normative specification.
 3. In parallel, prepare C6-C/C7/C9/C10 evidence plumbing using the B3 packet and verifier-boundary patterns.
 4. Keep C6-B and C8 blocked until an authorized substantive transition relation and a valid witness can be demonstrated.
 5. Run the independent checker against the exact committed profile; preserve its raw output and hashes.
-6. Report each gate as OPEN, BLOCKED, STRUCTURAL, VERIFIED, or CLOSED with evidence links. Never convert a design note into a pass.
+6. Report each gate as OPEN, BLOCKED, STRUCTURAL, VERIFIED, or CLOSED with evidence links. Never convert a design note into a pass. The first GitHub Actions entrypoint attempt created failed runs with zero jobs/logs; that unvalidated workflow file was removed. Do not claim tests passed until a supported execution path produces raw output.
 
 ## Stop conditions
 
