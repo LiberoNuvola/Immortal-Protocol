@@ -283,3 +283,6 @@ The source catalog now records 30 pinned files with path, blob SHA-1, baseline c
 Run #20 failed closed on two source-anchor wording mismatches; run #21 passed with 45/45 tests; run #22 passed on d8be60447b00162a070c93127d558413e95eb5ea with 48/48 tests and the inventory gate passing. Run #22 explicitly reported closureEligible false.
 
 The adversarial review surfaced gaps in ticket identity/terminal-state reconciliation, the aggregate V3-to-ticket-level refinement, caller-supplied admission Booleans, canonical class-set completeness in the Haskell projection, and R7 mapping/disjointness for PC add-ons and Jackpot. PA2/PA7 remain open; the source checklist is not an exhaustive proof.
+
+
+Run #23 at d6743836f84b003ad833657faf51cc740ae19227 passed the source guards, inventory gate and all 48 Node tests. The source catalog and expanded register remain a mechanical checklist; PA2/PA7 remain open.
