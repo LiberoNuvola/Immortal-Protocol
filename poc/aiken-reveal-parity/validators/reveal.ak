@@ -1,11 +1,20 @@
+use aiken/crypto.{VerificationKeyHash}
 use cardano/transaction
+use immortal/claim_transaction
 use immortal/expire_transaction
 use immortal/reveal_transaction
 use immortal/reveal_types
 
-/// Plutus V3 Prize validator entrypoint. Reveal and Expire dispatch to their
-/// transition implementations; the B1PrizePool validator and economic rules are unchanged.
-validator pre_rich_reveal {
+/// Parameterized Plutus V3 Prize-validator prototype.
+///
+/// Oracle identity and publisher parameters are consumed only by Claim. Reveal
+/// and Expire continue to use their existing transition predicates unchanged.
+/// This prototype is not yet deployed or wired into the production topology.
+validator pre_rich_reveal(
+  oracle_state_policy: ByteArray,
+  oracle_state_name: ByteArray,
+  oracle_publisher: VerificationKeyHash,
+) {
   spend(
     datum_opt: Option<reveal_types.PrizeDatum>,
     action: reveal_types.PrizeAction,
@@ -18,6 +27,15 @@ validator pre_rich_reveal {
         reveal_transaction.reveal_transaction_is_valid(self, own_ref, input_datum, player_secret)
       reveal_types.Expire ->
         expire_transaction.expire_transaction_is_valid(self, own_ref, input_datum)
+      reveal_types.Claim ->
+        claim_transaction.claim_transaction_is_valid(
+          self,
+          own_ref,
+          input_datum,
+          oracle_state_policy,
+          oracle_state_name,
+          oracle_publisher,
+        )
       _ -> False
     }
   }
