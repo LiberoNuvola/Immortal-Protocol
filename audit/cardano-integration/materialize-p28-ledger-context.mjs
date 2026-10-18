@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { readFile, writeFile } from 'node:fs/promises'
+import WebSocket from 'ws'
 
 const EVIDENCE_DIR = process.argv[2] ?? 'audit/yaci-evidence'
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
@@ -135,13 +136,86 @@ for (const model of ['PlutusV1', 'PlutusV2', 'PlutusV3']) {
 }
 await writeFile(EVIDENCE_DIR + '/protocol-parameters-raw.json', JSON.stringify(rawPparams, null, 2) + '\\n')
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
+const epochLatestJson = JSON.parse(epochLatest.toString('utf8'))
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
 
-const genesisResponse = await fetch(API + '/genesis')
-if (!genesisResponse.ok) throw new Error('Yaci /genesis failed: HTTP ' + genesisResponse.status)
-const genesis = await genesisResponse.json()
+// Yaci Store 0.12.0-beta5 does not implement Blockfrost-compatible GET /genesis.
+// Obtain timing and era parameters from the same local devnet's Ogmios ledger queries;
+// do not synthesize genesis values or infer them from wall-clock time.
+const OGMIOS_WS = process.env.YACI_OGMIOS_WS ?? 'ws://127.0.0.1:1337'
+const ogmios = new WebSocket(OGMIOS_WS)
+await new Promise((resolve, reject) => {
+  const timer = setTimeout(() => reject(new Error('Ogmios WebSocket open timeout: ' + OGMIOS_WS)), 15000)
+  ogmios.once('open', () => { clearTimeout(timer); resolve() })
+  ogmios.once('error', error => { clearTimeout(timer); reject(error) })
+})
+let ogmiosRpcId = 1
+const pendingOgmios = new Map()
+function ogmiosRpc(method, params = {}) {
+  return new Promise((resolve, reject) => {
+    const id = 'immortal-p28-' + ogmiosRpcId++
+    const timer = setTimeout(() => {
+      pendingOgmios.delete(id)
+      reject(new Error('Ogmios RPC timeout: ' + method))
+    }, 15000)
+    pendingOgmios.set(id, { resolve, reject, timer, method })
+    ogmios.send(JSON.stringify({ jsonrpc: '2.0', method, params, id }))
+  })
+}
+ogmios.on('message', raw => {
+  let response
+  try { response = JSON.parse(raw.toString()) } catch { return }
+  if (!response.id || !pendingOgmios.has(response.id)) return
+  const item = pendingOgmios.get(response.id)
+  pendingOgmios.delete(response.id)
+  clearTimeout(item.timer)
+  if (response.error) item.reject(new Error('Ogmios ' + item.method + ': ' + JSON.stringify(response.error)))
+  else item.resolve(response.result)
+})
+let ogmiosStartTime
+let ogmiosEraSummaries
+try {
+  ;[ogmiosStartTime, ogmiosEraSummaries] = await Promise.all([
+    ogmiosRpc('queryNetwork/startTime'),
+    ogmiosRpc('queryLedgerState/eraSummaries'),
+  ])
+} finally {
+  ogmios.close()
+}
+const systemStartMs = Date.parse(String(ogmiosStartTime))
+if (!Number.isFinite(systemStartMs) || systemStartMs <= 0) {
+  throw new Error('Ogmios queryNetwork/startTime returned an invalid timestamp: ' + String(ogmiosStartTime))
+}
+const latestEpochNumber = Number(epochLatestJson.epoch ?? epochLatestJson.epoch_no)
+if (!Number.isSafeInteger(latestEpochNumber) || latestEpochNumber < 0 || !Array.isArray(ogmiosEraSummaries)) {
+  throw new Error('Cannot qualify current epoch against Ogmios era summaries')
+}
+const activeEra = ogmiosEraSummaries.find(item => {
+  const startEpoch = Number(item.start?.epoch ?? 0)
+  const endEpoch = item.end?.epoch == null ? null : Number(item.end.epoch)
+  return latestEpochNumber >= startEpoch && (endEpoch == null || latestEpochNumber < endEpoch)
+})
+if (!activeEra) throw new Error('Ogmios era summary missing for current Yaci epoch ' + latestEpochNumber)
+const epochLength = Number(activeEra.parameters?.epochLength)
+const slotLengthSeconds = Number(activeEra.parameters?.slotLength?.milliseconds) / 1000
+if (!Number.isSafeInteger(epochLength) || epochLength <= 0) throw new Error('Ogmios epochLength invalid')
+if (!Number.isFinite(slotLengthSeconds) || slotLengthSeconds <= 0) throw new Error('Ogmios slotLength invalid')
+const genesis = {
+  system_start: Math.floor(systemStartMs / 1000),
+  epoch_length: epochLength,
+  slot_length: slotLengthSeconds,
+}
 for (const field of ['system_start', 'epoch_length', 'slot_length']) {
-  if (!Number.isSafeInteger(genesis[field]) || genesis[field] <= 0) throw new Error('Yaci /genesis has invalid ' + field)
+  if (!Number.isSafeInteger(genesis[field]) || genesis[field] <= 0) {
+    throw new Error('Ogmios-derived genesis field is invalid: ' + field + '=' + String(genesis[field]))
+  }
+}
+const genesisResponse = {
+  source: 'Ogmios queryNetwork/startTime + queryLedgerState/eraSummaries on local Yaci devnet',
+  startTime: String(ogmiosStartTime),
+  currentEpoch: latestEpochNumber,
+  activeEra,
+  values: genesis,
 }
 
 const utxoResponse = await fetch(API + '/txs/' + txHash + '/utxos')
@@ -199,7 +273,7 @@ await writeFile(
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     genesisResponse,
     yaciDevkitInfo,
-    sourceOfTruth: 'Yaci /genesis structured response + exact Slot Length from yaci-devkit info',
+    sourceOfTruth: 'Ogmios structured startTime and era summaries from the same local Yaci devnet; epoch/timing provenance recorded explicitly',
   }, null, 2) + '\n',
 )
 
@@ -208,12 +282,13 @@ await writeFile(
   JSON.stringify({
     schema: 'IMMORTAL-P2.8-YACI-SYSTEM-START-RAW-v0.2-CONWAY',
     source: {
-      endpoint: '/genesis',
-      apiBase: API,
+      endpoint: 'Ogmios queryNetwork/startTime + queryLedgerState/eraSummaries',
+      apiBase: OGMIOS_WS,
       yaciDevkitInfo: 'yaci-devkit-info.txt',
     },
     startTimeRaw: String(genesis.system_start),
     genesisSystemStart: genesis.system_start,
+    ogmiosStartTime: String(ogmiosStartTime),
     rawInfo: yaciInfo,
   }, null, 2) + '\n',
 )
@@ -241,6 +316,7 @@ const manifest = {
     transaction_utxos_endpoint: API + '/txs/' + txHash + '/utxos',
     protocol_parameters_file: 'reveal-protocol-parameters.json',
     protocol_parameters_raw_endpoint: API + '/epochs/latest/parameters',
+    timing_source: OGMIOS_WS,
     protocol_parameters_raw_file: 'protocol-parameters-raw.json',
     timing_file: 'yaci-devkit-info.txt',
     epoch_file: 'epoch-latest.json',
