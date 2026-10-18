@@ -57,3 +57,12 @@ pub fn ticket_owner_signed(
     None -> False
   }
 }
+
+test claim_owner_fails_closed_when_ticket_input_is_absent() {
+  !ticket_owner_signed(transaction.placeholder, #"a1", #"01")
+}
+
+test claim_owner_resolution_fails_closed_when_ticket_input_is_absent() {
+  unique_ticket_owner(transaction.placeholder, #"a1", #"01") == None
+}
+
