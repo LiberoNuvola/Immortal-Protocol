@@ -298,3 +298,56 @@ These are proposed falsification experiments, not findings of live exploits. Do 
 | Independent review package | PARTIAL | This report provides reproducible source references and falsification plan; it is not the independent review outcome. |
 
 **Stop condition:** the next required step is not another code-level guess or a self-declared manifest. It is an identifiable authorized PRE-RICH profile/governance decision covering the economic universe, CAR applicability and classification procedure. Until that exists, do not invent mappings or claim PA2/PA7 closure. Once approved, the subsequent technical inventory, deployment evidence and independent PA7 review can proceed without changing V3/Issue/Reveal/Claim/Expire semantics.
+
+
+## 13. Supplemental profile-authority verification — 2026-10-18
+
+A second targeted read found an important qualification to §12: the current authorized branch does contain a normative PRE-RICH application economics baseline. The blocker is therefore **not** “there is no PRE-RICH policy.” The narrower, still-blocking gap is that this application baseline is not a complete R7 accounting-cell inventory and does not identify a separately authorized approval process for that inventory.
+
+### 13.1 Additional current-branch sources
+
+| Source | Blob SHA on authorized branch | Declared status | Result |
+|---|---|---|---|
+| `PRE-RICH/docs/GAME-ECONOMY.md` | `3431169896aea420e7f8bff3c1932abed2c358ac` | “normative PRE-RICH application economic specification”; semantic status “CLOSED application baseline” | VERIFIED as the application-policy authority for its stated rules: Classic-6, ticket ladder, 500× normal payout cap, class contraction, Jackpot activation/funding/payout, settlement value preservation, ticket identity/transfer, single-use claim and final expiry mechanism. It is not a PA1/PA2 exhaustive mapping of every asset/right/commitment/event to exactly one R7 cell. |
+| `docs/01-formal-records/09_DECISION_REGISTER_FINAL.md` | `fed7e54483e9ce328da69a4e41cae1dd3d4a3792` | Decision record, v3.0.0 | Explicitly carries forward CAR as the universal “Conditional Allocation Reserve” abstraction and says no governance mechanism is specified (who may upgrade/how is profile-scoped). It does not resolve which concrete PRE-RICH balance/commitment, if any, instantiates CAR for R7 L2 or who approves a new R7 inventory. |
+| `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md` | `04c79bc3d5397e70668de547e14bf4801fa358ce` | Normative, v3.0.0 | Defines CAR as a universal abstraction for value conditionally committed to a future allocation; Jackpot is application-specific terminology. CAR is included in ProtectedCapital when the applicable protection predicate says so. This does not itself map Jackpot to CAR. |
+| `IMMORTAL/state/EconomicProfile.hs` | `e4eccd67bec97543b802aa15ff1b2719c9c18bde` | Implementation | Defines profile version, class prices and maximum normal payout multiplier. It is a typed parameter record, not an exhaustive inventory of economic rights, liabilities, event classes or R7 cells. |
+| `IMMORTAL/state/STATE-FIELD-OWNERSHIP.md` | `af6fd3cf0f904b1e45aa58e6b464797b4a3fed8c` | Explicitly non-normative implementation/conformance boundary; document metadata names another branch | Useful for locating fields and their claimed ownership, but not authority for normative R7 classification or profile approval. |
+| `docs/02-certification/REFINEMENT_CONFORMANCE_SPECIFICATION.md` | `163fa6a1e38c81f8e629a34ad1dd545459cb5d17` | Normative, certification layer, v3.0.0 | RF2 requires every implementation operation that can commit to map to a canonical action; RF8 requires a whole-program enumeration of every state-mutating path. It explicitly rejects sample-only coverage. |
+
+### 13.2 What the application authority closes — and what it does not
+
+The current `GAME-ECONOMY.md` does settle multiple PRE-RICH semantic decisions. Those closed decisions must be treated as authoritative and must not be reopened merely because implementation/conformance work remains. In particular, the baseline includes the Classic-6 two-row mechanism, ticket-level payout derived from row results and capped at 500×P, deterministic state-derived Jackpot activation/funding, full locked-balance Jackpot payout exactly once, immutable crystallized payouts, ticket transfer/identity, single-use claims and final expiry semantics. The exact expiry number remains a deployment/application parameter.
+
+However, the following distinction remains mandatory:
+
+- **Application-policy closure:** the named mechanics and lifecycle rules in `GAME-ECONOMY.md` are the current PRE-RICH semantic baseline.
+- **R7 partition closure:** every economic content item created, held, promised, settled, expired or historically retained by those mechanics must still be classified under PC1–PC7 and mapped to exactly one applicable cell, except the declared A4↔L3 contingency relation.
+- **Deployment conformance:** actual UTxOs, datums, assets, rights and transitions must be tied to that classification and the live deployment.
+
+The first does not imply the second or third.
+
+### 13.3 CAR and protected-field decision boundary
+
+The normative sources establish CAR as a universal abstraction and L2 as the corresponding class of conditionally committed value. They do **not** establish that PRE-RICH's Jackpot balance, Jackpot funding gap, unresolved-ticket reserve, SafetyCapital, ReserveProtection or MandatoryFutureCosts is identical to CAR. `GAME-ECONOMY.md` describes those PRE-RICH quantities and rules, while `STATE-FIELD-OWNERSHIP.md` is explicitly non-normative and cannot authorize a cell assignment.
+
+Therefore the required decision is now precise: **approve the mapping, disjointness and valuation of each concrete PRE-RICH protected quantity to R7's canonical cells (including whether any quantity instantiates CAR/L2), and identify the existing authority/process that approves this profile-level accounting classification.** No code comment, field name, existing projection or successful solvency test can substitute for that decision.
+
+### 13.4 Repository search limitations and source provenance
+
+The GitHub code-search index returned several hits anchored to commit `765af53acec61746af0dc9117db93bbe8bbffe77`, which is not the authorized branch HEAD. Those hits were not treated as current-branch evidence. Paths from that search that returned 404 when fetched at the authorized branch were excluded as unavailable in the current branch. The sources listed in §13.1 were fetched directly from `release/public-main-curated-2026-09-24` and have current-branch blob SHAs.
+
+This is a targeted source review, not a proof that every repository path or external governance record has been enumerated. No complete approved R7 mapping, profile approval record, real Env/Ω P1–P8 package, deployment-bound S0/Kc evidence or independent PA7 outcome was found in the sources examined.
+
+### 13.5 Revised gate interpretation
+
+| Property | Status | Refined reason |
+|---|---|---|
+| PRE-RICH application semantic baseline | VERIFIED | The current branch's `GAME-ECONOMY.md` declares a closed normative application baseline. |
+| R7 profile cell mapping / PA1–PA2 | BLOCKED | The application baseline does not enumerate all economic content and map every item to R7 cells under PC1–PC3. |
+| CAR/L2 instantiation in PRE-RICH | BLOCKED | CAR's universal meaning is normative, but the concrete profile mapping and valuation are not authorized by the inspected sources. |
+| Profile approval authority/process | BLOCKED | Decision Register explicitly leaves governance mechanism profile-scoped and does not identify an approved process/decision for this accounting inventory. |
+| PA7 | BLOCKED | Independent omission review must follow the authoritative inventory; this audit is not the independent reviewer. |
+| RF2/RF8 whole-program transition coverage | OPEN | Normative requirement is explicit; complete whole-program inventory and conformance evidence remain absent. |
+
+**Next stop condition:** do not ask for a generic new PRE-RICH policy or reopen already closed game mechanics. The minimum missing decision is a profile-level **R7 accounting instantiation and approval authority** for the existing closed application baseline. Once an existing authorized process is identified and that mapping is approved, the technical work can resume with field-by-field inventory, path coverage, deployment evidence and independent PA7 review.
