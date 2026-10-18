@@ -314,7 +314,7 @@ await writeFile(
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     genesisResponse,
-    yaciDevkitInfo,
+    yaciDevkitInfo: yaciInfo,
     sourceOfTruth: 'Ogmios era summary matched to current epoch returned by Yaci Store',
   }, null, 2) + '\n',
 )
