@@ -77,11 +77,17 @@ parseInput value = do
   maryValue <- parseMaryValue amounts
 
   datum <- parseDatum value
-  referenceScript <- optionalTextField value "reference_script_hash"
-  case referenceScript of
-    Just h | not (Text.null h) ->
-      Left "REFERENCE_SCRIPT_BODY_MISSING"
-    _ -> pure ()
+  referenceScriptHash <- optionalTextField value "reference_script_hash"
+  referenceScriptBody <- optionalNullableField value "script_ref"
+  case (referenceScriptHash, referenceScriptBody) of
+    (Nothing, Nothing) -> pure ()
+    (Just hashText, Nothing)
+      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
+      | otherwise -> Left "REFERENCE_SCRIPT_BODY_MISSING"
+    (Nothing, Just _) -> Left "REFERENCE_SCRIPT_HASH_MISSING"
+    (Just hashText, Just _)
+      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
+      | otherwise -> Left "REFERENCE_SCRIPT_BODY_UNSUPPORTED"
 
   pure
     ( txIn
@@ -211,6 +217,14 @@ optionalTextField value key = do
     Just Null -> Right Nothing
     Just (String t) -> Right (Just t)
     Just _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
+
+optionalNullableField :: Aeson.Value -> Text -> Either String (Maybe Aeson.Value)
+optionalNullableField value key = do
+  object <- asObject value
+  case KeyMap.lookup (Key.fromText key) object of
+    Nothing -> Right Nothing
+    Just Null -> Right Nothing
+    Just body -> Right (Just body)
 
 parseInteger :: String -> Text -> Either String Integer
 parseInteger label input =

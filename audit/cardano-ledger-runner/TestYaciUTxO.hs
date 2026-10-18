@@ -340,10 +340,32 @@ main = do
   assertLeft "reference script hash without body is rejected" "REFERENCE_SCRIPT_BODY_MISSING"
     (decodeYaciUTxO (B8.pack badRefScript))
 
+  bodyWithoutHash <- mutated "reference script body without hash"
+    "\"script_ref\": null" "\"script_ref\": {}"
+  assertLeft "reference script body without hash is rejected" "REFERENCE_SCRIPT_HASH_MISSING"
+    (decodeYaciUTxO (B8.pack bodyWithoutHash))
+
+  hashAndBody <- mutated "reference script hash and body"
+    "\"reference_script_hash\": null" ("\"reference_script_hash\": \"" <> replicate 56 'a' <> "\"")
+  hashAndBody <- mutatedFrom "reference script hash/body pair" hashAndBody
+    "\"script_ref\": null" "\"script_ref\": {}"
+  assertLeft "non-null reference script is not silently dropped" "REFERENCE_SCRIPT_BODY_UNSUPPORTED"
+    (decodeYaciUTxO (B8.pack hashAndBody))
+
+  emptyRefScriptHash <- mutated "empty reference script hash"
+    "\"reference_script_hash\": null" "\"reference_script_hash\": \"\""
+  assertLeft "empty reference script hash is rejected" "REFERENCE_SCRIPT_HASH_EMPTY"
+    (decodeYaciUTxO (B8.pack emptyRefScriptHash))
+
   badRefScriptType <- mutated "reference script hash of wrong type"
     "\"reference_script_hash\": null" "\"reference_script_hash\": true"
   assertLeft "wrong reference script hash type is rejected" "FIELD_NOT_TEXT:reference_script_hash"
     (decodeYaciUTxO (B8.pack badRefScriptType))
+
+  badRefScriptBodyType <- mutated "reference script body of wrong type"
+    "\"script_ref\": null" "\"script_ref\": true"
+  assertLeft "wrong reference script body type is not silently ignored" "REFERENCE_SCRIPT_HASH_MISSING"
+    (decodeYaciUTxO (B8.pack badRefScriptBodyType))
 
   assertLeft "malformed JSON is rejected" "Error in $:"
     (decodeYaciUTxO (B8.pack "{"))
