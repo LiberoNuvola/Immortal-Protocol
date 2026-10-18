@@ -388,12 +388,23 @@ jobs:
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
       # Isolated Claim conformance fixture; not a production Issue-admission witness.
+      # Do not allow a failed/non-run Aiken build to fall through to a stale plutus.json.
       - name: Execute real economic Claim transition trace
         id: claim_trace
+        if: steps.aiken-reveal-build.outcome == 'success'
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
           IMMORTAL_CLAIM_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
+
+      # The build is continue-on-error for unrelated lab diagnostics, but Claim
+      # specifically depends on the freshly built candidate. Fail this run if
+      # that prerequisite was not successful; never treat a skipped Claim as PASS.
+      - name: Enforce successful Aiken build for Claim candidate
+        if: always() && steps.aiken-reveal-build.outcome != 'success'
+        run: |
+          echo "Claim candidate was not run: pinned Aiken check/build did not succeed."
+          exit 1
 
       # If the normal Claim build fails, rerun the same fixture construction-only
       # to emit CBOR diagnostics. Never signs/submits; unrelated failures must
