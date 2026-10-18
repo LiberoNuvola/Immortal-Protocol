@@ -656,6 +656,9 @@ const scripts = buildScriptsFromLucid(
   testPolicyId,
   poolTokenNameHex,
 )
+// Retain the original Haskell V2 artifact for the parameterization diagnostic,
+// even when the transaction trace below selects the Aiken V3 candidate.
+const canonicalHaskellPrizeScript = scripts.prizeValidator as Script
 
 /**
  * Explicit local-lab-only route for exercising the typed-context Aiken Claim
@@ -737,7 +740,7 @@ function toEvolutionData(value: any): any {
   throw new Error('unsupported Data value in parameterization differential')
 }
 
-const legacyPrizeScriptHex = (scripts.prizeValidator as any).script
+const legacyPrizeScriptHex = (canonicalHaskellPrizeScript as any).script
 const differentialParams = [
   validatorToScriptHash({
     type: 'PlutusV2',
