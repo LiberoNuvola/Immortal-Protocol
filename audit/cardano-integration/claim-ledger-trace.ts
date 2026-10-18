@@ -1449,6 +1449,7 @@ const txHash = submission.transactionRef
 if (!signedClaim) {
   throw new Error('Claim execution adapter did not retain the signed transaction')
 }
+const txCbor = signedClaim.toCBOR() as string
 await lucid.awaitTx(txHash)
 
 let replayRejected = false
