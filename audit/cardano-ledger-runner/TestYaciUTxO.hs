@@ -203,6 +203,23 @@ main = do
             _ -> failTest "unexpected datum appeared in a null-datum fixture"
         _ -> failTest "expected exactly one decoded Babbage output"
 
+  duplicateInput <- mutated "duplicate transaction input"
+    "      }\n    ]"
+    ( "      },\n      {\n" <>
+      "        \"tx_hash\": \"" <> txHash <> "\",\n" <>
+      "        \"output_index\": 0,\n" <>
+      "        \"address\": \"" <> address <> "\",\n" <>
+      "        \"ledger_address_hex\": \"" <> addressHex <> "\",\n" <>
+      "        \"amount\": " <> amountJson <> ",\n" <>
+      "        \"data_hash\": null,\n" <>
+      "        \"inline_datum\": null,\n" <>
+      "        \"script_ref\": null,\n" <>
+      "        \"reference_script_hash\": null\n" <>
+      "      }\n    ]"
+    )
+  assertLeft "duplicate transaction input is rejected" "DUPLICATE_YACI_UTXO_INPUT"
+    (decodeYaciUTxO (B8.pack duplicateInput))
+
   negative <- mutated "negative quantity" "\"quantity\": \"5000000\"" "\"quantity\": \"-1\""
   assertLeft "negative UTxO quantity is rejected" "NEGATIVE_UTXO_QUANTITY"
     (decodeYaciUTxO (B8.pack negative))
