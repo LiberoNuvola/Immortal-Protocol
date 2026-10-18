@@ -120,7 +120,7 @@ This is a specification for the next implementation tranche, not a claim that su
 | VC1 | Formula/code for local V3 transition is decidable; certificate predicate χ is not instantiated | Partial source evidence |
 | VC2 | Local solvency invariant exists; full `Safe`/Rep inclusion for a concrete profile not proved | Conditional source evidence |
 | VC3 | Four-action local transition exists; all-Ω inductiveness not proved | Unproven |
-| VC4 | Structural `transitionValid` exists; universal `Accept(S,Wit(S))) not instantiated | Unproven |
+| VC4 | Structural `transitionValid` exists; universal `Accept(S,Wit(S))` not instantiated | Unproven |
 | VC5 / Ω | R3 contract exists; authoritative Env and sound Ω binding absent | Unproven |
 | VC6 / S0 | Synthetic fixtures exist; no authoritative concrete S0 in this evidence set | Unproven |
 | QNE and Rep/buffer preservation | Issue erodes modeled buffer; Reveal is only conditionally non-eroding under stable EEV/complete accounting; no universal witness | Partially analysed, not certified |
@@ -131,3 +131,19 @@ This is a specification for the next implementation tranche, not a claim that su
 The highest-priority blocker is **not another Boolean or a new action**. It is a profile-bound, source-authorized transition/refinement and Ω contract that can derive (rather than assert) every successor and bind authoritative EEV, obligations, acceptance and S0. The only potentially useful existing action-level result from this audit is the conditional local non-erosion property of Reveal under stable EEV and complete accounting; it is not always available and does not survive arbitrary unmodelled environment changes by assumption.
 
 Next independent work can proceed on a finite-model R1 checker and regression tests that reject caller-asserted closure and empty Ω, provided the checker labels Ω completeness as an input proof obligation rather than pretending to establish reality coverage. It must not be represented as closing C6 until the model/Env/S0 evidence is bound.
+
+
+## 8. Follow-up implementation — finite R1 checker (2026-10-18)
+
+After the source mapping above, a deliberately bounded finite-model checker was added on this branch:
+
+- Checker: [`scripts/check-r1-finite-certificate.mjs`](../../scripts/check-r1-finite-certificate.mjs)
+- Input contract and limitations: [`R1-FINITE-CHECKER-SCHEMA.md`](R1-FINITE-CHECKER-SCHEMA.md)
+- Regression suite: [`test/check-r1-finite-certificate.test.mjs`](../../test/check-r1-finite-certificate.test.mjs)
+- CI workflow: [`c6-r1-finite-checker.yml`](../../.github/workflows/c6-r1-finite-checker.yml)
+
+The checker derives EEV and ProtectedCapital from explicit R7 cell inputs, computes `Rep` and `χ`, checks the declared finite action availability/acceptance relations, derives successors from the transition table, rejects empty Ω, rejects undeclared materiality and Ω under-approximation relative to the declared finite Env, checks inductiveness, and hashes the normalized input plus checker source. It rejects caller-asserted certification booleans and synthetic S0 source kinds.
+
+**Evidence boundary:** the local isolated copy of the checker and tests passed 8/8 Node built-in tests. The checker and test files were committed to the authorized remote branch, and a narrow path-filtered CI workflow was added. The available GitHub connector exposes no push-run listing/dispatch operation; the commit's combined status response was empty, so the remote workflow result is **UNVERIFIED**, not PASS. The remote branch has no local checkout in this execution environment.
+
+This implementation is a finite-model gate only. It cannot authenticate source references or inventory digests, prove that the supplied event perimeter matches reality, establish action-list completeness, prove that transition rows refine deployed code, or supply a live S0. The regression fixture is synthetic and is not deployment evidence. Therefore C6-A/B/C, VC5 against reality, and VC6 for deployment remain **NOT CERTIFIED**.
