@@ -74,4 +74,4 @@ node --test test/check-r1-economic-inventory.test.mjs
 node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs
 \`\`\`
 
-Observed evidence: run #17 passed on `9716c3ad6c80bffcd5769c5f440ae72d0dbadde7`. The report/matrix-only update is a later commit and will have its own CI result because their paths are included in the workflow filter.
+Run [#17](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150614492) passed on `9716c3ad6c80bffcd5769c5f440ae72d0dbadde7`; run [#18](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150682177) passed on `4c01c7ede834ade10de851b2d00956fd0401cbc1`, with the inventory audit passing and the combined Node suite at 40/40. This paragraph records those exact run/commit pairs; it does not assert that a later documentation commit was tested by either run.

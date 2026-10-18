@@ -271,3 +271,6 @@ PA2 and PA7 remain open. No definitive V3→R1 binding, live EEV observation, S0
 - Follow-up commit: \`9716c3ad6c80bffcd5769c5f440ae72d0dbadde7\`.
 - Run [#17](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150614492): **SUCCESS** on that exact commit; source snapshot gates and inventory gate passed; combined Node tests: **40/40 pass, 0 fail**.
 - This result covers the bounded source-pinned register checker only. PA2/PA7, A4↔L3 profile refinement, authenticated EEV/S0, Ω completeness and full R1 binding remain open.
+
+
+- Run [#18](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150682177) on commit \`4c01c7ede834ade10de851b2d00956fd0401cbc1\`: **SUCCESS**, inventory gate passed, source snapshots passed, combined Node tests **40/40**. \`closureEligible: false\` remains the expected result.
