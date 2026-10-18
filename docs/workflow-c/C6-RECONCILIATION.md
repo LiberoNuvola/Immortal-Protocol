@@ -502,3 +502,31 @@ Do **not** implement permissionless contraction by simply deleting `authoritySig
 6. demonstrate positive and adversarial ledger traces, including stale state, under-protected post-state, invalid evidence, and competing spends.
 
 **Disposition:** implementation remains blocked at the predicate/evidence binding, not at the permissionless invocation concept. No code change, test run, CI dispatch or deployment performed. This is a source-audit finding, not a change to closed economic semantics.
+
+## T2/P0 decision archaeology — semantic closure versus B2 conformance (2026-10-18)
+
+### Normative reconciliation
+
+The targeted Notion retrieval clarifies a distinction that must be preserved:
+
+- **09 — Definitive Decision Register** classifies class control and hysteresis as semantically closed; `KA=8`, `KC=4`, `KD=4` and the class ladder remain canonical. It says implementation/conformance gaps do not reopen closed decisions.
+- **T2 — Transition Conformance Specification** requires economic transitions to be ledger-verifiable and fail closed when a necessary condition cannot be demonstrated. It prohibits the redeemer from freely choosing canonical economic values. For system-triggered transitions it inherits P0's contract.
+- **P0 — Protocol-Level Liveness & Permissionless Execution Contract** explicitly binds `CONTRACT_CLASS / ENTER_QUIESCENCE` to state-derived class safety, permissionless invocation, independent on-chain revalidation, atomic transition, stale-state rejection, recovery/re-discovery and monotone `HighestClassEverActivated`. A submitter transports a candidate; it does not decide economic truth. No submitter means SAFE STALL, not permission to sell at an unsafe class.
+
+This is stronger than saying that permissionless invocation is merely a preference: the retrieved T2/P0 text specifies it as the intended conformance contract for these transitions. However, the retrieved Notion pages do not expose verified metadata establishing their governance status, so this audit records their explicit content without upgrading their source-verification status.
+
+### Exact unresolved implementation boundary
+
+The sources do **not** provide a complete executable refinement from those requirements to the current B2 validator. In particular, they do not establish, in one canonical implementation artifact:
+1. the exact on-chain state representation for per-class unresolved exposure and the other inputs required by the already-closed economic gate;
+2. the deterministic predicate and destination-class derivation that independently reproduce existing saleability/hysteresis semantics;
+3. the authenticated and freshness-bound relationship between decision/observation evidence and the exact consumed control/economic state;
+4. the atomic refinement, if any, between class contraction and the separate QUIESCENT regime state.
+
+Therefore this is **not an invitation to reopen economic policy** or invent a new decision. It is an implementation/conformance gap against the stated contract. The current B2 carrier's non-empty reference checks and privileged `configuredAuthority` signature do not, by themselves, satisfy P0's independent on-chain revalidation. Removing that signature alone would not satisfy the contract either.
+
+### Next implementation gate — no code authorized by this audit
+
+Before changing the validator, identify an existing canonical state/evidence source and show how the closed economic predicate can be recomputed on-chain. Then test the contract at ledger/emulator level: eligible non-authority submitter succeeds; ineligible or under-protected state fails; stale/invalid evidence fails; competing spends allow at most one transition; class/regime/version/nonce changes are atomic as specified; `HighestClassEverActivated` never decreases.
+
+**Disposition:** class/hysteresis semantics CLOSED; permissionless invocation contract explicitly specified in retrieved T2/P0; B2 predicate/evidence refinement and ledger conformance OPEN. C6 remains **NOT CERTIFIED**. This documentation update does not authorize a validator change and does not alter V3, Reveal, EEV, first Issue, Beacon or B3/Materios.
