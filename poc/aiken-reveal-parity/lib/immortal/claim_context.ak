@@ -10,38 +10,36 @@ use cardano/assets
 use cardano/transaction
 use cardano/transaction.{Input, Transaction}
 
-fn owner_inputs(
+/// Mirrors the canonical Haskell ticketOwnerPkh scan: select the first
+/// input carrying exactly one ticket NFT, then require a public-key credential.
+/// If that first matching input is script-locked, fail closed as Haskell does.
+fn ticket_owner(
   inputs: List<Input>,
   ticket_policy: assets.PolicyId,
   ticket_name: assets.AssetName,
-) -> List<Input> {
-  list.filter(
-    inputs,
-    fn(input) {
-      assets.quantity_of(input.output.value, ticket_policy, ticket_name) == 1
-        && when input.output.address.payment_credential is {
-          VerificationKey(_) -> True
-          _ -> False
+) -> Option<ByteArray> {
+  when inputs is {
+    [] -> None
+    [input, ..rest] ->
+      if assets.quantity_of(input.output.value, ticket_policy, ticket_name) == 1 {
+        when input.output.address.payment_credential is {
+          VerificationKey(owner_hash) -> Some(owner_hash)
+          _ -> None
         }
-    },
-  )
+      } else {
+        ticket_owner(rest, ticket_policy, ticket_name)
+      }
+  }
 }
 
-/// Returns the sole public-key owner input for the ticket NFT, if unique.
-/// Script-locked ticket inputs and ambiguous owner inputs fail closed.
+/// Returns the ticket owner using the canonical first-match scan.
+/// This intentionally does not impose a new uniqueness rule on ticket inputs.
 pub fn unique_ticket_owner(
   tx: Transaction,
   ticket_policy: assets.PolicyId,
   ticket_name: assets.AssetName,
 ) -> Option<ByteArray> {
-  when owner_inputs(tx.inputs, ticket_policy, ticket_name) is {
-    [input] ->
-      when input.output.address.payment_credential is {
-        VerificationKey(owner_hash) -> Some(owner_hash)
-        _ -> None
-      }
-    _ -> None
-  }
+  ticket_owner(tx.inputs, ticket_policy, ticket_name)
 }
 
 /// Verifies the ticket owner's signature against the actual transaction
