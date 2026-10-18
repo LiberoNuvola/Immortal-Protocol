@@ -476,3 +476,44 @@ These expressions are unchanged. Statistical reserve remains a distinct statisti
 5. **Keep PA7 blocked pending an independent omission review** of the completed inventory and the owner-approved mapping.
 
 No R7 cell mapping is marked approved by this section. No code or economic semantics were changed. Build, tests, CI, live S0, Ω/P1–P8, R1/Kc and EV1–EV7 remain subject to the evidence limits recorded above.
+
+
+## 16. Recursive repository-tree inventory and RF8 boundary correction (2026-10-18)
+
+### 16.1 Tree enumeration result
+
+A recursive Git Trees API read was completed against the authorized branch at HEAD `9af64aeab9e5537fd141fe15b9a2cc4720f84f57`:
+
+- Tree SHA: `a0596b5f1a4fa1482de727b3ab56ca8bf2388ae2`
+- Entries: **551**; blobs/files: **483**; GitHub reported `truncated=false`.
+- Source-like files in the extension inventory: **232** (`*.hs`: 65; `*.ts`: 128; `*.js`: 8; `*.mjs`: 21; `*.py`: 9; plus one shell script). These extension counts are repository path counts, not a claim that every file is production code.
+- Workflow files under `.github/workflows/`: **17**.
+
+The complete tree listing is now available for this exact commit. This supersedes the prior §14.3/§14.5 statement that no tree listing was available and the implication that only one workflow had been identified. **It does not** mean all 483 files have had their contents, imports, runtime reachability, or economic effects individually reviewed; path enumeration is a prerequisite to that work, not the whole-program proof.
+
+The 17 workflow paths present are:
+`adapter-sale-conformance.yml`, `algorithmic-governability.yml`, `c13-cardano-semantic-conformance.yml`, `c6-r1-finite-checker.yml`, `cardano-ledger-audit.yml`, `genesis-regime-carrier.yml`, `immortal-cardano-lab.yml`, `immortal-liveness-conformance.yml`, `kernel-invalid-class-fail-closed.yml`, `materios-evidence-conformance.yml`, `p2-8-b1-cardano-ledger-runner.yml`, `pre-genesis-genesis-cardano.yml`, `pre-rich-action-refinement-conformance.yml`, `pre-rich-emulator-reveal.yml`, `pre-rich-expiry-conformance.yml`, `pre-rich-gamerules-replay.yml`, and `pre-rich-hysteresis-conformance.yml`. Listing a workflow does not establish that it ran successfully on this HEAD.
+
+### 16.2 Current-branch controls found by exact path
+
+The recursive tree and direct file reads establish the following source facts on this branch:
+
+- `scripts/check-r1-economic-inventory.mjs` exists (blob `2fa37350a604e28cfc9ce8688435dc3c5d79b352`). It pins a set of normative/implementation sources and validates the curated R1 inventory register, canonical cell IDs and known source/component anchors. It is a **curated known-component checker**, not a recursive scanner proving that all source files or all reachable economic transitions have been inventoried.
+- `scripts/check-r1-canonical-source.mjs` (blob `22fdbbd4c2f6d0b68f7be70c896cc9e4306a753e`) and `scripts/check-v3-universal-projection.mjs` (blob `c595eab9305928e8b35d1627d12b396f7632c16a`) pin/inspect the V3 action constructors and aggregate fields/projection. Their scope does not by itself prove NoSideDoor or whole-program RF2.
+- `src/__tests__/rf8-submission-boundary.test.ts` (blob `f741dc01bad30466d469ed333c33bfce772086ba`) scans direct `.signTx()`/`.submitTx()` calls within `src/` and asserts selected orchestrators use the economic submission boundary. It remains a bounded source-root test.
+- `src/__tests__/rf8-treasury-relayer-boundary.test.ts` (blob `18e66243935ecb128556c18f7b66f5fd2c0e013a`) specifically asserts that `treasuryWorker` in `relayer/relayer.js` contains no direct signing/submission and remains behind a fail-closed migration boundary until canonical EconomicAdmission exists. **Test source inspected; execution not performed here.**
+- `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` (blob `67ba372b5f1357b02c73a5f45e6107011b1ce9ed`) explicitly reserves `submitInfrastructure` for non-economic infrastructure (e.g. BeaconRegistry), while `submitEconomic` checks an `EconomicAdmissionWitness` before delegating. `EconomicAdmission.ts` (blob `38b73a608639e9bc1426b21766e9a0b69040ddf9`) checks witness fields, digest formats, action label, source references and liquidity correlation, but does not itself derive the truth of EEV/ProtectedCapital/Ω or prove canonical `T`.
+- `relayer/registryPublisher.js` (blob `97dfe72897ccf56596f2debe25077bcd213c03d4`) and `relayer/relayer.js` (blob `12a83fccce78e73b0f1b820e0168b8f079ddd26d`) directly submit BeaconRegistry transitions. The adapter source classifies BeaconRegistry as infrastructure, so these calls are **not evidence by themselves of an economic submission bypass**. They are still a transition/environment boundary that must be accounted for in the event perimeter and in how Beacon readiness/result evidence is bound to Reveal; the current path scan alone does not prove that refinement.
+- `audit/cardano-integration/reveal-ledger-trace.ts` and `audit/cardano-integration/expire-ledger-trace.ts` remain laboratory/observation paths outside the `src/` test root. Their source can call the adapter port's submission callbacks; that is not production-path proof, and no execution was performed in this pass.
+
+### 16.3 Corrected RF2/RF8 conclusion
+
+The stronger, current-branch conclusion is:
+
+1. **Repository path enumeration: VERIFIED for this commit** (non-truncated recursive tree, 483 blobs).
+2. **Curated R1 known-component register/checker: PRESENT in source; runtime result on this HEAD NOT VERIFIED.**
+3. **Selected submission-boundary tests: PRESENT in source; tests NOT RUN in this pass.**
+4. **Whole-program RF2/RF8: STILL OPEN.** A complete inventory must inspect all relevant source contents and entry points, including Haskell, Plutus, TypeScript, relayer, scripts, tests, workflows and generated artifacts, and classify each economically material committed or externally observed transition against canonical `T(S,a,ω)`. It must then establish no side door, not merely detect the strings `signTx` and `submitTx`.
+5. **Economic bypass: NOT ESTABLISHED by the current findings.** The confirmed BeaconRegistry submitters are described as infrastructure paths; the remaining question is canonical classification/environment binding, not an unsupported assertion that those paths are unsafe.
+
+No build, test, workflow dispatch, deployment, on-chain transaction, Yaci run or formal proof was executed. All previously recorded gates remain blocked/open unless explicitly changed above; in particular, this tree enumeration does not promote PA2, PA7, R1/Kc, Env/Ω/S0 or EV1–EV7.
