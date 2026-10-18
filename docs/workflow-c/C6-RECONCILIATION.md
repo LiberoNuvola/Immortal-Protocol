@@ -626,3 +626,9 @@ Run [37972119553](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs
 The reviewed Actions history does **not** show a successful V3 observation or a successful B2 deployment through these workflows. It does show that the relevant Preprod credential/identity configuration was missing on those dates. This is not proof that no singleton exists on-chain from another deployment route.
 
 Do not rerun B2 deployment as a discovery mechanism: it can mint a new singleton. First recover the canonical V3/B2 identity from any other authoritative transaction record, workflow artifact, or wallet/ledger history; then configure the observation-only V3 workflow with those exact identities and rerun `observe_v3=true`, `run_reveal=false`, `bootstrap_direct_usdm=false`. If no authoritative identity can be recovered, that absence must be established explicitly before any new deployment is considered. C6 remains **NOT CERTIFIED**.
+
+## V3 fast ledger gate history checked (2026-10-18)
+
+The manual V3 fast gate history was also inspected. Run [37183407698](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37183407698) on `work/immortal-green-closure` failed during **Generate V3 Plutus artifact**; Yaci startup, funded CI wallet creation, and the native-ledger V3 probe were all skipped. The two earlier manual runs returned cancelled. This gate is a local Yaci/devnet conformance path, not a Preprod deployment witness; it supplies no canonical Preprod singleton address or UTxO reference.
+
+This closes the Actions-history search for the available V3/B2 deployment paths: the observed V3 Preprod job did not pass configuration, the V3 fast ledger path did not reach its ledger probe, and the B2 deployment attempts did not reach submission. It still cannot rule out a separately executed deployment outside those workflows. No workflow was started in this audit and no on-chain state was changed.
