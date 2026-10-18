@@ -16,8 +16,12 @@ import {
   Data,
   Blockfrost,
   Lucid,
+  getAddressDetails,
+  scriptFromNative,
+  mintingPolicyToId,
   validatorToScriptHash,
   validatorToAddress,
+  applyParamsToScript as evolutionApplyParamsToScript,
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
@@ -63,6 +67,19 @@ const WRONG_SECRET = fromHex('02'.repeat(32))
 const FIXTURE_LOVELACE = 5_000_000n
 const FIXTURE_LIQUIDITY = 1_000_000n
 const FIXTURE_RESERVE = 100_000n
+const ORACLE_STATE_TOKEN_NAME_HEX = '4f5241434c45' // ORACLE
+
+type NativeScript = { type: 'sig'; keyHash: string } | {
+  type: 'all'
+  scripts: NativeScript[]
+}
+
+function nativePolicy(keyHash: string): Script {
+  return scriptFromNative({
+    type: 'all',
+    scripts: [{ type: 'sig', keyHash }],
+  } as NativeScript)
+}
 
 const fail = (message: string): never => { throw new Error(message) }
 const bytes = (hex: string): number => {
@@ -195,12 +212,24 @@ const poolEntry = poolEntries[0]
 if (!revealEntry.compiledCode || !revealEntry.hash || !poolEntry.compiledCode || !poolEntry.hash) {
   fail('Aiken Reveal or pool-stub compiledCode/hash is missing')
 }
-const revealScript: Script = { type: 'PlutusV3', script: revealEntry.compiledCode }
+const unparameterizedRevealScript: Script = { type: 'PlutusV3', script: revealEntry.compiledCode }
 const poolScript: Script = { type: 'PlutusV3', script: poolEntry.compiledCode }
-const revealHash = validatorToScriptHash(revealScript).toLowerCase()
+const blueprintRevealHash = validatorToScriptHash(unparameterizedRevealScript).toLowerCase()
 const poolHash = validatorToScriptHash(poolScript).toLowerCase()
-if (revealHash !== revealEntry.hash.toLowerCase()) fail('Reveal blueprint/Lucid script hash mismatch')
+if (blueprintRevealHash !== revealEntry.hash.toLowerCase()) fail('Reveal blueprint/Lucid unparameterized hash mismatch')
 if (poolHash !== poolEntry.hash.toLowerCase()) fail('Pool stub blueprint/Lucid script hash mismatch')
+const signingAddress = await lucid.wallet().address()
+const keyHash = getAddressDetails(signingAddress).paymentCredential?.hash
+if (!keyHash) fail('CI test wallet has no payment key hash')
+const fixtureOracleStatePolicyId = mintingPolicyToId(nativePolicy(keyHash))
+const revealScript: Script = {
+  type: 'PlutusV3',
+  script: evolutionApplyParamsToScript(
+    revealEntry.compiledCode,
+    [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+  ),
+}
+const revealHash = validatorToScriptHash(revealScript).toLowerCase()
 
 const publication = JSON.parse(readFileSync(PUBLICATION_PATH, 'utf8')) as {
   schema?: string
