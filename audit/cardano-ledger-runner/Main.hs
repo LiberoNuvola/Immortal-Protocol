@@ -57,7 +57,10 @@ canonicalEvidence :: [FilePath]
 canonicalEvidence =
   [ "tx.cbor"
   , "utxo.json"
+  , "transaction-metadata.json"
+  , "block-metadata.json"
   , "pparams.json"
+  , "protocol-parameters-raw.json"
   , "epoch-info.json"
   , "system-start.json"
   , "manifest.json"
@@ -76,7 +79,10 @@ hashedEvidence :: [FilePath]
 hashedEvidence =
   [ "tx.cbor"
   , "utxo.json"
+  , "transaction-metadata.json"
+  , "block-metadata.json"
   , "pparams.json"
+  , "protocol-parameters-raw.json"
   , "epoch-info.json"
   , "system-start.json"
   ]
@@ -310,16 +316,28 @@ verifyWorkflowBinding manifest =
 verifyTransactionObservation :: FilePath -> Aeson.Object -> IO (Either String ())
 verifyTransactionObservation evidenceDir manifest = do
   utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
+  txMetadataBytes <- BS.readFile (evidenceDir <> "/transaction-metadata.json")
+  blockMetadataBytes <- BS.readFile (evidenceDir <> "/block-metadata.json")
   pure $ do
     utxoValue <- (Aeson.eitherDecodeStrict' utxoBytes :: Either String Aeson.Value)
-    utxoObject <- case utxoValue of
-      Aeson.Object objectValue -> Right objectValue
-      _ -> Left "UTXO_CONTEXT_NOT_OBJECT"
+    txMetadataValue <- (Aeson.eitherDecodeStrict' txMetadataBytes :: Either String Aeson.Value)
+    blockMetadataValue <- (Aeson.eitherDecodeStrict' blockMetadataBytes :: Either String Aeson.Value)
+    utxoObject <- expectObject "UTXO_CONTEXT" utxoValue
+    txMetadata <- expectObject "TRANSACTION_METADATA" txMetadataValue
+    blockMetadata <- expectObject "BLOCK_METADATA" blockMetadataValue
 
     manifestTxHash <- manifestText manifest "transaction_hash"
     utxoTxHash <- manifestText utxoObject "transactionRef"
     observation <- manifestObject manifest "transaction_observation"
     observationTxHash <- manifestText observation "transaction_hash"
+    txMetadataHash <- manifestText txMetadata "hash"
+    txMetadataSlot <- manifestInteger txMetadata "slot"
+    txMetadataHeight <- manifestInteger txMetadata "block_height"
+    blockMetadataHash <- manifestText blockMetadata "hash"
+    blockMetadataSlot <- manifestInteger blockMetadata "slot"
+    blockMetadataHeight <- manifestInteger blockMetadata "height"
+    blockMetadataNumber <- manifestInteger blockMetadata "number"
+    blockMetadataTime <- manifestInteger blockMetadata "time"
     slot <- manifestInteger observation "slot"
     blockSlot <- manifestInteger observation "block_slot"
     blockHeight <- manifestInteger observation "block_height"
@@ -333,20 +351,24 @@ verifyTransactionObservation evidenceDir manifest = do
     if length manifestTxHash /= 64 || not (all isHexDigit manifestTxHash)
       then Left "TRANSACTION_REFERENCE_INVALID"
       else pure ()
-    if map toLower manifestTxHash /= map toLower utxoTxHash ||
-       map toLower manifestTxHash /= map toLower observationTxHash
+    if any (/= map toLower manifestTxHash)
+         [ map toLower utxoTxHash
+         , map toLower observationTxHash
+         , map toLower txMetadataHash
+         ]
       then Left "TRANSACTION_REFERENCE_BINDING_MISMATCH"
       else pure ()
     if slot < 0 || blockHeight < 0
       then Left "TRANSACTION_OBSERVATION_NEGATIVE_SLOT_OR_HEIGHT"
       else pure ()
-    if slot /= blockSlot
+    if slot /= blockSlot || slot /= txMetadataSlot || slot /= blockMetadataSlot
       then Left "TRANSACTION_BLOCK_SLOT_MISMATCH"
       else pure ()
-    if blockHeight /= blockNumber
+    if blockHeight /= blockNumber || blockHeight /= txMetadataHeight ||
+       blockHeight /= blockMetadataHeight || blockHeight /= blockMetadataNumber
       then Left "TRANSACTION_BLOCK_HEIGHT_MISMATCH"
       else pure ()
-    if blockTime <= 0 || null blockTimeIso
+    if blockTime <= 0 || blockTime /= blockMetadataTime || null blockTimeIso
       then Left "TRANSACTION_BLOCK_TIME_INVALID"
       else pure ()
     let expectedBlockTimeIso =
@@ -358,9 +380,16 @@ verifyTransactionObservation evidenceDir manifest = do
     if length blockHash /= 64 || not (all isHexDigit blockHash)
       then Left "TRANSACTION_BLOCK_HASH_INVALID"
       else pure ()
+    if map toLower blockHash /= map toLower blockMetadataHash
+      then Left "TRANSACTION_BLOCK_HASH_BINDING_MISMATCH"
+      else pure ()
     if null acquiredAt || observedAt /= acquiredAt
       then Left "TRANSACTION_OBSERVATION_TIMESTAMP_BINDING_MISMATCH"
       else pure ()
+
+expectObject :: String -> Aeson.Value -> Either String Aeson.Object
+expectObject _ (Aeson.Object objectValue) = Right objectValue
+expectObject label _ = Left (label <> "_NOT_OBJECT")
 
 manifestValue :: Aeson.Object -> String -> Either String Aeson.Value
 manifestValue source field =

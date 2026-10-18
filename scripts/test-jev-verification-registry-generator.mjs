@@ -77,6 +77,36 @@ const p28CancelledRegistry = generateRegistry(p28Cancelled);
 assert.equal(p28CancelledRegistry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "BLOCKED");
 assert.equal(p28CancelledRegistry.overallResult, "FAIL", "a decoder failure must dominate a cancelled downstream gate");
 
+const p28MaterializationFailure = structuredClone(base);
+p28MaterializationFailure.checks = [
+  {
+    checkId: "P2.8.CONTEXT.MATERIALIZATION",
+    requirementRef: "Integration Lab / Materialize raw Yaci ledger context for P2.8",
+    stepOutcome: "failure",
+    evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+    limitations: ["Failed context materialization blocks all dependent qualification."],
+  },
+  {
+    checkId: "P2.8.YACI.UTXO.DECODER",
+    requirementRef: "Integration Lab / Run native Yaci UTxO decoder conformance",
+    stepOutcome: "skipped",
+    evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+    limitations: ["Decoder did not run because materialization failed."],
+  },
+  {
+    checkId: "P2.8.LEDGER.EVIDENCE.GATE",
+    requirementRef: "Integration Lab / Run P2.8 ledger evidence gate",
+    stepOutcome: "skipped",
+    evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+    limitations: ["Skipped gate is NOT_RUN, never PASS."],
+  },
+];
+const materializationFailureRegistry = generateRegistry(p28MaterializationFailure);
+assert.equal(materializationFailureRegistry.checks.find((c) => c.checkId === "P2.8.CONTEXT.MATERIALIZATION").result, "FAIL");
+assert.equal(materializationFailureRegistry.checks.find((c) => c.checkId === "P2.8.YACI.UTXO.DECODER").result, "NOT_RUN");
+assert.equal(materializationFailureRegistry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "NOT_RUN");
+assert.equal(materializationFailureRegistry.overallResult, "FAIL", "materialization failure must dominate skipped decoder and gate");
+
 const noEvidence = structuredClone(base);
 noEvidence.checks[0].evidenceRefs = [];
 assert.throws(() => generateRegistry(noEvidence), /PASS outcome requires explicit evidence references/);

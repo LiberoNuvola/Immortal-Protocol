@@ -225,7 +225,8 @@ const transactionMetadataResponse = await fetch(API + '/txs/' + txHash)
 if (!transactionMetadataResponse.ok) {
   throw new Error('Yaci transaction metadata lookup failed: HTTP ' + transactionMetadataResponse.status)
 }
-const transactionMetadata = await transactionMetadataResponse.json()
+const transactionMetadataRaw = await transactionMetadataResponse.text()
+const transactionMetadata = JSON.parse(transactionMetadataRaw)
 if (typeof transactionMetadata.hash !== 'string' ||
     transactionMetadata.hash.toLowerCase() !== txHash.toLowerCase()) {
   throw new Error('Yaci transaction metadata hash does not match Reveal transactionRef')
@@ -243,7 +244,8 @@ const blockResponse = await fetch(API + '/blocks/' + transactionBlockHeight)
 if (!blockResponse.ok) {
   throw new Error('Yaci block metadata lookup failed: HTTP ' + blockResponse.status)
 }
-const blockMetadata = await blockResponse.json()
+const blockMetadataRaw = await blockResponse.text()
+const blockMetadata = JSON.parse(blockMetadataRaw)
 if (typeof blockMetadata.hash !== 'string' || !/^[0-9a-f]{64}$/i.test(blockMetadata.hash)) {
   throw new Error('Yaci block metadata lacks a valid block hash')
 }
@@ -280,6 +282,9 @@ if (!/^[1-9][0-9]*$/.test(workflowBinding.run_id) ||
     !/^[1-9][0-9]*$/.test(workflowBinding.run_attempt)) {
   throw new Error('Invalid GitHub workflow run ID/attempt')
 }
+
+await writeFile(EVIDENCE_DIR + '/transaction-metadata.json', transactionMetadataRaw)
+await writeFile(EVIDENCE_DIR + '/block-metadata.json', blockMetadataRaw)
 
 const acquiredAt = new Date().toISOString()
 const transactionObservation = {
@@ -411,7 +416,7 @@ await writeFile(
   }, null, 2) + '\n',
 )
 
-const files = ['tx.cbor', 'utxo.json', 'pparams.json', 'protocol-parameters-raw.json', 'epoch-info.json', 'system-start.json']
+const files = ['tx.cbor', 'utxo.json', 'transaction-metadata.json', 'block-metadata.json', 'pparams.json', 'protocol-parameters-raw.json', 'epoch-info.json', 'system-start.json']
 const hashes = {}
 for (const file of files) hashes[file] = sha256(await readFile(EVIDENCE_DIR + '/' + file))
 
