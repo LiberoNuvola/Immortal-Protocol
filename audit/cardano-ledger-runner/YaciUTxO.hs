@@ -63,7 +63,6 @@ parseInput value = do
     then Left "INVALID_YACI_OUTPUT_INDEX"
     else pure ()
 
-  let refText = txHash <> "#" <> Text.pack (show outputIndex)
   txId <- parseNative "TxId" (String txHash)
   let txIn = TxIn txId (TxIx (fromIntegral outputIndex))
 
