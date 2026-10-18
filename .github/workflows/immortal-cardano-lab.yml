@@ -423,35 +423,44 @@ jobs:
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
 
       - name: Materialize raw Yaci ledger context for P2.8
+        id: p28_context
         run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
 
       - name: Run native Yaci UTxO decoder conformance
+        id: yaci_utxo_decoder
         working-directory: audit/cardano-ledger-runner
         run: |
           cabal update
           cabal run yaci-utxo-test
 
       - name: Run P2.8 ledger evidence gate against this lab packet
+        id: p28_evidence_gate
         working-directory: audit/cardano-ledger-runner
         run: |
           cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence --evaluate
 
       - name: Measure script and transaction resource footprint
+        id: resource_footprint
         run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
 
       - name: Run existing pure invariant suite
+        id: pure_invariants
         run: npx tsx src/__tests__/b1-invariants.test.ts
 
       - name: Run economic admission provenance negative twins
+        id: admission_provenance
         run: npx tsx src/__tests__/economic-admission-input-binding.test.ts
 
       - name: Run PrizeValidator row-tier immutability guard
+        id: row_tier_immutability
         run: npx tsx src/__tests__/prize-validator-row-tier-immutability.test.ts
 
       - name: Run Claim settlement-address binding guard
+        id: claim_settlement_binding
         run: npx vitest run src/__tests__/claim-settlement-address.test.ts
 
       - name: Run predeploy structural gate
+        id: predeploy_structure
         run: npm run test:predeploy
 
       - name: Print resource audit summary
@@ -465,10 +474,12 @@ jobs:
           tail -500 audit/yaci-evidence/yaci.log > audit/yaci-evidence/yaci-final-tail.log || true
 
       - name: Test evidence packet redaction and provenance
+        id: evidence_packet_tests
         if: always()
         run: node scripts/test-evidence-packet.mjs
 
       - name: Test Notion evidence ledger publisher
+        id: notion_evidence_tests
         if: always()
         run: node scripts/test-notion-evidence-ledger.mjs
 
@@ -489,6 +500,18 @@ jobs:
           AIKEN_REVEAL_SPEND_OUTCOME: ${{ steps.aiken_reveal_spend.outcome || 'unknown' }}
           AIKEN_LEDGER_POSITIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.positive_outcome || 'unknown' }}
           AIKEN_LEDGER_NEGATIVE_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.negative_outcome || 'unknown' }}
+          CLAIM_TRACE_OUTCOME: ${{ steps.claim_trace.outcome || 'unknown' }}
+          P28_CONTEXT_OUTCOME: ${{ steps.p28_context.outcome || 'unknown' }}
+          YACI_UTXO_DECODER_OUTCOME: ${{ steps.yaci_utxo_decoder.outcome || 'unknown' }}
+          P28_EVIDENCE_GATE_OUTCOME: ${{ steps.p28_evidence_gate.outcome || 'unknown' }}
+          RESOURCE_FOOTPRINT_OUTCOME: ${{ steps.resource_footprint.outcome || 'unknown' }}
+          PURE_INVARIANTS_OUTCOME: ${{ steps.pure_invariants.outcome || 'unknown' }}
+          ADMISSION_PROVENANCE_OUTCOME: ${{ steps.admission_provenance.outcome || 'unknown' }}
+          ROW_TIER_IMMUTABILITY_OUTCOME: ${{ steps.row_tier_immutability.outcome || 'unknown' }}
+          CLAIM_SETTLEMENT_BINDING_OUTCOME: ${{ steps.claim_settlement_binding.outcome || 'unknown' }}
+          PREDEPLOY_STRUCTURE_OUTCOME: ${{ steps.predeploy_structure.outcome || 'unknown' }}
+          EVIDENCE_PACKET_TESTS_OUTCOME: ${{ steps.evidence_packet_tests.outcome || 'unknown' }}
+          NOTION_EVIDENCE_TESTS_OUTCOME: ${{ steps.notion_evidence_tests.outcome || 'unknown' }}
           AIKEN_LEDGER_WINNING_OUTCOME: ${{ steps.aiken_reveal_ledger.outputs.winning_outcome || 'unknown' }}
         run: |
           set -euo pipefail
@@ -592,6 +615,90 @@ jobs:
                 'Diagnostic execution-unit budgets used only to construct the invalid twin are not resource qualification.',
                 'This isolated V3 test is not the canonical production Plutus V2 validator.',
               ],
+            },
+            {
+              checkId: 'CLAIM.ECONOMIC.TRACE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Execute real economic Claim transition trace',
+              stepOutcome: outcome(process.env.CLAIM_TRACE_OUTCOME),
+              evidenceRefs,
+              limitations: ['Isolated Claim conformance is not a production Issue-admission witness.'],
+            },
+            {
+              checkId: 'P2.8.CONTEXT.MATERIALIZATION',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Materialize raw Yaci ledger context for P2.8',
+              stepOutcome: outcome(process.env.P28_CONTEXT_OUTCOME),
+              evidenceRefs,
+              limitations: ['Raw context materialization does not establish successful typed decoding.'],
+            },
+            {
+              checkId: 'P2.8.YACI.UTXO.DECODER',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run native Yaci UTxO decoder conformance',
+              stepOutcome: outcome(process.env.YACI_UTXO_DECODER_OUTCOME),
+              evidenceRefs,
+              limitations: ['Fixture conformance does not by itself qualify the observed ledger context.'],
+            },
+            {
+              checkId: 'P2.8.LEDGER.EVIDENCE.GATE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run P2.8 ledger evidence gate against this lab packet',
+              stepOutcome: outcome(process.env.P28_EVIDENCE_GATE_OUTCOME),
+              evidenceRefs,
+              limitations: ['This is scoped to this commit, run attempt, and local Yaci context; it is not Preprod/mainnet qualification.'],
+            },
+            {
+              checkId: 'P2.8.RESOURCE.FOOTPRINT',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Measure script and transaction resource footprint',
+              stepOutcome: outcome(process.env.RESOURCE_FOOTPRINT_OUTCOME),
+              evidenceRefs,
+              limitations: ['Metrics qualify only the artifacts measured in this run and its protocol parameters.'],
+            },
+            {
+              checkId: 'P2.8.PURE.INVARIANTS',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run existing pure invariant suite',
+              stepOutcome: outcome(process.env.PURE_INVARIANTS_OUTCOME),
+              evidenceRefs,
+              limitations: ['Pure invariants do not replace native ledger evidence.'],
+            },
+            {
+              checkId: 'P2.8.ADMISSION.PROVENANCE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run economic admission provenance negative twins',
+              stepOutcome: outcome(process.env.ADMISSION_PROVENANCE_OUTCOME),
+              evidenceRefs,
+              limitations: ['Negative twins verify binding guards only; they do not create authoritative admission.'],
+            },
+            {
+              checkId: 'P2.8.PRIZEVALIDATOR.IMMUTABILITY',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run PrizeValidator row-tier immutability guard',
+              stepOutcome: outcome(process.env.ROW_TIER_IMMUTABILITY_OUTCOME),
+              evidenceRefs,
+              limitations: ['This covers the named immutability property only.'],
+            },
+            {
+              checkId: 'P2.8.CLAIM.SETTLEMENT.BINDING',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run Claim settlement-address binding guard',
+              stepOutcome: outcome(process.env.CLAIM_SETTLEMENT_BINDING_OUTCOME),
+              evidenceRefs,
+              limitations: ['This covers the Claim settlement-address binding property only.'],
+            },
+            {
+              checkId: 'P2.8.PREDEPLOY.STRUCTURE',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Run predeploy structural gate',
+              stepOutcome: outcome(process.env.PREDEPLOY_STRUCTURE_OUTCOME),
+              evidenceRefs,
+              limitations: ['Structural conformance is necessary but not sufficient for ledger qualification.'],
+            },
+            {
+              checkId: 'EVIDENCE.PACKET.TESTS',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Test evidence packet redaction and provenance',
+              stepOutcome: outcome(process.env.EVIDENCE_PACKET_TESTS_OUTCOME),
+              evidenceRefs,
+              limitations: ['Tested redaction behavior is not a substitute for secret scanning.'],
+            },
+            {
+              checkId: 'EVIDENCE.NOTION.LEDGER.TESTS',
+              requirementRef: 'IMMORTAL Cardano Integration Lab / Test Notion evidence ledger publisher',
+              stepOutcome: outcome(process.env.NOTION_EVIDENCE_TESTS_OUTCOME),
+              evidenceRefs,
+              limitations: ['Local publisher tests are distinct from actual API publication.'],
             },
           ];
           await fs.mkdir('audit/yaci-evidence', { recursive: true });

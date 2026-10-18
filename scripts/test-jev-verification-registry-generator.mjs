@@ -49,6 +49,28 @@ assert.equal(generateRegistry(skipped).checks[0].result, "NOT_RUN");
 const unknown = structuredClone(base);
 unknown.checks[0].stepOutcome = "unknown";
 assert.equal(generateRegistry(unknown).checks[0].result, "BLOCKED");
+const p28Outcomes = structuredClone(base);
+p28Outcomes.checks.push(
+  {
+    checkId: "P2.8.YACI.UTXO.DECODER",
+    requirementRef: "Integration Lab / Run native Yaci UTxO decoder conformance",
+    stepOutcome: "failure",
+    evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+    limitations: ["Decoder failure blocks P2.8."],
+  },
+  {
+    checkId: "P2.8.LEDGER.EVIDENCE.GATE",
+    requirementRef: "Integration Lab / Run P2.8 ledger evidence gate",
+    stepOutcome: "skipped",
+    evidenceRefs: [{ kind: "workflow-run", uri: "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38615595908" }],
+    limitations: ["Skipped means NOT_RUN, never PASS."],
+  },
+);
+const p28Registry = generateRegistry(p28Outcomes);
+assert.equal(p28Registry.checks.find((c) => c.checkId === "P2.8.YACI.UTXO.DECODER").result, "FAIL");
+assert.equal(p28Registry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "NOT_RUN");
+assert.equal(p28Registry.overallResult, "FAIL", "a decoder failure must dominate a skipped downstream gate");
+
 const noEvidence = structuredClone(base);
 noEvidence.checks[0].evidenceRefs = [];
 assert.throws(() => generateRegistry(noEvidence), /PASS outcome requires explicit evidence references/);
