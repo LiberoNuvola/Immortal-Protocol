@@ -395,7 +395,7 @@ jobs:
       # to emit CBOR diagnostics. Never signs/submits; unrelated failures must
       # not trigger this fallback.
       - name: Diagnose Claim CBOR after normal build failure
-        if: steps.claim_trace.outcome == 'failure' && (github.event_name != 'workflow_dispatch' || inputs.claim_reference_diagnostic != true)
+        if: failure() && steps.claim_trace.outcome == 'failure' && (github.event_name != 'workflow_dispatch' || inputs.claim_reference_diagnostic != true)
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: "1"
         run: node --import tsx/esm audit/cardano-integration/claim-ledger-trace.ts
