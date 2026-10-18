@@ -180,8 +180,8 @@ const boundUtxo = bindPublishedReferenceScript({
 })
 if (!boundUtxo.scriptRef) fail('Reference-script CBOR binding did not materialize a local scriptRef')
 const reboundHash = validatorToScriptHash(boundUtxo.scriptRef as Script).toLowerCase()
-if (reboundHash !== blueprintHash) {
-  fail(`Materialized reference script hash mismatch: expected=${blueprintHash}, actual=${reboundHash}`)
+if (reboundHash !== lucidityHash) {
+  fail(`Materialized reference script hash mismatch: expected=${lucidityHash}, actual=${reboundHash}`)
 }
 if (bytes(signedCbor) > maxTxSize) fail('Post-acceptance size check failed unexpectedly')
 
