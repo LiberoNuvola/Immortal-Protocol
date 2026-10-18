@@ -396,7 +396,11 @@ function claimContextShapeMismatch(error: unknown): boolean {
   })
 }
 
-async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: number): Promise<Array<{
+async function boundedClaimFallbackExUnits(
+  cbor: string,
+  additionalUTxOsCount: number,
+  fallbackReason = 'Yaci Scalus KnownTypeUnliftingError: PubKeyHash/ByteString context representation',
+): Promise<Array<{
   redeemer_tag: string
   redeemer_index: number
   ex_units: { mem: number; steps: number }
@@ -491,7 +495,7 @@ async function boundedClaimFallbackExUnits(cbor: string, additionalUTxOsCount: n
   })
   claimEvaluationFallbacks.push({
     txSha256: description.txSha256,
-    reason: 'Yaci Scalus KnownTypeUnliftingError: PubKeyHash/ByteString context representation',
+    reason: fallbackReason,
     source: 'active maxTxExecutionUnits; 45% per spending redeemer, 90% aggregate',
     protocolParametersEndpoint: API + '/epochs/latest/parameters',
     activeProtocolParameters: {
@@ -546,7 +550,11 @@ providerWithEvaluation.evaluateTx = async (tx, additionalUTxOs = []) => {
       allowAikenNegativeDiagnosticBudget &&
       structuredYaciScriptEvaluationFailure(error)
     ) {
-      return await boundedClaimFallbackExUnits(cbor, additionalUTxOs.length)
+      return await boundedClaimFallbackExUnits(
+        cbor,
+        additionalUTxOs.length,
+        'Aiken Claim negative twin: bounded ExUnits supplied only to reach authoritative ledger rejection after structured validator evaluation failure',
+      )
     }
     throw error
   }
@@ -1263,6 +1271,11 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     const explicitPlutusFailure =
       phase === 'ledger submission' &&
       /The PlutusV[123] script failed/.test(message)
+    const explicitAikenScriptFailure =
+      claimAikenV3Mode &&
+      phase === 'ledger submission' &&
+      /validationtagmismatch|plutusfailure|script.*fail|plutus.*fail/i.test(message)
+    const explicitScriptFailure = explicitPlutusFailure || explicitAikenScriptFailure
     const rejectedByLedger =
       phase === 'ledger submission' &&
       (/HTTP 400|Bad Request|script evaluation|validation failed|input.*(spent|not found)|already spent/i.test(message) ||
@@ -1275,7 +1288,7 @@ async function expectClaimRejected(variant: ClaimVariant): Promise<void> {
     // of evidence was actually available; never label an unobserved trace as
     // branch-confirmed.
     if ((!rejectedByYaciEvaluation && !rejectedByLedger) ||
-        (!expectedMarker && !explicitPlutusFailure)) {
+        (!expectedMarker && !explicitScriptFailure)) {
       throw new Error(
         'Negative twin "' + variant.label +
         '" did not prove its expected on-chain rejection (' + phase +
