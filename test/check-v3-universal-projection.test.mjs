@@ -93,3 +93,12 @@ test('source binding fails closed when canonical source files are unavailable', 
   assert.equal(out.classification, 'SOURCE_BINDING_FAILED');
   assert.equal(out.errors.length, 6);
 });
+
+test('does not invent economic constraints for unmapped Jackpot lifecycle integers', () => {
+  const m = model();
+  m.state.jackpot.threshold = '-50';
+  m.state.jackpot.cycle = '-2';
+  const out = projectV3ToUniversal(m);
+  assert.equal(out.projected.additionalProtectedCapital, '11');
+  assert.equal(out.v3ProtectedCapital, '2039');
+});
