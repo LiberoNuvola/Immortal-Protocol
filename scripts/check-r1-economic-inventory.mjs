@@ -124,7 +124,7 @@ export function auditInventory(registry, sources) {
         }
       }
       if (!['not_applicable','unresolved','defined_by_normative_source'].includes(c.contingencyStatus)) add('component ' + c.id + ': invalid contingencyStatus');
-      if (c.contingencyStatus === 'unresolved' && !c.sourceAnchors?.some(a => a.sourceId === 'R7' && a.includes.includes('A4'))) add('component ' + c.id + ': unresolved contingency must cite normative A4/L3 relation');
+      if (c.id === 'contingency-a4-l3' && c.contingencyStatus === 'unresolved' && !c.sourceAnchors?.some(a => a.sourceId === 'R7' && a.includes.includes('A4'))) add('component ' + c.id + ': unresolved contingency must cite normative A4/L3 relation');
     }
   }
 

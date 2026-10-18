@@ -754,7 +754,7 @@
         },
         {
           "sourceId": "R7",
-          "includes": "A1…A5 are pairwise disjoint and jointly exhaustive over asset content"
+          "includes": "`A1…A5` are pairwise disjoint and jointly exhaustive over asset content"
         }
       ]
     }

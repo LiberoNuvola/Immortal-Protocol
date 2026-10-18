@@ -248,3 +248,18 @@ The projection result now carries:
 These digests support reproducible comparison of model and source-contract versions. They do not authenticate the input, and the projection output is **not** silently converted into the R1 checker schema. The R1 checker models R7 assets/commitments and the profile's EEV/obligation partition; there is no normative complete mapping from the richer V3 class/Jackpot state into all R7 cells in this branch. Converting it automatically would assume the still-open PA2/PA7 completeness and contingency-refinement obligations. Therefore source binding is improved, but **full R1 model binding remains UNPROVEN**.
 
 The latest code CI run is [#15](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39149578106) at commit `c9b6308c7750b886cc61549be15869e478d4fae7`: **SUCCESS**, with both source-snapshot steps successful and the combined Node test suite at 27/27 pass, 0 fail. The subsequent change to this matrix document does not match the workflow's path filters and did not alter code or workflow configuration.
+
+
+## R1 economic inventory gate — 2026-10-18 (NOT CERTIFIED)
+
+The new \`scripts/check-r1-economic-inventory.mjs\` pins the normative R7 accounting partition, R1 certificate specification, R9 EEV contract, R3 Ω perimeter specification, PRE-RICH Game Economy and the V3/Universal state/kernel sources. It validates the eleven R7 cells and 17 discovered PRE-RICH/V3 components/boundaries, but deliberately reports \`closureEligible: false\`. A passing register gate does not discharge PA2/PA7 or prove that the discovered list is exhaustive.
+
+Key open reconciliation items:
+- R7 L1 pending obligation versus V3 aggregate crystallized liability (no per-ticket L1/L4/L5 refinement).
+- Statistical \`v3UnresolvedReserve\` versus R7 L3's authoritative Ω-worst-case value.
+- \`v3SafetyCapital\`, \`v3ReserveProtection\` and \`v3MandatoryFutureCosts\` are included in implementation PC but lack complete R7 cell mappings/disjointness evidence.
+- Jackpot locked balance maps once to \`uesAdditionalProtectedCapital\` in the finite projection, but the R7 cell and disjointness from L2/L3 remain unproven.
+- A4↔L3 contingency, L6 emptiness, CAR applicability, ticket-level expiry identity and excluded-asset classification remain open.
+- EffectivePool, EEV, ProtectedCapital and buffer remain distinct.
+
+PA2 and PA7 remain open. No definitive V3→R1 binding, live EEV observation, S0, Ω-completeness claim or C6 certification is produced by this gate.
