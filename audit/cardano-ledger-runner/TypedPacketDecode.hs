@@ -196,9 +196,9 @@ decimalMilliseconds field value =
               if Text.all (\c -> c >= '0' && c <= '9') frac
                 then
                   let padded = frac <> Text.replicate (3 - Text.length frac) "0"
-                  case TR.decimal padded of
-                    Right (n, rest) | Text.null rest -> Right (whole * 1000 + n)
-                    _ -> Left ("INVALID_" <> field)
+                  in case TR.decimal padded of
+                       Right (n, rest) | Text.null rest -> Right (whole * 1000 + n)
+                       _ -> Left ("INVALID_" <> field)
                 else Left ("INVALID_" <> field)
 
 parseInteger :: String -> Text.Text -> Either String Integer
@@ -232,10 +232,10 @@ parseMilliseconds field value =
               if Text.all (\c -> c >= '0' && c <= '9') frac
                 then
                   let padded = frac <> Text.replicate (3 - Text.length frac) "0"
-                  case TR.decimal padded of
-                    Right (n, rest) | Text.null rest ->
-                      Right (whole * 1000 + n)
-                    _ -> Left ("INVALID_" <> field)
+                  in case TR.decimal padded of
+                       Right (n, rest) | Text.null rest ->
+                         Right (whole * 1000 + n)
+                       _ -> Left ("INVALID_" <> field)
                 else Left ("INVALID_" <> field)
 
 evaluateConwayTx ::
