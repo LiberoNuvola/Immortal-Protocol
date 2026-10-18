@@ -10,7 +10,7 @@ function model() {
       classPrices: [{classId:'0',price:'1'},{classId:'1',price:'2'},{classId:'2',price:'3'}]
     },
     state: {
-      crystallizedLiabilities:'10', unresolvedReserve:'8', unresolvedTicketCount:'3',
+      crystallizedLiabilities:'10', unresolvedReserve:'4', unresolvedTicketCount:'3',
       safetyCapital:'5', reserveProtection:'6', mandatoryFutureCosts:'7',
       classes:[
         {classId:'0',issued:'4',unresolved:'2',exposure:'2',cap:'100',saleable:true},
