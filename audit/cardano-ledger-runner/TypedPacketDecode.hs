@@ -10,7 +10,7 @@ module TypedPacketDecode
   , evaluateConwayTx
   ) where
 
-import Cardano.Ledger.Api (BabbageEra, ConwayEra, PParams, Tx)
+import Cardano.Ledger.Api (ConwayEra, PParams, Tx)
 import Cardano.Ledger.Api.PParams (ppProtocolVersionL)
 import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator, decCBOR)
 import Cardano.Ledger.Binary.Version (Version, mkVersion)
@@ -137,7 +137,7 @@ parseLabeledDecimal label content =
       else Right value
     [] -> Left ("MISSING_YACI_INFO:" <> Text.unpack label)
 
-protocolVersionToBinaryVersion :: PParams BabbageEra -> Either String Version
+protocolVersionToBinaryVersion :: PParams ConwayEra -> Either String Version
 protocolVersionToBinaryVersion pp =
   mkVersion (pvMajor (pp ^. ppProtocolVersionL))
 
