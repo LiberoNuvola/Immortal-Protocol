@@ -108,3 +108,38 @@ That makes the helper a legitimate candidate to investigate at the **application
 **Result:** do not discard this helper, but do not promote it into the universal IMMORTAL action algebra. The strongest supported conclusion is: *a concrete PRE-RICH lifecycle candidate and a QNE-checking predicate exist; the universal QNE proof is still open*. The missing evidence is an authoritative Ω binding/over-approximation proof, an explicit refinement into the canonical economic transition relation, acceptance compatibility, and proof of `Rep`/buffer preservation over every successor in the declared perimeter.
 
 This finding is source review only; it does not claim that the helper's tests or a formal proof have passed, and it does not change any normative semantics.
+
+## Follow-up implementation trace — helper tests, universal kernel and admission boundary (2026-10-18)
+
+A second source pass followed the lifecycle helper into its adjacent tests and the existing economic-admission boundary on `work/immortal-green-closure`.
+
+### What the existing test establishes
+
+`plutus/test/PreRichLifecycleTransitionTest.hs` contains positive and negative checks for the two lifecycle transitions and synthetic QNE examples. It checks that:
+- an explicitly supplied non-eroding successor passes;
+- a supplied adverse-EEV successor fails;
+- loss of represented obligations fails;
+- a mixed envelope fails if any supplied successor erodes;
+- an empty witness list fails closed.
+
+These are useful unit-level checks of the helper's local predicate. The test fixtures explicitly construct the `LifecycleOmegaWitness` values; they do **not** derive those values from a canonical economic transition or from an authoritative Cardano/adapter event envelope. The inspected `.github/workflows/formal-mechanical-evidence.yml` does not list this Haskell test among its steps. Therefore this review does not claim the test was executed by CI or that a universal QNE proof exists.
+
+### What the economic kernel and admission boundary establish
+
+`IMMORTAL/kernel/UniversalEconomicKernel.hs` calculates `ProtectedCapital` from crystallized liabilities, worst-case exposure, safety capital, reserve protection, mandatory future costs and additional protected capital. Its solvency invariant checks non-negative EEV, non-negative state fields and `EEV ≥ ProtectedCapital`.
+
+`PRE-RICH/onchain/PreRichEconomicAdmission.hs` separately checks a structural V3 transition, projects the candidate into the universal state, evaluates the economic gate using supplied truth/freshness/obligation inputs, and consumes the caller-provided `allOmegaSuccessorsInCertifiedKernel` Boolean. This is an admission boundary for a candidate action, not a definition or proof of the complete universal transition relation: the function receives the Ω-closure result as an input rather than deriving it itself.
+
+The TypeScript `EconomicAdmissionTransitionBinding.ts` checks that the admission witness and persisted canonical evidence agree on action class and pre-/post-state fingerprints. That is evidence binding, not a proof that the observed post-state is the result of the normative transition for every `ω ∈ Ω`.
+
+### Updated conclusion
+
+The repository contains three distinct useful pieces, but they must not be conflated:
+
+1. **Lifecycle transition helper:** a regime-specific state transition plus a local QNE predicate.
+2. **Economic admission gate:** checks a candidate action against supplied evidence and a supplied Ω-closure result.
+3. **Canonical transition evidence binding:** correlates a decision with persisted action/state fingerprints.
+
+No inspected artifact composes these into a source-backed universal relation proving, for every certified state, that the selected action is available and accepted and that every authoritative Ω-successor preserves `Rep`, safety and the buffer. The remaining gap is therefore an **explicit refinement/composition proof and authoritative Ω binding**, not a missing Boolean check.
+
+No source semantics were changed. The candidate remains worth retaining for PRE-RICH regime-level work, but C6-B remains BLOCKED until the missing composition and envelope obligations are discharged.
