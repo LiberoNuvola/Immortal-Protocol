@@ -26,6 +26,7 @@ executable cardano-ledger-runner
     , cryptohash-sha256
     , base16-bytestring
     , containers
+    , directory
     , time
   other-modules:
       TypedPacketDecode
