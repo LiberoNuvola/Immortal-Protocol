@@ -396,3 +396,32 @@ This preference is consistent with the documented intent in T2/P0, but it is **n
 An approved binding must specify the eligible state-derived trigger, what (if anything) needs cryptographic authorization, how an arbitrary eligible submitter constructs/submits the transaction without a privileged per-transaction signer, and how the validator enforces freshness, stale/concurrent rejection, atomic class/regime update, and monotone `HighestClassEverActivated`. A reproducible emulator/ledger trace must then demonstrate invocation by a non-authority submitter and the negative twins.
 
 **Status unchanged:** this clarifies scope and desired direction only. No validator, Beacon, V3, Reveal, or economic semantics were changed. C6 remains **NOT CERTIFIED**; no GREEN or deployment claim is made.
+
+
+## Follow-up trace — permissionless pattern exists elsewhere; B2-specific binding still absent (2026-10-18)
+
+A further cross-check found an existing design pattern that helps isolate the B2 issue without copying semantics across transitions:
+
+- `PRE-RICH/docs/GENESIS-REGIME-CARRIER-DESIGN-v0.1.md` explicitly defines Genesis activation as permissionless: the predicate is checked on-chain, any eligible submitter may invoke, the transition is atomic, and no privileged Genesis operator is required.
+- `PRE-RICH/onchain/PreRichLifecycleTransition.hs` separately defines the pure `Active → Quiescent` transition, but it is not itself an authenticated UTxO validator and is not composed with `PreRichControlCarrier`.
+- `scripts/deployPreRichControlCarrier.mts` defaults `PREPROD_CONTROL_AUTHORITY_PKH` to the deploying wallet's payment key hash unless configured otherwise. This confirms the configured signer can default to the deployer; it does not prove any live deployment or authorize that key as the only class-transition invoker.
+- `.github/workflows/pre-rich-b2-control-conformance.yml` does not contain a `ContractControl` ledger/emulator trace. The manual Preprod workflow definition is not evidence that deployment ran successfully.
+
+### What this comparison establishes
+
+Permissionless, state-derived, on-chain revalidation is already an explicit **design pattern** in the Genesis carrier design. It is therefore not necessary to invent a new general execution philosophy for B2. But Genesis activation and class contraction/quiescence have different predicates and state deltas: the Genesis design is precedent for the invocation boundary, **not authorization to transplant its validator or infer B2 transition semantics**.
+
+### Recommended minimal next implementation decision (not applied)
+
+Authorize a B2-specific refinement with the following boundary:
+
+1. The canonical control/economic state determines whether contraction or quiescence is eligible.
+2. Any submitter may construct and submit the candidate transaction once that predicate is true.
+3. The validator re-derives/checks the predicate from authenticated, fresh state/evidence and performs the state update atomically.
+4. If decision evidence needs authentication, its authorization must be represented separately from the identity of the transaction submitter; it must not silently make the configured key a required signer of every eligible invocation.
+5. The class update, any regime change to `QUIESCENT`, and nonce/version changes must have one approved atomic refinement; stale competing transactions must fail against consumed canonical state.
+6. `HighestClassEverActivated` remains monotone and contraction cannot retroactively authorize sales in a higher class.
+
+This is a **recommended architecture decision for approval**, not an assertion that the current code already satisfies it. The exact evidence format, freshness predicate and composition with the regime carrier still need to be grounded in the authorized source contract before production code is changed.
+
+**Verification status:** source inspection only. No test or deployment was executed in this pass. C6 remains **NOT CERTIFIED**; no V3, Reveal, economic constants, or Beacon semantics were changed.
