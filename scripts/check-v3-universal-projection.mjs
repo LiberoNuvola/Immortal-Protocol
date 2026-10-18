@@ -202,9 +202,9 @@ export function verifySourceSnapshot(root) {
   }
   if (errors.length === 0) {
     const actionMatch = sources['IMMORTAL/kernel/EconomicTransitionV3.hs']
-      .match(/data\\s+V3Action\\s*([\\s\\S]*?)(?=\\n\\{-#|\\n\\n)/);
+      .match(/data\s+V3Action\s*([\s\S]*?)(?=\n\{-#|\n\n)/);
     const actions = actionMatch
-      ? [...actionMatch[1].matchAll(/(?:^|\\n)\\s*[=|]\\s*([A-Z][A-Za-z0-9_]*)\\b/g)].map(m => m[1])
+      ? [...actionMatch[1].matchAll(/(?:^|\n)\s*[=|]\s*([A-Z][A-Za-z0-9_]*)\b/g)].map(m => m[1])
       : [];
     if (actions.join(',') !== EXPECTED_ACTIONS.join(',')) {
       errors.push(`V3Action constructors drifted: ${actions.join(',') || 'not found'}`);
@@ -215,8 +215,8 @@ export function verifySourceSnapshot(root) {
       const open = start < 0 ? -1 : source.indexOf('{', start + marker.length);
       const close = open < 0 ? -1 : source.indexOf('}', open + 1);
       if (open < 0 || close < 0) return [];
-      return source.slice(open + 1, close).split(/\\r?\\n/)
-        .map(line => line.match(/^\\s*,?\\s*([A-Za-z][A-Za-z0-9_]*)\\s*::/))
+      return source.slice(open + 1, close).split(/\r?\n/)
+        .map(line => line.match(/^\s*,?\s*([A-Za-z][A-Za-z0-9_]*)\s*::/))
         .filter(Boolean).map(m => m[1]);
     };
     const v3Fields = extractFields(sources['IMMORTAL/state/EconomicStateV3.hs'], 'V3EconomicState');
