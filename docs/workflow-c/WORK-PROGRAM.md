@@ -4,23 +4,23 @@ This file tracks the work programme. It is not a new normative specification.
 
 | Gate | Deliverable | Required evidence | Current disposition |
 |---|---|---|---|
-| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | Reconciliation required; no normative changes authorized |
-| C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | Reuse existing IMMORTAL state artifacts; verify alignment |
-| C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | Must be derived from normative sources, not invented |
-| C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | Open; no complete universal relation established by examined kernel |
-| C4 | Evidence/provenance contract | Source, version, checkpoint, derivation, verifier and digest binding | Reuse B3 evidence-boundary patterns without claiming proof validity |
-| C5 | Independent execution contract | Deterministic command, pinned toolchain, canonical input/output | Design/reconciliation only |
+| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | **SOURCE MAP DRAFTED** in `C0-C5-SOURCE-MAP.md`; targeted review only, gate open pending review |
+| C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | **INTERFACE CONTRACT DRAFTED**; completeness/units/canonical encoding unresolved |
+| C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | Mapped to Constitution, R1 and R7; executable inventory still open |
+| C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | **BLOCKED** pending profile-authorized action/transition relation; accounting deltas alone are insufficient |
+| C4 | Evidence/provenance contract | Source, version, checkpoint, derivation, verifier and digest binding | B3 integration boundary drafted; real proof verification remains separate/open |
+| C5 | Independent execution contract | Deterministic command, pinned toolchain, canonical input/output | Checker contract drafted; no runnable independent C checker yet |
 | C6 | Reference profile and action-space adequacy | Profile + explicit transition relation + non-vacuity argument | **BLOCKED / NOT CERTIFIED** |
-| C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
+| C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | **13-element worksheet drafted**; profile values and completeness evidence open |
 | C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
 | C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Open; structural tests alone insufficient |
 | C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | Open; packet must be generated from the actual checker run |
 
 ## Execution order
 
-1. Reconcile C0–C5 against the current source-of-truth hierarchy and existing repository artifacts.
-2. Complete C6-A as a profile/interface description without inventing economic behavior.
-3. In parallel, prepare C6-C/C7/C9/C10 evidence plumbing using the B3 packet and verifier-boundary patterns.
+1. Review `C0-C5-SOURCE-MAP.md` against the complete normative corpus; the current map is targeted, not exhaustive.
+2. Complete C6-A using `REFERENCE-PROFILE-CONTRACT.md` and `profile.schema.json`; the schema is structural only.
+3. Use `C7-OMEGA-WORKSHEET.md` and the B3 evidence boundary to define the independent checker and C10 packet.
 4. Keep C6-B and C8 blocked until an authorized substantive transition relation and a valid witness can be demonstrated.
 5. Run the independent checker against the exact committed profile; preserve its raw output and hashes.
 6. Report each gate as OPEN, BLOCKED, STRUCTURAL, VERIFIED, or CLOSED with evidence links. Never convert a design note into a pass.
