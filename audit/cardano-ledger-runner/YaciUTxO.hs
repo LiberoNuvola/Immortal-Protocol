@@ -64,7 +64,7 @@ parseInput value = do
     else pure ()
 
   let refText = txHash <> "#" <> Text.pack (show outputIndex)
-  txIn <- parseNative "TxIn" refText
+  txIn <- parseNative "TxIn" (String refText)
 
   addressHex <- textField value "ledger_address_hex"
   addressBytes <- decodeHexText "ledger_address_hex" addressHex
@@ -105,7 +105,7 @@ parseMaryValue items = do
 
   Right (MaryValue (Coin lovelace) (MultiAsset assets))
   where
-    step item (mLov, assets) = do
+    step (mLov, assets) item = do
       unit <- textField item "unit"
       quantity <- integerValueField item "quantity"
 
