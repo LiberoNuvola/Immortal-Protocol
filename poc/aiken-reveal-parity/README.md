@@ -173,9 +173,11 @@ The Claim trace has an environment-gated `IMMORTAL_CLAIM_AIKEN_V3=1` route, and 
 
 These changes address loader/hash consistency and allow the lab to exercise the candidate without first publishing the oversized Haskell PrizeValidator. They do **not** close Claim until the pinned Aiken build/check passes, the full final transaction fits the unchanged 16,384-byte limit, the real Yaci ledger accepts a valid Claim and rejects adversarial twins, and datum/oracle/pool behavior is differentially compared with the canonical Haskell V2 path. Oracle data used by the current lab is synthetic and is not production economic qualification. No production deployment or V2-to-V3 migration approval follows from this work.
 
-### Claim typed-context increment (2026-10-18)
+### Claim owner-scan parity correction (2026-10-18)
 
-Added `lib/immortal/claim_context.ak` as the first typed-context increment for Claim. It resolves a unique public-key input carrying exactly one instance of the ticket NFT, extracts that input's verification-key hash, and checks that the hash appears in the transaction's actual `extra_signatories`. Ambiguous/missing owner inputs fail closed. Two negative tests cover the absent-ticket-input case.
+The production-shaped candidate in `lib/immortal/claim_transaction.ak` and the helper in `lib/immortal/claim_context.ak` now use the same owner-selection behavior as `PrizeValidator.ticketOwnerPkh`: scan inputs in order, select the first input with exactly one ticket NFT, and require that input to have a public-key credential. If the first matching input is script-locked, lookup fails closed; it does not skip to a later matching input. This avoids introducing a duplicate-ticket rejection rule absent from the Haskell reference.
 
-**Scope is deliberately partial.** This does not yet validate the exact settlement outputs, authenticated oracle valuation, Prize continuing-output value preservation, Claim datum transition, B1PrizePool accounting, or parameterized validator hash/address deployment. It is not wired into `validators/reveal.ak` and is not a deployable Claim validator. The Haskell validator and V3 carrier are unchanged. Compiler/CI confirmation is still required before treating this increment as passing.
+The helper's tests cover absent-ticket inputs. They do not yet prove first-match behavior with constructed transaction fixtures. No Aiken compilation or CI result is asserted for this correction until a workflow run for the exact resulting commit is inspected.
+
+This is a parity correction only. It does not establish complete Haskell/Aiken equivalence, native-ledger acceptance, the 16,384-byte transaction-size gate, or approval for deployment. The Haskell validator and existing V3 carrier remain unchanged.
 
