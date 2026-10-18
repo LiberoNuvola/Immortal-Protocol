@@ -147,3 +147,42 @@ The checker derives EEV and ProtectedCapital from explicit R7 cell inputs, compu
 **Evidence boundary:** the local isolated copy of the checker and tests passed 8/8 Node built-in tests. The checker and test files were committed to the authorized remote branch, and a narrow path-filtered CI workflow was added. The available GitHub connector exposes no push-run listing/dispatch operation; the commit's combined status response was empty, so the remote workflow result is **UNVERIFIED**, not PASS. The remote branch has no local checkout in this execution environment.
 
 This implementation is a finite-model gate only. It cannot authenticate source references or inventory digests, prove that the supplied event perimeter matches reality, establish action-list completeness, prove that transition rows refine deployed code, or supply a live S0. The regression fixture is synthetic and is not deployment evidence. Therefore C6-A/B/C, VC5 against reality, and VC6 for deployment remain **NOT CERTIFIED**.
+
+
+## 8. Cross-branch recovery and disposition (rechecked 2026-10-18)
+
+The authorized branch was re-read at the start of this continuation: remote ref existed and still pointed to `f787be061cfcf5c9a1d832d43be1c75a3d913384`. The current task then added a source-binding guard and updated the branch-local CI definition. No local checkout exists in the execution environment; Git status, local diff, and native Cabal test execution remain unavailable.
+
+### Recovered candidates (read-only source branches)
+
+| Candidate | Provenance | Semantic review | Disposition |
+|---|---|---|---|
+| `PRE-RICH/onchain/PreRichEconomicProjection.hs` | `work/immortal-green-closure` HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob `22cf16232594a0e7f6c52749feaf8bf0ea6e5b13`. Same blob was read on `release/issue-admission-boundary-squash` HEAD `5b04f0c005bc983dd9be6427d78ff232e0240f20`. | Computes class reserve/count and worst-case exposure from profile prices and payout multiplier; maps locked Jackpot into universal `uesAdditionalProtectedCapital`; checks aggregate boundary equality. It rejects duplicate classes and per-class exposure mismatch, but the shown code does not independently require every canonical profile class to be present exactly once. | **ADAPTABLE, NOT IMPORTED.** Strong candidate for the missing V3→universal projection, but class-domain exhaustiveness and regression tests on the authorized branch must be established before importing. |
+| `PRE-RICH/onchain/PreRichEconomicAdmission.hs` | `work/immortal-green-closure` HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob `d8360b608f3bb32b7c74000de3ca3b5e3a907a9a`. Same blob on `release/issue-admission-boundary-squash` and `work/b3-materios-provenance-evidence` at time of read. | Composes structural V3 transition, projection, and economic gate, but takes `truthVerified`, `eevFresh`, `obligationsComplete`, and especially `allOmegaSuccessorsInCertifiedKernel` as caller-supplied Booleans. | **INFORMATIONAL ONLY FOR C6.** Useful boundary decomposition, not an authoritative Accept/Ω proof and not safe to count as universal closure. |
+| `PRE-RICH/onchain/PreRichLifecycleTransition.hs` | `work/immortal-green-closure` HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob `edae4c21dc98cb07791c83337d5df49bad9a01e5`. | `EnterQuiescent` and `MaintainQuiescent` change a separate lifecycle state/nonce, not V3 economic fields. QNE checks each supplied witness for safe buffer non-erosion and representation preservation, and rejects an empty witness list. The code expressly leaves soundness of the supplied Ω envelope to the caller. | **INFORMATIONAL ONLY; NOT A QNE WITNESS.** It does not prove Ω completeness, economic-state preservation under all real events, or that these lifecycle actions are in the authorized normative action relation. Not imported. |
+| `plutus/test/PreRichLifecycleTransitionTest.hs` | `work/immortal-green-closure` HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob `ae45d53803cc8845220875858487b17514abb3d1`. | Contains finite example tests for lifecycle transitions, adverse EEV, representation loss, and empty/non-empty witness lists. | **INFORMATIONAL TEST EVIDENCE ONLY.** It tests supplied finite witnesses, not their real-world Ω coverage; execution on the authorized branch was not performed. |
+| `.github/workflows/formal-mechanical-evidence.yml` | `work/immortal-green-closure` HEAD `5b060f13ea4ded1a163526c99935860c9d0f1316`; blob `7ff859e532e42e0030ec6074c84b3d8b81b64d82`. | Trigger filters target the green branch for push and `b1-hardening` for PR. | **NOT REUSABLE AS-IS.** Does not run on the authorized destination branch; importing it would not provide CI coverage here without a deliberate workflow adaptation. |
+
+The following paths were checked and remain absent on the authorized branch at the time of the read: the projection, admission and lifecycle modules above, their lifecycle test, and `.github/workflows/formal-mechanical-evidence.yml`. No code from those branches was imported.
+
+### 9. Canonical source binding guard
+
+Added to the authorized branch:
+
+- `scripts/check-r1-canonical-source.mjs`
+- `test/check-r1-canonical-source.test.mjs`
+- Updated `.github/workflows/c6-r1-finite-checker.yml` to run the source guard and both isolated Node test files, and to trigger when the guarded canonical Haskell files change.
+
+The guard pins Git blob SHA-1s for the current V3 transition, V3 state, V3 kernel, universal state, universal kernel, and economic gate; it also extracts and checks the exact V3 action constructors, canonical record field lists, and protected-capital terms. This is a **source-drift alarm and structural contract**, not a proof of projection equivalence or an input generator for a deployment certificate. It deliberately fails when one of the pinned source files changes so a reviewer must reassess and update the baseline explicitly.
+
+The source guard's report explicitly states that the authorized branch has no projection module. It does not claim a complete field-by-field semantic mapping. The recovered projection remains the best candidate for a subsequent isolated adaptation, subject to an explicit exact-class-set invariant and tests against the destination kernels.
+
+### 10. Execution and CI evidence boundary
+
+- The current remote branch ref was rechecked after writes and points to `471d3ee59462094594b0f090e9e84dceb3db22b2` at this checkpoint.
+- GitHub combined status for that commit returned an empty status list. This means **CI is UNVERIFIED**, not PASS.
+- No local Git checkout is available; no local working tree or native Haskell/Cabal build was inspected or executed.
+- No workflow was manually dispatched; no deployment, transaction, mint, merge, or release was performed.
+- Local test evidence from the prior checkpoint (8/8 finite-checker tests) applies to the isolated scratch copy noted in the prior report, not to an exact execution of the remote source blob. The new source-guard tests and updated workflow have not yet been observed passing in remote CI.
+
+**Current verdict remains C6 NOT CERTIFIED.** The concrete improvement is exact-source drift detection for the canonical transition/state/kernel/gate snapshots. The principal missing artifact remains a source-grounded and exhaustive projection/model that binds actual V3 state, complete inventory, authoritative EEV, `Accept`, `T`, and Ω to a real S0.
