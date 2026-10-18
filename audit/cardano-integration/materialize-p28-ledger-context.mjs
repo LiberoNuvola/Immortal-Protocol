@@ -232,7 +232,21 @@ const expectedRefs = transition.consumedUtxos.map((ref) => ref.toLowerCase())
 if (observedRefs.length !== expectedRefs.length ||
     new Set(observedRefs).size !== observedRefs.length ||
     expectedRefs.some((ref) => !observedRefs.includes(ref))) {
-  throw new Error('Yaci consumed input set does not match the exact Reveal transition')
+  const classify = (input) => ({
+    ref: typeof input.tx_hash === 'string' && Number.isSafeInteger(input.output_index)
+      ? input.tx_hash.toLowerCase() + '#' + input.output_index
+      : null,
+    collateral: input.collateral === true,
+    reference: input.reference === true,
+    addressPresent: typeof input.address === 'string',
+  })
+  throw new Error('Yaci consumed input set does not match the exact Reveal transition: ' +
+    JSON.stringify({
+      expectedRefs,
+      observedRefs,
+      rawInputs: utxos.inputs.map(classify),
+      counts: { expected: expectedRefs.length, observedEconomic: observedRefs.length, raw: utxos.inputs.length },
+    }))
 }
 
 const observedWithLedgerAddresses = {
