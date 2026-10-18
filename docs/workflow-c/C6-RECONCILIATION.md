@@ -608,3 +608,21 @@ A second source-level check inspected `pre-rich-b2-control-preprod.yml`, `script
 B2 currently has a deployable singleton and a constrained state-transition validator at source level, but the audited code does not yet demonstrate the required permissionless, state-derived contraction transition or its atomic synchronization with V3. No deployment was run; no code or tests were changed or executed. The deployment JSON files were absent from the reviewed closure-branch source snapshot, which does not prove absence of on-chain deployment or downloadable workflow artifacts.
 
 Next evidence order: (1) retrieve existing B2/V3 deployment artifacts and run references; (2) observe exact live singleton UTxOs without minting replacements; (3) reconcile the approved transition source and permissionless requirement with the validator; (4) only then define the minimal authorized refinement and its positive/negative conformance tests. Keep V3 and Reveal semantics untouched. C6 remains **NOT CERTIFIED**.
+
+## Prior Actions evidence recovered (2026-10-18)
+
+The Actions runs API was queried directly through the connected GitHub repository endpoint; this recovered two relevant historical execution results.
+
+### V3 observation was attempted, but never reached the ledger probe
+
+Run [37821116054](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37821116054), branch `work/immortal-green-closure`, created 2026-10-08 18:01 UTC, has a `preprod-v3-carrier-observation` job that failed at **Validate V3 deployment configuration**. Its job log shows all four required environment values empty: `BLOCKFROST_PROJECT_ID`, `VITE_V3_CARRIER_ADDRESS`, `VITE_V3_CARRIER_POLICY_ID`, and `VITE_V3_CARRIER_TOKEN_NAME_HEX`. The probe itself did not run, and the V3 evidence artifact was not produced. The overall workflow also had unrelated direct-USDM and Reveal jobs; their results do not change this V3 finding.
+
+### B2 deployment attempt failed before selecting a seed or submitting
+
+Run [37972119553](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37972119553), branch `work/immortal-green-closure`, created 2026-10-09 18:16 UTC, failed at **Select deterministic live wallet seed UTxO** because `BLOCKFROST_PROJECT_ID` was empty. The compiled B2 Plutus artifacts were built and validated, but the workflow skipped signing verification and the deployment step. No `b2-control-deployment.json` was generated and no artifact was uploaded. The preceding run [37967535347](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/37967535347) was cancelled at the same seed-selection step; it also has no artifacts. The separate AUTO workflow on `main` failed during native Plutus dependency installation and likewise has no deployment artifact.
+
+### Evidence-based conclusion and next step
+
+The reviewed Actions history does **not** show a successful V3 observation or a successful B2 deployment through these workflows. It does show that the relevant Preprod credential/identity configuration was missing on those dates. This is not proof that no singleton exists on-chain from another deployment route.
+
+Do not rerun B2 deployment as a discovery mechanism: it can mint a new singleton. First recover the canonical V3/B2 identity from any other authoritative transaction record, workflow artifact, or wallet/ledger history; then configure the observation-only V3 workflow with those exact identities and rerun `observe_v3=true`, `run_reveal=false`, `bootstrap_direct_usdm=false`. If no authoritative identity can be recovered, that absence must be established explicitly before any new deployment is considered. C6 remains **NOT CERTIFIED**.
