@@ -264,31 +264,36 @@ await writeFile(
 await writeFile(
   EVIDENCE_DIR + '/epoch-info.json',
   JSON.stringify({
-    schema: 'IMMORTAL-P2.8-YACI-EPOCH-RAW-v0.2-CONWAY',
+    schema: 'IMMORTAL-P2.8-OGMIOS-EPOCH-v0.1',
+    targetEpoch: latestEpochNumber,
+    targetAbsoluteSlot: null,
+    targetEra: String(activeEra.parameters?.era ?? 'Conway'),
+    epochLength,
+    slotLengthSeconds,
+    targetEraSummary: activeEra,
     source: {
-      endpoint: '/epochs/latest',
-      apiBase: API,
-      yaciDevkitInfo: 'yaci-devkit-info.txt',
+      endpoint: 'Ogmios queryLedgerState/eraSummaries',
+      apiBase: OGMIOS_WS,
+      yaciEpochEndpoint: API + '/epochs/latest',
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     genesisResponse,
     yaciDevkitInfo,
-    sourceOfTruth: 'Ogmios structured startTime and era summaries from the same local Yaci devnet; epoch/timing provenance recorded explicitly',
+    sourceOfTruth: 'Ogmios era summary matched to current epoch returned by Yaci Store',
   }, null, 2) + '\n',
 )
 
 await writeFile(
   EVIDENCE_DIR + '/system-start.json',
   JSON.stringify({
-    schema: 'IMMORTAL-P2.8-YACI-SYSTEM-START-RAW-v0.2-CONWAY',
+    schema: 'IMMORTAL-P2.8-OGMIOS-SYSTEM-START-v0.1',
     source: {
-      endpoint: 'Ogmios queryNetwork/startTime + queryLedgerState/eraSummaries',
+      endpoint: 'Ogmios queryNetwork/startTime',
       apiBase: OGMIOS_WS,
       yaciDevkitInfo: 'yaci-devkit-info.txt',
     },
-    startTimeRaw: String(genesis.system_start),
+    startTimeRaw: String(ogmiosStartTime),
     genesisSystemStart: genesis.system_start,
-    ogmiosStartTime: String(ogmiosStartTime),
     rawInfo: yaciInfo,
   }, null, 2) + '\n',
 )
