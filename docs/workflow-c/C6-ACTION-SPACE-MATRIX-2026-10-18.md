@@ -274,3 +274,12 @@ PA2 and PA7 remain open. No definitive V3→R1 binding, live EEV observation, S0
 
 
 - Run [#18](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39150682177) on commit \`4c01c7ede834ade10de851b2d00956fd0401cbc1\`: **SUCCESS**, inventory gate passed, source snapshots passed, combined Node tests **40/40**. \`closureEligible: false\` remains the expected result.
+
+
+## Independent PA2/PA7 source-surface audit — 2026-10-18
+
+The source catalog now records 30 pinned files with path, blob SHA-1, baseline commit, authority class and relation to the inventory. The register has 32 economic component/boundary rows and the checker requires 15 source-surface mappings. The expanded source set includes the PRE-RICH profile projection/admission modules and the ticket-level Issue/Reveal/Claim/Expire refinements already present in the authorized baseline.
+
+Run #20 failed closed on two source-anchor wording mismatches; run #21 passed with 45/45 tests; run #22 passed on d8be60447b00162a070c93127d558413e95eb5ea with 48/48 tests and the inventory gate passing. Run #22 explicitly reported closureEligible false.
+
+The adversarial review surfaced gaps in ticket identity/terminal-state reconciliation, the aggregate V3-to-ticket-level refinement, caller-supplied admission Booleans, canonical class-set completeness in the Haskell projection, and R7 mapping/disjointness for PC add-ons and Jackpot. PA2/PA7 remain open; the source checklist is not an exhaustive proof.
