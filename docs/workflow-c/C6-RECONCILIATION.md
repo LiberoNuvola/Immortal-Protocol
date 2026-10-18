@@ -280,3 +280,42 @@ Without changing V3/Reveal or introducing new economic semantics, the next admis
 5. a verified successful CI run for the wired suite, followed by independent evidence for Ω coverage and QNE over the declared perimeter.
 
 **Disposition:** T2/P0 narrows the authority gap for the application-level `EnterQuiescence` candidate; it does not close implementation conformance, Ω completeness, CK3/CK3′, or C6-B. C6 remains **NOT CERTIFIED**. No source code or normative semantics were changed by this review.
+
+
+## Additional implementation candidate — B2 Control carrier and class contraction (2026-10-18)
+
+The follow-up search found a closer on-chain class-control surface on `work/immortal-green-closure`: `PRE-RICH/onchain/PreRichControlCarrier.hs`. This is materially relevant to T2/P0's `CONTRACT_CLASS / ENTER_QUIESCENCE` binding and should be assessed before deciding that the only implementation candidate is the separate lifecycle helper.
+
+### What this carrier actually enforces
+
+The reviewed `PreRichControlDatum` contains:
+- `currentActiveClass`;
+- `highestClassEverActivated`;
+- `stateVersion`;
+- `transitionNonce`;
+- control policy/token identity.
+
+Its validator requires exactly one own script input and continuing output, exactly one control token in aggregate inputs and outputs, unchanged output/input `Value`, a valid configured policy/token identity, and increments both state version and transition nonce by one. It also requires a transaction signature from the configured `authority`.
+
+For `ContractControl`, the validator enforces that the new current class equals the redeemer's requested class and is no greater than the previous current class; `highestClassEverActivated` must remain unchanged. For `ActivateControl`, current and highest-ever class cannot decrease, and highest-ever remains at least the current class. These constraints are consistent with the monotonic-highest-class part of T2/P0.
+
+### What it does not yet establish for ENTER_QUIESCENCE
+
+1. **Not the same state/action:** this carrier models class indices, not the `PreRichRegime.Quiescent` tag. `ContractControl` does not itself transition `Active → Quiescent`, and no composition with `PreRichLifecycleTransition` was found.
+2. **Invocation versus authorization:** the validator requires `authoritySigned configuredAuthority` for every action. T2/P0 says contraction/quiescence may be invoked permissionlessly. A permissionless submitter can transport a transaction only if the configured signature is independently available in the intended protocol path; the reviewed validator does not establish that. This is a material conformance question, not automatically a defect: clarify whether the signature authorizes a state-derived decision or makes a privileged caller the only eligible invoker.
+3. **Decision/observation references:** the redeemer must provide non-empty decision and observation references, but this validator checks only that they are non-empty. It does not decode or authenticate their content, prove observation freshness, or independently derive the class contraction predicate from canonical economic evidence.
+4. **Atomicity/concurrency:** singleton token conservation, one own input/output and monotone state version/nonce provide a strong local UTxO-consumption boundary. This supports stale/racing transaction rejection at the carrier level, but no successful ledger trace was established in this source pass.
+5. **Economic QNE:** the class carrier does not compute EEV, ProtectedCapital, representation preservation, or `b = EEV - ProtectedCapital`; it therefore cannot alone discharge QNE or CK3/CK3′.
+
+### Revised architecture conclusion
+
+There are now two separate PRE-RICH candidates worth preserving, not conflating:
+
+- `PreRichControlCarrier.ContractControl`: a canonical on-chain **class-contraction** transition with monotone `HighestClassEverActivated` and singleton-state consumption, but requiring a configured authority signature and not itself entering the `Quiescent` regime.
+- `PreRichLifecycleTransition.EnterQuiescent`: an application-level **regime transition** aligned by name with T2/P0, but currently a pure helper without a demonstrated canonical on-chain state-consumption path.
+
+The missing edge is more precise than previously recorded: establish whether the approved semantics intend class contraction to be the concrete mechanism for `ENTER_QUIESCENCE`, and, if so, provide an authorized refinement binding the class-control datum/action and the regime state transition atomically. Do not infer that mapping from naming alone, and do not remove the configured authority signature or invent a new permissionless mechanism without an approved source.
+
+After that mapping is grounded, independently prove the QNE/Ω obligations. Neither carrier supplies an authoritative Ω envelope or a non-empty inductive `K_c` witness.
+
+No source code was changed. C6 remains **NOT CERTIFIED**; the new finding narrows the implementation search but does not close P0 conformance or C6-B.
