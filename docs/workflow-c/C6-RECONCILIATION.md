@@ -227,3 +227,56 @@ This materially narrows the prior finding:
 The source is a Notion page marked `unverified` by the Notion integration and last edited 2026-09-14; it is treated here as an existing project specification, not as proof of implementation conformance. The repository's `PRE-RICH/docs/PRE-GENESIS-GENESIS-TRANSITION-CONFORMANCE.md` separately warns not to import PRE-RICH Genesis semantics into universal IMMORTAL economics. No universal semantics are inferred from T2.
 
 **Revised next step:** compare the T2/P0 `ENTER_QUIESCENCE` contract clause-by-clause with `PreRichLifecycleTransition.hs` and its test suite; identify the already-defined canonical pre/post-state and the actual observation/transition binding; then determine whether an existing approved action is available throughout a concrete candidate (K_c). Do not treat `MaintainQuiescent` as authorized merely because its helper and tests exist. C6-B remains **BLOCKED / NOT CERTIFIED**.
+
+
+## Clause-by-clause conformance trace — T2/P0 ENTER_QUIESCENCE (2026-10-18)
+
+**Scope and evidence level.** This is a source-level comparison between the Notion page *T2 — Transition Conformance Specification v0.1 — 12 settembre 2026* (P0 binding; integration reports page status `unverified`, last edited 2026-09-14), the lifecycle helper and unit tests on `work/immortal-green-closure`, the canonical PRE-RICH regime carrier, economic admission boundary, Cabal suite declaration and CI workflow. It is not a claim of deployed on-chain conformance. T2/P0 is treated as an application-level specification candidate; its verification status is a material limitation.
+
+### P0 matrix
+
+| T2/P0 requirement | Evidence in reviewed sources | Assessment |
+|---|---|---|
+| Deterministic transition predicate | `lifecycleTransition` defines `Active + EnterQuiescent → Quiescent` and increments `transitionNonce`; `lifecycleActionAvailable` checks whether this pure transition returns a state. | **Partial** — deterministic helper exists, but it is not the action predicate of a canonical on-chain quiescence validator. |
+| Observable trigger / state discovery | T2/P0 requires an observable event or state-discovery method. The helper accepts a supplied lifecycle state/action and has no observation/event input. | **Not evidenced in helper** — no trigger/discovery binding was found in the reviewed lifecycle path. |
+| Wake-up and re-discovery | Required by common P0. No scheduler, event consumer, or recovery/re-discovery binding was found in the reviewed helper or regime carrier. | **Not evidenced** — operational trigger remains unresolved here. |
+| Permissionless invocation | T2/P0 explicitly says `CONTRACT_CLASS / ENTER_QUIESCENCE` may be invoked permissionlessly. The pure helper itself has no caller identity or authorization check. | **Specified, not demonstrated end-to-end** — no corresponding on-chain `EnterQuiescent` entrypoint was found in the reviewed carrier. |
+| Independent on-chain revalidation against canonical state | `GenesisRegimeCarrier.mkValidator` revalidates PRE-GENESIS → GENESIS using the carrier datum, authenticated Treasury/Oracle references and `genesisPredicate`; its only action constructor is `ActivateGenesis`. It does not implement `EnterQuiescent`. The lifecycle helper checks only its separate `PreRichLifecycleState`. | **Missing for quiescence** — Genesis validation cannot be credited as quiescence validation. |
+| Atomic state delta | The helper returns a new pure Haskell value with incremented nonce. The reviewed on-chain carrier does not consume/update a canonical quiescence state. | **Unit transition only** — atomic ledger transition for quiescence not evidenced. |
+| Idempotence and concurrency | The test checks that `EnterQuiescent` is unavailable from `Quiescent`. `MaintainQuiescent` can be repeated and increments the nonce each time. T2/P0 separately requires at most one consumer of the same canonical state. | **Partial / unresolved** — local replay guard for Enter exists; no ledger-level race/consumption test for quiescence, and repeated maintenance is not idempotent as a state transition. |
+| Stale/conflicting-state rejection | Pure helper rejects action/regime combinations not listed in its pattern match. No canonical carrier datum/version or stale-state revalidation is bound to the quiescence helper. | **Partial** — local invalid-regime rejection only; canonical stale/conflict rejection not demonstrated. |
+| SAFE STALL and missing evidence | T2/P0 defines operational stall/re-discovery behavior. The QNE helper fails closed on an empty witness list or an adverse supplied witness, but it is not a submitter/wakeup/recovery mechanism. | **Predicate fail-closed only** — not proof of the P0 operational path. SAFE STALL is not promoted to an economic action. |
+| Recovery/substitution after missed events | No such path was found in the reviewed helper or canonical regime carrier for quiescence. | **Not evidenced**. |
+| External dependency boundary | Helper explicitly takes per-successor EEV, ProtectedCapital, representation-preservation and safety values as supplied witness fields. | **Inputs explicit, authority unresolved** — no binding proves their origin, freshness or completeness. |
+| No observer/backend/relayer as economic authority | T2/P0 states this boundary. The helper itself does not authenticate a caller or observation; the reviewed quiescence path has no on-chain boundary to inspect. | **Specified, implementation not evidenced**. |
+| Class safety and monotone `HighestClassEverActivated` | T2/P0 requires state-derived class safety and monotonic highest-ever class. The lifecycle helper carries only regime and transition nonce; neither class state nor highest-ever-class field is checked there. | **Missing from helper** — must be enforced at the canonical application/economic boundary, not inferred from the regime tag. |
+
+### Canonical pre/post-state and transition binding
+
+The available sources currently expose three different state surfaces, without a proved composition:
+
+1. **Lifecycle helper state:** `PreRichLifecycleState { regime, transitionNonce }`; `EnterQuiescent` changes `Active` to `Quiescent` and increments the nonce.
+2. **Canonical regime carrier:** `PreRichRegimeDatum` plus on-chain `GenesisRegimeAction = ActivateGenesis`; the reviewed validator accepts only the PRE-GENESIS → GENESIS edge and has no quiescence branch.
+3. **Economic V3 state/admission:** `EconomicTransitionV3` uses `Issue`, `Reveal`, `Claim`, `Expire`. `PreRichEconomicAdmission` accepts a caller-supplied `allOmegaSuccessorsInCertifiedKernel` Boolean; it does not derive Ω closure or bind lifecycle transitions to V3.
+
+Consequently, T2/P0 provides a normative **application-level candidate** for `EnterQuiescence`, but the reviewed implementation does not yet provide the canonical pre-state/post-state binding required to demonstrate that the action is independently revalidated and atomically committed on-chain. The P0 text's class-safety and `HighestClassEverActivated` requirements are also not discharged by the helper's regime/nonce pair.
+
+### QNE-specific conclusion and `MaintainQuiescent`
+
+`qneAcrossOmega` verifies each supplied `LifecycleOmegaWitness` for non-negative post-EEV/protected capital, non-eroding buffer, representation preservation and safety, and rejects an empty list. It does not establish that the list covers the authoritative Ω for declared perimeter E. Nor does it bind each witness to the actual post-state produced by a canonical `T(S,a,ω)`.
+
+T2/P0 names `CONTRACT_CLASS / ENTER_QUIESCENCE`; no separate authorization for `MaintainQuiescent` was found in that binding. Its nonce-incrementing behavior therefore remains an implementation helper, not an approved QNE action, unless another approved source explicitly authorizes it. It must not be added to the universal IMMORTAL action algebra by inference.
+
+The lifecycle test suite is **wired** in `.github/workflows/genesis-regime-carrier.yml` via `cabal test pre-rich-lifecycle-transition-tests`, and declared in `plutus/pre-rich-plutus.cabal`. This establishes test configuration only. A successful run and its logs must be verified separately; source presence or workflow wiring is not a passing result.
+
+### Required next proof edge
+
+Without changing V3/Reveal or introducing new economic semantics, the next admissible work is to establish from approved sources and implementation evidence:
+
+1. the canonical pre-state, post-state, deterministic trigger and class-safety predicate for `ENTER_QUIESCENCE`;
+2. the on-chain validator/transition path that revalidates and atomically consumes the canonical state, including stale/conflict and concurrency behavior;
+3. the authoritative origin and completeness proof for EEV, ProtectedCapital, representation and safety evidence across every `ω ∈ Ω`;
+4. the explicit refinement between that application transition and the declared IMMORTAL profile's `Accept` / `T(S,a,ω)`, without silently inserting the lifecycle action into `EconomicTransitionV3`;
+5. a verified successful CI run for the wired suite, followed by independent evidence for Ω coverage and QNE over the declared perimeter.
+
+**Disposition:** T2/P0 narrows the authority gap for the application-level `EnterQuiescence` candidate; it does not close implementation conformance, Ω completeness, CK3/CK3′, or C6-B. C6 remains **NOT CERTIFIED**. No source code or normative semantics were changed by this review.
