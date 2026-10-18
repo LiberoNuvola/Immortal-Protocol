@@ -59,7 +59,7 @@ decodeConwayUTxO = decodeYaciUTxO
 decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
   root <- eitherDecodeStrict' bytes
-  case objectField root "schema" of
+  case objectAt root ["schema"] of
     Right (String schema)
       | schema == "IMMORTAL-P2.8-OGMIOS-SYSTEM-START-v0.1" -> do
           raw <- textAt root ["startTimeRaw"]
@@ -81,7 +81,7 @@ decodeYaciSystemStart bytes = do
 decodeYaciEpochInfo :: BS.ByteString -> Either String (EpochInfo (Either Text.Text))
 decodeYaciEpochInfo bytes = do
   root <- eitherDecodeStrict' bytes
-  case objectField root "schema" of
+  case objectAt root ["schema"] of
     Right (String schema)
       | schema == "IMMORTAL-P2.8-OGMIOS-EPOCH-v0.1" -> do
           epochSize <- integerValueAt root "epochLength"
