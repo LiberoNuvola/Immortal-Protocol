@@ -319,3 +319,41 @@ The missing edge is more precise than previously recorded: establish whether the
 After that mapping is grounded, independently prove the QNE/Ω obligations. Neither carrier supplies an authoritative Ω envelope or a non-empty inductive `K_c` witness.
 
 No source code was changed. C6 remains **NOT CERTIFIED**; the new finding narrows the implementation search but does not close P0 conformance or C6-B.
+
+
+## Follow-up trace — B2 control carrier, deployment and permissionless P0 (2026-10-18)
+
+The B2 control implementation was traced against the exact head of `work/immortal-green-closure` reviewed for this pass: `363811e0b78125f879e98a5e58aaf35b70c5801a`. This is source inspection; it does not establish that the current branch head has passed CI or that a control singleton is deployed on Preprod.
+
+### What the carrier actually enforces
+
+`PRE-RICH/onchain/PreRichControlCarrier.hs` defines a separate PRE-RICH control UTxO with `CurrentActiveClass`, `HighestClassEverActivated`, `stateVersion`, `transitionNonce`, policy identity and token name. `ContractControl` allows the current class to decrease while requiring `HighestClassEverActivated` to remain exactly unchanged. Both activation and contraction require non-empty decision/observation references, one continuing own-script output, exactly one own-script input, preservation of the singleton token, unchanged output Value, and increments of version and nonce.
+
+The decisive authorization predicate is unconditional: `authoritySigned configuredAuthority txInfo` is required for every action. The validator only checks that the two references are non-empty; it does not itself authenticate their contents, derive the state-based contraction decision, or check the referenced observation's freshness. No `Quiescent` regime is encoded in this datum/action algebra, and this carrier does not calculate EEV, ProtectedCapital, Rep, the QNE buffer, or closure over Ω.
+
+### Permissionless invocation is not established by the present deployment path
+
+The deployment script `scripts/deployPreRichControlCarrier.mts` defaults `PREPROD_CONTROL_AUTHORITY_PKH` to the deploying wallet's payment key hash unless a separate authority hash is configured. This sets the authority identity; it does not implement permissionless transition submission.
+
+Because the validator requires that authority's signature over the transaction, an arbitrary party cannot independently construct and submit a new contraction transaction without obtaining that signature. A party could potentially relay a fully signed transaction, but that is materially narrower than the T2/P0 contract that any eligible subject may invoke a transition from canonical state, with the protocol independently validating eligibility. The reviewed implementation does not establish a public transaction-construction/submission path that lets any submitter invoke a state-derived contraction without making the authority the required signer of the exact transaction.
+
+This is a real unresolved conformance question, not an instruction to remove the signature. The signature could be compatible only if an approved authority decision is separated from permissionless invocation in a way that preserves the protocol's stated authority boundary; no such refinement is established by the reviewed files.
+
+### What the workflows and tests demonstrate
+
+- `.github/workflows/pre-rich-b2-control-conformance.yml` builds/caches the two B2 Plutus artifacts, runs TypeScript observation/provider regressions, and performs a browser build. The reviewed workflow does not invoke an on-chain/emulator trace of `ContractControl` or prove permissionless eligibility.
+- The repository tree at the reviewed branch head did not expose a dedicated `PreRichControlCarrier` validator test file by that name. This is a path-level finding, not proof that no relevant assertions exist anywhere.
+- `.github/workflows/pre-rich-b2-control-preprod.yml` is a manual deployment workflow. It explicitly checks out `work/immortal-green-closure`, builds fresh artifacts, resolves one live seed UTxO, deploys the singleton and uploads a deployment evidence JSON. The workflow definition and deployment script are not proof that the workflow has successfully run or that the singleton currently exists on Preprod; no successful run or live deployment evidence was verified in this pass.
+- `Adapter/CARDANO/observation/PreprodB2ControlObservation.ts` reads the configured singleton and fails closed on missing/duplicate UTxOs, missing datum, malformed fields, or policy/token/class-binding mismatch. This establishes an observation boundary, not a transition-authority or liveness proof.
+- `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` requires the control identity and binds the signed Issue authority response to the observed control reference. That supports the Issue admission read path; it does not establish the separate class-contraction/ENTER_QUIESCENCE transition.
+
+### Required source-backed resolution
+
+Keep the two existing candidates separate until an authorized source binds them:
+
+1. `ContractControl`: authenticated class contraction with monotone `HighestClassEverActivated`, but with configured-authority signature and no explicit Quiescent regime.
+2. `EnterQuiescent`: a separate PRE-RICH lifecycle helper transition, with no demonstrated atomic refinement into the authenticated B2 control UTxO.
+
+The missing edge is an approved refinement specifying whether and how class contraction implements T2/P0 `CONTRACT_CLASS / ENTER_QUIESCENCE`, including the authority-signature versus permissionless-invocation boundary, canonical trigger/predicate, on-chain revalidation, atomic state delta, stale/concurrent submission behavior, and an evidence-backed ledger test. Do not infer that edge from the action name, and do not change validator semantics without an authorized decision.
+
+**Updated C6 result:** B2 makes the class-control state more concrete but does not supply an authorized universal IMMORTAL action or a non-empty `Kc` witness. C6 remains **NOT CERTIFIED**; C6-B remains blocked. No V3, Reveal, economic constants, or normative semantics were changed.
