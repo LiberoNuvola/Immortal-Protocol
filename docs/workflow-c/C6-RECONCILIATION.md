@@ -530,3 +530,37 @@ Therefore this is **not an invitation to reopen economic policy** or invent a ne
 Before changing the validator, identify an existing canonical state/evidence source and show how the closed economic predicate can be recomputed on-chain. Then test the contract at ledger/emulator level: eligible non-authority submitter succeeds; ineligible or under-protected state fails; stale/invalid evidence fails; competing spends allow at most one transition; class/regime/version/nonce changes are atomic as specified; `HighestClassEverActivated` never decreases.
 
 **Disposition:** class/hysteresis semantics CLOSED; permissionless invocation contract explicitly specified in retrieved T2/P0; B2 predicate/evidence refinement and ledger conformance OPEN. C6 remains **NOT CERTIFIED**. This documentation update does not authorize a validator change and does not alter V3, Reveal, EEV, first Issue, Beacon or B3/Materios.
+
+
+## On-chain source-of-state search — V3 carrier exists, but does not close B2 contraction (2026-10-18)
+
+### Concrete finding: a per-class economic state carrier already exists in code
+
+The audit found `PRE-RICH/onchain/V3EconomicStateCarrier.hs` on `work/immortal-green-closure`. Its datum stores the rich `V3EconomicState`, including all eight ordered `TicketClassState` entries with `tcsIssued`, `tcsUnresolved`, `tcsExposure`, `tcsCap`, and `tcsSaleable`, plus `CurrentActiveClass` and `HighestClassEverActivated`. Its on-chain `stateValid` checks the canonical eight classes, per-class price/exposure consistency, aggregate reserve/count consistency, and the historical maximum bound. The economic kernel and `PreRichEconomicProjection` also implement class-aware exposure and fail-closed projection.
+
+This means **the repository is not missing a representation of per-class state**. The exact gap is whether this existing carrier is the authoritative, live canonical state for the B2 transition and whether B2 consumes it atomically.
+
+### Why this is not yet a reusable contraction predicate
+
+The inspected `V3EconomicStateCarrier.hs` currently accepts only action labels `Issue`, `Reveal`, `Claim`, and `Expire` in its binding envelope. It requires an Ed25519 authority signature over the binding message, and its carrier transition validates state hashes/version but does not itself calculate the B2 contraction eligibility/destination-class predicate. The separate `PreRichControlCarrier.hs` has the class fields but no per-class economic decomposition, and its `ContractControl` branch accepts caller-selected `newCurrent` with non-empty decision/observation references and a configured authority signature.
+
+Therefore the current code has two related state surfaces:
+- rich V3 carrier: per-class economic data and hashes, but no `CONTRACT_CLASS` action/refinement and authority-signed state advancement;
+- B2 control carrier: class-control singleton and monotone history, but no canonical per-class economic data or independently evaluated contraction predicate.
+
+The current sources do not prove a canonical atomic refinement between these two surfaces, and repository code alone does not establish that the V3 carrier is deployed/live on Preprod. The presence of a validator module is not deployment evidence.
+
+### Reuse-first conclusion
+
+Do not create a third copy of per-class state and do not derive exposure from the B1 legacy aggregate or the `ppSuspendedClasses` bitmask. The B1 datum contains only aggregate unresolved reserve/count and suspension flags; it cannot reconstruct class composition when ticket prices differ. The existing V3 carrier is the first reuse candidate, subject to verifying its deployment/canonical identity and defining how class contraction is admitted and synchronized.
+
+The implementation design must decide, against existing approved semantics, how one canonical transaction:
+1. validates the exact current V3 class decomposition and state version;
+2. derives the permitted contraction from the already-closed economic gate rather than caller-supplied `newCurrent`;
+3. updates the V3 state and B2 control state without permitting them to diverge;
+4. preserves singleton consumption, version/nonce progression and monotone `HighestClassEverActivated`;
+5. proves that a competing or stale candidate cannot contract from an obsolete economic state.
+
+A reference input alone is not sufficient to establish freshness against concurrent changes if the referenced economic state can be spent/updated independently; the conformance design must explicitly close that race. No specific atomic wiring is selected here because the existing validator/action model does not yet demonstrate it.
+
+**Updated disposition:** canonical per-class representation FOUND in the V3 carrier; B2 contract still OPEN at canonical live-state identity, contraction predicate, and atomic cross-carrier refinement. No code/test/deployment changed or run. C6 remains **NOT CERTIFIED**.
