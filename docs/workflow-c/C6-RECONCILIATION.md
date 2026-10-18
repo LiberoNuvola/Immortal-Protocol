@@ -445,3 +445,28 @@ No retrieved decision artifact explicitly binds all three elements needed here: 
 Do not alter `PreRichControlCarrier.hs` yet. The minimum safe implementation change cannot be selected until the canonical predicate/evidence reference and the class-to-`QUIESCENT` atomic mapping are grounded. Once approved, test at least: non-authority submitter succeeds when eligible; same submitter fails when ineligible; stale reference/UTxO fails; two competing submissions yield at most one transition; highest-ever class is unchanged on contraction; and class/regime/version/nonce update is atomic.
 
 This is a source-retrieval result, not proof that no such decision exists anywhere in the workspace. It means none was found in the searched artifacts. No tests or deployment were run. C6 remains **NOT CERTIFIED**.
+
+
+## Additional prior-art check — permissionless execution and class authority (2026-10-18)
+
+A second targeted repository search found stronger textual prior art, but not a canonical B2 authorization:
+
+- `docs/archive/treasury-distribution-spec.md` states that no human operator/backend/founder/team wallet/relayer may have discretionary authority over class activation or contraction, and that a relayer may execute a valid permissionless transaction. The file is under `docs/archive/`; it is historical/reconciliation material, not sufficient by itself to authorize a production validator change.
+- `PRE-RICH/docs/PRE-RICH-COMPLETE-SYSTEM-SPECIFICATION.md` states that `CurrentActiveClass` may contract, `HighestClassEverActivated` is monotonic, and PRE-GENESIS → GENESIS is permissionless in design. It labels itself an integrative document and says normative meaning remains in cited source documents.
+- `PRE-RICH/docs/GENESIS-REGIME-CARRIER-DESIGN-v0.1.md` gives a concrete permissionless pattern: state predicate, discoverable state, any eligible submitter, on-chain revalidation, atomic singleton transition, and stale competing candidate failure. It explicitly applies this pattern to Genesis, not automatically to class contraction.
+
+### What this changes — and what it does not
+
+This prior art makes the preferred separation of **economic decision authority** from **transaction submission** consistent with existing architecture language. It strengthens the case for a permissionless B2 refinement rather than a privileged keeper.
+
+It does not prove that the current `ContractControl` validator can simply remove `configuredAuthority`: the B2 carrier currently validates only that decision/observation references are non-empty, not that they authenticate a fresh class-contraction predicate. Removing the signature without replacing that missing verification would make the action caller-controlled, not permissionless-and-safe.
+
+### Minimal safe design boundary for the next implementation slice
+
+1. Preserve the existing B2 singleton, exact one-input/one-output consumption, token conservation, unchanged Value, version/nonce increments, and monotone `HighestClassEverActivated`.
+2. Define the exact on-chain-verifiable predicate/evidence reference for class contraction from already-approved sources; do not invent a new economic threshold or trust arbitrary non-empty references.
+3. Bind `CurrentActiveClass` contraction and `QUIESCENT` regime transition atomically only if the approved canonical regime model requires both in the same transition; otherwise preserve the existing separated state machine and document its refinement boundary.
+4. Add ledger-level positive/negative twins for non-authority submitter, ineligible state, stale evidence/reference, competing UTxO spends, monotone highest class, and atomic regime/version/nonce updates.
+5. Keep Beacon/Materios outside this change: neither is a substitute for the class predicate or a reason to require a privileged tx signer.
+
+**Status:** prior art found; B2-specific proof and conformance remain missing. No code change, CI run, or deployment performed. This section is a reconciliation finding, not a canonical amendment or authorization to alter the validator.
