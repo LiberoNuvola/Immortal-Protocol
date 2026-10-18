@@ -31,6 +31,8 @@ test('projects exact canonical classes and maps Jackpot exactly once', () => {
   assert.equal(out.v3ProtectedCapital, out.universalProtectedCapital);
   assert.equal(out.buffer, '-439');
   assert.equal(out.invariants.exactCanonicalClassSet, true);
+  assert.match(out.modelSha256, /^[a-f0-9]{64}$/);
+  assert.match(out.sourceContractSha256, /^[a-f0-9]{64}$/);
 });
 
 test('rejects a missing canonical class', () => {
@@ -101,4 +103,17 @@ test('does not invent economic constraints for unmapped Jackpot lifecycle intege
   const out = projectV3ToUniversal(m);
   assert.equal(out.projected.additionalProtectedCapital, '11');
   assert.equal(out.v3ProtectedCapital, '2039');
+});
+
+test('canonical model digest is stable under object key order', () => {
+  const m = model();
+  const reordered = {
+    eev: m.eev,
+    state: { jackpot: m.state.jackpot, control: m.state.control, classes: m.state.classes,
+      mandatoryFutureCosts: m.state.mandatoryFutureCosts, reserveProtection: m.state.reserveProtection,
+      safetyCapital: m.state.safetyCapital, unresolvedTicketCount: m.state.unresolvedTicketCount,
+      unresolvedReserve: m.state.unresolvedReserve, crystallizedLiabilities: m.state.crystallizedLiabilities },
+    profile: { classPrices: m.profile.classPrices, maxNormalPayoutMultiplier: m.profile.maxNormalPayoutMultiplier, version: m.profile.version }
+  };
+  assert.equal(projectV3ToUniversal(m).modelSha256, projectV3ToUniversal(reordered).modelSha256);
 });
