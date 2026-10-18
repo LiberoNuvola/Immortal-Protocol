@@ -168,11 +168,14 @@ fn oracle_price_for(
       } else {
         when datum_data(tx, output) is {
           Some(raw) -> {
-            // Malformed datum data aborts this candidate rather than accepting
-            // an unauthenticated price. Ledger-valid oracle fixtures cover schema parity.
-            expect oracle: OracleDatum = raw
-            if oracle_quote_matches(oracle, asset_policy, asset_name, publisher, now) {
-              Some(oracle.price)
+            // Haskell fromBuiltinData returns Nothing for malformed OracleDatum
+            // and continues scanning. Aiken's soft cast preserves that behavior.
+            if raw is OracleDatum {
+              if oracle_quote_matches(raw, asset_policy, asset_name, publisher, now) {
+                Some(raw.price)
+              } else {
+                oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
+              }
             } else {
               oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
             }
