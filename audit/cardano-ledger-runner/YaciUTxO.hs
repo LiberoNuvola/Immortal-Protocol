@@ -55,7 +55,7 @@ decodeYaciUTxO bytes = do
     then Left "DUPLICATE_YACI_UTXO_INPUT"
     else Right (UTxO (Map.fromList parsed))
 
-parseInput :: Aeson.Value -> Either String (TxIn, BabbageTxOut BabbageEra)
+parseInput :: Aeson.Value -> Either String (TxIn, BabbageTxOut ConwayEra)
 parseInput value = do
   txHash <- textField value "tx_hash"
   outputIndex <- integerValueField value "output_index"
@@ -152,7 +152,7 @@ parseMaryValue items = do
                                 assets
                             )
 
-parseDatum :: Aeson.Value -> Either String (Datum BabbageEra)
+parseDatum :: Aeson.Value -> Either String (Datum ConwayEra)
 parseDatum value = do
   mHash <- optionalTextField value "data_hash"
   mInline <- optionalTextField value "inline_datum"
@@ -170,8 +170,7 @@ parseDatum value = do
 inlineDatum :: Text -> Maybe DataHash -> Either String (Datum ConwayEra)
 inlineDatum textHash expected = do
   raw <- decodeHexText "inline_datum" textHash
-  let binary :: Either String (BinaryData ConwayEra) =
-        makeBinaryData (toShort raw)
+  let binary = makeBinaryData (toShort raw) :: Either String (BinaryData ConwayEra)
   datumData <- case binary of
     Left err -> Left ("INVALID_INLINE_DATUM: " <> err)
     Right bd -> Right bd
