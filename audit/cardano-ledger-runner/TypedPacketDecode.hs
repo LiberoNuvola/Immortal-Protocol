@@ -10,7 +10,7 @@ module TypedPacketDecode
   , evaluateConwayTx
   ) where
 
-import Cardano.Ledger.Api (ConwayEra, PParams, Tx)
+import Cardano.Ledger.Api (BabbageEra, ConwayEra, PParams, Tx)
 import Cardano.Ledger.Api.PParams (ppProtocolVersionL)
 import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator, decCBOR)
 import Cardano.Ledger.Binary.Version (Version, mkVersion)
