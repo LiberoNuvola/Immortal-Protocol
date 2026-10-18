@@ -216,7 +216,7 @@ export function verifySourceSnapshot(root) {
       const close = open < 0 ? -1 : source.indexOf('}', open + 1);
       if (open < 0 || close < 0) return [];
       return source.slice(open + 1, close).split(/\r?\n/)
-        .map(line => line.match(/^\s*\\{?\s*,?\s*([A-Za-z][A-Za-z0-9_]*)\s*::/))
+        .map(line => line.match(/^\s*[{,]?\s*([A-Za-z][A-Za-z0-9_]*)\s*::/))
         .filter(Boolean).map(m => m[1]);
     };
     const v3Fields = extractFields(sources['IMMORTAL/state/EconomicStateV3.hs'], 'V3EconomicState');
