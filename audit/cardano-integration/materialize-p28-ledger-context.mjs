@@ -221,6 +221,83 @@ const genesisResponse = {
 const utxoResponse = await fetch(API + '/txs/' + txHash + '/utxos')
 if (!utxoResponse.ok) throw new Error('Yaci /txs/{hash}/utxos failed: HTTP ' + utxoResponse.status)
 const utxos = await utxoResponse.json()
+const transactionMetadataResponse = await fetch(API + '/txs/' + txHash)
+if (!transactionMetadataResponse.ok) {
+  throw new Error('Yaci transaction metadata lookup failed: HTTP ' + transactionMetadataResponse.status)
+}
+const transactionMetadata = await transactionMetadataResponse.json()
+if (typeof transactionMetadata.hash !== 'string' ||
+    transactionMetadata.hash.toLowerCase() !== txHash.toLowerCase()) {
+  throw new Error('Yaci transaction metadata hash does not match Reveal transactionRef')
+}
+const transactionSlot = transactionMetadata.slot
+const transactionBlockHeight = transactionMetadata.block_height
+if (!Number.isSafeInteger(transactionSlot) || transactionSlot < 0) {
+  throw new Error('Yaci transaction metadata lacks a valid absolute slot')
+}
+if (!Number.isSafeInteger(transactionBlockHeight) || transactionBlockHeight < 0) {
+  throw new Error('Yaci transaction metadata lacks a valid block height')
+}
+
+const blockResponse = await fetch(API + '/blocks/' + transactionBlockHeight)
+if (!blockResponse.ok) {
+  throw new Error('Yaci block metadata lookup failed: HTTP ' + blockResponse.status)
+}
+const blockMetadata = await blockResponse.json()
+if (typeof blockMetadata.hash !== 'string' || !/^[0-9a-f]{64}$/i.test(blockMetadata.hash)) {
+  throw new Error('Yaci block metadata lacks a valid block hash')
+}
+if (!Number.isSafeInteger(blockMetadata.number) || blockMetadata.number !== transactionBlockHeight ||
+    !Number.isSafeInteger(blockMetadata.height) || blockMetadata.height !== transactionBlockHeight) {
+  throw new Error('Yaci transaction/block height binding mismatch')
+}
+if (!Number.isSafeInteger(blockMetadata.slot) || blockMetadata.slot !== transactionSlot) {
+  throw new Error('Yaci transaction/block absolute slot binding mismatch')
+}
+if (!Number.isSafeInteger(blockMetadata.time) || blockMetadata.time <= 0) {
+  throw new Error('Yaci block metadata lacks a valid Unix timestamp in seconds')
+}
+
+const requiredGithubBinding = (name) => {
+  const value = process.env[name]
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error('Missing GitHub workflow provenance field: ' + name)
+  }
+  return value
+}
+const workflowBinding = {
+  repository: requiredGithubBinding('GITHUB_REPOSITORY'),
+  workflow: requiredGithubBinding('GITHUB_WORKFLOW'),
+  ref: requiredGithubBinding('GITHUB_REF'),
+  commit_sha: requiredGithubBinding('GITHUB_SHA'),
+  run_id: requiredGithubBinding('GITHUB_RUN_ID'),
+  run_attempt: requiredGithubBinding('GITHUB_RUN_ATTEMPT'),
+}
+if (!/^[0-9a-f]{40}$/i.test(workflowBinding.commit_sha)) {
+  throw new Error('Invalid GitHub workflow commit SHA')
+}
+if (!/^[1-9][0-9]*$/.test(workflowBinding.run_id) ||
+    !/^[1-9][0-9]*$/.test(workflowBinding.run_attempt)) {
+  throw new Error('Invalid GitHub workflow run ID/attempt')
+}
+
+const acquiredAt = new Date().toISOString()
+const transactionObservation = {
+  transaction_hash: txHash.toLowerCase(),
+  slot: transactionSlot,
+  block_height: transactionBlockHeight,
+  block_number: blockMetadata.number,
+  block_slot: blockMetadata.slot,
+  block_hash: blockMetadata.hash.toLowerCase(),
+  block_time_unix_seconds: blockMetadata.time,
+  block_time_iso: new Date(blockMetadata.time * 1000).toISOString(),
+  observed_at: acquiredAt,
+  source: {
+    transaction_endpoint: API + '/txs/' + txHash,
+    block_endpoint: API + '/blocks/' + transactionBlockHeight,
+  },
+}
+
 if (!Array.isArray(utxos.inputs) || utxos.inputs.length === 0) throw new Error('Yaci transaction UTxO response lacks consumed inputs')
 
 const economicInputs = utxos.inputs.filter((input) => input.collateral !== true && input.reference !== true)
@@ -362,7 +439,9 @@ const manifest = {
     timing_file: 'yaci-devkit-info.txt',
     epoch_file: 'epoch-latest.json',
   },
-  acquired_at: new Date().toISOString(),
+  acquired_at: acquiredAt,
+  workflow_binding: workflowBinding,
+  transaction_observation: transactionObservation,
   script_artifacts: transition.artifactHashes ?? null,
   sha256: hashes,
   materialization: {

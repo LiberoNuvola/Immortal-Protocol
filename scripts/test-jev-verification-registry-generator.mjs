@@ -71,6 +71,12 @@ assert.equal(p28Registry.checks.find((c) => c.checkId === "P2.8.YACI.UTXO.DECODE
 assert.equal(p28Registry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "NOT_RUN");
 assert.equal(p28Registry.overallResult, "FAIL", "a decoder failure must dominate a skipped downstream gate");
 
+const p28Cancelled = structuredClone(p28Outcomes);
+p28Cancelled.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").stepOutcome = "cancelled";
+const p28CancelledRegistry = generateRegistry(p28Cancelled);
+assert.equal(p28CancelledRegistry.checks.find((c) => c.checkId === "P2.8.LEDGER.EVIDENCE.GATE").result, "BLOCKED");
+assert.equal(p28CancelledRegistry.overallResult, "FAIL", "a decoder failure must dominate a cancelled downstream gate");
+
 const noEvidence = structuredClone(base);
 noEvidence.checks[0].evidenceRefs = [];
 assert.throws(() => generateRegistry(noEvidence), /PASS outcome requires explicit evidence references/);

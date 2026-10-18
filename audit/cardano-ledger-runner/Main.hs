@@ -7,6 +7,7 @@ import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
+import Data.Char (isHexDigit, toLower)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as BSC
@@ -24,7 +25,7 @@ import Cardano.Ledger.Alonzo.Plutus.Evaluate
 import Cardano.Slotting.EpochInfo.API (EpochInfo)
 import Cardano.Slotting.Time (SystemStart)
 import System.Directory (doesFileExist)
-import System.Environment (getArgs)
+import System.Environment (getArgs, lookupEnv)
 import System.Exit (exitFailure)
 import TypedPacketDecode
   ( decodeConwayPParams
@@ -251,22 +252,133 @@ inspectManifest evidenceDir manifestPath runEvaluation = do
       safeStall "INVALID_MANIFEST"
       putStrLn ("MANIFEST_ERROR: " <> err)
 
-    Right (Aeson.Object manifest) ->
-      case verifyManifestFileHashes evidenceDir manifest of
+    Right (Aeson.Object manifest) -> do
+      validation <- verifyFullManifest evidenceDir manifest
+      case validation of
         Left err -> safeStall err
         Right () -> do
           putStrLn "RESULT: MANIFEST_SHA256_BINDING_VERIFIED"
+          putStrLn "RESULT: WORKFLOW_COMMIT_RUN_BINDING_VERIFIED"
+          putStrLn "RESULT: TRANSACTION_SLOT_TIME_BINDING_VERIFIED"
           case KeyMap.lookup "policy" manifest of
             Just (Aeson.Object policy) ->
               case KeyMap.lookup "typed_context_ready" policy of
                 Just (Aeson.Bool False) -> decodeTypedArtifacts evidenceDir runEvaluation
                 Just (Aeson.Bool True) -> decodeTypedArtifacts evidenceDir runEvaluation
-
                 _ -> safeStall "INVALID_MANIFEST_TYPED_CONTEXT_FLAG"
-
             _ -> safeStall "INVALID_MANIFEST_POLICY"
 
     Right _ -> safeStall "INVALID_MANIFEST_SHAPE"
+
+verifyFullManifest :: FilePath -> Aeson.Object -> IO (Either String ())
+verifyFullManifest evidenceDir manifest = do
+  hashResult <- verifyManifestFileHashes evidenceDir manifest
+  case hashResult of
+    Left err -> pure (Left err)
+    Right () -> do
+      workflowResult <- verifyWorkflowBinding manifest
+      case workflowResult of
+        Left err -> pure (Left err)
+        Right () -> verifyTransactionObservation evidenceDir manifest
+
+verifyWorkflowBinding :: Aeson.Object -> IO (Either String ())
+verifyWorkflowBinding manifest =
+  case KeyMap.lookup (Key.fromString "workflow_binding") manifest of
+    Just (Aeson.Object binding) -> do
+      results <- mapM (checkBinding binding)
+        [ ("repository", "GITHUB_REPOSITORY")
+        , ("workflow", "GITHUB_WORKFLOW")
+        , ("ref", "GITHUB_REF")
+        , ("commit_sha", "GITHUB_SHA")
+        , ("run_id", "GITHUB_RUN_ID")
+        , ("run_attempt", "GITHUB_RUN_ATTEMPT")
+        ]
+      case [err | Left err <- results] of
+        [] -> pure (Right ())
+        err : _ -> pure (Left err)
+    _ -> pure (Left "WORKFLOW_BINDING_MISSING_OR_INVALID")
+  where
+    checkBinding binding (field, envName) = do
+      expected <- lookupEnv envName
+      pure $ case (KeyMap.lookup (Key.fromString field) binding, expected) of
+        (Just (Aeson.String actual), Just expectedValue)
+          | Text.unpack actual == expectedValue -> Right ()
+        _ -> Left ("WORKFLOW_BINDING_MISMATCH:" <> field)
+
+verifyTransactionObservation :: FilePath -> Aeson.Object -> IO (Either String ())
+verifyTransactionObservation evidenceDir manifest = do
+  utxoBytes <- BS.readFile (evidenceDir <> "/utxo.json")
+  pure $ do
+    utxoValue <- (Aeson.eitherDecodeStrict' utxoBytes :: Either String Aeson.Value)
+    utxoObject <- case utxoValue of
+      Aeson.Object objectValue -> Right objectValue
+      _ -> Left "UTXO_CONTEXT_NOT_OBJECT"
+
+    manifestTxHash <- manifestText manifest "transaction_hash"
+    utxoTxHash <- manifestText utxoObject "transactionRef"
+    observation <- manifestObject manifest "transaction_observation"
+    observationTxHash <- manifestText observation "transaction_hash"
+    slot <- manifestInteger observation "slot"
+    blockSlot <- manifestInteger observation "block_slot"
+    blockHeight <- manifestInteger observation "block_height"
+    blockNumber <- manifestInteger observation "block_number"
+    blockTime <- manifestInteger observation "block_time_unix_seconds"
+    blockHash <- manifestText observation "block_hash"
+    blockTimeIso <- manifestText observation "block_time_iso"
+    acquiredAt <- manifestText manifest "acquired_at"
+    observedAt <- manifestText observation "observed_at"
+
+    if length manifestTxHash /= 64 || not (all isHexDigit manifestTxHash)
+      then Left "TRANSACTION_REFERENCE_INVALID"
+      else pure ()
+    if map toLower manifestTxHash /= map toLower utxoTxHash ||
+       map toLower manifestTxHash /= map toLower observationTxHash
+      then Left "TRANSACTION_REFERENCE_BINDING_MISMATCH"
+      else pure ()
+    if slot < 0 || blockHeight < 0
+      then Left "TRANSACTION_OBSERVATION_NEGATIVE_SLOT_OR_HEIGHT"
+      else pure ()
+    if slot /= blockSlot
+      then Left "TRANSACTION_BLOCK_SLOT_MISMATCH"
+      else pure ()
+    if blockHeight /= blockNumber
+      then Left "TRANSACTION_BLOCK_HEIGHT_MISMATCH"
+      else pure ()
+    if blockTime <= 0 || null blockTimeIso
+      then Left "TRANSACTION_BLOCK_TIME_INVALID"
+      else pure ()
+    if length blockHash /= 64 || not (all isHexDigit blockHash)
+      then Left "TRANSACTION_BLOCK_HASH_INVALID"
+      else pure ()
+    if null acquiredAt || observedAt /= acquiredAt
+      then Left "TRANSACTION_OBSERVATION_TIMESTAMP_BINDING_MISMATCH"
+      else pure ()
+
+manifestValue :: Aeson.Object -> String -> Either String Aeson.Value
+manifestValue source field =
+  maybe (Left ("MANIFEST_FIELD_MISSING:" <> field)) Right
+    (KeyMap.lookup (Key.fromString field) source)
+
+manifestObject :: Aeson.Object -> String -> Either String Aeson.Object
+manifestObject source field = do
+  value <- manifestValue source field
+  case value of
+    Aeson.Object objectValue -> Right objectValue
+    _ -> Left ("MANIFEST_FIELD_NOT_OBJECT:" <> field)
+
+manifestText :: Aeson.Object -> String -> Either String String
+manifestText source field = do
+  value <- manifestValue source field
+  case value of
+    Aeson.String textValue -> Right (Text.unpack textValue)
+    _ -> Left ("MANIFEST_FIELD_NOT_TEXT:" <> field)
+
+manifestInteger :: Aeson.Object -> String -> Either String Integer
+manifestInteger source field = do
+  value <- manifestValue source field
+  case Aeson.fromJSON value :: Aeson.Result Integer of
+    Aeson.Success number -> Right number
+    Aeson.Error _ -> Left ("MANIFEST_FIELD_NOT_INTEGER:" <> field)
 
 verifyManifestFileHashes :: FilePath -> Aeson.Object -> IO (Either String ())
 verifyManifestFileHashes evidenceDir manifest = do
