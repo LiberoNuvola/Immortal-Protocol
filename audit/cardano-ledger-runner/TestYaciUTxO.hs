@@ -92,6 +92,9 @@ mutated label needle replacement = case replaceOnce needle replacement packet of
 main :: IO ()
 main = do
   decoded <- assertRight "native Yaci UTxO decode" (decodeYaciUTxO (B8.pack packet))
+  if decodeYaciUTxO (B8.pack packet) /= Right decoded
+    then failTest "same input produced a different decoded result"
+    else putStrLn "PASS deterministic decode result"
   case decoded of
     UTxO entries -> do
       if Map.size entries /= 1 then failTest ("expected one UTxO, got " <> show (Map.size entries)) else putStrLn "PASS decoded UTxO entry count"
@@ -137,6 +140,5 @@ main = do
   assertLeft "missing observed field is rejected" "MISSING_FIELD:observed" (decodeYaciUTxO (B8.pack "{}"))
   assertLeft "unexpected top-level type is rejected" "EXPECTED_OBJECT" (decodeYaciUTxO (B8.pack "[]"))
 
-  if decodeYaciUTxO (B8.pack packet) == decodeYaciUTxO (B8.pack packet) then putStrLn "PASS deterministic decode result" else failTest "decoder is nondeterministic"
   where
     failTest msg = putStrLn ("FAIL " <> msg) >> exitFailure
