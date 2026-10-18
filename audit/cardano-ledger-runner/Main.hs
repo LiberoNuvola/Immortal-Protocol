@@ -8,6 +8,8 @@ import qualified Data.ByteString.Base16 as B16
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import Data.Char (isHexDigit, toLower)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Char8 as BSC
@@ -346,6 +348,12 @@ verifyTransactionObservation evidenceDir manifest = do
       else pure ()
     if blockTime <= 0 || null blockTimeIso
       then Left "TRANSACTION_BLOCK_TIME_INVALID"
+      else pure ()
+    let expectedBlockTimeIso =
+          formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S"
+            (posixSecondsToUTCTime (fromInteger blockTime)) <> ".000Z"
+    if blockTimeIso /= expectedBlockTimeIso
+      then Left "TRANSACTION_BLOCK_TIME_ISO_MISMATCH"
       else pure ()
     if length blockHash /= 64 || not (all isHexDigit blockHash)
       then Left "TRANSACTION_BLOCK_HASH_INVALID"
