@@ -185,3 +185,29 @@ The generic rejection/safe-stall policy is not a substitute for that witness: th
 **No source-backed authorization edge was found for promoting the PRE-RICH lifecycle helper to the universal IMMORTAL action algebra.** This is a bounded review of the named normative source files, not a claim that every repository file has been exhaustively reviewed.
 
 Therefore the next step is not to alter code or manufacture an action. It is to identify an existing authoritative application/profile contract that authorizes this lifecycle transition and defines its acceptance and refinement semantics. If no such source exists, record an architecture decision before composition. In either case, a separate proof must bind the deployment's full authoritative Ω envelope to the declared perimeter and establish CK3/CK3′, non-vacuity at concrete `S0`, and the required `Rep`/buffer preservation. C6 remains **NOT CERTIFIED**.
+
+
+## Correction and extended application-contract trace — lifecycle authorization versus operational composition (2026-10-18)
+
+A further scan found an application-level source that must be distinguished from the universal normative corpus: `PRE-RICH/docs/GENESIS-REGIME-CARRIER-DESIGN-v0.1.md` records the semantic regime chain `PRE_GENESIS → GENESIS → ACTIVE → QUIESCENT`. This supports the existence of QUIESCENT as an intended PRE-RICH regime; it does **not** by itself define the full canonical action/acceptance/Ω semantics for `EnterQuiescent` or `MaintainQuiescent`.
+
+The concrete application implementation is split:
+- `PreRichRegimeState.hs` and `GenesisRegimeCarrier.hs` implement the PRE-GENESIS → GENESIS boundary, with the on-chain action constructor `ActivateGenesis`.
+- `PreRichLifecycleTransition.hs` separately implements ACTIVE → QUIESCENT and QUIESCENT → QUIESCENT-with-incremented-nonce on a different `PreRichLifecycleState` type.
+- The reviewed source set contains no composition/refinement function connecting the lifecycle helper's state/action to the canonical regime carrier and the economic `T(S,a,ω)` relation. The documented regime chain therefore supplies application-level intent, but the action-specific acceptance/refinement edge remains unproved in the inspected code.
+
+### Test-wiring correction
+
+The earlier note that `PreRichLifecycleTransitionTest.hs` was not listed in `formal-mechanical-evidence.yml` remains true for that particular workflow, but it was too broad if read as saying the test is not wired into any workflow. The separate `.github/workflows/genesis-regime-carrier.yml` explicitly runs:
+
+```sh
+cabal test pre-rich-lifecycle-transition-tests
+```
+
+and `plutus/pre-rich-plutus.cabal` defines that suite with `PreRichLifecycleTransitionTest.hs` as its main module. The workflow's existence establishes **test wiring**, not a passing run. No successful Actions run or log was verified in this pass, so execution status remains unconfirmed and no test pass is claimed.
+
+### Updated bounded conclusion
+
+There is now evidence of (1) intended PRE-RICH regime-chain semantics, (2) a concrete local lifecycle transition helper, and (3) a workflow configured to run its Haskell test suite. Still missing from the evidence reviewed here are: a verified successful test run; an explicit composition/refinement from the helper into the canonical application/economic transition boundary; action-specific acceptance compatibility; and a sound authoritative-Ω coverage argument proving QNE over the declared perimeter. Do not interpret the generic regime-chain diagram as proof of these operational obligations.
+
+This correction supersedes any implication that the lifecycle Haskell test is absent from all workflows. C6 remains **NOT CERTIFIED**; no code or normative semantics were changed.
