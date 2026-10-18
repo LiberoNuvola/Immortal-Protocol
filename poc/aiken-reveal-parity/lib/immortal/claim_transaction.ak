@@ -115,6 +115,15 @@ fn ticket_owner(
   }
 }
 
+/// Non-aborting equivalent of Haskell fromBuiltinData for OracleDatum.
+fn decode_oracle_datum(raw: Data) -> Option<OracleDatum> {
+  if raw is OracleDatum {
+    Some(raw)
+  } else {
+    None
+  }
+}
+
 fn valid_oracle_timestamp(timestamp: Int, now: Int) -> Bool {
   timestamp <= now && now - timestamp <= oracle_max_age_ms
 }
@@ -169,15 +178,16 @@ fn oracle_price_for(
         when datum_data(tx, output) is {
           Some(raw) -> {
             // Haskell fromBuiltinData returns Nothing for malformed OracleDatum
-            // and continues scanning. Aiken's soft cast preserves that behavior.
-            if raw is OracleDatum {
-              if oracle_quote_matches(raw, asset_policy, asset_name, publisher, now) {
-                Some(raw.price)
-              } else {
+            // and continues scanning; preserve that behavior with a soft cast.
+            when decode_oracle_datum(raw) is {
+              Some(oracle) ->
+                if oracle_quote_matches(oracle, asset_policy, asset_name, publisher, now) {
+                  Some(oracle.price)
+                } else {
+                  oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
+                }
+              None ->
                 oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
-              }
-            } else {
-              oracle_price_for(rest, tx, state_policy, state_name, publisher, asset_policy, asset_name, now)
             }
           }
           None ->
@@ -556,4 +566,9 @@ test claim_context_rejects_missing_prize_input() {
     #"4f5241434c45",
     #"bb",
   )
+}
+
+
+test claim_oracle_decoder_returns_none_for_malformed_data() {
+  decode_oracle_datum(Int(42)) == None
 }
