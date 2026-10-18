@@ -10,7 +10,7 @@ import { CML, Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNati
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-import { beaconRegistryValidator, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
+import { beaconRegistryValidator, buildB1PrizePool, buildScriptsFromLucid, prizeTableToData, prizeValidatorFactory } from '../../src/loadValidator'
 import { createCardanoExecutionAdapter } from '../../Adapter/CARDANO/runtime/CardanoExecutionAdapter'
 import {
   defaultPrizeTable,
@@ -603,6 +603,70 @@ const scripts = buildScriptsFromLucid(
   testPolicyId,
   poolTokenNameHex,
 )
+
+/**
+ * Explicit local-lab-only route for exercising the typed-context Aiken Claim
+ * validator. Selection happens before the Prize reference script is published,
+ * so this route never tries to publish the oversized Haskell PrizeValidator.
+ * The real B1PrizePool V2 validator is rebound to the exact parameterized Aiken
+ * Prize hash, preserving cross-datum/address consistency.
+ */
+const aikenClaimV3Candidate = process.env.IMMORTAL_CLAIM_AIKEN_V3 === '1'
+if (aikenClaimV3Candidate) {
+  const blueprint = JSON.parse(readFileSync('poc/aiken-reveal-parity/plutus.json', 'utf8')) as {
+    preamble?: { plutusVersion?: string }
+    validators?: Array<{ title?: string; compiledCode?: string; hash?: string }>
+  }
+  if (blueprint.preamble?.plutusVersion !== 'v3') {
+    throw new Error('Aiken Claim candidate requires a Plutus V3 blueprint')
+  }
+  const matches = (blueprint.validators ?? []).filter(v => v.title === 'reveal.pre_rich_reveal.spend')
+  if (matches.length !== 1 || !matches[0].compiledCode || !matches[0].hash) {
+    throw new Error('Expected one compiled Aiken Prize validator in the blueprint')
+  }
+  const unparameterized = { type: 'PlutusV3', script: matches[0].compiledCode } as Script
+  if (validatorToScriptHash(unparameterized).toLowerCase() !== matches[0].hash.toLowerCase()) {
+    throw new Error('Aiken blueprint unparameterized validator hash mismatch')
+  }
+  const aikenPrizeScript = {
+    type: 'PlutusV3',
+    script: evolutionApplyParamsToScript(
+      matches[0].compiledCode,
+      [fixtureOracleStatePolicyId, ORACLE_STATE_TOKEN_NAME_HEX, keyHash],
+    ),
+  } as Script
+  const aikenPrizeHash = validatorToScriptHash(aikenPrizeScript).toLowerCase()
+  const aikenBoundPoolScript = buildB1PrizePool(
+    aikenPrizeHash,
+    keyHash,
+    fixtureOracleStatePolicyId,
+    ORACLE_STATE_TOKEN_NAME_HEX,
+    testPolicyId,
+    poolTokenNameHex,
+  ) as unknown as Script
+  const aikenBoundPoolHash = validatorToScriptHash(aikenBoundPoolScript).toLowerCase()
+  Object.assign(scripts, {
+    prizeValidator: aikenPrizeScript,
+    prizeHash: aikenPrizeHash,
+    b1PrizePool: aikenBoundPoolScript,
+    b1PrizePoolHash: aikenBoundPoolHash,
+    prizeAddress: validatorToAddress('Preprod', aikenPrizeScript),
+    b1PrizePoolAddress: validatorToAddress('Preprod', aikenBoundPoolScript),
+  })
+  console.log(JSON.stringify({
+    claimCandidate: 'parameterized-aiken-v3-selected-before-reference-publication',
+    canonicalHaskellValidatorModified: false,
+    existingV3CarrierModified: false,
+    productionOracleQualified: false,
+    plutusVersion: 'v3',
+    aikenPrizeHash,
+    aikenPrizeBytes: Buffer.from(aikenPrizeScript.script, 'hex').length,
+    aikenBoundPoolHash,
+    transactionSizeLimitBytes: Number(protocolParameters.maxTxSize),
+    localYaciOnly: true,
+    deploymentGateClosed: true,
+  }, null, 2))
+}
 
 if (!scripts.prizeAddress || !scripts.b1PrizePoolAddress) {
   throw new Error('failed to derive Prize/B1PrizePool addresses')
