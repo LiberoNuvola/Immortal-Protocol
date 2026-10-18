@@ -12,9 +12,6 @@ on:
       - scripts/check-v3-universal-projection.mjs
       - test/check-v3-universal-projection.test.mjs
       - IMMORTAL/state/EconomicProfile.hs
-      - scripts/check-v3-universal-projection.mjs
-      - test/check-v3-universal-projection.test.mjs
-      - IMMORTAL/state/EconomicProfile.hs
       - IMMORTAL/kernel/EconomicTransitionV3.hs
       - IMMORTAL/state/EconomicStateV3.hs
       - IMMORTAL/kernel/EconomicKernel.hs
