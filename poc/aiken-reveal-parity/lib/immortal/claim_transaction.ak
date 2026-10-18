@@ -92,22 +92,26 @@ fn finite_upper_bound(tx: transaction.Transaction) -> Option<Int> {
   }
 }
 
-/// The ticket NFT identifies the claimant. Fail closed if zero or multiple
-/// input UTxOs independently carry exactly one unit of this ticket.
+/// Mirrors the canonical Haskell ticketOwnerPkh scan: select the first
+/// input carrying exactly one ticket NFT, then require a public-key credential.
+/// Preserve the reference's first-match behavior rather than adding a new
+/// duplicate-ticket rejection rule in the Aiken migration.
 fn ticket_owner(
   inputs: List<transaction.Input>,
   ticket_policy: PolicyId,
   ticket_name: AssetName,
 ) -> Option<VerificationKeyHash> {
-  when list.filter(inputs, fn(input) {
-    assets.quantity_of(input.output.value, ticket_policy, ticket_name) == 1
-  }) is {
-    [input] ->
-      when input.output.address.payment_credential is {
-        VerificationKey(owner) -> Some(owner)
-        Script(_) -> None
+  when inputs is {
+    [] -> None
+    [input, ..rest] ->
+      if assets.quantity_of(input.output.value, ticket_policy, ticket_name) == 1 {
+        when input.output.address.payment_credential is {
+          VerificationKey(owner) -> Some(owner)
+          Script(_) -> None
+        }
+      } else {
+        ticket_owner(rest, ticket_policy, ticket_name)
       }
-    _ -> None
   }
 }
 
