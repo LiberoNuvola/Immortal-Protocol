@@ -13,7 +13,7 @@ module TypedPacketDecode
 import Cardano.Ledger.Api (ConwayEra, PParams, Tx)
 import Cardano.Ledger.Api.PParams (ppProtocolVersionL)
 import Cardano.Ledger.Binary.Decoding (decodeFullAnnotator, decCBOR)
-import Cardano.Ledger.Binary.Version (Version, mkVersion)
+import Cardano.Ledger.Binary.Version (Version)
 import Cardano.Ledger.Core (TopTx)
 import Cardano.Ledger.BaseTypes (pvMajor)
 import Cardano.Ledger.State (UTxO)
@@ -139,7 +139,7 @@ parseLabeledDecimal label content =
 
 protocolVersionToBinaryVersion :: PParams ConwayEra -> Either String Version
 protocolVersionToBinaryVersion pp =
-  mkVersion (pvMajor (pp ^. ppProtocolVersionL))
+  Right (pvMajor (pp ^. ppProtocolVersionL))
 
 objectAt :: Value -> [Text.Text] -> Either String Value
 objectAt value [] = Right value
