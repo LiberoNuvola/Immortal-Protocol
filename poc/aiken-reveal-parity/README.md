@@ -181,3 +181,15 @@ The helper's tests cover absent-ticket inputs. They do not yet prove first-match
 
 This is a parity correction only. It does not establish complete Haskell/Aiken equivalence, native-ledger acceptance, the 16,384-byte transaction-size gate, or approval for deployment. The Haskell validator and existing V3 carrier remain unchanged.
 
+### Claim oracle decoder parity gap (2026-10-18)
+
+A source-to-source comparison of `lib/immortal/claim_transaction.ak::oracle_price_for` with the canonical `plutus/Economic.hs::oraclePriceFor` found an unresolved decoder-behavior mismatch:
+
+- Haskell's `decodeOracleDatum` uses `fromBuiltinData`, returns `Nothing` for a datum that does not decode as `OracleDatum`, and the scan continues to the next reference input.
+- The Aiken candidate currently uses `expect oracle: OracleDatum = raw` for a reference input carrying exactly one configured Oracle State token. If the datum is malformed, this assertion aborts the candidate rather than returning `None` and continuing the scan.
+
+Both approaches reject that malformed candidate as a source of price, but they are not decision-equivalent when a later reference input contains a valid matching Oracle State datum: Haskell can continue and find it, whereas this Aiken path can abort first. Do not describe oracle scanning as fully parity-aligned until this case is resolved.
+
+Required follow-up: identify a supported non-aborting Aiken Data decoder for this exact datum schema, or explicitly record the incompatibility if the pinned Aiken/stdlib cannot express the Haskell scan behavior safely. Add a differential fixture with (1) a malformed Oracle State candidate followed by (2) a valid matching candidate, plus a malformed-only negative case; compare the canonical Haskell decision and Aiken decision. Do not weaken authentication, skip the configured singleton requirement, or replace the oracle check with a caller-supplied value. This is an isolated Claim-candidate issue; it does not justify changes to Reveal, Expire, the existing V3 carrier, economic rules, or the 16,384-byte limit.
+
+No CI/compilation pass is claimed for this finding or the current Claim candidate. The issue remains open until the decoder strategy and differential evidence are recorded.
