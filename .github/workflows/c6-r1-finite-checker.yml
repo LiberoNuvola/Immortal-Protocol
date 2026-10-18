@@ -1,0 +1,34 @@
+name: C6 R1 finite certificate checker
+
+on:
+  push:
+    branches:
+      - release/public-main-curated-2026-09-24
+    paths:
+      - scripts/check-r1-finite-certificate.mjs
+      - test/check-r1-finite-certificate.test.mjs
+      - .github/workflows/c6-r1-finite-checker.yml
+  pull_request:
+    branches:
+      - release/public-main-curated-2026-09-24
+    paths:
+      - scripts/check-r1-finite-certificate.mjs
+      - test/check-r1-finite-certificate.test.mjs
+      - .github/workflows/c6-r1-finite-checker.yml
+
+permissions:
+  contents: read
+
+jobs:
+  finite-r1-model-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout authorized branch snapshot
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run finite R1 checker regressions
+        run: node --test test/check-r1-finite-certificate.test.mjs
