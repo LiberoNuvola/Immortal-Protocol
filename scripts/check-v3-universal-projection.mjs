@@ -187,15 +187,50 @@ export function projectV3ToUniversal(model) {
 export function verifySourceSnapshot(root) {
   const files = [];
   const errors = [];
+  const sources = {};
   for (const [path, expected] of Object.entries(SOURCE_BLOBS)) {
     const full = resolve(root, path);
     if (!existsSync(full)) {
       errors.push(`${path}: missing`);
       continue;
     }
-    const actual = gitBlobSha(readFileSync(full));
+    const bytes = readFileSync(full);
+    const actual = gitBlobSha(bytes);
+    sources[path] = bytes.toString('utf8');
     files.push({ path, expected, actual, matched: actual === expected });
     if (actual !== expected) errors.push(`${path}: source drift; review projection contract before updating pin`);
+  }
+  if (errors.length === 0) {
+    const actionMatch = sources['IMMORTAL/kernel/EconomicTransitionV3.hs']
+      .match(/data\\s+V3Action\\s*([\\s\\S]*?)(?=\\n\\{-#|\\n\\n)/);
+    const actions = actionMatch
+      ? [...actionMatch[1].matchAll(/(?:^|\\n)\\s*[=|]\\s*([A-Z][A-Za-z0-9_]*)\\b/g)].map(m => m[1])
+      : [];
+    if (actions.join(',') !== EXPECTED_ACTIONS.join(',')) {
+      errors.push(`V3Action constructors drifted: ${actions.join(',') || 'not found'}`);
+    }
+    const extractFields = (source, typeName) => {
+      const marker = `data ${typeName} = ${typeName}`;
+      const start = source.indexOf(marker);
+      const open = start < 0 ? -1 : source.indexOf('{', start + marker.length);
+      const close = open < 0 ? -1 : source.indexOf('}', open + 1);
+      if (open < 0 || close < 0) return [];
+      return source.slice(open + 1, close).split(/\\r?\\n/)
+        .map(line => line.match(/^\\s*,?\\s*([A-Za-z][A-Za-z0-9_]*)\\s*::/))
+        .filter(Boolean).map(m => m[1]);
+    };
+    const v3Fields = extractFields(sources['IMMORTAL/state/EconomicStateV3.hs'], 'V3EconomicState');
+    const universalFields = extractFields(sources['IMMORTAL/state/UniversalEconomicState.hs'], 'UniversalEconomicState');
+    if (v3Fields.join(',') !== V3_FIELDS.join(',')) errors.push(`V3 state fields drifted: ${v3Fields.join(',')}`);
+    if (universalFields.join(',') !== UNIVERSAL_FIELDS.join(',')) errors.push(`universal state fields drifted: ${universalFields.join(',')}`);
+    const v3Kernel = sources['IMMORTAL/kernel/EconomicKernel.hs'];
+    const universalKernel = sources['IMMORTAL/kernel/UniversalEconomicKernel.hs'];
+    for (const term of ['v3CrystallizedLiabilities','worstCaseExposure','v3SafetyCapital','v3ReserveProtection','v3MandatoryFutureCosts','jsLockedAmount']) {
+      if (!v3Kernel.includes(term)) errors.push(`V3 ProtectedCapital source term missing: ${term}`);
+    }
+    for (const term of ['uesCrystallizedLiabilities','uesWorstCaseExposure','uesSafetyCapital','uesReserveProtection','uesMandatoryFutureCosts','uesAdditionalProtectedCapital']) {
+      if (!universalKernel.includes(term)) errors.push(`universal ProtectedCapital source term missing: ${term}`);
+    }
   }
   return {
     ok: errors.length === 0,
