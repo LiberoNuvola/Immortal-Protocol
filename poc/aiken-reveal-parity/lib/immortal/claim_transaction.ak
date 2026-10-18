@@ -5,6 +5,7 @@
 /// B1PrizePool validator/hash topology, and ledger-valid parity remain separate gates.
 use aiken/collection/list
 use aiken/crypto.{ScriptHash, VerificationKeyHash}
+use cardano/assets.{AssetName, PolicyId}
 use aiken/interval
 use cardano/address.{Script, VerificationKey, from_verification_key}
 use cardano/assets
@@ -18,8 +19,8 @@ const oracle_max_age_ms = 3_600_000
 /// Field order matches Adapter/CARDANO/observation/OracleTypes.hs.
 pub type OracleDatum {
   OracleDatum {
-    asset_policy: ByteArray,
-    asset_name: ByteArray,
+    asset_policy: PolicyId,
+    asset_name: AssetName,
     price: Int,
     timestamp: Int,
     publisher: VerificationKeyHash,
@@ -95,8 +96,8 @@ fn finite_upper_bound(tx: transaction.Transaction) -> Option<Int> {
 /// input UTxOs independently carry exactly one unit of this ticket.
 fn ticket_owner(
   inputs: List<transaction.Input>,
-  ticket_policy: ByteArray,
-  ticket_name: ByteArray,
+  ticket_policy: PolicyId,
+  ticket_name: AssetName,
 ) -> Option<VerificationKeyHash> {
   when list.filter(inputs, fn(input) {
     assets.quantity_of(input.output.value, ticket_policy, ticket_name) == 1
@@ -119,11 +120,11 @@ fn valid_oracle_timestamp(timestamp: Int, now: Int) -> Bool {
 fn oracle_price_for(
   refs: List<transaction.Input>,
   tx: transaction.Transaction,
-  state_policy: ByteArray,
-  state_name: ByteArray,
+  state_policy: PolicyId,
+  state_name: AssetName,
   publisher: VerificationKeyHash,
-  asset_policy: ByteArray,
-  asset_name: ByteArray,
+  asset_policy: PolicyId,
+  asset_name: AssetName,
   now: Int,
 ) -> Option<Int> {
   when refs is {
@@ -170,7 +171,7 @@ fn ceiling_div_nonnegative(numerator: Int, denominator: Int) -> Int {
 /// Each non-zero asset must have its own matching authenticated oracle entry.
 /// ADA excludes the fixed min-UTxO quantity; all other asset quantities are valued.
 fn value_entries_usdm(
-  entries: List<(ByteArray, ByteArray, Int)>,
+  entries: List<(PolicyId, AssetName, Int)>,
   tx: transaction.Transaction,
   state_policy: ByteArray,
   state_name: ByteArray,
@@ -330,8 +331,8 @@ pub fn claim_transaction_is_valid(
   tx: transaction.Transaction,
   own_ref: transaction.OutputReference,
   input_datum: PrizeDatum,
-  oracle_state_policy: ByteArray,
-  oracle_state_name: ByteArray,
+  oracle_state_policy: PolicyId,
+  oracle_state_name: AssetName,
   oracle_publisher: VerificationKeyHash,
 ) -> Bool {
   when transaction.find_input(tx.inputs, own_ref) is {
