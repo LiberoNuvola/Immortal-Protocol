@@ -148,3 +148,10 @@ A completed C10 packet must include:
 - **Live C3 blocker:** the workspace automation record `JEV Autonomous Execution Loop` was observed disabled. Its stored prompt still names `work/immortal-green-closure`, not the authorized Workflow C branch. The branch-specific C6 checker has push/PR triggers; its green result does not invoke or prove a scheduled ChatGPT→Notion execution.
 - **Action boundary:** no automation was enabled or retargeted here. That recurring execution-control change must not be implied by documentation or CI; until a branch-aligned scheduled iteration is observed consuming the newest prompt, registering its result, and resuming on a later iteration without a user message, C3 remains **INCONCLUSIVE / BLOCKED**.
 - **Non-regression:** this is evidence-status reconciliation only. No universal action, Safe/Ω semantics, economic rule, V3/Reveal semantics or on-chain state changed.
+
+## 2026-10-19 — JEV loop enabled on the authorized Workflow C branch
+
+- The existing recurring workspace task was renamed 'Workflow C / JEV Autonomous Execution Loop', enabled, and its stored prompt was branch-aligned to release/public-main-curated-2026-09-24. Cadence remains hourly in Europe/Rome. The prompt refuses to execute against Green Closure or another branch, requires exact-head/run/artifact checks and keeps all core/economic/V3/Reveal/on-chain boundaries.
+- This is an execution-control configuration change, not evidence that the automation has run. At the latest check, the stored last_run_time still referred to 2026-10-18T17:40:12Z; the first post-enable run remains NOT OBSERVED.
+- C3 remains INCONCLUSIVE: require two linked scheduled iterations: first consumes the newest Workflow C branch-bound prompt and registers its exact outcome in Notion; the following run consumes that result and resumes without a user message. A green C6 finite-checker run is not this evidence.
+- No protocol implementation, normative/economic semantics, V3/Reveal code, deployment or on-chain state changed.
