@@ -100,3 +100,14 @@ A completed C10 packet must include:
 - Added `docs/workflow-c/C2-PREDICATE-INVENTORY.md`, anchored to the canonical Constitution, Universal Economic Model, Economic Kernel, Ω completeness contract, and R1/R3/R4/R8 certification specifications. It separates normative definition from profile instantiation, executable decision procedure, independent proof, and implementation evidence.
 - The inventory maps the core model tuple, state/action domain, Accept, Ω/E, T, Safe, fixed-point/Kc membership, Wit, CK1–CK8/VC1–VC6, protected accounting, QNE/non-eroding witness, S0/non-vacuity, and eligible-action/liveness boundary. It preserves every unresolved profile procedure as OPEN or BLOCKED.
 - This is source mapping only. It does not create a policy, action, coefficient, Safe/Ω definition, or profile certificate; C6-B/C8 remain blocked until authorized semantics and a concrete non-empty witness exist.
+
+## 2026-10-19 — C2 inventory and C10 packet verified at exact head
+
+- **Authorized branch:** `release/public-main-curated-2026-09-24`.
+- **Exact-head workflow:** [C6 R1 finite certificate checker #38](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201635345) — **SUCCESS** on `6ddfcf2d1d3dc300d60035174b42408e8d67d5a6`, which contains `docs/workflow-c/C2-PREDICATE-INVENTORY.md` and the catalog regression.
+- **Test results:** strict profile-manifest structure **6/6 pass**; finite R1/source-binding/projection/inventory **48/48 pass**; C10 evidence-builder regressions **7/7 pass**. All six configured commands are marked `PASS` with exit status `0`.
+- **Artifact:** [workflow-c-mechanical-evidence-39201635345-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201635345/artifacts/12164161875), ID `12164161875`, 12,777 bytes, ZIP SHA-256 `abe0e8470a623ce03043fad55c20a936779829606789be0eabb0dba4255331a2`, expiry 2026-11-18.
+- **Independent inspection:** downloaded ZIP hash matches GitHub; JSON parses and binds ref/SHA/run/attempt; all six output files and exit-status files match manifest sizes/hashes; all **40/40** source paths are `CAPTURED`.
+- **C2 conclusion:** normative predicate/proof obligations are source-mapped; profile-level domains, decisions, and substantive transition relation remain open. This does not establish CK/VC discharge.
+- **Unchanged blocker:** `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`; inventory remains `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. C6-B/C8 still require an authorized substantive transition relation and concrete non-empty Kc witness; C7/Ω completeness remains open. No economic action, coefficient, Safe set, Ω semantics, or normative rule was introduced.
+
