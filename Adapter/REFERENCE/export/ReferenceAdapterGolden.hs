@@ -2,7 +2,7 @@
 
 module Main where
 
-import Prelude (IO, String, Maybe(..), putStrLn, (++), show)
+import Prelude (IO, String, Bool(..), Maybe(..), putStrLn, (++), show)
 import EconomicStateV3
 import EconomicTransitionV3
 import GoldenVectors
