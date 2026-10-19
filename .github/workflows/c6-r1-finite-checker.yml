@@ -16,6 +16,9 @@ on:
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-CHECKPOINT-2026-10-18.md
       - docs/workflow-c/C6-ACTION-SPACE-MATRIX-2026-10-18.md
+      - docs/workflow-c/profile.schema.json
+      - docs/workflow-c/validate-profile-manifest.mjs
+      - docs/workflow-c/validate-profile-manifest.test.mjs
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
@@ -63,6 +66,9 @@ on:
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json
       - docs/workflow-c/R1-ECONOMIC-INVENTORY-CHECKPOINT-2026-10-18.md
       - docs/workflow-c/C6-ACTION-SPACE-MATRIX-2026-10-18.md
+      - docs/workflow-c/profile.schema.json
+      - docs/workflow-c/validate-profile-manifest.mjs
+      - docs/workflow-c/validate-profile-manifest.test.mjs
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
@@ -116,5 +122,7 @@ jobs:
         run: node scripts/check-v3-universal-projection.mjs
       - name: Audit source-pinned R1 economic inventory (closure remains fail-closed)
         run: node scripts/check-r1-economic-inventory.mjs
+      - name: Run reference-profile manifest structural regressions (C6-A/C6-C)
+        run: node --test docs/workflow-c/validate-profile-manifest.test.mjs
       - name: Run finite R1, source-binding, projection and inventory regressions
         run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs
