@@ -4,7 +4,7 @@ This file tracks the work programme. It is not a new normative specification.
 
 | Gate | Deliverable | Required evidence | Current disposition |
 |---|---|---|---|
-| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | Reconciliation required; no normative changes authorized |
+| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | PARTIAL / MECHANICAL — 39 current-branch sources (including canonical normative sources and C0–C6 reconciliation docs) are hash-catalogued in exact-run packets; semantic authority/conflict reconciliation remains open |
 | C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | Reuse existing IMMORTAL state artifacts; verify alignment |
 | C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | Must be derived from normative sources, not invented |
 | C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | Open; no complete universal relation established by examined kernel |
@@ -13,8 +13,8 @@ This file tracks the work programme. It is not a new normative specification.
 | C6 | Reference profile and action-space adequacy | Profile + explicit transition relation + non-vacuity argument | **BLOCKED / NOT CERTIFIED** |
 | C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
 | C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
-| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Strict manifest-field checking has adversarial regressions; the C10 manifest builder also has 6 failure-mode/status/hash regression tests; economic predicate checker remains separately bounded and does not authenticate profile semantics |
-| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command results, source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
+| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Strict manifest-field checking has adversarial regressions; the C10 packet builder has 7 status/hash/source-coverage regression tests; economic predicate checker remains separately bounded and does not authenticate profile semantics |
+| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command/exit statuses, 39 source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
 
 ## Execution order
 
@@ -84,4 +84,15 @@ A completed C10 packet must include:
 - **Independent verification:** downloaded/extracted packet; `evidence-manifest.json` parses and binds the exact branch, SHA, run ID/attempt and URL. All six checks are `PASS` with exit status `0`; all six output files and status records hash-match the manifest. All 22 expected source paths are captured with digests and none are missing. Independently recalculated the ZIP digest; it matches GitHub.
 - **Classification boundary unchanged:** `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`; checker still returns `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. This closes only the reproducibility mechanics for the configured finite gate, not the C6-B/C8 profile theorem, Ω completeness, PA2/PA7 exhaustiveness, authenticated S0 or non-empty Kc.
 - **Next Workflow C action:** continue C0–C5 source reconciliation and C6-C binding without inventing action semantics. If the only route to a non-empty Kc still requires a new substantive action or altered Ω/Safe/economic rules, stop for an explicit architecture decision.
+
+## 2026-10-19 — C0 canonical source coverage and C10 packet verified
+
+- **Authorized branch:** `release/public-main-curated-2026-09-24`.
+- Expanded the C10 digest catalog by 17 existing files that the current Workflow C source map names: the final Constitution, Universal Economic Model and Economic Kernel; Ω and liveness/non-vacuity contracts; Workflow C README/transfer/C0–C5/C6/C7/profile/B3/R1 schema docs; and the chain-neutral Universal Economic Kernel/State. The two universal state/kernel paths were already part of the workflow change triggers; 15 additional existing paths now trigger both push and pull-request conformance runs. No source from Green Closure or another branch was copied into this branch.
+- Added a regression asserting the canonical Workflow C source-map set remains in the manifest catalog. The standalone evidence-builder suite is now **7 tests**.
+- **Exact-head run #36:** [39201337935](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201337935) — **SUCCESS** on `376c4f0cd092ff64a5f458004e3861cdaf80141b`.
+- **Packet:** [workflow-c-mechanical-evidence-39201337935-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201337935/artifacts/12164161373), ID `12164161373`, 12,698 bytes, SHA-256 `216099df9c503cf9ecbd7760cabdd53e55a5984181949447f30d630cc4b7d95f`, expires 2026-11-18.
+- **Independent verification:** the retrieved packet binds the exact branch/SHA/run; all six commands have `PASS` and exit status `0`; each output and exit-status file matches its manifest digest; all **39/39 source paths** are `CAPTURED`; the ZIP digest independently matches GitHub. Tests: profile-manifest **6/6**, finite R1/source-binding/projection/inventory **48/48**, manifest builder **7/7**.
+- **C0 boundary:** presence/hash coverage is stronger provenance, not semantic authority validation. The map still needs source-by-source reconciliation of each predicate's authority, inputs, decision procedure, version and evidence obligation. No normative rule was changed.
+- **Unchanged blocker:** run #36 still reports `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. C6-B/C8 remain blocked on authorized transition semantics and a concrete non-empty Kc witness; C7 remains open. The next work remains C0–C5 semantic reconciliation/C2 predicate mapping, without inventing model behavior.
 
