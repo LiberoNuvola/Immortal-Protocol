@@ -573,3 +573,53 @@ The following are real source surfaces or normative R7 deltas that cannot simply
 - Tests/build/CI/live S0/EV1–EV7: **NOT VERIFIED in this pass**.
 
 No code, economic formulas, action semantics, test assertions, branches, deployment state or on-chain state were changed by this inventory update.
+
+
+## 18. Ticket-validator and pool-transition cross-check (2026-10-19)
+
+**Scope:** direct source inspection of `PreRichRevealRefinement.ts`, `PreRichClaimRefinement.ts`, `PreRichExpireRefinement.ts`, `PreRichJackpotPolicy.ts`, `plutus/PrizeValidator.hs`, `plutus/B1PrizePool.hs`, and `PreRichEconomicProjection.hs` at the authorized branch HEAD. This is a source review only; no tests or builds were run.
+
+### 18.1 Reveal — concrete cross-validator coupling is present, but is not the whole RF3 proof
+
+- `PrizeValidator.validateReveal` derives the result from the player secret, ticket/round commitments, Beacon target/value, and game version; it checks the validity upper bound against `pdExpiresAt`, requires a Pending datum and BeaconReady, and requires exactly one Prize script input and one pool input.
+- The continuing Prize datum must preserve identity fields and move to Revealed, with result/tier/payout fields equal to the locally derived values.
+- Both validators cross-check the pool transition in the same transaction: the Prize validator requires a matching pool input/output, unchanged physical pool liquidity, pending liabilities increased by the payout, unresolved count decremented, and payout no greater than the pre-reveal effective pool. The B1 pool validator additionally binds the consumed and continuing prize datums to the same ticket policy/name, requires Pending→Revealed, and applies exact `reserveRevealDelta(price)` and `liabilityRevealDelta(payout)` updates.
+- `PreRichRevealRefinement.ts` independently checks the 500× payout cap, exact crystallized liability increase, exact one-ticket count decrease, and exact price-reserve release in its supplied evidence.
+
+**Unclosed:** source-level cross-checks do not prove that the deployed scripts and off-chain refinement witness are the same compiled versions, that all result branches correspond to exactly one canonical R7 delta, or that the supplied Beacon/Ω evidence is authoritative. The TypeScript refinement requires `resultVerified` and `beaconReady` booleans; this validator derives the game result from the Beacon value, but the separate BeaconRegistry source still accepts a supplied receipt context signed by the designated relayer. Provenance and end-to-end deployment binding remain open.
+
+### 18.2 Claim — exact payout is cross-bound, but the asset valuation perimeter is materially different
+
+- `PrizeValidator.validateClaim` requires a Revealed datum, current ticket owner signature, claim validity ending no later than expiry, positive frozen payout, and a continuing datum marked Claimed with the frozen prize fields preserved. The ticket NFT is not required to be burned.
+- The B1 pool `TicketClaimed` path binds the consumed and continuing prize datum to the same ticket policy/name and payout, checks the current owner's signature, requires the claimed payout to match the redeemer, reduces `ppTotalLiquidity` and pending liabilities by the exact claimed amount, and leaves unresolved count/reserve and locked Jackpot unchanged.
+- The concrete claim path computes paid settlement value through `Economic.totalUsdmValue` / `payoutPaidUsdm`; the pool path also computes `poolInputUsdm` and `poolOutputUsdm` through `Economic.poolUsdmValue`, then requires their difference to equal the claim amount. Those functions use oracle-based per-asset USDM valuation in the source inspected here.
+
+**Unclosed:** the on-chain claim's oracle-valued settlement/pool-delta path is not equivalent by name or implication to the direct `PRE-RICH-EEV-USDM-DIRECT-V1` perimeter, which qualifies only canonical USDM physically present in the exact qualified PrizePool UTxO. Do not use `poolUsdmValue` as `VerifiedUSDM`. The accounting admission must separately prove that claim settlement semantics are compatible with the authorized profile and that any non-USDM asset movement cannot be misrepresented as direct USDM EEV. The aggregate V3 `Claim amount` also does not itself identify the unique ticket/right; the concrete datum binding helps at the ledger validator, but the end-to-end adapter/admission-to-ledger binding and replay/concurrency argument are not yet demonstrated by this source pass.
+
+### 18.3 Expire — the inspected ledger validator only expires Pending, unrevealed tickets
+
+- `PrizeValidator.validateExpire` requires exactly one Prize input, no continuing Prize output, Pending status, BeaconPending or BeaconReady, positive ticket price, zero prize amount, and a validity lower bound at or after `pdExpiresAt`. It binds the pool input/output, keeps liquidity/liabilities/locked Jackpot/floor/control fields unchanged, and releases exactly `pdPriceUsdm` from unresolved reserve while decrementing unresolved count.
+- B1 `TicketExpired` independently requires a Pending prize input, zero payout, expiry reached, pool binding, unchanged liquidity and pending liabilities, count decrement by one, and exact reserve expiry delta. The off-chain `PreRichExpireRefinement.ts` likewise validates ticket identity, canonical price, timestamps, one-step unresolved decrement, and price-reserve release.
+
+**Newly isolated semantic boundary:** the inspected `PrizeValidator` Expire branch does **not** accept a Revealed datum; it only accepts Pending. Claim, meanwhile, is prohibited once the validity upper bound exceeds the ticket's `pdExpiresAt`. Therefore this source surface provides final expiry for an unresolved Pending promise, but does not itself establish a transition for a revealed-but-unclaimed crystallized payout after that same expiry boundary. Whether such a right is meant to remain L1 indefinitely, have a separate L1→L5 finality transition, or follow another already-normative rule must be resolved from the governing source of truth and mapped explicitly; no new expiry rule is inferred here. Until resolved, do not claim the ledger paths establish exhaustive liability finality for all ticket states.
+
+### 18.4 Jackpot and projection — arithmetic is visible; R7 cell correspondence is not closed
+
+- `PreRichJackpotPolicy.ts` computes the dynamic floor as the maximum of the configured normal-ticket price sum and normal-saleable price sum, multiplied by the maximum normal payout multiplier. Funding need is the positive gap between this floor and the locked amount, and is zero unless the stable top-class predicates hold. Funding admission additionally requires the caller-supplied gate to be accepted and the gap not to exceed caller-supplied raw surplus.
+- `PreRichEconomicProjection.projectPreRichState` folds class rows, rejects invalid/negative state and rejects disagreement between folded reserve/count and the V3 aggregate. It projects crystallized liabilities, unresolved reserve/count, worst-case unresolved exposure, SafetyCapital, ReserveProtection, MandatoryFutureCosts, and locked Jackpot into the universal state. `projectionBoundaryEquivalent` explicitly documents that it establishes equality of represented protected-capital-derived boundary functions only; it does not prove Economic Gate soundness, viability, atomicity, or full Cardano/V3 equivalence.
+- `B1PrizePool.effectivePool` is explicitly `totalLiquidity - pendingLiabilities - unresolvedReserve - lockedJackpot`; the source comments that unresolvedReserve is only the deterministic ticket-price reservation, not full worst-case exposure. Its `solvencyInvariant` supplies `ppTotalLiquidity` as the EEV input to the universal kernel.
+
+**Unclosed:** the dynamic Jackpot floor/funding gap does not, by itself, establish whether the funded locked amount is exactly CAR/L2, whether the entire floor or only the funded amount is protected, or the precise event where a winning Jackpot becomes L1. The projection includes several additional protected-capital fields whose non-overlap with R7 L1/L2/L3 is not proven here. Further, the on-chain legacy `ppTotalLiquidity`/oracle-valued accounting path must not be silently equated with the direct-USDM EEV profile. These are correspondence and evidence gaps, not authorization to change formulas or remove fields.
+
+### 18.5 Updated status after this source pass
+
+- Reveal and B1 pool cross-transition constraints: **SOURCE-VERIFIED; deployment/compiled-version binding NOT VERIFIED**.
+- Claim exact frozen payout, owner signature and pool/accounting deltas: **SOURCE-VERIFIED; direct-USDM profile compatibility OPEN**.
+- Pending-ticket expiry finality: **SOURCE-VERIFIED for Pending only**.
+- Revealed-but-unclaimed expiry/finality: **OPEN; no corresponding transition established in the inspected validator**.
+- Jackpot floor/funding calculation: **SOURCE-VERIFIED; R7 L2/CAR and winner-to-L1 mapping OPEN**.
+- Projection arithmetic and explicit scope limitation: **SOURCE-VERIFIED; PC2/PC3 disjointness and full RF3 equivalence NOT PROVEN**.
+- RF2 whole-program mapping, RF3 simulation, RF8 NoSideDoor, PA2 exhaustiveness, PA7 independent review: **OPEN/BLOCKED**.
+- Tests, build, CI, live S0, EV1–EV7, and deployed validator identity: **NOT VERIFIED in this pass**.
+
+No source code, formulas, redeemers, datums, tests, branches, deployment state or on-chain state were changed by this review.
