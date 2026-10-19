@@ -123,6 +123,7 @@ test('includes canonical Workflow C normative and reconciliation sources in prov
     'docs/workflow-c/BRANCH-AND-TRANSFER-RECORD.md',
     'docs/workflow-c/C0-C5-SOURCE-MAP.md',
     'docs/workflow-c/C2-PREDICATE-INVENTORY.md',
+    'docs/workflow-c/C1-CANONICAL-STATE-FIELD-REGISTER.md',
     'docs/workflow-c/C6-RECONCILIATION.md',
     'docs/workflow-c/C7-OMEGA-WORKSHEET.md',
     'docs/workflow-c/REFERENCE-PROFILE-CONTRACT.md',

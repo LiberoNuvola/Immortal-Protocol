@@ -5,7 +5,7 @@ This file tracks the work programme. It is not a new normative specification.
 | Gate | Deliverable | Required evidence | Current disposition |
 |---|---|---|---|
 | C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | PARTIAL / MECHANICAL — current-branch sources including canonical norms and C0–C6 reconciliation docs are hash-catalogued in exact-run packets; semantic authority/conflict reconciliation remains open |
-| C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | Reuse existing IMMORTAL state artifacts; verify alignment |
+| C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | PARTIAL / SOURCE-MAPPED — `C1-CANONICAL-STATE-FIELD-REGISTER.md` records actual 8-field aggregate and kernel usage; units, EEV binding, history, full state completeness and refinement remain open |
 | C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | SOURCE-MAPPED — `C2-PREDICATE-INVENTORY.md` maps the normative predicate/proof boundaries and evidence obligations; profile instantiations and executable decision procedures remain open |
 | C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | Open; no complete universal relation established by examined kernel |
 | C4 | Evidence/provenance contract | Source, version, checkpoint, derivation, verifier and digest binding | Reuse B3 evidence-boundary patterns without claiming proof validity |
@@ -110,4 +110,11 @@ A completed C10 packet must include:
 - **Independent inspection:** downloaded ZIP hash matches GitHub; JSON parses and binds ref/SHA/run/attempt; all six output files and exit-status files match manifest sizes/hashes; all **40/40** source paths are `CAPTURED`.
 - **C2 conclusion:** normative predicate/proof obligations are source-mapped; profile-level domains, decisions, and substantive transition relation remain open. This does not establish CK/VC discharge.
 - **Unchanged blocker:** `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`; inventory remains `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. C6-B/C8 still require an authorized substantive transition relation and concrete non-empty Kc witness; C7/Ω completeness remains open. No economic action, coefficient, Safe set, Ω semantics, or normative rule was introduced.
+
+## 2026-10-19 — C1 canonical-state field register
+
+- Added `docs/workflow-c/C1-CANONICAL-STATE-FIELD-REGISTER.md` from the exact branch source for `UniversalEconomicState.hs` and `UniversalEconomicKernel.hs`. It distinguishes eight concrete Integer fields from the normative full state `𝒮`.
+- Source-observed points: `EEV` is an external function argument; `History` appears in the canonical model but not in this record; unresolved reserve and unresolved ticket count are checked non-negative but are not included in the current `protectedCapital` sum. This is recorded as an open mapping question, not labeled automatically correct or defective.
+- Added the field register to the C10 source-hash catalog, provenance regression and both workflow path triggers.
+- This is source reconciliation only. No economic formula, field layout, action or normative semantics were changed. C1 stays PARTIAL; C6-B/C8 remain blocked and C7 remains open.
 
