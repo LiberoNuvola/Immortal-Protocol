@@ -118,13 +118,96 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Prepare run-scoped evidence directory
+        run: mkdir -p workflow-c-evidence
       - name: Verify canonical source snapshot and structure
-        run: node scripts/check-r1-canonical-source.mjs
+        run: |
+          set -o pipefail
+          node scripts/check-r1-canonical-source.mjs | tee workflow-c-evidence/canonical-source.json
       - name: Verify V3/universal source snapshot
-        run: node scripts/check-v3-universal-projection.mjs
+        run: |
+          set -o pipefail
+          node scripts/check-v3-universal-projection.mjs | tee workflow-c-evidence/v3-universal-projection.json
       - name: Audit source-pinned R1 economic inventory (closure remains fail-closed)
-        run: node scripts/check-r1-economic-inventory.mjs
+        run: |
+          set -o pipefail
+          node scripts/check-r1-economic-inventory.mjs | tee workflow-c-evidence/r1-economic-inventory.json
       - name: Run reference-profile manifest structural regressions (C6-A/C6-C)
-        run: node --test docs/workflow-c/validate-profile-manifest.test.mjs
+        run: |
+          set -o pipefail
+          node --test docs/workflow-c/validate-profile-manifest.test.mjs | tee workflow-c-evidence/profile-manifest-tests.tap
       - name: Run finite R1, source-binding, projection and inventory regressions
-        run: node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs
+        run: |
+          set -o pipefail
+          node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs | tee workflow-c-evidence/finite-r1-tests.tap
+
+      - name: Assemble run-scoped mechanical evidence manifest
+        if: always()
+        env:
+          EVIDENCE_REPOSITORY: ${{ github.repository }}
+          EVIDENCE_REF: ${{ github.ref }}
+          EVIDENCE_COMMIT: ${{ github.sha }}
+          EVIDENCE_RUN_ID: ${{ github.run_id }}
+          EVIDENCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVIDENCE_EVENT: ${{ github.event_name }}
+          EVIDENCE_WORKFLOW: ${{ github.workflow }}
+          EVIDENCE_JOB_STATUS: ${{ job.status }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+
+          const directory = resolve('workflow-c-evidence');
+          mkdirSync(directory, { recursive: true });
+          const expectedFiles = [
+            'canonical-source.json',
+            'v3-universal-projection.json',
+            'r1-economic-inventory.json',
+            'profile-manifest-tests.tap',
+            'finite-r1-tests.tap',
+          ];
+          const checks = expectedFiles.map((name) => {
+            const path = resolve(directory, name);
+            if (!existsSync(path)) return { name, status: 'NOT_CAPTURED' };
+            const bytes = readFileSync(path);
+            return {
+              name,
+              status: 'CAPTURED',
+              sizeBytes: bytes.length,
+              sha256: createHash('sha256').update(bytes).digest('hex'),
+            };
+          });
+          const manifest = {
+            schema: 'workflow-c-mechanical-evidence-v1',
+            classification: 'MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION',
+            repository: process.env.EVIDENCE_REPOSITORY,
+            ref: process.env.EVIDENCE_REF,
+            commitSha: process.env.EVIDENCE_COMMIT,
+            workflow: process.env.EVIDENCE_WORKFLOW,
+            event: process.env.EVIDENCE_EVENT,
+            runId: process.env.EVIDENCE_RUN_ID,
+            runAttempt: process.env.EVIDENCE_RUN_ATTEMPT,
+            runUrl: `https://github.com/${process.env.EVIDENCE_REPOSITORY}/actions/runs/${process.env.EVIDENCE_RUN_ID}`,
+            jobStatusAtAssembly: process.env.EVIDENCE_JOB_STATUS,
+            checks,
+            limitations: [
+              'This packet records only the configured source-binding, finite-inventory, structural-manifest and bounded test commands.',
+              'The packet does not establish exhaustive PA2/PA7 coverage or authenticate the real-world asset/obligation universe.',
+              'The packet does not prove completeness of Omega, source authenticity, a live admissible S0, or an independently authorized transition relation.',
+              'A successful finite mechanical run does not certify non-empty Kc, an infinite-horizon property, adapter conformance, or deployment state.',
+              'The R1 inventory checker must continue to report closureEligible=false until its explicit closure obligations are satisfied.',
+              'This manifest hash list excludes the manifest itself; GitHub Actions publishes the containing artifact separately.'
+            ],
+          };
+          writeFileSync(resolve(directory, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+          console.log(JSON.stringify(manifest, null, 2));
+          NODE
+      - name: Upload run-scoped mechanical evidence packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-c-mechanical-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: workflow-c-evidence/
+          if-no-files-found: error
+          retention-days: 30
