@@ -4,9 +4,9 @@ This file tracks the work programme. It is not a new normative specification.
 
 | Gate | Deliverable | Required evidence | Current disposition |
 |---|---|---|---|
-| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | PARTIAL / MECHANICAL — 39 current-branch sources (including canonical normative sources and C0–C6 reconciliation docs) are hash-catalogued in exact-run packets; semantic authority/conflict reconciliation remains open |
+| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | PARTIAL / MECHANICAL — current-branch sources including canonical norms and C0–C6 reconciliation docs are hash-catalogued in exact-run packets; semantic authority/conflict reconciliation remains open |
 | C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | Reuse existing IMMORTAL state artifacts; verify alignment |
-| C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | Must be derived from normative sources, not invented |
+| C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | SOURCE-MAPPED — `C2-PREDICATE-INVENTORY.md` maps the normative predicate/proof boundaries and evidence obligations; profile instantiations and executable decision procedures remain open |
 | C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | Open; no complete universal relation established by examined kernel |
 | C4 | Evidence/provenance contract | Source, version, checkpoint, derivation, verifier and digest binding | Reuse B3 evidence-boundary patterns without claiming proof validity |
 | C5 | Independent execution contract | Deterministic command, pinned toolchain, canonical input/output | Design/reconciliation only |
@@ -14,7 +14,7 @@ This file tracks the work programme. It is not a new normative specification.
 | C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
 | C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
 | C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Strict manifest-field checking has adversarial regressions; the C10 packet builder has 7 status/hash/source-coverage regression tests; economic predicate checker remains separately bounded and does not authenticate profile semantics |
-| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command/exit statuses, 39 source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
+| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command/exit statuses, source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
 
 ## Execution order
 
@@ -95,4 +95,8 @@ A completed C10 packet must include:
 - **Independent verification:** the retrieved packet binds the exact branch/SHA/run; all six commands have `PASS` and exit status `0`; each output and exit-status file matches its manifest digest; all **39/39 source paths** are `CAPTURED`; the ZIP digest independently matches GitHub. Tests: profile-manifest **6/6**, finite R1/source-binding/projection/inventory **48/48**, manifest builder **7/7**.
 - **C0 boundary:** presence/hash coverage is stronger provenance, not semantic authority validation. The map still needs source-by-source reconciliation of each predicate's authority, inputs, decision procedure, version and evidence obligation. No normative rule was changed.
 - **Unchanged blocker:** run #36 still reports `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. C6-B/C8 remain blocked on authorized transition semantics and a concrete non-empty Kc witness; C7 remains open. The next work remains C0–C5 semantic reconciliation/C2 predicate mapping, without inventing model behavior.
+## 2026-10-19 — C2 predicate inventory source-mapped
 
+- Added `docs/workflow-c/C2-PREDICATE-INVENTORY.md`, anchored to the canonical Constitution, Universal Economic Model, Economic Kernel, Ω completeness contract, and R1/R3/R4/R8 certification specifications. It separates normative definition from profile instantiation, executable decision procedure, independent proof, and implementation evidence.
+- The inventory maps the core model tuple, state/action domain, Accept, Ω/E, T, Safe, fixed-point/Kc membership, Wit, CK1–CK8/VC1–VC6, protected accounting, QNE/non-eroding witness, S0/non-vacuity, and eligible-action/liveness boundary. It preserves every unresolved profile procedure as OPEN or BLOCKED.
+- This is source mapping only. It does not create a policy, action, coefficient, Safe/Ω definition, or profile certificate; C6-B/C8 remain blocked until authorized semantics and a concrete non-empty witness exist.

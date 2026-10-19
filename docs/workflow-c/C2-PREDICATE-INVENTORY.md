@@ -1,0 +1,58 @@
+# Workflow C — C2 Predicate Inventory and Evidence Obligations
+
+**Status:** SOURCE-MAPPED / NOT A CERTIFICATION RESULT  
+**Authorized branch:** `release/public-main-curated-2026-09-24`  
+**Source snapshot reviewed:** parent commit `06b0049c6d03ef055ed4711b6c9bd040e8169a00` (normative source files are unchanged by this inventory commit).
+
+This document maps the canonical predicates and proof obligations already named by IMMORTAL's normative corpus. It does not create new predicates, instantiate unresolved profile semantics, modify the economic model, or claim that an implementation satisfies the abstract conditions.
+
+## Classification rule
+
+Every row distinguishes four things that must not be conflated:
+
+1. **Normative definition** — what the canonical source says the symbol means.
+2. **Profile instantiation** — the exact domain, units, source inputs, version, and decision procedure for the selected reference profile.
+3. **Proof obligation** — the independent calculation or proof required for the claim.
+4. **Implementation evidence** — tests, digests, packets, or ledger observations; these show only what they actually execute or authenticate.
+
+The first exists in the normative corpus for the symbols below. Several profile instantiations and executable proof procedures remain open. The current manifest/finite-checker workflow establishes mechanical/source evidence only.
+
+## Predicate and state inventory
+
+| Predicate / object | Canonical authority | Inputs and required procedure | Evidence obligation / present status |
+|---|---|---|---|
+| Model tuple (M=(\mathcal S,Act,A,Accept,\Omega,T,Safe)) | `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §1; `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §1 | A versioned profile must instantiate each component consistently; the tuple's abstract definition is not itself an executable profile. | **Abstract definition source-mapped.** Complete chain-independent profile and action domain remain open under C6-A/C6-B. |
+| Canonical state space (\mathcal S), state (S) | `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §§1–2; `docs/00-normative/01_CONSTITUTION_FINAL.md`, §§5a, 11, 15 | Canonical state schema, field ownership, units, identity, encoding, reachable-state relation, and all inputs needed to decide actions/successors must be profile-fixed and versioned. | **Open instantiation.** The chain-neutral aggregate is an implementation candidate, not proof that the complete profile state has been enumerated. |
+| Action domain (A(S)) / `Act` | `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §§1–2, 6; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§1, 4.5 | The profile must enumerate authorized actions, availability/preconditions, and domain at each relevant state. Adapter encoding is a separate layer. | **Blocked for universal C6-B.** The reviewed sources do not provide a complete universal action algebra with a concrete Kc witness. Do not promote PRE-RICH-only actions or invent NoOp/rejection/SAFE STALL. |
+| `Accept(S,a)` | `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §§1, 2, 6; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §4.5 (CK3′); `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §3 (VC4); `docs/02-certification/LIVENESS_AND_PROGRESS_PROOF_SPECIFICATION.md`, §1 | Exact authoritative inputs, source identity/version, validity/freshness conditions, and the action's profile-defined admissibility must be specified. Acceptance is not inferred from a producer boolean. | **Definition present; procedure open.** VC4 requires independent evidence that the witness action is accepted whenever the specified authoritative inputs are present. |
+| Environment perimeter (E), event envelope (\Omega(S,a)), and `\Omega-COMPLETE(Env, Ω)` | `docs/00-normative/01_CONSTITUTION_FINAL.md`, §6; `docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md`, §§2–6; `docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md`, §§1–6 | A declared perimeter and all 13 Ω contract elements must be instantiated. The checked envelope must contain the real permitted environment or be soundly over-approximated; evidence cannot prove its own completeness. | **Profile instance open.** The checklist/schema and finite fixtures do not establish the actual environment perimeter, complete event universe, or adapter conformance. Narrowing Ω to make a certificate pass is unsound. |
+| Transition relation `T(S,a,ω)` | `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §1; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§1, 4, 4.5 | For accepted pairs, T must be total over the authoritative envelope and yield the canonical successor for each (\omega\in\Omega(S,a)); determinism and versioned encoding must follow the normative contract. | **Substantive profile relation open.** Existing accounting deltas constrain transitions but do not independently define the complete action/transition graph. Finite tests do not fill missing semantics. |
+| Immediate safety `Safe(S)` | `docs/00-normative/01_CONSTITUTION_FINAL.md`, §§3–5a, 8; `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §§1–2, 6; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §4.4 (CK2) | The profile must define the predicate on its canonical state and prove the state abstraction includes all protected obligations and unrepresented exposure. | **Universal obligation defined; concrete predicate open.** VC2/CK2 need a proof or independently checked exhaustive/model argument for the instantiated profile. |
+| (F(K)=Safe\cap Pre(K)), greatest fixed point (K^*) | `docs/00-normative/01_CONSTITUTION_FINAL.md`, §5; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§1–4, 5–7 | The abstract fixed-point semantics follow from the stated model. Any concrete approximation must be shown to satisfy the corresponding obligations under the authoritative (\Omega). | **Mathematical definition/theorems are source-mapped.** No finite CI result establishes an infinite-horizon or universal K* claim for this profile. |
+| Certificate membership (\chi(S)), concrete kernel (K_c=\chi^{-1}(1)) | `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §§2–3; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§4.4–4.5 | The membership procedure must be total on the declared domain, deterministic, and decidable within the resources available at decision time; it must evaluate canonical inputs rather than accept a claimed result. | **No complete profile-specific χ/Kc certificate.** Current schema validation and inventory checks are structural/mechanical, not model certification. |
+| Witness selector `Wit(S)` | `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §§2–4; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§4.4–4.5 | A deterministic, total selector must choose an authorized action at each certified state and satisfy successor closure and acceptance compatibility. | **Blocked downstream of C6-B.** A witness selector cannot be implemented honestly before the substantive action relation and profile domain exist. |
+| CK1–CK8 / VC1–VC6 | `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§4.4–4.5; `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §3 | CK1 decidability; CK2 safety inclusion; CK3 inductiveness over Ω; CK3′ acceptance-compatible action; CK4 non-vacuity; CK5 authoritative Ω; CK6 sound over-approximation; CK7 deterministic/versioned/reproducible Kc; CK8 evidence for CK2/CK3/CK3′. R1 expresses the matching VC1–VC6 certificate conditions. | **Obligations source-mapped, not discharged.** In particular, VC2+VC3 alone support (K_c\subseteq K^*); a concrete (S_0\) with χ((S_0))=1 is also required to establish non-emptiness. |
+| `ProtectedCapital(S)`, `EEV(S)`, `RawSurplus`, buffer (b(S)) | `docs/00-normative/01_CONSTITUTION_FINAL.md`, §§3–5a; `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §§3–5; `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §4 | Inputs must be qualified, source-bound, unit-consistent, and disjointly represented as required by the accounting partition. `RawSurplus = max(0, EEV − ProtectedCapital)` is an accounting result, not a permissive action. | **Abstract accounting boundary defined; profile valuation/source qualification open.** Do not treat calculated surplus alone as permission to execute. |
+| Representation predicate `Rep(S)` and QNE / non-eroding witness | `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §4; `docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md`, §§3–4; `docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md`, §§4B, 9 | R1's T-MARGIN/QNE recipe is conditional on profile-proven safety sufficiency and a substantive, available action that preserves representation and buffer for every authoritative Ω successor. | **Conditional recipe only.** It does not authorize a universal action or justify assuming constant EEV. A convenient empty/fabricated witness list is insufficient. |
+| Initial state (S_0), (\chi(S_0)=1), non-vacuity | `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md`, §3 (VC6); `docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md`, §§1–6 | The concrete canonical (S_0), its derivation, state digest, perimeter/profile version, and χ result must be independently reproducible. | **Open.** No concrete source-bound S0/witness packet in the current mechanical gate proves non-empty Kc. |
+| Eligible action (A_{exec}^{spec}(S;K_c)), progress/liveness | `docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md`, §6; `docs/02-certification/LIVENESS_AND_PROGRESS_PROOF_SPECIFICATION.md`, §§1–6 | Eligibility combines acceptance with successor closure into Kc for all Ω events. Progress additionally requires its own assumptions about an eligible action and eventual commitment. | **Keep safety/viability/liveness separate.** A safe permanent stall may be safety-conforming; a finite safety test does not establish eventual execution. |
+
+## Current evidence boundary
+
+The C6 R1 workflow now checks source snapshots, strict profile-manifest structure, finite R1/source-binding/projection/inventory regressions, and reproducible packet generation. Those steps yield **mechanical/source evidence** only:
+
+- the packet binds the exact branch, commit and run;
+- command exit statuses and output digests are independently recorded;
+- source bytes are hashed from the checkout for the named paths;
+- the R1 inventory gate still reports `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`.
+
+They do **not** establish the semantics or completeness of (A), Accept, Ω, T, Safe or the real-world perimeter; they do not discharge VC2/VC3/VC4/VC5/VC6; and they do not prove a non-empty Kc or an infinite-horizon theorem.
+
+## Open obligations and stop conditions
+
+1. Bind each profile predicate to exact canonical inputs, field domain/units, decision procedure, rule version and evidence requirement.
+2. Where the corpus supplies only abstract semantics, preserve the status as unresolved. Do not back-fill with implementation behavior or test fixtures.
+3. Require independent recomputation for χ, Wit, Ω membership/completeness claims, and the CK/VC witnesses.
+4. If a non-empty Kc still requires a new substantive action, changed Safe/Ω, EEV-constancy, invented coefficients, or a semantic reinterpretation of a PRE-RICH-only helper, stop for an explicit architecture decision.
+
+**Conclusion:** this inventory makes the existing predicate/proof boundary traceable; it is not a predicate evaluator, certificate, or proof of a non-empty viability kernel.
