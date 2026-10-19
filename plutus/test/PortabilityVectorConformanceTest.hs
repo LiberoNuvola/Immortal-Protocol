@@ -3,7 +3,7 @@
 module Main where
 
 import Data.Aeson
-  ( FromJSON
+  ( FromJSON (..)
   , Value (..)
   , eitherDecode
   , withObject
