@@ -13,8 +13,8 @@ This file tracks the work programme. It is not a new normative specification.
 | C6 | Reference profile and action-space adequacy | Profile + explicit transition relation + non-vacuity argument | **BLOCKED / NOT CERTIFIED** |
 | C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
 | C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
-| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Structural manifest validation and adversarial tests wired into C6 CI; exact-head structural run passed; economic predicate checker remains separately bounded and does not authenticate profile semantics |
-| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | Open; packet must be generated from the actual checker run |
+| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Strict manifest-field checking has adversarial regressions; the C10 manifest builder also has 6 failure-mode/status/hash regression tests; economic predicate checker remains separately bounded and does not authenticate profile semantics |
+| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command results, source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
 
 ## Execution order
 
@@ -74,4 +74,14 @@ A completed C10 packet must include:
 - **Independent packet validation:** artifact downloaded and extracted; `evidence-manifest.json` parses as JSON and binds `refs/heads/release/public-main-curated-2026-09-24`, exact SHA, run ID, attempt and URL. All five command records report **PASS / exitStatus 0**; the corresponding exit-status files are present. All 19 named source files are recorded as captured with byte lengths and SHA-256 digests. Independently recomputed the ZIP SHA-256; it matches GitHub's digest.
 - **Tests:** profile-manifest structural regressions **6/6 pass**; finite R1/source-binding/projection/inventory suite **48/48 pass**. Runtime in packet: Node `v22.23.3`, Linux x64.
 - **Unchanged certification boundary:** manifest classification remains `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`; inventory audit remains `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. C6-B/C8 are still blocked on authorized substantive transition semantics and a concrete non-empty Kc witness; C7 and PA2/PA7 remain open. This packet records reproducibility/integrity, not a viability proof.
+
+## 2026-10-19 — C10 packet builder regression-tested and latest artifact verified
+
+- **Authorized branch:** `release/public-main-curated-2026-09-24`.
+- Factored the packet generator into `scripts/build-workflow-c-mechanical-evidence.mjs` and added `scripts/test-workflow-c-mechanical-evidence.mjs`; the workflow now tests status parsing, exact run binding, command/output digests, source-file hashes, missing outputs/sources, malformed status and nonzero command status.
+- **Exact-head run #34:** [39201078250](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201078250) — **SUCCESS** on `3947bd25fc9ec6d3677202c25c41a45de35615f3`. Manifest-builder tests **6/6 pass**; profile-manifest tests **6/6 pass**; finite R1/source-binding/projection/inventory tests **48/48 pass**.
+- **Artifact:** [workflow-c-mechanical-evidence-39201078250-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201078250/artifacts/12163489246), ID `12163489246`, size 11,538 bytes, ZIP SHA-256 `7e8d9b23b89d3cededa5aaeadbda891f039b61cc1eaf3740911085ae25dc692e`, expiry 2026-11-18.
+- **Independent verification:** downloaded/extracted packet; `evidence-manifest.json` parses and binds the exact branch, SHA, run ID/attempt and URL. All six checks are `PASS` with exit status `0`; all six output files and status records hash-match the manifest. All 22 expected source paths are captured with digests and none are missing. Independently recalculated the ZIP digest; it matches GitHub.
+- **Classification boundary unchanged:** `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`; checker still returns `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. This closes only the reproducibility mechanics for the configured finite gate, not the C6-B/C8 profile theorem, Ω completeness, PA2/PA7 exhaustiveness, authenticated S0 or non-empty Kc.
+- **Next Workflow C action:** continue C0–C5 source reconciliation and C6-C binding without inventing action semantics. If the only route to a non-empty Kc still requires a new substantive action or altered Ω/Safe/economic rules, stop for an explicit architecture decision.
 
