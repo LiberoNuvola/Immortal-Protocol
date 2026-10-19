@@ -1,20 +1,27 @@
 # Workflow C — Work Programme and Exit Gates
 
 This file tracks the work programme. It is not a new normative specification.
+The canonical C0–C10 front numbering is taken from [the controlling Notion Workflow C page](https://app.notion.com/p/3fdc4454d6d581378702e9ae9d9fee85). Detailed state/predicate/transition/provenance/checking artifacts are local technical sub-work; they must not redefine those canonical IDs.
 
-| Gate | Deliverable | Required evidence | Current disposition |
-|---|---|---|---|
-| C0 | Source-of-truth and scope map | Referenced normative artifacts and conflicts recorded | PARTIAL / MECHANICAL — current-branch sources including canonical norms and C0–C6 reconciliation docs are hash-catalogued in exact-run packets; semantic authority/conflict reconciliation remains open |
-| C1 | Canonical reference state model | Field definitions, units, ownership and serialization contract | PARTIAL / SOURCE-MAPPED — `C1-CANONICAL-STATE-FIELD-REGISTER.md` records actual 8-field aggregate and kernel usage; units, EEV binding, history, full state completeness and refinement remain open |
-| C2 | Predicate inventory | Exact predicates, domains, assumptions and dependencies | SOURCE-MAPPED — `C2-PREDICATE-INVENTORY.md` maps the normative predicate/proof boundaries and evidence obligations; profile instantiations and executable decision procedures remain open |
-| C3 | Transition semantics | Explicit action domain, preconditions, postconditions and costs | Open; no complete universal relation established by examined kernel |
-| C4 | Evidence/provenance contract | Source, version, checkpoint, derivation, verifier and digest binding | Reuse B3 evidence-boundary patterns without claiming proof validity |
-| C5 | Independent execution contract | Deterministic command, pinned toolchain, canonical input/output | Design/reconciliation only |
-| C6 | Reference profile and action-space adequacy | Profile + explicit transition relation + non-vacuity argument | **BLOCKED / NOT CERTIFIED** |
-| C7 | Ω completeness and perimeter E | All 13 elements, fixing authority, E and completeness rationale | Open; must bind to normative source |
-| C8 | Initial state and non-empty Kc | Admissible S0, χ(S0)=1, witness/certificate and proof obligations | Open; no concrete Kc witness discharged |
-| C9 | Independent checker | Checker recomputes claims from canonical inputs; adversarial tests | Strict manifest-field checking has adversarial regressions; the C10 packet builder has 7 status/hash/source-coverage regression tests; economic predicate checker remains separately bounded and does not authenticate profile semantics |
-| C10 | Reproducibility packet | Commit, command, inputs, output, hashes, result, limitations | PARTIAL / MECHANICALLY VERIFIED — exact run/commit binding, six command/exit statuses, source digests and independently checked artifact integrity; model-certificate fields remain OPEN because C6-B/C8 are blocked |
+## Canonical front register
+
+| Front | Canonical deliverable | Current disposition |
+|---|---|---|
+| C0 — Inventory/dependencies | Reconcile Notion, authorized branch/HEAD, CI, artifacts and environment/evidence class. | **PARTIAL.** Exact-head runs and 42-source catalog are reproducible; semantic authority/conflict reconciliation and cross-environment separation continue. |
+| C1 — Trust boundary | Bind each input to proposer, verifier, proof, identity/version, freshness, canonical state and conflict/replay behavior. | **PARTIAL.** State/predicate source maps exist; network/script/asset/data/freshness and end-to-end trust-boundary proof remain open. |
+| C2 — Independent verification | Separate proof validity, source finality/canonicality and semantic correctness; adversarially verify evidence. | **PARTIAL / NOT CERTIFIED.** Predicate inventory and strict manifest structure are source/structural checks, not cryptographic proof validation, source finality or semantic truth. |
+| C3 — Autonomy/liveness | Demonstrate permissionless/operator-gated transitions, triggers, observable proof, outcome/finality and unattended resumption. | **INCONCLUSIVE.** A passing checker workflow is not evidence that a subsequent scheduled JEV run consumed a prompt, registered its own result and resumed without a user message. |
+| C4 — PRE-RICH transaction economics | Compare sponsorship, application balance/settlement and batching; measure TxFee, ExecutionCost, RequiredLockedValue and relayer compensation separately. | **OPEN / RESEARCH.** No fee policy frozen and no on-ledger atomic SALE/MINT cost/acceptance packet claimed by the C6 finite-checker runs. |
+| C5 — Acceptance evidence | Show malformed/stale/conflicting inputs cannot force an inadmissible action; bind pre-state, observed ledger post-state, transaction ref, cost vector and reproduction. | **OPEN / PARTIAL SUPPORT ONLY.** C10 mechanical packets do not establish DApp→Adapter SALE/MINT admission or no-bypass conformance on ledger. |
+| C6 — Reference profile/action space | Instantiate chain-independent `M=(𝒮,Act,A,Accept,Ω,T,Safe)` and identify viable action space. | **BLOCKED / NOT CERTIFIED.** No authorized complete universal action relation or concrete non-empty Kc witness. |
+| C7 — Ω/perimeter completeness | Instantiate all 13 contract elements, fixing authority, environment `E`, exclusions and soundness rationale. | **OPEN.** Worksheet remains checklist-only; authoritative perimeter/event-envelope completeness is not established. |
+| C8 — Concrete Kc and initial S0 | Reproducible admissible `S0`, `χ(S0)=1`, witness and discharged VC2/VC3/VC6. | **BLOCKED.** No independently qualified non-empty profile-specific Kc certificate. |
+| C9 — Independent certificate checker | Recompute profile/certificate predicates; reject producer-only booleans and malformed/stale/conflicting evidence. | **PARTIAL / MECHANICAL.** Structural validator and finite regressions pass; universal economic predicates and Kc theorem are not independently recomputed/certified. |
+| C10 — Reproducibility/evidence record | Pin exact SHA, command, inputs/outputs, hashes, results, assumptions and limitations; preserve a rerunnable packet. | **PARTIAL / MECHANICALLY VERIFIED.** Latest packet has exact run binding, six command/status records, source hashes and independent artifact digest verification; profile/model certificate remains open. |
+
+## Technical sub-work crosswalk
+
+The legacy headings in `C0-C5-SOURCE-MAP.md` are technical map indices, not canonical Workflow C front IDs. Their precise relationship is recorded in `NOTION-CANONICAL-FRONT-CROSSWALK.md`. In particular, local map 3 (transition semantics) is not canonical C3 (autonomy/liveness), local map 4 (evidence/provenance) is not canonical C4 (transaction economics), and local map 5 (reproducible checking) is not canonical C5 (acceptance evidence).
 
 ## Execution order
 
