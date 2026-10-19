@@ -52,6 +52,8 @@ export function buildOperationalPrompt(registry) {
     "Observed checks:",
     checksText,
     "",
+    "Freshness guard: this prompt is a run-scoped observation, not an instruction to trust stale state. Before acting, compare its commit/ref/run against the current branch HEAD and the newest relevant GitHub Actions runs.",
+    "Notion page insertion order is not execution recency: use GitHub run timestamps and commit ancestry to identify the newest valid evidence. If this prompt is stale, record the mismatch, inspect the newest matching registry/log/artifact, and base the next action on current evidence rather than this stale snapshot.",
     "Task: continue the authorized JEV automation/evidence work from these observations. Inspect the referenced run/log/artifact before drawing conclusions. If a check is not PASS, classify what the evidence actually establishes and identify the smallest next JEV-side action; do not infer root cause from status alone. If all checks are PASS, verify whether the JEV end-to-end acceptance criteria are actually met and make no unnecessary changes.",
     "",
     "Required loop: inspect current repository and Notion state; make at most one bounded, authorized change in JEV/evidence/automation surfaces; run focused tests; verify the actual workflow result; register the exact commit/run/status/evidence and limitations in the existing Notion ledger; leave a clear next action for the next scheduled ChatGPT execution.",
