@@ -42,12 +42,26 @@ function requireKeys(value, keys, path, errors) {
   }
 }
 
+function rejectUnknownKeys(value, keys, path, errors) {
+  if (!isObject(value)) return;
+  const allowed = new Set(keys);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) {
+      errors.push(`${path}.${key}: unexpected field; schema requires additionalProperties=false`);
+    }
+  }
+}
+
 export function validateProfileManifest(manifest) {
   const errors = [];
   requireObject(manifest, "manifest", errors);
   if (!isObject(manifest)) return { ok: false, errors };
 
   requireKeys(manifest, [
+    "profileId", "profileVersion", "sourceCommit", "claimScope",
+    "model", "certificate", "omegaDeclaration", "initialState", "evidencePacket",
+  ], "manifest", errors);
+  rejectUnknownKeys(manifest, [
     "profileId", "profileVersion", "sourceCommit", "claimScope",
     "model", "certificate", "omegaDeclaration", "initialState", "evidencePacket",
   ], "manifest", errors);
@@ -67,6 +81,7 @@ export function validateProfileManifest(manifest) {
   ];
   requireObject(manifest.model, "model", errors);
   requireKeys(manifest.model, modelKeys, "model", errors);
+  rejectUnknownKeys(manifest.model, modelKeys, "model", errors);
   for (const key of modelKeys) requireString(manifest.model?.[key], `model.${key}`, errors);
 
   const certKeys = [
@@ -75,6 +90,7 @@ export function validateProfileManifest(manifest) {
   ];
   requireObject(manifest.certificate, "certificate", errors);
   requireKeys(manifest.certificate, certKeys, "certificate", errors);
+  rejectUnknownKeys(manifest.certificate, certKeys, "certificate", errors);
   for (const key of certKeys.slice(0, 5)) requireString(manifest.certificate?.[key], `certificate.${key}`, errors);
   if (!Array.isArray(manifest.certificate?.proofArtifacts) || manifest.certificate.proofArtifacts.length === 0 ||
       !manifest.certificate.proofArtifacts.every(nonEmptyString)) {
@@ -84,6 +100,7 @@ export function validateProfileManifest(manifest) {
   const omegaKeys = ["fixingAuthorityRef", "perimeterRef", "residualRiskRef", "elements", "completenessEvidenceRef"];
   requireObject(manifest.omegaDeclaration, "omegaDeclaration", errors);
   requireKeys(manifest.omegaDeclaration, omegaKeys, "omegaDeclaration", errors);
+  rejectUnknownKeys(manifest.omegaDeclaration, omegaKeys, "omegaDeclaration", errors);
   for (const key of ["fixingAuthorityRef", "perimeterRef", "residualRiskRef", "completenessEvidenceRef"]) {
     requireString(manifest.omegaDeclaration?.[key], `omegaDeclaration.${key}`, errors);
   }
@@ -101,6 +118,7 @@ export function validateProfileManifest(manifest) {
         errors.push(`omegaDeclaration.elements: missing element number ${i + 1}`);
         continue;
       }
+      rejectUnknownKeys(entry, ["number", "element", "evidenceRef"], `omegaDeclaration.elements[${i + 1}]`, errors);
       if (entry.element !== OMEGA_ELEMENTS[i]) {
         errors.push(`omegaDeclaration.elements[${i + 1}]: expected normative element "${OMEGA_ELEMENTS[i]}"`);
       }
@@ -111,6 +129,7 @@ export function validateProfileManifest(manifest) {
   const initialKeys = ["canonicalStateRef", "stateDigest", "derivationTraceRef", "chiEvaluationRef"];
   requireObject(manifest.initialState, "initialState", errors);
   requireKeys(manifest.initialState, initialKeys, "initialState", errors);
+  rejectUnknownKeys(manifest.initialState, initialKeys, "initialState", errors);
   for (const key of ["canonicalStateRef", "derivationTraceRef", "chiEvaluationRef"]) {
     requireString(manifest.initialState?.[key], `initialState.${key}`, errors);
   }
@@ -124,6 +143,7 @@ export function validateProfileManifest(manifest) {
   ];
   requireObject(manifest.evidencePacket, "evidencePacket", errors);
   requireKeys(manifest.evidencePacket, packetKeys, "evidencePacket", errors);
+  rejectUnknownKeys(manifest.evidencePacket, packetKeys, "evidencePacket", errors);
   for (const key of ["checkerRef", "checkerVersion", "rawOutputRef", "assumptionsRef", "limitationsRef"]) {
     requireString(manifest.evidencePacket?.[key], `evidencePacket.${key}`, errors);
   }

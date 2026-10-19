@@ -74,3 +74,26 @@ test("rejects empty evidence references", () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((error) => error.includes("evidenceRef")));
 });
+
+test("rejects undeclared properties wherever the profile schema forbids extras", () => {
+  const cases = [
+    ["manifest", (m) => { m.unexpected = "claim"; }],
+    ["model", (m) => { m.model.unexpected = "claim"; }],
+    ["certificate", (m) => { m.certificate.unexpected = "claim"; }],
+    ["omegaDeclaration", (m) => { m.omegaDeclaration.unexpected = "claim"; }],
+    ["Ω element", (m) => { m.omegaDeclaration.elements[0].unexpected = "claim"; }],
+    ["initialState", (m) => { m.initialState.unexpected = "claim"; }],
+    ["evidencePacket", (m) => { m.evidencePacket.unexpected = "claim"; }],
+  ];
+
+  for (const [label, mutate] of cases) {
+    const manifest = validManifest();
+    mutate(manifest);
+    const result = validateProfileManifest(manifest);
+    assert.equal(result.ok, false, `unexpected property accepted at ${label}`);
+    assert.ok(
+      result.errors.some((error) => error.includes("unexpected field")),
+      `unknown-property error missing at ${label}: ${result.errors.join("; ")}`,
+    );
+  }
+});
