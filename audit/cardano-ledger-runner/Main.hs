@@ -140,15 +140,15 @@ inspectEvidence evidenceDir runEvaluation = do
     then
       if and rawPresent
         then do
-          safeStall "LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED"
           putStrLn
             "Raw Yaci handoff is present, but typed UTxO/PParams/EpochInfo/SystemStart packet files are not materialized."
           putStrLn
             "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+          safeStall "LEDGER_TYPED_CONTEXT_NOT_MATERIALIZED"
         else do
-          safeStall "INCOMPLETE_LEDGER_EVIDENCE"
           putStrLn
             "No synthetic transaction, UTxO, PParams, EpochInfo or SystemStart will be substituted."
+          safeStall "INCOMPLETE_LEDGER_EVIDENCE"
     else do
       nonEmpty <- mapM (fmap (not . BS.null) . BS.readFile) paths
       if not (and nonEmpty)
@@ -239,8 +239,8 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
   putStrLn ("OTHER_LEDGER_FAILURES: " <> show ledgerFailures)
   if Map.null report
     then do
-      safeStall "NO_REDEEMERS_FOUND"
       putStrLn "EVALUATION_STATUS: NOT_EVIDENT"
+      safeStall "NO_REDEEMERS_FOUND"
     else do
       putStrLn "EVALUATION_STATUS: COMPLETED"
       if failures == 0
@@ -259,13 +259,15 @@ inspectManifest evidenceDir manifestPath runEvaluation = do
 
   case Aeson.eitherDecodeStrict' manifestBytes :: Either String Aeson.Value of
     Left err -> do
-      safeStall "INVALID_MANIFEST"
       putStrLn ("MANIFEST_ERROR: " <> err)
+      safeStall "INVALID_MANIFEST"
 
     Right (Aeson.Object manifest) -> do
       validation <- verifyFullManifest evidenceDir manifest
       case validation of
-        Left err -> safeStall err
+        Left err -> do
+          putStrLn ("MANIFEST_VALIDATION_ERROR: " <> err)
+          safeStall err
         Right () -> do
           putStrLn "RESULT: MANIFEST_SHA256_BINDING_VERIFIED"
           putStrLn "RESULT: WORKFLOW_COMMIT_RUN_BINDING_VERIFIED"
@@ -461,32 +463,32 @@ decodeTypedArtifacts evidenceDir runEvaluation = do
 
   case decodeConwayPParams ppBytes of
     Left err -> do
-      safeStall "PPARAMS_NATIVE_DECODE_FAILED"
       putStrLn ("PPARAMS_ERROR: " <> err)
+      safeStall "PPARAMS_NATIVE_DECODE_FAILED"
 
     Right pp ->
       case decodeConwayTx pp txBytes of
         Left err -> do
-          safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
           putStrLn ("TX_ERROR: " <> err)
+          safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
 
         Right tx ->
           case decodeConwayUTxO utxoBytes of
             Left err -> do
-              safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
               putStrLn ("UTXO_ERROR: " <> err)
+              safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
 
             Right utxo ->
               case decodeYaciEpochInfo epochBytes of
                 Left err -> do
-                  safeStall "YACI_EPOCH_INFO_DECODE_FAILED"
                   putStrLn ("EPOCH_INFO_ERROR: " <> err)
+                  safeStall "YACI_EPOCH_INFO_DECODE_FAILED"
 
                 Right epochInfo ->
                   case decodeYaciSystemStart systemStartBytes of
                     Left err -> do
-                      safeStall "YACI_SYSTEM_START_DECODE_FAILED"
                       putStrLn ("SYSTEM_START_ERROR: " <> err)
+                      safeStall "YACI_SYSTEM_START_DECODE_FAILED"
 
                     Right systemStart -> do
                       putStrLn "RESULT: TYPED_CONWAY_CONTEXT_DECODED"
