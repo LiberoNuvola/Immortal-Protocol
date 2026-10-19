@@ -385,7 +385,7 @@ main = do
   assertLeft "wrong reference script body type is not silently ignored" "REFERENCE_SCRIPT_HASH_MISSING"
     (decodeYaciUTxO (B8.pack badRefScriptBodyType))
 
-  assertLeft "malformed JSON is rejected" "Unexpected end-of-input"
+  assertLeft "malformed JSON is rejected" "expecting record key literal"
     (decodeYaciUTxO (B8.pack "{"))
   assertLeft "missing observed field is rejected" "MISSING_FIELD:observed"
     (decodeYaciUTxO (B8.pack "{}"))
