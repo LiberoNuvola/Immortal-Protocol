@@ -27,6 +27,7 @@ export const SOURCE_PATHS = Object.freeze([
   'docs/workflow-c/C2-PREDICATE-INVENTORY.md',
   'docs/workflow-c/C1-CANONICAL-STATE-FIELD-REGISTER.md',
   'docs/workflow-c/NOTION-CANONICAL-FRONT-CROSSWALK.md',
+  'docs/workflow-c/C3-AUTONOMY-LIVENESS-OBSERVABILITY-MATRIX.md',
   'docs/workflow-c/C6-RECONCILIATION.md',
   'docs/workflow-c/C7-OMEGA-WORKSHEET.md',
   'docs/workflow-c/REFERENCE-PROFILE-CONTRACT.md',
