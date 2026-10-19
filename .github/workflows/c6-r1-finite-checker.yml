@@ -214,7 +214,7 @@ jobs:
             const statusExists = existsSync(statusPath);
             const bytes = outputExists ? readFileSync(outputPath) : null;
             const statusText = statusExists ? readFileSync(statusPath, 'utf8').trim() : null;
-            const exitStatus = statusText !== null && /^\\d+$/.test(statusText) ? Number(statusText) : null;
+            const exitStatus = statusText !== null && /^\d+$/.test(statusText) ? Number(statusText) : null;
             const status = !statusExists ? 'NOT_RUN_OR_NO_EXIT_STATUS'
               : (!outputExists || exitStatus === null || exitStatus !== 0) ? 'FAIL'
               : 'PASS';
@@ -293,7 +293,7 @@ jobs:
               'This manifest hash list excludes the manifest itself; GitHub Actions publishes the containing artifact separately.'
             ],
           };
-          writeFileSync(resolve(directory, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\\n', 'utf8');
+          writeFileSync(resolve(directory, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
           console.log(JSON.stringify(manifest, null, 2));
           NODE
       - name: Upload run-scoped mechanical evidence packet
