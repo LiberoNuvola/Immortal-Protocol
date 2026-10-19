@@ -78,11 +78,16 @@ main = do
   assert "ruleset change requires amendment"
     (amendmentRequiresNewProposal (rulesetId canonicalRuleset) 2)
 
-  let ce = CanonicalEvent "evt-1" 1 1 EProposalSubmitted Proposer 0
-             (PayloadProposalSubmitted pReview) "placeholder" Nothing
-             [EvidenceRef "phase6-test"] AcceptedEvent
+  let ceBase = CanonicalEvent "evt-1" 1 1 EProposalSubmitted Proposer 0
+                 (PayloadProposalSubmitted pReview) "" Nothing
+                 [EvidenceRef "phase6-test"] AcceptedEvent
+      ce = ceBase { payloadCommitment = commitmentDigestHex ceBase }
   assert "commitment algorithm explicit"
     (commitmentAlgorithm == "SHA-256 over UTF-8 canonical commitment preimage")
+  assert "canonical commitment matches computed digest"
+    (commitmentMatches ce)
+  assert "canonical commitment rejects a mismatched digest"
+    (not (commitmentMatches (ce { payloadCommitment = "invalid" })))
   assert "canonical commitment digest deterministic"
     (commitmentDigestHex ce == commitmentDigestHex ce)
 
