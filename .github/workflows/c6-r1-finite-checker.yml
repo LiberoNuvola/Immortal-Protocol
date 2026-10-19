@@ -122,24 +122,39 @@ jobs:
         run: mkdir -p workflow-c-evidence
       - name: Verify canonical source snapshot and structure
         run: |
-          set -o pipefail
-          node scripts/check-r1-canonical-source.mjs | tee workflow-c-evidence/canonical-source.json
+          set +e
+          node scripts/check-r1-canonical-source.mjs 2>&1 | tee workflow-c-evidence/canonical-source.log
+          command_status=${PIPESTATUS[0]}
+          printf '%s\n' "$command_status" > workflow-c-evidence/canonical-source.exit-status
+          exit "$command_status"
       - name: Verify V3/universal source snapshot
         run: |
-          set -o pipefail
-          node scripts/check-v3-universal-projection.mjs | tee workflow-c-evidence/v3-universal-projection.json
+          set +e
+          node scripts/check-v3-universal-projection.mjs 2>&1 | tee workflow-c-evidence/v3-universal-projection.log
+          command_status=${PIPESTATUS[0]}
+          printf '%s\n' "$command_status" > workflow-c-evidence/v3-universal-projection.exit-status
+          exit "$command_status"
       - name: Audit source-pinned R1 economic inventory (closure remains fail-closed)
         run: |
-          set -o pipefail
-          node scripts/check-r1-economic-inventory.mjs | tee workflow-c-evidence/r1-economic-inventory.json
+          set +e
+          node scripts/check-r1-economic-inventory.mjs 2>&1 | tee workflow-c-evidence/r1-economic-inventory.log
+          command_status=${PIPESTATUS[0]}
+          printf '%s\n' "$command_status" > workflow-c-evidence/r1-economic-inventory.exit-status
+          exit "$command_status"
       - name: Run reference-profile manifest structural regressions (C6-A/C6-C)
         run: |
-          set -o pipefail
-          node --test docs/workflow-c/validate-profile-manifest.test.mjs | tee workflow-c-evidence/profile-manifest-tests.tap
+          set +e
+          node --test docs/workflow-c/validate-profile-manifest.test.mjs 2>&1 | tee workflow-c-evidence/profile-manifest-tests.tap
+          command_status=${PIPESTATUS[0]}
+          printf '%s\n' "$command_status" > workflow-c-evidence/profile-manifest-tests.exit-status
+          exit "$command_status"
       - name: Run finite R1, source-binding, projection and inventory regressions
         run: |
-          set -o pipefail
-          node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs | tee workflow-c-evidence/finite-r1-tests.tap
+          set +e
+          node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs 2>&1 | tee workflow-c-evidence/finite-r1-tests.tap
+          command_status=${PIPESTATUS[0]}
+          printf '%s\n' "$command_status" > workflow-c-evidence/finite-r1-tests.exit-status
+          exit "$command_status"
 
       - name: Assemble run-scoped mechanical evidence manifest
         if: always()
@@ -160,19 +175,90 @@ jobs:
 
           const directory = resolve('workflow-c-evidence');
           mkdirSync(directory, { recursive: true });
-          const expectedFiles = [
-            'canonical-source.json',
-            'v3-universal-projection.json',
-            'r1-economic-inventory.json',
-            'profile-manifest-tests.tap',
-            'finite-r1-tests.tap',
+          const expectedChecks = [
+            {
+              id: 'canonical-source-snapshot',
+              command: 'node scripts/check-r1-canonical-source.mjs',
+              outputFile: 'canonical-source.log',
+              exitStatusFile: 'canonical-source.exit-status',
+            },
+            {
+              id: 'v3-universal-projection',
+              command: 'node scripts/check-v3-universal-projection.mjs',
+              outputFile: 'v3-universal-projection.log',
+              exitStatusFile: 'v3-universal-projection.exit-status',
+            },
+            {
+              id: 'r1-economic-inventory',
+              command: 'node scripts/check-r1-economic-inventory.mjs',
+              outputFile: 'r1-economic-inventory.log',
+              exitStatusFile: 'r1-economic-inventory.exit-status',
+            },
+            {
+              id: 'profile-manifest-structural-tests',
+              command: 'node --test docs/workflow-c/validate-profile-manifest.test.mjs',
+              outputFile: 'profile-manifest-tests.tap',
+              exitStatusFile: 'profile-manifest-tests.exit-status',
+            },
+            {
+              id: 'finite-r1-source-binding-projection-inventory-tests',
+              command: 'node --test test/check-r1-finite-certificate.test.mjs test/check-r1-canonical-source.test.mjs test/check-v3-universal-projection.test.mjs test/check-r1-economic-inventory.test.mjs',
+              outputFile: 'finite-r1-tests.tap',
+              exitStatusFile: 'finite-r1-tests.exit-status',
+            },
           ];
-          const checks = expectedFiles.map((name) => {
-            const path = resolve(directory, name);
-            if (!existsSync(path)) return { name, status: 'NOT_CAPTURED' };
-            const bytes = readFileSync(path);
+          const checks = expectedChecks.map((expected) => {
+            const outputPath = resolve(directory, expected.outputFile);
+            const statusPath = resolve(directory, expected.exitStatusFile);
+            const outputExists = existsSync(outputPath);
+            const statusExists = existsSync(statusPath);
+            const bytes = outputExists ? readFileSync(outputPath) : null;
+            const statusText = statusExists ? readFileSync(statusPath, 'utf8').trim() : null;
+            const exitStatus = statusText !== null && /^\\d+$/.test(statusText) ? Number(statusText) : null;
+            const status = !statusExists ? 'NOT_RUN_OR_NO_EXIT_STATUS'
+              : (!outputExists || exitStatus === null || exitStatus !== 0) ? 'FAIL'
+              : 'PASS';
             return {
-              name,
+              id: expected.id,
+              command: expected.command,
+              outputFile: expected.outputFile,
+              exitStatusFile: expected.exitStatusFile,
+              status,
+              exitStatus,
+              outputCaptured: outputExists,
+              ...(bytes ? {
+                sizeBytes: bytes.length,
+                sha256: createHash('sha256').update(bytes).digest('hex'),
+              } : {}),
+            };
+          });
+          const sourcePaths = [
+            '.github/workflows/c6-r1-finite-checker.yml',
+            'docs/workflow-c/profile.schema.json',
+            'docs/workflow-c/validate-profile-manifest.mjs',
+            'docs/workflow-c/validate-profile-manifest.test.mjs',
+            'docs/workflow-c/R1-ECONOMIC-INVENTORY-REGISTER-2026-10-18.json',
+            'docs/workflow-c/R1-ECONOMIC-INVENTORY-CHECKPOINT-2026-10-18.md',
+            'docs/workflow-c/C6-ACTION-SPACE-MATRIX-2026-10-18.md',
+            'scripts/check-r1-canonical-source.mjs',
+            'scripts/check-v3-universal-projection.mjs',
+            'scripts/check-r1-economic-inventory.mjs',
+            'scripts/check-r1-finite-certificate.mjs',
+            'test/check-r1-finite-certificate.test.mjs',
+            'test/check-r1-canonical-source.test.mjs',
+            'test/check-v3-universal-projection.test.mjs',
+            'test/check-r1-economic-inventory.test.mjs',
+            'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md',
+            'docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md',
+            'docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md',
+            'docs/02-certification/OMEGA_COMPLETENESS_AND_PERIMETER_SPECIFICATION.md',
+          ];
+          const sourceFiles = sourcePaths.map((path) => {
+            const absolutePath = resolve(path);
+            if (!existsSync(absolutePath)) return { path, status: 'NOT_CAPTURED' };
+            const bytes = readFileSync(absolutePath);
+            return {
+              path,
               status: 'CAPTURED',
               sizeBytes: bytes.length,
               sha256: createHash('sha256').update(bytes).digest('hex'),
@@ -190,17 +276,24 @@ jobs:
             runAttempt: process.env.EVIDENCE_RUN_ATTEMPT,
             runUrl: `https://github.com/${process.env.EVIDENCE_REPOSITORY}/actions/runs/${process.env.EVIDENCE_RUN_ID}`,
             jobStatusAtAssembly: process.env.EVIDENCE_JOB_STATUS,
+            runtime: {
+              node: process.version,
+              platform: process.platform,
+              architecture: process.arch,
+            },
             checks,
+            sourceFiles,
             limitations: [
-              'This packet records only the configured source-binding, finite-inventory, structural-manifest and bounded test commands.',
-              'The packet does not establish exhaustive PA2/PA7 coverage or authenticate the real-world asset/obligation universe.',
+              'This packet records configured commands and exit statuses plus SHA-256 digests of the named checked-out source files.',
+              'This packet does not establish exhaustive PA2/PA7 coverage or authenticate the real-world asset/obligation universe.',
               'The packet does not prove completeness of Omega, source authenticity, a live admissible S0, or an independently authorized transition relation.',
               'A successful finite mechanical run does not certify non-empty Kc, an infinite-horizon property, adapter conformance, or deployment state.',
               'The R1 inventory checker must continue to report closureEligible=false until its explicit closure obligations are satisfied.',
+              'A source-file digest identifies bytes in this commit; it does not establish normative authority, source completeness, or deployed identity.',
               'This manifest hash list excludes the manifest itself; GitHub Actions publishes the containing artifact separately.'
             ],
           };
-          writeFileSync(resolve(directory, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+          writeFileSync(resolve(directory, 'evidence-manifest.json'), JSON.stringify(manifest, null, 2) + '\\n', 'utf8');
           console.log(JSON.stringify(manifest, null, 2));
           NODE
       - name: Upload run-scoped mechanical evidence packet
