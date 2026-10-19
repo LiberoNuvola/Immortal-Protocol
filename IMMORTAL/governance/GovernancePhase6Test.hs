@@ -79,10 +79,11 @@ main = do
     (amendmentRequiresNewProposal (rulesetId canonicalRuleset) 2)
 
   let ce = CanonicalEvent "evt-1" 1 1 EProposalSubmitted Proposer 0
-             "payload" Nothing [] AcceptedEvent
+             (PayloadProposalSubmitted pReview) "placeholder" Nothing
+             [EvidenceRef "phase6-test"] AcceptedEvent
   assert "commitment algorithm explicit"
-    (commitmentAlgorithm == "SHA-256")
-  assert "canonical commitment input deterministic"
-    (commitmentInput ce == commitmentInput ce)
+    (commitmentAlgorithm == "SHA-256 over UTF-8 canonical commitment preimage")
+  assert "canonical commitment digest deterministic"
+    (commitmentDigestHex ce == commitmentDigestHex ce)
 
   putStrLn "PHASE 6 FINALITY/RULESET CHECKS PASSED"
