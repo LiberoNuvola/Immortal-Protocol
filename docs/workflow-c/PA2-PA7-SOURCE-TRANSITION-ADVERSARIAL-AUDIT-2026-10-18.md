@@ -724,3 +724,50 @@ This raises confidence in the **specific inspected-path finding** from §19; it 
 **Status:** DApp Pending-only expiry path **SOURCE-VERIFIED**; L1→L5 path **NOT FOUND IN THE EXACT PATHS REVIEWED**; whole-program absence **NOT PROVEN**; tests/build/CI/deployment/on-chain state **NOT VERIFIED**.
 
 No application/validator source, formulas, datums, redeemers, tests, branches, deployment, or on-chain state was changed by this section.
+
+## 21. Expiry evidence, ledger trace, and packaged-validator cross-check (2026-10-19)
+
+**Scope:** exact-branch inspection of the expiry evidence/policy helpers, unit tests, ledger trace, conformance workflow, predeploy source checker, and the two copies of packaged Plutus validator artifacts. This is source/artifact inspection only; no workflow, build, test, trace, or deployment was run.
+
+### 21.1 The expiry evidence helpers prove a time boundary, not L1→L5 accounting
+
+- `PRE-RICH/profile/PreRichExpiryEvidence.ts` (blob `b206c09e987787db848e291073294e0fa37af1f2`) validates ticket ID, issuance and expiry timestamps, and provides `validBeforeExpiry`, `expiredAtOrAfter`, and `lateRevealEconomicEffect`.
+- `lateRevealEconomicEffect` returns zero after the expiry boundary, which is evidence for no late-reveal economic effect at this helper's abstraction. The evidence type contains no frozen payout, pre/post pending-liability amount, terminal L5 cell, or proof of an exactly-once liability decrement. It does not implement the required accounting transition.
+- `PRE-RICH/profile/PreRichExpiryPolicy.ts` (blob `883a47dfc4823ac65c9bbfb9b0354d7719e905c5`) deterministically crystallizes `expiresAt = issuedAt + horizon` from supplied issuance state and a profile policy. It explicitly does not select a universal expiry duration. It likewise does not release a crystallized liability.
+- `src/__tests__/preRichExpiryEvidence.test.ts` and `src/__tests__/preRichExpiryPolicy.test.ts` test boundary eligibility, deterministic horizon derivation, and late-reveal inertness. They do not test exactly-once L1→L5 accounting, duplicate release, or atomic pool/ticket mutation.
+- `PRE-RICH/profile/PreRichExpireRefinement.ts` (blob `72598762a7a9d29d5a1ecc1a4d475c0121f4cde8`) remains the separate unresolved-ticket refinement: its evidence covers unresolved count and unresolved price reserve, not crystallized payout liabilities.
+
+### 21.2 The ledger trace and invariant tests cover Pending expiry only
+
+- `audit/cardano-integration/expire-ledger-trace.ts` (blob `561adc8105a648100bba6d595a25bedca5865262`) documents its fixture as an expired Pending PrizeDatum. Its fixture constructor encodes `PrizeStatus = Pending` and payout zero; its pre-pool datum has one unresolved ticket, zero pending liabilities, and the deterministic price reserve. The trace expects expiry to leave liquidity unchanged, release that reserve, decrement unresolved count, and retain the ticket NFT. It is not a trace of an expired revealed winning ticket.
+- `src/__tests__/b1-invariants.test.ts` (blob `4f108dd19cc29cc5498cb60752935d72867d89e6`) explicitly tests `pendingLiabilities unchanged by expiry` for the `TicketExpired` mirror. This is consistent with Pending-only expiry, but also confirms that the current expiry test model does not discharge a crystallized payout liability.
+- `src/__tests__/cardano-v3-semantic-conformance.test.ts` (blob `e74d73302d64aa207cddf5b7e0cba59b350e90da`) checks the existing redeemer encoding (`Expire` → `TicketExpired`); it does not define a separate crystallized-right expiry transition.
+
+### 21.3 Workflow and predeploy checker do not close this gap
+
+- `.github/workflows/pre-rich-expiry-conformance.yml` (blob `e3e30f46db005cbc96e2de9e7266b9b33ec1678f`) triggers on push/PR to `work/immortal-green-closure`, not on push to the authorized audit branch. Its configured test command runs only `preRichExpiryEvidence.test.ts` and `preRichExpiryPolicy.test.ts`; those tests cover policy/time-boundary helpers, not L1→L5 release. This report update did not dispatch or run that workflow.
+- `scripts/predeploy-check.mjs` (blob `98598731a5503c56705a4d5c6394edb2e30190ab`) checks for the existence of `TicketExpired`, `validateExpire`, no continuing Prize output, `pdExpiresAt`, and the DApp expiry function. These are source-presence checks; they do not assert that Expire accepts a Revealed winning datum or decrements `ppPendingLiabilities`.
+
+### 21.4 Packaged validator artifact copies are identical, not an alternate transition
+
+The recursive Git tree on the audited commit is non-truncated (`truncated=false`, 551 entries / 483 blobs). In this exact tree:
+
+- `plutus/out/prizeValidatorFactory.plutus.json` and `src/plutusScripts/prizeValidatorFactory.plutus.json` have the same blob SHA `183ebe92b31924aa19799dff8ec687b9b9bb9a22` and size 19,713 bytes.
+- `plutus/out/b1PrizePoolFactory.plutus.json` and `src/plutusScripts/b1PrizePoolFactory.plutus.json` have the same blob SHA `9efbac15e5dbf8ed5c2133ce0c6068c2c43c8de6` and size 15,286 bytes.
+
+This proves those checked-in copies are byte-identical to each other on this commit. It does **not** prove which artifact is deployed on-chain, that it was compiled from the current Haskell sources, or that any live validator has the same identity.
+
+### 21.5 Updated exact-scope conclusion
+
+Across the inspected policy/evidence helpers, tests, DApp transaction builder, Plutus validators, B1 pool validator, ledger trace, and packaged artifact copies, the expiry evidence is consistently scoped to (a) time eligibility/no late-reveal effect and (b) release of an unresolved Pending ticket's price reserve/count. No inspected path demonstrates the canonical expired-winning-right transition that releases a crystallized L1 liability exactly once into L5.
+
+**Classification:** stronger cross-file evidence for the previously recorded source-confirmed coverage gap; still **not** a universal proof that no other repository path or deployed external component can implement it. Whole-program transition reachability remains open.
+
+- Time-boundary / policy helper: **SOURCE-VERIFIED; not an accounting transition**.
+- Pending expiry unit tests and trace fixture: **SOURCE-VERIFIED; tests/trace not executed in this pass**.
+- Packaged validator copies: **byte-identical by blob SHA; deployed identity NOT VERIFIED**.
+- Predeploy checker: **does not test revealed-winning expiry semantics**.
+- L1→L5 exactly-once release: **NOT FOUND IN THE INSPECTED PATHS; OPEN BLOCKER**.
+- RF2/RF3/RF8, PA2, PA7, build/CI, and on-chain deployment conformance: **OPEN / NOT VERIFIED**.
+
+No source code, economic formula, datum/redeemer constructor, test, workflow, branch, deployment, or on-chain state was changed by this section.
