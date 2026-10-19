@@ -63,7 +63,9 @@ main = do
     "verified PRE-GENESIS predicate produces Genesis state"
 
   assert
-    (rejectedBelow == Nothing)
+    (case rejectedBelow of
+       Nothing -> True
+       Just _ -> False)
     "below-threshold observation fails closed"
 
   assert
@@ -71,19 +73,27 @@ main = do
     "fractional below-threshold valuation floors conservatively"
 
   assert
-    (preGenesisToGenesis preGenesisState fractionalBelowThresholdObservation == Nothing)
+    (case preGenesisToGenesis preGenesisState fractionalBelowThresholdObservation of
+       Nothing -> True
+       Just _ -> False)
     "fractional below-threshold Genesis admission fails closed"
 
   assert
-    (rejectedSource == Nothing)
+    (case rejectedSource of
+       Nothing -> True
+       Just _ -> False)
     "non-PRE-GENESIS observation fails closed"
 
   assert
-    (rejectedReplay == Nothing)
+    (case rejectedReplay of
+       Nothing -> True
+       Just _ -> False)
     "Genesis cannot be transitioned through the same edge twice"
 
   assert
-    (preGenesisToGenesis malformed validObservation == Nothing)
+    (case preGenesisToGenesis malformed validObservation of
+       Nothing -> True
+       Just _ -> False)
     "non-PRE-GENESIS carrier rejects the transition"
 
   putStrLn "ALL GENESIS REGIME CARRIER TESTS PASSED"
