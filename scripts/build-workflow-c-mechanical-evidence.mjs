@@ -14,6 +14,23 @@ export const EXPECTED_CHECKS = Object.freeze([
 ]);
 
 export const SOURCE_PATHS = Object.freeze([
+  'docs/00-normative/01_CONSTITUTION_FINAL.md',
+  'docs/00-normative/02_UNIVERSAL_ECONOMIC_MODEL.md',
+  'docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md',
+  'docs/01-contracts/13_LIVENESS_AND_PROGRESS_SPECIFICATION.md',
+  'docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md',
+  'docs/02-certification/LIVENESS_AND_PROGRESS_PROOF_SPECIFICATION.md',
+  'docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md',
+  'docs/workflow-c/README.md',
+  'docs/workflow-c/BRANCH-AND-TRANSFER-RECORD.md',
+  'docs/workflow-c/C0-C5-SOURCE-MAP.md',
+  'docs/workflow-c/C6-RECONCILIATION.md',
+  'docs/workflow-c/C7-OMEGA-WORKSHEET.md',
+  'docs/workflow-c/REFERENCE-PROFILE-CONTRACT.md',
+  'docs/workflow-c/B3-EVIDENCE-INTEGRATION.md',
+  'docs/workflow-c/R1-FINITE-CHECKER-SCHEMA.md',
+  'IMMORTAL/kernel/UniversalEconomicKernel.hs',
+  'IMMORTAL/state/UniversalEconomicState.hs',
   '.github/workflows/c6-r1-finite-checker.yml',
   'docs/workflow-c/WORK-PROGRAM.md',
   'docs/workflow-c/profile.schema.json',
