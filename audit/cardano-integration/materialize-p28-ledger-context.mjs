@@ -131,6 +131,39 @@ if (!Number.isInteger(protocolMajor) || protocolMajor !== 11) {
 if (!Number.isInteger(protocolMinor) || protocolMinor < 0) {
   throw new Error('Yaci raw protocol_minor_ver is missing or invalid: ' + String(rawPparams?.protocol_minor_ver))
 }
+const integerParameter = (field) => {
+  const value = rawPparams?.[field]
+  const parsed = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+$/.test(value)
+      ? Number(value)
+      : NaN
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    throw new Error('Yaci raw protocol parameter is missing or invalid: ' + field + '=' + String(value))
+  }
+  return parsed
+}
+const numericParameter = (field) => {
+  const value = rawPparams?.[field]
+  const parsed = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && value.trim() !== ''
+      ? Number(value)
+      : NaN
+  if (!Number.isFinite(parsed)) {
+    throw new Error('Yaci raw numeric protocol parameter is missing or invalid: ' + field + '=' + String(value))
+  }
+  return parsed
+}
+const unitIntervalParameter = (field) => {
+  const value = numericParameter(field)
+  if (value < 0 || value > 1) {
+    throw new Error('Yaci raw unit interval is outside [0,1]: ' + field + '=' + String(value))
+  }
+  return value
+}
+
+const ledgerCostModels = {}
 for (const model of ['PlutusV1', 'PlutusV2', 'PlutusV3']) {
   const normalized = pparamsJson?.costModels?.[model]
   const raw = rawPparams?.cost_models_raw?.[model]
@@ -139,8 +172,81 @@ for (const model of ['PlutusV1', 'PlutusV2', 'PlutusV3']) {
       ': normalized=' + String(Array.isArray(normalized) ? normalized.length : 'missing') +
       ', raw=' + String(Array.isArray(raw) ? raw.length : 'missing'))
   }
+  if (raw.some((value) => !Number.isSafeInteger(value)) ||
+      JSON.stringify(normalized) !== JSON.stringify(raw)) {
+    throw new Error('Yaci/Lucid cost-model values do not match exactly for ' + model)
+  }
+  ledgerCostModels[model] = raw
 }
-await writeFile(EVIDENCE_DIR + '/protocol-parameters-raw.json', JSON.stringify(rawPparams, null, 2) + '\\n')
+
+const pvtSecurityGroup = unitIntervalParameter('pvtpp_security_group')
+if (rawPparams.pvt_p_p_security_group !== undefined &&
+    unitIntervalParameter('pvt_p_p_security_group') !== pvtSecurityGroup) {
+  throw new Error('Yaci pool security-group parameter aliases disagree')
+}
+
+// Canonical Cardano Ledger Conway PParams JSON. Every scalar is mapped from the
+// same raw Yaci response; no defaults or inferred economic/ledger values are used.
+const ledgerPparams = {
+  txFeePerByte: integerParameter('min_fee_a'),
+  txFeeFixed: integerParameter('min_fee_b'),
+  maxBlockBodySize: integerParameter('max_block_size'),
+  maxTxSize: integerParameter('max_tx_size'),
+  maxBlockHeaderSize: integerParameter('max_block_header_size'),
+  stakeAddressDeposit: integerParameter('key_deposit'),
+  stakePoolDeposit: integerParameter('pool_deposit'),
+  poolRetireMaxEpoch: integerParameter('e_max'),
+  stakePoolTargetNum: integerParameter('n_opt'),
+  poolPledgeInfluence: numericParameter('a0'),
+  monetaryExpansion: unitIntervalParameter('rho'),
+  treasuryCut: unitIntervalParameter('tau'),
+  protocolVersion: { major: protocolMajor, minor: protocolMinor },
+  minPoolCost: integerParameter('min_pool_cost'),
+  utxoCostPerByte: integerParameter('coins_per_utxo_size'),
+  costModels: ledgerCostModels,
+  executionUnitPrices: {
+    priceMemory: numericParameter('price_mem'),
+    priceSteps: numericParameter('price_step'),
+  },
+  maxTxExecutionUnits: {
+    memory: integerParameter('max_tx_ex_mem'),
+    steps: integerParameter('max_tx_ex_steps'),
+  },
+  maxBlockExecutionUnits: {
+    memory: integerParameter('max_block_ex_mem'),
+    steps: integerParameter('max_block_ex_steps'),
+  },
+  maxValueSize: integerParameter('max_val_size'),
+  collateralPercentage: integerParameter('collateral_percent'),
+  maxCollateralInputs: integerParameter('max_collateral_inputs'),
+  poolVotingThresholds: {
+    motionNoConfidence: unitIntervalParameter('pvt_motion_no_confidence'),
+    committeeNormal: unitIntervalParameter('pvt_committee_normal'),
+    committeeNoConfidence: unitIntervalParameter('pvt_committee_no_confidence'),
+    hardForkInitiation: unitIntervalParameter('pvt_hard_fork_initiation'),
+    ppSecurityGroup: pvtSecurityGroup,
+  },
+  dRepVotingThresholds: {
+    motionNoConfidence: unitIntervalParameter('dvt_motion_no_confidence'),
+    committeeNormal: unitIntervalParameter('dvt_committee_normal'),
+    committeeNoConfidence: unitIntervalParameter('dvt_committee_no_confidence'),
+    updateToConstitution: unitIntervalParameter('dvt_update_to_constitution'),
+    hardForkInitiation: unitIntervalParameter('dvt_hard_fork_initiation'),
+    ppNetworkGroup: unitIntervalParameter('dvt_ppnetwork_group'),
+    ppEconomicGroup: unitIntervalParameter('dvt_ppeconomic_group'),
+    ppTechnicalGroup: unitIntervalParameter('dvt_pptechnical_group'),
+    ppGovGroup: unitIntervalParameter('dvt_ppgov_group'),
+    treasuryWithdrawal: unitIntervalParameter('dvt_treasury_withdrawal'),
+  },
+  committeeMinSize: integerParameter('committee_min_size'),
+  committeeMaxTermLength: integerParameter('committee_max_term_length'),
+  govActionLifetime: integerParameter('gov_action_lifetime'),
+  govActionDeposit: integerParameter('gov_action_deposit'),
+  dRepDeposit: integerParameter('drep_deposit'),
+  dRepActivity: integerParameter('drep_activity'),
+  minFeeRefScriptCostPerByte: numericParameter('min_fee_ref_script_cost_per_byte'),
+}
+await writeFile(EVIDENCE_DIR + '/protocol-parameters-raw.json', JSON.stringify(rawPparams, null, 2) + '\n')
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
 const epochLatestJson = JSON.parse(epochLatest.toString('utf8'))
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
@@ -368,7 +474,7 @@ const observedWithLedgerAddresses = {
 }
 
 await writeFile(EVIDENCE_DIR + '/tx.cbor', txCbor)
-await writeFile(EVIDENCE_DIR + '/pparams.json', pparams)
+await writeFile(EVIDENCE_DIR + '/pparams.json', JSON.stringify(ledgerPparams, null, 2) + '\n')
 
 await writeFile(
   EVIDENCE_DIR + '/utxo.json',
@@ -457,7 +563,7 @@ const manifest = {
   sha256: hashes,
   materialization: {
     transaction: 'copied byte-for-byte from reveal-tx.cbor',
-    protocol_parameters: 'copied byte-for-byte from reveal-protocol-parameters.json; cost-model lengths cross-checked against raw Yaci parameters',
+    protocol_parameters: 'canonical Conway PParams JSON mapped from raw Yaci protocol fields; Plutus cost-model arrays matched exactly against Lucid observation',
     protocol_parameters_raw: 'fetched directly from Yaci /epochs/latest/parameters; protocol_major_ver is the authoritative PV11 gate',
     utxo: 'fetched directly from Yaci Store for transactionRef; consumed input references cross-checked against Reveal trace',
     epoch_info: 'raw Yaci epoch/timing provenance; typed EpochInfo is constructed by the native runner',
