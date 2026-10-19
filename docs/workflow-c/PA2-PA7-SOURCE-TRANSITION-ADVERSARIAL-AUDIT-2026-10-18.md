@@ -623,3 +623,61 @@ No code, economic formulas, action semantics, test assertions, branches, deploym
 - Tests, build, CI, live S0, EV1–EV7, and deployed validator identity: **NOT VERIFIED in this pass**.
 
 No source code, formulas, redeemers, datums, tests, branches, deployment state or on-chain state were changed by this review.
+
+
+## 19. Normative expiry contract versus implemented ticket state machine (2026-10-19)
+
+**Scope:** exact-branch reads of `PRE-RICH/docs/GAME-ECONOMY.md`, `PRE-RICH/docs/CONSTITUTION.md`, `PRE-RICH/docs/APPLICATION-SPECIFICATION.md`, `docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md`, `docs/02-certification/REFINEMENT_CONFORMANCE_SPECIFICATION.md`, `plutus/Types.hs`, `plutus/PrizeValidator.hs`, `plutus/B1PrizePool.hs`, and the Claim/Expire refinement witnesses. No code or tests were changed or executed.
+
+### 19.1 The governing rule is already specified; this is not an owner-policy question
+
+The current-branch PRE-RICH economic canon says in §11 (Expiry):
+
+- no claim after expiry;
+- no new liability after expiry;
+- unresolved reserve is released exactly once where applicable;
+- **an expired unclaimed winning right is released exactly once**;
+- a late historical reveal may preserve historical information, but cannot create claimability or revive the dissolved right;
+- the expired payment commitment dissolves.
+
+The same document states that a revealed but unclaimed winning ticket may remain transferable, with its crystallized payout attached to the ticket. `PRE-RICH/docs/CONSTITUTION.md` and `PRE-RICH/docs/APPLICATION-SPECIFICATION.md` repeat final expiry/no-resurrection semantics. R7 classifies expired rights/liabilities as L5, excluded from ProtectedCapital, and permits `expire: L1 | L2 | L3 → L5`; R2 RF9 requires no reachable path from expired to claimable.
+
+Therefore, the normative rule already requires final dissolution of an expired unclaimed winning right. The open issue is **implementation refinement and transition coverage**, not whether the owner should invent a new expiry policy.
+
+### 19.2 Current Cardano datum/redeemer surface does not encode this transition
+
+Exact-branch source inspection establishes:
+
+1. `plutus/Types.hs` declares only `Pending`, `Revealed`, and `Claimed` as `PrizeStatus`. Its `PrizeAction` includes `Expire`, but the datum/action schema contains no distinct expired status or explicit revealed-right expiry action.
+2. `PrizeValidator.validateExpire` accepts only `pdStatus datum == Pending`, requires zero prize amount, requires expiry reached, and consumes the Prize datum without a continuing Prize output. Its pool cross-check releases one price reserve and decrements unresolved count, while leaving pending liabilities unchanged.
+3. `B1PrizePool`'s `TicketExpired` branch likewise requires a `Pending` Prize datum and zero payout, releases exactly the unresolved ticket-price reserve, decrements unresolved count, and leaves pending liabilities unchanged.
+4. `PrizeValidator.validateClaim` requires `Revealed`, positive frozen payout, and a transaction validity upper bound at or before `pdExpiresAt`. Thus a winning Revealed ticket past expiry cannot Claim, but the inspected Expire transition cannot consume it either.
+5. `PreRichClaimRefinement.ts` models only `Revealed → Claimed`; `PreRichExpireRefinement.ts` models release of one unresolved ticket's price reserve/count, not dissolution of a crystallized L1 right.
+
+The three-state datum and current redeemer branches therefore do not, by themselves, demonstrate the required exactly-once release of a revealed-but-unclaimed winning right. The pool's `ppPendingLiabilities` is documented as the sum of crystallized, unclaimed winning payouts; its inspected `TicketExpired` branch does not decrement that amount.
+
+### 19.3 Classification and required evidence
+
+This is a **SOURCE-CONFIRMED NORMATIVE-TO-IMPLEMENTATION COVERAGE GAP** for the inspected current branch. It is not yet a claim that no uninspected external component or future migration can ever resolve it; no such resolving transition was found in the exact source paths reviewed.
+
+The required proof obligations are:
+
+- Identify a committed transition that implements the normative `expire: L1 → L5` for a crystallized winning right, or establish that an existing canonical path already does so. Do not infer that unresolved-ticket `TicketExpired` is equivalent: it changes a different cell and leaves pending liabilities unchanged.
+- Bind that transition to the exact ticket/right identity and frozen payout, decrement the corresponding pending liability exactly once, preserve ticket-history semantics, and prevent any later Claim or late Reveal from restoring claimability.
+- Show atomicity between the ticket-level transition and the aggregate pool/liability update, including replay/concurrency behavior.
+- Map the concrete transition to the canonical V3 action/refinement relation, or document and prove the necessary extension/refinement without changing universal semantics by implication.
+- Add/identify deterministic tests and ledger evidence that cover pre-expiry Claim, post-expiry Claim rejection, exactly-once L1→L5 release, duplicate expiry rejection, and no resurrection; run them and bind results to the audited source commit before treating the obligation as closed.
+
+No implementation strategy is selected here. In particular, this report does **not** authorize adding a new `PrizeStatus`, redeemer, validator branch, accounting formula, or expiry duration without first reconciling the change against the normative hierarchy and its existing constructor/index compatibility constraints.
+
+### 19.4 Gate impact
+
+- Normative expiry rule for crystallized winning rights: **SOURCE-VERIFIED**.
+- Existing Pending/unrevealed expiry path: **SOURCE-VERIFIED**.
+- Revealed winning right expiry / `L1 → L5` exactly once: **NOT PRESENT IN THE INSPECTED VALIDATOR/POOL PATHS; OPEN BLOCKER**.
+- RF3 transition simulation for this case: **NOT PROVEN**.
+- RF9 expiry absorption: **NOT CLOSED** for the full lifecycle.
+- RF2/RF8 whole-program coverage, PA2 exhaustiveness, PA7 independent review: **OPEN/BLOCKED**.
+- Tests/build/CI/deployed validator identity/on-chain observation: **NOT VERIFIED in this pass**.
+
+No source code, economic formulas, datum/redeemer constructors, tests, branch, deployment, or on-chain state was changed by this finding.
