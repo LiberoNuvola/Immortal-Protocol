@@ -119,8 +119,8 @@ safeStall reason = do
 
 inspectEvidence :: FilePath -> Bool -> IO ()
 inspectEvidence evidenceDir runEvaluation = do
-  let paths = map (evidenceDir <> "/") canonicalEvidence
-      rawPaths = map (evidenceDir <> "/") rawHandoffEvidence
+  let paths = map (\file -> evidenceDir <> "/" <> file) canonicalEvidence
+      rawPaths = map (\file -> evidenceDir <> "/" <> file) rawHandoffEvidence
       manifestPath = evidenceDir <> "/manifest.json"
 
   present <- mapM doesFileExist paths
@@ -207,7 +207,7 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
       ledgerFailures = failures - executionFailures - contextFailures
 
       contextDigest bytes =
-        BSC.unpack (B16.encode (SHA256.hash bytes))
+        TE.decodeUtf8 (B16.encode (SHA256.hash bytes))
 
   txBytes <- BS.readFile (evidenceDir <> "/tx.cbor")
   ppBytes <- BS.readFile (evidenceDir <> "/pparams.json")
@@ -217,7 +217,7 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
 
   BS.writeFile reportPath (BSL.toStrict (Aeson.encode renderedJson))
   reportBytes <- BS.readFile reportPath
-  let reportDigest = BSC.unpack (B16.encode (SHA256.hash reportBytes))
+  let reportDigest = TE.decodeUtf8 (B16.encode (SHA256.hash reportBytes))
   BS.writeFile
     (evidenceDir <> "/ledger-evaluation-binding.txt")
     (TE.encodeUtf8
