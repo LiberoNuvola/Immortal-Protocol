@@ -56,3 +56,13 @@ A completed C10 packet must include:
 - **Boundary:** inventory reports `closureEligible=false` and `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. These tests establish structural/finite mechanical evidence only. They do not prove Ω completeness, PA2/PA7 exhaustiveness, source authenticity, economic transition semantics, a live S0, or non-empty Kc.
 - **Next:** continue the Workflow C C0–C5 reconciliation and C6-C evidence binding without changing normative semantics. C6-B/C8 remain blocked until an authorized substantive transition relation and concrete non-empty Kc witness are established.
 
+## 2026-10-19 — C10 run-scoped mechanical packet verified
+
+- **Authorized branch / tested SHA:** `release/public-main-curated-2026-09-24` / `30b3a34618e2a0726a25dfd12f7b6ae27220d1bf`.
+- **Workflow run #29:** [39200314704](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39200314704) — **SUCCESS**, exact matching SHA.
+- **Artifact:** [workflow-c-mechanical-evidence-39200314704-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39200314704/artifacts/12162788947), ID `12162788947`, size 8,251 bytes, GitHub ZIP SHA-256 `ed5a6754458e7376109771c4dede732ed1a168e4b566f819543b85ea812e0dc6`; expiry 2026-11-18.
+- **Packet verification:** downloaded and extracted the artifact. It contains `canonical-source.json`, `v3-universal-projection.json`, `r1-economic-inventory.json`, `profile-manifest-tests.tap`, `finite-r1-tests.tap`, and `evidence-manifest.json`. Independently recomputed SHA-256 and byte lengths for all five payload files; all five matched the manifest. Independently recomputed the ZIP digest; it matched GitHub's artifact digest.
+- **Observed test evidence:** profile-manifest structural suite **6/6 pass**; R1/source-binding/projection/inventory suite **48/48 pass**. Source snapshot/inventory checks returned no checker errors.
+- **Classification boundary:** `MECHANICAL_EVIDENCE_ONLY_NOT_PROFILE_CERTIFICATION`. The inventory checker explicitly reports `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`. Artifact integrity establishes which bytes were preserved, not truth/completeness of the economic universe, Ω completeness, PA2/PA7, authoritative S0, an authorized universal transition relation, Kc non-emptiness or deployment conformance.
+- **Status update:** C10's run-scoped packet generation, upload, retrieval and internal digest cross-check are now **MECHANICALLY VERIFIED for run #29**. Model/profile certification remains open; C6-B/C8 blocked and C7/PA2/PA7 remain open.
+
