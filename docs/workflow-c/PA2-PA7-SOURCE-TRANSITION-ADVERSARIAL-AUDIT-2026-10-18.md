@@ -681,3 +681,46 @@ No implementation strategy is selected here. In particular, this report does **n
 - Tests/build/CI/deployed validator identity/on-chain observation: **NOT VERIFIED in this pass**.
 
 No source code, economic formulas, datum/redeemer constructors, tests, branch, deployment, or on-chain state was changed by this finding.
+
+
+## 20. Extended exact-branch cross-check: DApp expiry path and regression surface (2026-10-19)
+
+**Purpose:** extend §19 from the on-chain validators/refinement witnesses to the concrete off-chain expirePrize transaction builder and its targeted regression test. This narrows the evidence boundary; it is not an exhaustive proof over every repository entry point.
+
+### 20.1 Exact-branch source observations
+
+The following files were fetched by explicit ref=release/public-main-curated-2026-09-24, not inferred from GitHub's default-branch code-search index:
+
+- **src/gameFlow.ts** (blob 8afabe9f2f2b29eaa76abc5e49e2dc3ef53ba966), expirePrize, lines 966 onward:
+  - rejects any datum whose status constructor index is not 0 (Pending), with the error “EXPIRE requires a Pending PrizeDatum”;
+  - reads ticket price and pdExpiresAt;
+  - checks pool unresolved reserve and unresolved-ticket count;
+  - changes only pool fields 2 and 3 (unresolved reserve and unresolved count), subtracting the ticket price and one respectively;
+  - submits the Prize input and B1 pool input atomically using the existing Expire / TicketExpired redeemers and validFrom(expiresAt).
+- **plutus/PrizeValidator.hs** (blob 52aaea8c964b12fc167908b1417481c4beaad4ce), validateExpire:
+  - requires Pending status and zero prize amount;
+  - requires expiry reached and no continuing Prize output;
+  - requires pool pending liabilities unchanged and performs unresolved reserve/count release.
+- **plutus/B1PrizePool.hs** (blob ffc3903a4e7e72a1be19c069bb5ad74f9767a8e6), TicketExpired:
+  - requires Pending status and zero payout;
+  - checks the ticket's expiry and pool binding;
+  - leaves total liquidity and pending liabilities unchanged while releasing the deterministic ticket-price reserve and decrementing unresolved count.
+- **PRE-RICH/profile/PreRichExpireRefinement.ts** (blob 72598762a7a9d29d5a1ecc1a4d475c0121f4cde8) and **src/__tests__/preRichExpireRefinement.test.ts** (blob cb7572f2f8fc7b8cd261556d50ed00a5bfa588f0) model/test only one unresolved ticket's price-reserve/count decrement. The evidence type has no crystallized payout or pending-liability before/after fields.
+- **IMMORTAL/kernel/EconomicTransitionV3.hs** (blob 62c2980a821cdcfc33a33e15a09617256ab8753c) still exposes aggregate Expire TicketClass; it does not identify a crystallized ticket right or carry a per-ticket expiry witness.
+
+### 20.2 Result
+
+The DApp builder independently corroborates the same boundary as the validator and pool: the only concrete expiry transaction it constructs is for an unresolved Pending ticket, and its proposed pool datum does not reduce ppPendingLiabilities. No concrete DApp expiry path for a revealed winning ticket / crystallized L1 right was found in the exact files reviewed.
+
+This raises confidence in the **specific inspected-path finding** from §19; it does not prove absence from every possible repository path, generated artifact, or future/deployed component. The recursive whole-program/reachability inventory and RF2/RF8 proof remain open.
+
+### 20.3 Required next evidence; no implementation chosen
+
+1. Continue exact-branch path inventory for every expiry-related caller, alternate builder, migration/relayer, generated validator artifact and deployment route; distinguish production paths from tests/labs.
+2. If the exhaustive inventory confirms no existing L1→L5 implementation, record the exact missing transition against the already normative PRE-RICH expiry rule.
+3. Only after source-of-truth and constructor-index compatibility reconciliation, assess a minimum implementation/refinement that preserves ticket identity, frozen payout, exactly-once liability release, atomicity, replay/concurrency safety and no resurrection. Do not change V3, Claim, Reveal, or expiry semantics by implication.
+4. Bind future tests and ledger evidence to the exact source and deployed script identities; do not treat the existing Pending-only expiry tests as proof of crystallized-right expiry.
+
+**Status:** DApp Pending-only expiry path **SOURCE-VERIFIED**; L1→L5 path **NOT FOUND IN THE EXACT PATHS REVIEWED**; whole-program absence **NOT PROVEN**; tests/build/CI/deployment/on-chain state **NOT VERIFIED**.
+
+No application/validator source, formulas, datums, redeemers, tests, branches, deployment, or on-chain state was changed by this section.
