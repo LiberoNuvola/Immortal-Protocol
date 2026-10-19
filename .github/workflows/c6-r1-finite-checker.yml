@@ -19,6 +19,7 @@ on:
       - docs/workflow-c/profile.schema.json
       - docs/workflow-c/validate-profile-manifest.mjs
       - docs/workflow-c/validate-profile-manifest.test.mjs
+      - docs/workflow-c/WORK-PROGRAM.md
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
@@ -69,6 +70,7 @@ on:
       - docs/workflow-c/profile.schema.json
       - docs/workflow-c/validate-profile-manifest.mjs
       - docs/workflow-c/validate-profile-manifest.test.mjs
+      - docs/workflow-c/WORK-PROGRAM.md
       - docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md
       - docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md
       - docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md
