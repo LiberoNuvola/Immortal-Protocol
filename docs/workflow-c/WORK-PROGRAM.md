@@ -118,3 +118,12 @@ A completed C10 packet must include:
 - Added the field register to the C10 source-hash catalog, provenance regression and both workflow path triggers.
 - This is source reconciliation only. No economic formula, field layout, action or normative semantics were changed. C1 stays PARTIAL; C6-B/C8 remain blocked and C7 remains open.
 
+## 2026-10-19 — C1 state-field register exact-head verification
+
+- **Authorized branch / tested SHA:** `release/public-main-curated-2026-09-24` / `b8553cfbcaea4f0c8369a35de130f91344d66bc4`.
+- **C6 R1 finite checker run #40:** [39201925040](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201925040) — **SUCCESS**, exact SHA.
+- **Artifact:** [workflow-c-mechanical-evidence-39201925040-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201925040/artifacts/12164127436), ID `12164127436`, 12,842 bytes, ZIP SHA-256 `7bc4b61c7875d0050af9a8dc0df01fb5d55a64757bda23eb965a26aeb3aea944`, expires 2026-11-18.
+- **Independent packet verification:** ZIP digest matches GitHub; manifest binds the exact branch/commit/run; all six command/output records and status files match their hashes, every command is `PASS` with exit status `0`, all **41/41** catalogued source paths are `CAPTURED`. Test outputs: profile-manifest **6/6**, finite R1/source-binding/projection/inventory **48/48**, C10 manifest builder **7/7**.
+- **C1 register:** `docs/workflow-c/C1-CANONICAL-STATE-FIELD-REGISTER.md` records the eight-field chain-neutral aggregate and exact kernel consumption. It flags untyped integer units/provenance, external EEV binding, absent History field, and the unresolved role of unresolved reserve/ticket count as profile-completeness questions, not automatically as code defects.
+- **Scope boundary:** this is source reconciliation plus mechanical/provenance evidence. It does not establish that the aggregate is complete for `𝒮`, prove canonical state refinement, or discharge CK/VC. The inventory remains `closureEligible=false` / `MECHANICAL_EVIDENCE_REGISTER_VALID_BUT_PROFILE_CLOSURE_UNPROVEN`; C6-B/C8 blocked and C7 Ω instantiation open. No normative semantics changed.
+
