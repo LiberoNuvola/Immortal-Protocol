@@ -271,11 +271,11 @@ Do not implement a self-hosted-node workaround. First exhaust the already-existi
 
 ### B3 consequence
 
-Once this wiring exists in a self-hosted or upstream build, the standard RPC can produce the SDK-native `FinalityProof` bytes. That still does not close B3: the IMMORTAL side must independently decode the outer proof, bind its target block/hash, decode and verify the inner GRANDPA justification against the authenticated authority-set state, and connect that finality result to the selection/enactment transition.
+That node wiring is reference material only and is not an available route for this project. B3 can advance only if a public interface or independently identified public proof publisher supplies SDK-native `FinalityProof` bytes and authenticated authority-set/transition evidence. Even then, the IMMORTAL side must independently decode the outer proof, bind its target block/hash, decode and verify the inner GRANDPA justification against the authenticated authority-set state, and connect that finality result to the selection/enactment transition.
 
 Status remains:
 
-**standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; self-hosted integration is the actionable route; real proof fixture OPEN.**
+**standard RPC dependency FOUND; node registration/wiring NOT PRESENT in current upstream main; no private-node/upstream-patch route available to this project; public proof fixture OPEN.**
 
 ## Live Preprod finding — 2026-10-11
 
@@ -411,5 +411,5 @@ The finalized-state capture reported `GRANDPA finality proof status: unavailable
 
 ### Decision
 
-Do not change Materios's attestor and do not weaken the B3-A trust boundary. The IMMORTAL-side verifier, finality-proof decoder, and conformance tests are present, but the public RPC surface still does not provide a usable proof. The next executable route is an operator-controlled compatible Materios node exposing the standard GRANDPA RPC / local justification store, or a separately approved change to the upstream RPC registration. Until real proof bytes are captured and independently checked against authenticated authority-set provenance, B3-A remains **OPEN** even though B3-B is **PASS**.
+Do not change Materios's attestor and do not weaken the B3-A trust boundary. The IMMORTAL-side verifier, finality-proof decoder, and conformance tests are present, but the public RPC surface still does not provide a usable proof. The previously described operator-controlled node/upstream-registration route is NOT available to this project and is not an action item. Continue only with public interfaces or an independently identified public proof publisher. Until real proof bytes are captured and independently checked against authenticated authority-set provenance, B3-A remains **OPEN** even though B3-B is **PASS**.
 
