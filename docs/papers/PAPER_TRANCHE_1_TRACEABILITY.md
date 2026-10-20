@@ -48,13 +48,18 @@ Before freezing a paper release, bind the following to a single immutable eviden
 
 A packet is not complete merely because files exist. Each artifact must be bound to the same source snapshot and the claim it supports.
 
-### P3 controlled-rejection candidate (not yet executed)
+### P3 controlled-rejection candidate — executed
 
-A candidate already present on this branch is the test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`. It supplies a Claim whose frozen prize is 250 subunits but settlement is 249, and expects the refinement-admissibility check to reject it. The implementation condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`; the application-policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, which says a crystallized payout is immutable and cannot be reduced by changing settlement asset.
+The existing test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts` supplies a Claim whose frozen prize is 250 subunits but settlement is 249, and expects the refinement-admissibility check to reject it. The implementation condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`; the application-policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, which says a crystallized payout is immutable and cannot be reduced by changing settlement asset.
 
-Candidate command: `npx vitest run src/__tests__/differentialActionReplay.test.ts`.
+- Command: `npx vitest run src/__tests__/differentialActionReplay.test.ts`
+- Run: [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498), run #1, commit `9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea`
+- Result: **PASS — 1 test file, 4 tests, exit code 0**
+- Artifact: [reproducibility packet](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498/artifacts/12278239769)
+- Artifact SHA-256: `34201119240fde4aabe0af4afcc26837be7fe42366417f76f9c53cce7d398de7`
+- Scope: unit-test rejection only; not a native Cardano transaction witness.
 
-**Status: selected candidate; execution evidence OPEN.** No passing result is claimed. The final packet must include the actual exit code, full logs, toolchain, source commit and artifact hash, and must preserve the distinction between a test-level rejection and a native-ledger rejection.
+This supports the bounded statement that the existing refinement predicate rejects the tested mismatch. It does not establish universal Claim correctness or native-ledger behavior.
 
 ## 4. Threat-model inputs for P4
 
