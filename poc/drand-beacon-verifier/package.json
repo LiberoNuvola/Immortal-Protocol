@@ -1,0 +1,14 @@
+{
+  "name": "immortal-drand-beacon-verifier-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Off-chain conformance PoC for fixed-round drand verification; not a Cardano integration.",
+  "scripts": {
+    "test": "node --test test.mjs",
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "drand-client": "1.4.2"
+  }
+}
