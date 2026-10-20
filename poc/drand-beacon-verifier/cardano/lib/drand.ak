@@ -41,7 +41,7 @@ pub fn verify_quicknet_signature(
 }
 
 test round_42_uses_big_endian_u64() {
-  builtin.integer_to_bytearray(True, 8, 42) == #000000000000002a
+  builtin.integer_to_bytearray(True, 8, 42) == #"000000000000002a"
 }
 
 test quicknet_hash_to_curve_is_deterministic() {
