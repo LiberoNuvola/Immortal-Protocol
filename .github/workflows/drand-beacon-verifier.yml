@@ -34,17 +34,24 @@ jobs:
       - name: Record compiler and compile diagnostics
         working-directory: poc/drand-beacon-verifier/cardano
         run: |
+          set +e
           set -uo pipefail
           aiken --version
+
           echo "=== Aiken check ==="
-          aiken check 2>&1 | tee /tmp/aiken-check.log
-          check_status=${PIPESTATUS[0]}
+          aiken check > /tmp/aiken-check.log 2>&1
+          check_status=$?
+          cat /tmp/aiken-check.log
           echo "aiken_check_exit=${check_status}"
+
           echo "=== Aiken build ==="
-          aiken build 2>&1 | tee /tmp/aiken-build.log
-          build_status=${PIPESTATUS[0]}
+          aiken build > /tmp/aiken-build.log 2>&1
+          build_status=$?
+          cat /tmp/aiken-build.log
           echo "aiken_build_exit=${build_status}"
-          find . -maxdepth 2 -type f -name 'plutus.json' -print
+
+          echo "=== Generated artifacts ==="
+          find . -maxdepth 3 -type f -name 'plutus.json' -print
           exit $(( check_status != 0 || build_status != 0 ))
 
   offchain:
