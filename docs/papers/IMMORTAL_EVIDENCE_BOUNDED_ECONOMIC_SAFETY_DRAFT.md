@@ -202,17 +202,39 @@ The residual obligation register specifically records that an omitted commitment
 
 The current evidence does not establish implementation conformance across all paths, a concrete certificate for every deployment profile, completeness of a real-world environment perimeter, correctness of every valuation oracle, liveness, a concrete governance act, composition with a second system, independent external security audit, or mainnet readiness. The B3/B4 work and broader generalization of IMMORTAL remain ongoing research, not results claimed by this paper.
 
-## 7. Related work: comparison plan
+## 7. Related work and positioning
 
-The final related-work section will compare the actual contribution against five focused areas:
+This section is a targeted comparison, not a claim of exhaustive literature coverage. The works below are verifiable starting points for the submission bibliography. Their contribution is described narrowly; the paper does not infer novelty merely because the systems have different names or architectures.
 
-1. commit-reveal protocols and their availability/grinding assumptions;
-2. on-chain accounting, liabilities and solvency constraints;
-3. oracle and valuation trust boundaries;
-4. publisher-based and publisher-independent randomness beacons, including VRF approaches;
-5. formal safety games, viability kernels, certificate-based gates and refinement/conformance evidence.
+### 7.1 Formal specification and implementation conformance for Cardano
 
-For each cited work, the final manuscript must identify the mechanism, assumptions, evidence type and precise point of comparison. Novelty is not asserted in this draft: the bibliography and comparative analysis remain to be completed. B3/B4 and broad chain-agnostic generalization will be described as ongoing work, not as completed properties.
+Knispel et al. present a mechanized Agda specification covering Cardano ledger transitions and describe it as an executable specification against which production implementation is tested for conformance. This is directly relevant to the distinction between a formal model and concrete ledger behavior. Ferariu, Wadler and Melkonian model smart-contract examples as transition systems, prove their properties in Agda, and separately establish functional equivalence to validator implementations generated through agda2hs, with emulator/property-based testing.
+
+These works set a demanding comparator: a paper about economic safety should state precisely which layer is formalized and what evidence connects it to executable code. IMMORTAL's stated contribution in this draft is different in emphasis: a chain-neutral economic safety/certification model, liability/protection-first accounting concepts, and a claim-by-claim evidence classification for a PRE-RICH/Cardano case study. This is a **positioning hypothesis**, not yet a demonstrated novelty claim. A submission must compare the exact formal definitions, proof obligations and refinement relations before claiming a distinct technical contribution.
+
+### 7.2 EUTXO as execution model
+
+Cardano's official documentation explains that EUTXO transactions consume existing outputs, produce new outputs and carry data, and that transaction validity is evaluated from the transaction and its inputs. This motivates explicit input/state provenance and bounded transition evaluation. It does not, by itself, solve application-level completeness of economic liabilities, valuation trust, or proof that an adapter has mapped every relevant datum correctly. The paper's accounting argument therefore sits above the ledger's value-conservation and transaction-validity rules; it must not imply that EUTXO alone guarantees economic solvency.
+
+### 7.3 Commit-reveal and randomness beacons
+
+Lee et al.'s *Commit-Reveal²* studies last-revealer strategies in randomness beacons and proposes randomized reveal ordering plus accountability and recovery mechanisms. This is relevant to the paper's treatment of reveal availability, bias resistance and liveness. The comparison must remain scoped: the present draft is not proposing a new randomness beacon and does not claim to solve last-revealer bias. Its focus is the economic safety and evidence boundary around a ticket lifecycle that may consume a Beacon result. PRE-RICH's B1 Authorized Publisher assumption remains explicit; B3's publisher-independent canonicality is ongoing work, not a result of this paper.
+
+### 7.4 Safety cases and evidence argumentation
+
+The safety-case literature treats assurance as an argument linking claims to supporting evidence under a defined application and environment. This supports the paper's structure—claim, assumptions, evidence class, counter-boundary and residual obligation—but the structure itself is not a new formal proof technique. The useful engineering contribution is to apply that discipline to the repository's concrete distinction between mathematical result, normative closure, code/test evidence, live observation and native-ledger witness.
+
+### 7.5 Bounded comparison and novelty statement
+
+The defensible statement at this stage is:
+
+> This work combines a chain-neutral economic safety specification with an explicit evidence-traceability method and a bounded PRE-RICH/Cardano case study. Its distinctive value, if confirmed by a fuller comparison, is the explicit treatment of the boundary between formal safety claims and the evidence required to justify deployment-specific claims.
+
+Do **not** yet claim firstness, superiority, universal chain agnosticism in deployed code, full implementation verification, or a novel randomness construction. A camera-ready version should include a systematic comparison table (formal object, safety property, proof technique, implementation relation, runtime evidence, trust assumptions, liveness guarantees) and revise the novelty sentence based on that analysis.
+
+### 7.6 Research gaps still open
+
+The current literature pass is enough to anchor the comparison but not to establish comprehensive coverage. Dedicated searches and full-text review are still required for solvency/accounting protocols, oracle/valuation security, viability-kernel synthesis, proof-carrying certificates and deployment evidence pipelines.
 
 ## 8. Discussion
 
@@ -230,7 +252,15 @@ The contribution is thus not “a universally safe protocol,” but an explicit,
 
 ## References and repository artifacts
 
-The final bibliography is pending. The following repository artifacts are the primary sources for the claims in this draft and must be pinned to the exact frozen commit before submission:
+### External literature and primary documentation
+
+1. Knispel, A., Melkonian, O., Chapman, J., Hill, A., Jääger, J., DeMeo, W., & Norell, U. (2024). “Formal Specification of the Cardano Blockchain Ledger, Mechanized in Agda.” *FMBC 2024*, OASIcs 118, 2:1–2:18. https://doi.org/10.4230/OASIcs.FMBC.2024.2
+2. Ferariu, T., Wadler, P., & Melkonian, O. (2025). “Validity, Liquidity, and Fidelity: Formal Verification for Smart Contracts in Cardano.” *FMBC 2025*, OASIcs 129, 6:1–6:21. https://doi.org/10.4230/OASIcs.FMBC.2025.6
+3. Lee, S., Gee, E., Soroush, N., Bingol, M. A., & Huang, K. (2025). “Commit-Reveal²: Securing Randomness Beacons with Randomized Reveal Order in Smart Contracts.” arXiv:2504.03936; later conference publication DOI: https://doi.org/10.1109/ICBC64466.2025.11114691
+4. Cardano Documentation. “Plutus — Accounting model used by Plutus” and “The Extended UTXO Model.” https://docs.cardano.org/developer-resources/smart-contracts/plutus and https://developers.cardano.org/docs/get-started/technical-concepts/eutxo/
+5. Leveson-style safety-case literature remains to be selected and checked against the intended formal argumentation framework; no specific reference is claimed as fully reviewed in this draft.
+
+### Repository artifacts (must be pinned to the exact frozen commit)
 
 1. `docs/03-audit/VERIFICATION_STATUS.md` — mathematical/certification status and non-claims.
 2. `docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md` — R1–R9 and required external evidence.
