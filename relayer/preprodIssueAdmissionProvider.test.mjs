@@ -16,9 +16,6 @@ const deployment = {
 
 const fakeLucid = {
   utxosAt: async address => {
-    if (address === deployment.counterAddress) {
-      return [{ txHash: 'a'.repeat(64), outputIndex: 0 }]
-    }
     if (address === deployment.b1PrizePoolAddress) {
       return [{
         txHash: 'b'.repeat(64),
@@ -30,71 +27,46 @@ const fakeLucid = {
         datum: { fields: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] },
       }]
     }
-    if (address === deployment.controlAddress) {
-      return [{
-        txHash: 'e'.repeat(64),
-        outputIndex: 3,
-        assets: { [deployment.controlPolicyId + deployment.controlTokenNameHex]: 1n },
-        datum: {
-          fields: [0n, 0n, 0n, 0n, deployment.controlPolicyId, deployment.controlTokenNameHex],
-        },
-      }]
-    }
-    if (address === deployment.carrierAddress) {
-      const classes = Array.from({ length: 8 }, (_, i) => ({
-        fields: [BigInt(i), 0n, 0n, 0n, 10n, { index: i === 0 ? 1 : 0 }],
-      }))
-      return [{
-        txHash: 'c'.repeat(64),
-        outputIndex: 2,
-        assets: { [deployment.carrierPolicyId + deployment.carrierTokenNameHex]: 1n },
-        datum: {
-          fields: [0n, {
-            fields: [
-              0n, 0n, 0n, 0n, 0n, 0n,
-              classes,
-              { fields: [0n, 0n] },
-              { fields: [0n, 0n, { index: 0 }, 0n] },
-            ],
-          }],
-        },
-      }]
-    }
-    throw new Error('unexpected address ' + address)
+    return []
   },
 }
 
-const producer = createPreprodIssueObservationProducerFromLucid({ lucid: fakeLucid, deployment })
-const context = await producer({
-  counterInputReference: 'a'.repeat(64) + '#0',
-  poolInputReference: 'b'.repeat(64) + '#1',
-  controlStateReference: 'e'.repeat(64) + '#3',
-  classId: 0,
-  price: 1,
-  observedAt: 1,
-  authoritativeInputs: {
-    poolUsdmValue: 100_000,
-    preEEV: 100_000,
-    candidateEEV: 100_000,
-    requiredImmediateLiquidity: 0,
-    truthVerified: true,
-    eevFresh: true,
-    obligationsComplete: true,
-    allOmegaSuccessorsCertified: true,
-    decisionReference: 'decision:1',
-    protectedCapitalProvenance: {},
-    eevQualification: {
-      status: 'qualified',
-      deploymentApproval: {
-        status: 'DEPLOYMENT_APPROVED',
-        profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
-      },
-    },
-    viabilityCertificate: {},
-  },
+const producer = createPreprodIssueObservationProducerFromLucid({
+  lucid: fakeLucid,
+  deployment,
 })
 
-assert.equal(context.decisionInput.classId, 0n)
-assert.equal(context.decisionInput.availableExecutableLiquidity, 100_000n)
-assert.equal(context.controlStateReference, 'e'.repeat(64) + '#3')
-console.log('preprodIssueAdmissionProvider: PASS')
+await assert.rejects(
+  () => producer({
+    counterInputReference: 'a'.repeat(64) + '#0',
+    poolInputReference: 'b'.repeat(64) + '#1',
+    controlStateReference: 'e'.repeat(64) + '#3',
+    classId: 0,
+    price: 1,
+    observedAt: 1,
+    // Deliberately attacker-controlled: production provider must not accept this.
+    authoritativeInputs: {
+      poolUsdmValue: 100_000,
+      preEEV: 100_000,
+      candidateEEV: 100_000,
+      requiredImmediateLiquidity: 0,
+      truthVerified: true,
+      eevFresh: true,
+      obligationsComplete: true,
+      allOmegaSuccessorsCertified: true,
+      decisionReference: 'forged-decision',
+      protectedCapitalProvenance: {},
+      eevQualification: {
+        status: 'qualified',
+        deploymentApproval: {
+          status: 'DEPLOYMENT_APPROVED',
+          profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
+        },
+      },
+      viabilityCertificate: {},
+    },
+  }),
+  /authenticated issue authority source is required; caller-supplied authoritativeInputs are not trusted/,
+)
+
+console.log('preprodIssueAdmissionProvider: caller-supplied authority rejected')
