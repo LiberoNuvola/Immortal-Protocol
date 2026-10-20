@@ -7,6 +7,11 @@ on:
     paths:
       - "Adapter/CARDANO/runtime/**"
       - "Adapter/CARDANO/observation/**"
+      - "relayer/preprodIssueAdmissionProvider.js"
+      - "relayer/preprodIssueAdmissionProvider.test.mjs"
+      - "relayer/preprodIssueObservationProvider.js"
+      - "relayer/preprodIssueObservationReader.js"
+      - "relayer/signedIssueAuthority.js"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/issue-admission-boundary-ci.yml"
@@ -14,6 +19,11 @@ on:
     paths:
       - "Adapter/CARDANO/runtime/**"
       - "Adapter/CARDANO/observation/**"
+      - "relayer/preprodIssueAdmissionProvider.js"
+      - "relayer/preprodIssueAdmissionProvider.test.mjs"
+      - "relayer/preprodIssueObservationProvider.js"
+      - "relayer/preprodIssueObservationReader.js"
+      - "relayer/signedIssueAuthority.js"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/issue-admission-boundary-ci.yml"
@@ -42,6 +52,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Run Issue Admission boundary tests
         run: npx vitest run Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts --reporter=verbose
+      - name: Reject caller-supplied Issue authority inputs
+        run: node relayer/preprodIssueAdmissionProvider.test.mjs
       - name: Typecheck adapter and boundary tests against locked Lucid
         run: >-
           npx tsc --noEmit --strict --target ES2020 --module ESNext
