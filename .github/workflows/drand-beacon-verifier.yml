@@ -33,10 +33,15 @@ jobs:
           version: v1.1.23
       - name: Record compiler and compile diagnostics
         working-directory: poc/drand-beacon-verifier/cardano
+        env:
+          RUST_BACKTRACE: full
+          RUST_LOG: trace
         run: |
           set +e
           set -uo pipefail
           aiken --version
+          echo "=== Aiken build help ==="
+          aiken build --help 2>&1 | head -100
 
           echo "=== Aiken check ==="
           aiken check > /tmp/aiken-check.log 2>&1
