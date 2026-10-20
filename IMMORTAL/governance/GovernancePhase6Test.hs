@@ -68,9 +68,12 @@ main = do
   assert "decision recording does not set finalization time"
     (finalizationAt p0 == Nothing)
 
-  assert "finalize produces Accepted, not Canonical"
+  -- Auxiliary helper conformance only: this does not close GOV-18.
+  -- Canonicalization must still require the separate adoption and conformance
+  -- canonical events enforced by GovernanceCanonicalReplay.
+  assert "auxiliary finalize produces Accepted; canonicalization remains separate"
     (case finalize p [cr] (100 + finalitySeconds) of
-       Right x -> proposalStatus x == Accepted
+       Right x -> proposalStatus x == Accepted && finalizationAt x == Just (100 + finalitySeconds)
        Left _ -> False)
 
   assert "ruleset immutable"
