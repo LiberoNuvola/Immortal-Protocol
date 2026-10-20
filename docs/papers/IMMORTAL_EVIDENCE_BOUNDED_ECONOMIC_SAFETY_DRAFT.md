@@ -293,6 +293,7 @@ The literature pass remains preliminary: these sources expand the initial compar
 ### Repository artifacts (must be pinned to the exact frozen commit)
 
 - `docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md` — threat and failure register; supporting analysis, not certification.
+- `docs/papers/PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md` — targeted source-by-source literature screening; P5 remains open, no novelty claim established.
 
 1. `docs/03-audit/VERIFICATION_STATUS.md` — mathematical/certification status and non-claims.
 2. `docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md` — R1–R9 and required external evidence.
