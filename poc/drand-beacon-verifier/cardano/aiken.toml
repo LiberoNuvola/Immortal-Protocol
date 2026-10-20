@@ -1,0 +1,16 @@
+name = "immortal/drand-beacon-verifier"
+version = "0.1.0"
+compiler = "v1.1.23"
+plutus = "v3"
+license = "Apache-2.0"
+description = "Isolated Plutus V3 Quicknet BLS signature verification feasibility PoC"
+
+[repository]
+user = "LiberoNuvola"
+project = "Immortal-Protocol"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v3.1.0"
+source = "github"
