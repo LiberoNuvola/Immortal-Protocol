@@ -1,5 +1,8 @@
 use codec::{Decode, Encode};
-use sp_core::{\n    hashing::{blake2_128, twox_128},\n    Blake2Hasher,\n};
+use sp_core::{
+    hashing::{blake2_128, twox_128},
+    Blake2Hasher,
+};
 use sp_runtime::StateVersion;
 use sp_state_machine::{
     backend::Backend, prove_read, read_proof_check, InMemoryBackend, StorageProof,
