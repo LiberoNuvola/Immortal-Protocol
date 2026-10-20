@@ -71,11 +71,11 @@ Before recording a rejection as evidence, document:
 5. Whether the rejection was observed in a unit test, emulator, devnet, Preprod, or native ledger.
 6. The precise claim the rejection supports and the claims it does not support.
 
-**Selected existing candidate (not yet executed in this work cycle):** the test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`. It constructs a Claim with `prizeAmountSubunits = 250` and `settlementAmountSubunits = 249`, then expects `claimRefinementAdmissible` to return false. This is an existing mismatch-rejection fixture; it does not introduce new protocol semantics.
+**Selected existing candidate (not yet executed in this work cycle):** the test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`. It constructs a Claim with `prizeAmountSubunits = 250` and `settlementAmountSubunits = 249`, then expects `claimRefinementAdmissible` to return false. This is an existing mismatch-rejection fixture; it does not introduce new protocol semantics. The implementation's exact rejection condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`, `validateClaimRefinementEvidence`: settlement must equal the frozen PrizeAmount exactly. The application specification `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, states that a crystallized payout is immutable and cannot be reduced by changing settlement asset. This is the closest current normative anchor identified; the final packet should bind the precise normative statement and source hash before promoting this test to a paper claim.
 
 **Candidate command:** `npx vitest run src/__tests__/differentialActionReplay.test.ts`.
 
-**Evidence status: OPEN / NOT RUN HERE.** The repository connector permits source inspection and commits but did not provide a test execution facility in this work cycle. Do not report the command as passed. The next execution must capture the actual exit code, complete stdout/stderr, exact commit SHA, tool versions and artifact hash. Before treating the case as normative evidence, cross-reference the settlement-equality condition to its canonical specification locus.
+**Evidence status: OPEN / NOT RUN HERE.** The repository connector permits source inspection and commits but did not provide a test execution facility in this work cycle. Do not report the command as passed. The next execution must capture the actual exit code, complete stdout/stderr, exact commit SHA, tool versions and artifact hash.
 
 ## 5. Native-ledger witness gate
 
