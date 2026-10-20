@@ -1,0 +1,57 @@
+name: IMMORTAL drand Beacon Verification PoC
+
+on:
+  workflow_dispatch:
+    inputs:
+      round:
+        description: "Preselected Quicknet round to verify"
+        required: true
+        default: "42"
+        type: string
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - "poc/drand-beacon-verifier/**"
+      - ".github/workflows/drand-beacon-verifier.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drand-beacon-verifier-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: poc/drand-beacon-verifier
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: poc/drand-beacon-verifier/package.json
+
+      - name: Install pinned verifier dependency
+        run: npm install --no-audit --no-fund
+
+      - name: Run positive and adversarial verification tests
+        run: npm test
+
+      - name: Capture verified round evidence
+        run: npm run capture
+        env:
+          DRAND_ROUND: ${{ inputs.round || '42' }}
+
+      - name: Upload verified beacon evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-drand-verified-beacon
+          path: poc/drand-beacon-verifier/out/DrandVerifiedBeacon.json
+          if-no-files-found: warn
