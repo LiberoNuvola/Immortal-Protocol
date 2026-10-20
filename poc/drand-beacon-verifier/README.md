@@ -33,7 +33,7 @@ Round selection is deliberately an input to the verifier, not chosen by this PoC
 
 1. Positive: fetch and verify pinned Quicknet round 42.
 2. Negative: reject a response with a different round.
-3. Negative: mutate the signature and recompute the derived randomness, proving the cryptographic signature check rejects it rather than only detecting a randomness/signature mismatch.
+3. Negative: substitute a genuine, well-formed signature from the adjacent round and recompute its derived randomness, proving verification rejects the wrong signed round rather than only detecting malformed bytes or a randomness/signature mismatch.
 
 The positive test depends on public drand API availability. The negative tests use a real beacon as the base vector and mutate it in memory.
 
