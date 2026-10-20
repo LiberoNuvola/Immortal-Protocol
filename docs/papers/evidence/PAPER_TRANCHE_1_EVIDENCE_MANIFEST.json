@@ -259,6 +259,11 @@
       "commit": "2ba583056d85054082b3a06ce002dceef260889c",
       "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/2ba583056d85054082b3a06ce002dceef260889c",
       "purpose": "add Reveal witness candidate-source review to paper reproducibility packet"
+    },
+    {
+      "commit": "4e6334429a2a056b8a82c936a2b4656dd1f14b3e",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/4e6334429a2a056b8a82c936a2b4656dd1f14b3e",
+      "purpose": "make the Reveal witness production-path qualification an explicit release-audit gate"
     }
   ],
   "latest_reviewed_blobs": {
@@ -266,7 +271,7 @@
     "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "143a09f276f8c3c1ecaf87b8d0230d6b51685cc5",
     "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "39d6869d69eeecb4c257192c39e6d990aca03f39",
     "docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md": "c6462a6b5c3c6702189417a809ff91faa88d098b",
-    "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "ac69c9803b80527ca60d9e5ee7b61985c4198b46",
+    "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "16ccbb4b837941474f41f5ac0e1e00394a94adf6",
     "docs/papers/PAPER_TRANCHE_1_THREAT_EVIDENCE_CROSSWALK.md": "1706a7a14c690da85aef24e0603d3a2c072692d3",
     "docs/papers/PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md": "d32c5d86a74ec1540979b66e4587487573169862",
     "docs/02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md": "e35785a5704549edc27717101380151c682c8779"
