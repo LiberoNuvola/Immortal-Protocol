@@ -65,20 +65,23 @@ This is a required coverage list, not a claim that every threat has been fully m
 
 ## 5. Related-work plan (P5)
 
-**Initial verified bibliography added to the manuscript draft; systematic comparison remains OPEN.** The following sources have been checked against publisher, institutional or official documentation pages:
+**Initial bibliography and comparative table added; systematic comparison remains OPEN.** The manuscript now contains an initial positioning table across Cardano ledger formalization, smart-contract verification, randomness beacons, EUTXO documentation, assurance-case literature and viability theory. This is a bounded first pass, not a systematic review or a novelty proof. The following sources have been checked against publisher, institutional or official documentation pages:
 
 - Knispel et al. (2024), *Formal Specification of the Cardano Blockchain Ledger, Mechanized in Agda*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2024.2. Comparator for a mechanized ledger specification and production-conformance objective.
 - Ferariu, Wadler and Melkonian (2025), *Validity, Liquidity, and Fidelity: Formal Verification for Smart Contracts in Cardano*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2025.6. Comparator for transition-system properties, functional equivalence to validator implementation, and emulator/property-based testing.
 - Lee et al. (2025), *Commit-Reveal²: Securing Randomness Beacons with Randomized Reveal Order in Smart Contracts*, arXiv:2504.03936; conference DOI: https://doi.org/10.1109/ICBC64466.2025.11114691. Comparator for last-revealer risk, reveal ordering, accountability and recovery; not evidence that IMMORTAL solves randomness bias.
 - Cardano official documentation, *Plutus — Accounting model used by Plutus* and *The Extended UTXO Model*: https://docs.cardano.org/developer-resources/smart-contracts/plutus and https://developers.cardano.org/docs/get-started/technical-concepts/eutxo/. Primary background on EUTXO transaction/value semantics.
+- “Security assurance cases—state of the art of an emerging approach,” *Empirical Software Engineering* (2021), https://doi.org/10.1007/s10664-021-09971-7. Background on assurance cases as structured arguments with evidence in a defined application/environment.
+- Aubin, J.-P. (1990), “A Survey of Viability Theory,” *SIAM Journal on Control and Optimization*, 28(4), 749–788, https://doi.org/10.1137/0328044. Background on viability kernels and controlled invariance; not a direct comparator for Cardano or IMMORTAL implementation evidence.
 
 Remaining research areas:
-- safety-case argumentation and evidence assurance;
+- systematic full-text review of safety-case argumentation and evidence assurance;
 - solvency/liability accounting in on-chain financial applications;
 - valuation oracle trust and conservative valuation;
-- viability kernels and certificate-based safety gates.
+- viability-kernel computation, safety games and certificate-based gates;
+- proof-carrying evidence and deployment evidence pipelines.
 
-For each source, record: bibliographic metadata, exact property/mechanism, assumptions, proof/evaluation method, implementation relation, and what IMMORTAL does or does not add. The manuscript now gives a cautious initial comparison, but novelty is not established until full-text review and a comparison table are complete.
+For each source, record: bibliographic metadata, exact property/mechanism, assumptions, proof/evaluation method, implementation relation, runtime evidence and what IMMORTAL does or does not add. The manuscript now contains an initial comparative table, but novelty is not established until full-text review and a systematic comparison are complete.
 
 ## 6. Paper Tranche 1 exit gate
 
