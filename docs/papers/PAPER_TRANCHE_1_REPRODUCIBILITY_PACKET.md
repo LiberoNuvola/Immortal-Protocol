@@ -72,6 +72,8 @@ A dedicated workflow now exists at `.github/workflows/paper-tranche-1-controlled
 
 **Execution status: PASS for the targeted test suite; artifact inspected through the Actions job log.** Run [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498), run number 1, completed successfully on branch `work/immortal-green-closure`, commit `9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea`. The log records `npm ci` success, Node `v22.23.3`, npm `10.9.9`, Vitest `1.6.1`, 1 test file passed, 4 tests passed, and exit code 0. The uploaded artifact is [paper-tranche-1-controlled-rejection-9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498/artifacts/12278239769); artifact ZIP SHA-256: `34201119240fde4aabe0af4afcc26837be7fe42366417f76f9c53cce7d398de7`. The source metadata includes lockfile SHA-256 `cc0127455cef590dede303ddfc1d1321e52914a96d595e6be015baaffad58ced`, test SHA-256 `9666de0b43e1a418c0d1364ff5eddae15f2009b72eb7f9337730e3d87dcce6b7`, and claim-refinement SHA-256 `6eb126587497e53865ee69556f66fca7e8f54df9d8482ae5f04239719928f667`.
 
+The `npm ci` log also reported 7 dependency audit findings (2 moderate, 3 high, 2 critical). No automated dependency upgrade or lockfile mutation was performed in this evidence-only step; these findings require a separate scoped triage before making any dependency-security claim.
+
 The recorded pass applies to the complete four-test Vitest file, including the 250-versus-249 mismatch rejection assertion. It is unit-test evidence only; it is not an emulator, Preprod, or native Cardano ledger witness. The overall P3 packet and Reveal witness gate remain open.
 
 ## 4. Controlled rejection requirement
