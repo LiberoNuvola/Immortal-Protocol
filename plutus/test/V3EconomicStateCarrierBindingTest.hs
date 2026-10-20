@@ -8,6 +8,8 @@ import Prelude
   , String
   , error
   , putStrLn
+  , not
+  , (++)
   , (==)
   )
 
@@ -64,7 +66,7 @@ main = do
         (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         (bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         (bytes "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
-        (bytes "3c1a0d94bc0024da6e8d1e0eaab96011b2fc07e2cbb074205a117bc90c0009b7e7339cd42d6cbd49a979918a71c98bf38ea550f241fede2615a4f504aa168a06")))
+        (bytes "3c1a0d94bc0024da6e8d1e0eaab96011b2fc07e2cbb074205a117bc90c0009b7e7339cd42d6cbd49a979918a71c98bf38ea550f241fede2615a4f504aa168a06"))))
     "changed decision reference invalidates authority signature"
 
   assert
