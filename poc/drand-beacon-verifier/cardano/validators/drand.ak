@@ -11,7 +11,7 @@ validator drand_beacon_verifier {
     witness: BeaconWitness,
     _own_ref: OutputReference,
     _context: Transaction,
-  ) {
+  ) -> Bool {
     verify_quicknet_signature(
       witness.round,
       witness.signature,
