@@ -56,7 +56,7 @@ check(typeof deployment?.utxos?.pool === 'string' && /^[0-9a-f]{64}#\d+$/.test(d
   'Deployment binds exact Pool UTxO')
 check(Boolean(directUsdmUnit) && deployment?.assets?.directUsdmUnit === directUsdmUnit,
   'Configured USDM asset matches deployment', directUsdmUnit ? undefined : 'PREPROD_TUSDM_UNIT is not configured')
-check(sourceSet?.status === 'OBSERVED' || sourceSet?.status === 'QUALIFIED',
+check(sourceSet?.status === 'OBSERVED_NOT_QUALIFIED' || sourceSet?.status === 'QUALIFIED',
   'Live source-set is materialized')
 check(sourceSet?.source?.kind === 'CARDANO_LIVE_UTXO' &&
   sourceSet?.source?.b1PrizePoolUtxo === deployment?.utxos?.pool &&
