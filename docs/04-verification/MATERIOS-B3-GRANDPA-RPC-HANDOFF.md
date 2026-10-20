@@ -377,3 +377,26 @@ let finality_proof_provider =
 Pass these into `crate::rpc::FullDeps`. Reuse the same `shared_voter_state` in `GrandpaParams` rather than constructing an unrelated second instance.
 
 No selector logic, no new proof format, and no change to consensus rules is involved.
+
+## Live Preprod re-check — 2026-10-20 (IMMORTAL run #74)
+
+Source run:
+https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39456195906
+
+Commit under test: `06080f8cfd02afdd48d8751a428da17adf9737f3`.
+
+### Confirmed results
+
+- `verifier`: **PASS** (`cargo fmt --check` and Rust tests).
+- `finalized-state-capture`: **PASS as extraction only**; captured block `2370597`, hash `0xe6819c1da3977dc101d96f616672a9668855f85ba677ca9591bd9b552a1646a0`.
+- `live-storage-proof`: **PASS**; independently verified native storage proof against the captured state root (`B3_B_RESULT=PASS`).
+- `real-grandpa-witness`: **FAIL / B3-A OPEN**; both public RPC surfaces returned `justifications: null` at the sampled finalized head and the 768-block scan found no attached GRANDPA justification.
+
+The B3-B live capture selected receipt `0xa5e2ccaacb5965a57422ece5c887b62b4458c0c7f0ebd034f4353b2c929e7454`, recorded 10 proof nodes and 3,033 SCALE proof bytes, and uploaded artifact `materios-b3b-live-storage-proof` (artifact ID `12281211833`, SHA-256 `df953a86e27bf8ec0e01aaa589fbaa01d367897848d468e388b5341ca1bd7706`). This proves the storage-read proof path for that captured receipt; it does **not** prove GRANDPA finality or authority-set provenance.
+
+The finalized-state capture reported `GRANDPA finality proof status: unavailable`. The later RPC probe in the same run observed finalized block `2370598` with hash `0xb3e3c04168e408fab78892c3653b0b022bbd195cfe0ea52417ba0856a9e63517`; both `/rpc` and `/preprod-rpc` returned `justifications: null`. These are separate observations made at different times, so the block-number difference is expected and is not itself a consistency failure.
+
+### Decision
+
+Do not change Materios's attestor and do not weaken the B3-A trust boundary. The IMMORTAL-side verifier, finality-proof decoder, and conformance tests are present, but the public RPC surface still does not provide a usable proof. The next executable route is an operator-controlled compatible Materios node exposing the standard GRANDPA RPC / local justification store, or a separately approved change to the upstream RPC registration. Until real proof bytes are captured and independently checked against authenticated authority-set provenance, B3-A remains **OPEN** even though B3-B is **PASS**.
+
