@@ -7,6 +7,7 @@ import Prelude
   , Maybe (..)
   , String
   , (++)
+  , (&&)
   , (==)
   , (+)
   , error

@@ -10,6 +10,7 @@ import Prelude
   , putStrLn
   , not
   , (++)
+  , (==)
   )
 
 import EconomicGate
