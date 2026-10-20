@@ -91,6 +91,13 @@ This is a required coverage list, not a claim that every threat has been fully m
 - “Security assurance cases—state of the art of an emerging approach,” *Empirical Software Engineering* (2021), https://doi.org/10.1007/s10664-021-09971-7. Background on assurance cases as structured arguments with evidence in a defined application/environment.
 - Aubin, J.-P. (1990), “A Survey of Viability Theory,” *SIAM Journal on Control and Optimization*, 28(4), 749–788, https://doi.org/10.1137/0328044. Background on viability kernels and controlled invariance; not a direct comparator for Cardano or IMMORTAL implementation evidence.
 
+Additional source-checked literature added to the manuscript on 20 October 2026:
+- Hassan et al. (2023), oracle problem/trust-model review, DOI https://doi.org/10.1016/j.jnca.2023.103672.
+- Cong et al. (2025), oracle economics and trade-offs, DOI https://doi.org/10.1016/j.jcorpfin.2025.102800.
+- Azimi et al. (2025), systematic review of smart-contract security design patterns, DOI https://doi.org/10.1007/s10664-025-10646-w.
+
+These broaden the initial comparison across oracle trust, oracle incentives and security-pattern coverage. They do not complete P5: the review remains selective, and no novelty/priority claim is established.
+
 Remaining research areas:
 - systematic full-text review of safety-case argumentation and evidence assurance;
 - solvency/liability accounting in on-chain financial applications;
