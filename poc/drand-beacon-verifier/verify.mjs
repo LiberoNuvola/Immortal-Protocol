@@ -1,4 +1,4 @@
-import { fetchBeacon, quicknetClientV2 } from "drand-client";
+import { fetchBeacon, HttpCachingChain, HttpChainClient } from "drand-client";
 
 export const QUICKNET = Object.freeze({
   beaconId: "quicknet",
@@ -7,7 +7,24 @@ export const QUICKNET = Object.freeze({
   schemeID: "bls-unchained-g1-rfc9380",
 });
 
-export async function verifyFixedRound(round, client = quicknetClientV2()) {
+export function createQuicknetClient() {
+  const options = {
+    disableBeaconVerification: false,
+    noCache: false,
+    apiVersion: "v2",
+    chainVerificationParams: {
+      chainHash: QUICKNET.chainHash,
+      publicKey: QUICKNET.publicKey,
+    },
+  };
+  const chain = new HttpCachingChain(
+    `https://api.drand.sh/v2/chains/${QUICKNET.chainHash}`,
+    options,
+  );
+  return new HttpChainClient(chain, options);
+}
+
+export async function verifyFixedRound(round, client = createQuicknetClient()) {
   if (!Number.isSafeInteger(round) || round < 1) {
     throw new Error("round must be a positive safe integer");
   }
