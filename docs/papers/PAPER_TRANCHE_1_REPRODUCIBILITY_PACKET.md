@@ -1,6 +1,6 @@
 # Paper Tranche 1 — Reproducibility Packet Register
 
-**Status:** P3 scaffold only — NOT an evidence packet; no evaluation is certified by this file.
+**Status:** P3 partial — one bounded unit-test result is recorded and source-pinned; the release packet is NOT closed and no native-ledger evaluation is certified by this file.
 **Workstream:** WORKSTREAM A — V1 + Paper Tranche 1.
 **Branch:** work/immortal-green-closure.
 **Purpose:** define the packet structure required to reproduce the manuscript's bounded claims without promoting historical, simulated, fixture-based, or undocumented results into current deployment evidence.
@@ -58,9 +58,9 @@ For every executed command or collection procedure, preserve a separate record c
 
 A missing log, exit code, commit binding, or input identity must be recorded as missing; do not reconstruct it from a summary.
 
-## 3. Controlled rejection
+## 3. Controlled rejection — executed, bounded unit-test evidence
 
-The existing mismatch case is selected:
+The existing mismatch case was selected and executed:
 - Test: `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`.
 - Mutation: frozen prize = 250 subunits; settlement = 249 subunits.
 - Expected behavior: `claimRefinementAdmissible` returns `false`.
@@ -76,20 +76,13 @@ The `npm ci` log also reported 7 dependency audit findings (2 moderate, 3 high, 
 
 The recorded pass applies to the complete four-test Vitest file, including the 250-versus-249 mismatch rejection assertion. It is unit-test evidence only; it is not an emulator, Preprod, or native Cardano ledger witness. The overall P3 packet and Reveal witness gate remain open.
 
-## 4. Controlled rejection — reconciled status
+## 4. Source snapshot pin and release-freeze obligations
 
-The selected existing mismatch case **has been executed successfully** in GitHub Actions run [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498), on source commit `9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea`. See Section 3 for the run, toolchain, test output, source hashes and uploaded artifact hash.
+The current source snapshot used for cross-document review is commit `2be7c4616d427021a2e5ab67719fab4d05ee50e2`, tree `5c62b74d37198d7f0313a805bcee990afed47db3`, on `work/immortal-green-closure`. The machine-readable manifest records Git blob SHAs for the manuscript, matrix, packet, threat model, normative kernel, conservation rules, application policy and certification dossiers. The controlled-rejection policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, Git blob SHA `41f69f7c7e7d31a776a92dcd942a3098848947fb` in that snapshot.
 
-- Existing test: `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`.
-- Input: frozen prize = 250 subunits; settlement = 249 subunits.
-- Expected and observed behavior: `claimRefinementAdmissible` returns `false`.
-- Implementation locus: `PRE-RICH/src/PreRichClaimRefinement.ts`, `validateClaimRefinementEvidence`, which requires settlement to equal the frozen PrizeAmount exactly.
-- Application-policy anchor: `PRE-RICH/docs/GAME-ECONOMY.md`, §10, on crystallized payout immutability.
-- Evidence class: **bounded unit-test evidence**, not emulator, devnet, Preprod, or native-ledger evidence.
+This is a pinned source snapshot, **not a final publication release**. The manifest was subsequently updated in commit `b25127dc690daf6a00013cbe9b8eff41dbbb3234`, so its current blob does not belong to the earlier snapshot. A final bundle must name the snapshot/archive explicitly and preserve all cited artifacts.
 
-This supports only the narrow claim that the tested refinement rejects the specified 250-versus-249 mismatch under the recorded source/test environment. It does not establish complete Claim correctness, economic solvency, production admission, transaction validity, or native Cardano ledger execution.
-
-The policy anchor is identified by path and section but has not yet been frozen in this packet with its own content hash. Bind the normative file and the manuscript/matrix to the final release snapshot before treating the case as a release-grade paper result.
+The controlled-rejection GitHub artifact expires on **2027-01-18** (90-day retention from the run). Archive the artifact and complete job logs into the publication bundle before expiry. Git blob SHAs identify repository objects and must not be mislabeled as SHA-256 checksums of raw file bytes.
 
 ## 5. Native-ledger witness gate
 
