@@ -47,6 +47,25 @@ This is an architectural contract, not proof that a production fee producer and 
 | Accounting classification | Canonical classification before funds are considered available | IMMORTAL accounting rules | Conceptual boundary exists; universal producer not established |
 | Reward budget/allocation | Budget is separately certified and bounded by available revenue | Authorized accounting/reward path | Structural harness exists; production producer not established |
 
+## Branch-local typed-contract verification (2026-10-20)
+
+The following implementation surfaces were fetched from this exact branch. This is a targeted contract check, not a proof over every repository file.
+
+| Surface | Concrete contract found | Fee-interface implication |
+|---|---|---|
+| `IMMORTAL/kernel/EconomicTransitionV3.hs` | `V3Action = Issue | Reveal | Claim | Expire`; transition validates application-economic state changes | No Protocol Usage Fee obligation or settlement result is carried by the V3 action/transition interface inspected. No V3 change is proposed. |
+| `IMMORTAL/kernel/UniversalEconomicKernel.hs` | `protectedCapital`, `rawSurplus`, non-negative state and solvency invariant | Provides universal protected-capital/surplus primitives, not a fee-target or fee-obligation producer. |
+| `Adapter/CARDANO/serialization/CanonicalEconomicState.ts` | Canonical state fields for liabilities, reserve, exposure, safety capital, reserve protection, future costs and additional protected capital | No fee obligation, reference, settlement amount, revenue receipt or accounting classification field. |
+| `Adapter/CARDANO/runtime/EconomicAdmission.ts` | `EconomicAdmissionWitness` binds action/state hashes, EEV, authenticated pool valuation, executable liquidity and required immediate liquidity | Existing authoritative admission/liquidity witness is not a typed Protocol Usage Fee contract; do not reinterpret its EEV or pool valuation as fee amount. |
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | Infrastructure submission and economically gated submission; verifies admission-bound inputs are present in completed transaction | Provides a submission gate, not fee calculation, settlement construction, or fee-revenue receipt classification. |
+| `Adapter/CARDANO/runtime/AuthoritativeIssueAdmission.ts` | Issue-specific qualification/deployment approval, protected-capital provenance and viability evidence | Issue admission evidence does not instantiate the universal fee interface. |
+| `src/config.ts` and `src/mint.ts` | `TICKET_PAYMENT_LOVELACE = 1_000_000`; PRE-RICH sale path pays the configured Treasury address | Concrete application settlement only; not an IMMORTAL-wide fee target or USDM valuation. |
+| `plutus/Types.hs`, `plutus/Treasury.hs`, `plutus/Economic.hs` | Application datum/treasury and B1 economic primitives; USDM accounting-unit comments distinguish USDM from ADA | These contracts must not be promoted into universal fee semantics without an approved specification. |
+| `audit/algorithmic-governability/fee-bearing-transition-separation-boundary.mjs` | Structural harness uses opaque target/amount values and validates explicit status predicates | Tests separation/fail-closed shape; it does not derive an economic target or settlement amount. |
+| `audit/algorithmic-governability/reward-treasury-boundary.mjs` | Structural harness checks externally supplied receipt/accounting/budget facts | Does not produce canonical accounting classification or calculate a reward budget. |
+
+**Verified result:** in these branch-local surfaces, no typed, production Protocol Usage Fee producer or end-to-end obligation-to-settlement-to-receipt contract was identified. Existing state, admission, application-payment and audit-harness types are useful adjacent boundaries, but none is a safe substitute for the missing universal contract. This conclusion is limited to the listed surfaces and the earlier targeted call-site inventory; it is not a claim that every file in the repository was exhaustively searched.
+
 ## Invariants retained from the existing design
 
 1. One Protocol Usage Fee obligation per declared fee-bearing transition; no second protocol fee in the Adapter.
