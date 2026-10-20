@@ -1,0 +1,47 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { fetchBeacon, quicknetClientV2 } from "drand-client";
+import { QUICKNET, verifyFixedRound } from "./verify.mjs";
+
+const FIXED_ROUND = 42;
+
+test("pinned Quicknet identity and fixed historical round verify", async () => {
+  const verified = await verifyFixedRound(FIXED_ROUND);
+  assert.equal(verified.verification, "PASS");
+  assert.equal(verified.round, FIXED_ROUND);
+  assert.equal(verified.chainHash, QUICKNET.chainHash);
+  assert.equal(verified.publicKey, QUICKNET.publicKey);
+  assert.equal(verified.schemeID, QUICKNET.schemeID);
+  assert.match(verified.signature, /^[0-9a-f]+$/i);
+  assert.match(verified.randomness, /^[0-9a-f]{64}$/i);
+});
+
+test("rejects a beacon returned for a different round", async () => {
+  const base = quicknetClientV2();
+  const client = {
+    options: base.options,
+    chain: () => base.chain(),
+    get: async (round) => {
+      const beacon = await base.get(round);
+      return { ...beacon, round: round + 1 };
+    },
+  };
+  await assert.rejects(() => fetchBeacon(client, FIXED_ROUND), /not valid|expected round/i);
+});
+
+test("rejects a forged signature even when randomness is recomputed", async () => {
+  const base = quicknetClientV2();
+  const client = {
+    options: base.options,
+    chain: () => base.chain(),
+    get: async (round) => {
+      const beacon = await base.get(round);
+      const first = beacon.signature[0] === "0" ? "1" : "0";
+      const signature = first + beacon.signature.slice(1);
+      const randomness = createHash("sha256").update(Buffer.from(signature, "hex")).digest("hex");
+      return { ...beacon, signature, randomness };
+    },
+  };
+  await assert.rejects(() => fetchBeacon(client, FIXED_ROUND), /not valid/i);
+});
