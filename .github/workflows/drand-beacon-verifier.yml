@@ -23,51 +23,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  aiken-compile:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Aiken
         uses: aiken-lang/setup-aiken@v1
         with:
           version: v1.1.23
-
-      - name: Build isolated Plutus V3 verifier
+      - name: Record compiler and compile diagnostics
         working-directory: poc/drand-beacon-verifier/cardano
         run: |
-          set -euo pipefail
+          set -uo pipefail
           aiken --version
-          aiken check
-          aiken build
-          test -s plutus.json
-          sha256sum plutus.json
+          echo "=== Aiken check ==="
+          aiken check 2>&1 | tee /tmp/aiken-check.log
+          check_status=${PIPESTATUS[0]}
+          echo "aiken_check_exit=${check_status}"
+          echo "=== Aiken build ==="
+          aiken build 2>&1 | tee /tmp/aiken-build.log
+          build_status=${PIPESTATUS[0]}
+          echo "aiken_build_exit=${build_status}"
+          find . -maxdepth 2 -type f -name 'plutus.json' -print
+          exit $(( check_status != 0 || build_status != 0 ))
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+  offchain:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install pinned verifier dependency
         working-directory: poc/drand-beacon-verifier
         run: npm install --no-audit --no-fund
-
       - name: Run positive and adversarial off-chain verification tests
         working-directory: poc/drand-beacon-verifier
         run: npm test
-
       - name: Capture verified round evidence
         working-directory: poc/drand-beacon-verifier
         run: npm run capture
         env:
           DRAND_ROUND: ${{ inputs.round || '42' }}
-
-      - name: Upload verifier and beacon evidence
+      - name: Upload verified beacon evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: immortal-drand-verified-beacon
-          path: |
-            poc/drand-beacon-verifier/out/DrandVerifiedBeacon.json
-            poc/drand-beacon-verifier/cardano/plutus.json
+          path: poc/drand-beacon-verifier/out/DrandVerifiedBeacon.json
           if-no-files-found: warn
