@@ -220,3 +220,30 @@ The current project-owner clarification means G1 must not be blocked on communit
 
 The smallest next source-backed question is now: **Can the existing ruleset commitment/version machinery represent a project-owner-approved G1 policy as a canonical, profile-bound input, and can the existing economic admission path verify and consume that exact commitment before obligation derivation?** Until both halves are demonstrated, G1 remains OPEN.
 
+
+### 9.5 Exact economic admission seam — profile, gate and Issue witness
+
+A focused read of the target-branch runtime boundary narrows the missing link further. The files below were fetched directly from `work/b3-materios-provenance-evidence` during this audit:
+
+- `IMMORTAL/state/EconomicProfile.hs` (blob `e4eccd67bec97543b802aa15ff1b2719c9c18bde`) defines `EconomicProfile` with `epVersion`, `epClassPrices`, and `epMaxNormalPayoutMultiplier`. `profileValid` validates those fields, but this type has no G1 declaration, fee-bearing transition map, policy commitment, or authority provenance. Thus `epVersion` alone cannot bind a G1 policy.
+- `IMMORTAL/kernel/EconomicGate.hs` (blob `8b8a06b4af1e2b5f4bac4f5faaa24f279d551127`) explicitly describes `EconomicGateInput` as an interface, not an authority declaration. Its inputs cover truth verification, EEV freshness, obligation completeness, EEV, available executable liquidity, and required immediate liquidity. `economicGate` checks those predicates and solvency; it has no G1 policy identity or fee-applicability result. The module also says concrete `K_c` certification is external and atomic commit/history remain downstream obligations.
+- `Adapter/CARDANO/runtime/EconomicAdmission.ts` (blob `5949c1f5b60091f2b5f9b0a59d4274887b7151d2`) defines `EconomicAdmissionWitness` with `gateVersion`, `decisionReference`, `authoritativeObservationReference`, action class/fingerprint, pre/post-state hashes, EEV, and authenticated liquidity references/values. Its validator requires these identifiers and binds liquidity to inputs, but there is no G1 policy reference, approved-policy commitment, or fee-applicability verifier.
+- `src/preRichIssueAdmissionBridge.ts` (blob `5538aa3473e4e831f71df9c62feb3247d4743be3`) enforces the qualified EEV profile `PRE-RICH-EEV-USDM-DIRECT-V1`, deployment approval, EV1–EV7 evidence, Issue coordinates, truth/freshness/obligation/Ω flags, ProtectedCapital provenance, viability evidence, and input/action/state bindings. This is strong EEV and Issue-admission qualification; it does not resolve a G1 fee policy.
+- `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` (blob `dee0d5bcf29e5b75b33b70438b43ff54ad1419bf`) checks the Haskell decision against the authoritative observation and emits `gateVersion: 'pre-rich-economic-gate-v1'`. The inspected witness construction carries no G1 policy commitment and the provider has no visible G1 resolver/verifier.
+- `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` (blob `4c5f81a76edb14dbcf59412c6b0500c749264883`) expressly calls itself evidence-only. It validates that `profileVersion` and other identifiers are non-empty, then binds action and pre/post-state fingerprints plus transaction reference. It does not establish that `profileVersion` equals a policy-approved profile revision or authenticate any fee applicability declaration.
+
+#### Ordering implication
+
+The documented canonical transition order puts authoritative input verification before obligation/exposure derivation. Therefore a G1 policy that changes whether an action incurs a protocol usage fee must be resolved and verified at that authoritative-input boundary, before the relevant obligation set is derived—not added later as an adapter settlement choice. The inspected economic gate and Issue bridge already enforce other authoritative inputs, but the source above does not show a G1 policy result being supplied to or consumed by that derivation.
+
+This conclusion is deliberately narrow: these files establish the missing fields/predicate at the inspected surfaces, not a proof that no other file anywhere in the repository could implement it. The previously inspected governance registry remains a possible version/commitment primitive, but no bridge from that primitive to the economic gate was found in these concrete admission surfaces.
+
+#### Updated reuse decision
+
+1. Reuse `EconomicProfile.epVersion` only as an existing profile coordinate; do not treat it as a G1 commitment.
+2. Reuse `RulesetRegistry` only if a concrete, approved policy payload can be committed and the runtime can resolve that exact payload without conflating governance ruleset version and profile version.
+3. Place any G1 verification at the existing authoritative-input boundary before obligation derivation; do not let Cardano Adapter, frontend, or relayer choose fee applicability.
+4. Preserve the current project-owner authority decision as a normative decision made now; do not require future community voting, invent an actor class, or claim that a human decision is already runtime-verifiable.
+5. Keep G1 **OPEN** until evidence demonstrates the whole chain: owner-approved policy record → immutable identity/commitment → exact profile/deployment/action binding → runtime verification before obligation derivation → resulting obligation enters existing Safe/`K_c`/atomic transition checks.
+
+No production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed by this follow-up.
