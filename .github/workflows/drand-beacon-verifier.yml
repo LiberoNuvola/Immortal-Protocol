@@ -38,7 +38,7 @@ jobs:
 
       - name: Check isolated Plutus V3 verifier
         working-directory: poc/drand-beacon-verifier/cardano
-        run: aiken check
+        run: aiken build
 
       - uses: actions/setup-node@v4
         with:
