@@ -178,6 +178,8 @@ At this draft stage, the evidence map and source loci are assembled, but the com
 
 ## 6. Threat model and limitations
 
+The detailed trust-boundary and threat register is maintained in [`PAPER_TRANCHE_1_THREAT_MODEL.md`](PAPER_TRANCHE_1_THREAT_MODEL.md). It is a supporting analysis artifact, not a security certification. Section 6 below summarizes the publication-facing assumptions and limitations; the threat register records concrete failure modes, required evidence and residual gaps.
+
 ### 6.1 Assumptions
 
 The safety result depends on the formal model's stated assumptions and, for a concrete profile, on the correctness and completeness of its declared state, environment, valuation and transition mapping. External data is not made authoritative simply by being fetched or signed. A signature may authenticate an origin without proving that the observation is complete, current or canonical.
@@ -274,6 +276,8 @@ The contribution is thus not “a universally safe protocol,” but an explicit,
 5. Leveson-style safety-case literature remains to be selected and checked against the intended formal argumentation framework; no specific reference is claimed as fully reviewed in this draft.
 
 ### Repository artifacts (must be pinned to the exact frozen commit)
+
+- `docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md` — threat and failure register; supporting analysis, not certification.
 
 1. `docs/03-audit/VERIFICATION_STATUS.md` — mathematical/certification status and non-claims.
 2. `docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md` — R1–R9 and required external evidence.
