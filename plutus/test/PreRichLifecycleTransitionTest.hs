@@ -34,16 +34,18 @@ main = do
   assert
     (case entered of
        Just state ->
-         plsRegime state == Quiescent
-         && plsTransitionNonce state == 8
+         case plsRegime state of
+           Quiescent -> plsTransitionNonce state == 8
+           _ -> False
        Nothing -> False)
     "ACTIVE -> QUIESCENT is a real lifecycle transition"
 
   assert
     (case maintained of
        Just state ->
-         plsRegime state == Quiescent
-         && plsTransitionNonce state == 9
+         case plsRegime state of
+           Quiescent -> plsTransitionNonce state == 9
+           _ -> False
        Nothing -> False)
     "QUIESCENT maintenance advances lifecycle nonce"
 
