@@ -1,4 +1,4 @@
-import { fetchBeacon, HttpCachingChain, HttpChainClient } from "drand-client";
+import { fetchBeacon, quicknetClient } from "drand-client";
 
 export const QUICKNET = Object.freeze({
   beaconId: "quicknet",
@@ -8,20 +8,9 @@ export const QUICKNET = Object.freeze({
 });
 
 export function createQuicknetClient() {
-  const options = {
-    disableBeaconVerification: false,
-    noCache: false,
-    apiVersion: "v2",
-    chainVerificationParams: {
-      chainHash: QUICKNET.chainHash,
-      publicKey: QUICKNET.publicKey,
-    },
-  };
-  const chain = new HttpCachingChain(
-    `https://api.drand.sh/v2/chains/${QUICKNET.chainHash}`,
-    options,
-  );
-  return new HttpChainClient(chain, options);
+  // The published drand-client@1.4.2 Quicknet helper pins the official
+  // chain hash/public key and uses the supported v1 relay API.
+  return quicknetClient();
 }
 
 export async function verifyFixedRound(round, client = createQuicknetClient()) {
