@@ -65,9 +65,8 @@ check(sourceSet?.source?.kind === 'CARDANO_LIVE_UTXO' &&
 check(qualification?.status === 'qualified' &&
   qualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1',
   'EV1-EV7 qualification exists')
-check(qualification?.deploymentApproval?.status === 'DEPLOYMENT_APPROVED',
-  'Qualified EEV has separate deployment approval',
-  qualification?.deploymentApproval === null ? 'Qualification alone does not authorize Issue' : undefined)
+// The qualification artifact is not itself a deployment approval.
+// Approval is evaluated only from the independent signed approval artifact below.
 check(oracle?.status === 'MATERIALIZED' &&
   oracle?.network === 'cardano-preprod' &&
   oracle?.oracleState?.utxo === deployment?.oracleConfiguration?.utxo,
