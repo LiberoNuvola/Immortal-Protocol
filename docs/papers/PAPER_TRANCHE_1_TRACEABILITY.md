@@ -82,7 +82,7 @@ This is a required coverage list, not a claim that every threat has been fully m
 
 ## 5. Related-work plan (P5)
 
-**Initial bibliography and comparative table added; systematic comparison remains OPEN.** The manuscript now contains an initial positioning table across Cardano ledger formalization, smart-contract verification, randomness beacons, EUTXO documentation, assurance-case literature and viability theory. This is a bounded first pass, not a systematic review or a novelty proof. The following sources have been checked against publisher, institutional or official documentation pages:
+**Targeted related-work screening expanded; systematic comparison remains OPEN.** See [`PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md`](PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md), which records query families, source-by-source scope/boundary, and remaining closure criteria. This is not a completed SLR and does not establish novelty. The manuscript now contains an initial positioning table across Cardano ledger formalization, smart-contract verification, randomness beacons, EUTXO documentation, assurance-case literature and viability theory. This is a bounded first pass, not a systematic review or a novelty proof. The following sources have been checked against publisher, institutional or official documentation pages:
 
 - Knispel et al. (2024), *Formal Specification of the Cardano Blockchain Ledger, Mechanized in Agda*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2024.2. Comparator for a mechanized ledger specification and production-conformance objective.
 - Ferariu, Wadler and Melkonian (2025), *Validity, Liquidity, and Fidelity: Formal Verification for Smart Contracts in Cardano*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2025.6. Comparator for transition-system properties, functional equivalence to validator implementation, and emulator/property-based testing.
@@ -96,7 +96,7 @@ Additional source-checked literature added to the manuscript on 20 October 2026:
 - Cong et al. (2025), oracle economics and trade-offs, DOI https://doi.org/10.1016/j.jcorpfin.2025.102800.
 - Azimi et al. (2025), systematic review of smart-contract security design patterns, DOI https://doi.org/10.1007/s10664-025-10646-w.
 
-These broaden the initial comparison across oracle trust, oracle incentives and security-pattern coverage. They do not complete P5: the review remains selective, and no novelty/priority claim is established.
+These broaden the initial comparison across oracle trust, oracle incentives, compositional DeFi analysis, reserve/liability evidence, empirical audit research and assurance reviews. The dated screening log records the source-by-source limits. They do not complete P5: the searches are targeted rather than exhaustive, and no novelty/priority claim is established.
 
 Remaining research areas:
 - systematic full-text review of safety-case argumentation and evidence assurance;
