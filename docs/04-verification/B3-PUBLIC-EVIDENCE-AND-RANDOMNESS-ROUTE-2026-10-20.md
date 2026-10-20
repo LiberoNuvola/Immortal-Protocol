@@ -43,6 +43,23 @@ Official technical references:
 
 The official documentation describes a distributed beacon based on threshold BLS signatures and exposes public API relays. The signature is independently verifiable against the configured network public key; clients are explicitly advised to verify beacon values rather than trust the HTTP response.
 
+### Executable off-chain PoC — first passing CI run
+
+The branch now contains `poc/drand-beacon-verifier/` and workflow:
+
+https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39464768309
+
+Run conclusion: **SUCCESS** on commit `a4197151b9d1e4f68fbffc26e4e65ecb490c820a`.
+
+The workflow ran three tests:
+1. Positive verification of fixed historical Quicknet round 42 using `drand-client@1.4.2`, with the chain identity pinned and signature verification enabled.
+2. Rejection of a beacon response whose round does not match the requested round.
+3. Rejection of a genuine, well-formed signature from the adjacent round after its derived randomness is recomputed, so the test exercises the signature's round binding rather than only malformed-byte detection.
+
+The workflow also captured verified-round evidence as artifact `immortal-drand-verified-beacon`, artifact ID `12283924010`, SHA-256 `b8fd5d426d14ee3352126e2a33df9800f435db3b435cf21e8ff4258bb36d1059`.
+
+This closes only the initial **off-chain verifier PoC**. It does not establish a production round-selection rule, on-chain Cardano verification, Plutus cost feasibility, ticket/game binding, or Materios finality. The candidate remains **NOT APPROVED** and B3 randomness remains **OPEN**.
+
 ### Candidate fit
 
 - **Useful for:** an externally verifiable randomness input, provided IMMORTAL fixes the beacon network, public-key/chain-hash identity, scheme, round-selection rule, and verification procedure.
