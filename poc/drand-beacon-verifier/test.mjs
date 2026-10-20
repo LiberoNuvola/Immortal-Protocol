@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { fetchBeacon, quicknetClientV2 } from "drand-client";
-import { QUICKNET, verifyFixedRound } from "./verify.mjs";
+import { fetchBeacon } from "drand-client";
+import { QUICKNET, createQuicknetClient, verifyFixedRound } from "./verify.mjs";
 
 const FIXED_ROUND = 42;
 
@@ -18,7 +18,7 @@ test("pinned Quicknet identity and fixed historical round verify", async () => {
 });
 
 test("rejects a beacon returned for a different round", async () => {
-  const base = quicknetClientV2();
+  const base = createQuicknetClient();
   const client = {
     options: base.options,
     chain: () => base.chain(),
@@ -31,7 +31,7 @@ test("rejects a beacon returned for a different round", async () => {
 });
 
 test("rejects a forged signature even when randomness is recomputed", async () => {
-  const base = quicknetClientV2();
+  const base = createQuicknetClient();
   const client = {
     options: base.options,
     chain: () => base.chain(),
