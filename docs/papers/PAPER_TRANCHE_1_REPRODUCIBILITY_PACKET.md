@@ -124,6 +124,7 @@ For a production-path Reveal claim, the packet must bind, at minimum:
 
 ## 7. Primary references
 
+- Machine-readable evidence manifest: `evidence/PAPER_TRANCHE_1_EVIDENCE_MANIFEST.json` (provisional; not a frozen release manifest).
 - Paper Tranche 1 draft: IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md
 - Claim-to-evidence traceability matrix: PAPER_TRANCHE_1_TRACEABILITY.md
 - Verification Status: ../03-audit/VERIFICATION_STATUS.md
