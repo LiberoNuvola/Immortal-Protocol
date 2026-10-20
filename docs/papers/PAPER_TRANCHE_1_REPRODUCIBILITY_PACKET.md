@@ -58,6 +58,20 @@ For every executed command or collection procedure, preserve a separate record c
 
 A missing log, exit code, commit binding, or input identity must be recorded as missing; do not reconstruct it from a summary.
 
+## 3. Controlled rejection
+
+The existing mismatch case is selected:
+- Test: `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`.
+- Mutation: frozen prize = 250 subunits; settlement = 249 subunits.
+- Expected behavior: `claimRefinementAdmissible` returns `false`.
+- Implementation locus: `PRE-RICH/src/PreRichClaimRefinement.ts`, exact settlement equality check.
+- Application-policy anchor: `PRE-RICH/docs/GAME-ECONOMY.md`, §10, crystallized payout immutability.
+- Targeted command: `npx vitest run src/__tests__/differentialActionReplay.test.ts`.
+
+A dedicated workflow now exists at `.github/workflows/paper-tranche-1-controlled-rejection.yml`. On pushes to this branch that touch the relevant test/source/lock/workflow files, it runs the targeted Vitest suite and uploads an artifact containing the test log, exit code, exact commit SHA, Node/npm/Vitest versions, and SHA-256 hashes of the lockfile and key sources. It can also be started manually with `workflow_dispatch`.
+
+**Status remains OPEN until an actual run completes and its artifact is inspected.** The workflow's existence is not a test result, and a Vitest rejection is not a native Cardano ledger witness.
+
 ## 4. Controlled rejection requirement
 
 P3 requires at least one controlled rejection drawn from an already specified invalid case. No new protocol semantics, thresholds, or economic rules may be introduced for this purpose.
