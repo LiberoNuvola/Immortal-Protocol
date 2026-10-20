@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.0",
+  "title": "IMMORTAL Paper Tranche 1 — Evidence Manifest",
+  "status": "provisional_not_release_frozen",
+  "workstream": "A — V1 + Paper Tranche 1",
+  "branch": "work/immortal-green-closure",
+  "generated_on": "2026-10-20",
+  "release_snapshot": {
+    "status": "OPEN",
+    "manuscript_commit": "5870b1aeb4d50e71a954da1cef00f65df1c09946",
+    "traceability_matrix_commit": "50ff4756a457be0a654d744ebb79102b4a69d73f",
+    "reproducibility_packet_commit": "26d01060f9aa6d9c9195a690691a5dc0e757a4f0",
+    "threat_model_commit": "089b1e2043a5d5fcedc8692103acdcf76cf5fca7",
+    "note": "These are separate document commits, not one frozen release snapshot. Final publication requires a single exact source snapshot or explicit historical version binding."
+  },
+  "evidence": [
+    {
+      "id": "P3-CR-001",
+      "claim_ids": [
+        "C4"
+      ],
+      "title": "Controlled rejection of Claim settlement mismatch",
+      "evidence_class": "bounded_unit_test",
+      "source_commit": "9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea",
+      "workflow": {
+        "run_id": "39454356498",
+        "run_number": 1,
+        "url": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498",
+        "conclusion": "success",
+        "command": "npx vitest run src/__tests__/differentialActionReplay.test.ts",
+        "toolchain": {
+          "node": "v22.23.3",
+          "npm": "10.9.9",
+          "vitest": "1.6.1"
+        },
+        "output_summary": {
+          "test_files_passed": 1,
+          "tests_passed": 4,
+          "exit_code": 0
+        }
+      },
+      "test_case": {
+        "name": "rejects an inadmissible refinement instead of normalizing it as canonical",
+        "input": {
+          "prize_amount_subunits": 250,
+          "settlement_amount_subunits": 249
+        },
+        "expected": "claimRefinementAdmissible returns false",
+        "observed": "test passed; mismatch rejected"
+      },
+      "source_artifacts": [
+        {
+          "path": "src/__tests__/differentialActionReplay.test.ts",
+          "sha256": "9666de0b43e1a418c0d1364ff5eddae15f2009b72eb7f9337730e3d87dcce6b7"
+        },
+        {
+          "path": "PRE-RICH/src/PreRichClaimRefinement.ts",
+          "sha256": "6eb126587497e53865ee69556f66fca7e8f54df9d8482ae5f04239719928f667"
+        },
+        {
+          "path": "package-lock.json",
+          "sha256": "cc0127455cef590dede303ddfc1d1321e52914a96d595e6be015baaffad58ced"
+        }
+      ],
+      "artifact": {
+        "name": "paper-tranche-1-controlled-rejection-9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea",
+        "url": "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498/artifacts/12278239769",
+        "artifact_id": "12278239769",
+        "sha256": "34201119240fde4aabe0af4afcc26837be7fe42366417f76f9c53cce7d398de7",
+        "size_bytes": 1075,
+        "expires_on": "2027-01-18"
+      },
+      "normative_anchor": {
+        "path": "PRE-RICH/docs/GAME-ECONOMY.md",
+        "section": "10",
+        "content_hash_status": "OPEN_NOT_CAPTURED"
+      },
+      "supports": [
+        "The exercised refinement predicate rejects the tested 250-versus-249 settlement mismatch under the recorded source and toolchain."
+      ],
+      "does_not_support": [
+        "Universal Claim correctness",
+        "Complete economic solvency",
+        "Production-path admission",
+        "Preprod or native Cardano ledger execution",
+        "The full C4 claim across all Issue/Reveal/Claim/Expire cases"
+      ],
+      "dependency_audit": {
+        "findings_reported_by_npm_ci": {
+          "moderate": 2,
+          "high": 3,
+          "critical": 2,
+          "total": 7
+        },
+        "remediation_performed": false,
+        "note": "No automatic dependency upgrade or lockfile mutation was performed in this evidence-only run; scoped triage remains open."
+      }
+    }
+  ],
+  "open_gates": [
+    {
+      "id": "P3-RELEASE-FREEZE",
+      "status": "OPEN",
+      "required": [
+        "Bind manuscript, matrix, packet, normative sources and evidence to one exact release snapshot or explicitly separate historical snapshots.",
+        "Capture normative policy anchor hash.",
+        "Archive complete logs and verify all hashes.",
+        "Freeze final manuscript, matrix, manifest and packet archive hashes."
+      ]
+    },
+    {
+      "id": "REVEAL-NATIVE-LEDGER-WITNESS",
+      "status": "OPEN",
+      "required": [
+        "Qualifying submitted production-path Preprod transaction hash and exact CBOR",
+        "Consumed UTxOs and relevant datum/redeemer context",
+        "Applicable epoch-specific protocol parameters",
+        "Era/epoch timing and SystemStart",
+        "Validator/script artifacts and hashes",
+        "Native cardano-ledger evaluator version and complete result"
+      ]
+    },
+    {
+      "id": "P5-RELATED-WORK",
+      "status": "OPEN",
+      "required": [
+        "Systematic comparison against commit-reveal games, oracle design, on-chain accounting and beacon/VRF literature."
+      ]
+    }
+  ]
+}
