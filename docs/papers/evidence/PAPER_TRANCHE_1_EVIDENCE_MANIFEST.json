@@ -127,7 +127,8 @@
         "Applicable epoch-specific protocol parameters",
         "Era/epoch timing and SystemStart",
         "Validator/script artifacts and hashes",
-        "Native cardano-ledger evaluator version and complete result"
+        "Native cardano-ledger evaluator version and complete result",
+        "Independently qualify the transaction as the intended production Reveal path; do not promote a wallet-key native test-policy/harness transaction on name or hash alone."
       ]
     },
     {
@@ -248,15 +249,34 @@
       "commit": "0c074666a5dcfa6336ff639b9e13be34100ac86a",
       "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/0c074666a5dcfa6336ff639b9e13be34100ac86a",
       "purpose": "link the P5 screening log from the manuscript artifact list"
+    },
+    {
+      "commit": "31f96e3fe013da0ee1c0fda7f8252feefe136101",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/31f96e3fe013da0ee1c0fda7f8252feefe136101",
+      "purpose": "record production-path qualification caveat for the P2.8 Reveal witness"
+    },
+    {
+      "commit": "2ba583056d85054082b3a06ce002dceef260889c",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/2ba583056d85054082b3a06ce002dceef260889c",
+      "purpose": "add Reveal witness candidate-source review to paper reproducibility packet"
     }
   ],
   "latest_reviewed_blobs": {
     "docs/papers/IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md": "65c8c20a2f470ffb42c39ade4e2fd130d8ae53a5",
     "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "143a09f276f8c3c1ecaf87b8d0230d6b51685cc5",
-    "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "23d50e159b5a6ee62a9d75e49b67996f455c5a1c",
+    "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "39d6869d69eeecb4c257192c39e6d990aca03f39",
     "docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md": "c6462a6b5c3c6702189417a809ff91faa88d098b",
     "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "ac69c9803b80527ca60d9e5ee7b61985c4198b46",
     "docs/papers/PAPER_TRANCHE_1_THREAT_EVIDENCE_CROSSWALK.md": "1706a7a14c690da85aef24e0603d3a2c072692d3",
-    "docs/papers/PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md": "d32c5d86a74ec1540979b66e4587487573169862"
+    "docs/papers/PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md": "d32c5d86a74ec1540979b66e4587487573169862",
+    "docs/02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md": "e35785a5704549edc27717101380151c682c8779"
+  },
+  "candidate_path_review": {
+    "date": "2026-10-20",
+    "status": "QUALIFICATION_REQUIRED_NOT_A_NATIVE_LEDGER_RESULT",
+    "source_path": "audit/cardano-integration/preprod-real-reveal.mjs",
+    "source_git_blob_sha": "996e8615af2902f2d254fb99a7b4a620b6e74fd4",
+    "finding": "The candidate harness derives a wallet-key native test policy and hardcodes RF-REAL-REVEAL/test-state values; a transaction from it must not be accepted as the intended production Reveal witness without independent binding of policy/script hashes, ticket/pool assets, datum/redeemer, consumed UTxOs and deployment identity.",
+    "consequence": "REVEAL-NATIVE-LEDGER-WITNESS remains OPEN. No transaction was submitted and no native evaluator result is claimed."
   }
 }
