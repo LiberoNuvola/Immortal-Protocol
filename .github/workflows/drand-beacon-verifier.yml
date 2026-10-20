@@ -55,11 +55,21 @@ jobs:
           cat /tmp/aiken-smoke.log
           echo "aiken_smoke_exit=${smoke_status}"
 
-          echo "=== Current project check ==="
-          aiken check > /tmp/aiken-check.log 2>&1
-          check_status=$?
-          cat /tmp/aiken-check.log
-          echo "aiken_check_exit=${check_status}"
+          echo "=== Type-check current project without running tests ==="
+          aiken check --skip-tests > /tmp/aiken-types.log 2>&1
+          type_status=$?
+          cat /tmp/aiken-types.log
+          echo "aiken_typecheck_exit=${type_status}"
+
+          echo "=== Isolate validator module ==="
+          tmp_validator="$(mktemp -d)"
+          cp aiken.toml "$tmp_validator/aiken.toml"
+          cp -R lib "$tmp_validator/lib"
+          mkdir -p "$tmp_validator/validators"
+          (cd "$tmp_validator" && aiken check --skip-tests) > /tmp/aiken-no-validator.log 2>&1
+          no_validator_status=$?
+          cat /tmp/aiken-no-validator.log
+          echo "aiken_without_validator_exit=${no_validator_status}"
 
           echo "=== Current project build ==="
           aiken build > /tmp/aiken-build.log 2>&1
@@ -68,7 +78,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || check_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
