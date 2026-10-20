@@ -134,7 +134,10 @@
       "id": "P5-RELATED-WORK",
       "status": "OPEN",
       "required": [
-        "Systematic full-text comparison of viability/safety games, oracle security and economics, on-chain liability/solvency accounting, assurance cases, and proof/deployment evidence pipelines."
+        "Run reproducible scholarly-database searches (at least two suitable databases) and save exact queries, dates, result counts and exports.",
+        "Define explicit inclusion/exclusion criteria and conduct backward/forward snowballing.",
+        "Complete full-text, theorem-level comparisons for viability/safety games and closely related financial-safety/solvency models.",
+        "Verify bibliography and update manuscript/traceability without claiming novelty until the comparison is complete."
       ]
     }
   ],
@@ -220,14 +223,40 @@
       "commit": "55ac2dfec38446379819be2f4ca2b719805e1cef",
       "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/55ac2dfec38446379819be2f4ca2b719805e1cef",
       "purpose": "link threat-to-evidence reconciliation from traceability matrix"
+    },
+    {
+      "commit": "fcc3464a7b9088ce983fc8d9c1c91b673d06eacc",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/fcc3464a7b9088ce983fc8d9c1c91b673d06eacc",
+      "purpose": "add targeted P5 related-work screening log; P5 remains open"
+    },
+    {
+      "commit": "282ffd470a2065a7fddbe688325e3f3aabccdc1e",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/282ffd470a2065a7fddbe688325e3f3aabccdc1e",
+      "purpose": "expand manuscript related-work table and bibliography with composable DeFi, reserve/liability evidence and assurance reviews"
+    },
+    {
+      "commit": "197af8282ea0a4cb143463fe40319ffee85c43a5",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/197af8282ea0a4cb143463fe40319ffee85c43a5",
+      "purpose": "record P5 screening progress and explicit open review criteria in traceability matrix"
+    },
+    {
+      "commit": "a19bbab28ef21d9b060dbe12d9c2686c0f61880b",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/a19bbab28ef21d9b060dbe12d9c2686c0f61880b",
+      "purpose": "refine P5 release gate after targeted screening"
+    },
+    {
+      "commit": "0c074666a5dcfa6336ff639b9e13be34100ac86a",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/0c074666a5dcfa6336ff639b9e13be34100ac86a",
+      "purpose": "link the P5 screening log from the manuscript artifact list"
     }
   ],
   "latest_reviewed_blobs": {
-    "docs/papers/IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md": "b765b52d879d21bb446202a75c65d13f4e046a8c",
-    "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "487fb85b840dad62935a714701466cf8f0b26a08",
+    "docs/papers/IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md": "65c8c20a2f470ffb42c39ade4e2fd130d8ae53a5",
+    "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "143a09f276f8c3c1ecaf87b8d0230d6b51685cc5",
     "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "23d50e159b5a6ee62a9d75e49b67996f455c5a1c",
     "docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md": "c6462a6b5c3c6702189417a809ff91faa88d098b",
-    "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "a9c1a26ecceb0d27b24fce8f56a7df8e31666a8e",
-    "docs/papers/PAPER_TRANCHE_1_THREAT_EVIDENCE_CROSSWALK.md": "1706a7a14c690da85aef24e0603d3a2c072692d3"
+    "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "ac69c9803b80527ca60d9e5ee7b61985c4198b46",
+    "docs/papers/PAPER_TRANCHE_1_THREAT_EVIDENCE_CROSSWALK.md": "1706a7a14c690da85aef24e0603d3a2c072692d3",
+    "docs/papers/PAPER_TRANCHE_1_P5_RELATED_WORK_SCREENING_LOG.md": "d32c5d86a74ec1540979b66e4587487573169862"
   }
 }
