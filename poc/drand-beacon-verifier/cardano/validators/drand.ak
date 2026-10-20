@@ -12,12 +12,10 @@ validator drand_beacon_verifier {
     _own_ref: OutputReference,
     _context: Transaction,
   ) {
-    expect True =
-      verify_quicknet_signature(
-        witness.round,
-        witness.signature,
-        witness.public_key,
-      )
-    ()
+    verify_quicknet_signature(
+      witness.round,
+      witness.signature,
+      witness.public_key,
+    )
   }
 }
