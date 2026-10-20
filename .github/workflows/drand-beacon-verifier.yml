@@ -126,7 +126,7 @@ jobs:
           cat > "$tmp_imports/lib/drand.ak" <<'AIKEN'
           use aiken/builtin
           pub fn smoke() -> Bool {
-            builtin.integer_to_bytearray(True, 8, 42) == #000000000000002a
+            builtin.integer_to_bytearray(True, 8, 42) == #"000000000000002a"
           }
           AIKEN
           (cd "$tmp_imports" && aiken check --skip-tests) > /tmp/aiken-integer.log 2>&1
@@ -140,7 +140,7 @@ jobs:
           use aiken/crypto/bls12_381/g2
           const quicknet_dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_"
           pub fn smoke() -> Bool {
-            let message = builtin.sha2_256(#000000000000002a)
+            let message = builtin.sha2_256(#"000000000000002a")
             let point = builtin.bls12_381_g1_hash_to_group(message, quicknet_dst)
             builtin.bls12_381_g1_equal(point, point)
           }
