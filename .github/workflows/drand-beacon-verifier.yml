@@ -34,8 +34,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: poc/drand-beacon-verifier/package.json
 
       - name: Install pinned verifier dependency
         run: npm install --no-audit --no-fund
