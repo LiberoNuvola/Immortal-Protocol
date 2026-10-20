@@ -2,7 +2,7 @@
 
 module Main where
 
-import Prelude (Bool(..), IO, Maybe(..), String, error, putStrLn, (++))
+import Prelude (Bool(..), IO, Maybe(..), String, error, putStrLn, (&&), (==), (++), not)
 import PreRichLifecycleTransition
   ( LifecycleOmegaWitness (..)
   , PreRichLifecycleAction (..)
