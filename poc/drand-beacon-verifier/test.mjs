@@ -37,8 +37,10 @@ test("rejects a forged signature even when randomness is recomputed", async () =
     chain: () => base.chain(),
     get: async (round) => {
       const beacon = await base.get(round);
-      const first = beacon.signature[0] === "0" ? "1" : "0";
-      const signature = first + beacon.signature.slice(1);
+      const otherRoundBeacon = await base.get(round + 1);
+      // Use a genuine, well-formed signature from the adjacent round and keep
+      // randomness consistent with that signature. Only the signed round is wrong.
+      const signature = otherRoundBeacon.signature;
       const randomness = createHash("sha256").update(Buffer.from(signature, "hex")).digest("hex");
       return { ...beacon, signature, randomness };
     },
