@@ -3,6 +3,7 @@ module Main where
 import Prelude
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BL8
 import qualified Data.Text as T
 import System.Exit (exitFailure)
 
@@ -172,12 +173,12 @@ main = do
   input <- A.eitherDecode =<< BL.getContents
   case input of
     Left err -> do
-      BL.putStrLn (A.encode (A.object ["admitted" A..= False, "error" A..= err]))
+      BL8.putStrLn (A.encode (A.object ["admitted" A..= False, "error" A..= err]))
       exitFailure
     Right decisionInput ->
       case produceIssueDecision decisionInput of
         Nothing -> do
-          BL.putStrLn (A.encode (A.object ["admitted" A..= False, "error" A..= ("EconomicAdmission rejected Issue" :: String)]))
+          BL8.putStrLn (A.encode (A.object ["admitted" A..= False, "error" A..= ("EconomicAdmission rejected Issue" :: String)]))
           exitFailure
         Just decision -> do
-          BL.putStrLn (A.encode (A.object ["admitted" A..= True, "decision" A..= decision]))
+          BL8.putStrLn (A.encode (A.object ["admitted" A..= True, "decision" A..= decision]))
