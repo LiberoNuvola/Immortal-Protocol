@@ -81,7 +81,7 @@ jobs:
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
-              True
+              ()
             }
           }
           AIKEN
@@ -96,6 +96,7 @@ jobs:
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
               expect True = verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
+              ()
             }
           }
           AIKEN
