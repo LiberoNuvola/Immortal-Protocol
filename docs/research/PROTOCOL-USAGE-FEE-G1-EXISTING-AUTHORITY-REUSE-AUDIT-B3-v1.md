@@ -157,3 +157,38 @@ Accordingly, distinguish:
 3. **Future governance:** a separate workstream; not a blocker for present owner-approved decisions and not silently imported into G1.
 
 No community vote, quorum, committee, signer set, or future governance procedure is required by this clarification. No cryptographic/runtime mechanism is invented here. The exact binding and verification method remains an implementation/conformance seam to close against the existing canonical rules.
+
+## 9. Existing versioning and runtime-binding surfaces — targeted follow-up
+
+This follow-up inspects the existing profile, economic-gate, Cardano admission/evidence, Issue-admission, and governance surfaces on `work/b3-materios-provenance-evidence`. It is documentation-only and does not change production behavior.
+
+### 9.1 Reusable surfaces found
+
+| Existing surface | What it already provides | Why it does not close G1 by itself |
+|---|---|---|
+| `IMMORTAL/state/EconomicProfile.hs` — `EconomicProfile.epVersion` | A positive integer profile version; the profile currently carries class prices and the maximum normal payout multiplier. | There is no fee-applicability registry or explicit fee-bearing/exempt declaration in this profile type. `epVersion` is not itself a commitment to a G1 policy payload. |
+| `IMMORTAL/kernel/EconomicGate.hs` — `EconomicGateInput` | Explicit checks for authoritative truth, EEV freshness, obligation completeness, liquidity bounds, solvency and viability composition. | Its own comments state that the Boolean inputs are an interface, not an authority declaration; callers must bind them to actual verification/refinement mechanisms. |
+| `Adapter/CARDANO/runtime/EconomicAdmission.ts` — `EconomicAdmissionWitness` | Existing `gateVersion`, `decisionReference`, `authoritativeObservationReference`, action class/fingerprint and pre/post-state hashes; the validator fails closed on absent/malformed references and mismatched liquidity evidence. | It has no G1 declaration reference, approved policy/profile revision binding, or fee-applicability result. Non-empty references do not prove that the referenced policy is authorized. |
+| `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` | Evidence records include `protocolVersion`, `profileVersion`, `adapterVersion`, action and state fingerprints, and transaction reference. | `profileVersion` is checked only for non-emptiness here. The existing transition-binding assertion checks action/pre-state/post-state/transaction, not equality to an independently expected approved G1 policy/profile revision. The file explicitly describes itself as evidence-only, not economic authority. |
+| `src/preRichIssueAdmissionBridge.ts` and `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` | An existing fail-closed authoritative Issue path binds the Haskell decision to observed action, EEV, liquidity, decision/observation references, ProtectedCapital provenance, carrier state, qualification evidence and deployment approval. | This is an Issue-admission path, not a general G1 usage-fee declaration verifier. The inspected witness types do not carry a G1 applicability declaration or a canonical G1 policy identity. Do not infer that this path closes G1 merely because it already verifies other authoritative inputs. |
+| `docs/00-normative/GOVERNANCE_IMPLEMENTATION_CONTRACT_PHASE2.md` | A versioned, immutable/replayable canonical event design, including `ruleset_version`, `payload_commitment`, predecessor and evidence references; it distinguishes approval from evidence/conformance/canonicalization. | This is a governance event contract, not proof that a G1 declaration is consumable by the live economic transition. |
+| `IMMORTAL/governance/Governance.hs` and `docs/COORDINATION/GOV-28_CANONICAL_REPLAY_MISMATCH.md` | Existing governance lifecycle/state machinery and a documented canonical replay mismatch. | The mismatch note states that the current replay implementation cannot consume the already-defined `DECISION_FINALIZED`, `ADOPTION_RECORDED`, `CONFORMANCE_RECORDED`, or `CANONICALIZED` events as canonical events. Therefore the governance path must not be assumed to provide a complete runtime G1 binding without resolving that separate, already-documented gap. |
+
+### 9.2 Minimal reuse conclusion
+
+The simplest *candidate direction* is to reuse the existing versioned profile identity and canonical decision/evidence references, then require the authoritative transition path to compare the G1 policy identity/revision and applicability declaration against the exact approved record for the candidate action and deployment context. This is a direction for further source-backed design, not an approved implementation specification.
+
+The current surfaces do not yet establish all of the following as one verified chain:
+
+`project-owner decision → canonical versioned G1 policy record → runtime verification of that exact record and context → G1 result consumed before obligation derivation → existing Safe / K_c / atomic transition`.
+
+In particular, `profileVersion`, `gateVersion`, `decisionReference`, and `authoritativeObservationReference` are useful identifiers, but their presence alone does not authenticate the G1 policy or prove that the canonical transition consumed it. A governance event or evidence packet likewise cannot substitute for the runtime predicate.
+
+### 9.3 Next closure step and boundaries
+
+Before changing production code, identify the exact existing canonical decision-record and verification API that can supply the approved policy revision to the transition. Reconcile it with the documented GOV-28 replay mismatch rather than building a parallel registry or authority system. If no existing API can prove the binding, record the smallest missing predicate/interface and request the project owner's explicit normative decision before implementing it.
+
+Do not add a new signer set, quorum, committee, signature scheme, registry, policy formula, fee-bearing class, or adapter-side authority. Do not alter V3, Reveal semantics, tests, CI, or deployment as part of this audit.
+
+**Updated conclusion:** existing versioning and evidence surfaces are reusable building blocks, but no verified G1 runtime binding has been demonstrated. G1 remains **OPEN**; no fee-bearing class is selected and no production implementation is authorized by this audit.
+
