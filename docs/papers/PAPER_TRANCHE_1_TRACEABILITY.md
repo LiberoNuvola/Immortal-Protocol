@@ -65,16 +65,20 @@ This is a required coverage list, not a claim that every threat has been fully m
 
 ## 5. Related-work plan (P5)
 
-Research and compare the paper's actual contribution against these bounded areas:
+**Initial verified bibliography added to the manuscript draft; systematic comparison remains OPEN.** The following sources have been checked against publisher, institutional or official documentation pages:
 
-- commit-reveal protocols and their availability/grinding assumptions;
-- on-chain accounting, liabilities and solvency constraints;
-- oracle trust, valuation perimeter and conservative valuation;
-- randomness beacons, publisher-based versus publisher-independent models;
-- formal safety games, viability kernels and certificate-based safety gates;
-- refinement/conformance evidence between abstract transition systems and ledger implementations.
+- Knispel et al. (2024), *Formal Specification of the Cardano Blockchain Ledger, Mechanized in Agda*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2024.2. Comparator for a mechanized ledger specification and production-conformance objective.
+- Ferariu, Wadler and Melkonian (2025), *Validity, Liquidity, and Fidelity: Formal Verification for Smart Contracts in Cardano*, FMBC/OASIcs. DOI: https://doi.org/10.4230/OASIcs.FMBC.2025.6. Comparator for transition-system properties, functional equivalence to validator implementation, and emulator/property-based testing.
+- Lee et al. (2025), *Commit-Reveal²: Securing Randomness Beacons with Randomized Reveal Order in Smart Contracts*, arXiv:2504.03936; conference DOI: https://doi.org/10.1109/ICBC64466.2025.11114691. Comparator for last-revealer risk, reveal ordering, accountability and recovery; not evidence that IMMORTAL solves randomness bias.
+- Cardano official documentation, *Plutus — Accounting model used by Plutus* and *The Extended UTXO Model*: https://docs.cardano.org/developer-resources/smart-contracts/plutus and https://developers.cardano.org/docs/get-started/technical-concepts/eutxo/. Primary background on EUTXO transaction/value semantics.
 
-For each source, record: bibliographic metadata, the precise mechanism being compared, the assumption boundary, what IMMORTAL adds or does not add, and a stable citation. Do not claim novelty until the comparison is completed. This matrix intentionally does not fabricate a bibliography.
+Remaining research areas:
+- safety-case argumentation and evidence assurance;
+- solvency/liability accounting in on-chain financial applications;
+- valuation oracle trust and conservative valuation;
+- viability kernels and certificate-based safety gates.
+
+For each source, record: bibliographic metadata, exact property/mechanism, assumptions, proof/evaluation method, implementation relation, and what IMMORTAL does or does not add. The manuscript now gives a cautious initial comparison, but novelty is not established until full-text review and a comparison table are complete.
 
 ## 6. Paper Tranche 1 exit gate
 
