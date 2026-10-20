@@ -14,11 +14,11 @@ The source follows the published drand-client verification construction and the 
 ## Status
 
 - Cryptographic source prototype: **ADDED**
-- Compile and builtin smoke tests: **CI PENDING**
+- Compile and builtin smoke tests: **OPEN — current Aiken build attempt exits non-zero without a diagnostic in the captured Actions log; source is not compiler-qualified**
 - Real fixed-signature parity against the JS verifier: **OPEN**
 - Measured CPU/memory budget and transaction size: **OPEN**
 - Production round-selection/ticket binding: **OPEN**
 - PRE-RICH integration: **NOT STARTED**
 - B3 approval: **NOT APPROVED**
 
-Do not infer Cardano feasibility from the existence of BLS builtins alone. A passing Aiken compile is not a signature-verification conformance result. The next acceptance gate is to run the exact same captured signature/public key/round through both implementations, then measure the real Plutus execution budget on the target protocol parameters.
+Do not infer Cardano feasibility from the existence of BLS builtins alone. A passing Aiken compile is not a signature-verification conformance result. The next acceptance gate is first to resolve the Aiken compilation failure and obtain a compiler-qualified artifact; then run the exact same captured signature/public key/round through both implementations and measure the real Plutus execution budget on the target protocol parameters. The Aiken draft is intentionally excluded from the passing off-chain CI gate until it compiles.
