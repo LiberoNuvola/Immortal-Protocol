@@ -9,9 +9,9 @@ Status: **off-chain PoC / candidate only**. This is not a selected normative ran
 - Public key: pinned in `verify.mjs`
 - Scheme: `bls-unchained-g1-rfc9380`
 - Default historical fixture round: `42`
-- Verification: official `drand-client@1.4.2`, with signature verification enabled and chain identity pinned.
+- Verification: official `drand-client@1.4.2` Quicknet client, with signature verification enabled and chain identity pinned.
 
-The client is configured by its official Quicknet v2 helper. The wrapper independently checks the chain hash, public key, scheme, beacon ID, and exact requested round. It rejects wrong-round responses and verifies the signature rather than trusting the relay response.
+The client is configured by the published official Quicknet helper and the public v1 relay API. The wrapper independently checks the chain hash, public key, scheme, beacon ID, and exact requested round. It rejects wrong-round responses and verifies the signature rather than trusting the relay response.
 
 ## Run
 
