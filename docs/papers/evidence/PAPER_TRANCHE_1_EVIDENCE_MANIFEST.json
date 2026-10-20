@@ -1,17 +1,25 @@
 {
   "schema_version": "1.0",
   "title": "IMMORTAL Paper Tranche 1 — Evidence Manifest",
-  "status": "provisional_not_release_frozen",
+  "status": "provisional_snapshot_pinned_manifest_not_release_frozen",
   "workstream": "A — V1 + Paper Tranche 1",
   "branch": "work/immortal-green-closure",
   "generated_on": "2026-10-20",
   "release_snapshot": {
-    "status": "OPEN",
-    "manuscript_commit": "5870b1aeb4d50e71a954da1cef00f65df1c09946",
-    "traceability_matrix_commit": "50ff4756a457be0a654d744ebb79102b4a69d73f",
-    "reproducibility_packet_commit": "26d01060f9aa6d9c9195a690691a5dc0e757a4f0",
-    "threat_model_commit": "089b1e2043a5d5fcedc8692103acdcf76cf5fca7",
-    "note": "These are separate document commits, not one frozen release snapshot. Final publication requires a single exact source snapshot or explicit historical version binding."
+    "status": "SOURCE_SNAPSHOT_PINNED_RELEASE_STILL_OPEN",
+    "branch": "work/immortal-green-closure",
+    "commit": "2be7c4616d427021a2e5ab67719fab4d05ee50e2",
+    "tree": "5c62b74d37198d7f0313a805bcee990afed47db3",
+    "url": "https://github.com/LiberoNuvola/Immortal-Protocol/tree/2be7c4616d427021a2e5ab67719fab4d05ee50e2",
+    "meaning": "Immutable Git source snapshot used to identify the manuscript, matrix, packet, threat model, normative source files and manifest version before this manifest update. This manifest update is a subsequent commit; do not imply its own current blob is contained in the pinned source snapshot.",
+    "source_snapshot_is_current_branch_head_at_capture": true,
+    "paper_artifacts": {
+      "docs/papers/IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md": "b765b52d879d21bb446202a75c65d13f4e046a8c",
+      "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "ec9f22cc1124096e3a10cbbb85c329ac95e68a74",
+      "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "ffb3a96a3f3bc14ad13784ed5feefb54dd5e012f",
+      "docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md": "c6462a6b5c3c6702189417a809ff91faa88d098b",
+      "docs/papers/evidence/PAPER_TRANCHE_1_EVIDENCE_MANIFEST.json": "4b4e7346d3cc7a5f32666e48de860e3d71a6f635"
+    }
   },
   "evidence": [
     {
@@ -73,7 +81,9 @@
       "normative_anchor": {
         "path": "PRE-RICH/docs/GAME-ECONOMY.md",
         "section": "10",
-        "content_hash_status": "OPEN_NOT_CAPTURED"
+        "content_hash_status": "OPEN_NOT_CAPTURED",
+        "content_git_blob_sha": "41f69f7c7e7d31a776a92dcd942a3098848947fb",
+        "hash_type": "Git blob SHA (not SHA-256 of file bytes)"
       },
       "supports": [
         "The exercised refinement predicate rejects the tested 250-versus-249 settlement mismatch under the recorded source and toolchain."
@@ -102,10 +112,10 @@
       "id": "P3-RELEASE-FREEZE",
       "status": "OPEN",
       "required": [
-        "Bind manuscript, matrix, packet, normative sources and evidence to one exact release snapshot or explicitly separate historical snapshots.",
-        "Capture normative policy anchor hash.",
-        "Archive complete logs and verify all hashes.",
-        "Freeze final manuscript, matrix, manifest and packet archive hashes."
+        "Decide and pin the actual submission release snapshot; current 2be7c... snapshot is a source snapshot, not a release tag.",
+        "Archive the evidence artifact and complete workflow logs beyond the 90-day artifact retention window.",
+        "Compute and record independent SHA-256 file hashes for the frozen publication bundle, if required by submission venue.",
+        "Verify all normative and manuscript citations against the pinned snapshot."
       ]
     },
     {
@@ -124,8 +134,55 @@
       "id": "P5-RELATED-WORK",
       "status": "OPEN",
       "required": [
-        "Systematic comparison against commit-reveal games, oracle design, on-chain accounting and beacon/VRF literature."
+        "Systematic full-text comparison of viability/safety games, oracle security and economics, on-chain liability/solvency accounting, assurance cases, and proof/deployment evidence pipelines."
       ]
+    }
+  ],
+  "pinned_source_files": [
+    {
+      "path": "docs/00-normative/03_ECONOMIC_KERNEL_FINAL.md",
+      "git_blob_sha": "535274985e822c32854236520ef4b68b88cb77d8",
+      "role": "normative economic kernel"
+    },
+    {
+      "path": "docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md",
+      "git_blob_sha": "e78a1e9584966d18498a385a0c2da6edae06ef7c",
+      "role": "normative invariants and conservation"
+    },
+    {
+      "path": "PRE-RICH/docs/GAME-ECONOMY.md",
+      "git_blob_sha": "41f69f7c7e7d31a776a92dcd942a3098848947fb",
+      "role": "application rules; section 10 is the controlled-rejection policy anchor"
+    },
+    {
+      "path": "docs/03-audit/VERIFICATION_STATUS.md",
+      "git_blob_sha": "ad94cd3dcef678a3101556362d15f103f21975d4",
+      "role": "mathematical verification status and non-claims"
+    },
+    {
+      "path": "docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md",
+      "git_blob_sha": "882fe7c64166ca1e394bf6e96bec9ebf90f7e6f8",
+      "role": "residual obligations"
+    },
+    {
+      "path": "docs/02-certification/IMMORTAL-PREPROD-CONFORMANCE-DOSSIER.md",
+      "git_blob_sha": "e8087926ef8d5683a2f2daec1991b7d4ac76f680",
+      "role": "bounded conformance and historical observation"
+    },
+    {
+      "path": "docs/02-certification/END-TO-END-EVIDENCE-DOSSIER.md",
+      "git_blob_sha": "febcf617803ff7bf7ebb7d5c4262bff85714447c",
+      "role": "end-to-end witness boundary"
+    },
+    {
+      "path": "docs/02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md",
+      "git_blob_sha": "0f3d3f27363b39690fdf76931446f3b4fc44fb8e",
+      "role": "native ledger evaluation requirements"
+    },
+    {
+      "path": "docs/WHITEPAPER.md",
+      "git_blob_sha": "bc2d05dadc9b90853d58c6c4aed867ef214f2ad1",
+      "role": "application and Beacon trust model"
     }
   ]
 }
