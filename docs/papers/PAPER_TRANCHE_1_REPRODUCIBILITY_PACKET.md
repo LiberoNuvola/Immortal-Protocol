@@ -127,3 +127,12 @@ For a production-path Reveal claim, the packet must bind, at minimum:
 - P2.8 Ledger Evaluation Dossier: ../02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md
 
 **Scope guard:** this register is a template, not a completed reproducibility packet. It does not assert that tests were rerun, a controlled rejection was captured, or a native-ledger witness exists.
+
+## 6. Reveal witness qualification — candidate-source review (2026-10-20)
+
+The source `audit/cardano-integration/preprod-real-reveal.mjs` on `work/immortal-green-closure` (Git blob `996e8615af2902f2d254fb99a7b4a620b6e74fd4`) derives a wallet-key native test policy and hardcodes harness values including ticket name `RF-REAL-REVEAL`, `PRICE_USDM = 100n`, `TOTAL_LIQUIDITY_USDM = 100_000n`, a zero-filled mainchain reference and a zero-filled Materios context. Therefore its name or any transaction it emits is not enough to establish that it is the intended production Reveal path.
+
+Before recording any hash as C5 evidence, bind and inspect the actual transaction's policy/script hashes, ticket and pool asset identities, datum/redeemer, consumed UTxOs, and deployment manifest. If these do not establish the intended production path, classify the transaction as harness/lab evidence and leave C5 OPEN. Only then run the existing non-signing Preprod ledger-evidence workflow to collect the exact transaction context and native evaluator result.
+
+This review did not submit a transaction or run the native evaluator. It does not change the existing status: **C5 / native Reveal ledger witness OPEN**.
+
