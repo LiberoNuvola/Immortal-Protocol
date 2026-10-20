@@ -389,6 +389,7 @@ async getGrandpaJustificationAtBlock(
 
   return grandpa[0] ?? null;
 }
+}
 
 export const GRANDPA_ENGINE_ID_HEX = "0x46524e4b";
 
