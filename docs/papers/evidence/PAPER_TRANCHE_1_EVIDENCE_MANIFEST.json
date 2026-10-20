@@ -189,18 +189,23 @@
     {
       "commit": "5d4e914c96f65c90ba961eb69fd7274932286f26",
       "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/5d4e914c96f65c90ba961eb69fd7274932286f26",
-      "purpose": "reconcile P3 packet duplicate section, update status, and add snapshot/retention obligations"
+      "purpose": "reconcile P3 packet duplicate section, update status, add snapshot and retention obligations"
     },
     {
       "commit": "0eeff9657a1707753ef52d31511322b605193fcc",
       "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/0eeff9657a1707753ef52d31511322b605193fcc",
       "purpose": "add release audit and explicit freeze checklist"
+    },
+    {
+      "commit": "114ecd494cf765a3ace710805c27e4f3b9906480",
+      "url": "https://github.com/LiberoNuvola/Immortal-Protocol/commit/114ecd494cf765a3ace710805c27e4f3b9906480",
+      "purpose": "link release audit from traceability matrix"
     }
   ],
   "latest_reviewed_blobs": {
-    "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "d0960f5d505998e4a25587c616930773df28e449",
-    "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "ec9f22cc1124096e3a10cbbb85c329ac95e68a74",
     "docs/papers/IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md": "b765b52d879d21bb446202a75c65d13f4e046a8c",
+    "docs/papers/PAPER_TRANCHE_1_TRACEABILITY.md": "0b49881b5c3702578377fd2b66c5c35c7a853488",
+    "docs/papers/PAPER_TRANCHE_1_REPRODUCIBILITY_PACKET.md": "d0960f5d505998e4a25587c616930773df28e449",
     "docs/papers/PAPER_TRANCHE_1_THREAT_MODEL.md": "c6462a6b5c3c6702189417a809ff91faa88d098b",
     "docs/papers/PAPER_TRANCHE_1_RELEASE_AUDIT.md": "5f1bf6fc9bd4564046ae8bc3025f1e4f648db7f3"
   }
