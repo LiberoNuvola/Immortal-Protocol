@@ -63,6 +63,8 @@ This supports the bounded statement that the existing refinement predicate rejec
 
 ## 4. Threat-model inputs for P4
 
+**Supporting artifact:** [`PAPER_TRANCHE_1_THREAT_MODEL.md`](PAPER_TRANCHE_1_THREAT_MODEL.md), commit `089b1e2043a5d5fcedc8692103acdcf76cf5fca7`. It records assets, trust boundaries, a threat/failure register (TM-01–TM-12), the distinction between safety and liveness, evidence requirements, and explicit non-claims. It is analysis, not certification.
+
 The paper must state, at minimum, what is trusted and what is not:
 
 1. **Normative authority:** canonical specifications govern; explanatory documents and implementation notes cannot silently change them.
