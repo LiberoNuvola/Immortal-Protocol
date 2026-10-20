@@ -158,3 +158,8 @@ These paths were fetched from `work/immortal-green-closure` while preparing this
 - A GitHub search index result may refer to the default branch or an older indexed commit. It must not override files fetched from the target branch.
 - The create/update commit for this matrix was `17153fc5fbf27e92dfe6aa6626f48257fdfde04e`; the file's blob was re-fetched successfully after creation.
 - The connector returned no combined status checks for that documentation-only commit. This means no checks were reported by that status endpoint, not that CI passed.
+
+
+## 9. Threat-to-evidence reconciliation
+
+The supporting [Threat-to-Evidence Crosswalk](PAPER_TRANCHE_1_THREAT_EVIDENCE_CROSSWALK.md) maps TM-01–TM-12 to the currently grounded normative anchors, implementation loci, evidence classes and residual limitations. It is a source map, not proof of control effectiveness. The native Reveal witness, qualified-EEV witness, profile-specific obligation exhaustiveness, B3 deployment and composition claims remain open where stated. Re-pin every referenced blob against the final release snapshot before submission.
