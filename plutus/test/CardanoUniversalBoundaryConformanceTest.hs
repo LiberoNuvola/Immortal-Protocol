@@ -102,10 +102,13 @@ main = do
     )
     "Cardano V3 -> Universal preserves V07 locality"
 
+  let boundaryV3 = stateFor 0 1 500 0 0
+      boundaryUniversal = project boundaryV3
+
   assert
-    ( projectionBoundaryEquivalent profile 1000 (stateFor 0 1 500 0 0)
-      && projectionBoundaryEquivalent profile 900 (stateFor 0 1 500 0 0)
-      && not (UniversalKernel.solvencyInvariant 900 v01)
+    ( projectionBoundaryEquivalent profile 1000 boundaryV3
+      && projectionBoundaryEquivalent profile 900 boundaryV3
+      && not (UniversalKernel.solvencyInvariant 900 boundaryUniversal)
     )
     "Universal bridge preserves the V3 solvency predicate without Cardano-side economic interpretation"
 
