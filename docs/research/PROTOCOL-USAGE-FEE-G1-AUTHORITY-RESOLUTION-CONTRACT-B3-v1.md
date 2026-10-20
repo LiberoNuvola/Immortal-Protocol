@@ -204,3 +204,19 @@ G1 remains **OPEN** until these criteria are satisfied and the relevant decision
 This artifact is documentation-only. It does not change source code, tests, CI, deployment, fee parameters, application rules, or the canonical Constitution/State Transition/Conformance Specifications. It does not touch the V3 carrier or Reveal semantics.
 
 **Conclusion:** The missing piece is not another fee formula or an Adapter-side boolean. It is an approved, verifiable declaration-authority contract connected to the existing canonical transition. This proposal defines the seam and the questions to resolve without pretending that the authority mechanism or fee-bearing classes have already been approved.
+
+
+## 12. Current project decision authority — clarification
+
+**Project-owner clarification, recorded 20 October 2026:** because there is currently no active community governance and no published paper, the founder/project owner is the sole human decision-maker for present project decisions. Future community governance is a separate workstream and is not a prerequisite for deciding G1 now.
+
+For this workstream, the project owner may explicitly approve or reject normative G1 choices, including the class mapping and applicability values. The approved decision must be recorded with its scope and revision in the canonical source hierarchy. This does not give an Adapter, frontend, relayer, or implementation discretionary power to invent or alter the decision.
+
+The owner decision and its runtime enforcement remain distinct:
+- **Owner decision:** the human-authorized normative choice.
+- **Canonical record:** the versioned record of what was decided, for which profile/classes, and from when.
+- **Runtime predicate:** the concrete implementation check that verifies it is consuming the exact approved record and rejects/safe-stalls if the required authoritative input is missing, invalid, conflicting, or stale, in accordance with the canonical transition specification.
+
+This contract does not require a community vote, quorum, committee, or future governance process for the current decision. It also does not invent a signature scheme or claim that runtime binding is already implemented. The next technical task is to reuse the simplest existing canonical versioning and verification surfaces that satisfy the Constitution and transition rules; only if those surfaces cannot provide the required binding should a new mechanism be proposed for explicit approval.
+
+The future governance design is deliberately out of scope. G1 can progress under the current project-owner authority without pretending that future community governance is already operational.
