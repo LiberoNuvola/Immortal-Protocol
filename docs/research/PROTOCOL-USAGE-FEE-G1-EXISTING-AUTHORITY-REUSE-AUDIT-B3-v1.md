@@ -143,3 +143,17 @@ The chain must be demonstrated in the real canonical path; a synthetic resolver 
 **No existing G1 runtime authority mechanism was established by the inspected canonical specifications, governance contract, Notion governance release candidate, and Haskell governance types.** The governance machinery is potentially reusable for approving/versioning a normative policy, but it is not proven to be the runtime authority predicate for fee applicability.
 
 G1 remains **OPEN**. This is a targeted audit, not proof of repository-wide absence. No fee-bearing class is selected and no production implementation is authorized by this document.
+
+
+## 8. Clarification — current project decision authority
+
+**Project-owner clarification, recorded 20 October 2026:** the project currently has no active community governance and no published paper. For present project decisions, the founder/project owner is the sole human decision-maker. Designing or completing the future community governance system is a separate workstream and is not a prerequisite for this G1 work.
+
+This clarification resolves the *current human decision-authority question*: G1 policy choices can be explicitly approved by the project owner now, with the decision recorded in the canonical source hierarchy. It does **not** mean that a human approval statement automatically becomes a machine-verifiable runtime input. The runtime representation and verification path still have to bind the recorded decision to the exact policy/profile revision and canonical transition.
+
+Accordingly, distinguish:
+1. **Normative approval now:** the project owner explicitly decides the G1 policy and records the scope, revision, rationale, and effective point.
+2. **Runtime enforcement:** the implementation consumes the approved, version-bound policy as an authoritative input and rejects/safe-stalls when required authoritative truth is absent, invalid, or stale.
+3. **Future governance:** a separate workstream; not a blocker for present owner-approved decisions and not silently imported into G1.
+
+No community vote, quorum, committee, signer set, or future governance procedure is required by this clarification. No cryptographic/runtime mechanism is invented here. The exact binding and verification method remains an implementation/conformance seam to close against the existing canonical rules.
