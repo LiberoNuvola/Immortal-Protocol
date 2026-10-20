@@ -30,7 +30,7 @@
 | P1 — claims, assumptions, properties and non-guarantees | Partially established | Final line-by-line check against the mathematical status and residual obligation register; preserve non-claims |
 | P2 — specification → argument → code → test → deployment evidence | Matrix exists, some paths remain partial | Bind every positive implementation claim to exact source and test; keep historical evidence labelled |
 | P3 — reproducibility packet | **OPEN** | Archive artifact and full logs before retention expiry; make one named submission snapshot/archive; verify every cited artifact and checksum |
-| P4 — threat model | Supporting artifact exists | Reconcile each threat/control with exact normative source, code locus, evidence class and residual limitation |
+| P4 — threat model | Threat model plus threat-to-evidence crosswalk recorded | Final release-snapshot verification still required for every normative/code blob; open mappings remain explicitly open |
 | P5 — related work | **OPEN** | Full-text, systematic comparison across viability/safety games, oracle trust/economics, on-chain liability/solvency accounting, assurance cases and evidence pipelines |
 | Native Reveal ledger witness | **OPEN** | Obtain exact qualifying production-path submitted transaction and evaluate it with the native Cardano ledger under complete context; do not substitute the unit test |
 | Dependency audit | **OPEN** | Triage 7 npm audit findings (2 moderate, 3 high, 2 critical) separately; no automatic fixes were applied |
