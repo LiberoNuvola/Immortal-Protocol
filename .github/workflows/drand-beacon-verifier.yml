@@ -157,6 +157,38 @@ jobs:
           cat /tmp/aiken-validator-typed-stub.log
           echo "aiken_validator_typed_stub_exit=${validator_typed_stub_status}"
 
+          echo "=== Isolate official validator argument naming and shape with minimal body ==="
+          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          use cardano/transaction.{OutputReference, Transaction}
+          use aiken/crypto.{VerificationKeyHash}
+
+          pub type Datum {
+            owner: VerificationKeyHash,
+          }
+
+          pub type Redeemer {
+            msg: ByteArray,
+          }
+
+          validator drand_beacon_verifier {
+            spend(
+              datum: Option<Datum>,
+              redeemer: Redeemer,
+              _: OutputReference,
+              transaction: Transaction,
+            ) {
+              True
+            }
+            else(_) {
+              fail
+            }
+          }
+          AIKEN
+          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-official-shape.log 2>&1
+          validator_official_shape_status=$?
+          cat /tmp/aiken-validator-official-shape.log
+          echo "aiken_validator_official_shape_exit=${validator_official_shape_status}"
+
           cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
@@ -260,7 +292,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
