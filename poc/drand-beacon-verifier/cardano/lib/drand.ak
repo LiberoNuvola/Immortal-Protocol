@@ -5,6 +5,13 @@ use aiken/crypto/bls12_381/g2
 /// This is scheme-specific and must not be replaced with the generic RFC9380 DST.
 const quicknet_dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_"
 
+/// Minimal witness shape used only by the isolated validator prototype.
+pub type BeaconWitness {
+  round: Int,
+  signature: ByteArray,
+  public_key: ByteArray,
+}
+
 /// Verify a Quicknet unchained beacon signature over SHA-256(round_be_u64).
 ///
 /// Signature is a compressed G1 point (48 bytes); public_key is a compressed
