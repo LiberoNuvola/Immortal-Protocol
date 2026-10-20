@@ -2,7 +2,7 @@
 
 module Main where
 
-import Prelude (Bool(..), IO, String, error, putStrLn, (++))
+import Prelude (Bool(..), IO, Maybe(..), String, error, putStrLn, (++))
 import PreRichLifecycleTransition
   ( LifecycleOmegaWitness (..)
   , PreRichLifecycleAction (..)
@@ -48,11 +48,15 @@ main = do
     "QUIESCENT maintenance advances lifecycle nonce"
 
   assert
-    (invalidEnter == Nothing)
+    (case invalidEnter of
+       Nothing -> True
+       Just _ -> False)
     "EnterQuiescent is not replayable from QUIESCENT"
 
   assert
-    (invalidMaintain == Nothing)
+    (case invalidMaintain of
+       Nothing -> True
+       Just _ -> False)
     "MaintainQuiescent is not available from ACTIVE"
 
   let nonEroding =

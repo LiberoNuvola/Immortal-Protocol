@@ -93,6 +93,7 @@ executable issue-admission
         base ^>=4.18.2,
         aeson,
         bytestring,
+        text,
         pre-rich-plutus
     default-language: Haskell2010
     ghc-options: -Wall

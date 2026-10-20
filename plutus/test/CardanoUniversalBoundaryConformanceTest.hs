@@ -4,6 +4,7 @@ import Prelude
   ( Bool (False, True)
   , IO
   , Integer
+  , Maybe (..)
   , String
   , (++)
   , (==)
