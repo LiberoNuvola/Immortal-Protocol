@@ -25,31 +25,49 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: poc/drand-beacon-verifier
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Aiken
+        uses: aiken-lang/setup-aiken@v1
+        with:
+          version: v1.1.23
+
+      - name: Build isolated Plutus V3 verifier
+        working-directory: poc/drand-beacon-verifier/cardano
+        run: |
+          set -euo pipefail
+          aiken --version
+          aiken check
+          aiken build
+          test -s plutus.json
+          sha256sum plutus.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install pinned verifier dependency
+        working-directory: poc/drand-beacon-verifier
         run: npm install --no-audit --no-fund
 
-      - name: Run positive and adversarial verification tests
+      - name: Run positive and adversarial off-chain verification tests
+        working-directory: poc/drand-beacon-verifier
         run: npm test
 
       - name: Capture verified round evidence
+        working-directory: poc/drand-beacon-verifier
         run: npm run capture
         env:
           DRAND_ROUND: ${{ inputs.round || '42' }}
 
-      - name: Upload verified beacon evidence
+      - name: Upload verifier and beacon evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: immortal-drand-verified-beacon
-          path: poc/drand-beacon-verifier/out/DrandVerifiedBeacon.json
+          path: |
+            poc/drand-beacon-verifier/out/DrandVerifiedBeacon.json
+            poc/drand-beacon-verifier/cardano/plutus.json
           if-no-files-found: warn
