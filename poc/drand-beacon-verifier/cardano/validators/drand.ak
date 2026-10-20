@@ -18,5 +18,6 @@ validator drand_beacon_verifier {
         witness.signature,
         witness.public_key,
       )
+    ()
   }
 }
