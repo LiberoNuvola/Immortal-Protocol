@@ -88,7 +88,7 @@ main = do
     (commitmentMatches ce)
   assert "canonical commitment rejects a mismatched digest"
     (not (commitmentMatches (ce { payloadCommitment = "invalid" })))
-  assert "canonical commitment digest deterministic"
-    (commitmentDigestHex ce == commitmentDigestHex ce)
+  assert "canonical commitment digest matches exact SHA-256 fixture"
+    (commitmentDigestHex ce == "724257054749b962ddf707ad48b60d43f9f3986d3da45023afef99c22ac9b11f")
 
   putStrLn "PHASE 6 FINALITY/RULESET CHECKS PASSED"
