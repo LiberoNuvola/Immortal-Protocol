@@ -31,7 +31,7 @@ jobs:
         uses: aiken-lang/setup-aiken@v1
         with:
           version: v1.1.23
-      - name: Record compiler and compile diagnostics
+      - name: Isolate silent Aiken compiler failure
         working-directory: poc/drand-beacon-verifier/cardano
         env:
           RUST_BACKTRACE: full
@@ -40,24 +40,35 @@ jobs:
           set +e
           set -uo pipefail
           aiken --version
-          echo "=== Aiken build help ==="
-          aiken build --help 2>&1 | head -100
 
-          echo "=== Aiken check ==="
+          echo "=== Check CLI diagnostics ==="
+          aiken check --help > /tmp/aiken-check-help.log 2>&1
+          cat /tmp/aiken-check-help.log
+
+          echo "=== Minimal project smoke test ==="
+          tmp="$(mktemp -d)"
+          cp aiken.toml "$tmp/aiken.toml"
+          mkdir -p "$tmp/lib" "$tmp/validators"
+          printf 'pub fn smoke() -> Bool { True }\n' > "$tmp/lib/smoke.ak"
+          (cd "$tmp" && aiken check) > /tmp/aiken-smoke.log 2>&1
+          smoke_status=$?
+          cat /tmp/aiken-smoke.log
+          echo "aiken_smoke_exit=${smoke_status}"
+
+          echo "=== Current project check ==="
           aiken check > /tmp/aiken-check.log 2>&1
           check_status=$?
           cat /tmp/aiken-check.log
           echo "aiken_check_exit=${check_status}"
 
-          echo "=== Aiken build ==="
+          echo "=== Current project build ==="
           aiken build > /tmp/aiken-build.log 2>&1
           build_status=$?
           cat /tmp/aiken-build.log
           echo "aiken_build_exit=${build_status}"
-
-          echo "=== Generated artifacts ==="
           find . -maxdepth 3 -type f -name 'plutus.json' -print
-          exit $(( check_status != 0 || build_status != 0 ))
+
+          exit $(( smoke_status != 0 || check_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
