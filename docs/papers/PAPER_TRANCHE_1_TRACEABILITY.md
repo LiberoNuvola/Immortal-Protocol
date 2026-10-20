@@ -109,6 +109,8 @@ For each source, record: bibliographic metadata, exact property/mechanism, assum
 
 ## 6. Paper Tranche 1 exit gate
 
+Release audit and freeze checklist: [`PAPER_TRANCHE_1_RELEASE_AUDIT.md`](PAPER_TRANCHE_1_RELEASE_AUDIT.md). Current status remains NOT READY TO SUBMIT; this audit does not close the native Reveal witness or systematic related-work gate.
+
 Tranche 1 is ready for editorial freeze only when:
 
 - [ ] The scientific claim is narrowed to the proved/specification-level contribution and its assumptions.
