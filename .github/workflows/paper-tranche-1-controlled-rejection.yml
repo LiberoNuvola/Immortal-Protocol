@@ -1,0 +1,81 @@
+name: Paper Tranche 1 — Controlled Rejection Evidence
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "src/__tests__/differentialActionReplay.test.ts"
+      - "PRE-RICH/src/PreRichClaimRefinement.ts"
+      - "PRE-RICH/src/PreRichIssueRefinement.ts"
+      - "PRE-RICH/src/PreRichRevealRefinement.ts"
+      - "PRE-RICH/src/PreRichExpireRefinement.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/paper-tranche-1-controlled-rejection.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paper-tranche-1-controlled-rejection-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  controlled-rejection:
+    name: Claim refinement rejects settlement mismatch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Record reproducibility metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/paper-tranche-1
+          {
+            echo "commit_sha=$GITHUB_SHA"
+            echo "ref=$GITHUB_REF"
+            echo "runner_os=$RUNNER_OS"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "vitest=$(npx vitest --version)"
+            echo "package_lock_sha256=$(sha256sum package-lock.json | cut -d ' ' -f 1)"
+            echo "test_sha256=$(sha256sum src/__tests__/differentialActionReplay.test.ts | cut -d ' ' -f 1)"
+            echo "claim_refinement_sha256=$(sha256sum PRE-RICH/src/PreRichClaimRefinement.ts | cut -d ' ' -f 1)"
+          } | tee evidence/paper-tranche-1/metadata.txt
+
+      - name: Run targeted controlled-rejection suite
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/paper-tranche-1
+          set +e
+          npx vitest run src/__tests__/differentialActionReplay.test.ts 2>&1 | tee evidence/paper-tranche-1/vitest.log
+          test_rc=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$test_rc" | tee evidence/paper-tranche-1/exit-code.txt
+          exit "$test_rc"
+
+      - name: Upload reproducibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-tranche-1-controlled-rejection-${{ github.sha }}
+          path: evidence/paper-tranche-1/
+          if-no-files-found: error
+          retention-days: 90
