@@ -77,7 +77,7 @@ jobs:
           cp -R lib "$tmp_val/lib"
           mkdir -p "$tmp_val/validators"
           cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
-          use aiken/transaction.{OutputReference, Transaction}
+          use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
@@ -91,7 +91,7 @@ jobs:
           echo "aiken_validator_stub_exit=${validator_stub_status}"
 
           cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
-          use aiken/transaction.{OutputReference, Transaction}
+          use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
