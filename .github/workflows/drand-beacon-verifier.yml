@@ -79,8 +79,11 @@ jobs:
           cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           validator drand_beacon_verifier {
-            spend(_datum: Option<Data>, _witness: Data, _own_ref: OutputReference, _context: Transaction) -> Bool {
+            spend(_datum: Option<Data>, _witness: Data, _own_ref: OutputReference, _context: Transaction) {
               True
+            }
+            else(_) {
+              fail
             }
           }
           AIKEN
@@ -93,8 +96,11 @@ jobs:
           use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
           validator drand_beacon_verifier {
-            spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) -> Bool {
+            spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
               verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
+            }
+            else(_) {
+              fail
             }
           }
           AIKEN
