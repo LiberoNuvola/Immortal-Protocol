@@ -102,3 +102,26 @@ Tranche 1 is ready for editorial freeze only when:
 - [Notion — 03 Open Decisions & Roadmap](https://app.notion.com/p/3d9c4454d6d581738bf2c461a8694a2e)
 - [Notion — IMMORTAL Multi-Front Workflow](https://app.notion.com/p/3e2c4454d6d5813f939aed777ba175b0)
 - [Notion — Active System Workflow & Closure Gate](https://app.notion.com/p/3dbc4454d6d58110875bcdabb1bfefbf)
+
+
+## 8. Concrete implementation and test loci (branch snapshot)
+
+These paths were fetched from `work/immortal-green-closure` while preparing this matrix. Their presence is a source map, not a declaration that all implementation-conformance obligations are discharged.
+
+| Concern | Concrete locus | What it can support | Limit |
+|---|---|---|---|
+| Economic kernel | `IMMORTAL/kernel/EconomicKernel.hs` | Code locus for class exposure, worst-case exposure, effective pool, protected capital, raw surplus, saleability, solvency and conservation invariants. | Source inspection alone is not a proof that every deployed adapter supplies correct inputs. |
+| V3 transition semantics | `IMMORTAL/kernel/EconomicTransitionV3.hs` | Code locus for Issue, Reveal, Claim and Expire transitions. | Must be paired with tests and refinement evidence; do not modify semantics as part of paper work. |
+| V3 refinement boundary | `IMMORTAL/conformance/RefinementV3.hs` | Defines the concrete-to-V3 projection and refinement checks; comments explicitly state concrete/Cardano code must establish fields from actual datum state. | A projection contract is not itself evidence that every datum field was correctly observed. |
+| Projection boundary test | `plutus/test/ProjectionBoundaryConformanceTest.hs` | Executable V3-to-Universal projection boundary checks, including protected-capital and transition assertions. | Bounded test cases only; not native-ledger execution evidence. |
+| Differential action replay | `src/__tests__/differentialActionReplay.test.ts` | Exercises refinement-admissibility evidence for Issue, Reveal, Claim and Expire. | Fixture/replay evidence must not be described as an on-chain transaction witness. |
+| Adapter conformance suite | `src/__tests__/immortal-cardano-adapter-conformance.test.ts` | Tests canonical class mappings, field provenance, permutation invariance, mutation rejection and action-boundary fixtures. | The suite's own header says it does not replace live Cardano/emulator execution. |
+| Native ledger evidence dossier | `docs/02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md` | Defines required exact validator artifacts, transaction CBOR, consumed UTxOs, era-specific protocol parameters, timing context and SHA-256 manifest. | Its status says native evaluator result remains pending a fresh successful build/evaluation run. |
+| Production-path witness workflow | `.github/workflows/immortal-preprod-ledger-evidence.yml` | Intended evidence collection path once a qualifying submitted production Reveal transaction is available. | The workflow's existence is not evidence that a qualifying transaction has already been evaluated. |
+
+### Snapshot and CI discipline
+
+- The branch's current file contents are the source references for this matrix; a paper freeze must record the exact commit SHA that contains both this matrix and the cited implementation/test files.
+- A GitHub search index result may refer to the default branch or an older indexed commit. It must not override files fetched from the target branch.
+- The create/update commit for this matrix was `17153fc5fbf27e92dfe6aa6626f48257fdfde04e`; the file's blob was re-fetched successfully after creation.
+- The connector returned no combined status checks for that documentation-only commit. This means no checks were reported by that status endpoint, not that CI passed.
