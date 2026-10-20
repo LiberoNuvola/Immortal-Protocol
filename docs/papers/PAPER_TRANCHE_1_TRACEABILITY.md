@@ -50,6 +50,8 @@ A packet is not complete merely because files exist. Each artifact must be bound
 
 ### P3 controlled-rejection candidate — executed
 
+Manifest: [`evidence/PAPER_TRANCHE_1_EVIDENCE_MANIFEST.json`](evidence/PAPER_TRANCHE_1_EVIDENCE_MANIFEST.json). The manifest is provisional and keeps the release-freeze and native-ledger gates open.
+
 The existing test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts` supplies a Claim whose frozen prize is 250 subunits but settlement is 249, and expects the refinement-admissibility check to reject it. The implementation condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`; the application-policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, which says a crystallized payout is immutable and cannot be reduced by changing settlement asset.
 
 - Command: `npx vitest run src/__tests__/differentialActionReplay.test.ts`
