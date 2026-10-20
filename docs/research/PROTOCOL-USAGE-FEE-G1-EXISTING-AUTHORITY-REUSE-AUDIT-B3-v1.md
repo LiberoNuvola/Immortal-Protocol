@@ -192,3 +192,31 @@ Do not add a new signer set, quorum, committee, signature scheme, registry, poli
 
 **Updated conclusion:** existing versioning and evidence surfaces are reusable building blocks, but no verified G1 runtime binding has been demonstrated. G1 remains **OPEN**; no fee-bearing class is selected and no production implementation is authorized by this audit.
 
+### 9.4 Governance ruleset registry and current replay source check
+
+A second source check found a more precise reusable building block than a generic governance-event schema:
+
+- `IMMORTAL/governance/RulesetRegistry.hs` defines an append-only `RulesetRegistry`, immutable version entries, a commitment string, an effective-from timestamp and a supersession link. `registerRuleset` rejects a conflicting definition for an existing version and requires monotonic extension; `rulesetCompatible` checks that a registered version's commitment matches.
+- `IMMORTAL/governance/GovernanceCommitment.hs` computes a SHA-256 digest over the canonical commitment preimage for a canonical governance event, and `GovernanceAuthorization.rulesetAuthorizationValid` combines registered ruleset/version compatibility with the event commitment and effective ruleset.
+- `IMMORTAL/governance/GovernanceDecisionWitness.hs`, `GovernanceCanonicalizationWitness.hs` and `GovernanceCanonicalReplay.hs` provide typed decision/canonicalization records and explicit handlers for finalization, adoption, conformance and canonicalization on this branch. The canonical replay checks that the canonicalization decision-record reference matches the finalized `DecisionRecord` reference.
+
+These are concrete versioning, commitment and replay components, not merely conceptual patterns. They are the strongest existing candidates to inspect before proposing anything new. However, their current declared domain is governance rulesets and governance proposal lifecycle. The inspected types do not expose a G1 usage-class declaration, profile/deployment binding, applicability value, or a predicate that passes that declaration into the economic transition. A governance `rulesetCommitment` cannot be presumed to commit to a G1 fee policy unless its payload and consumer explicitly establish that relationship.
+
+#### Branch-source correction regarding GOV-28
+
+The older `docs/COORDINATION/GOV-28_CANONICAL_REPLAY_MISMATCH.md` describes the four GOV-18 acts as unsupported by replay. That statement does not match the current source fetched from this target branch: `GovernanceEventSchema.hs` includes the four distinct payload/event types, and `GovernanceCanonicalReplay.hs` has dedicated handlers for them. Treat the coordination note as historical/stale relative to these source files unless a current test or commit proves otherwise. This correction is limited to the target branch's inspected files; it is not a claim that all governance conformance issues are closed. The implementation still has separate state/projection semantics, so no broader governance GREEN claim is made here.
+
+#### Reuse assessment
+
+| Candidate | Reuse decision for G1 |
+|---|---|
+| `RulesetRegistry` immutable version + commitment pattern | **Candidate to reuse** for policy identity/versioning only if the approved G1 policy can be represented and consumed without changing governance semantics or conflating governance ruleset version with economic profile version. |
+| Canonical event commitment and replay | **Candidate to reuse** for recording/replaying a project-owner decision if an existing, conformant event type and actor-authority path can represent the owner decision. Current inspected actor authorization has no explicit project-owner actor class; do not silently map the owner to `System`, `Proposer`, or another role. |
+| `DecisionRecord` / `CanonicalizationRecord` | **Not a direct G1 declaration**. These are governance lifecycle witnesses, not fee applicability records. |
+| `EconomicProfile.epVersion` | **Candidate binding coordinate**, but it is a profile version, not a policy digest or authority proof. |
+| `EconomicAdmissionWitness` and `CanonicalTransitionEvidence` | **Candidate downstream binding seam**, but currently lack G1 policy identity/applicability fields and validation against an independently resolved approved policy. |
+
+The current project-owner clarification means G1 must not be blocked on community voting. Consequently, reuse of the existing governance lifecycle is appropriate only if it can record the owner's present decision under an already-authorized path without falsely requiring community voting or inventing an actor role. If it cannot, do not bend the existing lifecycle to fit; identify the minimal canonical decision-record path consistent with the Constitution and obtain explicit owner approval for any normative gap.
+
+The smallest next source-backed question is now: **Can the existing ruleset commitment/version machinery represent a project-owner-approved G1 policy as a canonical, profile-bound input, and can the existing economic admission path verify and consume that exact commitment before obligation derivation?** Until both halves are demonstrated, G1 remains OPEN.
+
