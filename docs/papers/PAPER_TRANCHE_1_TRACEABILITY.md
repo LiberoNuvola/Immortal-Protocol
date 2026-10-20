@@ -48,6 +48,14 @@ Before freezing a paper release, bind the following to a single immutable eviden
 
 A packet is not complete merely because files exist. Each artifact must be bound to the same source snapshot and the claim it supports.
 
+### P3 controlled-rejection candidate (not yet executed)
+
+A candidate already present on this branch is the test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`. It supplies a Claim whose frozen prize is 250 subunits but settlement is 249, and expects the refinement-admissibility check to reject it. The implementation condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`; the application-policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, which says a crystallized payout is immutable and cannot be reduced by changing settlement asset.
+
+Candidate command: `npx vitest run src/__tests__/differentialActionReplay.test.ts`.
+
+**Status: selected candidate; execution evidence OPEN.** No passing result is claimed. The final packet must include the actual exit code, full logs, toolchain, source commit and artifact hash, and must preserve the distinction between a test-level rejection and a native-ledger rejection.
+
 ## 4. Threat-model inputs for P4
 
 The paper must state, at minimum, what is trusted and what is not:
