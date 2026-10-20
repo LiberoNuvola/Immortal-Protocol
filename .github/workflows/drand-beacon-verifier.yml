@@ -71,6 +71,39 @@ jobs:
           cat /tmp/aiken-no-validator.log
           echo "aiken_without_validator_exit=${no_validator_status}"
 
+          echo "=== Isolate validator body and types ==="
+          tmp_val="$(mktemp -d)"
+          cp aiken.toml "$tmp_val/aiken.toml"
+          cp -R lib "$tmp_val/lib"
+          mkdir -p "$tmp_val/validators"
+          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          use aiken/transaction.{Transaction}
+          use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
+          validator {
+            fn spend(_datum: Option<Data>, _witness: BeaconWitness, _context: Transaction) {
+              True
+            }
+          }
+          AIKEN
+          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-stub.log 2>&1
+          validator_stub_status=$?
+          cat /tmp/aiken-validator-stub.log
+          echo "aiken_validator_stub_exit=${validator_stub_status}"
+
+          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          use aiken/transaction.{Transaction}
+          use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
+          validator {
+            fn spend(_datum: Option<Data>, witness: BeaconWitness, _context: Transaction) {
+              verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
+            }
+          }
+          AIKEN
+          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-real.log 2>&1
+          validator_real_status=$?
+          cat /tmp/aiken-validator-real.log
+          echo "aiken_validator_real_exit=${validator_real_status}"
+
           echo "=== Isolate drand module body ==="
           tmp_module="$(mktemp -d)"
           cp aiken.toml "$tmp_module/aiken.toml"
@@ -157,7 +190,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || validator_stub_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
