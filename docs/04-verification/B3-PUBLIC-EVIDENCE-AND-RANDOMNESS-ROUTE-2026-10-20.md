@@ -60,6 +60,23 @@ The workflow also captured verified-round evidence as artifact `immortal-drand-v
 
 This closes only the initial **off-chain verifier PoC**. It does not establish a production round-selection rule, on-chain Cardano verification, Plutus cost feasibility, ticket/game binding, or Materios finality. The candidate remains **NOT APPROVED** and B3 randomness remains **OPEN**.
 
+### Cardano primitive compatibility — partial positive finding
+
+Official Cardano documentation confirms that Plutus V3 exposes BLS12-381 G1/G2 point operations, hash-to-group with an explicit caller-supplied domain-separation tag (DST), Miller loops and final pairing verification. The Aiken/Cardano developer guide documents these builtins and the Plutus V3 availability of CIP-0381:
+- https://cips.cardano.org/cip/CIP-0381
+- https://developers.cardano.org/docs/developers/curriculum/smart-contracts/advanced/bls-primitives/
+- https://github.com/drand/drand-client/blob/master/lib/beacon-verification.ts
+
+The pinned Quicknet scheme in the off-chain PoC is `bls-unchained-g1-rfc9380`. Its verifier hashes the big-endian 8-byte round with SHA-256, hashes that result to G1 using the exact DST `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_`, and verifies the pairing against the pinned G2 public key. Plutus's hash-to-group builtin accepts a supplied DST, so the documented primitive interface appears capable of expressing the same scheme. This is a **primitive-compatibility finding**, not proof of byte-for-byte implementation parity or affordable execution cost.
+
+An isolated Aiken V3 draft has been added at `poc/drand-beacon-verifier/cardano/`, but the first build attempts exited non-zero without a diagnostic in the captured GitHub Actions log. It is therefore explicitly **not compiler-qualified**, is excluded from the passing off-chain CI gate, and must not be treated as a working on-chain verifier. The passing JavaScript workflow remains the only executable conformance evidence at this point.
+
+The next gate is:
+1. resolve Aiken compilation and produce a reproducible Plutus V3 artifact;
+2. test the exact same fixed Quicknet signature, public key and round in the Aiken verifier and the official JS verifier;
+3. measure CPU/memory execution units and transaction size on the target Cardano protocol parameters;
+4. keep the external randomness candidate OPEN until these checks and the production round/ticket binding are complete.
+
 ### Candidate fit
 
 - **Useful for:** an externally verifiable randomness input, provided IMMORTAL fixes the beacon network, public-key/chain-hash identity, scheme, round-selection rule, and verification procedure.
