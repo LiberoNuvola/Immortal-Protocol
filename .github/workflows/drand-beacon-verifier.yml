@@ -71,6 +71,45 @@ jobs:
           cat /tmp/aiken-no-validator.log
           echo "aiken_without_validator_exit=${no_validator_status}"
 
+          echo "=== Compile official Aiken hello_world validator baseline ==="
+          tmp_official="$(mktemp -d)"
+          cp aiken.toml "$tmp_official/aiken.toml"
+          mkdir -p "$tmp_official/lib" "$tmp_official/validators"
+          cat > "$tmp_official/validators/hello_world.ak" <<'AIKEN'
+          use aiken/collection/list
+          use aiken/crypto.{VerificationKeyHash}
+          use cardano/transaction.{OutputReference, Transaction}
+
+          pub type Datum {
+            owner: VerificationKeyHash,
+          }
+
+          pub type Redeemer {
+            msg: ByteArray,
+          }
+
+          validator hello_world {
+            spend(
+              datum: Option<Datum>,
+              redeemer: Redeemer,
+              _: OutputReference,
+              transaction: Transaction,
+            ) {
+              let must_say_hello = redeemer.msg == "Hello, World!"
+              expect Some(Datum { owner }) = datum
+              let must_be_signed = list.has(transaction.extra_signatories, owner)
+              must_say_hello && must_be_signed
+            }
+            else(_) {
+              fail
+            }
+          }
+          AIKEN
+          (cd "$tmp_official" && aiken check --skip-tests) > /tmp/aiken-official-validator.log 2>&1
+          official_validator_status=$?
+          cat /tmp/aiken-official-validator.log
+          echo "aiken_official_validator_exit=${official_validator_status}"
+
           echo "=== Isolate validator body and types ==="
           tmp_val="$(mktemp -d)"
           cp aiken.toml "$tmp_val/aiken.toml"
