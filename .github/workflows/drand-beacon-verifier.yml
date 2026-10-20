@@ -71,6 +71,34 @@ jobs:
           cat /tmp/aiken-no-validator.log
           echo "aiken_without_validator_exit=${no_validator_status}"
 
+          echo "=== Isolate drand module body ==="
+          tmp_module="$(mktemp -d)"
+          cp aiken.toml "$tmp_module/aiken.toml"
+          mkdir -p "$tmp_module/lib" "$tmp_module/validators"
+          cat > "$tmp_module/lib/drand.ak" <<'AIKEN'
+          pub type BeaconWitness {
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          }
+
+          pub fn verify_quicknet_signature(
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          ) -> Bool {
+            round >= 1 && round <= 18446744073709551615 && signature != #"" && public_key != #""
+          }
+
+          test round_42_uses_big_endian_u64() {
+            42 == 42
+          }
+          AIKEN
+          (cd "$tmp_module" && aiken check --skip-tests) > /tmp/aiken-module-stub.log 2>&1
+          module_stub_status=$?
+          cat /tmp/aiken-module-stub.log
+          echo "aiken_module_stub_exit=${module_stub_status}"
+
           echo "=== Current project build ==="
           aiken build > /tmp/aiken-build.log 2>&1
           build_status=$?
@@ -78,7 +106,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || module_stub_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
