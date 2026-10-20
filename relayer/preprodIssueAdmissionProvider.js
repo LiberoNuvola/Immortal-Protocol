@@ -94,7 +94,6 @@ function createPreprodIssueObservationProducerFromLucid({
     readObservation: async ({ counterInputReference, poolInputReference, runtimeInputs }) => {
       if (!runtimeInputs || typeof runtimeInputs !== 'object') throw new Error('runtimeInputs are required')
 
-      const authoritativeInputs = runtimeInputs.authoritativeInputs
       const observationTimestamp = runtimeInputs.observedAt
       const directUsdmValue = await observeDirectUsdmPool({
         lucid,
@@ -103,13 +102,10 @@ function createPreprodIssueObservationProducerFromLucid({
       })
 
 
-      if (
-        (!authoritativeInputs || typeof authoritativeInputs !== 'object') &&
-        !configuredAuthoritySource
-      ) {
-        throw new Error(
-          'runtimeInputs.authoritativeInputs or an authenticated issue authority source is required',
-        )
+      // Never accept economic inputs supplied by the browser/request caller.
+      // Production admission must be backed by the configured authenticated authority.
+      if (!configuredAuthoritySource) {
+        throw new Error('authenticated issue authority source is required; caller-supplied authoritativeInputs are not trusted')
       }
 
       const observed = await readPreprodIssueObservation({
@@ -117,10 +113,6 @@ function createPreprodIssueObservationProducerFromLucid({
         ...deployment,
         classId: runtimeInputs.classId,
         price: runtimeInputs.price,
-        authoritativeInputs:
-          authoritativeInputs && typeof authoritativeInputs === 'object'
-            ? authoritativeInputs
-            : undefined,
         authoritySource: configuredAuthoritySource,
         observedAt: observationTimestamp,
         poolUsdmValue: directUsdmValue,
