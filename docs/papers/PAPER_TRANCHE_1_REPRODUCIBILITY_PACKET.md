@@ -76,24 +76,20 @@ The `npm ci` log also reported 7 dependency audit findings (2 moderate, 3 high, 
 
 The recorded pass applies to the complete four-test Vitest file, including the 250-versus-249 mismatch rejection assertion. It is unit-test evidence only; it is not an emulator, Preprod, or native Cardano ledger witness. The overall P3 packet and Reveal witness gate remain open.
 
-## 4. Controlled rejection requirement
+## 4. Controlled rejection — reconciled status
 
-P3 requires at least one controlled rejection drawn from an already specified invalid case. No new protocol semantics, thresholds, or economic rules may be introduced for this purpose.
+The selected existing mismatch case **has been executed successfully** in GitHub Actions run [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498), on source commit `9ad8ccd7e1dd1d6a9c9846106fcdf836f58a06ea`. See Section 3 for the run, toolchain, test output, source hashes and uploaded artifact hash.
 
-Before recording a rejection as evidence, document:
+- Existing test: `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`.
+- Input: frozen prize = 250 subunits; settlement = 249 subunits.
+- Expected and observed behavior: `claimRefinementAdmissible` returns `false`.
+- Implementation locus: `PRE-RICH/src/PreRichClaimRefinement.ts`, `validateClaimRefinementEvidence`, which requires settlement to equal the frozen PrizeAmount exactly.
+- Application-policy anchor: `PRE-RICH/docs/GAME-ECONOMY.md`, §10, on crystallized payout immutability.
+- Evidence class: **bounded unit-test evidence**, not emulator, devnet, Preprod, or native-ledger evidence.
 
-1. The existing normative invalid condition and its source location.
-2. The exact test/transaction input that triggers it.
-3. The expected rejection boundary and observed rejection.
-4. The source commit, toolchain, full log and artifact hash.
-5. Whether the rejection was observed in a unit test, emulator, devnet, Preprod, or native ledger.
-6. The precise claim the rejection supports and the claims it does not support.
+This supports only the narrow claim that the tested refinement rejects the specified 250-versus-249 mismatch under the recorded source/test environment. It does not establish complete Claim correctness, economic solvency, production admission, transaction validity, or native Cardano ledger execution.
 
-**Selected existing candidate (executed successfully in run 39454356498):** the test `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`. It constructs a Claim with `prizeAmountSubunits = 250` and `settlementAmountSubunits = 249`, then expects `claimRefinementAdmissible` to return false. This is an existing mismatch-rejection fixture; it does not introduce new protocol semantics. The implementation's exact rejection condition is in `PRE-RICH/src/PreRichClaimRefinement.ts`, `validateClaimRefinementEvidence`: settlement must equal the frozen PrizeAmount exactly. The application specification `PRE-RICH/docs/GAME-ECONOMY.md`, section 10, states that a crystallized payout is immutable and cannot be reduced by changing settlement asset. This is the closest current normative anchor identified; the final packet should bind the precise normative statement and source hash before promoting this test to a paper claim.
-
-**Candidate command:** `npx vitest run src/__tests__/differentialActionReplay.test.ts`.
-
-**Evidence status: OPEN / NOT RUN HERE.** The repository connector permits source inspection and commits but did not provide a test execution facility in this work cycle. Do not report the command as passed. The next execution must capture the actual exit code, complete stdout/stderr, exact commit SHA, tool versions and artifact hash.
+The policy anchor is identified by path and section but has not yet been frozen in this packet with its own content hash. Bind the normative file and the manuscript/matrix to the final release snapshot before treating the case as a release-grade paper result.
 
 ## 5. Native-ledger witness gate
 
