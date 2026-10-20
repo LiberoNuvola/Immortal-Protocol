@@ -175,10 +175,19 @@ function validateEevQualification(value) {
       'eevQualification.deploymentApproval.' + field,
     )
   }
-  requiredDigest(
+  const qualificationEvidenceHash = requiredDigest(
+    qualification.evidenceHash,
+    'eevQualification.evidenceHash',
+  )
+  const approvalEvidenceHash = requiredDigest(
     deploymentApproval.evidenceHash,
     'eevQualification.deploymentApproval.evidenceHash',
   )
+  if (approvalEvidenceHash !== qualificationEvidenceHash) {
+    throw new Error(
+      'deployment approval evidenceHash does not match qualified EEV evidenceHash',
+    )
+  }
   for (const field of ['qualifiedProperties', 'excludedProperties']) {
     if (!Array.isArray(deploymentApproval[field])) {
       throw new Error(
@@ -239,15 +248,13 @@ function validateEevQualification(value) {
   return Object.freeze({
     status: 'qualified',
     contractVersion,
+    evidenceHash: qualificationEvidenceHash,
     deploymentApproval: Object.freeze({
       status: 'DEPLOYMENT_APPROVED',
       candidateId: deploymentApproval.candidateId,
       sourceSetId: deploymentApproval.sourceSetId,
       profileVersion: deploymentApproval.profileVersion,
-      evidenceHash: requiredDigest(
-        deploymentApproval.evidenceHash,
-        'eevQualification.deploymentApproval.evidenceHash',
-      ),
+      evidenceHash: approvalEvidenceHash,
       qualifiedProperties: Object.freeze([...deploymentApproval.qualifiedProperties]),
       excludedProperties: Object.freeze([...deploymentApproval.excludedProperties]),
       testSuiteVersion: deploymentApproval.testSuiteVersion,
