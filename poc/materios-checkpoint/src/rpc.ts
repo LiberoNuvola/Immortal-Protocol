@@ -397,8 +397,6 @@ export type ChainBlockJustifications = {
   readonly justifications: string[];
 };
 
-}
-
 export type SubstrateHeader = {
 parentHash: string;
 number: string;
