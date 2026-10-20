@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import System.Exit (exitFailure)
 
 import EconomicStateV3
+import EconomicTransitionV3 (V3Action (..))
 import EconomicKernel
   ( protectedCapital
   , worstCaseExposure
