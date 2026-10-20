@@ -248,13 +248,26 @@ The current Materios `node/Cargo.toml` **already contains**:
 
 so no new dependency is required in the node crate. The blocker is registration/wiring, not dependency availability.
 
-### Self-hosted route — no paid managed service required
+### Operational constraint — no private Materios node or upstream changes
 
-The public Materios Gateway is a separate service layer. Its published README lists billing controls for selected gateway endpoints, but it does not publish `grandpa_proveFinality` as a paid API. The Materios node itself is published as open source and the project documents running a full node locally; full-validator operation is described as invite-only. Therefore there is no evidence in the published materials that B3-A requires paying for `grandpa_proveFinality` itself.
+For the current IMMORTAL work, a self-hosted Materios node or an upstream RPC patch is **not an available execution path**. The implementation must use only the interfaces and evidence that Materios already exposes publicly. The node-wiring recipe above is reference material, not an action item for this project.
 
-The practical non-managed route is to run a compatible Materios full node locally, wire the standard GRANDPA RPC into that node, and point the IMMORTAL Adapter at the local endpoint. This avoids dependence on the public RPC surface and does not change the cryptographic requirement: the Adapter still verifies the raw proof independently.
+The 2026-10-20 live run confirms the current public surfaces return finalized heads and useful storage-read proofs, but do not provide a consumable GRANDPA finality proof through the paths tested:
+- `grandpa_proveFinality(blockNumber)`: reported unavailable by the finalized-state capture;
+- `chain_getBlock(...).justifications`: `null` on both public RPC URLs at the observed finalized head and no GRANDPA justification found in the 768-block scan.
 
-This is an infrastructure route, not a new consensus rule and not a bypass of the B3 evidence contract.
+This does not prove that Materios consensus lacks GRANDPA finality. It proves only that the current public interfaces do not supply the required proof to this workflow. We must not ask the user to operate a node, imply that we can patch Materios, or treat an unverified RPC response as canonical evidence.
+
+### Available paths and their exact scope
+
+1. **Materios receipts + native storage proof — usable now.** Continue using the existing public receipt/Firehose/events path and independently verify the storage proof against the captured state root. This establishes the receipt/storage claim covered by that proof, not GRANDPA finality or publisher-independent Beacon canonicality.
+2. **A third-party proof publisher/relayer — only if an actual public source is identified.** The IMMORTAL verifier can accept proof bytes without contacting Materios, but the publisher must deliver real GRANDPA justification bytes and enough authenticated authority-set/transition evidence. No such public source has yet been demonstrated; do not mark this route available until a live fixture is captured.
+3. **A different public randomness beacon — a separate design option.** A public beacon such as a threshold beacon or a VRF-backed service may replace the randomness input only after its verification and Cardano integration are specified and tested. It does not prove Materios receipt authenticity, Materios state, or Materios finality; those claims must remain separate.
+4. **Keep the current authorized-publisher B1 boundary and defer B3.** This is the honest fallback if no independently verifiable public proof source can be demonstrated. It is not publisher-independent canonicality and must be labelled accordingly.
+
+### Decision for this branch
+
+Do not implement a self-hosted-node workaround. First exhaust the already-existing public Materios receipt/anchor interfaces and record exactly which evidence classes they support. In parallel, evaluate a genuinely available external source for the missing Beacon/randomness requirement, keeping randomness authenticity distinct from remote-chain finality. B3 remains OPEN until the selected path supplies verifiable evidence for every claim it makes.
 
 ### B3 consequence
 
