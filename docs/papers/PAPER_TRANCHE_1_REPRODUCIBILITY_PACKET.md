@@ -58,7 +58,7 @@ For every executed command or collection procedure, preserve a separate record c
 
 A missing log, exit code, commit binding, or input identity must be recorded as missing; do not reconstruct it from a summary.
 
-## 3. Controlled rejection — executed, bounded unit-test evidence
+## 4. Controlled rejection — executed, bounded unit-test evidence
 
 The existing mismatch case was selected and executed:
 - Test: `rejects an inadmissible refinement instead of normalizing it as canonical` in `src/__tests__/differentialActionReplay.test.ts`.
@@ -76,7 +76,7 @@ The `npm ci` log also reported 7 dependency audit findings (2 moderate, 3 high, 
 
 The recorded pass applies to the complete four-test Vitest file, including the 250-versus-249 mismatch rejection assertion. It is unit-test evidence only; it is not an emulator, Preprod, or native Cardano ledger witness. The overall P3 packet and Reveal witness gate remain open.
 
-## 4. Source snapshot pin and release-freeze obligations
+## 5. Source snapshot pin and release-freeze obligations
 
 The current source snapshot used for cross-document review is commit `2be7c4616d427021a2e5ab67719fab4d05ee50e2`, tree `5c62b74d37198d7f0313a805bcee990afed47db3`, on `work/immortal-green-closure`. The machine-readable manifest records Git blob SHAs for the manuscript, matrix, packet, threat model, normative kernel, conservation rules, application policy and certification dossiers. The controlled-rejection policy anchor is `PRE-RICH/docs/GAME-ECONOMY.md`, Git blob SHA `41f69f7c7e7d31a776a92dcd942a3098848947fb` in that snapshot.
 
@@ -84,7 +84,7 @@ This is a pinned source snapshot, **not a final publication release**. The manif
 
 The controlled-rejection GitHub artifact expires on **2027-01-18** (90-day retention from the run). Archive the artifact and complete job logs into the publication bundle before expiry. Git blob SHAs identify repository objects and must not be mislabeled as SHA-256 checksums of raw file bytes.
 
-## 5. Native-ledger witness gate
+## 6. Native-ledger witness gate
 
 A build, emulator result, local Yaci trace, fixture, workflow definition, or live wallet/pool observation is not a substitute for the required native-ledger witness.
 
@@ -102,7 +102,7 @@ For a production-path Reveal claim, the packet must bind, at minimum:
 
 **Current status: OPEN pending a qualifying witness and successful native evaluation.** Do not change V3 or Reveal semantics as a documentation-only attempt to satisfy this gate.
 
-## 6. Final packet acceptance checklist
+## 7. Final packet acceptance checklist
 
 - [ ] Manuscript, matrix and cited code/spec artifacts are bound to one exact commit snapshot or each historical snapshot is explicitly distinguished.
 - [ ] Every reported test has an exact command, inputs, exit code, full log and hash.
@@ -115,7 +115,7 @@ For a production-path Reveal claim, the packet must bind, at minimum:
 - [ ] Manuscript claims are rechecked against the final evidence matrix before freezing.
 - [ ] Final manuscript, matrix, manifest and packet archive have exact hashes.
 
-## 7. Primary references
+## 8. Primary references
 
 - Machine-readable evidence manifest: `evidence/PAPER_TRANCHE_1_EVIDENCE_MANIFEST.json` (provisional; not a frozen release manifest).
 - Paper Tranche 1 draft: IMMORTAL_EVIDENCE_BOUNDED_ECONOMIC_SAFETY_DRAFT.md
