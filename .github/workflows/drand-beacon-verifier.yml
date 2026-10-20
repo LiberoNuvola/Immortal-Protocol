@@ -99,30 +99,46 @@ jobs:
           cat /tmp/aiken-module-stub.log
           echo "aiken_module_stub_exit=${module_stub_status}"
 
-          echo "=== Isolate Aiken imports ==="
+          echo "=== Isolate Aiken builtin import ==="
           tmp_imports="$(mktemp -d)"
           cp aiken.toml "$tmp_imports/aiken.toml"
           mkdir -p "$tmp_imports/lib" "$tmp_imports/validators"
           cat > "$tmp_imports/lib/drand.ak" <<'AIKEN'
           use aiken/builtin
-          use aiken/crypto/bls12_381/g2
+          pub fn smoke() -> Bool { True }
+          AIKEN
+          (cd "$tmp_imports" && aiken check --skip-tests) > /tmp/aiken-builtin-import.log 2>&1
+          builtin_import_status=$?
+          cat /tmp/aiken-builtin-import.log
+          echo "aiken_builtin_import_exit=${builtin_import_status}"
 
+          echo "=== Isolate BLS g2 import ==="
+          cat > "$tmp_imports/lib/drand.ak" <<'AIKEN'
+          use aiken/crypto/bls12_381/g2
+          pub fn smoke() -> Bool { True }
+          AIKEN
+          (cd "$tmp_imports" && aiken check --skip-tests) > /tmp/aiken-g2-import.log 2>&1
+          g2_import_status=$?
+          cat /tmp/aiken-g2-import.log
+          echo "aiken_g2_import_exit=${g2_import_status}"
+
+          echo "=== Isolate integer_to_bytearray builtin ==="
+          cat > "$tmp_imports/lib/drand.ak" <<'AIKEN'
+          use aiken/builtin
           pub fn smoke() -> Bool {
             builtin.integer_to_bytearray(True, 8, 42) == #000000000000002a
           }
           AIKEN
-          (cd "$tmp_imports" && aiken check --skip-tests) > /tmp/aiken-imports.log 2>&1
-          imports_status=$?
-          cat /tmp/aiken-imports.log
-          echo "aiken_imports_exit=${imports_status}"
+          (cd "$tmp_imports" && aiken check --skip-tests) > /tmp/aiken-integer.log 2>&1
+          integer_status=$?
+          cat /tmp/aiken-integer.log
+          echo "aiken_integer_to_bytearray_exit=${integer_status}"
 
           echo "=== Isolate builtin BLS expression ==="
           cat > "$tmp_imports/lib/drand.ak" <<'AIKEN'
           use aiken/builtin
           use aiken/crypto/bls12_381/g2
-
           const quicknet_dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_"
-
           pub fn smoke() -> Bool {
             let message = builtin.sha2_256(#000000000000002a)
             let point = builtin.bls12_381_g1_hash_to_group(message, quicknet_dst)
@@ -141,7 +157,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || module_stub_status != 0 || imports_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
