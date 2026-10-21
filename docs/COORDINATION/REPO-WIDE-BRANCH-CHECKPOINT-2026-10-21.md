@@ -1077,3 +1077,38 @@ Do not change the trust protocol and do not create another duplicate B3 implemen
 | Full semantic audit | `PARTIAL / OPEN` |
 
 Twenty SHA entries were reviewed as source/workflow/design artifacts; the actual witness artifact is separately bound by run/artifact/hash in the review. Test-source identities were not represented as test execution. No IMMORTAL protocol code, upstream Materios code, branch topology, proof semantics, ledger state or deployment was modified.
+
+
+### 10.31 Semantic review slice 5 — universal kernel boundary and policy-source drift — 2026-10-21
+
+Review record: [SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md](SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md), commit `d2784efac6c09521e1e1a386ba9e134525269a49`. Ledger update: `f9844076aa3db61d0038ad59886cf3669ce9272a`.
+
+#### Static kernel-mapping result
+
+The reviewed mapping is coherent at the represented projection boundary: `PreRichEconomicProjection.hs` validates the profile and class aggregation, checks unresolved reserve/count against class-wise values, derives worst-case exposure from the profile payout bound, and maps locked Jackpot amount into universal `additionalProtectedCapital`. Its conformance predicate compares V3 and universal `ProtectedCapital`, `RawSurplus` and solvency functions. Test source `ProjectionBoundaryConformanceTest.hs` includes Issue/Reveal/Claim/Expire deltas, locked-Jackpot preservation and malformed-state rejections.
+
+This is **not** closure of the wider economic boundary. The canonical IMMORTAL v3.0.0 corpus explicitly keeps `K_c` certification and `Ω) completeness as profile/deployment obligations and does not claim a universal non-empty viability kernel. The conformance matrix retains OPEN for authoritative observation provenance, Economic Gate integration/authority binding, viability certification and full V3 → PRE-RICH → Adapter → Cardano equivalence. The Adapter `EconomicObservation.ts` only validates non-negative time and canonical-state shape; `ok: true` is not proof of truth/authenticity/freshness.
+
+The projection/gate test sources and workflow were statically inspected but not rerun in this review.
+
+#### Confirmed normative source-label conflict
+
+The current green snapshot still has a documentation conflict:
+- `PRE-RICH/docs/GAME-ECONOMY.md` and the reconciled current decision register mark A1 expiry mechanism and A2 Jackpot payout mode CLOSED, A3 no fixed allocation percentage CLOSED as unnecessary, with exact expiry numeric bounds retained as application/profile parameters.
+- `PRE-RICH/docs/CONSTITUTION.md` still says Jackpot payout mode is OPEN and exact duration is OPEN.
+- `PRE-RICH/docs/ECONOMIC-ALGORITHM.md` still references `OPEN-01` for payout mode and `OPEN-02` for exact lifetime.
+- `IMMORTAL/docs/ECONOMIC-ALGORITHM.md` calls itself a NON-NORMATIVE reader guide at its header but calls the algorithm “normative protocol logic” in its closing status paragraph.
+
+This is **normative source-label drift**, not an instruction to reopen the economic decisions or alter current payout/expiry mechanics. Because the PRE-RICH Constitution is presented as the project/application constitution and sits above Game Economy in the stated source-of-truth hierarchy, its stale OPEN labels cannot be silently ignored. The next governance-document task is to have the normative owner approve a narrow, versioned supersession pointer to the dated A1/A2/A3 closure, mark the older OPEN labels as historical/superseded, and clarify the IMMORTAL reader guide's authority label. No such source document was edited by this audit slice.
+
+#### Ledger state after slice 5
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| Entries with scoped static-review records | 98 |
+| Entries still `NOT_REVIEWED` | 1,713 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+Twenty-seven exact blob identities were reviewed; all are linked to this review record in the machine ledger. Test-source identities are not counted as test execution, and no policy or conformance status has been declared closed by this source review. No protocol code, normative source text, branch topology, workflow run or ledger state was changed.
