@@ -20,7 +20,7 @@ const DEFAULTS = {
   targetHash: "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e",
   discoveryRpc: "https://materios.fluxpointstudios.com/preprod-rpc",
   candidateOffsets: [0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301],
-  blockProbeTimeoutMs: 10000,
+  blockProbeTimeoutMs: 7000,
   waitSeconds: 360,
 };
 
@@ -408,7 +408,7 @@ async function probeCandidateBlock(blockNumber) {
   try {
     const hash = blockNumber === config.targetNumber
       ? config.targetHash
-      : String(await discoveryRpc("chain_getBlockHash", [blockNumber], 12000)).toLowerCase();
+      : String(await discoveryRpc("chain_getBlockHash", [blockNumber], 5000)).toLowerCase();
     if (!/^0x[0-9a-f]{64}$/.test(hash)) throw new Error("candidate block hash is not a 32-byte hash");
     probe.requestedBlockHash = hash;
     const value = await rpc("chain_getBlock", [hash], config.blockProbeTimeoutMs);
