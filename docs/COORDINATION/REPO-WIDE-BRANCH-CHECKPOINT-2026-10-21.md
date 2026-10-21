@@ -445,3 +445,13 @@ Fetched successfully during this audit update:
 - PR #19 remains open and is reported `mergeable=false` by the connector. Its wide heterogeneous diff must not be promoted as one unit. PR #35 remains open and draft; the PR body itself states bootstrap/governance review is required and contains a changed V3 carrier mint-policy implementation for future deployment, even though spending-validator/Reveal semantics are stated unchanged. Keep draft pending trusted-base/governance review, exact required checks and scope-specific ledger evidence. [PR #19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) · [PR #35](https://github.com/LiberoNuvola/Immortal-Protocol/pull/35).
 - Latest decisive exact-source Actions evidence retrieved directly by the connector is still associated with source SHA `1300b79d7460f2abcd79767d5d16dd2564aad064`, not the new documentation-only checkpoint commit: Integration Lab run `39646784077` / attempt 1 completed `cancelled`; V3 Fast Ledger run `39646783837` / attempt 1 completed `cancelled`; Emulator Reveal run `39646783971` / attempt 1 completed `failure`. The checkpoint commit is not a new protocol-source test result.
 - The connector's PR search identifies open PRs #19 and #35, and issue search identifies #20–#22 as open. This query scope does not establish the full closed-PR/issue history; a history-wide reconciliation remains open.
+
+
+### 10.12 PR discovery follow-up — current open-PR search
+
+A subsequent open-PR search exposed two additional open PRs that were not listed in the prior checkpoint table and must be reconciled before any merge/promotion decision:
+
+- [PR #28 — keep Yaci devnet alive through integration smoke test](https://github.com/LiberoNuvola/Immortal-Protocol/pull/28): currently open and connector-reported `mergeable=true`. This does not establish that its diff is safe or that its fix is represented on the exact active HEAD. Compare its focused diff and current-head workflow evidence with the existing Yaci changes in green and PR #19 before deciding whether it contains any unique work. Do not merge as part of this audit.
+- [PR #23 — make DApp game-first while preserving verification](https://github.com/LiberoNuvola/Immortal-Protocol/pull/23): currently open, draft, connector-reported `mergeable=true`. Reconcile it with Issue #22 and branch `feat/pre-rich-game-ui`; verify UI-only scope and isolate any provider/protocol changes before considering promotion. Keep draft until its own acceptance criteria and source diff are reviewed.
+
+Open-PR search now returned #19, #35, #28 and #23. `mergeable=true` is GitHub metadata only and is not a correctness or policy approval. The open PR/issue query remains a current search result rather than a complete closed-history audit.
