@@ -8,6 +8,7 @@ on:
     paths:
       - "poc/materios-execution-verifier/Cargo.toml"
       - "poc/materios-execution-verifier/src/bin/verify-genesis-trust-anchor.rs"
+      - "poc/materios-grandpa/genesis-trust-manifest-preprod-v6.json"
       - ".github/workflows/materios-genesis-authority-bootstrap.yml"
 
 permissions:
@@ -78,6 +79,8 @@ jobs:
 
       - name: Enforce report invariants and summarize
         run: |
+          set -euo pipefail
+          diff -u poc/materios-grandpa/genesis-trust-manifest-preprod-v6.json poc/materios-execution-verifier/out/GenesisAuthorityBootstrap.json
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const p = 'poc/materios-execution-verifier/out/GenesisAuthorityBootstrap.json';
