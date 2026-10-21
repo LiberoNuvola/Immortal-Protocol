@@ -133,7 +133,7 @@ The active branches overlap on critical boundaries. Highest-risk files include:
 
 For each conflict, compare source and target blob hashes, inspect the diff and run focused tests on the destination HEAD. Do not pick “newest” content without verifying semantics. Keep the B3 proof trust boundary independent from first-ticket readiness.
 
-## 4. Work allocation and closure predicates
+## 4. Work allocation and closure predicates (legacy grouping; see current dispatch board §10.16)
 
 ### W0 — Repository coordination / canonical checkpoint
 **Target:** work/immortal-green-closure. This document is the single repo-wide coordination checkpoint. Update it only when exact commit/run/evidence changes a status. Keep Notion Control Center as an index, not a competing full inventory.
@@ -270,7 +270,7 @@ Preserve existing Notion pages as indexes/history; do not replace them wholesale
 
 The older Notion checkpoint references 23 branches; GitHub returned **25** at this audit. A Notion “closed” label can mean the normative decision is closed while implementation, conformance or deployment evidence remains open. Compare the meaning of each status, not only its label.
 
-## 8. Priority order
+## 8. Priority order (snapshot; see current dispatch board §10.16)
 
 1. Re-read this checkpoint at restart; fetch current HEAD for green/B3/main and latest relevant run status.
 2. Record current exact-head CI results at source SHA `1300b79d7460f2abcd79767d5d16dd2564aad064`: Integration Lab cancelled after partial fixture/evidence work; V3 fast cancelled before carrier execution although ledger smoke passed; Kernel regression cancelled before tests; Reveal failed during build, so its negative ledger cases are inconclusive; Haskell and B2 remained in progress at the last query; five other named workflows completed successfully. Re-fetch statuses before decisions and do not describe this as green.
@@ -521,4 +521,51 @@ This is a targeted source review, not a full line-by-line review of all tracked 
 2. `PRE-RICH-EEV-USDM-DIRECT-V1` must derive the verified quantity of canonical USDM physically present in the exact qualified B1 PrizePool UTxO. The existing `Economic.poolUsdmValue` path is a general oracle-conversion function and must not be substituted for that direct quantity.
 3. Keep the Issue blocker open until a concrete, authenticated observation and qualification packet bind: canonical USDM asset identity, exact Pool UTxO, quantity, snapshot slot/time, source and verification references, derivation version, evidence digest, EV1–EV7, and deployment approval.
 4. No code, workflow, policy, branch, deployment, or ledger state was changed as part of this focused review. This review adds no new runtime or Preprod evidence and does not certify a real Issue.
+
+
+
+### 10.16 Canonical work dispatch — branch ownership and execution order
+
+**Single source of work allocation.** U-01..U-17 and P-01..P-17 remain the canonical task IDs. W0..W12 in §4 are legacy grouping aliases, not additional backlogs; §8 is a historical priority snapshot. Use this dispatch board for day-to-day routing. Audit status stays **PARTIAL**; this plan neither certifies source behavior nor authorizes implementation, merge, deployment or ledger action.
+
+#### Branch ownership — one lane per existing branch
+
+| Branch | Assigned lane | Included work | Keep out |
+|---|---|---|---|
+| `work/immortal-green-closure` | Primary coordinator + first Cardano closure + universal roadmap | Checkpoint; P-01/05/15/16 Issue, EEV, B2/control, wallet and qualified-liquidity boundaries; P-02 Pyth/MintPolicy investigation; P-03/04 Reveal/P2.8; P-06 expiry decision; P-13 Gate 41; P-17 declarations; U-01..13, U-15..17 as coordination and universal work. | No bulk imports from B3/UI/Aegis/audit snapshots. No invented expiry, fee, threshold or USD/USDM ratio. Keep V3/Reveal semantics frozen. |
+| `work/b3-materios-provenance-evidence` | External-proof lane | P-09 GRANDPA/finality witness; P-10 historical storage proof; P-11 execution proof/upstream #50; P-12 Workflow B evidence gates; U-14 Beacon 4 research only. | No duplicate B3 implementation in green; no unchanged zero-witness probe; Beacon 4 does not replace B3. |
+| `feat/pre-rich-game-ui` | UI-only lane | P-08 / Issue #22: presentation, accessibility, interaction and UI-only tests. | Provider, admission, EEV, oracle, validator, V3 or wallet-authority changes are not UI-only. Browser must not bypass fail-closed admission. |
+| `b1-hardening` | Aegis/hardening research | P-14 and relevant U-06 governance/hardening experiments with explicit research labels. | Prototype parameters are not normative policy; no import into kernel without explicit decision and conformance evidence. |
+| `merge/workflow-b-closed-main` | Existing PR #35 sandbox only | Trusted-base, contribution-gate and governance CI review. | Not the canonical B3 implementation lane; harness passes are not proof of Materios finality or real Issue admission. Keep draft pending exact-scope review. |
+| `main` | Public baseline / reviewed release target | Read baseline; accept only individually scoped and approved promotions. | No direct development or wholesale synchronization from green/B3. |
+| `audit/*`, `ops/*`, backup/release snapshots, `fix/cardano-lab-yaci-info`, `copilot/fix-real-preprod-reveal-job` | Historical evidence / diagnostic reference | Reuse only a uniquely relevant blob, artifact or falsifiable regression hypothesis, preserving its SHA/run identity. | No parallel active implementation, automatic cherry-pick or branch deletion. |
+
+Before acting, refresh the actual source HEAD and PR head/base. The branch table is a snapshot, not proof that a historical fix is currently present.
+
+#### Order of work and exit gates
+
+| Priority | IDs / lane | Next action | Exit gate |
+|---|---|---|---|
+| 0 — Control | W0 | Keep checkpoint and Notion index synchronized; maintain evidence ledger keyed by exact SHA. | Audit can leave PARTIAL only after live ref/manifest verification, unique-blob review ledger, Actions/PR/issue refresh and Notion reconciliation. |
+| 1 — First Issue critical path | P-01 + P-05 + P-15 + P-16; P-06 only when a canonical expiry decision is needed | Bind the exact B1 PrizePool UTxO, canonical USDM identity/quantity, qualified EEV packet, control singleton, deployment approval, live endpoint, final transaction body and post-state. | Authenticated observation + EV1–EV7 + approved direct-USDM derivation + exact final body + wallet signature + confirmed ledger effect + independent reconciliation. Until then: **BLOCKED / NOT ISSUED**. |
+| 2 — Native Cardano evidence | P-04 → P-03; separately P-02 | Make the P2.8 packet/typed context and real native economic steps actually run; diagnose Reveal bytes/reference-witness binding only from fresh builder output. Trace Pyth into MintPolicy only after currency-unit semantics are decided. | Same-SHA native transaction/economic traces and packet; Reveal within ledger size limit. Builds, emulator, budget probes and synthetic vectors alone do not close acceptance. |
+| 3 — Materios proofs | P-09 → P-10; P-11/P-12 separately | Acquire changed-source GRANDPA witness; acquire exact block/hash StateRoot + historical key/value proof; verify independently; refresh upstream #50 only for new commits/witnesses. Keep PR #35 process gates separate. | Proofs cryptographically verify for the stated block and state; finality, storage and execution claims remain distinct. No witness, no B3 closure. |
+| 4 — Universal semantics/portability | U-01 + U-02 → U-04 → U-03 → U-05 | Map normative definitions to code/projections/consumers; protect universal kernel from PRE-RICH-specific types; freeze deterministic reference vectors before viability proof or second-adapter comparison. | Same vectors and normalized evidence; explicit infinite-horizon proof obligations. Docs or finite tests do not certify viability/portability. |
+| 5 — Autonomous evidence | U-08 first; U-12/U-13 research; U-17 infrastructure | Observe a full JEV cycle and a subsequent scheduled cycle; keep AI an untrusted candidate generator and sponsorship as measured research. | Next cycle consumes latest registered prompt without a user message; otherwise autonomy remains inconclusive. |
+| 6 — Policy/governance | U-06/U-07; coordinate P-06 only through canon | Reconcile source-of-truth decisions and distinguish frozen from open choices. | Explicit approved decision and conformance tests; no invented fee, expiry duration, freshness threshold or currency ratio. |
+| 7 — Separate product/research/release | P-08; U-09/U-10/U-14/U-15/U-16; P-07/P-13/P-14 | Isolate UI, declarations, paper claims, CAROB THREE, Gate 41, Beacon 4 and second-adapter work in their assigned lanes. | Claims link to exact evidence; research remains labelled until its own proof gate is met. |
+
+#### PR routing — no wholesale promotion
+
+- **#19:** broad, heterogeneous; review scoped changes only.
+- **#23:** draft and not purely UI; separate provider/runtime/V3 changes from visual work.
+- **#28:** focused but touches V3 policy and lab workflow; security-sensitive review, with V3 semantics frozen.
+- **#35:** draft process gate overlaps P2.8/V3 evidence paths; process acceptance is not protocol acceptance.
+- Promotion requires current base/head SHA, isolated changed-path scope, completed required checks on the exact candidate SHA, negative-case/evidence provenance review and governance clearance. GitHub `mergeable=true` is not approval.
+
+#### No-repeat rules
+
+Do not repeat the same zero-witness B3-A probe, Reveal size/budget diagnosis or cancelled Integration Lab without a changed source/input and a falsifiable hypothesis. Do not re-run Pyth parsing tests to answer whether MintPolicy consumes the quote. Do not treat UI progress, generated indexes, PR harnesses or an approval-workflow setup as protocol acceptance.
+
+**Current declaration:** branch ownership and execution routing are now consolidated here; the audit remains **PARTIAL**; no code, branch topology, protocol semantics, deployment or ledger state was changed by this organizational update.
 
