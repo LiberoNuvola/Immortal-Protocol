@@ -396,3 +396,22 @@ The branch search confirms that `release/issue-admission-boundary-squash` exists
 **Conclusion of this branch comparison:** the release branch does not close the G1 blocker on the evidence inspected. This is a bounded source finding, not a claim that every file or external deployment was exhaustively identified. No files on the release branch were changed.
 
 **G1 remains OPEN.** This update changes only this audit document on `work/b3-materios-provenance-evidence`; no production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
+
+
+### 9.14 Notion cross-check — fee-bearing policy is still OPEN and PRE-RICH is out of scope
+
+A cross-check against the connected Notion source of truth found two relevant documents:
+
+- **IMMORTAL — Economic Usage Fee & Adapter Settlement Workflow v0.1** (fetched 11 Oct 2026): status is explicitly **OPEN**; it says PRE-RICH is out of scope for that workflow and prohibits a new authority path during design/specification. It preserves one Protocol Usage Fee, distinct from native chain execution cost, and says the fee-bearing policy must not bypass `K_c`, ProtectedCapital, liabilities, or atomicity.
+- **10 — Fee-Bearing Transition Matrix & Final Protocol/Adapter Separation Check v0.1** (fetched 19 Sep 2026): status is explicitly **OPEN — transition classification / separation audit**. Its matrix identifies candidate locations where a deployment/profile could declare a transition fee-bearing, but explicitly says the listed classes are not automatically fee-bearing. It also states that the workflow does not choose whether application-specific ticket purchase or reveal/claim interactions are fee-bearing.
+
+These sources mean the audit must keep two separate questions distinct:
+
+1. **Universal usage-fee design:** the fee-bearing transition/profile declaration and the usage-fee semantics remain OPEN. No fee-bearing class, amount, beneficiary, or settlement asset is inferred or selected by this audit.
+2. **PRE-RICH Issue admission completeness:** the signed `obligationsComplete` claim must be demonstrably derived from an authenticated observation and its actual approved obligation inventory. The current source scan does not prove that G1 fee obligations are represented in that inventory.
+
+The historical `05 — SOURCE REGISTRY` Notion page records an earlier architecture description in which the browser calls a remote provider and `issueAuthorityServer.js` connects Preprod observation, signed authority, Haskell producer, and witness. That is useful historical architecture context, but it does not identify the live upstream endpoint/build or override the inspected target-branch server composition, which requires a separately configured upstream signed authority. The deployment/source discrepancy therefore remains unresolved.
+
+**No normative decision is made here.** In particular, do not treat the Notion fee matrix as a selection of a fee-bearing class, or as approval to introduce a new Issue authority path. Continue to require source/build identity and derivation evidence for the actual upstream authority. Keep fee policy OPEN and G1-specific completeness unproven until the respective evidence exists.
+
+This section is documentation-only. No changes were made to the Notion pages, other branches, production code, tests, CI, deployment, V3 carrier, or Reveal semantics.
