@@ -119,9 +119,9 @@ function summarizeRpcMethods(response) {
   const set = new Set(methods);
   return {
     status: "available",
-    methodCount: methods.length,
+    method_count: methods.length,
     methods,
-    grandpaMethods: Object.fromEntries(
+    grandpa_methods: Object.fromEntries(
       TARGET_GRANDPA_METHODS.map(method => [method, set.has(method) ? "listed" : "not-listed"])
     ),
   };
