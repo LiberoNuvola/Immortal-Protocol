@@ -8,7 +8,6 @@ import Prelude
   , String
   , error
   , putStrLn
-  , (==)
   )
 
 import qualified Data.ByteString.Char8 as BSC
@@ -19,6 +18,9 @@ import V3EconomicStateCarrier
   )
 
 bytes = toBuiltin . BSC.pack
+hashA = bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+hashB = bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+hashC = bytes "cccccccccccccccccccccccccccccccc"
 
 valid :: V3EconomicStateAction
 valid =
@@ -26,9 +28,11 @@ valid =
     (bytes "Issue")
     (bytes "decision:issue:001")
     (bytes "observation:issue:001")
-    (bytes "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-    (bytes "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-    (bytes "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+    hashA
+    hashB
+    hashC
+    0
+    1
 
 assert :: Bool -> String -> IO ()
 assert condition label =
@@ -38,8 +42,7 @@ assert condition label =
 
 main :: IO ()
 main = do
-  assert
-    (bindingEnvelopeValid valid)
+  assert (bindingEnvelopeValid valid)
     "valid Issue decision envelope is accepted"
 
   assert
@@ -48,9 +51,11 @@ main = do
         (bytes "Reveal")
         (bytes "decision:reveal:001")
         (bytes "observation:reveal:001")
-        (bytes "pre")
-        (bytes "action")
-        (bytes "post")))
+        hashA
+        hashB
+        hashC
+        0
+        0))
     "Reveal envelope remains supported"
 
   assert
@@ -59,9 +64,11 @@ main = do
         (bytes "Unknown")
         (bytes "decision")
         (bytes "observation")
-        (bytes "pre")
-        (bytes "action")
-        (bytes "post"))))
+        hashA
+        hashB
+        hashC
+        0
+        1)))
     "unknown action class fails closed"
 
   assert
@@ -70,9 +77,11 @@ main = do
         (bytes "Issue")
         (bytes "")
         (bytes "observation")
-        (bytes "pre")
-        (bytes "action")
-        (bytes "post"))))
+        hashA
+        hashB
+        hashC
+        0
+        1)))
     "missing decision reference fails closed"
 
   assert
@@ -82,9 +91,11 @@ main = do
         (bytes "decision")
         (bytes "observation")
         (bytes "")
-        (bytes "action")
-        (bytes "post"))))
-    "missing pre-state hash fails closed"
+        hashB
+        hashC
+        0
+        1)))
+    "wrong-length pre-state hash fails closed"
 
   assert
     (not (bindingEnvelopeValid
@@ -92,9 +103,11 @@ main = do
         (bytes "Issue")
         (bytes "decision")
         (bytes "observation")
-        (bytes "pre")
+        hashA
         (bytes "")
-        (bytes "post"))))
+        hashC
+        0
+        1)))
     "missing action fingerprint fails closed"
 
   assert
@@ -103,9 +116,24 @@ main = do
         (bytes "Issue")
         (bytes "decision")
         (bytes "observation")
-        (bytes "pre")
-        (bytes "action")
-        (bytes ""))))
+        hashA
+        hashB
+        (bytes "")
+        0
+        1)))
     "missing post-state hash fails closed"
+
+  assert
+    (not (bindingEnvelopeValid
+      (AdvanceV3State
+        (bytes "Issue")
+        (bytes "decision")
+        (bytes "observation")
+        hashA
+        hashB
+        hashC
+        3
+        2)))
+    "Issue price must match canonical class price"
 
   putStrLn "ALL V3 CARRIER BINDING TESTS PASSED"

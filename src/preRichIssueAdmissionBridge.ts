@@ -13,6 +13,7 @@ export type IssueAdmissionRuntimeInputs = {
   poolInputReference: string
   liquiditySourceReferences: readonly string[]
   poolUsdmValue: bigint
+  carrierInputReference?: string
 }
 
 export type AuthoritativeIssueAdmissionProvider = (
@@ -46,6 +47,22 @@ export async function obtainAuthoritativeIssueAdmission(
   }
 
   return witness
+}
+
+export function assertIssueCarrierBindingWitness(
+  admission: EconomicAdmissionWitness,
+): void {
+  if (admission.actionClass !== 'Issue') throw new Error('economic admission is not an Issue transition')
+  if (!admission.carrierInputReference?.trim()) throw new Error('Issue admission is missing the V3 carrier input reference')
+  if (!admission.carrierPolicyId?.trim() || !admission.carrierTokenNameHex?.trim()) {
+    throw new Error('Issue admission is missing the V3 carrier singleton identity')
+  }
+  if (admission.carrierPreStateVersion === undefined || admission.carrierPreStateVersion < 0n) {
+    throw new Error('Issue admission is missing the V3 carrier pre-state version')
+  }
+  if (!admission.carrierCandidateState) {
+    throw new Error('Issue admission is missing the authoritative V3 candidate post-state')
+  }
 }
 
 export function assertIssueAdmissionMatchesCanonicalEvidence(
