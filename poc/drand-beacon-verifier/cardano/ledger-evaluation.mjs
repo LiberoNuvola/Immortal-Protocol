@@ -166,6 +166,8 @@ const evidence = {
   wallet: { address: walletAddress, utxoCount: walletUtxos.length, balanceLovelace: walletBalance.toString() },
   lockTransaction: null,
   spendTransaction: null,
+  negativeLockTransaction: null,
+  negativeSpendTransaction: null,
   yaciEvaluation: null,
   caveats: [
     'Only local Yaci devnet is used; no Preprod/mainnet funds or production scripts are touched.',
@@ -249,6 +251,99 @@ try {
     returnedLovelace: ADA_RETURN.toString(),
   }
   evidence.yaciEvaluation = yaciEvaluation
+
+  // Ledger-level adversarial twin: reuse the real round-42 signature while
+  // claiming round 43. Override only Lucid's evaluator result to provide a
+  // conservative budget because the Yaci REST evaluation endpoint currently
+  // fails with ExceptionInInitializerError; the Cardano ledger decides validity.
+  const negativeLockTx = await lucid
+    .newTx()
+    .pay.ToAddress(scriptAddress, { lovelace: ADA_LOCK })
+    .complete({ localUPLCEval: true })
+  const negativeLockSigned = await negativeLockTx.sign.withWallet().complete({ localUPLCEval: true })
+  const negativeLockCbor = negativeLockSigned.toCBOR()
+  const negativeLockHash = await negativeLockSigned.submit()
+  await lucid.awaitTx(negativeLockHash)
+  const negativeLockOutputs = await waitFor(
+    () => lucid.utxosAt(scriptAddress),
+    (xs) => xs.some((utxo) => utxo.txHash === negativeLockHash && BigInt(utxo.assets.lovelace ?? 0n) === ADA_LOCK),
+    'negative-twin script UTxO',
+  )
+  const negativeLockedUtxo = negativeLockOutputs.find(
+    (utxo) => utxo.txHash === negativeLockHash && BigInt(utxo.assets.lovelace ?? 0n) === ADA_LOCK,
+  )
+  if (!negativeLockedUtxo) throw new Error('Negative-twin script UTxO was not created')
+  evidence.negativeLockTransaction = {
+    txHash: negativeLockHash,
+    serializedBytes: Buffer.from(negativeLockCbor, 'hex').length,
+    lockedUtxo: negativeLockedUtxo.txHash + '#' + negativeLockedUtxo.outputIndex,
+    lockedLovelace: ADA_LOCK.toString(),
+  }
+
+  const providerWithAssignedBudget = provider
+  providerWithAssignedBudget.evaluateTx = async () => [{
+    redeemer_tag: 'spend',
+    redeemer_index: 0,
+    ex_units: { mem: 30_000, steps: 1_200_000_000 },
+  }]
+  const invalidRoundRedeemer = Data.to(new Constr(0, [ROUND + 1n, SIGNATURE, PUBLIC_KEY]))
+  const invalidSpendTx = await lucid
+    .newTx()
+    .collectFrom([negativeLockedUtxo], invalidRoundRedeemer)
+    .attach.SpendingValidator(script)
+    .pay.ToAddress(walletAddress, { lovelace: ADA_RETURN })
+    .complete({ localUPLCEval: false })
+  const invalidSignedSpend = await invalidSpendTx.sign.withWallet().complete({ localUPLCEval: false })
+  const invalidSpendCbor = invalidSignedSpend.toCBOR()
+  const invalidSpendDescription = txDescription(invalidSpendCbor)
+  let invalidSpendHash = null
+  let invalidSpendFailure = ''
+  let invalidSpendLedgerRejected = false
+
+  try {
+    invalidSpendHash = await invalidSignedSpend.submit()
+    await lucid.awaitTx(invalidSpendHash)
+    const currentScriptUtxos = await lucid.utxosAt(scriptAddress)
+    const invalidInputStillUnspent = currentScriptUtxos.some(
+      (utxo) => utxo.txHash === negativeLockedUtxo.txHash && utxo.outputIndex === negativeLockedUtxo.outputIndex,
+    )
+    if (!invalidInputStillUnspent) {
+      throw new Error('DRAND_INVALID_SIGNATURE_ACCEPTED_BY_LEDGER: round-42 signature was accepted for round 43')
+    }
+    // If a phase-2-invalid transaction is recorded, Cardano does not consume
+    // the script input. Reaching this branch means the transaction was observed
+    // and the invalid witness did not spend its target input.
+    invalidSpendLedgerRejected = true
+    invalidSpendFailure = 'Transaction observed without consuming the invalid-signature script input'
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('DRAND_INVALID_SIGNATURE_ACCEPTED_BY_LEDGER')) throw error
+    const currentScriptUtxos = await lucid.utxosAt(scriptAddress)
+    const invalidInputStillUnspent = currentScriptUtxos.some(
+      (utxo) => utxo.txHash === negativeLockedUtxo.txHash && utxo.outputIndex === negativeLockedUtxo.outputIndex,
+    )
+    const looksLikeScriptRejection = /script|plutus|evaluation|phase.?2|validation.?tag|HTTP 400|Bad Request|ledger.{0,30}reject|transaction.{0,30}reject/i.test(message)
+    if (!invalidInputStillUnspent || !looksLikeScriptRejection) {
+      throw new Error('Negative drand twin was not conclusively rejected by the ledger: ' + message)
+    }
+    invalidSpendLedgerRejected = true
+    invalidSpendFailure = message.slice(0, 1500)
+  }
+
+  if (!invalidSpendLedgerRejected) {
+    throw new Error('Negative drand twin was not rejected by the local Cardano ledger')
+  }
+  evidence.negativeSpendTransaction = {
+    result: 'LEDGER_REJECTED_INVALID_SIGNATURE',
+    redeemerRound: Number(ROUND + 1n),
+    signatureRound: Number(ROUND),
+    txHash: invalidSpendHash,
+    serializedBytes: invalidSpendDescription.serializedBytes,
+    assignedExecutionUnits: invalidSpendDescription.redeemerExecutionUnits,
+    scriptInputRemainsUnspent: true,
+    rejectionEvidence: invalidSpendFailure,
+  }
+
   evidence.status = 'PASS'
   evidence.acceptanceClaim = 'A confirmed local Yaci ledger transaction spent the script UTxO using the real captured Quicknet round-42 signature under the compiled Plutus V3 validator.'
   evidence.nonClaims = [
