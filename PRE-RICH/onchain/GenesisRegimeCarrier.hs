@@ -28,7 +28,9 @@ import Types
   )
 import OracleTypes
   ( OracleDatum (..)
+  , OracleQuote (..)
   , OracleStateId (..)
+  , lookupOracleQuote
   , precision
   )
 
@@ -213,7 +215,7 @@ findSingleOracleReference
   -> BuiltinByteString
   -> PubKeyHash
   -> TxInfo
-  -> Maybe OracleDatum
+  -> Maybe OracleQuote
 findSingleOracleReference stateId assetPolicy assetName publisher info =
   go (txInfoReferenceInputs info) Nothing
   where
@@ -227,16 +229,17 @@ findSingleOracleReference stateId assetPolicy assetName publisher info =
               (osiName stateId) == 1
       in
       case decodeOracleDatum info out of
-        Just od
-          | singletonOk
-          && odAssetPolicy od == assetPolicy
-          && odAssetName od == assetName
-          && odPublisher od == publisher
-          && validOracleTimestamp (odTimestamp od) info
-          && odPrice od >= 0 ->
-            case found of
-              Just _ -> Nothing
-              Nothing -> go is (Just od)
+        Just datum
+          | singletonOk ->
+              case lookupOracleQuote assetPolicy assetName datum of
+                Just quote
+                  | oqPublisher quote == publisher
+                  && validOracleTimestamp (oqTimestamp quote) info
+                  && oqPrice quote >= 0 ->
+                    case found of
+                      Just _ -> Nothing
+                      Nothing -> go is (Just quote)
+                _ -> go is found
         _ -> go is found
 
 {-# INLINABLE authenticatedObservation #-}
@@ -269,9 +272,9 @@ authenticatedObservation datum info =
             , gtoTreasuryStateVerified = True
             , gtoOracleVerified = True
             , gtoOracleFresh =
-                validOracleTimestamp (odTimestamp oracle) info
+                validOracleTimestamp (oqTimestamp oracle) info
             , gtoPreQuantity = quantity
-            , gtoVerifiedPreUsdmPrice = odPrice oracle
+            , gtoVerifiedPreUsdmPrice = oqPrice oracle
             , gtoOraclePrecision = precision
             }
 
