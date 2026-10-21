@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 16,
-    "semantic_ledger_entries_not_reviewed": 1795,
+    "scoped_static_reviews_recorded": 37,
+    "semantic_ledger_entries_not_reviewed": 1774,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; this tranche confirms the Pyth-to-MintPolicy binding and unit-conversion blockers.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding and first real Issue admission remain blocked; direct-USDM EEV approval is confirmed only for the recorded source UTxO snapshot.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -28726,10 +28726,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_BOOTSTRAP_REUSE_AND_SIDE_EFFECT_BOUNDARY",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01"
+      ]
     },
     {
       "blob_sha": "0ce6c53875ae5fe21259edb07cd52015766450f6",
@@ -29402,10 +29404,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_DIRECT_USDM_DERIVATION",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01"
+      ]
     },
     {
       "blob_sha": "106368b510a52447aa3de7ce951cf615466fc5e8",
@@ -29582,10 +29586,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "119ea454b85d49085d5f7363cfbbc1a8c3480f16",
@@ -33864,10 +33871,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_NORMATIVE_ADAPTER_CONFORMANCE_BOUNDARY",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "29679c457ec2cf5bdfe717300c7bb4affc1ef174",
@@ -34118,10 +34128,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "2afbe18782afbc757e9ffde38d1ada81b3813dba",
@@ -36779,10 +36792,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "3c29534bb2b76b3a5fee33d3bbf5576e33b056e6",
@@ -37069,10 +37085,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CANONICAL_HASKELL_DECISION_INTERFACE",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03"
+      ]
     },
     {
       "blob_sha": "3d2e951cd4e1cf327bc325409289107b8a713fcb",
@@ -38537,10 +38555,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_SEPARATE_DEPLOYMENT_APPROVAL",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-02"
+      ]
     },
     {
       "blob_sha": "4657cc6ceba6402a5f0ceef985dfa5480384caba",
@@ -38740,10 +38760,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_TESTS_DEFINED_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "47d4ec4b2c3002e31c45104db44d0560ef192511",
@@ -40672,10 +40694,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "551a78cb0e4dd42ad8f05aed551fd60ac7e7e2c3",
@@ -47746,10 +47771,14 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_EXTERNAL_AUTHORITY_BOUNDARY",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-02",
+        "F-EEV-03",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "88ee31132d7aefd827e6ad9687c05e321ee95988",
@@ -48691,10 +48720,14 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POOL_CANDIDATE_AND_CERTIFICATE_BINDING",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-02",
+        "F-EEV-03",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "8e5f77f5be9247bf3ce0576fccade1e7372fd4fb",
@@ -51252,10 +51285,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_LIVE_SOURCE_SET",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-02"
+      ]
     },
     {
       "blob_sha": "9d0cb4fa0d93215512465b6bf5dcf79006fbf58f",
@@ -53130,10 +53166,16 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_EEV_APPROVAL_SUCCESS_RUN_39552468679",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-02",
+        "F-EEV-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679",
+        "artifact:12324421376"
+      ]
     },
     {
       "blob_sha": "aa26d0ff719a65b159485c4dbee060666f7775be",
@@ -55689,10 +55731,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_EV1_EV7_QUALIFICATION_ARTIFACT",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "bb9ea20290d43ff83aeb332d74c3bed7775ca001",
@@ -57499,10 +57544,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_INPUT_AND_LIQUIDITY_BINDING",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03"
+      ]
     },
     {
       "blob_sha": "c91c92b8b99abec99a65b4c12799bdd45a4458c5",
@@ -57819,10 +57866,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "cab3f9d1c7c971b4127f9ae61d1477dc93454fd9",
@@ -61401,10 +61451,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03",
+        "F-EEV-04"
+      ]
     },
     {
       "blob_sha": "e01857fb9651cc2654aed4739120d2117fa760f8",
@@ -61983,10 +62036,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_FAIL_CLOSED_CERTIFICATE_GATE",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-02",
+        "F-EEV-03",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "e3cd1ad1cceb7abe71123a9fa168918a92437601",
@@ -63852,10 +63909,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_SIGNED_DECISION_BINDING",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-03",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "f104015848a41083c346faeab7b000887e4f09b8",
@@ -65402,10 +65462,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_LIVE_UTXO_BINDING",
+      "review_scope": "Static B1 EEV/Issue source review plus read-only inspection of GitHub Actions run #39552468679 and artifact 12324421376; no current UTxO re-query, conformance dispatch, Issue transaction or mint performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md@b61aebd95abb4fa7c3774d6eddcb4cd9e6902367",
+      "evidence_references": [
+        "F-EEV-01",
+        "F-EEV-02",
+        "F-EEV-05"
+      ]
     },
     {
       "blob_sha": "fad45a9571d26814118908aa92f63cc462c341eb",
