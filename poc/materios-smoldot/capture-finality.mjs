@@ -519,10 +519,11 @@ async function main() {
     } else {
       log("proof transport probe PASS; B3-A remains OPEN");
     }
+    // This is a short-lived acquisition CLI. The evidence file is fully written
+    // synchronously above; don't let optional network/task teardown block artifact upload.
+    // The OS will close the light client's sockets when this process exits.
     alive = false;
-    try { await chain.remove(); } catch {}
-    try { await client.terminate(); } catch {}
-    await Promise.race([pumpPromise.catch(() => {}), new Promise(resolve => setTimeout(resolve, 250))]);
+    process.exit(captured.length === 0 ? 2 : 0);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log("fatal: " + message);
@@ -548,10 +549,10 @@ async function main() {
       claims: { raw_grandpa_justification_transport_available: false, b3_a_closed: false },
       smoldot_log_tail: logTail.slice(-100),
     }, null, 2) + "\n");
-    process.exitCode = 1;
+    // Failure evidence has also been written synchronously. Exit directly so
+    // an unhealthy P2P shutdown cannot suppress artifact upload.
     alive = false;
-    try { if (chain) await chain.remove(); } catch {}
-    try { if (client) await client.terminate(); } catch {}
+    process.exit(1);
   }
 }
 
