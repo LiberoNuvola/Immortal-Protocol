@@ -310,10 +310,10 @@ contains(mintTs, /buildIssueSettlementAssets/, 'Issue settlement supports an opt
 contains(mintTs, /settlementAssetQuantities/, 'Multi-asset settlement quantities enter the Issue builder explicitly')
 contains(mainTs, /refreshSettlementOptions[\s\S]*?decodeOraclePriceReferences[\s\S]*?lucid\.wallet\.getUtxos/s,
   'DApp settlement choices are derived from the authenticated Oracle State and current wallet holdings')
-contains(mainTs, /deriveSingleAssetIssueSettlementQuantities[\s\S]*?settlementAssetQuantities:\s*\{\s*\[selectedSettlement\.unit\]:\s*selectedSettlement\.economicQuantity\s*\}/s,
-  'DApp passes only the exact quote-derived selected asset quantity into Issue')
-contains(mainTs, /selectedSettlementUnit[\s\S]*?Choose a wallet-held settlement asset/s,
-  'Issue remains blocked until the user explicitly selects an eligible settlement asset')
+contains(mainTs, /validateIssueSettlementQuote[\s\S]*?buildIssueSettlementAssets[\s\S]*?settlementAssetQuantities:\s*selectedSettlementQuantities/s,
+  'DApp basket quantities are quote-validated and passed through the exact-value settlement builder')
+contains(mainTs, /settlement-assets[\s\S]*?settlementInputValues[\s\S]*?Enter an exact Treasury basket/s,
+  'Issue UI collects explicit basket quantities and remains blocked until the basket matches the USDM target')
 contains(mintTs, /assertCompletedTreasurySettlement/, 'Completed Lucid Treasury output Value is checked before submission')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
   'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')

@@ -23,7 +23,7 @@ import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
   buildIssueSettlementAssets,
   decodeOraclePriceReferences,
-  deriveSingleAssetIssueSettlementQuantities,
+  validateIssueSettlementQuote,
 } from './issueSettlement'
 import { createRemoteAuthoritativeIssueAdmissionProvider } from './remoteAuthoritativeIssueAdmissionProvider'
 import { preRichExpiryPolicyV1 } from '../PRE-RICH/src/PreRichExpiryPolicy'
@@ -122,11 +122,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
             <button type="button" data-price="100" class="price-choice" aria-pressed="false">100</button>
           </div>
           <div class="settlement-picker">
-            <label for="settlement-asset" class="dapp-label">SETTLEMENT ASSET</label>
-            <select id="settlement-asset" class="settlement-asset-select" disabled>
-              <option value="">Connect wallet to inspect eligible assets</option>
-            </select>
-            <p id="settlement-asset-note" class="settlement-asset-note">Ticket accounting remains in USDM. A settlement choice requires fresh authenticated quotes for the payment asset and ADA min-UTxO.</p>
+            <span class="dapp-label">SETTLEMENT BASKET</span>
+            <div id="settlement-assets" class="settlement-assets">
+              <p class="settlement-asset-note">Connect wallet to inspect eligible quoted assets.</p>
+            </div>
+            <p id="settlement-asset-note" class="settlement-asset-note">Ticket price is in USDM. Enter quantities manually; the basket is accepted only when authenticated integer conversion matches the exact ticket price.</p>
           </div>
         </div>
         <div class="admission-checklist">
@@ -244,14 +244,17 @@ let selectedIssuePrice = 1
 type DAppSettlementOption = {
   unit: string
   label: string
-  economicQuantity: bigint
-  treasuryAssets: Record<string, bigint>
   balance: bigint
+  quotePrice: bigint
 }
 
 let settlementOptions: DAppSettlementOption[] = []
-let selectedSettlementUnit: string | null = null
+let settlementInputValues: Record<string, string> = {}
+let settlementEconomicQuantities: Record<string, bigint> | null = null
+let settlementTreasuryAssets: Record<string, bigint> | null = null
+let settlementOracleDatum: unknown = null
 let settlementOptionsLoading = false
+let issueSubmissionInProgress = false
 let settlementOptionsMessage = 'Connect a Preprod wallet to inspect settlement assets.'
 let settlementRefreshSequence = 0
 
@@ -272,27 +275,29 @@ function syncIssueButton() {
   const buy = document.getElementById('buy') as HTMLButtonElement | null
   if (!buy) return
 
+  if (issueSubmissionInProgress) {
+    buy.disabled = true
+    buy.textContent = 'Submitting authoritative Issue…'
+    return
+  }
   if (!connected) {
     buy.disabled = true
     buy.textContent = 'Buy Ticket — connect wallet'
     return
   }
-
   if (!issueExecutionConfigured()) {
     buy.disabled = true
     buy.textContent = 'Buy Ticket — deployment wiring unavailable'
     return
   }
-
   if (settlementOptionsLoading) {
     buy.disabled = true
     buy.textContent = 'Buy Ticket — verifying settlement'
     return
   }
-
-  if (!selectedSettlementUnit || !settlementOptions.some(option => option.unit === selectedSettlementUnit)) {
+  if (!settlementEconomicQuantities || !settlementTreasuryAssets) {
     buy.disabled = true
-    buy.textContent = 'Buy Ticket — choose settlement asset'
+    buy.textContent = 'Buy Ticket — match USDM settlement'
     return
   }
 
@@ -331,74 +336,183 @@ function settlementAssetDisplayName(unit: string): string {
   return `Asset ${unit.slice(0, 8)}…${unit.slice(-8)}`
 }
 
+function captureSettlementInputValues(): Record<string, string> {
+  const container = document.getElementById('settlement-assets')
+  const result: Record<string, string> = { ...settlementInputValues }
+  container?.querySelectorAll<HTMLInputElement>('input[data-settlement-unit]').forEach(input => {
+    const unit = input.dataset.settlementUnit
+    if (unit) result[unit] = input.value
+  })
+  return result
+}
+
+function formatBasketSummary(value: Record<string, bigint>): string {
+  return Object.entries(value)
+    .filter(([, quantity]) => quantity > 0n)
+    .map(([unit, quantity]) => unit === 'lovelace'
+      ? `ADA ${formatLovelace(quantity)}`
+      : `${settlementAssetDisplayName(unit)} ${quantity.toLocaleString('en-US')} units`)
+    .join(' + ')
+}
+
 function updateSettlementNote(): void {
   const note = document.getElementById('settlement-asset-note')
   const preview = document.getElementById('preview-settlement')
-  const selected = settlementOptions.find(option => option.unit === selectedSettlementUnit)
-  if (preview) preview.textContent = selected ? selected.label : 'NOT SELECTED'
-
+  if (preview) {
+    preview.textContent = settlementEconomicQuantities && settlementTreasuryAssets
+      ? formatBasketSummary(settlementTreasuryAssets)
+      : settlementOptionsLoading ? 'VERIFYING' : 'BASKET NOT VALID'
+  }
   if (!note) return
   if (settlementOptionsLoading) {
-    note.textContent = 'Reading the authenticated Oracle State and calculating exact quantities in the canonical USDM sub-unit domain…'
+    note.textContent = 'Reading the authenticated Oracle State and wallet balances. Quotes, quantities and ADA min-UTxO are checked against the canonical integer conversion.'
     return
   }
-  if (!selected) {
-    note.textContent = settlementOptionsMessage + ' The final Treasury Value must equal the ticket price under the on-chain oracle conversion.'
+  if (!settlementOptions.length) {
+    note.textContent = settlementOptionsMessage
     return
   }
-
-  if (selected.unit === 'lovelace') {
+  if (settlementEconomicQuantities && settlementTreasuryAssets) {
     note.textContent =
-      `Treasury payment: ${formatLovelace(selected.treasuryAssets.lovelace)} ADA. The amount is derived from the authenticated quote; wallet ADA for other protocol outputs and network fees is separate.`
+      `Valid basket: exact match for ${selectedIssuePrice} USDM. Treasury output: ${formatBasketSummary(settlementTreasuryAssets)}. ADA min-UTxO is included in the output and excluded from economic ADA valuation; network fees and other protocol outputs are separate.`
   } else {
-    note.textContent =
-      `Treasury payment: ${selected.economicQuantity.toLocaleString('en-US')} ledger units of ${settlementAssetDisplayName(selected.unit)} plus ${formatLovelace(CANONICAL_ADA_MIN_UTXO_LOVELACE)} ADA min-UTxO. A valid ADA quote is required even though the min-UTxO component is excluded from economic value.`
+    note.textContent = settlementOptionsMessage
+      + ` Ticket target: ${selectedIssuePrice} USDM. Enter whole ledger units for one or more assets; the basket must match exactly under authenticated quotes. Blank/zero token quantities are not included.`
   }
 }
 
 function renderSettlementOptions(): void {
-  const select = document.getElementById('settlement-asset') as HTMLSelectElement | null
-  if (!select) return
-  const previous = selectedSettlementUnit
-  select.innerHTML = ''
-  const placeholder = document.createElement('option')
-  placeholder.value = ''
-  placeholder.textContent = settlementOptionsLoading
-    ? 'Verifying available settlement assets…'
-    : settlementOptions.length
-      ? 'Choose a payment asset…'
-      : 'No eligible settlement asset'
-  select.appendChild(placeholder)
+  const container = document.getElementById('settlement-assets')
+  if (!container) return
+  container.innerHTML = ''
 
-  for (const option of settlementOptions) {
-    const element = document.createElement('option')
-    element.value = option.unit
-    element.textContent = option.label
-    select.appendChild(element)
+  if (settlementOptionsLoading) {
+    const loading = document.createElement('p')
+    loading.className = 'settlement-asset-note'
+    loading.textContent = 'Verifying current wallet holdings and authenticated asset quotes…'
+    container.appendChild(loading)
+    updateSettlementNote()
+    return
+  }
+  if (!settlementOptions.length) {
+    const empty = document.createElement('p')
+    empty.className = 'settlement-asset-note'
+    empty.textContent = settlementOptionsMessage
+    container.appendChild(empty)
+    updateSettlementNote()
+    return
   }
 
-  selectedSettlementUnit = previous && settlementOptions.some(option => option.unit === previous)
-    ? previous
-    : null
-  select.value = selectedSettlementUnit ?? ''
-  select.disabled = settlementOptionsLoading || settlementOptions.length === 0
+  const intro = document.createElement('p')
+  intro.className = 'settlement-asset-note'
+  intro.textContent = 'Enter the amounts you want to contribute. Token amounts are raw ledger units because token decimal metadata is not inferred by the protocol.'
+  container.appendChild(intro)
+
+  settlementOptions.forEach((option, index) => {
+    const row = document.createElement('div')
+    row.className = 'settlement-asset-option'
+    const copy = document.createElement('div')
+    copy.className = 'settlement-asset-copy'
+    const label = document.createElement('label')
+    label.className = 'settlement-asset-title'
+    label.htmlFor = `settlement-amount-${index}`
+    label.textContent = option.unit === 'lovelace' ? 'ADA · additional economic lovelace' : option.label
+    const balance = document.createElement('small')
+    balance.className = 'settlement-asset-balance'
+    balance.textContent = option.unit === 'lovelace'
+      ? `Wallet balance: ${formatLovelace(option.balance)} ADA; ${formatLovelace(CANONICAL_ADA_MIN_UTXO_LOVELACE)} ADA min-UTxO is added automatically.`
+      : `Wallet balance: ${option.balance.toLocaleString('en-US')} ledger units. Authenticated quote: ${option.quotePrice.toString()} USDM sub-units per ledger unit under precision 1,000,000.`
+    copy.append(label, balance)
+    const amount = document.createElement('input')
+    amount.className = 'settlement-asset-quantity'
+    amount.id = `settlement-amount-${index}`
+    amount.type = 'text'
+    amount.inputMode = 'numeric'
+    amount.autocomplete = 'off'
+    amount.spellcheck = false
+    amount.placeholder = option.unit === 'lovelace' ? '0' : 'blank = unused'
+    amount.value = settlementInputValues[option.unit] ?? (option.unit === 'lovelace' ? '0' : '')
+    amount.dataset.settlementUnit = option.unit
+    amount.setAttribute('aria-label', label.textContent || 'Settlement asset quantity')
+    row.append(copy, amount)
+    container.appendChild(row)
+  })
   updateSettlementNote()
 }
 
-async function refreshSettlementOptions(): Promise<void> {
+function updateSettlementBasket(): void {
+  settlementEconomicQuantities = null
+  settlementTreasuryAssets = null
+  if (settlementOptionsLoading) {
+    updateSettlementNote()
+    syncIssueButton()
+    return
+  }
+
+  try {
+    if (!connected || !wallet.getLucid() || !settlementOracleDatum) {
+      throw new Error('Connect the Preprod wallet and load the authenticated Oracle State before calculating settlement.')
+    }
+    const quantities: Record<string, bigint> = {}
+    for (const option of settlementOptions) {
+      const raw = (settlementInputValues[option.unit] ?? '').trim()
+      if (!raw) continue
+      if (!/^[0-9]+$/.test(raw)) {
+        throw new Error(`Enter a whole non-negative ledger quantity for ${settlementAssetDisplayName(option.unit)}.`)
+      }
+      const quantity = BigInt(raw)
+      if (quantity === 0n) continue
+      if (quantity > option.balance) {
+        throw new Error(`Selected quantity exceeds wallet balance for ${settlementAssetDisplayName(option.unit)}.`)
+      }
+      quantities[option.unit] = quantity
+    }
+    if (Object.keys(quantities).length === 0) {
+      throw new Error('Enter a positive quantity for ADA or at least one quoted token.')
+    }
+
+    const treasuryAssets = buildIssueSettlementAssets({
+      targetUsdmSubunits: BigInt(selectedIssuePrice * 100),
+      economicAssetQuantities: quantities,
+      oracleDatum: settlementOracleDatum,
+      expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
+      nowMs: BigInt(Date.now()),
+    })
+    const adaBalance = settlementOptions.find(option => option.unit === 'lovelace')?.balance ?? 0n
+    if (treasuryAssets.lovelace > adaBalance) {
+      throw new Error('Wallet ADA balance is insufficient for Treasury min-UTxO plus the selected economic ADA quantity.')
+    }
+
+    settlementEconomicQuantities = quantities
+    settlementTreasuryAssets = treasuryAssets
+    settlementOptionsMessage = 'The entered asset quantities reproduce the ticket price exactly in the canonical integer USDM domain.'
+  } catch (error) {
+    settlementOptionsMessage = error instanceof Error ? error.message : String(error)
+  }
+
+  updateSettlementNote()
+  syncPreview()
+  syncIssueButton()
+}
+
+async function refreshSettlementOptions(preserveInputs = false): Promise<void> {
+  const oldInputs = preserveInputs ? captureSettlementInputValues() : {}
   const sequence = ++settlementRefreshSequence
   settlementOptionsLoading = true
+  settlementEconomicQuantities = null
+  settlementTreasuryAssets = null
   settlementOptionsMessage = 'Checking the authenticated Oracle State and wallet balances.'
+  settlementOracleDatum = null
   renderSettlementOptions()
   syncIssueButton()
 
   try {
     if (!connected) {
       settlementOptions = []
+      settlementInputValues = {}
       settlementOptionsMessage = 'Connect a Preprod wallet to inspect settlement assets.'
       return
     }
-
     const lucid = wallet.getLucid()
     if (!lucid) throw new Error('Wallet session unavailable')
     if (!ORACLE_STATE_ADDRESS || !ORACLE_STATE_POLICY_ID || !ORACLE_STATE_TOKEN_NAME_HEX) {
@@ -414,8 +528,11 @@ async function refreshSettlementOptions(): Promise<void> {
     }
     const oracleDatum = oracleMatches[0].datum
     if (!oracleDatum) throw new Error('Oracle State singleton has no inline datum')
-
+    // Any Treasury payment carries ADA for min-UTxO. Without its fresh quote no
+    // token basket is executable under the existing on-chain valuation path.
+    validateIssueSettlementQuote(oracleDatum, 'lovelace', ORACLE_PUBLISHER_PKH, BigInt(Date.now()))
     const quotes = decodeOraclePriceReferences(oracleDatum)
+
     const walletUtxos: any[] = await lucid.wallet.getUtxos()
     const holdings = new Map<string, bigint>()
     for (const utxo of walletUtxos) {
@@ -428,75 +545,55 @@ async function refreshSettlementOptions(): Promise<void> {
       }
     }
 
-    const units = new Set<string>(['lovelace'])
-    for (const quote of quotes) units.add(assetUnitFromQuote(quote))
-
-    const options: DAppSettlementOption[] = []
-    const target = BigInt(selectedIssuePrice * 100)
-    const nowMs = BigInt(Date.now())
     const adaBalance = holdings.get('lovelace') ?? 0n
-
-    for (const unit of units) {
-      const balance = holdings.get(unit) ?? 0n
-      if (balance <= 0n) continue
-      try {
-        const economicAssetQuantities = deriveSingleAssetIssueSettlementQuantities({
-          targetUsdmSubunits: target,
-          assetUnit: unit,
-          oracleDatum,
-          expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
-          nowMs,
-        })
-        const economicQuantity = economicAssetQuantities[unit]
-        if (economicQuantity === undefined || economicQuantity <= 0n || economicQuantity > balance) continue
-
-        const treasuryAssets = buildIssueSettlementAssets({
-          targetUsdmSubunits: target,
-          economicAssetQuantities,
-          oracleDatum,
-          expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
-          nowMs,
-        })
-        if (treasuryAssets.lovelace > adaBalance) continue
-
-        const assetName = settlementAssetDisplayName(unit)
-        const label = unit === 'lovelace'
-          ? `ADA · Treasury ${formatLovelace(treasuryAssets.lovelace)} ADA`
-          : `${assetName} · ${economicQuantity.toLocaleString('en-US')} ledger units`
-        options.push({
-          unit,
-          label,
-          economicQuantity,
-          treasuryAssets,
-          balance,
-        })
-      } catch {
-        // An asset only appears if every required quote is unique, fresh,
-        // publisher-matched, representable at the exact ticket target, and
-        // paired with the required ADA min-UTxO quote.
-      }
+    if (adaBalance < CANONICAL_ADA_MIN_UTXO_LOVELACE) {
+      throw new Error('Wallet ADA balance is below the Treasury ADA minimum-UTxO floor.')
     }
 
+    const units = new Set<string>(['lovelace'])
+    for (const quote of quotes) units.add(assetUnitFromQuote(quote))
+    const options: DAppSettlementOption[] = []
+    const nowMs = BigInt(Date.now())
+    for (const unit of units) {
+      const balance = holdings.get(unit) ?? 0n
+      if (unit !== 'lovelace' && balance <= 0n) continue
+      try {
+        const quote = validateIssueSettlementQuote(oracleDatum, unit, ORACLE_PUBLISHER_PKH, nowMs)
+        if (unit === 'lovelace' && balance <= 0n) continue
+        options.push({
+          unit,
+          label: unit === 'lovelace' ? 'ADA' : settlementAssetDisplayName(unit),
+          balance,
+          quotePrice: quote.price,
+        })
+      } catch {
+        // Missing, duplicate, stale, future or publisher-mismatched quotes are omitted.
+      }
+    }
     if (sequence !== settlementRefreshSequence) return
+
+    settlementOracleDatum = oracleDatum
     settlementOptions = options
+    settlementInputValues = {}
+    for (const option of options) {
+      settlementInputValues[option.unit] = oldInputs[option.unit] ?? (option.unit === 'lovelace' ? '0' : '')
+    }
     if (options.length === 0) {
-      settlementOptionsMessage =
-        'No eligible option: the wallet needs the exact payment quantity, a fresh publisher-matched quote for that asset, an ADA quote for min-UTxO, and enough ADA to fund the Treasury output.'
+      settlementOptionsMessage = 'No wallet-held asset has a usable authenticated quote.'
     } else {
-      settlementOptionsMessage =
-        'Only wallet-held assets with unique fresh authenticated quotes and an exact USDM-subunit conversion are listed.'
+      settlementOptionsMessage = 'Only wallet-held assets with unique fresh publisher-matched quotes are shown. The final basket must match the ticket price exactly.'
     }
   } catch (error) {
     if (sequence !== settlementRefreshSequence) return
     settlementOptions = []
-    selectedSettlementUnit = null
-    settlementOptionsMessage = error instanceof Error
-      ? `Settlement options unavailable: ${error.message}`
-      : `Settlement options unavailable: ${String(error)}`
+    settlementInputValues = {}
+    settlementOracleDatum = null
+    settlementOptionsMessage = error instanceof Error ? `Settlement options unavailable: ${error.message}` : `Settlement options unavailable: ${String(error)}`
   } finally {
     if (sequence === settlementRefreshSequence) {
       settlementOptionsLoading = false
       renderSettlementOptions()
+      updateSettlementBasket()
       syncPreview()
       syncIssueButton()
     }
@@ -510,8 +607,9 @@ const syncPreview = () => {
   const setText = (id: string, value: string) => { const el = document.getElementById(id); if (el) el.textContent = value }
   setText('preview-class', name)
   setText('preview-price', selectedIssuePrice + ' USDM')
-  const selectedSettlement = settlementOptions.find(option => option.unit === selectedSettlementUnit)
-  setText('preview-settlement', selectedSettlement ? selectedSettlement.label : 'NOT SELECTED')
+  setText('preview-settlement', settlementEconomicQuantities && settlementTreasuryAssets
+    ? formatBasketSummary(settlementTreasuryAssets)
+    : settlementOptionsLoading ? 'VERIFYING' : 'BASKET NOT VALID')
   setText('preview-wallet', connectedWallet)
   setText('preview-admission', 'REQUIRED')
   setText('preview-message', ready
@@ -533,17 +631,17 @@ document.querySelectorAll<HTMLButtonElement>('.price-choice').forEach((button) =
     const title = document.getElementById('selected-class')
     if (title) title.textContent = name + ' / ' + selectedIssuePrice + ' USDM'
     syncPreview()
-    void refreshSettlementOptions()
+    void refreshSettlementOptions(true)
     status('Selected ' + name + '. Selection is not economic admission.')
   })
 })
 
-document.getElementById('settlement-asset')?.addEventListener('change', (event) => {
-  const select = event.currentTarget as HTMLSelectElement
-  selectedSettlementUnit = select.value || null
-  updateSettlementNote()
-  syncPreview()
-  syncIssueButton()
+document.getElementById('settlement-assets')?.addEventListener('input', (event) => {
+  const input = event.target as HTMLInputElement
+  const unit = input?.dataset?.settlementUnit
+  if (!unit) return
+  settlementInputValues[unit] = input.value
+  updateSettlementBasket()
 })
 
 const ticket3dContainer = document.getElementById('ticket-3d')
@@ -730,7 +828,10 @@ wallet.on('networkChanged', () => {
 wallet.on('disconnect', () => {
   connected = false
   settlementOptions = []
-  selectedSettlementUnit = null
+  settlementInputValues = {}
+  settlementEconomicQuantities = null
+  settlementTreasuryAssets = null
+  settlementOracleDatum = null
   settlementOptionsMessage = 'Connect a Preprod wallet to inspect settlement assets.'
   settlementOptionsLoading = false
   settlementRefreshSequence += 1
@@ -746,6 +847,7 @@ document.getElementById('claim')?.addEventListener('click', async () => {
 })
 
 document.getElementById('buy')?.addEventListener('click', async () => {
+  issueSubmissionInProgress = true
   const buy = document.getElementById('buy') as HTMLButtonElement | null
   if (buy) {
     buy.disabled = true
@@ -754,8 +856,10 @@ document.getElementById('buy')?.addEventListener('click', async () => {
 
   try {
     if (!connected) throw new Error('Connect a Preprod wallet first')
-    const selectedSettlement = settlementOptions.find(option => option.unit === selectedSettlementUnit)
-    if (!selectedSettlement) throw new Error('Choose a wallet-held settlement asset with a valid authenticated quote')
+    if (!settlementEconomicQuantities || !settlementTreasuryAssets) {
+      throw new Error('Enter an exact Treasury basket whose canonical USDM value equals the ticket price')
+    }
+    const selectedSettlementQuantities = { ...settlementEconomicQuantities }
     if (!issueExecutionConfigured()) {
       throw new Error('Authoritative Issue endpoint and V3 carrier factory are not configured')
     }
@@ -810,7 +914,7 @@ document.getElementById('buy')?.addEventListener('click', async () => {
       lucid,
       issueClassEvidence,
       priceUsdm: selectedIssuePrice * 100,
-      settlementAssetQuantities: { [selectedSettlement.unit]: selectedSettlement.economicQuantity },
+      settlementAssetQuantities: selectedSettlementQuantities,
       expiryPolicy: preRichExpiryPolicyV1,
       v3CarrierValidator,
       authoritativeIssueAdmissionProvider: provider,
@@ -823,6 +927,7 @@ document.getElementById('buy')?.addEventListener('click', async () => {
     document.getElementById('issue-gate-state')!.textContent = 'LOCKED'
     status('Issue blocked: ' + (error instanceof Error ? error.message : String(error)))
   } finally {
+    issueSubmissionInProgress = false
     syncIssueButton()
   }
 })

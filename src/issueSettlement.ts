@@ -165,6 +165,32 @@ export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceRefer
   return decodeOraclePriceReference(raw, '', '')
 }
 
+/**
+ * Resolve and validate an asset quote for the DApp basket editor. This is an
+ * option/preflight helper only; Plutus revalidates the quote against the
+ * transaction validity upper bound when the settlement is executed.
+ */
+export function validateIssueSettlementQuote(
+  oracleDatum: unknown,
+  assetUnit: string,
+  expectedPublisherPkh: string,
+  nowMs: bigint,
+): OraclePriceReference {
+  if (!expectedPublisherPkh.trim()) {
+    throw new Error('Expected oracle publisher is required')
+  }
+  const quote = oracleQuoteForUnit(
+    decodeOraclePriceReferences(oracleDatum),
+    assetUnit.toLowerCase(),
+    expectedPublisherPkh,
+    nowMs,
+  )
+  if (quote.price <= 0n) {
+    throw new Error(`Oracle quote for settlement asset ${assetUnit} must be positive`)
+  }
+  return quote
+}
+
 function ceilDiv(numerator: bigint, denominator: bigint): bigint {
   if (numerator < 0n) throw new Error('settlement numerator must be non-negative')
   if (denominator <= 0n) throw new Error('oracle price must be positive')

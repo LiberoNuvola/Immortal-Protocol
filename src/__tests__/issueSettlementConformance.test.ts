@@ -12,6 +12,7 @@ import {
   deriveAdaIssueSettlementLovelace,
   deriveSingleAssetIssueSettlementQuantities,
   type AdaOraclePriceReference,
+  validateIssueSettlementQuote,
 } from '../issueSettlement'
 
 const publisher = 'ab'.repeat(28)
@@ -181,6 +182,24 @@ describe('Issue settlement conformance', () => {
       expectedPublisherPkh: publisher,
       nowMs,
     })).toThrow(/expected 101/)
+  })
+
+  it('validates a selected basket quote by identity, freshness and publisher', () => {
+    const policy = '11'.repeat(28)
+    const name = '5052452d52494348'
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, [policy, name, 250n, nowMs - 1_000n, publisher] as any)
+    const datum = new Constr(1, [[ada, pre]] as any)
+
+    expect(validateIssueSettlementQuote(datum, policy + name, publisher, nowMs).price).toBe(250n)
+    expect(() => validateIssueSettlementQuote(datum, policy + name, 'cd'.repeat(28), nowMs))
+      .toThrow(/publisher mismatch/)
+    const stale = new Constr(0, [policy, name, 250n, nowMs - 3_600_001n, publisher] as any)
+    expect(() => validateIssueSettlementQuote(new Constr(1, [[ada, stale]] as any), policy + name, publisher, nowMs))
+      .toThrow(/stale/)
+    const duplicate = new Constr(0, [policy, name, 300n, nowMs - 1_000n, publisher] as any)
+    expect(() => validateIssueSettlementQuote(new Constr(1, [[ada, pre, duplicate]] as any), policy + name, publisher, nowMs))
+      .toThrow(/exactly one quote/)
   })
 
   it('derives an exact single-asset ADA payment from the authenticated quote set', () => {
