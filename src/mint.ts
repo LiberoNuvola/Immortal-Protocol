@@ -105,6 +105,8 @@ import {
   decodeAdaOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
   assertCompletedTreasurySettlement,
+  assertCompletedIssueValidityUpperBound,
+  deriveIssueSettlementValidityUpperBoundMs,
 } from './issueSettlement'
 
 const MIN_ADA_COUNTER = 2_000_000n
@@ -1147,13 +1149,14 @@ export async function mintSerialNFT(
   // unique, fresh, publisher-matched quote, including ADA carried for min-UTxO.
   // The multi-asset builder validates these quotes before building the output,
   // and the on-chain totalUsdmValue equality check remains authoritative.
+  const settlementObservedAtMs = BigInt(Date.now())
   const treasuryPaymentAssets: Record<string, bigint> = opts.settlementAssetQuantities
     ? buildIssueSettlementAssets({
         targetUsdmSubunits: BigInt(priceUsdm),
         economicAssetQuantities: opts.settlementAssetQuantities,
         oracleDatum: oracleStateUtxo.datum,
         expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
-        nowMs: BigInt(Date.now()),
+        nowMs: settlementObservedAtMs,
       })
     : {
         lovelace: deriveAdaIssueSettlementLovelace({
@@ -1163,6 +1166,23 @@ export async function mintSerialNFT(
           nowMs: BigInt(Date.now()),
         }),
       }
+
+  // The Plutus oracle predicate reads the finite transaction validity upper
+  // bound, not the local browser clock. Align the TTL with the earliest
+  // existing quote deadline, using one whole slot of conservative margin so
+  // the ledger upper-bound conversion cannot cross that deadline.
+  const settlementFreshnessDeadlineMs = deriveIssueSettlementValidityUpperBoundMs({
+    treasuryAssets: treasuryPaymentAssets,
+    oracleDatum: oracleStateUtxo.datum,
+    expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
+    nowMs: settlementObservedAtMs,
+  })
+  const deadlineSlot = lucid.utils.unixTimeToSlot(Number(settlementFreshnessDeadlineMs))
+  const settlementTtlSlot = deadlineSlot - 1
+  if (!Number.isSafeInteger(settlementTtlSlot) || settlementTtlSlot <= lucid.currentSlot()) {
+    throw new Error('Issue settlement oracle freshness window is too short for a safe finite transaction TTL')
+  }
+  const settlementValidToMs = lucid.utils.slotToUnixTime(settlementTtlSlot)
 
   // ----------------------------------------------------------
   // B1PrizePool singleton
@@ -1491,6 +1511,7 @@ export async function mintSerialNFT(
   let tx =
     lucid
       .newTx()
+      .validTo(settlementValidToMs)
 
       // ------------------------------------------------------
       // Counter: n -> n + 1
@@ -1665,7 +1686,7 @@ export async function mintSerialNFT(
       )
   }
 
-  tx = tx.complete()
+  tx = await tx.complete()
 
   // Validate the actual balanced Lucid body, not just the pre-completion
   // payment request, before it can be signed/submitted.
@@ -1674,6 +1695,7 @@ export async function mintSerialNFT(
     treasuryAddress,
     treasuryPaymentAssets,
   )
+  assertCompletedIssueValidityUpperBound(tx, settlementTtlSlot)
 
   // ----------------------------------------------------------
 
