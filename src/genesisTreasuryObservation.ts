@@ -1,4 +1,4 @@
-import { Data, type UTxO } from 'lucid-cardano'
+import type { UTxO } from 'lucid-cardano'
 
 import {
   GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS,
@@ -19,31 +19,6 @@ type ObservationInput = {
   oraclePublisherPkh: string
   sourceRegime?: 'PRE-GENESIS' | 'GENESIS'
   nowMs?: bigint
-}
-
-function parseDatum(raw: unknown): any {
-  if (raw == null) return null
-  if (typeof raw === 'string') {
-    try { return Data.from(raw) } catch { return null }
-  }
-  return raw
-}
-
-function fieldsOf(value: any): any[] | null {
-  return value && Array.isArray(value.fields) ? value.fields : null
-}
-
-function intOf(value: any): bigint | null {
-  if (typeof value === 'bigint') return value
-  if (typeof value === 'number' && Number.isInteger(value)) return BigInt(value)
-  if (value && typeof value.int !== 'undefined') return BigInt(value.int)
-  return null
-}
-
-function bytesOf(value: any): string | null {
-  if (typeof value === 'string') return value
-  if (value && typeof value.bytes === 'string') return value.bytes
-  return null
 }
 
 function singletonUtxo(utxos: UTxO[], unit: string, label: string): UTxO {
