@@ -42,12 +42,13 @@ Promote the current Issue consumer code through the repository's approved releas
 The exact code path is:
 - Genesis `pdPriceUsdm = 100` USDM sub-units (`1 USDM`);
 - `src/config.ts` sets `TICKET_PAYMENT_LOVELACE = 1_000_000`;
-- `src/mint.ts` sends the Treasury exactly that ADA-only value;
+- `src/mint.ts` requests that ADA-only value for the Treasury output via `payToContract`;
+- the final completed transaction body has not yet been independently captured to verify whether that requested output is preserved or rejected during completion;
 - `Adapter/CARDANO/observation/OracleTypes.hs` sets `minUtxoLovelace = 1_600_000`;
 - `plutus/Economic.hs` calculates the ADA economic quantity as `max(0, amt - minUtxoLovelace)`;
 - `plutus/MintPolicy.hs` requires `Economic.totalUsdmValue(TreasuryOutput) == pdPriceUsdm`.
 
-For the Treasury output currently constructed by the builder:
+For an ADA-only Treasury output whose final value is exactly the amount requested by the builder, the tested Plutus valuation function returns:
 
 ```text
 economicAda = max(0, 1,000,000 - 1,600,000) = 0
@@ -55,7 +56,7 @@ valuedTreasuryOutput = 0 USDM sub-units
 requiredGenesisPrice = 100 USDM sub-units
 ```
 
-Thus the current ADA-only output cannot pass the on-chain exact-value predicate for a positive Genesis price. The correct response is not to relax the validator or fabricate an admission: repair the settlement-amount construction and prove its equivalence to the on-chain calculation first.
+The direct Haskell regression exercises the actual `Economic.totalUsdmValue` function with that value and a valid ADA-specific Oracle fixture; it does not execute the entire MintPolicy or prove the value in a final Lucid transaction body. If Lucid rejects the under-minimum explicit output or yields another final value, that must be measured. Therefore the proven blocker is that the builder does not yet have an explicit, tested settlement amount derived from the USDM target, nor a final-body equality check. Do not relax the validator or fabricate admission: first establish the exact completed Treasury Value and its canonical valuation.
 
 This also shows why a non-permissionless real Issue would not be useful *yet*: it would combine a known settlement mismatch with an authority-dependent V3 transition. After settlement correctness is restored, a controlled authority-backed Issue may be useful as a narrowly scoped Adapter/ledger-integration experiment (transaction inclusion, actual fee, serialized size and StateBefore/StateAfter). It still cannot substantiate the paper's permissionless claim and must not be presented as doing so.
 
