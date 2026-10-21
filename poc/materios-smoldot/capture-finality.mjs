@@ -55,6 +55,21 @@ function fromHex(value, field) {
 function toHex(bytes) {
   return "0x" + Buffer.from(bytes).toString("hex");
 }
+function normalizeHexBytes(value, field) {
+  if (typeof value === "string") {
+    fromHex(value, field);
+    return value.toLowerCase();
+  }
+  // Smoldot's chain_getBlock.justifications wire shape follows its
+  // SCALE/Serde tuple representation: both engine ID and proof can be byte arrays.
+  if (
+    Array.isArray(value) &&
+    value.every(byte => Number.isInteger(byte) && byte >= 0 && byte <= 255)
+  ) {
+    return toHex(Uint8Array.from(value));
+  }
+  return null;
+}
 function encodeCompactU32(n) {
   const value = BigInt(n);
   if (value < 0n || value > 0xffffffffn) throw new Error("header.number outside u32");
@@ -352,11 +367,22 @@ async function tryTargetBlock() {
     targetProbe.stateRoot = String(header.stateRoot || "").toLowerCase();
     const list = Array.isArray(value.justifications) ? value.justifications : [];
     for (const tuple of list) {
-      if (!Array.isArray(tuple) || tuple.length !== 2 || typeof tuple[1] !== "string") continue;
+      if (!Array.isArray(tuple) || tuple.length !== 2) continue;
       const engineId = normalizeEngineId(tuple[0]);
-      if (engineId === "0x46524e4b") {
-        await processJustification("chain_getBlock.justifications", tuple[1], tuple[0]);
+      if (engineId !== "0x46524e4b") continue;
+      const justificationHex = normalizeHexBytes(
+        tuple[1],
+        "chain_getBlock.justifications.FRNK",
+      );
+      if (justificationHex === null) {
+        candidateErrors.push({
+          source: "chain_getBlock.justifications",
+          error: "MALFORMED_JUSTIFICATION_BYTE_ENCODING",
+          at: new Date().toISOString(),
+        });
+        continue;
       }
+      await processJustification("chain_getBlock.justifications", justificationHex, tuple[0]);
     }
     targetProbe.frnkJustificationFound = captured.some(item => item.targetHash === config.targetHash);
     targetProbe.status = targetProbe.frnkJustificationFound ? "TARGET_GRANDPA_JUSTIFICATION_CAPTURED" : "TARGET_HEADER_VERIFIED_NO_GRANDPA_JUSTIFICATION";
