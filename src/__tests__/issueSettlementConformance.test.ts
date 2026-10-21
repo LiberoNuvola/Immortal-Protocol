@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Constr } from 'lucid-cardano'
+import { C, Constr } from 'lucid-cardano'
 
 import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
@@ -7,6 +7,7 @@ import {
   assertCompletedIssueValidityUpperBound,
   assertCompletedTreasuryAdaSettlement,
   assertCompletedTreasurySettlement,
+  assertCompletedTreasuryMinimumAda,
   assertTreasuryAdaMeetsOutputMinimum,
   buildIssueSettlementAssets,
   decodeAdaOraclePriceReference,
@@ -76,6 +77,32 @@ function treasuryOutput(lovelace: bigint, address = 'addr_test_treasury', multia
 }
 
 describe('Issue settlement conformance', () => {
+  it('calculates minimum ADA from an actual CML Treasury output', () => {
+    const address = C.EnterpriseAddress.new(
+      0,
+      C.StakeCredential.from_scripthash(C.ScriptHash.from_hex('11'.repeat(28))),
+    ).to_address()
+    const treasuryAddress = address.to_bech32(undefined)
+    const makeOutput = (lovelace: bigint) => C.TransactionOutput.new(
+      address,
+      C.Value.new(C.BigNum.from_str(lovelace.toString())),
+    )
+
+    const fundedOutput = makeOutput(5_000_000n)
+    expect(() => assertCompletedTreasuryMinimumAda(
+      completedTx([fundedOutput]),
+      treasuryAddress,
+      4_310n,
+    )).not.toThrow()
+
+    const underfundedOutput = makeOutput(0n)
+    expect(() => assertCompletedTreasuryMinimumAda(
+      completedTx([underfundedOutput]),
+      treasuryAddress,
+      4_310n,
+    )).toThrow(/below output-specific minimum/)
+  })
+
   it('accepts the output-specific minimum ADA and rejects insufficient ADA without changing the basket', () => {
     expect(() => assertTreasuryAdaMeetsOutputMinimum(2_000_000n, 1_900_000n)).not.toThrow()
     expect(() => assertTreasuryAdaMeetsOutputMinimum(1_600_000n, 1_900_000n))
