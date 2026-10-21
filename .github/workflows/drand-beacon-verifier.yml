@@ -231,6 +231,43 @@ jobs:
           cat /tmp/aiken-validator-clean-lib.log
           echo "aiken_validator_clean_lib_exit=${validator_clean_lib_status}"
 
+          echo "=== Same validator with project library replaced by a typed stub ==="
+          tmp_stub_lib="$(mktemp -d)"
+          cp aiken.toml "$tmp_stub_lib/aiken.toml"
+          mkdir -p "$tmp_stub_lib/lib" "$tmp_stub_lib/validators"
+          cat > "$tmp_stub_lib/lib/drand.ak" <<'AIKEN'
+          pub type BeaconWitness {
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          }
+
+          pub fn verify_quicknet_signature(
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          ) -> Bool {
+            round > 0 && signature != #"" && public_key != #""
+          }
+          AIKEN
+          cp "$tmp_shape_clean/validators/drand.ak" "$tmp_stub_lib/validators/drand.ak"
+          (cd "$tmp_stub_lib" && aiken check --skip-tests) > /tmp/aiken-validator-stub-lib.log 2>&1
+          validator_stub_lib_status=$?
+          cat /tmp/aiken-validator-stub-lib.log
+          echo "aiken_validator_stub_lib_exit=${validator_stub_lib_status}"
+
+          echo "=== Same validator with production drand module but tests removed ==="
+          tmp_no_tests="$(mktemp -d)"
+          cp aiken.toml "$tmp_no_tests/aiken.toml"
+          mkdir -p "$tmp_no_tests/lib" "$tmp_no_tests/validators"
+          cp lib/drand.ak "$tmp_no_tests/lib/drand.ak"
+          sed -i '/^test round_42_uses_big_endian_u64()/,$d' "$tmp_no_tests/lib/drand.ak"
+          cp "$tmp_shape_clean/validators/drand.ak" "$tmp_no_tests/validators/drand.ak"
+          (cd "$tmp_no_tests" && aiken check --skip-tests) > /tmp/aiken-validator-no-tests.log 2>&1
+          validator_no_tests_status=$?
+          cat /tmp/aiken-validator-no-tests.log
+          echo "aiken_validator_no_tests_exit=${validator_no_tests_status}"
+
           cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
@@ -334,7 +371,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_stub_lib_status != 0 || validator_no_tests_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
