@@ -210,7 +210,7 @@ describe('Issue settlement conformance', () => {
       CANONICAL_ORACLE_PRECISION).toBeGreaterThan(100n)
   })
 
-  it('rejects non-ADA quote in the still ADA-only settlement amount builder', () => {
+  it('rejects non-ADA quote in the legacy ADA-only fallback helper', () => {
     expect(() => deriveAdaIssueSettlementLovelace({
       targetUsdmSubunits: 100n,
       quote: adaQuote({ assetPolicyHex: '11'.repeat(28), assetNameHex: '505245' }),
