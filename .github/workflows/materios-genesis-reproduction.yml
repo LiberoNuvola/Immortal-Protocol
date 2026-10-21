@@ -2,12 +2,6 @@ name: Materios Genesis Reproduction
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - work/b3-materios-provenance-evidence
-    paths:
-      - ".github/workflows/materios-genesis-reproduction.yml"
-
 permissions:
   contents: read
 
