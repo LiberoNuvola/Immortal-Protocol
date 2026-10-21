@@ -156,6 +156,15 @@ export function decodeOraclePriceReference(
   return matches[0]
 }
 
+/**
+ * Backward-compatible ADA quote accessor. On the additive quote-set schema,
+ * this selects only the exact ADA (empty policy/name) quote; it does not treat
+ * an arbitrary quote as ADA or relax the on-chain publisher/freshness checks.
+ */
+export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceReference {
+  return decodeOraclePriceReference(raw, '', '')
+}
+
 function ceilDiv(numerator: bigint, denominator: bigint): bigint {
   if (numerator < 0n) throw new Error('settlement numerator must be non-negative')
   if (denominator <= 0n) throw new Error('oracle price must be positive')
