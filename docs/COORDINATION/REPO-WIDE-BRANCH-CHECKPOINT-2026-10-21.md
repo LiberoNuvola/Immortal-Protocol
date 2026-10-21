@@ -644,7 +644,7 @@ The prior pinned green code anchor is `1300b79d7460f2abcd79767d5d16dd2564aad064`
 | `plutus/test/PythAdaUsdConversionTest.hs` | `e30ff098e7b7db32950efac3633dfcb70c49573f` | `SOURCE_REVIEWED_TEST_NOT_RUN` | Synthetic Haskell formula vectors cover parity/non-parity and invalid inputs. No current-head run result established here. |
 | `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | `SCOPED_CALL_PATH_REVIEW` | `atomicTreasuryPaymentValid` still values the exact Treasury output through `Economic.totalUsdmValue`. It does not call the new Pyth conversion candidate or read its result. |
 | `plutus/Economic.hs` | `e50366a65ce34e9433d5ff179dfc03a35a24c1a1` | `SCOPED_CALL_PATH_REVIEW` | The existing value conversion still obtains prices via `oraclePriceFor`; this is a general oracle conversion, not direct canonical-USDM quantity. See §10.15 for the same source identity and its Issue/EEV consequence. |
-| `audit/pre-genesis-genesis/PYTH-MINTPOLICY-PRICE-BINDING-DESIGN-20261021.md` | `4381da6e69e035ef4f788b3403e8cf3d183e15d6` | `PARTIAL_DOCUMENT_REVIEW` | Current design gate explicitly keeps production binding unapproved/unimplemented and separates source authenticity from unit conversion. This row does not claim a line-by-line review of the whole 17.9 KB document. |
+| `audit/pre-genesis-genesis/PYTH-MINTPOLICY-PRICE-BINDING-DESIGN-20261021.md` | `0db67eceec333ec4ba4339d8b927eb5d7bc4dc69` | `PARTIAL_DOCUMENT_REVIEW` | Current design gate includes a bounded software-gate PASS for the isolated Pyth probe and reiterates that genuine signed-update Preprod acceptance, native-ledger tampered-signature rejection, and production MintPolicy binding remain OPEN. This is not a line-by-line review of the whole document. |
 | `plutus/PythQuoteCarrierBinding.hs` | `669b99a0e4564504012bda8402b706d0ae7a9a9b` | `FETCHED_NOT_SEMANTICALLY_REVIEWED` | Exact source identity retrieved; content still needs a separate call-path and adversarial-predicate review if needed. |
 | `plutus/test/PythQuoteCarrierBindingTest.hs` | `d494f7cf8966cc92ecb120d1c16b8881414651ab` | `FETCHED_NOT_SEMANTICALLY_REVIEWED` | Exact source identity retrieved; do not count as reviewed/green based on existence. |
 | `plutus/pre-rich-plutus.cabal` | `3f06a8d28fc121ea19aa591db73f7ff19ef12c31` | `PARTIAL_BUILD-MAP_REVIEW` | The candidate module and suite are registered in the package file; full Cabal file and dependency/build behavior have not received a separate complete review here. |
@@ -720,4 +720,29 @@ The Notion page “2026-09-21 — A1/A2/A3 Policy Closure — Ticket Expiry & Ja
 - V3/Reveal semantics and the existing expired Preprod topology remain untouched.
 
 **Audit scope declaration:** these are targeted source reads bound to the listed blobs and call paths. The full current unique-blob semantic ledger, complete live-tree refresh and current-head Actions result remain open; no whole-repository coverage percentage is claimed.
+
+
+
+### 10.20 Pyth isolated probe — current software gate evidence (2026-10-21)
+
+The Pyth evidence layer has advanced, but only at the isolated code-feasibility gate. This section binds the observed result to the exact source commit and artifact; it does not promote source authenticity or MintPolicy price binding to PASS.
+
+| Evidence item | Identity | Result and scope |
+|---|---|---|
+| Source commit tested | `2106daa5f4c93c20cbe2479ae9fa08db0d8f59f6` | Source for `scripts/testPythSignedUpdatePreprod.mts`, `.github/workflows/pyth-native-ledger-probe.yml`, and the isolated Aiken signed-update consumer was fetched by SHA. The current green runner/workflow/validator blobs are identical to those at this commit: runner `fdfb24b90bba739c17bb4afcd4c6f51c0cc7406a`, workflow `5c0a4264ab48878a54b21f18a1188e4126a3a37d`, validator `5df4c0f9ee3833e7a0ac6454001e712a8b935823`. |
+| GitHub Actions run | [39659905806](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806) | Both jobs completed successfully: isolated Aiken synthetic source-boundary tests + Plutus V3 consumer compilation, and Node 24 strict TypeScript typecheck of the guarded native-ledger runner. No secrets were required and no transaction was submitted. |
+| Job IDs | `119429895721`; `119429896145` | All steps in both jobs returned `success`, including toolchain pinning, synthetic tests, build, artifact capture and runner typecheck. |
+| Artifact | `pyth-ada-usd-probe-2106daa5f4c93c20cbe2479ae9fa08db0d8f59f6` (ID `12374150310`) | Size 15,009 bytes; SHA-256 `4ca4299f029ba3d80e6ef7f288be000014fe097a286d73c919009c2e6cc0d9dc`; artifact is currently not expired and its reported expiry is 2026-11-20 19:14:54 UTC. |
+| Current runner | `scripts/testPythSignedUpdatePreprod.mts`, blob `fdfb24b90bba739c17bb4afcd4c6f51c0cc7406a` | Default mode fetches a genuine signed Lazer update, resolves the selected Pyth State and writes `PREPARED_NOT_SUBMITTED`; it does not load a wallet or build/sign/submit a transaction. Explicit `submit_preprod=true` is needed for the isolated positive ledger probe. |
+| Current manual-only workflow | `.github/workflows/pyth-native-ledger-probe.yml`, blob `5c0a4264ab48878a54b21f18a1188e4126a3a37d` | `workflow_dispatch` only; `submit_preprod` defaults false; dedicated test wallet and service secrets required for submission. No automatic production/Issue path. |
+
+**Pyth classification after this new evidence:**
+- `Aiken synthetic tests + Plutus V3 build + runner typecheck`: `TESTED_BOUNDED` at source commit `2106daa...`.
+- Genuine signed-update positive acceptance on Cardano Preprod: **NOT OBSERVED** by this run.
+- Native-ledger rejection of a tampered signature/payload: **NOT OBSERVED**; the runner's local mutated-payload rejection is not an on-chain negative proof.
+- Quote-carrier → actual `plutus/MintPolicy.hs` price-equality path: **NOT BOUND**; MintPolicy still calls `Economic.totalUsdmValue`.
+- USD/USDM source/ratio/resource-bound decision and token/source coverage: **OPEN**.
+- Production Issue, Treasury, EEV and V3/Reveal path: **UNCHANGED**.
+
+Therefore update P-02 from “candidate sources exist, software run not verified” to **“isolated software feasibility gate passed; genuine signed-update ledger proof and production source-to-economics binding remain open.”** Do not repeat the same synthetic Aiken/build/typecheck job unchanged; next new evidence must be a real signed-update native-ledger transaction with exact deployment State identity and transaction/evidence packet, followed by a separately governed conversion and actual MintPolicy binding. The explicit transaction submission is guarded and was not performed as part of this audit.
 
