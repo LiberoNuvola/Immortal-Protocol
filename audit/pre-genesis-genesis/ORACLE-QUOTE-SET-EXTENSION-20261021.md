@@ -207,3 +207,22 @@ The current working branch's additive quote-set and buyer-entered basket code is
 - PR #19 currently contains 1,664 commits / 381 changed files / +45,734/-2,204 and is not mergeable. Do not use it as a deployment shortcut.
 
 This confirms the current public DApp cannot be treated as a release of the branch's guarded Issue/quote-set flow. Promotion must be curated and dependency-complete; its Pages build should expose only public config, preserve fail-closed behavior if any runtime identity is missing, and then be verified against the exact configured Preprod Oracle singleton. No values from hidden repository variables were read, and no public deployment was changed here.
+
+
+## 8.8 Fresh read-only Koios observation — 2026-10-21T12:46:12Z
+
+The new [Oracle Quote-Set Read-Only Observation run 39602227985](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602227985) completed its bootstrap-wallet observation job successfully and uploaded [bootstrap-wallet-oracle-observation-708120cbaddb3ebf1b1b56a3f347bac19e13f1c7](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602227985/artifacts/12346467535). Evidence manifest hash: `769e855696b40d191a05325ec0b18082b56af681968dbf33aa93806979be809a`.
+
+The observation is read-only and independently re-queries Koios for the exact bootstrap wallet address and Oracle unit previously recorded in §8.6. It observed:
+
+- UTxO: `cardano:tx/fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Inline datum hash: `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+- Schema: legacy `OracleDatum`, constructor 0, one ADA quote; there is no `OracleQuoteSet` and no PRE/NIGHT quote.
+- Price field: `100` in the existing integer quote field; timestamp: `1791481130142` (`2026-10-08T17:38:50.142Z`); publisher-field matches the expected publisher.
+- Observation clock: runner wall clock `2026-10-21T12:46:12.590Z`. The decoder reports quote age `1,105,642,448 ms`, approximately `307.12 hours`, and `fresh: false` under the already-existing one-hour rule. Eligible quote units are empty; blockers include `ADA_STALE_TIMESTAMP` and `LEGACY_SCHEMA_SUPPORTS_ONLY_ONE_ASSET_QUOTE`.
+
+The successful Koios job does **not** establish source truth, does not qualify the configured publisher as permissionless, and is not a valid Issue admission witness (the timestamp was classified against the CI runner clock, not used to authorize a transaction). It also does not prove that this bootstrap-wallet Oracle State is the same address/policy/name configured in public Pages.
+
+The same workflow's strict job for the exact public runtime Oracle identity failed before querying chain state because the configured environment supplied none of `BLOCKFROST_PROJECT_ID`, `ORACLE_STATE_ADDRESS`, `ORACLE_STATE_POLICY_ID`, `ORACLE_STATE_TOKEN_NAME_HEX`, or `ORACLE_PUBLISHER_PKH`: [run 39602227985](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602227985). Thus the precise public DApp singleton remains unbound; this is a configuration-evidence failure, not a ledger rejection.
+
+**Result:** the fallback observation confirms that the already-identified bootstrap wallet singleton has not visibly migrated and its single quote is stale. It does not authorize refreshing that quote, inventing PRE/NIGHT quotes, updating the singleton, or issuing a ticket. The operational quote-source and public-runtime identity gates remain OPEN.
