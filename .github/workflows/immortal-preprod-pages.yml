@@ -129,7 +129,7 @@ jobs:
               throw new Error('Issue endpoint configured, but required public runtime variables are missing: ' + missing.join(', '))
             }
             console.log('Issue endpoint URL and required public runtime variable presence validated (values redacted).')
-            NODE
+          NODE
           fi
 
       - name: Build V5 + PRE-RICH DApp
