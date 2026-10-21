@@ -37,6 +37,11 @@ const CONTROL_PLANE_PATTERNS = [
   /^audit\/algorithmic-governability\//i,
   /^docs\/04-guides\/(?:PUBLIC-CONTRIBUTION-WORKFLOW|GITHUB-AUTO-MERGE-INTEGRATION)\.md$/i,
   /(^|\/)docs\/00-normative\//i,
+  /^docs\/(?:01-contracts|02-certification)\//i,
+  /^IMMORTAL\/(?:kernel|docs)\//i,
+  /^PRE-RICH\/docs\//i,
+  /^Adapter\/CARDANO\/docs\//i,
+  /^docs\/archive\/legacy\/(?:Game-Economy|Economic-Algorithm)[^/]*\.md$/i,
   /^PRE-RICH\/docs\/GAME-ECONOMY\.md$/i,
   /^SECURITY\.md$/i,
   /(^|\/)[^/]*CONSTITUTION[^/]*$/i,
@@ -344,6 +349,21 @@ const selfTest = () => {
   const control = classifyPullRequest({ body, files: ['.github/workflows/contribution-evidence-gate.yml'], headSha: 'abc123' })
   assert.equal(control.decision, 'STRONGER_REVIEW_REQUIRED')
   assert.equal(control.eligible, false)
+
+  // Route authoritative specifications even when their filenames lack narrow keywords.
+  for (const path of [
+    'IMMORTAL/docs/ECONOMIC-KERNEL.md',
+    'IMMORTAL/kernel/EconomicTransitionV3.hs',
+    'docs/01-contracts/13_LIVENESS_AND_PROGRESS_SPECIFICATION.md',
+    'docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md',
+    'PRE-RICH/docs/APPLICATION-SPECIFICATION.md',
+    'Adapter/CARDANO/docs/ADAPTER-SPECIFICATION.md',
+    'docs/archive/legacy/Game-Economy.md',
+  ]) {
+    const routed = classifyPullRequest({ body, files: [path], headSha: 'abc123' })
+    assert.equal(routed.decision, 'STRONGER_REVIEW_REQUIRED', path)
+    assert.equal(routed.eligible, false, path)
+  }
 
   const strongHead = 'abcdef1234567890abcdef1234567890abcdef12'
   const strongReviewCleared = classifyPullRequest({
