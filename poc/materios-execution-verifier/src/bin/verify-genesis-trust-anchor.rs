@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn rejects_a_raw_spec_with_the_wrong_pinned_size() {
         let bad = br#"{"id":"some_other_chain","genesis":{"raw":{"top":{},"childrenDefault":{}}}}"#;
-        assert!(verify_raw_genesis_spec(&bad)
+        assert!(verify_raw_genesis_spec(bad)
             .expect_err("wrong-sized raw input must reject")
             .contains("RAW_SPEC_SIZE_MISMATCH"));
     }
