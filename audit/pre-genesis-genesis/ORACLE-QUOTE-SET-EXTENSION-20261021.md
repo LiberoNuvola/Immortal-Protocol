@@ -275,3 +275,19 @@ The Pyth feasibility probe now contains a pure helper `pyth_ada_usd_to_usdm_subu
 - quote-carrier compiled validator code field: 8,363 bytes (not the full transaction size).
 
 **Still OPEN:** `D) is not yet selected or authenticated by a governing source-of-truth rule, and the helper is not invoked by the carrier transition or Haskell Plutus V2 MintPolicy. It is neither price-oracle evidence nor authority to treat USD as USDM. Integrating it into production requires the canonical rule for `D), an on-chain binding from the Pyth-verified raw quote to the exact converted value consumed by `MintPolicy.atomicTreasuryPaymentValid`, and native-ledger positive/tamper-negative transactions including the Pyth zero-withdrawal verification in the same transaction. No production validator or state was changed by this test candidate.
+
+
+## 8.13 Explicit decision boundary for USD↔USDM (no normative choice made)
+
+The new rational helper makes the unresolved input visible as `D = USD per USDM`; it does not decide what `D) means or who authenticates it. The reviewed source-of-truth documents define USDM as the canonical economic denomination and define 100 sub-units per USDM, but the inspected material does not explicitly establish that a USDM accounting unit is always exactly USD 1, nor does the active deployment expose a canonical USDM asset policy/name and an authenticated USDM/USD feed.
+
+| Possible contract | What it means | Additional burden | Status |
+|---|---|---|---|
+| **A. Abstract unit-of-account identity** | The constitution defines one USDM accounting unit as exactly USD 1 by semantics; this is not a claim that any stablecoin trades at parity. Use `D = 1) only after that definition is explicitly normative. | Requires a source-of-truth amendment or an existing authoritative clause proving the equivalence. | Not established by the reviewed files. |
+| **B. External USDM/USD valuation** | USDM is valued as a real token whose USD market price may depart from 1. | Requires an authenticated, fresh USDM/USD observation and explicit asset identity/source qualification; depeg must change conversion. | No qualified feed or live identity observed. |
+| **C. Direct ADA/USDM price** | Settlement uses a direct quote in the target accounting unit without interposing USD. | Requires a genuine source for ADA/USDM, authenticated on-chain and freshness-bounded. Pyth ADA/USD alone cannot establish it. | No direct quote-source evidence found. |
+| **D. Fail closed until decided** | Do not use USD/ADA to infer USDM/ADA; reject settlement needing the missing conversion. | Reduces liveness but introduces no parity assumption. | **Current safe operational posture.** |
+
+Recommendation for the current branch is **D** until the canonical meaning of USDM and the authoritative source for any required conversion are identified. If USDM is strictly an abstract accounting unit, option A is likely the smallest architecture, but only the constitutional/source-of-truth owner can authorize that identity. If USDM is a physical token, option B is required to account for a depeg. These alternatives are not interchangeable. No production constant, mint-policy branch, oracle update or deployment should choose between them by implementation convenience.
+
+The raw Pyth quote may continue to be verified and preserved in its isolated carrier while this decision is open. It must not be allowed to satisfy `Economic.totalUsdmValue` merely because its publisher signature and timestamps validate.
