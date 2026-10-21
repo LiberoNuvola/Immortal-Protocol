@@ -100,14 +100,26 @@ jobs:
             '**This is read-only acquisition evidence. The probe does not verify GRANDPA signatures/quorum, authority-set history, or B3-A.**',
           ];
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
-          if (!e.websocket?.connected || e.identity?.genesis_hash_match !== true) {
+          const identityValid = e.websocket?.connected === true && e.identity?.genesis_hash_match === true;
+          const witnessCaptured =
+            e.claims?.raw_grandpa_finality_payload_captured === true ||
+            e.claims?.raw_grandpa_justification_captured === true;
+
+          if (!identityValid) {
+            lines.push('', '- Acquisition classification: **ACQUISITION_ERROR**');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\\n## Classification\\n\\nThe endpoint did not establish the pinned Materios chain identity. B3-A remains OPEN.\\n');
             console.error('Fail-closed: WebSocket did not establish the expected Materios chain identity.');
             process.exit(1);
           }
-          if (e.claims?.raw_grandpa_finality_payload_captured !== true &&
-              e.claims?.raw_grandpa_justification_captured !== true) {
-            console.error('No raw GRANDPA finality payload/justification was acquired over the public WebSocket route.');
-            process.exit(1);
+
+          if (!witnessCaptured) {
+            lines.push('', '- Acquisition classification: **WITNESS_UNAVAILABLE**');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\\n## Classification\\n\\nThe probe completed and the endpoint identity matched, but no raw GRANDPA finality payload or FRNK justification was returned. This is a valid negative acquisition result, not a verifier result. B3-A remains OPEN as MATERIOS_FINALITY_PROOF_UNAVAILABLE.\\n');
+            console.log('WITNESS_UNAVAILABLE: probe completed; no raw GRANDPA witness returned. B3-A remains OPEN.');
+            process.exit(0);
           }
-          console.log('Raw unverified GRANDPA payload acquired. B3-A remains OPEN pending independent verification.');
+
+          lines.push('', '- Acquisition classification: **WITNESS_CAPTURED_UNVERIFIED**');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '\\n## Classification\\n\\nA raw GRANDPA payload was captured but has not been independently verified. B3-A remains OPEN until the full genesis-rooted and Materios-specific verification boundary passes.\\n');
+          console.log('WITNESS_CAPTURED_UNVERIFIED: raw payload acquired; B3-A remains OPEN pending independent verification.');
           NODE
