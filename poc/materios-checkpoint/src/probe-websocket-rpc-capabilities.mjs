@@ -127,6 +127,81 @@ function summarizeRpcMethods(response) {
   };
 }
 
+async function fetchGatewayDiscovery() {
+  const urls = [
+    process.env.MATERIOS_CHAIN_INFO_URL || "https://materios.fluxpointstudios.com/chain-info",
+    "https://materios.fluxpointstudios.com/preprod-blobs/chain-info",
+  ];
+  const sources = [];
+  const discoveredBootnodes = [];
+  for (const url of [...new Set(urls)]) {
+    const record = {
+      url,
+      fetched_at: new Date().toISOString(),
+      status: "NOT_ATTEMPTED",
+    };
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      record.http_status = response.status;
+      const raw = await response.text();
+      record.response_bytes = Buffer.byteLength(raw, "utf8");
+      record.response_sha256 = sha256Bytes(Buffer.from(raw, "utf8"));
+      if (!response.ok) {
+        record.status = "HTTP_ERROR";
+        record.error = "HTTP " + response.status;
+        sources.push(record);
+        continue;
+      }
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (error) {
+        record.status = "INVALID_JSON";
+        record.error = String(error);
+        sources.push(record);
+        continue;
+      }
+      if (!isObject(data)) {
+        record.status = "MALFORMED";
+        record.error = "chain-info result is not an object";
+        sources.push(record);
+        continue;
+      }
+      const bootnodes = Array.isArray(data.bootnodes)
+        ? data.bootnodes.filter(value => typeof value === "string" && value.length > 0)
+        : [];
+      record.status = "available";
+      record.chain = data.chain ?? data.chain_name ?? null;
+      record.genesis = typeof data.genesis === "string" ? data.genesis : null;
+      record.spec_version = Number.isSafeInteger(data.spec_version) ? data.spec_version : null;
+      record.best_block = Number.isSafeInteger(data.best_block) ? data.best_block : null;
+      record.finalized_block = Number.isSafeInteger(data.finalized_block) ? data.finalized_block : null;
+      record.finalized = typeof data.finalized === "string" ? data.finalized : null;
+      record.chain_spec_url = typeof data.chain_spec_url === "string" ? data.chain_spec_url : null;
+      record.bootnodes = bootnodes;
+      record.trust_scope = "Untrusted peer-discovery metadata only; never a finality/header/state/authority trust anchor";
+      for (const bootnode of bootnodes) {
+        if (!discoveredBootnodes.includes(bootnode)) discoveredBootnodes.push(bootnode);
+      }
+      sources.push(record);
+    } catch (error) {
+      record.status = "TRANSPORT_ERROR";
+      record.error = error instanceof Error ? error.message : String(error);
+      sources.push(record);
+    }
+  }
+  return {
+    schema_version: "materios-gateway-peer-discovery-v1",
+    captured_at: new Date().toISOString(),
+    status: discoveredBootnodes.length > 0 ? "BOOTNODES_DISCOVERED" :
+      sources.some(source => source.status === "available") ? "NO_BOOTNODES_LISTED" : "UNAVAILABLE",
+    sources,
+    unique_bootnodes: discoveredBootnodes,
+    bootnode_count: discoveredBootnodes.length,
+    trust_scope: "Bootnode candidates improve transport discovery only. Every proof/claim returned by a candidate remains untrusted and must be independently verified.",
+  };
+}
+
 async function main() {
   const endpoint = redactedEndpoint(ENDPOINT);
   const startedAt = new Date().toISOString();
@@ -145,6 +220,13 @@ async function main() {
     endpoint,
     mode: "read-only WebSocket RPC; no transaction submission",
     websocket: { connected: false, protocol: null, opened_at: null, closed: null },
+    gateway_discovery: {
+      status: "NOT_ATTEMPTED",
+      sources: [],
+      unique_bootnodes: [],
+      bootnode_count: 0,
+      trust_scope: "Untrusted transport discovery only",
+    },
     catalogue: {
       status: "NOT_ATTEMPTED",
       method_count: null,
@@ -181,6 +263,7 @@ async function main() {
     errors: eventErrors,
     claims: {
       public_websocket_connection_available: false,
+      existing_peer_candidates_discovered: false,
       websocket_advertises_grandpa_methods: false,
       grandpa_method_call_accepted: false,
       raw_grandpa_finality_payload_captured: false,
@@ -241,6 +324,9 @@ async function main() {
   }
 
   try {
+    evidence.gateway_discovery = await fetchGatewayDiscovery();
+    evidence.claims.existing_peer_candidates_discovered =
+      evidence.gateway_discovery.bootnode_count > 0;
     socket = new WebSocket(endpoint, { handshakeTimeout: TIMEOUT_MS, perMessageDeflate: false });
     socket.on("message", raw => {
       let message;
@@ -498,6 +584,8 @@ async function main() {
 
   console.log("Materios WebSocket RPC capability probe");
   console.log("Endpoint:", endpoint);
+  console.log("Gateway peer discovery:", evidence.gateway_discovery.status,
+    "unique bootnodes:", evidence.gateway_discovery.bootnode_count);
   console.log("Connected:", evidence.websocket.connected);
   console.log("RPC catalogue:", evidence.catalogue.status, evidence.catalogue.method_count || "");
   console.log("GRANDPA proveFinality:", evidence.finality_probe.prove_finality.status);
