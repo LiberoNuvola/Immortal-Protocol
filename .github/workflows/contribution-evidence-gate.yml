@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Validate contribution-gate policy fixtures
+        run: node scripts/contribution-evidence-gate.mjs --self-test
+
       - name: Evaluate contribution declaration and scope
         env:
           GITHUB_TOKEN: ${{ github.token }}
