@@ -28,6 +28,8 @@ export const TARGET_RPC_METHODS = [
   "state_getReadProof",
   "state_call",
   "grandpa_proveFinality",
+  "grandpa_subscribeJustifications",
+  "grandpa_unsubscribeJustifications",
   "materios_b3_calculateCommitteeProof",
 ] as const;
 
