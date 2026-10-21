@@ -241,6 +241,30 @@ powershell -ExecutionPolicy Bypass -File .\audit\cardano-integration\dijkstra-cl
 
 The harness deliberately does **not** submit or ledger-evaluate its transaction. A `PASS` means only that local CLI serialization/signing/ID handling and embedding succeeded. It does not prove UTxO validity, fee balancing, `maxTxSize` compliance, PlutusV4 Guard support, a sponsorship result, or Cardano ledger acceptance. The dummy transaction must never be submitted.
 
-The harness could not be executed in this session: no `cardano-cli`, `cardano-node`, `cabal`, `nix`, or PowerShell runtime is installed, and the shell cannot resolve public GitHub hosts. The script has been source-checked against the command shapes and official golden-test sequence in `cardano-cli 11.4.0.0`, but runtime success is **NOT VERIFIED**. The next evidence should be the actual local `evidence.json`, followed (only after a usable Dijkstra node is available) by ledger evaluation of a separate deliberately balanced test batch.
+The CLI harness could not run inside the working container because no `cardano-cli`, `cardano-node`, `cabal`, `nix`, or PowerShell runtime is installed and the shell cannot resolve public GitHub hosts. To avoid stopping at source inspection, the isolated Windows GitHub Actions workflow `.github/workflows/immortal-dijkstra-cli-wire-preflight.yml` was added and executed successfully on 2026-10-21; see §8 for its exact run and measured output. Thus the CLI format smoke test is now **RUNTIME VERIFIED**, but only at the offline CLI serialization/signing/embedding boundary. It is not a node, protocol-parameter, fee-balancing, Plutus evaluation or ledger-acceptance result.
 
 The experiment remains separated from active PRE-RICH: no change to `cabal.project`, Plutus pin, script version, Reveal, reference-script remediation, transaction deployment, ProtocolUsageFee or G1 is authorized by this research.
+
+
+## 8. Executed offline CLI wire-format preflight (2026-10-21)
+
+**Result: PASS — `OFFLINE_SYNTHETIC_CLI_WIRE_FORMAT_ONLY`.**
+
+- Workflow run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39548855783
+- Commit under test: `c90419e04ec19301826b6579c9e4ff3aa2cf742f`
+- CLI: `cardano-cli 11.4.0.0 - mingw32-x86_64 - ghc-9.12`
+- Official Windows release archive SHA-256 verified before execution: `964c83476bf9a96809405c7abb32abc45616d62c0c1707b7dc683c0f6c927dfe`
+- Uploaded run artifact: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39548855783/artifacts/12323125121 (artifact ID `12323125121`, archive SHA-256 `d21df0588bd0479782da68d9c5a3f796d0f5ab0c2a0ec82536fb3c5c57b9b712`, retained until 2026-11-04).
+
+Observed by the script:
+- All CLI stages exited successfully: version check, ephemeral key generation, payment key hash/address generation, sub-transaction build, sub-transaction signing, unsigned and signed sub-transaction ID calculation, top-level raw body embedding, top-level signing, and top-level ID calculation.
+- The sub-transaction ID remained unchanged across signing.
+- Serialized CBOR sizes: signed sub-transaction **269 bytes**; top-level transaction body **361 bytes**; signed top-level transaction **467 bytes**.
+- Synthetic top-level transaction ID output: `dc25b653b31d2465b9a85fb5458a32c34f4cc448eaf833adc03238f70c06d344`.
+
+Interpretation is intentionally narrow:
+- This confirms that the released CLI can build, sign and embed a key-guarded synthetic Dijkstra sub-transaction in a raw top-level transaction, then identify the resulting transaction.
+- Inputs are deliberately nonexistent synthetic IDs, and the generated signing key was deleted by the harness after use.
+- No transaction was submitted; no node, real UTxO, protocol parameters, automatic fee balance, actual sponsorship, PlutusV4 script, maxTxSize check or ledger evaluation was involved.
+- Therefore this PASS does **not** establish CIP-118 end-to-end readiness or unblock the current PRE-RICH Reveal. It closes only the offline CLI wire-format preflight gate. The next gate remains a reproducible Dijkstra node runtime and end-to-end integration, followed by a separately balanced toy batch with ledger evidence.
+- G1 remains OPEN; no fee-bearing class, fee amount, fee destination, sponsorship/reimbursement rule or production migration was selected.
