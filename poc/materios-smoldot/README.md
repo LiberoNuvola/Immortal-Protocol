@@ -40,5 +40,5 @@ Pinned source references:
 
 - Smoldot PR: https://github.com/paritytech/smoldot/pull/3369
 - Smoldot issue: https://github.com/paritytech/smoldot/issues/3288
-- Materios raw chain spec endpoint: https://materios.fluxpointstudios.com/blobs/chain-spec-raw.json
+- Materios raw chain spec endpoint: https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json
 - Materios public P2P bootnode from the operator docs: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM

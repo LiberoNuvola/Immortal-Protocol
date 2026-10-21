@@ -81,7 +81,7 @@ jobs:
         id: capture
         continue-on-error: true
         env:
-          MATERIOS_CHAIN_SPEC_URL: https://materios.fluxpointstudios.com/blobs/chain-spec-raw.json
+          MATERIOS_CHAIN_SPEC_URL: https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json
           MATERIOS_CHAIN_SPEC_SHA256: 77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"

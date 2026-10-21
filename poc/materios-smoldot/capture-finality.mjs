@@ -11,7 +11,7 @@ import { createHash } from "node:crypto";
 import { blake2b } from "../materios-checkpoint/node_modules/@noble/hashes/blake2.js";
 
 const DEFAULTS = {
-  chainSpecUrl: "https://materios.fluxpointstudios.com/blobs/chain-spec-raw.json",
+  chainSpecUrl: "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
   chainSpecSha256: "77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa",
   chainId: "materios_preprod_v6",
   genesisHash: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
