@@ -46,7 +46,7 @@ The *entire effective change* must remain within the declared eligible scope. A 
 
 
 
-The gate's A–E path mapping is intentionally narrower than a free-form class declaration: A covers non-normative Markdown; B covers audit tooling and selected scripts outside the governance control plane; C covers test/conformance/fixture paths; D covers process guidance; E covers explicitly named residual-obligation records. A PR declaring multiple classes must have every changed file match at least one declared class. Known normative paths and the governance-control plane fail closed to stronger review. This path classification is a filter, not a proof that unrecognized files have no semantic effect.
+The gate's A–E path mapping is intentionally narrower than a free-form class declaration: A is limited to `README.md`, `docs/README.md`, and `docs/EXECUTIVE-SUMMARY.md`; other Markdown is not automatically eligible by extension alone. B covers audit tooling and selected scripts outside the governance control plane; C covers test/conformance/fixture paths; D covers process guidance; E covers explicitly named residual-obligation records. A PR declaring multiple classes must have every changed file match at least one declared class. Known normative paths and the governance-control plane fail closed to stronger review. This path classification is a filter, not a proof that unrecognized files have no semantic effect.
 
 ## Mandatory exclusion / stronger-review routing
 
