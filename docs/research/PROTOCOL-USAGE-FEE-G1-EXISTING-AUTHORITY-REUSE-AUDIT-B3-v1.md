@@ -408,10 +408,38 @@ A cross-check against the connected Notion source of truth found two relevant do
 These sources mean the audit must keep two separate questions distinct:
 
 1. **Universal usage-fee design:** the fee-bearing transition/profile declaration and the usage-fee semantics remain OPEN. No fee-bearing class, amount, beneficiary, or settlement asset is inferred or selected by this audit.
-2. **PRE-RICH Issue admission completeness:** the signed `obligationsComplete` claim must be demonstrably derived from an authenticated observation and its actual approved obligation inventory. The current source scan does not prove that G1 fee obligations are represented in that inventory.
+2. **PRE-RICH Issue admission evidence:** the signed `obligationsComplete` claim is an Issue-specific economic-admission assertion. It must be grounded in the applicable approved evidence for the Issue path, but it is **not** a G1 fee-applicability declaration and does not prove that any Protocol Usage Fee applies. Whether an Issue/ticket action is fee-bearing remains unselected. Only after an authorized deployment/profile declaration selects that canonical usage class could a verified G1 result require a corresponding fee obligation in the canonical transition. The Notion workflow's explicit PRE-RICH exclusion means this audit must not assume that relationship in advance.
 
 The historical `05 — SOURCE REGISTRY` Notion page records an earlier architecture description in which the browser calls a remote provider and `issueAuthorityServer.js` connects Preprod observation, signed authority, Haskell producer, and witness. That is useful historical architecture context, but it does not identify the live upstream endpoint/build or override the inspected target-branch server composition, which requires a separately configured upstream signed authority. The deployment/source discrepancy therefore remains unresolved.
 
 **No normative decision is made here.** In particular, do not treat the Notion fee matrix as a selection of a fee-bearing class, or as approval to introduce a new Issue authority path. Continue to require source/build identity and derivation evidence for the actual upstream authority. Keep fee policy OPEN and G1-specific completeness unproven until the respective evidence exists.
 
 This section is documentation-only. No changes were made to the Notion pages, other branches, production code, tests, CI, deployment, V3 carrier, or Reveal semantics.
+
+
+### 9.15 Reconciliation with the branch-local G1 audits and signer helper
+
+The current target-branch tree contains a family of more specific G1 research artifacts. Reading them together narrows the finding and corrects an ambiguity in §9.14.
+
+**Source-of-truth and decision status**
+- `docs/research/PROTOCOL-USAGE-FEE-G1-APPLICABILITY-DECISION-B3-v1.md` (blob `c835d98a9390b8e3508547bd14ff847d52be8c2d`) explicitly records **OPEN — no deployment fee-bearing classes selected**. The candidate matrix is not an active mapping.
+- `docs/research/PROTOCOL-USAGE-FEE-G1-CANONICAL-ENTRYPOINT-AUDIT-B3-v1.md` (blob `8d3a62d79ec9f55abe08e6ffaba6fc4bd8d24527`) identifies the existing PRE-RICH Issue-admission route and states its precise limitation: there is no G1 declaration input, fee-applicability resolver, or fee-obligation derivation step in the inspected path.
+- `docs/research/PROTOCOL-USAGE-FEE-G1-CANONICAL-TRANSITION-AUTHORITY-AUDIT-B3-v1.md` (blob `92117b0e9694a881afb3fb147f23c0218f5700bd`) finds the G1 proposal is not bound to production canonical execution.
+- `docs/research/PROTOCOL-USAGE-FEE-G1-AUTHORITY-RESOLUTION-CONTRACT-B3-v1.md` (blob `ab7fadc1d1fd3a5cee55e08ea4cb380bc04ea8f6`) is explicitly a design-only proposal. Its declaration/resolution states are logical concepts, not production types; it does not approve a signer, key model, quorum, or authority predicate.
+- `docs/research/PROTOCOL-USAGE-FEE-CLOSURE-GAP-B3-v1.md` (blob `4b565052d101a42222b4b92de0a2ab13ae710f68`) expressly distinguishes application ticket payment and Issue admission from a completed universal Protocol Usage Fee implementation. `docs/research/PROTOCOL-USAGE-FEE-G1-CROSS-BRANCH-REUSE-AUDIT-B3-v1.md` (blob `4b858f67933934c7835d7d6f71b8e42795c60b50`) documents reusable identity-binding and fail-closed patterns, but no existing G1 authority mechanism.
+
+**The existing Issue signer is not a G1 resolver**
+- `src/authoritativeIssueAdmissionProducer.ts` (blob `d45adc23f78349c8537d8d3aa3c5c01da7d8ed6f`) explicitly adapts an externally authoritative producer and does not calculate the economic truth/gate booleans itself.
+- `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` (blob `dee0d5bcf29e5b75b33b70438b43ff54ad1419bf`) adapts a Haskell Issue decision and binds it to observed Cardano inputs. It is Issue-specific, not a universal usage-fee declaration path.
+- `relayer/preprodIssueAuthorityEnvelope.js` (blob `b5e7ddbe72483b61e96e202d6d2276a7c76467fb`) signs an **already-computed** Issue witness. It requires `witness.obligationsComplete === true` and signs that flag into an envelope; it does not derive completeness from a typed obligation inventory or add a G1 declaration, canonical usage-class ID, fee-bearing applicability, or declaration/profile revision.
+- `relayer/signedIssueAuthority.js` (blob `8e8ea3620aac888393f1daab8f7502853992a020`) verifies the signed envelope and requires the relevant Issue authority flags to be true. Signature verification authenticates the payload under the configured key; it does not turn the `obligationsComplete` flag into a G1 policy decision.
+- On the inspected branch, `relayer/issueAuthorityServer.js` (blob `69348a48d3848368936d6c8540629ba4ef50b266`) requires `ISSUE_AUTHORITY_SOURCE_URL` (or `ISSUE_AUTHORITY_URL`) and `ISSUE_AUTHORITY_PUBLIC_KEY`, then composes the Cardano provider with that upstream signed authority. The server path does not import `signIssueAuthorityEnvelope`; a bounded scan of the listed `relayer/` runtime modules found that signer helper in its own module and test, not in the server/provider composition.
+- The root `package.json` contains an `issue-authority-server` launch script, but a launch script does not prove deployment. The inspected workflows include a Pages build from `main` and CI/preprod workflows; no workflow or deployment artifact in the inspected surfaces identifies a deployed Issue-authority service, its URL, build digest, or configuration. The live upstream remains unidentified.
+
+**Corrected exact conclusion**
+1. G1 means the deployment/profile-specific applicability declaration for a canonical usage class, not the Issue `obligationsComplete` boolean.
+2. The Issue signer/verifier and Cardano/Haskell adapters are useful adjacent authority/evidence patterns, but do not implement the missing G1 declaration producer/resolver or bind it into the canonical transition.
+3. No fee-bearing usage class has been selected; PRE-RICH must not be assumed fee-bearing from its ticket-purchase or Issue-admission paths.
+4. If G1 is later authorized for an Issue usage class, its declaration must be verified against the exact canonical class and deployment/profile revision and consumed before candidate post-state safety/`K_c` checks, within the existing atomic transition. The current documents keep the authority predicate and binding method OPEN; no production implementation should be inferred from the proposal.
+
+This is a scoped source/document audit, not a proof that no external service exists. No other branch, source code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
