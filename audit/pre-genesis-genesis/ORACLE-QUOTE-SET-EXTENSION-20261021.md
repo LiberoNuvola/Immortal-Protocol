@@ -194,3 +194,16 @@ At the snapshot time the quote was `1,102,083,616 ms` old, approximately `306.13
 **Binding caveat:** this is a concrete observation of the singleton carried by the workflow's configured Preprod wallet address. The repository's public Pages Oracle address/policy/token values are supplied through repository variables that this read-only artifact does not disclose, so an exact equality between that deployed DApp configuration and this observed address/unit has not been independently proved here. Treat the evidence as the strong current-wallet finding, then run the new read-only `observe-preprod-oracle-quote-set.mjs` against the exact public-runtime Oracle identity to close that last configuration binding.
 
 This new observation supersedes the earlier statement in §8.2 that no live wallet singleton had yet been inspected; it does not supersede the still-open exact DApp-binding and source-qualification gates. No state was changed, no quote refreshed, and no ticket issued.
+
+
+## 8.7 Public Pages is a separate release blocker — verified 2026-10-21
+
+The current working branch's additive quote-set and buyer-entered basket code is not present in the current default-branch DApp or in the latest recorded Pages deployment:
+
+- Latest successful Pages run: [38182109071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38182109071), head `876bc54f8ee8f6e1dede226db8c367cca3ae620c`, dated 2026-10-11.
+- Current main ref: `97b09a38742098f17a61eb07734c401aeedccc06`.
+- `src/main.ts` at the deployment commit and current main points to the same blob `d55ba61dab9377b338989eb56b23b8825c9f6335`, without the authoritative Issue consumer or settlement basket selector; `src/issueSettlement.ts` is not present on main.
+- Main's Pages workflow blob `88ee733b7f05d1eb4eb88844ca4056923225e82b` lacks the current `VITE_ISSUE_AUTHORITY_ENDPOINT` runtime wiring. The working branch's newer Pages workflow blob `ccd5642e91083d7779d2d434f9547c24be7de1b5` includes it but is not the deployed/default-branch workflow.
+- PR #19 currently contains 1,664 commits / 381 changed files / +45,734/-2,204 and is not mergeable. Do not use it as a deployment shortcut.
+
+This confirms the current public DApp cannot be treated as a release of the branch's guarded Issue/quote-set flow. Promotion must be curated and dependency-complete; its Pages build should expose only public config, preserve fail-closed behavior if any runtime identity is missing, and then be verified against the exact configured Preprod Oracle singleton. No values from hidden repository variables were read, and no public deployment was changed here.
