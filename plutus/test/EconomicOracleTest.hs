@@ -43,7 +43,8 @@ main = do
   outcomes <- traverse runCase cases
   poolOutcome <- runPoolSingletonZeroCase
   fixedAdaSettlementOutcome <- runFixedAdaGenesisSettlementCase
-  if and outcomes && poolOutcome && fixedAdaSettlementOutcome then pure () else exitFailure
+  mixedBasketOutcome <- runMixedAssetBasketRequiresPerAssetQuoteCase
+  if and outcomes && poolOutcome && fixedAdaSettlementOutcome && mixedBasketOutcome then pure () else exitFailure
 
 runCase :: Case -> IO Bool
 runCase testCase = do
@@ -152,6 +153,46 @@ runFixedAdaGenesisSettlementCase = do
           authorizedPublisher
           fixedTreasuryValue)
 
+-- Regression for the current single-asset OracleDatum/singleton boundary.
+-- A token settlement output on Cardano also carries ADA for min-UTxO.
+-- totalUsdmValue asks for an oracle match for every non-zero asset before
+-- excluding ADA's minimum-UTxO quantity from economic value. One singleton
+-- datum quoting PRE cannot also authenticate the ADA component; a basket must
+-- fail closed until the quote-set/reference-input contract is redesigned.
+runMixedAssetBasketRequiresPerAssetQuoteCase :: IO Bool
+runMixedAssetBasketRequiresPerAssetQuoteCase = do
+  result <- try evaluateBasket :: IO (Either SomeException Integer)
+  let passed =
+        case result of
+          Left _ -> True
+          Right _ -> False
+  putStrLn (prefix passed <> "mixed ADA+PRE value rejected when singleton oracle datum only quotes PRE")
+  pure passed
+  where
+    prePolicy = bytes "pre-settlement-policy"
+    preName = bytes "PRE-RICH"
+    preOracleReferences =
+      [ referenceInput 0
+          (oracleOutputForAsset
+            1
+            statePolicy
+            stateName
+            prePolicy
+            preName
+            authorizedPublisher
+            now
+            price)
+      ]
+    mixedTreasuryValue =
+      singleton adaSymbol adaToken 1_600_000
+        <> singleton (CurrencySymbol prePolicy) (TokenName preName) 1
+    evaluateBasket =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo preOracleReferences)
+          oracleState
+          authorizedPublisher
+          mixedTreasuryValue)
 prefix :: Bool -> String
 prefix passed = if passed then "PASS " else "FAIL "
 
