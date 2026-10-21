@@ -441,3 +441,23 @@ This supports a transport-surface diagnosis, not a claim that Materios lacks GRA
 Materios remains useful for receipt lookup and independently verified storage-read proofs, but those proofs must remain separate from finality claims. B3-A stays **OPEN** and overall B3 is **NOT APPROVED**. Do not use `chain_getFinalizedHead`, authority data returned by the same RPC, or a storage proof alone as a replacement for independently verified GRANDPA finality.
 
 The next admissible path is an independently identified public proof publisher or externally operated archive RPC that returns actual `FinalityProof` / GRANDPA justification bytes for an exact checkpoint, followed by independent verification of the outer proof, inner justification, ancestry, signatures, quorum, and authenticated authority-set transitions. No private Materios node, upstream patch, or weakening of the trust boundary is assumed. If no such public interface is found, scope Materios to receipts/storage and use a separate finality source for the remaining requirements.
+
+## Archive-source availability probe — 2026-10-21 (IMMORTAL run #77)
+
+Source run: [Materios B3 execution-proof verifier — run #77](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39546610725).
+
+Commit under test: `d6b30227303afe2192463b1e4236918cbac26680`.
+
+- `verifier`: **PASS**.
+- `finalized-state-capture`: **PASS as extraction only**.
+- `live-storage-proof`: **PASS**.
+- `real-grandpa-witness`: **FAIL / B3-A OPEN**, as required by the missing proof.
+- The safe probe reported `archiveRpcConfigured: false`; the existing GitHub Actions secret `MATERIOS_ARCHIVE_RPC` is not configured for this workflow. No secret value or endpoint URL was printed.
+- Both named public RPC sources again reported `grandpa_proveFinality` as JSON-RPC `-32601 / method-not-found` and `chain_getBlock(...).justifications = null`.
+- The dense scan ended with `NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN`.
+
+### Operational conclusion
+
+At this revision, the only published Materios RPC URLs found in the repository are the primary `/rpc` and legacy `/preprod-rpc` endpoints. The gateway's public `/chain-info` route exposes metadata and a finalized block number but is not a GRANDPA-proof publisher. The optional archive-RPC secret is absent. Therefore there is no already-configured alternate public archive/proof source available to this workflow. This is an evidence-based operational limitation, not proof that no third-party or future public proof publisher could exist.
+
+Do not treat `chain_getFinalizedHead`, the authority list read from the same RPC, a committee receipt certificate, or a storage read proof as a replacement for a verified GRANDPA finality proof. Keep Materios scoped to receipt/storage evidence while B3-A remains **OPEN**; only reopen finality qualification when an independently identified public endpoint produces actual `FinalityProof` or GRANDPA justification bytes bound to an exact checkpoint and the authority-set transition chain can be authenticated.
