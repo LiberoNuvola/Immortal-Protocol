@@ -333,8 +333,9 @@ runLegacyOracleStateRemainsSoleConfiguredPriceSourceCase = do
     (prefix candidateCannotAuthorize
       <> "unqualified quote datum alone cannot value Treasury through current Economic entrypoint")
   putStrLn
-    (prefix legacyRemainsAuthoritative
-      <> "current Economic entrypoint still values from configured legacy OracleState when candidate quote disagrees")
+    ( (if legacyRemainsAuthoritative then "OBSERVED GAP: " else "UNEXPECTED: ")
+        <> "current Economic entrypoint still values from configured legacy OracleState when candidate quote disagrees"
+    )
   pure (candidateCannotAuthorize && legacyRemainsAuthoritative)
   where
     candidatePrice = 200
