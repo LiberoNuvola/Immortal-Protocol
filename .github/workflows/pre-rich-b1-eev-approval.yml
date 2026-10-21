@@ -77,7 +77,11 @@ jobs:
           if (q.status !== 'qualified') throw new Error('qualification is not qualified')
           if (q.deploymentApproval?.status !== 'DEPLOYMENT_APPROVED') throw new Error('deployment approval missing')
           if (q.deploymentApproval?.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') throw new Error('wrong deployment profile')
-          if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.evidenceHash)) throw new Error('approval evidence hash missing')
+          if (!/^[0-9a-f]{64}$/.test(q.evidenceHash ?? '')) throw new Error('approved qualification evidence hash missing')
+          if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.evidenceHash ?? '')) throw new Error('approval evidence hash missing')
+          if (q.deploymentApproval.qualificationEvidenceHash !== q.governance?.approvalInputQualificationHash) throw new Error('approval does not bind the original qualification digest')
+          if (q.deploymentApproval.evidenceHash !== q.governance?.approvalEvidenceHash) throw new Error('approval digest does not match its governance evidence record')
+          if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.qualificationEvidenceHash ?? '')) throw new Error('original qualification digest missing')
           NODE
 
       - name: Upload approved EEV evidence
