@@ -2,7 +2,7 @@
 
 Status: **NO TRUSTLESS B3-A CLOSURE FROM THE CURRENTLY OBSERVED PUBLIC DATA / B3-A OPEN**
 
-Branch: \`work/b3-materios-provenance-evidence\`
+Branch: `work/b3-materios-provenance-evidence`
 
 ## Decision
 
@@ -12,7 +12,7 @@ This is a conditional feasibility conclusion about the evidence currently availa
 
 Keep the failure state explicit:
 
-\`MATERIOS_FINALITY_PROOF_UNAVAILABLE\`
+`MATERIOS_FINALITY_PROOF_UNAVAILABLE`
 
 B3-A remains **OPEN**. Do not weaken the proof boundary or re-open already-completed negative RPC probes just to create activity.
 
@@ -20,13 +20,13 @@ B3-A remains **OPEN**. Do not weaken the proof boundary or re-open already-compl
 
 GRANDPA verification requires cryptographic data, not just a report that a node has finalized a block. At minimum the receiver must be able to bind:
 
-\`pinned genesis trust anchor → authenticated authority set/set ID → raw GRANDPA justification → signed precommits and quorum → ancestry/header hashes → ordered authority-set transitions → target checkpoint\`
+`pinned genesis trust anchor → authenticated authority set/set ID → raw GRANDPA justification → signed precommits and quorum → ancestry/header hashes → ordered authority-set transitions → target checkpoint`
 
-For the Materios-specific B3 boundary, the verifier must additionally bind the actual selector/enactment evidence: the on-chain selection-input commitment, exact runtime identity and call/result bytes, native execution proof, activation block hash/number, and the existing \`VerifiedAuthoritySetTransition\` boundary.
+For the Materios-specific B3 boundary, the verifier must additionally bind the actual selector/enactment evidence: the on-chain selection-input commitment, exact runtime identity and call/result bytes, native execution proof, activation block hash/number, and the existing `VerifiedAuthoritySetTransition` boundary.
 
 The currently observed public data does not supply that complete packet:
 
-- A \`chain_getFinalizedHead\` result, \`/chain-info.finalized_block\`, an explorer status, or agreement between RPCs is an untrusted service assertion.
+- A `chain_getFinalizedHead` result, `/chain-info.finalized_block`, an explorer status, or agreement between RPCs is an untrusted service assertion.
 - A header/hash and its digest can help describe a candidate chain, but are not a GRANDPA justification.
 - A storage/trie proof can establish that a key/value is included under the supplied StateRoot; without independently authenticated finality, it does not prove that the containing header is canonical.
 - A ZK proof can compress verification of a supplied witness. It cannot reconstruct the missing validator signatures, authenticated authority-set history, or Materios execution proof from a finalized-height number.
@@ -37,8 +37,8 @@ These are distinct cryptographic claims and must remain separately typed.
 
 ## Evidence basis
 
-1. The current public Materios HTTP/WebSocket endpoints do not advertise the GRANDPA proof-delivery methods. Focused live probes called the methods directly; \`grandpa_proveFinality\` and \`grandpa_subscribeJustifications\` returned \`-32601 Method not found\`. Tested \`chain_getBlock\` responses had no FRNK justification.
-2. The gateway peer-discovery response from both \`/chain-info\` and \`/preprod-blobs/chain-info\` returned the same single documented bootnode. It did not disclose a second public proof peer. All reported head/finalized numbers are still untrusted observations.
+1. The current public Materios HTTP/WebSocket endpoints do not advertise the GRANDPA proof-delivery methods. Focused live probes called the methods directly; `grandpa_proveFinality` and `grandpa_subscribeJustifications` returned `-32601 Method not found`. Tested `chain_getBlock` responses had no FRNK justification.
+2. The gateway peer-discovery response from both `/chain-info` and `/preprod-blobs/chain-info` returned the same single documented bootnode. It did not disclose a second public proof peer. All reported head/finalized numbers are still untrusted observations.
 3. The pinned Smoldot P2P experiment verified the expected raw-chain-spec digest and genesis identity, but remained in warp sync around block 97,069 and did not capture a raw FRNK justification across the sampled target/descendant candidates. This is a failure of the tested acquisition route, not evidence that the later reported blocks are unfinalized.
 4. Materios' public operator guide mentions a justification-retaining public sync node as being deployed, but the reviewed public material does not identify an endpoint or peer ID usable by the collector.
 5. The existing real receipt/storage-inclusion results remain useful within B3-B. They do not supply B3-A finality or authenticated authority provenance.
@@ -84,4 +84,4 @@ The frozen local-operator CLI design could collect the native execution proof an
 
 B3-A becomes GREEN only when a real, immutable packet establishes finality and ordered authority provenance from the pinned genesis trust anchor and passes the existing independent verifier through the exact Materios-specific authority-transition boundary. A new witness source is a prerequisite; no source availability result by itself is sufficient.
 
-**Current conclusion:** B3-A cannot be closed from the currently observed public data under the current operating constraints. Preserve \`MATERIOS_FINALITY_PROOF_UNAVAILABLE\`; continue independent work that does not depend on this gate; resume B3-A only on one of the concrete source/protocol triggers above.
+**Current conclusion:** B3-A cannot be closed from the currently observed public data under the current operating constraints. Preserve `MATERIOS_FINALITY_PROOF_UNAVAILABLE`; continue independent work that does not depend on this gate; resume B3-A only on one of the concrete source/protocol triggers above.
