@@ -1,0 +1,59 @@
+# Materios B3-A — Smoldot P2P Finality Probe Results (2026-10-21)
+
+Status: **NO RAW GRANDPA PROOF CAPTURED / B3-A OPEN**.
+
+Branch: `work/b3-materios-provenance-evidence`.
+
+## Purpose and trust boundary
+
+This probe tested a possible proof-acquisition route that does not require IMMORTAL to operate, activate, or modify a Materios node. It used the pinned Smoldot proof-export change under review in [paritytech/smoldot#3369](https://github.com/paritytech/smoldot/pull/3369), the published Materios v6 raw chain spec, and the one public P2P bootnode currently documented by Materios.
+
+The acquired chain-spec bytes matched the pinned SHA-256:
+
+`77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa`
+
+Smoldot reported the expected chain ID `materios_preprod_v6` and genesis hash:
+
+`0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+
+The HTTP RPC was used only as an untrusted source of candidate block hashes and a diagnostic head number. No RPC-reported finalized head or source agreement was treated as a trust anchor.
+
+## Run results
+
+| Run | IMMORTAL code revision | Immutable artifact | Result |
+|---|---|---|---|
+| [#39588463820](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588463820) | `064de0418a952f38a69fae60748d53f65a1f7672` | ID `12340029226`; ZIP SHA-256 `0817770c01d8c53ec6a23038c371309fe2a67e6ab3580578f1e91321225468f7` | 18 candidate blocks; 3 headers hash-bound; 0 FRNK justifications captured |
+| [#39588504155](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588504155) | `72c7603ffeaa967188b9ecf33c074d59d0b05837` | ID `12341098852`; ZIP SHA-256 `cf957ac9fda457d8dc23d922b9b71cbf82b2c214efb4dd7059ecac20d5d2a68c` | 18 candidate blocks; 4 headers hash-bound; 0 FRNK justifications captured |
+| [#39588545434](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588545434) | `810c49cea9c9cbd9089874c616f2e731cb767836` | ID `12339949549`; ZIP SHA-256 `d9b79ec7e85b36cb5554fdf4d1892e30344fe550d5f59b988708302da65dc074` | 18 candidate blocks; 3 headers hash-bound; 0 FRNK justifications captured |
+
+For all three runs, the Smoldot logs repeatedly reported GRANDPA warp sync idle/in progress at block **97,069**, while the untrusted HTTP RPC reported a finalized head around block **2,381,706–2,381,714**. This is an observed light-client synchronization/availability problem in this test configuration; it is not evidence that the later blocks are unfinalized.
+
+The best target-specific result was from run #39588545434:
+
+- Activation target `1856408 / 0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e`: returned header SCALE bytes hash to the expected block hash.
+- That response contained **no FRNK justification**.
+- Nearby candidate blocks `1856587` and `1856708` also returned hash-bound headers but no FRNK justification.
+- The other sampled blocks did not return a block object from Smoldot within the bounded probe.
+- No raw GRANDPA justification was acquired from the subscription or block responses.
+
+The candidate scan sampled the activation block and nearby descendant candidates at offsets `0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301`. This is bounded evidence only; it is not an exhaustive scan of all Materios peers, all blocks, or every potential proof publisher.
+
+## Conclusion
+
+**The tested single-bootnode Smoldot path is not currently a usable source of the needed GRANDPA witness.** It verifies the chain identity and can retrieve some historical headers, but it neither completes warp sync beyond block 97,069 nor returns a raw justification in the sampled target/descendant blocks.
+
+Do not promote any of these artifacts to finality evidence. They are acquisition diagnostics, not proofs of finality.
+
+The upstream Materios operator guide mentions that a justification-retaining public sync node is being deployed, but the public docs reviewed for this work still publish only the existing bootnode and no verifiable endpoint for that service. GitHub searches for the phrase found the operator guide note only, with no public endpoint, issue, or pull request that makes the service usable from this workflow. This is not proof that the service does not exist privately; its public availability remains **UNVERIFIED**.
+
+The next viable source-acquisition gate is therefore: **verify that the already-operating justification-retaining sync service has a public, documented P2P/RPC endpoint, or find another already-operating provider that returns the required proof packet**. Do not deploy a Materios node, trust a named operator, bypass the genesis-rooted verifier, or substitute drand/receipt evidence for GRANDPA.
+
+## Additional Materios protocol-reproducibility caveat
+
+Upstream [Materios #105](https://github.com/Flux-Point-Studios/materios/issues/105) remains open and records a separate preprod v6 risk: committee selection may read unsettled Cardano epoch data from a moving db-sync tip, meaning later replay may derive a different committee. Upstream states that a full replay has not been performed and no specific bad block is proven. The opt-in strict-rule switch in [Materios #109](https://github.com/Flux-Point-Studios/materios/issues/109) remains open and has not been verified active.
+
+This does not invalidate a GRANDPA signature or prove any target block invalid. It means an eventual proof packet must authenticate the actual ordered GRANDPA authority-set transitions and Materios-specific selector/enactment evidence; re-running selection against today's Cardano/db-sync view is not a substitute.
+
+## Acceptance remains unchanged
+
+B3-A stays **OPEN** until an immutable real witness is independently verified from the agreed genesis trust anchor through GRANDPA signature/quorum, ancestry, ordered authority-set history, runtime/input commitment, Materios-native execution proof, and the existing `VerifiedAuthoritySetTransition` boundary. No production or B3 conformance claim is made here.
