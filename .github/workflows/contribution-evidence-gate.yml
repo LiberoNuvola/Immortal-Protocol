@@ -31,6 +31,20 @@ jobs:
         with:
           node-version: 22
 
+      - name: Confirm trusted policy exists on base
+        shell: bash
+        run: |
+          missing=()
+          for path in scripts/contribution-evidence-gate.mjs audit/algorithmic-governability/contribution-acceptance-boundary.mjs; do
+            if [[ ! -f "$path" ]]; then missing+=("$path"); fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            message="BOOTSTRAP_REVIEW_REQUIRED: trusted policy file(s) absent from the target/base commit: ${missing[*]}. Refusing to execute pull-request-supplied policy code. This initial adoption PR needs separate human review; this result is not an eligibility verdict."
+            echo "::error title=Bootstrap review required::$message"
+            echo -e "# Contribution evidence gate\n\n**Decision:** BOOTSTRAP_REVIEW_REQUIRED\n\n$message" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Validate contribution-gate policy fixtures
         run: node scripts/contribution-evidence-gate.mjs --self-test
 
