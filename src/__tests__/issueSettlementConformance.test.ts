@@ -75,6 +75,18 @@ function treasuryOutput(lovelace: bigint, address = 'addr_test_treasury', multia
 }
 
 describe('Issue settlement conformance', () => {
+  it('accepts the output-specific minimum ADA and rejects insufficient ADA without changing the basket', () => {
+    expect(() => assertTreasuryAdaMeetsOutputMinimum(2_000_000n, 1_900_000n)).not.toThrow()
+    expect(() => assertTreasuryAdaMeetsOutputMinimum(1_600_000n, 1_900_000n))
+      .toThrow(/below output-specific minimum/)
+  })
+
+  it('rejects invalid output minimum ADA parameters', () => {
+    expect(() => assertTreasuryAdaMeetsOutputMinimum(-1n, 1_000_000n)).toThrow(/non-negative/)
+    expect(() => assertTreasuryAdaMeetsOutputMinimum(1_000_000n, -1n)).toThrow(/non-negative/)
+  })
+
+
   it('derives one finite transaction deadline from the earliest quote used by the Treasury output', () => {
     const policy = '11'.repeat(28)
     const name = '505245'
