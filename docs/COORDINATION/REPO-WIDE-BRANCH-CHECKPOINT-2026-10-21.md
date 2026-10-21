@@ -1171,3 +1171,35 @@ The one-time mint policy enforces seed consumption and the exact singleton mint 
 | Full semantic audit | `PARTIAL / OPEN` |
 
 The semantic ledger now links ten additional blob identities to this slice. A source review is not test execution, native-ledger proof, B2 deployment approval or permissionless-authority qualification. B2's authority model must be explicitly resolved under the existing source-of-truth hierarchy before any trustless/permissionless claim; no new control rule or quorum protocol is invented here. No protocol code, B2 transition semantics, V3/Reveal semantics, workflow, branch topology, transaction or deployment was changed by this review.
+
+
+### 10.34 Protocol-source SHA and Actions evidence refresh — 2026-10-21
+
+**Refresh performed after the global blob ledger and semantic-review slices 1–7 were already present in repository history.** Do not repeat the global deduplication task as if it were still pending: §10.26 and `REPO-WIDE-BLOB-LEDGER-2026-10-21.json` record the pinned census result of 1,811 globally unique blob SHA identities, 1,275 unique paths, 1,874 path/SHA pairs, and 337 paths with multiple SHA variants. The pinned ledger is a historical immutable-source census, not a claim about the branch's current documentation tree.
+
+#### Source-anchor reconciliation
+
+A GitHub compare of protocol-source anchor `3373b3044b9c251da1ec217d128f5dcb3c87c894` against current green HEAD `bb3d5472779f768dfe2980bac3d8c9b66a32fa7e` reports 24 commits ahead, 0 behind. The compare's changed-file set is documentation/coordination only: the global blob ledger, central checkpoint, and scoped semantic-review records. No protocol source, test, workflow, V3/Reveal semantics or deployment artifact was changed by those commits. Therefore `3373b304...` remains the reviewed protocol-source anchor for the findings below; `bb3d547...` is the current documentation branch tip, not a new protocol-evidence SHA.
+
+#### GitHub Actions attached to the exact protocol-source anchor
+
+A fresh query for workflow runs with `head_sha=3373b3044b9c251da1ec217d128f5dcb3c87c894` returned five completed runs:
+
+| Workflow | Run | Result |
+|---|---:|---|
+| Protocol Declaration Conformance | [39663657006](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39663657006) | SUCCESS |
+| IMMORTAL Portability Conformance | [39663657346](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39663657346) | SUCCESS |
+| Algorithmic Governability Adversarial Lab | [39663657001](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39663657001) | SUCCESS |
+| Documentation Link Check | [39663656998](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39663656998) | SUCCESS |
+| Cardano Adapter Sale Conformance | [39663657049](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39663657049) | SUCCESS |
+
+The query returned five runs total for this SHA. These are real results on the exact anchor, but they do **not** establish a passing current run for Pyth-to-MintPolicy binding, B1 direct-USDM EEV/authoritative Issue admission, Reveal/P2.8 native execution or B3/Materios proof verification. No workflow was dispatched as part of this refresh. Do not upgrade any of those gates based on the five successes above.
+
+#### Updated gate state
+
+- **Global blob identity census:** COMPLETE for the pinned snapshot; 1,811 unique blob SHAs. Keep the immutable ledger as the denominator for existing scoped reviews.
+- **Semantic review:** seven scoped review slices recorded; full audit remains `PARTIAL / OPEN`, with zero fully qualified semantic closures.
+- **Actions evidence refresh:** partial. Five exact-anchor runs verified; relevant specialized workflows and evidence chains remain individually unproven unless their own exact-SHA run/artifact/ledger evidence exists.
+- **Next work unit:** refresh each specialized workflow/evidence chain independently at the correct source SHA, starting with Pyth production binding and the existing B1/EEV, Reveal/P2.8 and B3/Materios blockers. Record only observed runs and artifacts; do not dispatch deployment, mint or mutate protocol semantics as an audit shortcut.
+
+This section is a coordination/evidence update only. No protocol code, test, workflow, branch topology, on-chain state, mint, merge or deployment was changed.
