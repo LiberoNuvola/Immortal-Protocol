@@ -116,11 +116,14 @@ jobs:
           const genesisOk = e.chain?.genesis_hash_match === true;
           const headerOk = proofCount > 0 && e.captured_justifications.every(x => x.headerHashVerified === true);
           const targetOk = e.claims?.historical_target_justification_captured === true;
-          const health = Array.isArray(e.chain?.system_health_observations) ? e.chain.system_health_observations : [];
-          const healthLines = health.slice(-8).map((h) => {
-            const value = h.value && typeof h.value === 'object' ? h.value : {};
-            const error = h.error ? ' error=' + String(h.error).replace(/\s+/g, ' ').slice(0, 180) : '';
-            return '- Health [' + String(h.label ?? 'unknown') + ' @ ' + String(h.at ?? 'unknown') + ']: peers=' + String(value.peers ?? 'n/a') + ', isSyncing=' + String(value.isSyncing ?? 'n/a') + ', shouldHavePeers=' + String(value.shouldHavePeers ?? 'n/a') + error;
+          const syncObservations = Array.isArray(e.chain?.sync_log_observations)
+            ? e.chain.sync_log_observations
+            : Array.isArray(e.smoldot_sync_log_observations) ? e.smoldot_sync_log_observations : [];
+          const syncAssessment = e.chain?.sync_log_assessment ?? e.smoldot_sync_log_assessment ?? {};
+          const syncLines = syncObservations.slice(-10).map((s) => {
+            return '- Sync [' + String(s.observedAt ?? 'unknown') + ']: ' + String(s.status ?? 'unknown') +
+              ', block=' + String(s.blockNumber ?? 'n/a') +
+              (s.blockHashHint ? ', hash=' + String(s.blockHashHint) : '');
           });
           const lines = [
             '# Materios Smoldot P2P Finality Probe',
@@ -132,13 +135,15 @@ jobs:
             '- Pinned historical target proof: **' + String(targetOk) + '**',
             '- Target probe status: **' + String(target.status ?? 'unknown') + '**',
             '- Latest finalized head observed: **' + JSON.stringify(e.chain?.latest_finalized_head_observed ?? null) + '**',
-            '- Health observations recorded: **' + String(health.length) + '**',
-            '- Health assessment: **' + String(e.chain?.system_health_assessment?.classification ?? 'NOT_AVAILABLE') + '**',
-            '- Valid health samples / peer range: **' + String(e.chain?.system_health_assessment?.valid_sample_count ?? 0) + ' / ' + String(e.chain?.system_health_assessment?.min_peers ?? 'n/a') + '–' + String(e.chain?.system_health_assessment?.max_peers ?? 'n/a') + '**',
-            '- Samples with isSyncing=true/false: **' + String(e.chain?.system_health_assessment?.is_syncing_true_samples ?? 0) + ' / ' + String(e.chain?.system_health_assessment?.is_syncing_false_samples ?? 0) + '**',
+            '- Native sync-log observations recorded: **' + String(syncObservations.length) + '**',
+            '- Sync-log assessment: **' + String(syncAssessment.classification ?? 'NOT_AVAILABLE') + '**',
+            '- Distinct observed blocks: **' + String(syncAssessment.distinct_observed_block_count ?? 0) + '**',
+            '- Observed block range: **' + String(syncAssessment.min_observed_block ?? 'n/a') + '–' + String(syncAssessment.max_observed_block ?? 'n/a') + '**',
+            '- Warp-sync idle/in-progress samples: **' + String(syncAssessment.idle_observations ?? 0) + ' / ' + String(syncAssessment.in_progress_observations ?? 0) + '**',
+            '- Observation span (seconds): **' + String(syncAssessment.observation_span_seconds ?? 'n/a') + '**',
             '',
-            '## Recent P2P health observations',
-            ...(healthLines.length ? healthLines : ['- No system_health observations were recorded.']),
+            '## Recent P2P sync-log observations',
+            ...(syncLines.length ? syncLines : ['- No native warp-sync status logs were recorded.']),
             '',
             '**This probe is acquisition evidence only. B3-A remains OPEN until IMMORTAL independently verifies the authority history, Materios selector execution proof, and VerifiedAuthoritySetTransition.**',
           ];
