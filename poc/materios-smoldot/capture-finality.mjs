@@ -502,6 +502,34 @@ async function observeHealth(label) {
   }
 }
 
+function assessSystemHealth(observations) {
+  const samples = observations.filter(
+    item => item?.value && typeof item.value === "object" && Number.isFinite(item.value.peers)
+  );
+  const peers = samples.map(item => item.value.peers);
+  let classification = "MIXED_OR_INCONCLUSIVE";
+  if (samples.length === 0) {
+    classification = "HEALTH_UNAVAILABLE";
+  } else if (samples.every(item => item.value.peers === 0)) {
+    classification = "NO_PEERS_OBSERVED";
+  } else if (samples.some(item => item.value.peers > 0 && item.value.isSyncing === true)) {
+    classification = "PEERS_CONNECTED_SYNCING_OBSERVED";
+  } else if (samples.every(item => item.value.peers > 0 && item.value.isSyncing === false)) {
+    classification = "PEERS_CONNECTED_NOT_SYNCING_AT_SAMPLE_TIMES";
+  }
+  return {
+    classification,
+    observation_count: observations.length,
+    valid_sample_count: samples.length,
+    min_peers: peers.length ? Math.min(...peers) : null,
+    max_peers: peers.length ? Math.max(...peers) : null,
+    is_syncing_true_samples: samples.filter(item => item.value.isSyncing === true).length,
+    is_syncing_false_samples: samples.filter(item => item.value.isSyncing === false).length,
+    should_have_peers_true_samples: samples.filter(item => item.value.shouldHavePeers === true).length,
+    note: "Bounded local observations only; not a network-wide availability or finality claim.",
+  };
+}
+
 async function main() {
   let spec;
   const finalErrors = [];
@@ -580,6 +608,8 @@ async function main() {
       }
     }
     const targetProof = captured.find(item => item.targetHash === config.targetHash) || null;
+    const systemHealthAssessment = assessSystemHealth(healthObservations);
+    log("Smoldot health assessment: " + JSON.stringify(systemHealthAssessment));
     const evidence = {
       schema_version: "materios-smoldot-p2p-finality-capture-v1",
       captured_at: new Date().toISOString(),
@@ -608,6 +638,7 @@ async function main() {
         latest_finalized_head_observed: lastFinalizedHead,
         latest_system_health: lastHealth,
         system_health_observations: healthObservations,
+        system_health_assessment: systemHealthAssessment,
       },
       target_probe: targetProbe,
       candidate_block_probes: candidateBlockProbes,
