@@ -347,7 +347,12 @@ jobs:
           echo "=== Validator calling imported verifier with witness fields ==="
           cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
+          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          pub type BeaconWitness {
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          }
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
               verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
@@ -448,7 +453,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_stub_lib_status != 0 || validator_no_tests_status != 0 || validator_renamed_file_status != 0 || validator_imported_type_status != 0 || validator_local_type_status != 0 || validator_imported_type_clean_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_stub_lib_status != 0 || validator_no_tests_status != 0 || validator_renamed_file_status != 0 || validator_local_type_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
