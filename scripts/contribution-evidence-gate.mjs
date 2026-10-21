@@ -37,6 +37,7 @@ const CONTROL_PLANE_PATTERNS = [
   /^audit\/algorithmic-governability\//i,
   /^docs\/04-guides\/(?:PUBLIC-CONTRIBUTION-WORKFLOW|GITHUB-AUTO-MERGE-INTEGRATION)\.md$/i,
   /(^|\/)docs\/00-normative\//i,
+  /(^|\/)(?:conformance|conformance-vectors|test-vectors|test_vectors)(\/|$)/i,
   /^docs\/(?:01-contracts|02-certification|architecture)\//i,
   /^docs\/01-formal-records\/governance\//i,
   /^docs\/COORDINATION\/GOV-/i,
@@ -394,6 +395,9 @@ const selfTest = () => {
     'docs/01-formal-records/governance/GOV-28-FULL-GOVERNANCE-CONFORMANCE.md',
     'docs/architecture/CAES-CONFORMANCE-MATRIX.md',
     'Adapter/BITCOIN/docs/RGB-IMMORTAL-CONFORMANCE-NOTE.md',
+    'IMMORTAL/conformance/GoldenVectors.hs',
+    'Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json',
+    'PRE-RICH/tests/conformance/B6-PC05-monetary-scale.conformance.test.ts',
   ]) {
     const routed = classifyPullRequest({ body, files: [path], headSha: 'abc123' })
     assert.equal(routed.decision, 'STRONGER_REVIEW_REQUIRED', path)
