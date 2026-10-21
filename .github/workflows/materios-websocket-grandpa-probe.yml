@@ -8,11 +8,11 @@ on:
         required: true
         type: string
         default: "wss://materios.fluxpointstudios.com/preprod-rpc"
-      subscription_wait_seconds:
-        description: "Bounded wait for live justification notification"
+      subscription_wait_ms:
+        description: "Bounded wait for live justification notification in milliseconds"
         required: true
         type: string
-        default: "15"
+        default: "15000"
   push:
     branches:
       - work/b3-materios-provenance-evidence
@@ -48,27 +48,27 @@ jobs:
         continue-on-error: true
         working-directory: poc/materios-checkpoint
         env:
-          MATERIOS_WS: ${{github.event.inputs.websocket_endpoint || 'wss://materios.fluxpointstudios.com/preprod-rpc'}}
+          MATERIOS_WS: ${{ github.event.inputs.websocket_endpoint || 'wss://materios.fluxpointstudios.com/preprod-rpc' }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_WS_TIMEOUT_MS: "12000"
-          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: ${{fromJSON(github.event.inputs.subscription_wait_seconds || '15') * 1000}}
-          MATERIOS_WS_EVIDENCE_OUT: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: ${{ github.event.inputs.subscription_wait_ms || '15000' }}
+          MATERIOS_WS_EVIDENCE_OUT: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
         run: node src/probe-websocket-rpc-capabilities.mjs
 
       - name: Upload raw WebSocket acquisition evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: materios-websocket-grandpa-probe-${{github.run_id}}-${{github.run_attempt}}
-          path: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+          name: materios-websocket-grandpa-probe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
           if-no-files-found: warn
           retention-days: 30
 
       - name: Summarize WebSocket proof availability (not verification)
         if: always()
         env:
-          EVIDENCE_PATH: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+          EVIDENCE_PATH: ${{ runner.temp }}/MateriosWebSocketRpcProbe.json
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
