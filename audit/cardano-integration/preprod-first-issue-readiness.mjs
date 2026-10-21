@@ -21,6 +21,57 @@ function check(condition, label, detail) {
   checks.push({ label, status: condition ? 'pass' : 'blocked', ...(detail ? { detail } : {}) })
 }
 
+function digestWithoutEvidenceHash(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const body = { ...value }
+  delete body.evidenceHash
+  return createHash('sha256')
+    .update(JSON.stringify(body, (_key, item) =>
+      typeof item === 'bigint' ? item.toString() : item,
+    ), 'utf8')
+    .digest('hex')
+}
+
+function approvalSnapshotDigestMatches(approved, qualification, sourceSet, deployment, oracle) {
+  const governance = approved?.governance
+  const approval = approved?.deploymentApproval
+  const match = /^github-actions:environment\\/PREPROD-EEV-APPROVAL\\/run\\/(.+)$/.exec(
+    governance?.approvalReference ?? '',
+  )
+  if (!match) return false
+  if (
+    typeof governance?.approvalActor !== 'string' ||
+    typeof governance?.approvalWorkflowCommit !== 'string' ||
+    !sourceSet?.source?.directUsdmUnit ||
+    !sourceSet?.source?.b1PrizePoolUtxo ||
+    !sourceSet?.freshness?.model ||
+    !sourceSet?.derivation?.version
+  ) return false
+
+  const snapshot = {
+    action: 'APPROVE_PREPROD_EEV',
+    actor: governance.approvalActor,
+    runId: match[1],
+    workflowCommit: governance.approvalWorkflowCommit,
+    profileVersion: approval?.profileVersion,
+    candidateId: approval?.candidateId,
+    sourceSetId: approval?.sourceSetId,
+    qualificationEvidenceHash: qualification?.evidenceHash,
+    sourceSetEvidenceHash: sourceSet?.evidenceHash,
+    deploymentEvidenceHash: deployment?.evidenceHash,
+    oracleEvidenceHash: oracle?.evidenceHash,
+    sourceReference: approved?.sourceReference,
+    directUsdmUnit: sourceSet.source.directUsdmUnit,
+    poolInputReference: sourceSet.source.b1PrizePoolUtxo,
+    freshnessModel: sourceSet.freshness.model,
+    derivationVersion: sourceSet.derivation.version,
+  }
+  const digest = createHash('sha256')
+    .update(JSON.stringify(snapshot), 'utf8')
+    .digest('hex')
+  return digest === approval?.evidenceHash
+}
+
 async function exists(path) {
   try { await access(path); return true } catch { return false }
 }
@@ -65,6 +116,16 @@ check(sourceSet?.source?.kind === 'CARDANO_LIVE_UTXO' &&
 check(qualification?.status === 'qualified' &&
   qualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1',
   'EV1-EV7 qualification exists')
+check(
+  /^[0-9a-f]{64}$/i.test(qualification?.evidenceHash ?? '') &&
+    digestWithoutEvidenceHash(qualification) === qualification?.evidenceHash,
+  'Original qualification digest matches its exact artifact',
+)
+check(
+  /^[0-9a-f]{64}$/i.test(sourceSet?.evidenceHash ?? '') &&
+    digestWithoutEvidenceHash(sourceSet) === sourceSet?.evidenceHash,
+  'Source-set digest matches its exact artifact',
+)
 // The qualification artifact is not itself a deployment approval.
 // Approval is evaluated only from the independent signed approval artifact below.
 check(oracle?.status === 'MATERIALIZED' &&
@@ -79,8 +140,9 @@ check(b2?.network === 'cardano-preprod' &&
 const deploymentApproval = approvedQualification?.deploymentApproval
 check(approvedQualification?.status === 'qualified' &&
   approvedQualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1' &&
-  /^[0-9a-f]{64}$/i.test(approvedQualification?.evidenceHash ?? ''),
-  'Approved qualification artifact exists and has a valid evidence digest')
+  /^[0-9a-f]{64}$/i.test(approvedQualification?.evidenceHash ?? '') &&
+  digestWithoutEvidenceHash(approvedQualification) === approvedQualification?.evidenceHash,
+  'Approved qualification artifact exists and its digest matches the exact artifact')
 check(deploymentApproval?.status === 'DEPLOYMENT_APPROVED' &&
   deploymentApproval?.profileVersion === 'PRE-RICH-EEV-USDM-DIRECT-V1' &&
   /^[0-9a-f]{64}$/i.test(deploymentApproval?.evidenceHash ?? ''),
@@ -93,8 +155,11 @@ check(
   approvedQualification?.governance?.approvalInputDeploymentHash === deployment?.evidenceHash &&
   approvedQualification?.governance?.approvalInputOracleStateHash === oracle?.evidenceHash &&
   deploymentApproval?.candidateId === 'PRE-RICH-EEV-USDM-DIRECT-V1:' + deployment?.utxos?.pool &&
-  deploymentApproval?.sourceSetId === sourceSet?.schema + ':' + sourceSet?.evidenceHash,
-  'Approval digest is bound to the exact qualification, source-set, deployment, Oracle State, and Pool candidate')
+  deploymentApproval?.sourceSetId === sourceSet?.schema + ':' + sourceSet?.evidenceHash &&
+  approvedQualification?.sourceSet?.poolInputReference === deployment?.utxos?.pool &&
+  approvedQualification?.sourceReference === 'cardano:preprod/utxo/' + deployment?.utxos?.pool &&
+  approvalSnapshotDigestMatches(approvedQualification, qualification, sourceSet, deployment, oracle),
+  'Approval digest is bound to the original qualification, current source-set, deployment, Oracle State, exact Pool candidate, actor, run, and commit')
 const providerPath = process.env.PREPROD_ISSUE_ADMISSION_PROVIDER_MODULE?.trim()
 check(Boolean(providerPath) && await exists(providerPath),
   'Production authoritative Issue provider is configured',
