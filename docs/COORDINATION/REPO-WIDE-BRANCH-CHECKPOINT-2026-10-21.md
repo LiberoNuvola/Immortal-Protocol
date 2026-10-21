@@ -937,3 +937,32 @@ The 1,811 global count is computed by taking the union of actual blob SHA values
 **Scope and interpretation:** this closes the cross-branch blob identity and path-variance census for the pinned snapshot. It does not mean 1,811 blobs have been semantically reviewed. Every semantic-ledger entry is explicitly initialized as `NOT_REVIEWED`; no semantic classifications, test conclusions, or release approvals are inferred from file identity. The snapshot's green HEAD is `3373b3044b9c251da1ec217d128f5dcb3c87c894`; the ledger/checkpoint commits that follow are coordination-only and must not be represented as new protocol-source or CI evidence.
 
 **Next gate:** use the immutable blob SHA as the review unit; record review scope, normative layer, branch/path context, evidence references, result and unresolved dependency. Prioritize the Pyth-to-`MintPolicy` quote binding, B1 direct-USDM EEV / authoritative Issue admission, Reveal/P2.8 size and execution evidence, and B3/Materios authority/finality and historical-state proof boundaries. Refresh Actions separately on each exact protocol-source SHA. Overall audit remains **PARTIAL / OPEN**. No protocol logic, V3/Reveal semantics, branch topology, ledger state, or deployment was changed by this census.
+
+
+### 10.27 Semantic review slice 1 — Pyth source-to-MintPolicy binding — 2026-10-21
+
+A scoped static review has been recorded against the exact blob SHAs in protocol-source snapshot `3373b3044b9c251da1ec217d128f5dcb3c87c894`.
+
+- Review record: [SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md](SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md)
+- Review commit: `fa32e2ac776855c149a75b9075e671a84dfec0e4`
+- Updated machine ledger: [REPO-WIDE-BLOB-LEDGER-2026-10-21.json](REPO-WIDE-BLOB-LEDGER-2026-10-21.json)
+- Ledger status-update commit: `ed58c3c174dd5158aecccd86d0f5125c52d14319`
+
+**Finding F-PYTH-01 — source price is not bound to the production settlement predicate.** `MintPolicy.atomicTreasuryPaymentValid` calls `Economic.totalUsdmValue`, which selects quotes through the configured legacy Oracle State reference-input path. The current MintPolicy call graph does not require or read `PythQuoteCarrierBinding.extractBoundPythAdaUsdQuote` and does not consume the Pyth conversion candidate. Thus Pyth verification and the legacy quote can remain separate facts; the intended quote-substitution gap remains open.
+
+**Finding F-PYTH-02 — USD/USDM conversion is still an unapproved normative choice.** The conversion candidate accepts the USD-per-USDM ratio and exponent bound as explicit inputs but is not wired into production valuation. No parity assumption, new rounding behavior, or conversion parameter is authorized by this review.
+
+**Finding F-PYTH-03 — carrier binding code is not yet production/native-ledger proof.** The helper enforces carrier shape and exact continuation identity/value, while the isolated Aiken carrier binds the datum to the selected raw Pyth tuple. Authenticity still requires the Pyth verification script to execute in the same transaction, and MintPolicy does not currently force that carrier spend.
+
+**Finding F-PYTH-04 — synthetic conformance is not end-to-end acceptance.** Reviewed unit/candidate tests use fixtures; the cross-module D=1/1 vector is test-only. This review did not dispatch the manual native-ledger probe, re-run CI, or submit a Cardano transaction. Historical run references were not refreshed and are not reclassified as current evidence.
+
+| Ledger measure after scoped review | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| SHA entries with scoped static-review records | 16 |
+| SHA entries still `NOT_REVIEWED` | 1,795 |
+| Full semantic audit complete | No — `PARTIAL / OPEN` |
+
+The ledger now points the 16 reviewed blob identities to this review record and lists the relevant findings per SHA. A scoped static review only applies to the exact immutable content identities recorded; it does not make a source path globally reviewed across other historical versions.
+
+**Next gate:** keep the Pyth issue blocked until the source-of-truth hierarchy approves the USD/USDM conversion contract, the exact transaction-bound quote is used by the Treasury valuation predicate, and positive/negative combined V2/V3 native-ledger transactions establish the source binding and resource fit. No change to protocol code, conversion policy, V3/Reveal semantics, branch topology, runtime or ledger state resulted from this review.
