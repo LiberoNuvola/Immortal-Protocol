@@ -364,7 +364,7 @@ const main = async () => {
 
   const event = JSON.parse(await readFile(eventPath, 'utf8'))
   const eventPR = event.pull_request
-  if (!eventPR?.number || !eventPR?.head?.sha) throw new Error('This gate requires a pull_request_target event.')
+  if (!eventPR?.number || !eventPR?.head?.sha) throw new Error('This gate requires a pull_request event.')
   const prUrl = apiUrl + '/repos/' + repository + '/pulls/' + eventPR.number
   const livePR = await githubRequest(prUrl, token)
   if (livePR.head?.sha !== eventPR.head.sha) {
