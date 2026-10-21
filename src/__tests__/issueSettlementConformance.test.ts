@@ -265,7 +265,7 @@ describe('Issue settlement conformance', () => {
       completedTx([treasuryOutput(2_600_001n)]),
       'addr_test_treasury',
       2_600_000n,
-    )).toThrow(/output mismatch/)
+    )).toThrow(/does not match/)
   })
 
   it('rejects zero, missing, and duplicate Treasury output candidates', () => {
