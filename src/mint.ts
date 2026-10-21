@@ -63,7 +63,6 @@ import {
   ORACLE_STATE_POLICY_ID,
   ORACLE_STATE_TOKEN_NAME_HEX,
   RELAYER_PKH,
-  TICKET_PAYMENT_LOVELACE,
   TREASURY_ADDRESS,
   TICKET_POLICY_ID,
   V3_CARRIER_ADDRESS,
@@ -101,6 +100,11 @@ import {
 import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 import type { IssueIntent } from '../IMMORTAL/intent/IssueIntent'
+import {
+  deriveAdaIssueSettlementLovelace,
+  assertCompletedTreasuryAdaSettlement,
+  type AdaOraclePriceReference,
+} from './issueSettlement'
 
 const MIN_ADA_COUNTER = 2_000_000n
 const MIN_ADA_PRIZE = 2_000_000n
@@ -291,6 +295,15 @@ function integerFromData(
     }
   }
 
+  return null
+}
+
+function bytesFromData(value: unknown): string | null {
+  if (typeof value === 'string') return value.toLowerCase()
+  if (value && typeof value === 'object' && 'bytes' in value) {
+    const bytes = (value as { bytes?: unknown }).bytes
+    if (typeof bytes === 'string') return bytes.toLowerCase()
+  }
   return null
 }
 
@@ -1128,6 +1141,43 @@ export async function mintSerialNFT(
     )
   }
 
+  // The current OracleDatum contains one priced-asset identity. For the
+  // current B1 settlement path we support ADA only: the on-chain Value
+  // evaluator also sees ADA carried for min-UTxO and requires a quote for it.
+  // Token and mixed-asset payments stay fail-closed until the oracle quote-set
+  // contract is extended on-chain.
+  const oracleFields = fieldsOf(parseData(oracleStateUtxo.datum))
+  if (!oracleFields || oracleFields.length !== 5) {
+    throw new Error('Authenticated Oracle State OracleDatum is missing or malformed')
+  }
+  const oracleAssetPolicyHex = bytesFromData(oracleFields[0])
+  const oracleAssetNameHex = bytesFromData(oracleFields[1])
+  const oraclePrice = integerFromData(oracleFields[2])
+  const oracleTimestampMs = integerFromData(oracleFields[3])
+  const oraclePublisherPkh = bytesFromData(oracleFields[4])
+  if (
+    oracleAssetPolicyHex === null ||
+    oracleAssetNameHex === null ||
+    oraclePrice === null ||
+    oracleTimestampMs === null ||
+    oraclePublisherPkh === null
+  ) {
+    throw new Error('Authenticated Oracle State OracleDatum contains invalid fields')
+  }
+  const adaOracleQuote: AdaOraclePriceReference = {
+    assetPolicyHex: oracleAssetPolicyHex,
+    assetNameHex: oracleAssetNameHex,
+    price: oraclePrice,
+    timestampMs: oracleTimestampMs,
+    publisherPkh: oraclePublisherPkh,
+  }
+  const treasuryPaymentLovelace = deriveAdaIssueSettlementLovelace({
+    targetUsdmSubunits: BigInt(priceUsdm),
+    quote: adaOracleQuote,
+    expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
+    nowMs: BigInt(Date.now()),
+  })
+
   // ----------------------------------------------------------
   // B1PrizePool singleton
   // ----------------------------------------------------------
@@ -1576,11 +1626,8 @@ export async function mintSerialNFT(
       // ------------------------------------------------------
       // Treasury payment
       //
-      // Current B1 Preprod settlement:
-      //   1 ADA = 1,000,000 lovelace
-      //
-      // MintPolicy requires this exact Treasury-script
-      // output in the SAME transaction.
+      // Derived from the authenticated OracleDatum using the same precision,
+      // min-UTxO exclusion and ceiling conversion enforced on-chain.
       // ------------------------------------------------------
 
       .payToContract(
@@ -1591,9 +1638,7 @@ export async function mintSerialNFT(
         },
         {
           lovelace:
-            BigInt(
-              TICKET_PAYMENT_LOVELACE,
-            ),
+            treasuryPaymentLovelace,
         },
       )
 
@@ -1638,6 +1683,14 @@ export async function mintSerialNFT(
   }
 
   tx = tx.complete()
+
+  // Validate the actual balanced Lucid body, not just the pre-completion
+  // payment request, before it can be signed/submitted.
+  assertCompletedTreasuryAdaSettlement(
+    tx,
+    treasuryAddress,
+    treasuryPaymentLovelace,
+  )
 
   // ----------------------------------------------------------
 
