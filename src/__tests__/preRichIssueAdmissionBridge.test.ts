@@ -13,7 +13,7 @@ function eevQualification() {
     contractVersion: '3.0.0',
     deploymentApproval: {
       status: 'DEPLOYMENT_APPROVED' as const,
-      candidateId: 'test-eev-v1',
+      candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:${pool}',
       sourceSetId: 'test-source-set-v1',
       profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'e'.repeat(64),
@@ -24,7 +24,7 @@ function eevQualification() {
       validFrom: '2026-10-07T00:00:00Z',
       validUntilOrRevalidationRule: 'revalidate-on-source-or-profile-change',
     },
-    sourceReference: 'source://test-eev',
+    sourceReference: 'cardano:preprod/utxo/' + pool,
     verificationReference: 'verify://test-eev',
     derivationVersion: 'test-eev-v1',
     snapshotReference: 'snapshot://issue/1',
@@ -298,6 +298,38 @@ describe('PRE-RICH Issue admission bridge', () => {
       inputs,
       classEvidence,
     )).rejects.toThrow(/Viability certificate is bound to a different deployment\/state/)
+  })
+
+  it('rejects a deployment approval bound to a different PrizePool candidate', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).candidateId =
+      'PRE-RICH-EEV-USDM-DIRECT-V1:' + 'c'.repeat(64) + '#7'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/deployment approval is bound to a different B1 PrizePool candidate/)
+  })
+
+  it('rejects an EEV qualification source bound to a different PrizePool UTxO', async () => {
+    const bad = witness()
+    ;(bad.eevQualification as any).sourceReference =
+      'cardano:preprod/utxo/' + 'c'.repeat(64) + '#7'
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/qualification source is bound to a different B1 PrizePool input/)
+  })
+
+  it('rejects an approval that omits a required EV property', async () => {
+    const bad = witness()
+    ;(bad.eevQualification.deploymentApproval as any).qualifiedProperties = ['EV1','EV2','EV3','EV4','EV5','EV6']
+    await expect(obtainAuthoritativeIssueAdmission(
+      async () => bad,
+      inputs,
+      classEvidence,
+    )).rejects.toThrow(/missing required qualification property: EV7/)
   })
 
   it('rejects an EEV certificate for a different profile', async () => {
