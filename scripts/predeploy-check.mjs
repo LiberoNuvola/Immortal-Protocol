@@ -302,12 +302,18 @@ if (/BigInt\s*\(\s*TICKET_PAYMENT_LOVELACE\s*,?\s*\)/s.test(mintTs)) {
   ok('Legacy fixed-ADA Treasury amount is absent from the Issue builder')
 }
 const settlementSource = read('src/issueSettlement.ts')
+const oracleTypesHs = read('Adapter/CARDANO/observation/OracleTypes.hs')
+const economicHs = read('plutus/Economic.hs')
 contains(mintTs, /deriveAdaIssueSettlementLovelace/, 'Issue settlement derives ADA quantity from authenticated OracleDatum quote')
 contains(mintTs, /assertCompletedTreasuryAdaSettlement/, 'Completed Lucid Treasury output is validated before submission')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
   'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')
-contains(settlementSource, /OracleDatum constructor is invalid[\s\S]*?exactly five fields[\s\S]*?field types/s,
-  'OracleDatum decoder validates constructor, field count and field types')
+contains(settlementSource, /OracleQuote constructor is invalid[\s\S]*?OracleQuoteSet constructor or quote list is invalid[\s\S]*?exactly one quote for requested asset/s,
+  'Oracle decoder validates legacy and quote-set constructors and rejects missing/duplicate asset quotes')
+contains(oracleTypesHs, /OracleDatum[\s\S]*?OracleQuoteSet[\s\S]*?lookupOracleQuote/s,
+  'Plutus schema preserves the legacy OracleDatum and adds multi-asset OracleQuoteSet lookup')
+contains(economicHs, /lookupOracleQuote[\s\S]*?oqPublisher[\s\S]*?validOracleTimestamp[\s\S]*?oqPrice/s,
+  'On-chain valuation authenticates the selected quote publisher, freshness and price')
 contains(settlementSource, /CANONICAL_ORACLE_PRECISION\s*=\s*1_000_000n/,
   'Off-chain settlement precision matches OracleTypes')
 contains(settlementSource, /CANONICAL_ADA_MIN_UTXO_LOVELACE\s*=\s*1_600_000n/,
