@@ -1112,3 +1112,39 @@ This is **normative source-label drift**, not an instruction to reopen the econo
 | Full semantic audit | `PARTIAL / OPEN` |
 
 Twenty-seven exact blob identities were reviewed; all are linked to this review record in the machine ledger. Test-source identities are not counted as test execution, and no policy or conformance status has been declared closed by this source review. No protocol code, normative source text, branch topology, workflow run or ledger state was changed.
+
+
+### 10.32 Semantic review slice 6 — P-06 on-chain expiry policy binding — 2026-10-21
+
+Review record: [SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md](SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md), commit `822dbb67762115bb86f2ae5cb76866990f01cb7d`. Ledger update: `c61755df9e6c590e6e424c9a44097849dd0459c7`.
+
+**P-06 remains `OPEN / INTEGRATION_BLOCKED`, and Issue [#20](https://github.com/LiberoNuvola/Immortal-Protocol/issues/20) remains open.** This is not a request to invent or change the ticket lifetime. The PRE-RICH V1 policy exists, with policy ID `pre-rich-expiry-v1`, version 1, state-derived horizon, and application bounds 2 hours–300 days.
+
+The reviewed source boundary is now precise:
+- `src/mint.ts` fails closed if the expiry policy/state are absent and crystallizes timestamps before building the PrizeDatum. However, it accepts a caller-provided `expiryPolicy` object, permits caller-provided `expiryIssuanceState` (whose own source comments assign verification responsibility to the caller), and takes `issuedAtMs` from the DApp process clock. The generic expiry helper checks determinism and input shape; it does not authenticate the policy, state hash or source snapshot.
+- On-chain `PrizeDatum` contains `pdIssuedAt` / `pdExpiresAt`, but has no policy ID/version, horizon or issuance-state commitment.
+- `MintPolicy.newPrizeDatumValid` validates ticket identity, price commitment, clean Pending/BeaconPending shape and registry round, but does not bind the timestamps to an authorized policy/snapshot or the issuance validity interval.
+- `B1PrizePool.TicketIssued` binds the minted NFT, Pending PrizeDatum, price, reserve and solvency, but not expiry provenance.
+- `PrizeValidator` enforces the stored time boundary for Reveal/Claim/Expire and preserves timestamps on later continuing datums. That proves enforcement of the value stored, not that the value was authorized at creation.
+
+Unit-test sources exercise V1 horizon derivation, clamps and lifecycle predicates with fixtures; the Issue refinement evidence schema does not include expiry policy binding. The expiry workflow is TypeScript/Vitest-only, not a Plutus on-chain binding test. Its pull-request path filter names legacy `PRE-RICH/tests/conformance/*` paths while the reviewed current tests live under `src/__tests__/*`; this filter discrepancy is included as an evidence-routing issue. No workflow was dispatched in this review and no test run is claimed.
+
+#### Closure gates
+
+1. At the authoritative Issue boundary, select the authorized PRE-RICH V1 policy rather than treating any deterministic caller-supplied policy as authorized.
+2. Bind `issuedAt` to the approved transaction-time/validity contract and `expiresAt` to the exact policy result computed from the same authenticated pre-Issue snapshot.
+3. Make the policy/version and snapshot commitment verifiable by the on-chain issuance validators; a non-empty off-chain `issuanceStateHash` is not itself authentication.
+4. Add negative on-chain vectors for arbitrary/future `issuedAt`, expiry before issuance, bounds violations, altered policy/state binding and timestamps inconsistent with the authorized policy; correct the PR path filter and run tests at the exact SHA.
+5. Only after those gates, obtain a new provider-backed Preprod Issue and follow-on lifecycle evidence. Do not alter the already-expired historic ticket or redeploy existing topology as an audit shortcut.
+
+#### Ledger state after slice 6
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| Entries with scoped static-review records | 113 |
+| Entries still `NOT_REVIEWED` | 1,698 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+Sixteen expiry-related blob identities were reviewed; 15 were previously `NOT_REVIEWED`. Existing review references were preserved in evidence references. Review counts still mean static inspection only, not test execution or closure. No protocol source, policy semantics, workflow, branch topology, Preprod state or ledger state was changed.
