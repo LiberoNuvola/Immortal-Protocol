@@ -120,3 +120,18 @@ The on-chain `MintPolicy` and `Economic.totalUsdmValue` remain authoritative; th
 Latest exact-head bounded evidence: Cardano Adapter Sale Conformance #4194 passed (settlement tests plus frontend build), Protocol Declaration #3000 passed, Security Credential Boundary #638 passed, and Documentation Link Check #1859 passed. PRE-RICH Action Refinement #307, IMMORTAL Portability #1795, Governability #4159 and B2 Conformance #425 were still in progress during the last status check, while Integration Lab #1998 was queued/pending.
 
 The compiled Plutus quote-set path, real native-ledger basket, predeploy structural gate, active Preprod quote-set datum, script resource footprint and end-to-end wallet Issue are still not certified. No live singleton or script was updated by this UI change, and no real ticket was emitted. The quote publisher remains a trust assumption; this does not substantiate full permissionlessness. The EEV perimeter is unchanged.
+
+
+## 7.2 — final transaction construction: TTL and size-dependent minimum ADA (2026-10-21)
+
+A final-body inspection must use the resolved `TxComplete`, not the `Promise` returned by Lucid's asynchronous `Tx.complete()`. The Issue builder now awaits completion, then independently verifies:
+
+- the Treasury address has exactly one output whose full asset map equals the quote-derived settlement;
+- the body has a finite TTL matching the slot selected from the earliest quote deadline among every asset in that output;
+- the output contains at least the minimum ADA calculated over that final serialized CML output and the provider's live `coinsPerUtxoByte` parameter.
+
+The TTL bound is derived from the already established `maxOracleAge`, with one whole slot of conservative margin. This aligns the Plutus freshness predicate—which uses the transaction's finite upper validity bound—with the same authenticated quotes used by the builder. It does not establish source truth or introduce a second freshness rule.
+
+The output-specific minimum is calculated using Lucid 0.10.11's pinned CML `min_ada_required(output, coinsPerUtxoByte)` primitive, rather than assuming that `1,600,000` lovelace is sufficient for every value and inline datum. Keep the economic rule distinct: `Economic.totalUsdmValue` still excludes exactly the normative 1,600,000 lovelace floor from ADA's valued quantity. If a final output needs more ADA than that floor, the additional ADA remains part of the canonical economic valuation. The application does not silently top up an output, alter user-entered asset quantities, waive integer equality, or hide economic surplus. A basket that cannot satisfy both the exact USDM equality and the serialized-output ADA minimum is rejected.
+
+The current Cardano Adapter Sale Conformance run `39591153488` passed at `80da6d2b72ff387e758f9ea01c2b6cd7d86b1fa5`, including the then-current settlement suite and browser build. This predates the latest CML min-ADA guard and is **not** evidence that the new output-specific runtime check has passed. Re-run the focused suite/build and predeploy check at the exact current head before promotion; then re-export every affected Plutus artifact and measure script/transaction sizes before native-ledger basket validation.
