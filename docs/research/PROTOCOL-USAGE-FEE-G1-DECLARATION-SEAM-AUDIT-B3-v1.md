@@ -59,3 +59,16 @@ Before creating a production type or wiring any call site, prepare a design-only
 ## Limits
 
 Targeted GitHub code-search and exact-branch file reads were used. Search index results can be incomplete and code search may index a different ref; therefore this is **not** a whole-repository proof of absence. No production code, tests, CI, deployment, or on-chain behavior was changed or verified.
+
+## Follow-up status — 21 October 2026
+
+The design-only next step listed above has since been completed at the documentation level. The branch now contains:
+
+- [G1 Interface Proposal](PROTOCOL-USAGE-FEE-G1-INTERFACE-PROPOSAL-B3-v1.md) — a design artifact, not an approved production interface.
+- [G1 Authority and Resolution Contract](PROTOCOL-USAGE-FEE-G1-AUTHORITY-RESOLUTION-CONTRACT-B3-v1.md) — includes the project-owner clarification in §12 while keeping human approval distinct from a runtime-verifiable authority predicate.
+- [G1 Canonical Transition Entry-Point Audit](PROTOCOL-USAGE-FEE-G1-CANONICAL-ENTRYPOINT-AUDIT-B3-v1.md) — §7 refines the exact source order and concludes that the normative sequencing seam exists, but no ready-made typed implementation seam is established in the inspected PRE-RICH/V3 path.
+- [Existing-Authority Reuse Audit](PROTOCOL-USAGE-FEE-G1-EXISTING-AUTHORITY-REUSE-AUDIT-B3-v1.md) — §9.18 concludes that the existing ruleset/commitment and evidence-binding primitives are reusable components, not a G1 authority implementation.
+
+Accordingly, the earlier recommendation to *prepare* the design proposal is **fulfilled as documentation work**, not as normative approval or implementation. No fee-bearing action class has been selected. The next unresolved decision is not to create another observational declaration layer; it is to approve the profile-scoped applicability mapping and the canonical authority/recording path that the runtime must verify. The exact representation must be shown to enter obligation derivation and the same candidate-state/safety/\`K_c\`/atomic-transition path. This audit makes no selection or implementation on the project owner's behalf.
+
+**Current disposition:** no reusable declaration-authority seam was found in the inspected surfaces; G1 remains OPEN. This status update is documentation-only and does not alter production code, tests, CI, deployment, V3 or Reveal.
