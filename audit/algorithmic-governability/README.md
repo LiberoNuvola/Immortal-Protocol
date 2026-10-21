@@ -16,7 +16,7 @@ The harnesses use deliberately small immutable toy objects. Passing them is evid
 
 ## Contribution-acceptance and GitHub Auto-merge model (research extension)
 
-The `contribution-acceptance-boundary.mjs` toy model checks evidence eligibility, commit binding, challenge lifecycle and intended Auto-merge preconditions. It does not query live pull requests or configure GitHub permissions. The live PR gate runs this model alongside its parser and path-policy fixtures; repository rules must still enforce human approvals and required status checks.
+The `contribution-acceptance-boundary.mjs` toy model checks evidence eligibility, commit binding, challenge lifecycle and intended Auto-merge preconditions. It does not query live pull requests or configure GitHub permissions. Once the gate is present in the target/base branch, its live PR workflow runs this model alongside parser and path-policy fixtures. On the initial adoption PR, the trusted-base preflight correctly reports `BOOTSTRAP_REVIEW_REQUIRED` because it will not execute policy code supplied only by that PR. Repository rules must still enforce human approvals and required status checks.
 
 ## Evidence model
 
