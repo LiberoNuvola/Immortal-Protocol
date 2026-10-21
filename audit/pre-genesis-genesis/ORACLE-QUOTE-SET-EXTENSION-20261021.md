@@ -239,3 +239,18 @@ Chain tip recorded in the manifest:
 The Oracle singleton is still the same output `cardano:tx/fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`, with unchanged inline datum hash `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`. It remains legacy constructor 0, one ADA quote, price field `100`, timestamp `1791481130142`, publisher field `69fe256b67d8f11822a34b250ab8ba271bdedb513daf99e618b6bc89`. The observed quote age relative to that tip is `1,105,957,858 ms` (approximately `307.21 hours`), and the inspection returns `fresh: false`, no eligible units, and blockers `ADA_STALE_TIMESTAMP` + `LEGACY_SCHEMA_SUPPORTS_ONLY_ONE_ASSET_QUOTE`. Manifest hash: `0b1eb9039542eb8f3eedadebc8c944c7a8472d87ddcb748e7fb95bfce9fecd3c`.
 
 This is stronger age classification than the preceding runner-clock observation, but it remains a read-only Koios observation, not an Issue validity proof or a source-truth certificate. The separate strict public-runtime job again failed before the chain query because its Blockfrost project ID and Oracle State / publisher variables are unset. The public Pages singleton remains unbound. No quote update, signature, deployment, or Issue was performed.
+
+
+## 8.10 Exact-source Haskell conformance confirmation — 2026-10-21T12:52:21Z
+
+[IMMORTAL Haskell Semantic Conformance run 39599364846](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39599364846) completed with `success` on commit `edb61d74c2aa5a076fbda5d11941c119776f87d1`. Its `Oracle conformance` step succeeded.
+
+A blob comparison against the current working branch confirms byte-for-byte equality for the relevant sources at that tested SHA:
+- `Adapter/CARDANO/observation/OracleTypes.hs`: `fd9b59d59d3f536d4113fe781909688157a92c59`;
+- `plutus/Economic.hs`: `e50366a65ce34e9433d5ff179dfc03a35a24c1a1`;
+- `plutus/test/EconomicOracleTest.hs`: `5dc7b482332bae942fd06312beeab50bb8a086dc`;
+- `plutus/MintPolicy.hs`: `0d59fc05b4c11873984fffd10014bd46d8470509`.
+
+The same comparison confirmed the TypeScript settlement implementation, focused settlement tests, mint builder and predeploy gate also had identical blobs at the Haskell-tested SHA; the independent Cardano Adapter Sale Conformance subsequently passed on the later working-branch head `fd71136ed688231072f2c041c67aa5c63a2262b1` in [run 39603184582](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184582).
+
+This establishes **source-level Haskell build/conformance and TypeScript settlement/build evidence** for these exact files. It does not establish native-ledger execution of a Pyth signature-verifying withdrawal, does not bind the Pyth carrier quote into the production V2 MintPolicy, and does not make the stale legacy Oracle State usable. The Integration Lab remained in progress at the last check, so these results are not a full live Cardano Issue proof.
