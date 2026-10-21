@@ -12,7 +12,7 @@ export const CANONICAL_ORACLE_PRECISION = 1_000_000n
 export const CANONICAL_ADA_MIN_UTXO_LOVELACE = 1_600_000n
 export const CANONICAL_ORACLE_MAX_AGE_MS = 3_600_000n
 
-export type AdaOraclePriceReference = {
+export type OraclePriceReference = {
   /** OracleDatum asset policy bytes, represented as lower-case hex. ADA = empty bytes. */
   assetPolicyHex: string
   /** OracleDatum asset name bytes, represented as lower-case hex. ADA = empty bytes. */
@@ -24,6 +24,9 @@ export type AdaOraclePriceReference = {
   /** OracleDatum publisher key hash, represented as hex. */
   publisherPkh: string
 }
+
+/** Narrow name retained for the current ADA-only Issue builder. */
+export type AdaOraclePriceReference = OraclePriceReference
 
 export type AdaIssueSettlementRequest = {
   targetUsdmSubunits: bigint
@@ -71,22 +74,14 @@ function datumInteger(value: any): bigint | null {
   return null
 }
 
-/**
- * Decode the precise 5-field OracleDatum used by OracleTypes.hs:
- * (asset policy bytes, asset name bytes, integer price, POSIX-ms timestamp,
- * publisher key-hash bytes). The resulting quote is still validated for asset,
- * publisher, age and conversion when the settlement amount is derived.
- */
-export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceReference {
-  const datum = parseDatum(raw)
-  if (datumConstructorIndex(datum) !== 0) {
-    throw new Error('Authenticated OracleDatum constructor is invalid')
+function decodeOracleQuoteRecord(value: unknown): OraclePriceReference {
+  if (datumConstructorIndex(value) !== 0) {
+    throw new Error('OracleQuote constructor is invalid')
   }
-  const fields = datumFields(datum)
+  const fields = datumFields(value)
   if (!fields || fields.length !== 5) {
-    throw new Error('Authenticated OracleDatum must contain exactly five fields')
+    throw new Error('OracleQuote must contain exactly five fields')
   }
-
   const assetPolicyHex = datumBytes(fields[0])
   const assetNameHex = datumBytes(fields[1])
   const price = datumInteger(fields[2])
@@ -99,10 +94,53 @@ export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceRefer
     timestampMs === null ||
     publisherPkh === null
   ) {
-    throw new Error('Authenticated OracleDatum contains invalid field types')
+    throw new Error('OracleQuote contains invalid field types')
+  }
+  return { assetPolicyHex, assetNameHex, price, timestampMs, publisherPkh }
+}
+
+/**
+ * Decode a requested asset price from either legacy constructor 0
+ * (five fields) or additive constructor 1 (a list of OracleQuote records).
+ * The requested asset must occur exactly once in a quote set. This mirrors
+ * lookupOracleQuote in OracleTypes.hs and never falls back to another asset.
+ */
+export function decodeOraclePriceReference(
+  raw: unknown,
+  expectedAssetPolicyHex: string,
+  expectedAssetNameHex: string,
+): OraclePriceReference {
+  const datum = parseDatum(raw)
+  const constructor = datumConstructorIndex(datum)
+  const fields = datumFields(datum)
+  if (!fields) throw new Error('OracleDatum fields are missing or malformed')
+
+  const expectedPolicy = expectedAssetPolicyHex.toLowerCase()
+  const expectedName = expectedAssetNameHex.toLowerCase()
+
+  if (constructor === 0) {
+    const quote = decodeOracleQuoteRecord(datum)
+    if (quote.assetPolicyHex !== expectedPolicy || quote.assetNameHex !== expectedName) {
+      throw new Error('OracleDatum asset identity does not match requested asset')
+    }
+    return quote
   }
 
-  return { assetPolicyHex, assetNameHex, price, timestampMs, publisherPkh }
+  if (constructor !== 1 || fields.length !== 1 || !Array.isArray(fields[0])) {
+    throw new Error('OracleQuoteSet constructor or quote list is invalid')
+  }
+  const quotes = (fields[0] as unknown[]).map(decodeOracleQuoteRecord)
+  const matches = quotes.filter(
+    quote => quote.assetPolicyHex === expectedPolicy && quote.assetNameHex === expectedName,
+  )
+  if (matches.length !== 1) {
+    throw new Error(`OracleQuoteSet must contain exactly one quote for requested asset; found ${matches.length}`)
+  }
+  return matches[0]
+}
+
+export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceReference {
+  return decodeOraclePriceReference(raw, '', '')
 }
 
 function ceilDiv(numerator: bigint, denominator: bigint): bigint {
