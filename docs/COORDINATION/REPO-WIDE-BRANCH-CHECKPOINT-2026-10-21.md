@@ -412,8 +412,8 @@ Fetched successfully during this audit update:
 
 | Coverage dimension | Current result | Interpretation / remaining work |
 |---|---|---|
-| Live branch names | 25 returned by current branch search; response exposes cursor `MjU` | Same count as prior inventory; separately prove whether cursor is continuation or completion via API/listing evidence before asserting full pagination |
-| Recursive manifests | Prior checkpoint links 25 non-truncated tree JSON results and contains per-branch path/blob inventories at historical source snapshot | This update did not redownload and recompute all 25 trees. Reuse the pinned manifest only while branch heads match; otherwise refresh changed refs and reconcile counts |
+| Live branch names | 25 branches returned; continuation query returned zero additional names and `cursor=null`; independently reconciled against §10.24 | Branch-name pagination complete for this connector query |
+| Recursive manifests | **COMPLETE structural census in §10.24**: 25 current branch HEADs enumerated; all 25 recursive tree responses `truncated=false` | Snapshot HEADs and per-branch counts are recorded in §10.24. The census commit is followed only by checkpoint-document updates that do not change tracked paths; re-census after any code/path change |
 | Current unique blob count | NOT RECALCULATED | Requires obtaining every live tree, validating every path/blob pair and deduplicating by blob SHA |
 | Semantic review, all unique blobs | NOT COMPLETED / NOT MEASURED | Existing focused inspections are not an exhaustive content review. Create a machine-verifiable blob-SHA review ledger before claiming a percentage |
 | Critical current artifacts | PARTIAL TARGETED REVIEW | Checkpoint, work-coordination register, universal white paper, architecture map, Adapter index/reference method, Bitcoin trust model, fee front, Workflow C and selected Notion pages were read or sampled; this is not a complete semantic audit of all critical source and workflow files |
@@ -427,10 +427,10 @@ Fetched successfully during this audit update:
 
 ### 10.9 Audit limitations and exact next steps
 
-1. Complete live-ref pagination and acquire current HEAD SHA for each branch, relevant tags and PR head/base references. Recompute manifest counts using blob SHA as the deduplication key and check algebraic path counts per branch.
+1. **Completed for branch names and recursive trees:** §10.24 records all 25 branch HEADs and counts, with all recursive responses non-truncated. Remaining structural work is to compute the global cross-branch unique blob SHA union and a path-to-SHA variance matrix, and reconcile current PR head/base refs against those branch anchors.
 2. Materialize a machine-readable audit ledger keyed by `{ref, commit, path, blob_sha, category, semantic_review_state, evidence_links}`. File names alone cannot be classified as reviewed.
 3. Prioritize semantic reads in this order: normative IMMORTAL and PRE-RICH canon; EconomicKernel/Haskell/TypeScript projections; MintPolicy/Pyth path; Sale/Issue admission/Treasury/EEV; Reveal/V3/reference-script/P2.8; all workflow YAML and shell/JS runners; B1/B2/B3 verifiers and Materios collectors; governance and fee boundaries; all remaining historical blobs by SHA-deduplicated content group.
-4. For Actions, query latest run per active workflow on exact current HEAD, inspect jobs and decisive logs; record attempt, skipped steps and artifacts. Do not infer success from workflow conclusion alone.
+4. For Actions, query latest run per active workflow on exact current **protocol-source** HEAD, inspect jobs and decisive logs; record attempt, skipped steps and artifacts. Documentation-only checkpoint commits do not establish protocol test evidence. Do not infer success from workflow conclusion alone.
 5. Refresh PR #19 and #35 metadata/diffs, and upstream Materios issue #50/commits, before making promotion or repeat-work decisions.
 6. Continue Notion discovery via direct linked pages from the Control Center and topic searches; preserve history. Update only the Control Center index with the final checkpoint commit after the commit SHA is known.
 7. After these steps, rerun consistency checks and only then publish live branch/blob/semantic-coverage numbers. Until then the correct overall audit state is **PARTIAL — structured workstream map materialized; exhaustive semantic review and live evidence refresh remain OPEN**.
@@ -438,11 +438,12 @@ Fetched successfully during this audit update:
 ### 10.10 Change log
 
 - `2026-10-21`: Added universal roadmap and cross-workstream register U-01..U-17 and applied Cardano/Materios register P-01..P-17; added state vocabulary, dependency tracks, no-repeat rules, Notion discovery links and explicit coverage/access limitations. Documentation-only update on `work/immortal-green-closure`.
+- `2026-10-21`: Added SHA-keyed core/kernel and P-06 expiry binding review; reconciled the older coverage ledger with §10.24's completed live recursive-tree census. Global unique-blob union and exhaustive semantic review remain open.
 
 
 ### 10.11 Live issue/PR refresh — 2026-10-21
 
-- The current GitHub branch search returned these 25 names and an opaque continuation cursor `MjU`; a second request with that cursor returned no additional branch names and `cursor=null`. This supports 25 branch names for that connector search, while full current tree/manifests and current unique-blob total remain **not recalculated**.
+- The current GitHub branch search returned 25 names; a second request using cursor `MjU` returned no additional names and `cursor=null`. Section §10.24 now records the complete live recursive-tree census for all 25 refs (`truncated=false`). The global cross-branch unique-blob total remains **not recalculated**.
 - Issue #20 remains open. Its current body says the existing deployed Prize UTxO was observed expired (`Prize: reveal window closed`, trace `PT5`) and must not be reopened/altered; a fresh authoritative `PreRichExpiryPolicy` plus verified issuance state is required before the first new Preprod Issue. Do not redeploy the existing topology or invent a horizon. [Issue #20](https://github.com/LiberoNuvola/Immortal-Protocol/issues/20).
 - Issue #21 remains open and expressly non-blocking to Cardano closure. Its existing work packages already call for adapter obligations, mapping Cardano, deterministic chain-neutral vectors, a chain-independent reference runner, selection of one materially different execution environment, and identical-vector comparison with normalized evidence. Reuse this issue/plan; do not create a duplicate portability issue. [Issue #21](https://github.com/LiberoNuvola/Immortal-Protocol/issues/21).
 - Issue #22 remains open and UI-only. It prohibits changing economic semantics/V3, bypassing `AuthoritativeIssueAdmissionProvider`, fabricating EEV/ProtectedCapital/viability/admission in the browser, or weakening fail-closed behavior. [Issue #22](https://github.com/LiberoNuvola/Immortal-Protocol/issues/22).
@@ -664,7 +665,7 @@ This ledger accounts for the twelve exact source identities above, including two
 3. **Keep PR #19/#23/#28/#35 out of wholesale promotion.** Refreshing the true current target base and reviewing security-sensitive shared paths is required before any promotion decision. No rebase, cherry-pick, merge, branch deletion, deployment or ledger transaction is authorized or performed by this section.
 4. **Audit exit remains OPEN.** The next review slices should be selected by changed unique blob SHA, prioritized as: source-of-truth normative files/kernel projections; remaining Pyth quote-binding module/tests; B1/EEV/admission and exact endpoint wiring; Reveal/reference-script/P2.8 runners; B3 collectors/verifiers; then workflow and historical blob groups. Capture for every slice the exact ref/commit/path/blob SHA, the sections actually read, test run (if any), result and residual uncertainty.
 
-**Current declaration:** branch-name pagination is confirmed for the connector query; targeted Pyth/call-path review is recorded by blob SHA; current branch divergence and stale PR bases are explicitly surfaced. Full live-tree manifest refresh, all-blob semantic ledger, complete Action/PR/issue history and remaining Notion decision-page reconciliation are still **PARTIAL / OPEN**.
+**Current declaration (superseded by §10.24 structural census):** branch-name pagination and all 25 live recursive tree responses are confirmed; targeted Pyth/kernel/expiry call-path reviews are recorded by blob SHA; current branch divergence and stale PR bases are surfaced. Global unique-blob SHA union, all-blob semantic ledger, full current Actions history and remaining Notion decision-page reconciliation are still **PARTIAL / OPEN**.
 
 
 
