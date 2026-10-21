@@ -5,12 +5,13 @@
 
 ## Scope
 
-This lab does not define new economic or governance rules. It checks two already-stated candidate properties:
+This lab does not define new economic or governance rules. It checks already-stated candidate properties:
 
 1. **No Result-Dependent Authority:** a monitor result may not alter normative authority, the governing metric, the evidence contract, or the admissibility rule unless an explicitly pre-authorized institutional rule already permits that change.
 2. **Search non-escalation:** a partial/adaptive search may not convert a partial coverage claim into a complete normative universe, widen its candidate domain, or weaken the immutable safe set merely because of search results.
+3. **Contribution-acceptance boundary (research extension):** in a toy model, evidence eligibility is derived from declared class/scope, commit-bound evidence and required checks; challenge and deadline states do not grant a maintainer unilateral result-dependent authority.
 
-The harness uses deliberately small immutable toy objects. Passing it is evidence that the implementation preserves these boundaries in the modeled cases; it is not a proof of the entire protocol.
+The harnesses use deliberately small immutable toy objects. Passing them is evidence that the implementation preserves these boundaries in the modeled cases; it is not a proof of the entire protocol, a guarantee of merge, or evidence that repository permissions are free from discretion.
 
 ## IMMORTAL Expansion namespace
 
@@ -33,10 +34,9 @@ This lab contains support for the **IMMORTAL Expansion** research front. Its ide
 
 The **EXP-** prefix is deliberate: it prevents these generalization axes from being confused with Governance (`GOV-xx`), system closure fronts (`B4/B5/B6`), or the separate G1–G6 liveness conditions.
 
-Current bounded implementations in this branch include **EXP-01-light + seniority boundary, EXP-02 boundary, EXP-03-minimal + valuation/haircut boundary, EXP-04 boundary, EXP-05 boundary, EXP-06, EXP-07-light, EXP-08 boundary, EXP-09 boundary, EXP-10 boundary, EXP-11 boundary and EXP-12 boundary**. These are research/conformance boundaries only; their production semantics remain open. The catalog is now executable at the boundary layer, but this does not mean the underlying production generalizations are canonical or deployed.
+Current bounded implementations in this branch include **EXP-01-light + seniority boundary, EXP-02 boundary, EXP-03-minimal + valuation/haircut boundary, EXP-04 boundary, EXP-05 boundary, EXP-06, EXP-07-light, EXP-08 boundary, EXP-09 boundary, EXP-10 boundary, EXP-11 boundary and EXP-12 boundary**. These are research/conformance boundaries only; their production semantics remain open. The catalog is executable at the boundary layer, but this does not mean the underlying production generalizations are canonical or deployed.
 
 These expansions are not a second governance system and do not create new economic authority.
-
 
 ## Workflow B — multi-front boundary matrix
 
@@ -59,12 +59,13 @@ These expansions are not a second governance system and do not create new econom
 | Observer vs authority | observation separated from authorization | full evidence-class/authority matrix |
 | AG-01 executable wiring | canonical Haskell test + Cabal suite + bounded matrix linkage | Haskell CI execution and full governance replay evidence |
 | Treasury legacy isolation | production JS/TS usage scan | final on-chain legacy surface retirement/isolation |
+| Public contribution acceptance | toy eligibility/challenge/deadline model | repository-level enforcement, independent review capacity, adopted response targets, and live PR validation |
 
 These are boundary/conformance surfaces, not claims of production closure. They must not be used to infer missing economic rules.
 
 ## Evidence model
 
-```
+```text
 Immutable Boundary
   ├─ Domain
   ├─ Rule
@@ -84,12 +85,13 @@ The lab intentionally gives two monitors identical observations but different de
 
 ## Run
 
-Workflow B also contains a self-check that every `.mjs` harness in this directory is registered exactly once in the workflow.
+Workflow B contains a self-check that every `.mjs` harness in this directory is registered exactly once in the workflow.
 
 ```bash
 node audit/algorithmic-governability/workflow-b-harness-coverage-boundary.mjs
 node audit/algorithmic-governability/adapter-maturity-registry-boundary.mjs
 node audit/algorithmic-governability/no-result-dependent-authority.mjs
+node audit/algorithmic-governability/contribution-acceptance-boundary.mjs
 node audit/algorithmic-governability/competing-monitor-epistemic-boundary.mjs
 node audit/algorithmic-governability/exp-01-typed-obligation-buckets-boundary.mjs
 node audit/algorithmic-governability/exp-01-seniority-order-boundary.mjs
@@ -122,4 +124,5 @@ Expected result: all assertions PASS.
 - no claim of cryptographic proof;
 - no substitution for AG-01 canonical replay/finality evidence;
 - no production profile-composition engine;
-- no production contingent-claims engine.
+- no production contingent-claims engine;
+- no claim that the toy model enforces GitHub permissions or guarantees a merge.
