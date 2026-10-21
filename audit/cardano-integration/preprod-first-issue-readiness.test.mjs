@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
+import { createHash, generateKeyPairSync } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -167,13 +167,15 @@ try {
     saveJson(resolve(issueDir, 'b2-control-deployment.json'), b2),
   ])
 
+  const { publicKey } = generateKeyPairSync('ed25519')
+  const authorityPublicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString()
   const env = {
     PREPROD_EVIDENCE_DIR: evidenceDir,
     PREPROD_ISSUE_EVIDENCE_DIR: issueDir,
     PREPROD_TUSDM_UNIT: directUsdmUnit,
     PREPROD_ISSUE_ADMISSION_PROVIDER_MODULE: providerModule,
     ISSUE_AUTHORITY_URL: 'https://authority.example.invalid/issue-admission',
-    ISSUE_AUTHORITY_PUBLIC_KEY: 'configured-test-key',
+    ISSUE_AUTHORITY_PUBLIC_KEY: authorityPublicKeyPem,
   }
 
   const ready = runGate(env)
@@ -181,6 +183,20 @@ try {
   assert.equal(ready.report.status, 'READY_FOR_WALLET_REVIEW')
   assert.equal(ready.report.safety.transactionsSubmitted, false)
   assert.equal(ready.report.safety.walletSigned, false)
+
+  const invalidKey = runGate({ ...env, ISSUE_AUTHORITY_PUBLIC_KEY: 'not-a-public-key' })
+  assert.equal(invalidKey.code, 2)
+  assert.equal(invalidKey.report.status, 'BLOCKED')
+  assert.ok(invalidKey.report.blockers.some(item =>
+    item.label === 'External signed Issue authority verification key is a valid public key',
+  ))
+
+  const invalidUrl = runGate({ ...env, ISSUE_AUTHORITY_URL: 'not-a-url' })
+  assert.equal(invalidUrl.code, 2)
+  assert.equal(invalidUrl.report.status, 'BLOCKED')
+  assert.ok(invalidUrl.report.blockers.some(item =>
+    item.label === 'External signed Issue authority URL is configured as a valid HTTP(S) URL',
+  ))
 
   const tamperedApproval = JSON.parse(await readFile(
     resolve(evidenceDir, 'preprod-direct-usdm-approved-qualification.json'),
