@@ -497,3 +497,39 @@ The safest reuse boundary is therefore limited to the existing version/activatio
 **Decision routing:** the current G1 record leaves all candidate classes unselected. If the project owner decides to select any class, record the exact scope/profile revision and explicit mappings in the canonical source hierarchy. The runtime must independently verify the resulting declaration under the separately approved predicate; a human decision, Git/Notion reference, profile version, or digest alone is not a runtime predicate. Future community governance is not assumed as a prerequisite, but no shortcut around the Constitution's verification and transition requirements is implied.
 
 **Final disposition:** useful adjacent primitives found; no drop-in authority mechanism found. G1 remains OPEN. Documentation-only update; no source code, tests, CI, deployment, governance schema, V3 carrier, or Reveal semantics changed.
+
+
+### 9.19 Exact economic-state and transition shape — final integration-boundary check
+
+A fresh read of the concrete Haskell types and admission composition narrows the previous reuse result further. The following are the exact branch-local contracts checked for this section:
+
+- `IMMORTAL/state/EconomicProfile.hs` — blob `e4eccd67bec97543b802aa15ff1b2719c9c18bde`
+- `IMMORTAL/state/UniversalEconomicState.hs` — blob `f89fe04c8aad8ca9c5e544fa9c145a38d157826f`
+- `IMMORTAL/state/EconomicStateV3.hs` — blob `632b3bc5f38be8f5a7f5f8de8187447bc0be33ba`
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` — blob `62c2980a821cdcfc33a33e15a09617256ab8753c`
+- `IMMORTAL/kernel/EconomicGate.hs` — blob `8b8a06b4af1e2b5f4bac4f5faaa24f279d551127`
+- `PRE-RICH/onchain/PreRichEconomicAdmission.hs` — blob `d8360b608f3bb32b7c74000de3ca3b5e3a907a9a`
+
+| Contract | Exact source-level shape | Safe G1 interpretation |
+|---|---|---|
+| `EconomicProfile` | `epVersion`, ticket `epClassPrices`, `epMaxNormalPayoutMultiplier`; profile validation checks positive version, positive prices, nonnegative IDs and unique ticket class IDs. | Versioning exists, but the profile does not define protocol usage classes or a fee-bearing/exempt mapping. Ticket class IDs cannot be assumed to be universal fee-class IDs. |
+| `V3Action` / `V3EconomicState` | `Issue`, `Reveal`, `Claim`, `Expire`; application-specific liabilities, reserves, class states, control state and Jackpot. | The action sum is not a universal usage-class registry, and its current state deltas do not represent a distinct Protocol Usage Fee obligation. This audit authorizes no V3 type or transition change. |
+| `UniversalEconomicState` | Liability, unresolved reserve/count, worst-case exposure, safety capital, reserve protection, mandatory future costs and additional protected capital. | It is an application-neutral safety aggregate, not a typed fee obligation/target/settlement record. Do not silently encode G1 applicability or fee revenue into `uesAdditionalProtectedCapital` or another aggregate. |
+| `EconomicGateInput` | Authority-truth, EEV freshness, obligation-completeness booleans, EEV and immediate executable-liquidity quantities. | `egiObligationsComplete` is a gate assertion supplied by the caller, not the declaration, class mapping, authority proof, or derivation of the G1 obligation. |
+| `preRichEconomicAdmission` | Validates and computes the V3 transition, projects the candidate state, then runs the economic/viability gate. | There is no pre-existing G1 resolver before candidate-state construction in this function. A new boolean at the gate would not establish that the obligation was included in the candidate state. |
+
+### Integration consequence
+
+The existing code gives G1 a **specified normative position** but not a ready-made data slot or resolver. A compliant future implementation must establish all of the following in the canonical path:
+
+1. resolve the candidate action to an approved canonical usage class;
+2. verify the authorized applicability declaration against the exact deployment/profile revision;
+3. derive any required Protocol Usage Fee obligation before completing the candidate post-state;
+4. include the obligation and its required economic effects in the same canonical transition's safety/`K_c` and atomicity reasoning;
+5. keep declaration authority evidence distinct from settlement/receipt evidence.
+
+The source does not establish whether this requires an extension to a canonical universal transition contract, a distinct universal fee-obligation component, or another already-approved representation. This audit deliberately does not select one. In particular, it does not repurpose `uesAdditionalProtectedCapital`, `obligationsComplete`, `epClassPrices`, PRE-RICH's EEV qualification profile, or an Issue witness as G1.
+
+**Readiness result:** the semantic order is clear, but the current inspected data types and PRE-RICH admission order do not provide a safe plug-in G1 implementation seam. The missing representation and its normative approval must be resolved before code changes; no fee-bearing class is selected. G1 remains OPEN.
+
+This section is a targeted exact-ref source check, not a whole-repository proof of absence. Documentation only: no production source, tests, CI, deployment, governance schema, V3 carrier or Reveal semantics changed.
