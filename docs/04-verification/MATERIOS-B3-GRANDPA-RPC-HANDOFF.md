@@ -461,3 +461,35 @@ Commit under test: `d6b30227303afe2192463b1e4236918cbac26680`.
 At this revision, the only published Materios RPC URLs found in the repository are the primary `/rpc` and legacy `/preprod-rpc` endpoints. The gateway's public `/chain-info` route exposes metadata and a finalized block number but is not a GRANDPA-proof publisher. The optional archive-RPC secret is absent. Therefore there is no already-configured alternate public archive/proof source available to this workflow. This is an evidence-based operational limitation, not proof that no third-party or future public proof publisher could exist.
 
 Do not treat `chain_getFinalizedHead`, the authority list read from the same RPC, a committee receipt certificate, or a storage read proof as a replacement for a verified GRANDPA finality proof. Keep Materios scoped to receipt/storage evidence while B3-A remains **OPEN**; only reopen finality qualification when an independently identified public endpoint produces actual `FinalityProof` or GRANDPA justification bytes bound to an exact checkpoint and the authority-set transition chain can be authenticated.
+
+
+## Public-surface and upstream issue review — 2026-10-21 (IMMORTAL run #78)
+
+Source run: [Materios B3 execution-proof verifier — run #78](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39547923965).
+Commit under test: `212bd831b7dc59bbd28fd85c97850946182c6db3`.
+
+- `verifier`: **PASS**; formatting and Rust tests passed.
+- `finalized-state-capture`: **PASS as extraction only**.
+- `live-storage-proof`: **PASS**; independent native storage-proof verification completed.
+- `real-grandpa-witness`: **FAIL / B3-A OPEN**.
+- Public primary RPC reported finalized block 2,378,225; legacy RPC reported 2,378,226 at a later observation. Both returned `grandpa_proveFinality` as `-32601 method-not-found` and `chain_getBlock(...).justifications = null`.
+- The collector scanned blocks 2,377,458–2,378,226 (769 blocks) and found no FRNK justification. `MATERIOS_ARCHIVE_RPC` remains unconfigured.
+- Unlike runs #76–#77, the collector now writes a bounded JSON diagnostic with the scan manifest before returning nonzero. Artifact upload succeeded: [materios-real-grandpa-witness artifact](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39547923965/artifacts/12322611342), ZIP SHA-256 `0c872a33b868cdfcbeb5fa61889a26a630d0af2a8fbf4012175ef51d7d41fcec`. This is evidence of what this RPC exposed over this scan window, not evidence that consensus finality is absent.
+- `Materios Canonical Evidence & Finality Boundary` run #150 passed: [run #150](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39547923974).
+
+### Upstream commits/issues triangulation
+
+The latest observed upstream Materios `main` commit is [`f1c8b400a229258298236d9337247135b6c1112e`](https://github.com/Flux-Point-Studios/materios/commit/f1c8b400a229258298236d9337247135b6c1112e), dated 2026-10-20. The current `partnerchain/node/src/rpc.rs` still registers System, Orinq Receipts and MOTRA without merging the standard GRANDPA RPC module. The current open upstream PR scan found no GRANDPA/finality/RPC exposure change; the only open PR matching authority/committee terms was [PR #97](https://github.com/Flux-Point-Studios/materios/pull/97), a raw-genesis committee guard, not a finality-proof publisher. Recent merged receipt/committee changes therefore do not supply the missing proof transport.
+
+Two additional upstream issues matter to the trust model but must not be overstated:
+
+- [Issue #105](https://github.com/Flux-Point-Studios/materios/issues/105) documents a preprod-v6 committee-selection rule that can read a moving Cardano epoch while it is still current. It says history may fail to re-verify from genesis; it also explicitly says no replay identified a concrete failing block. This is an unresolved authority-transition reproducibility risk, not proof that a specific observed block is invalid.
+- [Issue #107](https://github.com/Flux-Point-Studios/materios/issues/107) and [issue #112](https://github.com/Flux-Point-Studios/materios/issues/112) discuss small-order / publicly forgeable authority keys in launch-preflight and the raw-genesis guard. They are additional authority-key qualification concerns, not evidence that the live authority set captured by IMMORTAL contains such a key.
+
+The operator-kit public endpoints provide receipts, attestations, liveness heartbeats and related services, but the published README does not describe a GRANDPA justification/finality-proof publishing API. No independent public proof publisher was identified in this review.
+
+### Current decision
+
+**B3-B storage-proof path: PASS. B3-A GRANDPA finality and authenticated authority transition: OPEN. Overall B3: NOT APPROVED.** The drand Plutus V3 PoC is a separate result: it proves that a real Quicknet BLS signature can be verified by the isolated local Cardano script, but it does not authenticate Materios blocks or committee transitions.
+
+Do not spend further cycles increasing the scan window against the same two RPC surfaces unless their capabilities change. The next evidence-producing action is to identify a genuinely reachable public proof source that returns SDK-native `FinalityProof` / justification bytes and a path to authenticated authority-set transitions. Otherwise, keep Materios claims limited to receipts and storage proofs, and keep randomness-source claims separate from Materios finality.
