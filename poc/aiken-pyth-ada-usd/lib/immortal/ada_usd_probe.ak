@@ -363,3 +363,105 @@ test binding_must_match_the_exact_raw_quote() {
     None -> False
   }
 }
+
+
+/// Pure unit-conversion candidate for review only.
+///
+/// `usd_per_usdm_numerator / usd_per_usdm_denominator` is an explicit
+/// rational D = USD per 1 USDM. This function does not choose D and is not
+/// used by the quote-carrier validator. The caller supplies an exponent bound
+/// rather than inheriting a new fixed economic parameter from this probe.
+///
+/// Conversion:
+///   ceil((economic lovelace / 1e6 ADA/lovelace) *
+///        (price * 10^exponent USD/ADA) * (100 subunits/USDM) / D)
+///
+/// The raw signed price/exponent should be kept intact until this final exact
+/// rational conversion. Do not round the feed price to an integer first.
+fn power_of_ten_loop(remaining: Int, accumulator: Int) -> Int {
+  if remaining == 0 {
+    accumulator
+  } else {
+    power_of_ten_loop(remaining - 1, accumulator * 10)
+  }
+}
+
+fn positive_ceil_div(numerator: Int, denominator: Int) -> Int {
+  (numerator + denominator - 1) / denominator
+}
+
+pub fn pyth_ada_usd_to_usdm_subunits(
+  price: Int,
+  exponent: Int,
+  economic_lovelace: Int,
+  usd_per_usdm_numerator: Int,
+  usd_per_usdm_denominator: Int,
+  maximum_absolute_exponent: Int,
+) -> Option<Int> {
+  let exponent_magnitude = if exponent < 0 { 0 - exponent } else { exponent }
+  if
+    price <= 0
+      || economic_lovelace < 0
+      || usd_per_usdm_numerator <= 0
+      || usd_per_usdm_denominator <= 0
+      || maximum_absolute_exponent < 0
+      || exponent_magnitude > maximum_absolute_exponent
+  {
+    None
+  } else {
+    let scale = power_of_ten_loop(exponent_magnitude, 1)
+    let numerator = if exponent < 0 {
+      economic_lovelace * price * 100 * usd_per_usdm_denominator
+    } else {
+      economic_lovelace * price * scale * 100 * usd_per_usdm_denominator
+    }
+    let denominator = if exponent < 0 {
+      1_000_000 * scale * usd_per_usdm_numerator
+    } else {
+      1_000_000 * usd_per_usdm_numerator
+    }
+    Some(positive_ceil_div(numerator, denominator))
+  }
+}
+
+test rational_conversion_exact_one_usd_per_usdm() {
+  // Synthetic quote: $1 / ADA; one economic ADA -> 100 subunits if D = $1/USDM.
+  pyth_ada_usd_to_usdm_subunits(100_000_000, -8, 1_000_000, 1, 1, 18)
+    == Some(100)
+}
+
+test rational_conversion_uses_raw_price_before_ceiling_rounding() {
+  // Synthetic source: 0.695087 USD/ADA; 1.438 ADA -> 99.954... subunits,
+  // which rounds upward once to 100. Pre-rounding the feed quote to 70 would
+  // produce 101 under the legacy integer quote path for this quantity.
+  pyth_ada_usd_to_usdm_subunits(69_508_700, -8, 1_438_000, 1, 1, 18)
+    == Some(100)
+}
+
+test rational_conversion_does_not_assume_usdm_usd_parity() {
+  // Synthetic D = 2 USD per USDM. One ADA worth exactly $1 -> 50 USDM subunits.
+  pyth_ada_usd_to_usdm_subunits(100_000_000, -8, 1_000_000, 2, 1, 18)
+    == Some(50)
+}
+
+test rational_conversion_supports_an_explicit_fractional_usdm_usd_ratio() {
+  // Synthetic D = 3/2 USD per USDM. One ADA worth $1 -> ceil(100 / 1.5) = 67.
+  pyth_ada_usd_to_usdm_subunits(100_000_000, -8, 1_000_000, 3, 2, 18)
+    == Some(67)
+}
+
+test rational_conversion_supports_nonnegative_exponents_without_float_math() {
+  // Synthetic price = 7 USD/ADA with exponent 0; one ADA -> 700 subunits under D=1.
+  pyth_ada_usd_to_usdm_subunits(7, 0, 1_000_000, 1, 1, 18)
+    == Some(700)
+}
+
+test rational_conversion_rejects_invalid_unit_ratio_amount_and_exponent() {
+  and {
+    pyth_ada_usd_to_usdm_subunits(100_000_000, -8, 1_000_000, 0, 1, 18) == None,
+    pyth_ada_usd_to_usdm_subunits(100_000_000, -8, 1_000_000, 1, 0, 18) == None,
+    pyth_ada_usd_to_usdm_subunits(100_000_000, -8, -1, 1, 1, 18) == None,
+    pyth_ada_usd_to_usdm_subunits(100_000_000, -19, 1_000_000, 1, 1, 18) == None,
+    pyth_ada_usd_to_usdm_subunits(0, -8, 1_000_000, 1, 1, 18) == None,
+  }
+}
