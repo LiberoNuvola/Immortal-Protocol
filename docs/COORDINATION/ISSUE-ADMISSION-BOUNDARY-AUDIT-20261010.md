@@ -202,3 +202,16 @@ A direct comparison with `main` confirms the deployment risk is stronger than a 
 - The newer source-level Issue consumer path exists on `work/immortal-green-closure`, not in the inspected `main` files.
 
 **Operational consequence:** the deployed Pages build cannot be assumed to contain the newer authoritative Issue consumer path. Do not diagnose this solely as a secret/env setting. The intended source changes must first be promoted through the established PR/release policy; after that, the public endpoint must be supplied through a verified build configuration, and the server must be independently shown ready. No branch merge or deployment was performed in this audit.
+
+
+## 2026-10-21 follow-up — public Pages Issue configuration wiring
+
+The Pages build workflow has been updated on `work/immortal-green-closure`:
+
+- It now maps the public PRE-RICH runtime configuration from GitHub repository variables (`vars.VITE_*`) into the Vite build environment, including `VITE_ISSUE_AUTHORITY_ENDPOINT`. No service URL is hardcoded and no private authority key is placed into the frontend bundle.
+- If `VITE_ISSUE_AUTHORITY_ENDPOINT` is absent, the public static site build may continue, with a notice that Issue stays disabled. If it is present, the build requires HTTPS, forbids embedded URL credentials, requires the `/issue-admission` route, and rejects missing companion runtime variables. The validation reports missing variable names only, never their values.
+- Workflow commits: `9e2b247ebf675674edbee744e0c987048bc4efe2` (wiring) and `22b35fe8b0dba26db96c80c1355683271b50a8a3` (heredoc correction).
+
+**Scope and validation limit:** `.github/workflows/immortal-preprod-pages.yml` still builds `main` and its automatic push trigger is scoped to `main`. This branch change is not a deployed Pages artifact. The approved endpoint URL and repository-variable values have not been verified, no external authority server health or signed live response has been observed, and this Pages workflow has not been run against this branch. Do not mark the live Issue gate GREEN.
+
+The source tree contains the DApp consumer and server-side adapter composition, but no upstream signed-authority service implementation/deployment workflow was found in the branch tree. Railway project listing for the connected account was empty in this check; that does not exclude deployments on other platforms. The external signed authority and deployment-specific EEV / ProtectedCapital / viability evidence remain explicit blockers. V3 and Reveal semantics were not changed.
