@@ -68,7 +68,8 @@ const challengeAllowsAutoMerge = (pr) => {
   const state = pr.challengeState ?? (pr.challengeOpen === true ? 'OPEN' : 'NONE')
   if (state === 'NONE') return true
   if (state !== 'RESOLVED_NO_BLOCKER' && state !== 'RESOLVED_FIXED') return false
-  if (pr.challengeResolutionRecorded !== true) return false
+  if (typeof pr.challengeResolutionRef !== 'string' || pr.challengeResolutionRef.trim().length === 0) return false
+  if (typeof pr.challengeResolutionReason !== 'string' || pr.challengeResolutionReason.trim().length < 12) return false
   if (pr.challengeResolutionCommitSha !== pr.commitSha) return false
   if (state === 'RESOLVED_FIXED' && (pr.requiredChecksPass !== true ||
       pr.evidenceCommitSha !== pr.commitSha)) return false
@@ -216,7 +217,8 @@ assert.equal(autoMergeEligible({
   requiredChecksPass: true,
   approvalCommitSha: 'abc123',
   challengeState: 'RESOLVED_NO_BLOCKER',
-  challengeResolutionRecorded: true,
+  challengeResolutionRef: 'issue://7/disposition/1',
+  challengeResolutionReason: 'The concern was checked against the current head and does not apply.',
   challengeResolutionCommitSha: 'abc123',
 }), true, 'a resolved challenge permits the normal approval-and-check path when its disposition is recorded for the current head')
 assert.equal(autoMergeEligible({
@@ -224,8 +226,37 @@ assert.equal(autoMergeEligible({
   approved: true,
   requiredChecksPass: true,
   approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_FIXED',
+  challengeResolutionRef: 'issue://7/disposition/2',
+  challengeResolutionReason: 'The identified issue was fixed on this exact head.',
+  challengeResolutionCommitSha: 'abc123',
+}), true, 'a fixed challenge permits merge only when its resolution is bound to the current checked head')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
   challengeState: 'RESOLVED_NO_BLOCKER',
-  challengeResolutionRecorded: false,
+  challengeResolutionReason: 'The concern was checked against the current head and does not apply.',
+  challengeResolutionCommitSha: 'abc123',
+}), false, 'a resolution without a traceable record reference fails closed')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'UPHELD',
+  challengeResolutionRef: 'issue://7/disposition/3',
+  challengeResolutionReason: 'The challenge identified a substantive blocker on this head.',
+  challengeResolutionCommitSha: 'abc123',
+}), false, 'an upheld blocker prevents the affected head from being auto-merged')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_NO_BLOCKER',
+  challengeResolutionReason: 'The concern was checked against the current head and does not apply.',
   challengeResolutionCommitSha: 'abc123',
 }), false, 'a challenge cannot be silently dismissed without a recorded disposition')
 assert.equal(autoMergeEligible({
@@ -234,7 +265,8 @@ assert.equal(autoMergeEligible({
   requiredChecksPass: true,
   approvalCommitSha: 'abc123',
   challengeState: 'RESOLVED_NO_BLOCKER',
-  challengeResolutionRecorded: true,
+  challengeResolutionRef: 'issue://7/disposition/1',
+  challengeResolutionReason: 'The concern was checked against the previous head.',
   challengeResolutionCommitSha: 'old-head',
 }), false, 'challenge disposition bound to an old head must be reassessed')
 assert.equal(autoMergeEligible({
