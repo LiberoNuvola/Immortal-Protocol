@@ -1,0 +1,113 @@
+name: Materios WebSocket GRANDPA Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      websocket_endpoint:
+        description: "Existing Materios WebSocket RPC endpoint; do not include credentials"
+        required: true
+        type: string
+        default: "wss://materios.fluxpointstudios.com/preprod-rpc"
+      subscription_wait_seconds:
+        description: "Bounded wait for live justification notification"
+        required: true
+        type: string
+        default: "15"
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-websocket-grandpa-probe.yml"
+      - "poc/materios-checkpoint/src/probe-websocket-rpc-capabilities.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  ws-grandpa-probe:
+    name: Probe existing public WebSocket RPC
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
+
+      - name: Install pinned read-only probe dependencies
+        working-directory: poc/materios-checkpoint
+        run: npm ci --ignore-scripts
+
+      - name: Run WebSocket GRANDPA capability and capture probe
+        id: probe
+        continue-on-error: true
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_WS: ${{github.event.inputs.websocket_endpoint || 'wss://materios.fluxpointstudios.com/preprod-rpc'}}
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+          MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
+          MATERIOS_WS_TIMEOUT_MS: "12000"
+          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: ${{fromJSON(github.event.inputs.subscription_wait_seconds || '15') * 1000}}
+          MATERIOS_WS_EVIDENCE_OUT: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+        run: node src/probe-websocket-rpc-capabilities.mjs
+
+      - name: Upload raw WebSocket acquisition evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-websocket-grandpa-probe-${{github.run_id}}-${{github.run_attempt}}
+          path: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summarize WebSocket proof availability (not verification)
+        if: always()
+        env:
+          EVIDENCE_PATH: ${{runner.temp}}/MateriosWebSocketRpcProbe.json
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path = process.env.EVIDENCE_PATH;
+          if (!fs.existsSync(path)) {
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '# Materios WebSocket GRANDPA Probe\n\nNo evidence JSON was produced.\n');
+            process.exit(1);
+          }
+          const e = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const lines = [
+            '# Materios WebSocket GRANDPA Probe',
+            '',
+            '- Endpoint connected: **' + String(e.websocket?.connected ?? false) + '**',
+            '- Chain ID label: **' + String(e.chain_id ?? 'unknown') + '**',
+            '- Observed system chain: **' + String(e.identity?.system_chain ?? 'unknown') + '**',
+            '- Genesis hash match: **' + String(e.identity?.genesis_hash_match ?? false) + '**',
+            '- RPC catalogue status: **' + String(e.catalogue?.status ?? 'unknown') + '**',
+            '- Advertised method count: **' + String(e.catalogue?.method_count ?? 'unknown') + '**',
+            '- grandpa_proveFinality: **' + String(e.catalogue?.grandpa_methods?.grandpa_proveFinality ?? 'unknown') + '**',
+            '- grandpa_subscribeJustifications: **' + String(e.catalogue?.grandpa_methods?.grandpa_subscribeJustifications ?? 'unknown') + '**',
+            '- grandpa_unsubscribeJustifications: **' + String(e.catalogue?.grandpa_methods?.grandpa_unsubscribeJustifications ?? 'unknown') + '**',
+            '- Direct grandpa_proveFinality call: **' + String(e.finality_probe?.prove_finality?.status ?? 'unknown') + '**',
+            '- Direct grandpa_subscribeJustifications call: **' + String(e.finality_probe?.subscribe_justifications?.status ?? 'unknown') + '**',
+            '- Subscription notification received: **' + String(e.finality_probe?.subscribe_justifications?.notification_received ?? false) + '**',
+            '- Latest-head FRNK justification entries: **' + String(e.head_block_justifications?.frnk_entry_count ?? 'unknown') + '**',
+            '- Raw finality payload captured: **' + String(e.claims?.raw_grandpa_finality_payload_captured ?? false) + '**',
+            '- Raw FRNK justification captured: **' + String(e.claims?.raw_grandpa_justification_captured ?? false) + '**',
+            '',
+            '**This is read-only acquisition evidence. The probe does not verify GRANDPA signatures/quorum, authority-set history, or B3-A.**',
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          if (!e.websocket?.connected || e.identity?.genesis_hash_match !== true) {
+            console.error('Fail-closed: WebSocket did not establish the expected Materios chain identity.');
+            process.exit(1);
+          }
+          if (e.claims?.raw_grandpa_finality_payload_captured !== true &&
+              e.claims?.raw_grandpa_justification_captured !== true) {
+            console.error('No raw GRANDPA finality payload/justification was acquired over the public WebSocket route.');
+            process.exit(1);
+          }
+          console.log('Raw unverified GRANDPA payload acquired. B3-A remains OPEN pending independent verification.');
+          NODE
