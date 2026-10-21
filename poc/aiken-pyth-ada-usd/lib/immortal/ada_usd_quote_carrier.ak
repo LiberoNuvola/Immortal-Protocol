@@ -73,28 +73,32 @@ fn unique_script_output(
   }
 }
 
-fn singleton_input_count(
+fn sum_quantities(quantities: List<Int>) -> Int {
+  list.foldl(quantities, 0, fn(quantity, total) { quantity + total })
+}
+
+fn singleton_input_quantity(
   inputs: List<Input>,
   policy: PolicyId,
   name: AssetName,
 ) -> Int {
-  list.length(
-    list.filter(
+  sum_quantities(
+    list.map(
       inputs,
-      fn(input) { cardano_assets.quantity_of(input.output.value, policy, name) == 1 },
+      fn(input) { cardano_assets.quantity_of(input.output.value, policy, name) },
     ),
   )
 }
 
-fn singleton_output_count(
+fn singleton_output_quantity(
   outputs: List<Output>,
   policy: PolicyId,
   name: AssetName,
 ) -> Int {
-  list.length(
-    list.filter(
+  sum_quantities(
+    list.map(
       outputs,
-      fn(output) { cardano_assets.quantity_of(output.value, policy, name) == 1 },
+      fn(output) { cardano_assets.quantity_of(output.value, policy, name) },
     ),
   )
 }
@@ -147,8 +151,8 @@ pub fn quote_carrier_transition_is_valid(
             // This transition must spend/re-emit the one carrier singleton.
             list.length(script_inputs) == 1,
             list.length(script_outputs) == 1,
-            singleton_input_count(tx.inputs, carrier_policy_id, carrier_asset_name) == 1,
-            singleton_output_count(tx.outputs, carrier_policy_id, carrier_asset_name) == 1,
+            singleton_input_quantity(tx.inputs, carrier_policy_id, carrier_asset_name) == 1,
+            singleton_output_quantity(tx.outputs, carrier_policy_id, carrier_asset_name) == 1,
             when unique_script_input(tx.inputs, own_hash) is {
               Some(carrier_input) ->
                 when unique_script_output(tx.outputs, own_hash) is {
@@ -293,4 +297,20 @@ test carrier_output_rejects_missing_quote() {
   let datum = AdaUsdQuoteCarrierDatum { quote: None }
   let update = fixture_update(timestamp_us, timestamp_us)
   quote_carrier_datum_matches_update(datum, update, upper_bound_ms) == False
+}
+
+test authority_total_quantity_accepts_exactly_one() {
+  sum_quantities([1]) == 1
+}
+
+test authority_total_quantity_rejects_additional_tokens_across_outputs() {
+  and {
+    sum_quantities([1, 2]) != 1,
+    sum_quantities([1, 1]) != 1,
+    sum_quantities([2]) != 1,
+  }
+}
+
+test authority_total_quantity_rejects_missing_singleton() {
+  sum_quantities([]) != 1
 }
