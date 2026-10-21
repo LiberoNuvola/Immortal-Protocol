@@ -26,6 +26,7 @@ The HTTP RPC was used only as an untrusted source of candidate block hashes and 
 | [#39588504155](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588504155) | `72c7603ffeaa967188b9ecf33c074d59d0b05837` | ID `12341098852`; ZIP SHA-256 `cf957ac9fda457d8dc23d922b9b71cbf82b2c214efb4dd7059ecac20d5d2a68c` | 18 candidate blocks; 4 headers hash-bound; 0 FRNK justifications captured |
 | [#39588545434](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588545434) | `810c49cea9c9cbd9089874c616f2e731cb767836` | ID `12339949549`; ZIP SHA-256 `d9b79ec7e85b36cb5554fdf4d1892e30344fe550d5f59b988708302da65dc074` | 18 candidate blocks; 3 headers hash-bound; 0 FRNK justifications captured |
 | [#39598706602 (run #8)](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39598706602) | `711a0fb852f819b481692cbb1b84d0bd4dfcd245` | ID `12344858114`; JSON diagnostics retained in the ZIP artifact | 18 candidate queries all `QUERY_UNAVAILABLE`; 0 hash-bound headers; 0 FRNK justifications |
+| [#39601026951 (run #9)](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951) | `3719db8655cc212deec7736641ac85d235bbf5c5` | ID `12346387679`; JSON diagnostics retained in the ZIP artifact | 18 candidate queries; 5 headers hash-bound; 0 FRNK justifications; sync telemetry parsed over 350 seconds |
 
 For all three runs, the Smoldot logs repeatedly reported GRANDPA warp sync idle/in progress at block **97,069**, while the untrusted HTTP RPC reported a finalized head around block **2,381,706–2,381,714**. This is an observed light-client synchronization/availability problem in this test configuration; it is not evidence that the later blocks are unfinalized.
 
@@ -44,6 +45,20 @@ The candidate scan sampled the activation block and nearby descendant candidates
 Run [#39598706602](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39598706602) used the first `system_health` instrumentation revision. Every sampled `system_health` request timed out, starting with the first probe immediately after genesis validation. Subsequent Smoldot `chain_getBlock` requests also timed out, and no historical header or justification was captured in this attempt. The native Smoldot log continued to alternate between “GrandPa warp sync in progress” and “idle” at block **97,069**.
 
 This means the health-RPC instrumentation was not useful and the run is **confounded for historical block-query availability**; it cannot establish that the P2P peer lacks all requested blocks. The capture script was revised in commit [808e34b](https://github.com/LiberoNuvola/Immortal-Protocol/commit/808e34bfe11ae32fe54a50fe3fe7a00f065a8c9d) to stop issuing `system_health` and instead record warp-sync state directly from Smoldot's native log callback. The next bounded run is needed to measure historical queries without those extra RPC calls.
+
+## Run #9: native sync-log diagnostics, health RPC removed
+
+Run [#39601026951](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951) removed the `system_health` queries that had timed out in run #8. It preserved the expected chain ID and genesis identity, and the historical block-query behaviour returned to the earlier pattern:
+
+- 18 candidate blocks were queried.
+- 5 returned headers whose reconstructed SCALE hash matched the requested block hash.
+- The pinned activation target 1,856,408 was among those hash-bound headers, but its response contained no FRNK justification.
+- No raw GRANDPA justification was captured from either the subscription or block responses.
+- 13 other candidate queries returned no block object from Smoldot in the bounded probe.
+
+The native Smoldot log collector recorded 36 warp-sync observations over 350 seconds: 22 “in progress” and 14 “idle”. Every sample reported the same block **97,069**, so the derived classification was `WARP_SYNC_STALLED_AT_FIXED_BLOCK`. This is a local observation of the tested client/peer route, not proof that later blocks are unfinalized or that the peer is globally unavailable.
+
+Immutable artifact: ID `12346387679`, [workflow run #39601026951](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951). The workflow failed closed because no raw proof was captured; its candidate query step and artifact upload succeeded.
 
 ## Conclusion
 
