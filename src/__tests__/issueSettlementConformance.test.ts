@@ -7,7 +7,6 @@ import {
   assertCompletedIssueValidityUpperBound,
   assertCompletedTreasuryAdaSettlement,
   assertCompletedTreasurySettlement,
-  assertCompletedTreasuryMinimumAda,
   assertTreasuryAdaMeetsOutputMinimum,
   buildIssueSettlementAssets,
   decodeAdaOraclePriceReference,
