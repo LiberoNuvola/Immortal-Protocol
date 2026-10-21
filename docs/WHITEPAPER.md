@@ -301,6 +301,24 @@ The current oracle datum is also a single-asset `OracleDatum`, and the DApp buil
 
 The current Issue path is **not yet fully permissionless**. The V3 carrier validator requires a signature from its configured authority key, while an external signed admission envelope supplies economic evidence inputs that the on-chain sale validators do not independently reconstruct in full. The user's wallet signature authorizes the user's spend; it does not substitute for the economic gate.
 
+### 13.4 Reference Issue delta versus on-chain enforcement
+
+The existing reference transition in `IMMORTAL/kernel/EconomicTransitionV3.hs` already defines the Issue delta; it must not be re-invented for this paper. Under the canonical PRE-RICH profile, an accepted `Issue(classId, price)` requires the profile's exact price for that class and the existing class-saleability predicate. Its state delta is:
+
+```text
+v3UnresolvedReserve     += price
+v3UnresolvedTicketCount += 1
+targetClass.issued      += 1
+targetClass.unresolved  += 1
+targetClass.exposure    += price
+```
+
+Other class entries, crystallized liabilities, safety capital, reserve protection, mandatory future costs, control history and Jackpot state remain unchanged by this Issue transition. The reference transition also applies its existing pre/post conservation, non-negativity, profile and control-history checks. The separate Economic Admission function checks the candidate projected state against verified-truth, freshness, obligation-completeness, EEV, immediate-executable-liquidity and certified-Ω predicates.
+
+These are **reference/Haskell decision semantics**, not proof that the Cardano ledger enforces the complete relation. The current V3 carrier datum/redeemer path does not provide the validator with independently decoded Issue class/price coordinates from which to recompute the delta; it validates state endpoints and a signature over the supplied action fingerprint. The signature's existence does not demonstrate that the fingerprint is the canonical hash of the actual permitted Issue delta. MintPolicy and B1 enforce their respective atomic sale/payment/reservation invariants, but do not independently close this V3 state-transition gap.
+
+Accordingly, the paper may state that a canonical reference Issue transition and Economic Admission composition exist in Haskell, while marking **on-chain refinement of the exact Issue delta and authentication of all gate inputs as open implementation-conformance obligations**. The permissionless claim requires those obligations to be closed with adversarial evidence; removing only the signature check would be an unsafe weakening, not conformance.
+
 A successful Issue transaction under that authority-backed model could be useful as a narrowly scoped Adapter/ledger integration experiment only after the actual settlement-value mismatch has been fixed. It would not, by itself, demonstrate permissionless execution, complete economic-gate equivalence, source-authenticity closure or full viability certification.
 
 The current evidence should be classified as follows:
