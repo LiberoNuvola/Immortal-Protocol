@@ -305,7 +305,9 @@ const settlementSource = read('src/issueSettlement.ts')
 const oracleTypesHs = read('Adapter/CARDANO/observation/OracleTypes.hs')
 const economicHs = read('plutus/Economic.hs')
 contains(mintTs, /deriveAdaIssueSettlementLovelace/, 'Issue settlement derives ADA quantity from authenticated OracleDatum quote')
-contains(mintTs, /assertCompletedTreasuryAdaSettlement/, 'Completed Lucid Treasury output is validated before submission')
+contains(mintTs, /buildIssueSettlementAssets/, 'Issue settlement supports an opt-in buyer-selected multi-asset basket')
+contains(mintTs, /settlementAssetQuantities/, 'Multi-asset settlement quantities enter the Issue builder explicitly')
+contains(mintTs, /assertCompletedTreasurySettlement/, 'Completed Lucid Treasury output Value is checked before submission')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
   'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')
 contains(settlementSource, /OracleQuote constructor is invalid[\s\S]*?OracleQuoteSet constructor or quote list is invalid[\s\S]*?exactly one quote for requested asset/s,
@@ -340,7 +342,11 @@ if (!fs.existsSync(settlementTestPath)) {
     'Issue settlement tests bind the payment to the USDM target')
   contains(settlementTest, /oracle|PriceReference/i,
     'Issue settlement tests bind the valuation to per-asset price references')
-  contains(settlementTest, /stale|missing|invalid/i,
+  contains(settlementTest, /buildIssueSettlementAssets/,
+    'Issue settlement tests exercise the multi-asset basket builder')
+  contains(settlementTest, /assertCompletedTreasurySettlement/,
+    'Issue settlement tests inspect the full completed Treasury asset map')
+  contains(settlementTest, /stale|missing|invalid|duplicate/i,
     'Issue settlement tests cover invalid price-reference rejection')
 }
 
