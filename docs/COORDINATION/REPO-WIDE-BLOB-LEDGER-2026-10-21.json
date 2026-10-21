@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 51,
-    "semantic_ledger_entries_not_reviewed": 1760,
+    "scoped_static_reviews_recorded": 71,
+    "semantic_ledger_entries_not_reviewed": 1740,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness binding, and native P2.8 ledger gates remain blocked. Direct-USDM EEV approval is confirmed only for the recorded source UTxO snapshot.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness binding/native P2.8, and Materios B3-A/B/C proof acquisition remain blocked. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -29547,10 +29547,13 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_NATIVE_EXECUTION_PROOF_CHECK",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-C",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "1142c1a3130833845a37e71de04b6127993ecc23",
@@ -31977,10 +31980,13 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_UNTRUSTED_RPC_CAPTURE",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "1fe2899c885cc342257fb51da86a8b0285738251",
@@ -36320,10 +36326,14 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_EVIDENCE_SCHEMA_NOT_REAL_PROOF",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "B3-B",
+        "B3-C"
+      ]
     },
     {
       "blob_sha": "3954bf6d86b6600267929ecfbd5195a6f7c825c7",
@@ -36822,10 +36832,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_HEADER_ANCESTRY_CHECKS",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "3c3b8d6986dfe8572c4542af03e4562b8c52bdf8",
@@ -37262,10 +37275,17 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_DISTINCT_ACQUISITION_AND_NATIVE_VERIFICATION_JOBS",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "B3-B",
+        "B3-C",
+        "P-09",
+        "P-10",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "3eaef6ee9bfbe7efcb136885e0cee694912fde14",
@@ -41467,10 +41487,15 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_UPSTREAM_PATCH_SPEC_NOT_APPLIED",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "B3-C",
+        "P-09",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "5ab0a8c01bedddbb03b0ea36a4c9a3327584b620",
@@ -41483,10 +41508,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_GRANDPA_JUSTIFICATION_DECODE",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "5ad41a88b84b4e78fc4b3ad0aa3066e006b94939",
@@ -43400,10 +43428,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_VERIFIER_CLI_BOUNDARY",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-B",
+        "P-10"
+      ]
     },
     {
       "blob_sha": "691229c70bf02f5a58409638194725b71e3f9392",
@@ -43463,10 +43494,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_STORAGE_PROOF_ACQUISITION",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-B",
+        "P-10"
+      ]
     },
     {
       "blob_sha": "69ec565a1171787da931e2aa32d217f503bbc6db",
@@ -44140,10 +44174,13 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_FAILS_CLOSED_ON_MISSING_PROOF_TRANSPORT",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "6d511c1d5ae7a67f963e250fc27526ff86eff2d3",
@@ -45241,10 +45278,15 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_EXACT_BLOCK_RPC_TRANSPORT",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-B",
+        "B3-C",
+        "P-10",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "75389cda653a1695a63f6237a735c701bb1d210d",
@@ -50992,10 +51034,13 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_NATIVE_STORAGE_TRIE_CHECK_FIXTURE_ONLY",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-B",
+        "P-10"
+      ]
     },
     {
       "blob_sha": "9b7fa8c64f905f713e130563b64ff837fef5d331",
@@ -51260,10 +51305,15 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_PINNED_P2P_ACQUISITION",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951",
+        "artifact:12346387679"
+      ]
     },
     {
       "blob_sha": "9c9b640f3f079ca6c0f89b7f32889b4fda076c54",
@@ -54977,10 +55027,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_JUSTIFICATION_VS_AUTHORITY_TRUST_BOUNDARY",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "b6956505e2862e0d9c9dc1012c86611850eb0e0a",
@@ -55034,10 +55087,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_AUTHORITY_STATE_VALIDATION",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "b6ac34667793f5ea4fd70108826239fb97cf093d",
@@ -55401,10 +55457,13 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_HISTORICAL_ANCHOR_COLLECTOR",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-B",
+        "P-10"
+      ]
     },
     {
       "blob_sha": "b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534",
@@ -56931,10 +56990,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_EXECUTION_PROOF_CLIENT",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-C",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "c52f4e9e71d02f8b6bd9d80230255ded4af59552",
@@ -58228,10 +58290,15 @@
       "branches": [
         "work/b3-materios-provenance-evidence"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_P2P_PROOF_AVAILABILITY_FAIL_CLOSED",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951",
+        "artifact:12346387679"
+      ]
     },
     {
       "blob_sha": "cc1073744c25a84a0f7cc047a448cc5152378e5a",
@@ -59308,10 +59375,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09"
+      ]
     },
     {
       "blob_sha": "d2c57577ec83aa6031e4c0aef2a392b1f9ea1903",
@@ -62630,10 +62700,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_VERIFIED_TRANSITION_GATE",
+      "review_scope": "Static source/workflow/design review plus read-only inspection of P2P Actions run #39601026951 and its artifact 12346387679, along with upstream main RPC registration. No new RPC probe, witness capture, node operation, proof fabrication or verifier test execution was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md@7cc94a392103678be5dc779cc754d8ec1051d497",
+      "evidence_references": [
+        "B3-A",
+        "P-09",
+        "P-11"
+      ]
     },
     {
       "blob_sha": "e7e6518cfc3143308d6cffcf394bdebe82c0db27",
