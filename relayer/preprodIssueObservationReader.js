@@ -428,6 +428,25 @@ async function readPreprodIssueObservation({
     throw new Error('authenticated authority carrierBindingSignature is invalid')
   }
 
+  // Keep the exact digest endpoints covered by the same signed authority
+  // envelope so the Haskell producer can compare them to its live decision.
+  const authorityBindingKeys = ['stateHash', 'actionFingerprint', 'postStateHash']
+  const authorityBindingPresent = authorityBindingKeys.filter(
+    (key) => authoritativeInputs[key] !== undefined && authoritativeInputs[key] !== null,
+  ).length
+  if (authorityBindingPresent !== 0 && authorityBindingPresent !== authorityBindingKeys.length) {
+    throw new Error('authenticated authority carrier decision binding is incomplete')
+  }
+  const authorityDecisionBinding = authorityBindingPresent === authorityBindingKeys.length
+    ? Object.fromEntries(authorityBindingKeys.map((key) => {
+        const value = required(authoritativeInputs[key], key)
+        if (!/^[0-9a-fA-F]{64}$/.test(value)) {
+          throw new Error('authenticated authority ' + key + ' must be a 32-byte hex digest')
+        }
+        return [key, value.toLowerCase()]
+      }))
+    : undefined
+
   const protectedCapitalProvenance = authoritativeInputs.protectedCapitalProvenance
   if (!protectedCapitalProvenance || typeof protectedCapitalProvenance !== 'object') {
     throw new Error('authenticated authority source did not provide ProtectedCapital provenance')
@@ -468,6 +487,7 @@ async function readPreprodIssueObservation({
     eevQualification: authoritativeInputs.eevQualification,
     viabilityCertificate: authoritativeInputs.viabilityCertificate,
     ...(carrierBindingSignature === undefined ? {} : { carrierBindingSignature }),
+    ...(authorityDecisionBinding === undefined ? {} : { authorityDecisionBinding }),
     poolState,
     decisionInput: {
       preState: carrier.state,
