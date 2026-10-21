@@ -33,6 +33,7 @@ const CONTROL_PLANE_PATTERNS = [
   /^\.github\/workflows\//i,
   /^\.github\/(?:CODEOWNERS|dependabot\.yml)$/i,
   /^CONTRIBUTING\.md$/i,
+  /(^|\/)AGENTS\.md$/i,
   /^\.github\/PULL_REQUEST_TEMPLATE\.md$/i,
   /^CODEOWNERS$/i,
   /^scripts\/contribution-evidence-gate\.mjs$/i,
@@ -122,7 +123,7 @@ const isEligiblePathForClass = (path, klass) => {
   const markdown = /\.(?:md|mdx)$/i.test(path)
   switch (klass) {
     case 'A':
-      return markdown
+      return /^(?:README\.md|docs\/(?:README|EXECUTIVE-SUMMARY)\.md)$/i.test(path)
     case 'B':
       return (/^audit\/(?!algorithmic-governability\/).+\.(?:mjs|cjs|js|ts|tsx|py|sh|json|ya?ml|md)$/i.test(path) ||
         /^scripts\/(?:check|audit|verify|validate|replay|collect|extract|diagnose|report|evidence|boundary)[a-z0-9_-]*\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
@@ -479,11 +480,35 @@ const selfTest = () => {
 
   const mixedClasses = classifyPullRequest({
     body: body.replace('- Class: B', '- Class: A, C'),
-    files: ['docs/04-guides/reader.md', 'src/__tests__/reader.test.ts'],
+    files: ['README.md', 'src/__tests__/reader.test.ts'],
     headSha: 'abc123',
   })
   assert.equal(mixedClasses.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
   assert.equal(mixedClasses.eligible, true)
+
+  const narrowDocsPass = classifyPullRequest({
+    body: body.replace('- Class: B', '- Class: A'),
+    files: ['docs/EXECUTIVE-SUMMARY.md'],
+    headSha: 'abc123',
+  })
+  assert.equal(narrowDocsPass.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
+  assert.equal(narrowDocsPass.eligible, true)
+
+  const unclassifiedDocs = classifyPullRequest({
+    body: body.replace('- Class: B', '- Class: A'),
+    files: ['docs/research/unclassified-economic-boundary.md'],
+    headSha: 'abc123',
+  })
+  assert.equal(unclassifiedDocs.decision, 'STRONGER_REVIEW_REQUIRED')
+  assert.equal(unclassifiedDocs.eligible, false)
+
+  const agentInstructions = classifyPullRequest({
+    body: body.replace('- Class: B', '- Class: A'),
+    files: ['AGENTS.md'],
+    headSha: 'abc123',
+  })
+  assert.equal(agentInstructions.decision, 'STRONGER_REVIEW_REQUIRED')
+  assert.equal(agentInstructions.eligible, false)
 
   const policyLab = classifyPullRequest({
     body,
