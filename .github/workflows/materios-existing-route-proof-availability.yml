@@ -51,7 +51,7 @@ jobs:
         continue-on-error: true
         working-directory: poc/materios-checkpoint
         env:
-          MATERIOS_RPC: ${{ github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_RPC: ${{ github.event.inputs.archive_rpc || github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
         run: npm run probe:rpc
 
@@ -60,7 +60,7 @@ jobs:
         continue-on-error: true
         working-directory: poc/materios-checkpoint
         env:
-          MATERIOS_RPC: ${{ github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_RPC: ${{ github.event.inputs.archive_rpc || github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
         run: npm run capture:finalized
 
