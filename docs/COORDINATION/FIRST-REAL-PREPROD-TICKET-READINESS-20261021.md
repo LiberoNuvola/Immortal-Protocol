@@ -35,20 +35,31 @@ Verify the public DApp `VITE_ISSUE_AUTHORITY_ENDPOINT` is configured to an HTTPS
 
 Promote the current Issue consumer code through the repository's approved release path; do not assume the current public Pages artefact contains it. The configured public runtime must consistently identify the deployed Counter, Treasury, ticket policy, Oracle State, B1 Pool, V3 carrier, B2 control, reference-script addresses, Blockfrost project, and V3 carrier factory URL. Confirm the factory artifact reconstructs the expected configured V3 carrier address. Keep authority private keys and credentials server-side.
 
-### A4. Make the first purchase deliberately small and observable
+### A4. Decision: do not issue a real ticket merely to create a milestone
 
-Use the intended user's Preprod wallet and the Genesis / 1 USDM economic class only if the live authoritative state says that class is saleable and all admission checks pass. The current `src/mint.ts` specifies **1 ADA (1,000,000 lovelace) as the current B1 launch settlement payment**; `pdPriceUsdm` records the separate economic price in USDM sub-units. The UI must show this distinction before the user signs. Do not imply that this first transaction transfers USDM.
+**Do not run the first real Issue with the current builder.** The on-chain payment contract and the current transaction builder are provably inconsistent.
 
-On approval, have the wallet sign and submit the actual transaction. A successful function return is not sufficient evidence until the chain confirms the transaction and an independent read establishes:
-1. the ticket NFT policy ID and serial asset name in the intended wallet;
-2. Counter continuation to (n+1);
-3. exactly one matching Pending PrizeDatum, bound to the expected B1 Pool;
-4. exact Treasury settlement output;
-5. B1 Pool reserve/count transition and solvency checks;
-6. V3 carrier continuation to the expected version/state; and
-7. transaction inclusion, actual inputs and outputs, and no duplicate/replayed issuance.
+The exact code path is:
+- Genesis `pdPriceUsdm = 100` USDM sub-units (`1 USDM`);
+- `src/config.ts` sets `TICKET_PAYMENT_LOVELACE = 1_000_000`;
+- `src/mint.ts` sends the Treasury exactly that ADA-only value;
+- `Adapter/CARDANO/observation/OracleTypes.hs` sets `minUtxoLovelace = 1_600_000`;
+- `plutus/Economic.hs` calculates the ADA economic quantity as `max(0, amt - minUtxoLovelace)`;
+- `plutus/MintPolicy.hs` requires `Economic.totalUsdmValue(TreasuryOutput) == pdPriceUsdm`.
 
-Record the transaction ID, current input references, policy ID, asset name, resulting PrizeDatum reference, state-before/state-after, and evidence digests in a redacted evidence packet. Never include the buyer's secret, seed phrase, private key, or sensitive endpoint credentials.
+For the Treasury output currently constructed by the builder:
+
+```text
+economicAda = max(0, 1,000,000 - 1,600,000) = 0
+valuedTreasuryOutput = 0 USDM sub-units
+requiredGenesisPrice = 100 USDM sub-units
+```
+
+Thus the current ADA-only output cannot pass the on-chain exact-value predicate for a positive Genesis price. The correct response is not to relax the validator or fabricate an admission: repair the settlement-amount construction and prove its equivalence to the on-chain calculation first.
+
+This also shows why a non-permissionless real Issue would not be useful *yet*: it would combine a known settlement mismatch with an authority-dependent V3 transition. After settlement correctness is restored, a controlled authority-backed Issue may be useful as a narrowly scoped Adapter/ledger-integration experiment (transaction inclusion, actual fee, serialized size and StateBefore/StateAfter). It still cannot substantiate the paper's permissionless claim and must not be presented as doing so.
+
+The next useful evidence can be obtained without issuing a real ticket: differential tests over actual Treasury `Value` candidates and authenticated Oracle datum fixtures, followed by Plutus execution/conformance evidence. A real Issue becomes optional empirical evidence only after those gates pass, not a milestone in itself.
 
 ### A5. Keep Issue and Reveal acceptance separate
 
