@@ -271,3 +271,33 @@ The code also has a concrete existing profile selected in `produceIssueDecision`
 Trace the producer of `IssueDecisionInput` and the concrete source that sets `idiObligationsComplete`, including its obligation inventory and derivation version. Determine whether that source can supply a version-bound, independently verified G1 policy result before it asserts completeness. If no such binding exists, document the minimal missing predicate at that upstream authoritative-input boundary; do not patch the Haskell Boolean gate or invent a parallel fee calculator.
 
 **G1 remains OPEN.** This source-backed finding covers the inspected Issue decision chain only; it does not claim that every action path or every repository file has been exhaustively audited.
+
+
+### 9.7 Concrete Preprod producer — completeness is transported, not derived here
+
+The next trace followed the actual producer composition through `relayer/preprodIssueAdmissionProvider.js`, `relayer/preprodIssueObservationProvider.js`, `relayer/preprodIssueObservationReader.js`, and `relayer/authoritativeIssueRefinementEnvelope.js` on the target branch.
+
+- **`relayer/preprodIssueAdmissionProvider.js`** (blob `PLACEHOLDER`): it chooses either a caller-supplied `authoritySource`, or `fetchSignedIssueAuthority` when URL and public-key configuration are present. If neither is configured, it still accepts `runtimeInputs.authoritativeInputs` directly. The direct path is not required by this module to pass through the signed-authority fetcher or the refinement-envelope validator.
+- **`relayer/preprodIssueObservationReader.js`** (blob `e934caca34a99d4521968d6d04ebd0305f8b53f8`): the reader requires the authoritative values and checks that `obligationsComplete` is a Boolean. It then copies that value into `decisionInput.obligationsComplete`. Its required-key list does not include `derivationVersion`, `sourceReference`, `verificationReference`, or a G1 policy identity/commitment; it does not derive an obligation inventory or test whether a G1 fee obligation is present.
+- **`relayer/preprodIssueObservationProvider.js`** (blob `ff55cfa0bc28ac8a1d3f46bb52dc88ee980950b5`): this layer checks required Issue fields and observation-reference consistency, then passes the decision input to Haskell. It does not strengthen the meaning or provenance of `obligationsComplete`.
+- **`relayer/authoritativeIssueRefinementEnvelope.js`** (blob `009669b9a997ebfd26a63ffe36f0d187d6be5585`): a separate validator requires `verificationReference`, `sourceReference`, `derivationVersion`, `verificationStatus === 'VERIFIED'`, freshness metadata and Boolean flags. Its own comment says it is a transport contract, not an oracle or cryptographic verifier. In the inspected Preprod producer chain, the reader/provider do not import or invoke this validator, and even a validated envelope would not by itself prove that a G1 fee obligation was included in the completeness claim.
+
+The separate provenance note `docs/audits/PRE-RICH-ISSUE-ADMISSION-PROVENANCE.md` independently describes the concrete authoritative EEV/protected-capital/refinement producer and end-to-end admission evidence as **OPEN**. It explicitly prohibits manufacturing `obligationsComplete` locally or treating test fixtures as live economic evidence. That supports the conclusion that a typed Boolean and references are not, alone, a completeness proof.
+
+#### Exact finding
+
+The inspected chain has an upstream transport point for the claim, but no demonstrated semantic derivation of that claim:
+
+`runtimeInputs.authoritativeInputs / authoritySource → obligationsComplete: Boolean → IssueDecisionInput → EconomicGate`
+
+No inspected link proves:
+
+`approved G1 policy + exact Issue action/context → obligation inventory including any required G1 fee → independently verified completeness claim`.
+
+This is a **missing proof/binding in the inspected source path**, not proof that every supplied claim is false. A correctly authenticated upstream producer may exist outside these files, but the current call chain does not require or verify its G1-specific completeness semantics. Likewise, the presence of `derivationVersion` in the separate envelope type cannot be treated as bound to the Boolean unless the producer validates and consumes that envelope and binds its derivation to the actual obligation inventory and policy revision.
+
+#### Minimal closure seam
+
+Before any implementation change, identify the configured live `authoritySource`/signed-authority producer and inspect its concrete output and verification path. The source-backed acceptance condition for G1 should then be stated narrowly: the authoritative completeness result must be bound to the exact approved G1 policy revision and candidate Issue action, and to the obligation inventory derived under that policy, before it is passed into the existing gate. If the existing producer cannot prove that relation, record that missing predicate at the upstream authoritative-input boundary. Do not patch the Haskell Boolean gate, add a parallel fee calculator, or alter V3/Reveal.
+
+**Status remains G1 OPEN.** This audit still makes no selection of fee-bearing classes and authorizes no production implementation.
