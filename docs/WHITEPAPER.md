@@ -255,6 +255,62 @@ A valid sale binds:
 
 atomically or through an equivalent on-chain mechanism that prevents unreserved issuance.
 
+### 13.1 Economic denomination versus settlement asset
+
+The ticket's **economic price is denominated in USDM**. This is a unit-of-account decision, not a requirement that the buyer hold or transfer USDM itself.
+
+A deployment may permit payment in ADA, PRE, NIGHT or another asset only when that asset is explicitly supported by the deployment's authenticated price-reference contract and the on-chain calculation proves that the actual Treasury output has the required USDM-equivalent value. A permitted settlement basket would require every constituent asset to be independently priced and the entire conversion contract to be supported by the transaction's authenticated reference inputs. This paper does not imply that every example asset, or every combination of them, is already enabled in the current implementation.
+
+The current Plutus sale invariant is exact equality, not a loose lower bound:
+
+```text
+Economic.totalUsdmValue(actualTreasuryOutput, authenticatedOracleReferences)
+    == pdPriceUsdm
+```
+
+A missing, mismatched, unauthorized, negative or stale asset price must not be replaced with an assumed market quote. The ADA path has a specific economic-quantity adjustment for the configured minimum-UTxO amount. Integer precision and rounding are part of the on-chain conversion contract. The Adapter/builder may propose a settlement quantity, but the ledger-side predicate remains decisive.
+
+Settlement value and EEV perimeter are different concepts. Accepting PRE, NIGHT or ADA into Treasury does not automatically make those assets eligible as directly verified USDM liquidity for the PRE-RICH `PRE-RICH-EEV-USDM-DIRECT-V1` profile. That profile's qualified pool-value perimeter remains the canonical USDM physically present in the exact qualified B1 PrizePool UTxO unless a new normative decision explicitly changes it.
+
+### 13.2 Current Issue implementation gap — not a successful-sale claim
+
+The current working-branch builder still constructs the Treasury output with a fixed `1,000,000` lovelace amount through `TICKET_PAYMENT_LOVELACE`. Meanwhile, the Plutus conversion code sets `minUtxoLovelace = 1,600,000` and values ADA using:
+
+```text
+economicAdaLovelace = max(0, outputAdaLovelace - minUtxoLovelace)
+```
+
+For the builder's current ADA-only Treasury output:
+
+```text
+max(0, 1,000,000 - 1,600,000) = 0
+```
+
+The Genesis ticket price is 1 USDM, represented as 100 USDM sub-units. Therefore this fixed 1-ADA output contributes zero economic ADA value under the current conversion function and cannot satisfy the positive exact-equality price check by itself. This is a concrete implementation mismatch, not a reason to relax the on-chain rule.
+
+The current oracle datum is also a single-asset `OracleDatum`, and the DApp builder binds one configured Oracle State singleton. Consequently, multi-asset settlement combinations, and production support for PRE/NIGHT as individual payment choices, must not be reported as implemented until the reference-input/price-source representation, supported asset profile and builder are shown to provide the necessary authenticated quotes for the exact transaction. PRE/NIGHT acceptance additionally depends on qualifying the relevant asset-specific price-reference source.
+
+**Paper consequence:** do not submit a real purchase simply to create a “first ticket” milestone under this builder. First repair and verify the settlement construction against the unchanged exact-value validator; otherwise the attempted transaction would not be evidence of a valid Issue implementation.
+
+## 13.3 Issue authority boundary and honest evidence classification
+
+The current Issue path is **not yet fully permissionless**. The V3 carrier validator requires a signature from its configured authority key, while an external signed admission envelope supplies economic evidence inputs that the on-chain sale validators do not independently reconstruct in full. The user's wallet signature authorizes the user's spend; it does not substitute for the economic gate.
+
+A successful Issue transaction under that authority-backed model could be useful as a narrowly scoped Adapter/ledger integration experiment only after the actual settlement-value mismatch has been fixed. It would not, by itself, demonstrate permissionless execution, complete economic-gate equivalence, source-authenticity closure or full viability certification.
+
+The current evidence should be classified as follows:
+
+| Claim | Status suitable for publication |
+|---|---|
+| USDM is the ticket's economic unit of account | Defined by the PRE-RICH specification |
+| Treasury intake must equal the ticket price under authenticated conversion | On-chain predicate exists; current builder is not conformant to it |
+| Counter, ticket NFT, Pending PrizeDatum, payment and B1 reservation are composed into one candidate transaction | Implemented construction; a passing current end-to-end Issue transaction is not established |
+| Current Issue is permissionless / external authority is unnecessary | **Not established; current V3 signature makes the path authority-dependent** |
+| Full IMMORTAL Economic Gate / viability is equivalent to the Cardano transition for all relevant states | **Open conformance obligation** |
+| Full ticket lifecycle is independently verified on a current Preprod transaction | **Not established** |
+
+This status boundary is consistent with the universal IMMORTAL paper's evidence ladder: design, mathematical proof, model checks, implementation tests, audit and deployment evidence are separate classes. A source file or an off-chain decision result must not be promoted to a stronger claim than its actual evidence supports.
+
 ## 14. Treasury
 
 The intended direction is:
