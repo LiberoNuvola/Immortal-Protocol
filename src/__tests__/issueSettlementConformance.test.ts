@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { Constr } from 'lucid-cardano'
 
 import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
   CANONICAL_ORACLE_PRECISION,
   assertCompletedTreasuryAdaSettlement,
+  decodeAdaOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
   type AdaOraclePriceReference,
 } from '../issueSettlement'
@@ -43,6 +45,20 @@ function treasuryOutput(lovelace: bigint, address = 'addr_test_treasury', multia
 }
 
 describe('Issue settlement conformance', () => {
+  it('decodes the five-field OracleDatum without reinterpreting its asset identity', () => {
+    const datum = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    expect(decodeAdaOraclePriceReference(datum)).toEqual(adaQuote())
+  })
+
+  it('rejects malformed OracleDatum structure or field types', () => {
+    expect(() => decodeAdaOraclePriceReference(new Constr(1, ['', '', 100n, nowMs, publisher] as any)))
+      .toThrow(/constructor/)
+    expect(() => decodeAdaOraclePriceReference(new Constr(0, ['', '', 100n] as any)))
+      .toThrow(/five fields/)
+    expect(() => decodeAdaOraclePriceReference(new Constr(0, ['', '', 'not-an-integer', nowMs, publisher] as any)))
+      .toThrow(/field types/)
+  })
+
   it('derives ADA payment from the authenticated Oracle price and canonical USDM target', () => {
     const lovelace = deriveAdaIssueSettlementLovelace({
       targetUsdmSubunits: 100n,
