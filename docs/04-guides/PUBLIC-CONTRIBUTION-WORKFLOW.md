@@ -51,6 +51,8 @@ A test-only PR is excluded if its expected result changes the meaning of a norma
 
 For repository automation, the live evidence gate reports known normative and governance-control-plane changes as `STRONGER_REVIEW_REQUIRED`. The gate remains failing until an authorized maintainer records stronger-review clearance with the exact head-bound label `governance/strong-review-cleared-<first-12-hex-of-current-head>`. This clearance does not make the PR eligible for the reduced path and does not replace the required GitHub approval or other required CI checks. Any new head invalidates the clearance label.
 
+**Current enforcement limitation (verified 2026-10-21):** the active `Protect main` ruleset currently has zero required approving reviews and an empty required-status-check list. The phrases “required GitHub approval” and “required CI checks” above describe controls that must be configured before adoption; they are not yet enforced by that ruleset. Until then, the head-bound labels record the process disposition but do not provide independent review or required-check enforcement.
+
 ## 3. Evidence package
 
 A PR claiming the evidence-gated path must include this declaration in its description. Mark each item accurately; do not check a box merely because a workflow exists.
