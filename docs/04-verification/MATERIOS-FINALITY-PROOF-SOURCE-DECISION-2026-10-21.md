@@ -1,10 +1,12 @@
 # Materios B3-A — Finality Evidence Source Audit and Frozen Route (2026-10-21)
 
-Status: **B3-A OPEN — the operator-local acquisition route is already decided; real witness still pending.**
+Status: **B3-A OPEN — available public surfaces do not provide the real GRANDPA witness; alternate already-operating proof path required.**
 
-**Adopted route — do not reopen:** a real, synchronized Materios operator/full-validator node with the local `b3-proof` CLI, followed by independent IMMORTAL verification. The CLI reads the native `FullClient` for the target header, stored GRANDPA justification, native `ProofProvider::execution_proof`, and runtime identity; it exports an immutable evidence artifact. Public GRANDPA/execution-proof RPC wiring is the frozen fallback only, not the next task.
+**Current applicable constraint:** IMMORTAL cannot assume access to a Materios operator node, provision another node, or modify/deploy the upstream Materios node. The local-operator CLI plan was frozen earlier as a possible acquisition route, but it is not an executable next step under the current resource constraint. Do not present it as the current plan unless access to a real node is explicitly established.
 
-This audit is subordinate to, and does not supersede, the existing frozen plan:
+**Current route:** use only already available Materios/public infrastructure to obtain the evidence it actually exposes. The live public-RPC probe has already shown that the checked endpoints provide historical headers but not the required GRANDPA justification or historical execution/storage proof at the target. Keep Materios for the receipt lineage and storage-inclusion evidence it can support; seek a separate, already-operating source for independently verifiable GRANDPA finality and authority transitions. If no source provides the necessary cryptographic packet, B3-A stays OPEN. No trusted relay, operator attestation, current authority list, or drand beacon may be substituted for GRANDPA finality.
+
+The documents below preserve earlier implementation options and contracts; they do not override the above operational constraint:
 - [Local operator CLI proof plan](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-LOCAL-OPERATOR-CLI-PROOF-v1.md)
 - [Operator evidence acquisition handoff](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-OPERATOR-EVIDENCE-ACQUISITION-HANDOFF-v1.md)
 - [Operator patchset — fallback only](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-OPERATOR-PATCHSET-v1.patch)
@@ -70,19 +72,19 @@ For one selected finalized target block, the proof source must supply:
 
 The verifier must reject the packet when any element is unavailable or fails. Storage inclusion, execution proofs and GRANDPA finality must remain separate proof claims with separate evidence.
 
-## Next permitted action — execute the already adopted route
+## Next permitted action — alternate proof source, not another Materios issue pass
 
-Do **not** restart a generic public-surface search. Continue from the frozen operator-local plan:
+The previous public-RPC capability probe already closed that check. Do not repeat it, reopen issue #50, prepare an upstream patch, or assume the local-operator CLI can be run under the current constraint.
 
-1. Use the real Materios operator/full-validator instance already envisaged by the operator kit; do not create a fifth node just to repeat the public RPC probe.
-2. Confirm its local database/base path, chain spec/genesis identity, and sync status.
-3. Apply/build the already specified local `b3-proof` CLI only against a pinned Materios source revision and the operator's existing configuration.
-4. Capture the exact target header, stored GRANDPA justification, native execution proof, runtime identity/code, authority set/set ID, and selection commitment into one immutable artifact.
-5. Feed the artifact into the existing IMMORTAL verifier and require it to cross `VerifiedAuthoritySetTransition`. Synthetic tests remain conformance tests, never live witness evidence.
+Continue on the current IMMORTAL branch by evaluating already-running, externally reachable proof sources against a strict acceptance test: can a source provide the raw GRANDPA justification (not only a finalized-head number), the ancestry headers, the historically applicable authority set/set ID, and enough authenticated authority-transition evidence for IMMORTAL to verify the target independently? The source is only an untrusted transport; trust comes from the existing verifier and pinned trust anchor, never from the provider's identity or its assertion.
 
-If the operator node cannot provide the witness after this capability test, use the **already prepared patchset as fallback** against a pinned Materios build. Only then reassess the fallback's remaining work; do not treat the closed issue #50 as an instruction to implement upstream or as the primary route.
+Separate the evidence layers:
 
-B3-A remains OPEN until a real artifact passes independent verification. No V3/Reveal/economic semantic changes are required for this work.
+- **Materios receipts / B3-B inclusion:** retain and use the real receipt + storage-proof work already achieved, without relabelling it as finality.
+- **B3-A finality and authority transitions:** seek an existing proof source compatible with independent GRANDPA verification. The public endpoints examined do not meet this gate.
+- **drand / B3-D randomness:** useful for its separate beacon/randomness purpose; it does not certify Materios block finality or authority transitions.
+
+If no already-operating source can deliver the required proof packet, record that constraint as the blocker and compare alternate consensus/proof paths as a separate architecture decision. Do not silently weaken the trust model. B3-A remains OPEN until a real artifact passes independent verification. No V3/Reveal/economic semantic changes are required.
 
 ## Source references
 
@@ -117,3 +119,8 @@ Treat this as an additional open verification question, separate from the missin
 
 
 The related [upstream issue #109](https://github.com/Flux-Point-Studios/materios/issues/109), which proposes an opt-in chain-state switch from v6's relaxed Ariadne rule to the strict upstream rule, also remained **open** at this review. Do not assume that remediation has been activated on the live preprod chain. For IMMORTAL this remains a separate protocol-reproducibility risk, not a replacement for the absent justification evidence.
+
+
+## Supersession note — operational constraint
+
+The earlier Notion checkpoint [MATERIOS B3-A — Authority Transition Triangulation — 11 Oct 2026](https://app.notion.com/p/3f6c4454d6d581e5b818f9ab312fce7e?pvs=204) records the local operator/CLI route as a primary technical design. This audit preserves that design as historical prepared work, but the later operating constraint that IMMORTAL has no node to operate and cannot activate or modify a Materios node takes precedence for current execution. Therefore the current next action is alternate, already-operating proof-source discovery, not local CLI execution or an upstream change.
