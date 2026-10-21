@@ -285,14 +285,29 @@ contains(loadTs,
 contains(loadTs, /b1PrizePoolHash/, 'TypeScript wiring exposes B1PrizePool hash')
 contains(loadTs, /mintPolicy[\s\S]*?b1PrizePoolHash/s, 'MintPolicy is wired with the B1PrizePool dependency')
 
-contains(mintTs, /TICKET_PAYMENT_LOVELACE/, 'Mint uses canonical settlement constant')
+// The fixed ADA amount is a known Issue-settlement conformance blocker.
+if (/BigInt\\s*\\(\\s*TICKET_PAYMENT_LOVELACE\\s*,?\\s*\\)/s.test(mintTs)) {
+  fail('Issue Treasury payment is still a fixed ADA amount instead of a value derived from authenticated USDM price references; predeploy must remain blocked.')
+} else {
+  ok('Legacy fixed-ADA Treasury amount is absent from the Issue builder')
+}
 contains(mintTs, /b1PrizePool/i, 'Mint flow references B1PrizePool')
 contains(mintTs, /payToContract/, 'Mint constructs protocol outputs')
 contains(mintTs, /pdPrizePoolHash/, 'Mint binds PrizeDatum to B1PrizePool')
 contains(mintTs, /playerCommitment/, 'Mint creates player commitment')
 contains(mintTs, /ticketCommitment/, 'Mint creates ticket commitment')
-contains(mintTs, /TICKET_PAYMENT_LOVELACE[\s\S]*?payToContract|payToContract[\s\S]*?TICKET_PAYMENT_LOVELACE/s,
-  'Mint settlement uses the canonical Treasury payment amount')
+// This focused test is mandatory before predeploy; it must observe the completed
+// Treasury output and exercise its equality/price-reference boundary.
+const settlementTest = read('src/__tests__/issueSettlementConformance.test.ts')
+contains(settlementTest, /completed.*Treasury|Treasury.*completed/i,
+  'Issue settlement tests inspect the completed Treasury output')
+contains(settlementTest, /pdPriceUsdm|USDM/i,
+  'Issue settlement tests bind the payment to the USDM target')
+contains(settlementTest, /oracle|PriceReference/i,
+  'Issue settlement tests bind the valuation to per-asset price references')
+contains(settlementTest, /stale|missing|invalid/i,
+  'Issue settlement tests cover invalid price-reference rejection')
+
 contains(mintTs, /b1PrizePool[\s\S]*?payToContract|payToContract[\s\S]*?b1PrizePool/s,
   'Mint updates the B1PrizePool in the sale flow')
 
@@ -305,7 +320,10 @@ contains(flowTs, /deriveTicketSeed/, 'Client derives ticket seed')
 contains(flowTs, /b1PrizePool/i, 'Reveal/Claim coordinates B1PrizePool')
 
 contains(configTs, /GENESIS_TICKET_PRICE_USDM\s*=\s*100/, 'Genesis price = 1 USDM')
-contains(configTs, /TICKET_PAYMENT_LOVELACE\s*=\s*1_000_000/, 'Preprod settlement baseline = 1 ADA')
+// This constant is legacy configuration only; it must not authorize Issue.
+if (/TICKET_PAYMENT_LOVELACE\\s*=\\s*1_000_000/.test(configTs)) {
+  warn('Legacy TICKET_PAYMENT_LOVELACE config remains; the Issue builder must not use it as the ticket settlement amount.')
+}
 
 // ---------------------------------------------------------------------------
 // 6. Relayer & B1 scope
