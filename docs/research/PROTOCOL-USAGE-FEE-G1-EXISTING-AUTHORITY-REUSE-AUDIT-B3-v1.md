@@ -333,3 +333,14 @@ The server is a consumer/verifier of an external signed authority, not the imple
 **Next closure step:** identify the actual configured upstream authority service and inspect its implementation/artifact and evidence: how `obligationsComplete` is derived, what `derivationVersion` denotes, and whether the derivation consumes a versioned G1 policy and records the resulting obligation inventory. If that service is external to this repository, document its source and verification evidence; do not guess its URL or infer deployment configuration. The gap is the unproven G1-specific semantic derivation, not absence of signature verification in the inspected server path.
 
 **G1 remains OPEN.** Documentation-only audit; no production code, tests, CI, deployment, V3, or Reveal changed.
+
+
+### 9.10 Deployment endpoint provenance — repository configuration does not identify the live upstream
+
+The target-branch `.env.example` (blob `e0d934726a30e787ff74469ba8cb79ab0a026424`) documents `ISSUE_AUTHORITY_SOURCE_URL` and `ISSUE_AUTHORITY_PUBLIC_KEY` only as blank server-side configuration entries, with a warning not to expose them in `VITE_` variables. It documents the DApp's `VITE_ISSUE_AUTHORITY_ENDPOINT` separately. This is a configuration template, not evidence of actual environment values or a deployed endpoint.
+
+The inspected `relayer/issueAuthorityServer.js` requires the upstream URL and public key at startup. The target-branch Preprod workflow inspected in this audit does not configure the Issue authority endpoint or its verification key; it configures Cardano observation/deployment evidence and Reveal/bootstrap tasks. Common root deployment manifests checked during this pass (`railway.json`, `railway.toml`, `render.yaml`, `fly.toml`, `Procfile`, and `Dockerfile`) were not present at those paths on this branch. This is bounded evidence about the checked paths, not a repository-wide proof that no deployment mechanism exists elsewhere.
+
+**Result:** the repository establishes the required configuration contract but does not let this audit identify the actual live upstream authority URL, verify which service is running, or inspect its obligation derivation. Do not infer a URL from the variable names, and do not report a production fallback or a production signed configuration without environment/deployment evidence.
+
+The next concrete artifact needed is the deployed authority service's source/build identity plus its versioned configuration/evidence (secrets must remain undisclosed), sufficient to verify the producer that signs `obligationsComplete` and whether its derivation consumes G1. Until that is available, G1-specific completeness remains unproven and G1 remains OPEN.
