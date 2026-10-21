@@ -181,3 +181,19 @@ The related [upstream issue #109](https://github.com/Flux-Point-Studios/materios
 ## Supersession note — operational constraint
 
 The earlier Notion checkpoint [MATERIOS B3-A — Authority Transition Triangulation — 11 Oct 2026](https://app.notion.com/p/3f6c4454d6d581e5b818f9ab312fce7e?pvs=204) records the local operator/CLI route as a primary technical design. This audit preserves that design as historical prepared work, but the later operating constraint that IMMORTAL has no node to operate and cannot activate or modify a Materios node takes precedence for current execution. Therefore the current next action is alternate, already-operating proof-source discovery, not local CLI execution or an upstream change.
+
+### Published snapshot pointer check — 2026-10-21
+
+The existing public snapshot manifest is reachable at `https://materios.fluxpointstudios.com/operator-snapshots/preprod/latest.json` and returned HTTP 200. Its recorded archive is:
+
+- URL: `https://materios.fluxpointstudios.com/operator-snapshots/preprod/materios-preprod-rocksdb-20261016T093001Z.tar.gz`
+- Manifest publish time: `20261016T093001Z`
+- Published head block: `2309250`
+- Advertised size: **3,848,386,217 bytes** (about 3.58 GiB)
+- Manifest SHA-256: `97512dbea473c3d2e11e8db8c5b5b2a356e9da2d3e225c434cea2e055a63e49d`
+
+A read-only one-byte range request to the archive URL returned **HTTP 404**. The archive was not downloaded or unpacked, and no node was started. The manifest therefore does not provide an accessible offline data source at the time of the probe. This is an observed availability failure for the published URL; it does not prove the artifact was permanently removed, and it does not tell us whether any GRANDPA justification is contained in the database.
+
+Immutable manifest-only artifact: [snapshot-pointer run #39593881158](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39593881158), artifact ID `12342744743`, ZIP SHA-256 `b2cce9169cdb321cf37916484aef02a75bdaea126299e26cf5e5c54667dabd88`.
+
+This leaves no usable source in the current tested set: the public RPC/WebSocket does not serve GRANDPA methods or justifications; the gateway advertises only one peer; Smoldot stalls against that peer; the snapshot pointer references an unavailable multi-gigabyte archive. B3-A remains **OPEN**. A future retest of the snapshot requires only checking the manifest URL/object availability first; do not attempt a multi-gigabyte download until the URL responds successfully and there is a concrete offline verification plan.
