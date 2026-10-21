@@ -1037,3 +1037,43 @@ P-03 Reveal size/reference-witness binding and P-04 native Cardano-ledger P2.8 r
 | Full semantic audit | `PARTIAL / OPEN` |
 
 Fourteen source/workflow/test/evidence-contract SHA entries were added to this slice. The core `B1PrizePool.hs` and `PrizeValidator.hs` identities were compared across snapshots but deliberately remain `NOT_REVIEWED` semantically. No protocol source, workflow, V3/Reveal semantics, branch topology, Preprod transaction or ledger state was changed.
+
+
+### 10.30 Semantic review slice 4 — Materios B3-A/B/C proof boundaries — 2026-10-21
+
+Scoped review: [SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md](SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md), review commit `7cc94a392103678be5dc779cc754d8ec1051d497`. Ledger update with 20 exact B3 source/workflow/design SHA entries: `3763d75212b94036767550e1d127997a56f8ef27`.
+
+#### New verification of the latest acquisition artifact
+
+P2P probe [#39601026951](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951) completed with `NO_RAW_GRANDPA_PROOF_CAPTURED` and uploaded artifact [`12346387679`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39601026951/artifacts/12346387679). The artifact was downloaded and inspected read-only:
+- expected and observed genesis hashes match (`0x0e46e33f…849f7bf`);
+- requested block 1,856,408 / hash `0x7db6da35…4cfdf44e` has a reconstructed header hash match;
+- no `FRNK` justification was attached to the exact target, and the artifact contains zero captured GRANDPA justifications;
+- native Smoldot warp-sync logs are fixed at block 97,069 for 350 seconds (36 observations: 22 in progress, 14 idle);
+- the reported current/finalized HTTP head is explicitly marked an untrusted observation only.
+
+Artifact ZIP SHA-256: `ae98dadea115687f01ef6db3f30bd1ced8dc501651932ecd3a3ecdfd287a3dfa`. The capture implementation and core GRANDPA/B3 verifier blobs used by this run match the current B3 HEAD `2778d3e107f45ee15157fff8ef894905a72070ea`; the run's workflow file has since gained a one-shot push trigger and documentation changed. The result remains relevant to the same acquisition implementation, but is not labelled as a CI run on the current B3 HEAD.
+
+**Interpretation:** this is a source-specific failure of the pinned P2P acquisition path under its bounded observation window. It does not establish that no existing archive/full node or authorized Materios FullClient can provide a justification. Do not repeat the same probe/scan unchanged.
+
+#### B3-A, B3-B and B3-C remain independent proof gates
+
+- **P-09 / B3-A — `BLOCKED_NO_PUBLIC_GRANDPA_WITNESS`.** The collector extracts real `FRNK` bytes from the RPC transport; the IMMORTAL verifier checks signatures, quorum, set-id and ancestry against a supplied trusted authority state. The separate `VerifiedAuthoritySetTransition` gate must authenticate how that historically applicable authority set was selected. The capture artifact has no justification to feed to the verifier.
+- **P-10 / B3-B — `BLOCKED_EXACT_HISTORICAL_ANCHOR_WITNESS`.** The anchor collector requires a historical-state-capable `MATERIOS_ARCHIVE_RPC`, reads header/storage/read-proof at one exact block hash and fails if `proof.at` mismatches. The native Rust trie verifier validates a supplied state root/key/value, but synthetic fixture success cannot bind that root to the target block's independently verified finality.
+- **P-11 / B3-C — `INTEGRATION_BLOCKED / UPSTREAM CLOSURE DISCREPANCY`.** Issue [#50](https://github.com/Flux-Point-Studios/materios/issues/50) remains closed with zero comments, but current upstream `main` `partnerchain/node/src/rpc.rs` blob `30827863c7b8f6fb507b008cee9f572ec48fe06f` does not register `materios_b3_calculateCommitteeProof`; the existing IMMORTAL patch spec is still marked `NOT APPLIED`. A closed issue, `FullClient`, dependency declaration or a client transport stub is not proof that the RPC is in the deployed node. Do not reimplement the selector in TypeScript.
+
+#### Next executable source change / acquisition gate
+
+Do not change the trust protocol and do not create another duplicate B3 implementation in green. First identify a concrete, already-operating archive/full node or authorized existing Materios FullClient source with proof-retention capability. Then acquire the exact block's genuine GRANDPA justification and exact historical state proof as separate evidence; independently authenticate the applicable authority transition; and resolve the exact upstream #50 implementation/deployment ref before attempting a block-bound execution-proof fixture. Beacon 4 research does not substitute for B3.
+
+#### Ledger state after slice 4
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| Entries with scoped static-review records (Pyth + B1 + P2.8 + B3) | 71 |
+| Entries still `NOT_REVIEWED` | 1,740 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+Twenty SHA entries were reviewed as source/workflow/design artifacts; the actual witness artifact is separately bound by run/artifact/hash in the review. Test-source identities were not represented as test execution. No IMMORTAL protocol code, upstream Materios code, branch topology, proof semantics, ledger state or deployment was modified.
