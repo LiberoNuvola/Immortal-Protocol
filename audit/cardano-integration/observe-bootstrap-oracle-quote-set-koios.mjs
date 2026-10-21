@@ -37,6 +37,27 @@ function exactRef(utxo) {
   return `cardano:tx/${utxo.tx_hash}#${utxo.tx_index}`
 }
 
+// Use Koios chain-tip time for freshness classification; the runner wall clock
+// is not an authoritative ledger-time proxy. This remains an observation only,
+// not the actual transaction validity upper bound used by Plutus validators.
+const tipResponse = await fetch(KOIOS + '/tip')
+if (!tipResponse.ok) {
+  throw new Error(`Koios tip failed with HTTP ${tipResponse.status}`)
+}
+const tipRows = await tipResponse.json()
+const tip = Array.isArray(tipRows) ? tipRows[0] : tipRows?.data
+if (
+  !tip ||
+  typeof tip.hash !== 'string' ||
+  !/^[0-9a-fA-F]{64}$/.test(tip.hash) ||
+  !Number.isSafeInteger(Number(tip.block_time)) ||
+  Number(tip.block_time) < 0 ||
+  !Number.isSafeInteger(Number(tip.abs_slot)) ||
+  Number(tip.abs_slot) < 0
+) {
+  throw new Error('Koios returned malformed Preprod chain tip metadata')
+}
+
 const response = await fetch(KOIOS + '/address_info', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
@@ -69,7 +90,7 @@ const datumCborHex = utxo.inline_datum?.bytes
 if (typeof datumCborHex !== 'string' || !/^(?:[0-9a-fA-F]{2})+$/.test(datumCborHex)) {
   throw new Error('Observed Oracle singleton has no valid inline datum CBOR')
 }
-const nowMs = BigInt(Date.now())
+const nowMs = BigInt(Number(tip.block_time)) * 1_000n
 const inspection = inspectOracleDatum(Data.from(datumCborHex), {
   expectedPublisherPkh: EXPECTED_PUBLISHER_PKH,
   nowMs,
@@ -87,7 +108,11 @@ const baseManifest = {
   observationClock: {
     observedAtIso: new Date(Number(nowMs)).toISOString(),
     observedAtPosixMs: nowMs.toString(),
-    source: 'GitHub Actions runner wall clock; classification only, not an Issue admission witness',
+    source: 'Koios Preprod chain-tip block_time; classification only, not the Issue transaction validity upper bound',
+    tipHash: String(tip.hash).toLowerCase(),
+    tipBlockNo: Number(tip.block_no),
+    tipAbsSlot: Number(tip.abs_slot),
+    tipEpochNo: Number(tip.epoch_no),
   },
   identity: {
     source: 'prior public Preprod wallet singleton observation 39594377501',
