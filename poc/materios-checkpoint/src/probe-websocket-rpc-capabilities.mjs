@@ -183,6 +183,7 @@ async function main() {
       public_websocket_connection_available: false,
       websocket_advertises_grandpa_methods: false,
       grandpa_method_call_accepted: false,
+      raw_grandpa_finality_payload_captured: false,
       raw_grandpa_justification_captured: false,
       raw_payload_hashes_recorded: false,
       grandpa_signatures_verified_by_immortal: false,
@@ -352,6 +353,7 @@ async function main() {
               entries: justifications.entries,
             });
             if ((justifications.frnkEntryCount || 0) > 0) {
+              evidence.claims.raw_grandpa_finality_payload_captured = true;
               evidence.claims.raw_grandpa_justification_captured = true;
               evidence.claims.raw_payload_hashes_recorded = true;
             }
@@ -389,7 +391,7 @@ async function main() {
           raw_proof_sha256: sha256Bytes(proofBytes),
         };
         evidence.claims.grandpa_method_call_accepted = true;
-        evidence.claims.raw_grandpa_justification_captured = true;
+        evidence.claims.raw_grandpa_finality_payload_captured = true;
         evidence.claims.raw_payload_hashes_recorded = true;
       } else {
         evidence.finality_probe.prove_finality = {
@@ -441,6 +443,7 @@ async function main() {
             found.result_bytes = proofBytes.length;
             found.result_sha256 = sha256Bytes(proofBytes);
             if (typeof found.result === "string") found.result_hex = found.result;
+            evidence.claims.raw_grandpa_finality_payload_captured = true;
             evidence.claims.raw_grandpa_justification_captured = true;
             evidence.claims.raw_payload_hashes_recorded = true;
           }
@@ -499,7 +502,8 @@ async function main() {
   console.log("RPC catalogue:", evidence.catalogue.status, evidence.catalogue.method_count || "");
   console.log("GRANDPA proveFinality:", evidence.finality_probe.prove_finality.status);
   console.log("GRANDPA subscribeJustifications:", evidence.finality_probe.subscribe_justifications.status);
-  console.log("FRNK proof captured:", evidence.claims.raw_grandpa_justification_captured);
+  console.log("Raw finality payload captured:", evidence.claims.raw_grandpa_finality_payload_captured);
+  console.log("Raw FRNK justification captured:", evidence.claims.raw_grandpa_justification_captured);
   console.log("Wrote:", OUT_PATH);
   console.log("Scope: WebSocket capability/acquisition only; B3-A remains OPEN.");
 }
