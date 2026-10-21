@@ -64,6 +64,9 @@ Permissionless verification does not guarantee permissionless *availability*. If
 
 This document is a decision and work contract, not a proof, deployment approval, or claim of B3 closure.
 
+- Materios genesis bootstrap source register: `docs/04-verification/MATERIOS-GENESIS-BOOTSTRAP-EVIDENCE-REGISTER-v1.md`
+
+
 ## Initial implementation gap found during decision review
 
 A source review of `poc/materios-grandpa/src/authority.ts` shows that `TrustedAuthorityState` currently has no dedicated genesis-bootstrap constructor or opaque provenance brand. `validateAuthorityState()` validates structure; it does not establish that the initial set came from the canonical genesis configuration. The transition constructor protects later transitions, but the initial trust boundary is still caller-supplied.
