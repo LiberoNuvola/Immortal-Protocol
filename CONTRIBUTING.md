@@ -51,7 +51,11 @@ Application changes belong in the application layer unless they reveal a genuine
 
 When reporting a result, state exactly what was executed or proved. Do not turn a reference-model result into a validator claim.
 
-## Governance
+## Governance and evidence-gated contributions
+
+The proposed [Public Contribution Workflow](docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md) describes a limited, non-normative evidence-gated path for documentation, audit tooling, tests, process documentation, and residual-obligation updates.
+
+The guide is currently a **draft proposal**, not an adopted merge guarantee. Evidence completeness does not force a merge or bypass repository permissions, security triage, mandatory checks, or stronger review for normative/high-impact changes. Until the process is explicitly adopted and its checks are implemented, contributors should treat it as guidance for structuring a PR, not as an enforceable entitlement.
 
 Governance is an evolution process. It does not replace proof, testing, conformance review or independent audit.
 
