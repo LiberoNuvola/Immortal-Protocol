@@ -135,3 +135,22 @@ Commit [`9ae2bfb85efbd5501aa89f8ffc595be91a26fc21`](https://github.com/LiberoNuv
 The Haskell conformance run [39647416504](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39647416504) passed the existing quote-carrier and conversion test suites on preceding commit `fb51e0201061e2510f0ed7f2b278f1b16d45c797`. That run predates the new cross-module assertion; the assertion's own CI result has not yet been verified and is not classified as PASS here.
 
 **Scope limit:** this demonstrates only the candidate Haskell data path using a synthetic context and unit ratio. It neither executes Pyth's real zero-withdrawal signature verifier on a native Cardano ledger nor proves that production MintPolicy reads the carrier output. The ratio/bound remain test inputs, not approved parameters. Gate A, Gate B, and the normative unit-conversion decision remain open.
+
+
+## 11. Guarded native-ledger probe harness — prepared, not yet executed
+
+The repository now includes a manual, Preprod-only path to test the isolated Pyth consumer against an actual signed update:
+
+- Consumer: `poc/aiken-pyth-ada-usd/validators/pyth_signed_update_ledger_probe.ak`. It spends a no-datum probe UTxO and requires exactly one `pyth.get_updates` result, a fresh ADA/USD feed (ID 16) and a positive price. It is independent of PRE-RICH Issue and does not calculate Treasury value.
+- Runner: `scripts/testPythSignedUpdatePreprod.mts`. It fetches a Lazer signed update and the configured Pyth State, verifies the State reference-script identity against its datum, fingerprints the exact submitted payload without archiving raw signed bytes, funds a temporary probe UTxO if needed, and proposes a single verification transaction containing both the Pyth zero-withdrawal and this consumer spend.
+- Workflow: [`.github/workflows/pyth-native-ledger-probe.yml`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/pyth-native-ledger-probe.yml). It is manual-dispatch only. `submit_preprod` defaults to `false`, which fetches the update and resolves state metadata without building/signing/submitting a transaction. Real submission requires explicit opt-in and a dedicated funded Preprod test wallet secret.
+
+The isolated runner records a local rejection attempt for a one-byte-mutated payload, but deliberately does not submit that invalid transaction (which could forfeit collateral/fees). **A local evaluator rejection is not an on-chain negative proof.** The positive Preprod transaction has also not been run by this commit. The Gate A status therefore remains:
+
+- Harness source present; automated Aiken compilation is the first software gate.
+- Genuine signed-update positive acceptance on Preprod: **not yet observed**.
+- Tampered-signature rejection on the native ledger: **not yet observed**.
+- CBOR size and on-chain execution units: pending submitted transaction; execution units are fetched best-effort from Blockfrost evidence.
+- Pyth state/withdraw-script identity is checked fail-closed by the runner, but its successful runtime observation is still pending.
+
+No Pyth state, deployed script, production Oracle, `MintPolicy`, Issue path, economic conversion, V3 semantics or Reveal semantics is changed. This harness advances the evidence path only; it does not close the USD/USDM unit decision or Gate B source-to-economics binding.
