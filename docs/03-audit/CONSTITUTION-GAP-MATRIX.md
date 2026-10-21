@@ -101,6 +101,12 @@ KA/KC/KD and hysteresis are **not** in the normative OPEN set.
 | Multi-asset | verified conversion enforcement | CLOSING | validate identity, price, freshness, decimals, rounding, min-UTxO and rejection |
 | Jackpot | lifecycle/accounting enforcement | CLOSING | prove isolation, funding, selection, reset and liability rules |
 | Liveness | permissionless/event-driven execution | CLOSING | verify triggerability and safe stall behavior |
+| ISSUE settlement builder | Treasury output amount is still requested as fixed `TICKET_PAYMENT_LOVELACE`; no price-derived construction/final-body settlement equality evidence | IMPLEMENTATION GAP/FAIL | Block predeploy; derive a supported settlement quantity from authenticated references and verify the completed Treasury output against the canonical integer valuation |
+| Oracle asset coverage | `OracleDatum` carries one asset quote and the Issue MintPolicy is bound to one Oracle State singleton; token+ADA baskets do not have demonstrated simultaneous quote coverage | IMPLEMENTATION GAP/FAIL | Do not claim ADA/NIGHT/PRE or basket settlement support until the quote-set/reference contract and supported asset profile are implemented and tested |
+| Settlement conversion precision | `totalUsdmValue` applies ceiling division per nonzero asset; equality is in the integer conversion domain, not automatically unrounded rational equality | EVIDENCE / CONTRACT GAP | Preserve the current rule; close bounded-conversion error analysis and test granularity/rounding boundaries before broader equivalence claims |
+| V3 Issue transition | Carrier validator checks valid endpoints and mandatory authority signature but does not independently reconstruct the exact canonical Issue delta/action fingerprint | IMPLEMENTATION GAP/FAIL; authority-dependent | Specify on-chain transition refinement or a rigorously verified proof against the existing reference transition; never bypass the signature check as an interim fix |
+| Economic evidence authentication | EEV, executable liquidity, freshness, obligation completeness and certified-Ω inputs are evaluated off-chain but are not all independently derived from authenticated transaction data by the current Issue validators | EVIDENCE / IMPLEMENTATION GAP | Authenticate each source and bind it to exact UTxOs, or prove it under a reviewed on-chain-verifiable construction; identify residual assumptions |
+| First real Issue evidence | No verified completed transaction from the intended user's wallet plus independent reconciliation of ticket NFT, Treasury output, Counter, PrizeDatum, B1 Pool and V3 post-state | EVIDENCE GAP | Do not claim first-ticket completion; run only after settlement conformance, deployed service/configuration and current admission evidence are verified |
 | Infinite horizon | transition relation / invariance proof | CLOSING — PROOF | complete proof or explicitly bound the claim |
 
 ## 6. Historical classification
@@ -134,3 +140,16 @@ Its job is to answer only:
 > **What is specified, what is implemented, what is proved, and what evidence is still missing?**
 
 That separation is mandatory for the IMMORTAL / PRE-RICH documentation set.
+
+
+## 9. First real Issue — evidence boundary (2026-10-21)
+
+This is a non-normative status clarification for the paper and release process. It does not change the canonical rule set.
+
+- USDM remains the ticket's economic unit of account; the protocol may accept a different settlement asset only when the actual Treasury output satisfies the existing authenticated conversion predicate.
+- The current builder still supplies a fixed ADA amount. Since the Plutus valuation function excludes the configured ADA minimum-UTxO quantity from economic ADA value, the requested amount itself is not evidence that the Genesis price has been paid. The finalized transaction body has not been observed to establish whether Lucid preserves or rejects that request.
+- A successful EEV qualification artifact is not a ticket transaction, is not proof of an authoritative live Issue witness for the current UTxOs, and is not evidence that the ticket reached a user's wallet.
+- A real Issue using the current V3 carrier remains authority-backed because the carrier validator requires the configured Ed25519 signer. Such a transaction, after settlement construction is repaired, can be used for a deliberately scoped Adapter/ledger integration experiment only; it does not demonstrate permissionlessness.
+- No real Issue should be executed merely to create a milestone while settlement conformance is known incomplete. The `scripts/predeploy-check.mjs` release gate now fails closed for the fixed-ADA Issue construction and requires a focused Issue settlement conformance test before it can pass.
+
+Canonical reference: [`docs/COORDINATION/FIRST-REAL-PREPROD-TICKET-READINESS-20261021.md`](../COORDINATION/FIRST-REAL-PREPROD-TICKET-READINESS-20261021.md).
