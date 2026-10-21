@@ -365,3 +365,20 @@ There are now two distinct unclosed deployment links:
 Do not fix either issue as part of this documentation-only G1 audit: that would require deployment/source decisions outside its permitted scope. Do not copy an endpoint from another branch, invent a URL, expose secrets, or claim the target branch is deployed. The safe next evidence is a non-secret deployment record identifying the actual Pages source commit and, separately, the upstream authority service's repository/image/build digest and a sanitized configuration proving which policy/derivation version it runs. Public endpoint values may be shared if needed; private keys and secret values must not be shared.
 
 **G1 remains OPEN.** No production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
+
+
+### 9.12 Authority-producer source scan and branch inventory
+
+The source scan was extended to the complete `relayer/` directory listing on the target branch. The directory contains `issueAuthorityServer.js`, `signedIssueAuthority.js`, `preprodIssueAdmissionProvider.js`, `preprodIssueObservationProvider.js`, `preprodIssueObservationReader.js`, and related envelope/tests. In the inspected directory there is no separately named G1 fee authority producer or policy-bound obligation-inventory derivation module. The listed server composes a consumer/verifier around an upstream signed authority; it does not itself implement the upstream signer/derivation described in §9.9.
+
+The connected GitHub repository metadata confirms the repository's default branch is `main`. Branch search for `authority` returned no matching branch; search for `issue` returned `release/issue-admission-boundary-squash`. These are search results, not proof of repository-wide absence or proof that the release branch hosts an external service. No other repository or service was identified from the connected inventory during this pass.
+
+The GitHub integration does not expose secret values or secret metadata through its supported fetch paths, and no secret values were requested. No live environment variables, private keys, endpoint values, or external service logs were inspected.
+
+#### Source-scan conclusion
+
+Within the inspected target-branch relayer composition, the missing component remains upstream of `issueAuthorityServer.js`: a source/build-identifiable producer that derives the signed `obligationsComplete` assertion from the exact approved G1 policy and its corresponding obligation inventory. The available evidence does not identify that producer or prove that it exists outside this repository.
+
+This remains an evidence gap, not permission to invent or replace an authority. The next closure input must identify the actual upstream service/build using non-secret deployment metadata or provide its source repository/reference. Until that can be verified, do not modify the Issue path, deploy a new service, or change G1 semantics.
+
+**G1 remains OPEN.** Documentation-only update; no production code, tests, CI, deployment, V3 carrier, or Reveal semantics changed.
