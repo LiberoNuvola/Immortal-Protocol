@@ -1,6 +1,6 @@
 # IMMORTAL drand Beacon Verification PoC
 
-Status: **isolated off-chain + Plutus V3 verification PoC / candidate only**. The Aiken validator now compiles and a real Quicknet round-42 signature passes Aiken's test evaluator, with a wrong-round negative test. This is not yet a submitted Cardano ledger execution, not a selected normative randomness source, and not a Materios finality proof.
+Status: **isolated off-chain + Plutus V3 verification PoC / candidate only**. A real Quicknet round-42 signature passes the Aiken test evaluator, the wrong-round negative test passes, and a transaction using the compiled validator was accepted/confirmed on the local Yaci Cardano devnet ([CI run #73](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39540212780)). This is not a selected normative randomness source, not a Preprod/mainnet proof, and not a Materios finality proof.
 
 ## Fixed profile
 
@@ -41,5 +41,6 @@ The positive test depends on public drand API availability. The negative tests u
 
 - Proves only that the fetched beacon is valid under the pinned Quicknet chain identity and drand-client verification rules.
 - Does not prove Materios receipt authenticity, storage-root authenticity, GRANDPA finality, or authority-set provenance.
-- Demonstrates the Quicknet signature check using Plutus V3 builtins in Aiken's test evaluator, but does not yet prove execution in a submitted Cardano transaction or acceptable CPU/memory budget.
+- Demonstrates the Quicknet signature check in Aiken's test evaluator and one confirmed local Yaci ledger transaction. The recorded ExUnits are the budget assigned by Lucid's local evaluator and accepted by the ledger; Yaci's REST evaluator returned an initialization error, so this is not a direct ledger CPU/memory consumption report.
+- Local devnet-only resource evidence: 1,025-byte spend transaction; 281,908-lovelace fee; assigned redeemer budget 26,043 memory and 1,106,076,956 steps against observed limits of 16,500,000 memory and 10,000,000,000 steps. Target Preprod/mainnet budgets remain unqualified.
 - No changes to PRE-RICH outcome mapping, rejection sampling, ticket commitment, or B1/B3 semantics.
