@@ -28,7 +28,30 @@ The project target remains:
 7. The Cardano native-ledger runner and Reveal reference-script remediation are existing paths. They should be completed with exact transaction/context evidence, not bypassed by changing SDK or semantics.
 8. The existing Materios capture tools already attempt to obtain finalized-state/GRANDPA evidence (`poc/materios-checkpoint/src/capture-finalized.ts`) and a historical AnchorRecord plus `state_getReadProof` (`src/capture-anchor.ts`). A new read-only capability probe and workflow now record the advertised RPC surface and attempt both captures through the existing endpoint. This only tests availability/acquisition; its output must not be labelled proof verification. The workflow has been committed but its live result is not yet verified in this session.
 
-This register is based on source inspection, not a fresh CI or Preprod execution. It makes no new GREEN claim.
+This register is based on source inspection plus the live observations below; it does not claim B3 closure.
+
+## 2.1 Live Materios Preprod observation — 2026-10-21
+
+The read-only workflow run [#39556119848](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556119848) identified 85 advertised RPC methods. On the public `https://materios.fluxpointstudios.com/preprod-rpc` endpoint:
+- `state_getReadProof`, `state_getStorage`, `state_call`, `chain_getFinalizedHead`, `chain_getHeader`, and `chain_getBlock` are advertised.
+- `grandpa_proveFinality`, `state_getCode`, and `materios_b3_calculateCommitteeProof` are not advertised.
+- The attempted old target block returned `UnknownBlock: State already discarded`; the capture now defaults to the endpoint's current finalized-head observation instead of silently requiring archive history.
+
+At block `2379062`, hash `0x78b4375c28342ebb784f80fa0bca1db7439562618712351ba68772ec52424954`, state root `0x58aadb1ee170715f6daa814c0b945bcf01b3a38e72bc34f57037bda50b1a16e1`, the modified `capture:anchor` successfully acquired the configured `OrinqReceipts::Anchors` value and 10 read-proof nodes. The proof's `at` equals the requested block hash. This is **capture evidence only** until the independent trie verifier completes, and the root remains an untrusted RPC observation until B3-A finality is authenticated.
+
+The existing [B3-B live storage-proof job in run #39556187996](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556187996) independently verified a different receipt-storage key/value against that same state root and reported:
+- `B3_B_STORAGE_PROOF_VALID=true`
+- `B3_B_STORAGE_KEY_EXISTS=true`
+- `B3_B_STORAGE_VALUE_MATCH=true`
+- `B3_B_STATE_ROOT_BOUND=true`
+
+This proves the existing route can return a valid Substrate trie-membership proof for the receipt item in that evidence packet. It does **not** verify the separate `Anchors` value, authenticate finality, or close B3.
+
+The same run tried both public Materios RPC URLs (`/rpc` and `/preprod-rpc`): both returned `-32601 Method not found` for `grandpa_proveFinality`, and both had `chain_getBlock.justifications = null` at the observed finalized head. Its bounded scan of 768 blocks did not find a real GRANDPA justification. No archive RPC was configured. The run therefore recorded `NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN`; B3-A remains OPEN.
+
+The current run [#39556404546](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556404546) adds independent verification of the specific `Anchors` read-proof. At the time of this document update, that Rust verification step is still in progress; no result is asserted here.
+
+**Decision based on live evidence:** use the public Materios route for receipt/anchor reads and available storage proofs, but do not claim publisher-independent B3 finality from it. Without a configured archive/proof endpoint or an upstream-exposed finality proof, the existing public route does not currently supply the GRANDPA/runtime evidence needed to close B3-A/B3-C. Do not modify Materios or fabricate a fallback; keep the missing layers OPEN and continue with independently verifiable evidence.
 
 ## 3. Infrastructure classification
 
