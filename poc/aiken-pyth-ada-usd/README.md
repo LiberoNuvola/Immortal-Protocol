@@ -7,7 +7,7 @@ This project tests one narrow question: can an on-chain Plutus V3 consumer bind 
 ## Boundary
 
 - Pyth feed: ADA/USD, feed ID 16, as documented by the [Cardano Developer Portal](https://developers.cardano.org/docs/build/integrate/oracles/pyth/) and [Pyth's Cardano consumer guide](https://docs.pyth.network/price-feeds/pro/integrate-as-consumer/cardano).
-- Library: `pyth-network/pyth-lazer-cardano`, used through `pyth.get_updates`. The consumer does not implement signature verification itself. Pyth's verification script must execute in the same transaction for the signed update supplied as the zero-withdrawal redeemer to be authenticated.
+- Library: `pyth-network/pyth-lazer-cardano`, pinned in `aiken.toml` to upstream commit [`217b5917228b17f015719b27dd616a75ad6bd800`](https://github.com/pyth-network/pyth-lazer-cardano/commit/217b5917228b17f015719b27dd616a75ad6bd800), used through `pyth.get_updates`. The consumer does not implement signature verification itself. Pyth's verification script must execute in the same transaction for the signed update supplied as the zero-withdrawal redeemer to be authenticated.
 - Freshness: reuses the current protocol's one-hour maximum age. Update timestamp and feed-specific timestamp are both required, must not exceed the finite transaction upper validity bound, and must lie within that existing window. The validator rejects absent/non-finite upper bounds, missing fields, stale/future timestamps, non-positive price, and duplicate/missing ADA/USD feed identities.
 - Binding: the probe's marker datum repeats the raw price, exponent and both timestamps. The consumer only accepts when those fields match the quote extracted from the Pyth update. This tests whether a caller-supplied value can be substituted without also matching the signed update.
 
@@ -26,7 +26,7 @@ It also does not:
 
 ## CI contract
 
-`aiken check` exercises only synthetic pure vectors for freshness/feed selection/binding; the fixtures are not price observations and do not validate a signature. `aiken build` verifies the isolated Plutus V3 consumer compiles against the Pyth/stdlib package versions specified by the manifest. A pass is only a code-level feasibility result.
+`aiken check` exercises only synthetic pure vectors for freshness/feed selection/binding; the fixtures are not price observations and do not validate a signature. `aiken build` verifies the isolated Plutus V3 consumer compiles against the exact Pyth Git commit and stdlib/compiler versions specified by the manifest. The CI workflow preserves `aiken.lock`, `plutus.json`, their hashes and a build manifest as a short-lived artifact. A pass is only a code-level feasibility result.
 
 Further gates before considering integration:
 1. Resolve and retain the exact upstream Pyth package revision in the generated lockfile/evidence.
