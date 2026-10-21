@@ -6,17 +6,51 @@ on:
       - work/immortal-green-closure
     paths:
       - "poc/aiken-pyth-ada-usd/**"
+      - "scripts/testPythSignedUpdatePreprod.mts"
       - ".github/workflows/pyth-ada-usd-probe.yml"
+      - ".github/workflows/pyth-native-ledger-probe.yml"
   pull_request:
     paths:
       - "poc/aiken-pyth-ada-usd/**"
+      - "scripts/testPythSignedUpdatePreprod.mts"
       - ".github/workflows/pyth-ada-usd-probe.yml"
+      - ".github/workflows/pyth-native-ledger-probe.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  pyth-native-runner-typecheck:
+    name: Type-check guarded native-ledger runner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Install pinned isolated Pyth runner dependencies
+        run: |
+          npm install --no-save --package-lock=false \
+            @evolution-sdk/evolution@0.5.9 \
+            @pythnetwork/pyth-lazer-cardano-js@0.1.0 \
+            @pythnetwork/pyth-lazer-sdk@5.2.0
+
+      - name: Type-check runner without requiring secrets or submitting transactions
+        run: |
+          npx tsc --noEmit --strict --target ES2022 --module ESNext \
+            --moduleResolution bundler --skipLibCheck --types node \
+            --verbatimModuleSyntax scripts/testPythSignedUpdatePreprod.mts
+
   pyth-ada-usd-probe:
     name: Compile isolated Pyth ADA/USD consumer
     runs-on: ubuntu-24.04
