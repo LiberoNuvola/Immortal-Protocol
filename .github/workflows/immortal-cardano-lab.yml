@@ -153,7 +153,16 @@ jobs:
             sleep 2
           done
           echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
-          tail -300 audit/yaci-evidence/yaci.log || true
+          if [[ -f audit/yaci-evidence/yaci.log ]]; then
+            sed -E -i \
+              -e 's/(Payment Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Staking Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Private Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Mnemonic[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Seed[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              audit/yaci-evidence/yaci.log
+            tail -200 audit/yaci-evidence/yaci.log || true
+          fi
           exit 1
 
       - name: Derive funded CI test wallet
@@ -165,8 +174,10 @@ jobs:
       - name: Record devnet information
         run: |
           {
-            echo "branch=work/immortal-green-closure"
-            echo "workflow_sha=$GITHUB_SHA"
+            echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+            echo "base_ref=${GITHUB_BASE_REF:-}"
+            echo "event_sha=$GITHUB_SHA"
+            echo "checkout_sha=$(git rev-parse HEAD)"
             echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
@@ -174,9 +185,94 @@ jobs:
             echo "run_id=$GITHUB_RUN_ID"
             echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
+
+      # Do not call "yaci-devkit info" here: in non-interactive mode it starts
+      # another CLI process, which can terminate the live local devnet. Record
+      # the already-observed API health and startup parameters without touching it.
       - name: Record Yaci cluster timing/configuration
         run: |
-          yaci-devkit info | tee audit/yaci-evidence/yaci-devkit-info.txt
+          {
+            echo "startup_command=yaci-devkit up --enable-yaci-store"
+            echo "yaci_version=0.12.0-beta5"
+            echo "yaci_store_api=http://localhost:8080/api/v1"
+            echo "yaci_store_ready=$(grep -q '^YACI_STORE_READY=1
+
+      - name: Execute real Cardano ledger smoke transaction
+        run: node audit/cardano-integration/ledger-smoke.mjs
+
+      - name: Probe current Yaci cost models with Lucid Evolution
+        run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
+
+      - name: Execute V3 carrier against native Cardano ledger
+        run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
+
+      - name: Execute real economic Reveal transition trace
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+
+      - name: Execute real FundTreasury canonical Oracle valuation trace
+        run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
+
+      - name: Execute real economic Expire transition trace
+        run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
+
+      - name: Materialize raw Yaci ledger context for P2.8
+        run: node audit/cardano-integration/materialize-p28-ledger-context.mjs audit/yaci-evidence
+
+      - name: Run native Yaci UTxO decoder conformance
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal update
+          cabal run yaci-utxo-test
+
+      - name: Run P2.8 ledger evidence gate against this lab packet
+        working-directory: audit/cardano-ledger-runner
+        run: |
+          cabal run cardano-ledger-runner -- --evidence-dir ../yaci-evidence --evaluate
+
+      - name: Measure script and transaction resource footprint
+        run: node audit/cardano-integration/resource-audit.mjs | tee audit/yaci-evidence/resource-audit.json
+
+      - name: Run existing pure invariant suite
+        run: npx tsx src/__tests__/b1-invariants.test.ts
+      - name: Run economic admission provenance negative twins
+        run: npx tsx src/__tests__/economic-admission-input-binding.test.ts
+
+      - name: Run predeploy structural gate
+        run: npm run test:predeploy
+
+      - name: Print resource audit summary
+        if: always()
+        run: cat audit/yaci-evidence/resource-audit.json 2>/dev/null || true
+
+      - name: Preserve devnet evidence and logs
+        if: always()
+        run: |
+          curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
+          # Yaci prints private keys for generated devnet default accounts. Redact
+          # key/seed material before either displaying or uploading the log artifact.
+          if [[ -f audit/yaci-evidence/yaci.log ]]; then
+            sed -E -i \
+              -e 's/(Payment Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Staking Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Private Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Mnemonic[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Seed[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              audit/yaci-evidence/yaci.log
+            tail -200 audit/yaci-evidence/yaci.log || true
+          fi
+
+      - name: Upload laboratory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-cardano-lab-evidence
+          path: audit/yaci-evidence/
+ audit/yaci-evidence/bootstrap.txt && echo true || echo false)"
+            echo "epoch_latest_sha256=$(sha256sum audit/yaci-evidence/epoch-latest.json | awk '{print $1}')"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "startup_parameters:"
+            grep -E 'Node port|Submit Api Port|Protocol Magic|Block Time|Slot Length|Epoch Length' audit/yaci-evidence/yaci.log | tail -20 || true
+          } | tee audit/yaci-evidence/yaci-runtime-info.txt
 
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
