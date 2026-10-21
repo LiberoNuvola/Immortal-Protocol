@@ -1,6 +1,6 @@
 # IMMORTAL / PRE-RICH — Repository-Wide Branch & Evidence Checkpoint
 
-**Snapshot:** 2026-10-21, approximately 16:20 Europe/Rome  
+**Source-tree snapshot:** 2026-10-21; branch tips captured through 14:29 UTC (16:29 Europe/Rome), listed in Section 0. The checkpoint was committed and linked from Notion after that tree census.  
 **Checkpoint branch:** work/immortal-green-closure  
 **Classification:** coordination/audit record only; not a normative specification, deployment approval, merge authorization, or protocol-semantic decision.
 
