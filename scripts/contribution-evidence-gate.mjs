@@ -167,11 +167,11 @@ const classifyPullRequest = ({ body, files, headSha }) => {
   if (!parseLayer(values.Layer)) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Layer must be one or more of Universal, Adapter, Application, Process, Audit.'], files: changed, headSha }
   }
-  if (!/^non[- ]normative\\b/i.test((values['Normative status'] ?? '').trim())) {
+  if (!/^non[- ]normative\b/i.test((values['Normative status'] ?? '').trim())) {
     return { decision: 'STRONGER_REVIEW_REQUIRED', eligible: false, reasons: ['Normative or uncertain changes require stronger review.'], files: changed, headSha }
   }
   const residual = (values['Residual-obligation impact'] ?? '').trim()
-  if (!/^(?:none\\b|updated\\b|unresolved\\b|n\\/a\\b)/i.test(residual)) {
+  if (!/^(?:none\b|updated\b|unresolved\b|n\/a\b)/i.test(residual)) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Residual-obligation impact must be declared as None, Updated, Unresolved, or N/A with a reason.'], files: changed, headSha }
   }
   const incompatible = changed.filter((path) => !classes.some((klass) => isEligiblePathForClass(path, klass)))
