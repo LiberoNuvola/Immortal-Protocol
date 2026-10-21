@@ -185,3 +185,32 @@ Do not use `TICKET_PAYMENT_LOVELACE`, ticket price, `src/treasuryPolicy.ts` perc
 - **Fee applicability (G1):** still OPEN. This inventory selects no fee-bearing operation.
 
 **Scope limitation:** exact-branch reads of the listed fee inventory, Cardano adapter, PRE-RICH mint path, cost-model probe, admission types and related specifications. This is not a claim of exhaustive static analysis of every operation or external provider, and no tests, CI, deployment or live transaction measurements were run by this documentation pass.
+
+
+## G. Operational evidence follow-up — current branch snapshot
+
+### G1. Branch and evidence surfaces checked
+
+This follow-up was performed against branch `work/b3-materios-provenance-evidence`, whose observed head at the start of this pass was `a45837c7f355d8c52883807e4c70de9d5c746d54`. The branch has advanced since the earlier inventory commit; conclusions below are limited to the specific current-head artifacts inspected.
+
+The current branch contains `audit/cardano-ledger-runner/evidence/README.md` and `manifest.schema.json`, but that tracked directory contains the packet contract/schema rather than a populated real transaction packet. The contract requires `tx.cbor`, `utxo.json`, `pparams.json`, `epoch-info.json`, `system-start.json`, and `manifest.json` to describe the same ledger state and bind acquisition provenance, transaction inputs/hash, script artifacts and file digests. Its stated safe-stall behavior is an evidence gate, not evidence that a specific operation was evaluated.
+
+The tracked Reveal golden-packet document likewise specifies the required signed/unsigned transaction, transaction ID, redeemers/ex-units, ledger observation, and reconstructed post-state, while explicitly stating that no real Reveal packet is claimed closed. This is a useful future evidence contract, but it does not supply a transaction fee or per-operation cost value.
+
+The latest branch workflow run inspected during this pass was the drand Beacon Verification PoC. Its uploaded artifact is named `immortal-drand-verified-beacon`; a prior run also uploaded `immortal-drand-plutus-ledger-evidence`. These artifacts concern beacon verification/ledger evidence. The run metadata and artifact names alone do not establish a cost meter, provider invoice, fee-paid field tied to an IMMORTAL action, or a recoverable cost allocation. They are not to be reclassified as Protocol Usage Fee evidence without inspecting a specific artifact and proving that linkage.
+
+### G2. What can and cannot be concluded
+
+- **Evidence contract exists:** yes, for the P2.8 typed Ledger packet and Reveal transition.
+- **Current tracked P2.8 evidence directory contains a real populated transaction packet:** no; the inspected tracked directory contains the README and schema only.
+- **A reproducible operation-specific Cardano fee/execution-cost record was established by this follow-up:** no.
+- **A verified off-chain provider bill or usage meter bound to a canonical IMMORTAL action was established:** no.
+- **A general absence of all historical or external transaction evidence is proven:** no. Workflow artifacts and external provider records are not exhaustively enumerated by this targeted check.
+
+A ledger transaction's fee and a ledger evaluator's ExUnits are related but distinct observations: the transaction fee is the actual chain charge; ExUnits describe script execution resource use and need the corresponding protocol parameters/cost model to support comparison or attribution. Neither, by itself, prices hosting, oracle access, storage, Materios verification, or shared engineering overhead.
+
+### G3. Next evidence gate
+
+The next useful evidence step is not to set a percentage or estimate a universal fee. It is to select an already observed transaction that can be bound to one canonical action and assemble its exact transaction/ledger packet, then extract the ledger-reported fee and any ledger-aligned redeemer ExUnits. Separately, obtain actual provider usage/billing records for off-chain services if those costs are to be considered. Keep the chain charge, metered service cost, shared overhead and optional protocol contribution as separate fields.
+
+No transaction was submitted, no workflow was rerun, and no code, tests, CI, deployment, V3 or Reveal semantics were changed in this follow-up. G1 applicability and the economic fee formula remain OPEN.
