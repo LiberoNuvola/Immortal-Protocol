@@ -16,10 +16,18 @@ import type {
   ViabilityCertificateEvidence,
 } from '../../../src/preRichIssueAdmissionBridge'
 
+export type HaskellAuthorityDecisionBinding = {
+  stateHash: string
+  actionFingerprint: string
+  postStateHash: string
+}
+
 export type HaskellIssueObservation = {
   decisionInput: Record<string, unknown>
   decisionReference: string
   observationReference: string
+  /** Digest values signed by the external authority for this exact decision. */
+  authorityDecisionBinding: HaskellAuthorityDecisionBinding
   poolInputReference: string
   poolUsdmValue: bigint
   liquiditySourceReferences: readonly string[]
@@ -144,6 +152,32 @@ function runProducer(
   })
 }
 
+/**
+ * Require the independently-computed Haskell decision to match every digest
+ * covered by the verified authority signature before the witness can be built.
+ */
+export function assertHaskellDecisionMatchesAuthorityBinding(
+  decision: HaskellAuthorityDecisionBinding,
+  authorityBinding: HaskellAuthorityDecisionBinding | undefined,
+): void {
+  if (!authorityBinding) {
+    throw new Error('signed authority carrier decision binding is required')
+  }
+  for (const key of ['stateHash', 'actionFingerprint', 'postStateHash'] as const) {
+    const signed = authorityBinding[key]
+    const computed = decision[key]
+    if (!/^[0-9a-fA-F]{64}$/.test(signed)) {
+      throw new Error('signed authority ' + key + ' must be a 32-byte hex digest')
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(computed)) {
+      throw new Error('Haskell Issue ' + key + ' must be a 32-byte hex digest')
+    }
+    if (signed.toLowerCase() !== computed.toLowerCase()) {
+      throw new Error('Haskell Issue ' + key + ' does not match signed authority carrier binding')
+    }
+  }
+}
+
 export function createHaskellIssueAdmissionProvider(
   options: HaskellIssueAdmissionProviderOptions,
 ): AuthoritativeIssueAdmissionProvider {
@@ -172,6 +206,10 @@ export function createHaskellIssueAdmissionProvider(
     if (decision.actionClass !== 'Issue') {
       throw new Error('Haskell Issue producer returned a non-Issue action')
     }
+    assertHaskellDecisionMatchesAuthorityBinding(
+      decision,
+      observed.authorityDecisionBinding,
+    )
     const expectedAction = `Issue:${inputs.classId.toString()}:${inputs.price.toString()}`
     if (decision.action !== expectedAction) {
       throw new Error(
