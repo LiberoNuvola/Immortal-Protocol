@@ -43,8 +43,10 @@ main = do
   outcomes <- traverse runCase cases
   poolOutcome <- runPoolSingletonZeroCase
   fixedAdaSettlementOutcome <- runFixedAdaGenesisSettlementCase
+  exactAdaSettlementOutcome <- runExactAdaGenesisSettlementCase
+  adaRoundingBoundaryOutcome <- runAdaCeilingRoundingBoundaryCase
   mixedBasketOutcome <- runMixedAssetBasketRequiresPerAssetQuoteCase
-  if and outcomes && poolOutcome && fixedAdaSettlementOutcome && mixedBasketOutcome then pure () else exitFailure
+  if and outcomes && poolOutcome && fixedAdaSettlementOutcome && exactAdaSettlementOutcome && adaRoundingBoundaryOutcome && mixedBasketOutcome then pure () else exitFailure
 
 runCase :: Case -> IO Bool
 runCase testCase = do
@@ -153,6 +155,41 @@ runFixedAdaGenesisSettlementCase = do
           authorizedPublisher
           fixedTreasuryValue)
 
+-- Positive control: an explicit synthetic quote and ADA amount represent
+-- the Genesis target under the current integer conversion. The oracle quote
+-- is only a unit-test fixture, not a claim about any live ADA market price.
+runExactAdaGenesisSettlementCase :: IO Bool
+runExactAdaGenesisSettlementCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let passed = case result of Right actual -> actual == 100; Left _ -> False
+  putStrLn (prefix passed <> "synthetic authenticated ADA quote yields exactly 100 USDM sub-units")
+  pure passed
+  where
+    adaOracleReferences =
+      [ referenceInput 0
+          (oracleOutputForAsset 1 statePolicy stateName (bytes "") (bytes "") authorizedPublisher now 100)
+      ]
+    treasuryValue = singleton adaSymbol adaToken 2_600_000
+    evaluateSettlement = evaluate (totalUsdmValue (transactionInfo adaOracleReferences) oracleState authorizedPublisher treasuryValue)
+
+-- Boundary regression: the canonical per-asset conversion currently uses
+-- ceilingDiv. One lovelace below the exact synthetic amount still maps to the
+-- 100-sub-unit integer target (99.9999 before quantization). This describes
+-- the implemented integer semantics; bounded conversion policy must not be
+-- claimed more generally without reconciling the relevant specification.
+runAdaCeilingRoundingBoundaryCase :: IO Bool
+runAdaCeilingRoundingBoundaryCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let passed = case result of Right actual -> actual == 100; Left _ -> False
+  putStrLn (prefix passed <> "ceiling conversion rounds 99.9999 sub-units to the 100-sub-unit target")
+  pure passed
+  where
+    adaOracleReferences =
+      [ referenceInput 0
+          (oracleOutputForAsset 1 statePolicy stateName (bytes "") (bytes "") authorizedPublisher now 100)
+      ]
+    treasuryValue = singleton adaSymbol adaToken 2_599_999
+    evaluateSettlement = evaluate (totalUsdmValue (transactionInfo adaOracleReferences) oracleState authorizedPublisher treasuryValue)
 -- Regression for the current single-asset OracleDatum/singleton boundary.
 -- A token settlement output on Cardano also carries ADA for min-UTxO.
 -- totalUsdmValue asks for an oracle match for every non-zero asset before
