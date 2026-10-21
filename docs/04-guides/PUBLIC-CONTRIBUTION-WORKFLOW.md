@@ -57,13 +57,14 @@ A PR claiming the evidence-gated path must include this declaration in its descr
 ### Evidence-Gated Contribution Declaration
 
 - Layer: [Universal | Adapter | Application | Process | Audit]
-- Class: [A | B | C | D | E]
+- Class: [A | B | C | D | E; multiple classes use comma or +, e.g. A, C]
 - Normative status: [Non-normative | Normative/uncertain — evidence-gated path not claimed]
 - Purpose and claimed effect:
 - Affected files / areas:
 - Invariants, predicates, interfaces, or evidence contracts touched:
 - Explicitly unchanged boundaries:
 - Evidence:
+  - Evidence-bound commit SHA: [exact current PR head SHA; refresh after every commit]
   - Reproduction command(s):
   - Required CI workflow/run links:
   - Test/vector names and results:
@@ -76,6 +77,14 @@ A PR claiming the evidence-gated path must include this declaration in its descr
 ```
 
 For a documentation-only change, tests may be inapplicable; say so rather than inventing a test result. For tests and audit tooling, include reproducible commands and expected outputs. Evidence should identify commit SHA and environment where relevant. A green CI badge is not a substitute for identifying what the workflow actually tests.
+
+### 3.1 Initial automated eligibility check
+
+The initial gate implementation is `scripts/contribution-evidence-gate.mjs`, invoked by `.github/workflows/contribution-evidence-gate.yml`. It reads the PR metadata and paginated changed-file inventory through a read-only GitHub token, checks out the base commit rather than contributor code, and fails closed if the event is stale, required declaration fields are missing, the evidence-bound SHA differs from the current PR head, or a changed path is outside the declared class boundary.
+
+The first path mapping is deliberately narrow: A is non-normative Markdown; B is audit tooling and selected scripts outside the governance-control plane; C is test/conformance/fixture paths; D is contribution/process documentation; E is explicitly named residual-obligation records. Every changed file must match at least one declared class. Known normative files, the gate itself, governance lab, workflow files, and contribution-policy documents require stronger review regardless of the self-declared class.
+
+This is an initial process classifier, not a semantic proof. It cannot decide whether arbitrary prose or code has a hidden normative effect, and it does not replace required CI checks, review approval, security triage, or branch protection. The check must not be treated as a required merge condition until the workflow has been validated on representative PRs and the repository rules are deliberately configured.
 
 ## 4. Eligibility and status states
 
