@@ -340,3 +340,10 @@ Current closure status:
 - **Live Oracle operational readiness:** BLOCKED — the wallet singleton observed by Koios is legacy and stale; exact public runtime identity has not been furnished to the read-only observer.
 - **Oracle source trustlessness:** OPEN — datum publisher matching alone is not external-price verification or permissionless sourcing.
 - **First real Issue:** still blocked. No transaction was built, signed or submitted, and no Oracle datum update is authorized by this note.
+
+
+## 2026-10-21 follow-up — price-carrier feasibility probe passed
+
+The isolated Pyth project now also compiles a quote-carrier continuation validator. [CI run #12](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931) passed on commit `7298455cd01ee73915d294e713fbb8ef355f7e8a`: 13 synthetic Aiken tests and Plutus V3 compilation both succeed. Artifact: [`pyth-ada-usd-probe-7298455cd01ee73915d294e713fbb8ef355f7e8a`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931/artifacts/12346542438). The compiled carrier validator field is 8,289 bytes (not transaction size).
+
+This is code-level proof only. The probe checks unique script input/output, same continuing address and Value, singleton token preservation and exact match between the output quote tuple and the fresh ADA/USD tuple selected from synthetic Pyth update data. It does not constitute native-ledger Pyth signature verification, does not yet bind the price consumed by Haskell Plutus V2 MintPolicy, and does not answer the governed USD→USDM conversion. First real Issue remains blocked. No Pyth State, legacy Oracle State, production MintPolicy, V3 carrier or Reveal was changed.
