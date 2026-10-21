@@ -279,3 +279,63 @@ This is a sequenced work plan, not a new economic policy and not approval to byp
 - Only call Issue permissionless after the external authority key is no longer indispensable for valid Issue, the economic gate is verifiably enforced, and real ledger evidence confirms the complete path. Until then, describe the path accurately as atomic sale checks on-chain plus authority-dependent V3/economic admission.
 
 No code, validator artifact, deployment, or economic semantics were changed by this plan.
+
+
+### 2026-10-21 — Canonical Issue delta and trustless enforcement boundary
+
+Classification: non-normative conformance analysis. This section records existing reference semantics; it does not create a new transition rule or authorize a V3 change.
+
+#### Existing reference transition
+
+`IMMORTAL/kernel/EconomicTransitionV3.hs` defines `transition profile s (Issue cid price)`. The existing reference relation requires:
+
+- a class price defined by the configured `EconomicProfile` and exact equality between that canonical price and the requested `price`;
+- the existing `EconomicKernel.classSaleable` predicate (class exists, is not above `CurrentActiveClass`, has `issued < cap`, and its `saleable` flag is true);
+- the existing transition-validity preconditions and postconditions: profile validity, pre/post conservation, control-state validity, non-negative fields, and preservation of the monotonic `HighestClassEverActivated` rule.
+
+For the selected class, the canonical reference delta is:
+
+```text
+tcsIssued       := tcsIssued + 1
+tcsUnresolved   := tcsUnresolved + 1
+tcsExposure     := tcsExposure + price
+```
+
+At state level, the same transition sets:
+
+```text
+v3UnresolvedReserve     := v3UnresolvedReserve + price
+v3UnresolvedTicketCount := v3UnresolvedTicketCount + 1
+```
+
+All other class fields, other classes, crystallized liabilities, safety capital, reserve protection, mandatory future costs, control state and Jackpot state remain unchanged by this reference `Issue` transition. Do not encode a different delta in Plutus merely to close CI.
+
+#### Existing gate composition
+
+`PRE-RICH/onchain/PreRichEconomicAdmission.hs` composes the structural transition with projection into the universal state and the existing `EconomicGate`/viability predicate. Its inputs include `truthVerified`, `eevFresh`, `obligationsComplete`, candidate EEV, immediately executable liquidity, required immediate liquidity, and `allOmegaSuccessorsInCertifiedKernel`. The gate is a predicate over these inputs; its code explicitly says it does not manufacture truth, freshness, exhaustive obligations or a concrete-kernel certificate.
+
+`PRE-RICH/onchain/PreRichIssueDecision.hs` computes a canonical reference-state serialization, pre/post hashes and an action fingerprint from `Issue`, pre-state hash and post-state hash. This establishes a reference computation path in Haskell; it does not, by itself, authenticate the supplied economic evidence or force the Cardano transaction to have the same post-state.
+
+#### On-chain conformance gap
+
+`PRE-RICH/onchain/V3EconomicStateCarrier.hs` currently receives an action envelope whose on-chain action class is a broad label (`Issue`, `Reveal`, `Claim`, `Expire`), plus decision/observation references, pre-state hash, action fingerprint, post-state hash and authority signature. The inspected validator checks carrier singleton continuity, unchanged carrier Value, state validity/version increment, endpoint hashes and the Ed25519 signature. It does not receive the canonical Issue class/price as explicit semantic coordinates and independently recompute the above Issue-specific field delta or verify that the fingerprint is the canonical reference fingerprint.
+
+The current class-state checks (`classValid`) enforce shape, non-negativity and `exposure == unresolved * classPrice`, plus global reserve/count conservation; these invariants do **not** establish that an accepted carrier continuation changes only the permitted Issue fields by exactly the specified delta. The signature makes the currently accepted endpoint pair authority-approved, but authority approval is not the same as on-chain derivation of the permitted transition.
+
+#### Publication boundary
+
+| Proposition | Evidence class now justified | What remains to claim more |
+|---|---|---|
+| Canonical reference Issue delta exists | Reference/Haskell implementation and its conformance tests | Exact compiled validator relation and deployed transaction parity |
+| Ticket mint + Treasury payment + B1 reservation are coupled | On-chain MintPolicy/B1 guards plus candidate transaction construction | Successful measured final-body transaction and independent ledger reconciliation |
+| V3 transition conforms to canonical Issue delta | **Open** | Validator-level delta verification or a rigorously sound on-chain-verifiable proof, plus adversarial tests |
+| Economic Gate inputs are authenticated | **Partially/externally asserted** | Authenticate every source datum and verify freshness/completeness/perimeter, or prove them under an explicitly reviewed scheme |
+| Issue is permissionless | **Not established** | No indispensable authority signer, no trusted evidence oracle, complete transition/gate refinement and liveness evidence |
+
+#### Safe next design step
+
+Specify a semantic Issue redeemer/verification contract against the exact `EconomicTransitionV3.transition` relation before any V3 implementation change. It must bind the class and price to the canonical application profile; derive/check the exact pre/post deltas above; preserve all unrelated fields; reject replay, wrong class/price and altered endpoints; and cost the candidate validator/artifact and complete transaction against Cardano execution and size limits. This would close only the **transition-refinement** portion.
+
+The remaining `EconomicGate` and viability values must be independently authenticated or proven as part of the same valid public-input relation. A signature-free delta verifier alone would not make the entire Issue path permissionless if EEV/ProtectedCapital/Ω evidence remains supplied by an indispensable external authority.
+
+No V3, Reveal, MintPolicy, B1, B2, economic semantics, key or deployment changed as part of this analysis.
