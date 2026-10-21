@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 37,
-    "semantic_ledger_entries_not_reviewed": 1774,
+    "scoped_static_reviews_recorded": 51,
+    "semantic_ledger_entries_not_reviewed": 1760,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding and first real Issue admission remain blocked; direct-USDM EEV approval is confirmed only for the recorded source UTxO snapshot.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness binding, and native P2.8 ledger gates remain blocked. Direct-USDM EEV approval is confirmed only for the recorded source UTxO snapshot.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -28101,10 +28101,14 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_LATEST_RUN_FAILED_ACCEPTANCE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-02",
+        "F-P28-03",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971"
+      ]
     },
     {
       "blob_sha": "07f7dc1fa4aa44587033c6cdb591160d69519d69",
@@ -28652,10 +28656,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_RUNNER_EVIDENCE_CONTRACT",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-03",
+        "F-P28-04"
+      ]
     },
     {
       "blob_sha": "0cc597f8f5a67088cf6eec6e631d0ec48a0f50cb",
@@ -30099,10 +30106,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_P2_8_EVIDENCE_GATE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-03",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784077",
+        "artifact:12367697468"
+      ]
     },
     {
       "blob_sha": "14b99b28df57f0a74f7c145c789c55b26f41e55c",
@@ -38996,10 +39007,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CONTEXT_MATERIALIZER",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-03"
+      ]
     },
     {
       "blob_sha": "497d71bad11fce5575410a9e1899a25736831e76",
@@ -45784,10 +45797,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_REAL_PREPROD_RUNNER",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-01",
+        "F-P28-04"
+      ]
     },
     {
       "blob_sha": "799fb2c093d81c5f9ee85e749c4ddd4fbc7edd6c",
@@ -47950,10 +47966,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_YACI_PATH_USES_CBOR_GATE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-01",
+        "F-P28-03"
+      ]
     },
     {
       "blob_sha": "89c6b12fcd600d81b14303c30e9c568053ccc682",
@@ -50651,10 +50670,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_FINAL_SIZE_CHECK_WITHOUT_REFERENCE_WITNESS_ASSERTION",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-01",
+        "F-P28-02"
+      ]
     },
     {
       "blob_sha": "9995f16f891aba5af9fec46520aeee24dcfaaada",
@@ -52191,10 +52213,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_PREPROD_CONTEXT_MATERIALIZER",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-03"
+      ]
     },
     {
       "blob_sha": "a3ecbed7351fa5797e6acf9226d962bb50e479d0",
@@ -52851,10 +52875,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STRUCTURAL_TEST_NOT_FINAL_CBOR_EVIDENCE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-02"
+      ]
     },
     {
       "blob_sha": "a838f147d88cb7b5c282178c3ac095132580f3f4",
@@ -56631,10 +56657,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_ACCEPTANCE_CRITERIA",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-03",
+        "F-P28-04"
+      ]
     },
     {
       "blob_sha": "c3477a272fb6d63ecd21d91bbbe66bd2f185ee5c",
@@ -58613,10 +58642,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_FINAL_CBOR_REFERENCE_WITNESS_GATE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-01"
+      ]
     },
     {
       "blob_sha": "cecff6d6ce5004407d62bac68cca546cf23fff09",
@@ -60263,10 +60294,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_RUNNER_CANONICAL_FAILURE_16782_BYTES",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-02",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971"
+      ]
     },
     {
       "blob_sha": "d91a2498472ed493c67007ac8ead7eac34840912",
@@ -61234,10 +61268,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_FIXTURE_SOURCE_NOT_LEDGER_ACCEPTANCE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-02",
+        "F-P28-04"
+      ]
     },
     {
       "blob_sha": "ded0fadaacad4546c0d15d103fbf2c7f30695084",
@@ -64939,10 +64976,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_APP_BOUNDARY_CONFORMANCE_SOURCE",
+      "review_scope": "Static source/workflow/document review plus read-only inspection of Actions runs #39646783971 and #39646784077. No workflow rerun, Preprod dispatch, transaction submission, or native P2.8 gate execution was performed in this review.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md@0744227cb575bee5c50557f5f43be5bf26d00eb9",
+      "evidence_references": [
+        "F-P28-02"
+      ]
     },
     {
       "blob_sha": "f80155715532419fac7580c752525396c484b56f",
