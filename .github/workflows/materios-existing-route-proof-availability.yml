@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ""
+      websocket_endpoint:
+        description: "Existing Materios Preprod WebSocket RPC endpoint; do not include credentials"
+        required: true
+        type: string
+        default: "wss://materios.fluxpointstudios.com/preprod-rpc"
   push:
     branches:
       - work/b3-materios-provenance-evidence
@@ -54,6 +59,19 @@ jobs:
           MATERIOS_RPC: ${{ github.event.inputs.archive_rpc || github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
         run: npm run probe:rpc
+
+      - name: Probe public WebSocket GRANDPA methods and evidence delivery
+        id: websocket-capabilities
+        continue-on-error: true
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_WS: ${{ github.event.inputs.websocket_endpoint || 'wss://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+          MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
+          MATERIOS_WS_EVIDENCE_OUT: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
+          MATERIOS_WS_TIMEOUT_MS: "12000"
+          MATERIOS_WS_SUBSCRIPTION_WAIT_MS: "15000"
+        run: node src/probe-websocket-rpc-capabilities.mjs
 
       - name: Capture finalized checkpoint and available GRANDPA evidence
         id: finalized
@@ -210,6 +228,28 @@ jobs:
             lines.push('', 'RPC method catalogue was not captured; inspect the preceding step logs.');
           }
 
+          const websocketPath = 'poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json';
+          if (fs.existsSync(websocketPath)) {
+            try {
+              const probe = JSON.parse(fs.readFileSync(websocketPath, 'utf8'));
+              lines.push(
+                '',
+                '## WebSocket GRANDPA capability probe',
+                '- Connected: **' + String(probe.websocket?.connected ?? false) + '**',
+                '- RPC catalogue status: **' + String(probe.catalogue?.status ?? 'unknown') + '**',
+                '- GRANDPA proof RPC: **' + String(probe.finality_probe?.prove_finality?.status ?? 'unknown') + '**',
+                '- GRANDPA subscription: **' + String(probe.finality_probe?.subscribe_justifications?.status ?? 'unknown') + '**',
+                '- Justification notification received: **' + String(probe.finality_probe?.subscribe_justifications?.notification_received ?? false) + '**',
+                '- Raw GRANDPA payload captured: **' + String(probe.claims?.raw_grandpa_justification_captured ?? false) + '**',
+                '- This is WebSocket capability/acquisition evidence only; cryptographic finality remains unverified here.',
+              );
+            } catch (error) {
+              lines.push('', 'WebSocket RPC probe JSON could not be parsed: ' + String(error));
+            }
+          } else {
+            lines.push('', 'WebSocket RPC probe artifact was not produced; inspect its preceding step logs.');
+          }
+
           const storageVerificationPath = 'poc/materios-checkpoint/out/MateriosStorageProofVerification.json';
           if (fs.existsSync(storageVerificationPath)) {
             try {
@@ -293,6 +333,7 @@ jobs:
           name: materios-existing-route-proof-probe-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             poc/materios-checkpoint/out/MateriosRpcCapabilityProbe.json
+            poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
             poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
             poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json
             poc/materios-checkpoint/out/MateriosStorageProofVerification.json
