@@ -304,8 +304,10 @@ if (/BigInt\s*\(\s*TICKET_PAYMENT_LOVELACE\s*,?\s*\)/s.test(mintTs)) {
 const settlementSource = read('src/issueSettlement.ts')
 contains(mintTs, /deriveAdaIssueSettlementLovelace/, 'Issue settlement derives ADA quantity from authenticated OracleDatum quote')
 contains(mintTs, /assertCompletedTreasuryAdaSettlement/, 'Completed Lucid Treasury output is validated before submission')
-contains(mintTs, /oracleFields[\s\S]*?oraclePrice[\s\S]*?oracleTimestampMs[\s\S]*?oraclePublisherPkh/s,
-  'Issue quote fields are decoded from the authenticated Oracle State UTxO')
+contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
+  'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')
+contains(settlementSource, /OracleDatum constructor is invalid[\s\S]*?exactly five fields[\s\S]*?field types/s,
+  'OracleDatum decoder validates constructor, field count and field types')
 contains(settlementSource, /CANONICAL_ORACLE_PRECISION\s*=\s*1_000_000n/,
   'Off-chain settlement precision matches OracleTypes')
 contains(settlementSource, /CANONICAL_ADA_MIN_UTXO_LOVELACE\s*=\s*1_600_000n/,
