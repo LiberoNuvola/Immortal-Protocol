@@ -473,6 +473,35 @@ async function scanHistoricalCandidates() {
   }
 }
 
+const healthObservations = [];
+
+async function observeHealth(label) {
+  try {
+    const value = await rpc("system_health", [], 5000);
+    lastHealth = {
+      observedAt: new Date().toISOString(),
+      label,
+      value,
+    };
+    healthObservations.push(lastHealth);
+    if (healthObservations.length > 20) healthObservations.shift();
+    log(
+      "Smoldot health [" + label + "]: peers=" + String(value?.peers ?? "unknown") +
+      " isSyncing=" + String(value?.isSyncing ?? "unknown") +
+      " shouldHavePeers=" + String(value?.shouldHavePeers ?? "unknown")
+    );
+  } catch (error) {
+    const observation = {
+      observedAt: new Date().toISOString(),
+      label,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    healthObservations.push(observation);
+    if (healthObservations.length > 20) healthObservations.shift();
+    log("Smoldot health [" + label + "] unavailable: " + observation.error);
+  }
+}
+
 async function main() {
   let spec;
   const finalErrors = [];
@@ -504,6 +533,7 @@ async function main() {
       throw new Error("SYSTEM_CHAIN_MISMATCH expected=Materios Preprod v6 observed=" + String(systemChain));
     }
     log("Smoldot reports the pinned Materios genesis hash and chain name");
+    await observeHealth("after-genesis-identity");
 
     try {
       proofSubscriptionId = await rpc("grandpa_subscribeJustifications", [], 15000);
@@ -538,10 +568,16 @@ async function main() {
 
     scanDeadline = Date.now() + config.waitSeconds * 1000;
     await scanHistoricalCandidates();
+    let healthTick = 0;
     while (Date.now() < scanDeadline && captured.length === 0) {
-      // Avoid repeatedly queuing RPC calls that cannot complete while warp sync
-      // is stalled. Keep the proof subscription alive for any proofs it verifies.
+      // Avoid repeatedly queuing historical block calls while warp sync is stalled.
+      // Keep the proof subscription alive and sample health at a low frequency so
+      // the evidence distinguishes "no peers", "syncing", and a stalled sync.
       await waitForProofSignal(3000);
+      healthTick += 1;
+      if (healthTick % 5 === 0 && Date.now() < scanDeadline && captured.length === 0) {
+        await observeHealth("wait-" + healthTick);
+      }
     }
     const targetProof = captured.find(item => item.targetHash === config.targetHash) || null;
     const evidence = {
@@ -571,6 +607,7 @@ async function main() {
         initial_finalized_head: initialHead,
         latest_finalized_head_observed: lastFinalizedHead,
         latest_system_health: lastHealth,
+        system_health_observations: healthObservations,
       },
       target_probe: targetProbe,
       candidate_block_probes: candidateBlockProbes,
