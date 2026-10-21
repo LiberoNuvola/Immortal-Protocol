@@ -119,7 +119,7 @@ jobs:
           const health = Array.isArray(e.chain?.system_health_observations) ? e.chain.system_health_observations : [];
           const healthLines = health.slice(-8).map((h) => {
             const value = h.value && typeof h.value === 'object' ? h.value : {};
-            const error = h.error ? ' error=' + String(h.error).replace(/\\s+/g, ' ').slice(0, 180) : '';
+            const error = h.error ? ' error=' + String(h.error).replace(/\s+/g, ' ').slice(0, 180) : '';
             return '- Health [' + String(h.label ?? 'unknown') + ' @ ' + String(h.at ?? 'unknown') + ']: peers=' + String(value.peers ?? 'n/a') + ', isSyncing=' + String(value.isSyncing ?? 'n/a') + ', shouldHavePeers=' + String(value.shouldHavePeers ?? 'n/a') + error;
           });
           const lines = [
