@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 98,
-    "semantic_ledger_entries_not_reviewed": 1713,
+    "scoped_static_reviews_recorded": 113,
+    "semantic_ledger_entries_not_reviewed": 1698,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; normative source drift is recorded without changing the closed PRE-RICH policy decisions. Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness/native P2.8 gates, and Materios B3-A/B/C proof acquisition remain blocked. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; P-06 on-chain expiry policy/snapshot binding is not established and issue #20 remains open. Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness/native P2.8 gates, Materios B3-A/B/C proof acquisition, and PRE-RICH normative source-label drift remain open. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -28825,11 +28825,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "REVIEWED_STATIC_OPEN_BLOCKER",
-      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
-      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "semantic_review_status": "REVIEWED_STATIC_ISSUANCE_VALIDATOR_DOES_NOT_BIND_EXPIRY_POLICY",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
       "evidence_references": [
-        "F-PYTH-01"
+        "F-PYTH-01",
+        "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+        "F-EXP-02",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
       ]
     },
     {
@@ -29436,10 +29439,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_TICKETISSUED_BINDS_PRICE_NOT_EXPIRY_PROVENANCE",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-02",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "10959ec7372167385b3bfc24e1518c58324a7438",
@@ -34595,10 +34601,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_ISSUE_EVIDENCE_EXCLUDES_EXPIRY_BINDING",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "2d310e43052261436f9342ce46dc024e0696b0e3",
@@ -34993,10 +35002,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "305437e15a643526cbf962b90eb8bf57f7f72ef0",
@@ -35943,10 +35955,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "361e64c9e34a8fd6a93975d062f126373b127526",
@@ -37282,10 +37297,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POST_ISSUE_BOUNDARY_ENFORCEMENT",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-03",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "3e4c28ca66b1e7f61fef25ab7e01e1d9b60b0d94",
@@ -37944,10 +37962,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_STATE_DERIVATION_CALLER_POLICY_BOUNDARY",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-01",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "41a9c1dcf8747bca9dc2740e251e82a4b046135c",
@@ -42107,10 +42128,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CLASS_ISSUE_EVIDENCE",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "6074b080a83dbb8a400421da99ec49df7eb65263",
@@ -43646,10 +43670,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "6a226c82cdab8ba269c09f2bfc338f9e34881dd5",
@@ -44898,10 +44925,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_AGGREGATE_EXPIRE_REFINEMENT",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-03",
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "728264731e82e4344da9ddb1a15a63356a26d13e",
@@ -50034,10 +50065,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "950924e6e3a5368638ed83adf10d84227b31a56e",
@@ -52024,10 +52058,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_DATUM_HAS_TIMES_BUT_NO_POLICY_OR_SNAPSHOT_ID",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-02",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "a135cc2d1baf1bb19ac81dace942199a5c1af5ab",
@@ -52737,10 +52774,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_TS_ONLY_AND_PR_PATH_FILTER_DRIFT",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "a5d6d413ea7e0525ce397c4a56ee689a2de96c28",
@@ -54350,10 +54390,14 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_STORED_TIMESTAMP_BOUNDARY_ONLY",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-03",
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "b20b9c4149316c682258a03641f2bf6078129771",
@@ -55523,10 +55567,14 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CALLER_POLICY_AND_LOCAL_CLOCK_BUILDER",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-01",
+        "F-EXP-02",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "b9d15cc9eac0b60449543be1f4da37a50107fc7e",
@@ -60144,10 +60192,14 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_EXPIRE_TRACE_FIXTURE_ONLY",
+      "review_scope": "Static P-06 expiry source review (TypeScript policy/builder, on-chain MintPolicy/B1PrizePool/PrizeValidator, schema, tests and workflow). GitHub Issue #20 was checked and remains open. No tests rerun, CI dispatch, transaction submit or deployment performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-P06-ONCHAIN-EXPIRY-POLICY-BINDING-2026-10-21.md@822dbb67762115bb86f2ae5cb76866990f01cb7d",
+      "evidence_references": [
+        "F-EXP-03",
+        "F-EXP-04",
+        "https://github.com/LiberoNuvola/Immortal-Protocol/issues/20"
+      ]
     },
     {
       "blob_sha": "d746cd6d0dc74b075abe17c55a6ecd2f6712dcc6",
