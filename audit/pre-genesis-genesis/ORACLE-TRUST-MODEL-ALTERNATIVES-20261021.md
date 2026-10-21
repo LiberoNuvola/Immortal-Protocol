@@ -74,3 +74,14 @@ This is a verification spike, not a switch of production oracle. Keep the existi
 - No deployed script, main branch, public Pages release, V3 or Reveal behavior was changed.
 - The EEV perimeter remains canonical USDM physically present in the qualified B1 PrizePool UTxO.
 - Passing a signature check is not proof of oracle liveness, external market truth, or full system permissionlessness.
+
+
+## 6. Isolated Aiken feasibility probe — first CI result
+
+An isolated project now exists at `poc/aiken-pyth-ada-usd`. It uses the official `pyth-network/pyth-lazer-cardano` library, pinned to commit [`217b5917228b17f015719b27dd616a75ad6bd800`](https://github.com/pyth-network/pyth-lazer-cardano/commit/217b5917228b17f015719b27dd616a75ad6bd800), and the library-matched Aiken compiler `v1.1.21` / stdlib `v3.0.0`.
+
+The probe validator calls `pyth.get_updates`, requires one update and one ADA/USD feed (feed ID 16), requires both update-level and feed-level timestamps, enforces the existing one-hour age limit against a finite transaction validity upper bound, and matches raw price/exponent/timestamps against its candidate datum. It deliberately does not convert the raw quote into the existing `OracleQuote.price` integer.
+
+Initial unpinned-library run [#1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600265567) passed `aiken check` (9 synthetic tests) and `aiken build`. After pinning the Pyth library to the exact upstream commit, run [#2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600475220) passed the same synthetic test suite and compiled the Plutus V3 consumer; the final step was still running when first inspected. These results establish source-level/API compatibility for the isolated probe only.
+
+They do **not** prove Pyth signature verification, source liveness/market truth, an authenticated ADA USD price, correct USDM conversion, or an executed ledger transaction. The next CI run adds an artifact containing the generated dependency lock, blueprint, SHA-256 hashes and build manifest. The actual Pyth withdraw verification and the relationship to the legacy Haskell MintPolicy remain unproven.
