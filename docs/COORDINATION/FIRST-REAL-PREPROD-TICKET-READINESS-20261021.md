@@ -313,3 +313,14 @@ The live wallet observation in §8.6 remains evidence for the workflow-configure
 - [PRE-RICH B2 Control Carrier Conformance #441](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39594299630) ended `cancelled` on `39e983a472be03b567a2d95a5461a035f190867d`. Its build log shows `OracleTypes` and `Economic` compiled before cancellation, but the workflow did not finish and is not a complete conformance pass.
 
 No merge, Pages deployment, Oracle-state change, signature, or Issue transaction was performed in this checkpoint.
+
+
+## 2026-10-21 follow-up — isolated Pyth ADA/USD probe is code-level GREEN only
+
+A separate, non-production Aiken/Plutus V3 project now tests the exact ADA/USD feed selection, update timestamp and feed timestamp freshness, duplicate/missing feed rejection, and equality binding between the raw quote and a consumer datum. It is isolated under `poc/aiken-pyth-ada-usd/`; it does not change the deployed Oracle State, the Haskell Plutus V2 MintPolicy, V3 carrier or Reveal.
+
+- Source pinned to Pyth Lazer Cardano commit `217b5917228b17f015719b27dd616a75ad6bd800`, Aiken v1.1.21 / stdlib v3.0.0. The generated `aiken.lock` is committed.
+- [CI run #5](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600694371), head `75c9c89a9b00d26ff662000a7b1cfea1f68b038d`, passed nine synthetic tests, Aiken build, lockfile/hash capture and blueprint artifact upload.
+- Artifact [pyth-ada-usd-probe-75c9c89a9b00d26ff662000a7b1cfea1f68b038d](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600694371/artifacts/12345837738) contains manifest/lockfile/blueprint/SHA256SUMS. The isolated script's compiled-code field is 6,806 bytes; full transaction CBOR and execution on a ledger were not measured.
+
+**This is not a closure of the Issue oracle blocker.** The tests fabricate `PriceUpdate` data and only establish pure freshness/selection/binding logic. They do not exercise a genuine signed payload, a Pyth zero-withdrawal verification in the same transaction, or the exact value used by `MintPolicy.atomicTreasuryPaymentValid`. The quote-scale conversion into current `OracleQuote.price` remains deliberately unspecified. No live Issue, Pages deployment or Oracle State migration is authorized by this probe.
