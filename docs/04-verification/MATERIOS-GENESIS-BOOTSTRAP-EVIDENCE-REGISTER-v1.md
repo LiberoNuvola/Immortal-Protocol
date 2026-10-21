@@ -69,3 +69,12 @@ The weights and initial set ID are candidates based on the standard Substrate GR
 The upstream source also contains a launch-baseline fixture described as a pre-AJ, unapproved genesis. That fixture is not accepted as the production/preprod trust anchor. This register instead pins the current preprod chain-spec/runtime source, while retaining the independent build and live-network match as mandatory gates.
 
 B3-A remains **OPEN** until the exact genesis manifest and the verifier's enforced bootstrap boundary pass these checks. A matching genesis hash alone is not proof of later GRANDPA finality or of the Materios-specific authority-selection transition.
+
+
+## Reproducibility workflow
+
+Workflow committed: `.github/workflows/materios-genesis-reproduction.yml`. It pins the Materios source revision, builds `materios-node`, runs `chain-id --chain preprod`, compares the locally derived genesis hash to the pinned constant, then checks `chain_getBlockHash(0)` from the public Preprod RPC. The workflow execution and artifact have not yet been confirmed; no PASS is claimed here.
+
+The upstream `partnerchain/node/src/cli.rs` (blob `8dfad7b09883d2d355a82ee97975176a34768609`) defines the offline command. `partnerchain/node/src/chain_identity.rs` (blob `6a63e8c22079e52ccd82050daea455b69e0dfb64`) derives the genesis hash using the spec's own runtime code.
+
+Historical cross-check: `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json` reports the same genesis hash, but is only a dated gateway observation. A passing reproducibility workflow still does not prove GRANDPA finality or the authority transition.
