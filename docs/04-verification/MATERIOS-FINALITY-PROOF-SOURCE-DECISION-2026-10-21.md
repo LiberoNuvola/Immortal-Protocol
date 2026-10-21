@@ -1,8 +1,16 @@
-# Materios Finality Proof Source — Availability Decision (2026-10-21)
+# Materios B3-A — Finality Evidence Source Audit and Frozen Route (2026-10-21)
 
-Status: **B3-A OPEN — no accepted public source for cryptographic GRANDPA justifications has been identified.**
+Status: **B3-A OPEN — the operator-local acquisition route is already decided; real witness still pending.**
 
-This record captures the current public-source audit and the architectural consequence. It does not claim that any Materios block is unfinalized; it records that IMMORTAL cannot presently obtain and independently verify the necessary finality evidence through the checked public interfaces.
+**Adopted route — do not reopen:** a real, synchronized Materios operator/full-validator node with the local `b3-proof` CLI, followed by independent IMMORTAL verification. The CLI reads the native `FullClient` for the target header, stored GRANDPA justification, native `ProofProvider::execution_proof`, and runtime identity; it exports an immutable evidence artifact. Public GRANDPA/execution-proof RPC wiring is the frozen fallback only, not the next task.
+
+This audit is subordinate to, and does not supersede, the existing frozen plan:
+- [Local operator CLI proof plan](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-LOCAL-OPERATOR-CLI-PROOF-v1.md)
+- [Operator evidence acquisition handoff](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-OPERATOR-EVIDENCE-ACQUISITION-HANDOFF-v1.md)
+- [Operator patchset — fallback only](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-OPERATOR-PATCHSET-v1.patch)
+- [Standard GRANDPA RPC handoff — fallback context](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/04-verification/MATERIOS-B3-GRANDPA-RPC-HANDOFF.md)
+
+Issue #50 is recorded below only as evidence that the public execution-proof RPC was not adopted upstream. Re-reading or retrying that issue is not the prescribed path. This note does not claim that any Materios block is unfinalized; it records the still-missing real witness and independent verification.
 
 ## Evidence reviewed
 
@@ -62,9 +70,19 @@ For one selected finalized target block, the proof source must supply:
 
 The verifier must reject the packet when any element is unavailable or fails. Storage inclusion, execution proofs and GRANDPA finality must remain separate proof claims with separate evidence.
 
-## Next permitted action
+## Next permitted action — execute the already adopted route
 
-Continue only with a public-surface discovery pass for an already-operating Materios-compatible endpoint that exposes raw GRANDPA justifications, or a source that can provide them without changing or deploying a Materios node. If no such endpoint is available, record the source as unavailable and keep B3-A open; the remaining options are to change the proof source or explicitly weaken the trust model in a separately approved architecture decision. Do not disguise the second option as trustless.
+Do **not** restart a generic public-surface search. Continue from the frozen operator-local plan:
+
+1. Use the real Materios operator/full-validator instance already envisaged by the operator kit; do not create a fifth node just to repeat the public RPC probe.
+2. Confirm its local database/base path, chain spec/genesis identity, and sync status.
+3. Apply/build the already specified local `b3-proof` CLI only against a pinned Materios source revision and the operator's existing configuration.
+4. Capture the exact target header, stored GRANDPA justification, native execution proof, runtime identity/code, authority set/set ID, and selection commitment into one immutable artifact.
+5. Feed the artifact into the existing IMMORTAL verifier and require it to cross `VerifiedAuthoritySetTransition`. Synthetic tests remain conformance tests, never live witness evidence.
+
+If the operator node cannot provide the witness after this capability test, use the **already prepared patchset as fallback** against a pinned Materios build. Only then reassess the fallback's remaining work; do not treat the closed issue #50 as an instruction to implement upstream or as the primary route.
+
+B3-A remains OPEN until a real artifact passes independent verification. No V3/Reveal/economic semantic changes are required for this work.
 
 ## Source references
 
