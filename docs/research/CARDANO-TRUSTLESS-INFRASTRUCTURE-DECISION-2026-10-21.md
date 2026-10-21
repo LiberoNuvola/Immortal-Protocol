@@ -24,7 +24,7 @@ The project target remains:
 3. `audit/cardano-integration/materialize-preprod-p28-context.mjs` obtains transaction/UTxO/protocol context from Koios and requires an Ogmios endpoint exposed through a Demeter URL. This is useful evidence acquisition, but hosted API output is not intrinsically cryptographic proof.
 4. `audit/cardano-integration/KoiosOgmiosProvider.mjs` adapts Koios data into provider objects. A provider adapter normalizes returned data; normalization does not authenticate it.
 5. `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` invokes the canonical Haskell decision producer and checks consistency between its output and the observation object. The actual `observationSource` is injected. This module does not, by itself, prove that the source's claims (for example `truthVerified`, freshness, completeness, EEV, and liquidity provenance) are authentic.
-6. `poc/materios-grandpa/src/authority-transition.ts` declares an `AuthoritySetTransitionProofVerifier` boundary and explicitly states that the repository does not yet provide a concrete implementation. B3-C research likewise marks canonical checkpoint/finality binding, exact storage key, a real storage proof, and an independent storage verifier as open.
+6. `poc/materios-grandpa/src/authority-transition.ts` declares an `AuthoritySetTransitionProofVerifier` boundary and explicitly states that the repository does not yet provide a concrete implementation. B3-C research marks canonical checkpoint/finality binding, a real finalized storage proof, and a concrete independent storage verifier as open. A later anchor-key triangulation record closes the raw FRAME storage-key construction sub-boundary; the semantic checkpoint/round-to-anchorId binding remains open.
 7. The Cardano native-ledger runner and Reveal reference-script remediation are existing paths. They should be completed with exact transaction/context evidence, not bypassed by changing SDK or semantics.
 
 This register is based on source inspection, not a fresh CI or Preprod execution. It makes no new GREEN claim.
@@ -172,6 +172,7 @@ An index result must be tied to a slot/block or exact output reference and recon
 - `poc/materios-grandpa/src/authority-transition.ts`
 - `poc/materios-grandpa/src/materios-evidence-adapter.ts`
 - `docs/research/B3-C-POC2-STORAGE-PROOF-BOUNDARY-2026-09-27.md`
+- `docs/research/B3-C-POC2-MATERIOS-ANCHOR-KEY-TRIANGULATION-2026-09-27.md`
 - `docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md`
 - `docs/COORDINATION/IMMORTAL_MASTER_FRONT_MATRIX_v0.1.md`
 
