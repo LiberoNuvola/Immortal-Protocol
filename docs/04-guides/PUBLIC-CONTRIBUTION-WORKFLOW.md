@@ -108,6 +108,21 @@ Where feasible, the challenge should link to the affected line, invariant, test,
 
 The author must have a reasonable opportunity to answer a challenge. The public record should distinguish unresolved technical objections from scheduling delay, reviewer disagreement, and repository-permission constraints.
 
+### 5.1 Challenge lifecycle and Auto-merge effect
+
+A valid challenge has an explicit lifecycle; it is neither an unlimited silent veto nor something a deadline can erase.
+
+- **OPEN / UNDER_REVIEW:** a qualifying challenge has been recorded. Auto-merge is blocked.
+- **ESCALATED:** its response window elapsed without a disposition. It remains blocking; the record must identify the next action and, where practical, a next review date.
+- **SECURITY_HOLD / SECURITY_ESCALATED:** the report may be handled privately to avoid exposing exploit details. It remains blocking until an authorized disposition is recorded; deadline expiry does not clear it.
+- **RESOLVED_NO_BLOCKER:** a reasoned disposition finds no merge-blocking issue. The record must be tied to the current head commit.
+- **RESOLVED_FIXED:** a blocker has been corrected on the current head. Evidence and required checks must be rerun or reconfirmed for that head.
+- **UPHELD:** the challenge established a blocker. The affected head is not eligible for Auto-merge; any correction requires a new evaluation.
+
+Only a recorded disposition tied to the current head can clear a valid challenge for the reduced merge path. The disposition should state the category, rationale, relevant evidence, and who made the repository-process decision. For sensitive security cases, a public non-sensitive summary may replace the details.
+
+An overdue challenge must never be converted automatically into approval or rejection. If nobody adjudicates it, the PR stays blocked and its unresolved status remains visible. This exposes a stalled decision but cannot, by itself, eliminate stalling. Independent appeal requires additional authorized reviewers or a future community process; the repository must not claim those exist until they are actually available and configured.
+
 ## 6. Response windows and stalled PRs
 
 To make indefinite silence visible, this draft proposes the following **provisional targets for community review**, not yet binding service guarantees:
@@ -133,7 +148,7 @@ Maintainers retain operational responsibilities required by the actual repositor
 
 Maintainer status does not, by itself, confer authority to rewrite protocol semantics or to declare a failed predicate satisfied. A maintainer's operational veto should identify its basis. For urgent security cases, the public record may initially be minimal, with a non-sensitive explanation added when safe.
 
-Where feasible, a maintainer who authored the contribution or has a material conflict should disclose it and seek another reviewer. This is a safeguard, not a claim that independent review is currently always available.
+Where feasible, a maintainer who authored the contribution or has a material conflict should disclose it and seek another reviewer. This is a safeguard, not a claim that independent review is currently always available. If only one authorized repository maintainer is available, the process must say so: that maintainer may determine repository handling within the published process, but cannot turn that operational role into authority to waive protocol predicates or redefine normative semantics. The absence of an independent reviewer is a documented governance limitation, not a reason to simulate independence.
 
 ## 8. No result-dependent authority
 
