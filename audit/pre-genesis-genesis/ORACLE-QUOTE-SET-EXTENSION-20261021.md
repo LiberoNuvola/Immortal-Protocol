@@ -230,7 +230,7 @@ The same workflow's strict job for the exact public runtime Oracle identity fail
 
 ## 8.9 Chain-tip-time confirmation — 2026-10-21T12:51:28Z
 
-The Koios fallback was hardened to use the Preprod chain tip's `block_time` for stale/fresh classification rather than the GitHub runner's wall clock. On the next workflow run, [Oracle Quote-Set Read-Only Observation 39603184562](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184562), the Koios job passed and uploaded [bootstrap-wallet-oracle-observation-fd71136ed688231072f2c041c67aa5c63a2262b1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184562/artifacts/123464?).
+The Koios fallback was hardened to use the Preprod chain tip's `block_time` for stale/fresh classification rather than the GitHub runner's wall clock. On the next workflow run, [Oracle Quote-Set Read-Only Observation 39603184562](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184562), the Koios job passed and uploaded [bootstrap-wallet-oracle-observation-fd71136ed688231072f2c041c67aa5c63a2262b1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184562/artifacts/12346578534).
 
 Chain tip recorded in the manifest:
 - `block_time = 1792587088` seconds = `2026-10-21T12:51:28Z`;
