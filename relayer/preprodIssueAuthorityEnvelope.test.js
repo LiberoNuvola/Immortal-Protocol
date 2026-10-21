@@ -13,6 +13,11 @@ const { publicKey, privateKey } = generateKeyPairSync('ed25519')
 const eevQualification = {
   status: 'qualified',
   contractVersion: '3.0.0',
+  evidenceHash: 'c'.repeat(64),
+  governance: {
+    approvalEvidenceHash: 'e'.repeat(64),
+    approvalInputQualificationHash: 'a'.repeat(64),
+  },
   sourceReference: 'cardano:preprod/utxo/' + refs.pool,
   verificationReference: 'github-actions:run/123@' + 'b'.repeat(40),
   derivationVersion: 'direct-usdm-v1',
@@ -24,6 +29,7 @@ const eevQualification = {
     sourceSetId: 'source-set-1',
     profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
     evidenceHash: 'e'.repeat(64),
+    qualificationEvidenceHash: 'a'.repeat(64),
     qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
     excludedProperties: [],
     testSuiteVersion: 'pre-rich-direct-usdm-conformance-v1',
