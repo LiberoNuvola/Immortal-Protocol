@@ -85,3 +85,14 @@ Pinned source references:
 - [Gateway README/API scope](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/README.md)
 
 The gateway therefore aids receipt discovery and provides an operator-facing observation of the finalized head, but it does not currently supply the missing proof artifact. Its `finalized_block` value is sourced from the configured Materios RPC and must not be treated as an independent cryptographic certificate.
+
+
+## Additional protocol-validity caveat — preprod v6 authority-selection replay
+
+Upstream issue [Flux-Point-Studios/materios#105](https://github.com/Flux-Point-Studios/materios/issues/105) is still open as of this review. It documents a separate risk in preprod v6: under the current preprod relaxation, authority selection can read Cardano data from the Cardano epoch that is still in progress, with database queries extending to each node's moving db-sync tip. A node replaying the same Materios history later can therefore read a different final state and derive a different committee. The issue notes that a complete replay of v6 history against production db-sync has **not** been performed, so no specific bad block has been proven.
+
+This issue is **not evidence that GRANDPA finality signatures are invalid**, and it does not erase the storage-inclusion result. It does mean that IMMORTAL must not assume that replaying the authority-selection algorithm against today's Cardano/db-sync view reconstructs historical committee transitions deterministically. A candidate trustless light-client path must verify the actual authenticated authority-set transitions from finalized Materios headers/justifications using the proper GRANDPA set IDs; a current committee query or a fresh off-chain recomputation is not an adequate substitute.
+
+Reference: [upstream comment updating #105 after #100's third round](https://github.com/Flux-Point-Studios/materios/issues/105#issuecomment-6293128733).
+
+Treat this as an additional open verification question, separate from the missing justification source. It does not by itself prove that a header-based GRANDPA light client cannot work; that path still requires actual justifications, an authenticated transition chain, and negative tests.
