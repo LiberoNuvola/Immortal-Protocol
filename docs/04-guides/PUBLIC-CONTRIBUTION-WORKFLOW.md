@@ -136,6 +136,14 @@ Only a recorded disposition tied to the current head can clear a valid challenge
 
 An overdue challenge must never be converted automatically into approval or rejection. If nobody adjudicates it, the PR stays blocked and its unresolved status remains visible. This exposes a stalled decision but cannot, by itself, eliminate stalling. Independent appeal requires additional authorized reviewers or a future community process; the repository must not claim those exist until they are actually available and configured.
 
+### 5.2 Initial GitHub label convention
+
+The live evidence gate recognizes these hold labels: `governance/challenged`, `governance/escalated`, `governance/security-hold`, `governance/security-escalated`, and `governance/upheld`. Any active hold blocks the reduced path. These labels are a process signal, not a cryptographic proof or an independent adjudication.
+
+After a disposition is recorded with its rationale, relevant evidence, decision-maker and current head SHA, an authorized maintainer may remove the applicable hold label and apply `governance/challenge-cleared-<first-12-hex-of-head-SHA>`. The classifier requires exactly one clearance label and verifies its SHA prefix. A new commit makes a previous clearance label stale and blocks the reduced path until the disposition is re-evaluated. A clearance label must never be added merely because a timer expired.
+
+The classifier recognizes the label names; repository labels must be created/configured and the procedure followed manually. Label presence does not create independent review where the repository has no independent reviewer.
+
 ## 6. Response windows and stalled PRs
 
 To make indefinite silence visible, this draft proposes the following **provisional targets for community review**, not yet binding service guarantees:
