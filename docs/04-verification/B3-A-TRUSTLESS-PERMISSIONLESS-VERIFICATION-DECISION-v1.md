@@ -63,3 +63,11 @@ Permissionless verification does not guarantee permissionless *availability*. If
 - IMMORTAL acquisition handoff: `docs/04-verification/MATERIOS-B3-OPERATOR-EVIDENCE-ACQUISITION-HANDOFF-v1.md`
 
 This document is a decision and work contract, not a proof, deployment approval, or claim of B3 closure.
+
+## Initial implementation gap found during decision review
+
+A source review of `poc/materios-grandpa/src/authority.ts` shows that `TrustedAuthorityState` currently has no dedicated genesis-bootstrap constructor or opaque provenance brand. `validateAuthorityState()` validates structure; it does not establish that the initial set came from the canonical genesis configuration. The transition constructor protects later transitions, but the initial trust boundary is still caller-supplied.
+
+Therefore, **the existing verifier must not yet be described as end-to-end genesis-rooted**. The next implementation task is to define a canonical, versioned genesis trust manifest for the exact Materios network and a narrowly scoped bootstrap boundary that validates the manifest's chain ID, genesis hash, genesis authority set and initial set ID. The manifest's values must be recovered from pinned, authoritative chain-spec material and independently cross-checked; do not invent or infer them from a current RPC response. Only the bootstrap boundary should create the initial trusted-state type, and subsequent states must continue to come from verified transitions.
+
+Until the exact canonical genesis data and this API boundary are implemented and tested, B3-A remains OPEN even if a valid later GRANDPA proof is obtained.
