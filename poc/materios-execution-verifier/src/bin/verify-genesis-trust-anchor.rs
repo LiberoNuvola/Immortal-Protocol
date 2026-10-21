@@ -85,8 +85,7 @@ fn verify_raw_genesis_spec(raw: &[u8]) -> Result<Value, String> {
     if raw_sha256 != EXPECTED_RAW_SPEC_SHA256 {
         return Err(format!(
             "RAW_SPEC_SHA256_MISMATCH: expected {}, got {}",
-            EXPECTED_RAW_SPEC_SHA256,
-            raw_sha256
+            EXPECTED_RAW_SPEC_SHA256, raw_sha256
         ));
     }
 
@@ -169,8 +168,7 @@ fn verify_raw_genesis_spec(raw: &[u8]) -> Result<Value, String> {
     // Recompute the entire genesis trie from every raw key/value. This is not
     // a query to Materios RPC and does not trust a provider-reported state root.
     let state_version = StateVersion::V1;
-    let backend =
-        <InMemoryBackend<Blake2Hasher>>::from((vec![(None, storage)], state_version));
+    let backend = <InMemoryBackend<Blake2Hasher>>::from((vec![(None, storage)], state_version));
     let state_root = backend.storage_root(std::iter::empty(), state_version).0;
     let empty_extrinsics_root =
         BlakeTwo256::ordered_trie_root(Vec::<Vec<u8>>::new(), state_version);
@@ -196,9 +194,9 @@ fn verify_raw_genesis_spec(raw: &[u8]) -> Result<Value, String> {
     // Read GRANDPA authorities from the state whose complete map was just
     // rebound to the pinned genesis hash. No current RPC authority list is used.
     let authorities_key = storage_value_key(b"Grandpa", b"Authorities");
-    let authorities_scale = decoded_top
-        .get(&authorities_key)
-        .ok_or("GENESIS_GRANDPA_AUTHORITIES_MISSING: raw genesis has no Grandpa::Authorities value")?;
+    let authorities_scale = decoded_top.get(&authorities_key).ok_or(
+        "GENESIS_GRANDPA_AUTHORITIES_MISSING: raw genesis has no Grandpa::Authorities value",
+    )?;
     let authorities: Vec<(ed25519::Public, u64)> =
         decode_all("Grandpa::Authorities", authorities_scale)?;
 
