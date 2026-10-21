@@ -42,12 +42,25 @@ jobs:
         working-directory: poc/materios-checkpoint
         run: npm ci --ignore-scripts
 
+      - name: Test read-only RPC capability classifier
+        working-directory: poc/materios-checkpoint
+        run: npm run test:rpc-capabilities
+
+      - name: Probe advertised Materios RPC methods
+        id: capabilities
+        continue-on-error: true
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_RPC: ${{ github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+        run: npm run probe:rpc
+
       - name: Capture finalized checkpoint and available GRANDPA evidence
         id: finalized
         continue-on-error: true
         working-directory: poc/materios-checkpoint
         env:
-          MATERIOS_RPC: ${{ inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_RPC: ${{ github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
           MATERIOS_CHAIN_ID: materios_preprod_v6
         run: npm run capture:finalized
 
@@ -57,7 +70,7 @@ jobs:
         continue-on-error: true
         working-directory: poc/materios-checkpoint
         env:
-          MATERIOS_ARCHIVE_RPC: ${{ inputs.archive_rpc != '' && inputs.archive_rpc || inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_ARCHIVE_RPC: ${{ github.event.inputs.archive_rpc || github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
         run: npm run capture:anchor
 
       - name: Summarize acquisition status (not verification)
@@ -78,6 +91,31 @@ jobs:
             `- Finalized-state capture step: **${process.env.FINALIZED_OUTCOME ?? 'unknown'}**`,
             `- Historical anchor/storage capture step: **${process.env.ANCHOR_OUTCOME ?? 'unknown'}**`,
           ];
+
+          const capabilityPath = 'poc/materios-checkpoint/out/MateriosRpcCapabilityProbe.json';
+          if (fs.existsSync(capabilityPath)) {
+            try {
+              const probe = JSON.parse(fs.readFileSync(capabilityPath, 'utf8'));
+              lines.push(
+                '',
+                '## Advertised RPC surface',
+                `- Catalogue status: **${probe.catalogue?.status ?? 'unknown'}**`,
+                `- Advertised methods: ${probe.catalogue?.methodCount ?? 'unknown'}`,
+                '- This is endpoint capability evidence only; it is not a proof-verification result.',
+              );
+              if (probe.catalogue?.targets) {
+                for (const [method, status] of Object.entries(probe.catalogue.targets)) {
+                  lines.push(`- ${method}: ${status}`);
+                }
+              } else {
+                lines.push(`- Detail: ${probe.catalogue?.message ?? probe.catalogue?.reason ?? 'unavailable'}`);
+              }
+            } catch (error) {
+              lines.push('', 'RPC capability probe JSON could not be parsed: ' + String(error));
+            }
+          } else {
+            lines.push('', 'RPC method catalogue was not captured; inspect the preceding step logs.');
+          }
 
           const finalizedPath = 'poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json';
           if (fs.existsSync(finalizedPath)) {
@@ -142,6 +180,7 @@ jobs:
         with:
           name: materios-existing-route-proof-probe-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
+            poc/materios-checkpoint/out/MateriosRpcCapabilityProbe.json
             poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
             poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json
           if-no-files-found: warn
