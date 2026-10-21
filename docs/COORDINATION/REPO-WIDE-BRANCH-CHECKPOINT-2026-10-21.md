@@ -608,3 +608,57 @@ A fetch of commit-associated workflow runs for `dfe818d6758679fef220182e1fe0f5bd
 
 **Current declaration:** work dispatch is consolidated and the branch name set has been rechecked; source-head reconciliation, 25-tree refresh, unique-blob ledger, full PR/issue history, current relevant Actions results and Notion semantic review are still open. Overall repository audit remains **PARTIAL**.
 
+
+
+### 10.18 SHA-keyed review ledger and live branch divergence — 2026-10-21
+
+This section is a reproducible ledger for the targeted green delta discovered after the pinned tree census. “Fetched” means identity/content was retrieved; it does not mean a semantic review or test run. “Scoped review” applies only to the function/section named below. It is not the full-repository review ledger.
+
+#### A. Live ref comparison — promotion warning
+
+Current connector anchors: `main = 97b09a38742098f17a61eb07734c401aeedccc06`; `work/immortal-green-closure = ce01e136a57478dc3bdbf880aa8c84abfdee3918`; `work/b3-materios-provenance-evidence = 2778d3e107f45ee15157fff8ef894905a72070ea`; `feat/pre-rich-game-ui = 9ba77f967fa8f40395bef8c6cee77bf449d94dad`; `fix/cardano-lab-yaci-info = b8530c26ab40531f7f8b7965dc6f74bd05ec7850`; `merge/workflow-b-closed-main = 7bca8d91b65d7af1261d8b7cc4f28f496a73fcba`.
+
+| Comparison (base → head) | Connector result | Interpretation |
+|---|---|---|
+| `main` → green | `diverged`; green ahead 1,750 / behind 9; compare endpoint returned 300 file entries | Large divergent history and capped file response. Do not treat the 300 entries as a complete path manifest, or green as a scoped PR. |
+| `main` → B3 | `diverged`; B3 ahead 1,711 / behind 9; compare endpoint returned 300 file entries | B3 is a separate divergent lane; no bulk merge/synchronization. |
+| `main` → UI | `diverged`; UI ahead 38 / behind 9; 27 paths returned | PR #23 still contains provider/runtime/V3-adjacent paths; keep protocol changes outside UI-only acceptance. |
+| `main` → Yaci fix branch | `diverged`; ahead 4 / behind 5; 3 paths returned | PR #28 needs its base/head refreshed and exact diffs re-reviewed before promotion. |
+| `main` → PR #35 head | `ahead`; 18 commits / 14 paths returned; PR remains draft | Exact current main is its recorded base, but it includes the V3 policy/P2.8 probe overlap; mergeability is not approval. |
+
+PR base/head metadata adds two important cautions:
+- PR #19 is open, non-draft, connector `mergeable=false`, 402 changed files, 49,177 additions, 2,204 deletions; its current head follows green at `ce01e136...`. Its base SHA is `8c6873e1d50115659727c82c294426b9a946f1fa`, which is 9 commits behind current `main` according to compare. It carries green’s large history, not merely a CI patch or checkpoint change.
+- PR #23 also reports base SHA `8c6873e1...` (9 commits behind current main); PR #28 reports base SHA `aafad1d24ff678253a045e27114c7e544b2060c3` (5 commits behind current main). PR #35 reports base SHA equal to current pinned main. This is a stale-base/reconciliation issue, not a license to rebase, merge or rewrite refs during this audit.
+
+Branch name search returned 25 names; querying its cursor `MjU` yielded zero additional names and `cursor=null`. This closes the branch-name pagination question for the available connector query, but not the current tree/unique-blob enumeration.
+
+#### B. Targeted green source-delta ledger
+
+The prior pinned green code anchor is `1300b79d7460f2abcd79767d5d16dd2564aad064`. Comparing that SHA with current green returned 14 commits ahead, 0 behind, and ten changed-path records from the compare endpoint. The following rows bind review classification to the exact current blob SHA.
+
+| Path | Current blob SHA | Review state | Finding / limitation |
+|---|---|---|---|
+| `Adapter/CARDANO/observation/PythAdaUsdConversionCandidate.ts` | `ee2b4600c41ddde1b6f0ddf3c9b973259b395a16` | `SCOPED_SEMANTIC_REVIEW` | Exact integer/rational candidate conversion uses raw price and exponent; USD-per-USDM numerator/denominator and exponent limit are caller-supplied. Candidate/test-only; no production authority. The exponent limit itself is not frozen here and has no intrinsic upper bound in this candidate helper. |
+| `Adapter/CARDANO/observation/PythAdaUsdConversionCandidate.test.ts` | `0e21939d349e6b8331cfc4849836f8639ffcdad6` | `SOURCE_REVIEWED_TEST_NOT_RUN` | Synthetic parity/non-parity, fractional-ratio, exponent and fail-closed vectors are present. Source inspection is not evidence they passed on current head. |
+| `plutus/PythAdaUsdConversion.hs` | `43dbe58ab19c3e748bf34af2c77ff97cdd42253c` | `SCOPED_SEMANTIC_REVIEW` | Haskell integer/rational counterpart; explicitly candidate-only and requires caller-supplied ratio/bound. Recursive power-of-ten cost depends on the supplied bound; freeze/resource-bound that input before any on-chain integration. |
+| `plutus/test/PythAdaUsdConversionTest.hs` | `e30ff098e7b7db32950efac3633dfcb70c49573f` | `SOURCE_REVIEWED_TEST_NOT_RUN` | Synthetic Haskell formula vectors cover parity/non-parity and invalid inputs. No current-head run result established here. |
+| `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | `SCOPED_CALL_PATH_REVIEW` | `atomicTreasuryPaymentValid` still values the exact Treasury output through `Economic.totalUsdmValue`. It does not call the new Pyth conversion candidate or read its result. |
+| `plutus/Economic.hs` | `e50366a65ce34e9433d5ff179dfc03a35a24c1a1` | `SCOPED_CALL_PATH_REVIEW` | The existing value conversion still obtains prices via `oraclePriceFor`; this is a general oracle conversion, not direct canonical-USDM quantity. See §10.15 for the same source identity and its Issue/EEV consequence. |
+| `audit/pre-genesis-genesis/PYTH-MINTPOLICY-PRICE-BINDING-DESIGN-20261021.md` | `4381da6e69e035ef4f788b3403e8cf3d183e15d6` | `PARTIAL_DOCUMENT_REVIEW` | Current design gate explicitly keeps production binding unapproved/unimplemented and separates source authenticity from unit conversion. This row does not claim a line-by-line review of the whole 17.9 KB document. |
+| `plutus/PythQuoteCarrierBinding.hs` | `669b99a0e4564504012bda8402b706d0ae7a9a9b` | `FETCHED_NOT_SEMANTICALLY_REVIEWED` | Exact source identity retrieved; content still needs a separate call-path and adversarial-predicate review if needed. |
+| `plutus/test/PythQuoteCarrierBindingTest.hs` | `d494f7cf8966cc92ecb120d1c16b8881414651ab` | `FETCHED_NOT_SEMANTICALLY_REVIEWED` | Exact source identity retrieved; do not count as reviewed/green based on existence. |
+| `plutus/pre-rich-plutus.cabal` | `3f06a8d28fc121ea19aa591db73f7ff19ef12c31` | `PARTIAL_BUILD-MAP_REVIEW` | The candidate module and suite are registered in the package file; full Cabal file and dependency/build behavior have not received a separate complete review here. |
+| `.github/workflows/immortal-haskell-conformance.yml` | `63c87a2b96adad83f9ae1b212310692a7a2690ac` | `WORKFLOW_SOURCE_REVIEWED_RUN_NOT_VERIFIED` | The workflow includes Pyth quote binding and candidate conversion test suites; push path targets green, PR path targets `b1-hardening`. No passing workflow on the current candidate SHA was established by this refresh. |
+| `.github/workflows/adapter-sale-conformance.yml` | `1fa2d9a2370f64c7a3b005fb96bda588439f5b20` | `FETCHED_NOT_SEMANTICALLY_REVIEWED` | Two changed lines identified by the compare endpoint; full effect and current-head run remain to review. |
+
+This ledger accounts for the twelve exact source identities above, including two contextual call-path files. Only rows marked `SCOPED_SEMANTIC_REVIEW`, `SCOPED_CALL_PATH_REVIEW`, or `WORKFLOW_SOURCE_REVIEWED_RUN_NOT_VERIFIED` received the limited source-level review stated; none is a whole-repository semantic audit. It deliberately does not assign a numerical coverage percentage.
+
+#### C. Work dispatch impact
+
+1. **Do not duplicate Pyth formula/parser work.** The exact-rational candidate and synthetic vector source exists. The remaining P-02 work is (a) formally decide the USD/USDM relationship and an admissible exponent/resource bound, (b) verify the exact carrier-to-MintPolicy binding, and (c) run the required suites on a named current source SHA. The production price-equality path remains legacy Oracle State-based.
+2. **Keep the first Issue blocked until direct-USDM EEV is separately proven.** Nothing in P-02 substitutes for direct observation of canonical USDM in the exact qualified B1 PrizePool UTxO.
+3. **Keep PR #19/#23/#28/#35 out of wholesale promotion.** Refreshing the true current target base and reviewing security-sensitive shared paths is required before any promotion decision. No rebase, cherry-pick, merge, branch deletion, deployment or ledger transaction is authorized or performed by this section.
+4. **Audit exit remains OPEN.** The next review slices should be selected by changed unique blob SHA, prioritized as: source-of-truth normative files/kernel projections; remaining Pyth quote-binding module/tests; B1/EEV/admission and exact endpoint wiring; Reveal/reference-script/P2.8 runners; B3 collectors/verifiers; then workflow and historical blob groups. Capture for every slice the exact ref/commit/path/blob SHA, the sections actually read, test run (if any), result and residual uncertainty.
+
+**Current declaration:** branch-name pagination is confirmed for the connector query; targeted Pyth/call-path review is recorded by blob SHA; current branch divergence and stale PR bases are explicitly surfaced. Full live-tree manifest refresh, all-blob semantic ledger, complete Action/PR/issue history and remaining Notion decision-page reconciliation are still **PARTIAL / OPEN**.
+
