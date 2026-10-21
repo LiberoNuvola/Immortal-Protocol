@@ -301,6 +301,19 @@ if (/BigInt\s*\(\s*TICKET_PAYMENT_LOVELACE\s*,?\s*\)/s.test(mintTs)) {
 } else {
   ok('Legacy fixed-ADA Treasury amount is absent from the Issue builder')
 }
+const settlementSource = read('src/issueSettlement.ts')
+contains(mintTs, /deriveAdaIssueSettlementLovelace/, 'Issue settlement derives ADA quantity from authenticated OracleDatum quote')
+contains(mintTs, /assertCompletedTreasuryAdaSettlement/, 'Completed Lucid Treasury output is validated before submission')
+contains(mintTs, /oracleFields[\s\S]*?oraclePrice[\s\S]*?oracleTimestampMs[\s\S]*?oraclePublisherPkh/s,
+  'Issue quote fields are decoded from the authenticated Oracle State UTxO')
+contains(settlementSource, /CANONICAL_ORACLE_PRECISION\s*=\s*1_000_000n/,
+  'Off-chain settlement precision matches OracleTypes')
+contains(settlementSource, /CANONICAL_ADA_MIN_UTXO_LOVELACE\s*=\s*1_600_000n/,
+  'Off-chain ADA minimum-UTxO exclusion matches OracleTypes')
+contains(settlementSource, /only an authenticated ADA OracleDatum quote/,
+  'Issue builder fails closed rather than claiming unsupported multi-asset settlement')
+contains(settlementSource, /assertCompletedTreasuryAdaSettlement/,
+  'Completed-body Treasury equality check is implemented')
 contains(mintTs, /b1PrizePool/i, 'Mint flow references B1PrizePool')
 contains(mintTs, /payToContract/, 'Mint constructs protocol outputs')
 contains(mintTs, /pdPrizePoolHash/, 'Mint binds PrizeDatum to B1PrizePool')
