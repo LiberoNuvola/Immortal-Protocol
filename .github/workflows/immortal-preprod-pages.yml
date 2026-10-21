@@ -46,6 +46,31 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    # Public runtime configuration is injected only from repository variables.
+    # Missing Issue configuration remains fail-closed; no endpoint is hardcoded.
+    env:
+      VITE_COUNTER_SCRIPT_ADDRESS: ${{ vars.VITE_COUNTER_SCRIPT_ADDRESS }}
+      VITE_TREASURY_ADDRESS: ${{ vars.VITE_TREASURY_ADDRESS }}
+      VITE_TICKET_POLICY_ID: ${{ vars.VITE_TICKET_POLICY_ID }}
+      VITE_RELAYER_PKH: ${{ vars.VITE_RELAYER_PKH }}
+      VITE_ORACLE_PUBLISHER_PKH: ${{ vars.VITE_ORACLE_PUBLISHER_PKH }}
+      VITE_ORACLE_STATE_POLICY_ID: ${{ vars.VITE_ORACLE_STATE_POLICY_ID }}
+      VITE_ORACLE_STATE_TOKEN_NAME_HEX: ${{ vars.VITE_ORACLE_STATE_TOKEN_NAME_HEX }}
+      VITE_ORACLE_STATE_ADDRESS: ${{ vars.VITE_ORACLE_STATE_ADDRESS }}
+      VITE_B1_POOL_TOKEN_POLICY_ID: ${{ vars.VITE_B1_POOL_TOKEN_POLICY_ID }}
+      VITE_B1_POOL_TOKEN_NAME_HEX: ${{ vars.VITE_B1_POOL_TOKEN_NAME_HEX }}
+      VITE_V3_CARRIER_ADDRESS: ${{ vars.VITE_V3_CARRIER_ADDRESS }}
+      VITE_V3_CARRIER_POLICY_ID: ${{ vars.VITE_V3_CARRIER_POLICY_ID }}
+      VITE_V3_CARRIER_TOKEN_NAME_HEX: ${{ vars.VITE_V3_CARRIER_TOKEN_NAME_HEX }}
+      VITE_B2_CONTROL_ADDRESS: ${{ vars.VITE_B2_CONTROL_ADDRESS }}
+      VITE_B2_CONTROL_POLICY_ID: ${{ vars.VITE_B2_CONTROL_POLICY_ID }}
+      VITE_B2_CONTROL_TOKEN_NAME_HEX: ${{ vars.VITE_B2_CONTROL_TOKEN_NAME_HEX }}
+      VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS: ${{ vars.VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS }}
+      VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS: ${{ vars.VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS }}
+      VITE_BLOCKFROST_PREPROD_URL: ${{ vars.VITE_BLOCKFROST_PREPROD_URL }}
+      VITE_BLOCKFROST_PROJECT_ID: ${{ vars.VITE_BLOCKFROST_PROJECT_ID }}
+      VITE_ISSUE_AUTHORITY_ENDPOINT: ${{ vars.VITE_ISSUE_AUTHORITY_ENDPOINT }}
+      VITE_V3_CARRIER_FACTORY_URL: ${{ vars.VITE_V3_CARRIER_FACTORY_URL }}
     # Public protocol pages do not require DEMETER/Preprod secrets at build time.
     # PRE-RICH runtime actions remain fail-closed when authoritative evidence is absent.
     steps:
@@ -60,6 +85,52 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Validate public PRE-RICH runtime configuration
+        run: |
+          if [ -z "$VITE_ISSUE_AUTHORITY_ENDPOINT" ]; then
+            echo "::notice::VITE_ISSUE_AUTHORITY_ENDPOINT is not configured; public Pages will build, but ticket issuance stays disabled."
+          else
+            node --input-type=module <<'NODE'
+            const endpoint = new URL(process.env.VITE_ISSUE_AUTHORITY_ENDPOINT)
+            if (endpoint.protocol !== 'https:') {
+              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must use HTTPS')
+            }
+            if (endpoint.username || endpoint.password) {
+              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must not embed credentials')
+            }
+            if (!/\/issue-admission$/.test(endpoint.pathname)) {
+              throw new Error('VITE_ISSUE_AUTHORITY_ENDPOINT must target the /issue-admission route')
+            }
+            const required = [
+              'VITE_COUNTER_SCRIPT_ADDRESS',
+              'VITE_TREASURY_ADDRESS',
+              'VITE_TICKET_POLICY_ID',
+              'VITE_RELAYER_PKH',
+              'VITE_ORACLE_PUBLISHER_PKH',
+              'VITE_ORACLE_STATE_POLICY_ID',
+              'VITE_ORACLE_STATE_TOKEN_NAME_HEX',
+              'VITE_ORACLE_STATE_ADDRESS',
+              'VITE_B1_POOL_TOKEN_POLICY_ID',
+              'VITE_B1_POOL_TOKEN_NAME_HEX',
+              'VITE_V3_CARRIER_ADDRESS',
+              'VITE_V3_CARRIER_POLICY_ID',
+              'VITE_V3_CARRIER_TOKEN_NAME_HEX',
+              'VITE_B2_CONTROL_ADDRESS',
+              'VITE_B2_CONTROL_POLICY_ID',
+              'VITE_B2_CONTROL_TOKEN_NAME_HEX',
+              'VITE_PRIZE_VALIDATOR_REFERENCE_ADDRESS',
+              'VITE_B1_PRIZE_POOL_REFERENCE_ADDRESS',
+              'VITE_BLOCKFROST_PROJECT_ID',
+              'VITE_V3_CARRIER_FACTORY_URL',
+            ]
+            const missing = required.filter((key) => !process.env[key]?.trim())
+            if (missing.length) {
+              throw new Error('Issue endpoint configured, but required public runtime variables are missing: ' + missing.join(', '))
+            }
+            console.log('Issue endpoint URL and required public runtime variable presence validated (values redacted).')
+            NODE
+          fi
 
       - name: Build V5 + PRE-RICH DApp
         run: npm run build
