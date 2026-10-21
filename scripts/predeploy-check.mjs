@@ -315,6 +315,14 @@ contains(mainTs, /validateIssueSettlementQuote[\s\S]*?buildIssueSettlementAssets
 contains(mainTs, /settlement-assets[\s\S]*?settlementInputValues[\s\S]*?Enter an exact Treasury basket/s,
   'Issue UI collects explicit basket quantities and remains blocked until the basket matches the USDM target')
 contains(mintTs, /assertCompletedTreasurySettlement/, 'Completed Lucid Treasury output Value is checked before submission')
+contains(mintTs, /\.validTo\(settlementValidToMs\)/,
+  'Issue transaction sets a finite validity upper bound derived from the authenticated settlement quotes')
+contains(mintTs, /tx = await tx\.complete\(\)/,
+  'Issue verifies a resolved Lucid transaction body after awaiting completion')
+contains(mintTs, /assertCompletedIssueValidityUpperBound\(tx, settlementTtlSlot\)/,
+  'Completed Issue body retains the exact quote-valid TTL slot before submission')
+contains(settlementSource, /deriveIssueSettlementValidityUpperBoundMs/,
+  'Finite Issue TTL is derived from every Treasury asset quote used in valuation')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
   'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')
 contains(settlementSource, /OracleQuote constructor is invalid[\s\S]*?OracleQuoteSet constructor or quote list is invalid[\s\S]*?exactly one quote for requested asset/s,
