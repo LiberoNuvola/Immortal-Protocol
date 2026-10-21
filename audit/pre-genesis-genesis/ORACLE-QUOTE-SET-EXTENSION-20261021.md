@@ -175,3 +175,22 @@ Do not mark the first real Issue or multi-asset settlement GREEN merely because 
 The working branch now includes `audit/cardano-integration/observe-preprod-oracle-quote-set.mjs` and its pure decoder `oracleQuoteSetObservation.mjs`. The CLI requires the configured Preprod Blockfrost endpoint/project ID, Oracle State address, singleton policy/token name, and expected publisher identity. It reads the exact configured UTxO and emits a digest-bearing JSON observation containing the datum hash/reference, legacy-vs-quote-set constructor, quote identities, duplicate units, publisher-field matches, slot-derived freshness checks, and eligible units.
 
 This is explicitly **read-only**: it has no wallet seed/key, transaction builder, signer, submit path or state-update code. Its status does not claim source truth; it always reports that external price-source qualification remains unproven by datum bytes alone. Focused synthetic tests exercise the legacy and quote-set decoder through the existing settlement conformance suite. The live CLI itself has not been run in this checkpoint, so it has not produced evidence for the actual Preprod singleton.
+
+
+### 8.6 Concrete Preprod wallet-singleton observation — 2026-10-21
+
+The read-only wallet UTxO evidence uploaded by [IMMORTAL Cardano Preprod Context run 39594377501](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39594377501) was retrieved and inspected. The evidence packet is bound to head `993f1a8fb95682b0eacf56f19fb8e68e1706e898`; its observation timestamp is `2026-10-21T11:46:53.758Z`, network tip slot `136900008`, tip block `3ecf19a19d5b47737019056eb1210019ff6885c8299bcf0eefeec41371c73727`, wallet-UTxO packet SHA-256 `126b1e6d9f8db89a8cb1584012fa3ab0f060a7c91a48540c5e3fde4fc84afca2`.
+
+That snapshot contains this output at the workflow's configured Preprod wallet address:
+
+- UTxO reference: `cardano:tx/fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Value: 2,000,000 lovelace plus one `ORACLE` token, policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, name hex `4f5241434c45`.
+- Inline datum CBOR SHA-256: `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+- Datum constructor: legacy constructor 0, not `OracleQuoteSet`. The single quote is ADA (empty policy/name), integer price `100`, timestamp `1791481130142` (`2026-10-08T17:38:50.142Z`), publisher `69fe256b67d8f11822a34b250ab8ba271bdedb513daf99e618b6bc89`.
+- The publisher hash matches the payment credential decoded from the observed wallet address. This establishes who the observed datum claims as publisher; it does not prove the quote's external market truth.
+
+At the snapshot time the quote was `1,102,083,616 ms` old, approximately `306.13 hours`, against the existing one-hour maximum age. **This observed quote was stale by more than 12 days and cannot authorize an Issue under the existing transaction-relative freshness predicate.** Even apart from freshness, this legacy datum contains no PRE/NIGHT quotes, so it cannot support an ADA+PRE/NIGHT basket.
+
+**Binding caveat:** this is a concrete observation of the singleton carried by the workflow's configured Preprod wallet address. The repository's public Pages Oracle address/policy/token values are supplied through repository variables that this read-only artifact does not disclose, so an exact equality between that deployed DApp configuration and this observed address/unit has not been independently proved here. Treat the evidence as the strong current-wallet finding, then run the new read-only `observe-preprod-oracle-quote-set.mjs` against the exact public-runtime Oracle identity to close that last configuration binding.
+
+This new observation supersedes the earlier statement in §8.2 that no live wallet singleton had yet been inspected; it does not supersede the still-open exact DApp-binding and source-qualification gates. No state was changed, no quote refreshed, and no ticket issued.
