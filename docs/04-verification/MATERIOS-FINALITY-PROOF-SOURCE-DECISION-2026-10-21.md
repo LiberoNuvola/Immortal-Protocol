@@ -14,6 +14,14 @@ The documents below preserve earlier implementation options and contracts; they 
 
 Issue #50 is recorded below only as evidence that the public execution-proof RPC was not adopted upstream. Re-reading or retrying that issue is not the prescribed path. This note does not claim that any Materios block is unfinalized; it records the still-missing real witness and independent verification.
 
+## Smoldot P2P acquisition attempt — 2026-10-21
+
+The source-agnostic P2P light-client route was tested using the pinned Smoldot PR #3369 implementation, official SHA-256-pinned Materios v6 raw chain spec, and the sole public bootnode currently documented by Materios. The client reported the expected genesis identity, and some candidate historical headers were locally hash-bound. Across three runs and 18 sampled candidate heights per run, **no FRNK justification was captured**. The client repeatedly remained in GRANDPA warp sync at block 97,069 while the untrusted HTTP RPC reported a head around 2.38 million. The target block's header was hash-bound in two of the runs, but the target response contained no justification.
+
+Detailed immutable artifact IDs, digests, candidate-by-candidate outcomes, and scope limits are recorded in [MATERIOS-SMOLDOT-P2P-PROBE-RESULT-2026-10-21.md](MATERIOS-SMOLDOT-P2P-PROBE-RESULT-2026-10-21.md). This is a failed proof-acquisition attempt, not evidence that any tested block is unfinalized and not a verifier failure. The current Smoldot revision is an open upstream PR rather than a merged release.
+
+The operator guide mentions a justification-retaining public sync node as being deployed, but no usable public endpoint was found in the reviewed docs, issues, PRs, or commit search. The next acquisition gate is to verify a documented endpoint for that already-operating service or find another existing proof publisher. Do not deploy a Materios node or weaken the trust boundary.
+
 ## Evidence reviewed
 
 ### 1. Public Materios RPC surface
