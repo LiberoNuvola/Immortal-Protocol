@@ -119,7 +119,72 @@ assert.notEqual(deadlineTransition('ELIGIBLE', 15, false), 'MERGED',
 assert.notEqual(deadlineTransition('ELIGIBLE', 15, false), 'REJECTED',
   'overdue status never auto-rejects a PR')
 
+// GitHub Auto-merge model: this is a policy model only, not a live GitHub gate.
+// Auto-merge is eligible only after the process gate, approval, required checks,
+// and current-head evidence all agree. GitHub remains responsible for enforcement.
+const autoMergeEligible = (pr) =>
+  classify(pr) === 'ELIGIBLE' &&
+  pr.approved === true &&
+  pr.requiredChecksPass === true &&
+  pr.approvalCommitSha === pr.commitSha &&
+  pr.evidenceCommitSha === pr.commitSha &&
+  pr.challengeOpen !== true
+
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+}), true, 'eligible non-normative PR can request Auto-merge only after approval and checks')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: false,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+}), false, 'evidence eligibility alone cannot trigger merge')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: false,
+  approvalCommitSha: 'abc123',
+}), false, 'a failing required check blocks the modeled merge path')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'older-commit',
+}), false, 'approval for a previous head does not authorize the current head')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  normativeChange: true,
+}), false, 'normative changes cannot enter the reduced Auto-merge path')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeOpen: true,
+}), false, 'an unresolved concrete challenge blocks the modeled merge path')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  evidenceCommitSha: 'different-head',
+}), false, 'stale evidence cannot authorize a merge')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  proceduralOverdue: true,
+}), true, 'deadline status alone does not decide merge eligibility; approval and checks still govern')
+
 console.log('PASS: contribution acceptance boundary remains evidence-gated in the toy model')
+console.log('PASS: modeled Auto-merge requires eligibility, current-head approval, green required checks, and no open challenge')
 console.log('PASS: maintainer discretion is constrained by recorded challenge categories')
 console.log('PASS: deadlines expose stalling without creating automatic merge/rejection')
 console.log('PASS: normative scope, commit binding, and mandatory checks fail closed')
