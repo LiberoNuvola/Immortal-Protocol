@@ -11,6 +11,8 @@ on:
       - 'Adapter/MIDNIGHT/**'
       - 'relayer/**'
       - 'scripts/check-rf8-production-boundary.mjs'
+      - 'scripts/contribution-evidence-gate.mjs'
+      - '.github/workflows/contribution-evidence-gate.yml'
       - '.github/workflows/workflow-b-boundary-conformance.yml'
   pull_request:
     paths:
@@ -21,6 +23,8 @@ on:
       - 'Adapter/MIDNIGHT/**'
       - 'relayer/**'
       - 'scripts/check-rf8-production-boundary.mjs'
+      - 'scripts/contribution-evidence-gate.mjs'
+      - '.github/workflows/contribution-evidence-gate.yml'
       - '.github/workflows/workflow-b-boundary-conformance.yml'
   workflow_dispatch:
 
