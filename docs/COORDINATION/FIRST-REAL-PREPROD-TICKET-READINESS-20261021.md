@@ -134,3 +134,11 @@ This does not authorize changing the implementation's rounding behavior. The rel
 A non-permissionless real Issue is **not the next useful experiment** with the current source. It would not test a valid full sale while the builder does not derive/verify the completed Treasury value and the single-asset Oracle schema cannot supply the required quote set for token+ADA settlement. After those conformance issues are resolved, a specifically scoped authority-backed Issue could measure Adapter/ledger integration, cost, size and StateBefore/StateAfter; it still would not prove permissionlessness. Until then, prefer the actual Plutus valuation tests and formal transition-refinement work over a real ticket issued merely for a milestone.
 
 No on-chain rule, signature check, V3/Reveal behavior, settlement coefficient, or deployment was changed by this addendum.
+
+## Predeploy gate hardening — 2026-10-21
+
+`scripts/predeploy-check.mjs` previously treated the presence/use of `TICKET_PAYMENT_LOVELACE` as a positive configuration check. That was insufficient: it did not connect the requested Treasury asset quantity to the USDM-denominated `pdPriceUsdm` using the exact value the Plutus validator will evaluate.
+
+The gate now fails closed when the Issue builder still supplies `TICKET_PAYMENT_LOVELACE` directly to the Treasury output, and requires a focused `src/__tests__/issueSettlementConformance.test.ts` evidence surface before predeploy. The currently missing test file intentionally keeps the gate blocked; the static guard is a release blocker, **not** a replacement for implementing the settlement builder or for running tests.
+
+This change does not alter the Plutus equality check, select a new oracle layout, define a rounding tolerance, enable NIGHT/PRE baskets, or create a deployment. It prevents the legacy fixed-ADA value from being mistaken for verified settlement conformance.
