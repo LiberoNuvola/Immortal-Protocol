@@ -30,7 +30,7 @@ jobs:
       - name: Setup Aiken
         uses: aiken-lang/setup-aiken@v1
         with:
-          version: v1.1.23
+          version: v1.1.24
       - name: Isolate silent Aiken compiler failure
         working-directory: poc/drand-beacon-verifier/cardano
         env:
