@@ -31,9 +31,7 @@ const RPC = (() => {
   return value;
 })();
 
-const BLOCK_HASH =
-  process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH ??
-  "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e";
+const BLOCK_HASH_OVERRIDE = process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH;
 
 const STORAGE_KEY =
   process.env.MATERIOS_B3_ANCHOR_STORAGE_KEY ??
@@ -42,17 +40,25 @@ const STORAGE_KEY =
 async function main(): Promise<void> {
   const rpc = new MateriosRpc(RPC);
 
-  const header = await rpc.getHeader(BLOCK_HASH);
+  // Prefer a proof against the endpoint's current finalized-head observation.
+  // This avoids silently requiring archive history for the default probe.
+  // The endpoint's finalized-head claim remains untrusted until B3 finality
+  // verification is independently completed. Set MATERIOS_B3_ANCHOR_BLOCK_HASH
+  // only when intentionally probing a specific historical block.
+  const blockHash = BLOCK_HASH_OVERRIDE
+    ? BLOCK_HASH_OVERRIDE
+    : await rpc.getFinalizedHead();
+  const header = await rpc.getHeader(blockHash);
   const blockNumber = parseHeaderNumber(header.number);
 
-  const storageValue = await rpc.getStorage(STORAGE_KEY, BLOCK_HASH);
+  const storageValue = await rpc.getStorage(STORAGE_KEY, blockHash);
   if (storageValue === null) {
-    throw new Error("Historical AnchorRecord is absent at the requested block");
+    throw new Error("AnchorRecord is absent at the selected block; verify anchor key and target");
   }
 
-  const readProof = await rpc.getReadProof([STORAGE_KEY], BLOCK_HASH);
-  if (readProof.at.toLowerCase() !== BLOCK_HASH.toLowerCase()) {
-    throw new Error("Historical storage proof returned a different block hash");
+  const readProof = await rpc.getReadProof([STORAGE_KEY], blockHash);
+  if (readProof.at.toLowerCase() !== blockHash.toLowerCase()) {
+    throw new Error("Storage proof returned a different block hash");
   }
 
   const packet = {
@@ -60,8 +66,11 @@ async function main(): Promise<void> {
     captured_at: new Date().toISOString(),
     rpc_endpoint: RPC,
     target: {
-      block_hash: BLOCK_HASH,
+      block_hash: blockHash,
       block_number: blockNumber.toString(),
+      checkpoint_source: BLOCK_HASH_OVERRIDE
+        ? "explicit block hash (untrusted until independent finality verification)"
+        : "chain_getFinalizedHead response (untrusted until independent finality verification)",
       state_root: header.stateRoot,
       storage_key: STORAGE_KEY,
     },
@@ -98,7 +107,8 @@ async function main(): Promise<void> {
   console.log("Materios B3-B anchor witness");
   console.log("RPC:", RPC);
   console.log("block:", blockNumber.toString());
-  console.log("block hash:", BLOCK_HASH);
+  console.log("block hash:", blockHash);
+  console.log("checkpoint source:", packet.target.checkpoint_source);
   console.log("state root:", header.stateRoot);
   console.log("storage value bytes:", (storageValue.length - 2) / 2);
   console.log("proof nodes:", readProof.proof.length);
