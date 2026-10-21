@@ -60,3 +60,26 @@ Before promotion:
 - Only after the above passes should a separately tested asset-basket amount builder be wired into Issue. The builder must select concrete asset quantities but never decide their economic worth; the on-chain equality predicate remains authoritative.
 
 The EEV perimeter is unchanged. This does not expand `PRE-RICH-EEV-USDM-DIRECT-V1` to count ADA, PRE, NIGHT, or other assets toward VerifiedUSDM merely because they can be used as settlement assets.
+
+
+## 6.1 Current application settlement builder seam
+
+The current branch has now added a programmatic amount-construction path in `src/issueSettlement.ts`:
+
+- `buildIssueSettlementAssets` accepts a buyer-selected asset-unit/quantity map; quantities are not inferred from untrusted fiat estimates.
+- It decodes the authenticated datum as a quote list, checks that every output asset has exactly one quote (including ADA for the min-UTxO value map), and applies the current publisher, timestamp, non-negative-price, precision, ADA floor and `ceilingDiv` semantics.
+- The total must equal the exact ticket `pdPriceUsdm` sub-unit target. There is no tolerance or client-selected valuation.
+- `src/mint.ts` accepts this via optional `settlementAssetQuantities` and now calls `assertCompletedTreasurySettlement` after Lucid completion. This assertion compares the full final Treasury asset map with the prevalidated expected map before the signing/submission adapter is called.
+- Focused TypeScript fixtures include ADA-only, PRE-only with ADA floor, mixed ADA+NIGHT, missing ADA quote, stale quote, duplicate quote identity, wrong total, and final completed-output asset quantity mismatch.
+
+This is a **programmatic opt-in interface**, not proof that the consumer UI, deployed quote source, or current Preprod Oracle State UTxO supplies a constructor-1 quote set. It also has not been declared green until the exact-head Cardano Adapter Sale workflow passes and the Haskell build/test plus generated-artifact and ledger integration evidence closes.
+
+## 7.1 Promotion check-list update
+
+Before promotion, in addition to the original requirements above:
+
+- Run the actual TypeScript settlement conformance test and frontend build at the exact branch head; the structural predeploy gate must enforce the general full-Value assertion, not just ADA equality.
+- Build the modified Plutus library and execute `economic-oracle-tests`; confirm the ADA+PRE quote-set vector returns the unchanged canonical integer value and duplicate identity fails closed.
+- Re-export every dependent Plutus artifact because `Economic` is shared by several validators/policies. Record hashes and serialized sizes for every changed artifact; reject promotion if any transaction exceeds the protocol's 16,384-byte limit or relies on an unverified replacement for the existing Reveal reference-script path.
+- Establish how the live singleton datum would be updated and signed, with a before/after UTxO trace and a rollback/recovery plan. No automatic update/deployment is authorized by this branch patch.
+- Exercise basket payment on a local native ledger with the newly built artifacts before any wallet-driven Preprod Issue. The actual on-chain `MintPolicy` equality remains final; passing the off-chain amount builder is not ledger acceptance.
