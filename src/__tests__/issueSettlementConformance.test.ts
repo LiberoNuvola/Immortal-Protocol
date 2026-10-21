@@ -309,13 +309,13 @@ describe('Issue settlement conformance', () => {
     )).toThrow(/does not match/)
   })
 
-  it('rejects a completed Treasury output containing non-ADA assets', () => {
-    const multiasset = { keys: () => ({ len: () => 1 }) }
+  it('rejects a completed ADA-only Treasury output that contains an extra token', () => {
+    const multiasset = multiassetFor('11'.repeat(28), '505245', 1n)
     expect(() => assertCompletedTreasuryAdaSettlement(
       completedTx([treasuryOutput(2_600_000n, 'addr_test_treasury', multiasset)]),
       'addr_test_treasury',
       2_600_000n,
-    )).toThrow(/non-ADA assets/)
+    )).toThrow(/does not match/)
   })
 
   it('rejects a quote whose publisher configuration is empty', () => {
