@@ -2,7 +2,7 @@ name: Contribution Evidence Gate
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, edited, ready_for_review]
+    types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
 
 # Unprivileged PR context: this workflow reads PR metadata only. It checks out
 # the base commit, never the contributor's code, and never writes to GitHub.
