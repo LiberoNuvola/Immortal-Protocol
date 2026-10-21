@@ -1,0 +1,127 @@
+name: Materios Snapshot Pointer Probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-snapshot-pointer-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-snapshot-pointer:
+    name: Inspect published snapshot manifest only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch and inspect latest snapshot pointer (no archive download)
+        run: |
+          mkdir -p "$RUNNER_TEMP/materios-snapshot-probe"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { createHash } from 'node:crypto';
+
+          const manifestUrl = 'https://materios.fluxpointstudios.com/operator-snapshots/preprod/latest.json';
+          const outPath = process.env.RUNNER_TEMP + '/materios-snapshot-probe/manifest-probe.json';
+          const checkedAt = new Date().toISOString();
+          const sha256 = value => createHash('sha256').update(value).digest('hex');
+          const evidence = {
+            schema_version: 'materios-snapshot-pointer-probe-v1',
+            checked_at: checkedAt,
+            manifest_url: manifestUrl,
+            manifest: null,
+            manifest_sha256: null,
+            tarball_head: null,
+            archive_downloaded: false,
+            node_started: false,
+            claims: {
+              manifest_available: false,
+              snapshot_contains_target_grandpa_justification: false,
+              b3_a_closed: false,
+            },
+            scope: 'Manifest and HTTP HEAD only. The snapshot archive was not downloaded, unpacked, or started as a node. No contents or GRANDPA proof are inferred from the manifest alone.',
+          };
+
+          const response = await fetch(manifestUrl, { signal: AbortSignal.timeout(15000) });
+          const body = await response.text();
+          evidence.manifest_http_status = response.status;
+          evidence.manifest_body_sha256 = sha256(body);
+          if (!response.ok) throw new Error('Snapshot manifest HTTP ' + response.status);
+          let manifest;
+          try { manifest = JSON.parse(body); }
+          catch (error) { throw new Error('Invalid snapshot manifest JSON: ' + String(error)); }
+
+          for (const key of ['url', 'sha256', 'size_bytes', 'head_block_at_publish', 'published_at']) {
+            if (!(key in manifest)) throw new Error('Snapshot manifest missing field: ' + key);
+          }
+          if (typeof manifest.url !== 'string' || !/^https:\/\//.test(manifest.url)) {
+            throw new Error('Snapshot archive URL must use HTTPS');
+          }
+          if (typeof manifest.sha256 !== 'string' || !/^[0-9a-f]{64}$/i.test(manifest.sha256)) {
+            throw new Error('Snapshot sha256 must be 64 hex characters');
+          }
+          if (!Number.isSafeInteger(manifest.size_bytes) || manifest.size_bytes <= 0) {
+            throw new Error('Snapshot size_bytes must be a positive safe integer');
+          }
+
+          evidence.manifest = {
+            url: manifest.url,
+            sha256: manifest.sha256.toLowerCase(),
+            size_bytes: manifest.size_bytes,
+            head_block_at_publish: manifest.head_block_at_publish,
+            published_at: manifest.published_at,
+            ...(manifest.genesis_hash ? { genesis_hash: manifest.genesis_hash } : {}),
+          };
+          evidence.manifest_sha256 = sha256(JSON.stringify(evidence.manifest));
+          evidence.claims.manifest_available = true;
+
+          const head = await fetch(manifest.url, {
+            method: 'HEAD',
+            redirect: 'follow',
+            signal: AbortSignal.timeout(20000),
+          });
+          evidence.tarball_head = {
+            status: head.status,
+            final_url_host: new URL(head.url).host,
+            content_type: head.headers.get('content-type'),
+            content_length: head.headers.get('content-length'),
+            last_modified: head.headers.get('last-modified'),
+            accept_ranges: head.headers.get('accept-ranges'),
+          };
+          evidence.archive_size_agrees = evidence.tarball_head.content_length === null
+            ? null
+            : Number(evidence.tarball_head.content_length) === manifest.size_bytes;
+          if (!head.ok) evidence.tarball_head.error = 'HEAD returned HTTP ' + head.status;
+
+          fs.writeFileSync(outPath, JSON.stringify(evidence, null, 2) + '\n');
+          const fmt = n => n.toLocaleString('en-US') + ' bytes (' + (n / 1024 / 1024 / 1024).toFixed(2) + ' GiB)';
+          const lines = [
+            '# Materios Snapshot Pointer Probe',
+            '',
+            '- Manifest available: **true**',
+            '- Published snapshot: **' + String(manifest.published_at) + '**',
+            '- Head block at publish: **' + String(manifest.head_block_at_publish) + '**',
+            '- Archive size from manifest: **' + fmt(manifest.size_bytes) + '**',
+            '- Published SHA-256: ' + manifest.sha256,
+            '- Archive HEAD status: **' + String(head.status) + '**',
+            '- Content-Length agrees with manifest: **' + String(evidence.archive_size_agrees) + '**',
+            '- Archive downloaded/unpacked: **false**',
+            '',
+            'Scope limit: the manifest does not prove that the archive contains the target GRANDPA justification. No node was started.',
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          console.log(JSON.stringify(evidence, null, 2));
+          if (head.status >= 400) process.exit(1);
+          NODE
+
+      - name: Upload manifest-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-snapshot-pointer-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/materios-snapshot-probe/manifest-probe.json
+          if-no-files-found: warn
+          retention-days: 30
