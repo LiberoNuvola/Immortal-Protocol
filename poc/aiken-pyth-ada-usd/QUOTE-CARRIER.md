@@ -22,3 +22,16 @@ The current Haskell Plutus V2 MintPolicy still values Treasury from an Oracle St
 The Pyth ADA/USD price/exponent also still needs a governed conversion into the current USDM-subunit domain; the POC preserves the raw quote and does not introduce an off-chain or ungoverned rounding rule. This does not qualify PRE/USD or NIGHT/USD feeds, update the Oracle singleton, deploy scripts, or authorize Issue.
 
 CI uses synthetic datum/context tests and compilation only. It does not prove a signature or ledger acceptance.
+
+
+## Latest isolated carrier CI
+
+Run [Isolated Pyth ADA USD Probe #12](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931) passed on commit `7298455cd01ee73915d294e713fbb8ef355f7e8a`. The `aiken check` phase reports 13 synthetic tests passing, including the original nine price/feed/freshness checks plus:
+- exact fresh quote tuple accepted;
+- substituted price or exponent rejected;
+- stale update rejected even when output tuple matches;
+- missing output quote rejected.
+
+The compiled Plutus V3 blueprint artifact is [`pyth-ada-usd-probe-7298455cd01ee73915d294e713fbb8ef355f7e8a`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931/artifacts/12346542438), artifact ID `12346542438`. Manifest hashes: `aiken.toml` `ecd2615377622857982fea7de81e81eb664d8fc31866a8067ed976fc5054397b`; `aiken.lock` `bfecbc5440e3c386bcc8e382daa13d1d6695c8d0ede8003cf88bc19a4e423e07`; `plutus.json` `3b7fb17a17061e586ed26523b85bfdd01a4ff70f148f7dfd20bbc239ce3c0914`. Compiled code size: marker-consumer spend 6,806 bytes; quote-carrier spend 8,289 bytes. These are individual compiled validator fields, not full transaction CBOR.
+
+**Scope limit unchanged:** the carrier validator binds its continuation datum to the pure quote selection in the Aiken model and is compiled, but no genuine Pyth-signed update has been tested on a native Cardano ledger. The existing MintPolicy still does not consume this carrier price.
