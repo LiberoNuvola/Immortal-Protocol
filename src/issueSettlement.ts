@@ -1,3 +1,5 @@
+import { Data } from 'lucid-cardano'
+
 /**
  * PRE-RICH B1 Issue settlement construction.
  *
@@ -28,6 +30,79 @@ export type AdaIssueSettlementRequest = {
   quote: AdaOraclePriceReference
   expectedPublisherPkh: string
   nowMs: bigint
+}
+
+function parseDatum(raw: unknown): any {
+  if (typeof raw !== 'string') return raw
+  try {
+    return Data.from(raw)
+  } catch {
+    throw new Error('Authenticated OracleDatum CBOR is invalid')
+  }
+}
+
+function datumFields(value: any): any[] | null {
+  return value && Array.isArray(value.fields) ? value.fields : null
+}
+
+function datumConstructorIndex(value: any): number | null {
+  if (!value || typeof value !== 'object') return null
+  const raw = value.index ?? value.constr
+  if (raw === undefined) return null
+  const index = Number(raw)
+  return Number.isInteger(index) ? index : null
+}
+
+function datumBytes(value: any): string | null {
+  const bytes = typeof value === 'string' ? value : value?.bytes
+  return typeof bytes === 'string' ? bytes.toLowerCase() : null
+}
+
+function datumInteger(value: any): bigint | null {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number' && Number.isSafeInteger(value)) return BigInt(value)
+  if (value && typeof value.int !== 'undefined') {
+    try {
+      return BigInt(value.int)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+/**
+ * Decode the precise 5-field OracleDatum used by OracleTypes.hs:
+ * (asset policy bytes, asset name bytes, integer price, POSIX-ms timestamp,
+ * publisher key-hash bytes). The resulting quote is still validated for asset,
+ * publisher, age and conversion when the settlement amount is derived.
+ */
+export function decodeAdaOraclePriceReference(raw: unknown): AdaOraclePriceReference {
+  const datum = parseDatum(raw)
+  if (datumConstructorIndex(datum) !== 0) {
+    throw new Error('Authenticated OracleDatum constructor is invalid')
+  }
+  const fields = datumFields(datum)
+  if (!fields || fields.length !== 5) {
+    throw new Error('Authenticated OracleDatum must contain exactly five fields')
+  }
+
+  const assetPolicyHex = datumBytes(fields[0])
+  const assetNameHex = datumBytes(fields[1])
+  const price = datumInteger(fields[2])
+  const timestampMs = datumInteger(fields[3])
+  const publisherPkh = datumBytes(fields[4])
+  if (
+    assetPolicyHex === null ||
+    assetNameHex === null ||
+    price === null ||
+    timestampMs === null ||
+    publisherPkh === null
+  ) {
+    throw new Error('Authenticated OracleDatum contains invalid field types')
+  }
+
+  return { assetPolicyHex, assetNameHex, price, timestampMs, publisherPkh }
 }
 
 function ceilDiv(numerator: bigint, denominator: bigint): bigint {
