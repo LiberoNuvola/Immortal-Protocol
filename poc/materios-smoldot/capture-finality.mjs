@@ -613,6 +613,11 @@ async function main() {
         downloaded_chain_spec_bytes: spec.originalBytes.length,
         effective_chain_spec_sha256: spec.effectiveDigest,
         effective_chain_spec_note: "Only bootNodes is added in-memory; original downloaded bytes are preserved and separately SHA-256 pinned",
+        diagnostics: {
+          mode: "SMOLDOT_NATIVE_WARP_SYNC_LOGS",
+          system_health_rpc_used: false,
+          rationale: "A prior bounded run timed out on system_health and then timed out on historical chain_getBlock queries; this probe avoids those health RPC calls and records native sync-service messages instead.",
+        },
       },
       chain: {
         chain_id: config.chainId,
