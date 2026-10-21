@@ -63,6 +63,8 @@ The newer [Materios Existing-Route Proof Availability run #39590352016](https://
 
 The artifact `materios-existing-route-proof-probe-39590352016-1` (ID `12341796069`, ZIP SHA-256 `5fb6c9ceab5a72392ef1a4cf458adac389b471f4c15232b18d3d9101565b0a91`) also contains a native storage-trie proof that independently verifies membership of the requested key/value against the state root supplied by the HTTP RPC, using 10 proof nodes. This is **B3-B inclusion evidence only**: the proof packet explicitly keeps GRANDPA finality, authority provenance, deployed runtime identity, anchor-to-round binding, and B3 conformance false.
 
+The following rerun [#39590352022](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590352022) repeated the witness capture at a slightly later head. It returned `BLOCKED_NO_PUBLIC_GRANDPA_WITNESS` for a second contiguous 769-block window, **2,381,088–2,381,856**, again with `blocks_with_grandpa_justification=[]`. The RPC-reported head was block `2,381,856`; this is an untrusted observation. Artifact `materios-real-grandpa-witness`, ID `12342350690`, ZIP SHA-256 `6fdef44520add9fcbf00a37d2789a93ced4cd920a4826c9185d8cb5cac8abd14`.
+
 The resulting public capability picture is narrower and better evidenced than a generic RPC failure: the selected endpoint returns ordinary chain observations and storage proofs, but does not advertise either standard GRANDPA proof-delivery method, the Materios-specific execution-proof method, or `state_getCode`. This still proves only what this endpoint exposes at the time checked; it does not rule out a separate already-operating proof source.
 
 Reference: [Materios Preprod RPC endpoint](https://materios.fluxpointstudios.com/preprod-rpc).
