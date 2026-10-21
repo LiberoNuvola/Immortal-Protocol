@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Constr } from 'lucid-cardano'
+import { inspectOracleDatum } from '../../audit/cardano-integration/oracleQuoteSetObservation.mjs'
 
 import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
@@ -76,6 +77,69 @@ function treasuryOutput(lovelace: bigint, address = 'addr_test_treasury', multia
 }
 
 describe('Issue settlement conformance', () => {
+  it('describes the active Oracle singleton without claiming source truth', () => {
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const report = inspectOracleDatum(ada, {
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(report.schema).toBe('legacy-single-quote')
+    expect(report.adaOnlySettlementStructurallyUsable).toBe(true)
+    expect(report.sourceTruthProven).toBe(false)
+    expect(report.blockers).toContain('LEGACY_SCHEMA_SUPPORTS_ONLY_ONE_ASSET_QUOTE')
+  })
+
+  it('recognizes an ADA+PRE quote set only when quote identities are unique and usable', () => {
+    const policy = '11'.repeat(28)
+    const pre = new Constr(0, [policy, '505245', 250n, nowMs - 1_000n, publisher] as any)
+    const ada = new Constr(0, ['', '', 80n, nowMs - 2_000n, publisher] as any)
+    const report = inspectOracleDatum(new Constr(1, [[ada, pre]] as any), {
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(report.schema).toBe('oracle-quote-set')
+    expect(report.adaOnlySettlementStructurallyUsable).toBe(true)
+    expect(report.eligibleUnits).toEqual(['lovelace', policy + '505245'])
+    expect(report.duplicateAssetUnits).toEqual([])
+    expect(report.sourceQualificationStatus).toBe('NOT_PROVEN_BY_DATUM_ALONE')
+  })
+
+  it('detects duplicate asset identities instead of selecting an arbitrary quote', () => {
+    const policy = '22'.repeat(28)
+    const ada = new Constr(0, ['', '', 80n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, [policy, '505245', 250n, nowMs - 1_000n, publisher] as any)
+    const report = inspectOracleDatum(new Constr(1, [[ada, pre, pre]] as any), {
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(report.duplicateAssetUnits).toEqual([policy + '505245'])
+    expect(report.eligibleUnits).toEqual(['lovelace'])
+  })
+
+  it('fails closed when ADA is absent, stale, future-dated or attributed to another publisher', () => {
+    const policy = '33'.repeat(28)
+    const pre = new Constr(0, [policy, '505245', 250n, nowMs - 1_000n, publisher] as any)
+    const missingAda = inspectOracleDatum(new Constr(1, [[pre]] as any), {
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(missingAda.adaOnlySettlementStructurallyUsable).toBe(false)
+    expect(missingAda.blockers).toContain('ADA_QUOTE_REQUIRED_FOR_EVERY_TREASURY_OUTPUT')
+
+    const staleAda = new Constr(0, ['', '', 80n, nowMs - 3_600_001n, publisher] as any)
+    expect(inspectOracleDatum(staleAda, { expectedPublisherPkh: publisher, nowMs })
+      .blockers).toContain('ADA_STALE_TIMESTAMP')
+
+    const futureAda = new Constr(0, ['', '', 80n, nowMs + 1n, publisher] as any)
+    expect(inspectOracleDatum(futureAda, { expectedPublisherPkh: publisher, nowMs })
+      .blockers).toContain('ADA_FUTURE_TIMESTAMP')
+
+    const wrongPublisherAda = new Constr(0, ['', '', 80n, nowMs - 1_000n, 'cd'.repeat(28)] as any)
+    expect(inspectOracleDatum(wrongPublisherAda, { expectedPublisherPkh: publisher, nowMs })
+      .blockers).toContain('ADA_PUBLISHER_MISMATCH')
+  })
+
+
   it('accepts the output-specific minimum ADA and rejects insufficient ADA without changing the basket', () => {
     expect(() => assertTreasuryAdaMeetsOutputMinimum(2_000_000n, 1_900_000n)).not.toThrow()
     expect(() => assertTreasuryAdaMeetsOutputMinimum(1_600_000n, 1_900_000n))
