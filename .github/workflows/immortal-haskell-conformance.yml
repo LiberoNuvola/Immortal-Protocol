@@ -89,6 +89,10 @@ jobs:
         working-directory: plutus
         run: cabal test pyth-quote-carrier-binding-tests
 
+      - name: Pyth USD/USDM candidate formula differential vectors
+        working-directory: plutus
+        run: cabal test pyth-ada-usd-conversion-tests
+
       - name: Golden vector conformance
         working-directory: plutus
         run: cabal test v3-golden-vector-tests

@@ -21,6 +21,7 @@ library
         BeaconRegistry
         Economic
         PythQuoteCarrierBinding
+        PythAdaUsdConversion
         B1PrizePool
         CounterValidator
         MintPolicy
@@ -160,6 +161,15 @@ test-suite pyth-quote-carrier-binding-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite pyth-ada-usd-conversion-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PythAdaUsdConversionTest.hs
+    build-depends:
+        base ^>=4.18.2,
         pre-rich-plutus
     default-language: Haskell2010
 
