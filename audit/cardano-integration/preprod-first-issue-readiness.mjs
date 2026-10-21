@@ -35,7 +35,7 @@ function digestWithoutEvidenceHash(value) {
 function approvalSnapshotDigestMatches(approved, qualification, sourceSet, deployment, oracle) {
   const governance = approved?.governance
   const approval = approved?.deploymentApproval
-  const match = /^github-actions:environment\\/PREPROD-EEV-APPROVAL\\/run\\/(.+)$/.exec(
+  const match = /^github-actions:environment\/PREPROD-EEV-APPROVAL\/run\/(.+)$/.exec(
     governance?.approvalReference ?? '',
   )
   if (!match) return false
