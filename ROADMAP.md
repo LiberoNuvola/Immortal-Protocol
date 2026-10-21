@@ -75,8 +75,9 @@ Additional applications may specialize IMMORTAL with their own economic policy, 
   - [x] Extend `audit/algorithmic-governability` with adversarial contribution-acceptance and Auto-merge precondition cases; Workflow B run 388 passed
   - [ ] Review and adopt response windows, challenge categories, and conflict-of-interest handling
   - [ ] Enable and verify repository Auto-merge / branch rules / required checks (Auto-merge is currently disabled)
-  - [ ] Implement and verify a live PR status/check gate
-  - [ ] Validate the process on representative PRs before marking this item complete
+  - [x] Implement initial read-only PR evidence-eligibility workflow: `.github/workflows/contribution-evidence-gate.yml` + `scripts/contribution-evidence-gate.mjs` (self-test/representative-PR validation pending)
+  - [ ] Make the evidence-eligibility status a required check only after reviewing the fail-closed stronger-review route
+  - [ ] Validate the process on representative PRs and verify approval/check requirements before marking this item complete
 - [ ] Reproducible release process
 
 ## 5. Verification gates
