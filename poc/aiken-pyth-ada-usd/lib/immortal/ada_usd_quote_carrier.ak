@@ -121,6 +121,31 @@ pub fn quote_carrier_datum_matches_update(
   }
 }
 
+/// Shared state-transition predicate. The production wrapper derives each
+/// argument directly from the actual transaction; tests mutate one invariant
+/// at a time to ensure the wrapper's decision cannot silently omit a guard.
+pub fn quote_carrier_transition_shape_is_valid(
+  script_input_count: Int,
+  script_output_count: Int,
+  singleton_input_total: Int,
+  singleton_output_total: Int,
+  same_address: Bool,
+  same_value: Bool,
+  input_datum_valid: Bool,
+  output_quote_matches: Bool,
+) -> Bool {
+  and {
+    script_input_count == 1,
+    script_output_count == 1,
+    singleton_input_total == 1,
+    singleton_output_total == 1,
+    same_address,
+    same_value,
+    input_datum_valid,
+    output_quote_matches,
+  }
+}
+
 /// The carrier state may start with no quote or the preceding quote; each
 /// transition must replace it with the tuple extracted from the current Pyth
 /// update. Replay within the accepted freshness window remains allowed, just
@@ -147,47 +172,52 @@ pub fn quote_carrier_transition_is_valid(
             fn(output) { output.address.payment_credential == Script(own_hash) },
           )
 
-          and {
-            // This transition must spend/re-emit the one carrier singleton.
-            list.length(script_inputs) == 1,
-            list.length(script_outputs) == 1,
-            singleton_input_quantity(tx.inputs, carrier_policy_id, carrier_asset_name) == 1,
-            singleton_output_quantity(tx.outputs, carrier_policy_id, carrier_asset_name) == 1,
-            when unique_script_input(tx.inputs, own_hash) is {
-              Some(carrier_input) ->
-                when unique_script_output(tx.outputs, own_hash) is {
-                  Some(carrier_output) ->
-                    and {
-                      carrier_output.address == carrier_input.output.address,
-                      carrier_output.value == carrier_input.output.value,
-                      when decode_carrier_datum(tx, carrier_input.output) is {
-                        Some(_before) -> True
-                        None -> False
-                      },
-                      when decode_carrier_datum(tx, carrier_output) is {
-                        Some(after) ->
-                          when pyth.get_updates(pyth_policy_id, tx) is {
-                            [update] ->
-                              when tx.validity_range.upper_bound.bound_type is {
-                                interval.Finite(upper_bound_ms) ->
-                                  quote_carrier_datum_matches_update(after, update, upper_bound_ms)
-                                _ -> False
-                              }
-                            _ -> False
-                          }
-                        None -> False
-                      },
+          when unique_script_input(tx.inputs, own_hash) is {
+            None -> False
+            Some(carrier_input) ->
+              when unique_script_output(tx.outputs, own_hash) is {
+                None -> False
+                Some(carrier_output) -> {
+                  let input_datum_valid =
+                    when decode_carrier_datum(tx, carrier_input.output) is {
+                      Some(_) -> True
+                      None -> False
                     }
-                  None -> False
+
+                  let output_quote_matches =
+                    when decode_carrier_datum(tx, carrier_output) is {
+                      Some(after) ->
+                        when pyth.get_updates(pyth_policy_id, tx) is {
+                          [update] ->
+                            when tx.validity_range.upper_bound.bound_type is {
+                              interval.Finite(upper_bound_ms) ->
+                                quote_carrier_datum_matches_update(after, update, upper_bound_ms)
+                              _ -> False
+                            }
+                          _ -> False
+                        }
+                      None -> False
+                    }
+
+                  quote_carrier_transition_shape_is_valid(
+                    list.length(script_inputs),
+                    list.length(script_outputs),
+                    singleton_input_quantity(tx.inputs, carrier_policy_id, carrier_asset_name),
+                    singleton_output_quantity(tx.outputs, carrier_policy_id, carrier_asset_name),
+                    carrier_output.address == carrier_input.output.address,
+                    carrier_output.value == carrier_input.output.value,
+                    input_datum_valid,
+                    output_quote_matches,
+                  )
                 }
-              None -> False
-            },
+              }
           }
         }
         _ -> False
       }
   }
 }
+
 
 
 fn fixture_feed(
@@ -297,6 +327,65 @@ test carrier_output_rejects_missing_quote() {
   let datum = AdaUsdQuoteCarrierDatum { quote: None }
   let update = fixture_update(timestamp_us, timestamp_us)
   quote_carrier_datum_matches_update(datum, update, upper_bound_ms) == False
+}
+
+test carrier_transition_shape_accepts_all_preserved_invariants() {
+  quote_carrier_transition_shape_is_valid(
+    1, 1, 1, 1, True, True, True, True,
+  )
+}
+
+test carrier_transition_shape_rejects_missing_or_duplicate_script_outputs() {
+  and {
+    !quote_carrier_transition_shape_is_valid(
+      1, 0, 1, 1, True, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 2, 1, 1, True, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      2, 1, 1, 1, True, True, True, True,
+    ),
+  }
+}
+
+test carrier_transition_shape_rejects_missing_or_duplicate_singleton() {
+  and {
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 0, 1, True, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 2, 1, True, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 0, True, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 2, True, True, True, True,
+    ),
+  }
+}
+
+test carrier_transition_shape_rejects_address_or_value_substitution() {
+  and {
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 1, False, True, True, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 1, True, False, True, True,
+    ),
+  }
+}
+
+test carrier_transition_shape_rejects_malformed_input_or_unbound_quote() {
+  and {
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 1, True, True, False, True,
+    ),
+    !quote_carrier_transition_shape_is_valid(
+      1, 1, 1, 1, True, True, True, False,
+    ),
+  }
 }
 
 test authority_total_quantity_accepts_exactly_one() {
