@@ -123,3 +123,15 @@ On [CI run #12](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/3
 - compiled code fields: marker consumer 6,806 bytes; quote carrier 8,289 bytes.
 
 This moves the code feasibility boundary forward, but does not close any ledger/protocol acceptance gate. The tests use synthetic `PriceUpdate` fixtures. No Pyth zero-withdrawal signature has been evaluated against a genuine signed update on a native Cardano ledger; no final transaction CBOR or combined execution units were measured. The current Haskell Plutus V2 MintPolicy still calculates Treasury value from the configured Oracle State reference input and is not bound to the quote-carrier continuation. No conversion from raw Pyth USD/ADA price/exponent into the current USDM-unit quote has been frozen. The production price source is therefore **NOT QUALIFIED**.
+
+## 10. Haskell cross-module candidate regression — added, CI confirmation pending
+
+Commit [`9ae2bfb85efbd5501aa89f8ffc595be91a26fc21`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/9ae2bfb85efbd5501aa89f8ffc595be91a26fc21) extends `plutus/test/PythQuoteCarrierBindingTest.hs` with a cross-module assertion:
+- extract the raw quote from the candidate carrier transaction context;
+- pass the extracted `price` and `exponent` directly into `PythAdaUsdConversion.pythAdaUsdToUsdmSubunitsCandidate`;
+- use a synthetic 1,000,000-lovelace economic quantity, explicit test ratio `D=1/1`, and test-only exponent bound 18;
+- expect 70 USDM sub-units from the fixture quote `69,500,000 × 10^-8`.
+
+The Haskell conformance run [39647416504](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39647416504) passed the existing quote-carrier and conversion test suites on preceding commit `fb51e0201061e2510f0ed7f2b278f1b16d45c797`. That run predates the new cross-module assertion; the assertion's own CI result has not yet been verified and is not classified as PASS here.
+
+**Scope limit:** this demonstrates only the candidate Haskell data path using a synthetic context and unit ratio. It neither executes Pyth's real zero-withdrawal signature verifier on a native Cardano ledger nor proves that production MintPolicy reads the carrier output. The ratio/bound remain test inputs, not approved parameters. Gate A, Gate B, and the normative unit-conversion decision remain open.
