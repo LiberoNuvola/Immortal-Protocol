@@ -3,6 +3,7 @@
 Status: **B3-A OPEN — available public surfaces do not provide the real GRANDPA witness; alternate already-operating proof path required.**
 
 Latest source audit: [MATERIOS-ALTERNATE-FINALITY-SOURCE-INVENTORY-2026-10-21.md](MATERIOS-ALTERNATE-FINALITY-SOURCE-INVENTORY-2026-10-21.md) records the reviewed endpoints, P2P route, public-sync-node announcement, reusable verifier code, and the current fail-closed decision.
+Latest feasibility ruling: [MATERIOS-B3-A-PUBLIC-DATA-ONLY-FEASIBILITY-2026-10-21.md](MATERIOS-B3-A-PUBLIC-DATA-ONLY-FEASIBILITY-2026-10-21.md) explains why the current public observations cannot be converted into a GRANDPA proof without a real witness or an explicit protocol change.
 
 **Current applicable constraint:** IMMORTAL cannot assume access to a Materios operator node, provision another node, or modify/deploy the upstream Materios node. The local-operator CLI plan was frozen earlier as a possible acquisition route, but it is not an executable next step under the current resource constraint. Do not present it as the current plan unless access to a real node is explicitly established.
 
