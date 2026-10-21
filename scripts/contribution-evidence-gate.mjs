@@ -127,7 +127,7 @@ const isEligiblePathForClass = (path, klass) => {
   }
 }
 
-const classifyPullRequest = ({ body, files, headSha }) => {
+const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
   const changed = [...new Set((files ?? []).map((file) => String(file).replace(/\\/g, '/')))]
     .sort()
   if (changed.length === 0) {
@@ -142,6 +142,40 @@ const classifyPullRequest = ({ body, files, headSha }) => {
       controlFiles,
       files: changed,
       headSha,
+    }
+  }
+
+  const normalizedLabels = [...new Set(labels.map((label) => String(label).trim().toLowerCase()).filter(Boolean))]
+  const holdLabels = new Set([
+    'governance/challenged',
+    'governance/escalated',
+    'governance/security-hold',
+    'governance/security-escalated',
+    'governance/upheld',
+  ])
+  const activeHolds = normalizedLabels.filter((label) => holdLabels.has(label))
+  if (activeHolds.length > 0) {
+    return {
+      decision: 'CHALLENGE_BLOCKED',
+      eligible: false,
+      reasons: ['An active governance challenge/security hold label blocks the reduced path until an authorized, recorded disposition clears it.'],
+      challengeLabels: activeHolds,
+      files: changed,
+      headSha,
+    }
+  }
+  const clearLabels = normalizedLabels.filter((label) => label.startsWith('governance/challenge-cleared'))
+  if (clearLabels.length > 0) {
+    const expectedClearLabel = 'governance/challenge-cleared-' + String(headSha ?? '').slice(0, 12).toLowerCase()
+    if (clearLabels.length !== 1 || clearLabels[0] !== expectedClearLabel || !/^[0-9a-f]{12}$/.test(String(headSha ?? '').slice(0, 12))) {
+      return {
+        decision: 'STALE_CHALLENGE_DISPOSITION',
+        eligible: false,
+        reasons: ['Challenge clearance label must be unique and bound to the current head using its first 12 hexadecimal characters; a changed head requires fresh disposition.'],
+        challengeLabels: clearLabels,
+        files: changed,
+        headSha,
+      }
     }
   }
 
@@ -345,6 +379,35 @@ const selfTest = () => {
   assert.equal(residualRecord.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
   assert.equal(residualRecord.eligible, true)
 
+  const activeChallenge = classifyPullRequest({
+    body,
+    files: ['audit/example-boundary.mjs'],
+    headSha: 'abc123',
+    labels: ['governance/security-hold'],
+  })
+  assert.equal(activeChallenge.decision, 'CHALLENGE_BLOCKED')
+  assert.equal(activeChallenge.eligible, false)
+
+  const boundHead = 'abcdef1234567890abcdef1234567890abcdef12'
+  const boundBody = body.replace('Evidence-bound commit SHA: abc123', 'Evidence-bound commit SHA: ' + boundHead)
+  const clearedChallenge = classifyPullRequest({
+    body: boundBody,
+    files: ['audit/example-boundary.mjs'],
+    headSha: boundHead,
+    labels: ['governance/challenge-cleared-abcdef123456'],
+  })
+  assert.equal(clearedChallenge.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
+  assert.equal(clearedChallenge.eligible, true)
+
+  const staleChallengeClearance = classifyPullRequest({
+    body: boundBody.replace('Evidence-bound commit SHA: ' + boundHead, 'Evidence-bound commit SHA: abcdef1234567890abcdef1234567890abcdef12'),
+    files: ['audit/example-boundary.mjs'],
+    headSha: '123456abcdef7890abcdef1234567890abcdef12',
+    labels: ['governance/challenge-cleared-abcdef123456'],
+  })
+  assert.equal(staleChallengeClearance.decision, 'STALE_CHALLENGE_DISPOSITION')
+  assert.equal(staleChallengeClearance.eligible, false)
+
   console.log('PASS: complete declaration qualifies only within class-specific path boundaries')
   console.log('PASS: normative and governance-control paths fail closed')
   console.log('PASS: absent declarations and template placeholders fail closed')
@@ -381,7 +444,7 @@ const main = async () => {
   }
 
   const files = await fetchChangedFiles(apiUrl, repository, eventPR.number, token)
-  const result = classifyPullRequest({ body: livePR.body, files, headSha: livePR.head.sha })
+  const result = classifyPullRequest({ body: livePR.body, files, headSha: livePR.head.sha, labels: (livePR.labels ?? []).map((label) => label.name) })
   await emitResult(result)
   if (!result.eligible) process.exitCode = 1
 }
