@@ -11,6 +11,8 @@ path = "src/lib.rs"
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3", features = ["derive", "std"] }
 hex = "0.4"
+serde_json = "1"
+sha2 = "0.10"
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
 sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", rev = "c455194a2ae2f613c1c671e00dbf397b83ed8171", features = ["std"] }
