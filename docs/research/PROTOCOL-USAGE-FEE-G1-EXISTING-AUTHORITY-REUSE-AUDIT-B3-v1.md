@@ -322,3 +322,14 @@ The signed path does establish **source authentication and contextual binding fo
 The next investigation should identify the deployed/configured authority producer and its derivation process, then determine whether that producer's signed completeness claim is computed from a versioned obligation inventory that consumes the approved G1 policy. Do not treat the presence of Ed25519, `derivationVersion`, EEV qualification, or a valid `IssueDecision` as a substitute for that relation.
 
 **G1 remains OPEN.** No production files or tests were changed; this section records source inspection only.
+
+
+### 9.9 Server composition and external authority boundary
+
+Further inspection of `relayer/issueAuthorityServer.js` (blob `69348a48d3848368936d6c8540629ba4ef50b266`) and `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` (blob `5389a81744e82d3b5f125184b31dfdc8c054671a`) refines §9.7: the server composition requires an upstream authority URL and public verification key, constructs the provider with both, and routes Issue requests through the signed-envelope verifier before Haskell admission. The direct `authoritativeInputs` fallback belongs to a lower-level helper interface; it is not the path used by this server composition. Do not claim that a live deployment uses the fallback.
+
+The server is a consumer/verifier of an external signed authority, not the implementation that derives its completeness claim. Its readiness endpoint only indicates that the server started. The inspected repository path does not identify the live configured upstream endpoint or show the upstream producer's obligation inventory/derivation. The signed payload binds Issue and observation context and requires `obligationsComplete = true`, but it has no G1 policy commitment or G1-aware obligation inventory that would establish whether the completeness claim accounts for a fee under the approved G1 policy.
+
+**Next closure step:** identify the actual configured upstream authority service and inspect its implementation/artifact and evidence: how `obligationsComplete` is derived, what `derivationVersion` denotes, and whether the derivation consumes a versioned G1 policy and records the resulting obligation inventory. If that service is external to this repository, document its source and verification evidence; do not guess its URL or infer deployment configuration. The gap is the unproven G1-specific semantic derivation, not absence of signature verification in the inspected server path.
+
+**G1 remains OPEN.** Documentation-only audit; no production code, tests, CI, deployment, V3, or Reveal changed.
