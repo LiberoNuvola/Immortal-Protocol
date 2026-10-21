@@ -1,6 +1,6 @@
 # IMMORTAL / PRE-RICH — Repository-Wide Branch & Evidence Checkpoint
 
-**Source-code tree snapshot (GitHub API):** 2026-10-21; active source HEADs refreshed to green `1300b79d7460f2abcd79767d5d16dd2564aad064` (commit timestamp 17:46:31 UTC), B3 `2778d3e107f45ee15157fff8ef894905a72070ea`, and main `97b09a38742098f17a61eb07734c401aeedccc06`. The all-branch listing and recursive tree responses for green/B3/main were refreshed; all three trees were non-truncated. The checkpoint commit itself is coordination-only and follows this code snapshot.  
+**Pinned recursive-tree census (GitHub API, 2026-10-21; historical baseline, NOT current HEAD):** the manifest baseline used green `1300b79d7460f2abcd79767d5d16dd2564aad064` (commit timestamp 17:46:31 UTC), B3 `2778d3e107f45ee15157fff8ef894905a72070ea`, and main `97b09a38742098f17a61eb07734c401aeedccc06`. The full tree responses for green/B3/main were non-truncated at census time. Section 10.17 records that green subsequently advanced by 14 commits and that the candidate Pyth conversion files were added after the pinned green source anchor. Do NOT use the green census SHA or its file counts as current source state. Later coordination-only commits also advance the green branch tip; those commits do not constitute protocol test evidence. A discrepancy remains between the pinned main SHA and PR #19's reported base SHA; reconcile it before any promotion.  
 **Checkpoint branch:** work/immortal-green-closure  
 **Classification:** coordination/audit record only; not a normative specification, deployment approval, merge authorization, or protocol-semantic decision.
 
@@ -10,7 +10,7 @@ This audit recursively inventoried the Git tree of all **25 existing branches**,
 
 **Coverage limit:** the recursive census is exhaustive for tracked file identity and branch deltas. It is not a claim that every line of every historical file has already received a fresh semantic code review. The branch matrix classifies each ref, while the workstream sections identify what is implemented, what has actually been evidenced, and what remains open. Do not translate “file exists” into “feature proven.”
 
-### Current source anchors
+### Pinned source anchors for the original tree census (not current HEAD)
 
 | Ref | HEAD at snapshot | Commit time (UTC) | Tracked files | Role |
 |---|---|---|---:|---|
