@@ -1,4 +1,5 @@
 name: Materios Genesis Reproduction
+run-name: Materios genesis reproducibility gate
 
 on:
   workflow_dispatch:
@@ -39,20 +40,16 @@ jobs:
         with:
           toolchain: 1.85.0
 
-      - name: Cache Materios Cargo build
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            ${{ runner.temp }}/materios/partnerchain -> target
-
       - name: Build pinned Materios node
-        working-directory: ${{ runner.temp }}/materios/partnerchain
-        run: cargo build --locked --release -p materios-node
-
-      - name: Reproduce genesis hash from pinned chain spec
-        working-directory: ${{ runner.temp }}/materios/partnerchain
         run: |
           set -euo pipefail
+          cd "$RUNNER_TEMP/materios/partnerchain"
+          cargo build --locked --release -p materios-node
+
+      - name: Reproduce genesis hash from pinned chain spec
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/materios/partnerchain"
           ./target/release/materios-node chain-id --chain preprod > "$RUNNER_TEMP/materios-chain-id.json"
           cat "$RUNNER_TEMP/materios-chain-id.json"
           EXPECTED="0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
