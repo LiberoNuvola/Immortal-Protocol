@@ -6,7 +6,7 @@
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
 use cardano/address.{Script}
-use cardano/assets as assets
+use cardano/assets as cardano_assets
 use cardano/assets.{AssetName, PolicyId}
 use cardano/transaction
 use cardano/transaction.{Input, Output, OutputReference, Transaction}
@@ -76,7 +76,7 @@ fn singleton_input_count(
   list.length(
     list.filter(
       inputs,
-      fn(input) { assets.quantity_of(input.output.value, policy, name) == 1 },
+      fn(input) { cardano_assets.quantity_of(input.output.value, policy, name) == 1 },
     ),
   )
 }
