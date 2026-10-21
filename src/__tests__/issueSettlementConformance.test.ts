@@ -6,6 +6,7 @@ import {
   CANONICAL_ORACLE_PRECISION,
   assertCompletedTreasuryAdaSettlement,
   decodeAdaOraclePriceReference,
+  decodeOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
   type AdaOraclePriceReference,
 } from '../issueSettlement'
@@ -50,6 +51,30 @@ describe('Issue settlement conformance', () => {
     expect(decodeAdaOraclePriceReference(datum)).toEqual(adaQuote())
   })
 
+  it('selects ADA and PRE quotes from the additive multi-asset OracleQuoteSet constructor', () => {
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, ['11'.repeat(28), '5052452d52494348', 250n, nowMs - 1_000n, publisher] as any)
+    const quoteSet = new Constr(1, [[ada, pre]] as any)
+    expect(decodeAdaOraclePriceReference(quoteSet)).toEqual(adaQuote())
+    expect(decodeOraclePriceReference(quoteSet, '11'.repeat(28), '5052452d52494348')).toEqual({
+      assetPolicyHex: '11'.repeat(28),
+      assetNameHex: '5052452d52494348',
+      price: 250n,
+      timestampMs: nowMs - 1_000n,
+      publisherPkh: publisher,
+    })
+  })
+
+  it('rejects a quote set with a missing or duplicated requested asset quote', () => {
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre1 = new Constr(0, ['11'.repeat(28), '505245', 250n, nowMs - 1_000n, publisher] as any)
+    const pre2 = new Constr(0, ['11'.repeat(28), '505245', 260n, nowMs - 1_000n, publisher] as any)
+    expect(() => decodeOraclePriceReference(new Constr(1, [[ada]] as any), '11'.repeat(28), '505245'))
+      .toThrow(/exactly one quote/)
+    expect(() => decodeOraclePriceReference(new Constr(1, [[ada, pre1, pre2]] as any), '11'.repeat(28), '505245'))
+      .toThrow(/exactly one quote/)
+  })
+
   it('rejects malformed OracleDatum structure or field types', () => {
     expect(() => decodeAdaOraclePriceReference(new Constr(1, ['', '', 100n, nowMs, publisher] as any)))
       .toThrow(/constructor/)
@@ -87,7 +112,7 @@ describe('Issue settlement conformance', () => {
       CANONICAL_ORACLE_PRECISION).toBeGreaterThan(100n)
   })
 
-  it('rejects a quote for a non-ADA asset until multi-asset Oracle coverage is implemented', () => {
+  it('rejects non-ADA quote in the still ADA-only settlement amount builder', () => {
     expect(() => deriveAdaIssueSettlementLovelace({
       targetUsdmSubunits: 100n,
       quote: adaQuote({ assetPolicyHex: '11'.repeat(28), assetNameHex: '505245' }),
