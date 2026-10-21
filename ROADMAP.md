@@ -71,9 +71,11 @@ Additional applications may specialize IMMORTAL with their own economic policy, 
 - [ ] Final repository-wide SPDX/provenance audit
 - [ ] Public contribution workflow hardened
   - [x] Non-normative evidence-gated workflow proposal drafted: `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`
+  - [x] GitHub Auto-merge integration plan and challenge-disposition lifecycle drafted: `docs/04-guides/GITHUB-AUTO-MERGE-INTEGRATION.md`
+  - [x] Extend `audit/algorithmic-governability` with adversarial contribution-acceptance and Auto-merge precondition cases; Workflow B run 388 passed
   - [ ] Review and adopt response windows, challenge categories, and conflict-of-interest handling
-  - [ ] Extend `audit/algorithmic-governability` with adversarial contribution-acceptance cases
-  - [ ] Implement and verify any agreed PR status/check automation
+  - [ ] Enable and verify repository Auto-merge / branch rules / required checks (Auto-merge is currently disabled)
+  - [ ] Implement and verify a live PR status/check gate
   - [ ] Validate the process on representative PRs before marking this item complete
 - [ ] Reproducible release process
 
