@@ -207,3 +207,32 @@ The Issue UI now has an explicit settlement-asset selector. It does not assume t
 The exact-head Plutus compilation/export, the quote-set vector executed by the intended Plutus artifacts, predeploy structural gate, serialized script/transaction sizes, and a native-ledger execution of a real basket remain unproven by the above completed UI/TypeScript workflow. The live Preprod Oracle singleton was not rewritten, no script was redeployed, no wallet transaction was signed/submitted, and no ticket was created. The UI option is a guarded construction surface, not evidence that a selected asset is currently enabled on Preprod.
 
 The publisher remains the existing oracle trust boundary. This work does not establish fully permissionless market-price production and does not change the direct-USDM EEV perimeter: ADA/PRE/NIGHT settlement acceptance does not make those assets eligible as `VerifiedUSDM` in the B1 PrizePool profile. The giant PR #19 remains unmerged and should not be merged wholesale.
+
+
+## 2026-10-21 follow-up — DApp permits explicitly composed settlement baskets
+
+**Implementation head:** `2f82743741e451fb8e6c03f228d2378c7c2e5b21`.
+
+The Issue UI has progressed from a one-asset chooser to explicit user-entered quantities for all currently wallet-held assets whose exact quotes are present in the authenticated Oracle State datum. The buyer, not a heuristic, chooses the basket amounts.
+
+- The selector reads the configured singleton and wallet UTxOs; it lists an asset only when its exact quote is unique, fresh under the existing one-hour source window, publisher-matched, and positive. Since every Treasury output must carry ADA min-UTxO, a valid ADA quote is mandatory even for token-only economic contributions.
+- The buyer may enter whole integer ledger units for ADA-above-min-UTxO and/or multiple token assets. No token-decimal metadata is inferred; the UI states that token quantities are raw ledger units. Blank or zero token quantities are omitted.
+- The application calls the existing basket builder, which mirrors the unchanged per-asset `ceilingDiv` conversion and rejects all quantities unless the aggregate integer USDM result is exactly the selected ticket price. It also checks per-asset wallet balance and ADA min-UTxO funding.
+- Only an exact basket enables the Issue button. The selected quantities are snapshotted before the admission request. After Lucid balances and completes the transaction, the whole Treasury `Value` is compared against the prevalidated basket before the Cardano adapter may sign or submit. The Plutus `MintPolicy` equality check remains authoritative.
+- This is a manual quantity editor, not a price-allocation algorithm. It does not split the ticket price between assets or decide a basket on the buyer's behalf.
+
+### Exact-head evidence
+
+- [Cardano Adapter Sale Conformance #4194](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321049) — **success** on this head; settlement tests and frontend build passed.
+- [Protocol Declaration Conformance #3000](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321004) — **success**.
+- [PRE-RICH Action Refinement Conformance #307](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321132) — was running at the last status check.
+- [IMMORTAL Portability Conformance #1795](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321288) and [Governability #4159](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321017) — were running at the last status check.
+- [Security Credential Boundary #638](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321092) and [Documentation Link Check #1859](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321076) — **success**.
+- [PRE-RICH B2 Control Carrier Conformance #425](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321091) — still in canonical Plutus toolchain setup.
+- [IMMORTAL Cardano Integration Lab #1998](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590321405) — queued/pending at the last status check.
+
+### Release limit remains unchanged
+
+Even if every frontend test passes, the live Oracle State UTxO still needs to be inspected to learn whether it actually contains the additive quote-set constructor and unique valid ADA/token records. No active Oracle UTxO or validator was updated. Exact-head Plutus compile/export, quote-set execution by compiled validators, the predeploy structural gate, generated script hash/size review, real native-ledger basket acceptance and ledger reconciliation remain unproven. This commit is a code-only change: no wallet transaction was signed or submitted and no ticket was issued.
+
+The quote set remains validated under the existing configured publisher/freshness trust model; it does not itself make price production permissionless. The EEV boundary remains USDM physically present in the qualified B1 PrizePool UTxO. Accepting an asset as payment does not qualify it as EEV. PR #19 remains a 1,600+ commit / hundreds-of-files integration branch and must not be merged wholesale.

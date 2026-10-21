@@ -99,3 +99,24 @@ Exact-head bounded results on the commit above:
 - PRE-RICH B2 Conformance #424 and the full IMMORTAL Cardano Integration Lab #1997 were still in Plutus toolchain setup when checked. No exact-head completion was observed.
 
 Therefore the DApp implementation slice has TypeScript/build conformance, but the quote-set schema and resulting scripts are still **not release-certified**. Native Plutus compile/export, actual compiled artifact hash/size audit, quote-set ledger execution, predeploy gate, current Preprod datum identity/contents and a wallet-signed transaction are outstanding. No oracle UTxO or deployed script was modified by this code-only work. Do not label this as enabled multi-asset settlement on live Preprod or as completion of the trustless/permissionless goal.
+
+
+## 6.3 DApp now accepts an explicitly composed basket — 2026-10-21
+
+Implementation head: `2f82743741e451fb8e6c03f228d2378c7c2e5b21`.
+
+The Issue UI now has an explicit quantity field for each currently wallet-held, uniquely quoted asset. A user can enter ADA economic lovelace and/or quantities of multiple quoted token assets without the application inventing an allocation rule. Token amounts are interpreted as whole raw ledger units because token-decimal metadata is not used to infer quantities.
+
+The application basket preflight:
+- requires a current configured singleton quote for ADA because the Treasury output includes the minimum-UTxO ADA value;
+- rejects missing/duplicate target quote identities, stale/future quote timestamps, publisher mismatch and non-positive selected asset prices;
+- checks each selected quantity against the observed wallet balance and checks ADA can fund the output's minimum amount plus any entered economic ADA;
+- uses the existing integer conversion and requires exact equality with the ticket price, with no tolerance/haircut introduced;
+- snapshots the selected quantity map before requesting authoritative Issue admission; and
+- inspects the whole completed Treasury value before the adapter can sign/submit.
+
+The on-chain `MintPolicy` and `Economic.totalUsdmValue` remain authoritative; the UI/preflight is not the ledger proof. The schema remains additive with legacy constructor 0 unchanged, while constructor 1 supplies the quotes needed for multiple payment assets.
+
+Latest exact-head bounded evidence: Cardano Adapter Sale Conformance #4194 passed (settlement tests plus frontend build), Protocol Declaration #3000 passed, Security Credential Boundary #638 passed, and Documentation Link Check #1859 passed. PRE-RICH Action Refinement #307, IMMORTAL Portability #1795, Governability #4159 and B2 Conformance #425 were still in progress during the last status check, while Integration Lab #1998 was queued/pending.
+
+The compiled Plutus quote-set path, real native-ledger basket, predeploy structural gate, active Preprod quote-set datum, script resource footprint and end-to-end wallet Issue are still not certified. No live singleton or script was updated by this UI change, and no real ticket was emitted. The quote publisher remains a trust assumption; this does not substantiate full permissionlessness. The EEV perimeter is unchanged.
