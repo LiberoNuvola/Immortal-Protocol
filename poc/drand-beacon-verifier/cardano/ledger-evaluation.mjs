@@ -257,7 +257,7 @@ try {
     'Does not establish Preprod/mainnet execution-unit headroom without recording and validating their active protocol parameters.',
     'Does not integrate the validator into PRE-RICH.',
   ]
-  await writeFile(OUT, JSON.stringify(evidence, null, 2) + '\n')
+  await writeFile(OUT, JSON.stringify(evidence, (_key, value) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n')
   console.log(JSON.stringify({
     status: evidence.status,
     evidencePath: OUT,
@@ -269,6 +269,6 @@ try {
 } catch (error) {
   evidence.status = 'FAIL'
   evidence.failure = String(error)
-  await writeFile(OUT, JSON.stringify(evidence, null, 2) + '\n')
+  await writeFile(OUT, JSON.stringify(evidence, (_key, value) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n')
   throw error
 }
