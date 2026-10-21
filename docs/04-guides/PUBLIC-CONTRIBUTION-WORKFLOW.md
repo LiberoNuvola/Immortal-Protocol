@@ -3,7 +3,7 @@
 **Status:** NON-NORMATIVE / PROCESS PROPOSAL  
 **Version:** 0.2-draft  
 **Date:** 2026-10-21  
-**Related:** `CONTRIBUTING.md` · `ROADMAP.md` · Constitution §§10, 12 · `audit/algorithmic-governability/` · GOV-* evidence and replay documents
+**Related:** `CONTRIBUTING.md` · `ROADMAP.md` · [`GITHUB-AUTO-MERGE-INTEGRATION.md`](GITHUB-AUTO-MERGE-INTEGRATION.md) · Constitution §§10, 12 · `audit/algorithmic-governability/` · GOV-* evidence and replay documents
 
 > This guide proposes a public process. It does not create protocol semantics, economic authority, a right to bypass mandatory checks, or an automatic merge mechanism. It remains a draft until explicitly adopted and implemented.
 
