@@ -395,6 +395,50 @@ export function buildIssueSettlementAssets(
   return outputAssets
 }
 
+/**
+ * Derive a finite transaction validity deadline from the quote set actually
+ * used to value the expected Treasury output.
+ *
+ * Economic.validOracleTimestamp validates each selected quote against the
+ * transaction validity upper bound, not the local frontend clock. The Issue
+ * body must therefore carry a finite TTL no later than the earliest quote's
+ * existing timestamp + maxOracleAge. This adds no new freshness horizon.
+ */
+export function deriveIssueSettlementValidityUpperBoundMs(request: {
+  treasuryAssets: Readonly<Record<string, bigint>>
+  oracleDatum: unknown
+  expectedPublisherPkh: string
+  nowMs: bigint
+}): bigint {
+  const { treasuryAssets, oracleDatum, expectedPublisherPkh, nowMs } = request
+  if (nowMs < 0n) throw new Error('Current time must be non-negative')
+
+  const entries = Object.entries(treasuryAssets)
+  if (entries.length === 0) throw new Error('Treasury settlement asset map cannot be empty')
+
+  const quotes = decodeOraclePriceReferences(oracleDatum)
+  let earliestDeadline: bigint | null = null
+  for (const [rawUnit, quantity] of entries) {
+    const unit = rawUnit.toLowerCase()
+    if (typeof quantity !== 'bigint' || quantity <= 0n) {
+      throw new Error(`Treasury settlement quantity for ${unit} must be positive`)
+    }
+    const quote = oracleQuoteForUnit(quotes, unit, expectedPublisherPkh, nowMs)
+    const deadline = quote.timestampMs + CANONICAL_ORACLE_MAX_AGE_MS
+    if (deadline <= nowMs) {
+      throw new Error('Issue settlement quote has no future transaction-validity window')
+    }
+    if (earliestDeadline === null || deadline < earliestDeadline) {
+      earliestDeadline = deadline
+    }
+  }
+
+  if (earliestDeadline === null) {
+    throw new Error('Issue settlement validity deadline could not be derived')
+  }
+  return earliestDeadline
+}
+
 export type DeriveSingleAssetIssueSettlementRequest = {
   targetUsdmSubunits: bigint
   /** Cardano unit: 'lovelace' or policyIdHex + assetNameHex. */
