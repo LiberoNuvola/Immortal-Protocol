@@ -119,3 +119,26 @@ The next acquisition attempt is justified only when one of these concrete condit
 The source remains an untrusted transport. Any bytes obtained must still pass IMMORTAL's independent verifier, including genesis-rooted authority provenance and the Materios-specific runtime/input/execution-proof boundary. A recent valid GRANDPA proof alone does not close the historical activation-transition gate. If neither source becomes available, the next decision is a separate architecture decision about what proof of finality can be obtained from the existing public data—not another speculative endpoint or a weakened trust model.
 
 **B3-A remains OPEN. B3-B receipt/storage evidence remains usable within its stated scope. No V3, Reveal, economics, or Materios selector semantics are changed.**
+
+
+## New upstream correctness risk: historical Preprod v6 selector reproducibility — 2026-10-21
+
+A review of the official Materios repository identified a separate issue from proof-byte acquisition:
+
+- [Materios issue #105](https://github.com/Flux-Point-Studios/materios/issues/105) remains **OPEN**. It documents that Preprod v6's historical committee draws can query Cardano epoch E while E is still current, so the db-sync result moves with each node's tip. A later replay against E's final state can yield a different committee and fail `InvalidValidatorsHashMismatch`.
+- The issue explicitly says **no replay of v6 history against db-sync was run** and no specific failing block is known. This is therefore a material, evidence-backed risk hypothesis—not proof that any particular B3 target is invalid or unverifiable.
+- [PR #100](https://github.com/Flux-Point-Studios/materios/pull/100) was merged on 2026-10-21 and leaves the v6 relaxation permanently selected by the pinned genesis hash. It does not introduce an automatic date-based switch to the strict rule.
+- [Issue #109](https://github.com/Flux-Point-Studios/materios/issues/109) remains **OPEN** and proposes a future opt-in chain-state switch to the strict Ariadne rule. It requires a coordinated rollout and a freeze of committee inputs; it is not an available deployed fix and is not itself a historical proof source.
+
+### B3-A impact
+
+Treat this as a second, independent gate alongside GRANDPA witness acquisition:
+
+1. Obtaining a raw FRNK justification proves neither that the historical selector inputs are reproducible nor that the Materios-specific transition proof is complete.
+2. A retrospective execution of the selector against the final state of a Cardano epoch must not be assumed equivalent to the data the block's author actually observed while that epoch was still changing.
+3. The B3-A verifier needs target-specific evidence binding the selector result to authenticated inputs/commitments and the exact runtime/activation block. Any proposed replay path must show that it reconstructs the historical observation, not silently substitute the present or final epoch state.
+4. The pinned target used by IMMORTAL (block 1,856,408, hash `0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e`) has **not** been classified by the evidence reviewed here as affected or unaffected by #105.
+
+**Required classification until target-specific evidence exists:** `HISTORICAL_SELECTOR_REPRODUCIBILITY_UNVERIFIED`.
+
+This finding does not justify weakening GRANDPA verification, replacing the genesis trust anchor, changing Materios selector semantics, or reopening Materios issue #50. It means the exact historical-input binding must be evaluated in addition to finding a transport that can supply raw justification bytes.
