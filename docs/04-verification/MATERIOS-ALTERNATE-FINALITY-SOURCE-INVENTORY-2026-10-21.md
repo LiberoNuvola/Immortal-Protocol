@@ -23,6 +23,21 @@ The current operational constraint is unchanged: IMMORTAL has no Materios node a
 | Materios receipt / Cardano L1 anchor data | Existing B3-B receipt lineage and independently verified storage-inclusion evidence | **USEFUL, BUT A DIFFERENT CLAIM** | Receipt availability, Cardano anchor inclusion and trie membership are distinct from Materios GRANDPA finality and authority-set provenance. Preserve these results as B3-B/evidence lineage without upgrading them to B3-A. |
 | drand | Existing isolated randomness PoC | **B3-D RANDOMNESS ONLY** | A beacon output does not certify that a particular Materios block was finalized or authenticate a Materios authority transition. |
 
+## Latest live discovery confirmation — public Gateway + WebSocket
+
+The later read-only [Materios WebSocket GRANDPA Probe run #39593013066](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39593013066) independently queried the two public peer-discovery routes:
+
+- `https://materios.fluxpointstudios.com/chain-info`
+- `https://materios.fluxpointstudios.com/preprod-blobs/chain-info`
+
+Both returned HTTP 200 and the same response SHA-256, `d0ab3269279ba779341f7aa51a31b0c576a7b83d5c280a24b68182470eb0c8d6`. Both listed the same **single** bootnode, `/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM`; unique bootnode count was 1. The response reported genesis `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`, runtime spec version 242, best block 2,382,058 and finalized block 2,382,056. Those heights remain untrusted gateway observations, not finality evidence.
+
+Over the same WebSocket run, `rpc_methods` returned 85 methods but did not list `grandpa_proveFinality`, `grandpa_subscribeJustifications`, or `grandpa_unsubscribeJustifications`. Direct calls to the first two returned JSON-RPC `-32601 Method not found`. `chain_getBlock` at the reported head had `justifications: null`. No raw GRANDPA payload was captured.
+
+Immutable artifact: `materios-websocket-grandpa-probe-39593013066-1`, ID `12341638901`, ZIP SHA-256 `71d05518456821fcaf342a7f78bd46907aec1ffea325d803ed25cf7449037b42`.
+
+**Result:** the gateway's published peer-discovery metadata does not reveal another public peer candidate, and its public RPC still does not supply the missing finality witness. This is positive evidence of the currently published surface, not proof that a private or undocumented service does not exist.
+
 ## Evidence references already in the repository
 
 - [Frozen finality-source decision](MATERIOS-FINALITY-PROOF-SOURCE-DECISION-2026-10-21.md)
