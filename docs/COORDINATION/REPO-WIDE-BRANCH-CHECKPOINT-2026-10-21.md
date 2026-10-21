@@ -137,13 +137,13 @@ For each conflict, compare source and target blob hashes, inspect the diff and r
 **Target:** work/immortal-green-closure.  
 Workflow C is the Notion spec “Workflow C — IMMORTAL V2 Autonomous Verification & Execution v0.1,” explicitly **DESIGN / RECONCILIATION ONLY — OPEN**. It is not a single GitHub Actions workflow with a formal branch destination. Green is its working reconciliation reference, not merge authorization.
 
-JEV is **INCONCLUSIVE** until one unattended cycle is observed: prompt retrieval → bounded execution or safe decline → result registration with exact run/commit → next scheduled cycle consumes the latest prompt and records its own result without a user message. Run [39201592387](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201592387), attempt 2, failed prompt generation with ENOENT; separate evidence registration cannot claim the full loop.
+JEV is **INCONCLUSIVE** until one unattended cycle is observed: prompt retrieval → bounded execution or safe decline → result registration with exact run/commit → next scheduled cycle consumes the latest prompt and records its own result without a user message. Older run [39201592387](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201592387), attempt 2, failed prompt generation with ENOENT. Later run #2027 on source HEAD b68c1bd5... successfully executed the prompt generator/test and Notion registration steps, but the overall lab was cancelled before completing its integration gates; this does not demonstrate the next scheduled unattended iteration.
 
 **Next:** check whether freshness-guard candidate 05bee2e4a0fafe00568b08dc963e5b287196d2f1 is present and tested on current green HEAD; reconcile with ingress provenance fix 765af53acec61746af0dc9117db93bbe8bbffe77; run focused tests and one completed workflow, then observe the next scheduled unattended iteration. No autonomy claim from setup, upload, or user-triggered execution.
 
 ### W5 — P2.8 native Cardano runner / integration lab
 **Target:** work/immortal-green-closure.  
-Sources exist: audit/cardano-ledger-runner/Main.hs, TypedPacketDecode.hs, audit/cardano-integration/materialize-p28-ledger-context.mjs and a dedicated workflow. Prior investigation found Conway PParams normalization missing; commit 68cccb4b421d3d776469567afb99027eabc024f6 addressed that area. Run 39201592387 attempt 2 failed in JEV prompt generation, so it is not evidence that every P2.8 stage passed on current HEAD.
+Sources exist: audit/cardano-ledger-runner/Main.hs, TypedPacketDecode.hs, audit/cardano-integration/materialize-p28-ledger-context.mjs and a dedicated workflow. Prior investigation found Conway PParams normalization missing; commit 68cccb4b421d3d776469567afb99027eabc024f6 addressed that area. The later integration run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) was cancelled while waiting for Yaci Store; the Claim candidate build also failed, and raw-context materialization, typed decoding and the P2.8 evidence gate were skipped. No current-head P2.8 pass is established.
 
 **Next:** classify the first failing step from the latest completed current-head lab run. Keep SAFE_STALL when no real transaction packet exists. Raw context capture is not typed decoder success. Mark evidence as fixture, local Yaci ledger, Preprod or mainnet explicitly. Do not touch V3 or Reveal semantics to make a gate pass.
 
@@ -165,7 +165,7 @@ The workflow file workflow-b-boundary-conformance.yml is present on B3. Run #406
 
 **PR #35:** [draft bootstrap](https://github.com/LiberoNuvola/Immortal-Protocol/pull/35), head branch merge/workflow-b-closed-main, SHA 7bca8d91b65d7af1261d8b7cc4f28f496a73fcba. **Keep in draft.** Its merge guard requires governance control-plane review, deliberate main branch-protection setup and later trusted-base evaluation. The PR also changes the V3 carrier mint-policy source/compiled identity for future deployments; it is not merely documentation/CI. Supporting harness tests are not equivalent to a completed end-to-end ledger proof.
 
-**Next:** review exact 14-path diff and trusted-base preflight; verify exact-head lab run 39591157626 and invalid-case results; reconsider only after governance review and named required checks have actually been configured.
+**Observed PR lab result:** run [#2005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39591157626) passed the native V3 carrier step but failed at the real economic Reveal transition; P2.8 decoder/evidence steps were skipped. This is a failure of the scoped candidate run, not permission to alter Reveal semantics. **Next:** review the exact 14-path diff and trusted-base preflight, investigate the failing run within existing non-regression boundaries, and reconsider the PR only after governance review and named required checks are configured.
 
 ### W9 — Workflow C universal profile, paper and portability
 **Target:** work/immortal-green-closure.  
@@ -213,6 +213,8 @@ Paper Tranche 1 is **NOT READY TO SUBMIT**: P3 reproducibility/release snapshot,
 - EEV approval run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679): success at main SHA 97b09a...; must be re-bound to exact live qualified UTxOs and candidate first-Issue transaction.
 - Paper controlled-rejection run [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498): bounded unit tests only; not native Reveal proof.
 - P2.8/JEV run [39201592387](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201592387), attempt 2: failed prompt generation (ENOENT); not a current-head P2.8 pass.
+
+Follow-up to the queue snapshot: run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) ended **cancelled** at Yaci Store readiness; the Claim candidate build failed, while P2.8 steps were skipped. PR #35 integration run [#2005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39591157626) passed native V3 carrier but failed the real economic Reveal transition; its P2.8 steps were skipped. JEV prompt-generation and Notion registration steps succeeded on #2027, but the unattended next-cycle condition remains unproven.
 
 Re-fetch the latest run before using any status in a new decision. These entries are a time-stamped evidence ledger; statuses may change.
 
