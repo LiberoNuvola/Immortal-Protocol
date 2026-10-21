@@ -24,9 +24,11 @@ Source links:
 
 ## Candidate chain identity
 
-The pinned runtime source declares the following constant as the Materios preprod genesis hash:
+Expected live genesis hash, from the dated public observation and later re-observation:
 
-`0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+`0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`
+
+**Important source distinction:** at the pinned revision `f1c8b400a229258298236d9337247135b6c1112e`, the runtime binds `IntentSettlementMateriosChainId` dynamically to `frame_system::BlockHash::<Runtime>::get(0)`; that revision does not hard-code the above hash as a runtime constant. An earlier runtime-source candidate (`011473c88ef82fad3d4877af8d89a5b52abf235f`) contains the literal live-chain identity, but that later runtime source claim does not prove which source and WASM bytes created genesis.
 
 The pinned preprod chain-spec source declares:
 
@@ -35,7 +37,7 @@ The pinned preprod chain-spec source declares:
 - protocol ID: `materios-preprod-v6`
 - chain type: `Live`
 
-These values are source claims at the pinned revision. Before they become an accepted IMMORTAL trust anchor, an independent reproducible build must derive the chain-spec genesis hash and match it byte-for-byte to the runtime constant, and an independently queried live genesis hash must match too. The live RPC response is a cross-check, not the sole trust source.
+These are source claims, not by themselves a live-chain trust anchor. Acceptance requires a pinned, reproducible runtime blob, a source-derived chain spec that reconstructs the expected genesis hash, and a live RPC hash match. The gateway's `chain-info` route uses the configured RPC and therefore is not an independent second observer. The published raw spec reconstructs the live hash in run #17, but its host is not an independent provenance authority; the raw-spec digest and original runtime-code digest are recorded in the workflow evidence.
 
 ## Candidate genesis GRANDPA authority set
 
