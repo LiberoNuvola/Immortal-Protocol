@@ -83,3 +83,19 @@ Before promotion, in addition to the original requirements above:
 - Re-export every dependent Plutus artifact because `Economic` is shared by several validators/policies. Record hashes and serialized sizes for every changed artifact; reject promotion if any transaction exceeds the protocol's 16,384-byte limit or relies on an unverified replacement for the existing Reveal reference-script path.
 - Establish how the live singleton datum would be updated and signed, with a before/after UTxO trace and a rollback/recovery plan. No automatic update/deployment is authorized by this branch patch.
 - Exercise basket payment on a local native ledger with the newly built artifacts before any wallet-driven Preprod Issue. The actual on-chain `MintPolicy` equality remains final; passing the off-chain amount builder is not ledger acceptance.
+
+
+## 6.2 DApp settlement selector and current evidence — 2026-10-21
+
+Implementation head: `0754de3c9f8677ad485f55dfac52f16bcc2cf1eb`.
+
+The actual PRE-RICH Issue consumer now exposes a settlement-asset selector, based on the unique configured Oracle State singleton and the connected wallet's observed UTxOs. It offers a single economic payment asset at a time, and only if the selected ticket price has an exact integer-valued conversion under the current quote data and the wallet has sufficient quantity. Every non-ADA choice requires a matching ADA quote because the completed Treasury output also carries ADA for min-UTxO. The selected amount is passed into the mint builder, which performs a second preflight value calculation and verifies the full completed Treasury Value before signing/submission. The on-chain MintPolicy equality predicate remains authoritative.
+
+This is **not** a mixed-basket DApp. The lower-level builder can validate mixed quantities but there is no governed buyer-allocation rule or UI for choosing the composition; this implementation does not invent one. It also does not create quote records. A token can only be offered when the active, authenticated Oracle State datum already contains exactly one eligible quote for that token and one for ADA. The current single-quote legacy datum supports only its one quoted asset; using constructor 1 is a separate data-state requirement.
+
+Exact-head bounded results on the commit above:
+- Cardano Adapter Sale Conformance #4192 passed (settlement vectors plus frontend build): https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231864
+- Protocol Declaration #2998, PRE-RICH Action Refinement #306, Portability #1793, Governability #4157 and Documentation Link Check #1857 passed at the same head.
+- PRE-RICH B2 Conformance #424 and the full IMMORTAL Cardano Integration Lab #1997 were still in Plutus toolchain setup when checked. No exact-head completion was observed.
+
+Therefore the DApp implementation slice has TypeScript/build conformance, but the quote-set schema and resulting scripts are still **not release-certified**. Native Plutus compile/export, actual compiled artifact hash/size audit, quote-set ledger execution, predeploy gate, current Preprod datum identity/contents and a wallet-signed transaction are outstanding. No oracle UTxO or deployed script was modified by this code-only work. Do not label this as enabled multi-asset settlement on live Preprod or as completion of the trustless/permissionless goal.

@@ -179,3 +179,31 @@ The earlier statement that the builder remained strictly ADA-only is superseded 
 **Limits remain material:** this is not yet a released DApp experience. The buyer UI has not been shown to supply or optimize asset baskets; the active Preprod Oracle State UTxO has not been updated/verified as the new quote-set constructor; the quote publisher remains an existing trust boundary; and the new Haskell sources/scripts have not yet passed a completed full compile/export/integration run at this checkpoint. Changes to `Economic` affect script artifacts/hashes and must be measured against the 16,384-byte transaction limit before deployment. The new helper does not broaden the direct-USDM EEV perimeter.
 
 No real Issue transaction was built, signed, submitted or reconciled; no deployed Oracle datum, validator, V3 or Reveal semantics were changed. Main remains unchanged.
+
+
+## 2026-10-21 follow-up — DApp exposes an authenticated single-asset settlement choice
+
+**Implementation head:** `0754de3c9f8677ad485f55dfac52f16bcc2cf1eb` on `work/immortal-green-closure`.
+
+The Issue UI now has an explicit settlement-asset selector. It does not assume that the USDM accounting unit is the required payment token.
+
+- On wallet connection and on ticket-class changes, the DApp reads the unique configured Oracle State singleton and the currently connected wallet's UTxOs.
+- It derives options only from wallet-held assets having exactly one matching quote under the current Oracle datum, configured publisher, freshness checks and an integer quantity that reproduces the selected `pdPriceUsdm` target using the canonical conversion. For non-ADA payment it additionally requires the ADA quote for the Treasury output's min-UTxO component.
+- The buyer must select an option explicitly. The selected unit/quantity flows to `mintSerialNFTWithAuthoritativeAdmission` as `settlementAssetQuantities`. The completed Lucid transaction is checked against the full expected Treasury `Value` before the adapter can sign or submit it; the Plutus equality predicate is still the final authority.
+- The UI presently constructs **single-asset economic payment choices** (ADA or one quoted token), not a buyer-composed mixed basket. The lower-level amount builder validates mixed baskets, but the DApp does not invent an allocation/splitting rule to compose one. Any future basket UI needs a separately specified allocation interaction and must continue to require exact ledger-side equality.
+- This interface can only offer assets that the active Oracle singleton datum actually quotes. A legacy single-quote datum will not magically enable PRE/NIGHT; a quote set containing only token quotes but no ADA quote cannot support an output that carries ADA min-UTxO. Unsupported, duplicate, stale or mismatched quotes cause options to be omitted and Issue stays disabled unless the buyer selects a valid available option.
+
+### Exact-head evidence
+
+- [Cardano Adapter Sale Conformance #4192](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231864) — **success** on the implementation head; both the settlement conformance tests and frontend build passed.
+- [Protocol Declaration Conformance #2998](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231841) — **success**.
+- [PRE-RICH Action Refinement Conformance #306](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231851) — **success**.
+- [IMMORTAL Portability Conformance #1793](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231961) — **success**.
+- [Algorithmic Governability Adversarial Lab #4157](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231821) and [Documentation Link Check #1857](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231802) — **success**.
+- [PRE-RICH B2 Control Carrier Conformance #424](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231828) and [IMMORTAL Cardano Integration Lab #1997](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39589231840) — still in progress at the last inspection, both in canonical Plutus toolchain setup with no recorded failing step.
+
+### Still not certified
+
+The exact-head Plutus compilation/export, the quote-set vector executed by the intended Plutus artifacts, predeploy structural gate, serialized script/transaction sizes, and a native-ledger execution of a real basket remain unproven by the above completed UI/TypeScript workflow. The live Preprod Oracle singleton was not rewritten, no script was redeployed, no wallet transaction was signed/submitted, and no ticket was created. The UI option is a guarded construction surface, not evidence that a selected asset is currently enabled on Preprod.
+
+The publisher remains the existing oracle trust boundary. This work does not establish fully permissionless market-price production and does not change the direct-USDM EEV perimeter: ADA/PRE/NIGHT settlement acceptance does not make those assets eligible as `VerifiedUSDM` in the B1 PrizePool profile. The giant PR #19 remains unmerged and should not be merged wholesale.
