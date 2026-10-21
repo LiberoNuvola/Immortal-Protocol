@@ -7,7 +7,7 @@
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { MateriosRpc } from "./rpc.js";
@@ -190,14 +190,23 @@ async function main(): Promise<void> {
       console.log(`${catalogue.targets[name].toUpperCase()}: ${name}`);
     }
   } else {
-    console.log("Catalogue result:", catalogue.message ?? catalogue.reason);
+    const diagnostic =
+      "message" in catalogue
+        ? catalogue.message
+        : "reason" in catalogue
+          ? catalogue.reason
+          : "unknown";
+    console.log("Catalogue result:", diagnostic);
     console.log("Target method status: UNKNOWN (no catalogue)");
   }
   console.log("Wrote:", outPath);
   console.log("Scope: method availability only; no proof verified.");
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
+if (invokedPath === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}
