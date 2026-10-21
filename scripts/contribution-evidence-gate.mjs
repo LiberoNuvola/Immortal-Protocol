@@ -98,30 +98,30 @@ const parseLayer = (value) => {
 const parseClasses = (value) => {
   if (typeof value !== 'string') return null
   const normalized = value.trim().toUpperCase()
-  if (!/^[A-E](?:\\s*(?:,|\\+)\\s*[A-E])*$/.test(normalized)) return null
+  if (!/^[A-E](?:\s*(?:,|\+)\s*[A-E])*$/.test(normalized)) return null
   return [...new Set(normalized.match(/[A-E]/g))]
 }
 
 const isTestPath = (path) =>
-  /(^|\\/)(?:__tests__|tests?|test-vectors|test_vectors|conformance|fixtures|vectors)(\\/|$)/i.test(path) ||
-  /\\.(?:test|spec)\\.[a-z0-9]+$/i.test(path)
+  /(^|\/)(?:__tests__|tests?|test-vectors|test_vectors|conformance|fixtures|vectors)(\/|$)/i.test(path) ||
+  /\.(?:test|spec)\.[a-z0-9]+$/i.test(path)
 
 const isEligiblePathForClass = (path, klass) => {
-  const markdown = /\\.(?:md|mdx)$/i.test(path)
+  const markdown = /\.(?:md|mdx)$/i.test(path)
   switch (klass) {
     case 'A':
       return markdown
     case 'B':
-      return (/^audit\\/(?!algorithmic-governability\\/).+\\.(?:mjs|cjs|js|ts|tsx|py|sh|json|ya?ml|md)$/i.test(path) ||
-        /^scripts\\/(?!contribution-evidence-gate\\.mjs$).+\\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
+      return (/^audit\/(?!algorithmic-governability\/).+\.(?:mjs|cjs|js|ts|tsx|py|sh|json|ya?ml|md)$/i.test(path) ||
+        /^scripts\/(?!contribution-evidence-gate\.mjs$).+\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
     case 'C':
       return isTestPath(path)
     case 'D':
-      return /^(?:CONTRIBUTING|ROADMAP)\\.md$/i.test(path) ||
-        /^docs\\/04-guides\\/.+\\.mdx?$/i.test(path) ||
-        /^\\.github\\/(?:ISSUE_TEMPLATE\\/|PULL_REQUEST_TEMPLATE\\.md$)/i.test(path)
+      return /^(?:CONTRIBUTING|ROADMAP)\.md$/i.test(path) ||
+        /^docs\/04-guides\/.+\.mdx?$/i.test(path) ||
+        /^\.github\/(?:ISSUE_TEMPLATE\/|PULL_REQUEST_TEMPLATE\.md$)/i.test(path)
     case 'E':
-      return /(^|\\/)(?:RESIDUAL[_-]OBLIGATION(?:[_-]REGISTER)?|residual-obligations?)[^/]*\\.(?:md|json|ya?ml)$/i.test(path)
+      return /(^|\/)(?:RESIDUAL[_-]OBLIGATION(?:[_-]REGISTER)?|residual-obligations?)[^/]*\.(?:md|json|ya?ml)$/i.test(path)
     default:
       return false
   }
@@ -208,20 +208,21 @@ const emitResult = async (result) => {
     '',
     '**Decision:** ' + result.decision,
     '',
-    'Head commit: `' + (result.headSha ?? 'unknown') + '`',
+    'Head commit: ' + (result.headSha ?? 'unknown'),
     '',
     ...result.reasons.map((reason) => '- ' + reason),
     '',
     '## Changed files',
-    ...result.files.map((file) => '- `' + file + '`'),
+    ...result.files.map((file) => '- ' + file),
   ]
   if (result.controlFiles?.length) {
-    lines.push('', '## Stronger-review paths', ...result.controlFiles.map((file) => '- `' + file + '`'))
+    lines.push('', '## Stronger-review paths', ...result.controlFiles.map((file) => '- ' + file))
+  }
+  if (result.incompatibleFiles?.length) {
+    lines.push('', '## Paths outside declared class scope', ...result.incompatibleFiles.map((file) => '- ' + file))
   }
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
-  if (summaryPath) {
-    import('node:fs/promises').then(({ appendFile }) => appendFile(summaryPath, lines.join('\n') + '\n'))
-  }
+  if (summaryPath) await appendFile(summaryPath, lines.join('\n') + '\n')
   for (const line of lines) console.log(line)
 }
 
@@ -385,13 +386,13 @@ const main = async () => {
   if (!result.eligible) process.exitCode = 1
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error('FAIL-CLOSED: contribution evidence gate could not complete:', error?.message ?? error)
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
   if (summaryPath) {
-    import('node:fs/promises').then(({ appendFile }) => appendFile(summaryPath,
+    await appendFile(summaryPath,
       '# Contribution evidence gate\n\n**Decision:** FAIL_CLOSED\n\n' +
-      String(error?.message ?? error) + '\n'))
+      String(error?.message ?? error) + '\n')
   }
   process.exitCode = 1
 })
