@@ -85,3 +85,18 @@ The probe validator calls `pyth.get_updates`, requires one update and one ADA/US
 Initial unpinned-library run [#1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600265567) passed `aiken check` (9 synthetic tests) and `aiken build`. After pinning the Pyth library to the exact upstream commit, run [#2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600475220) passed the same synthetic test suite and compiled the Plutus V3 consumer; the final step was still running when first inspected. These results establish source-level/API compatibility for the isolated probe only.
 
 They do **not** prove Pyth signature verification, source liveness/market truth, an authenticated ADA USD price, correct USDM conversion, or an executed ledger transaction. The next CI run adds an artifact containing the generated dependency lock, blueprint, SHA-256 hashes and build manifest. The actual Pyth withdraw verification and the relationship to the legacy Haskell MintPolicy remain unproven.
+
+
+### 6.1 Exact revision and retained build artifact — 2026-10-21
+
+The dependency is now pinned and committed: Pyth Lazer Cardano source commit `217b5917228b17f015719b27dd616a75ad6bd800`, Aiken `v1.1.21`, stdlib `v3.0.0`; the generated `poc/aiken-pyth-ada-usd/aiken.lock` records those exact Git references.
+
+Exact pinned-lockfile CI: [Isolated Pyth ADA USD Probe #5](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600694371), commit [`75c9c89a`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/75c9c89a9b00d26ff662000a7b1cfea1f68b038d), **success**. It ran all nine synthetic Aiken tests and compiled the Plutus V3 consumer. Retained workflow artifact: [`pyth-ada-usd-probe-75c9c89a9b00d26ff662000a7b1cfea1f68b038d`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600694371/artifacts/12345837738), artifact ID `12345837738`.
+
+Build manifest SHA-256 values:
+- `aiken.toml`: `ecd2615377622857982fea7de81e81eb664d8fc31866a8067ed976fc5054397b`
+- `aiken.lock`: `bfecbc5440e3c386bcc8e382daa13d1d6695c8d0ede8003cf88bc19a4e423e07`
+- `plutus.json`: `61b131060b0434ed6f2a67e703ad6088c632e3c8c3bab5e79e81c7ce19d65748`
+- isolated `ada_usd_probe.pyth_ada_usd_probe.spend` compiled-code field: **6,806 bytes**.
+
+These numbers describe a compiled candidate script only. They are not a complete transaction size, do not include the Pyth verification script/reference input or actual withdrawal payload, and do not prove a genuine Pyth signature was checked by a Cardano ledger. The synthetic tests use constructed `PriceUpdate` values. Status remains **CODE-LEVEL PROBE PASS / CRYPTOGRAPHIC AND LEDGER INTEGRATION OPEN**.
