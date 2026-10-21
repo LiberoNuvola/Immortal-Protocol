@@ -90,7 +90,8 @@ export function admitGenesisTreasury(
   if (observation.oraclePrecision !== CANONICAL_ORACLE_PRECISION) {
     return { admitted: false, reason: 'INVALID_ORACLE_PRECISION' }
   }
-  if (observation.oraclePublisher !== canonicalOraclePublisher) {
+  // Key hashes are hex-encoded byte strings; hexadecimal casing is not identity.
+  if (observation.oraclePublisher.toLowerCase() !== canonicalOraclePublisher.toLowerCase()) {
     return { admitted: false, reason: 'WRONG_ORACLE_PUBLISHER' }
   }
   if (!observation.valuationVerified) {
