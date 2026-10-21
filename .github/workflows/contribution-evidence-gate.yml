@@ -8,6 +8,7 @@ on:
 # the base commit, never the contributor's code, and never writes to GitHub.
 permissions:
   contents: read
+  issues: read
   pull-requests: read
 
 concurrency:
