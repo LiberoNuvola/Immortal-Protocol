@@ -46,3 +46,24 @@ Added four grouped adversarial vectors for: (1) missing/duplicate carrier script
 [Isolated Pyth ADA USD Probe run 39604431999](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604431999) passed on the exact commit, including both `aiken check` and Plutus V3 compilation. The updated suite now reports four additional transition-shape tests on top of the existing synthetic quote/freshness cases.
 
 This remains synthetic code-level evidence: it does not construct or submit an actual Cardano transaction with a genuine Pyth-signed update and zero-withdrawal verification. Production MintPolicy binding and governed USD↔USDM conversion remain open.
+
+
+## 2026-10-21 follow-up — unit-conversion candidate is now tested but not wired
+
+`lib/immortal/ada_usd_probe.ak` contains the pure helper `pyth_ada_usd_to_usdm_subunits` for reviewing exact rational conversion of raw Pyth price/exponent into USDM sub-units. The conversion is expressed as:
+
+```text
+ceil(
+  economic_lovelace
+  × raw_price
+  × 10^raw_exponent
+  × 100 subunits/USDM
+  ÷ (1,000,000 lovelace/ADA × D USD/USDM)
+)
+```
+
+Here `D) is an explicit positive rational `usd_per_usdm_numerator / usd_per_usdm_denominator`. The helper never chooses it and does not default it to unity. New synthetic vectors verify exact-rational arithmetic, conversion after retaining the raw price/exponent, non-parity parameter examples, non-negative exponents, and invalid input rejection.
+
+[Run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on commit `c05267ca202bae85332870ef4c98b8972175d283`: 15 tests in the source-selection/conversion module, 12 in the carrier module, 27 checks with no errors/warnings, and successful Plutus V3 compilation. The current branch’s two Aiken source files are byte-identical to the tested revision.
+
+This does **not** close conversion qualification. `D) is not yet a governed/authenticated on-chain parameter and this helper is not called from the carrier validator, the production Haskell Plutus V2 MintPolicy, or the Issue settlement builder. Until a source-of-truth decision fixes how `D) is supplied/authenticated and the production predicate consumes the verified quote, the helper is only a mathematical candidate—not admissible Issue price evidence.
