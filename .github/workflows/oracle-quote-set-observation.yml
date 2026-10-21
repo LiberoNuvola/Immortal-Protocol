@@ -8,6 +8,7 @@ on:
     paths:
       - "audit/cardano-integration/observe-preprod-oracle-quote-set.mjs"
       - "audit/cardano-integration/oracleQuoteSetObservation.mjs"
+      - "audit/cardano-integration/observe-bootstrap-oracle-quote-set-koios.mjs"
       - ".github/workflows/oracle-quote-set-observation.yml"
 
 permissions:
@@ -75,5 +76,38 @@ jobs:
         with:
           name: oracle-quote-set-observation-${{ github.sha }}
           path: audit/preprod-evidence/oracle-quote-set-observation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  observe-bootstrap-wallet-oracle:
+    name: Observe the previously identified bootstrap-wallet singleton via Koios
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact observation revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Observe the bootstrap-wallet singleton read-only
+        run: |
+          mkdir -p audit/preprod-evidence
+          node audit/cardano-integration/observe-bootstrap-oracle-quote-set-koios.mjs | tee audit/preprod-evidence/bootstrap-wallet-oracle-observation.json
+
+      - name: Upload bootstrap-wallet observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-wallet-oracle-observation-${{ github.sha }}
+          path: audit/preprod-evidence/bootstrap-wallet-oracle-observation.json
           if-no-files-found: warn
           retention-days: 30
