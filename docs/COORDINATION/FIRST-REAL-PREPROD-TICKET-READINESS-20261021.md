@@ -291,3 +291,25 @@ Artifact [IMMORTAL Cardano Preprod Context #39594377501](https://github.com/Libe
 Therefore this observed wallet singleton is **not currently eligible for Issue** under the implemented freshness rule and does not contain a quote set for PRE/NIGHT. The observation is concrete but was taken from the workflow's wallet address; the hidden repository variables used by the deployed Pages DApp still need an exact address/policy/token match before asserting that the public runtime points to this exact UTxO. See §8.6 of `audit/pre-genesis-genesis/ORACLE-QUOTE-SET-EXTENSION-20261021.md` for the full reference and digest.
 
 Do not refresh this datum using a synthetic price or a locally invented timestamp. The next gate is to bind the configured DApp identity to the observed singleton, then obtain a qualified quote source and authorized publisher update under the existing trust contract. Neither this evidence collection nor the new observer script signs or submits a transaction.
+
+
+## 2026-10-21 follow-up — public Pages release does not contain the working-branch Issue consumer
+
+A read-only comparison of the live deployment history, the current default branch and this working branch establishes a separate release gate:
+
+- The latest successful `IMMORTAL Public Pages` run on `main` returned by the repository Actions API is [run 38182109071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/38182109071), built from commit `876bc54f8ee8f6e1dede226db8c367cca3ae620c` on 2026-10-11.
+- The current `main` ref remains `97b09a38742098f17a61eb07734c401aeedccc06`. At both the recorded Pages build commit and current `main`, `src/main.ts` resolves to blob `d55ba61dab9377b338989eb56b23b8825c9f6335`: it does **not** contain `mintSerialNFTWithAuthoritativeAdmission` or the settlement basket selector. The `src/issueSettlement.ts` module is absent from `main`.
+- The current `main` copy of `.github/workflows/immortal-preprod-pages.yml` is blob `88ee733b7f05d1eb4eb88844ca4056923225e82b` and does not inject `VITE_ISSUE_AUTHORITY_ENDPOINT` or the newer required public Issue runtime variables. The working-branch version is blob `ccd5642e91083d7779d2d434f9547c24be7de1b5` and contains the corresponding variable-presence/HTTPS checks. That workflow/source version is not the deployed `main` version.
+- The current working branch head is `21889aad27b36fff9c253454aa82933c08948c0d`; PR [#19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) remains open, not draft, and not mergeable; GitHub reports 1,664 commits, 381 changed files, 45,734 additions and 2,204 deletions. It is not a safe deployment vehicle to merge wholesale.
+
+**Result: PUBLIC DAPP RELEASE / RUNTIME BINDING OPEN.** A green TypeScript/build workflow on the working branch proves only that branch builds. It does not change GitHub Pages. Do not merge PR #19 to force a deployment. The Issue consumer and its Pages runtime workflow need a curated, dependency-complete promotion reviewed separately from the B3 work and from the Oracle state-update decision.
+
+The live wallet observation in §8.6 remains evidence for the workflow-configured wallet only. Without comparing the exact configured Pages Oracle address, policy ID and token-name with the on-chain observation, do not state that the stale wallet singleton is definitively the singleton the currently deployed site would use. Regardless, the public Pages build does not contain the working-branch Issue consumer and its current workflow does not bind its Issue authority endpoint.
+
+### Current bounded CI evidence
+
+- [Cardano Adapter Sale Conformance #4229](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39595060006) passed on the docs-only head `21889aad27b36fff9c253454aa82933c08948c0d`; it includes the branch's focused TS settlement tests and frontend build, but is not Plutus ledger proof.
+- [IMMORTAL Cardano Integration Lab #2020](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39594377482) is still reported `in_progress` on older code head `993f1a8fb95682b0eacf56f19fb8e68e1706e898`, last updated at 11:47:34Z, with native Yaci UTxO decoder conformance running and subsequent resource/predeploy/evidence steps not completed.
+- [PRE-RICH B2 Control Carrier Conformance #441](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39594299630) ended `cancelled` on `39e983a472be03b567a2d95a5461a035f190867d`. Its build log shows `OracleTypes` and `Economic` compiled before cancellation, but the workflow did not finish and is not a complete conformance pass.
+
+No merge, Pages deployment, Oracle-state change, signature, or Issue transaction was performed in this checkpoint.
