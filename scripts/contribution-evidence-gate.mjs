@@ -133,18 +133,6 @@ const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
   if (changed.length === 0) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Changed-file inventory is empty or unavailable.'], files: changed, headSha }
   }
-  const controlFiles = changed.filter(isControlPlane)
-  if (controlFiles.length > 0) {
-    return {
-      decision: 'STRONGER_REVIEW_REQUIRED',
-      eligible: false,
-      reasons: ['Changes to normative surfaces or the contribution-governance control plane cannot use the reduced Auto-merge path.'],
-      controlFiles,
-      files: changed,
-      headSha,
-    }
-  }
-
   const normalizedLabels = [...new Set(labels.map((label) => String(label).trim().toLowerCase()).filter(Boolean))]
   const holdLabels = new Set([
     'governance/challenged',
@@ -158,7 +146,7 @@ const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
     return {
       decision: 'CHALLENGE_BLOCKED',
       eligible: false,
-      reasons: ['An active governance challenge/security hold label blocks the reduced path until an authorized, recorded disposition clears it.'],
+      reasons: ['An active governance challenge/security hold label blocks merging until an authorized, recorded disposition clears it.'],
       challengeLabels: activeHolds,
       files: changed,
       headSha,
@@ -176,6 +164,41 @@ const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
         files: changed,
         headSha,
       }
+    }
+  }
+
+  const controlFiles = changed.filter(isControlPlane)
+  if (controlFiles.length > 0) {
+    const strongReviewLabels = normalizedLabels.filter((label) => label.startsWith('governance/strong-review-cleared-'))
+    const expectedStrongReviewLabel = 'governance/strong-review-cleared-' + String(headSha ?? '').slice(0, 12).toLowerCase()
+    const strongReviewCleared = strongReviewLabels.length === 1 &&
+      strongReviewLabels[0] === expectedStrongReviewLabel &&
+      /^[0-9a-f]{12}$/.test(String(headSha ?? '').slice(0, 12))
+    if (!strongReviewCleared) {
+      return {
+        decision: 'STRONGER_REVIEW_REQUIRED',
+        eligible: false,
+        reasons: [
+          'Changes to normative surfaces or the contribution-governance control plane cannot use the reduced path.',
+          'An authorized maintainer must complete stronger review and apply exactly governance/strong-review-cleared-<current-head-12> after the required human review; the required GitHub approval remains independent.',
+        ],
+        controlFiles,
+        files: changed,
+        headSha,
+      }
+    }
+    return {
+      decision: 'STRONGER_REVIEW_CLEARED',
+      eligible: true,
+      reducedPathEligible: false,
+      reasons: [
+        'An authorized maintainer recorded stronger-review clearance for the current head.',
+        'This PR is not classified as eligible for the reduced path.',
+        'Required GitHub review and all other required CI checks remain mandatory.',
+      ],
+      controlFiles,
+      files: changed,
+      headSha,
     }
   }
 
@@ -322,6 +345,35 @@ const selfTest = () => {
   assert.equal(control.decision, 'STRONGER_REVIEW_REQUIRED')
   assert.equal(control.eligible, false)
 
+  const strongHead = 'abcdef1234567890abcdef1234567890abcdef12'
+  const strongReviewCleared = classifyPullRequest({
+    body,
+    files: ['docs/00-normative/01_CONSTITUTION_FINAL.md'],
+    headSha: strongHead,
+    labels: ['governance/strong-review-cleared-abcdef123456'],
+  })
+  assert.equal(strongReviewCleared.decision, 'STRONGER_REVIEW_CLEARED')
+  assert.equal(strongReviewCleared.eligible, true)
+  assert.equal(strongReviewCleared.reducedPathEligible, false)
+
+  const staleStrongReview = classifyPullRequest({
+    body,
+    files: ['docs/00-normative/01_CONSTITUTION_FINAL.md'],
+    headSha: strongHead,
+    labels: ['governance/strong-review-cleared-123456abcdef'],
+  })
+  assert.equal(staleStrongReview.decision, 'STRONGER_REVIEW_REQUIRED')
+  assert.equal(staleStrongReview.eligible, false)
+
+  const activeChallengeOnControlPlane = classifyPullRequest({
+    body,
+    files: ['.github/workflows/contribution-evidence-gate.yml'],
+    headSha: strongHead,
+    labels: ['governance/security-hold', 'governance/strong-review-cleared-abcdef123456'],
+  })
+  assert.equal(activeChallengeOnControlPlane.decision, 'CHALLENGE_BLOCKED')
+  assert.equal(activeChallengeOnControlPlane.eligible, false)
+
   const missing = classifyPullRequest({ body: 'Just a PR', files: ['docs/04-guides/reader.md'], headSha: 'abc123' })
   assert.equal(missing.decision, 'INCOMPLETE')
   assert.equal(missing.eligible, false)
@@ -412,7 +464,8 @@ const selfTest = () => {
   assert.equal(staleChallengeClearance.eligible, false)
 
   console.log('PASS: complete declaration qualifies only within class-specific path boundaries')
-  console.log('PASS: normative and governance-control paths fail closed')
+  console.log('PASS: normative/control-plane changes require head-bound stronger-review clearance')
+  console.log('PASS: active challenges block both reduced and stronger-review paths')
   console.log('PASS: absent declarations and template placeholders fail closed')
   console.log('PASS: production code cannot be relabeled as test-only')
   console.log('PASS: mixed classes cover every changed file')
