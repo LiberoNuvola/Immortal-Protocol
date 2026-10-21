@@ -156,14 +156,26 @@ A source-level readiness check found real progress, but not yet a cleanly establ
 |---|---|---|
 | Dijkstra readiness tracker, `cardano-ledger#5604` | Open; the ticket is explicitly the umbrella for a `cardano-node` release that can successfully hard fork into a fully functional Dijkstra era | Do not treat Dijkstra support in source branches as public-network activation |
 | CIP-118 ledger implementation tracker, `cardano-ledger#5123` | Open | Keep the CIP implementation and end-to-end integration status distinct from the Proposed CIP text |
-| PlutusV4 context tracker, `plutus#7342` | Open; issue body still lists the V4 definition/context items as unchecked | PlutusV4/Guard capability and exact version compatibility require direct verification |
-| Local Dijkstra testnet integration, `cardano-node#6709` | Open PR, not merged; it adds hard-fork, sub-transaction swap, script-witness and Guard properties. Its description reports 8/9 passing, with the remaining PlutusV4 top-level Guard property failing in the streaming decoder before guard validation. It is stacked on an integration branch and requires cardano-api 11.9 plus a pinned cardano-cli commit. | Valuable upstream test basis, but not a stable released toolchain or evidence of a working target environment |
+| Plutus V4 releases | Plutus 1.71.0.0 (published 2026-09-30) and 1.72.0.0 (published 2026-10-17) are released. 1.71 carries the Plutus V4 context work; 1.72 includes a fix for sum-type decoding when targeting Plutus Core 1.1.0. Tracker `plutus#7342` remains open. | A current V4 candidate exists; still pin and verify exact compiler, API, ledger and script context together |
+| Cardano API, `cardano-api#1361` | Merged 2026-10-06; adds Dijkstra body fields plus construction/signing support for `SubTx`. Its PR describes some required top-level Guard fields as not yet written at that point. | API construction support exists, but does not establish full node/Guard end-to-end support |
+| Cardano CLI, `cardano-cli#1453` / release `11.4.0.0` | Merged and released 2026-10-16. Dijkstra-only commands build, sign and identify sub-transactions, and `dijkstra transaction build-raw --signed-sub-tx-file` can embed signed sub-transactions. Balanced `build` fee estimation for nested transactions is explicitly deferred in the PR. | CLI raw-body/witness work can be preflighted, but do not assume the balanced builder estimates the complete batch fee correctly |
+| Cardano Node 11.2, `cardano-node#6672` / PR `#6677` | Release tracker remains open; ledger, consensus, API and CLI dependencies are marked released in the tracker, while the node integration PR still reports “builds, needs review”. Node release page still identifies 11.1.3 as latest stable. | Dijkstra node release / public DijkstraNet is still the gating dependency for a supported public integration target |
+| Local Dijkstra testnet integration, `cardano-node#6709` | Open PR, not merged; adds hard-fork, sub-transaction swap, script-witness and Guard properties. Its description reports 8/9 passing; the remaining Plutus V4 top-level Guard property fails during node-to-client submission with a streaming-decoder error before Guard validation. It is stacked on the 11.2 integration and uses cardano-api 11.9 plus a pinned CLI/ledger stack. | Strong upstream test basis, but the exact top-level Guard submission path remains a blocker; the eight passing tests do not establish full integration |
 
 Sources:
 - https://github.com/IntersectMBO/cardano-ledger/issues/5604
 - https://github.com/IntersectMBO/cardano-ledger/issues/5123
 - https://github.com/IntersectMBO/plutus/issues/7342
+- https://github.com/IntersectMBO/plutus/releases/tag/1.71.0.0
+- https://github.com/IntersectMBO/plutus/releases/tag/1.72.0.0
+- https://github.com/IntersectMBO/cardano-api/pull/1361
+- https://github.com/IntersectMBO/cardano-cli/pull/1453
+- https://github.com/IntersectMBO/cardano-cli/releases/tag/cardano-cli-11.4.0.0
+- https://github.com/IntersectMBO/cardano-node/issues/6672
+- https://github.com/IntersectMBO/cardano-node/pull/6677
 - https://github.com/IntersectMBO/cardano-node/pull/6709
+- https://intersectmbo.org/news/intersect-weekly-update-133-oct-17-2026
+- https://github.com/IntersectMBO/cardano-ledger/pull/6189
 
 ### Can we run the minimal CIP-118 experiment against an official Dijkstra testnet now?
 
@@ -186,3 +198,39 @@ This repository session has no attached Dijkstra node/API endpoint or locally ru
 - **GO** for preparing the isolated experiment against a pinned upstream Dijkstra test harness when the decoder blocker and required toolchain are resolved.
 - **NO-GO** for applying CIP-118 to the active Reveal/production path today: no demonstrated target-network/API support, no ledger evidence for the proposed path, and no benefit to the current transaction-size gate established.
 - **G1 remains OPEN.** This readiness assessment selects no fee-bearing class, amount, fee destination, sponsor reimbursement, or optional margin.
+
+
+## 7. Current usable preflight vs. actual end-to-end gate (updated 2026-10-21)
+
+### Available now in released CLI
+
+The published `cardano-cli 11.4.0.0` includes Dijkstra sub-transaction commands from PR #1453. The source documents this raw construction flow:
+
+```sh
+cardano-cli dijkstra sub-transaction build-raw --tx-in ... --tx-out ... --guard-key-hash HASH --out-file sub.unsigned
+cardano-cli dijkstra sub-transaction sign --sub-tx-file sub.unsigned --signing-key-file k.skey --out-file sub.signed
+cardano-cli dijkstra sub-transaction txid --signed-sub-tx-file sub.signed
+cardano-cli dijkstra transaction build-raw ... --signed-sub-tx-file sub.signed --out-file tx.body
+```
+
+These are upstream command-shape examples, not a command run against this repository's wallet or a tested IMMORTAL transaction. The PR explicitly defers sub-transaction-aware fee estimation for the balanced `dijkstra transaction build`; do not use its ordinary fee estimate as evidence for a batch that embeds sub-transactions. Use the raw construction lane only for serialization/witness preflight until the matching balancing implementation is verified.
+
+### The latest upstream failure is narrower than “CIP-118 is unimplemented”
+
+The Dijkstra work is progressing in layers:
+- cardano-api construction/signing support for `SubTx` has merged;
+- cardano-cli raw build/sign/txid/embedding support has merged and been released;
+- the ledger fix for `Data` / `PlutusData` decoding of the `requiredTopLevelGuards` field merged as `cardano-ledger#6189` on 2026-10-16;
+- the node 11.2 integration and local Dijkstra testnet PR remain open, with one of nine end-to-end properties still failing at node-to-client submission before Guard validation.
+
+The ledger decoder fix and the remaining streaming-decoder/submission error are distinct findings; do not mark the latter fixed merely because #6189 merged. Upstream's 2026-10-17 update still describes public DijkstraNet as forthcoming with Node 11.2, and Node 11.3 as the intended join point for Linear Leios. The separate Musashi Dojo is testing Leios; it is not, by itself, a public DijkstraNet target for CIP-118 sub-transactions.
+
+### Decision and next concrete gate
+
+**Ready for a CLI-format smoke test:** build/sign/txid an inert test sub-transaction and embed it in a raw top-level Dijkstra body, using only disposable test keys and no mainnet funds. This proves only the released CLI's wire-format pipeline.
+
+**Not yet ready to claim an IMMORTAL-relevant ledger result:** the actual next gate is a reproducible node 11.2/Dijkstra test runtime, then the exact upstream nested-transaction integration tests with the remaining top-level Guard submission property passing. After that, add the minimal sponsor batch and inspect the serialized whole transaction, aggregate balance/collateral, script contexts/ExUnits and ledger result. It must be clear whether the tested path uses only key guards or the PlutusV4 top-level Guard path.
+
+The tool session used for this assessment has no installed `cardano-cli`, `cardano-node`, `cabal` or `nix`, and its shell cannot resolve public GitHub hosts, so the CLI-format smoke test could not be executed inside this session. No pretense of CLI, local-node or ledger execution is made. Repository upstream metadata has been inspected; no runtime fixture has been generated.
+
+The experiment remains separated from active PRE-RICH: no change to `cabal.project`, Plutus pin, script version, Reveal, reference-script remediation, transaction deployment, ProtocolUsageFee or G1 is authorized by this research.
