@@ -18,7 +18,11 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "semantic_reviews_completed": 0
+    "semantic_reviews_completed": 0,
+    "scoped_static_reviews_recorded": 16,
+    "semantic_ledger_entries_not_reviewed": 1795,
+    "full_semantic_audit_complete": false,
+    "semantic_audit_disposition": "PARTIAL / OPEN; this tranche confirms the Pyth-to-MintPolicy binding and unit-conversion blockers."
   },
   "branch_heads": [
     {
@@ -27159,10 +27163,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POC_ONLY",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-03",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "004c8d2281da0cb062b2e7387b597b6bd7578ae3",
@@ -27289,10 +27296,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POC_ONLY",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-03",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "00acd6108faae94f2dbe7a3f16e52b4f762be26f",
@@ -28800,10 +28810,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_OPEN_BLOCKER",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-01"
+      ]
     },
     {
       "blob_sha": "0d611c29fe4f74b9b2fa4cd328e8fe2edb5f48f4",
@@ -28927,10 +28939,15 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_DESIGN_NOT_APPROVED",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-01",
+        "F-PYTH-02",
+        "F-PYTH-03",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "0dbb877908e206096de0af800c14b87ae36fdd2e",
@@ -29025,10 +29042,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TESTS_SYNTHETIC",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-02",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "0eb6a7e080c2d802d53af635c5f05de739c1fa5a",
@@ -33267,10 +33287,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_DECISION_OPEN",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-02"
+      ]
     },
     {
       "blob_sha": "2658a4ab0fd2f4e348f475bd2cefa457d44a6c02",
@@ -37346,10 +37368,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_BUILD_SURFACE",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-01",
+        "F-PYTH-02"
+      ]
     },
     {
       "blob_sha": "3f22c38f17426872b33068137c59919ef73192fe",
@@ -38163,10 +38188,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CONVERSION_OPEN",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-02"
+      ]
     },
     {
       "blob_sha": "43e194a2e1090d50d2818bfc180d7fa9c3263882",
@@ -41553,10 +41580,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_MANUAL_GATED",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "5c3bb5295b4f6d7d07414afacb952b9c94411d9a",
@@ -42922,10 +42951,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_OPEN_BLOCKER",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-01",
+        "F-PYTH-03"
+      ]
     },
     {
       "blob_sha": "66c62fd4446af357773c992495965d34380f7486",
@@ -51659,10 +51691,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POC_ONLY",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-03",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "9f322f1e6035f37436c939ff959bd62653011fc3",
@@ -59577,10 +59612,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TESTS_SYNTHETIC",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "d4c8e7d3c3545baa753d8dc7e1fcd90b2ba5622c",
@@ -61774,10 +61811,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TESTS_SYNTHETIC",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-02",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "e330df0ca2bbe0fb341f859f2bce98670248785d",
@@ -62102,10 +62142,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_OPEN_BLOCKER",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-01",
+        "F-PYTH-02"
+      ]
     },
     {
       "blob_sha": "e510cbab32d9eb0bb157d97a8bf4d37c1f62b2c7",
@@ -63458,10 +63501,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CONVERSION_OPEN",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-02"
+      ]
     },
     {
       "blob_sha": "ee42bb2e599e93da6fb7b24ad2e2b7dc5560f319",
@@ -64299,10 +64344,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_SCOPE_LIMITS",
+      "review_scope": "Static source/config/test review; no new CI run or ledger transaction was performed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md@fa32e2ac776855c149a75b9075e671a84dfec0e4",
+      "evidence_references": [
+        "F-PYTH-03",
+        "F-PYTH-04"
+      ]
     },
     {
       "blob_sha": "f555c1309d77bf3542fc0a46d3bfe020be904344",
