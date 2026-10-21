@@ -1,0 +1,38 @@
+name: IMMORTAL Dijkstra Upstream Readiness Snapshot
+
+on:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - audit/cardano-integration/dijkstra-upstream-readiness.py
+      - docs/research/DIJKSTRA-D1-D2-UPSTREAM-READINESS-AUDIT.md
+      - .github/workflows/immortal-dijkstra-upstream-readiness.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    name: Capture upstream D1-D2 evidence (not a ledger test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout audit source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Collect upstream readiness snapshot
+        run: |
+          python3 audit/cardano-integration/dijkstra-upstream-readiness.py --output "${RUNNER_TEMP}/dijkstra-upstream-readiness.json"
+
+      - name: Publish readiness snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-dijkstra-upstream-readiness
+          path: ${{ runner.temp }}/dijkstra-upstream-readiness.json
+          if-no-files-found: error
+          retention-days: 14
