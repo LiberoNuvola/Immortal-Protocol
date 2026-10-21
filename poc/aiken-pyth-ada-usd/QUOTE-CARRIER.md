@@ -35,3 +35,14 @@ Run [Isolated Pyth ADA USD Probe #12](https://github.com/LiberoNuvola/Immortal-P
 The compiled Plutus V3 blueprint artifact is [`pyth-ada-usd-probe-7298455cd01ee73915d294e713fbb8ef355f7e8a`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931/artifacts/12346542438), artifact ID `12346542438`. Manifest hashes: `aiken.toml` `ecd2615377622857982fea7de81e81eb664d8fc31866a8067ed976fc5054397b`; `aiken.lock` `bfecbc5440e3c386bcc8e382daa13d1d6695c8d0ede8003cf88bc19a4e423e07`; `plutus.json` `3b7fb17a17061e586ed26523b85bfdd01a4ff70f148f7dfd20bbc239ce3c0914`. Compiled code size: marker-consumer spend 6,806 bytes; quote-carrier spend 8,289 bytes. These are individual compiled validator fields, not full transaction CBOR.
 
 **Scope limit unchanged:** the carrier validator binds its continuation datum to the pure quote selection in the Aiken model and is compiled, but no genuine Pyth-signed update has been tested on a native Cardano ledger. The existing MintPolicy still does not consume this carrier price.
+
+
+## 2026-10-21 follow-up — adversarial state-transition guard coverage
+
+Commit `5c35530e813e1a2ed43d8486eebae1dd058ee1ed` factors the carrier transition's preserved-state/identity requirements into `quote_carrier_transition_shape_is_valid`, the same predicate called by `quote_carrier_transition_is_valid`. This ensures the negative vectors exercise the guard predicate that the validator actually uses rather than testing unrelated stand-alone conditions.
+
+Added four grouped adversarial vectors for: (1) missing/duplicate carrier script input or output; (2) missing/duplicate authority singleton quantity across inputs/outputs; (3) substituted continuation address or physical Value; and (4) malformed input datum or an output quote not bound to the authenticated update.
+
+[Isolated Pyth ADA USD Probe run 39604431999](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604431999) passed on the exact commit, including both `aiken check` and Plutus V3 compilation. The updated suite now reports four additional transition-shape tests on top of the existing synthetic quote/freshness cases.
+
+This remains synthetic code-level evidence: it does not construct or submit an actual Cardano transaction with a genuine Pyth-signed update and zero-withdrawal verification. Production MintPolicy binding and governed USD↔USDM conversion remain open.
