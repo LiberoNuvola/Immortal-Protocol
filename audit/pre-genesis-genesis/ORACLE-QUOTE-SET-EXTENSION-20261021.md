@@ -135,3 +135,36 @@ The TTL bound is derived from the already established `maxOracleAge`, with one w
 The output-specific minimum is calculated using Lucid 0.10.11's pinned CML `min_ada_required(output, coinsPerUtxoByte)` primitive, rather than assuming that `1,600,000` lovelace is sufficient for every value and inline datum. Keep the economic rule distinct: `Economic.totalUsdmValue` still excludes exactly the normative 1,600,000 lovelace floor from ADA's valued quantity. If a final output needs more ADA than that floor, the additional ADA remains part of the canonical economic valuation. The application does not silently top up an output, alter user-entered asset quantities, waive integer equality, or hide economic surplus. A basket that cannot satisfy both the exact USDM equality and the serialized-output ADA minimum is rejected.
 
 The current Cardano Adapter Sale Conformance run `39591153488` passed at `80da6d2b72ff387e758f9ea01c2b6cd7d86b1fa5`, including the then-current settlement suite and browser build. This predates the latest CML min-ADA guard and is **not** evidence that the new output-specific runtime check has passed. Re-run the focused suite/build and predeploy check at the exact current head before promotion; then re-export every affected Plutus artifact and measure script/transaction sizes before native-ledger basket validation.
+
+
+## 8. Supersession and live publisher gap — 2026-10-21
+
+### 8.1 Correction to §4 implementation summary
+
+The §4 sentence that says the current Issue amount builder “still derives ADA only” is a historical status statement and is superseded by §6.1 and the current branch source. The current TypeScript path includes `buildIssueSettlementAssets`, the explicit buyer-selected basket UI, exact completed Treasury `Value` comparison, quote-derived finite transaction TTL, and the final-output min-ADA guard. This correction is about the working-tree code only; it is not a statement that the live Oracle singleton or a real transaction has been updated or verified.
+
+### 8.2 Missing operational quote-set publisher / migration evidence
+
+The repository surface census identified `audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs` as the only clearly named Oracle State bootstrap writer. Its new-state path creates legacy constructor 0 with one ADA quote. Its existing-state path explicitly reuses the singleton and does not migrate or update its datum. The current DApp reads the datum already present at the configured Oracle State singleton; the UI does not publish or update Oracle state. No other current-branch file discovered in the Oracle/quote/settlement path materializes constructor 1 on the active singleton.
+
+**Classification: OPEN — LIVE DATUM FORMAT / QUOTE PRODUCER / UPDATE AUTHORITY NOT QUALIFIED.**
+
+The branch has an additive on-chain and TypeScript decoder for `OracleQuoteSet`, but the existence of that constructor in source does not prove the currently configured Preprod singleton has it. This inspection did not query or change any live Oracle UTxO, and the current datum constructor and quote inventory remain unverified.
+
+### 8.3 Safe closure sequence
+
+1. Read the exact configured Oracle State singleton UTxO from the live intended network. Record network, singleton policy/name, address, UTxO reference, inline datum hash/bytes, and the decoded constructor; fail closed on zero/multiple matches or missing datum.
+2. For each proposed asset quote, require an independently qualified source artifact under the already-adopted Oracle trust contract, the exact policy/name identity, price units, source timestamp, publisher identity, and a reproducible evidence reference. Do not generate a quote from frontend balances, wallet ownership, synthetic vectors, a locally generated timestamp, or this audit's assumptions.
+3. Establish whether the existing singleton can be updated by the configured, already-authorized publisher and what exact signed state transition preserves the singleton identity. Do not create a second singleton, replace the configured address, silently mint another oracle NFT, or use an unqualified key as an upgrade path.
+4. Validate the proposed datum and output Value against the existing decoder, on-chain quote lookup, transaction-relative freshness predicate, duplicate/missing quote rejection, exact USDM integer conversion and output-specific min-ADA requirement. Run the canonical pinned Plutus build/export, hash/size checks and local-ledger negative/positive twins at the exact candidate head.
+5. Only after the publisher/source and datum are qualified should a separately authorized Preprod update be planned. After any authorized update, independently observe the resulting singleton UTxO and its datum before considering a wallet Issue. This audit did not sign or submit any update.
+
+### 8.4 What this does and does not close
+
+- **Code capability:** legacy one-quote datum and additive quote-set decoding/lookup are implemented on the working branch.
+- **Application capability:** the Issue UI can express a basket and blocks it unless selected quantities satisfy the current canonical integer conversion.
+- **Live operational capability:** not proven until the actual singleton's quote format and asset quote set are observed and source-qualified.
+- **Trustlessness:** not established. Under the current schema the configured publisher remains a trust assumption. A quote-set container solves the single-record data-shape limit; it does not authenticate the truth of external market prices or decentralize the publisher.
+- **EEV:** unchanged. Payment-asset eligibility does not expand the direct-USDM EEV perimeter.
+
+Do not mark the first real Issue or multi-asset settlement GREEN merely because frontend and pure conformance CI pass.
