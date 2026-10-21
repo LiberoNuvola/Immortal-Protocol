@@ -324,3 +324,19 @@ A separate, non-production Aiken/Plutus V3 project now tests the exact ADA/USD f
 - Artifact [pyth-ada-usd-probe-75c9c89a9b00d26ff662000a7b1cfea1f68b038d](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39600694371/artifacts/12345837738) contains manifest/lockfile/blueprint/SHA256SUMS. The isolated script's compiled-code field is 6,806 bytes; full transaction CBOR and execution on a ledger were not measured.
 
 **This is not a closure of the Issue oracle blocker.** The tests fabricate `PriceUpdate` data and only establish pure freshness/selection/binding logic. They do not exercise a genuine signed payload, a Pyth zero-withdrawal verification in the same transaction, or the exact value used by `MintPolicy.atomicTreasuryPaymentValid`. The quote-scale conversion into current `OracleQuote.price` remains deliberately unspecified. No live Issue, Pages deployment or Oracle State migration is authorized by this probe.
+
+
+## 2026-10-21 follow-up — re-observed bootstrap Oracle singleton; public runtime identity still unavailable
+
+Read-only Koios observation run [39602227985](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602227985), uploaded as [bootstrap-wallet-oracle-observation-708120cbaddb3ebf1b1b56a3f347bac19e13f1c7](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602227985/artifacts/12346467535), manifest SHA-256 `769e855696b40d191a05325ec0b18082b56af681968dbf33aa93806979be809a`.
+
+At `2026-10-21T12:46:12.590Z`, Koios returned exactly one configured Oracle token in the previously observed bootstrap wallet UTxO `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`. Its inline datum hash was unchanged (`aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`) and it still decodes as legacy constructor 0 containing only an ADA quote at price field `100`, timestamp `1791481130142`, publisher field matching the expected publisher. Quote age was `1,105,642,448 ms` (about `307.12 hours`); the existing one-hour predicate classifies it stale. This observation neither signed nor submitted a transaction or changed the UTxO.
+
+The workflow's separate strict observation of the exact public Pages runtime identity failed before querying Cardano because the workflow environment has no `BLOCKFROST_PROJECT_ID`, `ORACLE_STATE_ADDRESS`, `ORACLE_STATE_POLICY_ID`, `ORACLE_STATE_TOKEN_NAME_HEX`, or `ORACLE_PUBLISHER_PKH`. Consequently we **cannot yet state** that the bootstrap wallet singleton is the singleton used by the public DApp.
+
+Current closure status:
+- **On-chain code capability:** quote-set constructor and asset-specific lookups exist on the working branch; Haskell exact-head proof remains separate.
+- **Basket builder/UI:** explicit basket quantities and exact integer USDM preflight are implemented in source; no authorized quote set is live-observed.
+- **Live Oracle operational readiness:** BLOCKED — the wallet singleton observed by Koios is legacy and stale; exact public runtime identity has not been furnished to the read-only observer.
+- **Oracle source trustlessness:** OPEN — datum publisher matching alone is not external-price verification or permissionless sourcing.
+- **First real Issue:** still blocked. No transaction was built, signed or submitted, and no Oracle datum update is authorized by this note.
