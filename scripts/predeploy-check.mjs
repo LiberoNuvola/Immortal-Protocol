@@ -321,9 +321,11 @@ contains(settlementSource, /CANONICAL_ORACLE_PRECISION\s*=\s*1_000_000n/,
 contains(settlementSource, /CANONICAL_ADA_MIN_UTXO_LOVELACE\s*=\s*1_600_000n/,
   'Off-chain ADA minimum-UTxO exclusion matches OracleTypes')
 contains(settlementSource, /only an authenticated ADA OracleDatum quote/,
-  'Issue builder fails closed rather than claiming unsupported multi-asset settlement')
-contains(settlementSource, /assertCompletedTreasuryAdaSettlement/,
-  'Completed-body Treasury equality check is implemented')
+  'Legacy ADA-only fallback rejects a non-ADA datum instead of reinterpreting its quote')
+contains(settlementSource, /buildIssueSettlementAssets[\s\S]*?valuedUsdmSubunits !== target/s,
+  'Multi-asset amount builder values each selected asset and enforces exact USDM integer equality')
+contains(settlementSource, /assertCompletedTreasurySettlement[\s\S]*?actualEntries/s,
+  'Completed-body Treasury assertion compares the full ADA-plus-token Value map')
 contains(mintTs, /b1PrizePool/i, 'Mint flow references B1PrizePool')
 contains(mintTs, /payToContract/, 'Mint constructs protocol outputs')
 contains(mintTs, /pdPrizePoolHash/, 'Mint binds PrizeDatum to B1PrizePool')
