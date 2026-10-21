@@ -127,10 +127,15 @@ const script = { type: 'PlutusV3', script: validatorEntry.compiledCode }
 const scriptAddress = validatorToAddress(NETWORK, script)
 const protocolLimits = protocolParameters.maxTxExecutionUnits ?? {}
 const protocolMaximum = {
-  memory: Number(protocolLimits.memory ?? protocolLimits.mem ?? NaN),
-  steps: Number(protocolLimits.steps ?? NaN),
+  memory: Number(protocolParameters.maxTxExMem ?? protocolLimits.memory ?? protocolLimits.mem ?? NaN),
+  steps: Number(protocolParameters.maxTxExSteps ?? protocolLimits.steps ?? NaN),
   maxTxSize: Number(protocolParameters.maxTxSize ?? NaN),
 }
+const protocolResourceFields = Object.fromEntries(
+  Object.entries(protocolParameters).filter(([key]) =>
+    /^(protocolVersion|protocolMajorVer|protocolMinorVer|maxTxSize|maxTxExMem|maxTxExSteps|maxBlockExMem|maxBlockExSteps|priceMem|priceStep)$/i.test(key),
+  ),
+)
 
 const evidence = {
   schema: 'IMMORTAL-DRAND-PLUTUS-LEDGER-EVIDENCE-V1',
@@ -156,6 +161,7 @@ const evidence = {
       memory: Number.isFinite(protocolMaximum.memory) ? protocolMaximum.memory : null,
       steps: Number.isFinite(protocolMaximum.steps) ? protocolMaximum.steps : null,
     },
+    observedResourceFields: protocolResourceFields,
   },
   wallet: { address: walletAddress, utxoCount: walletUtxos.length, balanceLovelace: walletBalance.toString() },
   lockTransaction: null,
