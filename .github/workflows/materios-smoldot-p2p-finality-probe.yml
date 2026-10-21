@@ -1,13 +1,6 @@
 name: Materios Smoldot P2P Finality Probe
 
 on:
-  # One-shot diagnostic rerun: only capture-script changes on this branch
-  # trigger the probe. Workflow-file/docs edits do not cause another run.
-  push:
-    branches:
-      - work/b3-materios-provenance-evidence
-    paths:
-      - poc/materios-smoldot/capture-finality.mjs
   workflow_dispatch:
     inputs:
       target_block_number:
