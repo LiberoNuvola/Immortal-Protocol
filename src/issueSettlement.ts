@@ -364,10 +364,41 @@ function unwrapOption<T>(value: any): T | undefined {
   return value as T
 }
 
-function countCollection(value: any): number | null {
-  if (Array.isArray(value)) return value.length
-  if (value && typeof value.len === 'function') return Number(value.len())
-  return null
+function collectionItems(value: any, label: string): any[] {
+  if (Array.isArray(value)) return value
+  if (value && typeof value.len === 'function' && typeof value.get === 'function') {
+    const items: any[] = []
+    for (let index = 0; index < Number(value.len()); index += 1) {
+      items.push(value.get(index))
+    }
+    return items
+  }
+  throw new Error(`Completed Treasury ${label} collection is unavailable`)
+}
+
+function cmlByteSequenceHex(value: any, label: string): string {
+  let raw = value
+  if (raw && typeof raw.to_bytes === 'function') raw = raw.to_bytes()
+  else if (raw && typeof raw.name === 'function') raw = raw.name()
+
+  if (raw instanceof Uint8Array) return hexFromBytes(raw)
+  if (Array.isArray(raw) && raw.every(byte => Number.isInteger(byte) && byte >= 0 && byte <= 255)) {
+    return hexFromBytes(Uint8Array.from(raw))
+  }
+  if (typeof raw === 'string' && raw.length % 2 === 0 && /^[0-9a-fA-F]*$/.test(raw)) {
+    return raw.toLowerCase()
+  }
+  throw new Error(`Completed Treasury ${label} bytes are unavailable`)
+}
+
+function cmlInteger(value: any, label: string): bigint {
+  if (value == null) throw new Error(`Completed Treasury ${label} is unavailable`)
+  const raw = typeof value.to_str === 'function' ? value.to_str() : String(value)
+  try {
+    return BigInt(raw)
+  } catch {
+    throw new Error(`Completed Treasury ${label} is invalid`)
+  }
 }
 
 function completedOutputs(completedTx: any): any[] {
@@ -384,20 +415,70 @@ function completedOutputs(completedTx: any): any[] {
 }
 
 /**
- * Inspect the transaction body produced by Lucid.complete(), not merely the
- * input request. Exactly one Treasury output must exist, it must carry the
- * expected ADA amount, and it must not contain any non-ADA assets.
+ * Read the full Value from CML's completed transaction body and require an
+ * exact map equality with the payment that was derived from the authenticated
+ * quote set. This also rejects injected or omitted basket assets.
  */
-export function assertCompletedTreasuryAdaSettlement(
+function readCompletedTreasuryAssets(output: any): Record<string, bigint> {
+  const value = output?.amount?.()
+  const coin = cmlInteger(value?.coin?.(), 'ADA amount')
+  const assets: Record<string, bigint> = { lovelace: coin }
+  const multiasset = unwrapOption<any>(value?.multiasset?.())
+  if (multiasset == null) return assets
+
+  const policies = collectionItems(multiasset.keys?.(), 'policy IDs')
+  for (const policy of policies) {
+    const policyHex = cmlByteSequenceHex(policy, 'policy ID')
+    const policyAssets = unwrapOption<any>(multiasset.get?.(policy))
+    if (policyAssets == null) throw new Error('Completed Treasury policy has no asset map')
+    const assetNames = collectionItems(policyAssets.keys?.(), 'asset names')
+    for (const assetName of assetNames) {
+      const assetNameHex = cmlByteSequenceHex(assetName, 'asset name')
+      let amount: any
+      if (typeof multiasset.get_asset === 'function') {
+        amount = unwrapOption<any>(multiasset.get_asset(policy, assetName))
+      }
+      if (amount == null && typeof policyAssets.get === 'function') {
+        amount = unwrapOption<any>(policyAssets.get(assetName))
+      }
+      const quantity = cmlInteger(amount, 'multi-asset quantity')
+      if (quantity !== 0n) assets[policyHex + assetNameHex] = quantity
+    }
+  }
+  return assets
+}
+
+function normalizeExpectedTreasuryAssets(expectedAssets: Readonly<Record<string, bigint>>): Record<string, bigint> {
+  const normalized: Record<string, bigint> = {}
+  for (const [rawUnit, quantity] of Object.entries(expectedAssets)) {
+    const unit = rawUnit.toLowerCase()
+    if (unit !== 'lovelace') unitIdentity(unit)
+    if (typeof quantity !== 'bigint' || quantity <= 0n) {
+      throw new Error(`Expected Treasury quantity for ${unit} must be a positive bigint`)
+    }
+    if (normalized[unit] !== undefined) {
+      throw new Error(`Duplicate normalized expected Treasury unit: ${unit}`)
+    }
+    normalized[unit] = quantity
+  }
+  if (normalized.lovelace === undefined || normalized.lovelace < CANONICAL_ADA_MIN_UTXO_LOVELACE) {
+    throw new Error('Expected Treasury output must include the canonical ADA min-UTxO floor')
+  }
+  return normalized
+}
+
+/**
+ * Inspect the body returned by Lucid.complete(), not merely the output request.
+ * Exactly one Treasury output must have the expected final Value, including all
+ * token quantities and the ADA min-UTxO amount.
+ */
+export function assertCompletedTreasurySettlement(
   completedTx: any,
   treasuryAddress: string,
-  expectedLovelace: bigint,
+  expectedAssets: Readonly<Record<string, bigint>>,
 ): void {
   if (!treasuryAddress) throw new Error('Treasury address is required for completed-body conformance')
-  if (expectedLovelace <= CANONICAL_ADA_MIN_UTXO_LOVELACE) {
-    throw new Error('Treasury settlement must include the ADA minimum-UTxO floor and positive economic ADA')
-  }
-
+  const expected = normalizeExpectedTreasuryAssets(expectedAssets)
   const matches = completedOutputs(completedTx).filter((output) => {
     const address = output?.address?.()
     return typeof address?.to_bech32 === 'function' && address.to_bech32() === treasuryAddress
@@ -406,26 +487,29 @@ export function assertCompletedTreasuryAdaSettlement(
     throw new Error(`Completed transaction must contain exactly one Treasury output; found ${matches.length}`)
   }
 
-  const value = matches[0]?.amount?.()
-  const coin = value?.coin?.()
-  if (coin == null) throw new Error('Completed Treasury output ADA amount is unavailable')
-  const coinString = typeof coin.to_str === 'function' ? coin.to_str() : String(coin)
-  let actualLovelace: bigint
-  try {
-    actualLovelace = BigInt(coinString)
-  } catch {
-    throw new Error('Completed Treasury output ADA amount is invalid')
+  const actual = readCompletedTreasuryAssets(matches[0])
+  const expectedEntries = Object.entries(expected).sort(([a], [b]) => a.localeCompare(b))
+  const actualEntries = Object.entries(actual).sort(([a], [b]) => a.localeCompare(b))
+  if (
+    expectedEntries.length !== actualEntries.length ||
+    expectedEntries.some(([unit, quantity], index) =>
+      actualEntries[index]?.[0] !== unit || actualEntries[index]?.[1] !== quantity
+    )
+  ) {
+    throw new Error(
+      `Completed Treasury Value does not match the derived settlement: expected ${JSON.stringify(expectedEntries, (_, value) => typeof value === 'bigint' ? value.toString() : value)}, actual ${JSON.stringify(actualEntries, (_, value) => typeof value === 'bigint' ? value.toString() : value)}`,
+    )
   }
-  if (actualLovelace !== expectedLovelace) {
-    throw new Error(`Completed Treasury output mismatch: expected ${expectedLovelace}, got ${actualLovelace}`)
-  }
+}
 
-  const multiasset = unwrapOption<any>(value?.multiasset?.())
-  if (multiasset != null) {
-    const policies = typeof multiasset.keys === 'function' ? multiasset.keys() : null
-    const count = countCollection(policies)
-    if (count === null || count > 0) {
-      throw new Error('Completed Treasury output unexpectedly contains non-ADA assets')
-    }
+/** Backward-compatible ADA-only assertion retained for existing callers/tests. */
+export function assertCompletedTreasuryAdaSettlement(
+  completedTx: any,
+  treasuryAddress: string,
+  expectedLovelace: bigint,
+): void {
+  if (expectedLovelace <= CANONICAL_ADA_MIN_UTXO_LOVELACE) {
+    throw new Error('Treasury settlement must include the ADA minimum-UTxO floor and positive economic ADA')
   }
+  assertCompletedTreasurySettlement(completedTx, treasuryAddress, { lovelace: expectedLovelace })
 }
