@@ -116,10 +116,10 @@ runPoolSingletonZeroCase = do
 
 
 -- Regression for the currently configured first-Issue payment construction.
--- src/mint.ts sends 1,000,000 lovelace to Treasury, while Economic excludes
+-- src/mint.ts requests a Treasury output value of 1,000,000 lovelace, while Economic excludes
 -- minUtxoLovelace=1,600,000 from ADA's economic quantity. This test exercises
 -- the actual Plutus Economic.totalUsdmValue function used by MintPolicy; it
--- does not execute the full mint policy. The result must be zero, so it cannot
+-- does not execute the full mint policy or establish the final completed Lucid transaction body's output value. For the requested value, the result must be zero, so it cannot
 -- satisfy Genesis pdPriceUsdm=100 via this ADA-only output.
 runFixedAdaGenesisSettlementCase :: IO Bool
 runFixedAdaGenesisSettlementCase = do
