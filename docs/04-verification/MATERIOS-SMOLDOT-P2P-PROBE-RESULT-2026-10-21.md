@@ -25,6 +25,7 @@ The HTTP RPC was used only as an untrusted source of candidate block hashes and 
 | [#39588463820](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588463820) | `064de0418a952f38a69fae60748d53f65a1f7672` | ID `12340029226`; ZIP SHA-256 `0817770c01d8c53ec6a23038c371309fe2a67e6ab3580578f1e91321225468f7` | 18 candidate blocks; 3 headers hash-bound; 0 FRNK justifications captured |
 | [#39588504155](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588504155) | `72c7603ffeaa967188b9ecf33c074d59d0b05837` | ID `12341098852`; ZIP SHA-256 `cf957ac9fda457d8dc23d922b9b71cbf82b2c214efb4dd7059ecac20d5d2a68c` | 18 candidate blocks; 4 headers hash-bound; 0 FRNK justifications captured |
 | [#39588545434](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39588545434) | `810c49cea9c9cbd9089874c616f2e731cb767836` | ID `12339949549`; ZIP SHA-256 `d9b79ec7e85b36cb5554fdf4d1892e30344fe550d5f59b988708302da65dc074` | 18 candidate blocks; 3 headers hash-bound; 0 FRNK justifications captured |
+| [#39598706602 (run #8)](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39598706602) | `711a0fb852f819b481692cbb1b84d0bd4dfcd245` | ID `12344858114`; JSON diagnostics retained in the ZIP artifact | 18 candidate queries all `QUERY_UNAVAILABLE`; 0 hash-bound headers; 0 FRNK justifications |
 
 For all three runs, the Smoldot logs repeatedly reported GRANDPA warp sync idle/in progress at block **97,069**, while the untrusted HTTP RPC reported a finalized head around block **2,381,706–2,381,714**. This is an observed light-client synchronization/availability problem in this test configuration; it is not evidence that the later blocks are unfinalized.
 
@@ -37,6 +38,12 @@ The best target-specific result was from run #39588545434:
 - No raw GRANDPA justification was acquired from the subscription or block responses.
 
 The candidate scan sampled the activation block and nearby descendant candidates at offsets `0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301`. This is bounded evidence only; it is not an exhaustive scan of all Materios peers, all blocks, or every potential proof publisher.
+
+## Run #8: diagnostic RPC interference observed
+
+Run [#39598706602](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39598706602) used the first `system_health` instrumentation revision. Every sampled `system_health` request timed out, starting with the first probe immediately after genesis validation. Subsequent Smoldot `chain_getBlock` requests also timed out, and no historical header or justification was captured in this attempt. The native Smoldot log continued to alternate between “GrandPa warp sync in progress” and “idle” at block **97,069**.
+
+This means the health-RPC instrumentation was not useful and the run is **confounded for historical block-query availability**; it cannot establish that the P2P peer lacks all requested blocks. The capture script was revised in commit [808e34b](https://github.com/LiberoNuvola/Immortal-Protocol/commit/808e34bfe11ae32fe54a50fe3fe7a00f065a8c9d) to stop issuing `system_health` and instead record warp-sync state directly from Smoldot's native log callback. The next bounded run is needed to measure historical queries without those extra RPC calls.
 
 ## Conclusion
 
