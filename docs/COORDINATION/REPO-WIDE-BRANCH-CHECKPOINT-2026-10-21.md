@@ -1148,3 +1148,26 @@ Unit-test sources exercise V1 horizon derivation, clamps and lifecycle predicate
 | Full semantic audit | `PARTIAL / OPEN` |
 
 Sixteen expiry-related blob identities were reviewed; 15 were previously `NOT_REVIEWED`. Existing review references were preserved in evidence references. Review counts still mean static inspection only, not test execution or closure. No protocol source, policy semantics, workflow, branch topology, Preprod state or ledger state was changed.
+
+
+### 10.33 Semantic review slice 7 — B2 control carrier single-signer boundary — 2026-10-21
+
+Review record: [SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md](SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md), review-document commit [`063f0469daed175e35771506b46456a6b3583ed6`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/063f0469daed175e35771506b46456a6b3583ed6). Machine ledger status was updated for the ten exact source/test/workflow blob identities listed by that review. This is a static review on the frozen source snapshot `3373b3044b9c251da1ec217d128f5dcb3c87c894`; it does not rebase the census onto documentation-only HEADs.
+
+**Finding:** the current Plutus control carrier is authenticated by a single configured `PubKeyHash`, not by the off-chain Beacon B2 committee threshold. `ActivateControl` / `ContractControl` validate monotonic state shape and non-empty decision/observation references, but those references are not cryptographically bound to a verified quorum payload and the activation predicate described by the candidate design is not independently evaluated by the validator. The off-chain `services/beacon-b2-verifier` verifies synthetic Ed25519 quorum envelopes but is not bound into the Plutus transition guard. This is a single-key authority boundary, not an evidenced trustless/permissionless committee path.
+
+The one-time mint policy enforces seed consumption and the exact singleton mint field, but not the carrier-script destination; placement into the carrier is performed by the deployment builder. The off-chain observer fails closed on singleton/datum/configuration shape, but its mocked-UTxO tests are not on-chain transition tests.
+
+**CI/evidence finding:** `.github/workflows/pre-rich-b2-control-conformance.yml` omits `PRE-RICH/onchain/**` from its push filter and excludes those files from its artifact cache key. A source-only edit to the carrier can therefore miss automatic conformance and leave the conformance artifact cache key unchanged. The separate B2 Preprod deployment workflow is manual-only and was not dispatched here. The conformance job builds/exports the artifacts and runs off-chain TypeScript/Node suites; no Plutus carrier-specific negative-vector execution is evidenced by this review.
+
+#### Ledger state after slice 7
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities in the pinned census | 1,811 |
+| Entries with scoped static-review records | 123 |
+| Entries still `NOT_REVIEWED` | 1,688 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+The semantic ledger now links ten additional blob identities to this slice. A source review is not test execution, native-ledger proof, B2 deployment approval or permissionless-authority qualification. B2's authority model must be explicitly resolved under the existing source-of-truth hierarchy before any trustless/permissionless claim; no new control rule or quorum protocol is invented here. No protocol code, B2 transition semantics, V3/Reveal semantics, workflow, branch topology, transaction or deployment was changed by this review.

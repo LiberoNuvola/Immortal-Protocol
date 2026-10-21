@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 113,
-    "semantic_ledger_entries_not_reviewed": 1698,
+    "scoped_static_reviews_recorded": 123,
+    "semantic_ledger_entries_not_reviewed": 1688,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; P-06 on-chain expiry policy/snapshot binding is not established and issue #20 remains open. Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness/native P2.8 gates, Materios B3-A/B/C proof acquisition, and PRE-RICH normative source-label drift remain open. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; B2 Control transitions are single-key authorized and are not bound to the off-chain committee quorum verifier. P-06 expiry policy/snapshot binding and Issue #20 remain open. Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness/native P2.8 gates, Materios B3-A/B/C proof acquisition, and PRE-RICH normative source-label drift remain open.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -27734,9 +27734,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_STATIC_SEED_AND_MINT_QUANTITY_NOT_DESTINATION_BINDING",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -28381,9 +28381,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_STATIC_FAIL_CLOSED_OFFCHAIN_OBSERVATION_ONLY",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -40045,9 +40045,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_WORKFLOW_PATH_AND_CACHE_KEY_OMIT_ONCHAIN_SOURCES",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -42483,9 +42483,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_TESTS_SYNTHETIC_OFFCHAIN_QUORUM_ONLY",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -46772,9 +46772,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_DESIGN_CLOSURE_CANDIDATE_NOT_APPROVED",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -49334,9 +49334,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_STATIC_DEPLOYMENT_SELECTED_SINGLE_AUTHORITY_AND_OUTPUT",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -54516,9 +54516,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_WORKFLOW_MANUAL_DEPLOYMENT_NOT_DISPATCHED",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -58724,9 +58724,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_STATIC_SINGLE_SIGNER_AUTHORITY_NOT_COMMITTEE_PROOF",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -59224,9 +59224,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_MOCKED_UTXO_OBSERVATION",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
@@ -64583,9 +64583,9 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
+      "semantic_review_status": "REVIEWED_STATIC_OFFCHAIN_QUORUM_VERIFIER_NOT_BOUND_ONCHAIN",
+      "review_scope": "Static B2 control carrier/mint policy, off-chain observation, threshold verifier, deployment and CI-boundary review. No tests rerun, workflow dispatch, transaction submit, mint or deployment.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-B2-CONTROL-SINGLE-SIGNER-BOUNDARY-2026-10-21.md@063f0469daed175e35771506b46456a6b3583ed6",
       "evidence_references": []
     },
     {
