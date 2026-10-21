@@ -106,10 +106,8 @@ jobs:
           node <<'NODE'
           function rpcFailure(e) {
             const message = e instanceof Error ? e.message : '';
-            const methodNotFound = /(?:^|\\b)-32601\\s+Method not found/i.exec(message);
-            const invalidParams = /(?:^|\\b)-32602\\s+Invalid params/i.exec(message);
-            if (methodNotFound) return {code: -32601, classification: 'method-not-found'};
-            if (invalidParams) return {code: -32602, classification: 'invalid-params'};
+            if (message.includes('-32601 Method not found')) return {code: -32601, classification: 'method-not-found'};
+            if (message.includes('-32602 Invalid params')) return {code: -32602, classification: 'invalid-params'};
             return {classification: 'transport-or-rpc-error', errorType: e instanceof Error ? e.name : typeof e};
           }
           const archiveUrl = process.env.MATERIOS_ARCHIVE_RPC?.trim();
