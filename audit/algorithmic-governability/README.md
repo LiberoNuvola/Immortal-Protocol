@@ -13,7 +13,11 @@ This lab does not define new economic or governance rules. It checks already-sta
 
 The harnesses use deliberately small immutable toy objects. Passing them is evidence that the implementation preserves these boundaries in the modeled cases; it is not a proof of the entire protocol, a guarantee of merge, or evidence that repository permissions are free from discretion.
 
-## GitHub Auto-merge integration (research extension)\n\nThe contribution-acceptance toy model now also checks the intended preconditions for an Auto-merge request: evidence-gated eligibility, approval bound to the current head, passing required checks, and no unresolved concrete challenge. This is a policy-model test only; it does not inspect live PRs or configure GitHub permissions. See [`GITHUB-AUTO-MERGE-INTEGRATION.md`](../../docs/04-guides/GITHUB-AUTO-MERGE-INTEGRATION.md) for the proposed operational contract and the repository settings still required.\n\n## IMMORTAL Expansion namespace
+## GitHub Auto-merge integration (research extension)
+
+The contribution-acceptance toy model now also checks the intended preconditions for an Auto-merge request: evidence-gated eligibility, approval bound to the current head, passing required checks, and no unresolved concrete challenge. This is a policy-model test only; it does not inspect live PRs or configure GitHub permissions. See [`GITHUB-AUTO-MERGE-INTEGRATION.md`](../../docs/04-guides/GITHUB-AUTO-MERGE-INTEGRATION.md) for the proposed operational contract and the repository settings still required.
+
+## IMMORTAL Expansion namespace
 
 This lab contains support for the **IMMORTAL Expansion** research front. Its identifiers are:
 
