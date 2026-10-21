@@ -139,23 +139,33 @@ jobs:
           STATUS="build_or_derivation_failed"
           HASH="unavailable"
           CODE_SHA256="unavailable"
+          CODE_BLAKE2="unavailable"
 
-          if git -C "$SRC" checkout --detach "$CANDIDATE_COMMIT" > "$OUT/historical-checkout.log" 2>&1; then
-            if (cd "$SRC/partnerchain" && cargo build --locked --release -p materios-node) > "$OUT/historical-build.log" 2>&1; then
-              HIST_NODE="$SRC/partnerchain/target/release/materios-node"
-              if "$HIST_NODE" build-spec --chain preprod --raw > "$OUT/historical-v6-preprod-raw.json" 2> "$OUT/historical-build-spec.stderr"; then
-                if "$CURRENT_NODE" chain-id --chain "$OUT/historical-v6-preprod-raw.json" > "$OUT/historical-v6-identity.json" 2> "$OUT/historical-identity.stderr"; then
-                  HASH="$(jq -er '.genesis_hash | ascii_downcase' "$OUT/historical-v6-identity.json" 2>/dev/null || echo unavailable)"
-                  CODE_SHA256="$(node - "$OUT/historical-v6-preprod-raw.json" 2>/dev/null <<'NODE'
-          const fs = require('fs');
-          const crypto = require('crypto');
-          const doc = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-          const code = doc?.genesis?.raw?.top?.['0x3a636f6465'];
-          if (typeof code !== 'string' || !code.startsWith('0x')) process.exit(2);
-          process.stdout.write(crypto.createHash('sha256').update(Buffer.from(code.slice(2), 'hex')).digest('hex'));
-          NODE
-          )" || CODE_SHA256="unavailable"
-                  STATUS="derived"
+          # Build the historical source's exact runtime blob using Materios'
+          # own digest-pinned reproducible builder, which was added after the
+          # original genesis and archives the candidate commit at /materios.
+          if bash "$SRC/tools/runtime-build/build.sh" "$CANDIDATE_COMMIT" "$OUT/historical-runtime-build" > "$OUT/historical-runtime-build.log" 2>&1; then
+            WASM="$OUT/historical-runtime-build/materios_runtime.compact.compressed.wasm"
+            if [[ -s "$WASM" ]]; then
+              CODE_SHA256="$(sha256sum "$WASM" | cut -d ' ' -f1)"
+              CODE_BLAKE2="0x$(b2sum -l 256 "$WASM" | cut -d ' ' -f1)"
+
+              # Keep the pinned current node binary safe before checking out
+              # the historical revision in the same clone.
+              if git -C "$SRC" checkout --detach "$CANDIDATE_COMMIT" > "$OUT/historical-checkout.log" 2>&1; then
+                if (cd "$SRC/partnerchain" && cargo build --locked --release -p materios-node) > "$OUT/historical-build.log" 2>&1; then
+                  HIST_NODE="$SRC/partnerchain/target/release/materios-node"
+                  if "$HIST_NODE" build-spec --chain preprod > "$OUT/historical-v6-plain.json" 2> "$OUT/historical-build-spec-plain.stderr"; then
+                    CODE_HEX="$(xxd -p "$WASM" | tr -d '\n')"
+                    if jq --arg code "0x$CODE_HEX" '.genesis.runtimeGenesis.code = $code' "$OUT/historical-v6-plain.json" > "$OUT/historical-v6-plain-built.json" 2> "$OUT/historical-patch-code.stderr"; then
+                      if "$HIST_NODE" build-spec --chain "$OUT/historical-v6-plain-built.json" --raw > "$OUT/historical-v6-preprod-raw.json" 2> "$OUT/historical-build-spec-raw.stderr"; then
+                        if "$CURRENT_NODE" chain-id --chain "$OUT/historical-v6-preprod-raw.json" > "$OUT/historical-v6-identity.json" 2> "$OUT/historical-identity.stderr"; then
+                          HASH="$(jq -er '.genesis_hash | ascii_downcase' "$OUT/historical-v6-identity.json" 2>/dev/null || echo unavailable)"
+                          STATUS="derived"
+                        fi
+                      fi
+                    fi
+                  fi
                 fi
               fi
             fi
@@ -165,14 +175,17 @@ jobs:
           printf '%s\n' "$STATUS" > "$OUT/historical-candidate-status.txt"
           printf '%s\n' "$HASH" > "$OUT/historical-candidate-genesis-hash.txt"
           printf '%s\n' "$CODE_SHA256" > "$OUT/historical-candidate-runtime-code-sha256.txt"
+          printf '%s\n' "$CODE_BLAKE2" > "$OUT/historical-candidate-runtime-code-blake2-256.txt"
           {
             echo "status=$STATUS"
             echo "genesis_hash=$HASH"
             echo "runtime_code_sha256=$CODE_SHA256"
+            echo "runtime_code_blake2_256=$CODE_BLAKE2"
             echo "source_commit=$CANDIDATE_COMMIT"
           } | tee "$OUT/historical-candidate-result.txt"
+
           if [[ "$STATUS" != "derived" ]]; then
-            echo "::warning::Historical v6 source candidate did not produce an identity; diagnostic logs are retained."
+            echo "::warning::Historical v6 candidate did not produce a reconstructed raw identity; diagnostic logs are retained."
           fi
 
       - name: Assemble versioned evidence report
@@ -199,7 +212,7 @@ jobs:
           HIST_COMMIT="$(read_value historical-source-commit.txt)"
 
           VERDICT="FAIL"
-          if [[ "$RAW_SHA256" == "$EXPECTED_RAW_SHA256" && "$PUBLISHED_HASH" == "$EXPECTED" && "$RPC_HASH" == "$EXPECTED" && "$HIST_STATUS" == "derived" && "$HIST_HASH" == "$EXPECTED" ]]; then
+          if [[ "$RAW_SHA256" == "$EXPECTED_RAW_SHA256" && "$PUBLISHED_HASH" == "$EXPECTED" && "$RPC_HASH" == "$EXPECTED" && "$HIST_STATUS" == "derived" && "$HIST_HASH" == "$EXPECTED" && "$HIST_CODE_SHA256" == "$PUBLISHED_CODE_SHA256" ]]; then
             VERDICT="PASS"
           fi
 
@@ -232,7 +245,8 @@ jobs:
                 source_commit: $historical_candidate_commit,
                 status: $historical_candidate_status,
                 reproduced_genesis: $historical_candidate_genesis,
-                runtime_code_sha256: $historical_runtime_code_sha256
+                reproducible_runtime_code_sha256: $historical_runtime_code_sha256,
+                published_runtime_code_match: ($historical_runtime_code_sha256 == $published_runtime_code_sha256)
               },
               expected_live_genesis: $expected_live_genesis,
               published_raw_spec: {
@@ -259,7 +273,7 @@ jobs:
                 historical_source_reproduces_live_genesis: ($historical_candidate_status == "derived" and $historical_candidate_genesis == $expected_live_genesis)
               },
               verdict: $verdict,
-              limitation: "A raw-spec/RPC match is genesis identity evidence, not an independent source signature, GRANDPA finality proof, or authenticated authority-transition proof."
+              limitation: "A source-derived runtime blob and raw-spec/RPC match establish genesis identity reproducibility only; they do not prove independent source signature, GRANDPA finality, or authenticated authority-transition provenance."
             }' > "$OUT/MateriosGenesisReproduction.json"
 
           cat "$OUT/MateriosGenesisReproduction.json"
