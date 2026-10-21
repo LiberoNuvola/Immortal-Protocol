@@ -90,8 +90,9 @@ Linear Leios could improve transaction throughput and inclusion capacity after r
 CIP-118 could eventually enable sponsored or composed transactions for selected IMMORTAL adapter operations. It is **not** a drop-in fix for the current Reveal size blocker:
 
 - The full nested batch still has to fit within `maxTxSize`.
-- The existing Reveal spends Plutus V2 validators; a new-feature batch using sub-transactions/guards cannot run those V2 scripts under the CIP-118 compatibility rules.
-- Using the new path would therefore require a separately designed and verified Dijkstra/PlutusV4 route, with new script artifacts/hashes, exact transaction construction, aggregate collateral accounting and ledger evidence.
+- A CIP-118 batch that actually uses new features cannot execute Plutus V3-or-earlier scripts in those feature-using transactions. The CIP also describes a legacy-isolation mode for an older Plutus script at the **top level**: that top-level transaction must balance independently, cannot itself use the new features, and cannot use supplemental datums for sub-transaction outputs/reference inputs. Sub-transactions using the new features cannot use old Plutus versions. This is narrower than saying all older scripts are forbidden anywhere in a batch.
+- Consequently, putting the current Plutus V2 Reveal at the top level would not let it rely on a sponsor sub-transaction to balance its own fee/value, nor let it use the new transaction features. The entire serialized top-level batch, including every sub-transaction, still counts against `maxTxSize`; adding a batch is not a direct size remediation.
+- Any future design that executes the relevant behavior inside a feature-using sub-transaction or uses top-level guards would need a separately designed and verified Dijkstra/PlutusV4 path, with new script artifacts/hashes, exact transaction construction, aggregate collateral accounting and ledger evidence.
 - The already-selected reference-script remediation directly attacks the current witness-size issue without changing validator semantics and should remain the active route.
 
 No claim is made here that a migration to PlutusV4 is safe, necessary, or approved.
@@ -145,3 +146,43 @@ Only after Phase B, determine whether any canonical IMMORTAL operation benefits 
 Dijkstra/Linear Leios is a future Layer-1 throughput capability. CIP-118 is a more direct architectural opportunity for sponsorship and batching, but also introduces a new transaction model and PlutusV4/Guard requirements. Today the safest project decision is to preserve the existing reference-script Reveal remediation and current pinned evaluation lane; prepare a versioned support matrix and qualify CIP-118 separately when the target environment and API support are verifiable.
 
 This document is research only. It changes no runtime behavior, tests, contracts, transaction semantics, branch configuration or economic policy.
+
+
+## 6. Upstream implementation readiness and experiment entry gate (checked 2026-10-21)
+
+A source-level readiness check found real progress, but not yet a cleanly established production test target:
+
+| Upstream source | Observed status | Implication for IMMORTAL |
+|---|---|---|
+| Dijkstra readiness tracker, `cardano-ledger#5604` | Open; the ticket is explicitly the umbrella for a `cardano-node` release that can successfully hard fork into a fully functional Dijkstra era | Do not treat Dijkstra support in source branches as public-network activation |
+| CIP-118 ledger implementation tracker, `cardano-ledger#5123` | Open | Keep the CIP implementation and end-to-end integration status distinct from the Proposed CIP text |
+| PlutusV4 context tracker, `plutus#7342` | Open; issue body still lists the V4 definition/context items as unchecked | PlutusV4/Guard capability and exact version compatibility require direct verification |
+| Local Dijkstra testnet integration, `cardano-node#6709` | Open PR, not merged; it adds hard-fork, sub-transaction swap, script-witness and Guard properties. Its description reports 8/9 passing, with the remaining PlutusV4 top-level Guard property failing in the streaming decoder before guard validation. It is stacked on an integration branch and requires cardano-api 11.9 plus a pinned cardano-cli commit. | Valuable upstream test basis, but not a stable released toolchain or evidence of a working target environment |
+
+Sources:
+- https://github.com/IntersectMBO/cardano-ledger/issues/5604
+- https://github.com/IntersectMBO/cardano-ledger/issues/5123
+- https://github.com/IntersectMBO/plutus/issues/7342
+- https://github.com/IntersectMBO/cardano-node/pull/6709
+
+### Can we run the minimal CIP-118 experiment against an official Dijkstra testnet now?
+
+**Not demonstrated by the inspected evidence.** The upstream integration PR is building the local Dijkstra testnet path, but it remains unmerged and reports a decoder blocker on one of the PlutusV4/Guard properties. The Dijkstra roadmap still describes staged rollout through Preview, Pre-production and Mainnet; code-completion targets are estimates, not an activation guarantee.
+
+This repository session has no attached Dijkstra node/API endpoint or locally runnable cardano-node checkout. Therefore an end-to-end transaction experiment cannot be truthfully reported as executed here. The documented experiment is currently a **prepared entry gate**, not a pass.
+
+### Minimal experiment to run once the upstream test target is usable
+
+1. **Freeze the target:** record exact cardano-node, cardano-api/cli, cardano-ledger, Plutus compiler/API, era/protocol version and genesis configuration. Require a Dijkstra testnet that has actually reached protocol version 12.
+2. **Build a separate toy batch:** no PRE-RICH validators and no IMMORTAL monetary semantics. Use a key-controlled sub-transaction that is intentionally short of its fee/value and a top-level sponsor that completes the batch; sign only the test keys. Avoid live funds.
+3. **Baseline legacy isolation:** include a separately balanced legacy Plutus V2 top-level transaction plus an independently balanced feature-using sub-transaction, and verify that the top-level V2 script cannot depend on the sub-transaction's inputs, outputs, fee or new context.
+4. **Measure and inspect:** serialize the whole parent transaction including sub-transactions; compare exact bytes with observed `maxTxSize`; record all input/output values, overall balance, parent fee payer, aggregate collateral, per-script ExUnits, script languages and hashes, and the exact protocol parameters.
+5. **Negative cases:** missing sponsor funds, insufficient aggregate collateral, missing/invalid required Guard, duplicate/conflicting input, modified sub-transaction body, one failing script, and oversized aggregate CBOR. For script failure, prove the batch is not partially applied and only the specified collateral behavior occurs.
+6. **Evidence pack:** preserve signed transaction CBOR, tx id, full UTxO context, protocol parameters, system start/epoch context as needed, node logs, ledger result, block/slot observation, and a manifest with source/fixture/build hashes. Mark every result as local testnet, not Preprod/Mainnet.
+7. **Only then consider IMMORTAL:** decide whether an adapter operation benefits from sponsorship/composition; keep ProtocolUsageFee independent of Cardano chain fee/sponsorship. No G1 classification, fee formula or production migration is implied.
+
+### Go/no-go decision
+
+- **GO** for preparing the isolated experiment against a pinned upstream Dijkstra test harness when the decoder blocker and required toolchain are resolved.
+- **NO-GO** for applying CIP-118 to the active Reveal/production path today: no demonstrated target-network/API support, no ledger evidence for the proposed path, and no benefit to the current transaction-size gate established.
+- **G1 remains OPEN.** This readiness assessment selects no fee-bearing class, amount, fee destination, sponsor reimbursement, or optional margin.
