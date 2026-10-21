@@ -278,6 +278,8 @@ async function main(): Promise<void> {
 
   await writeEvidence({
     ...common,
+    signedUpdateBytes: freshUpdate.length,
+    signedUpdateSha256: sha256Hex(freshUpdate),
     status: 'PREPROD_LEDGER_ACCEPTED',
     ledgerGateA: 'POSITIVE_NATIVE_LEDGER_CASE_PASSED',
     pythStateReferenceScriptHash: pythRefScriptHash,
