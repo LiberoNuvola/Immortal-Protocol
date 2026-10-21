@@ -247,3 +247,27 @@ This conclusion is deliberately narrow: these files establish the missing fields
 5. Keep G1 **OPEN** until evidence demonstrates the whole chain: owner-approved policy record → immutable identity/commitment → exact profile/deployment/action binding → runtime verification before obligation derivation → resulting obligation enters existing Safe/`K_c`/atomic transition checks.
 
 No production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed by this follow-up.
+
+### 9.6 Haskell Issue decision path — exact pre-obligation boundary
+
+The follow-up traced the actual Haskell producer rather than relying only on interface names. These files were fetched from the same target branch:
+
+- `PRE-RICH/onchain/PreRichEconomicAdmission.hs` (blob `d8360b608f3bb32b7c74000de3ca3b5e3a907a9a`): `preRichEconomicAdmission` receives the fixed `EconomicProfile`, pre-state/action, pre- and candidate-EEV, executable/required liquidity, and Boolean inputs `truthVerified`, `eevFresh`, `obligationsComplete`, and `allOmegaSuccessorsInCertifiedKernel`. It checks `transitionValid`, constructs the candidate with `transition`, projects the candidate, then passes the supplied completeness Boolean to `EconomicGateInput` and runs `executionAdmissible`. It does not derive the obligation set itself or resolve a G1 policy.
+- `PRE-RICH/onchain/PreRichIssueDecision.hs` (blob `ec37ea8e656fa399f1e57e2404e0c6a2c5b5ccee`): `IssueDecisionInput` accepts `idiObligationsComplete` as an input. `produceIssueDecision` constructs `Issue (idiClass input) (idiPrice input)` and calls admission with the statically selected `preRichEconomicProfileV1`. The resulting decision includes state/action fingerprints and the supplied completeness flag, but no G1 policy reference, commitment, or fee-applicability result.
+- `PRE-RICH/onchain/PreRichEconomicProfile.hs` (blob `17487e50226a63061dfbf8500130a947bf5df62c`): the deployed source-level profile is `epVersion = 1`, class prices 1/2/3/5/10/25/50/100, and the 500 multiplier. It is a ticket-price/payout profile, not a usage-fee applicability policy.
+- `IMMORTAL/kernel/EconomicKernel.hs` (blob `229972487522da6392ff29aa97581096ebc0ff15`): the inspected kernel derives class exposure from profile price and ticket class state, computes worst-case exposure using `epMaxNormalPayoutMultiplier`, computes ProtectedCapital, RawSurplus and solvency. The inspected exported functions contain no protocol usage fee policy or fee-bearing action classification.
+- `IMMORTAL/state/EconomicStateV3.hs` (blob `632b3bc5f38be8f5a7f5f8de8187447bc0be33ba`): the V3 state/profile types expose ticket class and economic/control state. The inspected state shape does not itself represent a G1 declaration or policy commitment.
+- `relayer/authoritativeIssueRefinementEnvelope.js` (blob `009669b9a997ebfd26a63ffe36f0d187d6be5585`) explicitly calls itself a transport contract, not an oracle or cryptographic verifier. It validates that external refinement inputs include a `derivationVersion`, verification/source references and truth/freshness/completeness flags, but does not validate a G1 policy.
+- `relayer/preprodIssueObservationProvider.js` (blob `ff55cfa0bc28ac8a1d3f46bb52dc88ee980950b5`) validates and shapes observed values into the `IssueDecisionInput`; it states that the reader is responsible for obtaining the canonical V3 state/carrier and authenticated Oracle/Pool observations. It does not add a fee-policy decision.
+
+#### Consequence for ordering and completeness
+
+This establishes a more exact gap than “the witness lacks a field”: the Haskell Issue path receives `obligationsComplete` from upstream as a Boolean, then uses it as a gate condition. The inspected Issue producer does not itself prove that the upstream obligation inventory includes a G1 fee obligation whenever the approved policy says the Issue transition is fee-bearing. Merely setting `idiObligationsComplete = True`, attaching a `derivationVersion`, or emitting a valid `IssueDecision` does not establish that missing semantic link.
+
+The code also has a concrete existing profile selected in `produceIssueDecision`; the present G1 audit does not authorize replacing it, adding a fee to the ticket price, or changing the Issue transition. Whether the fee is an obligation and how it affects settlement must follow a separately approved G1 policy and the existing liability-first/ProtectedCapital/`K_c` rules. No fee amount, class, destination, or accounting classification is inferred here.
+
+#### Smallest next investigation
+
+Trace the producer of `IssueDecisionInput` and the concrete source that sets `idiObligationsComplete`, including its obligation inventory and derivation version. Determine whether that source can supply a version-bound, independently verified G1 policy result before it asserts completeness. If no such binding exists, document the minimal missing predicate at that upstream authoritative-input boundary; do not patch the Haskell Boolean gate or invent a parallel fee calculator.
+
+**G1 remains OPEN.** This source-backed finding covers the inspected Issue decision chain only; it does not claim that every action path or every repository file has been exhaustively audited.
