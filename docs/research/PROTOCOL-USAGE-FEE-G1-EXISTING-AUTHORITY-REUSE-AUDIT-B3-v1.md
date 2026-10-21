@@ -443,3 +443,18 @@ The current target-branch tree contains a family of more specific G1 research ar
 4. If G1 is later authorized for an Issue usage class, its declaration must be verified against the exact canonical class and deployment/profile revision and consumed before candidate post-state safety/`K_c` checks, within the existing atomic transition. The current documents keep the authority predicate and binding method OPEN; no production implementation should be inferred from the proposal.
 
 This is a scoped source/document audit, not a proof that no external service exists. No other branch, source code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
+
+
+### 9.16 Direct verification of the existing governance registry as a possible authority reuse
+
+I re-read the current target-branch governance implementation rather than relying only on the earlier cross-branch summary.
+
+- `IMMORTAL/governance/RulesetRegistry.hs` (blob `c79e452267e999931315e909717ee71a7b23ddee`) stores a ruleset version, commitment, `effectiveFrom`, and `supersedes`. It enforces append-only monotonic versioning, immutability of an existing version, supersession ordering, active-version lookup, and version/commitment compatibility.
+- `IMMORTAL/governance/GovernanceCommitment.hs` (blob `e3704095931de89216b0a227699a1f276685f326`) computes SHA-256 over the canonical governance commitment preimage and compares it to the event's declared payload commitment.
+- `IMMORTAL/governance/GovernanceAuthorization.hs` (blob `8a2716ed368e7403fbac82c7121369bc95ae53d1`) validates event-type/actor-class combinations, non-empty evidence references, event commitment consistency, ruleset registration, and the ruleset active at the event timestamp. It is a governance-event/ruleset validator.
+
+**Reuse assessment:** these files offer useful existing primitives for immutable version identity, canonical commitment checks, activation timing, and fail-closed ruleset compatibility. They do **not**, by themselves, define or verify a Protocol Usage Fee G1 declaration. The inspected `RulesetDefinition` contains no G1 class-to-applicability mapping; the authorization functions do not resolve an action to a canonical usage class, verify a declaration against a deployment/profile revision and relevant state context, or derive a fee obligation before the economic transition's candidate post-state. A commitment match proves consistency with the specified canonical preimage, not the semantic authorization of a particular G1 choice.
+
+No automatic mapping from an existing governance `ActorClass` (including `System` or `EmergencyAuthority`) to the project owner is established by this audit, and no signing identity/key model or G1-specific authority is inferred. The G1 authority-resolution proposal itself explicitly leaves the runtime predicate and its exact binding method open. The safe reuse is therefore **versioning/commitment/activation machinery only as a candidate**, contingent on a separately approved semantic link and canonical integration—not a claim that the current governance registry closes G1.
+
+**Final reuse conclusion:** the inspected repository already has adjacent infrastructure for admission evidence, signed Issue witnesses, governance events, ruleset commitments, and monotonic activation. None of these inspected components is a complete drop-in G1 authority mechanism. G1 remains OPEN; no fee-bearing class is selected. Documentation only.
