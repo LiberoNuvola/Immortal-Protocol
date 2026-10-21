@@ -279,7 +279,8 @@ jobs:
           cat /tmp/aiken-validator-renamed-file.log
           echo "aiken_validator_renamed_file_exit=${validator_renamed_file_status}"
 
-          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          rm -f "$tmp_val/validators/drand.ak"
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
           validator drand_beacon_verifier {
