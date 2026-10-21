@@ -4,12 +4,14 @@ import { Constr } from 'lucid-cardano'
 import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
   CANONICAL_ORACLE_PRECISION,
+  assertCompletedIssueValidityUpperBound,
   assertCompletedTreasuryAdaSettlement,
   assertCompletedTreasurySettlement,
   buildIssueSettlementAssets,
   decodeAdaOraclePriceReference,
   decodeOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
+  deriveIssueSettlementValidityUpperBoundMs,
   deriveSingleAssetIssueSettlementQuantities,
   type AdaOraclePriceReference,
   validateIssueSettlementQuote,
@@ -51,11 +53,12 @@ function multiassetFor(policyHex: string, assetNameHex: string, quantity: bigint
   }
 }
 
-function completedTx(outputs: any[]): any {
+function completedTx(outputs: any[], ttlSlot?: bigint): any {
   return {
     txComplete: {
       body: () => ({
         outputs: () => outputs,
+        ttl: () => ttlSlot === undefined ? undefined : ({ to_str: () => ttlSlot.toString() }),
       }),
     },
   }
@@ -72,6 +75,46 @@ function treasuryOutput(lovelace: bigint, address = 'addr_test_treasury', multia
 }
 
 describe('Issue settlement conformance', () => {
+  it('derives one finite transaction deadline from the earliest quote used by the Treasury output', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    const datum = new Constr(1, [[
+      new Constr(0, ['', '', 100n, nowMs - 2_000n, publisher] as any),
+      new Constr(0, [policy, name, 250n, nowMs - 1_000n, publisher] as any),
+    ]] as any)
+    expect(deriveIssueSettlementValidityUpperBoundMs({
+      treasuryAssets: { lovelace: 1_600_000n, [policy + name]: 1_000_000n },
+      oracleDatum: datum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toBe(nowMs - 2_000n + 3_600_000n)
+  })
+
+  it('rejects a missing, stale or publisher-mismatched quote when deriving the transaction deadline', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const fresh = new Constr(0, [policy, name, 250n, nowMs - 1_000n, publisher] as any)
+    const stale = new Constr(0, [policy, name, 250n, nowMs - 3_600_001n, publisher] as any)
+    const wrongPublisher = new Constr(0, [policy, name, 250n, nowMs - 1_000n, 'cd'.repeat(28)] as any)
+    const request = (datum: any) => deriveIssueSettlementValidityUpperBoundMs({
+      treasuryAssets: { lovelace: 1_600_000n, [policy + name]: 1_000_000n },
+      oracleDatum: datum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(() => request(new Constr(1, [[ada]] as any))).toThrow(/exactly one quote/)
+    expect(() => request(new Constr(1, [[ada, stale]] as any)).toThrow(/stale/)
+    expect(() => request(new Constr(1, [[ada, wrongPublisher]] as any)).toThrow(/publisher/)
+    expect(request(new Constr(1, [[ada, fresh]] as any))).toBe(nowMs - 1_000n + 3_600_000n)
+  })
+
+  it('requires a finite TTL in the completed transaction body and exact TTL-slot binding', () => {
+    expect(() => assertCompletedIssueValidityUpperBound(completedTx([], 123n), 123)).not.toThrow()
+    expect(() => assertCompletedIssueValidityUpperBound(completedTx([]), 123)).toThrow(/finite validity upper bound/)
+    expect(() => assertCompletedIssueValidityUpperBound(completedTx([], 122n), 123)).toThrow(/TTL mismatch/)
+  })
+
   it('decodes the five-field OracleDatum without reinterpreting its asset identity', () => {
     const datum = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
     expect(decodeAdaOraclePriceReference(datum)).toEqual(adaQuote())
