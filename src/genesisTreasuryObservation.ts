@@ -1,4 +1,5 @@
 import type { UTxO } from 'lucid-cardano'
+import { decodeOraclePriceReference } from './issueSettlement'
 
 import {
   GENESIS_PRE_TREASURY_THRESHOLD_USDM_SUBUNITS,
