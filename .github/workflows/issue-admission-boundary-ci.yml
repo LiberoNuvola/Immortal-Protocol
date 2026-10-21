@@ -70,6 +70,8 @@ jobs:
         run: node relayer/signedIssueAuthority.test.js
       - name: Verify signed Issue authority envelope end-to-end
         run: node relayer/preprodIssueAuthorityEnvelope.test.js
+      - name: Syntax-check read-only first Issue readiness gate
+        run: node --check audit/cardano-integration/preprod-first-issue-readiness.mjs
       - name: Typecheck adapter and boundary tests against locked Lucid
         run: >-
           npx tsc --noEmit --strict --target ES2020 --module ESNext
