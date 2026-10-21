@@ -23,6 +23,9 @@
 | Cryptographic core | **Final validation** |
 | State-machine conformance | **In progress** |
 | Economic implementation conformance | **Open / closing** |
+| Issue admission | **Authority-backed; permissionless conformance open** |
+| First real Issue transaction | **Not verified; settlement builder/body conformance open** |
+| Multi-asset ticket settlement | **USDM-denominated rule defined; current Oracle/builder path incomplete** |
 | B3 / canonical Beacon | **Target / in progress** |
 | Independent external security audit | **Not completed** |
 | Mainnet | **Not ready** |
