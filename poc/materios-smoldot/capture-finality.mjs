@@ -44,12 +44,60 @@ const config = {
 
 const startedAt = new Date().toISOString();
 const logTail = [];
+const syncLogObservations = [];
 function log(message) {
   const line = new Date().toISOString() + " " + message;
   console.log(line);
   logTail.push(line);
   if (logTail.length > 200) logTail.shift();
 }
+function recordSyncLogObservation(target, message) {
+  if (typeof target !== "string" || !target.includes("sync-service-")) return;
+  const match = /GrandPa warp sync (in progress|idle)(?: at block #(\d+) \(([^)]*)\))?/.exec(String(message));
+  if (!match) return;
+  syncLogObservations.push({
+    observedAt: new Date().toISOString(),
+    target,
+    status: match[1].toUpperCase().replace(" ", "_"),
+    blockNumber: match[2] ? Number(match[2]) : null,
+    blockHashHint: match[3] || null,
+    rawMessage: String(message),
+  });
+  if (syncLogObservations.length > 200) syncLogObservations.shift();
+}
+function assessSyncLogObservations(observations) {
+  const samples = observations.filter(item => Number.isSafeInteger(item.blockNumber));
+  const heights = samples.map(item => item.blockNumber);
+  const uniqueHeights = [...new Set(heights)];
+  const firstMs = samples.length ? Date.parse(samples[0].observedAt) : NaN;
+  const lastMs = samples.length ? Date.parse(samples[samples.length - 1].observedAt) : NaN;
+  const spanSeconds = Number.isFinite(firstMs) && Number.isFinite(lastMs)
+    ? Math.max(0, Math.round((lastMs - firstMs) / 1000))
+    : null;
+  let classification = "NO_WARP_SYNC_STATUS_OBSERVED";
+  if (samples.length > 0 && uniqueHeights.length > 1) {
+    classification = "WARP_SYNC_ADVANCEMENT_OBSERVED";
+  } else if (samples.length >= 3 && uniqueHeights.length === 1 && spanSeconds >= 60) {
+    classification = "WARP_SYNC_STALLED_AT_FIXED_BLOCK";
+  } else if (samples.length > 0) {
+    classification = "WARP_SYNC_STATUS_OBSERVED";
+  }
+  return {
+    classification,
+    observation_count: observations.length,
+    block_observation_count: samples.length,
+    distinct_observed_block_count: uniqueHeights.length,
+    min_observed_block: heights.length ? Math.min(...heights) : null,
+    max_observed_block: heights.length ? Math.max(...heights) : null,
+    idle_observations: observations.filter(item => item.status === "IDLE").length,
+    in_progress_observations: observations.filter(item => item.status === "IN_PROGRESS").length,
+    first_observed_at: samples[0]?.observedAt ?? null,
+    last_observed_at: samples[samples.length - 1]?.observedAt ?? null,
+    observation_span_seconds: spanSeconds,
+    note: "Derived from local Smoldot warp-sync log messages over a bounded run. It does not identify the underlying peer cause and is not a finality claim.",
+  };
+}
+
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
 }
@@ -189,7 +237,6 @@ let finalizedSubscriptionId = null;
 let proofSignalResolvers = [];
 let scanDeadline = Date.now() + config.waitSeconds * 1000;
 let lastFinalizedHead = null;
-let lastHealth = null;
 let targetProbe = {
   status: "NOT_ATTEMPTED",
   blockHash: config.targetHash,
@@ -473,63 +520,6 @@ async function scanHistoricalCandidates() {
   }
 }
 
-const healthObservations = [];
-
-async function observeHealth(label) {
-  try {
-    const value = await rpc("system_health", [], 5000);
-    lastHealth = {
-      observedAt: new Date().toISOString(),
-      label,
-      value,
-    };
-    healthObservations.push(lastHealth);
-    if (healthObservations.length > 20) healthObservations.shift();
-    log(
-      "Smoldot health [" + label + "]: peers=" + String(value?.peers ?? "unknown") +
-      " isSyncing=" + String(value?.isSyncing ?? "unknown") +
-      " shouldHavePeers=" + String(value?.shouldHavePeers ?? "unknown")
-    );
-  } catch (error) {
-    const observation = {
-      observedAt: new Date().toISOString(),
-      label,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    healthObservations.push(observation);
-    if (healthObservations.length > 20) healthObservations.shift();
-    log("Smoldot health [" + label + "] unavailable: " + observation.error);
-  }
-}
-
-function assessSystemHealth(observations) {
-  const samples = observations.filter(
-    item => item?.value && typeof item.value === "object" && Number.isFinite(item.value.peers)
-  );
-  const peers = samples.map(item => item.value.peers);
-  let classification = "MIXED_OR_INCONCLUSIVE";
-  if (samples.length === 0) {
-    classification = "HEALTH_UNAVAILABLE";
-  } else if (samples.every(item => item.value.peers === 0)) {
-    classification = "NO_PEERS_OBSERVED";
-  } else if (samples.some(item => item.value.peers > 0 && item.value.isSyncing === true)) {
-    classification = "PEERS_CONNECTED_SYNCING_OBSERVED";
-  } else if (samples.every(item => item.value.peers > 0 && item.value.isSyncing === false)) {
-    classification = "PEERS_CONNECTED_NOT_SYNCING_AT_SAMPLE_TIMES";
-  }
-  return {
-    classification,
-    observation_count: observations.length,
-    valid_sample_count: samples.length,
-    min_peers: peers.length ? Math.min(...peers) : null,
-    max_peers: peers.length ? Math.max(...peers) : null,
-    is_syncing_true_samples: samples.filter(item => item.value.isSyncing === true).length,
-    is_syncing_false_samples: samples.filter(item => item.value.isSyncing === false).length,
-    should_have_peers_true_samples: samples.filter(item => item.value.shouldHavePeers === true).length,
-    note: "Bounded local observations only; not a network-wide availability or finality claim.",
-  };
-}
-
 async function main() {
   let spec;
   const finalErrors = [];
@@ -546,7 +536,10 @@ async function main() {
       forbidWs: false,
       forbidNonLocalWs: false,
       forbidWss: false,
-      logCallback: (_level, target, message) => log("[smoldot " + target + "] " + message),
+      logCallback: (_level, target, message) => {
+        recordSyncLogObservation(target, message);
+        log("[smoldot " + target + "] " + message);
+      },
     });
     chain = await client.addChain({ chainSpec: spec.effectiveText });
     const pumpPromise = pumpResponses();
@@ -561,7 +554,7 @@ async function main() {
       throw new Error("SYSTEM_CHAIN_MISMATCH expected=Materios Preprod v6 observed=" + String(systemChain));
     }
     log("Smoldot reports the pinned Materios genesis hash and chain name");
-    await observeHealth("after-genesis-identity");
+    log("using native Smoldot sync logs for bounded sync diagnostics; no system_health RPC probes");
 
     try {
       proofSubscriptionId = await rpc("grandpa_subscribeJustifications", [], 15000);
@@ -596,20 +589,14 @@ async function main() {
 
     scanDeadline = Date.now() + config.waitSeconds * 1000;
     await scanHistoricalCandidates();
-    let healthTick = 0;
     while (Date.now() < scanDeadline && captured.length === 0) {
-      // Avoid repeatedly queuing historical block calls while warp sync is stalled.
-      // Keep the proof subscription alive and sample health at a low frequency so
-      // the evidence distinguishes "no peers", "syncing", and a stalled sync.
+      // Keep the proof subscription alive without issuing node-level health RPCs,
+      // which timed out in the previous run and contaminated subsequent block queries.
       await waitForProofSignal(3000);
-      healthTick += 1;
-      if (healthTick % 5 === 0 && Date.now() < scanDeadline && captured.length === 0) {
-        await observeHealth("wait-" + healthTick);
-      }
     }
     const targetProof = captured.find(item => item.targetHash === config.targetHash) || null;
-    const systemHealthAssessment = assessSystemHealth(healthObservations);
-    log("Smoldot health assessment: " + JSON.stringify(systemHealthAssessment));
+    const syncLogAssessment = assessSyncLogObservations(syncLogObservations);
+    log("Smoldot sync-log assessment: " + JSON.stringify(syncLogAssessment));
     const evidence = {
       schema_version: "materios-smoldot-p2p-finality-capture-v1",
       captured_at: new Date().toISOString(),
@@ -636,9 +623,8 @@ async function main() {
         genesis_hash_match: observedGenesis === config.genesisHash,
         initial_finalized_head: initialHead,
         latest_finalized_head_observed: lastFinalizedHead,
-        latest_system_health: lastHealth,
-        system_health_observations: healthObservations,
-        system_health_assessment: systemHealthAssessment,
+        sync_log_observations: syncLogObservations,
+        sync_log_assessment: syncLogAssessment,
       },
       target_probe: targetProbe,
       candidate_block_probes: candidateBlockProbes,
@@ -705,6 +691,8 @@ async function main() {
       },
       captured_justifications: captured,
       capture_errors: candidateErrors,
+      smoldot_sync_log_observations: syncLogObservations,
+      smoldot_sync_log_assessment: assessSyncLogObservations(syncLogObservations),
       claims: { raw_grandpa_justification_transport_available: false, b3_a_closed: false },
       smoldot_log_tail: logTail.slice(-100),
     }, null, 2) + "\n");
