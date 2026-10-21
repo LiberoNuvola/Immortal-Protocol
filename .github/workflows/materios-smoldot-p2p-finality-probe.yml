@@ -18,12 +18,6 @@ on:
         required: true
         type: string
         default: "360"
-  push:
-    branches:
-      - work/b3-materios-provenance-evidence
-    paths:
-      - ".github/workflows/materios-smoldot-p2p-finality-probe.yml"
-      - "poc/materios-smoldot/**"
 
 permissions:
   contents: read
