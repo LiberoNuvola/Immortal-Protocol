@@ -274,19 +274,23 @@ Settlement value and EEV perimeter are different concepts. Accepting PRE, NIGHT 
 
 ### 13.2 Current Issue implementation gap — not a successful-sale claim
 
-The current working-branch builder still constructs the Treasury output with a fixed `1,000,000` lovelace amount through `TICKET_PAYMENT_LOVELACE`. Meanwhile, the Plutus conversion code sets `minUtxoLovelace = 1,600,000` and values ADA using:
+The current working-branch builder requests a Treasury output with a fixed 1,000,000 lovelace amount through TICKET_PAYMENT_LOVELACE. The locked lucid-cardano dependency is version 0.10.11: the application supplies this explicit value to payToContract and calls complete(); the application code does not derive a settlement quantity from the USDM target or validate the completed transaction body's Treasury value against the canonical economic conversion before signing. No successful completed/signed Issue transaction establishes the final output value.
+
+The Plutus conversion code sets minUtxoLovelace = 1,600,000 and values ADA using:
 
 ```text
 economicAdaLovelace = max(0, outputAdaLovelace - minUtxoLovelace)
 ```
 
-For the builder's current ADA-only Treasury output:
+For an ADA-only Treasury value equal to the amount requested by the builder, the canonical valuation function returns:
 
 ```text
 max(0, 1,000,000 - 1,600,000) = 0
+valuedTreasuryOutput = 0 USDM sub-units
+requiredGenesisPrice = 100 USDM sub-units
 ```
 
-The Genesis ticket price is 1 USDM, represented as 100 USDM sub-units. Therefore this fixed 1-ADA output contributes zero economic ADA value under the current conversion function and cannot satisfy the positive exact-equality price check by itself. This is a concrete implementation mismatch, not a reason to relax the on-chain rule.
+Therefore, if the requested ADA-only value is also the value in the final Treasury output, it contributes zero economic ADA value and cannot satisfy the positive exact-equality price check. If transaction completion rejects the under-minimum output or produces another final value, that must be observed and measured, not assumed. The proven conclusion is that the current builder has no explicit, tested, price-derived settlement construction or final-body settlement conformance check. This is an implementation/conformance gap, not a reason to relax the on-chain rule.
 
 The current oracle datum is also a single-asset `OracleDatum`, and the DApp builder binds one configured Oracle State singleton. Consequently, multi-asset settlement combinations, and production support for PRE/NIGHT as individual payment choices, must not be reported as implemented until the reference-input/price-source representation, supported asset profile and builder are shown to provide the necessary authenticated quotes for the exact transaction. PRE/NIGHT acceptance additionally depends on qualifying the relevant asset-specific price-reference source.
 
