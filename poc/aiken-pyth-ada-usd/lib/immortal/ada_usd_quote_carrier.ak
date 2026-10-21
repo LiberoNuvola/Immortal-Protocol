@@ -89,7 +89,7 @@ fn singleton_output_count(
   list.length(
     list.filter(
       outputs,
-      fn(output) { assets.quantity_of(output.value, policy, name) == 1 },
+      fn(output) { cardano_assets.quantity_of(output.value, policy, name) == 1 },
     ),
   )
 }
