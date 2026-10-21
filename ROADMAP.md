@@ -70,6 +70,11 @@ Additional applications may specialize IMMORTAL with their own economic policy, 
 - [x] Licensing baseline recorded
 - [ ] Final repository-wide SPDX/provenance audit
 - [ ] Public contribution workflow hardened
+  - [x] Non-normative evidence-gated workflow proposal drafted: `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`
+  - [ ] Review and adopt response windows, challenge categories, and conflict-of-interest handling
+  - [ ] Extend `audit/algorithmic-governability` with adversarial contribution-acceptance cases
+  - [ ] Implement and verify any agreed PR status/check automation
+  - [ ] Validate the process on representative PRs before marking this item complete
 - [ ] Reproducible release process
 
 ## 5. Verification gates
