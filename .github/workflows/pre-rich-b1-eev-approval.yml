@@ -74,6 +74,28 @@ jobs:
       - name: Materialize DEPLOYMENT_APPROVED qualification
         run: node audit/cardano-integration/preprod-direct-usdm-approve.mjs
 
+      - name: Normalize approved governance state
+        run: |
+          node --input-type=commonjs - <<'NODE'
+          const fs = require('node:fs')
+          const { createHash } = require('node:crypto')
+          const p = 'audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json'
+          const q = JSON.parse(fs.readFileSync(p, 'utf8'))
+          if (q.deploymentApproval?.status !== 'DEPLOYMENT_APPROVED') {
+            throw new Error('refusing to normalize an artifact without deployment approval')
+          }
+          q.governance = {
+            ...(q.governance ?? {}),
+            qualificationMeaning: 'EV1-EV7 were mechanically qualified against the observed direct-USDM source set. This artifact records a separate DEPLOYMENT_APPROVED decision for that exact candidate; it does not itself authorize Issue admission.',
+            requiredNextStep: 'Before Issue admission, revalidate the live UTxO and validate this approval together with authenticated control state, ProtectedCapital provenance, viability/liquidity evidence, and the authoritative Issue decision.',
+          }
+          delete q.evidenceHash
+          q.evidenceHash = createHash('sha256')
+            .update(JSON.stringify(q, (_key, item) => typeof item === 'bigint' ? item.toString() : item), 'utf8')
+            .digest('hex')
+          fs.writeFileSync(p, JSON.stringify(q, null, 2) + '\n')
+          NODE
+
       - name: Verify approval result
         run: |
           node - <<'NODE'
@@ -88,6 +110,11 @@ jobs:
           if (q.deploymentApproval.qualificationEvidenceHash !== q.governance?.approvalInputQualificationHash) throw new Error('approval does not bind the original qualification digest')
           if (q.deploymentApproval.evidenceHash !== q.governance?.approvalEvidenceHash) throw new Error('approval digest does not match its governance evidence record')
           if (!/^[0-9a-f]{64}$/.test(q.deploymentApproval.qualificationEvidenceHash ?? '')) throw new Error('original qualification digest missing')
+          if (!q.governance?.qualificationMeaning?.includes('records a separate DEPLOYMENT_APPROVED decision')) throw new Error('approved governance meaning is stale or inconsistent')
+          if (!q.governance?.requiredNextStep?.includes('authoritative Issue decision')) throw new Error('approved governance next step is stale or incomplete')
+          const { evidenceHash, ...payload } = q
+          const actualEvidenceHash = require('node:crypto').createHash('sha256').update(JSON.stringify(payload, (_key, item) => typeof item === 'bigint' ? item.toString() : item), 'utf8').digest('hex')
+          if (evidenceHash !== actualEvidenceHash) throw new Error('approved qualification evidence hash does not match normalized artifact')
           NODE
 
       - name: Upload approved EEV evidence
