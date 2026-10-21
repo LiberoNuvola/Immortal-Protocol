@@ -1,0 +1,16 @@
+name = "liberonuvola/immortal-pyth-ada-usd-probe"
+version = "0.1.0"
+compiler = "v1.1.21"
+plutus = "v3"
+license = "Apache-2.0"
+description = "Isolated Pyth Lazer ADA/USD signed-update and freshness probe; not a production validator."
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v3.0.0"
+source = "github"
+
+[[dependencies]]
+name = "pyth-network/pyth-lazer-cardano"
+version = "main"
+source = "github"
