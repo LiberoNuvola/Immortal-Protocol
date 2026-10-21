@@ -136,6 +136,7 @@ jobs:
             '- Target probe status: **' + String(target.status ?? 'unknown') + '**',
             '- Latest finalized head observed: **' + JSON.stringify(e.chain?.latest_finalized_head_observed ?? null) + '**',
             '- Native sync-log observations recorded: **' + String(syncObservations.length) + '**',
+            '- Observed sync targets: **' + String((syncAssessment.observed_sync_targets ?? []).join(', ') || 'n/a') + '**',
             '- Sync-log assessment: **' + String(syncAssessment.classification ?? 'NOT_AVAILABLE') + '**',
             '- Distinct observed blocks: **' + String(syncAssessment.distinct_observed_block_count ?? 0) + '**',
             '- Observed block range: **' + String(syncAssessment.min_observed_block ?? 'n/a') + '–' + String(syncAssessment.max_observed_block ?? 'n/a') + '**',
