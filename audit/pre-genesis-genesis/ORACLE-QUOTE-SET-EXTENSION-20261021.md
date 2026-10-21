@@ -168,3 +168,10 @@ The branch has an additive on-chain and TypeScript decoder for `OracleQuoteSet`,
 - **EEV:** unchanged. Payment-asset eligibility does not expand the direct-USDM EEV perimeter.
 
 Do not mark the first real Issue or multi-asset settlement GREEN merely because frontend and pure conformance CI pass.
+
+
+### 8.5 Read-only live-state observation tool added
+
+The working branch now includes `audit/cardano-integration/observe-preprod-oracle-quote-set.mjs` and its pure decoder `oracleQuoteSetObservation.mjs`. The CLI requires the configured Preprod Blockfrost endpoint/project ID, Oracle State address, singleton policy/token name, and expected publisher identity. It reads the exact configured UTxO and emits a digest-bearing JSON observation containing the datum hash/reference, legacy-vs-quote-set constructor, quote identities, duplicate units, publisher-field matches, slot-derived freshness checks, and eligible units.
+
+This is explicitly **read-only**: it has no wallet seed/key, transaction builder, signer, submit path or state-update code. Its status does not claim source truth; it always reports that external price-source qualification remains unproven by datum bytes alone. Focused synthetic tests exercise the legacy and quote-set decoder through the existing settlement conformance suite. The live CLI itself has not been run in this checkpoint, so it has not produced evidence for the actual Preprod singleton.
