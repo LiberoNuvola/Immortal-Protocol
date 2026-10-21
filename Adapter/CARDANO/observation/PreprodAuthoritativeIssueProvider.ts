@@ -34,6 +34,11 @@ const { readPreprodIssueObservation } = require('../../../relayer/preprodIssueOb
     protectedCapitalProvenance: unknown
     viabilityCertificate: unknown
     carrierBindingSignature: string
+    authorityDecisionBinding?: {
+      stateHash: string
+      actionFingerprint: string
+      postStateHash: string
+    }
     decisionInput: Record<string, unknown>
   }>
 }
@@ -245,9 +250,16 @@ export function createPreprodAuthoritativeIssueProvider(
         'signed authority did not provide a valid V3 carrier binding signature',
       )
     }
+    const authorityDecisionBinding = observed.authorityDecisionBinding
+    if (!authorityDecisionBinding) {
+      throw new Error(
+        'signed authority did not provide the signed state/action/post-state digests',
+      )
+    }
 
     return {
       decisionInput: observed.decisionInput,
+      authorityDecisionBinding,
       decisionReference: String((observed.decisionInput as Record<string, unknown>).decisionReference),
       observationReference: observed.observationReference,
       poolInputReference: observed.poolInputReference,
