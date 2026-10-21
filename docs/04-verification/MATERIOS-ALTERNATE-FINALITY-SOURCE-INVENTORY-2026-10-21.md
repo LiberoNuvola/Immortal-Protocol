@@ -71,7 +71,8 @@ A fresh read of [smoldot issue #3288](https://github.com/paritytech/smoldot/issu
 This changes the recommended engineering priority: we do not need to recreate the proposed RPC surface. We need to diagnose why the existing pinned light client does not acquire from the published Materios peer. The probe is already configured to verify the raw chain-spec digest and genesis identity, ask the P2P client for historical blocks, reconstruct the SCALE header and check the justification target hash. It must continue to treat the result as acquisition evidence only.
 
 Bounded next experiment:
-1. Re-run only when useful to obtain fresh peer/sync logs, preserving the same pinned PR SHA and genesis/chain-spec checks.
+1. The existing capture script now records `system_health` immediately after genesis validation and at 15-second intervals during the wait, including peer count, `isSyncing`, `shouldHavePeers`, timestamps and query errors. This closes a diagnostics gap: the previously declared `latest_system_health` field was never populated. Change committed in `43b637a2d5792aab243c27cb2eddd2b84e791fbf`, with README documentation in `3b5ef01b32f8d215aeb89eb7f3f0d6a771981c4c`.
+2. Re-run only when useful to obtain fresh peer/sync logs, preserving the same pinned PR SHA and genesis/chain-spec checks.
 2. Capture the full smoldot log state around warp-sync progress and peer count; distinguish peer connectivity, warp-sync progress, and historical block query results instead of treating them as one generic failure.
 3. If an additional peer identity or justification-retaining endpoint is published, add it as an explicit documented candidate and rerun against it. No guessed hosts.
 4. Accept success only when a raw FRNK justification is captured and its target header hash matches; then feed it to the existing independent IMMORTAL verifier. A proof for a current block demonstrates transport only; it does not satisfy the historical authority-transition gate.
