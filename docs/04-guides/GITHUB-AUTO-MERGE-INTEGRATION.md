@@ -22,9 +22,9 @@ Repository metadata currently reports `allow_auto_merge = false`. Therefore GitH
 ## Proposed merge path
 
 1. A PR declares its contribution class (A–E) and supplies the evidence package in `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`.
-2. The algorithmic-governability evidence gate evaluates only process eligibility: declared class, affected scope, normative status, evidence completeness, and commit binding.
+2. The initial live classifier is `scripts/contribution-evidence-gate.mjs`, invoked by `.github/workflows/contribution-evidence-gate.yml`. It checks the declaration and the complete changed-file inventory using base-branch code, verifies that each file fits at least one declared class-specific path boundary, and requires `Evidence-bound commit SHA` to equal the current PR head.
 3. Existing required CI checks evaluate their actual properties. The evidence gate must not substitute for tests, conformance, security review, or ledger evidence.
-4. A required human approval is obtained under the repository's branch rules. Approval is a repository action, not proof of conformance. For changes that need stronger review, the existing stronger review path applies.
+4. A required human approval and the other required CI checks are obtained under the repository's branch rules. The new classifier does not independently evaluate approvals, validate a claimed CI result, or adjudicate human challenges. Approval is a repository action, not proof of conformance. For changes that need stronger review, the existing stronger review path applies.
 5. Any valid, unresolved challenge blocks Auto-merge. It must receive a recorded disposition before the ordinary merge preconditions can be satisfied; a response deadline never dismisses it automatically.
 6. GitHub Auto-merge is eligible only after all required reviews and required status checks pass for the current head. Any new commit invalidates checks and any challenge disposition tied to the prior head, causing reevaluation.
 7. The merge method is selected from the repository's allowed merge methods; no workflow may bypass required checks or write directly to the protected branch.
@@ -41,6 +41,10 @@ Candidate classes are A–E as defined in the public contribution workflow:
 
 The *entire effective change* must remain within the declared eligible scope. A class label, file path, green check, approval, or popularity signal is not sufficient by itself.
 
+
+
+The gate's A–E path mapping is intentionally narrower than a free-form class declaration: A covers non-normative Markdown; B covers audit tooling and selected scripts outside the governance control plane; C covers test/conformance/fixture paths; D covers process guidance; E covers explicitly named residual-obligation records. A PR declaring multiple classes must have every changed file match at least one declared class. Known normative paths and the governance-control plane fail closed to stronger review. This path classification is a filter, not a proof that unrecognized files have no semantic effect.
+
 ## Mandatory exclusion / stronger-review routing
 
 The reduced path must not be used for Constitution, Economic Kernel, normative `[M]` predicates, `Safe`, `Ω`, `T`, obligation partition, universal semantics, safety conditions, economic policy, authority boundaries, evidence trust roots, signing/release controls, branch-protection controls, or any semantically ambiguous change.
@@ -54,7 +58,7 @@ An administrator must apply and verify these settings in GitHub before describin
 1. Enable **Allow auto-merge** in repository settings.
 2. Protect the intended target branch with a ruleset/branch protection rule.
 3. Require pull requests and the agreed number/type of approvals; dismiss stale approvals when the head changes.
-4. Require the exact named status checks selected for the protected branch, including the dedicated evidence-gate check once it is implemented and validated. Do not rely on a workflow that is skipped for some changed paths as the only required check.
+4. Require the exact named status checks selected for the protected branch, including `contribution-evidence-eligibility` after its policy self-tests pass and representative PR behaviour is validated. Do not rely on a workflow that is skipped for some changed paths as the only required check.
 5. Require conversation resolution and prevent force pushes/deletion as appropriate.
 6. Do not permit routine bypass of required checks. If administrators retain bypass powers, document that this is a residual operational authority rather than claiming discretion has been eliminated.
 7. Configure CODEOWNERS/stronger reviewers for normative and security-sensitive areas. A sole maintainer cannot manufacture independent review by turning on Auto-merge.
