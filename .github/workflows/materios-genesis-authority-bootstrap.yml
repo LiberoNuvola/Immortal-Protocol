@@ -1,0 +1,140 @@
+name: Materios Genesis Authority Bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - "poc/materios-execution-verifier/Cargo.toml"
+      - "poc/materios-execution-verifier/src/bin/verify-genesis-trust-anchor.rs"
+      - ".github/workflows/materios-genesis-authority-bootstrap.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: materios-genesis-authority-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-pinned-genesis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout IMMORTAL work branch
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Materios source fixture
+        uses: actions/checkout@v4
+        with:
+          repository: Flux-Point-Studios/materios
+          ref: bc1465d85e033001bc86175b85d60f2e5c353413
+          path: upstream-materios
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache SDK and verifier build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Recover exact published raw genesis input
+        id: genesis
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p poc/materios-execution-verifier/out
+          gzip -dc upstream-materios/tools/launch-preflight/fixtures/preprod-v6-raw.json.gz \
+            > poc/materios-execution-verifier/out/chain-spec-preprod-raw.json
+          actual_size="$(stat -c '%s' poc/materios-execution-verifier/out/chain-spec-preprod-raw.json)"
+          actual_sha="$(sha256sum poc/materios-execution-verifier/out/chain-spec-preprod-raw.json | awk '{print $1}')"
+          test "$actual_size" = "1063592"
+          test "$actual_sha" = "77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa"
+          {
+            echo "raw_size=$actual_size"
+            echo "raw_sha=$actual_sha"
+          } >> "$GITHUB_OUTPUT"
+          echo "Pinned raw genesis input: size=$actual_size SHA256=$actual_sha"
+
+      - name: Test bootstrap verifier
+        env:
+          CARGO_TERM_COLOR: always
+        run: cargo test --manifest-path poc/materios-execution-verifier/Cargo.toml --bin verify-genesis-trust-anchor
+
+      - name: Recompute genesis root and extract GRANDPA authority state
+        env:
+          CARGO_TERM_COLOR: always
+          RUST_BACKTRACE: "1"
+        run: |
+          set -euo pipefail
+          cargo run --quiet \
+            --manifest-path poc/materios-execution-verifier/Cargo.toml \
+            --bin verify-genesis-trust-anchor \
+            < poc/materios-execution-verifier/out/chain-spec-preprod-raw.json \
+            > poc/materios-execution-verifier/out/GenesisAuthorityBootstrap.json
+
+      - name: Enforce report invariants and summarize
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p = 'poc/materios-execution-verifier/out/GenesisAuthorityBootstrap.json';
+          const r = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const required = [
+            'complete_raw_genesis_map_recomputed',
+            'computed_genesis_hash_matches_configured_chain_anchor',
+            'grandpa_authorities_decoded_from_hash_bound_genesis_storage',
+            'grandpa_keys_cross_checked_against_pinned_source',
+            'grandpa_weights_read_from_raw_genesis_storage',
+            'grandpa_set_id_derived_from_explicit_storage_or_genesis_default',
+          ];
+          if (r.status !== 'VERIFIED') throw new Error('Unexpected status: ' + r.status);
+          if (r.chain_id !== 'materios_preprod_v6') throw new Error('Wrong chain ID');
+          if (r.computed_genesis_hash !== '0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf') {
+            throw new Error('Genesis hash differs from the pinned trust anchor');
+          }
+          if (r.grandpa_authority_count !== 4) throw new Error('Expected four genesis GRANDPA authorities');
+          if (r.grandpa_current_set_id !== 0) throw new Error('Unexpected genesis GRANDPA set ID');
+          for (const claim of required) {
+            if (r.claims?.[claim] !== true) throw new Error('Missing verified claim: ' + claim);
+          }
+          for (const authority of r.grandpa_authorities) {
+            if (!/^0x[0-9a-f]{64}$/.test(authority.public_key)) throw new Error('Malformed GRANDPA authority key');
+            if (!Number.isSafeInteger(authority.weight) || authority.weight <= 0) {
+              throw new Error('Invalid GRANDPA authority weight in decoded genesis state');
+            }
+          }
+          const summary = [
+            '# Materios genesis authority bootstrap',
+            '',
+            '- Status: VERIFIED',
+            '- Chain ID: ' + r.chain_id,
+            '- Genesis hash: ' + r.computed_genesis_hash,
+            '- Recomputed genesis state root: ' + r.genesis_state_root,
+            '- Raw genesis SHA256: ' + r.source.raw_spec_sha256,
+            '- Runtime code SHA256: ' + r.runtime_code_sha256,
+            '- Runtime code Blake2-256: ' + r.runtime_code_blake2_256,
+            '- GRANDPA current set ID: ' + r.grandpa_current_set_id + ' (' + r.grandpa_current_set_id_provenance + ')',
+            '- GRANDPA authorities and decoded weights:',
+            ...r.grandpa_authorities.map(a => '  - ' + a.public_key + ' weight ' + a.weight),
+            '- Total authority weight: ' + r.grandpa_total_weight,
+            '- Canonical manifest SHA256: ' + r.manifest_sha256,
+            '',
+            'Scope limitation: this proves the pinned raw genesis reconstructs the configured genesis hash and yields the listed initial authority state. It does not verify post-genesis GRANDPA finality, authority transitions, the Materios committee-selection execution proof, or close B3-A.'
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n');
+          console.log(summary.join('\n'));
+          NODE
+
+      - name: Upload genesis authority manifest and source digest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-genesis-authority-bootstrap-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            poc/materios-execution-verifier/out/GenesisAuthorityBootstrap.json
+            poc/materios-execution-verifier/out/chain-spec-preprod-raw.json
+          if-no-files-found: warn
+          retention-days: 90
