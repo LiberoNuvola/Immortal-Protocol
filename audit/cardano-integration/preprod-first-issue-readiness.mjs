@@ -45,9 +45,9 @@ const b2 = await jsonFile(
   issueEvidenceDir + '/b2-control-deployment.json',
   'B2 control deployment evidence',
 )
-const approval = await jsonFile(
-  issueEvidenceDir + '/eev-deployment-approval.json',
-  'Separate EEV deployment approval',
+const approvedQualification = await jsonFile(
+  evidenceDir + '/preprod-direct-usdm-approved-qualification.json',
+  'Approved direct-USDM EEV qualification',
 )
 
 check(deployment?.status === 'DEPLOYED' && deployment?.network === 'cardano-preprod',
@@ -76,10 +76,25 @@ check(b2?.network === 'cardano-preprod' &&
   typeof b2?.controlPolicyId === 'string' &&
   typeof b2?.controlTokenNameHex === 'string',
   'B2 control singleton is deployed and identified')
-check(approval?.status === 'DEPLOYMENT_APPROVED' &&
-  approval?.profileVersion === 'PRE-RICH-EEV-USDM-DIRECT-V1' &&
-  /^[0-9a-f]{64}$/i.test(approval?.evidenceHash ?? ''),
-  'Approval artifact binds the direct-USDM profile and evidence digest')
+const deploymentApproval = approvedQualification?.deploymentApproval
+check(approvedQualification?.status === 'qualified' &&
+  approvedQualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1' &&
+  /^[0-9a-f]{64}$/i.test(approvedQualification?.evidenceHash ?? ''),
+  'Approved qualification artifact exists and has a valid evidence digest')
+check(deploymentApproval?.status === 'DEPLOYMENT_APPROVED' &&
+  deploymentApproval?.profileVersion === 'PRE-RICH-EEV-USDM-DIRECT-V1' &&
+  /^[0-9a-f]{64}$/i.test(deploymentApproval?.evidenceHash ?? ''),
+  'Approved qualification carries the direct-USDM deployment approval')
+check(
+  deploymentApproval?.qualificationEvidenceHash === qualification?.evidenceHash &&
+  approvedQualification?.governance?.approvalInputQualificationHash === qualification?.evidenceHash &&
+  approvedQualification?.governance?.approvalEvidenceHash === deploymentApproval?.evidenceHash &&
+  approvedQualification?.governance?.approvalInputSourceSetHash === sourceSet?.evidenceHash &&
+  approvedQualification?.governance?.approvalInputDeploymentHash === deployment?.evidenceHash &&
+  approvedQualification?.governance?.approvalInputOracleStateHash === oracle?.evidenceHash &&
+  deploymentApproval?.candidateId === 'PRE-RICH-EEV-USDM-DIRECT-V1:' + deployment?.utxos?.pool &&
+  deploymentApproval?.sourceSetId === sourceSet?.schema + ':' + sourceSet?.evidenceHash,
+  'Approval digest is bound to the exact qualification, source-set, deployment, Oracle State, and Pool candidate')
 const providerPath = process.env.PREPROD_ISSUE_ADMISSION_PROVIDER_MODULE?.trim()
 check(Boolean(providerPath) && await exists(providerPath),
   'Production authoritative Issue provider is configured',
