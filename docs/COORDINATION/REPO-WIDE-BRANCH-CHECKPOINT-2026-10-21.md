@@ -1271,3 +1271,49 @@ Read-only refresh of PR #19 and PR #35 after section 10.35. No PR was edited, ap
 The two PRs have different targets and evidence purposes; neither is an acceptable substitute for closing Pyth→MintPolicy, current B1 Issue admission, native Reveal/P2.8 or Materios B3 proof evidence. Preserve both existing PR states and branch topology. The latest checkpoint commit `3220e3c3ece764cc4b6308b39e1df6c977a53344` is document-only; it does not improve the PRs' protocol-test qualification.
 
 **Overall promotion decision: HOLD.** PR #19 requires scope partition and exact failure/readiness diagnosis. PR #35 remains a governance draft until target enforcement is verified. Overall audit remains **PARTIAL / OPEN**. No PR state, branch, protocol source, workflow, deployment, ledger transaction, mint or protocol semantics were changed.
+
+
+### 10.37 Exact-head Actions and main ruleset check — 2026-10-21
+
+This final consistency pass uses live GitHub REST responses and is scoped to read-only evidence.
+
+#### Current checkpoint SHA / generic push Actions
+
+Current work/immortal-green-closure HEAD: eb129b7563c62363ccfd880b2bae38057fd9eff7. The branch compares as 27 commits ahead and 0 behind the reviewed protocol-source anchor 3373b3044b9c251da1ec217d128f5dcb3c87c894; the changed-file set versus that anchor remains limited to the global blob ledger, this central checkpoint and seven semantic-review records.
+
+Five push-triggered Actions runs completed successfully at this exact documentation checkpoint SHA:
+
+| Workflow | Run | Result |
+|---|---:|---|
+| Algorithmic Governability Adversarial Lab | [39678425283](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39678425283) | SUCCESS |
+| IMMORTAL Portability Conformance | [39678425380](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39678425380) | SUCCESS |
+| Documentation Link Check | [39678425142](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39678425142) | SUCCESS |
+| Cardano Adapter Sale Conformance | [39678425066](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39678425066) | SUCCESS |
+| Protocol Declaration Conformance | [39678425147](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39678425147) | SUCCESS |
+
+These runs validate their own workflow scopes and are associated with a documentation-only SHA. They do not resolve the Pyth/MintPolicy production binding, do not constitute a new first-user Issue/EEV acceptance, do not close Reveal/P2.8 native-ledger execution, and do not supply missing Materios B3 witnesses. They must not be cited as evidence that protocol-source code changed or the specialist gates passed.
+
+#### PR #19 live mergeability refresh
+
+The direct GitHub Pull Request API now reports [PR #19](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19) as OPEN, non-draft, unmerged, head eb129b7563c62363ccfd880b2bae38057fd9eff7, base main at 8c6873e1d50115659727c82c294426b9a946f1fa, 413 changed files, 1,792 commits in the PR history, mergeable=false and mergeable_state=dirty. The head advanced automatically when this branch's documentation checkpoint moved; the latest head must replace the previous 3220e3c3... snapshot in any current PR assessment.
+
+The exact merge-conflict files were not surfaced by the API call used in this audit. Classification remains HOLD / NON-MERGEABLE; do not infer a conflict-free or promotable state from CI successes.
+
+#### PR #35 and actual main ruleset
+
+[PR #35](https://github.com/LiberoNuvola/Immortal-Protocol/pull/35) remains OPEN / DRAFT at head 7bca8d91b65d7af1261d8b7cc4f28f496a73fcba, base main at 97b09a38742098f17a61eb07734c401aeedccc06, 14 changed files. Its explicit request to remain draft until governance controls are reviewed is still binding.
+
+GitHub repository ruleset [Protect main](https://github.com/LiberoNuvola/Immortal-Protocol/rules/23959424) was fetched directly and reports enforcement=active, target branch ~DEFAULT_BRANCH, and no bypass actors. It protects against non-fast-forward updates and deletion and requires linear history. However its pull_request parameters require 0 approving reviews, do not require code-owner review, do not require approval of the last push and do not require review-thread resolution. Its required_status_checks list is empty. The ruleset read is successful; direct branch-protection endpoint access returned HTTP 403, so this finding is limited to the accessible repository ruleset and does not claim that no other administrative settings exist.
+
+Therefore the repository does have an active ruleset, but the reviewed ruleset alone does not enforce an approval gate or any required status-check gate. PR #35 MUST REMAIN DRAFT until the governance control plane and deliberately selected target-branch controls are reviewed and configured. This audit does not change those repository settings.
+
+#### Final scope / decision
+
+- Current documentation checkpoint HEAD and its five generic runs: verified.
+- Global SHA ledger and recursive branch-tree census: previously completed for the pinned snapshot; no recensus performed.
+- PR #19: HOLD, open/non-mergeable, large aggregate diff; exact conflict files not identified.
+- PR #35: KEEP DRAFT, active main ruleset observed but approval/status-check requirements are currently zero in that ruleset.
+- Specialist gates: Pyth→MintPolicy BLOCKER CONFIRMED; EEV qualification/approval historical candidate only and Issue not established; Reveal/P2.8 INTEGRATION_BLOCKED; Materios B3-A/B/C BLOCKED.
+- Overall audit: PARTIAL / OPEN.
+
+Only the checkpoint document was changed by this update. No code, test or workflow was altered; no PR setting, branch, merge, rebase, deployment, mint or on-chain transaction was changed.
