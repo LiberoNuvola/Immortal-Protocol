@@ -39,7 +39,7 @@ No production source, deployment or protocol state is changed by this package.
 
 ## 2026-10-21 follow-up — exact-rational conversion candidate, not yet an economic decision
 
-The isolated `lib/immortal/ada_usd_probe.ak` now includes a pure `pyth_ada_usd_to_usdm_subunits` candidate. It keeps the signed Pyth raw price/exponent until one exact integer conversion, uses the existing `1,000,000` lovelace-per-ADA and `100` USDM-subunits-per-USDM conventions, and accepts an explicit rational parameter `D = USD per 1 USDM` as numerator/denominator. It does **not** default `D) to 1:1, does not select the ratio, and is not called by the quote-carrier or production settlement validators.
+The isolated `lib/immortal/ada_usd_probe.ak` now includes a pure `pyth_ada_usd_to_usdm_subunits` candidate. It keeps the signed Pyth raw price/exponent until one exact integer conversion, uses the existing `1,000,000` lovelace-per-ADA and `100` USDM-subunits-per-USDM conventions, and accepts an explicit rational parameter `D = USD per 1 USDM` as numerator/denominator. It does **not** default `D` to 1:1, does not select the ratio, and is not called by the quote-carrier or production settlement validators.
 
 The new vectors cover:
 - an explicit synthetic `D = 1 USD/USDM` case;
@@ -50,3 +50,16 @@ The new vectors cover:
 [Run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on commit `c05267ca202bae85332870ef4c98b8972175d283`, whose probe source is byte-identical to this working branch. The run reports 15 tests passed in the raw-feed/conversion module, 12 passed in the quote-carrier module, and 27 Aiken checks with zero errors/warnings. Both `aiken check` and `aiken build` passed. The quote-carrier compiled-code field is now 8,363 bytes; this is validator code size, not full transaction CBOR.
 
 **The key blocker has narrowed, not closed:** the function’s `D) parameter is still a fixture/config input. No authoritative source, on-chain singleton, governance policy, precision/freshness contract, or conservative admissibility rule for USD per USDM has been qualified. It must not be copied into the real MintPolicy as an off-chain value, and raw ADA/USD may not be used as if it were USDM price. The helper remains an isolated design/conformance candidate.
+
+
+## Gate A — controlled Preprod ledger probe
+
+A manual workflow, `.github/workflows/pyth-native-ledger-probe.yml`, and a separate consumer validator were added to make a real signed-update test reproducible without wiring Pyth into Issue.
+
+- `validators/pyth_signed_update_ledger_probe.ak` is a minimal Plutus V3 consumer. It demands the configured Pyth State, a single update, ADA/USD feed ID 16, a positive price, and the existing freshness window; it is not connected to Treasury or production economics.
+- `scripts/testPythSignedUpdatePreprod.mts` obtains an actual signed Lazer payload, resolves the configured Cardano Preprod Pyth State, and fingerprints the payload without storing the raw bytes. In submission mode it funds a no-datum probe UTxO and then submits a consumer spend with the Pyth zero-withdrawal in the same transaction.
+- The workflow is `workflow_dispatch` only. Its `submit_preprod` input defaults to `false`; this mode only fetches the update/state and writes a `PREPARED_NOT_SUBMITTED` evidence record. No automatic push runs submit transactions.
+- To run the on-chain positive case, configure repository secrets `PYTH_LAZER_TOKEN`, `PYTH_PREPROD_TEST_MNEMONIC` (a dedicated, funded testnet wallet only) and `PREPROD_BLOCKFROST_PROJECT_ID` or `VITE_BLOCKFROST_PROJECT_ID`. Enter the 56-hex Preprod Pyth deployment policy ID as the manual workflow input, review that it resolves to the intended Pyth State, and explicitly set `submit_preprod=true`. The first run may submit a separate 5 ADA funding transaction, followed by the verification transaction.
+- The runner also evaluates a one-byte-mutated payload locally and never submits it. This is only a local negative result, **not** an on-chain rejection proof. On successful submission, an evidence artifact records the state reference, payload digest, transaction hashes, serialized CBOR size and best-effort redeemer/execution-unit observation.
+
+**Gate A status after adding the harness: IMPLEMENTATION PREPARED, REAL LEDGER EVIDENCE NOT YET OBSERVED.** A source commit or green compilation must not be labelled as a successful native-ledger signature test. Even after a successful Preprod positive case, the on-chain negative case, USD/USDM unit decision and MintPolicy-to-carrier binding remain open.
