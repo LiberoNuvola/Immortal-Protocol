@@ -112,5 +112,5 @@ jobs:
           path: |
             ${{ runner.temp }}/materios-chain-id.json
             ${{ runner.temp }}/materios-source-commit.txt
-            ${{ runner.temp }}/materios/out/MateriosGenesisReproduction.json
+            out/MateriosGenesisReproduction.json
           if-no-files-found: warn
