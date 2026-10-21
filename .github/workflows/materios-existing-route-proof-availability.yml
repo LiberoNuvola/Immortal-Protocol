@@ -73,6 +73,99 @@ jobs:
           MATERIOS_ARCHIVE_RPC: ${{ github.event.inputs.archive_rpc || github.event.inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
         run: npm run capture:anchor
 
+      - name: Set up Rust toolchain for trie verification
+        if: always() && steps.anchor.outcome == 'success'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust verifier dependencies
+        if: always() && steps.anchor.outcome == 'success'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Independently verify captured anchor storage proof
+        id: storage-proof-verification
+        if: always() && steps.anchor.outcome == 'success'
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { spawnSync } from 'node:child_process';
+
+          const witnessPath = 'poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json';
+          const reportPath = 'poc/materios-checkpoint/out/MateriosStorageProofVerification.json';
+          const witness = JSON.parse(fs.readFileSync(witnessPath, 'utf8'));
+          const nodes = witness.storage_proof?.nodes;
+
+          if (!Array.isArray(nodes) || nodes.length === 0) {
+            throw new Error('StorageProof nodes are missing or empty');
+          }
+          if (witness.target?.block_hash?.toLowerCase() !== witness.storage_proof?.at?.toLowerCase()) {
+            throw new Error('StorageProof target block hash mismatch');
+          }
+          if (witness.target?.state_root?.length !== 66) {
+            throw new Error('StorageProof state root must be a 32-byte 0x-prefixed hash');
+          }
+
+          const proofInput = nodes.join('\n') + '\n';
+          const result = spawnSync(
+            'cargo',
+            [
+              'run',
+              '--quiet',
+              '--manifest-path',
+              'poc/materios-execution-verifier/Cargo.toml',
+              '--bin',
+              'verify-storage-witness',
+              '--',
+              witness.target.state_root,
+              witness.target.storage_key,
+              witness.anchor_record.scale_hex,
+            ],
+            {
+              input: proofInput,
+              encoding: 'utf8',
+              maxBuffer: 4 * 1024 * 1024,
+            },
+          );
+
+          if (result.error) throw result.error;
+          if (result.status !== 0) {
+            if (result.stderr) process.stderr.write(result.stderr);
+            throw new Error('Independent Substrate trie proof verifier rejected the witness');
+          }
+
+          const sha256 = value => createHash('sha256').update(Buffer.from(value.replace(/^0x/i, ''), 'hex')).digest('hex');
+          const report = {
+            schema_version: 'materios-storage-proof-verification-v1',
+            status: 'VERIFIED',
+            verifier: 'poc/materios-execution-verifier/src/storage.rs::verify_storage_proof via verify-storage-witness',
+            verified_at: new Date().toISOString(),
+            relation: 'the supplied storage key resolves to the exact supplied SCALE value under the supplied state root',
+            target: {
+              chain_id: 'materios_preprod_v6',
+              block_hash: witness.target.block_hash,
+              block_number: witness.target.block_number,
+              state_root: witness.target.state_root,
+              checkpoint_source: witness.target.checkpoint_source,
+            },
+            storage_key_sha256: sha256(witness.target.storage_key),
+            storage_value_sha256: sha256(witness.anchor_record.scale_hex),
+            proof_node_count: nodes.length,
+            claims: {
+              trie_membership_against_supplied_state_root: true,
+              grandpa_finality_verified: false,
+              authority_set_provenance_verified: false,
+              deployed_runtime_identity_verified: false,
+              anchor_id_to_beacon_round_binding_verified: false,
+              b3_conformance: false,
+            },
+          };
+          fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
+          console.log('B3_B_STORAGE_PROOF_VERIFICATION=PASS');
+          console.log('The state-root membership proof is verified. Finality/runtime/canonicality remain outside this proof.');
+          NODE
+
       - name: Summarize acquisition status (not verification)
         if: always()
         env:
@@ -115,6 +208,25 @@ jobs:
             }
           } else {
             lines.push('', 'RPC method catalogue was not captured; inspect the preceding step logs.');
+          }
+
+          const storageVerificationPath = 'poc/materios-checkpoint/out/MateriosStorageProofVerification.json';
+          if (fs.existsSync(storageVerificationPath)) {
+            try {
+              const report = JSON.parse(fs.readFileSync(storageVerificationPath, 'utf8'));
+              lines.push(
+                '',
+                '## Independent storage-proof verification',
+                `- Trie membership: **${report.status ?? 'unknown'}**`,
+                `- Block: ${report.target?.block_hash ?? 'unknown'} (${report.target?.block_number ?? 'unknown'})`,
+                `- Proof nodes: ${report.proof_node_count ?? 'unknown'}`,
+                '- GRANDPA finality, runtime identity, and anchor-to-round binding: **not verified by this step**',
+              );
+            } catch (error) {
+              lines.push('', 'Storage-proof verification report could not be parsed: ' + String(error));
+            }
+          } else {
+            lines.push('', 'Independent storage-proof verifier did not produce a report.');
           }
 
           const finalizedPath = 'poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json';
@@ -183,6 +295,7 @@ jobs:
             poc/materios-checkpoint/out/MateriosRpcCapabilityProbe.json
             poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
             poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json
+            poc/materios-checkpoint/out/MateriosStorageProofVerification.json
           if-no-files-found: warn
           retention-days: 30
       
@@ -218,6 +331,15 @@ jobs:
             'poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json',
             'Historical anchor witness',
           );
+
+          const storageVerification = readJson(
+            'poc/materios-checkpoint/out/MateriosStorageProofVerification.json',
+            'Independent storage-proof verification',
+          );
+
+          if (storageVerification?.status !== 'VERIFIED') {
+            blockers.push('Independent trie proof verification: no verified storage-membership report');
+          }
 
           if (probe?.catalogue?.status !== 'available') {
             blockers.push('RPC catalogue: method inventory unavailable');
