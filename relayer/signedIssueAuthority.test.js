@@ -10,13 +10,18 @@ function certificate() {
   return {
     status: 'qualified',
     contractVersion: '3.0.0',
-    evidenceHash: 'a'.repeat(64),
+    evidenceHash: 'c'.repeat(64),
+    governance: {
+      approvalEvidenceHash: 'b'.repeat(64),
+      approvalInputQualificationHash: 'd'.repeat(64),
+    },
     deploymentApproval: {
       status: 'DEPLOYMENT_APPROVED',
       candidateId: 'pre-rich-eev-v1',
       sourceSetId: 'source-set://preprod/1',
       profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
-      evidenceHash: 'a'.repeat(64),
+      evidenceHash: 'b'.repeat(64),
+      qualificationEvidenceHash: 'd'.repeat(64),
       qualifiedProperties: ['EV1','EV2','EV3','EV4','EV5','EV6','EV7'],
       excludedProperties: [],
       testSuiteVersion: 'eev-qualification-tests-v1',
@@ -172,20 +177,25 @@ assert.equal(good.eevQualification.status, 'qualified')
 assert.equal(good.eevQualification.deploymentApproval.status, 'DEPLOYMENT_APPROVED')
 assert.equal(good.observedAt, 1000n)
 assert.equal(good.directUsdmUnit, expected.directUsdmUnit)
-assert.equal(good.eevQualification.evidenceHash, 'a'.repeat(64))
+assert.equal(good.eevQualification.evidenceHash, 'c'.repeat(64))
+assert.equal(good.eevQualification.deploymentApproval.evidenceHash, 'b'.repeat(64))
+assert.equal(good.eevQualification.deploymentApproval.qualificationEvidenceHash, 'd'.repeat(64))
 
 assert.throws(
   () => verifySignedIssueAuthorityEnvelope(
     signed(makePayload({
       eevQualification: {
         ...certificate(),
-        evidenceHash: 'b'.repeat(64),
+        deploymentApproval: {
+          ...certificate().deploymentApproval,
+          qualificationEvidenceHash: 'e'.repeat(64),
+        },
       },
     }), privateKey),
     publicKey.export({ type: 'spki', format: 'pem' }),
     expected,
   ),
-  /deployment approval evidenceHash does not match qualified EEV evidenceHash/,
+  /deployment approval qualificationEvidenceHash does not match original qualified EEV evidenceHash/,
 )
 
 assert.throws(
