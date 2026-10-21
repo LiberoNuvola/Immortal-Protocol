@@ -911,3 +911,29 @@ Next audit slice:
 4. Refresh latest Actions on the exact protocol-source SHA separately from checkpoint-only commits. The structural census does not upgrade any test, ledger or Preprod claim.
 
 No protocol code, test, workflow, branch topology or ledger state was modified.
+
+
+### 10.26 Global blob-SHA deduplication ledger — 2026-10-21
+
+The 25 branch HEAD trees captured for this census have now been merged into a single path/SHA index. Each tree response was re-fetched from the exact pinned commit in the branch inventory and returned `truncated=false`. The resulting machine-readable artifact is:
+
+- [REPO-WIDE-BLOB-LEDGER-2026-10-21.json](REPO-WIDE-BLOB-LEDGER-2026-10-21.json)
+- Ledger commit: `b3cc28b108d4a99054184fe82ec16b2ee4958313`
+
+| Global identity measure | Verified result |
+|---|---:|
+| Branch HEADs in snapshot | 25 |
+| Recursive tree-entry occurrences | 15,626 |
+| Blob-path occurrences across branch trees | 13,767 |
+| Sum of branch-local distinct blob SHA counts | 13,547 |
+| **Globally unique blob SHA identities** | **1,811** |
+| Unique paths across all branch trees | 1,275 |
+| Unique path/SHA pairs (path content variants) | 1,874 |
+| Paths with more than one SHA across branches | 337 |
+| Semantic reviews completed by this census | 0 |
+
+The 1,811 global count is computed by taking the union of actual blob SHA values, not by summing branch-local distinct counts. The path/SHA matrix records the exact branch set for each content version at a path; the SHA ledger links each immutable content identity to its observed paths and branches. Size consistency was checked for each repeated SHA.
+
+**Scope and interpretation:** this closes the cross-branch blob identity and path-variance census for the pinned snapshot. It does not mean 1,811 blobs have been semantically reviewed. Every semantic-ledger entry is explicitly initialized as `NOT_REVIEWED`; no semantic classifications, test conclusions, or release approvals are inferred from file identity. The snapshot's green HEAD is `3373b3044b9c251da1ec217d128f5dcb3c87c894`; the ledger/checkpoint commits that follow are coordination-only and must not be represented as new protocol-source or CI evidence.
+
+**Next gate:** use the immutable blob SHA as the review unit; record review scope, normative layer, branch/path context, evidence references, result and unresolved dependency. Prioritize the Pyth-to-`MintPolicy` quote binding, B1 direct-USDM EEV / authoritative Issue admission, Reveal/P2.8 size and execution evidence, and B3/Materios authority/finality and historical-state proof boundaries. Refresh Actions separately on each exact protocol-source SHA. Overall audit remains **PARTIAL / OPEN**. No protocol logic, V3/Reveal semantics, branch topology, ledger state, or deployment was changed by this census.
