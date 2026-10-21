@@ -32,6 +32,8 @@ const REQUIRED_FIELDS = [
 const CONTROL_PLANE_PATTERNS = [
   /^\.github\/workflows\//i,
   /^\.github\/(?:CODEOWNERS|dependabot\.yml)$/i,
+  /^CONTRIBUTING\.md$/i,
+  /^\.github\/PULL_REQUEST_TEMPLATE\.md$/i,
   /^CODEOWNERS$/i,
   /^scripts\/contribution-evidence-gate\.mjs$/i,
   /^audit\/algorithmic-governability\//i,
@@ -381,6 +383,12 @@ const selfTest = () => {
   const control = classifyPullRequest({ body, files: ['.github/workflows/contribution-evidence-gate.yml'], headSha: 'abc123' })
   assert.equal(control.decision, 'STRONGER_REVIEW_REQUIRED')
   assert.equal(control.eligible, false)
+
+  for (const path of ['CONTRIBUTING.md', '.github/PULL_REQUEST_TEMPLATE.md']) {
+    const routed = classifyPullRequest({ body, files: [path], headSha: 'abc123' })
+    assert.equal(routed.decision, 'STRONGER_REVIEW_REQUIRED', path)
+    assert.equal(routed.eligible, false, path)
+  }
 
   // Route authoritative specifications even when their filenames lack narrow keywords.
   for (const path of [
