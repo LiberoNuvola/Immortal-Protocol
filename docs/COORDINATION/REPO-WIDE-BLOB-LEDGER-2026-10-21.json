@@ -18,10 +18,10 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "scoped_static_reviews_recorded": 71,
-    "semantic_ledger_entries_not_reviewed": 1740,
+    "scoped_static_reviews_recorded": 98,
+    "semantic_ledger_entries_not_reviewed": 1713,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness binding/native P2.8, and Materios B3-A/B/C proof acquisition remain blocked. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
+    "semantic_audit_disposition": "PARTIAL / OPEN; normative source drift is recorded without changing the closed PRE-RICH policy decisions. Pyth-to-MintPolicy binding, first real Issue admission, Reveal reference-witness/native P2.8 gates, and Materios B3-A/B/C proof acquisition remain blocked. Direct-USDM EEV approval is confirmed only for its recorded source UTxO snapshot.",
     "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
@@ -27281,10 +27281,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_STALE_OPEN_DECISION_LABELS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-03"
+      ]
     },
     {
       "blob_sha": "00a417789c4b9a11c7a0bcef8682fcc638183456",
@@ -27430,10 +27432,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_NON_NORMATIVE_OPEN_CONFORMANCE_MATRIX",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "01ca057a2d42fb57b816b8456a36997739de4ddd",
@@ -27806,10 +27810,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_UNIVERSAL_APP_POLICY_BOUNDARY",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01"
+      ]
     },
     {
       "blob_sha": "04c9ef389afdc61a8c4e268c1b9a670826d5a37e",
@@ -29297,10 +29303,12 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN_IN_THIS_SLICE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "0fe75d42aecc352eb7ea2b741751cdae6ce87b97",
@@ -31030,10 +31038,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_NON_AUTHORITATIVE_OBSERVATION_WRAPPER",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "18e66243935ecb128556c18f7b66f5fd2c0e013a",
@@ -32515,10 +32525,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_V3_PROFILE_BOUNDARY",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "22b677bb9baa50ac88dc2274a5fa647429d37ceb",
@@ -32577,10 +32589,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_FAIL_CLOSED_V3_TO_UNIVERSAL_PROJECTION",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "22f03f3e67daadb1f5221ec16528d4ff05ce9f42",
@@ -33381,10 +33395,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_REFINEMENT_AND_EVIDENCE_REQUIREMENTS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01",
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "26a0aa8e42d8f76a7f49e22699a40188420a31a2",
@@ -33835,10 +33852,13 @@
       "branches": [
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_TEST_SOURCE_NOT_RERUN_IN_THIS_SLICE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02",
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "290ff076a30a660d0b4b3e69a9f3eb641b2b840f",
@@ -37173,10 +37193,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CONFLICTING_AUTHORITY_LABELS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-03"
+      ]
     },
     {
       "blob_sha": "3d7675839a8807fa6bd914e06e00c87859e35381",
@@ -38010,10 +38032,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CURRENT_POLICY_CLOSURE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-03"
+      ]
     },
     {
       "blob_sha": "420dc60017a6acba11c113bfbf5dbcd252122ae4",
@@ -38722,10 +38746,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_SHAPE_VALIDATION_NOT_TRUTH_CERTIFICATION",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "47a2987ed2dce256adba6c9b7242d05773c29b1e",
@@ -40518,10 +40544,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_KERNEL_THEOREMS_AND_NONCLAIMS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01",
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "5353b5b67a25e6c385a33c20f89d62dfe0d8d280",
@@ -42498,10 +42527,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_PROFILE_RICH_STATE_SCHEMA",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "6351c178cb727900f6e0f2374601fee3e1270dad",
@@ -45142,10 +45173,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CANONICAL_CONSTITUTION",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01"
+      ]
     },
     {
       "blob_sha": "744b69ad8ea4414ef90dde90da0ad394e013f88e",
@@ -45158,10 +45191,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_NON_NORMATIVE_GUIDE_WITH_CANONICAL_POINTER",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01"
+      ]
     },
     {
       "blob_sha": "7465fd119fab5e4059825f938df898e3d0bb81fe",
@@ -47429,10 +47464,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_NON_NORMATIVE_KERNEL_GUIDE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01",
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "86d4d309c1a96fab40fd529977fcc0bccd3778e8",
@@ -48424,10 +48462,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_EXPLICIT_EEV_LIQUIDITY_AND_KC_GATE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02",
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "8bdae3ac7000d9af5a08ccd8122eaed703087938",
@@ -52614,10 +52655,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_POSTSTATE_AND_KC_GATE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01",
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "a54f3784c0cf562e35e89ca34e7258c22ecd1e73",
@@ -52645,10 +52689,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_NON_NORMATIVE_POLICY_RECONCILIATION",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-03"
+      ]
     },
     {
       "blob_sha": "a55c7c06c417577c97764d87560f793c754547b3",
@@ -53406,10 +53452,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_STALE_OPEN_01_OPEN_02_LABELS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-03"
+      ]
     },
     {
       "blob_sha": "ab79c910f34dadb3634ee8f48deed042ea540c23",
@@ -58457,10 +58505,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_UNIVERSAL_PROTECTED_CAPITAL_FORMULA",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "cd6c9798f96ab97715644a1894216c3e558d2441",
@@ -60244,10 +60294,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_GATE_COMPOSITION_REQUIRES_TRUSTED_CALLER_INPUTS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02",
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "d8c360624623fdfb42a5f9337570217d1fa63b7a",
@@ -62064,10 +62117,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_WORKFLOW_TEST_GATE_NOT_DISPATCHED_HERE",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "e38740a0466d15349e4c2e6dc75f2466109bf72d",
@@ -62635,10 +62690,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_OBLIGATION_AND_CONSERVATION_INVARIANTS",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-01",
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
@@ -63400,10 +63458,13 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CANONICAL_ISSUE_DECISION_PRODUCER",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02",
+        "F-OBS-01"
+      ]
     },
     {
       "blob_sha": "ec384dfad74876cdb6a3c725fd9c986a1ada132b",
@@ -65188,10 +65249,12 @@
         "work/b3-materios-provenance-evidence",
         "work/immortal-green-closure"
       ],
-      "semantic_review_status": "NOT_REVIEWED",
-      "review_scope": null,
-      "review_reference": null,
-      "evidence_references": []
+      "semantic_review_status": "REVIEWED_STATIC_CHAIN_NEUTRAL_STATE_SCHEMA",
+      "review_scope": "Static review of the canonical IMMORTAL normative corpus, universal economic gate, PRE-RICH V3-to-universal mapping, Adapter observation boundary, and policy-source version labels. Test/workflow source identities were reviewed but not rerun; no protocol source or policy decision was changed.",
+      "review_reference": "docs/COORDINATION/SEMANTIC-REVIEW-NORMATIVE-KERNEL-PRE-RICH-POLICY-DRIFT-2026-10-21.md@d2784efac6c09521e1e1a386ba9e134525269a49",
+      "evidence_references": [
+        "F-NORM-02"
+      ]
     },
     {
       "blob_sha": "f8b4add5b993aa5e3969fa39ef96219d553627d6",
