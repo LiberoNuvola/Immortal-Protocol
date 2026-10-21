@@ -1,3 +1,22 @@
+<#
+.SYNOPSIS
+Runs an offline Cardano CLI Dijkstra sub-transaction build/sign/embed smoke test.
+
+.DESCRIPTION
+Uses one ephemeral payment key, synthetic/nonexistent inputs and a local test address.
+It tests serialization, sub-transaction ID stability across signing, embedding into
+a top-level transaction body, and outer transaction signing/ID calculation.
+
+It does not connect to a node, inspect UTxOs, calculate actual fees, evaluate Plutus,
+or submit a transaction. The generated transaction is deliberately not ledger-valid
+and must never be submitted.
+
+.EXAMPLE
+powershell -ExecutionPolicy Bypass -File .\audit\cardano-integration\dijkstra-cli-wire-preflight.ps1 -CardanoCli "C:\cardano-cli-11.4.0.0\cardano-cli.exe"
+
+.EXAMPLE
+powershell -ExecutionPolicy Bypass -File .\audit\cardano-integration\dijkstra-cli-wire-preflight.ps1 -OutputDir "$env:TEMP\immortal-dijkstra-preflight"
+#>
 [CmdletBinding()]
 param(
     [Parameter()]
