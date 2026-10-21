@@ -286,7 +286,7 @@ contains(loadTs, /b1PrizePoolHash/, 'TypeScript wiring exposes B1PrizePool hash'
 contains(loadTs, /mintPolicy[\s\S]*?b1PrizePoolHash/s, 'MintPolicy is wired with the B1PrizePool dependency')
 
 // The fixed ADA amount is a known Issue-settlement conformance blocker.
-if (/BigInt\\s*\\(\\s*TICKET_PAYMENT_LOVELACE\\s*,?\\s*\\)/s.test(mintTs)) {
+if (/BigInt\s*\(\s*TICKET_PAYMENT_LOVELACE\s*,?\s*\)/s.test(mintTs)) {
   fail('Issue Treasury payment is still a fixed ADA amount instead of a value derived from authenticated USDM price references; predeploy must remain blocked.')
 } else {
   ok('Legacy fixed-ADA Treasury amount is absent from the Issue builder')
@@ -321,7 +321,7 @@ contains(flowTs, /b1PrizePool/i, 'Reveal/Claim coordinates B1PrizePool')
 
 contains(configTs, /GENESIS_TICKET_PRICE_USDM\s*=\s*100/, 'Genesis price = 1 USDM')
 // This constant is legacy configuration only; it must not authorize Issue.
-if (/TICKET_PAYMENT_LOVELACE\\s*=\\s*1_000_000/.test(configTs)) {
+if (/TICKET_PAYMENT_LOVELACE\s*=\s*1_000_000/.test(configTs)) {
   warn('Legacy TICKET_PAYMENT_LOVELACE config remains; the Issue builder must not use it as the ticket settlement amount.')
 }
 
