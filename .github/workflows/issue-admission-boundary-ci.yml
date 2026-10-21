@@ -17,6 +17,7 @@ on:
       - "relayer/preprodIssueAuthorityEnvelope.test.js"
       - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
       - "audit/cardano-integration/preprod-first-issue-readiness.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.test.mjs"
       - ".github/workflows/pre-rich-b1-eev-approval.yml"
       - "package.json"
       - "package-lock.json"
@@ -35,6 +36,7 @@ on:
       - "relayer/preprodIssueAuthorityEnvelope.test.js"
       - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
       - "audit/cardano-integration/preprod-first-issue-readiness.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.test.mjs"
       - ".github/workflows/pre-rich-b1-eev-approval.yml"
       - "package.json"
       - "package-lock.json"
@@ -70,6 +72,8 @@ jobs:
         run: node relayer/signedIssueAuthority.test.js
       - name: Verify signed Issue authority envelope end-to-end
         run: node relayer/preprodIssueAuthorityEnvelope.test.js
+      - name: Verify first Issue readiness evidence-chain gate
+        run: node audit/cardano-integration/preprod-first-issue-readiness.test.mjs
       - name: Syntax-check read-only first Issue readiness gate
         run: node --check audit/cardano-integration/preprod-first-issue-readiness.mjs
       - name: Typecheck adapter and boundary tests against locked Lucid
