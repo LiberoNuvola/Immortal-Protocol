@@ -214,3 +214,16 @@ A ledger transaction's fee and a ledger evaluator's ExUnits are related but dist
 The next useful evidence step is not to set a percentage or estimate a universal fee. It is to select an already observed transaction that can be bound to one canonical action and assemble its exact transaction/ledger packet, then extract the ledger-reported fee and any ledger-aligned redeemer ExUnits. Separately, obtain actual provider usage/billing records for off-chain services if those costs are to be considered. Keep the chain charge, metered service cost, shared overhead and optional protocol contribution as separate fields.
 
 No transaction was submitted, no workflow was rerun, and no code, tests, CI, deployment, V3 or Reveal semantics were changed in this follow-up. G1 applicability and the economic fee formula remain OPEN.
+
+
+### G4. Candidate transaction selection — negative result
+
+The branch-local source reconciliation did not identify an eligible transaction hash that can presently be promoted as a canonical IMMORTAL operation cost sample.
+
+The current PRE-RICH conformance dossier states that live Preprod observation and Reveal-boundary tests exist, but end-to-end ledger equivalence still lacks a real submitted production Reveal transaction witness. The separate historical handoff on `work/immortal-green-closure` records a Reveal attempt rejected before signature/submission because the deployed ticket's reveal window had closed; that attempt therefore has no submitted Reveal transaction fee to measure. This is not treated as a fact about the current branch's runtime state, but it corroborates the documented missing-witness boundary.
+
+The repository also contains a script named `audit/cardano-integration/preprod-real-reveal.mjs` that can construct and submit a test-policy Reveal sequence when supplied with a wallet seed and address. It derives a test policy from that wallet and includes explicit test constants; it is not evidence of the canonical production PRE-RICH deployment or a safe substitute for a production action. This audit did not execute it, access signing material, or submit a transaction.
+
+The historical Mainnet Gate 41 transaction is outside the target action/profile and cannot stand in for a canonical IMMORTAL operation cost sample. It may be useful for testing a generic ledger-fee extraction method only if separately labelled as an unrelated historical transaction; it must not be used to infer a universal Protocol Usage Fee.
+
+**Disposition:** no eligible candidate selected; do not fabricate a hash or launch a wallet-signing flow. The next evidence prerequisite is an already-submitted transaction hash whose action identity and target network/profile can be authenticated. If the intended sample is a production PRE-RICH Reveal, it must be the exact already-submitted production-path transaction—not the test-policy harness or a rejected pre-submission evaluation.
