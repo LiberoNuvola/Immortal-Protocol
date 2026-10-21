@@ -147,10 +147,11 @@ The repository now includes a manual, Preprod-only path to test the isolated Pyt
 
 The isolated runner records a local rejection attempt for a one-byte-mutated payload, but deliberately does not submit that invalid transaction (which could forfeit collateral/fees). **A local evaluator rejection is not an on-chain negative proof.** The positive Preprod transaction has also not been run by this commit. The Gate A status therefore remains:
 
-- Harness source present; automated Aiken compilation is the first software gate.
+- **Software gate passed:** [CI run 39659905806](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806), commit `2106daa5f4c93c20cbe2479ae9fa08db0d8f59f6`, passed synthetic Aiken tests, Plutus V3 compilation and strict TypeScript typecheck for the runner. This run did not require secrets or submit a transaction.
 - Genuine signed-update positive acceptance on Preprod: **not yet observed**.
-- Tampered-signature rejection on the native ledger: **not yet observed**.
+- Tampered-signature rejection on the native ledger: **not yet observed**. The mutated-payload check remains local only.
 - CBOR size and on-chain execution units: pending submitted transaction; execution units are fetched best-effort from Blockfrost evidence.
-- Pyth state/withdraw-script identity is checked fail-closed by the runner, but its successful runtime observation is still pending.
+- Pyth state/withdraw-script identity is checked fail-closed in source, but its successful runtime observation is still pending.
+- **Dispatch limitation:** both probe workflows currently exist on `work/immortal-green-closure`, not `main`. They cannot be exposed through the standard repository default-branch manual Actions UI until their narrowly scoped workflow/source surface is promoted via review. Do not merge the broad active PR solely to expose this workflow.
 
 No Pyth state, deployed script, production Oracle, `MintPolicy`, Issue path, economic conversion, V3 semantics or Reveal semantics is changed. This harness advances the evidence path only; it does not close the USD/USDM unit decision or Gate B source-to-economics binding.
