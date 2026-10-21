@@ -298,15 +298,20 @@ contains(mintTs, /playerCommitment/, 'Mint creates player commitment')
 contains(mintTs, /ticketCommitment/, 'Mint creates ticket commitment')
 // This focused test is mandatory before predeploy; it must observe the completed
 // Treasury output and exercise its equality/price-reference boundary.
-const settlementTest = read('src/__tests__/issueSettlementConformance.test.ts')
-contains(settlementTest, /completed.*Treasury|Treasury.*completed/i,
-  'Issue settlement tests inspect the completed Treasury output')
-contains(settlementTest, /pdPriceUsdm|USDM/i,
-  'Issue settlement tests bind the payment to the USDM target')
-contains(settlementTest, /oracle|PriceReference/i,
-  'Issue settlement tests bind the valuation to per-asset price references')
-contains(settlementTest, /stale|missing|invalid/i,
-  'Issue settlement tests cover invalid price-reference rejection')
+const settlementTestPath = path.resolve(ROOT, 'src/__tests__/issueSettlementConformance.test.ts')
+if (!fs.existsSync(settlementTestPath)) {
+  fail('Required Issue settlement conformance test is missing; first-ticket predeploy remains blocked.')
+} else {
+  const settlementTest = fs.readFileSync(settlementTestPath, 'utf8')
+  contains(settlementTest, /completed.*Treasury|Treasury.*completed/i,
+    'Issue settlement tests inspect the completed Treasury output')
+  contains(settlementTest, /pdPriceUsdm|USDM/i,
+    'Issue settlement tests bind the payment to the USDM target')
+  contains(settlementTest, /oracle|PriceReference/i,
+    'Issue settlement tests bind the valuation to per-asset price references')
+  contains(settlementTest, /stale|missing|invalid/i,
+    'Issue settlement tests cover invalid price-reference rejection')
+}
 
 contains(mintTs, /b1PrizePool[\s\S]*?payToContract|payToContract[\s\S]*?b1PrizePool/s,
   'Mint updates the B1PrizePool in the sale flow')
