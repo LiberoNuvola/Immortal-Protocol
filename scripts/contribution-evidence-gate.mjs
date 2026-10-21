@@ -480,7 +480,7 @@ const selfTest = () => {
 
   const mixedClasses = classifyPullRequest({
     body: body.replace('- Class: B', '- Class: A, C'),
-    files: ['docs/04-guides/reader.md', 'src/__tests__/reader.test.ts'],
+    files: ['README.md', 'src/__tests__/reader.test.ts'],
     headSha: 'abc123',
   })
   assert.equal(mixedClasses.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
