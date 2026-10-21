@@ -160,8 +160,7 @@ fn verify_raw_genesis_spec(raw: &[u8]) -> Result<Value, String> {
     if runtime_code_sha256 != EXPECTED_RUNTIME_CODE_SHA256 {
         return Err(format!(
             "RUNTIME_CODE_SHA256_MISMATCH: expected {}, got {}",
-            EXPECTED_RUNTIME_CODE_SHA256,
-            runtime_code_sha256
+            EXPECTED_RUNTIME_CODE_SHA256, runtime_code_sha256
         ));
     }
 
