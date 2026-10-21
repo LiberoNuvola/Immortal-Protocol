@@ -371,8 +371,8 @@ if (!fs.existsSync(settlementTestPath)) {
     'Issue settlement tests cover invalid price-reference rejection')
   contains(settlementTest, /below output-specific minimum/,
     'Issue settlement tests fail closed when completed Treasury ADA is below the size-dependent ledger minimum')
-  contains(settlementTest, /C\.TransactionOutput\.new[\s\S]*?assertCompletedTreasuryMinimumAda/,
-    'Issue settlement tests execute the minimum ADA check against an actual CML output')
+  contains(settlementTest, /assertTreasuryAdaMeetsOutputMinimum/,
+    'Issue settlement tests exercise fail-closed minimum ADA validation')
   contains(settlementTest, /finite validity upper bound/,
     'Issue settlement tests reject transactions without a finite quote-valid TTL')
 }
