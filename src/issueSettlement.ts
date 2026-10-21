@@ -369,6 +369,60 @@ export function buildIssueSettlementAssets(
   return outputAssets
 }
 
+export type DeriveSingleAssetIssueSettlementRequest = {
+  targetUsdmSubunits: bigint
+  /** Cardano unit: 'lovelace' or policyIdHex + assetNameHex. */
+  assetUnit: string
+  /** The inline datum from the exact authenticated Oracle State singleton UTxO. */
+  oracleDatum: unknown
+  expectedPublisherPkh: string
+  nowMs: bigint
+}
+
+/**
+ * Derive the largest integer quantity of one selected asset whose existing
+ * canonical ceiling conversion equals the ticket's USDM-subunit target.
+ * The function does not choose assets or assign prices: it only inverts the
+ * authenticated on-chain quote and then validates the complete output basket,
+ * including the ADA min-UTxO quote, through buildIssueSettlementAssets.
+ */
+export function deriveSingleAssetIssueSettlementQuantities(
+  request: DeriveSingleAssetIssueSettlementRequest,
+): Record<string, bigint> {
+  const unit = request.assetUnit.toLowerCase()
+  if (unit !== 'lovelace') unitIdentity(unit)
+  if (request.targetUsdmSubunits <= 0n) {
+    throw new Error('USDM settlement target must be positive')
+  }
+
+  const quotes = decodeOraclePriceReferences(request.oracleDatum)
+  const quote = oracleQuoteForUnit(
+    quotes,
+    unit,
+    request.expectedPublisherPkh,
+    request.nowMs,
+  )
+  if (quote.price <= 0n) {
+    throw new Error('Selected asset has no positive authenticated Oracle price')
+  }
+
+  const quantity =
+    (request.targetUsdmSubunits * CANONICAL_ORACLE_PRECISION) / quote.price
+  if (quantity <= 0n) {
+    throw new Error('USDM target cannot be represented by a positive quantity of the selected asset')
+  }
+
+  const economicAssetQuantities = { [unit]: quantity }
+  buildIssueSettlementAssets({
+    targetUsdmSubunits: request.targetUsdmSubunits,
+    economicAssetQuantities,
+    oracleDatum: request.oracleDatum,
+    expectedPublisherPkh: request.expectedPublisherPkh,
+    nowMs: request.nowMs,
+  })
+  return economicAssetQuantities
+}
+
 function unwrapOption<T>(value: any): T | undefined {
   if (value == null) return undefined
   if (typeof value.is_some === 'function') {

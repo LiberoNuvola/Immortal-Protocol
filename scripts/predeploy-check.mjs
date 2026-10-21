@@ -267,6 +267,7 @@ section('5/8  B1 TYPESCRIPT ↔ PLUTUS COMPATIBILITY')
 
 const loadTs = read('src/loadValidator.ts')
 const mintTs = read('src/mint.ts')
+const mainTs = read('src/main.ts')
 const flowTs = read('src/gameFlow.ts')
 const configTs = read('src/config.ts')
 const economicOracleTestHs = read('plutus/test/EconomicOracleTest.hs')
@@ -307,6 +308,12 @@ const economicHs = read('plutus/Economic.hs')
 contains(mintTs, /deriveAdaIssueSettlementLovelace/, 'Issue settlement derives ADA quantity from authenticated OracleDatum quote')
 contains(mintTs, /buildIssueSettlementAssets/, 'Issue settlement supports an opt-in buyer-selected multi-asset basket')
 contains(mintTs, /settlementAssetQuantities/, 'Multi-asset settlement quantities enter the Issue builder explicitly')
+contains(mainTs, /refreshSettlementOptions[\s\S]*?decodeOraclePriceReferences[\s\S]*?lucid\.wallet\.getUtxos/s,
+  'DApp settlement choices are derived from the authenticated Oracle State and current wallet holdings')
+contains(mainTs, /deriveSingleAssetIssueSettlementQuantities[\s\S]*?settlementAssetQuantities:\s*\{\s*\[selectedSettlement\.unit\]:\s*selectedSettlement\.economicQuantity\s*\}/s,
+  'DApp passes only the exact quote-derived selected asset quantity into Issue')
+contains(mainTs, /selectedSettlementUnit[\s\S]*?Choose a wallet-held settlement asset/s,
+  'Issue remains blocked until the user explicitly selects an eligible settlement asset')
 contains(mintTs, /assertCompletedTreasurySettlement/, 'Completed Lucid Treasury output Value is checked before submission')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
   'Issue settlement decodes the authenticated Oracle State UTxO through the canonical OracleDatum decoder')

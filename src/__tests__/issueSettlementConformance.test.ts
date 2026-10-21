@@ -10,6 +10,7 @@ import {
   decodeAdaOraclePriceReference,
   decodeOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
+  deriveSingleAssetIssueSettlementQuantities,
   type AdaOraclePriceReference,
 } from '../issueSettlement'
 
@@ -180,6 +181,65 @@ describe('Issue settlement conformance', () => {
       expectedPublisherPkh: publisher,
       nowMs,
     })).toThrow(/expected 101/)
+  })
+
+  it('derives an exact single-asset ADA payment from the authenticated quote set', () => {
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, ['11'.repeat(28), '5052452d52494348', 250n, nowMs - 1_000n, publisher] as any)
+    const oracleDatum = new Constr(1, [[ada, pre]] as any)
+    const result = deriveSingleAssetIssueSettlementQuantities({
+      targetUsdmSubunits: 100n,
+      assetUnit: 'lovelace',
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(result).toEqual({ lovelace: 1_000_000n })
+    expect(buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: result,
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toEqual({ lovelace: 2_600_000n })
+  })
+
+  it('derives a single PRE-RICH settlement amount only when ADA min-UTxO and PRE quotes are both present', () => {
+    const policy = '11'.repeat(28)
+    const name = '5052452d52494348'
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, [policy, name, 250n, nowMs - 1_000n, publisher] as any)
+    const oracleDatum = new Constr(1, [[ada, pre]] as any)
+    const result = deriveSingleAssetIssueSettlementQuantities({
+      targetUsdmSubunits: 100n,
+      assetUnit: policy + name,
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(result).toEqual({ [policy + name]: 400_000n })
+    expect(buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: result,
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toEqual({ lovelace: CANONICAL_ADA_MIN_UTXO_LOVELACE, [policy + name]: 400_000n })
+  })
+
+  it('does not offer an asset that cannot satisfy the target under canonical integer conversion', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const pre = new Constr(0, [policy, name, 200_000_000n, nowMs - 1_000n, publisher] as any)
+    const oracleDatum = new Constr(1, [[ada, pre]] as any)
+    expect(() => deriveSingleAssetIssueSettlementQuantities({
+      targetUsdmSubunits: 100n,
+      assetUnit: policy + name,
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toThrow(/positive quantity/)
   })
 
   it('derives ADA payment from the authenticated Oracle price and canonical USDM target', () => {

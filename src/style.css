@@ -220,3 +220,11 @@ button:focus-visible {
 .dapp-product-line span{opacity:.45}
 .dapp-product-line span::before{content:'·';margin-right:10px}
 #claim:disabled{opacity:.45;cursor:not-allowed}
+
+
+/* Settlement asset picker: only wallet-held assets with exact authenticated quotes are eligible. */
+.settlement-picker{display:grid;gap:8px;margin-top:20px;max-width:520px}
+.settlement-picker label{opacity:.65;font-size:10px;letter-spacing:.11em}
+.settlement-asset-select{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:#111519;color:inherit;font:inherit}
+.settlement-asset-select:disabled{opacity:.55;cursor:not-allowed}
+.settlement-asset-note{margin:0;font-size:12px;line-height:1.55;opacity:.62}
