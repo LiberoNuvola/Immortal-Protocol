@@ -3,10 +3,14 @@ import { Data } from 'lucid-cardano'
 /**
  * PRE-RICH B1 Issue settlement construction.
  *
- * This is deliberately limited to the single authenticated ADA quote exposed
- * by the current OracleDatum/OracleState singleton. Token settlement is not
- * represented as supported here: the current on-chain valuation demands a
- * quote for every non-zero asset, including the ADA minimum-UTxO component.
+ * The legacy OracleDatum constructor contains one asset quote; the additive
+ * OracleQuoteSet constructor can carry several asset-specific quotes inside
+ * the same authenticated singleton. Every nonzero asset in the actual
+ * Treasury output still requires an exact, fresh, publisher-matched quote,
+ * including ADA for the minimum-UTxO component.
+ *
+ * This module only prevalidates the requested integer basket and verifies the
+ * completed transaction body. MintPolicy/Economic remain authoritative on-chain.
  */
 export const CANONICAL_ORACLE_PRECISION = 1_000_000n
 export const CANONICAL_ADA_MIN_UTXO_LOVELACE = 1_600_000n
