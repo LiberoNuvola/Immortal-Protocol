@@ -19,6 +19,7 @@ const REQUIRED_FIELDS = [
   'Reproduction command(s)',
   'Required CI workflow/run links',
   'Test/vector names and results',
+  'Evidence-bound commit SHA',
   'Residual-obligation impact',
   'Compatibility / migration impact',
   'Provenance of generated or copied material',
@@ -154,6 +155,10 @@ const classifyPullRequest = ({ body, files, headSha }) => {
   if (missing.length > 0) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Missing or placeholder declaration fields: ' + missing.join(', ')], files: changed, headSha }
   }
+  const evidenceHeadSha = String(values['Evidence-bound commit SHA'] ?? '').replace(/[`'"]/g, '').trim()
+  if (!headSha || evidenceHeadSha !== headSha) {
+    return { decision: 'STALE_EVIDENCE', eligible: false, reasons: ['Evidence-bound commit SHA must exactly match the current pull-request head; update the declaration and refresh evidence after each commit.'], files: changed, headSha }
+  }
 
   const classes = parseClasses(values.Class)
   if (!classes || classes.length === 0) {
@@ -260,6 +265,7 @@ const selfTest = () => {
     '  - Reproduction command(s): node scripts/contribution-evidence-gate.mjs --self-test',
     '  - Required CI workflow/run links: Workflow B',
     '  - Test/vector names and results: gate fixture tests',
+    '  - Evidence-bound commit SHA: abc123',
     '- Residual-obligation impact: None',
     '- Compatibility / migration impact: None; no public interface changed.',
     '- Provenance of generated or copied material: Original contribution.',
@@ -297,6 +303,14 @@ const selfTest = () => {
   })
   assert.equal(wrongLayer.decision, 'INCOMPLETE')
   assert.equal(wrongLayer.eligible, false)
+  const staleEvidence = classifyPullRequest({
+    body: body.replace('Evidence-bound commit SHA: abc123', 'Evidence-bound commit SHA: oldsha'),
+    files: ['audit/example-boundary.mjs'],
+    headSha: 'abc123',
+  })
+  assert.equal(staleEvidence.decision, 'STALE_EVIDENCE')
+  assert.equal(staleEvidence.eligible, false)
+
 
   const productionCodeUnderTestClass = classifyPullRequest({
     body: body.replace('- Class: B', '- Class: C'),
@@ -323,7 +337,7 @@ const selfTest = () => {
   assert.equal(policyLab.eligible, false)
 
   const residualRecord = classifyPullRequest({
-    body,
+    body: body.replace('- Class: B', '- Class: E'),
     files: ['docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md'],
     headSha: 'abc123',
   })
