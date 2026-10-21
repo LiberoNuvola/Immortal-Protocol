@@ -1163,7 +1163,7 @@ export async function mintSerialNFT(
           targetUsdmSubunits: BigInt(priceUsdm),
           quote: decodeAdaOraclePriceReference(oracleStateUtxo.datum),
           expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
-          nowMs: BigInt(Date.now()),
+          nowMs: settlementObservedAtMs,
         }),
       }
 
