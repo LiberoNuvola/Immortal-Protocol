@@ -50,41 +50,35 @@ jobs:
         run: npm install --prefix poc/drand-beacon-verifier/cardano --no-audit --no-fund
 
       - name: Install pinned Yaci DevKit
-        run: npm install --global @bloxbean/yaci-devkit@0.12.0-beta5
+        run: npm install --global @bloxbean/yaci-devkit@0.12.0
 
-      - name: Start local Cardano devnet with Ogmios evaluator
+      - name: Start local Cardano devnet
         run: |
           set -euo pipefail
           mkdir -p poc/drand-beacon-verifier/cardano/out
-          nohup bash poc/drand-beacon-verifier/cardano/start-yaci-devnet.sh > poc/drand-beacon-verifier/cardano/out/yaci-supervisor.log 2>&1 &
-          echo $! > poc/drand-beacon-verifier/cardano/out/yaci-supervisor.pid
+          nohup yaci-devkit up --enable-yaci-store --enable-kupomios > poc/drand-beacon-verifier/cardano/out/yaci.log 2>&1 &
+          echo $! > poc/drand-beacon-verifier/cardano/out/yaci.pid
 
-      - name: Wait for Yaci Store using Ogmios evaluator
+      - name: Wait for Yaci Store with Ogmios evaluator
         run: |
           set -euo pipefail
           OUT=poc/drand-beacon-verifier/cardano/out
           ready=0
           for i in $(seq 1 180); do
-            if [ -f "$OUT/yaci-startup-status.txt" ] && grep -q '^YACI_STARTUP=failed' "$OUT/yaci-startup-status.txt"; then
-              cat "$OUT/yaci-startup-status.txt"
-              tail -200 "$OUT/yaci-supervisor.log" || true
-              tail -300 "$OUT/yaci.log" || true
-              echo "YACI_OGMIOS_EVALUATOR_READY=0"
-              exit 1
-            fi
             if curl --connect-timeout 1 --max-time 2 --fail --silent http://127.0.0.1:8080/api/v1/epochs/latest > "$OUT/yaci-epoch.json"; then
-              if [ -f "$OUT/yaci-startup-status.txt" ] && grep -q '^YACI_STARTUP=ready_ogmios_evaluator' "$OUT/yaci-startup-status.txt"; then
-                ready=1
-                break
-              fi
+              ready=1
+              break
             fi
             sleep 2
           done
           if [ "$ready" -ne 1 ]; then
-            cat "$OUT/yaci-startup-status.txt" 2>/dev/null || true
-            tail -200 "$OUT/yaci-supervisor.log" || true
             tail -300 "$OUT/yaci.log" || true
+            echo "YACI_STORE_READY=0"
+            exit 1
+          fi
+          if ! grep -Fq "Yaci Store tx evaluator mode: ogmios" "$OUT/yaci.log"; then
             echo "YACI_OGMIOS_EVALUATOR_READY=0"
+            tail -300 "$OUT/yaci.log" || true
             exit 1
           fi
           grep -F "Yaci Store tx evaluator mode: ogmios" "$OUT/yaci.log"
@@ -106,8 +100,6 @@ jobs:
             poc/drand-beacon-verifier/cardano/out/DrandPlutusLedgerEvidence.json
             poc/drand-beacon-verifier/cardano/out/yaci.log
             poc/drand-beacon-verifier/cardano/out/yaci-epoch.json
-            poc/drand-beacon-verifier/cardano/out/yaci-startup-status.txt
-            poc/drand-beacon-verifier/cardano/out/yaci-supervisor.log
           if-no-files-found: warn
 
   offchain:
