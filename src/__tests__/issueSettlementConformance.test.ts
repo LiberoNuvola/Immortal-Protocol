@@ -5,6 +5,8 @@ import {
   CANONICAL_ADA_MIN_UTXO_LOVELACE,
   CANONICAL_ORACLE_PRECISION,
   assertCompletedTreasuryAdaSettlement,
+  assertCompletedTreasurySettlement,
+  buildIssueSettlementAssets,
   decodeAdaOraclePriceReference,
   decodeOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
@@ -22,6 +24,28 @@ function adaQuote(overrides: Partial<AdaOraclePriceReference> = {}): AdaOraclePr
     timestampMs: nowMs - 1_000n,
     publisherPkh: publisher,
     ...overrides,
+  }
+}
+
+function cmlCollection(items: any[]): any {
+  return {
+    len: () => items.length,
+    get: (index: number) => items[index],
+  }
+}
+
+function multiassetFor(policyHex: string, assetNameHex: string, quantity: bigint): any {
+  const policy = { to_bytes: () => Uint8Array.from(policyHex.match(/../g)!.map(byte => parseInt(byte, 16))) }
+  const assetName = { name: () => Uint8Array.from(assetNameHex.match(/../g)?.map(byte => parseInt(byte, 16)) ?? []) }
+  const amount = { to_str: () => quantity.toString() }
+  const perPolicy = {
+    keys: () => cmlCollection([assetName]),
+    get: (_name: any) => amount,
+  }
+  return {
+    keys: () => cmlCollection([policy]),
+    get: (_policy: any) => perPolicy,
+    get_asset: (_policy: any, _name: any) => amount,
   }
 }
 
@@ -82,6 +106,80 @@ describe('Issue settlement conformance', () => {
       .toThrow(/five fields/)
     expect(() => decodeAdaOraclePriceReference(new Constr(0, ['', '', 'not-an-integer', nowMs, publisher] as any)))
       .toThrow(/field types/)
+  })
+
+  it('builds a PRE-only economic basket while retaining only the ADA min-UTxO floor', () => {
+    const policy = '11'.repeat(28)
+    const name = '5052452d52494348'
+    const oracleDatum = new Constr(1, [[
+      new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any),
+      new Constr(0, [policy, name, 100n, nowMs - 1_000n, publisher] as any),
+    ]] as any)
+    const assets = buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: { [policy + name]: 1_000_000n },
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(assets).toEqual({ lovelace: CANONICAL_ADA_MIN_UTXO_LOVELACE, [policy + name]: 1_000_000n })
+  })
+
+  it('builds a mixed ADA+PRE basket only when per-asset rounded values sum to the USDM target', () => {
+    const policy = '22'.repeat(28)
+    const name = '4e49474854'
+    const oracleDatum = new Constr(1, [[
+      new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any),
+      new Constr(0, [policy, name, 100n, nowMs - 1_000n, publisher] as any),
+    ]] as any)
+    const assets = buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: { lovelace: 500_000n, [policy + name]: 500_000n },
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(assets).toEqual({ lovelace: 2_100_000n, [policy + name]: 500_000n })
+  })
+
+  it('rejects baskets missing any required quote, including ADA for min-UTxO', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    const oracleDatum = new Constr(1, [[
+      new Constr(0, [policy, name, 100n, nowMs - 1_000n, publisher] as any),
+    ]] as any)
+    expect(() => buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: { [policy + name]: 1_000_000n },
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toThrow(/exactly one quote for settlement asset lovelace/)
+  })
+
+  it('rejects stale, duplicate, and non-equal multi-asset basket quotes', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    const ada = new Constr(0, ['', '', 100n, nowMs - 1_000n, publisher] as any)
+    const freshPre = new Constr(0, [policy, name, 100n, nowMs - 1_000n, publisher] as any)
+    const stalePre = new Constr(0, [policy, name, 100n, nowMs - 3_600_001n, publisher] as any)
+    const quoteSet = (entries: any[]) => new Constr(1, [entries] as any)
+    const request = (oracleDatum: any) => buildIssueSettlementAssets({
+      targetUsdmSubunits: 100n,
+      economicAssetQuantities: { [policy + name]: 1_000_000n },
+      oracleDatum,
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })
+    expect(() => request(quoteSet([ada, stalePre]))).toThrow(/stale/)
+    expect(() => request(quoteSet([ada, freshPre, freshPre]))).toThrow(/exactly one quote/)
+    expect(() => buildIssueSettlementAssets({
+      targetUsdmSubunits: 101n,
+      economicAssetQuantities: { [policy + name]: 1_000_000n },
+      oracleDatum: quoteSet([ada, freshPre]),
+      expectedPublisherPkh: publisher,
+      nowMs,
+    })).toThrow(/expected 101/)
   })
 
   it('derives ADA payment from the authenticated Oracle price and canonical USDM target', () => {
@@ -181,6 +279,34 @@ describe('Issue settlement conformance', () => {
       'addr_test_treasury',
       2_600_000n,
     )).toThrow(/exactly one Treasury output/)
+  })
+
+  it('accepts the exact completed Treasury basket, including ADA floor and selected token amount', () => {
+    const policy = '11'.repeat(28)
+    const name = '5052452d52494348'
+    assertCompletedTreasurySettlement(
+      completedTx([treasuryOutput(
+        1_600_000n,
+        'addr_test_treasury',
+        multiassetFor(policy, name, 1_000_000n),
+      )]),
+      'addr_test_treasury',
+      { lovelace: 1_600_000n, [policy + name]: 1_000_000n },
+    )
+  })
+
+  it('rejects a completed basket when a token quantity differs from the derived map', () => {
+    const policy = '11'.repeat(28)
+    const name = '505245'
+    expect(() => assertCompletedTreasurySettlement(
+      completedTx([treasuryOutput(
+        1_600_000n,
+        'addr_test_treasury',
+        multiassetFor(policy, name, 999_999n),
+      )]),
+      'addr_test_treasury',
+      { lovelace: 1_600_000n, [policy + name]: 1_000_000n },
+    )).toThrow(/does not match/)
   })
 
   it('rejects a completed Treasury output containing non-ADA assets', () => {
