@@ -1239,3 +1239,35 @@ This update follows the seven existing semantic-review slices; it does not repea
 - B3-A / B3-B / B3-C: **BLOCKED** for the distinct evidence requirements above.
 - Connector combined commit-status responses were empty for queried SHAs; this interface does not expose a fresh push-run inventory through that response. Therefore absence from that response is **not** treated as proof that no Actions runs exist. The exact workflow run/job/artifact evidence listed above is the basis for the classifications.
 - This update adds no protocol source, tests, workflow logic, branch, deployment, ledger transaction, mint, merge, or change to V3/Reveal/economic semantics.
+
+
+### 10.36 Pull-request and promotion reconciliation — 2026-10-21
+
+Read-only refresh of PR #19 and PR #35 after section 10.35. No PR was edited, approved, marked ready, closed or merged.
+
+#### PR #19 — broad CI/integration repair PR
+
+- [PR #19 — fix(ci): unblock Cardano lab and conformance gates](https://github.com/LiberoNuvola/Immortal-Protocol/pull/19)
+- State: **OPEN**, non-draft, unmerged; GitHub connector reports **mergeable=false**.
+- Exact head: `work/immortal-green-closure` / `3220e3c3ece764cc4b6308b39e1df6c977a53344`.
+- Exact base: `main` / `8c6873e1d50115659727c82c294426b9a946f1fa`.
+- Current diff: **413 files**, 117,442 additions, 2,204 deletions. This has expanded from the previously recorded 405-file snapshot.
+- Categorized changed paths: 44 workflow YAML files, 2 GitHub Actions, 37 protocol/on-chain/kernel files, 22 Adapter files, 45 audit/runner files, 45 PoC files, 33 application `src/` paths, 16 relayer files, 68 docs, 3 JSON/data files, and 98 other/root/support paths.
+- Reviews exposed by the current connector call: zero formal review submissions and zero inline review threads returned; one historical issue comment was returned. Treat this as “no review evidence surfaced by this query,” not as a code approval or an exhaustive proof that nobody reviewed elsewhere.
+- Disposition: **DO NOT PROMOTE / HOLD FOR SCOPED REVIEW**. The PR is non-mergeable and combines production-facing source, many workflows, adapter/relayer, audit tools, governance and documentation. A successful unrelated conformance run does not authorize this aggregate diff. First refresh the exact cause of `mergeable=false`, partition the changed paths into independent scope/evidence groups without creating branches, and obtain exact-head CI/review evidence for each production-facing group. Do not resolve this by merging, rebasing, cherry-picking or broad force-updating.
+
+#### PR #35 — Workflow B contribution gate
+
+- [PR #35 — feat(governance): add evidence-gated contribution PR gate](https://github.com/LiberoNuvola/Immortal-Protocol/pull/35)
+- State: **OPEN / DRAFT**, unmerged; GitHub connector reports `mergeable=true`.
+- Exact head: `merge/workflow-b-closed-main` / `7bca8d91b65d7af1261d8b7cc4f28f496a73fcba`.
+- Exact base: `main` / `97b09a38742098f17a61eb07734c401aeedccc06`.
+- Diff: 14 files, 1,668 additions, 44 deletions. Includes contribution-evidence/algorithmic-governability workflows, control-plane scripts/docs, P2.8 materialization tooling, and `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` plus `audit/cardano-integration/v3-carrier-ledger-probe.mts`.
+- The PR body itself says **keep as draft** until the governance control plane has been reviewed and the target branch's enforcement rules have been deliberately configured and verified. Reviews/inline threads surfaced by the connector: zero.
+- Disposition: **KEEP DRAFT / DO NOT MARK READY OR MERGE**. Mergeability is not proof that repository governance rules are configured or that the control plane resists bypass. Require a deliberate review of branch protections/rulesets, bypass actors/permissions, event/path classification, evidence SHA binding, challenge handling and fail-closed behavior. Review the included V3 carrier mint-policy change as its own protocol-surface boundary; do not infer it is authorized just because the contribution PR labels its other changes non-semantic.
+
+#### Branch and promotion rule
+
+The two PRs have different targets and evidence purposes; neither is an acceptable substitute for closing Pyth→MintPolicy, current B1 Issue admission, native Reveal/P2.8 or Materios B3 proof evidence. Preserve both existing PR states and branch topology. The latest checkpoint commit `3220e3c3ece764cc4b6308b39e1df6c977a53344` is document-only; it does not improve the PRs' protocol-test qualification.
+
+**Overall promotion decision: HOLD.** PR #19 requires scope partition and exact failure/readiness diagnosis. PR #35 remains a governance draft until target enforcement is verified. Overall audit remains **PARTIAL / OPEN**. No PR state, branch, protocol source, workflow, deployment, ledger transaction, mint or protocol semantics were changed.
