@@ -84,6 +84,7 @@ function assessSyncLogObservations(observations) {
   }
   return {
     classification,
+    observed_sync_targets: [...new Set(observations.map(item => item.target).filter(Boolean))],
     observation_count: observations.length,
     block_observation_count: samples.length,
     distinct_observed_block_count: uniqueHeights.length,
