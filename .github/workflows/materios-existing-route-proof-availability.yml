@@ -1,0 +1,148 @@
+name: Materios Existing-Route Proof Availability
+
+on:
+  workflow_dispatch:
+    inputs:
+      rpc_endpoint:
+        description: "Existing Materios Preprod RPC endpoint; do not include credentials"
+        required: true
+        type: string
+        default: "https://materios.fluxpointstudios.com/preprod-rpc"
+      archive_rpc:
+        description: "Optional existing historical-state-capable RPC; blank reuses rpc_endpoint; do not include credentials"
+        required: false
+        type: string
+        default: ""
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-existing-route-proof-availability.yml"
+      - "poc/materios-checkpoint/**"
+
+permissions:
+  contents: read
+
+jobs:
+  probe-existing-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
+
+      - name: Install pinned PoC-0 dependencies
+        working-directory: poc/materios-checkpoint
+        run: npm ci --ignore-scripts
+
+      - name: Capture finalized checkpoint and available GRANDPA evidence
+        id: finalized
+        continue-on-error: true
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_RPC: ${{ inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+        run: npm run capture:finalized
+
+      - name: Capture historical anchor value and storage proof
+        id: anchor
+        if: always()
+        continue-on-error: true
+        working-directory: poc/materios-checkpoint
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ inputs.archive_rpc != '' && inputs.archive_rpc || inputs.rpc_endpoint || 'https://materios.fluxpointstudios.com/preprod-rpc' }}
+        run: npm run capture:anchor
+
+      - name: Summarize acquisition status (not verification)
+        if: always()
+        env:
+          FINALIZED_OUTCOME: ${{ steps.finalized.outcome }}
+          ANCHOR_OUTCOME: ${{ steps.anchor.outcome }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const lines = [
+            '# Materios existing-route proof availability',
+            '',
+            'This run is read-only. It does not modify or activate a Materios node.',
+            'Successful capture means evidence was returned; it does NOT mean cryptographic verification or B3 closure.',
+            '',
+            `- Finalized-state capture step: **${process.env.FINALIZED_OUTCOME ?? 'unknown'}**`,
+            `- Historical anchor/storage capture step: **${process.env.ANCHOR_OUTCOME ?? 'unknown'}**`,
+          ];
+
+          const finalizedPath = 'poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json';
+          if (fs.existsSync(finalizedPath)) {
+            try {
+              const capture = JSON.parse(fs.readFileSync(finalizedPath, 'utf8'));
+              const proof = capture.grandpa?.finality_proof;
+              lines.push(
+                '',
+                '## GRANDPA evidence returned',
+                `- Status: **${proof?.status ?? 'unknown'}**`,
+                `- Source: ${proof?.source ?? 'none recorded'}`,
+                `- Format: ${proof?.format ?? 'none recorded'}`,
+                '- Verification: **not performed by this capture step**',
+              );
+              if (Array.isArray(capture.scope?.open)) {
+                lines.push('', 'Open items recorded by capture:', ...capture.scope.open.map(x => `- ${x}`));
+              }
+            } catch (error) {
+              lines.push('', 'Finalized capture JSON could not be parsed: ' + String(error));
+            }
+          } else {
+            lines.push('', 'No finalized-state capture packet was produced. Inspect the preceding step logs.');
+          }
+
+          const anchorPath = 'poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json';
+          if (fs.existsSync(anchorPath)) {
+            try {
+              const witness = JSON.parse(fs.readFileSync(anchorPath, 'utf8'));
+              const nodes = witness.storage_proof?.nodes;
+              lines.push(
+                '',
+                '## Historical storage proof returned',
+                `- Target block: ${witness.target?.block_hash ?? 'unknown'}`,
+                `- State root (observed): ${witness.target?.state_root ?? 'unknown'}`,
+                `- Storage key: ${witness.target?.storage_key ?? 'unknown'}`,
+                `- Proof nodes: ${Array.isArray(nodes) ? nodes.length : 'unknown'}`,
+                '- Proof verification: **not performed by this capture step**',
+                '- Finality and anchor-to-round semantic binding: **still open**',
+              );
+            } catch (error) {
+              lines.push('', 'Anchor witness JSON could not be parsed: ' + String(error));
+            }
+          } else {
+            lines.push(
+              '',
+              '## Historical storage proof',
+              'No anchor witness packet was produced. The selected RPC may lack historical-state/read-proof capability or the target key may not exist at the requested block. Inspect the capture-step error before classifying the cause.',
+            );
+          }
+
+          lines.push(
+            '',
+            '## Decision rule',
+            'Do not label B3 verified from this workflow. A captured proof must next pass an independent verifier against an authenticated finalized checkpoint and exact runtime identity.',
+          );
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          NODE
+
+      - name: Upload raw capture packets for independent verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-existing-route-proof-probe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
+            poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json
+          if-no-files-found: warn
+          retention-days: 30
