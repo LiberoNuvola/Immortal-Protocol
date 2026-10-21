@@ -67,8 +67,10 @@ function validHex(value: string, length: number, name: string): string {
   return normalized
 }
 
-async function fetchSignedUpdate(lazer: PythLazerClient): Promise<Buffer> {
-  const latest = await lazer.getLatestPrice({
+async function fetchSignedUpdate(token: string): Promise<Buffer> {
+  const lazer = await PythLazerClient.create({ token, webSocketPoolConfig: {} })
+  try {
+    const latest = await lazer.getLatestPrice({
     channel: 'fixed_rate@200ms',
     formats: ['solana'],
     jsonBinaryEncoding: 'hex',
@@ -80,8 +82,11 @@ async function fetchSignedUpdate(lazer: PythLazerClient): Promise<Buffer> {
     throw new Error('Pyth Lazer did not return a valid hex-encoded signed update')
   }
   const update = Buffer.from(raw, 'hex')
-  if (update.length === 0) throw new Error('Pyth Lazer signed update is empty')
-  return update
+    if (update.length === 0) throw new Error('Pyth Lazer signed update is empty')
+    return update
+  } finally {
+    lazer.shutdown()
+  }
 }
 
 async function writeEvidence(evidence: Record<string, unknown>): Promise<void> {
@@ -92,13 +97,13 @@ async function writeEvidence(evidence: Record<string, unknown>): Promise<void> {
 
 async function main(): Promise<void> {
   const policyId = validHex(required('PYTH_CARDANO_POLICY_ID'), 56, 'PYTH_CARDANO_POLICY_ID')
-  const lazer = await PythLazerClient.create({ token: required('PYTH_LAZER_TOKEN') })
+  const lazerToken = required('PYTH_LAZER_TOKEN')
   const readClient = Client.make(preprod).withKoios({
     baseUrl: 'https://preprod.koios.rest/api/v1',
   })
   const pythState = await getPythState(policyId, readClient)
   const pythWithdrawScriptHash = validHex(getPythScriptHash(pythState), 56, 'Pyth withdraw script hash')
-  const signedUpdate = await fetchSignedUpdate(lazer)
+  const signedUpdate = await fetchSignedUpdate(lazerToken)
 
   const stateUnit = policyId + Buffer.from('Pyth State', 'utf8').toString('hex')
   const common = {
@@ -108,7 +113,6 @@ async function main(): Promise<void> {
     pythPolicyId: policyId,
     pythStateUnit: stateUnit,
     pythStateResolvedFrom: 'Pyth SDK via Koios',
-    pythStateUnit: stateUnit,
     pythWithdrawalScriptHash: pythWithdrawScriptHash,
     signedUpdateBytes: signedUpdate.length,
     signedUpdateSha256: sha256Hex(signedUpdate),
@@ -216,7 +220,7 @@ async function main(): Promise<void> {
 
   // Fetch again after funding so the validity interval is paired with a recent
   // signed payload, rather than reusing an update that aged during setup.
-  const freshUpdate = await fetchSignedUpdate(lazer)
+  const freshUpdate = await fetchSignedUpdate(lazerToken)
   const updateHex = freshUpdate.toString('hex')
   const now = Date.now()
   const validFromMs = now - 15_000
