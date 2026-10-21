@@ -382,3 +382,17 @@ Within the inspected target-branch relayer composition, the missing component re
 This remains an evidence gap, not permission to invent or replace an authority. The next closure input must identify the actual upstream service/build using non-secret deployment metadata or provide its source repository/reference. Until that can be verified, do not modify the Issue path, deploy a new service, or change G1 semantics.
 
 **G1 remains OPEN.** Documentation-only update; no production code, tests, CI, deployment, V3 carrier, or Reveal semantics changed.
+
+
+### 9.13 Read-only inspection of `release/issue-admission-boundary-squash`
+
+The branch search confirms that `release/issue-admission-boundary-squash` exists. The first direct file fetches for the newer `issueAuthorityServer.js`, `signedIssueAuthority.js`, and `preprodIssueAdmissionProvider.js` paths returned 404 on this ref; that is a path/ref result, not evidence of an API failure or of a live service. I then inspected the release branch's actual `relayer/` directory listing and fetched the files that exist there.
+
+- `relayer/README.md` (blob `d9d97ab06a2c56898709f82f94bdaf20b710b1d3`) describes a minimal reference relayer that watches a treasury and triggers distribution. It explicitly calls itself an operational scaffold, not a production-hardened authority producer.
+- `relayer/issueAdmissionProvider.js` (blob `a2837fca30e9c5d0431efda9fbff2a04853a4fd6`) executes the existing Haskell `issue-admission` executable and adapts decision metadata into an `EconomicAdmissionWitness`. Its comments state that it does not calculate EEV, liquidity, ProtectedCapital, viability, class state, or the economic decision. It accepts an externally supplied `decisionInput` and `runtimeInputs`; it does not derive a G1 policy or an obligation inventory, and its returned witness has no G1 policy commitment.
+- `relayer/attentionObservation.js`, `attentionAuthority.js`, `attentionSignature.js`, and `attentionProducerRegistry.js` concern advertising/attention observations. Their aggregation, hash/signature verification, producer registration, and freshness checks are not the G1 obligation-completeness producer. The attention observation module itself explicitly says it is not an economic authority.
+- The release branch's `relayer/README.md` and `issueAdmissionProvider.js` therefore provide useful historical boundary evidence, but no reusable G1 fee authority producer was identified in the inspected files. The release branch has a differently named/older Issue admission bridge, not the missing signed producer that derives `obligationsComplete` from an approved G1 policy and its exact obligation inventory.
+
+**Conclusion of this branch comparison:** the release branch does not close the G1 blocker on the evidence inspected. This is a bounded source finding, not a claim that every file or external deployment was exhaustively identified. No files on the release branch were changed.
+
+**G1 remains OPEN.** This update changes only this audit document on `work/b3-materios-provenance-evidence`; no production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
