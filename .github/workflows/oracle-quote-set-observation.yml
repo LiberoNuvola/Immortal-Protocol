@@ -1,0 +1,79 @@
+name: Oracle Quote-Set Read-Only Observation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/observe-preprod-oracle-quote-set.mjs"
+      - "audit/cardano-integration/oracleQuoteSetObservation.mjs"
+      - ".github/workflows/oracle-quote-set-observation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  observe-preprod-oracle:
+    name: Observe the exact configured Preprod Oracle singleton
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 15
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID || vars.VITE_BLOCKFROST_PROJECT_ID }}
+      BLOCKFROST_PREPROD_URL: ${{ vars.VITE_BLOCKFROST_PREPROD_URL || 'https://cardano-preprod.blockfrost.io/api/v0' }}
+      ORACLE_STATE_ADDRESS: ${{ vars.VITE_ORACLE_STATE_ADDRESS }}
+      ORACLE_STATE_POLICY_ID: ${{ vars.VITE_ORACLE_STATE_POLICY_ID }}
+      ORACLE_STATE_TOKEN_NAME_HEX: ${{ vars.VITE_ORACLE_STATE_TOKEN_NAME_HEX }}
+      ORACLE_PUBLISHER_PKH: ${{ vars.VITE_ORACLE_PUBLISHER_PKH }}
+    steps:
+      - name: Checkout exact observation revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install isolated Cardano observation dependencies
+        run: npm install --prefix audit/cardano-integration --no-audit --no-fund
+
+      - name: Validate read-only observation configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const required = [
+            'BLOCKFROST_PROJECT_ID',
+            'ORACLE_STATE_ADDRESS',
+            'ORACLE_STATE_POLICY_ID',
+            'ORACLE_STATE_TOKEN_NAME_HEX',
+            'ORACLE_PUBLISHER_PKH',
+          ];
+          const missing = required.filter((key) => !process.env[key]?.trim());
+          if (missing.length) {
+            console.error('Oracle observation blocked; missing configuration names: ' + missing.join(', '));
+            process.exit(1);
+          }
+          console.log('Required Oracle observation configuration is present; values redacted.');
+          NODE
+
+      - name: Observe the exact configured Oracle singleton without signing or submitting
+        run: |
+          mkdir -p audit/preprod-evidence
+          node audit/cardano-integration/observe-preprod-oracle-quote-set.mjs | tee audit/preprod-evidence/oracle-quote-set-observation.json
+
+      - name: Upload read-only Oracle observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-quote-set-observation-${{ github.sha }}
+          path: audit/preprod-evidence/oracle-quote-set-observation.json
+          if-no-files-found: warn
+          retention-days: 30
