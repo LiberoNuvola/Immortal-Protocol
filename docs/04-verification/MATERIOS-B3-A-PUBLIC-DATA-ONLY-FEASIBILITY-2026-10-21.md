@@ -85,3 +85,20 @@ The frozen local-operator CLI design could collect the native execution proof an
 B3-A becomes GREEN only when a real, immutable packet establishes finality and ordered authority provenance from the pinned genesis trust anchor and passes the existing independent verifier through the exact Materios-specific authority-transition boundary. A new witness source is a prerequisite; no source availability result by itself is sufficient.
 
 **Current conclusion:** B3-A cannot be closed from the currently observed public data under the current operating constraints. Preserve `MATERIOS_FINALITY_PROOF_UNAVAILABLE`; continue independent work that does not depend on this gate; resume B3-A only on one of the concrete source/protocol triggers above.
+
+
+## Additional acceptance risk: Preprod v6 historical selector inputs — 2026-10-21
+
+The official [Materios issue #105](https://github.com/Flux-Point-Studios/materios/issues/105) is still open. It identifies a possible reproducibility problem in the Preprod v6 history: under the permanent v6 `AriadneRule::Relaxed`, committee selection may read a still-changing current Cardano epoch through a node's local db-sync tip. A later reconstruction from that epoch's final data may calculate a different committee.
+
+The source issue is careful about its evidence: it reports the mechanism and historical mid-epoch input changes, but **does not report a replay of v6 history or a known failing block**. So this is not a proven failure of the pinned target. The target block 1,856,408 remains unclassified with respect to this risk.
+
+The merged [Materios PR #100](https://github.com/Flux-Point-Studios/materios/pull/100) leaves Preprod v6 on the relaxation permanently. The proposed [issue #109](https://github.com/Flux-Point-Studios/materios/issues/109) describes a future RootTimelock/storage-key opt-in switch to the strict rule; it remains open and does not itself establish historical selector provenance.
+
+Accordingly, acquisition and acceptance are separate:
+
+- **Acquisition gate:** obtain authentic raw GRANDPA justification(s) and required ancestry/authority-transition data.
+- **Historical selector gate:** independently bind the target's selector result to the exact authenticated inputs and runtime/block context used at that point in history. A replay against current Cardano data, or against the epoch's final data without proving equivalence, is insufficient.
+- **Current state:** both gates remain open. Until target-specific input provenance or an equivalent independently verified execution proof is available, classify the historical selector aspect as `HISTORICAL_SELECTOR_REPRODUCIBILITY_UNVERIFIED`, not as a proven failure.
+
+Do not alter the pinned trust model, weaken the finality requirements, touch selector semantics, or reopen Materios issue #50 to bypass this gate. The existing public-data-only conclusion still stands, now with this independent caveat: even successful transport acquisition must be followed by an explicit historical-input verification step.
