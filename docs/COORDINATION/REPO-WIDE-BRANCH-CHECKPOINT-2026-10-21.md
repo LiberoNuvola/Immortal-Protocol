@@ -1,6 +1,6 @@
 # IMMORTAL / PRE-RICH — Repository-Wide Branch & Evidence Checkpoint
 
-**Source-tree snapshot:** 2026-10-21; branch tips captured through 14:29 UTC (16:29 Europe/Rome), listed in Section 0. The checkpoint was committed and linked from Notion after that tree census.  
+**Source-code tree snapshot (GitHub API):** 2026-10-21; active source HEADs refreshed to green `1300b79d7460f2abcd79767d5d16dd2564aad064` (commit timestamp 17:46:31 UTC), B3 `2778d3e107f45ee15157fff8ef894905a72070ea`, and main `97b09a38742098f17a61eb07734c401aeedccc06`. The all-branch listing and recursive tree responses for green/B3/main were refreshed; all three trees were non-truncated. The checkpoint commit itself is coordination-only and follows this code snapshot.  
 **Checkpoint branch:** work/immortal-green-closure  
 **Classification:** coordination/audit record only; not a normative specification, deployment approval, merge authorization, or protocol-semantic decision.
 
@@ -15,15 +15,15 @@ This audit recursively inventoried the Git tree of all **25 existing branches**,
 | Ref | HEAD at snapshot | Commit time (UTC) | Tracked files | Role |
 |---|---|---|---:|---|
 | main | 97b09a38742098f17a61eb07734c401aeedccc06 | 2026-10-21 05:37:43 | 756 | public/default baseline |
-| work/immortal-green-closure | b68c1bd5ae4289df700847b406214dc6a9b4d6a2 | 2026-10-21 14:29:49 | 937 | active cross-system closure / checkpoint branch |
+| work/immortal-green-closure | 1300b79d7460f2abcd79767d5d16dd2564aad064 | 2026-10-21 17:46:31 | 940 | active cross-system closure / checkpoint branch |
 | work/b3-materios-provenance-evidence | 2778d3e107f45ee15157fff8ef894905a72070ea | 2026-10-21 12:50:37 | 997 | active Workflow B / Materios evidence branch |
 | b1-hardening | c561393e7eb842529aeaa272377e5afe0138d085 | 2026-10-17 16:38:44 | 359 | isolated B1 experiments / hardening research |
 | feat/pre-rich-game-ui | 9ba77f967fa8f40395bef8c6cee77bf449d94dad | 2026-10-07 04:29:30 | 759 | DApp presentation/UI lane |
 
 **Do not promote either active work branch wholesale into main.** Tree comparisons found:
-- Green vs main: 549 identical path/blob pairs; 193 green-only paths; 12 main-only paths; 195 shared paths with different blob SHAs.
+- Green vs main: 549 identical path/blob pairs; 196 green-only paths; 12 main-only paths; 195 shared paths with different blob SHAs.
 - B3 vs main: 561 identical path/blob pairs; 254 B3-only paths; 13 main-only paths; 182 shared paths with different blob SHAs.
-- Green vs B3: 750 identical path/blob pairs; 99 green-only paths; 159 B3-only paths; 88 shared paths with different blob SHAs.
+- Green vs B3: 750 identical path/blob pairs; 102 green-only paths; 159 B3-only paths; 88 shared paths with different blob SHAs.
 
 These counts are not merge-safety metrics. A shared filename with different content is a conflict to inspect. A branch-only file is not necessarily ready to port. Transfers must be scoped and verified against the exact target HEAD.
 
@@ -67,7 +67,7 @@ Counts refer to tracked file blobs on each observed branch HEAD, not files chang
 | release/issue-admission-boundary-squash | 5b04f0c005bc | 2026-10-10 | 751 | Historical focused Issue Admission squash/CI reference; newer work exists elsewhere. |
 | release/public-main-curated-2026-09-24 | 04f2684244dd | 2026-10-19 | 489 | Older curated snapshot with useful Workflow C maps/schema/tests. Reference or selectively port documentation; not a merge target. |
 | work/b3-materios-provenance-evidence | 2778d3e107f4 | 2026-10-21 | 997 | Active B3/Workflow B lane: Materios finality, authority provenance, historical storage proof acquisition/verification and boundary conformance. |
-| work/immortal-green-closure | b68c1bd5ae42 | 2026-10-21 | 937 | Active cross-system closure and canonical checkpoint host: B1/EEV/direct-USDM, B2/Issue, JEV, P2.8, Workflow C/papers, Pyth quote diagnosis and portability. |
+| work/immortal-green-closure | 1300b79d7460 | 2026-10-21 | 940 | Active cross-system closure and canonical checkpoint host: B1/EEV/direct-USDM, B2/Issue, JEV, P2.8, Workflow C/papers, Pyth quote diagnosis and portability. |
 
 ### Branch hygiene conclusions
 
@@ -117,7 +117,7 @@ For each conflict, compare source and target blob hashes, inspect the diff and r
 
 ### W2 — Pyth price authenticity and asset-unit conversion
 **Target:** work/immortal-green-closure.  
-**State:** design/research only, not approved or implemented in production. Current Haskell MintPolicy values the Treasury output using the legacy Oracle State quote. Verifying a Pyth update in a separate consumer is not enough if MintPolicy can value that output using another quote. A transaction-bound quote carrier is a candidate only.
+**State:** design/research only; not approved or implemented in production. `plutus/PythQuoteCarrierBinding.hs` now contains an isolated Haskell Plutus V2 transaction-topology extractor, with synthetic adversarial vectors in `plutus/test/PythQuoteCarrierBindingTest.hs`; current source HEAD `1300b79d7460f2abcd79767d5d16dd2564aad064` adds `ViewPatterns` to the helper. It checks a unique carrier input/output, authority-singleton conservation and no mint/burn, address and physical-Value preservation, and decodable carrier datums, then returns the raw price/exponent/timestamps without unit conversion. Crucially, it is **not called by `plutus/MintPolicy.hs`**: `atomicTreasuryPaymentValid` still values the Treasury output through `Economic.totalUsdmValue` / the legacy Oracle State quote. The current-head Haskell Semantic Conformance run #329 is still in progress; synthetic context tests do not prove Pyth signature validity or native-ledger acceptance.
 
 **Normative choice remains OPEN:** inspected sources do not establish 1 USDM = 1 USD and do not provide a canonical USD/USDM ratio. USD/ADA cannot silently be relabelled USDM/ADA; do not round Pyth raw price/exponent prematurely to an integer legacy quote.
 
@@ -143,7 +143,7 @@ JEV is **INCONCLUSIVE** until one unattended cycle is observed: prompt retrieval
 
 ### W5 — P2.8 native Cardano runner / integration lab
 **Target:** work/immortal-green-closure.  
-Sources exist: audit/cardano-ledger-runner/Main.hs, TypedPacketDecode.hs, audit/cardano-integration/materialize-p28-ledger-context.mjs and a dedicated workflow. Prior investigation found Conway PParams normalization missing; commit 68cccb4b421d3d776469567afb99027eabc024f6 addressed that area. The later integration run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) was cancelled while waiting for Yaci Store; the Claim candidate build also failed, and raw-context materialization, typed decoding and the P2.8 evidence gate were skipped. No current-head P2.8 pass is established.
+Sources exist: `audit/cardano-ledger-runner/Main.hs`, `TypedPacketDecode.hs`, `audit/cardano-integration/materialize-p28-ledger-context.mjs` and a dedicated workflow. Prior investigation found Conway PParams normalization missing; commit `68cccb4b421d3d776469567afb99027eabc024f6` addressed that area. Integration run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) was cancelled while waiting for Yaci Store; the Claim candidate build also failed, and raw-context materialization, typed decoding and P2.8 evidence were skipped. The newer exact-head Integration Lab run [#2029](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784077) on `1300b79d7460f2abcd79767d5d16dd2564aad064` is **in progress** at the snapshot, so it is not evidence of a pass. No current-head P2.8 pass is established.
 
 **Next:** classify the first failing step from the latest completed current-head lab run. Keep SAFE_STALL when no real transaction packet exists. Raw context capture is not typed decoder success. Mark evidence as fixture, local Yaci ledger, Preprod or mainnet explicitly. Do not touch V3 or Reveal semantics to make a gate pass.
 
@@ -201,7 +201,7 @@ Paper Tranche 1 is **NOT READY TO SUBMIT**: P3 reproducibility/release snapshot,
 | Issue #20 — authoritative ticket expiry policy | green | Reconcile existing source-of-truth decision first; no duration invented. |
 | Issue #21 — cross-environment conformance/minimal second adapter | green | Non-blocking research using existing vectors. |
 | Issue #22 — scratch-and-win UI | feat/pre-rich-game-ui | UI-only scope; isolate protocol/provider diffs. |
-| PR #19 — Cardano lab/conformance repair | head green, base main | Open, mergeable=false; GitHub shows 1,720 commits and 395 changed files. Its inspected head SHA b68c1bd5... is broad and must not be merged as one package. Split into narrowly scoped PR work only after exact diff review. |
+| PR #19 — Cardano lab/conformance repair | head green, base main | Open, `mergeable=false`; refreshed GitHub metadata shows 1,726 commits and 398 changed files. Current head SHA is `1300b79d7460f2abcd79767d5d16dd2564aad064`. The PR is broad and must not be merged as one package; split into narrowly scoped PR work only after exact diff and base/trust review. |
 | PR #35 — evidence-gated contribution PR gate | merge/workflow-b-closed-main | Open draft bootstrap; keep draft pending trust-base governance review, branch-protection configuration and exact-head native-ledger evidence. |
 
 ## 6. Actions evidence observed at the snapshot
@@ -214,7 +214,9 @@ Paper Tranche 1 is **NOT READY TO SUBMIT**: P3 reproducibility/release snapshot,
 - Paper controlled-rejection run [39454356498](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39454356498): bounded unit tests only; not native Reveal proof.
 - P2.8/JEV run [39201592387](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39201592387), attempt 2: failed prompt generation (ENOENT); not a current-head P2.8 pass.
 
-Follow-up to the queue snapshot: run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) ended **cancelled** at Yaci Store readiness; the Claim candidate build failed, while P2.8 steps were skipped. PR #35 integration run [#2005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39591157626) passed native V3 carrier but failed the real economic Reveal transition; its P2.8 steps were skipped. JEV prompt-generation and Notion registration steps succeeded on #2027, but the unattended next-cycle condition remains unproven.
+Follow-up to the queue snapshot: run [#2027](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39617289296) ended **cancelled** at Yaci Store readiness; the Claim candidate build also failed, while P2.8 steps were skipped. PR #35 integration run [#2005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39591157626) passed native V3 carrier but failed the real economic Reveal transition; its P2.8 steps were skipped. JEV prompt-generation and Notion registration steps succeeded on #2027, but the unattended next-cycle condition remains unproven.
+
+**Live exact-head refresh — green `1300b79d7460f2abcd79767d5d16dd2564aad064` (GitHub run APIs observed 2026-10-21 17:47 UTC):** current recursive tree counts are main 756, green 940 and B3 997 tracked blobs; all three tree responses are non-truncated. The exact-head Integration Lab [#2029](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784077), Haskell Semantic Conformance [#329](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784015), V3 Carrier Fast Ledger [#223](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783837), B2 Control Carrier [#447](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783847), Kernel Invalid-Class [#3675](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783893), and PRE-RICH Emulator Reveal [#956](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971) were **in progress**. The following exact-head runs had completed successfully: Algorithmic Governability [#4257](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784085), Documentation Link Check [#1956](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783881), Portability [#1892](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783861), Adapter Sale [#4291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783956), and Protocol Declaration [#3099](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783866). This mixed state is **not GREEN**. The passed checks do not prove Pyth production binding, P2.8, a live Issue, the unattended JEV cycle, or Materios finality.
 
 Re-fetch the latest run before using any status in a new decision. These entries are a time-stamped evidence ledger; statuses may change.
 
@@ -235,7 +237,7 @@ The older Notion checkpoint references 23 branches; GitHub returned **25** at th
 ## 8. Priority order
 
 1. Re-read this checkpoint at restart; fetch current HEAD for green/B3/main and latest relevant run status.
-2. Complete the exact-head CI queue for b68c1bd5...; classify each job independently. Do not describe pending runs as green.
+2. Classify the exact-head CI state for `1300b79d7460f2abcd79767d5d16dd2564aad064`; some workflows have passed while Integration Lab/Haskell/V3/B2/Kernel/Reveal remain in progress at the observed snapshot. Re-fetch current run status before any decision; do not describe pending runs as green.
 3. First ticket remains blocked: reconcile direct-USDM pool observation, source/unit binding, Treasury output/minimum-UTxO requirements, runtime/service endpoint and final transaction body. Do not mint merely to create a milestone.
 4. Prove the unattended JEV loop: current source SHA, fresh prompt, bounded execution/decline, exact result registration and subsequent scheduled consumption.
 5. Materios needs new-source evidence: no same-endpoint probe rerun until archive/peer/source inputs change. Leave B3 fail-closed.
