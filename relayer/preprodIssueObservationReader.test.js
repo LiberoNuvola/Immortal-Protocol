@@ -105,6 +105,9 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
       obligationsComplete: true,
       allOmegaSuccessorsCertified: true,
       decisionReference: 'decision-1',
+      stateHash: '1'.repeat(64),
+      actionFingerprint: '2'.repeat(64),
+      postStateHash: '3'.repeat(64),
       protectedCapitalProvenance: {
         sourceReference: 'c'.repeat(64) + '#2',
         components: {
@@ -125,6 +128,11 @@ test('reads exact Counter, Pool and V3 carrier and binds authoritative inputs', 
   assert.equal(result.poolInputReference, ref('b') + '#1')
   assert.equal(result.carrierStateReference, ref('c') + '#2')
   assert.equal(result.controlStateReference, ref('e') + '#3')
+  assert.deepEqual(result.authorityDecisionBinding, {
+    stateHash: '1'.repeat(64),
+    actionFingerprint: '2'.repeat(64),
+    postStateHash: '3'.repeat(64),
+  })
   assert.equal(result.protectedCapitalProvenance.total, 1650n)
   assert.deepEqual(result.protectedCapitalProvenance.components, {
     crystallizedLiabilities: 10n,
