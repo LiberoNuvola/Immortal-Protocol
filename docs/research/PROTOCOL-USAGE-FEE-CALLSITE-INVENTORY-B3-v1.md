@@ -141,3 +141,47 @@ These records are design context; they do not substitute for implementation or e
 - No V3 or Reveal semantics touched.
 - No test, CI, or live-chain execution performed for this report.
 - “Not established” means the inspected artifacts do not prove the claim; it is not a universal assertion that the capability cannot exist elsewhere.
+
+
+## F. Operation and cost-attribution inventory — targeted branch-local pass
+
+**Purpose:** identify which cost evidence exists today, what could be measured without inventing a fee formula, and what remains unsupported. This is an inventory, not a fee policy. No operation is declared fee-bearing by this section.
+
+### F1. Operations and current evidence
+
+| Operation / resource path | Evidence found on this branch | Cost category that can be identified now | What is not established |
+|---|---|---|---|
+| Cardano transaction execution | `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` signs/submits a completed transaction and returns its transaction reference. `Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md` says transaction provenance should include fees and execution results. | **ChainExecutionCost**, separate from Protocol Usage Fee. In principle, a submitted transaction can be inspected for its actual ledger fee and execution units, with the matching protocol parameters and transaction context. | The inspected adapter does not calculate a universal IMMORTAL fee, and the cited generic evidence statement is not proof of a completed per-transaction cost-measurement pipeline. No branch-local end-to-end cost packet was established by this pass. |
+| Plutus validation/execution | `audit/cardano-integration/evolution-cost-model-probe.ts` checks the expected shape/length of the Plutus cost-model parameters exposed by the provider. | Cost-model compatibility prerequisite; it can help establish that evaluation uses a compatible model. | It does not measure the execution units or actual fee of each business operation and does not derive Protocol Usage Fee. |
+| PRE-RICH Issue / ticket sale | `src/mint.ts` combines ticket minting, Treasury payment, pending Prize UTxO creation and B1PrizePool update; it calls `tx.complete()` and submits through `submitEconomic`. `src/config.ts` provides a fixed launch settlement amount of 1,000,000 lovelace. | Application settlement/payment and a Cardano transaction that also incurs ChainExecutionCost. | The fixed lovelace amount is not a measurement of operating cost and is explicitly distinct from the USDM economic valuation. It is not a universal IMMORTAL fee. |
+| PRE-RICH Reveal / Claim / Expire | `EconomicActionClass` and the V3 transition model identify these as economic action classes; the current admission boundary validates supplied witnesses and transaction input binding. | Candidate application transitions whose chain execution costs could be measured from actual transactions if/when submitted and observed. | No universal G1 applicability declaration, per-operation resource-cost ledger, or Protocol Usage Fee producer was identified in the inspected paths. No class is selected as fee-bearing. |
+| Oracle / reference observations | The repository contains oracle observation and direct-USDM observation paths for application economic admission. | Potential external-service, compute and data-availability costs; chain execution cost only where an actual on-chain transaction is submitted. | The inspected artifacts do not provide a verified unit cost per observation, a provider invoice/usage meter, or an approved allocation of shared oracle costs to a protocol action. Observation alone does not imply a fee. |
+| Materios evidence / anchoring / verification | The B3 work contains checkpoint, finality, storage-proof and execution-verifier tooling and evidence capture. | Potential infrastructure costs: compute, storage, bandwidth, RPC/provider use and operator time. These must be evidenced by the actual deployment/provider if they are to be recovered. | The inspected evidence artifacts are proof/provenance mechanisms, not a canonical cost meter. This pass did not establish actual per-operation prices, provider billing records, or a defensible allocation of shared node/storage costs to IMMORTAL actions. |
+| Off-chain relayer / admission service | Relayer and authoritative-admission modules transport/verify witnesses and may call upstream providers. | Potential service operating costs such as compute, network, hosting and paid upstream access. | No authenticated metering or cost ledger was established that binds these expenses to a canonical IMMORTAL action. A relayer signature or admission witness is not cost evidence. |
+| Shared development, maintenance and governance work | Research describes possible maintenance/build/review work but does not instantiate it as an operating-cost meter. | Shared overhead, if the owner later decides it belongs in the recoverable cost perimeter. | No approved allocation period, allocation key, cost evidence contract or rule for attributing shared overhead to individual operations exists in the inspected fee artifacts. Commit counts or lines of code would not be a reliable cost measure by themselves. |
+
+### F2. Classification rules for the next evidence pass
+
+Use these categories without collapsing them:
+
+1. **Directly observed chain cost:** the actual ledger transaction fee and, where relevant, recorded execution-unit usage under the corresponding protocol parameters. This is ChainExecutionCost, not Protocol Usage Fee.
+2. **Directly metered protocol cost:** a provider bill or trusted usage meter tied to a defined service interval/action, with source, units, time window and provenance.
+3. **Shared operating overhead:** an actual documented expense whose allocation to operations is still a policy/model decision; do not divide it arbitrarily or label it a per-operation fact.
+4. **Unmeasured / unverified:** a plausible cost without sufficient evidence. Keep it unpriced until a reliable measurement or approved estimation method exists.
+5. **Excluded cost:** a cost explicitly outside the approved fee perimeter, including any chain cost already accounted for separately. The exclusion list itself still needs an authorized rule.
+
+### F3. Measurement record needed before cost-based fee calculation
+
+For any proposed recoverable cost, the evidence record should at least identify the operation/service, cost category, amount and unit, source/meter, observation period or transaction reference, timestamp, provenance, applicable rule/version, allocation method if shared, and a check against duplicate counting. These are evidence-design requirements for future review, not a claim that such a producer already exists.
+
+Do not use `TICKET_PAYMENT_LOVELACE`, ticket price, `src/treasuryPolicy.ts` percentages, `v3MandatoryFutureCosts`, ProtectedCapital, RawSurplus, a Treasury balance, or a generic Plutus cost-model compatibility result as a proxy for the universal Protocol Usage Fee.
+
+### F4. Result
+
+- **ChainExecutionCost:** a distinct and potentially directly observable category, but a reproducible per-operation evidence packet was not established by this targeted pass.
+- **Protocol-attributable operating cost:** possible categories identified, but no verified per-operation meter/allocation was established in the inspected surfaces.
+- **Shared overhead:** no approved attribution method established.
+- **Optional protocol contribution/margin:** no cost evidence or authorized calculation basis establishes a rate; leave it open.
+- **Fee applicability (G1):** still OPEN. This inventory selects no fee-bearing operation.
+
+**Scope limitation:** exact-branch reads of the listed fee inventory, Cardano adapter, PRE-RICH mint path, cost-model probe, admission types and related specifications. This is not a claim of exhaustive static analysis of every operation or external provider, and no tests, CI, deployment or live transaction measurements were run by this documentation pass.
