@@ -498,3 +498,27 @@ The open PRs overlap on security- or runtime-sensitive paths; treat them as comp
 | Contribution gate, workflow permissions, and PR declaration | #35, with CI-policy overlap in #19 | Gate must be evaluated against trusted base policy and exact head SHA; it is not a normative change approval or a substitute for required CI/security review. |
 
 **Minimum promotion sequence (not executed):** (1) compare each PR to its current base SHA; (2) resolve shared-path conflicts as individual reviewed changes; (3) run required workflows on the exact proposed target SHA; (4) verify critical negative cases and provenance-bound evidence; (5) only then consider separate promotion under repository governance. No merge, cherry-pick or branch mutation was performed by this audit.
+
+
+## 10.15 Focused semantic review — Issue admission / EEV authority (2026-10-21)
+
+This is a targeted source review, not a full line-by-line review of all tracked blobs. File identity was fetched from the named refs; findings below are bounded to the inspected source text.
+
+| Source | Ref / blob SHA | Observation | Classification |
+|---|---|---|---|
+| `src/preRichIssueAdmissionBridge.ts` | `work/immortal-green-closure` / `8e594655f68fb3c9f267703a85474e6fd1f25f8e` | Adds candidate-specific EEV qualification, requires `DEPLOYMENT_APPROVED` and profile `PRE-RICH-EEV-USDM-DIRECT-V1`, and binds approval source to the exact Pool UTxO reference. | Implemented fail-closed checks in source; concrete live authority evidence remains separate. |
+| `src/authoritativeIssueAdmissionProducer.ts` | `work/immortal-green-closure` / `d45adc23f78349c8537d8d3aa3c5c01da7d8ed6f` | Defines an injected producer boundary and explicitly does not derive EEV, ProtectedCapital, viability, or gate booleans. | Interface/adapter only; does not itself materialize an authoritative source. |
+| `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` | `work/immortal-green-closure` / `f0c794892104b25e64e94f402c1dd0f5d604364e` | Runs a Haskell decision producer and compares state/action/post-state digests against signed authority binding; requires a supplied observation source and direct-USDM value. | Binding/verification logic present; authority signature, source qualification, and live observation still require concrete evidence. |
+| `relayer/preprodIssueObservation.js` | `work/immortal-green-closure` / `737b63f38848e73274bd47ef0d7500db6d2d4392` | Discovers exact Counter and B1 PrizePool UTxOs, validates datum shape and timestamps, but receives `poolUsdmValue` and `authoritativeStateProducer` as inputs. | Observation boundary only; it does not prove the supplied valuation is derived from qualified canonical USDM units. |
+| `plutus/Economic.hs` | `work/immortal-green-closure` / `e50366a65ce34e9433d5ff179dfc03a35a24c1a1` | `poolUsdmValue` belongs to a conversion path using `totalUsdmValue` / `oraclePriceFor`; source comments describe asset-specific oracle valuation, not a raw USDM-only quantity read. | Confirms the critical distinction: do not treat `poolUsdmValue` as `VerifiedUSDM` under the direct-USDM profile without a separately qualified derivation. |
+| `src/preRichIssueAdmissionBridge.ts` | `main` / `8d0fb18b8423fd93a232e370e97b7cc352322ed3` | Older bridge accepts an `EconomicAdmissionWitness` and checks the authenticated Pool input and valuation match, without the additional EEV deployment-approval/profile contract present on green. | Material branch delta; do not port wholesale. |
+| `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` | `work/immortal-green-closure` / `b778d8a559d4050a565ac5f49a8d5cccb5451b42` | Seed consumption plus exact singleton mint constraint. | Frozen V3 semantics; preserve. |
+| `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` | `main` / `b88e901576071024bb2b02f6c5d066900ed35e2a` | Same intended seed/exact-token constraint expressed through `AssocMap` helper functions. | Different implementation/blob; no semantic change authorized by this audit. |
+
+### Consequence and next evidence gate
+
+1. The green branch has stronger admission-boundary checks than `main`, but those checks do not themselves make the injected producer, source signatures, EEV derivation, or Pool liquidity observation authoritative.
+2. `PRE-RICH-EEV-USDM-DIRECT-V1` must derive the verified quantity of canonical USDM physically present in the exact qualified B1 PrizePool UTxO. The existing `Economic.poolUsdmValue` path is a general oracle-conversion function and must not be substituted for that direct quantity.
+3. Keep the Issue blocker open until a concrete, authenticated observation and qualification packet bind: canonical USDM asset identity, exact Pool UTxO, quantity, snapshot slot/time, source and verification references, derivation version, evidence digest, EV1–EV7, and deployment approval.
+4. No code, workflow, policy, branch, deployment, or ledger state was changed as part of this focused review. This review adds no new runtime or Preprod evidence and does not certify a real Issue.
+
