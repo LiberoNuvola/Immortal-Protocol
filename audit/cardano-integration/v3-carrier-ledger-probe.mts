@@ -1,6 +1,7 @@
 /** Ledger-native V3 carrier mint probe against the local Yaci Conway devnet.
- * Intentionally bypasses Lucid UPLC evaluation: the signed transaction is submitted
- * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
+ * Lucid performs local UPLC evaluation only to populate redeemer execution units.
+ * The signed transaction is still submitted to the real local Cardano node, which
+ * remains authoritative for transaction acceptance/rejection.
  */
 import { readFileSync } from 'node:fs'
 import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script } from '@lucid-evolution/lucid'
@@ -41,7 +42,7 @@ const tx = await lucid
   .mintAssets({ [unit]: 1n }, Data.void())
   .attach.MintingPolicy(policy)
   .pay.ToAddress(address, { lovelace: 2_000_000n, [unit]: 1n })
-  .complete({ localUPLCEval: false })
+  .complete({ localUPLCEval: true })
 
 const signed = await tx.sign.withWallet().complete()
 const txHash = await signed.submit()
