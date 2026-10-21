@@ -102,8 +102,8 @@ jobs:
           }
           for (const authority of r.grandpa_authorities) {
             if (!/^0x[0-9a-f]{64}$/.test(authority.public_key)) throw new Error('Malformed GRANDPA authority key');
-            if (!Number.isSafeInteger(authority.weight) || authority.weight <= 0) {
-              throw new Error('Invalid GRANDPA authority weight in decoded genesis state');
+            if (typeof authority.weight !== 'string' || !/^[1-9][0-9]*$/.test(authority.weight) || BigInt(authority.weight) <= 0n) {
+              throw new Error('Invalid exact GRANDPA authority weight in decoded genesis state');
             }
           }
           const summary = [
