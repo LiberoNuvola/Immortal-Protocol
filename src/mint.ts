@@ -101,9 +101,9 @@ import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 import type { IssueIntent } from '../IMMORTAL/intent/IssueIntent'
 import {
+  decodeAdaOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
   assertCompletedTreasuryAdaSettlement,
-  type AdaOraclePriceReference,
 } from './issueSettlement'
 
 const MIN_ADA_COUNTER = 2_000_000n
@@ -295,15 +295,6 @@ function integerFromData(
     }
   }
 
-  return null
-}
-
-function bytesFromData(value: unknown): string | null {
-  if (typeof value === 'string') return value.toLowerCase()
-  if (value && typeof value === 'object' && 'bytes' in value) {
-    const bytes = (value as { bytes?: unknown }).bytes
-    if (typeof bytes === 'string') return bytes.toLowerCase()
-  }
   return null
 }
 
@@ -1146,31 +1137,7 @@ export async function mintSerialNFT(
   // evaluator also sees ADA carried for min-UTxO and requires a quote for it.
   // Token and mixed-asset payments stay fail-closed until the oracle quote-set
   // contract is extended on-chain.
-  const oracleFields = fieldsOf(parseData(oracleStateUtxo.datum))
-  if (!oracleFields || oracleFields.length !== 5) {
-    throw new Error('Authenticated Oracle State OracleDatum is missing or malformed')
-  }
-  const oracleAssetPolicyHex = bytesFromData(oracleFields[0])
-  const oracleAssetNameHex = bytesFromData(oracleFields[1])
-  const oraclePrice = integerFromData(oracleFields[2])
-  const oracleTimestampMs = integerFromData(oracleFields[3])
-  const oraclePublisherPkh = bytesFromData(oracleFields[4])
-  if (
-    oracleAssetPolicyHex === null ||
-    oracleAssetNameHex === null ||
-    oraclePrice === null ||
-    oracleTimestampMs === null ||
-    oraclePublisherPkh === null
-  ) {
-    throw new Error('Authenticated Oracle State OracleDatum contains invalid fields')
-  }
-  const adaOracleQuote: AdaOraclePriceReference = {
-    assetPolicyHex: oracleAssetPolicyHex,
-    assetNameHex: oracleAssetNameHex,
-    price: oraclePrice,
-    timestampMs: oracleTimestampMs,
-    publisherPkh: oraclePublisherPkh,
-  }
+  const adaOracleQuote = decodeAdaOraclePriceReference(oracleStateUtxo.datum)
   const treasuryPaymentLovelace = deriveAdaIssueSettlementLovelace({
     targetUsdmSubunits: BigInt(priceUsdm),
     quote: adaOracleQuote,
