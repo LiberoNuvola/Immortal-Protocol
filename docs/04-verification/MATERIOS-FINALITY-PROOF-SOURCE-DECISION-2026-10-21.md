@@ -40,6 +40,17 @@ Observed results recorded by the investigation:
 
 These observations establish a public-interface/evidence-availability limitation only. They do **not** establish that the scanned blocks were unfinalized, and the scan does not cover all blocks or every possible service.
 
+### Additional live witness probe — 2026-10-21
+
+The later CI run [#39590324041](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590324041) tested the existing public `/rpc` endpoint again, independently of the Smoldot P2P probe. The uploaded `materios-real-grandpa-witness` packet (artifact ID `12341295881`, ZIP SHA-256 `56c8d7f5c77de9108d5f2993a1dcd7edcbd0c63fb5bb39399117356d11528e31`) records status `BLOCKED_NO_PUBLIC_GRANDPA_WITNESS`:
+
+- The dense scan covered **769 blocks**, numbers `2,381,072–2,381,840`.
+- No block in that scan contained a recognized GRANDPA `FRNK` justification. Four block responses had a non-null justification field, but none contained a GRANDPA justification.
+- `grandpa_proveFinality` returned `-32601 Method not found`; the capture also could not obtain runtime code through `state_getCode` (`-32601 Method not found`).
+- The finalized head and reported current GRANDPA set ID (`4220`) remain untrusted RPC observations, not a finality certificate or authenticated authority history.
+
+This is an additional endpoint-availability result, not an assertion that the scanned blocks were unfinalized or that the chain's finality is invalid. The packet explicitly leaves cryptographic finality and authority-transition provenance false. It extends the known scan evidence but does not make the historical target's proof available.
+
 Reference: [Materios Preprod RPC endpoint](https://materios.fluxpointstudios.com/preprod-rpc).
 
 ### 2. Upstream execution-proof RPC request is not an available dependency
