@@ -640,6 +640,33 @@ export function assertCompletedTreasurySettlement(
 }
 
 /** Backward-compatible ADA-only assertion retained for existing callers/tests. */
+/**
+ * Require that the finalized CML transaction body carries the exact finite
+ * TTL selected from the authenticated settlement quote-set freshness window.
+ */
+export function assertCompletedIssueValidityUpperBound(
+  completedTx: any,
+  expectedTtlSlot: number,
+): void {
+  if (!Number.isSafeInteger(expectedTtlSlot) || expectedTtlSlot < 0) {
+    throw new Error('Expected Issue TTL slot must be a non-negative safe integer')
+  }
+  const body = completedTx?.txComplete?.body?.()
+  if (!body || typeof body.ttl !== 'function') {
+    throw new Error('Completed Issue transaction validity TTL is unavailable')
+  }
+  const ttl = unwrapOption<any>(body.ttl())
+  if (ttl == null) {
+    throw new Error('Completed Issue transaction is missing a finite validity upper bound')
+  }
+  const actualTtlSlot = cmlInteger(ttl, 'validity upper-bound slot')
+  if (actualTtlSlot !== BigInt(expectedTtlSlot)) {
+    throw new Error(
+      `Completed Issue TTL mismatch: expected slot ${expectedTtlSlot}, got ${actualTtlSlot}`,
+    )
+  }
+}
+
 export function assertCompletedTreasuryAdaSettlement(
   completedTx: any,
   treasuryAddress: string,
