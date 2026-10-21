@@ -91,3 +91,40 @@ Under the current source-of-truth hierarchy, do not change the Oracle singleton 
 4. only then bind the Aiken carrier output into Plutus V2 MintPolicy and verify both together on a native Cardano ledger.
 
 No parity rule, source, conversion constant, oracle update, production code, deployment or real Issue is changed by this memo.
+
+
+## 8. External source and token-identity cross-check — 2026-10-22
+
+This check adds current external evidence; it does **not** select an option or authorize implementation.
+
+### 8.1 The repository's accounting unit and a Cardano token are different claims
+
+The archived Constitution identifies USDM as PRE-RICH's canonical economic unit and requires verified conversion for other payment assets (Articles 5 and 16). The PRE-RICH system specification separately fixes the representation at 100 sub-units per USDM and requires asset identity, price validity, freshness, decimal handling, deterministic rounding, minimum-UTxO treatment and stale/malformed-data rejection. Neither source explicitly defines the accounting unit as exactly one USD or proves that a token carrying the ticker `USDM` is always worth one accounting USDM.
+
+The normative EEV Oracle/Valuation Contract R9 is also explicit that universal safety is relative to the valuation supplied by the adapter: the adapter must establish source authority, verification, freshness, deterministic derivation, conservative direction and failure behavior. It does not certify the market truth of a supplied price.
+
+### 8.2 Current issuer documentation makes ticker-only identity unsafe
+
+- Cardano's ecosystem page describes USDM as a fiat-backed stablecoin whose units are backed 1:1 by USD reserves and whose on-chain proof-of-reserves is delivered through Charli3: [Cardano — Stablecoins](https://cardano.org/stablecoins/).
+- NBX's issuer terms, updated 17 July 2026, are more specific for the EEA: NBX-issued USDM and Moneta-issued USDM are distinct issuance obligations, with separate reserves and no cross-liability/cross-coverage. Redemption rights also differ by issuer and eligibility: [NBX USDM Terms](https://nbx.com/en/usdm-terms).
+
+These statements are about issuer backing/redemption obligations; they are not a cryptographic proof that every on-chain token named USDM is interchangeable, or that its secondary-market price is continuously exactly $1. A production valuation must bind the exact network asset identity (policy ID + asset name) and source contract to the intended semantics.
+
+### 8.3 Pyth feed identity is product- and asset-specific
+
+Pyth's official documentation distinguishes Pyth Core and Pyth Pro (formerly Lazer) and maintains separate feed-ID catalogs. The Pro catalog exposes the symbol, feed ID, exponent, status and minimum channel for each feed: [Pyth Pro Price Feed IDs](https://docs.pyth.network/price-feeds/pro/price-feed-ids). The repository's current native-ledger candidate uses Pyth Pro/Lazer with the raw ADA/USD feed. This review did not establish a Pyth Pro feed whose provenance and definition are explicitly tied to the exact Cardano USDM asset policy intended by PRE-RICH. A generic `USDM/USD` symbol or a feed available on another chain would not satisfy that asset-identity requirement by itself.
+
+A DEX-derived ADA/USDM observation can avoid an implicit USD bridge only if its exact source, asset policy, freshness, execution/market constraints and on-chain verification path are qualified under the existing source-of-truth hierarchy. A displayed or historical feed record alone is not such qualification.
+
+### 8.4 Engineering disposition and decision recommendation
+
+The key ambiguity to remove from the source-of-truth hierarchy is whether `USDM` names:
+
+1. a **protocol accounting unit** used to denominate the frozen economic obligations; or
+2. a **particular Cardano-native token** whose market/redeemable value must be observed.
+
+The robust architecture should keep those identities explicit even if governance ultimately chooses a one-to-one relationship for valuation. Do not conflate a protocol rule defining its accounting unit with a guarantee about any token's secondary-market price or issuer/redemption path.
+
+**Recommendation for normative review (not an approved decision):** define the accounting-unit meaning and its relationship to USD explicitly, independently of native-token identity. If governance intends USDM sub-units to be USD-denominated accounting units, state that rule normatively; convert raw Pyth ADA/USD data using the exact rational price/exponent and the already-governed conservative rounding contract. If instead USDM denotes a token-relative unit, require an independently verified USD/USDM ratio or an exact asset/USDM quote. In either case, physical USDM tokens accepted as assets must still be bound by exact policy ID/name and an authorized valuation source; ticker-only parity is insufficient.
+
+Until the relevant normative owner adopts one route, Options A/B/C in §4 remain OPEN. No `D = 1` constant, feed ID, rounding update, or production compatibility path is authorized by this research. The production `MintPolicy` must continue to be classified as not Pyth-bound until the exact quote consumed by the Treasury equality check is verified in the same transaction.
