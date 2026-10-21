@@ -12,7 +12,8 @@ This probe tests a source-agnostic path that does not require a Materios validat
 4. Starts the Substrate light client, checks system_chain and the genesis hash against the pinned Materios v6 identity.
 5. Uses the public HTTP RPC only as an untrusted block-hash discovery source, then asks Smoldot's P2P layer for the target activation block and nearby candidate commit blocks (including the approximate 60-block session boundaries). The HTTP RPC is never trusted for finality; every P2P-returned header is locally SCALE-encoded and hash-checked.
 6. Supports both hex-string and byte-array representations of Smoldot's `chain_getBlock.justifications` wire format. It subscribes to justifications verified by the light client and records each candidate outcome, rather than repeatedly polling a single historical block and starving the RPC queue.
-7. Reconstructs a proof target header's SCALE bytes and checks Blake2-256(header) against the justification's target hash. It writes a JSON acquisition artifact without calling the proof canonical or verified by IMMORTAL.
+7. Samples `system_health` after genesis identity validation and at 15-second intervals during the proof wait, recording peer count, `isSyncing`, `shouldHavePeers`, timestamps, and query errors in the evidence artifact. This distinguishes lack of peers from ongoing/stalled sync and avoids interpreting every negative result as the same failure.
+8. Reconstructs a proof target header's SCALE bytes and checks Blake2-256(header) against the justification's target hash. It writes a JSON acquisition artifact without calling the proof canonical or verified by IMMORTAL.
 
 ## Why this is the right boundary
 
