@@ -10,8 +10,9 @@ This probe tests a source-agnostic path that does not require a Materios validat
 2. Adds the already documented public P2P bootnode to an in-memory copy only. The downloaded source bytes and digest are preserved; genesis storage is not edited.
 3. Builds Smoldot at pinned upstream PR commit c898452405be712c6037ad956464b3fe9f9907f4, which contains the proposed raw GRANDPA justification export via grandpa_subscribeJustifications and chain_getBlock.
 4. Starts the Substrate light client, checks system_chain and the genesis hash against the pinned Materios v6 identity.
-5. Requests the exact historical target block and captures a returned FRNK justification if the peer serves one. It also subscribes to proofs verified by the light client and captures any raw justifications received during the bounded observation window.
-6. Reconstructs a target header's SCALE bytes from the RPC fields and checks Blake2-256(header) against the hash carried by the justification. It writes a JSON evidence artifact without calling it canonical or verified by IMMORTAL.
+5. Uses the public HTTP RPC only as an untrusted block-hash discovery source, then asks Smoldot's P2P layer for the target activation block and nearby candidate commit blocks (including the approximate 60-block session boundaries). The HTTP RPC is never trusted for finality; every P2P-returned header is locally SCALE-encoded and hash-checked.
+6. Supports both hex-string and byte-array representations of Smoldot's `chain_getBlock.justifications` wire format. It subscribes to justifications verified by the light client and records each candidate outcome, rather than repeatedly polling a single historical block and starving the RPC queue.
+7. Reconstructs a proof target header's SCALE bytes and checks Blake2-256(header) against the justification's target hash. It writes a JSON acquisition artifact without calling the proof canonical or verified by IMMORTAL.
 
 ## Why this is the right boundary
 
@@ -30,7 +31,7 @@ A successful workflow means only that the P2P light-client path delivered at lea
 - that VerifiedAuthoritySetTransition was crossed;
 - that B3-A is closed.
 
-A live proof for a different block is useful proof-transport evidence, but is not a substitute for the exact historical transition witness.
+A live proof for a different block is useful proof-transport evidence, but is not a substitute for the exact historical transition witness. The target activation block has no GRANDPA digest of its own, so nearby descendant commit targets are probed; if a descendant justification is found, a sequential ancestry bridge back to the activation block is still required.
 
 ## Reproducibility
 
