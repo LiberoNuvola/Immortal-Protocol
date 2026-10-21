@@ -236,3 +236,20 @@ The Issue UI has progressed from a one-asset chooser to explicit user-entered qu
 Even if every frontend test passes, the live Oracle State UTxO still needs to be inspected to learn whether it actually contains the additive quote-set constructor and unique valid ADA/token records. No active Oracle UTxO or validator was updated. Exact-head Plutus compile/export, quote-set execution by compiled validators, the predeploy structural gate, generated script hash/size review, real native-ledger basket acceptance and ledger reconciliation remain unproven. This commit is a code-only change: no wallet transaction was signed or submitted and no ticket was issued.
 
 The quote set remains validated under the existing configured publisher/freshness trust model; it does not itself make price production permissionless. The EEV boundary remains USDM physically present in the qualified B1 PrizePool UTxO. Accepting an asset as payment does not qualify it as EEV. PR #19 remains a 1,600+ commit / hundreds-of-files integration branch and must not be merged wholesale.
+
+
+## 2026-10-21 follow-up — Issue transaction-body, oracle-window and min-ADA conformance
+
+This follow-up records three construction-boundary requirements now enforced in the working branch. It does not authorize a wallet Issue or deployment.
+
+1. **Await completion before inspecting the body.** The Lucid v0.10.11 `Tx.complete()` API is asynchronous. The Issue path now awaits it before reading the completed CML outputs or passing the candidate to the adapter. Previously, checking the Promise as if it were a completed body was not a valid final-body conformance test.
+2. **Bind the body TTL to the quotes actually used.** Plutus `Economic.validOracleTimestamp` checks each selected quote against the transaction validity upper bound. The builder now derives the earliest existing deadline `quote.timestamp + maxOracleAge` for every asset in the exact Treasury Value, sets a finite `validTo` with one whole slot of conservative margin, and verifies the completed transaction body's TTL equals the selected slot. This reuses the existing `maxOracleAge`; it does not introduce a new economic or freshness threshold. A too-short window fails closed.
+3. **Check output-specific minimum ADA.** After the final output is built, the Issue path calculates the required ADA against the actual CML Treasury output—including its complete asset map and inline datum—using Lucid's pinned `min_ada_required(output, coinsPerUtxoByte)` primitive and the provider's protocol parameter. It rejects if the final output's ADA is below that amount. The pre-existing 1.6M lovelace constant remains the economic ADA exclusion applied by Plutus; it is not treated as a universal ledger minimum for every serialized Treasury output.
+
+Focused TypeScript test vectors now cover finite/missing/mismatched TTL and the minimum-ADA boundary. Exact-head CI must pass after these latest edits. No output amount is silently increased, no surplus is hidden from the canonical USDM valuation, and no ADA/PRE/NIGHT basket is authorized merely because a quote exists.
+
+### Evidence and remaining limits
+
+The Cardano Adapter Sale Conformance workflow passed on earlier code revision `80da6d2` (including its settlement conformance test and browser build), before the output-specific minimum-ADA guard was added. That result is not evidence for the newest commit. The output-specific runtime CML call, full predeploy gate, Haskell/Plutus re-export, script hash/size review and native-ledger basket execution remain subject to current-head verification.
+
+The quote-set schema is still code on a working branch only. The currently deployed Oracle State UTxO has not been shown to contain the additive quote-set constructor, and no Oracle State UTxO was updated. Multi-asset settlement, the real wallet Issue, and the fully permissionless/trustless V3 transition therefore remain open.
