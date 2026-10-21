@@ -23,6 +23,12 @@ The current operational constraint is unchanged: IMMORTAL has no Materios node a
 | Materios receipt / Cardano L1 anchor data | Existing B3-B receipt lineage and independently verified storage-inclusion evidence | **USEFUL, BUT A DIFFERENT CLAIM** | Receipt availability, Cardano anchor inclusion and trie membership are distinct from Materios GRANDPA finality and authority-set provenance. Preserve these results as B3-B/evidence lineage without upgrading them to B3-A. |
 | drand | Existing isolated randomness PoC | **B3-D RANDOMNESS ONLY** | A beacon output does not certify that a particular Materios block was finalized or authenticate a Materios authority transition. |
 
+## Additional official infrastructure documentation checked — 2026-10-21
+
+The official [Current-Snapshot Bootstrap guide](https://github.com/Flux-Point-Studios/docs/blob/main/materios/current-snapshot-bootstrap.md) confirms that the public operator path still identifies **exactly one reliable public bootnode**. Its hourly snapshot manifest points to a RocksDB tarball containing `data/chains/materios_preprod_v6/db/`, intended to restore an operator to current state and avoid the known historical-sync problem. It does not publish a second P2P peer or a justification-serving RPC endpoint.
+
+The guide's post-restore canonical-room self-check compares a local block hash to the hash reported by the public `/chain-info` route. That is useful operator diagnostics, but under IMMORTAL's frozen trust boundary it is not a GRANDPA witness: the public hash remains an untrusted claim unless bound to the raw justification and authenticated authority history. A snapshot can be useful for operations, but must not be treated as a substitute for the missing proof packet.
+
 ## Latest live discovery confirmation — public Gateway + WebSocket
 
 The later read-only [Materios WebSocket GRANDPA Probe run #39593013066](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39593013066) independently queried the two public peer-discovery routes:
