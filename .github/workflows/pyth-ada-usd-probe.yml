@@ -43,6 +43,55 @@ jobs:
       - name: Compile isolated Plutus V3 consumer
         run: aiken build
 
+      - name: Capture pinned dependencies and compiled artifact metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s aiken.lock
+          test -s plutus.json
+          mkdir -p probe-evidence
+          cp aiken.lock probe-evidence/aiken.lock
+          cp plutus.json probe-evidence/plutus.json
+          sha256sum aiken.toml aiken.lock plutus.json > probe-evidence/SHA256SUMS
+          node <<'NODE'
+          const fs = require('node:fs')
+          const { createHash } = require('node:crypto')
+          const lock = fs.readFileSync('aiken.lock')
+          const blueprintBytes = fs.readFileSync('plutus.json')
+          const blueprint = JSON.parse(blueprintBytes.toString('utf8'))
+          if (blueprint.preamble?.plutusVersion !== 'v3') process.exit(1)
+          const validators = (blueprint.validators ?? []).map((validator) => {
+            if (typeof validator.compiledCode !== 'string' || !/^[0-9a-f]+$/i.test(validator.compiledCode)) {
+              throw new Error('Invalid compiledCode for validator ' + String(validator.title))
+            }
+            return {
+              title: validator.title ?? null,
+              hash: validator.hash ?? null,
+              compiledCodeBytes: Buffer.from(validator.compiledCode, 'hex').length,
+            }
+          })
+          fs.writeFileSync('probe-evidence/build-manifest.json', JSON.stringify({
+            schema: 'immortal-pyth-ada-usd-probe-build-v1',
+            status: 'COMPILED_PROBE_ONLY',
+            plutusVersion: blueprint.preamble.plutusVersion,
+            aikenManifestSha256: createHash('sha256').update(fs.readFileSync('aiken.toml')).digest('hex'),
+            lockfileSha256: createHash('sha256').update(lock).digest('hex'),
+            blueprintSha256: createHash('sha256').update(blueprintBytes).digest('hex'),
+            validators,
+            disclaimer: 'Compilation and synthetic tests do not prove Pyth signature verification or native-ledger acceptance.',
+          }, null, 2) + '\n')
+          console.log(fs.readFileSync('probe-evidence/build-manifest.json', 'utf8'))
+          NODE
+
+      - name: Upload pinned source and compile evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyth-ada-usd-probe-${{ github.sha }}
+          path: |
+            poc/aiken-pyth-ada-usd/probe-evidence/**
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Report generated artifact is probe-only
         run: |
           test -s plutus.json
