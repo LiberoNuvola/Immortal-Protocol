@@ -191,10 +191,10 @@ async function main(): Promise<void> {
     }
   } else {
     const diagnostic =
-      "message" in catalogue
-        ? catalogue.message
-        : "reason" in catalogue
-          ? catalogue.reason
+      catalogue.status === "malformed"
+        ? catalogue.reason
+        : "message" in catalogue
+          ? catalogue.message
           : "unknown";
     console.log("Catalogue result:", diagnostic);
     console.log("Target method status: UNKNOWN (no catalogue)");
