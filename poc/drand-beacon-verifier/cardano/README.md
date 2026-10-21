@@ -9,16 +9,22 @@ It implements the cryptographic equation for the pinned drand Quicknet scheme:
 - hash the result to G1 using Quicknet's exact DST, `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_`;
 - verify `e(signature, G2_generator) = e(hash_to_curve(message), public_key)` using Plutus V3 BLS12-381 pairing builtins.
 
-The source follows the published drand-client verification construction and the Plutus V3 BLS12-381 builtin interface. It does not yet contain a real signature fixture test, measured execution-unit report, or PRE-RICH integration. The off-chain JavaScript PoC currently owns the positive and adversarial live beacon tests.
-
 ## Status
 
-- Cryptographic source prototype: **ADDED**
-- Compile and builtin smoke tests: **OPEN — current Aiken build attempt exits non-zero without a diagnostic in the captured Actions log; source is not compiler-qualified**
-- Real fixed-signature parity against the JS verifier: **OPEN**
-- Measured CPU/memory budget and transaction size: **OPEN**
-- Production round-selection/ticket binding: **OPEN**
-- PRE-RICH integration: **NOT STARTED**
-- B3 approval: **NOT APPROVED**
+- Aiken compiler qualification: **PASS** on Aiken v1.1.24.
+- `aiken check`: **PASS**, 4 checks, 0 errors, 0 warnings.
+- Blueprint generation: **PASS**, `plutus.json` generated.
+- Real Quicknet round-42 signature vector: **PASS** in Aiken's test evaluator.
+- Wrong-round negative vector: **PASS**; the same round-42 signature is rejected when checked as round 43.
+- JavaScript off-chain verifier and adversarial tests: **PASS** in the same CI workflow.
+- Execution-unit and transaction-size measurements on the target Cardano environment: **OPEN**.
+- End-to-end submitted transaction / ledger execution: **OPEN**.
+- Production round-selection and ticket binding: **OPEN**.
+- PRE-RICH integration: **NOT STARTED**.
+- B3 approval: **NOT APPROVED**.
 
-Do not infer Cardano feasibility from the existence of BLS builtins alone. A passing Aiken compile is not a signature-verification conformance result. The next acceptance gate is first to resolve the Aiken compilation failure and obtain a compiler-qualified artifact; then run the exact same captured signature/public key/round through both implementations and measure the real Plutus execution budget on the target protocol parameters. The Aiken draft is intentionally excluded from the passing off-chain CI gate until it compiles.
+The round-42 signature and Quicknet public key are pinned as a test vector also captured by the off-chain `drand-client@1.4.2` verifier. The Aiken positive test verifies the real signature with the Plutus V3 BLS12-381 builtins; the negative test reuses the signature with round 43 and expects rejection.
+
+These tests demonstrate compilation and cryptographic verification in Aiken's test evaluator. They do **not** by themselves prove successful execution in a submitted Cardano transaction, adequate execution-unit headroom under current protocol parameters, transaction-size feasibility, or production-safe round selection.
+
+The next acceptance gate is to measure CPU/memory execution units for both valid and invalid vectors, record the applicable protocol parameters, and execute an end-to-end transaction on the target Cardano environment. No production PRE-RICH or B1/B3 semantics are changed by this isolated PoC.
