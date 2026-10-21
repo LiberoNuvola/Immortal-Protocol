@@ -115,7 +115,7 @@ jobs:
           cp aiken.toml "$tmp_val/aiken.toml"
           cp -R lib "$tmp_val/lib"
           mkdir -p "$tmp_val/validators"
-          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: Data, _own_ref: OutputReference, _context: Transaction) {
@@ -132,7 +132,7 @@ jobs:
           echo "aiken_validator_stub_exit=${validator_stub_status}"
 
           echo "=== Isolate validator with explicit local Datum/Redeemer types ==="
-          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
 
           pub type Datum {
@@ -158,7 +158,7 @@ jobs:
           echo "aiken_validator_typed_stub_exit=${validator_typed_stub_status}"
 
           echo "=== Isolate official validator argument naming and shape with minimal body ==="
-          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           use aiken/crypto.{VerificationKeyHash}
 
@@ -190,7 +190,7 @@ jobs:
           echo "aiken_validator_official_shape_exit=${validator_official_shape_status}"
 
           echo "=== Same official-shape fixture with canonical hello_world name ==="
-          cat > "$tmp_val/validators/drand.ak" <<'AIKEN'
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
           use aiken/crypto.{VerificationKeyHash}
 
@@ -225,7 +225,7 @@ jobs:
           tmp_shape_clean="$(mktemp -d)"
           cp aiken.toml "$tmp_shape_clean/aiken.toml"
           mkdir -p "$tmp_shape_clean/lib" "$tmp_shape_clean/validators"
-          cp "$tmp_val/validators/drand.ak" "$tmp_shape_clean/validators/drand.ak"
+          cp "$tmp_val/validators/beacon_validator.ak" "$tmp_shape_clean/validators/beacon_validator.ak"
           (cd "$tmp_shape_clean" && aiken check --skip-tests) > /tmp/aiken-validator-clean-lib.log 2>&1
           validator_clean_lib_status=$?
           cat /tmp/aiken-validator-clean-lib.log
@@ -250,7 +250,7 @@ jobs:
             round > 0 && signature != #"" && public_key != #""
           }
           AIKEN
-          cp "$tmp_shape_clean/validators/drand.ak" "$tmp_stub_lib/validators/drand.ak"
+          cp "$tmp_shape_clean/validators/beacon_validator.ak" "$tmp_stub_lib/validators/beacon_validator.ak"
           (cd "$tmp_stub_lib" && aiken check --skip-tests) > /tmp/aiken-validator-stub-lib.log 2>&1
           validator_stub_lib_status=$?
           cat /tmp/aiken-validator-stub-lib.log
@@ -262,28 +262,28 @@ jobs:
           mkdir -p "$tmp_no_tests/lib" "$tmp_no_tests/validators"
           cp lib/drand.ak "$tmp_no_tests/lib/drand.ak"
           sed -i '/^test round_42_uses_big_endian_u64()/,$d' "$tmp_no_tests/lib/drand.ak"
-          cp "$tmp_shape_clean/validators/drand.ak" "$tmp_no_tests/validators/drand.ak"
+          cp "$tmp_shape_clean/validators/beacon_validator.ak" "$tmp_no_tests/validators/beacon_validator.ak"
           (cd "$tmp_no_tests" && aiken check --skip-tests) > /tmp/aiken-validator-no-tests.log 2>&1
           validator_no_tests_status=$?
           cat /tmp/aiken-validator-no-tests.log
           echo "aiken_validator_no_tests_exit=${validator_no_tests_status}"
 
-          echo "=== Check whether validator module filename collides with lib/drand.ak ==="
+          echo "=== Validate validator with a non-colliding module filename ==="
           tmp_renamed_validator="$(mktemp -d)"
           cp aiken.toml "$tmp_renamed_validator/aiken.toml"
           cp -R lib "$tmp_renamed_validator/lib"
           mkdir -p "$tmp_renamed_validator/validators"
-          cp "$tmp_val/validators/drand.ak" "$tmp_renamed_validator/validators/beacon_validator.ak"
+          cp "$tmp_val/validators/beacon_validator.ak" "$tmp_renamed_validator/validators/beacon_validator.ak"
           (cd "$tmp_renamed_validator" && aiken check --skip-tests) > /tmp/aiken-validator-renamed-file.log 2>&1
           validator_renamed_file_status=$?
           cat /tmp/aiken-validator-renamed-file.log
           echo "aiken_validator_renamed_file_exit=${validator_renamed_file_status}"
 
           echo "=== Validator with imported BeaconWitness but constant True body ==="
-          rm -f "$tmp_val/validators/drand.ak"
+          rm -f "$tmp_val/validators/beacon_validator.ak"
           cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{BeaconWitness}
+          use drand.{BeaconWitness}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
               True
@@ -331,7 +331,7 @@ jobs:
           AIKEN
           cat > "$tmp_imported_type_clean/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{BeaconWitness}
+          use drand.{BeaconWitness}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
               True
@@ -347,7 +347,7 @@ jobs:
           echo "=== Validator calling imported verifier with witness fields ==="
           cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          use drand.{verify_quicknet_signature}
           pub type BeaconWitness {
             round: Int,
             signature: ByteArray,
@@ -390,7 +390,7 @@ jobs:
           echo "=== Control: production verifier called with literal arguments ==="
           cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          use drand.{verify_quicknet_signature}
           validator drand_beacon_verifier {
             spend(_datum: Option<Data>, _witness: Data, _own_ref: OutputReference, _context: Transaction) {
               verify_quicknet_signature(42, #"010203", #"040506")
@@ -414,7 +414,7 @@ jobs:
           AIKEN
           cat > "$tmp_stub_call/validators/beacon_validator.ak" <<'AIKEN'
           use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          use drand.{verify_quicknet_signature}
           pub type BeaconWitness {
             round: Int,
             signature: ByteArray,
