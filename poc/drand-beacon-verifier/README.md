@@ -1,6 +1,6 @@
 # IMMORTAL drand Beacon Verification PoC
 
-Status: **off-chain PoC / candidate only**. This is not a selected normative randomness source, not a Cardano integration, and not a Materios finality proof.
+Status: **isolated off-chain + Plutus V3 verification PoC / candidate only**. The Aiken validator now compiles and a real Quicknet round-42 signature passes Aiken's test evaluator, with a wrong-round negative test. This is not yet a submitted Cardano ledger execution, not a selected normative randomness source, and not a Materios finality proof.
 
 ## Fixed profile
 
@@ -41,5 +41,5 @@ The positive test depends on public drand API availability. The negative tests u
 
 - Proves only that the fetched beacon is valid under the pinned Quicknet chain identity and drand-client verification rules.
 - Does not prove Materios receipt authenticity, storage-root authenticity, GRANDPA finality, or authority-set provenance.
-- Does not yet prove Cardano/Plutus feasibility or on-chain verification.
+- Demonstrates the Quicknet signature check using Plutus V3 builtins in Aiken's test evaluator, but does not yet prove execution in a submitted Cardano transaction or acceptable CPU/memory budget.
 - No changes to PRE-RICH outcome mapping, rejection sampling, ticket commitment, or B1/B3 semantics.
