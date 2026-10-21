@@ -483,3 +483,18 @@ All three runs below are bound to source SHA `1300b79d7460f2abcd79767d5d16dd2564
 #### Updated no-repeat rule
 
 Do not rerun the same cancelled lab and report a generic green result. The next lab run should be authorized only after the intended execution predicates are explicit and the workflow will not skip the required native transaction, economic transitions and P2.8 packet. Do not repeat the Reveal budget probe as acceptance evidence; use it only when a changed, falsifiable hypothesis is attached to the run. For V3, preserve its prior known-good evidence and investigate only the new run's cancellation/trigger path; do not change V3 semantics.
+
+
+### 10.14 Shared-path collision matrix for open PRs
+
+The open PRs overlap on security- or runtime-sensitive paths; treat them as competing patches until the exact target-base comparison is complete:
+
+| Shared path / concern | PRs touching it | Required treatment |
+|---|---|---|
+| `.github/workflows/immortal-cardano-lab.yml` | #19, #28, #35 | Three-way compare exact patch and target HEAD; confirm lifecycle, conditions and skipped acceptance steps; no workflow result from one head transfers to another. |
+| `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` | #28, #35 (and broad adjacent V3 changes in #19) | Preserve V3 semantics; review the exact-mint constraint and negative twins on the exact candidate commit; do not merge an entire PR just to obtain the policy change. |
+| `audit/cardano-integration/v3-carrier-ledger-probe.mts` | #28, #35 | Confirm probe's observed inputs, ledger endpoint and evidence packet provenance; a probe script passing is not a carrier execution pass unless its decisive transaction step completes. |
+| `.env.example`, `HaskellIssueAdmissionProvider.ts`, `EconomicAdmission.ts`, V3 carrier/IssueAdmission path | #19 and #23; adjacent authority and evidence paths in #35 | Separate presentation-only edits from provider/authority changes. Browser or relayer data must not become authoritative EEV/admission merely because UI flow needs it. |
+| Contribution gate, workflow permissions, and PR declaration | #35, with CI-policy overlap in #19 | Gate must be evaluated against trusted base policy and exact head SHA; it is not a normative change approval or a substitute for required CI/security review. |
+
+**Minimum promotion sequence (not executed):** (1) compare each PR to its current base SHA; (2) resolve shared-path conflicts as individual reviewed changes; (3) run required workflows on the exact proposed target SHA; (4) verify critical negative cases and provenance-bound evidence; (5) only then consider separate promotion under repository governance. No merge, cherry-pick or branch mutation was performed by this audit.
