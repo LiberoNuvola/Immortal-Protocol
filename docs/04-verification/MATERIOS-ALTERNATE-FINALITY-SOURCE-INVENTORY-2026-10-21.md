@@ -38,6 +38,17 @@ Immutable artifact: `materios-websocket-grandpa-probe-39593013066-1`, ID `123416
 
 **Result:** the gateway's published peer-discovery metadata does not reveal another public peer candidate, and its public RPC still does not supply the missing finality witness. This is positive evidence of the currently published surface, not proof that a private or undocumented service does not exist.
 
+## Follow-up after WebSocket probe classification fix — 2026-10-21
+
+The workflow `.github/workflows/materios-websocket-grandpa-probe.yml` now distinguishes probe/integrity failure from a completed negative acquisition:
+- `ACQUISITION_ERROR`: connection or pinned Materios genesis identity does not validate.
+- `WITNESS_UNAVAILABLE`: endpoint identity is valid, but no raw GRANDPA finality payload/FRNK justification was returned.
+- `WITNESS_CAPTURED_UNVERIFIED`: raw payload is captured, but the independent verifier has not accepted it.
+
+Run [#39595137122](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39595137122) completed successfully with `WITNESS_UNAVAILABLE`; the workflow's success does not mean B3-A passed. The separate fix to render the summary classification correctly is in commit `7530efacd3481470af81f1d250ba061422b0fb54`.
+
+No qualifying new witness source was identified by this workflow. B3-A remains OPEN and `MATERIOS_FINALITY_PROOF_UNAVAILABLE` remains fail-closed. This classification change is operational only and does not change trust semantics.
+
 ## Evidence references already in the repository
 
 - [Public-data-only feasibility ruling](MATERIOS-B3-A-PUBLIC-DATA-ONLY-FEASIBILITY-2026-10-21.md)
