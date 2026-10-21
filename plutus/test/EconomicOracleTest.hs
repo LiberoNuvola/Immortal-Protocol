@@ -24,6 +24,7 @@ import PlutusTx.Prelude (BuiltinByteString)
 import Economic
   ( oraclePriceFor
   , poolUsdmValue
+  , totalUsdmValue
   )
 
 import OracleTypes
@@ -41,7 +42,8 @@ main :: IO ()
 main = do
   outcomes <- traverse runCase cases
   poolOutcome <- runPoolSingletonZeroCase
-  if and outcomes && poolOutcome then pure () else exitFailure
+  fixedAdaSettlementOutcome <- runFixedAdaGenesisSettlementCase
+  if and outcomes && poolOutcome && fixedAdaSettlementOutcome then pure () else exitFailure
 
 runCase :: Case -> IO Bool
 runCase testCase = do
@@ -111,6 +113,44 @@ runPoolSingletonZeroCase = do
           poolPolicy
           poolName
           poolValue)
+
+
+-- Regression for the currently configured first-Issue payment construction.
+-- src/mint.ts sends 1,000,000 lovelace to Treasury, while Economic excludes
+-- minUtxoLovelace=1,600,000 from ADA's economic quantity. This test exercises
+-- the actual Plutus Economic.totalUsdmValue function used by MintPolicy; it
+-- does not execute the full mint policy. The result must be zero, so it cannot
+-- satisfy Genesis pdPriceUsdm=100 via this ADA-only output.
+runFixedAdaGenesisSettlementCase :: IO Bool
+runFixedAdaGenesisSettlementCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let passed =
+        case result of
+          Right actual -> actual == 0 && actual /= 100
+          Left _ -> False
+  putStrLn (prefix passed <> "fixed 1 ADA Treasury output values to zero, not Genesis 100 sub-units")
+  pure passed
+  where
+    adaOracleReferences =
+      [ referenceInput 0
+          (oracleOutputForAsset
+            1
+            statePolicy
+            stateName
+            (bytes "")
+            (bytes "")
+            authorizedPublisher
+            now
+            price)
+      ]
+    fixedTreasuryValue = singleton adaSymbol adaToken 1_000_000
+    evaluateSettlement =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo adaOracleReferences)
+          oracleState
+          authorizedPublisher
+          fixedTreasuryValue)
 
 prefix :: Bool -> String
 prefix passed = if passed then "PASS " else "FAIL "
