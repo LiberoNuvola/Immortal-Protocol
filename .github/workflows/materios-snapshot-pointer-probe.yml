@@ -78,23 +78,45 @@ jobs:
           evidence.manifest_sha256 = sha256(JSON.stringify(evidence.manifest));
           evidence.claims.manifest_available = true;
 
-          const head = await fetch(manifest.url, {
-            method: 'HEAD',
+          // Verify object availability with a single-byte Range GET. If the server
+          // ignores Range, cancel after the first byte; never fetch the 3-4 GiB archive.
+          const probe = await fetch(manifest.url, {
+            method: 'GET',
+            headers: { Range: 'bytes=0-0' },
             redirect: 'follow',
             signal: AbortSignal.timeout(20000),
           });
-          evidence.tarball_head = {
-            status: head.status,
-            final_url_host: new URL(head.url).host,
-            content_type: head.headers.get('content-type'),
-            content_length: head.headers.get('content-length'),
-            last_modified: head.headers.get('last-modified'),
-            accept_ranges: head.headers.get('accept-ranges'),
+          const rangeEvidence = {
+            status: probe.status,
+            final_url_host: new URL(probe.url).host,
+            content_type: probe.headers.get('content-type'),
+            content_length: probe.headers.get('content-length'),
+            content_range: probe.headers.get('content-range'),
+            last_modified: probe.headers.get('last-modified'),
+            accept_ranges: probe.headers.get('accept-ranges'),
+            range_requested: 'bytes=0-0',
+            bytes_read: 0,
+            first_byte_hex: null,
           };
-          evidence.archive_size_agrees = evidence.tarball_head.content_length === null
-            ? null
-            : Number(evidence.tarball_head.content_length) === manifest.size_bytes;
-          if (!head.ok) evidence.tarball_head.error = 'HEAD returned HTTP ' + head.status;
+          if (probe.body) {
+            const reader = probe.body.getReader();
+            try {
+              const chunk = await reader.read();
+              if (!chunk.done && chunk.value?.length) {
+                rangeEvidence.bytes_read = 1;
+                rangeEvidence.first_byte_hex = Buffer.from(chunk.value.slice(0, 1)).toString('hex');
+              }
+            } finally {
+              await reader.cancel().catch(() => {});
+            }
+          }
+          evidence.tarball_head = rangeEvidence;
+          evidence.archive_size_agrees = rangeEvidence.status === 206
+            ? rangeEvidence.content_range === 'bytes 0-0/' + String(manifest.size_bytes)
+            : rangeEvidence.content_length === null
+              ? null
+              : Number(rangeEvidence.content_length) === manifest.size_bytes;
+          if (!probe.ok) evidence.tarball_head.error = 'Range GET returned HTTP ' + probe.status;
 
           fs.writeFileSync(outPath, JSON.stringify(evidence, null, 2) + '\n');
           const fmt = n => n.toLocaleString('en-US') + ' bytes (' + (n / 1024 / 1024 / 1024).toFixed(2) + ' GiB)';
@@ -106,7 +128,7 @@ jobs:
             '- Head block at publish: **' + String(manifest.head_block_at_publish) + '**',
             '- Archive size from manifest: **' + fmt(manifest.size_bytes) + '**',
             '- Published SHA-256: ' + manifest.sha256,
-            '- Archive HEAD status: **' + String(head.status) + '**',
+            '- Archive one-byte Range GET status: **' + String(probe.status) + '**',
             '- Content-Length agrees with manifest: **' + String(evidence.archive_size_agrees) + '**',
             '- Archive downloaded/unpacked: **false**',
             '',
@@ -114,7 +136,7 @@ jobs:
           ];
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
           console.log(JSON.stringify(evidence, null, 2));
-          if (head.status >= 400) process.exit(1);
+          if (probe.status >= 400) process.exit(1);
           NODE
 
       - name: Upload manifest-only evidence
