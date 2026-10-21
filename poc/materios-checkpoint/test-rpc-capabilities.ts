@@ -14,16 +14,20 @@ test("RPC method catalogue reports only exact advertised names", () => {
       "chain_getFinalizedHead",
       "state_getReadProof",
       "state_getReadProof",
+      "grandpa_subscribeJustifications",
     ],
   });
 
   assert.equal(result.status, "available");
   if (result.status !== "available") throw new Error("expected valid catalogue");
-  assert.equal(result.methodCount, 3);
+  assert.equal(result.methodCount, 4);
   assert.equal(result.targets.chain_getFinalizedHead, "listed");
   assert.equal(result.targets.state_getReadProof, "listed");
+  assert.equal(result.targets.grandpa_subscribeJustifications, "listed");
+  assert.equal(result.targets.grandpa_unsubscribeJustifications, "not-listed");
   assert.equal(result.targets.materios_b3_calculateCommitteeProof, "not-listed");
   assert.equal(TARGET_RPC_METHODS.includes("grandpa_proveFinality"), true);
+  assert.equal(TARGET_RPC_METHODS.includes("grandpa_subscribeJustifications"), true);
 });
 
 test("missing or malformed method lists remain unknown, never unavailable", () => {
