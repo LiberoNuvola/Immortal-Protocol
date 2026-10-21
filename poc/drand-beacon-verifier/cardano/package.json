@@ -1,0 +1,10 @@
+{
+  "name": "immortal-drand-cardano-ledger-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Yaci/Cardano ledger evaluation harness for the Quicknet Plutus V3 verifier",
+  "dependencies": {
+    "@lucid-evolution/lucid": "0.6.5"
+  }
+}
