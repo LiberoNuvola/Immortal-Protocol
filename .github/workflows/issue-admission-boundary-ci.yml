@@ -13,6 +13,9 @@ on:
       - "relayer/preprodIssueObservationReader.js"
       - "relayer/signedIssueAuthority.js"
       - "relayer/signedIssueAuthority.test.js"
+      - "relayer/preprodIssueAuthorityEnvelope.js"
+      - "relayer/preprodIssueAuthorityEnvelope.test.js"
+      - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/issue-admission-boundary-ci.yml"
@@ -57,6 +60,8 @@ jobs:
         run: node relayer/preprodIssueAdmissionProvider.test.mjs
       - name: Verify signed Issue authority and EEV approval digest binding
         run: node relayer/signedIssueAuthority.test.js
+      - name: Verify signed Issue authority envelope end-to-end
+        run: node relayer/preprodIssueAuthorityEnvelope.test.js
       - name: Typecheck adapter and boundary tests against locked Lucid
         run: >-
           npx tsc --noEmit --strict --target ES2020 --module ESNext
