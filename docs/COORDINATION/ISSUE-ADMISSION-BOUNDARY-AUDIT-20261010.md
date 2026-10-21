@@ -248,3 +248,34 @@ To make Issue genuinely permissionless, removing the URL check or accepting unsi
 Until that replacement is implemented and adversarially verified, the honest status is **atomic B1 sale checks on-chain; complete economic admission and V3 state advancement still authority-dependent**. Do not describe the current Issue path as fully permissionless/trustless.
 
 No V3, Reveal, B1, B2 or economic semantics were changed by this audit. The existing carrier signature requirement remains in place; no key or signature check was bypassed.
+
+
+### Follow-up implementation plan — permissionless Issue (analysis only; no validator changes)
+
+This is a sequenced work plan, not a new economic policy and not approval to bypass the current signature gate.
+
+**P0 — preserve the current fail-closed behavior**
+- Do not remove the endpoint check, accept an unsigned witness, weaken `assertAuthoritativeIssueAdmissionWitness`, or deploy a different V3 artifact while the current on-chain validator still requires the authority signature.
+- The wallet signature remains necessary for the buyer's spending authorization, but it is not a substitute for the protocol's economic admission.
+
+**P1 — close the gap between already-enforced sale invariants and the complete gate**
+- Keep the existing atomic transaction path: Counter increment, exact serial NFT mint, Pending PrizeDatum, Treasury payment, and B1 PrizePool transition.
+- Treat the MintPolicy and B1PrizePool checks as real on-chain protections, but do not overclaim them as a full verification of EEV, ProtectedCapital provenance, evidence freshness, mandatory future costs, or all-Ω successor viability.
+- For each economic predicate already defined in the source-of-truth hierarchy, record whether it is (a) derived from the actual transaction / authenticated on-chain UTxO, (b) enforced by an existing validator, (c) computed off-chain, or (d) asserted by the signed envelope. Do not add coefficients, thresholds, or semantics.
+
+**P2 — remove the external signer as a discretionary veto**
+- The current V3 carrier validator calls `bindingAuthorityValid` and requires an Ed25519 signature over action class, decision reference, observation reference, pre-state hash, action fingerprint and post-state hash. It checks the pre/post hashes against the datum endpoints, but the inspected validator does not independently recompute the Issue-specific transition delta/action fingerprint.
+- Consequently, eliminating the mandatory signer requires a deliberate replacement for this validator-level authorization. Candidate classes to evaluate against the canonical specifications are: (1) have the validator verify the exact permitted transition and relevant invariants directly; or (2) use a proof-verification construction whose soundness and public inputs are checked on-chain. These are alternatives to investigate, not selected designs. Do not silently switch to a weaker signature policy or to a single new trusted operator.
+- Keep V3 and Reveal unchanged until one alternative is specified, costed against Cardano limits, and accompanied by adversarial conformance evidence.
+
+**P3 — remove trust in the source of economic evidence**
+- The Haskell producer currently evaluates inputs it receives; it cannot turn an asserted source value into authenticated truth just by recomputing the decision.
+- Identify which EV1–EV7 artifacts, direct-USDM observations, ProtectedCapital components, freshness claims, and viability/Ω claims can be derived from exact on-chain UTxOs and normative state. For every remaining off-chain claim, require a verifiable proof or explicitly classify the residual trust assumption. Evidence digests must be recomputed from retrieved/canonicalized bytes, not merely checked for 64-hex shape.
+- Do not invent an Issue freshness horizon. A source-authenticated clock and governed horizon must be resolved from the canonical policy before freshness can be declared satisfied.
+
+**P4 — acceptance before any permissionless claim**
+- Adversarially test changed state endpoints, incorrect action delta, replay, stale/future observation, evidence-byte tampering, mismatched actual transaction inputs, extra unexpected script inputs, and post-state divergence.
+- Run exact-SHA focused tests, typecheck, full relevant CI, then a real Preprod transaction and independent ledger reconciliation of inclusion plus StateAfter.
+- Only call Issue permissionless after the external authority key is no longer indispensable for valid Issue, the economic gate is verifiably enforced, and real ledger evidence confirms the complete path. Until then, describe the path accurately as atomic sale checks on-chain plus authority-dependent V3/economic admission.
+
+No code, validator artifact, deployment, or economic semantics were changed by this plan.
