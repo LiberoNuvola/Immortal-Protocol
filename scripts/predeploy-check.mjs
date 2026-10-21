@@ -269,6 +269,16 @@ const loadTs = read('src/loadValidator.ts')
 const mintTs = read('src/mint.ts')
 const flowTs = read('src/gameFlow.ts')
 const configTs = read('src/config.ts')
+const economicOracleTestHs = read('plutus/test/EconomicOracleTest.hs')
+
+contains(economicOracleTestHs, /runFixedAdaGenesisSettlementCase/,
+  'Plutus valuation regression covers the requested fixed-ADA Issue value')
+contains(economicOracleTestHs, /runExactAdaGenesisSettlementCase/,
+  'Plutus valuation regression covers a synthetic exact-value positive control')
+contains(economicOracleTestHs, /runAdaCeilingRoundingBoundaryCase/,
+  'Plutus valuation regression covers the integer ceiling boundary')
+contains(economicOracleTestHs, /runMixedAssetBasketRequiresPerAssetQuoteCase/,
+  'Plutus valuation regression rejects a basket without per-asset quote coverage')
 
 contains(loadTs, /b1PrizePoolFactory\.plutus\.json/, 'loadValidator imports B1PrizePool factory')
 contains(loadTs, /buildB1PrizePool/, 'loadValidator exposes buildB1PrizePool')
