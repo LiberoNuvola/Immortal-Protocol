@@ -433,7 +433,7 @@ Fetched successfully during this audit update:
 4. For Actions, query latest run per active workflow on exact current **protocol-source** HEAD, inspect jobs and decisive logs; record attempt, skipped steps and artifacts. Documentation-only checkpoint commits do not establish protocol test evidence. Do not infer success from workflow conclusion alone.
 5. Refresh PR #19 and #35 metadata/diffs, and upstream Materios issue #50/commits, before making promotion or repeat-work decisions.
 6. Continue Notion discovery via direct linked pages from the Control Center and topic searches; preserve history. Update only the Control Center index with the final checkpoint commit after the commit SHA is known.
-7. After these steps, rerun consistency checks and only then publish live branch/blob/semantic-coverage numbers. Until then the correct overall audit state is **PARTIAL — structured workstream map materialized; exhaustive semantic review and live evidence refresh remain OPEN**.
+7. After these steps, rerun consistency checks and only then publish global unique-blob/semantic-coverage numbers. The branch-name and live recursive-tree census is complete (§10.24), but the correct overall audit state remains **PARTIAL — structural inventory complete; exhaustive semantic review, current Actions evidence and Notion decision reconciliation remain OPEN**.
 
 ### 10.10 Change log
 
@@ -724,7 +724,7 @@ The Notion page “2026-09-21 — A1/A2/A3 Policy Closure — Ticket Expiry & Ja
 - P-06 remains blocked as described above. Its next task is the missing on-chain policy/time binding, not another generic expiry formula.
 - V3/Reveal semantics and the existing expired Preprod topology remain untouched.
 
-**Audit scope declaration:** these are targeted source reads bound to the listed blobs and call paths. The full current unique-blob semantic ledger, complete live-tree refresh and current-head Actions result remain open; no whole-repository coverage percentage is claimed.
+**Audit scope declaration:** these are targeted source reads bound to the listed blobs and call paths. The live branch-name/recursive-tree census is now complete (§10.24), but the global cross-branch unique-blob union, full semantic ledger and current-head Actions refresh remain open; no whole-repository coverage percentage is claimed.
 
 
 
@@ -896,3 +896,18 @@ A fresh GitHub REST branch list returned **25 branches**. The recursive tree end
 
 The census supersedes earlier non-current file counts such as green 940. The exact green HEAD at census was `337da0e6...`; the following checkpoint-only update changes the checkpoint blob but adds/removes no file path, so tree/file counts remain unchanged while the HEAD SHA advances. This census closes **branch-name and recursive-tree pagination/structural inventory**; it does not close semantic review, historical PR/issue reconciliation, current-head Actions review or Notion source reconciliation. No branch was created/deleted and no code or runtime state was changed.
 
+
+
+### 10.25 Census reconciliation and next audit unit — 2026-10-21
+
+Section 10.24 supersedes older statements in §§10.8–10.11 and §10.19 that the live recursive-tree refresh was still pending. All 25 current branch HEAD trees were fetched and are non-truncated. The tracked structural census is therefore **COMPLETE** for that snapshot.
+
+The remaining structural task is not another branch-name search: it is the **global union of blob SHAs across all 25 tree manifests**, plus path-to-SHA variance and an explicit link from each review record to its exact blob SHA. The aggregate 13,547 figure in §10.24 is a sum of per-branch distinct SHA counts and must not be mistaken for global uniqueness.
+
+Next audit slice:
+1. Reconcile the current branch heads against the census snapshot. Current branch tip can advance via documentation-only checkpoint commits without changing tracked path counts; do not let that obscure protocol-source SHA.
+2. Compute the global unique-blob denominator from the 25 complete tree payloads. If the connector cannot expose/store the raw tree payloads for machine deduplication, record that access limitation rather than inferring the union from aggregate counts.
+3. Extend the semantic ledger only with source reads bound to exact blob SHA and explicit review scope; prioritize Pyth quote binding, B1 EEV/Issue admission, Reveal/P2.8 runners, and B3 proof verifiers.
+4. Refresh latest Actions on the exact protocol-source SHA separately from checkpoint-only commits. The structural census does not upgrade any test, ledger or Preprod claim.
+
+No protocol code, test, workflow, branch topology or ledger state was modified.
