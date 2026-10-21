@@ -569,3 +569,42 @@ Do not repeat the same zero-witness B3-A probe, Reveal size/budget diagnosis or 
 
 **Current declaration:** branch ownership and execution routing are now consolidated here; the audit remains **PARTIAL**; no code, branch topology, protocol semantics, deployment or ledger state was changed by this organizational update.
 
+
+
+### 10.17 Live recheck after work-dispatch consolidation — 2026-10-21
+
+This refresh records only facts rechecked directly against the current GitHub connector responses. It supersedes older statements only where stated; historical evidence remains pinned to its original SHA.
+
+#### Branch census and active anchors
+
+- Branch search returned exactly 25 names. A second request using continuation cursor `MjU` returned zero names and `cursor=null`. The currently exposed branch-name set is therefore complete for this connector query.
+- The previous green source anchor `1300b79d7460f2abcd79767d5d16dd2564aad064` is no longer the current branch tip. PR #19 metadata identifies `work/immortal-green-closure` head as `dfe818d6758679fef220182e1fe0f5bd134e28bd`, which is the documentation-only dispatch commit.
+- Compare from old green source anchor to current green head reports 14 commits ahead, 0 behind, and a connector-limited changed-file list of 10 entries. The reported paths include new `PythAdaUsdConversionCandidate.ts` and tests, new `plutus/PythAdaUsdConversion.hs` and tests, changes to the Haskell conformance workflow/Cabal suite, a Pyth design-gate document, and this checkpoint. The 10-path response is not treated as a complete path manifest.
+- The B3 branch comparison against pinned SHA `2778d3e107f45ee15157fff8ef894905a72070ea` reported identical; the comparison using `main` and pinned SHA `97b09a38742098f17a61eb07734c401aeedccc06` also reported identical. **Anchor discrepancy:** PR #19 metadata separately reports base SHA `8c6873e1d50115659727c82c294426b9a946f1fa`. Until this difference is reconciled through direct ref-head evidence, do not claim that `main` has been fully refreshed or use the conflicting anchor to authorize promotion.
+- Recursive manifests and unique-blob counts have not been re-downloaded/recomputed for all 25 current refs. The branch-name census is complete for the query; whole-repository structural and semantic audit status remains **PARTIAL**.
+
+#### PR #19 is the green branch's broad review container
+
+Live metadata reports PR #19 open, non-draft, base `main`, head `work/immortal-green-closure`, connector `mergeable=false`, 402 changed files, 49,138 additions, 2,204 deletions, last updated `2026-10-21T18:53:07Z`. Consequently the documentation-only checkpoint commit is part of the head of an already broad and heterogeneous PR. Keep #19 unmerged; this is not a scoped approval for any code or for the dispatch document as an independently reviewed PR. Do not resolve this by creating a branch or splitting/merging anything during the organizational audit.
+
+PR #23 remains open/draft, base `main`, head `feat/pre-rich-game-ui`, 27 changed files. PR #28 remains open/non-draft, head `fix/cardano-lab-yaci-info`, three changed files and V3/workflow overlap. PR #35 remains open/draft, head `merge/workflow-b-closed-main`, 14 changed files and explicit governance-bootstrap restrictions. Their mergeability metadata does not authorize promotion.
+
+#### P-02 / Pyth conversion candidate status refresh
+
+| Source | Current green branch blob SHA | Updated classification |
+|---|---|---|
+| `Adapter/CARDANO/observation/PythAdaUsdConversionCandidate.ts` | `ee2b4600c41ddde1b6f0ddf3c9b973259b395a16` | Candidate exact-rational formula only. Requires caller-supplied USD-per-USDM rational and exponent bound; explicitly not production-authoritative. |
+| `Adapter/CARDANO/observation/PythAdaUsdConversionCandidate.test.ts` | `0e21939d349e6b8331cfc4849836f8639ffcdad6` | Synthetic parity/non-parity, exponent and invalid-input vectors exist. Test source does not itself prove the current-head suite passed. |
+| `plutus/PythAdaUsdConversion.hs` | `43dbe58ab19c3e748bf34af2c77ff97cdd42253c` | Haskell candidate with exact integer/rational arithmetic and caller-supplied USD/USDM ratio/bound; not production-authoritative. |
+| `plutus/test/PythAdaUsdConversionTest.hs` | `e30ff098e7b7db32950efac3633dfcb70c49573f` | Synthetic differential vectors exist; no acceptance inference without a run bound to the current code SHA. |
+| `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | `atomicTreasuryPaymentValid` still calls `Economic.totalUsdmValue`; the candidate module is not used by the MintPolicy price-equality path. |
+| `audit/pre-genesis-genesis/PYTH-MINTPOLICY-PRICE-BINDING-DESIGN-20261021.md` | `80285b3dcc32c05959b903b399e9717957139925` | Design explicitly remains NOT APPROVED / NOT IMPLEMENTED IN PRODUCTION and identifies same-transaction price substitution as the key binding risk. |
+
+Accordingly P-02 remains **IMPLEMENTED_UNPROVEN / DESIGN DECISION OPEN**, not production-connected or ledger-verified. The new candidate work is meaningful progress and should be preserved; do not repeat parser/formula work. The next P-02 step is to refresh the exact-head conformance run and keep its results labelled as bounded synthetic/differential evidence, while the normative USD/USDM ratio/bound decision and actual MintPolicy quote binding remain separate blockers. No change to `MintPolicy.hs`, the legacy `Economic.totalUsdmValue` path, or protocol semantics is authorized by this organizational refresh.
+
+#### Actions current-head result
+
+A fetch of commit-associated workflow runs for `dfe818d6758679fef220182e1fe0f5bd134e28bd` returned an empty list under that connector's PR-triggered-run scope. This is **not** evidence that no workflow ran for prior code commits: it means the latest documentation-only commit has no runs surfaced by that query. No current-head Pyth or native-ledger acceptance result was found by this targeted recheck.
+
+**Current declaration:** work dispatch is consolidated and the branch name set has been rechecked; source-head reconciliation, 25-tree refresh, unique-blob ledger, full PR/issue history, current relevant Actions results and Notion semantic review are still open. Overall repository audit remains **PARTIAL**.
+
