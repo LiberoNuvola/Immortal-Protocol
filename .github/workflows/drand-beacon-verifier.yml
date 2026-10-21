@@ -41,6 +41,58 @@ jobs:
           test -s plutus.json
           echo "Aiken verification passed; blueprint generated at poc/drand-beacon-verifier/cardano/plutus.json"
 
+      - name: Setup Node for local ledger probe
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated Lucid dependency
+        run: npm install --prefix poc/drand-beacon-verifier/cardano --no-audit --no-fund
+
+      - name: Install pinned Yaci DevKit
+        run: npm install --global @bloxbean/yaci-devkit@0.12.0-beta5
+
+      - name: Start local Cardano devnet
+        run: |
+          mkdir -p poc/drand-beacon-verifier/cardano/out
+          nohup yaci-devkit up --enable-yaci-store --enable-kupomios > poc/drand-beacon-verifier/cardano/out/yaci.log 2>&1 &
+          echo $! > poc/drand-beacon-verifier/cardano/out/yaci.pid
+
+      - name: Wait for Yaci Store
+        run: |
+          set -euo pipefail
+          ready=0
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8080/api/v1/epochs/latest > poc/drand-beacon-verifier/cardano/out/yaci-epoch.json; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            tail -300 poc/drand-beacon-verifier/cardano/out/yaci.log || true
+            echo "YACI_STORE_READY=0"
+            exit 1
+          fi
+          echo "YACI_STORE_READY=1"
+
+      - name: Execute verifier against local Cardano ledger
+        working-directory: poc/drand-beacon-verifier/cardano
+        run: node ledger-evaluation.mjs
+        env:
+          YACI_STORE_API: http://127.0.0.1:8080/api/v1
+
+      - name: Upload Plutus V3 ledger evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-drand-plutus-ledger-evidence
+          path: |
+            poc/drand-beacon-verifier/cardano/out/DrandPlutusLedgerEvidence.json
+            poc/drand-beacon-verifier/cardano/out/yaci.log
+            poc/drand-beacon-verifier/cardano/out/yaci-epoch.json
+          if-no-files-found: warn
+
   offchain:
     runs-on: ubuntu-24.04
     steps:
