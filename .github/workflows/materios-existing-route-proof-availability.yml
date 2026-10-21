@@ -185,3 +185,84 @@ jobs:
             poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json
           if-no-files-found: warn
           retention-days: 30
+      
+      - name: Fail closed when proof inputs are unavailable
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const blockers = [];
+          const readJson = (path, label) => {
+            if (!fs.existsSync(path)) {
+              blockers.push(`${label}: artifact missing`);
+              return null;
+            }
+            try {
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch (error) {
+              blockers.push(`${label}: invalid JSON (${String(error)})`);
+              return null;
+            }
+          };
+
+          const probe = readJson(
+            'poc/materios-checkpoint/out/MateriosRpcCapabilityProbe.json',
+            'RPC catalogue',
+          );
+          const finalized = readJson(
+            'poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json',
+            'Finalized capture',
+          );
+          const anchor = readJson(
+            'poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.json',
+            'Historical anchor witness',
+          );
+
+          if (probe?.catalogue?.status !== 'available') {
+            blockers.push('RPC catalogue: method inventory unavailable');
+          } else {
+            if (probe.catalogue.targets?.state_getReadProof !== 'listed') {
+              blockers.push('RPC capability: state_getReadProof is not advertised');
+            }
+          }
+
+          if (finalized?.grandpa?.finality_proof?.status !== 'captured') {
+            blockers.push(
+              `GRANDPA evidence: no finality proof bytes captured (${finalized?.grandpa?.finality_proof?.error ?? 'unknown reason'})`,
+            );
+          }
+          if (finalized?.runtime_code?.status !== 'captured') {
+            blockers.push(
+              `Runtime identity: WASM bytes not captured (${finalized?.runtime_code?.error ?? 'unknown reason'})`,
+            );
+          }
+
+          if (anchor) {
+            const targetHash = anchor.target?.block_hash?.toLowerCase();
+            const proofAt = anchor.storage_proof?.at?.toLowerCase();
+            const nodes = anchor.storage_proof?.nodes;
+            if (!targetHash || targetHash !== proofAt) {
+              blockers.push('Storage proof capture: proof block does not match requested target block');
+            }
+            if (!Array.isArray(nodes) || nodes.length === 0) {
+              blockers.push('Storage proof capture: proof node array is missing or empty');
+            }
+            if (!/^0x[0-9a-f]{64}$/i.test(anchor.target?.state_root ?? '')) {
+              blockers.push('Storage proof capture: observed state root is missing/invalid');
+            }
+          }
+
+          if (blockers.length > 0) {
+            console.error('::error::B3 proof-input availability gate is BLOCKED.');
+            for (const blocker of blockers) console.error('::error::' + blocker);
+            console.error(
+              'This is an acquisition-availability gate only. Passing it would not prove finality, storage membership, canonicality, or B3 conformance.',
+            );
+            process.exitCode = 1;
+          } else {
+            console.log(
+              'Required proof inputs were captured. This does not mean the proofs were cryptographically verified or that B3 is closed.',
+            );
+          }
+          NODE
