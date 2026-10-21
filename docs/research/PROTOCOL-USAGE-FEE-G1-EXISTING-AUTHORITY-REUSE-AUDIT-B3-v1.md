@@ -301,3 +301,24 @@ This is a **missing proof/binding in the inspected source path**, not proof that
 Before any implementation change, identify the configured live `authoritySource`/signed-authority producer and inspect its concrete output and verification path. The source-backed acceptance condition for G1 should then be stated narrowly: the authoritative completeness result must be bound to the exact approved G1 policy revision and candidate Issue action, and to the obligation inventory derived under that policy, before it is passed into the existing gate. If the existing producer cannot prove that relation, record that missing predicate at the upstream authoritative-input boundary. Do not patch the Haskell Boolean gate, add a parallel fee calculator, or alter V3/Reveal.
 
 **Status remains G1 OPEN.** This audit still makes no selection of fee-bearing classes and authorizes no production implementation.
+
+
+### 9.8 Signed Issue authority — authenticates the claim, not G1 completeness semantics
+
+The configured signed-authority route was inspected in `relayer/signedIssueAuthority.js` (blob `8e8ea3620aac888393f1daab8f7502853992a020`) and its test file `relayer/signedIssueAuthority.test.js` (blob `5e8a37c4ccb75919df0864ae974bb770aac363b7`).
+
+This is stronger than a bare transport Boolean and must be distinguished from the direct-input fallback:
+
+- `fetchSignedIssueAuthority` retrieves an envelope and `verifySignedIssueAuthorityEnvelope` verifies an Ed25519 signature over the canonicalized payload with the configured public key.
+- The verifier binds the signed payload to the expected Issue class/price, Counter, Pool, B2 control, V3 carrier and observation references; validates the EEV qualification/profile and EV1–EV7 evidence shape; checks ProtectedCapital component arithmetic and its carrier reference; checks the viability-certificate structure and state/EEV/ProtectedCapital bindings; and checks the signed freshness window.
+- It requires `obligationsComplete` to be a Boolean and rejects unless it is `true`. However, the inspected payload schema has no G1 policy identifier/commitment or obligation inventory, and the verifier does not recompute or inspect an inventory to establish that a G1 fee obligation is included when applicable. The signature proves that the configured key signed the claim; it does not independently prove the claim's G1-specific economic meaning.
+- The signature test fixtures demonstrate structural and signature validation. They do not demonstrate a live G1 policy binding or prove that a production authority derives completeness from an obligation inventory.
+- As established in §9.7, `createPreprodIssueObservationProducerFromLucid` also permits `runtimeInputs.authoritativeInputs` when the signed fetcher is not configured. That path does not get the signature verification performed by `fetchSignedIssueAuthority` merely because the same field names are present. This is a configuration/producer-boundary fact, not a claim that any particular live deployment currently uses that fallback.
+
+#### Refined conclusion
+
+The signed path does establish **source authentication and contextual binding for the signed Issue evidence**, including the truth/freshness/completeness assertions it carries. The narrower G1 gap remains: the verifier has no demonstrated policy-bound obligation inventory, so it cannot establish that `obligationsComplete = true` accounts for a G1 usage fee under the approved policy for this exact Issue action.
+
+The next investigation should identify the deployed/configured authority producer and its derivation process, then determine whether that producer's signed completeness claim is computed from a versioned obligation inventory that consumes the approved G1 policy. Do not treat the presence of Ed25519, `derivationVersion`, EEV qualification, or a valid `IssueDecision` as a substitute for that relation.
+
+**G1 remains OPEN.** No production files or tests were changed; this section records source inspection only.
