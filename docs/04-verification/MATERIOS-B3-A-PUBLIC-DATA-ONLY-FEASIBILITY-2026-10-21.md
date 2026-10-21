@@ -49,6 +49,7 @@ Detailed source and artifact IDs are recorded in:
 - [Smoldot P2P probe results](MATERIOS-SMOLDOT-P2P-PROBE-RESULT-2026-10-21.md)
 - [Frozen finality source decision](MATERIOS-FINALITY-PROOF-SOURCE-DECISION-2026-10-21.md)
 - [B3-A trustless/permissionless verification decision](B3-A-TRUSTLESS-PERMISSIONLESS-VERIFICATION-DECISION-v1.md)
+- [Fallback architecture proposal — permissionless finality-evidence publication](MATERIOS-B3-A-FINALITY-EVIDENCE-ARCHITECTURE-FALLBACK-DECISION-2026-10-21.md)
 
 ## Permitted forward paths
 
@@ -60,7 +61,7 @@ The justification-retaining service (or another existing provider) publishes a d
 
 ### B. A new protocol/architecture supplies an independently verifiable anchor
 
-If no source can serve the witness, a separate architecture decision could define a new trustless publication/commitment mechanism — for example, explicit L1 commitments to finalized Materios headers and authority-transition material, together with a formally specified proof relation. That would be a protocol/interface change requiring its own requirements, review, implementation and deployment. It is **not** already present in the current receipt anchoring path and must not be assumed available.
+If no source can serve the witness, the separate [fallback architecture proposal](MATERIOS-B3-A-FINALITY-EVIDENCE-ARCHITECTURE-FALLBACK-DECISION-2026-10-21.md) compares permissionless evidence publication and verification-placement options. A candidate design could use Cardano L1 commitments to finalized Materios headers and authority-transition material, together with a formally specified proof relation. That would be a protocol/interface change requiring its own requirements, review, implementation and deployment. It is **not** already present in the current receipt anchoring path and must not be assumed available. A commitment alone does not prove GRANDPA finality or guarantee that off-chain evidence remains retrievable.
 
 A proof system, light-client library, relay, or ZK circuit alone is not this mechanism. It needs a well-defined authenticated input/commitment and a live producer of the evidence.
 
