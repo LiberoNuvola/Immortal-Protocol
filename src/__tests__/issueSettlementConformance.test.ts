@@ -99,7 +99,7 @@ describe('Issue settlement conformance', () => {
     })
     expect(report.schema).toBe('oracle-quote-set')
     expect(report.adaOnlySettlementStructurallyUsable).toBe(true)
-    expect(report.eligibleUnits).toEqual(['lovelace', policy + '505245'])
+    expect(report.eligibleUnits).toEqual([policy + '505245', 'lovelace'])
     expect(report.duplicateAssetUnits).toEqual([])
     expect(report.sourceQualificationStatus).toBe('NOT_PROVEN_BY_DATUM_ALONE')
   })
