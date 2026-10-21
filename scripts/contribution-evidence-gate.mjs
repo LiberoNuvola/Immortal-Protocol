@@ -8,6 +8,13 @@ import { appendFile, readFile } from 'node:fs/promises'
 
 const ALLOWED_CLASSES = new Set(['A', 'B', 'C', 'D', 'E'])
 const ALLOWED_LAYERS = new Set(['UNIVERSAL', 'ADAPTER', 'APPLICATION', 'PROCESS', 'AUDIT'])
+const CHALLENGE_HOLD_LABELS = new Set([
+  'governance/challenged',
+  'governance/escalated',
+  'governance/security-hold',
+  'governance/security-escalated',
+  'governance/upheld',
+])
 const REQUIRED_FIELDS = [
   'Layer',
   'Class',
@@ -140,21 +147,14 @@ const isEligiblePathForClass = (path, klass) => {
   }
 }
 
-const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
+const classifyPullRequest = ({ body, files, headSha, labels = [], challengeHistoryLabels = [] }) => {
   const changed = [...new Set((files ?? []).map((file) => String(file).replace(/\\/g, '/')))]
     .sort()
   if (changed.length === 0) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Changed-file inventory is empty or unavailable.'], files: changed, headSha }
   }
   const normalizedLabels = [...new Set(labels.map((label) => String(label).trim().toLowerCase()).filter(Boolean))]
-  const holdLabels = new Set([
-    'governance/challenged',
-    'governance/escalated',
-    'governance/security-hold',
-    'governance/security-escalated',
-    'governance/upheld',
-  ])
-  const activeHolds = normalizedLabels.filter((label) => holdLabels.has(label))
+  const activeHolds = normalizedLabels.filter((label) => CHALLENGE_HOLD_LABELS.has(label))
   if (activeHolds.length > 0) {
     return {
       decision: 'CHALLENGE_BLOCKED',
@@ -166,6 +166,17 @@ const classifyPullRequest = ({ body, files, headSha, labels = [] }) => {
     }
   }
   const clearLabels = normalizedLabels.filter((label) => label.startsWith('governance/challenge-cleared'))
+  const historicalChallenges = [...new Set(challengeHistoryLabels.map((label) => String(label).trim().toLowerCase()).filter((label) => CHALLENGE_HOLD_LABELS.has(label)))]
+  if (historicalChallenges.length > 0 && clearLabels.length === 0) {
+    return {
+      decision: 'CHALLENGE_BLOCKED',
+      eligible: false,
+      reasons: ['A governance challenge/security hold was previously applied to this PR. Removing the active label alone does not clear it; a recorded disposition and current-head governance/challenge-cleared-<head-12> label are required.'],
+      challengeLabels: historicalChallenges,
+      files: changed,
+      headSha,
+    }
+  }
   if (clearLabels.length > 0) {
     const expectedClearLabel = 'governance/challenge-cleared-' + String(headSha ?? '').slice(0, 12).toLowerCase()
     if (clearLabels.length !== 1 || clearLabels[0] !== expectedClearLabel || !/^[0-9a-f]{12}$/.test(String(headSha ?? '').slice(0, 12))) {
@@ -325,6 +336,24 @@ const fetchChangedFiles = async (apiUrl, repository, number, token) => {
   throw new Error('Pull-request file inventory exceeded the 3,000-file safety limit; fail closed.')
 }
 
+const fetchChallengeLabelHistory = async (apiUrl, repository, number, token) => {
+  const labels = new Set()
+  for (let page = 1; page <= 30; page += 1) {
+    const batch = await githubRequest(
+      apiUrl + '/repos/' + repository + '/issues/' + number + '/events?per_page=100&page=' + page,
+      token,
+    )
+    if (!Array.isArray(batch)) throw new Error('GitHub returned an invalid issue-event inventory for governance challenge history.')
+    for (const event of batch) {
+      const label = String(event?.label?.name ?? '').trim().toLowerCase()
+      if ((event?.event === 'labeled' || event?.event === 'unlabeled') && CHALLENGE_HOLD_LABELS.has(label)) {
+        labels.add(label)
+      }
+    }
+    if (batch.length < 100) return [...labels]
+  }
+  throw new Error('Governance challenge-event history exceeded the 3,000-event safety limit; fail closed.')
+}
 const eventSnapshotIsCurrent = (eventPR, livePR) => Boolean(
   eventPR?.head?.sha &&
   eventPR?.base?.sha &&
@@ -542,9 +571,30 @@ const selfTest = () => {
     files: ['audit/example-boundary.mjs'],
     headSha: boundHead,
     labels: ['governance/challenge-cleared-abcdef123456'],
+    challengeHistoryLabels: ['governance/security-hold'],
   })
   assert.equal(clearedChallenge.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
   assert.equal(clearedChallenge.eligible, true)
+
+  const removedHoldWithoutDisposition = classifyPullRequest({
+    body: boundBody,
+    files: ['audit/example-boundary.mjs'],
+    headSha: boundHead,
+    labels: [],
+    challengeHistoryLabels: ['governance/security-hold'],
+  })
+  assert.equal(removedHoldWithoutDisposition.decision, 'CHALLENGE_BLOCKED')
+  assert.equal(removedHoldWithoutDisposition.eligible, false)
+
+  const staleHistoryClearance = classifyPullRequest({
+    body: boundBody,
+    files: ['audit/example-boundary.mjs'],
+    headSha: '123456abcdef7890abcdef1234567890abcdef12',
+    labels: ['governance/challenge-cleared-abcdef123456'],
+    challengeHistoryLabels: ['governance/security-hold'],
+  })
+  assert.equal(staleHistoryClearance.decision, 'STALE_CHALLENGE_DISPOSITION')
+  assert.equal(staleHistoryClearance.eligible, false)
 
   const staleChallengeClearance = classifyPullRequest({
     body: boundBody.replace('Evidence-bound commit SHA: ' + boundHead, 'Evidence-bound commit SHA: abcdef1234567890abcdef1234567890abcdef12'),
@@ -600,7 +650,8 @@ const main = async () => {
   }
 
   const files = await fetchChangedFiles(apiUrl, repository, eventPR.number, token)
-  const result = classifyPullRequest({ body: livePR.body, files, headSha: livePR.head.sha, labels: (livePR.labels ?? []).map((label) => label.name) })
+  const challengeHistoryLabels = await fetchChallengeLabelHistory(apiUrl, repository, eventPR.number, token)
+  const result = classifyPullRequest({ body: livePR.body, files, headSha: livePR.head.sha, labels: (livePR.labels ?? []).map((label) => label.name), challengeHistoryLabels })
   await emitResult(result)
   if (!result.eligible) process.exitCode = 1
 }
