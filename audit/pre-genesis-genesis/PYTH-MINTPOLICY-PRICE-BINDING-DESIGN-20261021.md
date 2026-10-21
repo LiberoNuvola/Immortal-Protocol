@@ -110,3 +110,16 @@ The design likely requires an additive Pyth quote-carrier validator and new, exp
 **Proceed only with the isolated carrier/native-ledger proof once the conversion contract is answered. Do not switch the production Issue path yet.** The completed probe proves that the pinned Pyth library compiles with the isolated freshness and quote-selection checks. It does not yet prove signature verification, quote-to-MintPolicy binding, an approved USDM conversion, PRE/NIGHT coverage, transaction resource fit, or public DApp runtime deployment.
 
 No Oracle singleton, quote-carrier state, MintPolicy, V3 carrier, Reveal, public Pages deployment, or Preprod transaction is changed by this design document.
+
+
+## 9. Isolated quote-carrier code probe — PASS, production binding still OPEN
+
+The proposed carrier boundary has now been implemented as an isolated Aiken/Plutus V3 candidate under `poc/aiken-pyth-ada-usd/lib/immortal/ada_usd_quote_carrier.ak` and `poc/aiken-pyth-ada-usd/validators/ada_usd_quote_carrier.ak`.
+
+On [CI run #12](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931), commit `7298455cd01ee73915d294e713fbb8ef355f7e8a`:
+- `aiken check`: 13/13 synthetic tests pass, including exact quote-carrier continuation binding, altered price/exponent rejection, stale update rejection and missing quote rejection;
+- `aiken build`: success for both the raw quote marker consumer and the quote-carrier validator;
+- artifact: [`pyth-ada-usd-probe-7298455cd01ee73915d294e713fbb8ef355f7e8a`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931/artifacts/12346542438), ID `12346542438`;
+- compiled code fields: marker consumer 6,806 bytes; quote carrier 8,289 bytes.
+
+This moves the code feasibility boundary forward, but does not close any ledger/protocol acceptance gate. The tests use synthetic `PriceUpdate` fixtures. No Pyth zero-withdrawal signature has been evaluated against a genuine signed update on a native Cardano ledger; no final transaction CBOR or combined execution units were measured. The current Haskell Plutus V2 MintPolicy still calculates Treasury value from the configured Oracle State reference input and is not bound to the quote-carrier continuation. No conversion from raw Pyth USD/ADA price/exponent into the current USDM-unit quote has been frozen. The production price source is therefore **NOT QUALIFIED**.
