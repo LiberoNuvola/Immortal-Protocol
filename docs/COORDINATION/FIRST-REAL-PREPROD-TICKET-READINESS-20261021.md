@@ -142,3 +142,18 @@ No on-chain rule, signature check, V3/Reveal behavior, settlement coefficient, o
 The gate now fails closed when the Issue builder still supplies `TICKET_PAYMENT_LOVELACE` directly to the Treasury output, and requires a focused `src/__tests__/issueSettlementConformance.test.ts` evidence surface before predeploy. The currently missing test file intentionally keeps the gate blocked; the static guard is a release blocker, **not** a replacement for implementing the settlement builder or for running tests.
 
 This change does not alter the Plutus equality check, select a new oracle layout, define a rounding tolerance, enable NIGHT/PRE baskets, or create a deployment. It prevents the legacy fixed-ADA value from being mistaken for verified settlement conformance.
+
+## 2026-10-21 follow-up — settlement builder now derives and inspects the completed ADA output
+
+The current working branch now contains a scoped implementation slice; this does **not** close the first-ticket gate and does not authorize a live Issue.
+
+- `src/issueSettlement.ts` derives the Treasury lovelace quantity from the authenticated Oracle State UTxO's `OracleDatum`, the ticket's USDM-subunit target, and the same `precision = 1,000,000` / `minUtxoLovelace = 1,600,000` parameters used by the Plutus valuation function. It uses the existing `ceilingDiv` integer conversion and fails closed if a target cannot be represented under that conversion.
+- `src/mint.ts` now decodes the OracleDatum fields and derives the ADA amount instead of using `TICKET_PAYMENT_LOVELACE`. After `tx.complete()`, it inspects the actual completed transaction body and requires exactly one Treasury output with the derived lovelace amount and no non-ADA assets before adapter submission.
+- `src/__tests__/issueSettlementConformance.test.ts` covers canonical synthetic quote vectors, precision/rounding boundaries, stale/future/zero/mismatched quote rejection, unsupported non-ADA quotes, and completed-body output mismatches. `scripts/predeploy-check.mjs` now checks this settlement path and its constants.
+- The quote is synthetic test evidence only. No real live OracleDatum was asserted to be an ADA quote, no test suite or typecheck was executed in this patch, no workflow result has been observed, and no Preprod transaction was constructed, signed, or submitted.
+
+### Explicit limit remains open
+
+This implementation slice supports only an ADA-valued Treasury output, and only when the single authenticated OracleDatum quotes ADA (empty policy/name). If the live singleton currently quotes PRE, the builder will reject the Issue rather than reinterpret that quote. NIGHT/PRE settlement and mixed baskets remain unsupported by this slice: each nonzero asset, including ADA required for min-UTxO, needs an authenticated price under `Economic.totalUsdmValue`, while the current OracleDatum/singleton boundary does not demonstrate simultaneous quotes. The production requirement that the ticket may be paid with eligible ADA, NIGHT, PRE, or a permitted basket is therefore **not closed**. It needs a governed on-chain quote-set/reference-input contract and conformance evidence; this patch does not change Oracle or economic semantics.
+
+The old A4 statement that the builder still uses a fixed 1 ADA output describes the pre-patch state. It is superseded only on `work/immortal-green-closure` by this update; `main` has not been promoted, and the first real Issue remains blocked until focused CI/typecheck passes, the live quote is verified, the completed-body and on-chain conversion match, and all other admission/deployment gates are closed.
