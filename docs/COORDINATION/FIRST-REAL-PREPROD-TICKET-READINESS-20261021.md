@@ -269,3 +269,10 @@ The currently identified bootstrap script `audit/cardano-integration/preprod-dir
 - The next operational evidence is an exact live singleton read + source-qualification packet. Only after that evidence exists should a state-update transaction be prepared; any live signature/submission remains separately authorized. No quote price was fabricated and no Preprod transaction was signed or sent during this work.
 
 This gap is independent of the successful TypeScript sale conformance/build. B2 carrier and Integration Lab results are still tracked separately and are not substituted for Oracle source, live-state or wallet-Issue evidence.
+
+
+## 2026-10-21 follow-up — read-only Oracle observation path prepared
+
+A read-only observer is available at `audit/cardano-integration/observe-preprod-oracle-quote-set.mjs`. It reads the configured Preprod Oracle State singleton and records its exact UTxO reference, datum hash/format, decoded quote inventory, publisher-field matches, duplicate identities, and slot-derived freshness findings. It does not load a signing key or submit a transaction. The pure decoder has targeted synthetic regression tests, but the live observer has not yet been run, so the real singleton's datum constructor and available assets remain unobserved.
+
+When running it, use the same address, policy ID, token name and publisher identity configured for the actual DApp deployment. Preserve the complete JSON output and digest as evidence. A `QUOTE_SET` shape is not enough to authorize a basket: source qualification remains a separate obligation, and the current publisher trust model is not fully permissionless.
