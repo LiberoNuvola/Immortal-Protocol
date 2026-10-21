@@ -1141,11 +1141,12 @@ export async function mintSerialNFT(
     )
   }
 
-  // The current OracleDatum contains one priced-asset identity. For the
-  // current B1 settlement path we support ADA only: the on-chain Value
-  // evaluator also sees ADA carried for min-UTxO and requires a quote for it.
-  // Token and mixed-asset payments stay fail-closed until the oracle quote-set
-  // contract is extended on-chain.
+  // The legacy OracleDatum constructor contains one priced-asset identity;
+  // the additive OracleQuoteSet constructor can carry several exact asset
+  // quotes on this same singleton UTxO. Every output asset still requires a
+  // unique, fresh, publisher-matched quote, including ADA carried for min-UTxO.
+  // The multi-asset builder validates these quotes before building the output,
+  // and the on-chain totalUsdmValue equality check remains authoritative.
   const treasuryPaymentAssets: Record<string, bigint> = opts.settlementAssetQuantities
     ? buildIssueSettlementAssets({
         targetUsdmSubunits: BigInt(priceUsdm),
