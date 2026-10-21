@@ -36,7 +36,7 @@ const CONTROL_PLANE_PATTERNS = [
   /^scripts\/contribution-evidence-gate\.mjs$/i,
   /^audit\/algorithmic-governability\//i,
   /^docs\/04-guides\/(?:PUBLIC-CONTRIBUTION-WORKFLOW|GITHUB-AUTO-MERGE-INTEGRATION)\.md$/i,
-  /^docs\/00-normative\//i,
+  /(^|\/)docs\/00-normative\//i,
   /^PRE-RICH\/docs\/GAME-ECONOMY\.md$/i,
   /^SECURITY\.md$/i,
   /(^|\/)[^/]*CONSTITUTION[^/]*$/i,
@@ -113,7 +113,7 @@ const isEligiblePathForClass = (path, klass) => {
       return markdown
     case 'B':
       return (/^audit\/(?!algorithmic-governability\/).+\.(?:mjs|cjs|js|ts|tsx|py|sh|json|ya?ml|md)$/i.test(path) ||
-        /^scripts\/(?!contribution-evidence-gate\.mjs$).+\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
+        /^scripts\/(?:check|audit|verify|validate|replay|collect|extract|diagnose|report|evidence|boundary)[a-z0-9_-]*\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
     case 'C':
       return isTestPath(path)
     case 'D':
@@ -254,6 +254,9 @@ const emitResult = async (result) => {
   }
   if (result.incompatibleFiles?.length) {
     lines.push('', '## Paths outside declared class scope', ...result.incompatibleFiles.map((file) => '- ' + file))
+  }
+  if (result.challengeLabels?.length) {
+    lines.push('', '## Governance challenge labels', ...result.challengeLabels.map((label) => '- ' + label))
   }
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
   if (summaryPath) await appendFile(summaryPath, lines.join('\n') + '\n')
