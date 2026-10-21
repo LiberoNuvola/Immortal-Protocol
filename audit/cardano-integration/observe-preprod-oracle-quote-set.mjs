@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
+import { Lucid } from '@lucid-evolution/lucid'
 import { Data } from 'lucid-cardano'
 import { inspectOracleDatum } from './oracleQuoteSetObservation.mjs'
 
@@ -68,8 +68,10 @@ if (!/^[0-9a-f]{56}$/.test(expectedPublisherPkh)) {
  * singleton and its visible quote records; it does not assert external market
  * truth and does not promote a quote to "source-qualified".
  */
-const provider = new Blockfrost(blockfrostUrl, projectId)
-const lucid = await Lucid(provider, 'Preprod')
+const lucid = await Lucid.new(
+  { kind: 'Blockfrost', url: blockfrostUrl, projectId },
+  'Preprod',
+)
 const oracleUnit = oraclePolicyId + oracleTokenNameHex
 const oracleUtxos = await lucid.utxosAt(oracleStateAddress)
 const matches = oracleUtxos.filter(utxo => (utxo.assets?.[oracleUnit] ?? 0n) === 1n)
@@ -88,7 +90,7 @@ if (!singleton.datum) {
 const datumCborHex = typeof singleton.datum === 'string'
   ? singleton.datum
   : Data.to(singleton.datum)
-const observedSlot = lucid.currentSlot()
+const observedSlot = await lucid.currentSlot()
 const observedAtMs = BigInt(lucid.utils.slotToUnixTime(observedSlot))
 const inspection = inspectOracleDatum(datumCborHex, {
   expectedPublisherPkh,
