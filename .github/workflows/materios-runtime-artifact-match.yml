@@ -153,7 +153,11 @@ jobs:
             };
           }
 
+          const matches = candidates.filter((x) => x.matches_genesis_code);
           const rawSpecMatchesExpected = rawSha256 === expectedRawSha256;
+          const officialNodeBuildSpecDiagnostic = fs.existsSync(path.join(out, "official-node-v6-build-spec.stderr"))
+            ? fs.readFileSync(path.join(out, "official-node-v6-build-spec.stderr"), "utf8").slice(0, 2000)
+            : "unavailable";
           const manifestMatches = candidates.every((x) => x.publisher_manifest_matches !== false)
             && (manifestTextNode === null || manifestTextNode === officialNodeSha256)
             && (manifestTextRaw === null || manifestTextRaw === rawSha256);
@@ -193,6 +197,7 @@ jobs:
               size_bytes: officialNodeBytes.length,
               sha256: officialNodeSha256,
               build_spec_status: officialBuildSpecStatus,
+              build_spec_diagnostic: officialNodeBuildSpecDiagnostic,
               built_in_chain_spec: officialBuiltGenesisMetadata,
               built_in_raw_code_sha256: officialBuiltCodeSha256,
               built_in_storage_matches_published_raw_spec: officialBuiltTopMatchesPublished,
@@ -217,7 +222,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: materios-runtime-artifact-match-${{ github.run_id }}
-          path: out/
+          path: |
+            out/MateriosRuntimeArtifactMatch.json
+            out/chain-spec-v6-raw.json
+            out/SHA256SUMS
+            out/official-node-v6-built-raw.json
+            out/official-node-v6-build-spec.stderr
+            out/official-node-v6-build-spec-status.txt
+            out/*.wasm
           if-no-files-found: warn
 
       - name: Enforce raw-spec and artifact identity
