@@ -77,6 +77,16 @@ Artifact `materios-websocket-grandpa-probe-39592480972-1`: ID `12342328397`, ZIP
 
 This closes the transport ambiguity: for the selected public endpoint, it is **not merely that the HTTP catalogue hides the methods**; the actual WebSocket calls reject them too. It still does not prove that no separate already-operating proof publisher exists.
 
+### Public gateway peer discovery — 2026-10-21
+
+The corrected live probe also queried both publicly documented chain-info routes: `https://materios.fluxpointstudios.com/chain-info` and `https://materios.fluxpointstudios.com/preprod-blobs/chain-info`. Both returned HTTP 200 and identical response SHA-256 `d0ab3269279ba779341f7aa51a31b0c576a7b83d5c280a24b68182470eb0c8d6`. Both reported the expected genesis, runtime spec version 242, best block 2,382,058, finalized block 2,382,056, and exactly the same single bootnode:
+
+`/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM`
+
+After deduplication, the two APIs yielded **one unique public bootnode, not a second peer**. These are untrusted discovery observations only; returned best/finalized block numbers are not finality evidence. The probe artifact is run [#39593013066](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39593013066), artifact `materios-websocket-grandpa-probe-39593013066-1`, ID `12341638901`, SHA-256 `71d05518456821fcaf342a7f78bd46907aec1ffea325d803ed25cf7449037b42`.
+
+This rules out the gateway's current public discovery list as a source of additional peers in the tested state. It does not rule out a private override or another unlisted provider.
+
 Reference: [Materios Preprod RPC endpoint](https://materios.fluxpointstudios.com/preprod-rpc).
 
 ### 2. Upstream execution-proof RPC request is not an available dependency
