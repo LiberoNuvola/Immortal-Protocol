@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+
+// NON-NORMATIVE toy model. This checks process invariants only; it does not
+// control GitHub permissions, force merges, or certify repository governance.
+import assert from 'node:assert/strict'
+
+const ELIGIBLE_CLASSES = new Set(['A', 'B', 'C', 'D', 'E'])
+const REQUIRED_EVIDENCE = [
+  'layerDeclared',
+  'scopeInventoryPresent',
+  'normativeStatusDeclared',
+  'reproductionOrReasonForNATest',
+  'residualImpactDeclared',
+  'commitShaBound',
+]
+
+const classify = (pr) => {
+  if (!pr || typeof pr !== 'object') return 'INCOMPLETE'
+  if (!ELIGIBLE_CLASSES.has(pr.eligibleClass)) return 'OUT_OF_SCOPE'
+  if (pr.normativeChange === true || pr.semanticBoundaryChanged === true) return 'OUT_OF_SCOPE'
+  if (REQUIRED_EVIDENCE.some((field) => pr[field] !== true)) return 'INCOMPLETE'
+  if (pr.checksPass !== true) return 'INCOMPLETE'
+  if (pr.evidenceCommitSha !== pr.commitSha) return 'INCOMPLETE'
+  return 'ELIGIBLE'
+}
+
+const challenge = (status, claim) => {
+  const allowed = new Set([
+    'MISSING_EVIDENCE',
+    'FAILING_CHECK',
+    'SCOPE_MISMATCH',
+    'SECURITY',
+    'PROVENANCE',
+    'COMPATIBILITY',
+    'LICENSING',
+  ])
+  if (!claim || !allowed.has(claim.category)) return { status, accepted: false }
+  if (typeof claim.reason !== 'string' || claim.reason.trim().length < 12) {
+    return { status, accepted: false }
+  }
+  if (claim.category !== 'SECURITY' && !claim.evidenceRef) {
+    return { status, accepted: false }
+  }
+  return { status: 'CHALLENGED', accepted: true, category: claim.category }
+}
+
+const deadlineTransition = (status, elapsedDays, hasRecordedBlocker) => {
+  if (elapsedDays < 14 || hasRecordedBlocker || status === 'RESOLVED' ||
+      status === 'CLOSED' || status === 'WITHDRAWN') return status
+  if (status === 'ELIGIBLE' || status === 'CLAIMED' || status === 'INCOMPLETE') {
+    return 'PROCEDURALLY_OVERDUE'
+  }
+  return status
+}
+
+// Stable example: evidence completeness is a deterministic function of declared
+// scope and commit-bound evidence, not reviewer preference or PR popularity.
+const eligiblePR = Object.freeze({
+  eligibleClass: 'C',
+  normativeChange: false,
+  semanticBoundaryChanged: false,
+  layerDeclared: true,
+  scopeInventoryPresent: true,
+  normativeStatusDeclared: true,
+  reproductionOrReasonForNATest: true,
+  residualImpactDeclared: true,
+  commitShaBound: true,
+  checksPass: true,
+  commitSha: 'abc123',
+  evidenceCommitSha: 'abc123',
+})
+
+assert.equal(classify(eligiblePR), 'ELIGIBLE')
+assert.equal(classify({ ...eligiblePR, reviewerPreference: 'dislikes this author' }), 'ELIGIBLE',
+  'maintainer preference alone does not alter evidence eligibility')
+assert.equal(classify({ ...eligiblePR, normativeChange: true }), 'OUT_OF_SCOPE',
+  'normative changes are routed to stronger review even when tests pass')
+assert.equal(classify({ ...eligiblePR, semanticBoundaryChanged: true }), 'OUT_OF_SCOPE',
+  'semantic boundary changes cannot enter the reduced-review path')
+assert.equal(classify({ ...eligiblePR, checksPass: false }), 'INCOMPLETE',
+  'a failed required check cannot be overridden by popularity or preference')
+assert.equal(classify({ ...eligiblePR, evidenceCommitSha: 'older-commit' }), 'INCOMPLETE',
+  'evidence bound to an old commit is invalidated after the PR changes')
+assert.equal(classify({ ...eligiblePR, residualImpactDeclared: false }), 'INCOMPLETE',
+  'missing residual-obligation impact declaration fails closed')
+assert.equal(classify({ ...eligiblePR, eligibleClass: 'NORMATIVE' }), 'OUT_OF_SCOPE',
+  'unknown or excluded classes cannot claim evidence-gated eligibility')
+
+const noReason = challenge('ELIGIBLE', { category: 'SCOPE_MISMATCH', reason: 'I disagree' })
+assert.equal(noReason.accepted, false)
+assert.equal(noReason.status, 'ELIGIBLE',
+  'a preference without a concrete reason does not create a valid challenge')
+
+const evidencedChallenge = challenge('ELIGIBLE', {
+  category: 'FAILING_CHECK',
+  reason: 'Required conformance vector fails reproducibly.',
+  evidenceRef: 'ci://run/123',
+})
+assert.equal(evidencedChallenge.accepted, true)
+assert.equal(evidencedChallenge.status, 'CHALLENGED',
+  'a categorized challenge with a concrete reason and evidence is recorded')
+
+const securityHold = challenge('ELIGIBLE', {
+  category: 'SECURITY',
+  reason: 'Potential credential exposure requires private triage.',
+})
+assert.equal(securityHold.accepted, true)
+assert.equal(securityHold.status, 'CHALLENGED',
+  'security concerns may be triaged without public exploit details')
+
+assert.equal(deadlineTransition('ELIGIBLE', 15, false), 'PROCEDURALLY_OVERDUE',
+  'deadline expiry makes unexplained delay visible')
+assert.equal(deadlineTransition('ELIGIBLE', 30, true), 'ELIGIBLE',
+  'a documented blocker preserves state and must not imply rejection')
+assert.equal(deadlineTransition('CHALLENGED', 30, false), 'CHALLENGED',
+  'time alone does not erase a valid challenge')
+assert.notEqual(deadlineTransition('ELIGIBLE', 15, false), 'MERGED',
+  'overdue status never auto-merges a PR')
+assert.notEqual(deadlineTransition('ELIGIBLE', 15, false), 'REJECTED',
+  'overdue status never auto-rejects a PR')
+
+console.log('PASS: contribution acceptance boundary remains evidence-gated in the toy model')
+console.log('PASS: maintainer discretion is constrained by recorded challenge categories')
+console.log('PASS: deadlines expose stalling without creating automatic merge/rejection')
+console.log('PASS: normative scope, commit binding, and mandatory checks fail closed')
+console.log('ALL CONTRIBUTION-ACCEPTANCE GOVERNABILITY CHECKS PASSED')
