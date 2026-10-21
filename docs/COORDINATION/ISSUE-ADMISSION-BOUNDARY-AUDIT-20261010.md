@@ -215,3 +215,36 @@ The Pages build workflow has been updated on `work/immortal-green-closure`:
 **Scope and validation limit:** `.github/workflows/immortal-preprod-pages.yml` still builds `main` and its automatic push trigger is scoped to `main`. This branch change is not a deployed Pages artifact. The approved endpoint URL and repository-variable values have not been verified, no external authority server health or signed live response has been observed, and this Pages workflow has not been run against this branch. Do not mark the live Issue gate GREEN.
 
 The source tree contains the DApp consumer and server-side adapter composition, but no upstream signed-authority service implementation/deployment workflow was found in the branch tree. Railway project listing for the connected account was empty in this check; that does not exclude deployments on other platforms. The external signed authority and deployment-specific EEV / ProtectedCapital / viability evidence remain explicit blockers. V3 and Reveal semantics were not changed.
+
+
+## 2026-10-21 — Issue: wallet consent is not the same as economic authority
+
+This review separates three distinct operations. It does not change the economic rules or any validator.
+
+### Transaction authority map
+
+| Boundary | What the current code does | Classification |
+| --- | --- | --- |
+| User wallet | `src/main.ts` starts the Issue request; `src/mint.ts` builds one candidate transaction; `CardanoExecutionAdapter` signs via the connected Lucid wallet and submits it. | User consent for spending and submission. It does not prove that the economic decision is correct. |
+| Ticket mint policy | `plutus/MintPolicy.hs` checks one Counter input, a serial NFT name derived from the Counter, the Counter continuation to `n+1`, a valid Pending PrizeDatum, the exact Treasury payment valued through the configured Oracle State, and the B1 reservation in the same transaction. | On-chain structural and payment enforcement. |
+| B1 PrizePool validator | `plutus/B1PrizePool.hs` checks pre-state solvency, the Pool singleton and unique Pool input, the matching Pending PrizeDatum and ticket mint, price equality, unchanged Pool physical value and protected fields, the exact increase to unresolved reserve/count, and post-state solvency. | On-chain Pool accounting/solvency enforcement under the deployed B1 model. This is not the complete V3 EEV/viability certificate. |
+| V3 carrier | `src/mint.ts` spends and continues the V3 singleton for Issue. `PRE-RICH/onchain/V3EconomicStateCarrier.hs` checks singleton continuity, unchanged carrier value, state identity and that signed pre/post hashes match the datum endpoints; it also calls `bindingAuthorityValid`, which verifies an Ed25519 signature against the configured authority public key. | A required external authority signature for each V3 state transition, including Issue. It is not merely an optional informational API. |
+| B2 control | The Issue reader observes the exact B2 singleton as a reference input and cross-checks class-control values against the V3 projection. The B2 validator itself is not executed by spending B2 in the Issue transaction; it governs B2 state changes when B2 is spent. | Authenticated state observation/binding; not an independent on-chain recalculation of the economic gate during this Issue. |
+| Economic gate / viability | The server-side composition fetches a signed authority envelope and passes its evidence to the Haskell Issue producer. The Haskell decision independently computes/validates the candidate transition against the supplied EEV, executable liquidity and gate predicates, but the source values and truth/freshness/certification claims are still asserted by the external authority envelope. | Off-chain computation plus signed assertions. The Cardano ledger does not independently reproduce the external authority's full EEV/ProtectedCapital/viability evidence in the current atomic-sale validators. |
+
+### Finding
+
+The buyer's wallet is the authority for authorizing the buyer's spend; the Cardano validators are the authority for accepting a transaction that satisfies their encoded rules. These are not interchangeable.
+
+In the current implementation, however, the buyer's signature alone is not enough: the same Issue transaction advances the V3 carrier, and that validator requires a signature from the configured authority key. Therefore the external signer currently has a protocol-level veto over every Issue transition. The signed envelope also supplies the economic evidence inputs which the local Haskell producer evaluates. Calling this dependency only a "data provider" would understate its authority.
+
+### Correct direction; no unsafe shortcut
+
+To make Issue genuinely permissionless, removing the URL check or accepting unsigned witness fields is not sufficient and would be unsafe. A replacement must preserve the existing on-chain economic guarantees while removing discretionary trust in the signer. That requires an explicitly selected, verifiable design for both:
+
+1. the V3 state transition (so the ledger can validate the authorized state transition without an indispensable operator signature); and
+2. the economic decision evidence (so EEV, ProtectedCapital, freshness, obligation completeness and viability claims are either derived from authenticated state under already-governed rules or proven by an on-chain-verifiable proof).
+
+Until that replacement is implemented and adversarially verified, the honest status is **atomic B1 sale checks on-chain; complete economic admission and V3 state advancement still authority-dependent**. Do not describe the current Issue path as fully permissionless/trustless.
+
+No V3, Reveal, B1, B2 or economic semantics were changed by this audit. The existing carrier signature requirement remains in place; no key or signature check was bypassed.
