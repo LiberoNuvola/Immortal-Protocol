@@ -1,0 +1,151 @@
+name: Materios Smoldot P2P Finality Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_block_number:
+        description: "Exact previously observed B3 target block number"
+        required: true
+        type: string
+        default: "1856408"
+      target_block_hash:
+        description: "Exact previously observed B3 target block hash"
+        required: true
+        type: string
+        default: "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e"
+      wait_seconds:
+        description: "Maximum P2P proof observation window"
+        required: true
+        type: string
+        default: "360"
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-smoldot-p2p-finality-probe.yml"
+      - "poc/materios-smoldot/**"
+
+permissions:
+  contents: read
+
+jobs:
+  p2p-proof-capture:
+    name: Build pinned light client and capture raw proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout IMMORTAL branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Fetch exact Smoldot PR revision
+        env:
+          EXPECTED_SMOLDOT_COMMIT: c898452405be712c6037ad956464b3fe9f9907f4
+        run: |
+          set -euo pipefail
+          SMOLDOT_DIR="$RUNNER_TEMP/smoldot"
+          git init "$SMOLDOT_DIR"
+          git -C "$SMOLDOT_DIR" remote add origin https://github.com/paritytech/smoldot.git
+          git -C "$SMOLDOT_DIR" fetch --depth=1 origin refs/pull/3369/head
+          git -C "$SMOLDOT_DIR" checkout --detach FETCH_HEAD
+          ACTUAL="$(git -C "$SMOLDOT_DIR" rev-parse HEAD)"
+          echo "Fetched Smoldot PR 3369 head: $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED_SMOLDOT_COMMIT" ]; then
+            echo "::error::Smoldot PR head changed. Expected $EXPECTED_SMOLDOT_COMMIT, observed $ACTUAL. Pin review required."
+            exit 1
+          fi
+          echo "SMOLDOT_ENTRY=$SMOLDOT_DIR/wasm-node/javascript/dist/mjs/index-nodejs.js" >> "$GITHUB_ENV"
+          echo "SMOLDOT_COMMIT=$ACTUAL" >> "$GITHUB_ENV"
+
+      - name: Build the pinned Smoldot WASM light client
+        working-directory: ${{ runner.temp }}/smoldot/wasm-node/javascript
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+
+      - name: Install the existing IMMORTAL hash dependency
+        working-directory: poc/materios-checkpoint
+        run: npm ci --ignore-scripts
+
+      - name: Run P2P light-client proof capture
+        id: capture
+        continue-on-error: true
+        env:
+          MATERIOS_CHAIN_SPEC_URL: https://materios.fluxpointstudios.com/blobs/chain-spec-raw.json
+          MATERIOS_CHAIN_SPEC_SHA256: 77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+          MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
+          MATERIOS_BOOTNODE: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
+          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '1856408' }}
+          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e' }}
+          SMOLDOT_MAX_WAIT_SECONDS: ${{ github.event.inputs.wait_seconds || '360' }}
+          SMOLDOT_EVIDENCE_OUT: ${{ runner.temp }}/materios-smoldot-evidence.json
+        run: node poc/materios-smoldot/capture-finality.mjs
+
+      - name: Upload immutable acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-smoldot-p2p-finality-evidence
+          path: ${{ runner.temp }}/materios-smoldot-evidence.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Apply proof-availability verdict (not B3-A closure)
+        if: always()
+        env:
+          EVIDENCE_PATH: ${{ runner.temp }}/materios-smoldot-evidence.json
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p = process.env.EVIDENCE_PATH;
+          function coreSummary(s) {
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '# Materios Smoldot P2P Finality Probe\n\n' + s + '\n');
+          }
+          if (!fs.existsSync(p)) {
+            coreSummary('No evidence file was produced; this is a probe failure.');
+            process.exit(1);
+          }
+          const e = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const proofCount = Array.isArray(e.captured_justifications) ? e.captured_justifications.length : 0;
+          const target = e.target_probe ?? {};
+          const genesisOk = e.chain?.genesis_hash_match === true;
+          const headerOk = proofCount > 0 && e.captured_justifications.every(x => x.headerHashVerified === true);
+          const targetOk = e.claims?.historical_target_justification_captured === true;
+          const lines = [
+            '# Materios Smoldot P2P Finality Probe',
+            '',
+            '- Probe status: **' + String(e.status ?? 'UNKNOWN') + '**',
+            '- Genesis identity match: **' + String(genesisOk) + '**',
+            '- Header/justification binding checks: **' + String(headerOk) + '**',
+            '- Captured raw GRANDPA justifications: **' + String(proofCount) + '**',
+            '- Pinned historical target proof: **' + String(targetOk) + '**',
+            '- Target probe status: **' + String(target.status ?? 'unknown') + '**',
+            '- Latest finalized head observed: **' + JSON.stringify(e.chain?.latest_finalized_head_observed ?? null) + '**',
+            '',
+            '**This probe is acquisition evidence only. B3-A remains OPEN until IMMORTAL independently verifies the authority history, Materios selector execution proof, and VerifiedAuthoritySetTransition.**',
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          if (!genesisOk) {
+            console.error('Fail-closed: expected Materios genesis identity was not confirmed.');
+            process.exit(1);
+          }
+          if (!headerOk) {
+            console.error('Fail-closed: no raw GRANDPA proof with reconstructed matching target header was captured.');
+            process.exit(1);
+          }
+          if (!targetOk) {
+            console.warn('A real P2P GRANDPA proof was captured, but not for the pinned historical B3 target. This does not close the target transition gate.');
+          }
+          console.log('P2P proof transport observed. No B3-A closure is asserted.');
+          NODE
