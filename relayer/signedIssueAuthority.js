@@ -527,6 +527,11 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
 
   return Object.freeze({
     ...values,
+    // Preserve the exact digest endpoints covered by the verified carrier-binding signature.
+    // The Haskell producer must independently recompute and match all three before admission.
+    stateHash: payloadStateHash,
+    actionFingerprint: payloadActionFingerprint,
+    postStateHash: payloadPostStateHash,
     truthVerified: true,
     eevFresh: true,
     obligationsComplete: true,
