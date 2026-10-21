@@ -112,6 +112,7 @@ if (!Number.isInteger(protocolMajor) || protocolMajor !== 11) {
   throw new Error('P2.8 currently requires Conway/PV11 protocol parameters; observed major=' + String(pparamsJson?.protocolVersion?.major))
 }
 const epochLatest = await requireFile(EVIDENCE_DIR + '/epoch-latest.json')
+// CI normalizes this file from the actual Yaci startup log, without restarting the devnet.
 const yaciInfo = (await requireFile(EVIDENCE_DIR + '/yaci-devkit-info.txt')).toString('utf8')
 
 const genesisResponse = await fetch(API + '/genesis')
@@ -171,12 +172,12 @@ await writeFile(
     source: {
       endpoint: '/epochs/latest',
       apiBase: API,
-      yaciDevkitInfo: 'yaci-devkit-info.txt',
+      yaciDevkitInfo: 'yaci-devkit-info.txt (normalized from Yaci startup log)',
     },
     latestEpochResponse: JSON.parse(epochLatest.toString('utf8')),
     genesisResponse,
     yaciDevkitInfo,
-    sourceOfTruth: 'Yaci /genesis structured response + exact Slot Length from yaci-devkit info',
+    sourceOfTruth: 'Yaci /genesis structured response + Slot Length reported by the Yaci startup log and normalized as yaci-devkit-info.txt',
   }, null, 2) + '\n',
 )
 
