@@ -18,6 +18,9 @@ const DEFAULTS = {
   bootNode: "/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM",
   targetNumber: 1856408,
   targetHash: "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e",
+  discoveryRpc: "https://materios.fluxpointstudios.com/preprod-rpc",
+  candidateOffsets: [0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301],
+  blockProbeTimeoutMs: 10000,
   waitSeconds: 360,
 };
 
@@ -29,6 +32,10 @@ const config = {
   bootNode: process.env.MATERIOS_BOOTNODE || DEFAULTS.bootNode,
   targetNumber: Number(process.env.MATERIOS_TARGET_BLOCK_NUMBER || DEFAULTS.targetNumber),
   targetHash: (process.env.MATERIOS_TARGET_BLOCK_HASH || DEFAULTS.targetHash).toLowerCase(),
+  discoveryRpc: process.env.MATERIOS_DISCOVERY_RPC || DEFAULTS.discoveryRpc,
+  candidateOffsets: (process.env.MATERIOS_CANDIDATE_OFFSETS || DEFAULTS.candidateOffsets.join(","))
+    .split(",").map(x => Number(x.trim())).filter(x => Number.isSafeInteger(x) && x >= 0),
+  blockProbeTimeoutMs: Number(process.env.MATERIOS_BLOCK_PROBE_TIMEOUT_MS || DEFAULTS.blockProbeTimeoutMs),
   waitSeconds: Number(process.env.SMOLDOT_MAX_WAIT_SECONDS || DEFAULTS.waitSeconds),
   entry: process.env.SMOLDOT_ENTRY,
   out: process.env.SMOLDOT_EVIDENCE_OUT || path.resolve("poc/materios-smoldot/out/smoldot-finality-capture.json"),
@@ -180,6 +187,7 @@ const candidateErrors = [];
 let proofSubscriptionId = null;
 let finalizedSubscriptionId = null;
 let proofSignalResolvers = [];
+let scanDeadline = Date.now() + config.waitSeconds * 1000;
 let lastFinalizedHead = null;
 let lastHealth = null;
 let targetProbe = {
@@ -191,6 +199,8 @@ let targetProbe = {
   headerHashVerified: false,
   reason: null,
 };
+const candidateBlockProbes = [];
+let discoveryRpcId = 0;
 
 function signalProof() {
   const waiting = proofSignalResolvers;
@@ -211,7 +221,7 @@ function waitForProofSignal(ms) {
   });
 }
 
-async function processJustification(source, encodedHex, suppliedEngineId = "0x46524e4b") {
+async function processJustification(source, encodedHex, suppliedEngineId = "0x46524e4b", suppliedHeader = null) {
   try {
     const engineId = normalizeEngineId(suppliedEngineId);
     if (engineId && engineId !== "0x46524e4b") {
@@ -219,8 +229,8 @@ async function processJustification(source, encodedHex, suppliedEngineId = "0x46
       return;
     }
     const target = parseJustificationTarget(encodedHex);
-    const header = await rpc("chain_getHeader", [target.targetHash], 15000);
-    if (!header || typeof header !== "object") throw new Error("target header unavailable");
+    const header = suppliedHeader ?? await discoveryRpc("chain_getHeader", [target.targetHash], 12000);
+    if (!header || typeof header !== "object") throw new Error("target header unavailable from untrusted header transport");
     const headerNumber = parseHeaderNumber(header);
     if (headerNumber !== target.targetNumber) throw new Error("justification/header number mismatch");
     const rawHeader = encodeHeaderFromJson(header);
@@ -343,55 +353,123 @@ function rpc(method, params = [], timeoutMs = 15000) {
   });
 }
 
-async function tryTargetBlock() {
+async function discoveryRpc(method, params = [], timeoutMs = 12000) {
+  const id = ++discoveryRpcId;
+  const response = await fetch(config.discoveryRpc, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) throw new Error("discovery RPC HTTP " + response.status + " for " + method);
+  const body = await response.json();
+  if (body.error) throw new Error("discovery RPC " + method + ": " + body.error.code + " " + body.error.message);
+  if (!Object.prototype.hasOwnProperty.call(body, "result")) throw new Error("discovery RPC " + method + ": missing result");
+  return body.result;
+}
+
+async function processBlockJustifications(value, source, suppliedHeader) {
+  const list = Array.isArray(value?.justifications) ? value.justifications : [];
+  const report = [];
+  for (const tuple of list) {
+    if (!Array.isArray(tuple) || tuple.length !== 2) continue;
+    const engineId = normalizeEngineId(tuple[0]);
+    const entry = { engineId, byteArrayEncoding: Array.isArray(tuple[1]), processed: false };
+    if (engineId !== "0x46524e4b") {
+      report.push(entry);
+      continue;
+    }
+    const justificationHex = normalizeHexBytes(tuple[1], source + ".FRNK");
+    if (justificationHex === null) {
+      entry.error = "MALFORMED_JUSTIFICATION_BYTE_ENCODING";
+      candidateErrors.push({ source, error: entry.error, at: new Date().toISOString() });
+      report.push(entry);
+      continue;
+    }
+    await processJustification(source, justificationHex, tuple[0], suppliedHeader);
+    entry.processed = true;
+    entry.justificationBytes = (justificationHex.length - 2) / 2;
+    report.push(entry);
+  }
+  return report;
+}
+
+async function probeCandidateBlock(blockNumber) {
+  const probe = {
+    requestedBlockNumber: blockNumber,
+    requestedBlockHash: null,
+    status: "NOT_ATTEMPTED",
+    responseShape: null,
+    headerHashVerified: false,
+    returnedJustifications: [],
+    error: null,
+    probedAt: new Date().toISOString(),
+  };
   try {
-    const value = await rpc("chain_getBlock", [config.targetHash], 20000);
-    targetProbe.responseShape = value && typeof value === "object" ? Object.keys(value) : String(value);
+    const hash = blockNumber === config.targetNumber
+      ? config.targetHash
+      : String(await discoveryRpc("chain_getBlockHash", [blockNumber], 12000)).toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(hash)) throw new Error("candidate block hash is not a 32-byte hash");
+    probe.requestedBlockHash = hash;
+    const value = await rpc("chain_getBlock", [hash], config.blockProbeTimeoutMs);
+    probe.responseShape = value && typeof value === "object" ? Object.keys(value) : String(value);
     if (!value || typeof value !== "object" || !value.block || typeof value.block !== "object") {
-      targetProbe.status = "BLOCK_NOT_RETURNED";
-      targetProbe.reason = "chain_getBlock returned no block object for pinned historical target";
-      return;
+      probe.status = "BLOCK_NOT_RETURNED";
+      throw new Error("Smoldot chain_getBlock returned no block object");
     }
     const header = value.block.header;
-    const number = parseHeaderNumber(header);
+    const returnedNumber = parseHeaderNumber(header);
     const rawHeader = encodeHeaderFromJson(header);
     const computedHash = toHex(blake2b(rawHeader, { dkLen: 32 })).toLowerCase();
-    if (number !== config.targetNumber || computedHash !== config.targetHash) {
-      targetProbe.status = "TARGET_HEADER_MISMATCH";
-      targetProbe.reason = "number/hash mismatch number=" + number + " hash=" + computedHash;
-      return;
+    if (returnedNumber !== blockNumber || computedHash !== hash) {
+      probe.status = "HEADER_BINDING_MISMATCH";
+      throw new Error("number/hash mismatch; returnedNumber=" + returnedNumber + " computedHash=" + computedHash + " requestedHash=" + hash);
     }
-    targetProbe.headerHashVerified = true;
-    targetProbe.headerScaleHex = toHex(rawHeader);
-    targetProbe.headerJson = header;
-    targetProbe.stateRoot = String(header.stateRoot || "").toLowerCase();
-    const list = Array.isArray(value.justifications) ? value.justifications : [];
-    for (const tuple of list) {
-      if (!Array.isArray(tuple) || tuple.length !== 2) continue;
-      const engineId = normalizeEngineId(tuple[0]);
-      if (engineId !== "0x46524e4b") continue;
-      const justificationHex = normalizeHexBytes(
-        tuple[1],
-        "chain_getBlock.justifications.FRNK",
-      );
-      if (justificationHex === null) {
-        candidateErrors.push({
-          source: "chain_getBlock.justifications",
-          error: "MALFORMED_JUSTIFICATION_BYTE_ENCODING",
-          at: new Date().toISOString(),
-        });
-        continue;
-      }
-      await processJustification("chain_getBlock.justifications", justificationHex, tuple[0]);
-    }
-    targetProbe.frnkJustificationFound = captured.some(item => item.targetHash === config.targetHash);
-    targetProbe.status = targetProbe.frnkJustificationFound ? "TARGET_GRANDPA_JUSTIFICATION_CAPTURED" : "TARGET_HEADER_VERIFIED_NO_GRANDPA_JUSTIFICATION";
-    if (!targetProbe.frnkJustificationFound) {
-      targetProbe.reason = "Smoldot supplied the target header, but no FRNK justification was returned for this historical block";
+    probe.headerHashVerified = true;
+    probe.headerScaleHex = toHex(rawHeader);
+    probe.headerJson = header;
+    probe.stateRoot = String(header.stateRoot || "").toLowerCase();
+    probe.returnedJustifications = await processBlockJustifications(value, "chain_getBlock.justifications@" + blockNumber, header);
+    const anyProofForCandidate = captured.some(item => item.targetHash.toLowerCase() === hash);
+    probe.status = anyProofForCandidate ? "FRNK_JUSTIFICATION_CAPTURED" : "HEADER_VERIFIED_NO_FRNK_JUSTIFICATION";
+    if (blockNumber === config.targetNumber) {
+      const targetProofFound = captured.some(item => item.targetHash.toLowerCase() === config.targetHash);
+      Object.assign(targetProbe, {
+        status: targetProofFound ? "TARGET_GRANDPA_JUSTIFICATION_CAPTURED" : "TARGET_HEADER_VERIFIED_NO_GRANDPA_JUSTIFICATION",
+        responseShape: probe.responseShape,
+        frnkJustificationFound: targetProofFound,
+        headerHashVerified: true,
+        headerScaleHex: probe.headerScaleHex,
+        headerJson: header,
+        stateRoot: probe.stateRoot,
+        reason: targetProofFound ? null : "Header was verified, but Smoldot returned no FRNK justification for this historical block",
+      });
     }
   } catch (error) {
-    targetProbe.status = "TARGET_QUERY_UNAVAILABLE";
-    targetProbe.reason = error instanceof Error ? error.message : String(error);
+    probe.error = error instanceof Error ? error.message : String(error);
+    if (probe.status === "NOT_ATTEMPTED") probe.status = "QUERY_UNAVAILABLE";
+    if (blockNumber === config.targetNumber && !targetProbe.headerHashVerified) {
+      Object.assign(targetProbe, {
+        status: probe.status === "BLOCK_NOT_RETURNED" ? "BLOCK_NOT_RETURNED" : "TARGET_QUERY_UNAVAILABLE",
+        responseShape: probe.responseShape,
+        reason: probe.error,
+      });
+    }
+  }
+  candidateBlockProbes.push(probe);
+  log("P2P historical block probe #" + blockNumber + ": " + probe.status + (probe.error ? " (" + probe.error + ")" : ""));
+  return probe;
+}
+
+async function scanHistoricalCandidates() {
+  const uniqueOffsets = [...new Set(config.candidateOffsets)].sort((a, b) => a - b);
+  for (const offset of uniqueOffsets) {
+    if (Date.now() >= scanDeadline || captured.length >= 10) break;
+    const blockNumber = config.targetNumber + offset;
+    await probeCandidateBlock(blockNumber);
+    if (offset === 0 && targetProbe.headerHashVerified) {
+      log("pinned B3-A activation header verified; continuing to probe nearby finalized commit targets");
+    }
   }
 }
 
@@ -440,52 +518,31 @@ async function main() {
       finalErrors.push("chain_subscribeFinalizedHeads failed: " + (error instanceof Error ? error.message : String(error)));
     }
 
+    // HTTP RPC is used only as an untrusted hash/header discovery transport.
+    // It is never accepted as a finality claim or authority-state trust anchor.
     let initialHead = null;
     try {
-      const hash = String(await rpc("chain_getFinalizedHead", [], 15000)).toLowerCase();
-      const header = await rpc("chain_getHeader", [hash], 15000);
-      initialHead = { hash, number: parseHeaderNumber(header), stateRoot: header.stateRoot };
+      const hash = String(await discoveryRpc("chain_getFinalizedHead", [], 10000)).toLowerCase();
+      const header = await discoveryRpc("chain_getHeader", [hash], 10000);
+      initialHead = { hash, number: parseHeaderNumber(header), stateRoot: header.stateRoot, source: "untrusted HTTP RPC report only" };
       lastFinalizedHead = {
         hash,
         number: initialHead.number,
         stateRoot: String(header.stateRoot || "").toLowerCase(),
         observedAt: new Date().toISOString(),
+        source: "untrusted HTTP RPC report only; not used as a trust anchor",
       };
     } catch (error) {
-      log("initial finalized head not ready: " + (error instanceof Error ? error.message : String(error)));
+      log("HTTP RPC reported finalized head unavailable: " + (error instanceof Error ? error.message : String(error)));
     }
 
-    const deadline = Date.now() + config.waitSeconds * 1000;
-    let nextTargetProbe = 0;
-    let nextHealthProbe = 0;
-    while (Date.now() < deadline && captured.length === 0) {
-      const now = Date.now();
-      if (now >= nextTargetProbe) {
-        await tryTargetBlock();
-        nextTargetProbe = Date.now() + 30000;
-      }
-      if (now >= nextHealthProbe) {
-        try { lastHealth = await rpc("system_health", [], 10000); }
-        catch (error) { lastHealth = { error: error instanceof Error ? error.message : String(error) }; }
-        try {
-          const hash = String(await rpc("chain_getFinalizedHead", [], 10000)).toLowerCase();
-          const header = await rpc("chain_getHeader", [hash], 10000);
-          const observation = {
-            hash,
-            number: parseHeaderNumber(header),
-            stateRoot: String(header.stateRoot || "").toLowerCase(),
-            observedAt: new Date().toISOString(),
-          };
-          if (!lastFinalizedHead || observation.number >= lastFinalizedHead.number) lastFinalizedHead = observation;
-        } catch (error) {
-          log("finalized head not ready: " + (error instanceof Error ? error.message : String(error)));
-        }
-        nextHealthProbe = Date.now() + 15000;
-      }
-      if (captured.length > 0) break;
+    scanDeadline = Date.now() + config.waitSeconds * 1000;
+    await scanHistoricalCandidates();
+    while (Date.now() < scanDeadline && captured.length === 0) {
+      // Avoid repeatedly queuing RPC calls that cannot complete while warp sync
+      // is stalled. Keep the proof subscription alive for any proofs it verifies.
       await waitForProofSignal(3000);
     }
-
     const targetProof = captured.find(item => item.targetHash === config.targetHash) || null;
     const evidence = {
       schema_version: "materios-smoldot-p2p-finality-capture-v1",
@@ -516,6 +573,12 @@ async function main() {
         latest_system_health: lastHealth,
       },
       target_probe: targetProbe,
+      candidate_block_probes: candidateBlockProbes,
+      candidate_scan: {
+        offsets: [...new Set(config.candidateOffsets)].sort((a, b) => a - b),
+        discovery_rpc: config.discoveryRpc,
+        trust_scope: "HTTP RPC supplied candidate hashes/headers only. Each returned block header hash and each GRANDPA justification target are checked locally; discovery data does not confer finality.",
+      },
       captured_justifications: captured.slice(0, 10),
       capture_errors: [...finalErrors, ...candidateErrors.slice(-30)],
       claims: {
@@ -566,6 +629,8 @@ async function main() {
         chainId: config.chainId,
         genesisHash: config.genesisHash,
         bootNode: config.bootNode,
+        discoveryRpc: config.discoveryRpc,
+        candidateOffsets: config.candidateOffsets,
         targetNumber: config.targetNumber,
         targetHash: config.targetHash,
         smoldotCommit: config.smoldotCommit,
