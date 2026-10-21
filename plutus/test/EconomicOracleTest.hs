@@ -29,6 +29,7 @@ import Economic
 
 import OracleTypes
   ( OracleDatum (..)
+  , OracleQuote (..)
   , OracleStateId (..)
   )
 
@@ -46,7 +47,13 @@ main = do
   exactAdaSettlementOutcome <- runExactAdaGenesisSettlementCase
   adaRoundingBoundaryOutcome <- runAdaCeilingRoundingBoundaryCase
   mixedBasketOutcome <- runMixedAssetBasketRequiresPerAssetQuoteCase
-  if and outcomes && poolOutcome && fixedAdaSettlementOutcome && exactAdaSettlementOutcome && adaRoundingBoundaryOutcome && mixedBasketOutcome then pure () else exitFailure
+  quoteSetBasketOutcome <- runMultiAssetQuoteSetBasketCase
+  duplicateQuoteOutcome <- runDuplicateOracleQuoteFailsClosedCase
+  if and outcomes && poolOutcome && fixedAdaSettlementOutcome && exactAdaSettlementOutcome
+      && adaRoundingBoundaryOutcome && mixedBasketOutcome && quoteSetBasketOutcome
+      && duplicateQuoteOutcome
+    then pure ()
+    else exitFailure
 
 runCase :: Case -> IO Bool
 runCase testCase = do
@@ -230,6 +237,73 @@ runMixedAssetBasketRequiresPerAssetQuoteCase = do
           oracleState
           authorizedPublisher
           mixedTreasuryValue)
+-- A single authenticated singleton UTxO may carry one quote per asset.
+-- This basket has the exact ADA min-UTxO floor plus one quoted PRE quantity.
+-- ADA's economic quantity is zero, but its quote is still required by the
+-- existing totalUsdmValue traversal before the minimum-UTxO exclusion.
+runMultiAssetQuoteSetBasketCase :: IO Bool
+runMultiAssetQuoteSetBasketCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let passed = case result of
+        Right actual -> actual == 100
+        Left _ -> False
+  putStrLn (prefix passed <> "multi-asset OracleQuoteSet values ADA+PRE basket from one singleton reference")
+  pure passed
+  where
+    prePolicy = bytes "pre-settlement-policy"
+    preName = bytes "PRE-RICH"
+    quoteSet =
+      OracleQuoteSet
+        [ OracleQuote (bytes "") (bytes "") 100 now authorizedPublisher
+        , OracleQuote prePolicy preName 100 now authorizedPublisher
+        ]
+    oracleReferences =
+      [ referenceInput 0
+          (oracleOutputWithDatum 1 statePolicy stateName quoteSet)
+      ]
+    basket =
+      singleton adaSymbol adaToken 1_600_000
+        <> singleton (CurrencySymbol prePolicy) (TokenName preName) 1_000_000
+    evaluateSettlement =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo oracleReferences)
+          oracleState
+          authorizedPublisher
+          basket)
+
+-- More than one quote for the requested identity is ambiguous and must not
+-- select the first/last entry. lookupOracleQuote returns Nothing and the
+-- valuation primitive fails closed.
+runDuplicateOracleQuoteFailsClosedCase :: IO Bool
+runDuplicateOracleQuoteFailsClosedCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let passed = case result of
+        Left _ -> True
+        Right _ -> False
+  putStrLn (prefix passed <> "duplicate OracleQuoteSet identity fails closed")
+  pure passed
+  where
+    prePolicy = bytes "pre-settlement-policy"
+    preName = bytes "PRE-RICH"
+    quoteSet =
+      OracleQuoteSet
+        [ OracleQuote prePolicy preName 100 now authorizedPublisher
+        , OracleQuote prePolicy preName 200 now authorizedPublisher
+        ]
+    oracleReferences =
+      [ referenceInput 0
+          (oracleOutputWithDatum 1 statePolicy stateName quoteSet)
+      ]
+    basket = singleton (CurrencySymbol prePolicy) (TokenName preName) 1_000_000
+    evaluateSettlement =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo oracleReferences)
+          oracleState
+          authorizedPublisher
+          basket)
+
 prefix :: Bool -> String
 prefix passed = if passed then "PASS " else "FAIL "
 
@@ -281,19 +355,16 @@ referenceInput index out =
 
 oracleOutputForAsset :: Integer -> BuiltinByteString -> BuiltinByteString -> BuiltinByteString -> BuiltinByteString -> PubKeyHash -> Integer -> Integer -> TxOut
 oracleOutputForAsset nftAmount nftPolicy nftName datumPolicy datumName publisher timestamp oraclePrice =
+  oracleOutputWithDatum nftAmount nftPolicy nftName
+    (OracleDatum datumPolicy datumName oraclePrice timestamp publisher)
+
+oracleOutputWithDatum :: Integer -> BuiltinByteString -> BuiltinByteString -> OracleDatum -> TxOut
+oracleOutputWithDatum nftAmount nftPolicy nftName datum =
   TxOut
     (Address (PubKeyCredential authorizedPublisher) Nothing)
     (singleton (CurrencySymbol nftPolicy) (TokenName nftName) nftAmount)
     (OutputDatum (Datum (toBuiltinData datum)))
     Nothing
-  where
-    datum =
-      OracleDatum
-        datumPolicy
-        datumName
-        oraclePrice
-        timestamp
-        publisher
 
 oracleOutput :: Integer -> BuiltinByteString -> BuiltinByteString -> PubKeyHash -> Integer -> Integer -> TxOut
 oracleOutput nftAmount nftPolicy nftName publisher timestamp oraclePrice =
