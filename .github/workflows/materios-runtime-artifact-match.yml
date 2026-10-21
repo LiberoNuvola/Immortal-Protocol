@@ -1,0 +1,163 @@
+name: Materios Runtime Artifact Match
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - "docs/04-verification/MATERIOS-GENESIS-BOOTSTRAP-EVIDENCE-REGISTER-v1.md"
+      - ".github/workflows/materios-runtime-artifact-match.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compare-published-runtime:
+    name: Match published runtime bytes to v6 genesis code
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout IMMORTAL
+        uses: actions/checkout@v4
+
+      - name: Prepare evidence directory
+        run: mkdir -p out
+
+      - name: Download and hash official v6 artifacts
+        run: |
+          set -euo pipefail
+          BASE="https://materios.fluxpointstudios.com/releases"
+          OUT="$GITHUB_WORKSPACE/out"
+          EXPECTED_RAW_SHA256="77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa"
+
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$BASE/chain-spec-v6-raw.json" --output "$OUT/chain-spec-v6-raw.json"
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$BASE/SHA256SUMS" --output "$OUT/SHA256SUMS"
+
+          assets=(
+            "materios_runtime.compact.compressed.wasm"
+            "materios_runtime.spec-201.wasm"
+            "materios_runtime.spec-202.wasm"
+            "materios_runtime.spec-203.wasm"
+            "materios_runtime.spec-204.wasm"
+            "materios_runtime.spec-205.wasm"
+            "materios_runtime.spec-206.wasm"
+            "materios_runtime.spec-209.wasm"
+            "materios_runtime.spec-212.wasm"
+            "materios_runtime.spec-215.wasm"
+            "materios_runtime.spec-217.wasm"
+          )
+
+          for asset in "${assets[@]}"; do
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+              "$BASE/$asset" --output "$OUT/$asset"
+          done
+
+          node - "$OUT" "$EXPECTED_RAW_SHA256" <<'NODE'
+          const fs = require("fs");
+          const path = require("path");
+          const crypto = require("crypto");
+
+          const out = process.argv[2];
+          const expectedRawSha256 = process.argv[3];
+          const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex");
+          const rawPath = path.join(out, "chain-spec-v6-raw.json");
+          const rawBytes = fs.readFileSync(rawPath);
+          const rawSha256 = digest(rawBytes);
+          const rawSpec = JSON.parse(rawBytes.toString("utf8"));
+          const codeHex = rawSpec?.genesis?.raw?.top?.["0x3a636f6465"];
+          if (typeof codeHex !== "string" || !/^0x(?:[0-9a-fA-F]{2})+$/.test(codeHex)) {
+            throw new Error("Raw chain spec has no canonical 0x-prefixed :code entry.");
+          }
+          const genesisCodeSha256 = digest(Buffer.from(codeHex.slice(2), "hex"));
+
+          const manifestText = fs.readFileSync(path.join(out, "SHA256SUMS"), "utf8");
+          const manifest = new Map();
+          for (const line of manifestText.split(/\r?\n/)) {
+            const m = line.match(/^([a-f0-9]{64})\s+[* ]?(.+)$/i);
+            if (m) manifest.set(m[2].trim(), m[1].toLowerCase());
+          }
+
+          const names = [
+            "materios_runtime.compact.compressed.wasm",
+            "materios_runtime.spec-201.wasm",
+            "materios_runtime.spec-202.wasm",
+            "materios_runtime.spec-203.wasm",
+            "materios_runtime.spec-204.wasm",
+            "materios_runtime.spec-205.wasm",
+            "materios_runtime.spec-206.wasm",
+            "materios_runtime.spec-209.wasm",
+            "materios_runtime.spec-212.wasm",
+            "materios_runtime.spec-215.wasm",
+            "materios_runtime.spec-217.wasm"
+          ];
+
+          const candidates = names.map((name) => {
+            const bytes = fs.readFileSync(path.join(out, name));
+            const sha256 = digest(bytes);
+            const manifestSha256 = manifest.get(name) ?? null;
+            return {
+              filename: name,
+              size_bytes: bytes.length,
+              sha256,
+              matches_genesis_code: sha256 === genesisCodeSha256,
+              publisher_manifest_sha256: manifestSha256,
+              publisher_manifest_matches: manifestSha256 === null ? null : manifestSha256 === sha256
+            };
+          });
+
+          const matches = candidates.filter((x) => x.matches_genesis_code);
+          const rawSpecMatchesExpected = rawSha256 === expectedRawSha256;
+          const manifestMatches = candidates.every((x) => x.publisher_manifest_matches !== false);
+          const report = {
+            schema: "IMMORTAL-MATERIOS-RUNTIME-ARTIFACT-MATCH-v1",
+            observed_at_utc: new Date().toISOString(),
+            source: {
+              release_index: "https://materios.fluxpointstudios.com/releases/",
+              chain_spec: "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
+              checksum_manifest: "https://materios.fluxpointstudios.com/releases/SHA256SUMS"
+            },
+            raw_genesis_spec: {
+              size_bytes: rawBytes.length,
+              sha256: rawSha256,
+              expected_sha256: expectedRawSha256,
+              matches_expected: rawSpecMatchesExpected
+            },
+            genesis_runtime_code: {
+              size_bytes: Buffer.from(codeHex.slice(2), "hex").length,
+              sha256: genesisCodeSha256
+            },
+            publisher_manifest: {
+              entries_found_for_candidates: candidates.filter((x) => x.publisher_manifest_sha256 !== null).length,
+              all_listed_entries_match_downloads: manifestMatches
+            },
+            candidates,
+            exact_matches: matches.map((x) => x.filename),
+            exact_match_count: matches.length,
+            verdict: rawSpecMatchesExpected && matches.length === 1 && manifestMatches
+              ? "PASS_ARTIFACT_IDENTITY"
+              : "FAIL",
+            limitation: "This compares files from one publisher. It does not prove source reproducibility, independent release provenance, GRANDPA finality, or authenticated authority-transition provenance."
+          };
+
+          fs.writeFileSync(path.join(out, "MateriosRuntimeArtifactMatch.json"), JSON.stringify(report, null, 2) + "\n");
+          console.log(JSON.stringify(report, null, 2));
+          NODE
+
+      - name: Upload comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-runtime-artifact-match-${{ github.run_id }}
+          path: out/
+          if-no-files-found: warn
+
+      - name: Enforce raw-spec and artifact identity
+        if: always()
+        run: |
+          set -euo pipefail
+          REPORT="$GITHUB_WORKSPACE/out/MateriosRuntimeArtifactMatch.json"
+          test -f "$REPORT"
+          test "$(jq -r '.verdict' "$REPORT")" = "PASS_ARTIFACT_IDENTITY"
