@@ -312,18 +312,6 @@ jobs:
           }
           AIKEN
           (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-real.log 2>&1
-          use cardano/transaction.{OutputReference, Transaction}
-          use immortal/drand-beacon-verifier/drand.{BeaconWitness, verify_quicknet_signature}
-          validator drand_beacon_verifier {
-            spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
-              verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
-            }
-            else(_) {
-              fail
-            }
-          }
-          AIKEN
-          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-real.log 2>&1
           validator_real_status=$?
           cat /tmp/aiken-validator-real.log
           echo "aiken_validator_real_exit=${validator_real_status}"
