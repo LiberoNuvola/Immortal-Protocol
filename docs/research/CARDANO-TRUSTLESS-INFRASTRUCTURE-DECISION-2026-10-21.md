@@ -67,7 +67,9 @@ Given the explicit constraint not to modify/activate the Materios node, the next
 
 The repository's `poc/drand-beacon-verifier` proves a different relation: a pinned drand Quicknet signature/round can be checked, and an earlier local Yaci test accepted the correctly bound signature and rejected a wrong-round signature. Its own README labels it **candidate only**, not a selected normative randomness source and not a Materios finality/storage proof; Preprod/Mainnet evidence remains open. It therefore cannot be promoted silently to B3 or used to authenticate the Materios `AnchorRecord`.
 
-The existing Beacon failover contract already permits B3 → B2 → B1 **only for new, not-yet-committed rounds**, when the selected mode's own verifier has produced round-bound evidence. If drand is considered for future-round randomness, it must be explicitly qualified under the appropriate approved mode and its threshold/availability assumptions must be declared; this audit does not alter the mode set or activate that fallback. Existing rounds remain frozen.
+The existing Beacon failover contract describes B3 → B2 → B1 **only for new, not-yet-committed rounds**, when the selected mode's own verifier has produced round-bound evidence. A fresh repository search found `selectBeaconMode` only in `src/beaconTrust.ts` and `src/__tests__/beaconTrust.test.ts`, with no production call site found. Its `validEvidence` check verifies presence/non-empty metadata and matching `roundId`; it does not itself verify signatures or cryptographic proof material. Therefore the helper is not evidence that automatic failover is already integrated or enforced on-chain.
+
+If drand is considered for future-round randomness, it must be explicitly qualified under an approved mode and its threshold/availability assumptions must be declared; this audit does not alter the mode set or activate that fallback. The current drand PoC is not the missing production integration and is not a substitute for Materios finality/storage authentication. Existing rounds remain frozen.
 
 ## 3. Infrastructure classification
 
