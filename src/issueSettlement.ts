@@ -1,4 +1,4 @@
-import { Data } from 'lucid-cardano'
+import { C, Data } from 'lucid-cardano'
 
 /**
  * PRE-RICH B1 Issue settlement construction.
@@ -665,6 +665,56 @@ export function assertCompletedIssueValidityUpperBound(
       `Completed Issue TTL mismatch: expected slot ${expectedTtlSlot}, got ${actualTtlSlot}`,
     )
   }
+}
+
+/**
+ * Pure boundary helper used by tests and by the completed-output checker.
+ * The minimum passed here is computed for the exact serialized output using
+ * Cardano's pinned min_ada_required(output, coinsPerUtxoByte) primitive.
+ */
+export function assertTreasuryAdaMeetsOutputMinimum(
+  actualLovelace: bigint,
+  requiredLovelace: bigint,
+): void {
+  if (actualLovelace < 0n || requiredLovelace < 0n) {
+    throw new Error('Treasury ADA amounts must be non-negative')
+  }
+  if (actualLovelace < requiredLovelace) {
+    throw new Error(
+      `Completed Treasury ADA is below output-specific minimum: actual ${actualLovelace}, required ${requiredLovelace}`,
+    )
+  }
+}
+
+/**
+ * Require sufficient ADA using the serialized Treasury output itself. This
+ * includes its address, full multi-asset Value and inline datum, and uses the
+ * live network's coinsPerUtxoByte protocol parameter instead of a hardcoded
+ * estimate. This is validation only: it never changes the selected payment
+ * quantities or masks ADA above the economic 1.6M exclusion.
+ */
+export function assertCompletedTreasuryMinimumAda(
+  completedTx: any,
+  treasuryAddress: string,
+  coinsPerUtxoByte: bigint,
+): { actualLovelace: bigint; requiredLovelace: bigint } {
+  if (!treasuryAddress) throw new Error('Treasury address is required for min-ADA conformance')
+  if (coinsPerUtxoByte <= 0n) throw new Error('coinsPerUtxoByte must be positive')
+
+  const matches = completedOutputs(completedTx).filter((output) => {
+    const address = output?.address?.()
+    return typeof address?.to_bech32 === 'function' && address.to_bech32() === treasuryAddress
+  })
+  if (matches.length !== 1) {
+    throw new Error(`Completed transaction must contain exactly one Treasury output for min-ADA conformance; found ${matches.length}`)
+  }
+
+  const output = matches[0]
+  const actualLovelace = cmlInteger(output?.amount?.()?.coin?.(), 'ADA amount')
+  const required = C.min_ada_required(output, C.BigNum.from_str(coinsPerUtxoByte.toString()))
+  const requiredLovelace = cmlInteger(required, 'output-specific minimum ADA')
+  assertTreasuryAdaMeetsOutputMinimum(actualLovelace, requiredLovelace)
+  return { actualLovelace, requiredLovelace }
 }
 
 export function assertCompletedTreasuryAdaSettlement(
