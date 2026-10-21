@@ -180,6 +180,32 @@ export async function obtainAuthoritativeIssueAdmission(
   if (deploymentApproval.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') {
     throw new Error('authoritative Issue witness EEV profile is not the deployed direct-USDM profile')
   }
+
+  // A deployment approval is candidate-specific. Bind both its candidate identity
+  // and the qualification source to the exact Pool UTxO used by this Issue.
+  const expectedPoolReference = stripTxPrefix(inputs.poolInputReference).toLowerCase()
+  const sourcePrefix = 'cardano:preprod/utxo/'
+  const sourceReference = witness.eevQualification.sourceReference.trim()
+  const sourcePoolReference = sourceReference.startsWith(sourcePrefix)
+    ? sourceReference.slice(sourcePrefix.length)
+    : ''
+  if (
+    !sourcePoolReference ||
+    stripTxPrefix(sourcePoolReference).toLowerCase() !== expectedPoolReference
+  ) {
+    throw new Error('authoritative Issue EEV qualification source is bound to a different B1 PrizePool input')
+  }
+
+  const candidatePrefix = deploymentApproval.profileVersion + ':'
+  const candidatePoolReference = deploymentApproval.candidateId.startsWith(candidatePrefix)
+    ? deploymentApproval.candidateId.slice(candidatePrefix.length)
+    : ''
+  if (
+    !candidatePoolReference ||
+    stripTxPrefix(candidatePoolReference).toLowerCase() !== expectedPoolReference
+  ) {
+    throw new Error('authoritative Issue EEV deployment approval is bound to a different B1 PrizePool candidate')
+  }
   if (!deploymentApproval.candidateId.trim() || !deploymentApproval.sourceSetId.trim() ||
       !deploymentApproval.profileVersion.trim() || !deploymentApproval.testSuiteVersion.trim() ||
       !deploymentApproval.failureMatrixVersion.trim() || !deploymentApproval.validFrom.trim() ||
@@ -192,6 +218,12 @@ export async function obtainAuthoritativeIssueAdmission(
       if (!value.trim()) {
         throw new Error('authoritative Issue witness has incomplete EEV deployment approval: ' + key + '[' + index + ']')
       }
+    }
+  }
+
+  for (const key of ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'] as const) {
+    if (!deploymentApproval.qualifiedProperties.includes(key)) {
+      throw new Error('authoritative Issue EEV deployment approval is missing required qualification property: ' + key)
     }
   }
 
