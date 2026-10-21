@@ -26,7 +26,7 @@ It implements the cryptographic equation for the pinned drand Quicknet scheme:
 - PRE-RICH integration: **NOT STARTED**.
 - B3 approval: **NOT APPROVED**.
 
-Reproducible CI evidence: [IMMORTAL drand Beacon Verification PoC — run #82](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39543072212), pinned to Yaci DevKit `0.12.0`. The workflow log confirms `Yaci Store tx evaluator mode: ogmios`, and the uploaded `immortal-drand-plutus-ledger-evidence` artifact contains the valid accepted transaction, the Ogmios evaluation result, and the rejected wrong-round twin.
+Reproducible CI evidence: [IMMORTAL drand Beacon Verification PoC — run #83](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39544513204), pinned to Yaci DevKit `0.12.0`. The workflow log confirms `Yaci Store tx evaluator mode: ogmios`, and the uploaded `immortal-drand-plutus-ledger-evidence` artifact contains the valid accepted transaction, the Ogmios evaluation result, and the rejected wrong-round twin.
 
 ## Local Yaci transaction measurements
 
