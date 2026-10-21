@@ -119,9 +119,32 @@ jobs:
               const tip = await rpc(url, 'chain_getFinalizedHead');
               const block = await rpc(url, 'chain_getBlock', [tip]);
               const js = block && block.justifications;
+              const numberHex = block && block.block && block.block.header && block.block.header.number;
+              let finalityProofProbe;
+              if (typeof numberHex !== 'string' || !/^0x[0-9a-f]+$/i.test(numberHex)) {
+                finalityProofProbe = {status: 'unavailable', error: 'chain_getBlock returned no valid SCALE block number'};
+              } else {
+                const blockNumber = Number(BigInt(numberHex));
+                if (!Number.isSafeInteger(blockNumber)) {
+                  finalityProofProbe = {status: 'unavailable', error: 'finalized block number exceeds JavaScript safe integer range'};
+                } else {
+                  try {
+                    const proof = await rpc(url, 'grandpa_proveFinality', [blockNumber]);
+                    finalityProofProbe = {
+                      status: proof === null ? 'null' : 'captured',
+                      resultType: proof === null ? 'null' : typeof proof,
+                      bytes: typeof proof === 'string' && /^0x[0-9a-f]*$/i.test(proof) ? (proof.length - 2) / 2 : null,
+                    };
+                  } catch (e) {
+                    finalityProofProbe = {status: 'unavailable', error: String(e)};
+                  }
+                }
+              }
               console.log(JSON.stringify({
                 url,
                 finalizedHead: tip,
+                finalizedBlockNumber: typeof numberHex === 'string' && /^0x[0-9a-f]+$/i.test(numberHex) ? Number(BigInt(numberHex)) : null,
+                grandpaProveFinality: finalityProofProbe,
                 justificationsKind: js === null ? 'null' : Array.isArray(js) ? 'array' : typeof js,
                 justificationCount: Array.isArray(js) ? js.length : null,
                 engines: Array.isArray(js) ? js.map(x => x && x[0]) : null
