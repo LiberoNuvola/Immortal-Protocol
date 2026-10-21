@@ -946,7 +946,7 @@ A scoped static review has been recorded against the exact blob SHAs in protocol
 - Review record: [SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md](SEMANTIC-REVIEW-PYTH-MINTPOLICY-BINDING-2026-10-21.md)
 - Review commit: `fa32e2ac776855c149a75b9075e671a84dfec0e4`
 - Updated machine ledger: [REPO-WIDE-BLOB-LEDGER-2026-10-21.json](REPO-WIDE-BLOB-LEDGER-2026-10-21.json)
-- Ledger status-update commit: `ed58c3c174dd5158aecccd86d0f5125c52d14319`
+- Ledger status-update commit: `aaa01626676055493526fc0831eb05d56f30a923` (clarifies scoped static-review counts versus fully qualified semantic closure)
 
 **Finding F-PYTH-01 — source price is not bound to the production settlement predicate.** `MintPolicy.atomicTreasuryPaymentValid` calls `Economic.totalUsdmValue`, which selects quotes through the configured legacy Oracle State reference-input path. The current MintPolicy call graph does not require or read `PythQuoteCarrierBinding.extractBoundPythAdaUsdQuote` and does not consume the Pyth conversion candidate. Thus Pyth verification and the legacy quote can remain separate facts; the intended quote-substitution gap remains open.
 
