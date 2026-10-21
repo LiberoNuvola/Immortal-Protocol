@@ -1317,3 +1317,35 @@ Therefore the repository does have an active ruleset, but the reviewed ruleset a
 - Overall audit: PARTIAL / OPEN.
 
 Only the checkpoint document was changed by this update. No code, test or workflow was altered; no PR setting, branch, merge, rebase, deployment, mint or on-chain transaction was changed.
+
+
+### 10.38 USDM unit semantics and external feed/issuer identity — 2026-10-22
+
+Decision record: [PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md](../audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md), amended in documentation-only commit [dc08a4d290a47d3dce3a8bea87d1dfc7192db641](https://github.com/LiberoNuvola/Immortal-Protocol/commit/dc08a4d290a47d3dce3a8bea87d1dfc7192db641). The amendment adds an external-source and asset-identity cross-check; it does **not** approve a unit conversion or authorize production implementation.
+
+#### Reconciled facts
+
+- The archived Constitution defines USDM as PRE-RICH's canonical economic unit and says that non-USDM payment assets require verified conversion (Articles 5 and 16). The PRE-RICH system spec fixes 100 sub-units per unit and requires exact asset identity, valid/fresh price data, decimal handling, deterministic rounding, minimum-UTxO treatment and fail-closed rejection. These sources do not explicitly say that one accounting USDM is exactly one USD.
+- EEV Valuation Contract R9 states that universal safety theorems are relative to the adapter-supplied valuation. The adapter must authenticate its source and derivation; R9 does not prove market-price truth for an arbitrary oracle datum.
+- Current public issuer documentation is not a substitute for on-chain asset identity: [Cardano's USDM overview](https://cardano.org/stablecoins/) describes 1:1 USD backing, while [NBX's issuer terms updated 17 July 2026](https://nbx.com/en/usdm-terms) explicitly distinguish EEA NBX-issued USDM from Moneta-issued USDM, with separate reserves and no cross-liability. This does not establish that all tokens called USDM are interchangeable or trade at exactly par at all times.
+- [Pyth Pro's feed catalogue](https://docs.pyth.network/price-feeds/pro/price-feed-ids) distinguishes Pro/Lazer IDs from Pyth Core IDs. This review has not established a Pyth Pro quote whose source definition is bound to the exact Cardano USDM policy ID intended for this application. A ticker or generic symbol is insufficient evidence of that mapping.
+- No live or authorized direct ADA/USDM quote was qualified by this review. Historical or DEX-derived feed listings do not establish a current, trusted production valuation path.
+
+#### Recommended normative disposition — proposal only
+
+Separate **the protocol's USDM accounting unit** from **any Cardano-native token whose ticker is USDM**. The normative owner must explicitly decide whether the accounting unit is USD-denominated; the decision cannot be inferred from the ticker, a reserve statement, or a stablecoin issuer's redemption terms.
+
+- If the intended meaning is one USD-denominated accounting unit, specify that relationship in the normative source-of-truth hierarchy. Then preserve raw Pyth ADA/USD price/exponent and implement exact rational conversion with the approved rounding contract. This still does not automatically value a physical USDM token at par: its exact policy ID/name and valuation rule remain required.
+- If USDM means a token-relative unit, require a source-qualified, fresh USD/USDM ratio or an exact asset/USDM feed bound to the relevant Cardano asset identity.
+- Under either route, only the exact quote authenticated by the Pyth/quote-carrier validator may be consumed by the production Treasury equality predicate; the legacy Oracle State price must not be an unbound fallback in a Pyth-authoritative path.
+
+This is a recommendation awaiting normative approval, not a selected protocol rule.
+
+#### Gate state and next dependency
+
+- Pyth quote → production MintPolicy: **BLOCKER CONFIRMED**.
+- USD/USDM denomination and conversion: **NORMATIVE DECISION OPEN**.
+- Native signed Pyth update + source-to-economics binding: **NOT ESTABLISHED**.
+- No protocol implementation, unit constant, asset mapping, workflow, branch topology, V3/Reveal semantics or on-chain state changed in this pass.
+
+Next decision dependency: approve the meaning of the USDM accounting unit under the existing source-of-truth hierarchy. Until then, changing MintPolicy to consume the Pyth candidate would embed an unapproved economic rule and remains prohibited.
