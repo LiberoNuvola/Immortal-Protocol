@@ -254,3 +254,10 @@ A blob comparison against the current working branch confirms byte-for-byte equa
 The same comparison confirmed the TypeScript settlement implementation, focused settlement tests, mint builder and predeploy gate also had identical blobs at the Haskell-tested SHA; the independent Cardano Adapter Sale Conformance subsequently passed on the later working-branch head `fd71136ed688231072f2c041c67aa5c63a2262b1` in [run 39603184582](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184582).
 
 This establishes **source-level Haskell build/conformance and TypeScript settlement/build evidence** for these exact files. It does not establish native-ledger execution of a Pyth signature-verifying withdrawal, does not bind the Pyth carrier quote into the production V2 MintPolicy, and does not make the stale legacy Oracle State usable. The Integration Lab remained in progress at the last check, so these results are not a full live Cardano Issue proof.
+
+
+## 8.11 Pyth carrier state-transition guards now have adversarial vectors
+
+The isolated Pyth Aiken carrier now calls a shared `quote_carrier_transition_shape_is_valid` predicate from the actual transition validator and tests four grouped negative cases: missing/duplicate carrier script inputs and outputs, missing/duplicate singleton authority quantity, changed continuing address/value, and invalid input datum or an output quote not matched to the update.
+
+[Isolated Pyth ADA USD Probe run 39604431999](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604431999) passed on exact commit `5c35530e813e1a2ed43d8486eebae1dd058ee1ed`, including `aiken check` and Plutus V3 compilation. This strengthens the synthetic state-transition boundary but is not a signed-update ledger transaction. The existing Haskell MintPolicy is still not wired to consume the carrier quote, and USD↔USDM conversion remains unresolved.
