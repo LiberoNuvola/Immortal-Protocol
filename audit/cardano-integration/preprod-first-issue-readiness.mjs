@@ -4,6 +4,11 @@ import { createHash } from 'node:crypto'
 const evidenceDir = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 const issueEvidenceDir = process.env.PREPROD_ISSUE_EVIDENCE_DIR ?? 'audit/preprod-issue'
 const directUsdmUnit = process.env.PREPROD_TUSDM_UNIT?.trim()
+const issueAuthorityUrl = (
+  process.env.ISSUE_AUTHORITY_SOURCE_URL ??
+  process.env.ISSUE_AUTHORITY_URL
+)?.trim()
+const issueAuthorityPublicKey = process.env.ISSUE_AUTHORITY_PUBLIC_KEY?.trim()
 const checks = []
 
 async function jsonFile(path, label) {
@@ -164,6 +169,12 @@ const providerPath = process.env.PREPROD_ISSUE_ADMISSION_PROVIDER_MODULE?.trim()
 check(Boolean(providerPath) && await exists(providerPath),
   'Production authoritative Issue provider is configured',
   providerPath ? undefined : 'Only the provider boundary exists; do not manufacture EEV, ProtectedCapital, viability or admission in the browser')
+check(Boolean(issueAuthorityUrl),
+  'External signed Issue authority URL is configured',
+  'The runtime requires ISSUE_AUTHORITY_SOURCE_URL or ISSUE_AUTHORITY_URL; the in-repository client does not create the external signed EEV authority')
+check(Boolean(issueAuthorityPublicKey),
+  'External signed Issue authority verification key is configured',
+  'ISSUE_AUTHORITY_PUBLIC_KEY must verify the external authority envelope')
 
 const blockers = checks.filter(c => c.status === 'blocked' || c.status === 'missing_or_invalid')
 const report = {
