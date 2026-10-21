@@ -92,3 +92,26 @@ Do not reuse as G1 authority:
 **G1 remains OPEN. No fee-bearing class is selected.** No production types, Haskell/TypeScript logic, tests, CI, deployment or on-chain behavior were changed.
 
 Before implementation, the project authority must resolve the normative applicability/authority contract without inventing economic values or delegating fee policy to the Adapter. After that decision, the implementation can be constrained to the existing canonical path and tested against absent, explicit-false, explicit-true, stale, conflicting, revoked, wrong-profile and bypass scenarios. Those are candidate conformance cases, not yet normative acceptance semantics.
+
+
+## 7. Exact source-order refinement — conceptual seam versus implementable seam
+
+A fresh exact-branch read of the named source files narrows the insertion finding above. The normative sequence remains authoritative, but the current implementation's concrete order and data structures matter:
+
+1. `PRE-RICH/onchain/PreRichEconomicAdmission.hs` (`d8360b608f3bb32b7c74000de3ca3b5e3a907a9a`) rejects negative pre-EEV, calls `transitionValid`, computes `transition profile preState action` to obtain `candidateV3`, projects that candidate to `candidateUniversal`, and only then constructs `EconomicGateInput` and invokes `executionAdmissible`.
+2. The admission function receives `truthVerified`, `eevFresh`, `obligationsComplete`, and the Ω-successor condition as arguments. It does not derive those authority facts internally and does not resolve G1.
+3. `EconomicTransitionV3.hs` (`62c2980a821cdcfc33a33e15a09617256ab8753c`) represents only `Issue | Reveal | Claim | Expire` and application-state deltas. `EconomicProfile.hs` carries version, ticket-class prices and payout multiplier, but no protocol-fee applicability map or protocol usage-class registry.
+4. `UniversalEconomicState.hs` (`f89fe04c8aad8ca9c5e544fa9c145a38d157826f`) contains liability, reserve, unresolved-count, worst-case-exposure and protected-capital aggregates; it contains no typed Protocol Usage Fee obligation, settlement target or settlement result.
+5. `EconomicAdmissionWitness` in `Adapter/CARDANO/runtime/EconomicAdmission.ts` (`5949c1f5b60091f2b5f9b0a59d4274887b7151d2`) binds action and state fingerprints, EEV, authenticated pool valuation, executable liquidity and required immediate liquidity. It does not carry the G1 declaration or a fee-obligation derivation. The evidence bridge is binding/validation, not the missing economic calculation.
+
+### Consequence
+
+There is a **normative sequencing seam**—authoritative-input verification and exhaustive obligation/exposure derivation before candidate-delta/post-state checks—but no ready-made typed **implementation seam** in the inspected PRE-RICH/V3 path. In the current code, the candidate V3 state is already computed before the economic gate, and neither the V3 state nor its universal projection represents a distinct protocol-fee obligation.
+
+Therefore it would be incorrect to close the gap by merely passing another boolean into `EconomicGateInput`, treating `obligationsComplete=true` as fee applicability, or adding a post-admission receipt check. Such changes would not demonstrate that a fee obligation is represented in the complete candidate post-state and checked by the same safety/`K_c`/atomic-transition path.
+
+Before implementation, the approved G1 contract must identify how a verified result influences the existing canonical action and full candidate post-state while preserving the documented separation of universal IMMORTAL fee semantics from PRE-RICH application semantics. This audit does **not** prescribe a new state field, mutate `V3Action`, choose a fee-bearing class, or alter V3/Reveal semantics. The precise representation and transition integration remain design/authority questions; once approved, they require an end-to-end refinement/conformance demonstration.
+
+This refinement is consistent with the [existing-authority reuse audit](PROTOCOL-USAGE-FEE-G1-EXISTING-AUTHORITY-REUSE-AUDIT-B3-v1.md) §9.18: version/commitment/fingerprint primitives are reusable bindings, not a G1 authority or obligation implementation.
+
+**Result:** insertion order is identified; implementation seam is **NOT READY**. G1 remains OPEN. Source-only read, documentation update only; no code, tests, CI, deployment, V3 carrier, or Reveal behavior changed.
