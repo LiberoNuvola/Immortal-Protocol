@@ -119,3 +119,18 @@ This distinction is normative for the first-ticket path and supersedes any wordi
 - **Do not conflate settlement with EEV qualification:** receiving ADA, NIGHT or PRE in Treasury does not automatically make those assets eligible for the B1 `VerifiedUSDM` / EEV perimeter. The established `PRE-RICH-EEV-USDM-DIRECT-V1` profile only counts canonical USDM physically present in the exact qualified B1 PrizePool UTxO. Do not broaden that perimeter by implication, and do not introduce ADA liquidation, PRE liquidation, NIGHT valuation or liquidity assumptions into EEV without a separate normative decision.
 
 Thus the immediate first-ticket blocker is more precise than “pay 1 ADA”: **the actual settlement output must satisfy the ticket's USDM-denominated price through the authenticated on-chain Oracle conversion**. If the current fixed-lovelace builder does not satisfy that equality, the existing on-chain check should reject the transaction; do not bypass the check to make a demo pass.
+
+
+## Paper evidence addendum — integer equality, rounding and bounded-conversion status
+
+The B1 sale predicate compares `pdPriceUsdm` with the integer result of `Economic.totalUsdmValue`. That function currently applies `ceilingDiv(amount × oraclePrice, precision)` per nonzero asset entry, then sums the integer USDM-sub-unit results. Accordingly, the current predicate establishes **equality in the canonical integer-valued conversion domain**, not by itself equality of the unrounded rational exchange value.
+
+A synthetic conformance vector makes the distinction concrete (not a live quote): with `precision = 1,000,000`, `minUtxoLovelace = 1,600,000` and a fixture quote of 100 USDM sub-units per ADA, an output containing 2,600,000 lovelace values to 100 sub-units, while 2,599,999 lovelace has raw conversion 99.9999 and is rounded up to the same integer result of 100. The new Haskell cases exercise the actual Plutus `totalUsdmValue` function for the fixed builder value, an exact-value positive control, this rounding boundary, and rejection of a mixed ADA+PRE value when only a single PRE quote is available in the singleton Oracle datum.
+
+This does not authorize changing the implementation's rounding behavior. The relevant PriceReference/rounding research still leaves a general bounded-conversion/error contract open; the paper must not claim arbitrary-asset continuous-value equivalence merely from the current integer equality check. A multi-asset design would need an explicitly governed quote-set/reference contract and a bounded rounding/representation rule, with tests for asset granularity and conversion boundaries.
+
+## Decision on a real authority-backed Issue
+
+A non-permissionless real Issue is **not the next useful experiment** with the current source. It would not test a valid full sale while the builder does not derive/verify the completed Treasury value and the single-asset Oracle schema cannot supply the required quote set for token+ADA settlement. After those conformance issues are resolved, a specifically scoped authority-backed Issue could measure Adapter/ledger integration, cost, size and StateBefore/StateAfter; it still would not prove permissionlessness. Until then, prefer the actual Plutus valuation tests and formal transition-refinement work over a real ticket issued merely for a milestone.
+
+No on-chain rule, signature check, V3/Reveal behavior, settlement coefficient, or deployment was changed by this addendum.
