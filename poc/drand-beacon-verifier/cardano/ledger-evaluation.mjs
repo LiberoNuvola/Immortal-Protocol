@@ -77,7 +77,7 @@ async function evaluateWithYaci(cborHex) {
       return { status: 'UNAVAILABLE', httpStatus: response.status, response: raw.slice(0, 2000) }
     }
     const results = payload?.result?.EvaluationResult
-    if (!response.ok || payload?.fault || !results) {
+    if (!response.ok || payload?.fault || !results || Object.keys(results).length === 0) {
       return {
         status: 'UNAVAILABLE',
         httpStatus: response.status,
@@ -86,13 +86,21 @@ async function evaluateWithYaci(cborHex) {
         response: raw.slice(0, 2000),
       }
     }
-    return {
-      status: 'PASS',
-      redeemers: Object.entries(results).map(([pointer, budget]) => {
-        const [tag, index] = pointer.split(':')
-        return { tag, index: Number(index), memory: Number(budget.memory), steps: Number(budget.steps) }
-      }),
+    const redeemers = Object.entries(results).map(([pointer, budget]) => {
+      const [tag, index] = pointer.split(':')
+      return { tag, index: Number(index), memory: Number(budget.memory), steps: Number(budget.steps) }
+    })
+    if (redeemers.length === 0 || redeemers.some(({ memory, steps }) =>
+      !Number.isFinite(memory) || !Number.isFinite(steps) || memory <= 0 || steps <= 0
+    )) {
+      return {
+        status: 'UNAVAILABLE',
+        httpStatus: response.status,
+        message: 'Evaluator returned no valid redeemer execution budget',
+        response: raw.slice(0, 2000),
+      }
     }
+    return { status: 'PASS', redeemers }
   } catch (error) {
     return { status: 'UNAVAILABLE', error: String(error).slice(0, 2000) }
   }
@@ -211,6 +219,25 @@ try {
   const spendCbor = signedSpend.toCBOR()
   const description = txDescription(spendCbor)
   const yaciEvaluation = await evaluateWithYaci(spendCbor)
+  const yaciSpendBudget = yaciEvaluation.status === 'PASS'
+    ? yaciEvaluation.redeemers.find(({ tag, index }) => tag === 'spend' && index === 0)
+    : undefined
+  if (!yaciSpendBudget) {
+    throw new Error('YACI_TX_EVALUATION_REQUIRED: valid-spend transaction evaluation did not return a spend budget: ' +
+      JSON.stringify(yaciEvaluation).slice(0, 2000))
+  }
+  if (!Number.isFinite(protocolMaximum.memory) || !Number.isFinite(protocolMaximum.steps)) {
+    throw new Error('YACI_PROTOCOL_LIMITS_REQUIRED: complete transaction execution limits were not observed')
+  }
+  if (yaciSpendBudget.memory > protocolMaximum.memory || yaciSpendBudget.steps > protocolMaximum.steps) {
+    throw new Error('YACI_TX_EVALUATION_OVER_LIMIT: evaluated spend exceeds the observed transaction execution limits')
+  }
+  const assignedSpendBudget = description.redeemerExecutionUnits.find(({ tag, index }) => tag === 0 && index === 0)
+  if (!assignedSpendBudget ||
+      Number(assignedSpendBudget.memory) < yaciSpendBudget.memory ||
+      Number(assignedSpendBudget.steps) < yaciSpendBudget.steps) {
+    throw new Error('YACI_TX_BUDGET_UNDERASSIGNED: signed transaction budget is below the Yaci/Ogmios evaluated spend budget')
+  }
 
   const spendHash = await signedSpend.submit()
   await lucid.awaitTx(spendHash)

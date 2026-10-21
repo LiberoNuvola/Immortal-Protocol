@@ -18,6 +18,7 @@ It implements the cryptographic equation for the pinned drand Quicknet scheme:
 - Wrong-round negative vector: **PASS** in Aiken's test evaluator; the same round-42 signature is rejected when checked as round 43.
 - Actual valid-signature Cardano ledger transaction: **PASS** — the local Yaci ledger accepted and confirmed a spend through the compiled Plutus V3 validator.
 - Actual invalid-signature/incorrect-round twin: **PASS** — attempting to spend with the real round-42 signature while declaring round 43 was rejected by the Conway ledger with `ValidationTagMismatch` / `PlutusFailure`; the target script UTxO remained unspent.
+- Yaci/Ogmios REST transaction evaluation: **PASS** for the valid spend, returning the spend redeemer's memory/step budget.
 - Off-chain JavaScript signature verification and adversarial tests: **PASS** in the same CI workflow.
 - Preprod/mainnet execution-unit headroom: **OPEN**.
 - Production round-selection and ticket binding: **OPEN**.
@@ -25,7 +26,7 @@ It implements the cryptographic equation for the pinned drand Quicknet scheme:
 - PRE-RICH integration: **NOT STARTED**.
 - B3 approval: **NOT APPROVED**.
 
-Reproducible CI evidence: [IMMORTAL drand Beacon Verification PoC — run #76](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39541410901). The run uploaded `immortal-drand-plutus-ledger-evidence`, including both the accepted positive transaction and the rejected wrong-round twin.
+Reproducible CI evidence: [IMMORTAL drand Beacon Verification PoC — run #82](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39543072212), pinned to Yaci DevKit `0.12.0`. The workflow log confirms `Yaci Store tx evaluator mode: ogmios`, and the uploaded `immortal-drand-plutus-ledger-evidence` artifact contains the valid accepted transaction, the Ogmios evaluation result, and the rejected wrong-round twin.
 
 ## Local Yaci transaction measurements
 
@@ -39,22 +40,22 @@ These measurements apply only to the local Yaci devnet and its observed protocol
 | Observed `maxTxSize` | 16,384 bytes |
 | Valid transaction size as a share of limit | 6.26% |
 | Valid transaction fee | 281,908 lovelace (0.281908 ADA) |
-| Valid spend assigned redeemer memory budget | 26,043 |
+| Yaci/Ogmios evaluation and assigned memory budget | 26,043 (matching) |
 | Observed `maxTxExMem` | 16,500,000 |
 | Memory budget as a share of limit | 0.158% |
-| Valid spend assigned redeemer step budget | 1,106,076,956 |
+| Yaci/Ogmios evaluation and assigned step budget | 1,106,076,956 (matching) |
 | Observed `maxTxExSteps` | 10,000,000,000 |
 | Step budget as a share of limit | 11.06% |
 | Invalid-round twin | Rejected; original script input remains unspent |
 
-The ExUnits above are the budget assigned by Lucid's local UPLC evaluation during construction of the valid transaction, and the Cardano ledger accepted that budget. They are **not** a direct measurement of actual consumed CPU/memory returned by Yaci's REST evaluator. The wrong-round twin uses an explicit conservative test budget so that it can reach the ledger without depending on the REST endpoint.
+The valid transaction's assigned ExUnits match the values returned by Yaci Store's REST `/utils/txs/evaluate/utxos` endpoint in Ogmios mode. These are ledger cost-model memory/step units, not wall-clock CPU time or host-process memory. The workflow now fails closed if the REST endpoint is unavailable, returns no spend budget, or reports a budget above the observed transaction limits / above the budget assigned to the signed transaction. The wrong-round twin deliberately uses a conservative explicit test budget so its rejection can be established by the ledger independently of the evaluator endpoint.
 
-Yaci's REST `/utils/txs/evaluate/utxos` endpoint returned HTTP 500 with `ExceptionInInitializerError`; that remains an independent diagnostic issue. It did not prevent the node from accepting the valid transaction and rejecting the incorrect-round transaction.
+The earlier HTTP 500 / `ExceptionInInitializerError` was observed with Yaci DevKit `0.12.0-beta5`. With stable `0.12.0`, the workflow confirms Ogmios is the selected evaluator and the REST evaluation returns `PASS`.
 
 ## Scope and remaining gates
 
 The test vector is the real captured Quicknet round 42 also checked by the off-chain `drand-client@1.4.2` profile. The positive Aiken test verifies that signature with the Plutus V3 BLS12-381 builtins; the wrong-round tests reject reuse of the signature with round 43; the local ledger probe confirms both the valid and invalid branches.
 
-Before production use, the remaining gates are to investigate Yaci's REST evaluator initialization failure, run equivalent measurements against the intended target protocol parameters, and establish production-safe round selection and ticket binding.
+Before production use, the remaining gates are to repeat qualification against the intended target protocol parameters (including Preprod/mainnet), establish production-safe round selection and ticket binding, and prove Materios GRANDPA finality, receipt/storage-root authenticity, and authority-set provenance. PRE-RICH integration remains out of scope.
 
 This PoC does **not** prove Materios GRANDPA finality, receipt/storage-root authenticity, authority-set provenance, or PRE-RICH integration. No production PRE-RICH, B1, B3 or Reveal semantics are changed by this isolated work.
