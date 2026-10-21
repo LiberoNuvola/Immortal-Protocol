@@ -55,7 +55,19 @@ The run remains **FAILED / fail-closed** because the endpoint does not expose `g
 
 The resulting artifact is [materios-existing-route-proof-probe-39556404546-1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556404546/artifacts/12325098545), SHA-256 `bf50317dca948a7311ad97d5bac4257f6dde4aa4ab84cc9be069a5d71781256b`. It contains the RPC capability inventory, finalized-state capture, anchor witness and the independent storage-proof verification report.
 
-**Decision based on live evidence:** use the public Materios route for receipt/anchor reads and available storage proofs, but do not claim publisher-independent B3 finality from it. Without a configured archive/proof endpoint or an upstream-exposed finality proof, the existing public route does not currently supply the GRANDPA/runtime evidence needed to close B3-A/B3-C. Do not modify Materios or fabricate a fallback; keep the missing layers OPEN and continue with independently verifiable evidence.
+**Decision based on live evidence:** the standard public endpoints are useful for receipt/anchor reads and for producing a real storage-membership proof. The specific `OrinqReceipts::Anchors` key/value proof has now passed the existing independent Substrate trie verifier against the observed state root. B3-A is still OPEN: the same endpoints do not expose `grandpa_proveFinality`, block justifications were null in the bounded scan, and `state_getCode` is not advertised. The workflow now uses `archive_rpc`, when supplied, for the whole capture/probe path, not just historical anchor reads; the latest run did not have an archive endpoint configured. Do not modify Materios or fabricate a fallback.
+
+### Upstream source boundary — why repeating the same public calls is not enough
+
+The upstream Materios `partnerchain/node/src/rpc.rs` inspected from `Flux-Point-Studios/materios` `main` currently merges `System`, `OrinqReceipts`, and `MotraRpc` into `create_full`; it does not merge the standard `sc-consensus-grandpa-rpc` module. `partnerchain/node/Cargo.toml` does declare `sc-consensus-grandpa-rpc`, but a dependency is not a registered endpoint. The existing IMMORTAL handoff for a narrow execution-proof RPC is explicitly defined but **not applied upstream**. This matches the live result: IMMORTAL-side code cannot manufacture raw finality/execution proof bytes that the chosen service does not return.
+
+Given the explicit constraint not to modify/activate the Materios node, the next acceptable external option is a **pre-existing archive/proof endpoint** that serves the needed bytes. Supplying one to the workflow is an acquisition route, not a trust grant: every finality, runtime and storage proof still has to verify independently. Until such a route produces the missing witness, keep B3-A/B3-C open.
+
+### Separate candidate for randomness — not a Materios proof substitute
+
+The repository's `poc/drand-beacon-verifier` proves a different relation: a pinned drand Quicknet signature/round can be checked, and an earlier local Yaci test accepted the correctly bound signature and rejected a wrong-round signature. Its own README labels it **candidate only**, not a selected normative randomness source and not a Materios finality/storage proof; Preprod/Mainnet evidence remains open. It therefore cannot be promoted silently to B3 or used to authenticate the Materios `AnchorRecord`.
+
+The existing Beacon failover contract already permits B3 → B2 → B1 **only for new, not-yet-committed rounds**, when the selected mode's own verifier has produced round-bound evidence. If drand is considered for future-round randomness, it must be explicitly qualified under the appropriate approved mode and its threshold/availability assumptions must be declared; this audit does not alter the mode set or activate that fallback. Existing rounds remain frozen.
 
 ## 3. Infrastructure classification
 
@@ -206,6 +218,11 @@ An index result must be tied to a slot/block or exact output reference and recon
 - `poc/materios-checkpoint/src/capture-anchor.ts`
 - `docs/research/B3-C-POC2-STORAGE-PROOF-BOUNDARY-2026-09-27.md`
 - `docs/research/B3-C-POC2-MATERIOS-ANCHOR-KEY-TRIANGULATION-2026-09-27.md`
+- `docs/04-verification/MATERIOS-B3-NODE-RPC-PATCH-HANDOFF.md`
+- `docs/04-verification/MATERIOS-B3-GRANDPA-RPC-HANDOFF.md`
+- `poc/drand-beacon-verifier/README.md`
+- Upstream Materios node RPC assembly: https://github.com/Flux-Point-Studios/materios/blob/main/partnerchain/node/src/rpc.rs
+- Upstream Materios node dependencies: https://github.com/Flux-Point-Studios/materios/blob/main/partnerchain/node/Cargo.toml
 - `docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md`
 - `docs/COORDINATION/IMMORTAL_MASTER_FRONT_MATRIX_v0.1.md`
 
