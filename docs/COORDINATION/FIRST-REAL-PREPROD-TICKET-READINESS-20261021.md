@@ -253,3 +253,19 @@ Focused TypeScript test vectors now cover finite/missing/mismatched TTL and the 
 The Cardano Adapter Sale Conformance workflow passed on earlier code revision `80da6d2` (including its settlement conformance test and browser build), before the output-specific minimum-ADA guard was added. That result is not evidence for the newest commit. The output-specific runtime CML call, full predeploy gate, Haskell/Plutus re-export, script hash/size review and native-ledger basket execution remain subject to current-head verification.
 
 The quote-set schema is still code on a working branch only. The currently deployed Oracle State UTxO has not been shown to contain the additive quote-set constructor, and no Oracle State UTxO was updated. Multi-asset settlement, the real wallet Issue, and the fully permissionless/trustless V3 transition therefore remain open.
+
+
+## 2026-10-21 follow-up — active Oracle quote-set state remains unobserved
+
+The current branch can decode the legacy five-field Oracle datum and the additive multi-quote constructor, and the Issue UI surfaces only assets for which the exact singleton datum supplies a unique, fresh quote from the configured publisher. That is an application fail-closed boundary, not an Oracle deployment or price-source qualification.
+
+The currently identified bootstrap script `audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs` creates a **legacy ADA-only** datum when the singleton is absent and merely reuses an existing singleton when one is present. It does not upgrade an existing singleton to `OracleQuoteSet`; the DApp consumes the active datum and does not publish one. A repository-wide branch-tree review found no separate current-branch quote-set publisher in the obvious Oracle/quote/settlement surfaces. No live singleton was queried or changed in this step, so the active network's actual datum shape remains UNKNOWN.
+
+### Resulting first-Issue gate
+
+- A controlled ADA-only Issue can be evaluated only after the exact live singleton is observed and proven to contain a valid ADA quote, the quote window/TTL is compatible, and the final completed Treasury output passes exact integer-value and dynamic min-ADA checks.
+- A PRE/NIGHT/mixed basket remains locked unless the live singleton contains exactly one qualified quote for every nonzero asset in the final Treasury Value, including ADA, and the quote set is tied to the configured publisher/source contract.
+- A quote list is not automatically trustless: the selected quote still relies on the configured publisher and does not prove external market truth. Do not describe this additive schema as achieving the project's 100% permissionless/trustless target.
+- The next operational evidence is an exact live singleton read + source-qualification packet. Only after that evidence exists should a state-update transaction be prepared; any live signature/submission remains separately authorized. No quote price was fabricated and no Preprod transaction was signed or sent during this work.
+
+This gap is independent of the successful TypeScript sale conformance/build. B2 carrier and Integration Lab results are still tracked separately and are not substituted for Oracle source, live-state or wallet-Issue evidence.
