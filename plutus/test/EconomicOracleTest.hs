@@ -49,10 +49,10 @@ main = do
   mixedBasketOutcome <- runMixedAssetBasketRequiresPerAssetQuoteCase
   quoteSetBasketOutcome <- runMultiAssetQuoteSetBasketCase
   duplicateQuoteOutcome <- runDuplicateOracleQuoteFailsClosedCase
-  legacyFallbackGapOutcome <- runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase
+  pythQuoteBindingGapOutcome <- runLegacyOracleStateRemainsSoleConfiguredPriceSourceCase
   if and outcomes && poolOutcome && fixedAdaSettlementOutcome && exactAdaSettlementOutcome
       && adaRoundingBoundaryOutcome && mixedBasketOutcome && quoteSetBasketOutcome
-      && duplicateQuoteOutcome && legacyFallbackGapOutcome
+      && duplicateQuoteOutcome && pythQuoteBindingGapOutcome
     then pure ()
     else exitFailure
 
@@ -306,26 +306,36 @@ runDuplicateOracleQuoteFailsClosedCase = do
           authorizedPublisher
           basket)
 
--- Negative control / blocker reproduction for the Pyth source-to-economics seam.
+-- Characterization test for the still-open Pyth -> MintPolicy source binding.
 --
--- A quote-like reference input carrying a conflicting price is deliberately
--- NOT the configured OracleState singleton. The current Economic.totalUsdmValue
--- ignores it and still values the Treasury basket from the legacy singleton.
--- This test documents the current gap; it does NOT certify the path as safe.
--- When MintPolicy is actually bound to the Pyth carrier, replace this
--- characterization test with native-ledger acceptance/rejection vectors.
-runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase :: IO Bool
-runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase = do
-  result <- try evaluateSettlement :: IO (Either SomeException Integer)
-  let observedLegacyAuthority =
-        case result of
+-- The candidate is deliberately unqualified (it carries no configured Oracle
+-- singleton). It cannot be used by Economic.totalUsdmValue. If the configured
+-- legacy singleton is also present, the current function continues to value
+-- the basket from that legacy datum, not from the candidate quote.
+--
+-- This documents the current wiring gap; it is NOT a passing safety proof and
+-- it does not emulate a signed Pyth update or execute the full MintPolicy.
+-- Replace this characterization with ledger-level positive/negative vectors
+-- once an additive Pyth-bound economics entrypoint is implemented.
+runLegacyOracleStateRemainsSoleConfiguredPriceSourceCase :: IO Bool
+runLegacyOracleStateRemainsSoleConfiguredPriceSourceCase = do
+  candidateOnlyResult <- try evaluateCandidateOnly :: IO (Either SomeException Integer)
+  candidateAndLegacyResult <- try evaluateCandidateAndLegacy :: IO (Either SomeException Integer)
+  let candidateCannotAuthorize =
+        case candidateOnlyResult of
+          Left _ -> True
+          Right _ -> False
+      legacyRemainsAuthoritative =
+        case candidateAndLegacyResult of
           Right actual -> actual == legacyPrice && actual /= candidatePrice
           Left _ -> False
   putStrLn
-    ( (if observedLegacyAuthority then "OBSERVED " else "FAIL ")
-        <> "OPEN SOURCE-TO-ECONOMICS GAP: legacy OracleState quote controls valuation despite a conflicting unqualified candidate quote"
-    )
-  pure observedLegacyAuthority
+    (prefix candidateCannotAuthorize
+      <> "unqualified quote datum alone cannot value Treasury through current Economic entrypoint")
+  putStrLn
+    (prefix legacyRemainsAuthoritative
+      <> "current Economic entrypoint still values from configured legacy OracleState when candidate quote disagrees")
+  pure (candidateCannotAuthorize && legacyRemainsAuthoritative)
   where
     candidatePrice = 200
     legacyPrice = 100
@@ -356,7 +366,14 @@ runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase = do
             [ OracleQuote assetPolicy assetName legacyPrice now authorizedPublisher
             ])
         )
-    evaluateSettlement =
+    evaluateCandidateOnly =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo [unqualifiedCandidateReference])
+          oracleState
+          authorizedPublisher
+          assetBasket)
+    evaluateCandidateAndLegacy =
       evaluate
         (totalUsdmValue
           (transactionInfo [unqualifiedCandidateReference, configuredLegacyReference])
