@@ -231,6 +231,16 @@ The ledger decoder fix and the remaining streaming-decoder/submission error are 
 
 **Not yet ready to claim an IMMORTAL-relevant ledger result:** the actual next gate is a reproducible node 11.2/Dijkstra test runtime, then the exact upstream nested-transaction integration tests with the remaining top-level Guard submission property passing. After that, add the minimal sponsor batch and inspect the serialized whole transaction, aggregate balance/collateral, script contexts/ExUnits and ledger result. It must be clear whether the tested path uses only key guards or the PlutusV4 top-level Guard path.
 
-The tool session used for this assessment has no installed `cardano-cli`, `cardano-node`, `cabal` or `nix`, and its shell cannot resolve public GitHub hosts, so the CLI-format smoke test could not be executed inside this session. No pretense of CLI, local-node or ledger execution is made. Repository upstream metadata has been inspected; no runtime fixture has been generated.
+An isolated PowerShell harness has now been added at `audit/cardano-integration/dijkstra-cli-wire-preflight.ps1`. It uses a generated ephemeral payment key, a locally generated testnet address, synthetic nonexistent transaction inputs, the Dijkstra sub-transaction guard, and the CLI's raw build/sign/txid/embed pipeline. It records a machine-readable `evidence.json`, including serialized CBOR sizes for the signed sub-transaction, top-level body, and signed top-level transaction. The generated signing key is deleted in the script's `finally` block.
+
+Run from the IMMORTAL repository root on Windows with the official CLI 11.4.0.0 or later:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\audit\cardano-integration\dijkstra-cli-wire-preflight.ps1 -CardanoCli "C:\path\to\cardano-cli.exe"
+```
+
+The harness deliberately does **not** submit or ledger-evaluate its transaction. A `PASS` means only that local CLI serialization/signing/ID handling and embedding succeeded. It does not prove UTxO validity, fee balancing, `maxTxSize` compliance, PlutusV4 Guard support, a sponsorship result, or Cardano ledger acceptance. The dummy transaction must never be submitted.
+
+The harness could not be executed in this session: no `cardano-cli`, `cardano-node`, `cabal`, `nix`, or PowerShell runtime is installed, and the shell cannot resolve public GitHub hosts. The script has been source-checked against the command shapes and official golden-test sequence in `cardano-cli 11.4.0.0`, but runtime success is **NOT VERIFIED**. The next evidence should be the actual local `evidence.json`, followed (only after a usable Dijkstra node is available) by ledger evaluation of a separate deliberately balanced test batch.
 
 The experiment remains separated from active PRE-RICH: no change to `cabal.project`, Plutus pin, script version, Reveal, reference-script remediation, transaction deployment, ProtocolUsageFee or G1 is authorized by this research.
