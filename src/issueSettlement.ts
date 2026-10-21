@@ -13,6 +13,12 @@ import { C, Data } from 'lucid-cardano'
  * completed transaction body. MintPolicy/Economic remain authoritative on-chain.
  */
 export const CANONICAL_ORACLE_PRECISION = 1_000_000n
+/**
+ * The fixed ADA quantity excluded from economic valuation by the current
+ * Plutus Economic.totalUsdmValue implementation. This mirrors the existing
+ * OracleTypes.minUtxoLovelace constant; it is NOT the ledger's output-specific
+ * minimum ADA, which depends on the serialized output and coinsPerUtxoByte.
+ */
 export const CANONICAL_ADA_MIN_UTXO_LOVELACE = 1_600_000n
 export const CANONICAL_ORACLE_MAX_AGE_MS = 3_600_000n
 
@@ -314,8 +320,10 @@ function oracleQuoteForUnit(
 /**
  * Build a concrete Treasury output basket from quantities selected by the
  * buyer, using only quotes decoded from the authenticated Oracle State datum.
- * The builder adds the canonical ADA minimum-UTxO amount. It then mirrors the
- * exact on-chain integer conversion and requires equality with the USDM target.
+ * The builder adds the fixed ADA valuation-exclusion floor mirrored by the
+ * current Plutus contract. It then mirrors the exact on-chain integer
+ * conversion and requires equality with the USDM target. The actual ledger
+ * minimum ADA for the completed output is a separate fail-closed check.
  * This is a preflight check only; MintPolicy's on-chain equality remains final.
  */
 export function buildIssueSettlementAssets(
@@ -599,7 +607,7 @@ function normalizeExpectedTreasuryAssets(expectedAssets: Readonly<Record<string,
     normalized[unit] = quantity
   }
   if (normalized.lovelace === undefined || normalized.lovelace < CANONICAL_ADA_MIN_UTXO_LOVELACE) {
-    throw new Error('Expected Treasury output must include the canonical ADA min-UTxO floor')
+    throw new Error('Expected Treasury output must include the fixed ADA economic-exclusion floor')
   }
   return normalized
 }
@@ -723,7 +731,7 @@ export function assertCompletedTreasuryAdaSettlement(
   expectedLovelace: bigint,
 ): void {
   if (expectedLovelace <= CANONICAL_ADA_MIN_UTXO_LOVELACE) {
-    throw new Error('Treasury settlement must include the ADA minimum-UTxO floor and positive economic ADA')
+    throw new Error('Treasury settlement must include the fixed ADA economic-exclusion floor and positive economic ADA')
   }
   assertCompletedTreasurySettlement(completedTx, treasuryAddress, { lovelace: expectedLovelace })
 }
