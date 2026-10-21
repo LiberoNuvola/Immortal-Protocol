@@ -116,7 +116,7 @@ const validatorCandidates = blueprint.validators?.filter((entry) => typeof entry
 const validatorEntry =
   validatorCandidates.find((entry) =>
     entry.datum?.purpose === 'spend' ||
-    /(?:^|\\.)drand_beacon_verifier\\.spend$/.test(entry.title ?? ''),
+    (typeof entry.title === 'string' && entry.title.endsWith('drand_beacon_verifier.spend')),
   ) ??
   (validatorCandidates.length === 1 ? validatorCandidates[0] : undefined)
 if (!validatorEntry) {
