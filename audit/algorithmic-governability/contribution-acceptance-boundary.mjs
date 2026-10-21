@@ -38,7 +38,7 @@ const challenge = (status, claim) => {
   if (typeof claim.reason !== 'string' || claim.reason.trim().length < 12) {
     return { status, accepted: false }
   }
-  if (claim.category !== 'SECURITY' && !claim.evidenceRef) {
+  if (claim.category !== 'SECURITY' && (typeof claim.evidenceRef !== 'string' || claim.evidenceRef.trim().length === 0)) {
     return { status, accepted: false }
   }
   return { status: 'CHALLENGED', accepted: true, category: claim.category }
@@ -113,6 +113,13 @@ const noReason = challenge('ELIGIBLE', { category: 'SCOPE_MISMATCH', reason: 'I 
 assert.equal(noReason.accepted, false)
 assert.equal(noReason.status, 'ELIGIBLE',
   'a preference without a concrete reason does not create a valid challenge')
+const emptyEvidenceChallenge = challenge('ELIGIBLE', {
+  category: 'PROVENANCE',
+  reason: 'The source provenance cannot be reproduced.',
+  evidenceRef: '   ',
+})
+assert.equal(emptyEvidenceChallenge.accepted, false,
+  'a non-security challenge requires a non-empty evidence reference')
 
 const evidencedChallenge = challenge('ELIGIBLE', {
   category: 'FAILING_CHECK',
@@ -269,14 +276,13 @@ assert.equal(autoMergeEligible({
   challengeResolutionReason: 'The concern was checked against the previous head.',
   challengeResolutionCommitSha: 'old-head',
 }), false, 'challenge disposition bound to an old head must be reassessed')
-assert.equal(autoMergeEligible({
+assert.equal(challengeAllowsAutoMerge({
   ...eligiblePR,
-  approved: true,
-  requiredChecksPass: true,
-  approvalCommitSha: 'abc123',
   challengeState: 'RESOLVED_FIXED',
-  challengeResolutionRecorded: true,
+  challengeResolutionRef: 'issue://7/disposition/4',
+  challengeResolutionReason: 'Fix was claimed, but the evidence is stale.',
   challengeResolutionCommitSha: 'abc123',
+  requiredChecksPass: true,
   evidenceCommitSha: 'different-head',
 }), false, 'claiming a fix cannot override stale evidence')
 assert.equal(autoMergeEligible({
