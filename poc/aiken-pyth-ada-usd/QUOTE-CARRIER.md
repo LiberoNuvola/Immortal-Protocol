@@ -24,7 +24,7 @@ The Pyth ADA/USD price/exponent also still needs a governed conversion into the 
 CI uses synthetic datum/context tests and compilation only. It does not prove a signature or ledger acceptance.
 
 
-## Latest isolated carrier CI
+## Historical isolated carrier CI (before transition-shape hardening)
 
 Run [Isolated Pyth ADA USD Probe #12](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39602416931) passed on commit `7298455cd01ee73915d294e713fbb8ef355f7e8a`. The `aiken check` phase reports 13 synthetic tests passing, including the original nine price/feed/freshness checks plus:
 - exact fresh quote tuple accepted;
