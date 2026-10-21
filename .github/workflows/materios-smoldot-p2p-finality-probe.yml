@@ -1,6 +1,12 @@
 name: Materios Smoldot P2P Finality Probe
 
 on:
+  # Temporary one-shot trigger for the revised native-log diagnostic probe.
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - poc/materios-smoldot/capture-finality.mjs
   workflow_dispatch:
     inputs:
       target_block_number:
