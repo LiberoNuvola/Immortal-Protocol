@@ -261,3 +261,17 @@ This establishes **source-level Haskell build/conformance and TypeScript settlem
 The isolated Pyth Aiken carrier now calls a shared `quote_carrier_transition_shape_is_valid` predicate from the actual transition validator and tests four grouped negative cases: missing/duplicate carrier script inputs and outputs, missing/duplicate singleton authority quantity, changed continuing address/value, and invalid input datum or an output quote not matched to the update.
 
 [Isolated Pyth ADA USD Probe run 39604431999](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604431999) passed on exact commit `5c35530e813e1a2ed43d8486eebae1dd058ee1ed`, including `aiken check` and Plutus V3 compilation. This strengthens the synthetic state-transition boundary but is not a signed-update ledger transaction. The existing Haskell MintPolicy is still not wired to consume the carrier quote, and USD↔USDM conversion remains unresolved.
+
+
+## 8.12 Exact-rational Pyth conversion is now a tested design candidate, not a deployed valuation path
+
+The Pyth feasibility probe now contains a pure helper `pyth_ada_usd_to_usdm_subunits` that converts the signed ADA/USD raw price and exponent into integer USDM sub-units without floating point or early price rounding. The helper accepts the ratio `D = USD per 1 USDM` explicitly as numerator/denominator; the code does not silently assume parity. It reuses the existing lovelace/ADA and USDM-subunit scaling conventions, while bounding the exponent as an explicit caller-supplied resource parameter.
+
+[Isolated Pyth ADA USD Probe run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on SHA `c05267ca202bae85332870ef4c98b8972175d283`, the same probe and carrier source blobs now present on this branch:
+- raw feed/freshness/conversion module: 15 tests passed;
+- quote-carrier module: 12 tests passed;
+- Aiken summary: 27 checks, 0 errors, 0 warnings;
+- Plutus V3 build: success;
+- quote-carrier compiled validator code field: 8,363 bytes (not the full transaction size).
+
+**Still OPEN:** `D) is not yet selected or authenticated by a governing source-of-truth rule, and the helper is not invoked by the carrier transition or Haskell Plutus V2 MintPolicy. It is neither price-oracle evidence nor authority to treat USD as USDM. Integrating it into production requires the canonical rule for `D), an on-chain binding from the Pyth-verified raw quote to the exact converted value consumed by `MintPolicy.atomicTreasuryPaymentValid`, and native-ledger positive/tamper-negative transactions including the Pyth zero-withdrawal verification in the same transaction. No production validator or state was changed by this test candidate.
