@@ -49,6 +49,8 @@ The following require the existing stronger review and evidence path; they canno
 
 A test-only PR is excluded if its expected result changes the meaning of a normative requirement. File paths alone do not determine eligibility: reviewers must consider semantic effect.
 
+For repository automation, the live evidence gate reports known normative and governance-control-plane changes as `STRONGER_REVIEW_REQUIRED`. The gate remains failing until an authorized maintainer records stronger-review clearance with the exact head-bound label `governance/strong-review-cleared-<first-12-hex-of-current-head>`. This clearance does not make the PR eligible for the reduced path and does not replace the required GitHub approval or other required CI checks. Any new head invalidates the clearance label.
+
 ## 3. Evidence package
 
 A PR claiming the evidence-gated path must include this declaration in its description. Mark each item accurately; do not check a box merely because a workflow exists.
@@ -132,7 +134,7 @@ A valid challenge has an explicit lifecycle; it is neither an unlimited silent v
 - **RESOLVED_FIXED:** a blocker has been corrected on the current head. Evidence and required checks must be rerun or reconfirmed for that head.
 - **UPHELD:** the challenge established a blocker. The affected head is not eligible for Auto-merge; any correction requires a new evaluation.
 
-Only a recorded disposition tied to the current head can clear a valid challenge for the reduced merge path. The disposition should state the category, rationale, relevant evidence, and who made the repository-process decision. For sensitive security cases, a public non-sensitive summary may replace the details.
+Only a recorded disposition tied to the current head can clear a valid challenge for the reduced merge path. In the current repository gate, an authorized maintainer records this disposition using exactly `governance/challenge-cleared-<first-12-hex-of-current-head>` and removes the active challenge/hold label; the gate rejects stale or ambiguous clearance labels. The disposition should state the category, rationale, relevant evidence, and who made the repository-process decision. For sensitive security cases, a public non-sensitive summary may replace the details. This label convention is enforced through repository permissions and is not cryptographic proof; required GitHub review remains separate.
 
 An overdue challenge must never be converted automatically into approval or rejection. If nobody adjudicates it, the PR stays blocked and its unresolved status remains visible. This exposes a stalled decision but cannot, by itself, eliminate stalling. Independent appeal requires additional authorized reviewers or a future community process; the repository must not claim those exist until they are actually available and configured.
 
