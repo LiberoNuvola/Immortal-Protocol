@@ -85,6 +85,10 @@ jobs:
         working-directory: plutus
         run: cabal test economic-oracle-tests
 
+      - name: Pyth quote-carrier binding conformance
+        working-directory: plutus
+        run: cabal test pyth-quote-carrier-binding-tests
+
       - name: Golden vector conformance
         working-directory: plutus
         run: cabal test v3-golden-vector-tests

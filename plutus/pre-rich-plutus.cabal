@@ -20,6 +20,7 @@ library
         GameRules
         BeaconRegistry
         Economic
+        PythQuoteCarrierBinding
         B1PrizePool
         CounterValidator
         MintPolicy
@@ -140,6 +141,19 @@ test-suite economic-oracle-tests
     type: exitcode-stdio-1.0
     hs-source-dirs: test
     main-is: EconomicOracleTest.hs
+    build-depends:
+        base ^>=4.18.2,
+        bytestring,
+        plutus-core ^>=1.67.0.0,
+        plutus-ledger-api ^>=1.67.0.0,
+        plutus-tx ^>=1.67.0.0,
+        pre-rich-plutus
+    default-language: Haskell2010
+
+test-suite pyth-quote-carrier-binding-tests
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: PythQuoteCarrierBindingTest.hs
     build-depends:
         base ^>=4.18.2,
         bytestring,
