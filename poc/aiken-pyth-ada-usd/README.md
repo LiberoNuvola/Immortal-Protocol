@@ -36,3 +36,17 @@ Further gates before considering integration:
 5. Verify that the on-chain value used by `MintPolicy.atomicTreasuryPaymentValid` is exactly the Pyth-derived, source-verified value, not a separate stale legacy OracleDatum quote. If this cannot be proven without changing normative semantics, stop at this probe.
 
 No production source, deployment or protocol state is changed by this package.
+
+## 2026-10-21 follow-up — exact-rational conversion candidate, not yet an economic decision
+
+The isolated `lib/immortal/ada_usd_probe.ak` now includes a pure `pyth_ada_usd_to_usdm_subunits` candidate. It keeps the signed Pyth raw price/exponent until one exact integer conversion, uses the existing `1,000,000` lovelace-per-ADA and `100` USDM-subunits-per-USDM conventions, and accepts an explicit rational parameter `D = USD per 1 USDM` as numerator/denominator. It does **not** default `D) to 1:1, does not select the ratio, and is not called by the quote-carrier or production settlement validators.
+
+The new vectors cover:
+- an explicit synthetic `D = 1 USD/USDM` case;
+- a raw-price boundary where rounding the feed price first would change the answer;
+- synthetic `D = 2` and `D = 3/2) cases proving that the code does not silently assume USD/USDM parity;
+- a non-negative feed exponent and invalid ratios/amounts/exponents.
+
+[Run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on commit `c05267ca202bae85332870ef4c98b8972175d283`, whose probe source is byte-identical to this working branch. The run reports 15 tests passed in the raw-feed/conversion module, 12 passed in the quote-carrier module, and 27 Aiken checks with zero errors/warnings. Both `aiken check` and `aiken build` passed. The quote-carrier compiled-code field is now 8,363 bytes; this is validator code size, not full transaction CBOR.
+
+**The key blocker has narrowed, not closed:** the function’s `D) parameter is still a fixture/config input. No authoritative source, on-chain singleton, governance policy, precision/freshness contract, or conservative admissibility rule for USD per USDM has been qualified. It must not be copied into the real MintPolicy as an off-chain value, and raw ADA/USD may not be used as if it were USDM price. The helper remains an isolated design/conformance candidate.
