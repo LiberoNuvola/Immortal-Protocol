@@ -112,9 +112,16 @@ if (walletUtxos.length === 0 || walletBalance < ADA_LOCK + 5_000_000n) {
 }
 
 const blueprint = JSON.parse(await readFile('plutus.json', 'utf8'))
-const validatorEntry = blueprint.validators?.find((entry) => entry.purpose === 'spend' && typeof entry.compiledCode === 'string')
+const validatorCandidates = blueprint.validators?.filter((entry) => typeof entry.compiledCode === 'string') ?? []
+const validatorEntry =
+  validatorCandidates.find((entry) =>
+    entry.datum?.purpose === 'spend' ||
+    /(?:^|\\.)drand_beacon_verifier\\.spend$/.test(entry.title ?? ''),
+  ) ??
+  (validatorCandidates.length === 1 ? validatorCandidates[0] : undefined)
 if (!validatorEntry) {
-  throw new Error('Aiken blueprint contains no spend validator with compiledCode')
+  throw new Error('Aiken blueprint contains no unambiguous spend validator with compiledCode: ' +
+    JSON.stringify(validatorCandidates.map((entry) => ({ title: entry.title, purpose: entry.datum?.purpose }))))
 }
 const script = { type: 'PlutusV3', script: validatorEntry.compiledCode }
 const scriptAddress = validatorToAddress(NETWORK, script)
