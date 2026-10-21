@@ -15,7 +15,7 @@ rm -f "$FIFO" "$STATUS"
 mkfifo "$FIFO"
 printf 'YACI_STARTUP=starting\n' > "$STATUS"
 
-nohup yaci-devkit up --enable-kupomios --interactive < "$FIFO" > "$LOG" 2>&1 &
+nohup yaci-devkit up --component node yaci-store --enable-kupomios --interactive < "$FIFO" > "$LOG" 2>&1 &
 cli_pid=$!
 printf '%s\n' "$cli_pid" > "$OUT/yaci.pid"
 
