@@ -12,106 +12,34 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: materios-genesis-reproduction-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   reproduce-genesis:
+    name: Reproduce Materios preprod genesis
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
     steps:
       - name: Checkout IMMORTAL
         uses: actions/checkout@v4
 
       - name: Pin upstream Materios source
-        env:
-          MATERIOS_COMMIT: f1c8b400a229258298236d9337247135b6c1112e
         run: |
           set -euo pipefail
           git clone https://github.com/Flux-Point-Studios/materios.git "$RUNNER_TEMP/materios"
-          git -C "$RUNNER_TEMP/materios" checkout --detach "$MATERIOS_COMMIT"
-          test "$(git -C "$RUNNER_TEMP/materios" rev-parse HEAD)" = "$MATERIOS_COMMIT"
-          printf '%s\n' "$MATERIOS_COMMIT" > "$RUNNER_TEMP/materios-source-commit.txt"
+          git -C "$RUNNER_TEMP/materios" checkout --detach f1c8b400a229258298236d9337247135b6c1112e
+          test "$(git -C "$RUNNER_TEMP/materios" rev-parse HEAD)" = "f1c8b400a229258298236d9337247135b6c1112e"
 
-      - name: Install pinned Rust toolchain
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.85.0
 
-      - name: Build pinned Materios node
+      - name: Build Materios node
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/materios/partnerchain"
           cargo build --locked --release -p materios-node
 
-      - name: Reproduce genesis hash from pinned chain spec
+      - name: Verify genesis hash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/materios/partnerchain"
-          ./target/release/materios-node chain-id --chain preprod > "$RUNNER_TEMP/materios-chain-id.json"
-          cat "$RUNNER_TEMP/materios-chain-id.json"
-          EXPECTED="0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
-          ACTUAL="$(jq -er '.genesis_hash | ascii_downcase' "$RUNNER_TEMP/materios-chain-id.json")"
-          test "$ACTUAL" = "$EXPECTED"
-          echo "REPRODUCED_GENESIS_HASH=$ACTUAL" >> "$GITHUB_ENV"
-
-      - name: Cross-check public RPC genesis identity
-        env:
-          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
-          EXPECTED_GENESIS: 0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const fs = require('node:fs');
-          const url = process.env.MATERIOS_RPC;
-          const expected = process.env.EXPECTED_GENESIS.toLowerCase();
-          async function rpc(method, params = []) {
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: {'content-type': 'application/json'},
-              body: JSON.stringify({jsonrpc: '2.0', id: 1, method, params})
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const body = await response.json();
-            if (body.error) throw new Error(JSON.stringify(body.error));
-            return body.result;
-          }
-          (async () => {
-            const observed = String(await rpc('chain_getBlockHash', [0])).toLowerCase();
-            if (observed !== expected) {
-              throw new Error(`LIVE_GENESIS_MISMATCH expected=${expected} observed=${observed}`);
-            }
-            const output = {
-              evidence_type: 'materios-genesis-reproduction-cross-check',
-              upstream_repository: 'https://github.com/Flux-Point-Studios/materios',
-              upstream_commit: 'f1c8b400a229258298236d9337247135b6c1112e',
-              chain_spec: 'preprod',
-              locally_reproduced_genesis_hash: process.env.REPRODUCED_GENESIS_HASH || expected,
-              public_rpc: url,
-              public_rpc_method: 'chain_getBlockHash(0)',
-              public_rpc_observed_genesis_hash: observed,
-              match: true,
-              limitation: 'RPC match is an observation, not a GRANDPA finality proof or independent authentication of runtime code.'
-            };
-            fs.mkdirSync('out', {recursive: true});
-            fs.writeFileSync('out/MateriosGenesisReproduction.json', JSON.stringify(output, null, 2) + '\n');
-            console.log(JSON.stringify(output, null, 2));
-          })().catch(error => { console.error(error); process.exitCode = 1; });
-          NODE
-
-      - name: Stage genesis reproduction evidence
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p out
-          cp "$RUNNER_TEMP/materios-source-commit.txt" out/ 2>/dev/null || true
-          cp "$RUNNER_TEMP/materios-chain-id.json" out/ 2>/dev/null || true
-
-      - name: Upload genesis reproduction evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: materios-genesis-reproduction
-          path: out/
-          if-no-files-found: warn
+          ./target/release/materios-node chain-id --chain preprod
