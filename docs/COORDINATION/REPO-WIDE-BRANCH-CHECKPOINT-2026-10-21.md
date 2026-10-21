@@ -857,3 +857,41 @@ The result must be stated as **three closed semantic/application decisions with 
 
 This reconciles policy ownership only; it does not close Issue #20, certify the current branch on Preprod, or approve a release. For the larger review, Notion's historical pages remain useful provenance, but the Control Center and this checkpoint must identify which dated decision has current authority. Overall audit is still **PARTIAL / OPEN**.
 
+
+
+### 10.24 Complete live branch tree census — 2026-10-21
+
+A fresh GitHub REST branch list returned **25 branches**. The recursive tree endpoint was fetched for every listed branch HEAD, and all 25 tree responses returned `truncated=false`. The table below is the live structural manifest summary, not the semantic audit ledger. `Entries` includes both file blobs and tree entries; `Blob files` counts paths whose entry type is blob; `distinct blob SHAs (within branch)` deduplicates repeated content within that one tree only.
+
+| Existing branch | HEAD SHA at census | Tree entries | Blob files | Distinct blob SHAs within branch | Truncated |
+|---|---|---:|---:|---:|---|
+| `audit/adapter-sale-conformance` | `272413a38bb882ad1313ea63491697c11b8e8b38` | 383 | 331 | 320 | false |
+| `audit/claim-b1-conformance` | `1e64ec9f31ba50e04e36b4576ba66d73bfefc0a8` | 377 | 328 | 317 | false |
+| `audit/kernel-invalid-class-fail-closed` | `50e80bd1787412bc62a582d95c8fb653bd2baa3a` | 380 | 329 | 318 | false |
+| `audit/p2-8-b1-baseline-size-2026-09-21` | `d73f39199ae53e79e415daa68d91fe2cd92a62c2` | 380 | 329 | 318 | false |
+| `audit/p2-8-b1-cardano-ledger-runner` | `9ec325e1ca7be43d573ce71560824d9134e1bea1` | 635 | 563 | 557 | false |
+| `audit/p2-8-b1-inline-haskell-uplc-diagnostic-2026-09-21` | `b7cb39a708755f7bd0b3faccca79b3f4e5f58b1c` | 381 | 330 | 319 | false |
+| `audit/p2-8-b1-inline-runtime-diagnostic-2026-09-21` | `f84b37ad14d4c7bf5ad6141ae624c71c469ba5f9` | 381 | 330 | 319 | false |
+| `audit/p2-8-b1-lucid-evolution-2026-09-21` | `ace1e78bca47562b7cbecb7f47ddb45de9f89bfc` | 384 | 331 | 320 | false |
+| `audit/p2-8-b1-reference-budget-diagnostic-2026-09-21` | `259d7dc21f135c1af9ec6e6c8418cdc074618300` | 381 | 330 | 319 | false |
+| `audit/p2-8-b1-reference-scripts-2026-09-21` | `c55b6e82d76551c267d91078f48750ce5c469750` | 524 | 459 | 453 | false |
+| `audit/p2-8-reveal-size-2026-09-21` | `3afb09b341e44ef3ba4541be74b4bd227cda36b4` | 377 | 328 | 317 | false |
+| `b1-hardening` | `c561393e7eb842529aeaa272377e5afe0138d085` | 418 | 359 | 350 | false |
+| `backup/main-before-curated-promotion-2026-09-24` | `d861329e4ff85ed8255176717de9d54f93ad871f` | 228 | 199 | 190 | false |
+| `copilot/fix-real-preprod-reveal-job` | `3c845c20314f952a859db3e48fdba948cebc8607` | 853 | 756 | 749 | false |
+| `feat/pre-rich-game-ui` | `9ba77f967fa8f40395bef8c6cee77bf449d94dad` | 858 | 759 | 742 | false |
+| `fix/cardano-lab-yaci-info` | `b8530c26ab40531f7f8b7965dc6f74bd05ec7850` | 848 | 751 | 744 | false |
+| `main` | `97b09a38742098f17a61eb07734c401aeedccc06` | 853 | 756 | 749 | false |
+| `merge/workflow-b-closed-main` | `7bca8d91b65d7af1261d8b7cc4f28f496a73fcba` | 859 | 762 | 755 | false |
+| `ops/b2-preprod-new-workflow` | `30f7cb46b6d798919f6ba323770a78ed27ac596c` | 852 | 755 | 748 | false |
+| `ops/b2-preprod-zero-input-dispatch` | `151834415a1db922b008eabe93b224cfd83d3b14` | 846 | 749 | 742 | false |
+| `ops/expose-b2-preprod-dispatch` | `b2a1a14713289a6a82eb59b4d3483d891eb797ab` | 846 | 749 | 742 | false |
+| `release/issue-admission-boundary-squash` | `5b04f0c005bc983dd9be6427d78ff232e0240f20` | 848 | 751 | 744 | false |
+| `release/public-main-curated-2026-09-24` | `04f2684244ddbf26946980ab764e4336fd2ab0a7` | 557 | 489 | 483 | false |
+| `work/b3-materios-provenance-evidence` | `2778d3e107f45ee15157fff8ef894905a72070ea` | 1110 | 997 | 991 | false |
+| `work/immortal-green-closure` | `337da0e6bb01f8e6373ae441be74867ddc79c1e7` | 1067 | 947 | 941 | false |
+
+**Aggregate structural result:** 15,626 tree-entry occurrences across the 25 trees; 13,767 blob-path occurrences; 13,547 branch-local distinct-blob counts when summed across branches. The final number is **not** the number of globally unique blob SHAs because identical SHAs are shared between branches. The exact cross-branch unique SHA union and path-to-SHA variance matrix are not yet recomputed; no global unique-blob count is claimed.
+
+The census supersedes earlier non-current file counts such as green 940. The exact green HEAD at census was `337da0e6...`; the following checkpoint-only update changes the checkpoint blob but adds/removes no file path, so tree/file counts remain unchanged while the HEAD SHA advances. This census closes **branch-name and recursive-tree pagination/structural inventory**; it does not close semantic review, historical PR/issue reconciliation, current-head Actions review or Notion source reconciliation. No branch was created/deleted and no code or runtime state was changed.
+
