@@ -53,7 +53,7 @@ function log(message) {
 }
 function recordSyncLogObservation(target, message) {
   if (typeof target !== "string" || !target.includes("sync-service-")) return;
-  const match = /GrandPa warp sync (in progress|idle)(?: at block #(\d+) \(([^)]*)\))?/.exec(String(message));
+  const match = /GrandPa warp sync (in progress|idle)(?:\.?\s+(?:Block: #|at block #)(\d+)\s+\(([^)]*)\))?/.exec(String(message));
   if (!match) return;
   syncLogObservations.push({
     observedAt: new Date().toISOString(),
