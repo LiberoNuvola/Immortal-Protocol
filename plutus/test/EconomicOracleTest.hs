@@ -49,9 +49,10 @@ main = do
   mixedBasketOutcome <- runMixedAssetBasketRequiresPerAssetQuoteCase
   quoteSetBasketOutcome <- runMultiAssetQuoteSetBasketCase
   duplicateQuoteOutcome <- runDuplicateOracleQuoteFailsClosedCase
+  legacyFallbackGapOutcome <- runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase
   if and outcomes && poolOutcome && fixedAdaSettlementOutcome && exactAdaSettlementOutcome
       && adaRoundingBoundaryOutcome && mixedBasketOutcome && quoteSetBasketOutcome
-      && duplicateQuoteOutcome
+      && duplicateQuoteOutcome && legacyFallbackGapOutcome
     then pure ()
     else exitFailure
 
@@ -304,6 +305,64 @@ runDuplicateOracleQuoteFailsClosedCase = do
           oracleState
           authorizedPublisher
           basket)
+
+-- Negative control / blocker reproduction for the Pyth source-to-economics seam.
+--
+-- A quote-like reference input carrying a conflicting price is deliberately
+-- NOT the configured OracleState singleton. The current Economic.totalUsdmValue
+-- ignores it and still values the Treasury basket from the legacy singleton.
+-- This test documents the current gap; it does NOT certify the path as safe.
+-- When MintPolicy is actually bound to the Pyth carrier, replace this
+-- characterization test with native-ledger acceptance/rejection vectors.
+runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase :: IO Bool
+runLegacyOracleQuoteRemainsAuthoritativeWithUnqualifiedCandidateCase = do
+  result <- try evaluateSettlement :: IO (Either SomeException Integer)
+  let observedLegacyAuthority =
+        case result of
+          Right actual -> actual == legacyPrice && actual /= candidatePrice
+          Left _ -> False
+  putStrLn
+    ( (if observedLegacyAuthority then "OBSERVED " else "FAIL ")
+        <> "OPEN SOURCE-TO-ECONOMICS GAP: legacy OracleState quote controls valuation despite a conflicting unqualified candidate quote"
+    )
+  pure observedLegacyAuthority
+  where
+    candidatePrice = 200
+    legacyPrice = 100
+    assetBasket =
+      singleton
+        (CurrencySymbol assetPolicy)
+        (TokenName assetName)
+        1_000_000
+    unqualifiedCandidateReference =
+      referenceInput
+        0
+        (oracleOutputWithDatum
+          0
+          statePolicy
+          stateName
+          (OracleQuoteSet
+            [ OracleQuote assetPolicy assetName candidatePrice now authorizedPublisher
+            ])
+        )
+    configuredLegacyReference =
+      referenceInput
+        1
+        (oracleOutputWithDatum
+          1
+          statePolicy
+          stateName
+          (OracleQuoteSet
+            [ OracleQuote assetPolicy assetName legacyPrice now authorizedPublisher
+            ])
+        )
+    evaluateSettlement =
+      evaluate
+        (totalUsdmValue
+          (transactionInfo [unqualifiedCandidateReference, configuredLegacyReference])
+          oracleState
+          authorizedPublisher
+          assetBasket)
 
 prefix :: Bool -> String
 prefix passed = if passed then "PASS " else "FAIL "
