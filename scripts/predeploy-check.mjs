@@ -338,7 +338,7 @@ contains(economicHs, /lookupOracleQuote[\s\S]*?oqPublisher[\s\S]*?validOracleTim
 contains(settlementSource, /CANONICAL_ORACLE_PRECISION\s*=\s*1_000_000n/,
   'Off-chain settlement precision matches OracleTypes')
 contains(settlementSource, /CANONICAL_ADA_MIN_UTXO_LOVELACE\s*=\s*1_600_000n/,
-  'Off-chain ADA minimum-UTxO exclusion matches OracleTypes')
+  'Fixed ADA valuation-exclusion floor matches OracleTypes; output-specific ledger min ADA is checked separately')
 contains(settlementSource, /only an authenticated ADA OracleDatum quote/,
   'Legacy ADA-only fallback rejects a non-ADA datum instead of reinterpreting its quote')
 contains(settlementSource, /buildIssueSettlementAssets[\s\S]*?valuedUsdmSubunits !== target/s,
