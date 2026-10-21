@@ -344,3 +344,24 @@ The inspected `relayer/issueAuthorityServer.js` requires the upstream URL and pu
 **Result:** the repository establishes the required configuration contract but does not let this audit identify the actual live upstream authority URL, verify which service is running, or inspect its obligation derivation. Do not infer a URL from the variable names, and do not report a production fallback or a production signed configuration without environment/deployment evidence.
 
 The next concrete artifact needed is the deployed authority service's source/build identity plus its versioned configuration/evidence (secrets must remain undisclosed), sufficient to verify the producer that signs `obligationsComplete` and whether its derivation consumes G1. Until that is available, G1-specific completeness remains unproven and G1 remains OPEN.
+
+
+### 9.11 DApp consumer, deployed Pages branch, and connected deployment inventory
+
+A final cross-check compared the target branch with the exact branch configured by the repository's public Pages workflow and checked the connected deployment inventory without changing any configuration.
+
+- On `work/b3-materios-provenance-evidence`, `src/main.ts` (blob `c26c4fff3f8408e3abd835d229ab5eb689ca06b2`) imports `ISSUE_AUTHORITY_ENDPOINT`, constructs `createRemoteAuthoritativeIssueAdmissionProvider(ISSUE_AUTHORITY_ENDPOINT)`, and passes it to `mintSerialNFTWithAuthoritativeAdmission`. `src/config.ts` (blob `37c75e237e4c47ab2ea3f04f43f76ad57bf71636`) reads `VITE_ISSUE_AUTHORITY_ENDPOINT` and defaults an absent value to an empty string; the provider throws if the endpoint is empty.
+- The actual public Pages workflow on the target branch, `.github/workflows/immortal-preprod-pages.yml` (blob `9e29111a7c71e4dedf93aa5a78421a55db39ed5a`), triggers from `main`, checks out the exact `main` head, runs `npm run build`, and does not visibly inject `VITE_ISSUE_AUTHORITY_ENDPOINT`.
+- Direct comparison against current `main` confirms a more important branch divergence: `main:src/main.ts` (blob `d55ba61dab9377b338989eb56b23b8825c9f6335`) does not contain the remote authoritative Issue provider path; `main:src/config.ts` (blob `4e4dcf268c5ff01677922e2972a7e662ff87a760`) does not define `ISSUE_AUTHORITY_ENDPOINT`. Therefore the configured Pages workflow does not build the target branch's newer Issue consumer path. This is a source/workflow fact, not evidence that a particular live page was successfully deployed or is currently serving that artifact.
+- The connected GitHub repository inventory exposed only `LiberoNuvola/Immortal-Protocol`; it did not expose a separate authority-producer repository. The connected Railway project listing returned no accessible projects. These are limits of the current connected-account inventories, not proof that no external repository, hosting account, or service exists.
+
+#### Consequence
+
+There are now two distinct unclosed deployment links:
+
+1. **Frontend deployment:** the Pages workflow follows `main`, whose inspected source lacks the remote authoritative Issue consumer present on the target branch; the workflow also does not visibly inject the endpoint variable.
+2. **Authority producer:** the server-side consumer requires a configured upstream signed authority, but neither its live endpoint nor the upstream producer/build/derivation is identifiable from the inspected repository or connected deployment inventory.
+
+Do not fix either issue as part of this documentation-only G1 audit: that would require deployment/source decisions outside its permitted scope. Do not copy an endpoint from another branch, invent a URL, expose secrets, or claim the target branch is deployed. The safe next evidence is a non-secret deployment record identifying the actual Pages source commit and, separately, the upstream authority service's repository/image/build digest and a sanitized configuration proving which policy/derivation version it runs. Public endpoint values may be shared if needed; private keys and secret values must not be shared.
+
+**G1 remains OPEN.** No production code, tests, CI, deployment, V3 carrier, or Reveal semantics were changed.
