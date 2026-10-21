@@ -86,23 +86,18 @@ export async function observeGenesisTreasuryState(
   const oracleUtxos: UTxO[] = await input.lucid.utxosAt(input.oracleStateAddress)
   const oracle = singletonUtxo(oracleUtxos, oracleUnit, 'Oracle State')
 
-  const oracleFields = fieldsOf(parseDatum(oracle.datum))
-  if (!oracleFields || oracleFields.length !== 5) {
-    throw new Error('OracleDatum is missing or malformed')
-  }
+  const quote = decodeOraclePriceReference(
+    oracle.datum,
+    input.prePolicyId,
+    input.preAssetNameHex,
+  )
+  const price = quote.price
+  const timestamp = quote.timestampMs
+  const publisher = quote.publisherPkh
 
-  const oraclePrePolicy = bytesOf(oracleFields[0])
-  const oraclePreName = bytesOf(oracleFields[1])
-  const price = intOf(oracleFields[2])
-  const timestamp = intOf(oracleFields[3])
-  const publisher = bytesOf(oracleFields[4])
-
-  if (oraclePrePolicy !== input.prePolicyId || oraclePreName !== input.preAssetNameHex) {
-    throw new Error('Oracle State asset identity does not match PRE')
-  }
-  if (price === null || price < 0n) throw new Error('Oracle price is invalid')
-  if (timestamp === null || timestamp < 0n) throw new Error('Oracle timestamp is invalid')
-  if (publisher !== input.oraclePublisherPkh) throw new Error('Oracle publisher mismatch')
+  if (price < 0n) throw new Error('Oracle price is invalid')
+  if (timestamp < 0n) throw new Error('Oracle timestamp is invalid')
+  if (publisher !== input.oraclePublisherPkh.toLowerCase()) throw new Error('Oracle publisher mismatch')
 
   const nowMs = input.nowMs ?? BigInt(Date.now())
   const oracleFresh = timestamp <= nowMs && nowMs - timestamp <= ORACLE_MAX_AGE_MS
