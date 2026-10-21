@@ -13,7 +13,7 @@ function eevQualification() {
     contractVersion: '3.0.0',
     deploymentApproval: {
       status: 'DEPLOYMENT_APPROVED' as const,
-      candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:${pool}',
+      candidateId: 'PRE-RICH-EEV-USDM-DIRECT-V1:' + pool,
       sourceSetId: 'test-source-set-v1',
       profileVersion: 'PRE-RICH-EEV-USDM-DIRECT-V1',
       evidenceHash: 'e'.repeat(64),
