@@ -67,6 +67,16 @@ The following rerun [#39590352022](https://github.com/LiberoNuvola/Immortal-Prot
 
 The resulting public capability picture is narrower and better evidenced than a generic RPC failure: the selected endpoint returns ordinary chain observations and storage proofs, but does not advertise either standard GRANDPA proof-delivery method, the Materios-specific execution-proof method, or `state_getCode`. This still proves only what this endpoint exposes at the time checked; it does not rule out a separate already-operating proof source.
 
+### Direct WebSocket verification — 2026-10-21
+
+The focused [Materios WebSocket GRANDPA Probe run #39592480972](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39592480972) connected to the documented public WebSocket endpoint `wss://materios.fluxpointstudios.com/preprod-rpc`, received an `rpc_methods` catalogue of **85 methods**, and confirmed both `system_chain = Materios Preprod v6` and the expected genesis hash `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
+
+The live catalogue again did not list `grandpa_proveFinality`, `grandpa_subscribeJustifications`, or `grandpa_unsubscribeJustifications`. The probe then called the first two methods directly over WebSocket (not just checking the catalogue); both returned **`-32601 Method not found`**. A `chain_getBlock` query at the RPC-reported head **2,382,015** returned `justifications: null`. That head/hash is an untrusted endpoint observation. No finality payload or justification was captured.
+
+Artifact `materios-websocket-grandpa-probe-39592480972-1`: ID `12342328397`, ZIP SHA-256 `9557340a51dc9a279136853a0ffaaa3a5fe1126297293f8f91fafdaac4936f4d`.
+
+This closes the transport ambiguity: for the selected public endpoint, it is **not merely that the HTTP catalogue hides the methods**; the actual WebSocket calls reject them too. It still does not prove that no separate already-operating proof publisher exists.
+
 Reference: [Materios Preprod RPC endpoint](https://materios.fluxpointstudios.com/preprod-rpc).
 
 ### 2. Upstream execution-proof RPC request is not an available dependency
