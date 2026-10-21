@@ -105,6 +105,7 @@ import {
   decodeAdaOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
   assertCompletedTreasurySettlement,
+  assertCompletedTreasuryMinimumAda,
   assertCompletedIssueValidityUpperBound,
   deriveIssueSettlementValidityUpperBoundMs,
 } from './issueSettlement'
@@ -1696,6 +1697,16 @@ export async function mintSerialNFT(
     treasuryPaymentAssets,
   )
   assertCompletedIssueValidityUpperBound(tx, settlementTtlSlot)
+
+  // Cardano min-ADA is output-size-dependent. Validate the actual completed
+  // Treasury output (including inline datum and asset bundle) with the same
+  // protocol parameter that configured Lucid's transaction builder.
+  const treasuryProtocolParameters = await lucid.provider.getProtocolParameters()
+  assertCompletedTreasuryMinimumAda(
+    tx,
+    treasuryAddress,
+    BigInt(treasuryProtocolParameters.coinsPerUtxoByte),
+  )
 
   // ----------------------------------------------------------
 
