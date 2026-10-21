@@ -40,6 +40,7 @@ Immutable artifact: `materios-websocket-grandpa-probe-39593013066-1`, ID `123416
 
 ## Evidence references already in the repository
 
+- [Public-data-only feasibility ruling](MATERIOS-B3-A-PUBLIC-DATA-ONLY-FEASIBILITY-2026-10-21.md)
 - [Frozen finality-source decision](MATERIOS-FINALITY-PROOF-SOURCE-DECISION-2026-10-21.md)
 - [Smoldot P2P probe results and immutable artifacts](MATERIOS-SMOLDOT-P2P-PROBE-RESULT-2026-10-21.md)
 - [WebSocket GRANDPA capability probe workflow](../../.github/workflows/materios-websocket-grandpa-probe.yml)
