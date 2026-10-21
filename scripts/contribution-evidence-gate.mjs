@@ -33,7 +33,7 @@ const CONTROL_PLANE_PATTERNS = [
   /^\.github\/(?:CODEOWNERS|dependabot\.yml)$/i,
   /^CODEOWNERS$/i,
   /^scripts\/contribution-evidence-gate\.mjs$/i,
-  /^audit\/algorithmic-governability\/contribution-acceptance-boundary\.mjs$/i,
+  /^audit\/algorithmic-governability\//i,
   /^docs\/04-guides\/(?:PUBLIC-CONTRIBUTION-WORKFLOW|GITHUB-AUTO-MERGE-INTEGRATION)\.md$/i,
   /^docs\/00-normative\//i,
   /^PRE-RICH\/docs\/GAME-ECONOMY\.md$/i,
@@ -94,6 +94,38 @@ const parseLayer = (value) => {
   return parts.length > 0 && parts.every((part) => ALLOWED_LAYERS.has(part))
 }
 
+const parseClasses = (value) => {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toUpperCase()
+  if (!/^[A-E](?:\\s*(?:,|\\+)\\s*[A-E])*$/.test(normalized)) return null
+  return [...new Set(normalized.match(/[A-E]/g))]
+}
+
+const isTestPath = (path) =>
+  /(^|\\/)(?:__tests__|tests?|test-vectors|test_vectors|conformance|fixtures|vectors)(\\/|$)/i.test(path) ||
+  /\\.(?:test|spec)\\.[a-z0-9]+$/i.test(path)
+
+const isEligiblePathForClass = (path, klass) => {
+  const markdown = /\\.(?:md|mdx)$/i.test(path)
+  switch (klass) {
+    case 'A':
+      return markdown
+    case 'B':
+      return (/^audit\\/(?!algorithmic-governability\\/).+\\.(?:mjs|cjs|js|ts|tsx|py|sh|json|ya?ml|md)$/i.test(path) ||
+        /^scripts\\/(?!contribution-evidence-gate\\.mjs$).+\\.(?:mjs|cjs|js|ts|tsx|py|sh)$/i.test(path))
+    case 'C':
+      return isTestPath(path)
+    case 'D':
+      return /^(?:CONTRIBUTING|ROADMAP)\\.md$/i.test(path) ||
+        /^docs\\/04-guides\\/.+\\.mdx?$/i.test(path) ||
+        /^\\.github\\/(?:ISSUE_TEMPLATE\\/|PULL_REQUEST_TEMPLATE\\.md$)/i.test(path)
+    case 'E':
+      return /(^|\\/)(?:RESIDUAL[_-]OBLIGATION(?:[_-]REGISTER)?|residual-obligations?)[^/]*\\.(?:md|json|ya?ml)$/i.test(path)
+    default:
+      return false
+  }
+}
+
 const classifyPullRequest = ({ body, files, headSha }) => {
   const changed = [...new Set((files ?? []).map((file) => String(file).replace(/\\/g, '/')))]
     .sort()
@@ -123,32 +155,45 @@ const classifyPullRequest = ({ body, files, headSha }) => {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Missing or placeholder declaration fields: ' + missing.join(', ')], files: changed, headSha }
   }
 
-  const klass = (values.Class ?? '').trim().toUpperCase()
-  if (!ALLOWED_CLASSES.has(klass)) {
-    return { decision: 'STRONGER_REVIEW_REQUIRED', eligible: false, reasons: ['Class is not one of the reduced-path classes A–E.'], files: changed, headSha }
+  const classes = parseClasses(values.Class)
+  if (!classes || classes.length === 0) {
+    return { decision: 'STRONGER_REVIEW_REQUIRED', eligible: false, reasons: ['Class must be declared as one or more of A–E, separated by commas or plus signs.'], files: changed, headSha }
   }
   if (!parseLayer(values.Layer)) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Layer must be one or more of Universal, Adapter, Application, Process, Audit.'], files: changed, headSha }
   }
-  if (!/^non[- ]normative\b/i.test((values['Normative status'] ?? '').trim())) {
+  if (!/^non[- ]normative\\b/i.test((values['Normative status'] ?? '').trim())) {
     return { decision: 'STRONGER_REVIEW_REQUIRED', eligible: false, reasons: ['Normative or uncertain changes require stronger review.'], files: changed, headSha }
   }
   const residual = (values['Residual-obligation impact'] ?? '').trim()
-  if (!/^(?:none\b|updated\b|unresolved\b|n\/a\b)/i.test(residual)) {
+  if (!/^(?:none\\b|updated\\b|unresolved\\b|n\\/a\\b)/i.test(residual)) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Residual-obligation impact must be declared as None, Updated, Unresolved, or N/A with a reason.'], files: changed, headSha }
+  }
+  const incompatible = changed.filter((path) => !classes.some((klass) => isEligiblePathForClass(path, klass)))
+  if (incompatible.length > 0) {
+    return {
+      decision: 'STRONGER_REVIEW_REQUIRED',
+      eligible: false,
+      reasons: ['One or more changed paths are outside the declared class scope; production or unknown paths must not enter the reduced Auto-merge path.'],
+      incompatibleFiles: incompatible,
+      files: changed,
+      headSha,
+      classes,
+    }
   }
 
   return {
     decision: 'ELIGIBLE_FOR_REDUCED_PATH',
     eligible: true,
     reasons: [
-      'Declared class and required fields are present.',
+      'Declared class(es) and required fields are present.',
+      'Each changed file matches at least one declared class A–E path boundary.',
       'Known normative/control-plane paths are not changed.',
       'This is a process-eligibility result only; required reviews and independent CI checks remain mandatory.',
     ],
     files: changed,
     headSha,
-    class: klass,
+    classes,
   }
 }
 
@@ -253,9 +298,43 @@ const selfTest = () => {
   assert.equal(wrongLayer.decision, 'INCOMPLETE')
   assert.equal(wrongLayer.eligible, false)
 
-  console.log('PASS: complete A–E declaration yields reduced-path eligibility')
+  const productionCodeUnderTestClass = classifyPullRequest({
+    body: body.replace('- Class: B', '- Class: C'),
+    files: ['src/economic-transition.ts'],
+    headSha: 'abc123',
+  })
+  assert.equal(productionCodeUnderTestClass.decision, 'STRONGER_REVIEW_REQUIRED')
+  assert.equal(productionCodeUnderTestClass.eligible, false)
+
+  const mixedClasses = classifyPullRequest({
+    body: body.replace('- Class: B', '- Class: A, C'),
+    files: ['docs/04-guides/reader.md', 'src/__tests__/reader.test.ts'],
+    headSha: 'abc123',
+  })
+  assert.equal(mixedClasses.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
+  assert.equal(mixedClasses.eligible, true)
+
+  const policyLab = classifyPullRequest({
+    body,
+    files: ['audit/algorithmic-governability/no-result-dependent-authority.mjs'],
+    headSha: 'abc123',
+  })
+  assert.equal(policyLab.decision, 'STRONGER_REVIEW_REQUIRED')
+  assert.equal(policyLab.eligible, false)
+
+  const residualRecord = classifyPullRequest({
+    body,
+    files: ['docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md'],
+    headSha: 'abc123',
+  })
+  assert.equal(residualRecord.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
+  assert.equal(residualRecord.eligible, true)
+
+  console.log('PASS: complete declaration qualifies only within class-specific path boundaries')
   console.log('PASS: normative and governance-control paths fail closed')
   console.log('PASS: absent declarations and template placeholders fail closed')
+  console.log('PASS: production code cannot be relabeled as test-only')
+  console.log('PASS: mixed classes cover every changed file')
   console.log('ALL CONTRIBUTION EVIDENCE GATE SELF-TESTS PASSED')
 }
 
