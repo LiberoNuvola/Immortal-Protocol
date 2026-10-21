@@ -52,3 +52,22 @@ test quicknet_hash_to_curve_is_deterministic() {
 
   builtin.bls12_381_g1_equal(point_a, point_b)
 }
+
+/// Captured genuine Quicknet round-42 vector, independently verified by the
+/// off-chain drand-client@1.4.2 profile. These tests exercise the actual Plutus
+/// BLS12-381 pairing verifier, not only hash-to-curve determinism.
+test quicknet_round_42_real_signature_verifies() {
+  verify_quicknet_signature(
+    42,
+    #"95a9f9f5b231b7714de1553105d8ffdf3dcda24cfdb1e689319bccf79a9c8ce430a91b811fbfaf763900bc998b5d686a",
+    #"83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a",
+  )
+}
+
+test quicknet_round_42_signature_rejected_for_round_43() {
+  verify_quicknet_signature(
+    43,
+    #"95a9f9f5b231b7714de1553105d8ffdf3dcda24cfdb1e689319bccf79a9c8ce430a91b811fbfaf763900bc998b5d686a",
+    #"83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76eae8991ef5ece45a",
+  ) == False
+}
