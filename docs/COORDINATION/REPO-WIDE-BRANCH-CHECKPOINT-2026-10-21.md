@@ -966,3 +966,38 @@ A scoped static review has been recorded against the exact blob SHAs in protocol
 The ledger now points the 16 reviewed blob identities to this review record and lists the relevant findings per SHA. A scoped static review only applies to the exact immutable content identities recorded; it does not make a source path globally reviewed across other historical versions.
 
 **Next gate:** keep the Pyth issue blocked until the source-of-truth hierarchy approves the USD/USDM conversion contract, the exact transaction-bound quote is used by the Treasury valuation predicate, and positive/negative combined V2/V3 native-ledger transactions establish the source binding and resource fit. No change to protocol code, conversion policy, V3/Reveal semantics, branch topology, runtime or ledger state resulted from this review.
+
+
+### 10.28 Semantic review slice 2 — B1 direct-USDM EEV and Issue admission — 2026-10-21
+
+A targeted source/evidence review is recorded in [SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md](SEMANTIC-REVIEW-B1-EEV-ISSUE-ADMISSION-2026-10-21.md), review commit `b61aebd95abb4fa7c3774d6eddcb4cd9e6902367`. The machine ledger update is commit `7ab7f818bae1363ba8cec7794c224848e7a552c6`.
+
+#### Corrected evidence classification for P-01
+
+GitHub Actions run [#39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) completed successfully and uploaded artifact `immortal-preprod-eev-approved` (artifact ID `12324421376`). The artifact was downloaded and inspected. It contains:
+- EV1–EV7 qualification and a separate `DEPLOYMENT_APPROVED` decision for profile `PRE-RICH-EEV-USDM-DIRECT-V1`;
+- candidate-bound source UTxO `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`;
+- physical direct-USDM amount `1000000000` atomic units and derived EEV `100000` IMMORTAL USDM sub-units by `floor(atomicQuantity * 100 / 1000000)`;
+- source observation time `2026-10-21T05:57:26.613Z`, approval `validFrom=2026-10-21T05:57:26.889Z` and freshness rule `LIVE_UTXO_REVALIDATION`.
+
+The approval workflow head was `main` `97b09a38742098f17a61eb07734c401aeedccc06`; its workflow YAML explicitly checked out the qualification pipeline at pinned source commit `0e5fa575f84e3759655b6d0a3492b2f0b79aa446`. Keep workflow-head provenance distinct from the code ref used for the qualification scripts. The run's deployment manifests report `reusedExisting=true` and no bootstrap transaction hash.
+
+**Interpretation:** do not continue to label the direct-USDM EEV deployment approval itself “missing.” It is established for that recorded candidate/snapshot. The same artifact explicitly says it does not authorize Issue admission and requires revalidation of the exact UTxO plus authenticated control state, ProtectedCapital, viability/liquidity and the authoritative Issue decision. The live status of the Pool UTxO was not re-queried during this review.
+
+#### Current residual blockers
+
+1. **P-01 remains BLOCKED for end-to-end Issue**, not for existence of an EEV approval. No current green-source successful Direct-USDM conformance run was established in this review; workflow `.github/workflows/pre-rich-direct-usdm-conformance.yml` defines Vitest, strict TypeScript boundary checks, authority/admission conformance and browser build, but these must be evidenced at the exact current protocol-source SHA. The approval workflow's step list itself did not run those tests.
+2. The exact real Issue transaction is still not evidenced from the intended wallet. The builder/minimum-UTxO/Treasury-output price-equality boundary and the live `/issue-admission` authority response must be captured in one completed transaction evidence packet. Approval artefact, factory, or endpoint presence alone cannot close this.
+3. Existing green admission code has fail-closed cross-bindings for the Pool candidate, Counter, B2 control state, V3 carrier, signed Haskell state/action/post-state digests, ProtectedCapital components, viability proof set and EV1–EV7. Those are static source findings, not proof that the production endpoint is currently wired, fresh or invoked for an accepted user transaction.
+
+#### Ledger state after the second scoped review
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| Entries with a scoped static review record (Pyth + B1) | 37 |
+| Entries still `NOT_REVIEWED` | 1,774 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+The ledger marks the B1 source/test/workflow blobs by exact SHA and links them to this review. Test files marked `REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA` were statically inspected; their presence/digests are not represented as execution evidence. No protocol source, workflow, V3/Reveal semantics, branch topology, current ledger state or deployment was modified by this review.
