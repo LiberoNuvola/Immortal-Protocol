@@ -35,6 +35,15 @@ jobs:
             "$BASE/chain-spec-v6-raw.json" --output "$OUT/chain-spec-v6-raw.json"
           curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
             "$BASE/SHA256SUMS" --output "$OUT/SHA256SUMS"
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "$BASE/materios-node-v6-x86_64-linux" --output "$OUT/materios-node-v6-x86_64-linux"
+          chmod +x "$OUT/materios-node-v6-x86_64-linux"
+          if "$OUT/materios-node-v6-x86_64-linux" build-spec --chain preprod --raw \
+            > "$OUT/official-node-v6-built-raw.json" 2> "$OUT/official-node-v6-build-spec.stderr"; then
+            printf 'success\n' > "$OUT/official-node-v6-build-spec-status.txt"
+          else
+            printf 'failure\n' > "$OUT/official-node-v6-build-spec-status.txt"
+          fi
 
           assets=(
             "materios_runtime.compact.compressed.wasm"
@@ -108,11 +117,53 @@ jobs:
             };
           });
 
-          const matches = candidates.filter((x) => x.matches_genesis_code);
+          const officialNodePath = path.join(out, "materios-node-v6-x86_64-linux");
+          const officialNodeBytes = fs.readFileSync(officialNodePath);
+          const officialNodeSha256 = digest(officialNodeBytes);
+          const officialBuildSpecStatus = fs.existsSync(path.join(out, "official-node-v6-build-spec-status.txt"))
+            ? fs.readFileSync(path.join(out, "official-node-v6-build-spec-status.txt"), "utf8").trim()
+            : "unavailable";
+          let officialBuiltRawSpec = null;
+          try {
+            officialBuiltRawSpec = JSON.parse(fs.readFileSync(path.join(out, "official-node-v6-built-raw.json"), "utf8"));
+          } catch {}
+
+          const manifestTextNode = manifest.get("materios-node-v6-x86_64-linux") ?? null;
+          const manifestTextRaw = manifest.get("chain-spec-v6-raw.json") ?? null;
+          let officialBuiltCodeSha256 = null;
+          let officialBuiltTopMatchesPublished = false;
+          let officialBuiltGenesisMetadata = null;
+          if (officialBuiltRawSpec?.genesis?.raw?.top) {
+            const builtTop = officialBuiltRawSpec.genesis.raw.top;
+            const builtCodeHex = builtTop["0x3a636f6465"];
+            if (typeof builtCodeHex === "string" && /^0x(?:[0-9a-fA-F]{2})+$/.test(builtCodeHex)) {
+              officialBuiltCodeSha256 = digest(Buffer.from(builtCodeHex.slice(2), "hex"));
+            }
+            const sortDeep = (value) => Array.isArray(value)
+              ? value.map(sortDeep)
+              : value && typeof value === "object"
+                ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, sortDeep(value[key])]))
+                : value;
+            officialBuiltTopMatchesPublished = JSON.stringify(sortDeep(builtTop)) === JSON.stringify(sortDeep(rawSpec.genesis.raw.top));
+            officialBuiltGenesisMetadata = {
+              name: officialBuiltRawSpec.name ?? null,
+              id: officialBuiltRawSpec.id ?? null,
+              protocol_id: officialBuiltRawSpec.protocolId ?? null,
+              raw_storage_entries: Object.keys(builtTop).length
+            };
+          }
+
           const rawSpecMatchesExpected = rawSha256 === expectedRawSha256;
-          const manifestMatches = candidates.every((x) => x.publisher_manifest_matches !== false);
+          const manifestMatches = candidates.every((x) => x.publisher_manifest_matches !== false)
+            && (manifestTextNode === null || manifestTextNode === officialNodeSha256)
+            && (manifestTextRaw === null || manifestTextRaw === rawSha256);
+          const officialBinaryReproducesRawSpec =
+            officialBuildSpecStatus === "success"
+            && officialBuiltTopMatchesPublished
+            && officialBuiltCodeSha256 === genesisCodeSha256
+            && manifestTextNode === officialNodeSha256;
           const report = {
-            schema: "IMMORTAL-MATERIOS-RUNTIME-ARTIFACT-MATCH-v1",
+            schema: "IMMORTAL-MATERIOS-RUNTIME-ARTIFACT-MATCH-v2",
             observed_at_utc: new Date().toISOString(),
             source: {
               release_index: "https://materios.fluxpointstudios.com/releases/",
@@ -131,18 +182,33 @@ jobs:
             },
             publisher_manifest: {
               entries_found_for_candidates: candidates.filter((x) => x.publisher_manifest_sha256 !== null).length,
+              raw_spec_sha256: manifestTextRaw,
+              raw_spec_manifest_matches: manifestTextRaw === null ? null : manifestTextRaw === rawSha256,
+              official_node_sha256: manifestTextNode,
+              official_node_manifest_matches: manifestTextNode === null ? null : manifestTextNode === officialNodeSha256,
               all_listed_entries_match_downloads: manifestMatches
             },
+            official_node_binary: {
+              filename: "materios-node-v6-x86_64-linux",
+              size_bytes: officialNodeBytes.length,
+              sha256: officialNodeSha256,
+              build_spec_status: officialBuildSpecStatus,
+              built_in_chain_spec: officialBuiltGenesisMetadata,
+              built_in_raw_code_sha256: officialBuiltCodeSha256,
+              built_in_storage_matches_published_raw_spec: officialBuiltTopMatchesPublished,
+              reproduces_published_raw_spec: officialBinaryReproducesRawSpec
+            },
             candidates,
-            exact_matches: matches.map((x) => x.filename),
-            exact_match_count: matches.length,
-            verdict: rawSpecMatchesExpected && matches.length === 1 && manifestMatches
-              ? "PASS_ARTIFACT_IDENTITY"
+            exact_runtime_wasm_matches: matches.map((x) => x.filename),
+            exact_runtime_wasm_match_count: matches.length,
+            verdict: rawSpecMatchesExpected && manifestMatches && officialBinaryReproducesRawSpec
+              ? "PASS_OFFICIAL_BINARY_RAW_SPEC_MATCH"
               : "FAIL",
-            limitation: "This compares files from one publisher. It does not prove source reproducibility, independent release provenance, GRANDPA finality, or authenticated authority-transition provenance."
+            limitation: "A matching official binary and raw chain spec establish artifact consistency within one publisher's release. They do not prove source reproducibility, independent release provenance, GRANDPA finality, or authenticated authority-transition provenance."
           };
 
           fs.writeFileSync(path.join(out, "MateriosRuntimeArtifactMatch.json"), JSON.stringify(report, null, 2) + "\n");
+          fs.unlinkSync(officialNodePath);
           console.log(JSON.stringify(report, null, 2));
           NODE
 
@@ -160,4 +226,4 @@ jobs:
           set -euo pipefail
           REPORT="$GITHUB_WORKSPACE/out/MateriosRuntimeArtifactMatch.json"
           test -f "$REPORT"
-          test "$(jq -r '.verdict' "$REPORT")" = "PASS_ARTIFACT_IDENTITY"
+          test "$(jq -r '.verdict' "$REPORT")" = "PASS_OFFICIAL_BINARY_RAW_SPEC_MATCH"
