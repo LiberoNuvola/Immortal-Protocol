@@ -66,7 +66,7 @@ function Invoke-CardanoCli {
 
     $output = & $script:CardanoCliPath @CliArgs 2>&1
     $exitCode = $LASTEXITCODE
-    $outputText = (@($output | ForEach-Object { "$_" }) -join "\`n").Trim()
+    $outputText = (@($output | ForEach-Object { "$_" }) -join [Environment]::NewLine).Trim()
     $step = [ordered]@{
         name = $Label
         exitCode = $exitCode
@@ -146,7 +146,7 @@ try {
         "--payment-verification-key-file", $verificationKey,
         "--testnet-magic", "42"
     )
-    $addressLine = @($addressOutput -split "\`r?\`n" | Where-Object { $_ -match '^addr_test1[0-9a-z]+$' } | Select-Object -Last 1)
+    $addressLine = @($addressOutput -split '\r?\n' | Where-Object { $_ -match '^addr_test1[0-9a-z]+$' } | Select-Object -Last 1)
     if ($addressLine.Count -ne 1) {
         throw "Could not extract a bech32 testnet address from cardano-cli address build output."
     }
