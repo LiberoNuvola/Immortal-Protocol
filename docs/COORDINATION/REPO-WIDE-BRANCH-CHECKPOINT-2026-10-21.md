@@ -750,3 +750,62 @@ The Pyth evidence layer has advanced, but only at the isolated code-feasibility 
 
 Therefore update P-02 from “candidate sources exist, software run not verified” to **“isolated software feasibility gate passed; genuine signed-update ledger proof and production source-to-economics binding remain open.”** Do not repeat the same synthetic Aiken/build/typecheck job unchanged; next new evidence must be a real signed-update native-ledger transaction with exact deployment State identity and transaction/evidence packet, followed by a separately governed conversion and actual MintPolicy binding. The explicit transaction submission is guarded and was not performed as part of this audit.
 
+
+
+### 10.21 Materios B3 live-evidence reconciliation and next acquisition gate — 2026-10-21
+
+This update reconciles the B3 branch against the current Workflow B / Materios triangulation page. The B3 branch comparison against pinned source SHA <code>2778d3e107f45ee15157fff8ef894905a72070ea</code> returned <code>identical</code> (0 ahead / 0 behind). The source artifacts below remain the same pinned implementation/evidence tooling; the recent activity in the B3 decision page is a record of observed acquisition failures, not a new implementation milestone. This is an evidence and work-routing update only.
+
+#### A. Exact current B3 source inventory (bounded)
+
+| Source on <code>work/b3-materios-provenance-evidence</code> | Blob SHA | What is actually present | Qualification |
+|---|---|---|---|
+| <code>docs/04-verification/MATERIOS-B3-GRANDPA-RPC-UPSTREAM-PATCH-v1.md</code> | <code>5a929ce0795a89391580aa439bab3920e252fd88</code> | Detailed patch specification for wiring the standard Substrate GRANDPA RPC on the upstream Materios node. The document explicitly says NOT APPLIED to Materios. | Handoff/specification, not a deployed endpoint. |
+| <code>poc/materios-checkpoint/src/capture-anchor.ts</code> | <code>b99d24ec77c3e617f3b923600a73d86526884668</code> | Fail-closed collector binds header, StateRoot, exact Anchor storage key/value and <code>state_getReadProof</code> to an exact block hash. It records remaining proof/finality tasks. | Evidence capture only; it does not authenticate finality. |
+| <code>poc/materios-checkpoint/src/rpc.ts</code> | <code>74f983d5980f25452c6517024528528fdbbfce43</code> | RPC client exposes GRANDPA finality proof/justification extraction and execution-proof request paths; it treats responses as untrusted inputs. | Consumer/transport boundary; endpoint capability and witness acquisition remain environmental dependencies. |
+| <code>poc/materios-execution-verifier/src/storage.rs</code> | <code>9b7432f629668aaca5cf7e4db5e26c62ccc22d76</code> | Uses pinned Polkadot SDK proof verification to bind StateRoot, proof, exact key and expected value. | Independent storage-proof verifier source exists; it needs the real target witness. |
+| <code>audit/materios-b3/archive-rpc-preflight.mjs</code> | <code>4ca293a0cad972d13429b46dd6e9f450621a005e</code> | Requires the supplied archive RPC to serve header/state root, historical value and read-proof nodes at one exact block hash. | Correct preflight gate; not proof that a usable archive endpoint currently exists. |
+| <code>audit/algorithmic-governability/b3-a-witness-packet-boundary.mjs</code> | <code>2365e1656027d7c117405d751928940662126ddc</code> | Validates evidence packet shape and cross-field block/hash binding. Its source explicitly says it does not verify cryptography or establish a real witness. | TESTED_BOUNDED packet boundary only; never classify as B3-A finality PASS. |
+
+#### B. Triangulated acquisition result and evidence classes
+
+The Notion page [MATERIOS B3-A — Authority Transition Triangulation](https://app.notion.com/p/3f6c4454d6d581e5b818f9ab312fce7e) contains the latest 2026-10-21 acquisition entries. The relevant result is a source-specific failure, not a claim that Materios lacks GRANDPA finality:
+
+- Public HTTP and WebSocket endpoints tested at <code>materios.fluxpointstudios.com</code> do not advertise or implement <code>grandpa_proveFinality</code>, <code>grandpa_subscribeJustifications</code>, or <code>grandpa_unsubscribeJustifications</code>; direct calls return <code>-32601 Method not found</code>. The tested public block responses have <code>justifications: null</code>.
+- The public RPC method catalogue does not advertise the required standard GRANDPA proof APIs or <code>state_getCode</code>; a separate public gateway discovery response exposed only one bootnode.
+- A dense scan of 769 blocks over <code>2,381,088–2,381,856</code> did not capture a raw GRANDPA <code>FRNK</code> justification. The returned head/set-id are untrusted RPC observations, not a certificate. Do not repeat the same scan against the same endpoints/parameters and call the absence global.
+- The published snapshot manifest points to <code>materios-preprod-rocksdb-20261016T093001Z.tar.gz</code> (advertised 3.58 GiB), but a read-only ranged GET returned HTTP 404. No archive was downloaded or unpacked; this proves only that this specific URL was unavailable in that test.
+- A bounded live storage-inclusion verifier passed against a supplied root/value in a separate run. This does **not** authenticate that root as finalized, and does not close the exact historical state witness for anchor block <code>1856408</code>. The public endpoint had earlier reported <code>UnknownBlock: State already discarded</code> for historical state at that anchor.
+- The B3-A witness-packet boundary checks schema/cross-field correspondence only; the real justification, historical authority-set/set-id, transition input commitment, native selector/execution proof, ancestry and quorum still require independently verifiable bytes tied to the exact target.
+
+Evidence sources preserved by the Notion record include:
+- public RPC dense scan #39590324041, artifact 12341295881, SHA-256 <code>56c8d7f5c77de9108d5f2993a1dcd7edcbd0c63fb5bb39399117356d11528e31</code>;
+- later dense scan / B3-B scoped proof #39590352022, artifact 12342350690, SHA-256 <code>6fdef44520add9fcbf00a37d2789a93ced4cd920a4826c9185d8cb5cac8abd14</code>;
+- WebSocket GRANDPA probe #39592480972, artifact 12342328397, SHA-256 <code>9557340a51dc9a279136853a0ffaaa3a5fe1126297293f8f91fafdaac4936f4d</code>;
+- gateway peer discovery #39593013066, artifact 12341638901, SHA-256 <code>71d05518456821fcaf342a7f78bd46907aec1ffea325d803ed25cf7449037b42</code>;
+- snapshot-pointer availability check #39593881158, artifact 12342744743, SHA-256 <code>b2cce9169cdb321cf37916484aef02a75bdaea126299e26cf5e5c54667dabd88</code>.
+
+The run IDs/artifacts above are carried over from the current Notion evidence register, not freshly rerun by this document update. Their stated scope limits remain in force.
+
+#### C. B3 work routing — no-repeat and dependency discipline
+
+**P-09 / B3-A — <code>BLOCKED_NO_PUBLIC_GRANDPA_WITNESS</code>.** Keep the primary lane on <code>work/b3-materios-provenance-evidence</code>. The next acquisition task is to identify an already-operating, verifiable justification-retaining Full Node/archive or an authorized existing Materios FullClient source and test its actual proof capability. The existing upstream patch document is specified but NOT APPLIED to Materios; a public deployment-intent statement is not endpoint evidence. Do not silently turn this into a new local node operation, another public-RPC scan or a new trust protocol.
+
+Required real packet remains:
+<code>exact target header/block hash → genuine GRANDPA justification → historical authority set + set-id → selection/enactment inputs and commitment → native execution evidence → ancestry/quorum → independent verification → VerifiedAuthoritySetTransition</code>.
+Do not infer the authority set from a later observed set (the Notion page warns that the observed later set ID 3976/4220 does not establish the historical set for block 1856408).
+
+**P-10 / B3-B — <code>BLOCKED</code> for the exact historical anchor witness.** Keep the already-built collector and pinned Rust verifier. Next executable gate requires a historical-state-capable RPC that can return, for the exact block hash 1856408:
+<code>header.stateRoot + Anchors[anchor_id] exact historical value + state_getReadProof</code>.
+Then independently verify the trie proof against that root. Do not substitute a recent/live storage-inclusion proof for the historical anchor proof, and never treat inclusion as finality.
+
+**P-11 / Materios execution proof and upstream dependency.** Preserve the existing client/verifier boundary and check upstream issues/commits only when a new endpoint, witness or source revision is identified. Do not reimplement the selector in TypeScript or repeat the old RPC probe without a new input.
+
+**P-12 / Workflow B and PR #35.** Continue to classify harness successes as bounded source/boundary evidence. PR #35 remains an open draft governance/process sandbox, not B3 proof and not the canonical B3 branch.
+
+#### D. Cross-lane interpretation
+
+The B3 acquisition gate is independent of P-01 first Issue. It may progress in parallel, but it must not be “closed” by success in P-2.8, Pyth, a packet-shape test or the DApp Issue path. No change to V3, Reveal, EEV, expiry, the universal kernel, or B3 trust semantics is required or authorized by this organizational reconciliation.
+
+**Current B3 disposition:** B3-A finality/authority witness OPEN; B3-B exact historical anchor witness OPEN; bounded storage inclusion and packet-shape conformance are separately scoped; operator/upstream RPC wiring is specified but not applied. No new transaction, witness, code modification or deployment resulted from this update.
+
