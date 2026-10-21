@@ -37,11 +37,15 @@ const CONTROL_PLANE_PATTERNS = [
   /^audit\/algorithmic-governability\//i,
   /^docs\/04-guides\/(?:PUBLIC-CONTRIBUTION-WORKFLOW|GITHUB-AUTO-MERGE-INTEGRATION)\.md$/i,
   /(^|\/)docs\/00-normative\//i,
-  /^docs\/(?:01-contracts|02-certification)\//i,
+  /^docs\/(?:01-contracts|02-certification|architecture)\//i,
+  /^docs\/01-formal-records\/governance\//i,
+  /^docs\/COORDINATION\/GOV-/i,
   /^IMMORTAL\/(?:kernel|docs)\//i,
   /^PRE-RICH\/docs\//i,
-  /^Adapter\/CARDANO\/docs\//i,
+  /^Adapter\/[^/]+\/docs\//i,
   /^docs\/archive\/legacy\/(?:Game-Economy|Economic-Algorithm)[^/]*\.md$/i,
+  /(^|\/)[^/]*(?:NORMATIVE|CONFORMANCE)[^/]*$/i,
+  /(^|\/)[^/]*(?:ECONOMIC[-_](?:KERNEL|MODEL|ALGORITHM)|STATE[-_]?TRANSITION|INVARIANTS[-_]?CONSERVATION)[^/]*$/i,
   /^PRE-RICH\/docs\/GAME-ECONOMY\.md$/i,
   /^SECURITY\.md$/i,
   /(^|\/)[^/]*CONSTITUTION[^/]*$/i,
@@ -359,6 +363,10 @@ const selfTest = () => {
     'PRE-RICH/docs/APPLICATION-SPECIFICATION.md',
     'Adapter/CARDANO/docs/ADAPTER-SPECIFICATION.md',
     'docs/archive/legacy/Game-Economy.md',
+    'docs/research/PROTOCOL-USAGE-FEE-G1-NORMATIVE-RECONCILIATION-B3-v1.md',
+    'docs/01-formal-records/governance/GOV-28-FULL-GOVERNANCE-CONFORMANCE.md',
+    'docs/architecture/CAES-CONFORMANCE-MATRIX.md',
+    'Adapter/BITCOIN/docs/RGB-IMMORTAL-CONFORMANCE-NOTE.md',
   ]) {
     const routed = classifyPullRequest({ body, files: [path], headSha: 'abc123' })
     assert.equal(routed.decision, 'STRONGER_REVIEW_REQUIRED', path)
