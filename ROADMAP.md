@@ -77,7 +77,7 @@ Additional applications may specialize IMMORTAL with their own economic policy, 
   - [ ] Enable and verify repository Auto-merge / branch rules / required checks (Auto-merge is currently disabled)
   - [ ] Require independent review and selected CI status checks on `main` (current `Protect main` ruleset has zero required approvals and an empty required-check list)
   - [x] Implement initial read-only PR evidence-eligibility workflow: `.github/workflows/contribution-evidence-gate.yml` + `scripts/contribution-evidence-gate.mjs`
-  - [x] Self-test the stronger-review clearance and active-challenge blocking paths; Workflow B run 404 passed
+  - [x] Self-test stronger-review clearance, active-challenge blocking, conservative normative routing, and narrow documentation allowlist; Workflow B run 406 passed against the same gate-script blob staged for PR #35
   - [ ] Merge the gate into a target/base branch before it can execute on ordinary PRs targeting that branch
   - [ ] Make the evidence-eligibility status a required check only after reviewing the fail-closed stronger-review route
   - [ ] Validate the process on representative PRs and verify approval/check requirements before marking this item complete
