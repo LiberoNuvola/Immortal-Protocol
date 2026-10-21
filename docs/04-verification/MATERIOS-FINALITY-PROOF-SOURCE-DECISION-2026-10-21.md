@@ -96,3 +96,6 @@ This issue is **not evidence that GRANDPA finality signatures are invalid**, and
 Reference: [upstream comment updating #105 after #100's third round](https://github.com/Flux-Point-Studios/materios/issues/105#issuecomment-6293128733).
 
 Treat this as an additional open verification question, separate from the missing justification source. It does not by itself prove that a header-based GRANDPA light client cannot work; that path still requires actual justifications, an authenticated transition chain, and negative tests.
+
+
+The related [upstream issue #109](https://github.com/Flux-Point-Studios/materios/issues/109), which proposes an opt-in chain-state switch from v6's relaxed Ariadne rule to the strict upstream rule, also remained **open** at this review. Do not assume that remediation has been activated on the live preprod chain. For IMMORTAL this remains a separate protocol-reproducibility risk, not a replacement for the absent justification evidence.
