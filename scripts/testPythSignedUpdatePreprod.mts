@@ -26,9 +26,9 @@ import {
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
+import { Client, preprod } from '@evolution-sdk/evolution'
 import { PythLazerClient } from '@pythnetwork/pyth-lazer-sdk'
 import {
-  createReadClient,
   getPythScriptHash,
   getPythState,
 } from '@pythnetwork/pyth-lazer-cardano-js'
@@ -93,19 +93,21 @@ async function writeEvidence(evidence: Record<string, unknown>): Promise<void> {
 async function main(): Promise<void> {
   const policyId = validHex(required('PYTH_CARDANO_POLICY_ID'), 56, 'PYTH_CARDANO_POLICY_ID')
   const lazer = await PythLazerClient.create({ token: required('PYTH_LAZER_TOKEN') })
-  const readClient = createReadClient('preprod')
+  const readClient = Client.make(preprod).withKoios({
+    baseUrl: 'https://preprod.koios.rest/api/v1',
+  })
   const pythState = await getPythState(policyId, readClient)
   const pythWithdrawScriptHash = validHex(getPythScriptHash(pythState), 56, 'Pyth withdraw script hash')
   const signedUpdate = await fetchSignedUpdate(lazer)
 
   const stateUnit = policyId + Buffer.from('Pyth State', 'utf8').toString('hex')
-  const stateReference = pythState.txHash + '#' + pythState.outputIndex
   const common = {
     schema: 'immortal-pyth-native-ledger-probe-v1',
     network: 'cardano-preprod',
     probe: 'Pyth Lazer ADA/USD signed-update consumer, feed ID 16',
     pythPolicyId: policyId,
-    pythStateReference: stateReference,
+    pythStateUnit: stateUnit,
+    pythStateResolvedFrom: 'Pyth SDK via Koios',
     pythStateUnit: stateUnit,
     pythWithdrawalScriptHash: pythWithdrawScriptHash,
     signedUpdateBytes: signedUpdate.length,
@@ -161,14 +163,13 @@ async function main(): Promise<void> {
   const probeAddress = validatorToAddress(PREPROD, probeValidator)
   const derivedProbeHash = validatorToScriptHash(probeValidator)
 
-  const resolvedStateOutputs = await provider.getUtxosByOutRef([{
-    txHash: pythState.txHash,
-    outputIndex: pythState.outputIndex,
-  }])
-  if (resolvedStateOutputs.length !== 1) {
-    throw new Error('Pyth State reference could not be resolved uniquely through the Preprod provider')
+  // Re-resolve the exact State NFT with Lucid's own UTxO type. The Pyth SDK's
+  // typed UTxO is used to decode the authenticated datum above; do not assume
+  // its reference-field shape matches Lucid's.
+  const pythStateUtxo = await lucid.utxoByUnit(stateUnit)
+  if (!pythStateUtxo) {
+    throw new Error('Configured Pyth State NFT could not be resolved through the Preprod provider')
   }
-  const pythStateUtxo = resolvedStateOutputs[0]
   if ((pythStateUtxo.assets[stateUnit] ?? 0n) !== 1n) {
     throw new Error('Resolved Pyth State UTxO does not contain exactly one configured Pyth State NFT')
   }
@@ -278,6 +279,7 @@ async function main(): Promise<void> {
 
   await writeEvidence({
     ...common,
+    pythStateReference: pythStateUtxo.txHash + '#' + pythStateUtxo.outputIndex,
     signedUpdateBytes: freshUpdate.length,
     signedUpdateSha256: sha256Hex(freshUpdate),
     status: 'PREPROD_LEDGER_ACCEPTED',
