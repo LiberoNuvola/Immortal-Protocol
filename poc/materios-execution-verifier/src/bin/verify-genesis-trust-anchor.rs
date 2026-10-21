@@ -233,7 +233,7 @@ fn verify_raw_genesis_spec(raw: &[u8]) -> Result<Value, String> {
         authorities_json.push(json!({
             "index": index,
             "public_key": format!("0x{public_key_hex}"),
-            "weight": weight,
+            "weight": weight.to_string(),
         }));
     }
 
