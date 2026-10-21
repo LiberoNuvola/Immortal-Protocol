@@ -671,6 +671,59 @@ async function main(): Promise<void> {
   );
 
   if (witnessedBlocks.length === 0) {
+    // Preserve a machine-readable, bounded negative observation before failing.
+    // This is diagnostic evidence only: absence in this RPC scan does not imply
+    // that GRANDPA did not finalize the chain or that no external proof exists.
+    const outDir = join(HERE, "..", "out");
+    mkdirSync(outDir, { recursive: true });
+
+    const diagnostics = {
+      schema_version: "materios-real-grandpa-witness-v1",
+      chain_id: CHAIN_ID,
+      rpc_endpoint: RPC,
+      captured_at: new Date().toISOString(),
+      status: "BLOCKED_NO_PUBLIC_GRANDPA_WITNESS",
+      finalized_head: {
+        block_number: finalizedHeight.toString(),
+        block_hash: finalizedHash,
+        state_root: finalizedHeader.stateRoot,
+      },
+      witness: null,
+      probes: {
+        dense_scan_start: scanStart,
+        dense_scan_end: finalizedHeightNumber,
+        dense_scan_blocks: recentBlocks.length,
+        blocks_with_grandpa_justification: [],
+        scan_manifest: recentBlocks.map((block) => ({
+          block_number: block.number,
+          block_hash: block.hash,
+          justification_field:
+            block.signed.justifications === null
+              ? "null"
+              : Array.isArray(block.signed.justifications)
+                ? "array"
+                : typeof block.signed.justifications,
+          grandpa_justification_present: false,
+        })),
+        limitation:
+          "The configured public RPC exposed no FRNK GRANDPA justification via chain_getBlock in this bounded scan window. This does not prove absence of GRANDPA consensus finality or absence of a proof from another source.",
+      },
+      b3a_claim: {
+        cryptographic_finality: false,
+        authority_transition_provenance: false,
+        overall_status: "OPEN_NO_PUBLIC_WITNESS",
+      },
+    };
+
+    writeFileSync(
+      join(outDir, "MateriosRealGrandpaWitness.json"),
+      JSON.stringify(diagnostics, null, 2) + "\n",
+      "utf8",
+    );
+
+    console.error(
+      "B3-A OPEN: wrote bounded no-witness diagnostic; proof remains required",
+    );
     throw new Error(
       "NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN",
     );
