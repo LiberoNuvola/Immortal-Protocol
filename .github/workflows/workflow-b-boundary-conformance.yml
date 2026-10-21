@@ -133,6 +133,8 @@ jobs:
         run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
       - name: Contribution acceptance evidence-gate boundary
         run: node audit/algorithmic-governability/contribution-acceptance-boundary.mjs
+      - name: Live PR contribution evidence-gate policy self-test
+        run: node scripts/contribution-evidence-gate.mjs --self-test
       - name: Competing-monitor epistemic boundary
         run: node audit/algorithmic-governability/competing-monitor-epistemic-boundary.mjs
       - name: Treasury legacy isolation
