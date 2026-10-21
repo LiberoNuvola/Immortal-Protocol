@@ -321,6 +321,14 @@ const fetchChangedFiles = async (apiUrl, repository, number, token) => {
   throw new Error('Pull-request file inventory exceeded the 3,000-file safety limit; fail closed.')
 }
 
+const eventSnapshotIsCurrent = (eventPR, livePR) => Boolean(
+  eventPR?.head?.sha &&
+  eventPR?.base?.sha &&
+  livePR?.head?.sha &&
+  livePR?.base?.sha &&
+  livePR.head.sha === eventPR.head.sha &&
+  livePR.base.sha === eventPR.base.sha,
+)
 const selfTest = () => {
   const body = [
     '### Evidence-Gated Contribution Declaration',
@@ -345,6 +353,25 @@ const selfTest = () => {
   const pass = classifyPullRequest({ body, files: ['audit/example-boundary.mjs'], headSha: 'abc123' })
   assert.equal(pass.decision, 'ELIGIBLE_FOR_REDUCED_PATH')
   assert.equal(pass.eligible, true)
+
+  const eventHead = 'a'.repeat(40)
+  const eventBase = 'b'.repeat(40)
+  assert.equal(eventSnapshotIsCurrent(
+    { head: { sha: eventHead }, base: { sha: eventBase } },
+    { head: { sha: eventHead }, base: { sha: eventBase } },
+  ), true)
+  assert.equal(eventSnapshotIsCurrent(
+    { head: { sha: eventHead }, base: { sha: eventBase } },
+    { head: { sha: 'c'.repeat(40) }, base: { sha: eventBase } },
+  ), false, 'head changes must stale the event')
+  assert.equal(eventSnapshotIsCurrent(
+    { head: { sha: eventHead }, base: { sha: eventBase } },
+    { head: { sha: eventHead }, base: { sha: 'd'.repeat(40) } },
+  ), false, 'base policy changes must stale the event')
+  assert.equal(eventSnapshotIsCurrent(
+    { head: { sha: eventHead } },
+    { head: { sha: eventHead } },
+  ), false, 'missing base SHA must fail closed')
 
   const normative = classifyPullRequest({ body, files: ['docs/00-normative/01_CONSTITUTION_FINAL.md'], headSha: 'abc123' })
   assert.equal(normative.decision, 'STRONGER_REVIEW_REQUIRED')
@@ -514,11 +541,19 @@ const main = async () => {
   if (!eventPR?.number || !eventPR?.head?.sha) throw new Error('This gate requires a pull_request event.')
   const prUrl = apiUrl + '/repos/' + repository + '/pulls/' + eventPR.number
   const livePR = await githubRequest(prUrl, token)
-  if (livePR.head?.sha !== eventPR.head.sha) {
+  if (!eventSnapshotIsCurrent(eventPR, livePR)) {
+    const staleReasons = []
+    if (!eventPR.head?.sha || livePR.head?.sha !== eventPR.head.sha) {
+      staleReasons.push('The pull request head changed after this event was emitted. Wait for reevaluation against the current head.')
+    }
+    if (!eventPR.base?.sha || livePR.base?.sha !== eventPR.base.sha) {
+      staleReasons.push('The pull request base/policy SHA changed or is missing after this event was emitted. Wait for reevaluation against the current target policy.')
+    }
+    staleReasons.push('Stale or incompletely bound event snapshots fail closed.')
     const stale = {
       decision: 'STALE_EVENT',
       eligible: false,
-      reasons: ['The pull request head changed after this event was emitted. Wait for the workflow triggered by the latest head; stale results fail closed.'],
+      reasons: staleReasons,
       files: [],
       headSha: eventPR.head.sha,
     }
