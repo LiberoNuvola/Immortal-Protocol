@@ -24,9 +24,10 @@ Repository metadata currently reports `allow_auto_merge = false`. Therefore GitH
 1. A PR declares its contribution class (A–E) and supplies the evidence package in `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`.
 2. The algorithmic-governability evidence gate evaluates only process eligibility: declared class, affected scope, normative status, evidence completeness, and commit binding.
 3. Existing required CI checks evaluate their actual properties. The evidence gate must not substitute for tests, conformance, security review, or ledger evidence.
-4. A required human approval is obtained under the repository's branch rules. For changes that need stronger review, the existing stronger review path applies.
-5. GitHub Auto-merge is enabled only after all required reviews and required status checks pass. Any new commit invalidates checks for the prior head and causes reevaluation.
-6. The merge method is selected from the repository's allowed merge methods; no workflow may bypass required checks or write directly to the protected branch.
+4. A required human approval is obtained under the repository's branch rules. Approval is a repository action, not proof of conformance. For changes that need stronger review, the existing stronger review path applies.
+5. Any valid, unresolved challenge blocks Auto-merge. It must receive a recorded disposition before the ordinary merge preconditions can be satisfied; a response deadline never dismisses it automatically.
+6. GitHub Auto-merge is eligible only after all required reviews and required status checks pass for the current head. Any new commit invalidates checks and any challenge disposition tied to the prior head, causing reevaluation.
+7. The merge method is selected from the repository's allowed merge methods; no workflow may bypass required checks or write directly to the protected branch.
 
 ## Classes eligible for the reduced path
 
@@ -59,7 +60,22 @@ An administrator must apply and verify these settings in GitHub before describin
 7. Configure CODEOWNERS/stronger reviewers for normative and security-sensitive areas. A sole maintainer cannot manufacture independent review by turning on Auto-merge.
 8. Start without a merge queue. Consider a merge queue only if PR volume or race conditions justify it.
 
-After configuration, verify the settings against a test PR: a compliant non-normative PR should wait for approval and all required checks; a failing check or stale head must prevent merge; a normative/boundary-changing PR must not enter the reduced path.
+After configuration, verify the settings against a test PR: a compliant non-normative PR should wait for approval and all required checks; a failing check or stale head must prevent merge; a normative/boundary-changing PR must not enter the reduced path. 
+
+## Challenge lifecycle and anti-veto safeguards
+
+A concrete challenge is not a permanent discretionary veto, but neither does a deadline make it disappear:
+
+- **OPEN / UNDER_REVIEW:** challenge identifies a permitted category, actionable reason, and evidence reference (except sensitive security reports, handled privately). Auto-merge is blocked.
+- **ESCALATED:** the response window elapsed without a recorded disposition. The challenge remains blocking. The record must identify the responsible next action and, where practical, the next review date. Escalation is visibility/accountability, not approval or rejection.
+- **SECURITY_HOLD / SECURITY_ESCALATED:** sensitive details may remain private, but the hold remains blocking until an authorized disposition is recorded. Time alone cannot clear it.
+- **RESOLVED_NO_BLOCKER:** the challenge is dismissed with a concrete rationale and a public/non-sensitive record tied to the current head.
+- **RESOLVED_FIXED:** the defect was corrected on the current head; the disposition, evidence and required checks must refer to that head.
+- **UPHELD:** the challenge established a blocker; the affected head is not eligible for Auto-merge. A corrected commit must be re-evaluated and the resolution bound to that new head.
+
+Only a recorded, current-head disposition can clear a challenge for the reduced path. No reaction count, preference, silence, approval, or timeout substitutes for it. If a valid challenge is ignored, the result is a visibly stalled/escalated PR—not an automatic merge. This protects against both unsubstantiated vetoes and deadline-based bypasses.
+
+A valid challenge that is escalated but never adjudicated can still stall a PR. The process makes that failure explicit but cannot eliminate it through code alone; independent escalation requires additional authorized reviewers or a future community process. At the repository's current stage, do not claim such independence exists unless it is actually configured.
 
 ## Algorithmic-governability invariants
 
@@ -76,4 +92,4 @@ After configuration, verify the settings against a test PR: a compliant non-norm
 
 GitHub Auto-merge is a conditional execution mechanism, not a proof that governance is non-discretionary. Repository administrators can change settings and permissions unless the organization/platform prevents it. The process can make criteria public, checks reproducible, changes auditable, and bypasses visible; it cannot honestly claim that all human or administrative discretion has been eliminated.
 
-The existing `contribution-acceptance-boundary.mjs` is a non-normative toy model. It is not a GitHub permission gate and does not currently inspect a live PR or configure branch rules. The public contribution workflow remains a draft until the gate is integrated, CI is observed passing, and repository settings are explicitly applied and verified.
+The existing `contribution-acceptance-boundary.mjs` is a non-normative toy model. It checks the intended lifecycle for open, escalated and security challenges, as well as recorded dispositions tied to the current head; it is not a GitHub permission gate and does not inspect live PRs or configure branch rules. The public contribution workflow remains a draft until a live gate is integrated, CI is observed passing, and repository settings are explicitly applied and verified.
