@@ -276,3 +276,18 @@ This gap is independent of the successful TypeScript sale conformance/build. B2 
 A read-only observer is available at `audit/cardano-integration/observe-preprod-oracle-quote-set.mjs`. It reads the configured Preprod Oracle State singleton and records its exact UTxO reference, datum hash/format, decoded quote inventory, publisher-field matches, duplicate identities, and slot-derived freshness findings. It does not load a signing key or submit a transaction. The pure decoder has targeted synthetic regression tests, but the live observer has not yet been run, so the real singleton's datum constructor and available assets remain unobserved.
 
 When running it, use the same address, policy ID, token name and publisher identity configured for the actual DApp deployment. Preserve the complete JSON output and digest as evidence. A `QUOTE_SET` shape is not enough to authorize a basket: source qualification remains a separate obligation, and the current publisher trust model is not fully permissionless.
+
+
+## 2026-10-21 follow-up — live wallet evidence reveals a stale legacy Oracle datum
+
+Artifact [IMMORTAL Cardano Preprod Context #39594377501](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39594377501), observed at `2026-10-21T11:46:53.758Z`, records an Oracle-token UTxO in the workflow's configured Preprod wallet:
+
+- Reference: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Value: 2,000,000 lovelace + one `ORACLE` token (policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, name `4f5241434c45`).
+- Datum hash: `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+- Datum: constructor 0, one ADA quote at price `100`, timestamp `2026-10-08T17:38:50.142Z`; its publisher field matches the payment credential of that wallet address.
+- Quote age at observation: `1,102,083,616 ms` (about `306.13 hours`), versus the existing one-hour freshness bound.
+
+Therefore this observed wallet singleton is **not currently eligible for Issue** under the implemented freshness rule and does not contain a quote set for PRE/NIGHT. The observation is concrete but was taken from the workflow's wallet address; the hidden repository variables used by the deployed Pages DApp still need an exact address/policy/token match before asserting that the public runtime points to this exact UTxO. See §8.6 of `audit/pre-genesis-genesis/ORACLE-QUOTE-SET-EXTENSION-20261021.md` for the full reference and digest.
+
+Do not refresh this datum using a synthetic price or a locally invented timestamp. The next gate is to bind the configured DApp identity to the observed singleton, then obtain a qualified quote source and authorized publisher update under the existing trust contract. Neither this evidence collection nor the new observer script signs or submits a transaction.
