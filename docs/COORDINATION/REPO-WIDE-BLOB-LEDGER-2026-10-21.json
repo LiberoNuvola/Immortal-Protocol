@@ -18,11 +18,11 @@
     "globally_unique_paths": 1275,
     "unique_path_blob_sha_pairs": 1874,
     "paths_with_multiple_blob_shas_across_branches": 337,
-    "semantic_reviews_completed": 0,
     "scoped_static_reviews_recorded": 16,
     "semantic_ledger_entries_not_reviewed": 1795,
     "full_semantic_audit_complete": false,
-    "semantic_audit_disposition": "PARTIAL / OPEN; this tranche confirms the Pyth-to-MintPolicy binding and unit-conversion blockers."
+    "semantic_audit_disposition": "PARTIAL / OPEN; this tranche confirms the Pyth-to-MintPolicy binding and unit-conversion blockers.",
+    "fully_qualified_semantic_reviews_completed": 0
   },
   "branch_heads": [
     {
