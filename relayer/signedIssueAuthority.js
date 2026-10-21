@@ -183,9 +183,30 @@ function validateEevQualification(value) {
     deploymentApproval.evidenceHash,
     'eevQualification.deploymentApproval.evidenceHash',
   )
-  if (approvalEvidenceHash !== qualificationEvidenceHash) {
+  const approvalQualificationEvidenceHash = requiredDigest(
+    deploymentApproval.qualificationEvidenceHash,
+    'eevQualification.deploymentApproval.qualificationEvidenceHash',
+  )
+  const governance = requiredObject(
+    qualification.governance,
+    'eevQualification.governance',
+  )
+  const approvalInputQualificationHash = requiredDigest(
+    governance.approvalInputQualificationHash,
+    'eevQualification.governance.approvalInputQualificationHash',
+  )
+  const governanceApprovalEvidenceHash = requiredDigest(
+    governance.approvalEvidenceHash,
+    'eevQualification.governance.approvalEvidenceHash',
+  )
+  if (approvalQualificationEvidenceHash !== approvalInputQualificationHash) {
     throw new Error(
-      'deployment approval evidenceHash does not match qualified EEV evidenceHash',
+      'deployment approval qualificationEvidenceHash does not match original qualified EEV evidenceHash',
+    )
+  }
+  if (approvalEvidenceHash !== governanceApprovalEvidenceHash) {
+    throw new Error(
+      'deployment approval evidenceHash does not match its approval evidence record',
     )
   }
   for (const field of ['qualifiedProperties', 'excludedProperties']) {
@@ -255,6 +276,7 @@ function validateEevQualification(value) {
       sourceSetId: deploymentApproval.sourceSetId,
       profileVersion: deploymentApproval.profileVersion,
       evidenceHash: approvalEvidenceHash,
+      qualificationEvidenceHash: approvalQualificationEvidenceHash,
       qualifiedProperties: Object.freeze([...deploymentApproval.qualifiedProperties]),
       excludedProperties: Object.freeze([...deploymentApproval.excludedProperties]),
       testSuiteVersion: deploymentApproval.testSuiteVersion,
