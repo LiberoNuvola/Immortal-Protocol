@@ -197,12 +197,13 @@ runAdaCeilingRoundingBoundaryCase = do
       ]
     treasuryValue = singleton adaSymbol adaToken 2_599_999
     evaluateSettlement = evaluate (totalUsdmValue (transactionInfo adaOracleReferences) oracleState authorizedPublisher treasuryValue)
--- Regression for the current single-asset OracleDatum/singleton boundary.
--- A token settlement output on Cardano also carries ADA for min-UTxO.
--- totalUsdmValue asks for an oracle match for every non-zero asset before
--- excluding ADA's minimum-UTxO quantity from economic value. One singleton
--- datum quoting PRE cannot also authenticate the ADA component; a basket must
--- fail closed until the quote-set/reference-input contract is redesigned.
+-- Negative compatibility vector for the legacy single-quote OracleDatum
+-- constructor. A token settlement output on Cardano also carries ADA for
+-- min-UTxO. totalUsdmValue still asks for an oracle match for each nonzero
+-- asset before excluding ADA's minimum-UTxO quantity from economic value.
+-- A legacy PRE-only datum therefore cannot value an ADA+PRE basket; the
+-- additive OracleQuoteSet case below supplies both identities on the same
+-- authenticated singleton reference input.
 runMixedAssetBasketRequiresPerAssetQuoteCase :: IO Bool
 runMixedAssetBasketRequiresPerAssetQuoteCase = do
   result <- try evaluateBasket :: IO (Either SomeException Integer)
@@ -210,7 +211,7 @@ runMixedAssetBasketRequiresPerAssetQuoteCase = do
         case result of
           Left _ -> True
           Right _ -> False
-  putStrLn (prefix passed <> "mixed ADA+PRE value rejected when singleton oracle datum only quotes PRE")
+  putStrLn (prefix passed <> "legacy single-quote datum rejects ADA+PRE basket when only PRE is quoted")
   pure passed
   where
     prePolicy = bytes "pre-settlement-policy"
