@@ -99,8 +99,8 @@ The official `/releases/` index gives a more specific candidate than the earlier
 | Published artifact | Index evidence | Relevance |
 |---|---|---|
 | `chain-spec-v6-raw.json` | Published 2026-04-28 15:05 UTC; 1,063,592 bytes | Same file retrieved and hashed in run #17 |
-| `materios_runtime.spec-202.wasm` | Published 2026-04-21 22:20 UTC; 477,796 bytes | Historical runtime source candidate; exact bytes still need comparing to raw-genesis `:code` |
-| `materios_runtime.compact.compressed.wasm` | Published 2026-04-21 22:20 UTC; 477,796 bytes | Same size and timestamp as the spec-202 WASM; size equality is not byte equality |
+| `materios_runtime.spec-202.wasm` | Published 2026-04-21 22:20 UTC; 477,796 bytes | Not byte-identical to the raw-genesis `:code` |
+| `materios_runtime.compact.compressed.wasm` | Published 2026-04-21 22:20 UTC; 477,796 bytes | Not byte-identical to the raw-genesis `:code`; size equality is not byte equality |
 | `materios-node-v6-x86_64-linux` | Published 2026-04-28 15:05 UTC; 73,791,376 bytes | Official launch node binary candidate |
 | `materios-node-v5-x86_64-linux` | Published 2026-04-21 16:11 UTC; 73,232,144 bytes | Previous network generation, not the v6 trust anchor |
 
@@ -110,13 +110,24 @@ The source revision `5001ee3dc953896c6b06847a80c058d8f7deded2` has `spec_version
 
 The public operator docs also distinguish genesis runtime code from the upgraded live runtime: the v6 raw genesis spec does not export `CandidateValidationApi`, while the upgraded live runtime does. Therefore the current main-branch runtime cannot simply be substituted as genesis `:code`; the historical WASM must be byte-identified and used when reconstructing the v6 chain spec.
 
-**Next discriminating checks:** download the official spec-202 WASM in CI; compare its SHA-256 to the raw spec's `:code` SHA-256; use the v6 chain-spec fields with that code to reconstruct genesis; and separately build the spec-202 runtime from commit `5001ee3` with a pinned toolchain to test source reproducibility. Record each result independently. Do not mark the candidate source trusted merely because the filenames or sizes match.
+### Run #22 — official binary/raw-spec consistency
+
+- Workflow: [Materios Runtime Artifact Match](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39560950332).
+- IMMORTAL commit: `bb920e49ac94019a39854e91266bee096a01ef10`.
+- Artifact: [comparison evidence ZIP](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39560950332/artifacts/12327368993); ZIP SHA-256 `1ae964f9b4e709ed0ef1321051f4a6fbce36da8bb9736ad023d489a20ed97db9`.
+- Publisher `SHA256SUMS` validates both the raw spec (`77877aa6…65aaa`) and the official v6 node binary (`dda4f3a731c909641d42b0f52f78b7d0bdf1a35867f0c2759cd50f5bfd158ebc`).
+- The official node binary's `build-spec --chain preprod --raw` completed successfully. Its `genesis.raw.top` had 63 entries and matched the published raw spec's complete storage map, including every key/value and `:code`, exactly.
+- The official node's built-in runtime code SHA-256 is `438747fce96411c4fe5d4c02d725993573093937aa14e39104036e5b7811d99f`, identical to the raw spec's `:code` SHA-256. The code is 526,789 bytes.
+- None of the 11 separately published runtime WASM files tested matches that code hash. In particular, `materios_runtime.spec-202.wasm` and `materios_runtime.compact.compressed.wasm` both hash to `7fa5ccb12ebde4f2d2904cfb6ee0678c3e5549c0a678e0f2d8833f2399ffcae2`; `materios_runtime.spec-209.wasm` is 526,758 bytes and has a different hash too.
+- Workflow verdict: **PASS_OFFICIAL_BINARY_RAW_SPEC_MATCH**. This establishes consistency of two official release artifacts; it is not source reproducibility, because they have a common publisher and the embedded runtime does not match any of the tested standalone WASMs.
+
+The key unresolved source question is therefore narrower: recover the exact committed or otherwise attested source/build inputs that produced the 526,789-byte genesis runtime. The checked-in `spec-202` source candidate is informative but is not yet proven to produce those bytes. The current-main node build is not a substitute: run #17 reconstructed a different hash from its current built-in spec, while loading the published raw spec still produced the expected live genesis hash.
 
 ### Required build path
 
 Upstream added a specific reproducible runtime builder in signed commit `e55bda47ecb114599e3ae2717c9ff69a01a71683` (3 October 2026), whose commit message explicitly documents this source-path problem. Its `tools/runtime-build/build.sh` builds the runtime at `/materios` in a digest-pinned `rust:1.85.0-bookworm` image and emits SHA-256 and Blake2-256 of `materios_runtime.compact.compressed.wasm`. The published raw spec's `:code` digest must be compared with this output for a source candidate; simply compiling `materios-node` on the runner is not sufficient.
 
-Run #18 is testing the historical v6 source candidate `bfffb5942818334e367ef44a222e5371a9a3968b`. That native candidate test is diagnostic only until the reproducible runtime blob and reconstructed raw genesis are checked.
+Run #18 / #19 were native-build diagnostics for historical source candidate `bfffb5942818334e367ef44a222e5371a9a3968b`. This is a spec-204 runtime source, not the spec-202 candidate, and it must not be treated as the source of the genesis `:code`. Its outputs remain diagnostic only.
 
 The upstream `partnerchain/node/src/cli.rs` (blob `8dfad7b09883d2d355a82ee97975176a34768609`) defines the offline command, and `partnerchain/node/src/chain_identity.rs` (blob `6a63e8c22079e52ccd82050daea455b69e0dfb64`) derives the genesis hash from a chain spec's storage.
 
