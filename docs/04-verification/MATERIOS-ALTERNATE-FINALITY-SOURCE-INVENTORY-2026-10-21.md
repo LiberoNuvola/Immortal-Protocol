@@ -61,6 +61,34 @@ No qualifying new witness source was identified by this workflow. B3-A remains O
 - [Materios Gateway chain-info implementation](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/src/routes/chain-info.ts)
 - [Materios Gateway firehose implementation](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/src/firehose/chain-events.ts)
 
+## Parallel path: acquisition and architecture alternatives — 2026-10-21
+
+A fresh read of the official [Materios Operator Kit](https://github.com/Flux-Point-Studios/materios/blob/main/docs/OPERATOR_KIT.md) still documents the FPS-side justification-pruning problem and says a justification-retaining public sync node is being deployed. The current public text still gives no endpoint, P2P peer ID, RPC method, or readiness signal for that service. This is a lead to resolve, not an available source.
+
+### Ranked alternatives
+
+| Priority | Path | Trustless fit | Current assessment / exit criterion |
+|---|---|---|---|
+| A | **Discover and probe the announced justification-retaining public sync node** | High: transport may be operated by FPS, but IMMORTAL independently validates every proof | Best next low-cost step. Resume only when a public endpoint/peer ID is published or supplied as a concrete lead; then probe identity, historical block/justification availability, and reproducibility. Do not guess DNS names. |
+| B | **Acquire raw justification bytes from another already-running Materios full-node/RPC provider** | High if the proof is checked from the pinned genesis and all required authority transitions are authenticated | Search provider docs/announcements for an actual endpoint, not just an explorer or finalized-height API. A provider is a byte source, not a trust anchor. Exit if no endpoint and no raw FRNK payload. |
+| C | **Permissionless P2P proof acquisition using Substrate block requests** | Potentially high; peers are untrusted and proof verification remains local | Research a minimal client/protocol path that can request blocks with justifications from existing peers, including authority-change blocks. The existing smoldot probe does not expose justifications through its JSON-RPC API and stalled during warp sync; that does not rule out a purpose-built acquisition client. This is an engineering investigation, not yet a proven route. First validate protocol/library support against the pinned Materios chain spec and obtain one real raw proof before expanding scope. |
+| D | **Change the B3-A finality trust model / use another finality mechanism** | Unknown until a complete alternative proof and trust anchor are specified | Last resort and a separate architecture decision. A gateway height, signed operator statement, receipt, drand output, or current authority list is not a replacement for finality proof. Any alternative must specify genesis/trust anchor, authenticated transitions, target binding, verifier, on-chain cost, liveness and adversarial assumptions before implementation. |
+
+### Important distinction: evidence availability versus finality semantics
+
+- A different RPC or P2P peer can solve **data acquisition** without changing the IMMORTAL trust model.
+- A different verifier cannot synthesize signatures that were never acquired.
+- A current finalized header or state/execution proof alone does not establish the full historical GRANDPA authority-transition chain.
+- B3-B receipt/storage proofs remain useful for their own claim, but must not be promoted to B3-A finality.
+- Do not reopen Materios issue #50 as a substitute for this work; it is not the chosen next step. Do not touch V3, Reveal, PRE-RICH economics, or Materios authority-selector semantics.
+
+### Next execution order
+
+1. Continue monitoring the official operator-kit documentation and public Materios repo for a concrete sync-node endpoint/peer ID or readiness announcement.
+2. In parallel, perform a bounded protocol/library feasibility check for a purpose-built P2P block-with-justification requester. The acceptance test is one authentic, raw FRNK justification bound to a real Materios block, not a mocked fixture.
+3. If either source yields bytes, route them through the existing independent verifier and preserve all current fail-closed checks.
+4. If neither path yields a witness, stop repeating endpoint probes and prepare a separately reviewed architecture decision. Until then MATERIOS_FINALITY_PROOF_UNAVAILABLE remains fail-closed.
+
 ## Decision and stopping rule
 
 **No reviewed, already-operating public source currently qualifies as the B3-A witness source.** The missing item is not another boolean endpoint or another verifier implementation; it is an actual cryptographic witness packet from a source that can serve it.
