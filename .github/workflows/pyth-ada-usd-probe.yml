@@ -38,10 +38,24 @@ jobs:
           cat aiken.toml
 
       - name: Run synthetic source-boundary tests
-        run: aiken check
+        shell: bash
+        run: |
+          set +e
+          script -qec 'RUST_BACKTRACE=full aiken check' /dev/null > aiken-check.tty.log 2>&1
+          status=$?
+          printf 'AIKEN_CHECK_EXIT=%s\\n' "$status"
+          cat aiken-check.tty.log
+          exit "$status"
 
       - name: Compile isolated Plutus V3 consumer
-        run: aiken build
+        shell: bash
+        run: |
+          set +e
+          script -qec 'RUST_BACKTRACE=full aiken build' /dev/null > aiken-build.tty.log 2>&1
+          status=$?
+          printf 'AIKEN_BUILD_EXIT=%s\\n' "$status"
+          cat aiken-build.tty.log
+          exit "$status"
 
       - name: Capture pinned dependencies and compiled artifact metadata
         shell: bash
