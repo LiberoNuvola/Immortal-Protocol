@@ -19,6 +19,8 @@ This is a repository-process mechanism, not a DAO, token, protocol rule, or auth
 
 Repository metadata currently reports `allow_auto_merge = false`. Therefore GitHub Auto-merge is **not enabled at repository level** as of this inspection. The GitHub integration used for this work does not expose a supported operation to change that repository setting or branch protection/rulesets, so this document does not claim those settings have been applied.
 
+The active `Protect main` ruleset currently requires pull requests, linear history, and prevents non-fast-forward updates and branch deletion, but its retrieved configuration has `required_approving_review_count: 0`, `required_status_checks: []`, `require_code_owner_review: false`, and `dismiss_stale_reviews_on_push: false`. Thus **no human approval and no CI status check are currently required by that ruleset**. The “stronger review” labels described below are process metadata; they do not independently enforce a review. Configure and verify the ruleset before claiming those controls are active.
+
 ## Proposed merge path
 
 1. A PR declares its contribution class (A–E) and supplies the evidence package in `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`.
