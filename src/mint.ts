@@ -101,9 +101,10 @@ import { observeEconomicStateCarrier } from './preprodEconomicStateObservation'
 import { observePreprodB2Control } from '../Adapter/CARDANO/observation/PreprodB2ControlObservation'
 import type { IssueIntent } from '../IMMORTAL/intent/IssueIntent'
 import {
+  buildIssueSettlementAssets,
   decodeAdaOraclePriceReference,
   deriveAdaIssueSettlementLovelace,
-  assertCompletedTreasuryAdaSettlement,
+  assertCompletedTreasurySettlement,
 } from './issueSettlement'
 
 const MIN_ADA_COUNTER = 2_000_000n
@@ -730,6 +731,14 @@ export type MintSerialOptions = {
    */
   issueClassEvidence: IssueRefinementEvidence
   priceUsdm?: number
+  /**
+   * Optional buyer-selected economic quantities for a multi-asset Treasury
+   * settlement. Keys are Cardano asset units; 'lovelace' is the economic ADA
+   * contribution ABOVE the min-UTxO floor. The builder adds the floor, reads
+   * prices from the authenticated Oracle State datum, and rejects a basket
+   * unless the canonical integer conversion equals priceUsdm exactly.
+   */
+  settlementAssetQuantities?: Readonly<Record<string, bigint>>
   networkId?: number
   roundId?: number
   mainchainRef?: Uint8Array
@@ -1137,13 +1146,22 @@ export async function mintSerialNFT(
   // evaluator also sees ADA carried for min-UTxO and requires a quote for it.
   // Token and mixed-asset payments stay fail-closed until the oracle quote-set
   // contract is extended on-chain.
-  const adaOracleQuote = decodeAdaOraclePriceReference(oracleStateUtxo.datum)
-  const treasuryPaymentLovelace = deriveAdaIssueSettlementLovelace({
-    targetUsdmSubunits: BigInt(priceUsdm),
-    quote: adaOracleQuote,
-    expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
-    nowMs: BigInt(Date.now()),
-  })
+  const treasuryPaymentAssets: Record<string, bigint> = opts.settlementAssetQuantities
+    ? buildIssueSettlementAssets({
+        targetUsdmSubunits: BigInt(priceUsdm),
+        economicAssetQuantities: opts.settlementAssetQuantities,
+        oracleDatum: oracleStateUtxo.datum,
+        expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
+        nowMs: BigInt(Date.now()),
+      })
+    : {
+        lovelace: deriveAdaIssueSettlementLovelace({
+          targetUsdmSubunits: BigInt(priceUsdm),
+          quote: decodeAdaOraclePriceReference(oracleStateUtxo.datum),
+          expectedPublisherPkh: ORACLE_PUBLISHER_PKH,
+          nowMs: BigInt(Date.now()),
+        }),
+      }
 
   // ----------------------------------------------------------
   // B1PrizePool singleton
@@ -1603,10 +1621,7 @@ export async function mintSerialNFT(
           inline:
             treasuryDatum,
         },
-        {
-          lovelace:
-            treasuryPaymentLovelace,
-        },
+        treasuryPaymentAssets,
       )
 
       // ------------------------------------------------------
@@ -1653,10 +1668,10 @@ export async function mintSerialNFT(
 
   // Validate the actual balanced Lucid body, not just the pre-completion
   // payment request, before it can be signed/submitted.
-  assertCompletedTreasuryAdaSettlement(
+  assertCompletedTreasurySettlement(
     tx,
     treasuryAddress,
-    treasuryPaymentLovelace,
+    treasuryPaymentAssets,
   )
 
   // ----------------------------------------------------------
