@@ -367,6 +367,71 @@ jobs:
           cat /tmp/aiken-validator-real.log
           echo "aiken_validator_real_exit=${validator_real_status}"
 
+          echo "=== Control: local witness field access only ==="
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
+          use cardano/transaction.{OutputReference, Transaction}
+          pub type BeaconWitness {
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          }
+          validator drand_beacon_verifier {
+            spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
+              witness.round > 0 && witness.signature != #"" && witness.public_key != #""
+            }
+            else(_) { fail }
+          }
+          AIKEN
+          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-field-access.log 2>&1
+          field_access_status=$?
+          cat /tmp/aiken-validator-field-access.log
+          echo "aiken_validator_field_access_exit=${field_access_status}"
+
+          echo "=== Control: production verifier called with literal arguments ==="
+          cat > "$tmp_val/validators/beacon_validator.ak" <<'AIKEN'
+          use cardano/transaction.{OutputReference, Transaction}
+          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          validator drand_beacon_verifier {
+            spend(_datum: Option<Data>, _witness: Data, _own_ref: OutputReference, _context: Transaction) {
+              verify_quicknet_signature(42, #"010203", #"040506")
+            }
+            else(_) { fail }
+          }
+          AIKEN
+          (cd "$tmp_val" && aiken check --skip-tests) > /tmp/aiken-validator-literal-call.log 2>&1
+          literal_call_status=$?
+          cat /tmp/aiken-validator-literal-call.log
+          echo "aiken_validator_literal_call_exit=${literal_call_status}"
+
+          echo "=== Control: local witness fields passed to a minimal imported function ==="
+          tmp_stub_call="$(mktemp -d)"
+          cp aiken.toml "$tmp_stub_call/aiken.toml"
+          mkdir -p "$tmp_stub_call/lib" "$tmp_stub_call/validators"
+          cat > "$tmp_stub_call/lib/drand.ak" <<'AIKEN'
+          pub fn verify_quicknet_signature(round: Int, signature: ByteArray, public_key: ByteArray) -> Bool {
+            round > 0 && signature != #"" && public_key != #""
+          }
+          AIKEN
+          cat > "$tmp_stub_call/validators/beacon_validator.ak" <<'AIKEN'
+          use cardano/transaction.{OutputReference, Transaction}
+          use immortal/drand-beacon-verifier/drand.{verify_quicknet_signature}
+          pub type BeaconWitness {
+            round: Int,
+            signature: ByteArray,
+            public_key: ByteArray,
+          }
+          validator drand_beacon_verifier {
+            spend(_datum: Option<Data>, witness: BeaconWitness, _own_ref: OutputReference, _context: Transaction) {
+              verify_quicknet_signature(witness.round, witness.signature, witness.public_key)
+            }
+            else(_) { fail }
+          }
+          AIKEN
+          (cd "$tmp_stub_call" && aiken check --skip-tests) > /tmp/aiken-validator-stub-call.log 2>&1
+          stub_call_status=$?
+          cat /tmp/aiken-validator-stub-call.log
+          echo "aiken_validator_stub_call_exit=${stub_call_status}"
+
           echo "=== Isolate drand module body ==="
           tmp_module="$(mktemp -d)"
           cp aiken.toml "$tmp_module/aiken.toml"
@@ -453,7 +518,7 @@ jobs:
           echo "aiken_build_exit=${build_status}"
           find . -maxdepth 3 -type f -name 'plutus.json' -print
 
-          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_stub_lib_status != 0 || validator_no_tests_status != 0 || validator_renamed_file_status != 0 || validator_local_type_status != 0 || validator_real_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
+          exit $(( smoke_status != 0 || type_status != 0 || no_validator_status != 0 || official_validator_status != 0 || validator_stub_status != 0 || validator_typed_stub_status != 0 || validator_official_shape_status != 0 || validator_hello_name_status != 0 || validator_clean_lib_status != 0 || validator_stub_lib_status != 0 || validator_no_tests_status != 0 || validator_renamed_file_status != 0 || validator_local_type_status != 0 || validator_real_status != 0 || field_access_status != 0 || literal_call_status != 0 || stub_call_status != 0 || module_stub_status != 0 || builtin_import_status != 0 || g2_import_status != 0 || integer_status != 0 || bls_status != 0 || build_status != 0 ))
 
   offchain:
     runs-on: ubuntu-24.04
