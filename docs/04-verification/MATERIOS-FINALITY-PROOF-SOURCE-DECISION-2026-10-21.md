@@ -72,3 +72,16 @@ Continue only with a public-surface discovery pass for an already-operating Mate
 - [Materios upstream RPC registration at inspected commit](https://github.com/Flux-Point-Studios/materios/blob/bc1465d85e033001bc86175b85d60f2e5c353413/partnerchain/node/src/rpc.rs)
 - [Polkadot.js GRANDPA JSON-RPC documentation](https://polkadot.js.org/docs/polkadot/rpc/)
 - [Polkadot SDK — GRANDPA justification verification context](https://paritytech.github.io/polkadot-sdk/master/bp_header_chain/justification/index.html)
+
+
+## Additional public surface check — Materios Gateway
+
+The public [Materios Gateway repository](https://github.com/Flux-Point-Studios/materios-gateway/tree/78a654465be54c002a027806f496350e8cbf860a) was also inspected. Its `chain-info` route queries `chain_getFinalizedHead` and `chain_getHeader`, then reports a `finalized_block` number. It does not return the GRANDPA justification, authenticated authority transitions, or a finality-proof envelope. Its receipt firehose consumes `system.events` and `chain.subscribeNewHeads`; its event types concern receipt submission/certification/anchoring and connection status, not cryptographic finality proofs.
+
+Pinned source references:
+- [Gateway chain-info route](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/src/routes/chain-info.ts)
+- [Gateway firehose route](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/src/routes/firehose.ts)
+- [Gateway chain-event subscriber](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/src/firehose/chain-events.ts)
+- [Gateway README/API scope](https://github.com/Flux-Point-Studios/materios-gateway/blob/78a654465be54c002a027806f496350e8cbf860a/README.md)
+
+The gateway therefore aids receipt discovery and provides an operator-facing observation of the finalized head, but it does not currently supply the missing proof artifact. Its `finalized_block` value is sourced from the configured Materios RPC and must not be treated as an independent cryptographic certificate.
