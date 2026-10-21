@@ -84,9 +84,13 @@ The following are proposed public labels for discussion, not yet an implemented 
 - **CLAIMED:** author requests evidence-gated handling and supplies the declaration.
 - **INCOMPLETE:** a specific required declaration item or reproducible artifact is missing.
 - **ELIGIBLE:** scope is within an allowed class and required evidence is present and internally consistent.
-- **CHALLENGED:** a concrete defect, scope mismatch, security concern, or counter-evidence has been stated.
-- **RESOLVED:** the stated challenge was answered, corrected, or withdrawn.
-- **PROCEDURALLY OVERDUE:** the published response window elapsed without a substantive response or a documented reason for delay.
+- **CHALLENGED (OPEN / UNDER_REVIEW):** a concrete defect, scope mismatch, security concern, or counter-evidence has been stated; Auto-merge is blocked.
+- **ESCALATED:** a challenge passed its response window without disposition; it remains blocking and needs a recorded next action.
+- **SECURITY_HOLD / SECURITY_ESCALATED:** a sensitive security concern is being triaged privately; the hold remains blocking until an authorized disposition is recorded.
+- **RESOLVED_NO_BLOCKER:** a reasoned disposition found no merge-blocking issue and is bound to the current head.
+- **RESOLVED_FIXED:** a blocker was corrected on the current head; evidence and required checks are current.
+- **UPHELD:** a challenge established a blocker for the affected head; that head is not eligible for Auto-merge.
+- **PROCEDURALLY OVERDUE:** the contribution response window elapsed without a substantive response or a documented reason for delay. This records delay; it does not imply approval, rejection, or automatic merge.
 - **OUT OF SCOPE:** a reasoned classification explains why stronger review is required.
 - **CLOSED / WITHDRAWN:** the PR was closed or withdrawn, with its public record preserved.
 
