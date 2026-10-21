@@ -51,6 +51,20 @@ The later CI run [#39590324041](https://github.com/LiberoNuvola/Immortal-Protoco
 
 This is an additional endpoint-availability result, not an assertion that the scanned blocks were unfinalized or that the chain's finality is invalid. The packet explicitly leaves cryptographic finality and authority-transition provenance false. It extends the known scan evidence but does not make the historical target's proof available.
 
+### RPC method-catalogue check — 2026-10-21
+
+The newer [Materios Existing-Route Proof Availability run #39590352016](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39590352016) probed `rpc_methods` on the public `/preprod-rpc` endpoint. It received a valid catalogue of **85 advertised methods**. The following were **not listed**:
+
+- `grandpa_proveFinality`
+- `grandpa_subscribeJustifications`
+- `grandpa_unsubscribeJustifications`
+- `materios_b3_calculateCommitteeProof`
+- `state_getCode`
+
+The artifact `materios-existing-route-proof-probe-39590352016-1` (ID `12341796069`, ZIP SHA-256 `5fb6c9ceab5a72392ef1a4cf458adac389b471f4c15232b18d3d9101565b0a91`) also contains a native storage-trie proof that independently verifies membership of the requested key/value against the state root supplied by the HTTP RPC, using 10 proof nodes. This is **B3-B inclusion evidence only**: the proof packet explicitly keeps GRANDPA finality, authority provenance, deployed runtime identity, anchor-to-round binding, and B3 conformance false.
+
+The resulting public capability picture is narrower and better evidenced than a generic RPC failure: the selected endpoint returns ordinary chain observations and storage proofs, but does not advertise either standard GRANDPA proof-delivery method, the Materios-specific execution-proof method, or `state_getCode`. This still proves only what this endpoint exposes at the time checked; it does not rule out a separate already-operating proof source.
+
 Reference: [Materios Preprod RPC endpoint](https://materios.fluxpointstudios.com/preprod-rpc).
 
 ### 2. Upstream execution-proof RPC request is not an available dependency
