@@ -22,6 +22,8 @@ import qualified PlutusTx.AssocMap as AssocMap
 import OracleTypes
   ( OracleStateId (..)
   , OracleDatum (..)
+  , OracleQuote (..)
+  , lookupOracleQuote
   , precision
   , minUtxoLovelace
   , maxOracleAge
@@ -87,10 +89,11 @@ decodeOracleDatum info out =
       Nothing
 
 
--- | Resolve an oracle price from the authorized Oracle State reference input.
---
--- The singleton NFT authenticates the state container. The OracleDatum and the
--- configured singleton token must be present on the same TxOut.
+-- | Resolve an asset-specific price from the authenticated Oracle State
+-- reference input. Legacy five-field OracleDatum remains supported. The
+-- additive OracleQuoteSet constructor allows a single singleton UTxO to carry
+-- several independently timestamped, publisher-bound quotes. Missing or
+-- duplicate target quotes fail closed.
 {-# INLINABLE oraclePriceFor #-}
 oraclePriceFor
   :: [TxInInfo]
@@ -111,9 +114,7 @@ oraclePriceFor
   csBytes
   tnBytes =
   let
-    out =
-      txInInfoResolved i
-
+    out = txInInfoResolved i
     oracleStatePresent =
       valueOf
         (txOutValue out)
@@ -122,26 +123,18 @@ oraclePriceFor
         == 1
   in
   case decodeOracleDatum info out of
-
-    Just od
-      | oracleStatePresent
-      && odAssetPolicy od == csBytes
-      && odAssetName od == tnBytes
-      && odPublisher od == publisher
-      && validOracleTimestamp
-           (odTimestamp od)
-           info
-      && odPrice od >= 0 ->
-          odPrice od
-
+    Just datum
+      | oracleStatePresent ->
+          case lookupOracleQuote csBytes tnBytes datum of
+            Just quote
+              | oqPublisher quote == publisher
+              && validOracleTimestamp (oqTimestamp quote) info
+              && oqPrice quote >= 0 ->
+                  oqPrice quote
+            _ ->
+              oraclePriceFor is oracleState publisher info csBytes tnBytes
     _ ->
-      oraclePriceFor
-        is
-        oracleState
-        publisher
-        info
-        csBytes
-        tnBytes
+      oraclePriceFor is oracleState publisher info csBytes tnBytes
 
 
 -- | Canonical conversion from Value to USDM sub-units.
