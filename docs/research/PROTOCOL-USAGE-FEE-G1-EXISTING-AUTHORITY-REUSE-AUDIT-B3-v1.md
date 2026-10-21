@@ -533,3 +533,56 @@ The source does not establish whether this requires an extension to a canonical 
 **Readiness result:** the semantic order is clear, but the current inspected data types and PRE-RICH admission order do not provide a safe plug-in G1 implementation seam. The missing representation and its normative approval must be resolved before code changes; no fee-bearing class is selected. G1 remains OPEN.
 
 This section is a targeted exact-ref source check, not a whole-repository proof of absence. Documentation only: no production source, tests, CI, deployment, governance schema, V3 carrier or Reveal semantics changed.
+
+
+### 9.20 Economic principle proposed by the project owner — cost recovery plus optional protocol contribution
+
+**Status:** owner-proposed direction for analysis; not yet an adopted normative fee rule. This section records the project owner's current intuition and separates it from G1 applicability and from the still-open production fee function.
+
+The proposed economic intuition is:
+
+> An IMMORTAL operation may consume resources to complete. Where a Protocol Usage Fee applies, the fee should recover the portion of those costs attributable to the operation and may include an additional, explicitly authorized contribution retained by the protocol.
+
+This is a useful candidate principle, but it does not by itself determine which operations are fee-bearing, which costs are attributable, how they are measured, or whether a contribution is enabled.
+
+#### Required separations
+
+1. **Native chain execution cost (`ChainExecutionCost`)** — the cost charged by the underlying chain for transaction execution. It remains distinct from `ProtocolUsageFee`; do not count it twice merely because both costs arise during one operation.
+2. **Protocol-attributable operating cost** — a measured or defensibly derived cost of resources/services used to perform the protocol operation. The included cost categories, measurement method, time window, shared-overhead allocation and evidence quality have not been selected.
+3. **Protocol contribution / margin** — an optional additional amount retained by the protocol. Its purpose, beneficiary/accounting treatment, formula and authorization remain open. A percentage markup on cost and a percentage share of the final fee are different formulas and must not be conflated.
+4. **Total user burden** — if both protocol fee and chain execution cost are paid by the user, the presentation may report their sum, but the canonical categories and evidence must remain separately identifiable.
+
+#### Candidate formulas — illustrative only
+
+Let `C_a` be the approved, evidenced protocol-operating cost attributable to an operation, and let `Q` be an optional approved contribution:
+
+- Cost recovery only: `ProtocolUsageFee = C_a`
+- Cost recovery plus contribution: `ProtocolUsageFee = C_a + Q`
+- If, later, an approved rule chooses a markup rate `r`: `ProtocolUsageFee = C_a × (1 + r)`
+
+These are alternative candidate forms, not adopted equations. No rate, amount, unit, rounding rule, minimum fee, cap, cost-allocation method or contribution destination is selected here. A markup rate applied to cost is not the same as a percentage of the final amount collected.
+
+#### Source-backed constraints and implementation implications
+
+The normative hierarchy already supplies the transition-level requirements:
+- Constitution §3 and State & Transition Specification §1 require obligations/exposures to be represented and derived before the action becomes executable.
+- Constitution §8 and State & Transition Specification §6 require coupled economic changes to commit atomically.
+- Constitution §11 requires deterministic, versioned, reproducible and independently verifiable derivations.
+- Conformance Specification C3, C6, C7, C16 and C17 require obligation representation, atomicity, deterministic derivation, EEV/failure handling where applicable, and exhaustive/non-overlapping obligation/exposure partitioning.
+
+These rules establish ordering, safety and conformance constraints. They do **not** establish a concrete cost-accounting model, a fee amount formula, a universal reference unit, or an authorized contribution rate.
+
+The inspected `IMMORTAL/kernel/EconomicKernel.hs` contains application-specific ticket exposure, protected-capital, reserve and liability functions. The inspected `EconomicStateV3.hs` represents PRE-RICH ticket liabilities/reserves and Jackpot state. Those definitions are not evidence that a universal protocol-operating-cost ledger or G1 fee function already exists; do not repurpose ticket prices, Jackpot, `v3MandatoryFutureCosts`, or `uesAdditionalProtectedCapital` as a fee formula or fee-revenue bucket.
+
+#### Recommended next evidence-first work
+
+Before choosing any formula or modifying production code:
+
+1. Inventory real IMMORTAL operations and identify which resources/services each actually consumes; do not infer fee applicability from an operation's existence.
+2. For each plausible cost category, classify it as directly measurable per operation, shared/overhead, chain execution cost, or not yet measurable. Record evidence and uncertainty rather than inventing an allocation.
+3. Establish which costs the protocol intends to recover and which are explicitly excluded.
+4. Compare cost-recovery-only against an optional contribution as separate policy decisions. Leave the contribution disabled/unselected until its purpose and calculation basis are explicitly approved.
+5. Keep this economic amount function downstream of G1 applicability but upstream of complete candidate post-state safety/viability and atomic commit. A fee-bearing declaration alone does not establish an amount; a cost estimate alone does not make an operation fee-bearing.
+6. Keep settlement asset/reference qualification, conversion/rounding, affordability, accounting classification and any reward/distribution policy as separate closure gates.
+
+**Disposition:** this proposed principle gives the fee-function work a coherent direction without closing G1 or authorizing an implementation. G1 class applicability remains OPEN; the production fee function, attributable-cost model, optional contribution policy, settlement and live evidence remain OPEN. Documentation only; no source code, tests, CI, deployment, G1 class mapping, V3 carrier or Reveal semantics changed.
