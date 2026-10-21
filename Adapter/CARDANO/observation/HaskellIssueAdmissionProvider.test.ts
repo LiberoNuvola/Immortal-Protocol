@@ -1,7 +1,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { execPath } from 'node:process'
-import { createHaskellIssueAdmissionProvider } from './HaskellIssueAdmissionProvider'
+import {
+  assertHaskellDecisionMatchesAuthorityBinding,
+  createHaskellIssueAdmissionProvider,
+} from './HaskellIssueAdmissionProvider'
 
 const counter = 'a'.repeat(64) + '#0'
 const pool = 'b'.repeat(64) + '#1'
@@ -133,6 +136,26 @@ function producerScript() {
 }
 
 describe('Haskell Issue admission provider', () => {
+  it('rejects a signed carrier binding when Haskell recomputes a different digest', () => {
+    const computed = {
+      stateHash: '4'.repeat(64),
+      actionFingerprint: '6'.repeat(64),
+      postStateHash: '5'.repeat(64),
+    }
+    expect(() => assertHaskellDecisionMatchesAuthorityBinding(
+      computed,
+      { ...computed, actionFingerprint: '9'.repeat(64) },
+    )).toThrow('Haskell Issue actionFingerprint does not match signed authority carrier binding')
+    expect(() => assertHaskellDecisionMatchesAuthorityBinding(
+      computed,
+      { ...computed, stateHash: '9'.repeat(64) },
+    )).toThrow('Haskell Issue stateHash does not match signed authority carrier binding')
+    expect(() => assertHaskellDecisionMatchesAuthorityBinding(
+      computed,
+      undefined,
+    )).toThrow('signed authority carrier decision binding is required')
+  })
+
   it('binds Haskell decision coordinates and ProtectedCapital provenance', async () => {
     const eev = eevQualification()
     const certificate = viabilityCertificate()
@@ -159,6 +182,11 @@ describe('Haskell Issue admission provider', () => {
         },
         decisionReference,
         observationReference,
+        authorityDecisionBinding: {
+          stateHash: '4'.repeat(64),
+          actionFingerprint: '6'.repeat(64),
+          postStateHash: '5'.repeat(64),
+        },
         poolInputReference: pool,
         poolUsdmValue: 100n,
         liquiditySourceReferences: [pool],
@@ -226,6 +254,11 @@ describe('Haskell Issue admission provider', () => {
         },
         decisionReference,
         observationReference,
+        authorityDecisionBinding: {
+          stateHash: '4'.repeat(64),
+          actionFingerprint: '6'.repeat(64),
+          postStateHash: '5'.repeat(64),
+        },
         poolInputReference: pool,
         poolUsdmValue: 100n,
         liquiditySourceReferences: [pool],
