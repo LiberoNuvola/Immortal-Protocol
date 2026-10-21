@@ -33,6 +33,8 @@ import PythQuoteCarrierBinding
   , extractBoundPythAdaUsdQuote
   )
 
+import PythAdaUsdConversion (pythAdaUsdToUsdmSubunitsCandidate)
+
 bytes :: String -> BuiltinByteString
 bytes = toBuiltin . ByteString.pack
 
@@ -153,6 +155,20 @@ main = do
       Just actual -> sameRawQuote actual rawQuote
       Nothing -> False)
     "unique carrier continuation returns exact raw price/exponent/timestamps"
+
+  assert
+    (case extract validInfo of
+      Just quote ->
+        pythAdaUsdToUsdmSubunitsCandidate
+          (pabPrice quote)
+          (pabExponent quote)
+          1_000_000
+          1
+          1
+          18
+          == Just 70
+      Nothing -> False)
+    "candidate conversion consumes the extracted raw carrier tuple (synthetic D=1/1; not authoritative)"
 
   assert
     (rejected (txInfo [] [carrierOut quoteDatum carrierValue] mempty))
