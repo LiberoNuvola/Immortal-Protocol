@@ -37,20 +37,20 @@ jobs:
       - name: Install pinned Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.85.0
+          toolchain: 1.88.0
 
       - name: Cache Materios Cargo build
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            ${{ runner.temp }}/materios -> target
+            ${{ runner.temp }}/materios/partnerchain -> target
 
       - name: Build pinned Materios node
-        working-directory: ${{ runner.temp }}/materios
+        working-directory: ${{ runner.temp }}/materios/partnerchain
         run: cargo build --locked --release -p materios-node
 
       - name: Reproduce genesis hash from pinned chain spec
-        working-directory: ${{ runner.temp }}/materios
+        working-directory: ${{ runner.temp }}/materios/partnerchain
         run: |
           set -euo pipefail
           ./target/release/materios-node chain-id --chain preprod > "$RUNNER_TEMP/materios-chain-id.json"
