@@ -4,7 +4,7 @@
 // Runs trusted base-branch code against PR metadata and changed-file inventory.
 // It does not prove semantic non-interference and does not configure GitHub rules.
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { appendFile, readFile } from 'node:fs/promises'
 
 const ALLOWED_CLASSES = new Set(['A', 'B', 'C', 'D', 'E'])
 const ALLOWED_LAYERS = new Set(['UNIVERSAL', 'ADAPTER', 'APPLICATION', 'PROCESS', 'AUDIT'])
@@ -95,7 +95,7 @@ const parseLayer = (value) => {
 }
 
 const classifyPullRequest = ({ body, files, headSha }) => {
-  const changed = [...new Set((files ?? []).map((file) => String(file).replace(/\\/g, '/'))]
+  const changed = [...new Set((files ?? []).map((file) => String(file).replace(/\\/g, '/')))]
     .sort()
   if (changed.length === 0) {
     return { decision: 'INCOMPLETE', eligible: false, reasons: ['Changed-file inventory is empty or unavailable.'], files: changed, headSha }
@@ -152,7 +152,7 @@ const classifyPullRequest = ({ body, files, headSha }) => {
   }
 }
 
-const emitResult = (result) => {
+const emitResult = async (result) => {
   const lines = [
     '# Contribution evidence gate',
     '',
