@@ -53,6 +53,28 @@ const deadlineTransition = (status, elapsedDays, hasRecordedBlocker) => {
   return status
 }
 
+// A valid challenge has its own lifecycle. Deadline expiry increases visibility
+// and accountability; it never silently resolves the technical objection.
+const challengeDeadlineTransition = (state, elapsedDays) => {
+  const terminal = new Set(['RESOLVED_NO_BLOCKER', 'RESOLVED_FIXED', 'CLOSED'])
+  if (terminal.has(state) || elapsedDays < 14) return state
+  if (state === 'SECURITY_HOLD' || state === 'SECURITY_ESCALATED') return 'SECURITY_ESCALATED'
+  if (state === 'OPEN' || state === 'ACKNOWLEDGED' ||
+      state === 'UNDER_REVIEW' || state === 'ESCALATED') return 'ESCALATED'
+  return state
+}
+
+const challengeAllowsAutoMerge = (pr) => {
+  const state = pr.challengeState ?? (pr.challengeOpen === true ? 'OPEN' : 'NONE')
+  if (state === 'NONE') return true
+  if (state !== 'RESOLVED_NO_BLOCKER' && state !== 'RESOLVED_FIXED') return false
+  if (pr.challengeResolutionRecorded !== true) return false
+  if (pr.challengeResolutionCommitSha !== pr.commitSha) return false
+  if (state === 'RESOLVED_FIXED' && (pr.requiredChecksPass !== true ||
+      pr.evidenceCommitSha !== pr.commitSha)) return false
+  return true
+}
+
 // Stable example: evidence completeness is a deterministic function of declared
 // scope and commit-bound evidence, not reviewer preference or PR popularity.
 const eligiblePR = Object.freeze({
@@ -128,7 +150,7 @@ const autoMergeEligible = (pr) =>
   pr.requiredChecksPass === true &&
   pr.approvalCommitSha === pr.commitSha &&
   pr.evidenceCommitSha === pr.commitSha &&
-  pr.challengeOpen !== true
+  challengeAllowsAutoMerge(pr)
 
 assert.equal(autoMergeEligible({
   ...eligiblePR,
@@ -166,8 +188,65 @@ assert.equal(autoMergeEligible({
   approved: true,
   requiredChecksPass: true,
   approvalCommitSha: 'abc123',
-  challengeOpen: true,
+  challengeState: 'OPEN',
 }), false, 'an unresolved concrete challenge blocks the modeled merge path')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'ESCALATED',
+}), false, 'an overdue challenge stays blocking until it receives a recorded disposition')
+assert.equal(challengeDeadlineTransition('OPEN', 13), 'OPEN',
+  'challenge remains open inside its response window')
+assert.equal(challengeDeadlineTransition('OPEN', 15), 'ESCALATED',
+  'an unaddressed challenge escalates publicly after its response window')
+assert.equal(challengeDeadlineTransition('SECURITY_HOLD', 15), 'SECURITY_ESCALATED',
+  'a security hold escalates without exposing sensitive details or clearing the hold')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'SECURITY_ESCALATED',
+}), false, 'a time-expired security hold cannot authorize its own merge')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_NO_BLOCKER',
+  challengeResolutionRecorded: true,
+  challengeResolutionCommitSha: 'abc123',
+}), true, 'a resolved challenge permits the normal approval-and-check path when its disposition is recorded for the current head')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_NO_BLOCKER',
+  challengeResolutionRecorded: false,
+  challengeResolutionCommitSha: 'abc123',
+}), false, 'a challenge cannot be silently dismissed without a recorded disposition')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_NO_BLOCKER',
+  challengeResolutionRecorded: true,
+  challengeResolutionCommitSha: 'old-head',
+}), false, 'challenge disposition bound to an old head must be reassessed')
+assert.equal(autoMergeEligible({
+  ...eligiblePR,
+  approved: true,
+  requiredChecksPass: true,
+  approvalCommitSha: 'abc123',
+  challengeState: 'RESOLVED_FIXED',
+  challengeResolutionRecorded: true,
+  challengeResolutionCommitSha: 'abc123',
+  evidenceCommitSha: 'different-head',
+}), false, 'claiming a fix cannot override stale evidence')
 assert.equal(autoMergeEligible({
   ...eligiblePR,
   approved: true,
@@ -184,7 +263,8 @@ assert.equal(autoMergeEligible({
 }), true, 'deadline status alone does not decide merge eligibility; approval and checks still govern')
 
 console.log('PASS: contribution acceptance boundary remains evidence-gated in the toy model')
-console.log('PASS: modeled Auto-merge requires eligibility, current-head approval, green required checks, and no open challenge')
+console.log('PASS: modeled Auto-merge requires eligibility, current-head approval, green required checks, and a resolved challenge disposition')
+console.log('PASS: overdue challenges escalate visibly but never become auto-merge permits')
 console.log('PASS: maintainer discretion is constrained by recorded challenge categories')
 console.log('PASS: deadlines expose stalling without creating automatic merge/rejection')
 console.log('PASS: normative scope, commit binding, and mandatory checks fail closed')
