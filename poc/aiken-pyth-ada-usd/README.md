@@ -63,3 +63,12 @@ A manual workflow, `.github/workflows/pyth-native-ledger-probe.yml`, and a separ
 - The runner also evaluates a one-byte-mutated payload locally and never submits it. This is only a local negative result, **not** an on-chain rejection proof. On successful submission, an evidence artifact records the state reference, payload digest, transaction hashes, serialized CBOR size and best-effort redeemer/execution-unit observation.
 
 **Gate A status after adding the harness: IMPLEMENTATION PREPARED, REAL LEDGER EVIDENCE NOT YET OBSERVED.** A source commit or green compilation must not be labelled as a successful native-ledger signature test. Even after a successful Preprod positive case, the on-chain negative case, USD/USDM unit decision and MintPolicy-to-carrier binding remain open.
+
+### Software-gate result — 2026-10-21
+
+[CI run 39659905806](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806) succeeded on commit `2106daa5f4c93c20cbe2479ae9fa08db0d8f59f6`. It records:
+- Aiken synthetic tests and Plutus V3 compilation for the isolated consumer: pass.
+- Strict TypeScript typecheck for `scripts/testPythSignedUpdatePreprod.mts`: pass.
+- No API secrets required, no wallet loaded, and no Cardano transaction built or submitted by that CI job.
+
+**Operational caveat:** the manual workflow and runner currently exist on `work/immortal-green-closure`, not on `main`. GitHub's normal Actions manual-dispatch surface is therefore not yet available from the repository's default branch. Promote only the scoped Pyth test files/workflow through an appropriate review; do not merge the broad active PR just to expose a test button.
