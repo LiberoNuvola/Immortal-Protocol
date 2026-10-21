@@ -104,8 +104,8 @@ describe('Issue settlement conformance', () => {
       nowMs,
     })
     expect(() => request(new Constr(1, [[ada]] as any))).toThrow(/exactly one quote/)
-    expect(() => request(new Constr(1, [[ada, stale]] as any)).toThrow(/stale/)
-    expect(() => request(new Constr(1, [[ada, wrongPublisher]] as any)).toThrow(/publisher/)
+    expect(() => request(new Constr(1, [[ada, stale]] as any))).toThrow(/stale/)
+    expect(() => request(new Constr(1, [[ada, wrongPublisher]] as any))).toThrow(/publisher/)
     expect(request(new Constr(1, [[ada, fresh]] as any))).toBe(nowMs - 1_000n + 3_600_000n)
   })
 
