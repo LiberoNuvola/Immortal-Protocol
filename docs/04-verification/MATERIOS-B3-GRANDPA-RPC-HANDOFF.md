@@ -413,3 +413,31 @@ The finalized-state capture reported `GRANDPA finality proof status: unavailable
 
 Do not change Materios's attestor and do not weaken the B3-A trust boundary. The IMMORTAL-side verifier, finality-proof decoder, and conformance tests are present, but the public RPC surface still does not provide a usable proof. The previously described operator-controlled node/upstream-registration route is NOT available to this project and is not an action item. Continue only with public interfaces or an independently identified public proof publisher. Until real proof bytes are captured and independently checked against authenticated authority-set provenance, B3-A remains **OPEN** even though B3-B is **PASS**.
 
+## Live Preprod re-check — 2026-10-21 (IMMORTAL run #75)
+
+Source run: [Materios B3 execution-proof verifier — run #75](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39545521252).
+
+Commit under test: `d50bc98b28f1b8286804825ef2fe529b2d5930f4`.
+
+### Confirmed results
+
+- `verifier`: **PASS** (`cargo fmt --check` and Rust tests).
+- `finalized-state-capture`: **PASS as extraction only**; captured finalized block `2377963`, hash `0xdc6ae22ae6dcb45cf20baaddbf3a1bf1b90aaa150b8025ae99198bc4a0b52262`, state root `0xad7bdbc7038b02b906467cca6dd52f372fcaa4492442fdd64066ac97091dbeeb`.
+- `live-storage-proof`: **PASS**; artifact `materios-b3b-live-storage-proof` (ID `12321248280`) validates the exact receipt storage read proof with 10 proof nodes. Receipt ID: `0x9d50f29cbdf389aa37268afde8aaa536fd305a461a6cd77574d4b7ff23c4a78f`; certified block: `2377963`.
+- `real-grandpa-witness`: **FAIL / B3-A OPEN**; the 768-block scan ended with `NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN`.
+
+The newly instrumented RPC probe records the same limitation on both `https://materios.fluxpointstudios.com/rpc` and `https://materios.fluxpointstudios.com/preprod-rpc`: `grandpa_proveFinality(2377963)` returns JSON-RPC `-32601 Method not found`, while `chain_getBlock(finalizedHash).justifications` is `null`.
+
+The finalized-state artifact (ID `12321138478`) captures `finality_proof.status = unavailable`; it also records authority set ID `4213` and five authorities from RPC state. Those authority values are not authenticated by this capture. Reading them is not a substitute for a finality proof or proof of authority-set provenance.
+
+### Source-level cross-check
+
+The current Materios upstream source at commit [`f1c8b400a229258298236d9337247135b6c1112e`](https://github.com/Flux-Point-Studios/materios/commit/f1c8b400a229258298236d9337247135b6c1112e) is consistent with the observed RPC response: [`partnerchain/node/src/rpc.rs`](https://github.com/Flux-Point-Studios/materios/blob/f1c8b400a229258298236d9337247135b6c1112e/partnerchain/node/src/rpc.rs) registers the System, Orinq Receipts, and MOTRA RPC modules, but does not merge the standard GRANDPA RPC module. [`partnerchain/node/src/service.rs`](https://github.com/Flux-Point-Studios/materios/blob/f1c8b400a229258298236d9337247135b6c1112e/partnerchain/node/src/service.rs) contains GRANDPA consensus/service wiring, and `partnerchain/node/Cargo.toml` includes `sc-consensus-grandpa-rpc`.
+
+This supports a transport-surface diagnosis, not a claim that Materios lacks GRANDPA consensus finality: the current public RPC assembly does not expose the needed proof route, and the public block responses sampled by CI do not carry justifications.
+
+### Decision and next acceptance gate
+
+Materios remains useful for receipt lookup and independently verified storage-read proofs, but those proofs must remain separate from finality claims. B3-A stays **OPEN** and overall B3 is **NOT APPROVED**. Do not use `chain_getFinalizedHead`, authority data returned by the same RPC, or a storage proof alone as a replacement for independently verified GRANDPA finality.
+
+The next admissible path is an independently identified public proof publisher or externally operated archive RPC that returns actual `FinalityProof` / GRANDPA justification bytes for an exact checkpoint, followed by independent verification of the outer proof, inner justification, ancestry, signatures, quorum, and authenticated authority-set transitions. No private Materios node, upstream patch, or weakening of the trust boundary is assumed. If no such public interface is found, scope Materios to receipts/storage and use a separate finality source for the remaining requirements.
