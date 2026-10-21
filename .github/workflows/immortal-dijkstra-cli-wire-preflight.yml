@@ -1,0 +1,73 @@
+name: IMMORTAL Dijkstra CLI Wire Preflight
+
+on:
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - audit/cardano-integration/dijkstra-cli-wire-preflight.ps1
+      - .github/workflows/immortal-dijkstra-cli-wire-preflight.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cli-wire-preflight:
+    name: Offline build-sign-embed smoke test
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download and verify official cardano-cli 11.4.0.0
+        shell: powershell
+        run: |
+          $version = "11.4.0.0"
+          $archive = Join-Path $env:RUNNER_TEMP "cardano-cli-$version-win64.zip"
+          $extractDir = Join-Path $env:RUNNER_TEMP "cardano-cli-$version"
+          $url = "https://github.com/IntersectMBO/cardano-cli/releases/download/cardano-cli-$version/cardano-cli-$version-win64.zip"
+          $expectedSha256 = "964c83476bf9a96809405c7abb32abc45616d62c0c1707b7dc683c0f6c927dfe"
+
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualSha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "cardano-cli archive SHA-256 mismatch: expected $expectedSha256, got $actualSha256"
+          }
+
+          Expand-Archive -LiteralPath $archive -DestinationPath $extractDir -Force
+          $cli = Get-ChildItem -LiteralPath $extractDir -Filter "cardano-cli.exe" -File -Recurse |
+            Select-Object -First 1
+          if (-not $cli) {
+            throw "cardano-cli.exe not found in the verified release archive"
+          }
+
+          "CARDANO_CLI_PATH=$($cli.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Verified official cardano-cli archive SHA-256: $actualSha256"
+          & $cli.FullName --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "The verified cardano-cli binary did not start successfully"
+          }
+
+      - name: Run synthetic CLI wire-format preflight
+        shell: powershell
+        run: |
+          $evidenceDir = Join-Path $env:RUNNER_TEMP "immortal-dijkstra-cli-wire-preflight"
+          New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
+          $preflight = Join-Path $env:GITHUB_WORKSPACE "audit/cardano-integration/dijkstra-cli-wire-preflight.ps1"
+          & "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File $preflight -CardanoCli "$env:CARDANO_CLI_PATH" -OutputDir $evidenceDir
+          if ($LASTEXITCODE -ne 0) {
+            throw "Offline Dijkstra CLI wire-format preflight failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Upload synthetic preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortal-dijkstra-cli-wire-preflight
+          path: ${{ runner.temp }}/immortal-dijkstra-cli-wire-preflight/**
+          if-no-files-found: warn
+          retention-days: 14
