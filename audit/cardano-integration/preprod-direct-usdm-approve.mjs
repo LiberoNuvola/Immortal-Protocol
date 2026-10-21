@@ -175,6 +175,7 @@ const deploymentApproval = {
   sourceSetId,
   profileVersion: PROFILE_VERSION,
   evidenceHash: approvalEvidenceHash,
+  qualificationEvidenceHash,
   qualifiedProperties: Array.isArray(qualification.qualifiedProperties)
     ? [...qualification.qualifiedProperties]
     : ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'],
