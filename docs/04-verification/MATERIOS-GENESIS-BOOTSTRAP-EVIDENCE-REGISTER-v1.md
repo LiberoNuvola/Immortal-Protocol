@@ -73,8 +73,29 @@ B3-A remains **OPEN** until the exact genesis manifest and the verifier's enforc
 
 ## Reproducibility workflow
 
-Workflow committed: `.github/workflows/materios-genesis-reproduction.yml`. It pins the Materios source revision, builds `materios-node`, runs `chain-id --chain preprod`, compares the locally derived genesis hash to the pinned constant, then checks `chain_getBlockHash(0)` from the public Preprod RPC. The workflow execution and artifact have not yet been confirmed; no PASS is claimed here.
+Workflow: `.github/workflows/materios-genesis-reproduction.yml`. The first complete run is evidence collection, not a closure PASS.
 
-The upstream `partnerchain/node/src/cli.rs` (blob `8dfad7b09883d2d355a82ee97975176a34768609`) defines the offline command. `partnerchain/node/src/chain_identity.rs` (blob `6a63e8c22079e52ccd82050daea455b69e0dfb64`) derives the genesis hash using the spec's own runtime code.
+### Run #17 — captured evidence
 
-Historical cross-check: `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json` reports the same genesis hash, but is only a dated gateway observation. A passing reproducibility workflow still does not prove GRANDPA finality or the authority transition.
+- Run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556626040
+- IMMORTAL commit: `961be9034d502b99e79a4cc8cf106399b769f55c`
+- Artifact: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39556626040/artifacts/12326009589
+- ZIP SHA-256: `aa14592f99c128126987b1d273e504b60432a0bf9b10ae2889331b22532e3356`
+- Captured raw genesis spec size: 1,063,592 bytes.
+- Captured raw genesis spec SHA-256: `77877aa63358af6cf0c78a3b106ac2d295da575973bec1c3ff51d53b3fa65aaa`.
+- Raw spec's `:code` bytes SHA-256: `438747fce96411c4fe5d4c02d725993573093937aa14e39104036e5b7811d99f`.
+- The pinned `f1c8b400a229258298236d9337247135b6c1112e` source's native-built built-in chain spec produced `0xfdea248a1edbdec4ffca2306a242896758eba27bac1eddcfabfba457483d4e57`, not the expected live genesis.
+- The downloaded raw spec, when loaded and hashed by the compiled Materios CLI, produced `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`; the direct Preprod RPC returned the same value. The gateway returned it too, but it is not an independent source: the gateway's `chain-info` route polls its configured RPC.
+- Verdict: **FAIL / source reproduction not established**. The artifact intentionally records this mismatch instead of weakening the assertion.
+
+Run #16 for the same pinned upstream commit had produced a different native-built genesis hash (`0x7beedf41110d62c0c7a14c734b2351b647b040e0209ef808fe6c16a846fd7e56`). The difference is consistent with the upstream's own finding that builds of the same source from different paths yielded different WASM `:code` blobs and genesis hashes.
+
+### Required build path
+
+Upstream added a specific reproducible runtime builder in signed commit `e55bda47ecb114599e3ae2717c9ff69a01a71683` (3 October 2026), whose commit message explicitly documents this source-path problem. Its `tools/runtime-build/build.sh` builds the runtime at `/materios` in a digest-pinned `rust:1.85.0-bookworm` image and emits SHA-256 and Blake2-256 of `materios_runtime.compact.compressed.wasm`. The published raw spec's `:code` digest must be compared with this output for a source candidate; simply compiling `materios-node` on the runner is not sufficient.
+
+Run #18 is testing the historical v6 source candidate `bfffb5942818334e367ef44a222e5371a9a3968b`. That native candidate test is diagnostic only until the reproducible runtime blob and reconstructed raw genesis are checked.
+
+The upstream `partnerchain/node/src/cli.rs` (blob `8dfad7b09883d2d355a82ee97975176a34768609`) defines the offline command, and `partnerchain/node/src/chain_identity.rs` (blob `6a63e8c22079e52ccd82050daea455b69e0dfb64`) derives the genesis hash from a chain spec's storage.
+
+Historical cross-check: `poc/materios-grandpa/evidence/live-chain-info-2026-09-25.json` reports the same genesis hash, but is only a dated gateway observation. Genesis identity reproduction still does not prove GRANDPA finality or the Materios-specific authority-selection transition.
