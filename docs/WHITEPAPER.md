@@ -334,6 +334,29 @@ The current evidence should be classified as follows:
 
 This status boundary is consistent with the universal IMMORTAL paper's evidence ladder: design, mathematical proof, model checks, implementation tests, audit and deployment evidence are separate classes. A source file or an off-chain decision result must not be promoted to a stronger claim than its actual evidence supports.
 
+### 13.5 Integer conversion and rounding boundary
+
+The phrase “exact USDM-equivalent value” needs a precise numeric domain. The current Plutus `Economic.totalUsdmValue` does not compare an unrounded rational exchange value with the ticket price. It converts each nonzero asset entry with `ceilingDiv(amount × oraclePrice, precision)` and sums those integer USDM sub-unit results; `MintPolicy` then compares that integer sum for equality with `pdPriceUsdm`.
+
+This is deterministic integer-valued behavior, but equality after upward rounding is not the same proposition as equality of the underlying unrounded economic quantities. For example, with a **synthetic test quote only** of 100 USDM sub-units per ADA and precision 1,000,000:
+
+```text
+minUtxoLovelace = 1,600,000
+output ADA = 2,600,000  -> economic ADA = 1,000,000 lovelace
+raw conversion = 1,000,000 × 100 / 1,000,000 = 100
+ceiling result = 100 USDM sub-units
+
+output ADA = 2,599,999  -> economic ADA = 999,999 lovelace
+raw conversion = 999,999 × 100 / 1,000,000 = 99.9999
+ceiling result = 100 USDM sub-units
+```
+
+Both values map to the same integer target, even though their raw conversion differs. This example is a unit-test vector, not a claim about a live ADA price. For a value represented as the sum of separately rounded assets, the possible upward adjustment can accumulate across asset entries.
+
+Therefore the paper may accurately claim **exact equality of the current canonical integer conversion result**. It must not claim exact equality of an unrounded economic amount for arbitrary asset/price domains unless the PriceReference contract, asset granularity and a bounded conversion-error policy justify that stronger statement. The existing PriceReference/rounding analysis leaves the general bounded-conversion rule open. No rounding direction, tolerance or numerical bound is invented here.
+
+The Haskell conformance tests now isolate three relevant outcomes: the requested 1,000,000-lovelace value maps to zero after ADA minimum-UTxO exclusion; a positive synthetic ADA amount can map exactly to the 100-sub-unit target; and a one-lovelace-short amount rounds upward to the same integer result under current `ceilingDiv`. They test the actual Plutus valuation function, not the full MintPolicy or a completed Lucid transaction.
+
 ## 14. Treasury
 
 The intended direction is:
