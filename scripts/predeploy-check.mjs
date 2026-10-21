@@ -321,6 +321,10 @@ contains(mintTs, /tx = await tx\.complete\(\)/,
   'Issue verifies a resolved Lucid transaction body after awaiting completion')
 contains(mintTs, /assertCompletedIssueValidityUpperBound\(tx, settlementTtlSlot\)/,
   'Completed Issue body retains the exact quote-valid TTL slot before submission')
+contains(mintTs, /assertCompletedTreasuryMinimumAda[\s\S]*?coinsPerUtxoByte/s,
+  'Issue checks actual Treasury minimum ADA using the live protocol parameter')
+contains(settlementSource, /C\.min_ada_required\(output, C\.BigNum\.from_str\(coinsPerUtxoByte\.toString\(\)\)\)/,
+  'Minimum ADA is calculated from the completed output including value and datum')
 contains(settlementSource, /deriveIssueSettlementValidityUpperBoundMs/,
   'Finite Issue TTL is derived from every Treasury asset quote used in valuation')
 contains(mintTs, /decodeAdaOraclePriceReference\(oracleStateUtxo\.datum\)/,
@@ -365,6 +369,10 @@ if (!fs.existsSync(settlementTestPath)) {
     'Issue settlement tests inspect the full completed Treasury asset map')
   contains(settlementTest, /stale|missing|invalid|duplicate/i,
     'Issue settlement tests cover invalid price-reference rejection')
+  contains(settlementTest, /below output-specific minimum/,
+    'Issue settlement tests fail closed when completed Treasury ADA is below the size-dependent ledger minimum')
+  contains(settlementTest, /finite validity upper bound/,
+    'Issue settlement tests reject transactions without a finite quote-valid TTL')
 }
 
 contains(mintTs, /b1PrizePool[\s\S]*?payToContract|payToContract[\s\S]*?b1PrizePool/s,
