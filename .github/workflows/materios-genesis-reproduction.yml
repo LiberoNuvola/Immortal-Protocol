@@ -101,13 +101,18 @@ jobs:
           })().catch(error => { console.error(error); process.exitCode = 1; });
           NODE
 
+      - name: Stage genesis reproduction evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cp "$RUNNER_TEMP/materios-source-commit.txt" out/ 2>/dev/null || true
+          cp "$RUNNER_TEMP/materios-chain-id.json" out/ 2>/dev/null || true
+
       - name: Upload genesis reproduction evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: materios-genesis-reproduction
-          path: |
-            ${{ runner.temp }}/materios-chain-id.json
-            ${{ runner.temp }}/materios-source-commit.txt
-            out/MateriosGenesisReproduction.json
+          path: out/
           if-no-files-found: warn
