@@ -101,9 +101,24 @@ jobs:
         env:
           MATERIOS_RPC_PRIMARY: https://materios.fluxpointstudios.com/rpc
           MATERIOS_RPC_LEGACY: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
         run: |
           node <<'NODE'
-          const urls = [process.env.MATERIOS_RPC_PRIMARY, process.env.MATERIOS_RPC_LEGACY];
+          function rpcFailure(e) {
+            const message = e instanceof Error ? e.message : '';
+            const methodNotFound = /(?:^|\\b)-32601\\s+Method not found/i.exec(message);
+            const invalidParams = /(?:^|\\b)-32602\\s+Invalid params/i.exec(message);
+            if (methodNotFound) return {code: -32601, classification: 'method-not-found'};
+            if (invalidParams) return {code: -32602, classification: 'invalid-params'};
+            return {classification: 'transport-or-rpc-error', errorType: e instanceof Error ? e.name : typeof e};
+          }
+          const archiveUrl = process.env.MATERIOS_ARCHIVE_RPC?.trim();
+          const sources = [
+            {source: 'public-primary', url: process.env.MATERIOS_RPC_PRIMARY},
+            {source: 'public-legacy', url: process.env.MATERIOS_RPC_LEGACY},
+            ...(archiveUrl ? [{source: 'configured-archive-rpc', url: archiveUrl}] : []),
+          ];
+          console.log(JSON.stringify({archiveRpcConfigured: Boolean(archiveUrl)}));
           async function rpc(url, method, params=[]) {
             const r = await fetch(url, {
               method: 'POST',
@@ -114,7 +129,7 @@ jobs:
             if (b.error) throw new Error(String(b.error.code) + ' ' + String(b.error.message));
             return b.result;
           }
-          for (const url of urls) {
+          for (const {source, url} of sources) {
             try {
               const tip = await rpc(url, 'chain_getFinalizedHead');
               const block = await rpc(url, 'chain_getBlock', [tip]);
@@ -122,11 +137,11 @@ jobs:
               const numberHex = block && block.block && block.block.header && block.block.header.number;
               let finalityProofProbe;
               if (typeof numberHex !== 'string' || !/^0x[0-9a-f]+$/i.test(numberHex)) {
-                finalityProofProbe = {status: 'unavailable', error: 'chain_getBlock returned no valid SCALE block number'};
+                finalityProofProbe = {status: 'unavailable', classification: 'invalid-block-number'};
               } else {
                 const blockNumber = Number(BigInt(numberHex));
                 if (!Number.isSafeInteger(blockNumber)) {
-                  finalityProofProbe = {status: 'unavailable', error: 'finalized block number exceeds JavaScript safe integer range'};
+                  finalityProofProbe = {status: 'unavailable', classification: 'unsafe-block-number'};
                 } else {
                   try {
                     const proof = await rpc(url, 'grandpa_proveFinality', [blockNumber]);
@@ -136,12 +151,12 @@ jobs:
                       bytes: typeof proof === 'string' && /^0x[0-9a-f]*$/i.test(proof) ? (proof.length - 2) / 2 : null,
                     };
                   } catch (e) {
-                    finalityProofProbe = {status: 'unavailable', error: String(e)};
+                    finalityProofProbe = {status: 'unavailable', ...rpcFailure(e)};
                   }
                 }
               }
               console.log(JSON.stringify({
-                url,
+                source,
                 finalizedHead: tip,
                 finalizedBlockNumber: typeof numberHex === 'string' && /^0x[0-9a-f]+$/i.test(numberHex) ? Number(BigInt(numberHex)) : null,
                 grandpaProveFinality: finalityProofProbe,
@@ -150,7 +165,7 @@ jobs:
                 engines: Array.isArray(js) ? js.map(x => x && x[0]) : null
               }));
             } catch (e) {
-              console.log(JSON.stringify({url,error:String(e)}));
+              console.log(JSON.stringify({source, error: rpcFailure(e)}));
             }
           }
           NODE
