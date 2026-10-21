@@ -265,7 +265,7 @@ try {
     spendTransaction: evidence.spendTransaction,
     yaciEvaluation,
     protocolParameters: evidence.protocolParameters,
-  }, null, 2))
+  }, (_key, value) => typeof value === 'bigint' ? value.toString() : value, 2))
 } catch (error) {
   evidence.status = 'FAIL'
   evidence.failure = String(error)
