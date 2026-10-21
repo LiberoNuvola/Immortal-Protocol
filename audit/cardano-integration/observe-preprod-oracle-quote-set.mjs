@@ -38,7 +38,6 @@ function exactRef(utxo) {
 const projectId = required('BLOCKFROST_PROJECT_ID', 'VITE_BLOCKFROST_PROJECT_ID')
 const blockfrostUrl =
   process.env.BLOCKFROST_PREPROD_URL?.trim() ||
-  process.env.VITE_BLOCKFROCK_PREPROD_URL?.trim() ||
   process.env.VITE_BLOCKFROST_PREPROD_URL?.trim() ||
   'https://cardano-preprod.blockfrost.io/api/v0'
 const oracleStateAddress = required('ORACLE_STATE_ADDRESS', 'VITE_ORACLE_STATE_ADDRESS')
