@@ -363,3 +363,12 @@ The strict observation job still lacks all five public runtime variables: `BLOCK
 [IMMORTAL Haskell Semantic Conformance run 39599364846](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39599364846) is now `success` on `edb61d74c2aa5a076fbda5d11941c119776f87d1`, including the Oracle conformance step. The core quote-set sources `OracleTypes.hs`, `Economic.hs`, `EconomicOracleTest.hs` and `MintPolicy.hs` are byte-identical between that tested commit and the current working branch. The settlement builder, focused settlement test and predeploy gate are also byte-identical at that tested SHA. The later Cardano Adapter Sale Conformance run [39603184582](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39603184582) passed on `fd71136ed688231072f2c041c67aa5c63a2262b1`.
 
 This raises the confidence of the quote-set and exact Treasury-body conformance code, but it is not a live Issue result. The bootstrap wallet's Oracle UTxO remains legacy/stale; the strict observation of the public Pages runtime still fails on missing config; the Pyth probe is still synthetic code-level evidence; and the Integration Lab did not yet finish in the last observation. No real Issue transaction was built, signed, or submitted.
+
+
+## 2026-10-21 follow-up — Pyth exact-rational conversion candidate passes synthetic tests
+
+The isolated Pyth project now has a mathematical candidate for converting the authenticated raw price/exponent to USDM sub-units while explicitly accepting `D = USD per USDM) as a rational parameter. It intentionally does not assume `D = 1); the new synthetic tests include `D = 2) and `D = 3/2), raw-price-first rounding, positive exponent, and invalid-input cases.
+
+[Run 39604543598](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39604543598) passed on commit `c05267ca202bae85332870ef4c98b8972175d283`; the current probe/carrier source blobs are the same. Reported output: 15 tests in the conversion/source module + 12 carrier tests = 27; 27 checks, 0 errors and 0 warnings; Plutus V3 build passed.
+
+This narrows the conversion work from an unstated floating-point/scale guess to an explicit rational input, but it does not settle or authenticate that input. No current normative source establishes the live on-chain value of USD per USDM, and the helper is not connected to the existing Plutus V2 MintPolicy. No Issue, Oracle State update or deployment is authorized by this code-level result.
