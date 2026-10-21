@@ -1001,3 +1001,39 @@ The approval workflow head was `main` `97b09a38742098f17a61eb07734c401aeedccc06`
 | Full semantic audit | `PARTIAL / OPEN` |
 
 The ledger marks the B1 source/test/workflow blobs by exact SHA and links them to this review. Test files marked `REVIEWED_TEST_SOURCE_RUN_NOT_CONFIRMED_CURRENT_GREEN_SHA` were statically inspected; their presence/digests are not represented as execution evidence. No protocol source, workflow, V3/Reveal semantics, branch topology, current ledger state or deployment was modified by this review.
+
+
+### 10.29 Semantic review slice 3 — Reveal reference-witness binding and P2.8 — 2026-10-21
+
+Scoped review: [SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md](SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md), review commit `0744227cb575bee5c50557f5f43be5bf26d00eb9`. The deduplicated ledger records the exact reviewed blob identities in commit `cd9c9301ccf5dd9ee2ec9e432638a7b7c5c93681`.
+
+#### Freshly inspected Actions evidence — retain both outcomes separately
+
+- [PRE-RICH Emulator Reveal #39646783971](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971), source SHA `1300b79d7460f2abcd79767d5d16dd2564aad064`, failed the canonical Reveal acceptance step. Its log records active `maxTxSize=16384` and serialized fixture size `16782` bytes, i.e. 398 bytes over. A diagnostic-only budget probe still exceeded the same size. A separate diagnostic-only size probe used a local limit of 100000 and then failed with `Spend[0] attempted to instantiate a non-polymorphic term`; negative cases stopped at build and were labelled `INCONCLUSIVE_NOT_SUBMIT_REJECTION`. They are not ledger-rejection evidence.
+- [IMMORTAL Cardano Integration Lab #39646784077](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784077), same source SHA, ended `cancelled`. Yaci startup and isolated Aiken Reveal fixture twins completed, but the real Cardano smoke, V3 carrier execution, economic Reveal/Claim/Expire/FundTreasury traces, raw P2.8 context materialization, typed UTxO decoder and native P2.8 gate were skipped. Artifact `12367697468` is setup/fixture evidence, not native economic or P2.8 acceptance.
+
+The checkpoint's historical Preprod runner measurement of ~17,571 bytes and the emulator fixture measurement of 16,782 bytes belong to different paths/fixtures. Both exceed 16,384; do not conflate their numbers or relax the protocol limit.
+
+#### Source-to-CBOR binding finding
+
+`audit/cardano-integration/revealReferenceScripts.ts` has a strong final-CBOR assertion helper: publication transaction CBOR binds the exact reference UTxO output, and the completed transaction must contain the expected reference inputs, expected spending inputs/redeemers and continuing outputs, embed zero Plutus scripts, and fit the active size ceiling. The Yaci `reveal-ledger-trace.ts` uses these helpers.
+
+The actual `audit/cardano-integration/preprod-real-reveal.mjs` runner calls `.readFrom([prizeReferenceUtxo, poolReferenceUtxo])` and checks the signed transaction's serialized size, but does not call either binding helper and does not inspect/assert that the final witness set contains zero embedded Plutus scripts or that both reference UTxOs are exact outputs of verified publication transaction CBOR. Source-level `.readFrom` tests therefore do not close reference-witness conversion on the real Preprod builder.
+
+No relevant Reveal builder, P2.8 workflow, reference-script helper or core Reveal validator SHA changed between source snapshot `1300b79d…` (the above exact-head runs) and `3373b3044b9c…`; this review did not rerun an unchanged hypothesis.
+
+#### Closure gates and current status
+
+P-03 Reveal size/reference-witness binding and P-04 native Cardano-ledger P2.8 remain **`OPEN / INTEGRATION_BLOCKED`**. The next meaningful candidate is a narrow, reviewed builder/evidence update that invokes the verified published-reference binding and final-CBOR assertions in the actual Preprod path, records size / active maxTxSize / exact reference inputs / embedded-script counts before signing, then proves `<= 16384` bytes. Only a transaction that passes that gate should proceed to native context materialization and the full `tx.cbor + utxo.json + pparams.json + epoch-info.json + system-start.json + manifest.json` packet. The real Preprod workflow requires explicit dispatch with `run_reveal=true`; no dispatch was performed here.
+
+#### Ledger update after slice 3
+
+| Measure | Result |
+|---|---:|
+| Globally unique blob SHA identities | 1,811 |
+| Entries with scoped static review records (Pyth + B1 + P2.8) | 51 |
+| Entries still `NOT_REVIEWED` | 1,760 |
+| Fully qualified semantic closures | 0 |
+| Full semantic audit | `PARTIAL / OPEN` |
+
+Fourteen source/workflow/test/evidence-contract SHA entries were added to this slice. The core `B1PrizePool.hs` and `PrizeValidator.hs` identities were compared across snapshots but deliberately remain `NOT_REVIEWED` semantically. No protocol source, workflow, V3/Reveal semantics, branch topology, Preprod transaction or ledger state was changed.
