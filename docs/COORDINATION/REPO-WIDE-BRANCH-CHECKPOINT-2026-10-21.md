@@ -2145,3 +2145,34 @@ Commit [5208318cb6ed51875ae2bae53364486f57dcaa37](https://github.com/LiberoNuvol
 The new source SHA is 5208318cb6ed51875ae2bae53364486f57dcaa37. The automatically triggered [PRE-RICH Emulator Reveal Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/workflows/pre-rich-emulator-reveal.yml) must show whether both reference-script publications and the canonical Reveal builder progress with the 16,384-byte ceiling. Do not assume this passes because a new funding UTxO exists; inspect its actual logs. If Reveal then fails during local UPLC evaluation, record that as the next distinct blocker; do not bypass it or fabricate execution units.
 
 **Current verdict:** PrizeValidator size gate now passes through first publication in the in-memory emulator at current source; second-publication funding correction is pending validation; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN. P-03/P-04 remain **INTEGRATION_BLOCKED**; no real-ledger transaction submitted; audit **PARTIAL / OPEN**.
+
+
+### 10.58 Agent B — isolate reference-publication payers after legacy coin selection drains fixture wallet — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** fixture-only correction committed; exact-head emulator run in progress.
+
+#### Evidence and refinement of §10.57
+
+The exact-head run [PRE-RICH Emulator Reveal #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094), source `af56179fba836229f9a4463bbcd82ef619cec0f8`, now shows the PrizeValidator reference publication completes and is submitted in the in-memory Emulator after the redundant Claim predicate was removed. Fresh payload: PrizeValidator factory 15,977 B; parameterized script 16,106 B. The same run then failed at B1PrizePool reference publication with `Insufficient input in transaction`; the main wallet's UTxO list was empty after the first publication. This confirms that the publication path can consume the available wallet value (including its change) while keeping within the local serialization ceiling, leaving no payer input for the second script.
+
+The intermediate single-extra-UTxO idea at commit [`5208318cb6ed51875ae2bae53364486f57dcaa37`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5208318cb6ed51875ae2bae53364486f57dcaa37) leaves that funding on the same wallet address, so the same legacy coin-selection path may consume it too. A newer, isolated fixture correction was therefore made rather than treating the intermediate idea as proven.
+
+#### Narrow isolated-payer change
+
+Commit [`218f4f32b802a2f969e71f77ab9e7ad3afc478a4`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/218f4f32b802a2f969e71f77ab9e7ad3afc478a4) changes only `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs` (new blob `3c57391cd3254365d9ee7de4a952f48254a5671f`). It seeds two independent emulator-only fee wallets with 3,000,000 lovelace each and uses one publisher for the PrizeValidator reference-script transaction and another for the B1PrizePool reference-script transaction. The script-holder address stays separate from both publishers and the ticket/game wallet. This avoids making either publication depend on the previous transaction's change output and prevents a publication from consuming the ticket/game wallet merely to fund infrastructure.
+
+This change touches only the emulator fixture funding/transaction construction; no Plutus validator, economic logic, V3/Reveal semantics, protocol limit, production builder or deployed reference UTxO was changed. No real/preprod transaction was submitted.
+
+#### Exact-head verification started
+
+- [PRE-RICH Emulator Reveal Conformance #39726613822](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613822), source SHA `218f4f32b802a2f969e71f77ab9e7ad3afc478a4`, is running. Its logs must prove that both isolated publication transactions complete and submit, and show remaining game-wallet UTxOs, before claiming this fixture blocker is cleared.
+- [IMMORTAL Cardano Integration Lab #39726613781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613781), same SHA, was pending at the last check; it must be observed separately for the Haskell V2 Claim positive/negative twins. The previous Lab/Reveal runs on intermediate commits do not prove the isolated-payer version.
+
+#### Exit predicates
+
+1. Both reference-script publication transactions complete/submit in canonical emulator mode at `maxTxSize=16384`, with the actual serialized sizes recorded.
+2. The fixture does not drain the game wallet needed for later Reveal setup; both reference UTxOs are uniquely identified and remain read-only inputs to Reveal.
+3. The actual Reveal-spending CBOR must still be measured independently. A diagnostic-only path that raises local `maxTxSize` and stops before signing/submission is not acceptance.
+4. The later Yaci/native P2.8 packet remains a separate gate.
+
+**Current verdict:** the prior exact-head PrizeValidator payload measurement (16,106 B) is below the script size seen before the redundant Claim guard was removed, but the current canonical two-publication run is pending. Final Reveal-spend CBOR remains NOT MEASURED; native P2.8 is NOT ESTABLISHED; Claim owner/signature equivalence is OPEN. P-03/P-04 remain **INTEGRATION_BLOCKED**, overall audit **PARTIAL / OPEN**.
