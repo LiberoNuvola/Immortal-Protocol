@@ -63,6 +63,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test simulator arithmetic and fail-closed validation
+        run: node --test audit/cardano-integration/treasury-liquidation-simulation.test.mjs
       - name: Run deterministic integer simulation
         env:
           SCENARIO_ID: ${{ inputs.scenario_id }}
