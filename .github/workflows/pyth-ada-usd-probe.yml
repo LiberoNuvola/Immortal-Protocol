@@ -53,11 +53,11 @@ jobs:
         run: node --import=tsx ./scripts/pythPreprodConfig.test.mts
 
       - name: Type-check runner without requiring secrets or submitting transactions
-        run: |
-          npx tsc --noEmit --strict --target ES2022 --module ESNext \
-            --moduleResolution bundler --skipLibCheck --types node \
-            --allowImportingTsExtensions --verbatimModuleSyntax \\
-            scripts/testPythSignedUpdatePreprod.mts
+        run: >-
+          npx tsc --noEmit --strict --target ES2022 --module ESNext
+          --moduleResolution bundler --skipLibCheck --types node
+          --allowImportingTsExtensions --verbatimModuleSyntax
+          scripts/testPythSignedUpdatePreprod.mts
 
   pyth-ada-usd-probe:
     name: Compile isolated Pyth ADA/USD consumer
