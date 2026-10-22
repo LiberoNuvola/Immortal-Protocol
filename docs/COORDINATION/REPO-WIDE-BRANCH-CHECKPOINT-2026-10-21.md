@@ -2752,3 +2752,10 @@ The current `.github/workflows/pre-rich-emulator-reveal.yml` on `work/immortal-g
 
 Inspect the latest `IMMORTAL Cardano Integration Lab` run on `work/immortal-green-closure` and its exact commit. If it predates the integrated-negative implementation or lacks a run on the current commit, run the existing workflow once; do not create a new probe or rerun the obsolete Haskell size probe. If it fails, classify the exact failing stage from the artifact/log before editing code. Do not declare this gate GREEN from source inspection alone.
 
+
+
+## 10.20 — B3-A identity regressions committed, unexecuted (2026-10-22)
+
+Agent C added two fail-closed tests to `poc/materios-grandpa/test/verifier.test.ts` on `work/b3-materios-provenance-evidence`: mismatched genesis (`e1d1042e545c96ac456ef3d6476bc1d674e2c4fa`) and mismatched chain label (`b2930473e73a6edfe947b0480306dd2d79f27645`). Full review at [B3-A GRANDPA Compatibility Review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md), commit `6a1eb3884b82042a0ad6b268890fba10d3f7a3bd`.
+
+**Evidence class:** regression source committed, test run NOT OBSERVED. These tests exercise existing mismatch guards under a synthetic crypto stub; they do not authenticate the initial authority state, prevent cross-chain replay if both checkpoint and trusted state are adversary-controlled, or establish live Materios finality. B3-A/B/C remain OPEN. Next: run exact-SHA test/build/typecheck, audit runtime bootstrap creation, obtain independently authenticated genesis/set provenance. No deployment; PR #35 draft; V3/Reveal untouched.
