@@ -142,3 +142,44 @@ Two regression tests were appended to `poc/materios-grandpa/test/verifier.test.t
 - `b2930473e73a6edfe947b0480306dd2d79f27645`: reject mismatched chain label under the same synthetic fixture.
 
 These test cases exercise already-existing guards, not a new authenticated bootstrap. They intentionally use the pre-existing synthetic `alwaysValidCrypto` stub, so neither case demonstrates real GRANDPA signature verification or resistance to an adversary who supplies both the checkpoint and initial trusted state. Test execution/CI evidence is **not yet recorded**. B3-A remains OPEN.
+
+
+## 8. Complete bootstrap construction/call-site audit (2026-10-22)
+
+Audit performed against the exact B3 branch sources, not the default branch search index.
+
+### Call-site inventory
+
+- `poc/materios-grandpa/src/verifier.ts::verifyFinality` accepts `TrustedAuthorityState` directly and calls `validateAuthorityState`, which is shape validation only.
+- `poc/materios-grandpa/src/materios-evidence-adapter.ts::verifyMateriosFinalityAgainstTransition` accepts `currentTrusted: TrustedAuthorityState` from its caller, then verifies a transition relative to that state. It does not construct or authenticate the initial state.
+- `trustedAuthorityStateFromVerifiedTransition(current, transition)` validates the current state's shape and checks the transition marker/hash, chain ID, genesis hash, source set ID and source authority-set identity. The current state remains caller-supplied.
+- `verifyAuthoritySetTransition(statement, proofVerifier)` delegates the critical proof obligation to a caller-supplied verifier. The repository contract says no production proof verifier is implemented; an accepting test stub is not a real proof.
+- `poc/materios-checkpoint/src/capture-finalized.ts` captures RPC evidence and explicitly describes the returned finality bytes as untrusted. It does not create a trusted bootstrap state.
+- `poc/materios-checkpoint/src/rpc.ts` documents RPC results, storage proofs, and finality transport as untrusted evidence pending independent verification.
+- Tests create initial states directly with `currentTrustedState()` / `makeTrustedState()`; the transition tests use a structural proof-verifier stub and the finality tests use synthetic crypto. These are unit fixtures, not operational bootstrap sources.
+- `poc/materios-grandpa/test/README.md` already states that the initial trusted authority set is an explicit external trust boundary of PoC-1A.
+
+### Result: no authenticated production bootstrap source found in the audited path
+
+The inspected production-facing path consumes a caller-supplied initial state. The capture/RPC modules provide evidence transport, not an authenticated root of trust. No in-repository constructor was found that independently authenticates the tuple `(Materios genesis hash, initial GRANDPA set ID, initial authority list)`; no complete genesis-to-initial-authority proof or independently authenticated bootstrap manifest is wired into the verifier.
+
+This conclusion is scoped to the audited B3 branch files above. It does not assert that no external source could ever be selected; it means such a source is not currently implemented and bound into this path.
+
+### Implementation decision — fail closed, do not add a cosmetic brand
+
+Do **not** add a runtime brand or constructor that simply wraps caller-supplied values and calls them trusted. Without a real authenticated bootstrap verifier and pinned trust anchor, that would only move the naming problem and could create false confidence. Also do not replace the API with a new branded state yet: there is no valid production constructor to supply the brand, and fabricating one would be unsafe.
+
+The safe current boundary is therefore explicit qualification, not a false GREEN:
+1. Treat all caller-supplied initial authority states as externally trusted configuration / unresolved trust assumption, not as permissionless proof.
+2. Keep RPC/runtime API responses and transition statements in the untrusted-evidence type until a real proof verifier authenticates them.
+3. Before operational qualification, specify and implement an independently authenticated bootstrap source binding genesis identity, initial set ID, and authority list together; then require that result at the `verifyFinality` and adapter boundary.
+4. Verify the bootstrap verifier with adversarial cases: arbitrary caller-created state rejected; wrong genesis/set ID/authority list rejected; same keys and set ID on another chain rejected unless the trust model explicitly accepts the replay assumption; and valid source evidence accepted only after cryptographic verification.
+5. Run `npm test`, `npm run build`, and `npm run typecheck` on the exact candidate SHA before reporting software verification. Those commands have **not** been executed as part of this audit.
+
+### Status
+
+- Source/call-site audit: completed for the files enumerated above.
+- Authenticated initial bootstrap: **OPEN / blocker**.
+- Production transition proof verifier: **OPEN / blocker**.
+- Identity regression tests: committed, but execution remains unobserved.
+- B3-A/B/C: OPEN. No deployment or on-chain transaction; PR #35 remains draft; V3/Reveal semantics untouched.
