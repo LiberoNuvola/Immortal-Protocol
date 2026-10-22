@@ -899,7 +899,6 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
   in
        traceIfFalse "54" ownerSigned
     && traceIfFalse "55" (pdStatus datum == Revealed)
-    && traceIfFalse "56" (pdStatus datum /= Claimed)
     && traceIfFalse "11" (countOwnScriptInputs ctx == 1)
     && traceIfFalse "30" (countPoolInputs info prizePoolBs == 1)
     && traceIfFalse "57" (pdPrizeAmount datum > 0)
