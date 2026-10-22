@@ -2487,3 +2487,40 @@ This localizes the observed compatibility/runtime fault to the legacy `lucid-car
 The repository already contains `audit/cardano-integration/reveal-ledger-trace.ts`, an Evolution Lucid + Yaci path that binds the two reference-script publication transactions, serializes the built Reveal CBOR, runs `assertRevealUsesReferenceScripts`, asks Yaci to evaluate that exact CBOR for ExUnits and emits `revealDiag` records. The current `immortal-cardano-lab.yml` no longer calls this script; it runs the isolated Aiken V3 Reveal candidate path instead. Before adding another harness or changing any validator, determine whether this existing trace can be executed under the current Lab bootstrap in its canonical Haskell mode (`IMMORTAL_REVEAL_AIKEN_V3` unset/false), without changing V3 semantics or deploying/submitting to Preprod. If the trace is already runnable from the current environment, use the existing exact script rather than creating a parallel builder. Its local Yaci transaction would still be a devnet trace, not a real Preprod transaction, and must be labelled accordingly.
 
 **Current verdict:** Pool local Value path = `TESTED_BOUNDED` through the deliberate semantic stop; Prize local evaluator = `PRIZE_EVALUATOR_FAILURE`; canonical Haskell V2 Reveal = local evaluator failure before final CBOR; final Reveal size/reference-witness binding = **NOT MEASURED**; native P2.8 = **NOT ESTABLISHED**; P-03/P-04 remain **INTEGRATION_BLOCKED**. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.67 Agent B — active Aiken V3 economic transitions pass local Yaci through Expire; P2.8 pending — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** bounded local-Yaci transition trace passed through Expire; Claim and native P2.8 stages remain in progress.
+
+#### Exact current Integration Lab evidence
+
+[IMMORTAL Cardano Integration Lab #39777884299](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777884299) runs exact source SHA `cb9825d20cacdddca98d8a1cd6bf554287b0c2bf`; current checked-out workflow is `.github/workflows/immortal-cardano-lab.yml` blob `be7013485ebe67dd94ddc776fd38607b18fbc4d1`. The job has passed these completed steps with effective step conclusion `success`:
+
+- Step 24 — isolated Aiken V3 Reveal loss/win and negative ledger twins.
+- Step 25 — local Cardano ledger smoke transaction.
+- Step 27 — V3 carrier against native Cardano ledger. This is a separate component; this run has not changed the carrier.
+- Step 28 — Aiken V3 Reveal native-ledger preflight.
+- Step 29 — active Aiken V3 economic Reveal transition trace.
+- Step 30 — FundTreasury canonical Oracle valuation trace.
+- Step 31 — TicketIssued 500× solvency-boundary trace.
+- Step 32 — Aiken V3 economic Expire transition trace.
+
+Step 29 executes the existing `audit/cardano-integration/reveal-ledger-trace.ts` with `IMMORTAL_REVEAL_AIKEN_V3=1`, using Lucid Evolution and local Yaci rather than the legacy `lucid-cardano@0.10.11` local UPLC evaluator. The trace contains final-CBOR reference-script assertions, Yaci evaluator ExUnit measurement/coverage, active protocol size/ExUnit checks, transaction submission, observed continuing outputs and replay rejection. This run’s step conclusion `success` is the bounded integration result for that local candidate trace.
+
+#### Explicit scope / non-claims
+
+This success must not be re-labelled as a production Haskell V2 PrizeValidator pass, a Cardano Preprod transaction, a production Issue, or unconditional universal/V3 equivalence:
+
+- The candidate in step 29 is the isolated Aiken Plutus V3 Prize validator plus the existing parameterized B1PrizePool Plutus V2 validator. The production migration is still not authorized.
+- The harness is local Yaci Conway/devnet with synthetic test state, deterministic beacon/player secrets, an identity-only fixture Oracle State, and a 1:1 test-liquidity asset. The trace explicitly records `productionOracleQualified=false` and that canonical production `Economic.poolUsdmValue` is not evaluated by the fixture valuation.
+- The step-24 isolated candidate test uses a test-only always-true Pool stub; its PASS must remain separate from step 29’s active trace with the real Haskell B1PrizePool V2 validator.
+- No Preprod/mainnet transaction or deployment was performed by this Lab run.
+
+#### Remaining current-run gates
+
+At the checkpoint update, step 33 `Execute real economic Claim transition trace` was in progress. Step 37 `Materialize raw Yaci ledger context for P2.8` and step 38 `Run native Yaci UTxO decoder conformance` were still pending, as was step 39 `Run P2.8 ledger evidence gate against this lab packet`. Therefore **P2.8 remains OPEN** until the exact Reveal transaction/context packet passes the current-source native Cardano-ledger runner. Do not infer its result from step 29’s success.
+
+This provides a viable Evolution/Yaci path around the legacy PrizeValidator local-evaluator error for the isolated Aiken candidate, but does not erase the separate observed legacy Haskell V2 local evaluator failure at `Spend[0]` recorded in §10.66. No V3 carrier, Reveal economic semantics, protocol constants, or production validator source changed.
+
+**Current verdict:** active candidate Reveal + FundTreasury/TicketIssued/Expire = `TESTED_BOUNDED` on local Yaci; economic Claim = `IN_PROGRESS`; native P2.8 = `PENDING`; Haskell V2 legacy emulator evaluator path remains `PRIZE_EVALUATOR_FAILURE`; P-03/P-04 remain **INTEGRATION-BLOCKED** pending complete evidence and current-head ledger evaluation. Overall audit remains **PARTIAL / OPEN**.
