@@ -2126,3 +2126,22 @@ The diagnostic-only run with local maxTxSize 100,000 publishes both references b
 Add a second ADA-only initial UTxO on the same emulator wallet address to keep funding available for the second reference-script publication after the first setup/publication sequence. Do not change validators or transaction-size parameters. Rerun exact-head canonical test and confirm it reaches the Reveal-spending construction before recording any reveal-size conclusion. A local emulator confirmation remains bounded evidence only; native P2.8 and Claim owner/signature equivalence remain OPEN.
 
 **Current verdict:** first reference-script publication passes the in-memory emulator at current generated size; second reference publication is BLOCKED by fixture funding; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit **PARTIAL / OPEN**.
+
+
+### 10.57 Agent B — preserve emulator funding across both reference-script publications — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). Status: fixture correction committed; fresh exact-head validation pending.
+
+#### Triggering evidence
+
+PRE-RICH Emulator Reveal run [#39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094), source SHA af56179fba836229f9a4463bbcd82ef619cec0f8, completed with the new PrizeValidator publication size below the builder guard. It submitted and awaited that publication in the in-memory Emulator, then failed during B1PrizePool reference publication with “Insufficient input in transaction”; diagnostic logs showed no wallet UTxOs before the second publication. With the publication-size blocker removed, this fixture funding/coin-selection condition becomes the next obstacle.
+
+#### Narrow fixture-only correction
+
+Commit [5208318cb6ed51875ae2bae53364486f57dcaa37](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5208318cb6ed51875ae2bae53364486f57dcaa37) changes only src/__tests__/immortal-cardano-reveal-emulator-b1.mjs (new blob 305d3e6123311d22c09122e0cc49a47ee9fa560d, prior blob b5bf9cbdc97b0201942b5ee2f30fe0f3b58f5bd2). A second ADA-only UTxO is now seeded to the same wallet address, separate from the NFT-bearing setup UTxO, so the second publication has independent fixture funding if the legacy emulator path consumes the first change output. It does not change validator bytecode, transaction-size limits, economic state, Reveal/V3 semantics or any live/preprod ledger state.
+
+#### Exact-head next test
+
+The new source SHA is 5208318cb6ed51875ae2bae53364486f57dcaa37. The automatically triggered [PRE-RICH Emulator Reveal Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/workflows/pre-rich-emulator-reveal.yml) must show whether both reference-script publications and the canonical Reveal builder progress with the 16,384-byte ceiling. Do not assume this passes because a new funding UTxO exists; inspect its actual logs. If Reveal then fails during local UPLC evaluation, record that as the next distinct blocker; do not bypass it or fabricate execution units.
+
+**Current verdict:** PrizeValidator size gate now passes through first publication in the in-memory emulator at current source; second-publication funding correction is pending validation; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN. P-03/P-04 remain **INTEGRATION_BLOCKED**; no real-ledger transaction submitted; audit **PARTIAL / OPEN**.
