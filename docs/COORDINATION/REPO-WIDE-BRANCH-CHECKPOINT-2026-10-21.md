@@ -1835,3 +1835,48 @@ This patch does not alter validator bytecode, protocol parameters, economics, V3
 **Next action:** retrieve the run logs. The key first result is raw parameterized script length; the diagnostic run must then report each complete publication transaction size. Do not interpret publication size as Reveal spending size. After the publication blocker is measured, the Reveal final-CBOR path remains a separate issue because legacy Lucid cannot use nativeUplc:false in this emulator without a Blockfrost evaluator. Do not inject synthetic ExUnits into an acceptance path or call such evidence a ledger result.
 
 **Current verdict:** PrizeValidator publication transaction previously measured at 16,782 / 16,384; fresh script payload lengths and independent publication CBOR sizes are pending; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; no real ledger transaction was submitted. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.52 Agent A — Issue authority freshness fail-closed guard and current-head B2 audit — 2026-10-22
+
+This section records one narrow Issue-authority hardening patch and the current source review of B2 admission/expiry. It does not authorize Issue, select an economic conversion, or change V3/Reveal.
+
+#### Bounded fail-closed correction and exact CI evidence
+
+- `relayer/signedIssueAuthority.js` changed from blob `3ae7d7cd2c125345f647f28adf3e08f7e88db2af` to `bf3c93307c168661b592ed1aaf35f861d342896e` in commit [`1055ad08116b6959f523ff31bff5fc7287a09070`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/1055ad08116b6959f523ff31bff5fc7287a09070). The verifier now rejects absent/null `expected.currentObservedAt` instead of skipping future/stale checks.
+- `relayer/signedIssueAuthority.test.js` changed from blob `a01916989e62af65dd1b01cc1bd914bc3d86af9b` to `c9bc1acd02ca4d2bca4c70c1682208d1bfc5f52f` in commit [`a8d2b4a0a779dab06aef87ffd5b7e354b2e0aa8f`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a8d2b4a0a779dab06aef87ffd5b7e354b2e0aa8f). Added a regression for omitted verification time.
+- Exact-head [Issue Admission Boundary CI run 39724296403](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39724296403) completed **SUCCESS** on `a8d2b4a0a779dab06aef87ffd5b7e354b2e0aa8f`: adapter boundary suite, rejection of caller-supplied authority inputs, signed authority/EEV digest binding, envelope end-to-end, first-Issue evidence-chain gate, syntax check and strict adapter typecheck passed.
+
+**Scope limit:** production `fetchSignedIssueAuthority` currently supplies `currentObservedAt: Date.now()`; the change closes only the optional-field bypass. It does not turn a local wall clock into an authenticated Cardano clock. The payload's signed `freshnessWindow` is currently required to be positive but has no source-of-truth governed maximum and is supplied by the authority signer. Do not claim freshness-policy closure: no threshold has been invented or approved here.
+
+#### Current B2 / expiry / transaction-body source review
+
+- `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` blob `0d885efc470b725bfe89d0c1080bf530d362b70d` reads spending inputs from the completed Lucid transaction body and rejects if declared required inputs are missing, duplicated or uninspectable before signing. This is a real fail-closed check.
+- **G2 remains PARTIAL:** its documented set relation is inclusion, not equality. The body may contain additional wallet/fee inputs, and the admission witness does not bind a final transaction-body digest or classify each additional spending input. No test/run here proves that arbitrary extra script inputs are rejected. Do not describe the final body as completely bound.
+- The existing `assertExecutableLiquidityObservationFresh(observation,currentObservedAt,maxAge)` helper in `Adapter/CARDANO/observation/ExecutableLiquidityObservation.ts` blob `f7add943fe56d19c031f2672a6d27a267d8ca970` checks future/stale observations for caller-provided clock and horizon. Generic `assertEconomicAdmission` does not call it directly. The signed Issue path performs its own time-window check, but the current time is local `Date.now()` and the freshness window is authority-supplied. G3 is therefore **PARTIALLY IMPLEMENTED / POLICY OPEN**, not closed.
+- `PRE-RICH/src/PreRichExpiryPolicy.ts` blob `4191763a53124f7d6736bd09694eab660d1faef4` defines the existing application/profile V1 horizon bounds (2 hours to 300 days) and deterministic horizon from its supplied issuance-state snapshot. This is not a new universal IMMORTAL duration.
+- `src/mint.ts` blob `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534` still sets `issuedAtMs = BigInt(Date.now())`, crystallizes expiry from a caller-supplied or carrier-derived snapshot, and validates the completed Treasury output, validity upper bound and min-ADA before `submitEconomic`. The inspected production MintPolicy/B1 TicketIssued path does not prove that the stored `issuedAt`/`expiresAt` originated from the authorized snapshot/policy. P-06 remains **INTEGRATION_BLOCKED**; no V3/Reveal semantics were changed.
+- `src/preRichIssueAdmissionBridge.ts` blob `8e594655f68fb3c9f267703a85474e6fd1f25f8e` binds EEV qualification/deployment approval to the exact Pool reference and checks certificate/evidence fields. The signed-envelope verifier validates signature, required field shape and internal cross-bindings. It does not independently fetch and re-hash the live source files/evidence bytes for EV1–EV7; G4's byte-level recomputation remains open.
+
+#### Agent A status after this slice
+
+| Item | State |
+|---|---|
+| P-01 exact direct-USDM candidate out-reference liveness | **VERIFIED for the 2026-10-22T04:40:56Z observation window only** — run [39723715470](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723715470), artifact [12402475397](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723715470/artifacts/12402475397). EV1–EV7 are not requalified by that read-only run. |
+| P-01 first Issue / EV1–EV7 current qualification | **BLOCKED** — requires normative Preprod asset identity, fresh source-set and separately authorized qualification/approval, then transaction and ledger reconciliation. |
+| P-02 Pyth → production MintPolicy | **TESTED_BOUNDED / PRODUCTION BINDING OPEN** — still legacy Oracle State valuation; feed 16 is ADA/USD; unit/quote decision open. |
+| P-05 B2 admission | **IMPLEMENTED_UNPROVEN / G2 PARTIAL** — required input containment exists, complete final-body binding and extra-input classification remain open. |
+| P-06 expiry | **INTEGRATION_BLOCKED** — profile exists, but on-chain origin binding remains unproven. |
+| P-15 qualified asset/liquidity perimeter | **HISTORICAL/PHYSICAL tUSDM OBSERVED LIVE; NORMATIVE MAPPING OPEN** — no parity assumption, no ADA/PRE liquidation qualified. |
+| P-16 first wallet Issue / final settlement | **NOT ESTABLISHED** — no wallet-signature/confirmed Issue transaction or independent post-state evidence is claimed. |
+
+#### Next executable steps and safety boundary
+
+1. Keep the new clock-presence regression; do not equate it with trustless time or a governed freshness horizon.
+2. Route freshness-window governance through the existing D-11/D-13/GOV-02 source-of-truth path; do not set a max age here.
+3. To close G2, specify and test an explicit policy for permitted additional fee/funding inputs, then bind/reconcile all actual final-body inputs and outputs. Coordinate before editing the shared adapter submission boundary.
+4. To close G4/G5, recompute approved evidence digests from retrieved canonical bytes and later compare the confirmed transaction's actual inputs/outputs and post-state; receipt-only evidence is insufficient.
+5. P-06 needs a policy/state → `issuedAt`/`expiresAt` predicate at the authorized Issue boundary, backed by adversarial direct-transaction tests; do not relax or edit V3/Reveal to achieve it.
+6. No Issue, wallet action, approval workflow, deployment, conversion, or ledger transaction was performed in this slice.
+
+Overall audit remains **PARTIAL / OPEN**.
