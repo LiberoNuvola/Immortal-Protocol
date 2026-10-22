@@ -1153,31 +1153,39 @@ async function main() {
 
   /*
    * --------------------------------------------------------------
-   * 11. OPTIONAL DIAGNOSTIC: POOL-ONLY VALUE PATH ISOLATION
+   * 11. OPTIONAL DIAGNOSTIC: POOL VALUE PATH ISOLATION
    * --------------------------------------------------------------
    *
-   * Enable explicitly with P2_8_B1_POOL_VALUE_PROBE=1. The probe spends the
-   * real Pool UTxO and deliberately omits the Prize output. Under a generous
-   * emulator budget, reaching the ordinary "no prize output" failure proves
-   * the Value path evaluated; NonConstrScrutinized isolates the evaluator
-   * failure to singletonPoolTokenValid/valueOf. The transaction is never
-   * accepted, so it does not mutate emulator state.
+   * Enable explicitly with P2_8_B1_POOL_VALUE_PROBE=1. This transaction
+   * includes a decodable Prize input/output in the context but deliberately
+   * supplies no Prize redeemer, so only the B1PrizePool validator is evaluated.
+   * A deliberately mismatched Pool redeemer price should stop at
+   * "reveal input price mismatch", after the pre-action Value/singleton checks.
+   * This is a construction/evaluation diagnostic only: never sign or submit.
    */
   if (process.env.P2_8_B1_POOL_VALUE_PROBE === "1") {
     try {
       const poolValueProbeTx =
         await lucid
           .newTx()
+          // Context-only Prize input: no redeemer, so do not evaluate the
+          // PrizeValidator in this isolated Pool diagnostic.
+          .collectFrom([prizeUtxos[0]])
           .collectFrom(
             [poolUtxos[0]],
             Data.to(
               constr(
                 2,
-                [BigInt(priceUsdm)],
+                [BigInt(priceUsdm) + 1n],
               ),
             ),
           )
           .readFrom([poolReferenceInput])
+          .payToContract(
+            prizeAddress,
+            { inline: Data.to(postPrizeDatum) },
+            prizeUtxos[0].assets,
+          )
           .payToContract(
             poolAddress,
             { inline: Data.to(prePoolDatum) },
@@ -1187,13 +1195,11 @@ async function main() {
           .validTo(4_000_000_000_000)
           .complete();
 
-      const poolValueProbeSigned =
-        await poolValueProbeTx.sign().complete();
-
-      await poolValueProbeSigned.submit();
-
+      // If complete() unexpectedly returns, no expected Pool semantic guard
+      // was observed. Do not sign or submit this deliberately invalid fixture.
+      void poolValueProbeTx;
       throw new Error(
-        "P2.8-B.1 Pool-only Value probe unexpectedly succeeded",
+        "Pool Value diagnostic completed without the expected price-mismatch rejection",
       );
     } catch (error) {
       const message =
@@ -1207,31 +1213,26 @@ async function main() {
         );
 
       const budgetOverrun =
-        /execution went over budget|went over budget|Mem -\d+|CPU -\d+/i.test(
+        /execution went over budget|went over budget|Mem -\\d+|CPU -\\d+/i.test(
           message,
         );
 
-      // The Pool Value probe intentionally omits the Prize input/output.
-      // Reaching this action-level guard proves the preceding pre-solvency,
-      // singleton-token Value lookup and own-Pool-input checks ran. This is a
-      // bounded semantic stop, not a ledger rejection.
       const semanticFailure =
-        /no prize output|exactly one decodable prize input required/i.test(message);
+        /reveal input price mismatch/i.test(message);
 
       const classification =
         evaluatorFailure
-          ? "EVALUATOR_VALUE_FAILURE"
+          ? "EVALUATOR_FAILURE_BEFORE_POOL_SEMANTIC_GUARD"
           : budgetOverrun
             ? "BUDGET_OVERRUN"
             : semanticFailure
-              ? "SEMANTIC_VALIDATOR_FAILURE"
+              ? "EXPECTED_SEMANTIC_STOP_AFTER_VALUE_GUARDS"
               : "UNCLASSIFIED_FAILURE";
 
       console.log(
         "P2.8-B.1 POOL_VALUE_PROBE",
         classification,
       );
-
       console.log(
         "P2.8-B.1 POOL_VALUE_PROBE_ERROR",
         message,
@@ -1240,17 +1241,17 @@ async function main() {
       if (evaluatorFailure) {
         console.log(
           "P2.8-B.1 ISOLATION",
-          "B1PrizePool singletonPoolTokenValid/assetAmount Value-lookup path reaches evaluator failure before action semantics",
+          "B1PrizePool evaluation failed before the deliberate reveal-price mismatch; inspect pre-action singleton Value / solvency guards without changing validator semantics",
         );
       } else if (budgetOverrun) {
         console.log(
           "P2.8-B.1 ISOLATION",
-          "Pool-only diagnostic reached script evaluation but exhausted the configured execution budget; this probe result is non-semantic and must not block the real Reveal",
+          "B1PrizePool diagnostic exhausted the configured local execution budget; no semantic/ledger conclusion",
         );
       } else if (semanticFailure) {
         console.log(
           "P2.8-B.1 ISOLATION",
-          "Pool-only diagnostic reached the validator's ordinary semantic failure after the unconditional Value path",
+          "B1PrizePool passed its earlier pre-action guards and reached the deliberately mismatched Prize-input price check; diagnostic only, not ledger acceptance",
         );
       } else {
         throw error;
