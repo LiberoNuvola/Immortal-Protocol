@@ -1349,3 +1349,43 @@ This is a recommendation awaiting normative approval, not a selected protocol ru
 - No protocol implementation, unit constant, asset mapping, workflow, branch topology, V3/Reveal semantics or on-chain state changed in this pass.
 
 Next decision dependency: approve the meaning of the USDM accounting unit under the existing source-of-truth hierarchy. Until then, changing MintPolicy to consume the Pyth candidate would embed an unapproved economic rule and remains prohibited.
+
+
+### 10.39 Decision-register crosswalk — USDM denomination is not implied by DEC-3 — 2026-10-22
+
+This section reconciles the new Pyth unit-conversion memo with the existing Notion source-of-truth records. It does not create or approve a new normative rule.
+
+#### Existing decisions and their actual scope
+
+| Canonical record | Existing status | What it establishes | What it does NOT establish |
+|---|---|---|---|
+| Notion `02 — Decision Log`, DEC-3 | `CLOSED` | USDM is the economic/reference unit; settlement in another supported asset must equal the required USDM-equivalent amount under a verified valuation contract; under/overpayment is invalid. | It does not state that one accounting USDM equals exactly one USD, nor does it select an ADA/USD → USDM conversion formula. |
+| Notion `09 — Definitive Decision Register`, D-10 | `OPEN` | Multi-asset valuation/settlement remains an unresolved decision area. | It does not itself choose the eligible asset set or source/feed mapping. |
+| Notion `09 — Definitive Decision Register`, D-11 | `OPEN` | Oracle authorization, freshness and latency remain unresolved. | It does not qualify a specific Pyth feed, issuer, policy ID, asset mapping or production quote path. |
+| Notion `09 — Definitive Decision Register`, D-13 | `OPEN` | Governance authorization remains an unresolved decision area. | It does not allow an implementation or adapter to silently choose economic truth. |
+| Notion `GOV-02 — Authority / Permission Matrix v0.1` | Boundary specification | PRE-RICH application policy is owned at the application layer; adapters implement chain-specific policy/realization and verify external evidence assumptions; normative changes require the designated governance process. | It does not authorize a maintainer to settle a missing denomination rule by code. |
+| `PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md` | `RESEARCHED / NORMATIVE DECISION OPEN / NO IMPLEMENTATION AUTHORIZED` | Records options A/B/C, exact-rational candidate math and the missing feed/asset identity evidence. | It is not an adopted decision and does not select A, B or C. |
+
+#### Work routing — no duplicate decision ID
+
+Treat the unresolved question as a **decision residue within existing D-10/D-11**, with governance authority checked against D-13/GOV-02. Do not invent a new D-number, assume DEC-3 means USD parity, or reopen DEC-3's exact-equivalence rule. The specific choice to be governed is:
+
+> What source-qualified relationship, if any, maps the PRE-RICH accounting unit “USDM” to USD for valuation of non-USDM assets, and what exact Cardano asset identity/quote must be accepted as physical settlement in canonical USDM?
+
+The decision record must explicitly choose and justify one of the already documented alternatives:
+- **A — USD-denominated accounting unit/parity:** only if the normative owner explicitly defines the relationship; the physical Cardano USDM asset still requires exact policy ID/name and its own treatment.
+- **B — independent USD/USDM ratio:** requires a second authenticated, fresh source/ratio and defined failure behavior.
+- **C — source quote already denominated in USDM:** requires exact asset/feed identity and source authorization; a ticker is insufficient.
+
+The decision must identify the normative owner/approval path, canonical source file and version, effective scope (PRE-RICH only vs IMMORTAL-wide), and conformance fixtures. Until that is adopted, do not change `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy or any unit constant.
+
+#### Dependency and parallelism
+
+1. **Normative decision:** resolve the existing D-10/D-11 residue under D-13/GOV-02. This is the blocker for choosing a production conversion formula, not a blocker for unrelated B3/Materios evidence acquisition.
+2. **Feed/asset qualification:** in parallel, gather source metadata only—exact Pyth feed identifier/type, signed-update format, target asset policy ID/name, token decimals and freshness model. Evidence collection may not presume that the feed is economically admissible.
+3. **Versioned conversion contract:** after the normative choice, freeze exact rational fields, exponent/resource bounds, rounding, overflow and fail-closed rules.
+4. **Production binding:** only then bind the authenticated quote to the exact MintPolicy treasury-equality predicate and run cross-script/native-ledger negative cases.
+5. **Separate first-Issue gate:** EEV direct-USDM revalidation and authoritative Issue admission remain independent blockers; no conversion decision alone authorizes Issue.
+
+**Classification:** source-of-truth crosswalk reviewed; normative choice **OPEN**; implementation **NOT AUTHORIZED**; global semantic audit **PARTIAL / OPEN**. No issue, branch, protocol code, workflow, deployment or ledger state was changed.
+
