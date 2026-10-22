@@ -1,0 +1,86 @@
+name: Treasury Liquidation Scenario Simulation
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario_id:
+        description: "Unique scenario identifier"
+        required: true
+        type: string
+      asset_ref:
+        description: "Canonical asset reference (identity evidence is external to this simulation)"
+        required: true
+        type: string
+      asset_quantity_atomic:
+        description: "Asset quantity in atomic units"
+        required: true
+        type: string
+      asset_quantity_scale:
+        description: "Atomic units per whole asset (e.g. 1000000); explicit input, not inferred"
+        required: true
+        type: string
+      asset_value_removed_usdm_atomic:
+        description: "USDM atomic units removed from EEV when selling this asset"
+        required: true
+        type: string
+      gross_usdm_proceeds_atomic:
+        description: "Gross USDM proceeds from a separately evidenced execution/scenario"
+        required: true
+        type: string
+      execution_costs_usdm_atomic:
+        description: "Total execution costs in same USDM atomic units"
+        required: true
+        type: string
+      pre_eev_usdm_atomic:
+        description: "Pre-sale EEV in USDM atomic units"
+        required: true
+        type: string
+      protected_capital_usdm_atomic:
+        description: "ProtectedCapital in same USDM atomic units"
+        required: true
+        type: string
+      evidence_class:
+        description: "Scenario input or independently observed execution"
+        required: true
+        type: choice
+        options:
+          - USER_SUPPLIED_SCENARIO
+          - OBSERVED_EXECUTION
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact branch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run deterministic integer simulation
+        env:
+          SCENARIO_ID: ${{ inputs.scenario_id }}
+          ASSET_REF: ${{ inputs.asset_ref }}
+          ASSET_QUANTITY_ATOMIC: ${{ inputs.asset_quantity_atomic }}
+          ASSET_QUANTITY_SCALE: ${{ inputs.asset_quantity_scale }}
+          ASSET_VALUE_REMOVED_USDM_ATOMIC: ${{ inputs.asset_value_removed_usdm_atomic }}
+          GROSS_USDM_PROCEEDS_ATOMIC: ${{ inputs.gross_usdm_proceeds_atomic }}
+          EXECUTION_COSTS_USDM_ATOMIC: ${{ inputs.execution_costs_usdm_atomic }}
+          PRE_EEV_USDM_ATOMIC: ${{ inputs.pre_eev_usdm_atomic }}
+          PROTECTED_CAPITAL_USDM_ATOMIC: ${{ inputs.protected_capital_usdm_atomic }}
+          EVIDENCE_CLASS: ${{ inputs.evidence_class }}
+        run: node audit/cardano-integration/treasury-liquidation-simulation.mjs
+      - name: Upload scenario evidence (including failed scenarios)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treasury-liquidation-simulation-${{ inputs.scenario_id }}
+          path: treasury-liquidation-simulation.json
+          if-no-files-found: warn
+          retention-days: 90
