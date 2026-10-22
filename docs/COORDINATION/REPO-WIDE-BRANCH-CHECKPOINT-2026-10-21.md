@@ -2190,3 +2190,30 @@ On the same SHA, general CI already returned SUCCESS for Documentation Link Chec
 Baseline remains run [#39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094) on source af56179fba836229f9a4463bbcd82ef619cec0f8: PrizeValidator publication passed in the in-memory emulator at 16,106-byte parameterized script payload; the second B1PrizePool publication then failed for missing input. The new ADA-only fixture UTxO is meant to address that exact setup blocker. Await actual step logs before marking it resolved.
 
 **Current verdict:** new exact-head result pending; final Reveal spending CBOR NOT MEASURED; Claim owner/signature equivalence NOT YET PROVEN; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; audit **PARTIAL / OPEN**.
+
+
+### 10.59 Agent B — both reference publications pass; Reveal construction now stops at Pool script evaluator — 2026-10-22
+
+**Exact source:** 5208318cb6ed51875ae2bae53364486f57dcaa37. **Status:** publication/funding fixture gates passed in-memory; Reveal evaluation remains blocked.
+
+#### Exact-head result
+
+PRE-RICH Emulator Reveal Conformance [run #39726370402](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370402) completed failure after the fixture funding correction.
+
+Fresh export metrics are unchanged from the source-equivalent validator version:
+- PrizeValidator factory payload 15,977 B; parameterized 16,106 B; published reference transaction diagnostic CBOR 16,297 B under local maxTxSize 100,000.
+- B1PrizePool factory payload 11,357 B; parameterized 11,513 B; publication transaction diagnostic CBOR 11,740 B on this exact run (the preceding run recorded 11,704 B; retain the current exact run's measurement and do not merge transaction-byte observations across fixture revisions).
+
+The canonical test now completes, submits and awaits both PrizeValidator and B1PrizePool reference-script publications in the in-memory Emulator. The second publication is no longer blocked by insufficient input, confirming the additional ADA-only genesis UTxO fixes that fixture obstacle.
+
+The canonical Reveal spending builder then fails during local Plutus evaluation with “Spend[1] attempted to instantiate a non-polymorphic term”. Spend[1] corresponds to the second spending input in the Reveal fixture, the B1PrizePool script. The negative input-binding twins also fail at build stage and remain INCONCLUSIVE_NOT_SUBMIT_REJECTION; no ledger-originated rejection is claimed.
+
+The diagnostic-only size profile uses maxTxSize 100,000 and gets through both script-publication transactions, but Reveal completion then fails with “Blockfrost not set. Can't calculate ex units” after nativeUplc is disabled on the legacy Lucid builder. The final Reveal-spending CBOR and its embedded-script witness census therefore remain NOT MEASURED.
+
+Companion [IMMORTAL Cardano Integration Lab #39726370427](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370427) was cancelled before providing native P2.8 acceptance; it contributes no current-head ledger proof.
+
+#### Next diagnostic scope
+
+Inspect the B1PrizePool Claim/Reveal value and singleton checks, using the exact evaluator error and existing historical probes to isolate the failing operation. Separate a Lucid/Scalus evaluator limitation from an on-chain validator predicate failure. Do not change the B1PrizePool or Reveal acceptance conditions, do not change V3, and do not substitute fabricated ExUnits or treat local emulator publication as Cardano-ledger acceptance. Any code change must have an explicit non-regression hypothesis and current-head tests.
+
+**Current verdict:** both reference-script publication transactions pass only in-memory emulator setup; canonical Reveal spending construction FAILS in local evaluator at Spend[1]; final Reveal CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN; P-03/P-04 remain **INTEGRATION_BLOCKED**. No real Cardano ledger transaction was submitted. Overall audit **PARTIAL / OPEN**.
