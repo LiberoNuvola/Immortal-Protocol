@@ -475,6 +475,18 @@ async function main() {
   const walletAddress =
     await probe.wallet.address();
 
+  // Reference-script publication uses dedicated, independently funded wallets.
+  // On a near-limit script publication the legacy coin selector can absorb a
+  // large change output into the fee to stay below maxTxSize; do not make the
+  // next reference publication depend on change returned to the game wallet.
+  const prizeReferencePublisherSeed = generateSeedPhrase();
+  const poolReferencePublisherSeed = generateSeedPhrase();
+  const publisherProbe = await Lucid.new(new Emulator([]), "Preprod");
+  publisherProbe.selectWalletFromSeed(prizeReferencePublisherSeed);
+  const prizeReferencePublisherAddress = await publisherProbe.wallet.address();
+  publisherProbe.selectWalletFromSeed(poolReferencePublisherSeed);
+  const poolReferencePublisherAddress = await publisherProbe.wallet.address();
+
   const baseEmulatorParams =
     await new Emulator([]).getProtocolParameters();
 
@@ -518,15 +530,16 @@ async function main() {
               1n,
           },
         },
-        // Keep a separate ADA-only UTxO so the second reference-script
-        // publication remains fundable if this legacy Emulator/Lucid path
-        // consumes the setup change UTxO on the first publication. This is
-        // test-fixture liquidity only; no protocol semantics are changed.
+        // One compact fee source per reference publication keeps the
+        // near-limit script publication from consuming the game wallet's
+        // entire change UTxO. These are emulator-only infrastructure payers.
         {
-          address: walletAddress,
-          assets: {
-            lovelace: 100_000_000n,
-          },
+          address: prizeReferencePublisherAddress,
+          assets: { lovelace: 3_000_000n },
+        },
+        {
+          address: poolReferencePublisherAddress,
+          assets: { lovelace: 3_000_000n },
         },
       ],
       emulatorProtocolParameters,
@@ -537,6 +550,11 @@ async function main() {
       emulator,
       "Preprod",
     );
+
+  const prizeReferencePublisher = await Lucid.new(emulator, "Preprod");
+  prizeReferencePublisher.selectWalletFromSeed(prizeReferencePublisherSeed);
+  const poolReferencePublisher = await Lucid.new(emulator, "Preprod");
+  poolReferencePublisher.selectWalletFromSeed(poolReferencePublisherSeed);
 
   const emulatorParams = await emulator.getProtocolParameters();
   console.log(
@@ -563,6 +581,15 @@ async function main() {
   const referenceLucid = await Lucid.new(emulator, "Preprod");
   referenceLucid.selectWalletFromSeed(generateSeedPhrase());
   const referenceAddress = await referenceLucid.wallet.address();
+  const uniqueWalletAddresses = new Set([
+    walletAddress,
+    prizeReferencePublisherAddress,
+    poolReferencePublisherAddress,
+    referenceAddress,
+  ]);
+  if (uniqueWalletAddresses.size !== 4) {
+    throw new Error("Game, reference publisher and reference holder wallets must be isolated");
+  }
 
   /*
    * --------------------------------------------------------------
@@ -944,7 +971,7 @@ async function main() {
 
   console.log("P2.8-B.1 stage: prize-reference-complete:start");
   const prizeReferenceTx =
-    await lucid
+    await prizeReferencePublisher
       .newTx()
       .payToAddressWithData(
         referenceAddress,
@@ -1003,7 +1030,7 @@ async function main() {
   let poolReferenceTx;
   try {
     poolReferenceTx =
-      await lucid
+      await poolReferencePublisher
         .newTx()
         .payToAddressWithData(
           referenceAddress,
