@@ -2621,3 +2621,32 @@ Commits: [provider guard `436072c5`](https://github.com/LiberoNuvola/Immortal-Pr
 This new guard does **not** replace the signed authority's cryptographic signature/digest validation, prove current EV1–EV7 against live Preprod bytes, create `DEPLOYMENT_APPROVED`, or close the missing authoritative R1/Kc certificate. The source does not choose a policy for USD/USDM, quote freshness, additional transaction inputs or ticket expiry. P-01/P-16 remain **BLOCKED** pending authoritative current EEV evidence and the remaining issue-admission/ledger requirements.
 
 No branch was created; no wallet action or transaction was submitted; no V3/Reveal semantics, economic constants, or normative decision was changed. Overall audit remains **PARTIAL / OPEN**.
+
+## 10.18 — B3 upstream GRANDPA verifier triangulation (2026-10-22)
+
+**Classification:** coordination/research update only. Non-normative. No B3 closure, runtime-semantic change, branch creation, merge, or deployment is authorized by this entry.
+
+### Upstream source inspected
+
+- `Flux-Point-Studios/orynq-sdk` commit `90fc397111a98b2d6fe47771e82003cdcaa429d5` (merge PR #141; 2026-10-22 10:19:47 UTC), especially `packages/anchors-midnight/src/grandpa.ts`.
+- Related commits: `4f78fa4206e14492e54de5fcde5b4901c7ad716a` (documents cross-chain/set-ID trust assumption), `0f7cc83caceedc5ab7f91eca2ed2687a376e4188` (equivocation signatures and lowest precommit), `f33c39f203c8cb34a7a1d7830f59678552e570db` (set-start and cross-chain equivocation handling).
+- Materios upstream commits reviewed previously: `bc1465d85e033001bc86175b85d60f2e5c353413` (no-secret-keys launch preflight), `ff6bac7cee17259c95b3a4960487419d66384415` (genesis committee guard), `f1217d7b9e4942a0e7f4283cc0dce74cbac89877` (Ariadne/follower epoch rule), and `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (sccache CI policy).
+- Current B3 source contract remains `poc/materios-grandpa/test/MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md`; extraction path remains `poc/materios-checkpoint/src/capture-finalized.ts`.
+
+### Findings
+
+1. **Reusable, not drop-in.** Orynq's `justifiedTarget` and `verifyFinality` provide valuable adversarial test patterns: valid equivocation handling, signed precommit distinctions, set-change boundaries, ancestry continuity, exact response-count checks and bounded work. The implementation is explicitly `anchors-midnight`; its `SET_LENGTH = 300`, checkpoint assumptions and `DEFAULT_MAX_SET_CHANGES = 2016` are Midnight-specific. Do not copy these constants or its set-transition assumptions into Materios.
+2. **Cross-chain replay is a real trust boundary.** GRANDPA signatures bind round and set ID, not chain ID/genesis. A mathematically valid justification is not by itself proof that it belongs to Materios. The upstream verifier documents a trust assumption that honest keys do not sign under the same set ID on another chain. B3 must make the relevant Materios genesis/chain identity and authority-history trust anchor explicit, and must not silently claim publisher-independent cross-chain identity from GRANDPA signatures alone.
+3. **Authority provenance remains open.** Materios preflight/genesis checks improve the assurance of a launched chain but do not retroactively prove a historical transition. The advertised authority set must be bound to a trusted checkpoint and verified transition history; the runtime authority-selection proof remains a separate authenticated-execution concern.
+4. **Current capture is transport, not proof.** `capture-finalized.ts` explicitly extracts the node's finalized head, header, state root, runtime code/version, authority list/set ID and attempts `grandpa_proveFinality`. It labels finality proof verification, authority-set transition proof, runtime execution proof and source reproducibility as open. A successful capture or WebSocket probe is not finality evidence.
+5. **B3 remains fail-closed.** The existing checkpoint records the latest B3 P2P probe as failing due to unavailable raw GRANDPA justification, consistent with fail-closed behavior. Do not rerun the same endpoint without a changed source/peer/archive condition and do not upgrade a capability probe into a finality result.
+
+### Next actions — Agent C
+
+- Compare Orynq's verifier logic and adversarial tests against the existing Materios PoC without importing Midnight-specific constants or trust assumptions.
+- Add/confirm explicit regression cases for: same keys and set IDs across distinct genesis/chain identities; wrong checkpoint/genesis; invalid or relabelled set-change block; equivocation signatures; malformed/oversized ancestry; mismatched RPC response counts; and finality proof target differing from the requested block.
+- Keep the two-stage contract: authenticated finality/authority/ancestry first, then StateRoot → exact storage key/value. Keep B3-C execution/runtime identity and runtime-source correspondence separate.
+- Do not claim a complete trustless fix for chain identity unless a protocol-level authenticated identity binding is demonstrated; otherwise record the remaining trust assumption explicitly.
+- Preserve PR #35 as draft and keep Workflow B/JEV results classified by exact commit, run and evidence type.
+
+**Status after this update:** upstream verifier research advanced; B3-A/B/C remain OPEN. No Materios finality proof was independently verified by this update.
