@@ -33,3 +33,11 @@ The simulator's `SCENARIO_PASS` is only a result for the supplied arithmetic. It
 ## Guardrails
 
 Do not infer a DEX route, price, liquidity, haircut, slippage, or fee model. Do not change normative economic semantics, V3 carrier, or Reveal. Keep the QNE universal proof separate from a single successful execution scenario.
+
+## Treasury inventory observation — 2026-10-22 follow-up
+
+- Derived the candidate Preprod Treasury address from `plutus/out/treasury.plutus.json` (Plutus V2): `addr_test1wrnd6rtjfzyc06r2rza338d3py0xeuuafpw6fe8rva5wruqawmlq4`. This is a code-derived address, not by itself proof of a live Treasury UTxO.
+- Added `audit/cardano-integration/observe-preprod-treasury-inventory.mjs`, a read-only Koios observer that derives the address from the current artifact, queries `POST /address_info`, lists exact UTxO refs, and totals native lovelace (tADA) plus the exact configured tUSDM unit (policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, asset name hex `745553444d`). It preserves integer atomic units and records explicit limitations.
+- Added `.github/workflows/observe-preprod-treasury-inventory.yml` to run on pushes to this branch when the observer/artifact/workflow changes, and to publish the JSON as a run artifact and step summary.
+- The workflow run and its on-chain output have **not been independently inspected in this session**. Do not claim the Treasury currently holds tADA or tUSDM until the observer result is read and the derived address is matched to the live ledger.
+- Even if balances are present, this is only custody/inventory evidence; no DEX route, minimum-output bound, executed swap, or QNE proof follows from it.
