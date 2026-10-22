@@ -11,6 +11,62 @@ const issueAuthorityUrl = (
 const issueAuthorityPublicKey = process.env.ISSUE_AUTHORITY_PUBLIC_KEY?.trim()
 const checks = []
 
+const EEV_SOURCE_EVIDENCE = {
+  EV1: {
+    path: 'docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md',
+    reference: 'docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md#EV1-Source-specification-and-verification-predicate',
+  },
+  EV2: {
+    path: 'Adapter/CARDANO/observation/DirectUsdmEev.ts',
+    reference: 'Adapter/CARDANO/observation/DirectUsdmEev.ts#direct-usdm-v1',
+  },
+  EV3: {
+    path: 'audit/cardano-integration/preprod-direct-usdm-source-set.mjs',
+    reference: 'audit/cardano-integration/preprod-direct-usdm-source-set.mjs#LIVE_UTXO_REVALIDATION',
+  },
+  EV4: {
+    path: 'Adapter/CARDANO/observation/DirectUsdmEev.test.ts',
+    reference: 'Adapter/CARDANO/observation/DirectUsdmEev.test.ts#deterministic-floor-conversion',
+  },
+  EV5: {
+    path: 'Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts',
+    reference: 'Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts#exact-pool-binding-failure-matrix',
+  },
+  EV6: {
+    path: 'docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md',
+    reference: 'docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md#external-truth-failure-and-shock-perimeter',
+  },
+  EV7: {
+    path: 'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md',
+    reference: 'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md#PA1-PA7-accounting-partition-certification',
+  },
+}
+
+async function qualificationSourceEvidenceMatches(value) {
+  if (!value || !value.evidence || typeof value.evidence !== 'object' || Array.isArray(value.evidence)) {
+    return false
+  }
+
+  for (const [key, source] of Object.entries(EEV_SOURCE_EVIDENCE)) {
+    const evidence = value.evidence[key]
+    if (
+      !evidence ||
+      evidence.reference !== source.reference ||
+      typeof evidence.digest !== 'string' ||
+      !/^[0-9a-fA-F]{64}$/.test(evidence.digest)
+    ) return false
+
+    try {
+      const bytes = await readFile(source.path)
+      const digest = createHash('sha256').update(bytes).digest('hex')
+      if (digest !== evidence.digest.toLowerCase()) return false
+    } catch {
+      return false
+    }
+  }
+  return true
+}
+
 async function jsonFile(path, label) {
   try {
     const value = JSON.parse(await readFile(path, 'utf8'))
@@ -121,6 +177,11 @@ check(sourceSet?.source?.kind === 'CARDANO_LIVE_UTXO' &&
 check(qualification?.status === 'qualified' &&
   qualification?.schema === 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1',
   'EV1-EV7 qualification exists')
+check(
+  await qualificationSourceEvidenceMatches(qualification),
+  'EV1-EV7 digests and exact source references match current repository bytes',
+  'requalify the exact candidate if any referenced source file changed or evidence is missing',
+)
 check(
   /^[0-9a-f]{64}$/i.test(qualification?.evidenceHash ?? '') &&
     digestWithoutEvidenceHash(qualification) === qualification?.evidenceHash,
