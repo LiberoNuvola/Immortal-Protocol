@@ -2242,3 +2242,22 @@ The current branch contains the narrower, separate-publisher fixture in commit [
 The next useful step is no longer to optimize reference-script publication payload. The current parameterized script and two reference publications now fit within the emulator's serialization/size constraints. The next work must isolate the local CEK failure on the actual Reveal spending transaction without altering Reveal/V3 semantics, and must produce a final spending CBOR using an explicitly justified evaluator or bounded non-acceptance construction method. Do not treat `nativeUplc:false` plus missing Blockfrost as sizing evidence; do not fabricate ExUnits; do not raise the protocol maxTxSize.
 
 **Current verdict:** in-memory reference publication: bounded PASS on SHA 5208318…; canonical Haskell Reveal evaluation: FAIL before final-CBOR serialization; diagnostic final Reveal CBOR: NOT MEASURED; native P2.8: NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; audit **PARTIAL / OPEN**. No production/preprod transaction was submitted.
+
+
+### 10.60 Agent B — schedule isolated Pool Value evaluator diagnostic — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). Status: diagnostic workflow step committed; exact-head run queued.
+
+The exact-head emulator result in [run #39726370402](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370402) showed both reference-script publications completing and being confirmed in the in-memory Emulator after the second ADA-only fixture UTxO was added. Canonical Reveal construction then failed at local evaluation with “Spend[1] attempted to instantiate a non-polymorphic term”; the second spending input is the B1PrizePool script. Negative input-binding twins stop at build and remain INCONCLUSIVE_NOT_SUBMIT_REJECTION. The final Reveal CBOR was not emitted.
+
+The separate size diagnostic sets nativeUplc:false, gets through both publications, but cannot complete Reveal because legacy Lucid requires a Blockfrost evaluator to calculate ExUnits and none is configured. This is a diagnostic capability gap, not evidence of script rejection or acceptance.
+
+#### New narrowly-scoped workflow diagnostic
+
+Commit [269240e0aa946136f6ad324785297f0ff286d50b](https://github.com/LiberoNuvola/Immortal-Protocol/commit/269240e0aa946136f6ad324785297f0ff286d50b) changes only .github/workflows/pre-rich-emulator-reveal.yml (blob 431c435bdae986a5d41e268eab58b29b64a76911). It adds a separate step setting P2_8_B1_POOL_VALUE_PROBE=1, P2_8_B1_BUDGET_PROBE=1 and P2_8_B1_SIZE_PROBE=1, labelled diagnostic-only with continue-on-error. The existing test code's Pool-only probe spends the Pool input with its reference script while deliberately omitting the Prize output; it is intended to distinguish a failure in singletonPoolTokenValid/valueOf from reaching the ordinary “no prize output” semantic rejection. It must never be treated as acceptance or ledger evidence.
+
+The exact-head workflow [PRE-RICH Emulator Reveal #39727002870](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39727002870) was queued when this record was appended. The earlier source result is a distinct run and is not replaced by queueing this diagnostic.
+
+**Next action:** inspect the exact run's Pool-only classification/error. If it identifies the existing evaluator fault, research the legacy evaluator/API and existing history before any validator change. Preserve the 16,384-byte protocol limit, existing acceptance predicates, V3 and Reveal semantics; do not supply fabricated ExUnits. Any candidate fix requires exact-head source tests and must keep the Claim owner/signature equivalence question open until explicit positive and negative Claim contexts are tested.
+
+**Current verdict:** both reference publications pass only in-memory setup; canonical Reveal local evaluation remains FAILED at the B1PrizePool Spend[1] path; final Reveal CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN; P-03/P-04 remain INTEGRATION_BLOCKED. No real Cardano ledger transaction was submitted. Audit remains PARTIAL / OPEN.
