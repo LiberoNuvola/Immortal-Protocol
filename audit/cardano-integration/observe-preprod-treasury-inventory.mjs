@@ -1,0 +1,86 @@
+import { readFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { validatorToAddress, validatorToScriptHash } from '@lucid-evolution/lucid'
+
+const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
+const ARTIFACT_PATH = 'plutus/out/treasury.plutus.json'
+const TUSDM_POLICY_ID = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9'
+const TUSDM_ASSET_NAME_HEX = '745553444d'
+const TUSDM_UNIT = TUSDM_POLICY_ID + TUSDM_ASSET_NAME_HEX
+const OUTPUT_PATH = process.env.TREASURY_OBSERVATION_OUTPUT ?? 'audit/preprod-evidence/treasury-inventory-observation.json'
+
+const artifactText = await readFile(ARTIFACT_PATH, 'utf8')
+const artifact = JSON.parse(artifactText)
+if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
+  throw new Error('TREASURY_ARTIFACT_INVALID: expected PlutusScriptV2 cborHex')
+}
+const validator = { type: 'PlutusV2', script: artifact.cborHex }
+const treasuryAddress = validatorToAddress('Preprod', validator)
+const treasuryScriptHash = validatorToScriptHash(validator)
+
+const response = await fetch(`${KOIOS}/address_info`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ _addresses: [treasuryAddress] }),
+})
+if (!response.ok) throw new Error(`KOIOS_ADDRESS_INFO_HTTP_${response.status}`)
+const rows = await response.json()
+const info = Array.isArray(rows) ? rows.find((r) => r?.address === treasuryAddress) : undefined
+if (!info) throw new Error('TREASURY_ADDRESS_NOT_RETURNED_BY_KOIOS')
+
+const utxos = (info.utxo_set ?? []).map((u) => {
+  const assets = Object.fromEntries((u.asset_list ?? []).map((a) => [
+    String(a.policy_id) + String(a.asset_name ?? ''),
+    String(a.quantity),
+  ]))
+  return {
+    ref: String(u.tx_hash) + '#' + String(u.tx_index),
+    lovelace: String(u.value),
+    tUSDMAtomic: assets[TUSDM_UNIT] ?? '0',
+    otherNativeAssets: Object.entries(assets)
+      .filter(([unit]) => unit !== TUSDM_UNIT)
+      .map(([unit, quantity]) => ({ unit, quantity })),
+  }
+})
+const totalLovelace = utxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
+const totalTusdm = utxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
+const observation = {
+  schema: 'IMMORTAL-PREPROD-TREASURY-INVENTORY-OBSERVATION-v1',
+  observedAt: new Date().toISOString(),
+  network: 'cardano-preprod',
+  treasuryAddress,
+  treasuryScriptHash,
+  treasuryArtifactPath: ARTIFACT_PATH,
+  treasuryArtifactSha256: createHash('sha256').update(artifactText).digest('hex'),
+  source: { provider: 'Koios', endpoint: 'POST /address_info', responseAddressMatched: true },
+  assetIdentity: {
+    tADA: 'native lovelace (testnet ADA; 1000000 lovelace per ADA)',
+    tUSDM: { policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX, unit: TUSDM_UNIT },
+  },
+  totals: {
+    utxoCount: utxos.length,
+    tADALovelace: totalLovelace.toString(),
+    tADA: (Number(totalLovelace) / 1_000_000).toString(),
+    tUSDMAtomic: totalTusdm.toString(),
+    tUSDM: (Number(totalTusdm) / 1_000_000).toString(),
+  },
+  utxos,
+  qualification: {
+    addressDerivedFromCurrentArtifact: true,
+    ledgerObservationObtained: true,
+    tUSDMIdentityMatchedByExactPolicyAndAssetName: true,
+    liquidationRouteVerified: false,
+    swapExecuted: false,
+    qneProven: false,
+  },
+  limitations: [
+    'This is a read-only snapshot of the exact script address derived from the current repository artifact.',
+    'Native lovelace is reported as testnet ADA; it is not USDM liquidity.',
+    'The tUSDM unit is matched exactly by policy ID and asset-name hex; this observation does not independently certify issuer or redemption value.',
+    'Balances do not prove an executable DEX route, minimum output, execution costs, or a non-erosive QNE action.',
+  ],
+}
+await mkdir(OUTPUT_PATH.split('/').slice(0, -1).join('/') || '.', { recursive: true })
+await writeFile(OUTPUT_PATH, JSON.stringify(observation, null, 2) + '\n')
+console.log(JSON.stringify(observation, null, 2))
