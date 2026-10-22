@@ -1423,7 +1423,14 @@ async function main() {
         4_000_000_000_000,
       )
 
-      .complete();
+      // Size-probe mode must serialize the transaction even if the local UPLC
+      // evaluator has an independent CEK failure. This mode is diagnostic-only:
+      // it returns before signing/submission and cannot count as acceptance.
+      .complete(
+        process.env.P2_8_B1_SIZE_PROBE === "1"
+          ? { localUPLCEval: false }
+          : undefined,
+      );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(
@@ -1442,8 +1449,43 @@ async function main() {
       throw new Error("Size probe could not obtain valid transaction CBOR");
     }
     const parsedTx = CML.Transaction.from_cbor_hex(txCbor);
-    const bodyBytes = parsedTx.body().to_cbor_bytes().length;
-    const witnessSetBytes = parsedTx.witness_set().to_cbor_bytes().length;
+    const body = parsedTx.body();
+    const witnessSet = parsedTx.witness_set();
+    const bodyBytes = body.to_cbor_bytes().length;
+    const witnessSetBytes = witnessSet.to_cbor_bytes().length;
+    const txInputs = [];
+    const inputCollection = body.inputs();
+    for (let i = 0; i < Number(inputCollection.len()); i++) {
+      const input = inputCollection.get(i);
+      txInputs.push(input.transaction_id().to_hex().toLowerCase() + "#" + Number(input.index()));
+    }
+    const referenceInputs = [];
+    const referenceCollection = body.reference_inputs?.();
+    if (referenceCollection) {
+      for (let i = 0; i < Number(referenceCollection.len()); i++) {
+        const input = referenceCollection.get(i);
+        referenceInputs.push(input.transaction_id().to_hex().toLowerCase() + "#" + Number(input.index()));
+      }
+    }
+    const scriptCollectionStats = (method) => {
+      const collection = witnessSet[method]?.();
+      return {
+        count: collection == null ? 0 : Number(collection.len()),
+        bytes: collection == null ? 0 : (() => {
+          let total = 0;
+          for (let i = 0; i < Number(collection.len()); i++) {
+            total += collection.get(i).to_cbor_bytes().length;
+          }
+          return total;
+        })(),
+      };
+    };
+    const embeddedScripts = {
+      plutus_v1: scriptCollectionStats("plutus_v1_scripts"),
+      plutus_v2: scriptCollectionStats("plutus_v2_scripts"),
+      plutus_v3: scriptCollectionStats("plutus_v3_scripts"),
+    };
+    const embeddedScriptCount = Object.values(embeddedScripts).reduce((sum, x) => sum + x.count, 0);
     const datumBytes = {
       prePrize: Data.to(prePrizeDatum).length / 2,
       postPrize: Data.to(postPrizeDatum).length / 2,
@@ -1464,10 +1506,14 @@ async function main() {
       bodyBytes,
       witnessSetBytes,
       overheadBytes: txCbor.length / 2 - bodyBytes - witnessSetBytes,
+      spendingInputs: txInputs.sort(),
+      referenceInputs: referenceInputs.sort(),
+      embeddedScripts,
+      embeddedScriptCount,
       datumBytes,
       redeemerBytes,
       referenceScriptBytes,
-      note: "Reference scripts are stored in reference UTxOs and are not part of this transaction's witness set; this probe does not establish ledger acceptance.",
+      note: "Diagnostic-only CBOR inspection. Reference-witness conversion is supported only when both expected reference inputs are present and embedded Plutus script count is zero; this probe does not establish ledger acceptance.",
     }));
     return;
   }
