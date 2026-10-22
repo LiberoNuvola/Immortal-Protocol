@@ -2806,3 +2806,10 @@ This is a concrete trust-minimized route, not trustless-from-nothing: the intend
 Report updated at [B3-A GRANDPA review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md), commit [`cab075e8`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/cab075e84b105633005ac2769ee515a4c961fd78).
 
 **Status unchanged:** authenticated bootstrap OPEN/BLOCKER; production transition proof verifier OPEN/BLOCKER; identity tests committed but not run; B3-A/B/C OPEN. No deploy or on-chain tx; PR #35 draft; V3/Reveal untouched.
+
+
+### 10.23 — B3-A source/release artifact triangulation (2026-10-22)
+
+Follow-up verified the hosted Materios release index reports `chain-spec-v6-raw.json` at 1,063,592 bytes, while public repository `Flux-Point-Studios/materios` commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` contains `chain-spec/chain-spec-raw.json` at 614,373 bytes. These are not interchangeable without a provenance/derivation proof. The repo's `.fluxpoint-spec-lock.json` SHA-256 (`4328b0ee893357524ad91c5f2dfc0c962ba8dcfa92e239fb061b8c903161926d`) is not the hosted release checksum. Official docs expose only truncated checksum `77877aa6…65aaa`; available fetch tools cannot retrieve the exact bytes of `SHA256SUMS` due content-type rejection, and text extraction is not byte-preserving. No hash or genesis reconstruction claimed.
+
+**B3 status remains unchanged:** bootstrap OPEN/BLOCKER; production transition proof verifier OPEN/BLOCKER; identity regressions committed but not run; B3-A/B/C OPEN. Next step: fetch exact hosted release bytes on a byte-preserving runner, verify full SHA256SUMS entry, archive bytes/digest/provenance, then independently reconstruct genesis with pinned Substrate SDK and extract initial GRANDPA authorities/set ID. No deployment/transaction; PR #35 remains draft; V3/Reveal untouched. Full findings: [B3-A GRANDPA review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md).
