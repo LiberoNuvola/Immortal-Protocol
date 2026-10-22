@@ -1428,7 +1428,7 @@ async function main() {
       // it returns before signing/submission and cannot count as acceptance.
       .complete(
         process.env.P2_8_B1_SIZE_PROBE === "1"
-          ? { localUPLCEval: false }
+          ? { nativeUplc: false }
           : undefined,
       );
   } catch (error) {
