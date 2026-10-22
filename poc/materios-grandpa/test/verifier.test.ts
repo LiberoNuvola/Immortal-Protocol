@@ -646,3 +646,19 @@ describe("verifier", () => {
     }
   );
 });
+
+describe("B3-A chain identity regression", () => {
+  it("rejects mismatched genesis with identical authority keys", async () => {
+    const checkpoint = makeCheckpoint();
+    checkpoint.genesisHash = new Uint8Array(32).fill(0xfe);
+    await expect(
+      verifyFinality(
+        checkpoint,
+        makeJustification([1, 2, 3]),
+        makeState(),
+        alwaysValidCrypto,
+        { verifyAncestry: false }
+      )
+    ).rejects.toMatchObject({ code: "GENESIS_HASH_MISMATCH" });
+  });
+});
