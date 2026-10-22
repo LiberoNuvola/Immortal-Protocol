@@ -2596,3 +2596,28 @@ Step 45, predeploy structural gate, failed for a separate compilation defect in 
 4. No change to V3 carrier, Reveal semantics, economic rules, protocol limits, production deployment or ledger state is authorized by these results.
 
 **Current verdict:** raw P2.8 packet = materialized; native decoder = PASS; exact native typed context = decoded; ledger evaluation = COMPLETED / FAILED (2 other ledger failures, 0 Plutus execution failures); predeploy structure = FAILED at `IssueAdmission.hs:175`; P-04 remains **INTEGRATION-BLOCKED** pending per-redeemer classification and closure of separate predeploy blocker. Overall audit remains **PARTIAL / OPEN**.
+
+
+
+### 10.71 Agent A — EEV qualification and deployment approval required at Issue provider boundary — 2026-10-22
+
+**Owner:** Agent A (P-01/P-16 Issue admission boundary). **Classification:** fail-closed input-contract hardening; no change to normative economics or protocol transitions.
+
+#### Finding and narrow correction
+
+At the current branch before this fix, `relayer/preprodIssueAdmissionProvider.js` rejected a wrong EEV `profileVersion` only when the field was present. An observation with a missing `eevQualification`, missing `deploymentApproval`, missing status, or missing profile did not fail at this provider's own qualification check. The deeper default signed-authority path validates approval and signature/digest bindings, but the provider boundary itself did not express the complete required precondition; injected authority-source functions could expose that gap.
+
+The provider now fails closed unless all three conditions are explicit:
+- EEV qualification `status === qualified`;
+- nested deployment approval `status === DEPLOYMENT_APPROVED`;
+- approval profile `PRE-RICH-EEV-USDM-DIRECT-V1`.
+
+Commits: [provider guard `436072c5`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/436072c5413c153741883b85558d74cf40b74cdb) · [regression cases `bd520121`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/bd520121e086bff865d07ca86779847c527f5cad).
+
+#### Verification and limits
+
+[Issue Admission Boundary CI #39825094344](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39825094344) completed **SUCCESS** on exact source SHA `bd520121e086bff865d07ca86779847c527f5cad`. The provider test now exercises missing qualification, unqualified status, absent approval, pending approval and wrong-profile cases using a local synthetic Lucid fixture. This is source/test evidence only, not a live EEV certificate or a ledger Issue.
+
+This new guard does **not** replace the signed authority's cryptographic signature/digest validation, prove current EV1–EV7 against live Preprod bytes, create `DEPLOYMENT_APPROVED`, or close the missing authoritative R1/Kc certificate. The source does not choose a policy for USD/USDM, quote freshness, additional transaction inputs or ticket expiry. P-01/P-16 remain **BLOCKED** pending authoritative current EEV evidence and the remaining issue-admission/ledger requirements.
+
+No branch was created; no wallet action or transaction was submitted; no V3/Reveal semantics, economic constants, or normative decision was changed. Overall audit remains **PARTIAL / OPEN**.
