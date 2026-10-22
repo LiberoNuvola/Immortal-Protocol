@@ -48,6 +48,50 @@ const utxos = addressRows.map((u) => {
       .map(([unit, quantity]) => ({ unit, quantity })),
   }
 })
+// Historical candidate: the Treasury artifact before the 2026-09-05 artifact update.
+const HISTORICAL_TREASURY_COMMIT = '2d3277ecf89a1b2e7489c85795470b0777446691'
+const HISTORICAL_ARTIFACT_URL = `https://raw.githubusercontent.com/LiberoNuvola/Immortal-Protocol/${HISTORICAL_TREASURY_COMMIT}/src/plutusScripts/treasury.plutus.json`
+const historicalArtifactResponse = await fetch(HISTORICAL_ARTIFACT_URL)
+if (!historicalArtifactResponse.ok) {
+  throw new Error(`HISTORICAL_TREASURY_ARTIFACT_HTTP_${historicalArtifactResponse.status}`)
+}
+const historicalArtifactText = await historicalArtifactResponse.text()
+const historicalArtifact = JSON.parse(historicalArtifactText)
+if (historicalArtifact.type !== 'PlutusScriptV2' || typeof historicalArtifact.cborHex !== 'string') {
+  throw new Error('HISTORICAL_TREASURY_ARTIFACT_INVALID')
+}
+const historicalValidator = { type: 'PlutusV2', script: historicalArtifact.cborHex }
+const historicalTreasuryAddress = lucid.utils.validatorToAddress(historicalValidator)
+const historicalTreasuryScriptHash = lucid.utils.validatorToScriptHash(historicalValidator)
+const historicalUtxoResponse = await fetch(`${KOIOS}/address_utxos`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ _addresses: [historicalTreasuryAddress] }),
+})
+if (!historicalUtxoResponse.ok) {
+  throw new Error(`KOIOS_HISTORICAL_ADDRESS_UTXOS_HTTP_${historicalUtxoResponse.status}`)
+}
+const historicalUtxoRows = await historicalUtxoResponse.json()
+if (!Array.isArray(historicalUtxoRows)) {
+  throw new Error('KOIOS_HISTORICAL_ADDRESS_UTXOS_INVALID_RESPONSE')
+}
+if (historicalUtxoRows.some((row) => row?.address !== historicalTreasuryAddress)) {
+  throw new Error('KOIOS_HISTORICAL_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS')
+}
+const historicalUtxos = historicalUtxoRows.map((u) => {
+  const assets = Object.fromEntries((u.asset_list ?? []).map((a) => [
+    String(a.policy_id) + String(a.asset_name ?? ''),
+    String(a.quantity),
+  ]))
+  return {
+    ref: String(u.tx_hash) + '#' + String(u.tx_index),
+    lovelace: String(u.value),
+    tUSDMAtomic: assets[TUSDM_UNIT] ?? '0',
+  }
+})
+const historicalTotalLovelace = historicalUtxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
+const historicalTotalTusdm = historicalUtxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
+
 const holderResponse = await fetch(
   `${KOIOS}/asset_addresses?_asset_policy=${TUSDM_POLICY_ID}&_asset_name=${TUSDM_ASSET_NAME_HEX}`,
 )
@@ -106,6 +150,19 @@ const observation = {
     tUSDM: formatSixDecimals(totalTusdm),
   },
   utxos,
+  historicalTreasuryArtifactCandidate: {
+    sourceCommit: HISTORICAL_TREASURY_COMMIT,
+    sourcePath: 'src/plutusScripts/treasury.plutus.json',
+    artifactSha256: createHash('sha256').update(historicalArtifactText).digest('hex'),
+    address: historicalTreasuryAddress,
+    scriptHash: historicalTreasuryScriptHash,
+    utxoCount: historicalUtxos.length,
+    tADALovelace: historicalTotalLovelace.toString(),
+    tADA: formatSixDecimals(historicalTotalLovelace),
+    tUSDMAtomic: historicalTotalTusdm.toString(),
+    tUSDM: formatSixDecimals(historicalTotalTusdm),
+    utxos: historicalUtxos,
+  },
   tUSDMPolicyDiscovery: {
     provider: 'Koios',
     endpoint: 'GET /policy_asset_list',
