@@ -2326,3 +2326,24 @@ No production transaction builder, validator logic, V3/Reveal semantics, protoco
 New workflow [PRE-RICH Emulator Reveal #39727481872](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39727481872) was queued on exact source SHA fb1dec848505f67c922c722db708712a6744f581. It must demonstrate that publication can be completed with the isolated 10 ADA fee source, then report what the Pool-only diagnostic actually sees. Do not infer success until the log has reached the diagnostic step and printed its classification.
 
 **Current verdict:** current probe run #39727002870 did not reach Pool-only test due to publisher funding; fresh exact-head run #39727481872 pending; canonical Reveal still fails at local evaluator Spend[1] on the last completed main profile; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT PROVEN. P-03/P-04 remain **INTEGRATION_BLOCKED**, no real transaction submitted, audit **PARTIAL / OPEN**.
+
+
+### 10.62 Agent B — Haskell V2 Claim trace starts but transaction build is 27 bytes over limit — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** Claim semantic result INCONCLUSIVE; builder stops at size guard before signature or submission.
+
+#### Exact run evidence
+
+[IMMORTAL Cardano Integration Lab #39726613781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613781), exact source SHA `218f4f32b802a2f969e71f77ab9e7ad3afc478a4`, ran steps through `Execute Haskell V2 Claim owner-signature conformance candidate`. The log confirms the runner selected `IMMORTAL_CLAIM_AIKEN_V3=0`, built the synthetic Revealed-state fixture and enumerated inputs for Prize, B1PrizePool, ticket NFT and both malformed/valid Oracle State references. Parameterization diagnostics gave 16,111 bytes for both legacy and Evolution serialized script variants, with different hashes/CBOR representations. Before it could execute the valid Claim or missing-owner-signature negative twin, Lucid Evolution `complete()` threw:
+
+`TxBuilderError: Max transaction size of 16384 exceeded. Found: 16411`
+
+This is **27 bytes over** and occurred before the transaction was signed/submitted. The Haskell V2 Claim step was configured `continue-on-error: true`; its GitHub step conclusion `success` is not an acceptance result. The actual log is a build/size failure, so no positive Claim or on-ledger negative Claim result is inferred. The parent Integration Lab run was later cancelled by a newer push; cancellation does not convert the candidate into a pass.
+
+#### Consequence and next action
+
+Claim owner/signature semantics remain **NOT PROVEN**. The current candidate's Claim transaction body/resource footprint must be inspected in a construction-only diagnostic that emits final CBOR and exact input/reference/witness counts without fabricating ExUnits or submitting an over-limit transaction. Any eventual remediation must fit within the unchanged 16,384-byte ceiling; do not loosen that guard. Only once the transaction is buildable within the protocol size limit can the positive Claim and `missing-owner-required-signer` negative twin meaningfully qualify the owner-signature optimization.
+
+This result is separate from the Reveal blocker: the prior 16,782-byte observation belongs to PrizeValidator reference-script publication on an earlier source; on SHA 5208318… both reference publications pass the emulator, then Reveal local UPLC evaluation fails before final-CBOR serialization. The final Reveal-spending CBOR and native P2.8 packet are still NOT MEASURED/NOT ESTABLISHED.
+
+**Current verdict:** Haskell V2 Claim build = FAIL at 16,411 / 16,384 bytes; Claim semantics = INCONCLUSIVE; Reveal final-spend CBOR = NOT MEASURED; P-03/P-04 remain **INTEGRATION_BLOCKED**; no Cardano Preprod/mainnet transaction submitted; overall audit **PARTIAL / OPEN**.
