@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { Blockfrost, Lucid } from 'lucid-cardano'
+import { Emulator, Lucid } from 'lucid-cardano'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const ARTIFACT_PATH = 'plutus/out/treasury.plutus.json'
@@ -15,7 +15,8 @@ const artifact = JSON.parse(artifactText)
 if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
   throw new Error('TREASURY_ARTIFACT_INVALID: expected PlutusScriptV2 cborHex')
 }
-const lucid = await Lucid.new(new Blockfrost('http://127.0.0.1:8080/api/v1', ''), 'Preprod')
+// Address/hash derivation is offline; an Emulator supplies Lucid's protocol-parameter initialization without a network provider.
+const lucid = await Lucid.new(new Emulator([]), 'Preprod')
 const validator = { type: 'PlutusV2', script: artifact.cborHex }
 const treasuryAddress = lucid.utils.validatorToAddress(validator)
 const treasuryScriptHash = lucid.utils.validatorToScriptHash(validator)
