@@ -143,11 +143,21 @@ function createPreprodIssueObservationProducerFromLucid({
       }
 
       const qualification = observed.eevQualification
-      const profileVersion = qualification?.deploymentApproval?.profileVersion
-      if (
-        profileVersion !== undefined &&
-        profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1'
-      ) {
+      if (!qualification || typeof qualification !== 'object' || Array.isArray(qualification)) {
+        throw new Error('authoritative Issue EEV qualification is required')
+      }
+      if (qualification.status !== 'qualified') {
+        throw new Error('authoritative Issue EEV qualification must be qualified')
+      }
+
+      const deploymentApproval = qualification.deploymentApproval
+      if (!deploymentApproval || typeof deploymentApproval !== 'object' || Array.isArray(deploymentApproval)) {
+        throw new Error('authoritative Issue EEV deployment approval is required')
+      }
+      if (deploymentApproval.status !== 'DEPLOYMENT_APPROVED') {
+        throw new Error('authoritative Issue EEV deployment approval must be DEPLOYMENT_APPROVED')
+      }
+      if (deploymentApproval.profileVersion !== 'PRE-RICH-EEV-USDM-DIRECT-V1') {
         throw new Error('authoritative Issue EEV profile does not match direct-USDM V1')
       }
 
