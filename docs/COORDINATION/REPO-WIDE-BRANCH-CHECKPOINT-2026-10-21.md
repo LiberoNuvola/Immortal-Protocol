@@ -1389,3 +1389,18 @@ The decision must identify the normative owner/approval path, canonical source f
 
 **Classification:** source-of-truth crosswalk reviewed; normative choice **OPEN**; implementation **NOT AUTHORIZED**; global semantic audit **PARTIAL / OPEN**. No issue, branch, protocol code, workflow, deployment or ledger state was changed.
 
+
+
+### 10.40 Feed and settlement-asset metadata inventory — 2026-10-22
+
+Read-only source inventory; this is not a quote qualification or economic decision.
+
+- `src/config.ts` blob `37c75e237e4c47ab2ea3f04f43f76ad57bf71636`: defines PRE identity, Oracle State and ticket/control IDs, but no canonical USDM settlement policy ID/name or Pyth feed ID.
+- `.env.example` blob `e0d934726a30e787ff74469ba8cb79ab0a026424`: `DIRECT_USDM_UNIT` is commented, not an approved identity.
+- `PREPROD-PRE-MATERIALIZATION-GATE-v0.1.md` blob `ceae73da4511e33184b4a4f3ffc370942645946d`: the explicit policy/name is for PRE, not USDM.
+- `PYTH-MINTPOLICY-PRICE-BINDING-DESIGN-20261021.md` blob `0db67eceec333ec4ba4339d8b927eb5d7bc4dc69`: feed ID 16 is ADA/USD; the memo keeps USD/USDM denomination open.
+- `PythQuoteCarrierBinding.hs` blob `669b99a0e4564504012bda8402b706d0ae7a9a9b`: raw quote binding candidate; not used by deployed MintPolicy.
+- `PythAdaUsdConversion.hs` blob `43dbe58ab19c3e748bf34af2c77ff97cdd42253c`: rational candidate needs an explicit USD-per-USDM ratio and exponent bound; not wired into production.
+- `preprod-real-reveal.mjs` blob `996e8615af2902f2d254fb99a7b4a620b6e74fd4`: uses hardcoded fixture values and a zero-filled oracle-policy placeholder; diagnostic harness only.
+
+**Dispatch:** obtain the exact USDM policy ID/name from an authenticated target-network observation; confirm token units; identify the exact Pyth feed type/ID and signed-update verification path; record freshness and failure rules. Do not infer asset identity from ticker or from PRE's policy. Do not treat ADA/USD as ADA/USDM. No conversion option is selected, and no production implementation is authorized. B3/Materios remains an independent active lane. Audit remains **PARTIAL / OPEN**.
