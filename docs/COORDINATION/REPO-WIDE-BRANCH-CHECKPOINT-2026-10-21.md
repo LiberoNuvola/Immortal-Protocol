@@ -2460,3 +2460,30 @@ The exact-source [IMMORTAL Cardano Integration Lab #39777010375](https://github.
 - No Preprod/mainnet transaction was sent by these Agent B diagnostics. Overall audit remains **PARTIAL / OPEN**.
 
 **Next action:** inspect [run #39777906146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777906146) at the Prize-only step if it advances. In parallel, do not rerun the Pool-only probe unchanged; its bounded guard isolation has already been established. Any next Reveal-size work must emit an explicitly labelled construction-only result or final CBOR, without inventing ExUnits or treating a partial builder body as a final transaction.
+
+
+### 10.66 Agent B — PrizeValidator local evaluator isolation reproduces Spend[0] crash — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** legacy local-evaluator failure isolated to PrizeValidator; no final Reveal CBOR; native P2.8 remains OPEN.
+
+#### Exact-head evidence
+
+PRE-RICH Emulator Reveal Conformance [run #39777906146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777906146), exact source SHA `f008440cbc6673c82dd5e82c8b3ffec51d95edc6`, completed FAILURE.
+
+1. The canonical Reveal path failed with `Spend[0] attempted to instantiate a non-polymorphic term` before signing/submission and before final spending-transaction CBOR was emitted.
+2. The Pool-only path printed `POOL_VALUE_PROBE EXPECTED_SEMANTIC_STOP_AFTER_VALUE_GUARDS`; its deliberate redeemer price mismatch was reached after the preceding Pool Value/singleton checks. This result is bounded, local-emulator diagnostic evidence only.
+3. The new complementary Prize-only path printed `PRIZE_VALIDATOR_PROBE PRIZE_EVALUATOR_FAILURE`, with the same `Spend[0] attempted to instantiate a non-polymorphic term`. Its transaction retained the real fixture Pool input/output as context but supplied no Pool redeemer, so only the PrizeValidator was selected for local evaluation. The diagnostic never signed/submitted the candidate.
+
+This localizes the observed compatibility/runtime fault to the legacy `lucid-cardano@0.10.11` local UPLC evaluation of the current compiled PrizeValidator fixture; it does **not** prove that Cardano-ledger/Yaci would reject the transaction. The Pool-only probe does not reproduce the same fault before its deliberate semantic stop. No inference is made that the Pool validator is fully correct from that bounded probe.
+
+#### Remaining serialization boundary
+
+- Both reference-script publication transactions continued to fit and complete in the in-memory emulator under the diagnostic size ceiling: PrizeValidator publication 16,297 B; B1PrizePool publication 11,704 B. These are publication transactions, not final Reveal spend size.
+- With `P2_8_B1_SIZE_PROBE=1`, legacy `nativeUplc:false` still cannot complete the full transaction because no Blockfrost evaluator is configured: `Blockfrost not set. Can't calculate ex units`. Therefore final Reveal spending CBOR, embedded script witness counts, reference-input census and final total size remain **NOT MEASURED**. Do not fabricate ExUnits and do not classify the diagnostic step's `continue-on-error` conclusion as acceptance.
+- The step does not submit a transaction. No production validator or economic semantics, V3 carrier, maximum transaction-size parameter or production builder was changed.
+
+#### Route decision and next action
+
+The repository already contains `audit/cardano-integration/reveal-ledger-trace.ts`, an Evolution Lucid + Yaci path that binds the two reference-script publication transactions, serializes the built Reveal CBOR, runs `assertRevealUsesReferenceScripts`, asks Yaci to evaluate that exact CBOR for ExUnits and emits `revealDiag` records. The current `immortal-cardano-lab.yml` no longer calls this script; it runs the isolated Aiken V3 Reveal candidate path instead. Before adding another harness or changing any validator, determine whether this existing trace can be executed under the current Lab bootstrap in its canonical Haskell mode (`IMMORTAL_REVEAL_AIKEN_V3` unset/false), without changing V3 semantics or deploying/submitting to Preprod. If the trace is already runnable from the current environment, use the existing exact script rather than creating a parallel builder. Its local Yaci transaction would still be a devnet trace, not a real Preprod transaction, and must be labelled accordingly.
+
+**Current verdict:** Pool local Value path = `TESTED_BOUNDED` through the deliberate semantic stop; Prize local evaluator = `PRIZE_EVALUATOR_FAILURE`; canonical Haskell V2 Reveal = local evaluator failure before final CBOR; final Reveal size/reference-witness binding = **NOT MEASURED**; native P2.8 = **NOT ESTABLISHED**; P-03/P-04 remain **INTEGRATION_BLOCKED**. Overall audit remains **PARTIAL / OPEN**.
