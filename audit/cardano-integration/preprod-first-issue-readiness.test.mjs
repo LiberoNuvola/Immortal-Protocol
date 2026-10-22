@@ -11,6 +11,46 @@ const readinessScript = resolve(root, 'audit/cardano-integration/preprod-first-i
 const providerModule = resolve(root, 'relayer/preprodIssueAdmissionProvider.js')
 const evidenceRoot = await mkdtemp(resolve(tmpdir(), 'immortal-preprod-readiness-'))
 
+const EEV_SOURCE_EVIDENCE = {
+  EV1: {
+    path: 'docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md',
+    reference: 'docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md#EV1-Source-specification-and-verification-predicate',
+  },
+  EV2: {
+    path: 'Adapter/CARDANO/observation/DirectUsdmEev.ts',
+    reference: 'Adapter/CARDANO/observation/DirectUsdmEev.ts#direct-usdm-v1',
+  },
+  EV3: {
+    path: 'audit/cardano-integration/preprod-direct-usdm-source-set.mjs',
+    reference: 'audit/cardano-integration/preprod-direct-usdm-source-set.mjs#LIVE_UTXO_REVALIDATION',
+  },
+  EV4: {
+    path: 'Adapter/CARDANO/observation/DirectUsdmEev.test.ts',
+    reference: 'Adapter/CARDANO/observation/DirectUsdmEev.test.ts#deterministic-floor-conversion',
+  },
+  EV5: {
+    path: 'Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts',
+    reference: 'Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts#exact-pool-binding-failure-matrix',
+  },
+  EV6: {
+    path: 'docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md',
+    reference: 'docs/01-contracts/16_OMEGA_COMPLETENESS_CONTRACT.md#external-truth-failure-and-shock-perimeter',
+  },
+  EV7: {
+    path: 'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md',
+    reference: 'docs/02-certification/ACCOUNTING_PARTITION_AND_CONSERVATION_CERTIFICATION.md#PA1-PA7-accounting-partition-certification',
+  },
+}
+
+const sourceEvidence = {}
+for (const [key, source] of Object.entries(EEV_SOURCE_EVIDENCE)) {
+  const bytes = await readFile(resolve(root, source.path))
+  sourceEvidence[key] = {
+    reference: source.reference,
+    digest: createHash('sha256').update(bytes).digest('hex'),
+  }
+}
+
 function digest(value) {
   return createHash('sha256')
     .update(JSON.stringify(value, (_key, item) =>
@@ -88,7 +128,7 @@ try {
     verificationReference: 'github-actions:run/100@' + 'c'.repeat(40),
     derivationVersion: 'direct-usdm-v1',
     snapshotReference: 'sha256:' + 'd'.repeat(64),
-    evidence: {},
+    evidence: sourceEvidence,
     qualifiedProperties: ['EV1', 'EV2', 'EV3', 'EV4', 'EV5', 'EV6', 'EV7'],
     excludedProperties: [],
     testSuiteVersion: 'pre-rich-direct-usdm-conformance-v1',
@@ -212,7 +252,24 @@ try {
     item.label === 'Approval digest is bound to the original qualification, current source-set, deployment, Oracle State, exact Pool candidate, actor, run, and commit',
   ))
 
-  console.log('preprod-first-issue-readiness: passes valid evidence chain and blocks mismatched approval digest')
+  // Recompute every EV digest from actual repository bytes and reject a
+  // coherently re-hashed qualification artifact whose referenced source bytes
+  // no longer match its EV evidence.
+  const qualificationPath = resolve(evidenceDir, 'preprod-direct-usdm-qualification.json')
+  const validQualification = JSON.parse(await readFile(qualificationPath, 'utf8'))
+  const staleSourceQualification = JSON.parse(JSON.stringify(validQualification))
+  staleSourceQualification.evidence.EV2.digest = '0'.repeat(64)
+  setArtifactDigest(staleSourceQualification)
+  await saveJson(qualificationPath, staleSourceQualification)
+  const staleSource = runGate(env)
+  assert.equal(staleSource.code, 2)
+  assert.equal(staleSource.report.status, 'BLOCKED')
+  assert.ok(staleSource.report.blockers.some(item =>
+    item.label === 'EV1-EV7 digests and exact source references match current repository bytes',
+  ))
+  await saveJson(qualificationPath, validQualification)
+
+  console.log('preprod-first-issue-readiness: passes valid evidence chain and blocks altered source digests and approval digest mismatch')
 } finally {
   await rm(evidenceRoot, { recursive: true, force: true })
 }
