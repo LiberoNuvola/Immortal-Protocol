@@ -250,105 +250,6 @@ rawConstrField expectedTag fieldIndex d =
         else Nothing
     Nothing -> Nothing
 
-{-# INLINABLE rawTicketOwnerHash #-}
-rawTicketOwnerHash
-  :: CurrencySymbol
-  -> TokenName
-  -> BuiltinData
-  -> Maybe BuiltinData
-rawTicketOwnerHash ticketCs ticketTn rawCtx =
-  case rawConstrField 0 0 rawCtx of
-    Nothing -> Nothing
-    Just rawInfo ->
-      case rawConstrField 0 0 rawInfo of
-        Nothing -> Nothing
-        Just rawInputsData ->
-          case rawList rawInputsData of
-            Nothing -> Nothing
-            Just rawInputs ->
-              rawTicketOwnerHashInInputs ticketCs ticketTn rawInputs
-
-{-# INLINABLE rawTicketOwnerHashInInputs #-}
-rawTicketOwnerHashInInputs
-  :: CurrencySymbol
-  -> TokenName
-  -> [BuiltinData]
-  -> Maybe BuiltinData
-rawTicketOwnerHashInInputs _ _ [] = Nothing
-rawTicketOwnerHashInInputs ticketCs ticketTn (rawInput:rest) =
-  case rawConstrField 0 1 rawInput of
-    Nothing -> Nothing
-    Just rawOut ->
-      case rawConstrField 0 1 rawOut of
-        Nothing -> Nothing
-        Just rawValue ->
-          case rawAssetAmount ticketCs ticketTn rawValue of
-            Just amount ->
-              if amount == 1
-                then
-                  case rawConstrField 0 0 rawOut of
-                    Nothing -> Nothing
-                    Just rawAddress ->
-                      case rawConstrField 0 0 rawAddress of
-                        Just rawCredential ->
-                          case rawConstr rawCredential of
-                            Just (tag, fields) ->
-                              if tag == 0
-                                then rawField 0 fields
-                                else Nothing
-                            Nothing -> Nothing
-                        Nothing -> Nothing
-                else rawTicketOwnerHashInInputs ticketCs ticketTn rest
-            Nothing -> rawTicketOwnerHashInInputs ticketCs ticketTn rest
-
-{-# INLINABLE rawMapPairs #-}
-rawMapPairs :: BuiltinData -> Maybe [(BuiltinData, BuiltinData)]
-rawMapPairs d =
-  Builtins.matchData
-    d
-    (\_ _ -> Nothing)
-    (\entries -> Just entries)
-    (\_ -> Nothing)
-    (\_ -> Nothing)
-    (\_ -> Nothing)
-
-{-# INLINABLE rawAssetAmount #-}
-rawAssetAmount
-  :: CurrencySymbol
-  -> TokenName
-  -> BuiltinData
-  -> Maybe Integer
-rawAssetAmount ticketCs ticketTn rawValue =
-  case rawMapPairs rawValue of
-    Just currencies -> rawTokenAmount ticketCs ticketTn currencies
-    Nothing -> Nothing
-
-{-# INLINABLE rawTokenAmount #-}
-rawTokenAmount
-  :: CurrencySymbol
-  -> TokenName
-  -> [(BuiltinData, BuiltinData)]
-  -> Maybe Integer
-rawTokenAmount _ _ [] = Nothing
-rawTokenAmount ticketCs ticketTn ((rawCs, rawTokensData):rest) =
-  if Builtins.equalsData rawCs (toBuiltinData ticketCs)
-    then
-      case rawMapPairs rawTokensData of
-        Just tokens -> rawTokenAmountForName ticketTn tokens
-        Nothing -> Nothing
-    else rawTokenAmount ticketCs ticketTn rest
-
-{-# INLINABLE rawTokenAmountForName #-}
-rawTokenAmountForName
-  :: TokenName
-  -> [(BuiltinData, BuiltinData)]
-  -> Maybe Integer
-rawTokenAmountForName _ [] = Nothing
-rawTokenAmountForName ticketTn ((rawTn, rawAmount):rest) =
-  if Builtins.equalsData rawTn (toBuiltinData ticketTn)
-    then fromBuiltinData rawAmount
-    else rawTokenAmountForName ticketTn rest
-
 {-# INLINABLE rawSignatories #-}
 rawSignatories :: BuiltinData -> Maybe [BuiltinData]
 rawSignatories rawCtx =
@@ -364,16 +265,6 @@ rawContainsData :: BuiltinData -> [BuiltinData] -> Bool
 rawContainsData _ [] = False
 rawContainsData expected (x:xs) =
   Builtins.equalsData expected x || rawContainsData expected xs
-
-{-# INLINABLE rawOwnerSigned #-}
-rawOwnerSigned :: CurrencySymbol -> TokenName -> BuiltinData -> Bool
-rawOwnerSigned ticketCs ticketTn rawCtx =
-  case rawTicketOwnerHash ticketCs ticketTn rawCtx of
-    Nothing -> False
-    Just rawOwner ->
-      case rawSignatories rawCtx of
-        Nothing -> False
-        Just rawSigs -> rawContainsData rawOwner rawSigs
 
 {-# INLINABLE rawAddressOf #-}
 rawAddressOf :: BuiltinData -> Maybe BuiltinData
@@ -930,19 +821,20 @@ validateClaim oracleState oraclePublisher datum rawCtx ctx =
     maybeOwner =
       ticketOwnerPkh ticketCs ticketTn (txInfoInputs info)
 
-    rawOwner =
-      rawTicketOwnerHash ticketCs ticketTn rawCtx
-
-    -- Derive the owner's PubKeyHash from the typed TxInfo, then use the
-    -- raw context only to match the exact enterprise settlement address.
-    -- In Plutus V2 the raw credential field is BuiltinData wrapping a
-    -- bytestring; comparing it to typed PubKeyHash via equalsByteString caused
-    -- a Data/ByteString mismatch in the Yaci/Scalus evaluator.
-    -- Keep signature membership on the raw BuiltinData representation:
-    -- the Yaci/Scalus Plutus V2 evaluator currently exposes signatories as Data
-    -- at this boundary, while txSignedBy lowers to equalsByteString.
+    -- Derive the ticket owner once from typed TxInfo, which is also the
+    -- owner used to construct the exact settlement address. Keep signer
+    -- membership on the raw BuiltinData representation: the legacy Yaci/Scalus
+    -- Plutus V2 evaluator exposes signatories as Data at this boundary, whereas
+    -- txSignedBy lowers to byte-string equality and has failed this path.
+    -- This avoids a second raw traversal of every input and Value map while
+    -- preserving the owner/signatory membership predicate for ledger TxInfo.
     ownerSigned =
-      rawOwnerSigned ticketCs ticketTn rawCtx
+      case maybeOwner of
+        Nothing -> False
+        Just ownerHash ->
+          case rawSignatories rawCtx of
+            Nothing -> False
+            Just rawSigs -> rawContainsData (toBuiltinData ownerHash) rawSigs
 
     -- C-03: Oracle-based settlement verification. Construct the canonical
     -- enterprise address from the typed PubKeyHash before comparing raw address
