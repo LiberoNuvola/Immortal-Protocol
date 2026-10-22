@@ -2524,3 +2524,23 @@ At the checkpoint update, step 33 `Execute real economic Claim transition trace`
 This provides a viable Evolution/Yaci path around the legacy PrizeValidator local-evaluator error for the isolated Aiken candidate, but does not erase the separate observed legacy Haskell V2 local evaluator failure at `Spend[0]` recorded in §10.66. No V3 carrier, Reveal economic semantics, protocol constants, or production validator source changed.
 
 **Current verdict:** active candidate Reveal + FundTreasury/TicketIssued/Expire = `TESTED_BOUNDED` on local Yaci; economic Claim = `IN_PROGRESS`; native P2.8 = `PENDING`; Haskell V2 legacy emulator evaluator path remains `PRIZE_EVALUATOR_FAILURE`; P-03/P-04 remain **INTEGRATION-BLOCKED** pending complete evidence and current-head ledger evaluation. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.68 Agent B — Aiken V3 Claim passes local Yaci; P2.8 context materialized; native decoder in progress — 2026-10-22
+
+**Owner:** Agent B (P-04). **Status:** local candidate lifecycle trace passed through Claim; native decoder active; Cardano-ledger evaluation pending.
+
+Current run [IMMORTAL Cardano Integration Lab #39777884299](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777884299), source SHA `cb9825d20cacdddca98d8a1cd6bf554287b0c2bf), has reached these completed steps:
+
+- Step 33 — `Execute real economic Claim transition trace`: completed with effective conclusion `success` on the configured Aiken V3 candidate route and local Yaci.
+- Step 37 — `Materialize raw Yaci ledger context for P2.8`: `success`. The materializer binds the exact `reveal-tx.cbor` bytes to `reveal-transition.json` and Yaci's observed transaction metadata/consumed inputs, then writes raw UTxO, protocol parameter, epoch-info and system-start evidence files.
+- Step 38 — `Run native Yaci UTxO decoder conformance`: still `in_progress` at this checkpoint snapshot.
+- Step 39 — `Run P2.8 ledger evidence gate against this lab packet`: still `pending`.
+
+Step 35, `Execute Haskell V2 Claim owner-signature conformance candidate`, has also completed at the workflow step-summary level. Because it is explicitly `continue-on-error: true`, its displayed effective `success` is not enough to infer owner-signature acceptance; the raw job log must classify whether it built within the size bound and where the negative twins were rejected. The prior exact-source run #39777010375 logged 16,411 bytes (>16,384) in this Haskell V2 Claim path; this new run's diagnostic remains to be read.
+
+#### Scope and interpretation
+
+The successful Aiken V3 Claim trace is a local-Yaci candidate run, not proof of production Claim authority/settlement or a real user's Issue. The P2.8 context materialization success confirms the fixture's raw packet was extracted and linked; it does not mean the native Cardano-ledger evaluator passed. The current active decoder and next ledger gate must use the exact packet on this exact run, not substitute another transaction or a synthetic context.
+
+**Current verdict:** candidate Aiken V3 Reveal/FundTreasury/TicketIssued/Expire/Claim = `TESTED_BOUNDED` on local Yaci; P2.8 raw materializer = `PASS`; native UTxO decoder = `IN_PROGRESS`; native Cardano-ledger evidence gate = `PENDING`; Haskell V2 Claim owner/signature classification = `PENDING_RAW_LOG_REVIEW`. Production migration remains unauthorized; P-03/P-04 overall remain **INTEGRATION-BLOCKED** until the exact native ledger gate and other requirements are satisfied. Overall audit remains **PARTIAL / OPEN**.
