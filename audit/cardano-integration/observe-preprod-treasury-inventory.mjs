@@ -109,6 +109,34 @@ const tUSDMHolders = holderRows.map((holder) => {
   }
 })
 
+const PRE_POLICY_ID = '1b29fda97d0fd321398c5b7b3285fdaadd519a0d002932853311f02c'
+const PRE_ASSET_NAME_HEX = '5052452d52494348'
+const preHolderResponse = await fetch(
+  `${KOIOS}/asset_addresses?_asset_policy=${PRE_POLICY_ID}&_asset_name=${PRE_ASSET_NAME_HEX}`,
+)
+if (!preHolderResponse.ok) throw new Error(`KOIOS_PRE_ASSET_ADDRESSES_HTTP_${preHolderResponse.status}`)
+const preHolderRows = await preHolderResponse.json()
+if (!Array.isArray(preHolderRows)) throw new Error('KOIOS_PRE_ASSET_ADDRESSES_INVALID_RESPONSE')
+const preHolders = preHolderRows.map((holder) => {
+  if (typeof holder?.payment_address !== 'string' || holder.quantity == null) {
+    throw new Error('KOIOS_PRE_ASSET_ADDRESSES_INVALID_HOLDER_ROW')
+  }
+  return {
+    address: holder.payment_address,
+    quantityAtomic: String(holder.quantity),
+    matchesArtifactTreasury: holder.payment_address === treasuryAddress,
+  }
+})
+const preHolderAddresses = new Set(preHolders.map((holder) => holder.address))
+const tUSDMAndPREHolderIntersection = tUSDMHolders
+  .filter((holder) => preHolderAddresses.has(holder.address))
+  .map((holder) => ({
+    address: holder.address,
+    tUSDMAtomic: holder.quantityAtomic,
+    PREAtomic: preHolders.find((preHolder) => preHolder.address === holder.address).quantityAtomic,
+    matchesArtifactTreasury: holder.address === treasuryAddress,
+  }))
+
 const policyResponse = await fetch(
   `${KOIOS}/policy_asset_list?_asset_policy=${TUSDM_POLICY_ID}`,
 )
@@ -162,6 +190,19 @@ const observation = {
     tUSDMAtomic: historicalTotalTusdm.toString(),
     tUSDM: formatSixDecimals(historicalTotalTusdm),
     utxos: historicalUtxos,
+  },
+  PREHolderDiscovery: {
+    provider: 'Koios',
+    endpoint: 'GET /asset_addresses',
+    policyId: PRE_POLICY_ID,
+    assetNameHex: PRE_ASSET_NAME_HEX,
+    returnedHolderCount: preHolders.length,
+    holders: preHolders,
+  },
+  tUSDMAndPREHolderIntersection: {
+    count: tUSDMAndPREHolderIntersection.length,
+    candidates: tUSDMAndPREHolderIntersection,
+    interpretation: 'Discovery only. A shared PRE/tUSDM holder is not proven to be the configured Treasury; validate its address/script identity and UTxOs before attribution.',
   },
   tUSDMPolicyDiscovery: {
     provider: 'Koios',
