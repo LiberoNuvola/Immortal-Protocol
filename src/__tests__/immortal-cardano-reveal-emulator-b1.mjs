@@ -535,14 +535,15 @@ async function main() {
         // entire change UTxO. These are emulator-only infrastructure payers.
         {
           address: prizeReferencePublisherAddress,
-          // The large reference-script output plus minimum change can exceed
-          // the remainder of a 3 ADA input. Keep enough fixture-only ADA for
-          // the canonical publication fee and a valid change output.
-          assets: { lovelace: 10_000_000n },
+          // A ~16 KB reference script requires a high minimum-ADA output;
+          // a 10 ADA payer still exhausts inputs before the diagnostic can
+          // inspect serialized CBOR. Keep 150 ADA in this isolated test payer.
+          assets: { lovelace: 150_000_000n },
         },
         {
           address: poolReferencePublisherAddress,
-          assets: { lovelace: 10_000_000n },
+          // Match the independently funded PrizeValidator publisher.
+          assets: { lovelace: 150_000_000n },
         },
       ],
       emulatorProtocolParameters,
@@ -956,6 +957,8 @@ async function main() {
   const scriptPublicationMetrics = {
     network: "emulator-fixture",
     activeMaxTxSize: emulatorParams.maxTxSize,
+    referenceOutputLovelace: "100000000",
+    referencePublisherFundingLovelace: "150000000",
     prizeValidator: {
       scriptHash: prizeHash,
       parameterizedScriptBytes: Buffer.from(prizeScript.script, "hex").length,
@@ -979,7 +982,9 @@ async function main() {
       .payToAddressWithData(
         referenceAddress,
         { scriptRef: prizeScript },
-        { lovelace: 2_000_000n },
+        // 100 ADA is a conservative emulator fixture allowance for the
+        // minimum-ADA requirement of this near-16 KB reference-script output.
+        { lovelace: 100_000_000n },
       )
       .complete();
 
@@ -1038,7 +1043,8 @@ async function main() {
         .payToAddressWithData(
           referenceAddress,
           { scriptRef: poolScript },
-          { lovelace: 2_000_000n },
+          // Use the same conservative fixture allowance for the pool script.
+          { lovelace: 100_000_000n },
         )
         .complete();
     if (sizeProbe) {
