@@ -22,6 +22,10 @@ curl --fail --location --silent --show-error --retry 3 \
 curl --fail --location --silent --show-error --retry 3 \
   "$BASE_URL/$SPEC_NAME" -o "$TMP_DIR/$SPEC_NAME"
 
+# Preserve raw evidence even when validation fails, so failures are diagnosable.
+cp "$TMP_DIR/$MANIFEST_NAME" "$OUT_DIR/$MANIFEST_NAME"
+cp "$TMP_DIR/$SPEC_NAME" "$OUT_DIR/$SPEC_NAME"
+
 # Require an exact manifest filename match; do not guess a digest.
 MATCHES="$(awk -v f="$SPEC_NAME" '
   {
@@ -33,8 +37,7 @@ MATCHES="$(awk -v f="$SPEC_NAME" '
 
 if [[ "$(printf '%s\n' "$MATCHES" | sed '/^$/d' | wc -l | tr -d ' ')" != "1" ]]; then
   echo "ERROR: expected exactly one SHA256SUMS entry for $SPEC_NAME" >&2
-  echo "Manifest was saved to $OUT_DIR/$MANIFEST_NAME for inspection." >&2
-  cp "$TMP_DIR/$MANIFEST_NAME" "$OUT_DIR/$MANIFEST_NAME"
+  echo "Downloaded raw files preserved in $OUT_DIR for inspection." >&2
   exit 3
 fi
 
@@ -52,8 +55,6 @@ if [[ "$ACTUAL" != "$EXPECTED" ]]; then
   exit 5
 fi
 
-cp "$TMP_DIR/$MANIFEST_NAME" "$OUT_DIR/$MANIFEST_NAME"
-cp "$TMP_DIR/$SPEC_NAME" "$OUT_DIR/$SPEC_NAME"
 BYTES="$(wc -c < "$OUT_DIR/$SPEC_NAME" | tr -d ' ')"
 UTC_NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 cat > "$OUT_DIR/ACQUISITION.txt" <<EOF
