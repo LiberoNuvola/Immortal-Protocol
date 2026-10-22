@@ -535,11 +535,14 @@ async function main() {
         // entire change UTxO. These are emulator-only infrastructure payers.
         {
           address: prizeReferencePublisherAddress,
-          assets: { lovelace: 3_000_000n },
+          // The large reference-script output plus minimum change can exceed
+          // the remainder of a 3 ADA input. Keep enough fixture-only ADA for
+          // the canonical publication fee and a valid change output.
+          assets: { lovelace: 10_000_000n },
         },
         {
           address: poolReferencePublisherAddress,
-          assets: { lovelace: 3_000_000n },
+          assets: { lovelace: 10_000_000n },
         },
       ],
       emulatorProtocolParameters,
@@ -1193,7 +1196,7 @@ async function main() {
           : String(error);
 
       const evaluatorFailure =
-        /attempted to case a non-const|NonConstrScrutinized|non-const/i.test(
+        /attempted to case a non-const|attempted to instantiate a non-polymorphic term|NonConstrScrutinized|non-const/i.test(
           message,
         );
 
@@ -1227,7 +1230,7 @@ async function main() {
       if (evaluatorFailure) {
         console.log(
           "P2.8-B.1 ISOLATION",
-          "B1PrizePool singletonPoolTokenValid/valueOf path reaches evaluator failure before action semantics",
+          "B1PrizePool singletonPoolTokenValid/assetAmount Value-lookup path reaches evaluator failure before action semantics",
         );
       } else if (budgetOverrun) {
         console.log(
