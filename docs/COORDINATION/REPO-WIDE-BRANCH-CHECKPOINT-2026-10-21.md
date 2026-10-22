@@ -2047,3 +2047,34 @@ For context, the immediately prior exact-head result on d6c9fd34d91933197c9d73e9
 **Next action:** read exact-head run #39725693094 for fresh script payload and canonical publication guard; read #39725693412 for source-level conformance. Preserve the 16,384-byte limit and do not infer Claim semantic equivalence from a smaller script alone. Explicit Claim owner-signature positive/negative evidence remains open. No deployment, reference-script update or ledger submission was performed.
 
 **Current verdict:** exact size after the redundant-guard removal NOT YET MEASURED; Claim owner/signature equivalence NOT YET PROVEN; final Reveal spending CBOR NOT MEASURED; P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit **PARTIAL / OPEN**.
+
+
+### 10.55 Agent B — Haskell V2 Claim test marker alignment and current validation dispatch — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04).  
+**Status:** test correction committed; Haskell V2 Claim trace not yet observed to completion.
+
+#### Claim owner/signature candidate and size delta
+
+The exact-source emulator run [#39725072071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072071) for source SHA `d6c9fd34d91933197c9d73e9caf3342b3d549623` fresh-built and exported successfully, but canonical PrizeValidator reference publication failed its size guard. The diagnostic had emitted a Prize publication CBOR of 16,344 bytes under a local maxTxSize of 100,000; this is diagnostic-only and does not supersede the canonical builder guard (16,386 / 16,384). Subsequent Reveal construction stopped at `Blockfrost not set. Can't calculate ex units`, so final Reveal spend CBOR remains NOT MEASURED.
+
+Commit [`af56179fba836229f9a4463bbcd82ef619cec0f8`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/af56179fba836229f9a4463bbcd82ef619cec0f8) removes the logically redundant Claim conjunct `pdStatus datum /= Claimed` directly after `pdStatus datum == Revealed`. This is source-level predicate simplification only. The exact-head run [PRE-RICH Emulator Reveal #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094) was still in setup/build as of this section. **No fresh size delta for af56179f is claimed yet.**
+
+#### Haskell V2 Claim trace and marker alignment
+
+The Cardano Integration Lab has a new, separate `Execute Haskell V2 Claim owner-signature conformance candidate` step in addition to the existing Aiken V3 Claim trace. It runs `audit/cardano-integration/claim-ledger-trace.ts` with `IMMORTAL_CLAIM_AIKEN_V3=0`, relying on the freshly exported Haskell PrizeValidator artifact and the script's positive Claim plus five negative twins. In the compact-label Haskell V2 validator, Claim's owner-signature failure is marker `54` and settlement/payout failure marker `59`; the existing Aiken path uses different descriptive markers. The source-level marker mismatch was corrected in commit [`144a809899bedea17e9937fd0f43bb31a35465c4`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/144a809899bedea17e9937fd0f43bb31a35465c4), blob `cced077c9ba001feeda21c59aa8be7f2333be45c`, by choosing the expected marker according to the selected validator mode. Without this, a valid ledger rejection could have been incorrectly classified as inconclusive because the expected Aiken trace text would not match Haskell V2's compact label.
+
+Exact-head validation dispatch:
+- [IMMORTAL Cardano Integration Lab #39725914240](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725914240), source SHA `144a809899bedea17e9937fd0f43bb31a35465c4`, was pending at section append time; it includes the current Haskell V2 Claim trace-marker correction.
+- [PRE-RICH Emulator Reveal Conformance #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094), source SHA `af56179fba836229f9a4463bbcd82ef619cec0f8`, was in progress and is the specific run to inspect for the fresh export size after the redundant guard was removed.
+- [IMMORTAL Haskell Semantic Conformance #39725693412](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693412), same source SHA `af56179f...`, was still in its setup phase. Its pure/source conformance scope is not a substitute for the live Claim owner/signature trace.
+- The prior integration run [#39725706061](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725706061) was still running on pre-marker-fix commit `d54f896cae349f846a3447acfd6e8406f2bb6245`; if it reports Haskell Claim results, interpret expected-marker classification against that older trace code, not the corrected marker implementation.
+
+#### Acceptance gates remain separate
+
+1. Fresh-export factory and parameterized script sizes from exact current source, followed by canonical publication below 16,384 with a recorded margin; diagnostic CBOR alone is not acceptance.
+2. Haskell V2 Claim positive transition succeeds on local Yaci; missing-owner signer negative twin is rejected with marker `54` or explicitly classified native ledger failure; settlement-negative cases prove their expected branches.
+3. No V3/Reveal semantics changed. The reduced Claim owner path remains a candidate until the new source and claim trace results complete.
+4. Final Reveal-spending CBOR and native P2.8 still need their own exact transaction, UTxO, PParams, EpochInfo, SystemStart and ledger-evaluation packet.
+
+No production/preprod transaction was submitted and no live reference script was replaced. **P-03/P-04 remain INTEGRATION_BLOCKED; overall audit remains PARTIAL / OPEN.**
