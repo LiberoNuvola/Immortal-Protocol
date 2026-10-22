@@ -398,9 +398,11 @@ jobs:
           IMMORTAL_EXPIRE_AIKEN_V3: "1"
         run: node --import tsx/esm audit/cardano-integration/expire-ledger-trace.ts
 
-      # Isolated Claim conformance fixture; not a production Issue-admission witness.
-      # Do not allow a failed/non-run Aiken build to fall through to a stale plutus.json.
-      - name: Execute real economic Claim transition trace
+      # Hybrid Claim conformance fixture: Aiken V3 Prize validator + Haskell V2
+      # B1PrizePool validator. This is not yet an all-Aiken Claim path or a
+      # production Issue-admission witness. Do not allow a failed/non-run Aiken
+      # build to fall through to a stale plutus.json.
+      - name: Execute Aiken Prize + Haskell B1PrizePool Claim trace
         id: claim_trace
         if: steps.aiken-reveal-build.outcome == 'success'
         env:
