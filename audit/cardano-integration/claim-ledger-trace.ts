@@ -1367,7 +1367,7 @@ await expectClaimRejected({
 await expectClaimRejected({
   label: 'settlement-underpayment',
   expectedTraceMarkers: [
-    'Prize: payout',
+    claimAikenV3Mode ? 'Prize: payout' : '59',
     'B1PrizePool: payout USDM value insufficient',
   ],
   settlementUsdm: PRIZE_AMOUNT - 1n,
@@ -1377,17 +1377,23 @@ await expectClaimRejected({
 })
 await expectClaimRejected({
   label: 'aggregate-settlement-overpayment',
-  expectedTraceMarkers: ['Prize: payout'],
+  expectedTraceMarkers: [claimAikenV3Mode ? 'Prize: payout' : '59'],
   extraSettlementOutput: true,
 })
 await expectClaimRejected({
   label: 'missing-owner-required-signer',
-  expectedTraceMarkers: ['Prize: owner sig', 'B1PrizePool: owner not signed'],
+  expectedTraceMarkers: [
+    claimAikenV3Mode ? 'Prize: owner sig' : '54',
+    'B1PrizePool: owner not signed',
+  ],
   includeOwnerSigner: false,
 })
 await expectClaimRejected({
   label: 'malformed-oracle-without-valid-alternative',
-  expectedTraceMarkers: ['Prize: payout', 'B1PrizePool: payout USDM value insufficient'],
+  expectedTraceMarkers: [
+    claimAikenV3Mode ? 'Prize: payout' : '59',
+    'B1PrizePool: payout USDM value insufficient',
+  ],
   oracleMode: 'malformed-only',
 })
 
