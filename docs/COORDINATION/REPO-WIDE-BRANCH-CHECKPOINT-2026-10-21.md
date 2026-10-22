@@ -2100,3 +2100,29 @@ No production/preprod transaction was submitted and no live reference script was
 The last completed fresh-size observation is still the pre-redundant-guard candidate [run #39725072071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072071): parameterized PrizeValidator 16,153 B; canonical publication guard 16,386 / 16,384 B (2 B over); diagnostic publication CBOR 16,344 B under local maxTxSize 100,000; final Reveal-spending CBOR NOT MEASURED. Keep those values attributed to `d6c9fd34...` only; no newer measurement is claimed.
 
 **Next action:** obtain the current-head step outcomes/logs for run #39725693094, run #39725693412 and replacement Lab #39725914240. On the corrected Lab, require the Haskell V2 Claim positive case plus all five negative twins, especially `missing-owner-required-signer`, to finish with the expected actual branch evidence. Until then, Claim owner/signature equivalence remains OPEN, P-03/P-04 remain `INTEGRATION_BLOCKED`, and overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.56 Agent B — PrizeValidator publication passes in emulator; second reference publication exposes fixture funding defect — 2026-10-22
+
+**Exact source:** af56179fba836229f9a4463bbcd82ef619cec0f8. **Status:** publication size gate improved; canonical fixture blocked at second publication by available input.
+
+Run [PRE-RICH Emulator Reveal Conformance #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094) completed failure on the exact head. Fresh build/export and artifact binding passed. Fresh script metrics:
+
+| Measurement | Previous source d6c9fd34 | Current source af56179f |
+|---|---:|---:|
+| PrizeValidator factory payload | 16,024 B | **15,977 B** |
+| Parameterized PrizeValidator payload | 16,153 B | **16,106 B** |
+| Canonical first reference publication completion | Passed size guard, then local emulator submit/confirmation | Same current run now passes |
+| Diagnostic PrizeValidator publication CBOR | 16,344 B | **16,297 B** |
+| Parameterized B1PrizePool | 11,513 B | 11,513 B |
+| Diagnostic B1PrizePool publication CBOR | 11,704 B | 11,704 B |
+
+The redundant Claim status guard removal lowered both PrizeValidator factory and parameterized payloads by another 47 bytes. The canonical path now completes, signs, submits and awaits the PrizeValidator reference publication in the in-memory emulator. It then fails during construction of the B1PrizePool reference publication with “Insufficient input in transaction”. The log shows lucid.wallet.getUtxos() as an empty list immediately before that second publication. This is a test-fixture funding/coin-selection blocker uncovered only after the size gate moved; it is not a Reveal validator rejection.
+
+The diagnostic-only run with local maxTxSize 100,000 publishes both references but fails building Reveal with “Blockfrost not set. Can't calculate ex units”; no final Reveal CBOR is emitted. No real Cardano ledger transaction was submitted in this workflow.
+
+#### Next test-harness correction
+
+Add a second ADA-only initial UTxO on the same emulator wallet address to keep funding available for the second reference-script publication after the first setup/publication sequence. Do not change validators or transaction-size parameters. Rerun exact-head canonical test and confirm it reaches the Reveal-spending construction before recording any reveal-size conclusion. A local emulator confirmation remains bounded evidence only; native P2.8 and Claim owner/signature equivalence remain OPEN.
+
+**Current verdict:** first reference-script publication passes the in-memory emulator at current generated size; second reference publication is BLOCKED by fixture funding; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit **PARTIAL / OPEN**.
