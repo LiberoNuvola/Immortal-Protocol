@@ -2544,3 +2544,25 @@ Step 35, `Execute Haskell V2 Claim owner-signature conformance candidate`, has a
 The successful Aiken V3 Claim trace is a local-Yaci candidate run, not proof of production Claim authority/settlement or a real user's Issue. The P2.8 context materialization success confirms the fixture's raw packet was extracted and linked; it does not mean the native Cardano-ledger evaluator passed. The current active decoder and next ledger gate must use the exact packet on this exact run, not substitute another transaction or a synthetic context.
 
 **Current verdict:** candidate Aiken V3 Reveal/FundTreasury/TicketIssued/Expire/Claim = `TESTED_BOUNDED` on local Yaci; P2.8 raw materializer = `PASS`; native UTxO decoder = `IN_PROGRESS`; native Cardano-ledger evidence gate = `PENDING`; Haskell V2 Claim owner/signature classification = `PENDING_RAW_LOG_REVIEW`. Production migration remains unauthorized; P-03/P-04 overall remain **INTEGRATION-BLOCKED** until the exact native ledger gate and other requirements are satisfied. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.69 Agent B — static preflight risk: native Yaci UTxO decoder does not currently accept reference-script bodies — 2026-10-22
+
+**Owner:** Agent B (P-04). **Classification:** STATIC RISK / NOT YET CONFIRMED BY CURRENT P2.8 GATE. This note does not replace the live step outcome.
+
+#### Exact source facts
+
+- Current decoder `audit/cardano-ledger-runner/YaciUTxO.hs` blob `1fae63fa61186a92ca14f46f3ba1b61132275c07`, pinned Conway ledger API source family in `audit/cardano-ledger-runner/cabal.project` blob `d47821bea92205a15af3fd2de3d8c4e3a49cc2c6`.
+- In `parseInput`, the current code rejects a UTxO carrying both `reference_script_hash` and `script_ref` with `REFERENCE_SCRIPT_BODY_UNSUPPORTED`; if only the hash is present it rejects with `REFERENCE_SCRIPT_BODY_MISSING`. When no reference script exists, it constructs `BabbageTxOut addr maryValue datum SNothing`.
+- The isolated executable `yaci-utxo-test` is sourced from `TestYaciUTxO.hs` blob `1fea1724909aa27e372fd1e42170ccd76766e653`; its primary fixture has `script_ref: null` and `reference_script_hash: null`. Therefore a test-suite PASS alone would not show that script-bearing reference inputs from the current P2.8 packet decode as typed Conway UTxOs.
+- The current P2.8 materializer `audit/cardano-integration/materialize-p28-ledger-context.mjs` blob `4978257d28f2104c5fc9b96a9b37f2f0ba4a4816` preserves the Yaci transaction's raw input records (plus an address-hex field), and the Conway runner is expected to construct the consumed UTxO set from this packet. Since the final Reveal uses two reference-script inputs, those real input records may exercise exactly this unsupported branch.
+
+This is a **falsifiable static risk**, not yet the observed current-run failure: the current Integration Lab [#39777884299](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777884299) still shows step 38 `Run native Yaci UTxO decoder conformance` as `in_progress`, and step 39 `Run P2.8 ledger evidence gate against this lab packet` as `pending`. We have not received the raw output of step 39, so do not claim it failed or that P2.8 is blocked specifically by this reason yet.
+
+#### Next action after the current run yields a result
+
+1. Read the actual step 38/39 log and the packet’s exact `utxo.json`/manifest from the uploaded lab artifact after the run completes.
+2. If step 39 confirms `REFERENCE_SCRIPT_BODY_UNSUPPORTED` / `REFERENCE_SCRIPT_BODY_MISSING` on the actual reference-script inputs, implement a narrowly scoped native decoder for exact Yaci `script_ref` type/body on Conway, preserving Plutus V2/V3 language and bytes, checking the declared hash, and storing a typed `StrictMaybe (Script ConwayEra)` in the `BabbageTxOut` instead of silently using `SNothing`. Add regression fixtures for both a script-bearing reference input and a no-script input, including wrong/missing hash and unsupported script type rejection.
+3. Do not modify `audit/cardano-ledger-runner/**` until this run finishes; the active Integration Lab watches that path and could be cancelled by a new code push. After a confirmed failure, rerun the exact-current workflow only after the patch is narrowly implemented and reviewable.
+
+**Current verdict:** materializer step 37 = PASS; decoder step 38 = IN PROGRESS; P2.8 native ledger gate step 39 = PENDING. Decoder incompatibility is a **static risk pending live confirmation**, not a declared failure. P-04 remains **INTEGRATION-BLOCKED** until exact current-packet native Cardano-ledger evaluation closes. Overall audit remains **PARTIAL / OPEN**.
