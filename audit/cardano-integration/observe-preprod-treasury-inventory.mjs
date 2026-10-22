@@ -48,6 +48,23 @@ const utxos = addressRows.map((u) => {
       .map(([unit, quantity]) => ({ unit, quantity })),
   }
 })
+const holderResponse = await fetch(
+  `${KOIOS}/asset_addresses?_asset_policy=${TUSDM_POLICY_ID}&_asset_name=${TUSDM_ASSET_NAME_HEX}`,
+)
+if (!holderResponse.ok) throw new Error(`KOIOS_ASSET_ADDRESSES_HTTP_${holderResponse.status}`)
+const holderRows = await holderResponse.json()
+if (!Array.isArray(holderRows)) throw new Error('KOIOS_ASSET_ADDRESSES_INVALID_RESPONSE')
+const tUSDMHolders = holderRows.map((holder) => {
+  if (typeof holder?.payment_address !== 'string' || holder.quantity == null) {
+    throw new Error('KOIOS_ASSET_ADDRESSES_INVALID_HOLDER_ROW')
+  }
+  return {
+    address: holder.payment_address,
+    quantityAtomic: String(holder.quantity),
+    matchesArtifactTreasury: holder.payment_address === treasuryAddress,
+  }
+})
+
 const totalLovelace = utxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
 const totalTusdm = utxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
 function formatSixDecimals(value) {
@@ -76,6 +93,14 @@ const observation = {
     tUSDM: formatSixDecimals(totalTusdm),
   },
   utxos,
+  tUSDMHolderDiscovery: {
+    provider: 'Koios',
+    endpoint: 'GET /asset_addresses',
+    policyId: TUSDM_POLICY_ID,
+    assetNameHex: TUSDM_ASSET_NAME_HEX,
+    returnedHolderCount: tUSDMHolders.length,
+    holders: tUSDMHolders,
+  },
   qualification: {
     addressDerivedFromCurrentArtifact: true,
     ledgerObservationObtained: true,
