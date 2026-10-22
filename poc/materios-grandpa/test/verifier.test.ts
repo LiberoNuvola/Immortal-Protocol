@@ -662,3 +662,20 @@ describe("B3-A chain identity regression", () => {
     ).rejects.toMatchObject({ code: "GENESIS_HASH_MISMATCH" });
   });
 });
+
+
+describe("B3-A chain label regression", () => {
+  it("rejects mismatched chain label even with matching authority keys", async () => {
+    const checkpoint = makeCheckpoint();
+    checkpoint.chainId = "foreign-chain";
+    await expect(
+      verifyFinality(
+        checkpoint,
+        makeJustification([1, 2, 3]),
+        makeState(),
+        alwaysValidCrypto,
+        { verifyAncestry: false }
+      )
+    ).rejects.toMatchObject({ code: "CHAIN_ID_MISMATCH" });
+  });
+});
