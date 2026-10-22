@@ -183,3 +183,35 @@ The safe current boundary is therefore explicit qualification, not a false GREEN
 - Production transition proof verifier: **OPEN / blocker**.
 - Identity regression tests: committed, but execution remains unobserved.
 - B3-A/B/C: OPEN. No deployment or on-chain transaction; PR #35 remains draft; V3/Reveal semantics untouched.
+
+
+## 9. Bootstrap route refinement from published Materios v6 configuration (2026-10-22)
+
+The repository contains historical observation packets, and the published Materios operator documentation exposes a concrete v6 genesis candidate. These are useful discovery inputs, **not yet an authenticated bootstrap proof**:
+
+- Network label: `materios_preprod_v6`.
+- Reported genesis hash: `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
+- Published raw chain spec: [chain-spec-v6-raw.json](https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json).
+- Published Cardano genesis UTxO: `13313ea0119e0c4330f64f1809159064a371a1bbf2050b1fe13d5492280dca50#0`.
+- Official [SPO onboarding parameters](https://docs.fluxpointstudios.com/materios-partner-chain/spo-onboarding) and [node requirements](https://docs.fluxpointstudios.com/materios-partner-chain/node-requirements) identify these as v6 Preprod parameters. They are operator documentation and a hosted chain spec, not by themselves an independent cryptographic trust root.
+
+### Recommended implementation path — reproducible genesis bootstrap, then permissionless proof chain
+
+Prefer **independently reproducible genesis data** over accepting an RPC response or trusting a live endpoint's claimed initial committee. This does not eliminate the need to pin an initial network identity; it makes that trust anchor explicit and verifiable, after which subsequent state/finality should be proved rather than trusted.
+
+Required implementation sequence:
+
+1. Retrieve the exact raw v6 chain spec and its publisher checksum manifest; record the full SHA-256, not a truncated web-page display.
+2. Independently parse the raw genesis storage and reconstruct the Substrate genesis state/header with the repository's pinned SDK/trie implementation. Recompute the genesis block hash and require exact equality with the reviewed/pinned expected hash above.
+3. Extract the genesis `pallet_grandpa::Authorities` state from the reconstructed genesis storage (or provide a storage proof against the independently recomputed genesis state root). Decode the exact authority IDs and weights using the pinned runtime/SDK encoding; reject absent, duplicate, malformed, or empty authority lists.
+4. Bind the resulting initial authority state to the exact chain ID, genesis hash, GRANDPA set ID and authority list in a versioned bootstrap artifact/config whose expected genesis hash is reviewed and pinned independently of the RPC/chain-spec host. A checksum published beside the same download is an integrity aid, not an independent authenticity guarantee.
+5. Verify a real GRANDPA justification against this bootstrapped state, then verify each subsequent set transition and the Materios authority-selection execution proof. Never accept a current authority list from RPC as the bootstrap.
+6. Add reproducibility tests: altered chain spec/checksum, wrong genesis hash, changed genesis authority bytes, wrong set ID, duplicate authority, chain-ID mismatch, and a valid fixture reconstructed independently from the pinned chain spec. Include at least one real captured GRANDPA witness in the suite.
+
+### Security boundary and limitation
+
+This is the most concrete trust-minimized route found in current project evidence, but it is **not “trustless from nothing.”** A verifier must pin the intended genesis identity through a reviewed software/configuration trust anchor or another independently authenticated mechanism. The permissionless claim should apply to verifying all post-bootstrap finality and authority transitions, not to pretending the initial network identity has no root of trust. If a stronger anchor is required, the alternative is an independently verified Cardano-enforced commitment binding the same genesis identity and initial authority state; no such binding is currently shown as implemented in the audited path.
+
+### Evidence status
+
+The official documentation and hosted chain spec were inspected as discovery sources. The chain spec has **not** yet been downloaded and independently hashed/reconstructed in this task; the genesis authority set, genesis state root, and initial GRANDPA set ID therefore remain unverified. No production bootstrap code is implemented by this note. Keep the bootstrap blocker OPEN until those exact bytes and reconstruction results are captured and reproduced.
