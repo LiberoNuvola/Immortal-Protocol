@@ -1788,3 +1788,18 @@ The artifact result is `LIVE_CANDIDATE_OUTREF_AND_ASSETS_MATCH`. No economic con
 4. Continue to block first Issue until qualified EEV, authoritative B2 admission, final transaction-body/input binding, policy-derived expiry and confirmed ledger/post-state evidence all agree.
 
 **Safety boundary:** no issue of tokens, USD/USDM conversion, oracle authorization, deployment approval, code promotion, wallet signature, workflow dispatch into an approval workflow, or ledger transaction was performed by this observation. Overall status remains **PARTIAL / OPEN**.
+
+
+### 10.50 Agent B — corrigendum: classify 16,782 bytes as reference-script publication, not Reveal spend — 2026-10-22
+
+**Correction of evidence classification; protocol status does not improve.**
+
+The source and logs show that run [#39646783971](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971) fails at prize-reference-complete:start, in the builder for payToAddressWithData(referenceAddress, { scriptRef: prizeScript }, ...). That is the transaction publishing the PrizeValidator reference-script UTxO. Its serialized transaction is 16,782 bytes against 16,384; it fails before the canonical Reveal-spending transaction is built. Therefore the figure 16,782 must NOT be cited as the final Reveal spending transaction size.
+
+When the diagnostic profile lifts its local size limit to 100,000, it can publish the reference scripts and advance to Reveal construction, but then fails in local UPLC evaluation before producing final CBOR or witness counters. The actual Reveal spending transaction size and whether embedded script witnesses are absent remain NOT MEASURED by this emulator probe. A separate historical Preprod builder result of ~17,571 bytes remains a distinct path/evidence item and must not be mixed into the 16,782-byte publication result.
+
+The same classification correction is reflected in the semantic dossier [SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/SEMANTIC-REVIEW-P28-REVEAL-REFERENCE-SCRIPTS-2026-10-21.md), updated in commit [ca935dbc2c1ad267cff09d5699b71016c00c5df7](https://github.com/LiberoNuvola/Immortal-Protocol/commit/ca935dbc2c1ad267cff09d5699b71016c00c5df7) (blob 1e78c5434b44fa009ca0623039ffd970ad9255df). The correction to the canonical checkpoint is commit [1491e6145caf13f6c33eb04295786ff2bf6b8b06](https://github.com/LiberoNuvola/Immortal-Protocol/commit/1491e6145caf13f6c33eb04295786ff2bf6b8b06) (checkpoint blob d5b3997b344aa7e8a1919f8a93134b81d8bfd5a5).
+
+Separately, the corrected diagnostic parameter nativeUplc: false is under exact-head validation in [PRE-RICH Emulator Reveal #39723673393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673393), source SHA f2dd0384ba3d43d02cac40b970a03b771bf4c894. At this section's append time, the run remained in Setup canonical Plutus CI and had not reached the Reveal steps; no positive diagnostic result is yet claimed.
+
+**Next sequence:** (1) read the f2dd0384... run through publication and Reveal diagnostic; (2) record raw validator bytes plus publication CBOR/size at the publication boundary; (3) obtain final Reveal spending CBOR and inspect exact reference inputs and embedded Plutus witness counts; (4) only then choose a narrow byte-size/builder remediation, keeping validator/V3/Reveal semantics unchanged. P-03/P-04 remain **INTEGRATION_BLOCKED**; no ledger transaction was submitted.
