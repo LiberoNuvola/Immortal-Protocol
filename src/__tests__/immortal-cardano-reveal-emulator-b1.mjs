@@ -1211,8 +1211,12 @@ async function main() {
           message,
         );
 
+      // The Pool Value probe intentionally omits the Prize input/output.
+      // Reaching this action-level guard proves the preceding pre-solvency,
+      // singleton-token Value lookup and own-Pool-input checks ran. This is a
+      // bounded semantic stop, not a ledger rejection.
       const semanticFailure =
-        /no prize output/i.test(message);
+        /no prize output|exactly one decodable prize input required/i.test(message);
 
       const classification =
         evaluatorFailure
