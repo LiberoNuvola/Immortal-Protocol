@@ -2687,7 +2687,7 @@ The current readiness script now hashes the actual EV1–EV7 file bytes and requ
 
 ## 10.19 — Materios GRANDPA bootstrap trust-boundary audit (2026-10-22)
 
-Direct comparison completed against the existing Materios GRANDPA verifier and Orynq's upstream adversarial test suite. Detailed evidence: [B3-A Orynq GRANDPA Compatibility Review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md) (updated commit `bda13a9df8c94558b332279288ae4d8d59bf0ebc`).
+Direct comparison completed against the existing Materios GRANDPA verifier and Orynq's upstream adversarial test suite. Detailed evidence: [B3-A Orynq GRANDPA Compatibility Review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md) (updated commit `7739836e30e1ab210d05f75ab56164af49857b71`).
 
 **Confirmed:** the verifier checks checkpoint chain ID/genesis against the supplied authority state, exact justification target, signatures, distinct signers, authority membership, weighted quorum, and optional ancestry. The capture client explicitly treats RPC output and raw finality bytes as untrusted transport evidence.
 
