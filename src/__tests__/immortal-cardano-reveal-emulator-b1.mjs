@@ -1261,6 +1261,78 @@ async function main() {
 
   /*
    * --------------------------------------------------------------
+   * 11. OPTIONAL DIAGNOSTIC: PRIZE VALIDATOR ISOLATION
+   * --------------------------------------------------------------
+   *
+   * Enable with P2_8_B1_PRIZE_VALUE_PROBE=1. This keeps a real Pool input
+   * and its continuing output in TxInfo, but gives that input no redeemer,
+   * so only the PrizeValidator spend is locally evaluated. It reuses the
+   * canonical Reveal secret, output datums and cross-pool accounting. The
+   * probe is diagnostic only: it never signs or submits a transaction.
+   */
+  if (process.env.P2_8_B1_PRIZE_VALUE_PROBE === "1") {
+    try {
+      await lucid
+        .newTx()
+        .collectFrom(
+          [prizeUtxos[0]],
+          Data.to(constr(1, [bytesData(toHex(playerSecret))])),
+        )
+        // Context-only Pool input: the absent redeemer intentionally prevents
+        // local evaluation of B1PrizePool in this complementary isolation.
+        .collectFrom([poolUtxos[0]])
+        .readFrom([prizeReferenceInput])
+        .payToContract(
+          prizeAddress,
+          { inline: Data.to(postPrizeDatum) },
+          prizeUtxos[0].assets,
+        )
+        .payToContract(
+          poolAddress,
+          { inline: Data.to(postPoolDatum) },
+          poolUtxos[0].assets,
+        )
+        .addSigner(walletAddress)
+        .validTo(4_000_000_000_000)
+        .complete();
+
+      console.log(
+        "P2.8-B.1 PRIZE_VALIDATOR_PROBE",
+        "BOUNDED_LOCAL_EVAL_COMPLETED",
+      );
+      console.log(
+        "P2.8-B.1 PRIZE_VALIDATOR_PROBE_SCOPE",
+        "PrizeValidator redeemer evaluated with canonical outputs; Pool input is context-only; no signature or submission",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+      const evaluatorFailure =
+        /attempted to case a non-const|attempted to instantiate a non-polymorphic term|NonConstrScrutinized|non-const/i.test(message);
+      const budgetOverrun =
+        /execution went over budget|went over budget|Mem -\d+|CPU -\d+/i.test(message);
+      const classification =
+        evaluatorFailure
+          ? "PRIZE_EVALUATOR_FAILURE"
+          : budgetOverrun
+            ? "PRIZE_BUDGET_OVERRUN"
+            : /failed script execution|Trace|validator crashed|script failed/i.test(message)
+              ? "PRIZE_SEMANTIC_OR_SCRIPT_FAILURE"
+              : "PRIZE_UNCLASSIFIED_FAILURE";
+
+      console.log("P2.8-B.1 PRIZE_VALIDATOR_PROBE", classification);
+      console.log("P2.8-B.1 PRIZE_VALIDATOR_PROBE_ERROR", message);
+      console.log(
+        "P2.8-B.1 PRIZE_VALIDATOR_PROBE_SCOPE",
+        "Construction/evaluation only; no signature or submission; does not qualify full two-script Reveal",
+      );
+    }
+  }
+
+  /*
+   * --------------------------------------------------------------
    * 11. NEGATIVE INPUT-BINDING TWINS
    * --------------------------------------------------------------
    *
