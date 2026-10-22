@@ -1992,3 +1992,37 @@ The measured 16,559-byte fresh PrizeValidator factory and 16,688-byte parameteri
 The current exact-head candidate [`d6c9fd34d91933197c9d73e9caf3342b3d549623`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d6c9fd34d91933197c9d73e9caf3342b3d549623) reduces one redundant raw owner/value-map traversal in Claim. Its size delta must be taken only from fresh build output; source line count or artifact file size alone is not acceptance. Wait for current-head Reveal and Haskell semantic conformance runs, then record the new factory and parameterized bytes plus exact run/compiler artifact hashes. Claim owner/signature equivalence remains OPEN until explicit positive/negative cases pass.
 
 No tracked artifact was overwritten, no deployed hash was changed, no V3/Reveal predicate was changed, and no ledger transaction was submitted. P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.54 Agent B — size result after Claim owner traversal reduction — 2026-10-22
+
+**Exact source under test:** [d6c9fd34d91933197c9d73e9caf3342b3d549623](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d6c9fd34d91933197c9d73e9caf3342b3d549623).  
+**Status:** source compiles and export completes; canonical PrizeValidator reference publication still fails by 2 bytes; Claim semantic verification pending.
+
+#### New exact-head generated sizes
+
+PRE-RICH Emulator Reveal Conformance [run #39725072071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072071) completed failure on the exact candidate SHA. Fresh Plutus export and artifact binding succeeded. The fixture's fresh measurements are:
+
+| Measurement | Previous generated artifact at run #39724168595 | Candidate at run #39725072071 |
+|---|---:|---:|
+| PrizeValidator factory script payload | 16,559 B | 16,024 B |
+| Parameterized PrizeValidator script payload | 16,688 B | **16,153 B** |
+| Canonical publication size guard | 16,782 B | **16,386 B** |
+| Diagnostic complete publication CBOR under local 100,000 ceiling | 16,879 B | **16,344 B** |
+| B1PrizePool factory payload | 11,357 B | 11,357 B |
+| Parameterized B1PrizePool payload | 11,513 B | 11,513 B |
+| Diagnostic Pool publication CBOR | 11,704 B | 11,704 B |
+
+The candidate reduced the parameterized PrizeValidator by 535 bytes. The canonical builder now fails with “Maximum transaction size of 16384 exceeded. Found: 16386”, 2 bytes over. The diagnostic unsigned publication CBOR is 16,344 bytes, but that does not override the canonical size guard: it omits/does not model all bytes included by the builder's completion estimate, and is not an accepted or signed ledger transaction. No maxTxSize was changed.
+
+#### Final Reveal size is still not available
+
+With the local diagnostic ceiling raised to 100,000, both reference-script publication CBOR measurements can be emitted; construction then reaches Reveal. Reveal completion fails with “Blockfrost not set. Can't calculate ex units” under the legacy lucid-cardano@0.10.11 builder when nativeUplc:false is set for this diagnostic. Consequently the final Reveal-spending CBOR, actual embedded script witness count and reference-input census are still **NOT MEASURED** by this emulator workflow. A green diagnostic step due to continue-on-error is not a pass.
+
+#### Semantic-validation status
+
+The Claim owner/signature traversal source reduction is promising for script size but is **not yet semantically closed**. The current IMMORTAL Haskell Semantic Conformance run [#39725072040](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072040) and Integration Lab [#39725072011](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072011) were still running at checkpoint append time; no results from them are implied. The current Haskell Reveal fixture primarily evaluates Reveal contexts and does not yet provide a positive full Claim path for the changed ownerSigned expression. No deployment/reference-UTxO update is authorized or performed.
+
+**Next action:** remove only the logically redundant Claim conjunct pdStatus datum /= Claimed, which is subsumed by the preceding pdStatus datum == Revealed, and run fresh exact-head export/size and regression gates. This targets a source-level no-op predicate rather than changing economics, Claim ownership, signature requirements, Reveal semantics or V3. Then add/execute explicit Claim owner-signature positive and negative evidence before treating the owner-traversal optimization as ready.
+
+**Current verdict:** parameterized PrizeValidator 16,153 B; canonical publication 16,386 / 16,384 B; final Reveal spending CBOR NOT MEASURED; Claim equivalence NOT YET PROVEN; P-03/P-04 remain **INTEGRATION_BLOCKED**; no real-ledger transaction submitted. Overall audit remains **PARTIAL / OPEN**.
