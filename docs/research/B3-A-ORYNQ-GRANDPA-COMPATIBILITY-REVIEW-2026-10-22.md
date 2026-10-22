@@ -133,3 +133,12 @@ Inspected current-branch test sources:
 The integration test constructs `currentTrustedState()` directly as a plain object and passes it into the transition function. Its proof-verifier stub returns `true`; finality's crypto stub also returns `true). The transition unit test explicitly labels its proof verifier as a structural test stub that does not verify Materios committee derivation. These are useful boundary/shape tests, but they cannot establish a production-authenticated genesis bootstrap or cryptographic committee transition.
 
 This confirms the next step should not be to add another nominal “trusted state” fixture. It should be to define the real bootstrap evidence format and production verifier boundary, then keep synthetic fixtures clearly separated from production-qualified evidence. The package declares `npm test`, `npm run build`, and `npm run typecheck`; **none of these commands was executed in this review**, so no test-pass claim is made.
+
+
+## 7. Added fail-closed identity regression tests (2026-10-22)
+
+Two regression tests were appended to `poc/materios-grandpa/test/verifier.test.ts` on the existing B3 branch:
+- `e1d1042e545c96ac456ef3d6476bc1d674e2c4fa`: reject mismatched checkpoint genesis hash with otherwise matching authority keys, set ID and synthetic quorum.
+- `b2930473e73a6edfe947b0480306dd2d79f27645`: reject mismatched chain label under the same synthetic fixture.
+
+These test cases exercise already-existing guards, not a new authenticated bootstrap. They intentionally use the pre-existing synthetic `alwaysValidCrypto` stub, so neither case demonstrates real GRANDPA signature verification or resistance to an adversary who supplies both the checkpoint and initial trusted state. Test execution/CI evidence is **not yet recorded**. B3-A remains OPEN.
