@@ -1321,7 +1321,7 @@ Only the checkpoint document was changed by this update. No code, test or workfl
 
 ### 10.38 USDM unit semantics and external feed/issuer identity — 2026-10-22
 
-Decision record: [PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md](../audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md), amended in documentation-only commit [dc08a4d290a47d3dce3a8bea87d1dfc7192db641](https://github.com/LiberoNuvola/Immortal-Protocol/commit/dc08a4d290a47d3dce3a8bea87d1dfc7192db641). The amendment adds an external-source and asset-identity cross-check; it does **not** approve a unit conversion or authorize production implementation.
+Decision record: [PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md](../../audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md), amended in documentation-only commit [dc08a4d290a47d3dce3a8bea87d1dfc7192db641](https://github.com/LiberoNuvola/Immortal-Protocol/commit/dc08a4d290a47d3dce3a8bea87d1dfc7192db641). The amendment adds an external-source and asset-identity cross-check; it does **not** approve a unit conversion or authorize production implementation.
 
 #### Reconciled facts
 
@@ -1672,3 +1672,6 @@ No validator, V3 carrier, protocol parameter, economic rule, production transact
 **Next action:** retrieve the exact-head emulator logs. First check that canonical acceptance still reports the real protocol bound; separately check whether the diagnostic logs final CBOR and the actual script/reference-input census. If serialization still cannot be obtained, record the specific failure and do not dispatch an identical rerun. If CBOR is obtained, decide the next builder correction only after its embeddedScriptCount and reference-input set identify what is actually serialized.
 
 **Current status:** P-03 INTEGRATION_BLOCKED; P-04 INTEGRATION_BLOCKED; no transaction submitted by this Agent B step. The result expected from this change is improved diagnosis only, not closure.
+
+
+Checkpoint maintenance note (2026-10-22): Documentation Link Check run [39722987246](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722987246) identified the stale relative path above. It was corrected from `../audit/...` (which resolved under `docs/`) to `../../audit/...` (repository-root `audit/`). This is a documentation-link correction only; it does not alter P-03/P-04 status or protocol source.
