@@ -1538,3 +1538,30 @@ The existing source-set runner `audit/cardano-integration/preprod-direct-usdm-so
 
 **Status:** Pyth signed-update Preprod acceptance **NOT RUN / OPEN**; Haskell carrier → MintPolicy binding **NOT IMPLEMENTED**; current EEV UTxO liveness **NOT VERIFIED IN THIS PASS**; first Issue **BLOCKED**. No code, workflow, branch topology, wallet action, deployment, V3/Reveal semantics or ledger transaction was modified. Audit remains **PARTIAL / OPEN**.
 
+### 10.45 Native-ledger probe acceptance scope and execution capability — 2026-10-22
+
+Focused review of `scripts/testPythSignedUpdatePreprod.mts` blob `fdfb24b90bba739c17bb4afcd4c6f51c0cc7406a` and `.github/workflows/pyth-native-ledger-probe.yml` blob `5c0a4264ab48878a54b21f18a1188e4126a3a37d`. No workflow was dispatched in this pass; the connected GitHub actions available to this task expose read/inspection and rerun operations but no `workflow_dispatch` creation action. A manual workflow run must not be inferred from a successful source review.
+
+#### Actual runner behavior
+
+- With `submit_preprod=false` (workflow default), the runner resolves the configured Pyth State through the SDK/Koios, fetches a genuine Lazer signed update and writes `PREPARED_NOT_SUBMITTED` evidence including the policy ID, State NFT unit, withdrawal-script hash, signed-update length and digest. It does not load a wallet, build/sign a Cardano transaction or submit anything. This is the correct first live, read-only probe, conditional on the required Pyth Lazer secret and an explicit manual dispatch.
+- With `submit_preprod=true`, the runner may first send a funding transaction to create a probe output if none is available, then submits exactly one positive Pyth-verification transaction and waits for confirmation. Thus "two transactions" means funding + positive verification when funding is needed; it does **not** mean positive + negative verification.
+- The one-byte-mutated update is passed to `complete({ localUPLCEval: true })` and must fail before the positive transaction is submitted. This is a **local evaluator negative case**, not a transaction rejected by a remote/native Cardano ledger. The result JSON correctly records `nativeLedgerNegativeCase: NOT_RUN`.
+- Consequently a confirmed positive probe demonstrates that the Pyth withdrawal verifier and isolated V3 consumer executed in the same confirmed transaction for that update. It does not yet demonstrate native-ledger rejection of a tampered update, feed liveness/truth, the normative USD/USDM relation, PRE-RICH Issue authorization, or the production MintPolicy binding.
+
+#### Current operational limitation
+
+- Workflow dispatch has **NOT BEEN RUN** in this session. The available GitHub tool surface does not expose workflow-dispatch; no substitute API write was attempted.
+- A live EEV source revalidation also has **NOT BEEN RUN**; the historical out-reference remains unresolved here. The correct script exists, but it needs the real Preprod deployment manifest, target-approved `PREPROD_TUSDM_UNIT` and a live Koios response. Do not use the approval workflow as a read-only substitute, because it re-qualifies and materializes deployment approval.
+- No test-wallet mnemonic, Pyth token, Blockfrost credential or approval secret was read, emitted or supplied by this pass.
+
+#### Next execution path and honest closure states
+
+1. Manually dispatch `Pyth Signed Update — Preprod Ledger Probe` from the exact intended Green SHA, policy input `c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45`, `submit_preprod=false). Inspect its artifact: require `PREPARED_NOT_SUBMITTED`, authenticated State UTxO reference, reference-script hash, signed-update digest and no transaction hashes.
+2. Separately run a genuinely read-only exact B1 PrizePool out-reference check using the already present source-set script with the real deployment manifest and explicitly approved Preprod asset unit. Save tip/slot, query timestamp, exact txHash#index, physical asset quantity and digest; reject cached prior observations.
+3. Only after that artifact is reviewed should the owner explicitly authorize the test-wallet submission mode. Its expected result is a positive native-ledger verification plus local tampered-payload rejection, not native negative rejection.
+4. Treat native-ledger tampered-payload rejection as a distinct, still-missing test obligation. Do not call it complete based on the current runner output. Any new test shape must be reviewed for its resource consumption, fees and failed-transaction behavior before any further test-wallet submission.
+5. Continue to block production quote-to-MintPolicy integration until W1-A (approved existing D-10/D-11 decision under D-13/GOV-02), source identity/quote qualification and exact on-chain binding are closed.
+
+**State:** no-submit Pyth run **NOT DISPATCHED**; positive Pyth ledger probe **NOT RUN**; native-ledger negative **NOT RUN**; EEV live out-reference **NOT VERIFIED**; first Issue **BLOCKED**. No code, workflow, branch topology, wallet action, deployment, V3/Reveal semantics or ledger state was changed. Audit remains **PARTIAL / OPEN**.
+
