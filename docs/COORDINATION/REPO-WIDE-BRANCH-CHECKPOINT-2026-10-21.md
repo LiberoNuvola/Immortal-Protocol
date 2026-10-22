@@ -2176,3 +2176,17 @@ This change touches only the emulator fixture funding/transaction construction; 
 4. The later Yaci/native P2.8 packet remains a separate gate.
 
 **Current verdict:** the prior exact-head PrizeValidator payload measurement (16,106 B) is below the script size seen before the redundant Claim guard was removed, but the current canonical two-publication run is pending. Final Reveal-spend CBOR remains NOT MEASURED; native P2.8 is NOT ESTABLISHED; Claim owner/signature equivalence is OPEN. P-03/P-04 remain **INTEGRATION_BLOCKED**, overall audit **PARTIAL / OPEN**.
+
+
+### 10.58 Agent B — exact run IDs for the second-reference funding fixture — 2026-10-22
+
+The fixture-only funding correction from §10.57 has triggered these exact-head workflows on source SHA 5208318cb6ed51875ae2bae53364486f57dcaa37:
+
+- [PRE-RICH Emulator Reveal Conformance #39726370402](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370402): still in progress at Setup canonical Plutus CI at the last read; no new test result yet.
+- [IMMORTAL Cardano Integration Lab #39726370427](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370427): still in progress at Setup canonical Plutus CI at the last read; no native P2.8 result yet.
+
+On the same SHA, general CI already returned SUCCESS for Documentation Link Check [#39726370505](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370505), IMMORTAL Portability Conformance [#39726370417](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370417), Algorithmic Governability Adversarial Lab [#39726370360](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370360) and Protocol Declaration Conformance [#39726370468](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370468). These do not certify the Reveal/P2.8 gate.
+
+Baseline remains run [#39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094) on source af56179fba836229f9a4463bbcd82ef619cec0f8: PrizeValidator publication passed in the in-memory emulator at 16,106-byte parameterized script payload; the second B1PrizePool publication then failed for missing input. The new ADA-only fixture UTxO is meant to address that exact setup blocker. Await actual step logs before marking it resolved.
+
+**Current verdict:** new exact-head result pending; final Reveal spending CBOR NOT MEASURED; Claim owner/signature equivalence NOT YET PROVEN; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; audit **PARTIAL / OPEN**.
