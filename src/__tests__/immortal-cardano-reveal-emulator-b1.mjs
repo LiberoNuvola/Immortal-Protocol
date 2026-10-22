@@ -910,6 +910,28 @@ async function main() {
   );
   console.log("P2.8-B.1 stage: setup-tx-submit:done");
 
+  // Record the payload boundary before complete(). In the canonical profile,
+  // complete() itself may reject the script-publication transaction at maxTxSize,
+  // before any Reveal-spending transaction exists.
+  const scriptPublicationMetrics = {
+    network: "emulator-fixture",
+    activeMaxTxSize: emulatorParams.maxTxSize,
+    prizeValidator: {
+      scriptHash: prizeHash,
+      parameterizedScriptBytes: Buffer.from(prizeScript.script, "hex").length,
+      parameterizedScriptHexChars: prizeScript.script.length,
+      factoryScriptBytes: Buffer.from(prizeFactory.cborHex, "hex").length,
+    },
+    b1PrizePool: {
+      scriptHash: poolHash,
+      parameterizedScriptBytes: Buffer.from(poolScript.script, "hex").length,
+      parameterizedScriptHexChars: poolScript.script.length,
+      factoryScriptBytes: Buffer.from(poolFactory.cborHex, "hex").length,
+    },
+    note: "Raw parameterized script payload lengths are not the serialized publication-transaction size and do not prove publication acceptance.",
+  };
+  console.log("P2.8-B.1 REFERENCE SCRIPT PAYLOAD METRICS", JSON.stringify(scriptPublicationMetrics));
+
   console.log("P2.8-B.1 stage: prize-reference-complete:start");
   const prizeReferenceTx =
     await lucid
@@ -920,6 +942,16 @@ async function main() {
         { lovelace: 2_000_000n },
       )
       .complete();
+
+  if (sizeProbe) {
+    const publicationCbor = prizeReferenceTx.toString().replace(/^0x/, "");
+    console.log("P2.8-B.1 PRIZE REFERENCE PUBLICATION TX SIZE (diagnostic only)", JSON.stringify({
+      txBytes: Buffer.from(publicationCbor, "hex").length,
+      maxTxSizeCanonical: emulatorParams.maxTxSize,
+      scriptBytes: scriptPublicationMetrics.prizeValidator.parameterizedScriptBytes,
+      note: "This measures the script-publication transaction, not the subsequent Reveal-spending transaction.",
+    }));
+  }
 
   console.log("P2.8-B.1 stage: prize-reference-complete:done");
   console.log("P2.8-B.1 stage: prize-reference-submit:start");
@@ -969,6 +1001,15 @@ async function main() {
           { lovelace: 2_000_000n },
         )
         .complete();
+    if (sizeProbe) {
+      const publicationCbor = poolReferenceTx.toString().replace(/^0x/, "");
+      console.log("P2.8-B.1 POOL REFERENCE PUBLICATION TX SIZE (diagnostic only)", JSON.stringify({
+        txBytes: Buffer.from(publicationCbor, "hex").length,
+        maxTxSizeCanonical: emulatorParams.maxTxSize,
+        scriptBytes: scriptPublicationMetrics.b1PrizePool.parameterizedScriptBytes,
+        note: "This measures the script-publication transaction, not the subsequent Reveal-spending transaction.",
+      }));
+    }
   } catch (poolReferenceBuildError) {
     console.error(
       "P2.8-B.1 pool-reference-complete error details",
