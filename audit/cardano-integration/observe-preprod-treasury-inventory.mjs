@@ -63,7 +63,7 @@ const observation = {
   treasuryScriptHash,
   treasuryArtifactPath: ARTIFACT_PATH,
   treasuryArtifactSha256: createHash('sha256').update(artifactText).digest('hex'),
-  source: { provider: 'Koios', endpoint: 'POST /address_utxos', responseAddressMatched: addressRows.every((u) => u.address === treasuryAddress), returnedUtxoRows: rows.length },
+  source: { provider: 'Koios', endpoint: 'POST /address_utxos', responseAddressMatched: rows.length > 0 && addressRows.every((u) => u.address === treasuryAddress), noUtxosReturned: rows.length === 0, returnedUtxoRows: rows.length },
   assetIdentity: {
     tADA: 'native lovelace (testnet ADA; 1000000 lovelace per ADA)',
     tUSDM: { policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX, unit: TUSDM_UNIT },
