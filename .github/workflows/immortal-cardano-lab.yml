@@ -41,6 +41,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_legacy_haskell_claim_diagnostic:
+        description: "Opt in to the legacy Haskell V2 Claim comparison trace; not part of the active Aiken Claim path"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   devnet-integration:
@@ -412,14 +417,12 @@ jobs:
           echo "Claim candidate was not run: pinned Aiken check/build did not succeed."
           exit 1
 
-      # Independent audit of the current Haskell Plutus V2 PrizeValidator.
-      # The Aiken V3 Claim run above does not validate Claim owner/signature logic
-      # in the Haskell V2 script whose size is currently being reduced.
-      # This candidate trace checks a positive Claim and on-ledger negative twins,
-      # including the missing-owner-signer case. Keep its result separately scoped.
-      - name: Execute Haskell V2 Claim owner-signature conformance candidate
+      # Legacy Haskell V2 Claim comparison is opt-in and non-blocking.
+      # The active Claim trace above selects the freshly built Aiken V3 Prize
+      # validator; Haskell V2 must not be a prerequisite for the Aiken path.
+      - name: Execute optional legacy Haskell V2 Claim comparison
         id: haskell_claim_v2_candidate
-        if: always() && steps.aiken-reveal-build.outcome == 'success'
+        if: always() && steps.aiken-reveal-build.outcome == 'success' && github.event_name == 'workflow_dispatch' && inputs.run_legacy_haskell_claim_diagnostic == true
         continue-on-error: true
         env:
           CLAIM_REFERENCE_DIAGNOSTIC: ${{ github.event.inputs.claim_reference_diagnostic == 'true' && '1' || '0' }}
