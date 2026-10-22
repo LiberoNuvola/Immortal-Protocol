@@ -2759,3 +2759,29 @@ Inspect the latest `IMMORTAL Cardano Integration Lab` run on `work/immortal-gree
 Agent C added two fail-closed tests to `poc/materios-grandpa/test/verifier.test.ts` on `work/b3-materios-provenance-evidence`: mismatched genesis (`e1d1042e545c96ac456ef3d6476bc1d674e2c4fa`) and mismatched chain label (`b2930473e73a6edfe947b0480306dd2d79f27645`). Full review at [B3-A GRANDPA Compatibility Review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md), commit `6a1eb3884b82042a0ad6b268890fba10d3f7a3bd`.
 
 **Evidence class:** regression source committed, test run NOT OBSERVED. These tests exercise existing mismatch guards under a synthetic crypto stub; they do not authenticate the initial authority state, prevent cross-chain replay if both checkpoint and trusted state are adversary-controlled, or establish live Materios finality. B3-A/B/C remain OPEN. Next: run exact-SHA test/build/typecheck, audit runtime bootstrap creation, obtain independently authenticated genesis/set provenance. No deployment; PR #35 draft; V3/Reveal untouched.
+
+
+## 10.21 — B3 bootstrap call-site audit: no authenticated initial authority source wired (2026-10-22)
+
+Agent C audited the exact B3 branch source/call paths and updated the [B3-A GRANDPA compatibility review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md).
+
+### Confirmed call paths
+
+- `verifyFinality` accepts caller-supplied `TrustedAuthorityState`; validation checks structure, not provenance.
+- `verifyMateriosFinalityAgainstTransition` receives `currentTrusted` from its caller and cannot authenticate its origin.
+- Transition state construction checks a transition against the current state, but does not authenticate the initial state.
+- The transition proof verifier is an injected dependency; no production verifier is currently wired. Synthetic accepting stubs in tests are not cryptographic evidence.
+- Checkpoint capture and RPC code explicitly carry untrusted evidence; neither provides a verified genesis-to-authority bootstrap.
+
+### Decision
+
+Do not add a nominal runtime brand or constructor without an actual independently authenticated source: it would falsely imply trust. No in-repository operational constructor was found that authenticates the tuple `(Materios genesis hash, initial GRANDPA set ID, initial authority list)` together. This remains an explicit external trust assumption and a blocker to permissionless B3-A qualification.
+
+### Gate status
+
+- B3 source/call-site audit: complete for audited files.
+- Initial authenticated bootstrap: **OPEN / BLOCKER**.
+- Production authority-transition proof verifier: **OPEN / BLOCKER**.
+- Identity regression tests: source committed, execution not yet observed.
+- B3-A/B/C remain OPEN. No deployment or on-chain transaction; PR #35 remains draft; V3/Reveal untouched.
+- Do not mark GREEN until a real bootstrap source/verifier is implemented and `npm test`, `npm run build`, and `npm run typecheck` pass on the exact candidate SHA.
