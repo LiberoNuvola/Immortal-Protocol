@@ -2217,3 +2217,28 @@ Companion [IMMORTAL Cardano Integration Lab #39726370427](https://github.com/Lib
 Inspect the B1PrizePool Claim/Reveal value and singleton checks, using the exact evaluator error and existing historical probes to isolate the failing operation. Separate a Lucid/Scalus evaluator limitation from an on-chain validator predicate failure. Do not change the B1PrizePool or Reveal acceptance conditions, do not change V3, and do not substitute fabricated ExUnits or treat local emulator publication as Cardano-ledger acceptance. Any code change must have an explicit non-regression hypothesis and current-head tests.
 
 **Current verdict:** both reference-script publication transactions pass only in-memory emulator setup; canonical Reveal spending construction FAILS in local evaluator at Spend[1]; final Reveal CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN; P-03/P-04 remain **INTEGRATION_BLOCKED**. No real Cardano ledger transaction was submitted. Overall audit **PARTIAL / OPEN**.
+
+
+### 10.59 Agent B — latest completed size-fixture result: both reference publications pass; Reveal evaluator remains blocker — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** both publication transactions observed in the in-memory emulator; Reveal spend CBOR still not produced.
+
+#### Exact evidence from the funding-corrected source
+
+[PRE-RICH Emulator Reveal Conformance #39726370402](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370402), source SHA `5208318cb6ed51875ae2bae53364486f57dcaa37`, reached a new boundary:
+
+- Fresh PrizeValidator factory payload: **15,977 B**; parameterized script: **16,106 B**.
+- With the separate ADA-only funding UTxO on the wallet, the canonical profile completed and submitted both PrizeValidator and B1PrizePool reference-script publication transactions at active `maxTxSize=16,384`. After the first publication, the logged game-wallet UTxO had 289,812,455 lovelace; the subsequent Pool publication also completed/submitted. This is bounded in-memory emulator evidence, not Preprod or ledger-native publication evidence.
+- The canonical Reveal-spending transaction then failed during legacy local UPLC evaluation: `Spend[1] attempted to instantiate a non-polymorphic term`. This happens before Reveal CBOR serialization/signing/submission. It is the primary next diagnostic blocker.
+- In the separate size-probe profile (local maxTxSize 100,000, diagnostic-only), Prize publication CBOR measured **16,297 B** and Pool publication CBOR **11,740 B**. Reveal construction then failed with `Blockfrost not set. Can't calculate ex units`, because the legacy diagnostic path asks for a remote evaluator that is not configured. Neither diagnostic failure yields final Reveal-spend CBOR.
+- The negative Reveal scenarios still report `INCONCLUSIVE_NOT_SUBMIT_REJECTION stage=build`; they have not established ledger-originated rejection.
+
+#### Current exact-head fixture variant
+
+The current branch contains the narrower, separate-publisher fixture in commit [`218f4f32b802a2f969e71f77ab9e7ad3afc478a4`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/218f4f32b802a2f969e71f77ab9e7ad3afc478a4), which gives the Prize and Pool reference publications independent 3,000,000-lovelace payer UTxOs instead of using the game wallet or its change. This avoids relying on a wallet's change output and bounds the emulator-only fees. Its exact-head [PRE-RICH Emulator Reveal #39726613822](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613822) and [IMMORTAL Cardano Integration Lab #39726613781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613781) were still in setup as of this checkpoint update; the previous #39726370402 measurements belong only to source SHA 5208318….
+
+#### Next acceptance step
+
+The next useful step is no longer to optimize reference-script publication payload. The current parameterized script and two reference publications now fit within the emulator's serialization/size constraints. The next work must isolate the local CEK failure on the actual Reveal spending transaction without altering Reveal/V3 semantics, and must produce a final spending CBOR using an explicitly justified evaluator or bounded non-acceptance construction method. Do not treat `nativeUplc:false` plus missing Blockfrost as sizing evidence; do not fabricate ExUnits; do not raise the protocol maxTxSize.
+
+**Current verdict:** in-memory reference publication: bounded PASS on SHA 5208318…; canonical Haskell Reveal evaluation: FAIL before final-CBOR serialization; diagnostic final Reveal CBOR: NOT MEASURED; native P2.8: NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; audit **PARTIAL / OPEN**. No production/preprod transaction was submitted.
