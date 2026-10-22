@@ -56,7 +56,8 @@ jobs:
         run: |
           npx tsc --noEmit --strict --target ES2022 --module ESNext \
             --moduleResolution bundler --skipLibCheck --types node \
-            --verbatimModuleSyntax scripts/testPythSignedUpdatePreprod.mts
+            --allowImportingTsExtensions --verbatimModuleSyntax \\
+            scripts/testPythSignedUpdatePreprod.mts
 
   pyth-ada-usd-probe:
     name: Compile isolated Pyth ADA/USD consumer
