@@ -121,3 +121,15 @@ This is not a finding that signature/quorum code is wrong. It is a finding that 
 ### Differential decision
 
 Do not port Orynq's Midnight set-length assumptions. Reuse its adversarial test concepts and compare semantics one by one. The immediate priority is bootstrap provenance and the boundary between `AuthoritySetEvidence`, `TrustedAuthorityState`, and verified transition results, before optimizing set-walk performance or declaring B3-A closed.
+
+
+## 6. Test-fixture limitation found during call-site audit
+
+Inspected current-branch test sources:
+- `poc/materios-grandpa/test/authority-boundary.integration.test.ts` (blob `846f87bff3662e3df19779e245a53ffebf2d58d4`)
+- `poc/materios-grandpa/test/authority-transition.test.ts` (blob `2e09654529c131539bc4782c530469592b0a0d4c`)
+- package scripts in `poc/materios-grandpa/package.json` (blob `d514aa014da08be31a8d33a6c1583203613be597`)
+
+The integration test constructs `currentTrustedState()` directly as a plain object and passes it into the transition function. Its proof-verifier stub returns `true`; finality's crypto stub also returns `true). The transition unit test explicitly labels its proof verifier as a structural test stub that does not verify Materios committee derivation. These are useful boundary/shape tests, but they cannot establish a production-authenticated genesis bootstrap or cryptographic committee transition.
+
+This confirms the next step should not be to add another nominal “trusted state” fixture. It should be to define the real bootstrap evidence format and production verifier boundary, then keep synthetic fixtures clearly separated from production-qualified evidence. The package declares `npm test`, `npm run build`, and `npm run typecheck`; **none of these commands was executed in this review**, so no test-pass claim is made.
