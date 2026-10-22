@@ -1,0 +1,43 @@
+name: Observe Preprod Treasury Inventory
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - audit/cardano-integration/observe-preprod-treasury-inventory.mjs
+      - plutus/out/treasury.plutus.json
+      - .github/workflows/observe-preprod-treasury-inventory.yml
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Read Treasury address UTxOs from Preprod
+        run: node audit/cardano-integration/observe-preprod-treasury-inventory.mjs
+      - name: Publish observation summary
+        if: always()
+        run: |
+          if [ -f audit/preprod-evidence/treasury-inventory-observation.json ]; then
+            cat audit/preprod-evidence/treasury-inventory-observation.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload read-only observation
+        if: always() && hashFiles('audit/preprod-evidence/treasury-inventory-observation.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-treasury-inventory-observation
+          path: audit/preprod-evidence/treasury-inventory-observation.json
+          if-no-files-found: error
