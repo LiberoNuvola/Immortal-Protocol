@@ -2651,3 +2651,35 @@ No branch was created; no wallet action or transaction was submitted; no V3/Reve
 - Preserve PR #35 as draft and keep Workflow B/JEV results classified by exact commit, run and evidence type.
 
 **Status after this update:** upstream verifier research advanced; B3-A/B/C remain OPEN. No Materios finality proof was independently verified by this update.
+
+
+### 10.72 Agent A — historical EEV approval is not reproducible against its recorded workflow commit — 2026-10-22
+
+**Owner:** Agent A (P-01/P-16 readiness). **Classification:** provenance audit; no approval/deployment/ledger action.
+
+#### Exact source-identity comparison
+
+Inspected the historical EEV artifact bundle from workflow run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679). Its approval metadata records workflow commit `97b09a38742098f17a61eb07734c401aeedccc06` on `main`, with approval reference `github-actions:environment/PREPROD-EEV-APPROVAL/run/39552468679`. I compared the seven EV source paths declared by the current readiness gate at the current `work/immortal-green-closure` branch with the exact recorded workflow commit.
+
+| Evidence | Current green blob | Exists at recorded approval commit? | Result |
+|---|---|---|---|
+| EV1 — EEV contract | `292a2adb4137209f02e5a55477a5eef676d974e9` | Yes; same blob | Path identity matches |
+| EV2 — `DirectUsdmEev.ts` | `10616024e007cf9a18707047e89e84990cfc093b` | **No (404)** | Cannot reproduce from recorded commit |
+| EV3 — direct-USDM source-set producer | `9cf28d31bf72e0aea6c077538e97e7399ed0d04b` | **No (404)** | Cannot reproduce from recorded commit |
+| EV4 — EEV conversion tests | `3bfcce27425c04f91ee80b9326fa8a0d165490ee` | **No (404)** | Cannot reproduce from recorded commit |
+| EV5 — exact Pool binding tests | `2acbf841c4318fdf7bc502f715129b06e8623079` | **No (404)** | Cannot reproduce from recorded commit |
+| EV6 — OMEGA completeness contract | `1543ee6b0de15f491eddb872fb6f7d6df7a5f7f3` | Yes; same blob | Path identity matches |
+| EV7 — accounting partition certification | `9ebe7c55fb5de26aa9c8e1d0f17e466c91855c3e` | Yes; same blob | Path identity matches |
+
+The four missing-path results are exact content-API 404 responses for the recorded approval commit, not merely different blob hashes. Therefore the historical approval artifact cannot be treated as reproducible evidence that EV1–EV7 were sourced from the current green implementations. This does not by itself prove the economic calculation is false; it proves the claimed source provenance does not join across the approval commit and current implementation.
+
+The current readiness script now hashes the actual EV1–EV7 file bytes and requires equality with each qualification artifact digest. Its existing synthetic regression demonstrates fail-closed behavior for a changed EV2 digest, but that fixture is not a run against the historical approval bundle or a fresh live qualification.
+
+#### Consequence / next gate
+
+- **P-01 remains BLOCKED; P-16 remains NOT ISSUED.** Do not reuse the historical `DEPLOYMENT_APPROVED` artifact as current approval or claim the readiness gate is satisfied.
+- Required sequence: materialize a new source-set from a live, exact Pool UTxO; generate a fresh EV1–EV7 qualification against the current reviewed source bytes; then obtain a new separately authorized approval bound to that exact qualification/source-set/deployment/Oracle State and workflow commit. Revalidate the Pool UTxO again at admission. This checkpoint does not invoke the approval workflow or manufacture any certificate.
+- The physical `tUSDM` candidate still does not by itself close the normative canonical-USDM/valuation decision. No USD/USDM parity, freshness threshold, expiry policy or additional-input rule is inferred here.
+- No branch was created; no wallet action, transaction, approval workflow, V3/Reveal semantic change, or normative decision occurred.
+
+**Status:** provenance mismatch concretely confirmed; fresh live evidence and governed re-approval remain outstanding. Overall audit remains **PARTIAL / OPEN**.
