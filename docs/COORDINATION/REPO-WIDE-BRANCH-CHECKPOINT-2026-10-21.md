@@ -2701,3 +2701,32 @@ Direct comparison completed against the existing Materios GRANDPA verifier and O
 5. Run the relevant verifier test suite and record exact command, commit SHA, and output before changing status.
 
 **Status remains OPEN:** B3-A is not closed until bootstrap provenance and real Materios finality material are verified. B3-B exact storage inclusion and B3-C execution proof remain separate and open. No deployment/on-chain transaction; PR #35 remains draft; V3/Reveal semantics untouched.
+
+
+## 10.18 P2.8 Reveal size — Aiken candidate vs canonical production path (2026-10-22)
+
+**Classification:** diagnostic/checkpoint clarification only. This section does not authorize a validator switch, change Reveal semantics, change the V3 carrier, or relax Cardano's 16,384-byte transaction limit.
+
+### Finding confirmed from workflow source
+
+The current `.github/workflows/pre-rich-emulator-reveal.yml` on `work/immortal-green-closure` runs `cabal run exe:export-scripts`, then copies fresh artifacts from `plutus/out/` into `src/plutusScripts/` before invoking `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs`. The canonical test therefore consumes freshly exported Haskell/Plutus artifacts, not the isolated Aiken prototype. Relevant source:
+- [Reveal conformance workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/pre-rich-emulator-reveal.yml)
+- [Haskell PrizeValidator](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/plutus/PrizeValidator.hs)
+- [Aiken parity workflow](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/aiken-reveal-parity.yml)
+- [Aiken prototype README and acceptance gates](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/poc/aiken-reveal-parity/README.md)
+
+### Evidence distinction
+
+- The latest canonical fixture measurement reported a parameterized Haskell `PrizeValidator` of **16,688 bytes**, already **304 bytes above** the 16,384-byte transaction ceiling before transaction-envelope overhead. The diagnostic publication transaction measured **16,879 bytes** with the local diagnostic size limit raised; it was not an accepted ledger transaction. The complete final Reveal-spend transaction measurement remains open for this current fixture.
+- The isolated Aiken Reveal candidate has previously measured **5,502 bytes** of compiled script and passed a local Yaci publication (5,809-byte transaction) and integrated Reveal fixture (1,245-byte transaction) using an Aiken **Plutus V3** PrizeValidator reference script plus the real parameterized Haskell **Plutus V2** B1PrizePool validator. These are candidate-path results, not canonical Haskell V2 results or production evidence.
+- The Aiken package explicitly targets Plutus V3; the canonical production Haskell validator targets Plutus V2. The parity harness is marked isolated/not deployable and its own measurement report says full transaction size, CPU/memory, and native-ledger acceptance are not established by the compiled-script lower-bound report. V2/V3 compatibility and full behavior/state-effect equivalence remain open.
+- Therefore, the earlier Aiken work did **not** silently fix the current canonical Haskell artifact. It demonstrated a potentially much smaller alternative path, but it has not met the acceptance gates required to replace the canonical validator.
+
+### Next actions — no duplicate run without a new hypothesis
+
+1. Keep the canonical Haskell V2 failure visible and retain the 16,384-byte ceiling. Do not change V3 carrier or Reveal/economic semantics.
+2. Continue only in the isolated Aiken candidate lane: finish the integrated negative twin with the real B1PrizePool validator, broaden canonical Haskell/Aiken differential checks over decisions and state effects, and complete the V2-to-V3 target-ledger compatibility review.
+3. Measure final signed CBOR for publication and positive/negative Reveal transactions, plus CPU/memory against authoritative protocol limits, on the exact candidate SHA. A script-byte lower bound or synthetic fixture alone is insufficient.
+4. Only after all gates pass, make a separately reviewed migration decision and then bind the accepted candidate into a dedicated deployment/conformance workflow. Do not redirect the current canonical workflow prematurely.
+5. Keep the current probe and canonical Reveal run as separate evidence records: a failure while publishing the reference script is not a measurement of the final Reveal spend transaction.
+
