@@ -215,3 +215,16 @@ This is the most concrete trust-minimized route found in current project evidenc
 ### Evidence status
 
 The official documentation and hosted chain spec were inspected as discovery sources. The chain spec has **not** yet been downloaded and independently hashed/reconstructed in this task; the genesis authority set, genesis state root, and initial GRANDPA set ID therefore remain unverified. No production bootstrap code is implemented by this note. Keep the bootstrap blocker OPEN until those exact bytes and reconstruction results are captured and reproduced.
+
+
+## 2026-10-22 follow-up — source/release artifact mismatch and checksum retrieval
+
+A further source triangulation was performed against the public Materios repository and the hosted release directory.
+
+- The hosted release index reports `releases/chain-spec-v6-raw.json` as **1,063,592 bytes**, timestamped 28-Apr-2026 15:05, and `releases/SHA256SUMS` as 1,811 bytes.
+- The public GitHub repository tree at `Flux-Point-Studios/materios`, commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`, contains `chain-spec/chain-spec-raw.json` at **614,373 bytes**, not the same artifact by size. It must not be substituted for the hosted v6 release spec without a reproducible derivation/provenance link.
+- The same repository contains `.fluxpoint-spec-lock.json` with SHA-256 `4328b0ee893357524ad91c5f2dfc0c962ba8dcfa92e239fb061b8c903161926d`; this lock does not establish the SHA-256 of the hosted release JSON and is not evidence of the release artifact's checksum.
+- The official docs publish only a truncated release checksum (`77877aa6…65aaa`). Attempts to retrieve `SHA256SUMS` through available web fetchers failed because the host serves a content type rejected by those fetchers; direct web open also reported inaccessible. The release index establishes the file exists, but not its bytes or contents.
+- The hosted raw JSON can be viewed through a text extraction service, but that representation is truncated/normalized and therefore unsuitable for hashing exact bytes or reconstructing the genesis state. No exact download or SHA-256 verification has been achieved.
+
+**Decision:** keep the bootstrap blocker OPEN. Do not infer the missing checksum, hash a transformed text extract, or treat a same-project GitHub file as equivalent. Next operational path is to obtain the exact hosted bytes through a byte-preserving download (e.g. curl on an operator/CI runner), verify the full manifest entry, and archive the raw bytes + computed SHA-256 + provenance. Then independently rebuild genesis with a pinned Substrate SDK and extract GRANDPA genesis storage. No test suite was run, no authority set/set ID was authenticated, and no production bootstrap was implemented in this follow-up.
