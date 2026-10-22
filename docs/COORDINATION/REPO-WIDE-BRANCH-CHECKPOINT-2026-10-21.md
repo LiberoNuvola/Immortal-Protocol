@@ -2566,3 +2566,33 @@ This is a **falsifiable static risk**, not yet the observed current-run failure:
 3. Do not modify `audit/cardano-ledger-runner/**` until this run finishes; the active Integration Lab watches that path and could be cancelled by a new code push. After a confirmed failure, rerun the exact-current workflow only after the patch is narrowly implemented and reviewable.
 
 **Current verdict:** materializer step 37 = PASS; decoder step 38 = IN PROGRESS; P2.8 native ledger gate step 39 = PENDING. Decoder incompatibility is a **static risk pending live confirmation**, not a declared failure. P-04 remains **INTEGRATION-BLOCKED** until exact current-packet native Cardano-ledger evaluation closes. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.70 Agent B — P2.8 native typed context decoded; ledger evaluation returns two non-Plutus failures — 2026-10-22
+
+**Owner:** Agent B (P-04). **Source/run:** [IMMORTAL Cardano Integration Lab #39777884299](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777884299), source SHA `cb9825d20cacdddca98d8a1cd6bf554287b0c2bf`. **Final workflow conclusion:** failure.
+
+#### P2.8 exact packet result
+
+The completed job log establishes:
+
+- Step 37, raw Yaci context materialization: PASS.
+- Step 38, native Yaci UTxO decoder conformance: PASS. This directly resolves the static risk in §10.69 for this packet; do not continue to label reference-script decoding as an unconfirmed blocker.
+- Step 39, P2.8 ledger evidence gate: the runner accepted the exact run/commit/manifest/transaction/time/CBOR bindings and decoded the transaction, consumed UTxOs, PParams, EpochInfo and SystemStart into native Conway Ledger types.
+- The ledger evaluation completed against the bound packet, with 2 redeemer entries, 0 successes, 2 failures, 0 Plutus execution failures, 0 ledger-context failures and 2 “other ledger failures”. The runner emitted `RESULT: LEDGER_ALIGNED_EVALUATION_FAILURE` and an explicit typed failure report. Thus step 39's workflow step is green because the gate successfully produced/classified its evidence packet; **the Reveal transaction itself did not pass ledger evaluation**.
+- Raw evidence directory reports `tx.cbor` 32,147 bytes and `reveal-transition.json` 22,914 bytes as materialized artifacts; those are packet-file sizes, not the Cardano serialized transaction size. The current exact packet is linked by the run's manifest and evaluation binding.
+
+This is a useful advance: P2.8 is no longer blocked on inability to decode script-bearing reference UTxOs or on missing raw context. The remaining blocker is the specific two-redeemer typed ledger failure. Before any code change, inspect `ledger-evaluation-report.json` and the per-redeemer JSON from the exact artifact to classify each failure (spending vs reference/other ledger conditions) and tie it to the exact input/redeemer. Do not infer a Plutus validator rejection: the log explicitly reports zero Plutus execution failures.
+
+#### Separate predeploy structural failure
+
+Step 45, predeploy structural gate, failed for a separate compilation defect in `export/IssueAdmission.hs` around line 175: `A.eitherDecode =<< BL.getContents` has type `BL.ByteString -> Either String ...`, while the bind expects an IO action. The compiler expected `BL.ByteString -> IO (Either ...)` and found `BL.ByteString -> Either String (Either ...)`. This is a concrete Haskell IO/decoder integration mismatch, not a protocol/economic decision. It blocked `cabal build exe:issue-admission`; do not conflate it with P2.8 or change Issue semantics to address it.
+
+#### Scope / next actions
+
+1. Retrieve the exact artifact for run #39777884299 and read the full ledger evaluation report/per-redeemer JSON; classify the two failures without changing protocol code first.
+2. Fix the `IssueAdmission.hs` input-decoding IO mismatch narrowly in the implementation branch that owns this executable, then run its direct build/test and the exact current predeploy gate.
+3. Keep the historical legacy Haskell V2 Claim path separate: its earlier builder failed at 16,411 bytes (27 over the ledger maximum) before submission. The current run's green step 35 is `continue-on-error`-wrapped and is not proof that Haskell V2 Claim passed size or owner-signature evaluation.
+4. No change to V3 carrier, Reveal semantics, economic rules, protocol limits, production deployment or ledger state is authorized by these results.
+
+**Current verdict:** raw P2.8 packet = materialized; native decoder = PASS; exact native typed context = decoded; ledger evaluation = COMPLETED / FAILED (2 other ledger failures, 0 Plutus execution failures); predeploy structure = FAILED at `IssueAdmission.hs:175`; P-04 remains **INTEGRATION-BLOCKED** pending per-redeemer classification and closure of separate predeploy blocker. Overall audit remains **PARTIAL / OPEN**.
