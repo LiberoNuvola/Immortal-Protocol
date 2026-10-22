@@ -512,17 +512,18 @@ function verifySignedIssueAuthorityEnvelope(envelope, publicKeyPem, expected) {
   }
   if (freshnessWindow === 0n) throw new Error('Issue authority freshnessWindow must be positive')
 
-  if (expected.currentObservedAt !== undefined) {
-    const currentObservedAt = nonNegative(
-      expected.currentObservedAt,
-      'current observedAt',
-    )
-    if (currentObservedAt < observedAt) {
-      throw new Error('Issue authority observation is from the future')
-    }
-    if (currentObservedAt - observedAt > freshnessWindow) {
-      throw new Error('Issue authority EEV observation is stale')
-    }
+  if (expected.currentObservedAt === undefined || expected.currentObservedAt === null) {
+    throw new Error('Issue authority currentObservedAt is required to verify observation freshness')
+  }
+  const currentObservedAt = nonNegative(
+    expected.currentObservedAt,
+    'current observedAt',
+  )
+  if (currentObservedAt < observedAt) {
+    throw new Error('Issue authority observation is from the future')
+  }
+  if (currentObservedAt - observedAt > freshnessWindow) {
+    throw new Error('Issue authority EEV observation is stale')
   }
 
   return Object.freeze({
