@@ -1971,3 +1971,24 @@ At checkpoint append time these were still in progress/pending. The previous gen
 5. Since the validator script hash changes, do not promote it or update a deployed reference-script UTxO without separate identity reconciliation and a reviewed, authorized deployment procedure.
 
 **Current verdict:** candidate in validation; fresh build size delta NOT YET AVAILABLE; Claim equivalence NOT YET PROVEN; canonical publication and final Reveal size NOT YET CLOSED; P-03/P-04 remain **INTEGRATION_BLOCKED**. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.54 Agent B — forensic lineage: stale tracked Plutus JSON versus current source closure — 2026-10-22
+
+**Status:** source of drift identified; size/conformance result for the Claim owner-reuse candidate remains pending. No validator logic changed in this section.
+
+#### Exact comparison
+
+- The Git-tracked `src/plutusScripts/prizeValidatorFactory.plutus.json` blob `183ebe92b31924aa19799dff8ec687b9b9bb9a22` contains a `cborHex` payload of 9,760 bytes. Its last history entry on the public/main lineage is the 2026-09-24 release commit `25d083703d07f36e8ed31bf3e5947a4cded5c6a2`; the tracked JSON did not change as the working Plutus source evolved in October.
+- The canonical current-branch source before the Claim owner-reuse candidate was `plutus/PrizeValidator.hs` blob `3e35eeadf3fbb6ace4e8b288106a5ed8f687e66b` (35,836 source characters), versus the Sep-24 release-line source blob `52aaea8c964b12fc167908b1417481c4beaad4ce` (27,182 characters). The source history on `work/immortal-green-closure` includes Claim raw-context fixes and size experiments on 2026-10-11 through 2026-10-17. The existing tracked JSON was not regenerated alongside that source lineage.
+- The tracked B1PrizePool factory JSON blob `9efbac15e5dbf8ed5c2133ce0c6068c2c43c8de6` contains a 7,543-byte `cborHex` payload; the fresh current-source build measured 11,357 factory payload bytes and 11,513 parameterized bytes. The current working source graph includes added on-chain dependency modules and changed source roots in `plutus/pre-rich-plutus.cabal` (current blob `3f06a8d28fc121ea19aa591db73f7ff19ef12c31`, 10,551 characters; release-line blob `36c3cb21706f54d6dace802321eb2d8c4ffe3a09`, 5,613 characters). This is a source/dependency-closure drift signal, not a one-file encoding discrepancy.
+- The compiler dependency is **not** the explanation found so far: current `cabal.project` pins Plutus at commit `48e9bf08f439e7223de713b5b71696fcd81cffc3`, and the upstream Git tag `1.67.0.0` resolves to that exact same commit. The project file changed from a tag reference to its commit SHA, not to a different Plutus revision.
+- The export program serializes `PrizeValidator.compiledValidatorFactory` and `B1PrizePool.compiledValidatorFactory` via `serialiseCompiledCode`. The emulator workflow rebuilds these artifacts from the current checkout and copies the fresh exports into its consumer workspace. Therefore size/acceptance conclusions must use the fresh run payloads, not the older committed JSON.
+
+#### Consequence and constraints
+
+The measured 16,559-byte fresh PrizeValidator factory and 16,688-byte parameterized script are the valid current-source measurements for the pre-Claim-reuse candidate. The 16,782-byte canonical publication attempt and 16,879-byte diagnostic publication CBOR are separate construction profiles and both exceed the 16,384-byte ledger limit. The smaller tracked JSON is not evidence of a publishable current validator.
+
+The current exact-head candidate [`d6c9fd34d91933197c9d73e9caf3342b3d549623`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d6c9fd34d91933197c9d73e9caf3342b3d549623) reduces one redundant raw owner/value-map traversal in Claim. Its size delta must be taken only from fresh build output; source line count or artifact file size alone is not acceptance. Wait for current-head Reveal and Haskell semantic conformance runs, then record the new factory and parameterized bytes plus exact run/compiler artifact hashes. Claim owner/signature equivalence remains OPEN until explicit positive/negative cases pass.
+
+No tracked artifact was overwritten, no deployed hash was changed, no V3/Reveal predicate was changed, and no ledger transaction was submitted. P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit remains **PARTIAL / OPEN**.
