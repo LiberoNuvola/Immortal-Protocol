@@ -45,6 +45,11 @@ const utxos = (info.utxo_set ?? []).map((u) => {
 })
 const totalLovelace = utxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
 const totalTusdm = utxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
+function formatSixDecimals(value) {
+  const whole = value / 1_000_000n
+  const fractional = (value % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '')
+  return fractional ? `${whole}.${fractional}` : whole.toString()
+}
 const observation = {
   schema: 'IMMORTAL-PREPROD-TREASURY-INVENTORY-OBSERVATION-v1',
   observedAt: new Date().toISOString(),
@@ -61,9 +66,9 @@ const observation = {
   totals: {
     utxoCount: utxos.length,
     tADALovelace: totalLovelace.toString(),
-    tADA: (Number(totalLovelace) / 1_000_000).toString(),
+    tADA: formatSixDecimals(totalLovelace),
     tUSDMAtomic: totalTusdm.toString(),
-    tUSDM: (Number(totalTusdm) / 1_000_000).toString(),
+    tUSDM: formatSixDecimals(totalTusdm),
   },
   utxos,
   qualification: {
