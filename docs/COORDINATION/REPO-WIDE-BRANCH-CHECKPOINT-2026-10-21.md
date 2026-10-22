@@ -2418,3 +2418,45 @@ No validator, Reveal/V3 semantics, economic rules, production builder, workflow 
 4. Keep native Cardano-ledger P2.8 context and the exact tuple `tx.cbor + utxo.json + pparams.json + epoch-info.json + system-start.json + manifest.json` as the independent next acceptance gate.
 
 **Current verdict:** reference-script publication = bounded in-memory emulator pass on the named fixture; canonical Reveal evaluator = FAIL before final-CBOR serialization; final Reveal-spending size/reference-witness status = NOT MEASURED; native P2.8 = NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**. No Preprod/mainnet transaction was submitted by this Agent B step. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.65 Agent B — Pool Value guard isolation confirmed; Prize isolation result pending — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04 and related Cardano resource evidence). **Status:** Pool probe = `TESTED_BOUNDED`; full Reveal = `INTEGRATION_BLOCKED`; complementary Prize-only probe was added but has not reached its test step in the latest workflow run.
+
+#### Exact completed probe result
+
+In PRE-RICH Emulator Reveal Conformance [run #39777010469](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777010469), source SHA `2e73bb6a295c41a5c69b0308430311af23747015`, the revised Pool-only probe printed:
+
+- `POOL_VALUE_PROBE EXPECTED_SEMANTIC_STOP_AFTER_VALUE_GUARDS`
+- Error: `Spend[1] ... Trace B1PrizePool: reveal input price mismatch`
+
+The test supplied a decodable Prize input and continuing output but deliberately set `TicketRevealed(priceUsdm + 1)`, did not supply a Prize redeemer, and did not sign or submit the diagnostic transaction. The Pool validator advanced through its preceding solvency/singleton-token-Value/Pool-input checks and reached the deliberately mismatched Prize-input price guard. This is bounded local evaluator evidence that the old Pool-only Value-path hypothesis is not reproduced on this current compiled path. It is **not** a passing complete Reveal, negative ledger rejection, or native P2.8 result.
+
+The same run independently failed the canonical full Reveal at `Spend[0] attempted to instantiate a non-polymorphic term` before final Reveal CBOR serialization. This differs from the Pool-only probe's deliberately reached semantic stop at `Spend[1]`, so the next probe should isolate PrizeValidator rather than continue to modify the Pool diagnostic.
+
+#### Complementary PrizeValidator isolation diagnostic
+
+Commits [`cb9825d20cacdddca98d8a1cd6bf554287b0c2bf`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/cb9825d20cacdddca98d8a1cd6bf554287b0c2bf) and [`f008440cbc6673c82dd5e82c8b3ffec51d95edc6`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f008440cbc6673c82dd5e82c8b3ffec51d95edc6) add a second diagnostic-only path:
+
+- It spends the Prize UTxO with the canonical Reveal redeemer, keeps the Pool input/output as context without a Pool redeemer, and preserves both continuing datums.
+- It calls legacy Lucid `.complete()` only. It never signs or submits. Its output explicitly scopes results to PrizeValidator local evaluation, not complete two-script Reveal acceptance.
+- The test is designed to classify whether `Spend[0]` still errors when the Pool validator is not locally invoked. It does not alter either validator, the protocol rules, or the 16,384-byte limit.
+
+Exact-head [PRE-RICH Emulator Reveal #39777906146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777906146) is on SHA `f008440cbc6673c82dd5e82c8b3ffec51d95edc6`. At the latest read, its job had not progressed beyond `Setup canonical Plutus CI`; therefore the new Prize-only result is **PENDING**, not success/failure. No log evidence was emitted for the new diagnostic yet. Do not infer a result merely from the workflow's queued/in-progress status or from another diagnostic step marked green under `continue-on-error`.
+
+#### Separate Claim resource result from the preceding Integration Lab
+
+The exact-source [IMMORTAL Cardano Integration Lab #39777010375](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777010375), SHA `2e73bb6a295c41a5c69b0308430311af23747015`, later ended `cancelled`. Its Haskell V2 Claim owner-signature candidate reached transaction completion and logged `Max transaction size of 16384 exceeded. Found: 16411` (27 bytes over) before signature/submission. The workflow step conclusion `success` was only because the step has `continue-on-error: true`; the raw log contains the error. Claim owner/signature semantics remain **NOT PROVEN** and this is a separate resource blocker from Reveal.
+
+#### Current verdict and next action
+
+- Reference-script publication: bounded in-memory emulator pass; diagnostic publication sizes remain 16,297 B (PrizeValidator) and 11,704 B (B1PrizePool) on the exact fixture where logged. Those figures are not final Reveal spend size.
+- Pool local Value/singleton guard path: `TESTED_BOUNDED` through the intentionally mismatched input-price guard.
+- PrizeValidator local evaluator: **PENDING** current-head isolation probe.
+- Canonical full Reveal: still fails at `Spend[0]` before final CBOR; size/reference-witness census **NOT MEASURED**.
+- Legacy `nativeUplc: false` route remains unavailable for full construction because Blockfrost is not configured (`Can't calculate ex units`); do not fabricate ExUnits.
+- Native Cardano-ledger P2.8 remains **NOT ESTABLISHED**; P-03/P-04 stay **INTEGRATION_BLOCKED**; Claim resource/owner-signature proof remains open.
+- No Preprod/mainnet transaction was sent by these Agent B diagnostics. Overall audit remains **PARTIAL / OPEN**.
+
+**Next action:** inspect [run #39777906146](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777906146) at the Prize-only step if it advances. In parallel, do not rerun the Pool-only probe unchanged; its bounded guard isolation has already been established. Any next Reveal-size work must emit an explicitly labelled construction-only result or final CBOR, without inventing ExUnits or treating a partial builder body as a final transaction.
