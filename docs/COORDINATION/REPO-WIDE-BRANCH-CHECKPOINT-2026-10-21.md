@@ -2628,6 +2628,7 @@ No branch was created; no wallet action or transaction was submitted; no V3/Reve
 
 ### Upstream source inspected
 
+- Detailed compatibility review on B3 branch: [B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md) (B3 branch commit `2980eca0be16b3337727f8fdafb61e480aa660d2`).
 - `Flux-Point-Studios/orynq-sdk` commit `90fc397111a98b2d6fe47771e82003cdcaa429d5` (merge PR #141; 2026-10-22 10:19:47 UTC), especially `packages/anchors-midnight/src/grandpa.ts`.
 - Related commits: `4f78fa4206e14492e54de5fcde5b4901c7ad716a` (documents cross-chain/set-ID trust assumption), `0f7cc83caceedc5ab7f91eca2ed2687a376e4188` (equivocation signatures and lowest precommit), `f33c39f203c8cb34a7a1d7830f59678552e570db` (set-start and cross-chain equivocation handling).
 - Materios upstream commits reviewed previously: `bc1465d85e033001bc86175b85d60f2e5c353413` (no-secret-keys launch preflight), `ff6bac7cee17259c95b3a4960487419d66384415` (genesis committee guard), `f1217d7b9e4942a0e7f4283cc0dce74cbac89877` (Ariadne/follower epoch rule), and `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (sccache CI policy).
