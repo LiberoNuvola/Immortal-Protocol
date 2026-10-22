@@ -65,6 +65,19 @@ const tUSDMHolders = holderRows.map((holder) => {
   }
 })
 
+const policyResponse = await fetch(
+  `${KOIOS}/policy_asset_list?_asset_policy=${TUSDM_POLICY_ID}`,
+)
+if (!policyResponse.ok) throw new Error(`KOIOS_POLICY_ASSET_LIST_HTTP_${policyResponse.status}`)
+const policyRows = await policyResponse.json()
+if (!Array.isArray(policyRows)) throw new Error('KOIOS_POLICY_ASSET_LIST_INVALID_RESPONSE')
+const policyAssets = policyRows.map((asset) => ({
+  assetNameHex: String(asset.asset_name ?? ''),
+  assetNameAscii: asset.asset_name_ascii == null ? null : String(asset.asset_name_ascii),
+  totalSupply: asset.total_supply == null ? null : String(asset.total_supply),
+  fingerprint: asset.fingerprint == null ? null : String(asset.fingerprint),
+}))
+
 const totalLovelace = utxos.reduce((sum, u) => sum + BigInt(u.lovelace), 0n)
 const totalTusdm = utxos.reduce((sum, u) => sum + BigInt(u.tUSDMAtomic), 0n)
 function formatSixDecimals(value) {
@@ -93,6 +106,13 @@ const observation = {
     tUSDM: formatSixDecimals(totalTusdm),
   },
   utxos,
+  tUSDMPolicyDiscovery: {
+    provider: 'Koios',
+    endpoint: 'GET /policy_asset_list',
+    policyId: TUSDM_POLICY_ID,
+    returnedAssetCount: policyAssets.length,
+    assets: policyAssets,
+  },
   tUSDMHolderDiscovery: {
     provider: 'Koios',
     endpoint: 'GET /asset_addresses',
