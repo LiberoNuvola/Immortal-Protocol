@@ -184,6 +184,20 @@ assert.equal(good.eevQualification.evidenceHash, 'c'.repeat(64))
 assert.equal(good.eevQualification.deploymentApproval.evidenceHash, 'b'.repeat(64))
 assert.equal(good.eevQualification.deploymentApproval.qualificationEvidenceHash, 'd'.repeat(64))
 
+// Freshness verification must fail closed when the caller omits its clock.
+// The production fetch wrapper currently supplies a local Date.now() value;
+// this assertion prevents other verifier callers from bypassing the check
+// simply by omitting currentObservedAt.
+const { currentObservedAt: _currentObservedAt, ...withoutVerificationClock } = expected
+assert.throws(
+  () => verifySignedIssueAuthorityEnvelope(
+    signed(makePayload(), privateKey),
+    publicKey.export({ type: 'spki', format: 'pem' }),
+    withoutVerificationClock,
+  ),
+  /currentObservedAt is required to verify observation freshness/,
+)
+
 assert.throws(
   () => verifySignedIssueAuthorityEnvelope(
     signed(makePayload({
