@@ -2347,3 +2347,36 @@ Claim owner/signature semantics remain **NOT PROVEN**. The current candidate's C
 This result is separate from the Reveal blocker: the prior 16,782-byte observation belongs to PrizeValidator reference-script publication on an earlier source; on SHA 5208318… both reference publications pass the emulator, then Reveal local UPLC evaluation fails before final-CBOR serialization. The final Reveal-spending CBOR and native P2.8 packet are still NOT MEASURED/NOT ESTABLISHED.
 
 **Current verdict:** Haskell V2 Claim build = FAIL at 16,411 / 16,384 bytes; Claim semantics = INCONCLUSIVE; Reveal final-spend CBOR = NOT MEASURED; P-03/P-04 remain **INTEGRATION_BLOCKED**; no Cardano Preprod/mainnet transaction submitted; overall audit **PARTIAL / OPEN**.
+
+
+### 10.63 Agent A — Pyth deployment pin and source-byte EEV gate — 2026-10-22
+
+This update closes two bounded evidence-integrity gaps. It does not connect Pyth to production `MintPolicy`, requalify or reapprove EEV, alter economic semantics, or submit a ledger transaction.
+
+#### P-02 — pin the isolated probe to official Pyth Pro Preprod identity
+
+- Added `scripts/pythPreprodConfig.mts` and `scripts/pythPreprodConfig.test.mts`. The runner now fails closed unless the supplied 56-hex policy ID is the published **Pyth Pro (formerly Lazer) Cardano Preprod** deployment ID `c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45`, and records the source URL in its evidence.
+- Sources: [Pyth Pro contract addresses](https://docs.pyth.network/price-feeds/pro/contract-addresses) lists that ID specifically for Cardano Preprod; [Pyth Pro Cardano consumer guide](https://docs.pyth.network/price-feeds/pro/integrate-as-consumer/cardano) identifies feed ID **16** as ADA/USD and states that Pyth's withdraw script verifies signatures but does not itself enforce freshness.
+- Test rejects alternate 56-hex policies and malformed identifiers. The synthetic identity test passed in run [39738882819](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39738882819); that workflow still failed in its TypeScript step due a malformed shell line continuation, which was corrected in commit [`a04ebd0150b193390e76a3c74636b31ea31524af`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a04ebd0150b193390e76a3c74636b31ea31524af).
+- Latest exact runner/build run [39739575067](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39739575067) is **in progress at last observation**. The isolated Aiken source-boundary tests and Plutus V3 consumer build passed; the runner job was still installing pinned dependencies before its identity/typecheck steps completed.
+- **Non-claims:** no signed update from Pyth was fetched in a manual native-ledger run here; no transaction was submitted; no Pyth value was consumed by production MintPolicy; feed 16 is ADA/USD, not ADA/USDM. The separate Pyth-native-ledger workflow remains manual-only.
+
+#### P-01 — re-hash EV1–EV7 against current repository bytes in Issue readiness
+
+- `audit/cardano-integration/preprod-first-issue-readiness.mjs` now checks each of EV1–EV7 against the exact expected source reference and SHA-256 of the referenced file bytes in the current checkout. Missing evidence, changed source bytes, wrong reference, malformed digest or missing source fail closed.
+- Test `audit/cardano-integration/preprod-first-issue-readiness.test.mjs` now creates a valid fixture from exact current source bytes and then proves an altered EV2 digest blocks readiness even after the qualification JSON's own `evidenceHash` is recomputed.
+- Exact [Issue Admission Boundary CI run 39739270131](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39739270131) on commit `d015feff85120cbce6136a6aa8eaf3dca68dc118` completed **SUCCESS**, including the new positive/negative readiness checks, signed-envelope verification and strict adapter typecheck.
+- This validates the **preflight verifier and its test fixture**. It does not re-run EEV qualification on a live source-set, approve deployment, prove economic truth, or assert the historical approval artifact still matches the present candidate. The existing historical approval was produced by run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) on branch `main` at SHA `97b09a38742098f17a61eb07734c401aeedccc06`; no new approval was produced here.
+
+#### Safety boundary and current front classification
+
+| Front | Result from this slice |
+|---|---|
+| P-01 / EV integrity | **Readiness check strengthened; live EV1–EV7 requalification and deployment approval still BLOCKED** pending approved asset identity, current source-set and independent approval |
+| P-02 / Pyth | **Probe identity pinned; static/Aiken build passed; typecheck rerun pending**; still ADA/USD probe only and not connected to MintPolicy |
+| P-05 / B2 | **G2 remains PARTIAL**; declared-input containment does not classify all extra wallet/fee inputs or bind the complete transaction body |
+| P-06 / expiry | **INTEGRATION_BLOCKED**; authorized origin of `issuedAt`/`expiresAt` not established on-chain |
+| P-15 / asset perimeter | **Historical tUSDM candidate observed live; normative accounting mapping remains OPEN** |
+| P-16 / first wallet Issue | **NOT ESTABLISHED**; no authorized signature, confirmed Issue transaction or independent post-state reconciliation |
+
+No policy coefficient, freshness horizon, USDM conversion or USD parity assumption was introduced. V3 and Reveal semantics were not changed. No wallet signing, approval workflow, deployment or ledger transaction was performed by these changes.
