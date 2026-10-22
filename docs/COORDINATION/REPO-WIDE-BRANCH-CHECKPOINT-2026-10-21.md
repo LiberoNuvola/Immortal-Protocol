@@ -2380,3 +2380,41 @@ This update closes two bounded evidence-integrity gaps. It does not connect Pyth
 | P-16 / first wallet Issue | **NOT ESTABLISHED**; no authorized signature, confirmed Issue transaction or independent post-state reconciliation |
 
 No policy coefficient, freshness horizon, USDM conversion or USD parity assumption was introduced. V3 and Reveal semantics were not changed. No wallet signing, approval workflow, deployment or ledger transaction was performed by these changes.
+
+
+### 10.64 Agent B — correct Pool Value probe context and distinguish size/evaluator findings — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** new bounded diagnostic running on exact current HEAD; no final Reveal CBOR yet.
+
+#### Latest completed source/run evidence
+
+[PRE-RICH Emulator Reveal Conformance #39738698776](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39738698776) ran source SHA `f4d66958631a0affe57fb3748f5e1045623c4a65` and concluded failure.
+
+- On the canonical emulator profile, both reference-script publication transactions were built/signed/submitted to the **in-memory emulator**, and both `prize-reference-complete` and `pool-reference-complete` passed at configured `maxTxSize=16384`. This is bounded emulator fixture evidence only, not a Preprod/mainnet publication proof.
+- The diagnostic profile (which overrides the size ceiling to 100,000 **only for diagnosis**) reported serialized publication transaction sizes: PrizeValidator **16,297 B** with parameterized script payload 16,106 B, and B1PrizePool **11,704 B** with parameterized script payload 11,513 B. These values describe each script's publication transaction, **not** the later Reveal-spending transaction.
+- Canonical Reveal construction failed locally with `Spend[0] attempted to instantiate a non-polymorphic term` before the final Reveal CBOR was emitted. The final Reveal transaction size/reference-witness census remains **NOT MEASURED**.
+- The previous Pool-only probe stopped with `B1PrizePool: exactly one decodable prize input required`. That is a malformed probe context: it had deliberately omitted the Prize input. The action-level trace shows the preceding pre-solvency, singleton-token Value lookup and own-Pool-input guards ran on that bounded input, but does not localize the failure in the complete Reveal transaction.
+- The size diagnostic using legacy Lucid's `nativeUplc: false` then stopped with `Blockfrost not set. Can't calculate ex units`. This is a missing evaluator path, not an ExUnits measurement or ledger verdict. Do not fabricate ExUnits.
+
+#### Narrow diagnostic changes on the current branch
+
+- [Commit `62d46f648451ab3beb44d0d2c3fa122a99bc4d48`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/62d46f648451ab3beb44d0d2c3fa122a99bc4d48), test blob `7fa0a93f1423633e90f0418313110f101331cd72`, corrected the Pool probe's semantic-failure classifier.
+- [Commit `4671302479ed56638dd99366bb9a43260b130f4e`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/4671302479ed56638dd99366bb9a43260b130f4e), test blob `dc16733a8eb6ffd4ada176d0183c25dbf7b80c4e`, strengthens the diagnostic context: adds a decodable Prize input and continuing output but intentionally omits its redeemer, so the builder evaluates only the B1PrizePool Plutus redeemer; supplies a deliberately mismatched Pool redeemer price so a successful early Value path should terminate at the expected Pool semantic guard. The invalid transaction is never signed or submitted.
+- [Commit `2e73bb6a295c41a5c69b0308430311af23747015`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/2e73bb6a295c41a5c69b0308430311af23747015), test blob `23abb187017de6b2df87be224f385792401298a9`, fixes the diagnostic budget-overrun regex so the expected `Mem -n` / `CPU -n` form is recognized.
+
+No validator, Reveal/V3 semantics, economic rules, production builder, workflow configuration or protocol size limit was changed.
+
+#### Exact-head validation
+
+- [PRE-RICH Emulator Reveal Conformance #39777010469](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777010469) is running on source SHA `2e73bb6a295c41a5c69b0308430311af23747015`. Its exact-head Reveal and Pool diagnostic outcomes are pending.
+- [IMMORTAL Cardano Integration Lab #39777010375](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777010375) is in progress on the same SHA. It must be evaluated by individual execution steps; workflow startup does not establish native P2.8 acceptance.
+- Documentation Link Check [#39777010290](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39777010290) passed on this SHA.
+
+#### Next action and exit criteria
+
+1. Read the exact-head Pool Value probe classification. `EXPECTED_SEMANTIC_STOP_AFTER_VALUE_GUARDS` would show only that this emulator diagnostic reached the deliberately mismatched price guard, not transaction acceptance. An evaluator failure/budget overrun/unclassified failure remains bounded diagnostic failure.
+2. Read the canonical Reveal error independently. Do not use a Pool-probe outcome to label the full Reveal error without a source/trace binding.
+3. The final Reveal-spend CBOR and witness census are still required. `nativeUplc: false` is not viable here without a qualified evaluator, and no arbitrary ExUnits may be inserted to force serialization. A construction-only partial body, if used later, must be labelled as such and not mistaken for final CBOR or a size PASS.
+4. Keep native Cardano-ledger P2.8 context and the exact tuple `tx.cbor + utxo.json + pparams.json + epoch-info.json + system-start.json + manifest.json` as the independent next acceptance gate.
+
+**Current verdict:** reference-script publication = bounded in-memory emulator pass on the named fixture; canonical Reveal evaluator = FAIL before final-CBOR serialization; final Reveal-spending size/reference-witness status = NOT MEASURED; native P2.8 = NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**. No Preprod/mainnet transaction was submitted by this Agent B step. Overall audit remains **PARTIAL / OPEN**.
