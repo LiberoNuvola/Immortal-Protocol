@@ -6,7 +6,7 @@ import { Emulator, Lucid } from 'lucid-cardano'
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const ARTIFACT_PATH = 'plutus/out/treasury.plutus.json'
 const TUSDM_POLICY_ID = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9'
-const TUSDM_ASSET_NAME_HEX = '745553444d'
+const TUSDM_ASSET_NAME_HEX = '0014df10745553444d'
 const TUSDM_UNIT = TUSDM_POLICY_ID + TUSDM_ASSET_NAME_HEX
 const OUTPUT_PATH = process.env.TREASURY_OBSERVATION_OUTPUT ?? 'audit/preprod-evidence/treasury-inventory-observation.json'
 
