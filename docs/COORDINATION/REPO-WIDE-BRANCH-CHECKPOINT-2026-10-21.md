@@ -2785,3 +2785,24 @@ Do not add a nominal runtime brand or constructor without an actual independentl
 - Identity regression tests: source committed, execution not yet observed.
 - B3-A/B/C remain OPEN. No deployment or on-chain transaction; PR #35 remains draft; V3/Reveal untouched.
 - Do not mark GREEN until a real bootstrap source/verifier is implemented and `npm test`, `npm run build`, and `npm run typecheck` pass on the exact candidate SHA.
+
+
+## 10.22 — B3 bootstrap route refined: reproduce genesis, then verify forward (2026-10-22)
+
+Agent C found published Materios v6 discovery inputs: chain ID `materios_preprod_v6`, reported genesis hash `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`, hosted raw chain spec [chain-spec-v6-raw.json](https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json), and Cardano genesis UTxO `13313ea0119e0c4330f64f1809159064a371a1bbf2050b1fe13d5492280dca50#0`. Official operator references: [SPO onboarding](https://docs.fluxpointstudios.com/materios-partner-chain/spo-onboarding), [node requirements](https://docs.fluxpointstudios.com/materios-partner-chain/node-requirements).
+
+These public docs and hosted bytes are **discovery sources only**; no independent chain-spec hash/reconstruction was performed and the initial authority list/set ID remain unverified.
+
+### Recommended route
+
+1. Download the exact raw chain spec and obtain its full checksum; verify the downloaded bytes independently.
+2. Reconstruct the genesis trie/header with the pinned Substrate SDK and recompute the genesis hash; compare against the independently reviewed/pinned expected identity.
+3. Extract/decode `pallet_grandpa::Authorities` from the reconstructed genesis state (or verify a storage proof against the recomputed genesis state root), binding chain ID + genesis hash + initial set ID + authority list as one bootstrap object.
+4. Verify real GRANDPA finality and every authority transition forward; then compose with the existing canonical runtime/authority-selection execution proof.
+5. Add reproducibility and adversarial tests for changed chain spec, wrong hash, altered authority bytes, wrong set ID and cross-chain mismatch.
+
+This is a concrete trust-minimized route, not trustless-from-nothing: the intended genesis identity still needs an explicit independently reviewed software/configuration trust anchor, unless a verified Cardano-enforced bootstrap commitment is implemented. Neither authenticated bootstrap route is currently implemented in the audited path.
+
+Report updated at [B3-A GRANDPA review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md), commit [`cab075e8`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/cab075e84b105633005ac2769ee515a4c961fd78).
+
+**Status unchanged:** authenticated bootstrap OPEN/BLOCKER; production transition proof verifier OPEN/BLOCKER; identity tests committed but not run; B3-A/B/C OPEN. No deploy or on-chain tx; PR #35 draft; V3/Reveal untouched.
