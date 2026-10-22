@@ -172,7 +172,8 @@ actionText _ = "INVALID"
 
 main :: IO ()
 main = do
-  input <- A.eitherDecode =<< BL.getContents
+  raw <- BL.getContents
+  let input = A.eitherDecode raw
   case input of
     Left err -> do
       BL8.putStrLn (A.encode (A.object ["admitted" A..= False, "error" A..= err]))
