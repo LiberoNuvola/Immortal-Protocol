@@ -2078,3 +2078,25 @@ Exact-head validation dispatch:
 4. Final Reveal-spending CBOR and native P2.8 still need their own exact transaction, UTxO, PParams, EpochInfo, SystemStart and ledger-evaluation packet.
 
 No production/preprod transaction was submitted and no live reference script was replaced. **P-03/P-04 remain INTEGRATION_BLOCKED; overall audit remains PARTIAL / OPEN.**
+
+
+### 10.56 Agent B — Haskell V2 Claim trace blocked by superseded run; corrected marker run queued — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** marker correction committed; corrected local-Yaci Claim test in progress. No semantic PASS claimed yet.
+
+#### Run #39725706061 disposition
+
+[IMMORTAL Cardano Integration Lab #39725706061](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725706061), source SHA `d54f896cae349f846a3447acfd6e8406f2bb6245`, finished as `cancelled`. Its steps show that `Setup canonical Plutus CI` was cancelled; the fresh export, Yaci launch, Claim steps and P2.8 stages were skipped. The workflow later hit its fail-closed guard `Enforce successful Aiken build for Claim candidate` because the required setup/build outcome was not success; this reflects cancellation of the prerequisite, not evidence that Aiken or Haskell Claim semantics failed. The Haskell V2 Claim candidate step was skipped. This run contributes no ledger/conformance result.
+
+#### Corrected test and replacement dispatch
+
+- The Haskell V2 Claim test path now selects expected traces by validator mode in [commit `144a809899bedea17e9937fd0f43bb31a35465c4`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/144a809899bedea17e9937fd0f43bb31a35465c4), source blob `cced077c9ba001feeda21c59aa8be7f2333be45c`. It expects compact Haskell V2 marker `54` for owner-signature failure and `59` for Claim payout/settlement failure, while retaining Aiken's descriptive markers when the Aiken mode is selected.
+- Replacement [IMMORTAL Cardano Integration Lab #39725914240](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725914240) checks out SHA `144a809899bedea17e9937fd0f43bb31a35465c4`; it was `in_progress` with Plutus cache restore in progress at the time of this update. The Haskell V2 Claim candidate step cannot be considered executed until its own step outcome and artifact/log evidence are observed.
+- The exact source size run [PRE-RICH Emulator Reveal #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094) on `af56179fba836229f9a4463bbcd82ef619cec0f8` completed fresh artifact export/binding and smoke, but had not advanced past the cache-save step at last check; therefore the effect of removing Claim's redundant `pdStatus /= Claimed` conjunct on canonical publication size is not yet measured in the available step summaries.
+- [IMMORTAL Haskell Semantic Conformance #39725693412](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693412), also on `af56179f...`, was in the `Historical PRE policy UPLC decode` step; it has not supplied a completed exact-head conformance result yet.
+
+#### Current acceptance boundary
+
+The last completed fresh-size observation is still the pre-redundant-guard candidate [run #39725072071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072071): parameterized PrizeValidator 16,153 B; canonical publication guard 16,386 / 16,384 B (2 B over); diagnostic publication CBOR 16,344 B under local maxTxSize 100,000; final Reveal-spending CBOR NOT MEASURED. Keep those values attributed to `d6c9fd34...` only; no newer measurement is claimed.
+
+**Next action:** obtain the current-head step outcomes/logs for run #39725693094, run #39725693412 and replacement Lab #39725914240. On the corrected Lab, require the Haskell V2 Claim positive case plus all five negative twins, especially `missing-owner-required-signer`, to finish with the expected actual branch evidence. Until then, Claim owner/signature equivalence remains OPEN, P-03/P-04 remain `INTEGRATION_BLOCKED`, and overall audit remains **PARTIAL / OPEN**.
