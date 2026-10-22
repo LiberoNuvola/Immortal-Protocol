@@ -2730,3 +2730,25 @@ The current `.github/workflows/pre-rich-emulator-reveal.yml` on `work/immortal-g
 4. Only after all gates pass, make a separately reviewed migration decision and then bind the accepted candidate into a dedicated deployment/conformance workflow. Do not redirect the current canonical workflow prematurely.
 5. Keep the current probe and canonical Reveal run as separate evidence records: a failure while publishing the reference script is not a measurement of the final Reveal spend transaction.
 
+## 10.20 — Integrated Aiken Reveal wrong-secret twin: source audit (2026-10-22)
+
+**Agent B source audit; no ledger result inferred.** Re-read the current branch implementation rather than repeating the old “add the negative twin” task.
+
+### What is already implemented
+
+- `audit/cardano-integration/reveal-ledger-trace.ts` selects the isolated Aiken Plutus V3 Prize validator only when `IMMORTAL_REVEAL_AIKEN_V3=1`, then parameterizes and hash-binds the real B1PrizePool Plutus V2 validator to that Aiken Prize hash.
+- The same trace builds and submits a wrong-secret twin using the same Prize and Pool UTxOs and the two bound reference scripts. It does this before the valid Reveal consumes those UTxOs.
+- The negative twin uses the positive transaction's ExUnits only to construct the adversarial transaction. It checks the active `maxTxSize`, calls `submit()`, classifies the rejection as validator/ledger-related, and checks that both original inputs remain unspent.
+- `.github/workflows/immortal-cardano-lab.yml` runs this trace with `IMMORTAL_REVEAL_AIKEN_V3=1` in both the Reveal preflight and active Reveal trace steps. The separate `aiken-reveal-ledger-probe.ts` still uses a test-only pool stub and must not be mistaken for the real-pool negative twin.
+
+### Current classification
+
+- **Implementation:** present in source; do not add a duplicate negative-twin implementation.
+- **Runtime evidence:** OPEN until a successful run of the exact current branch/commit is inspected and its `audit/yaci-evidence/reveal-transition.json` / JEV registry artifacts confirm the wrong-secret submission reached Yaci and was rejected for validator execution.
+- **Scope:** synthetic local Yaci fixture only. This does not close Haskell/Aiken equivalence, V2/V3 compatibility, production USDM/EEV qualification, CPU/memory qualification, or the canonical Haskell 16,384-byte blocker.
+- **Protected invariants:** no change to the Haskell validator, existing V3 carrier, Reveal/economic semantics, transaction-size ceiling, branches, or production deployment.
+
+### Next action
+
+Inspect the latest `IMMORTAL Cardano Integration Lab` run on `work/immortal-green-closure` and its exact commit. If it predates the integrated-negative implementation or lacks a run on the current commit, run the existing workflow once; do not create a new probe or rerun the obsolete Haskell size probe. If it fails, classify the exact failing stage from the artifact/log before editing code. Do not declare this gate GREEN from source inspection alone.
+
