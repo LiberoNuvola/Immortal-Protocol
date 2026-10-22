@@ -1749,3 +1749,42 @@ No protocol validator, economic rule, V3 carrier, Reveal semantics, production b
 **Next action:** read run #39723673393 after completion. If nativeUplc:false allows a serialized CBOR, inspect exact transaction bytes, expected two reference inputs and embedded Plutus V1/V2/V3 counts. Otherwise record the actual exception and stop repeating the same no-result probe. Do not infer reference-witness correctness from a structural test or a step-level continue-on-error PASS.
 
 **Current verdict:** canonical Reveal size = previously observed 16,782 / 16,384 bytes; fresh probe measurement NOT YET AVAILABLE; native P2.8 NOT ESTABLISHED; P-03/P-04 remain INTEGRATION_BLOCKED; no transaction submitted by this Agent B step. Overall audit remains PARTIAL / OPEN.
+
+
+### 10.50 Agent A — fresh live observation of the direct-USDM Pool out-reference — 2026-10-22
+
+This is a fresh **read-only liveness observation** of the exact historical EEV candidate. It does not change the source contract, qualify `tUSDM` as the normative accounting unit, re-run EV1–EV7 qualification, materialize deployment approval, or authorize an Issue.
+
+#### Exact observation evidence
+
+- Collector source: `audit/cardano-integration/preprod-eev-liveness-observation.mjs`, blob `0e8d65d9897cecc3afe20659907d10fe438a0582`.
+- Workflow: `.github/workflows/preprod-eev-liveness-observation.yml`, blob `d480f342c6c2cf2ab14d6355e0f64e39b6581906`.
+- Exact-head run [39723715470](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723715470), source SHA `da22220ba19a7590f3d6b3d3403c401ced54773b), completed **success**. This is collector execution success, and the artifact's domain status below is the actual observation result.
+- Artifact: [preprod-eev-liveness-da22220…](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723715470/artifacts/12402475397), ID `12402475397`, artifact ZIP SHA-256 `ba3a1ca39f7d4dd02daa7164b74cf618114e8f1241813742ec56a222113adf1c`.
+- Observation interval: `2026-10-22T04:40:56.215Z`–`2026-10-22T04:40:57.630Z`.
+- Koios endpoint: `https://preprod.koios.rest/api/v1/address_info`; exact address row returned: 1; exact `txHash#index` match count: **1**.
+- Source out-reference: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Pool address: `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`.
+- Live observed output: 5,000,000 lovelace; Pool singleton quantity **1**; physical candidate asset quantity **1,000,000,000** atomic units. Asset-list SHA-256 `6db7809ba6d2f7ed26cbf1ace737b2ccb62a13e00e4f7f9837b3bb8947077428`; inline datum SHA-256 `713c19f73c32fb981cc048102deedbaa13549a4c714495839fdd8d80898eb3e7`; raw address response SHA-256 `b1f6e6faa1e79ed828fac55c0e84d4118beb48b541f1361cc83f0d3f4007f8a6`.
+- Chain tip before and after query was identical: hash `5f6990ecbca633400da6e69850bb8ed114ff5d05b2b8220eb8013461033e4b88`, absolute slot `136960849`, block height `5320729`, Conway era (tip block time `1792644049`).
+
+The artifact result is `LIVE_CANDIDATE_OUTREF_AND_ASSETS_MATCH`. No economic conversion was applied; the observer did not mint or sign anything; no wallet, approval secret or deployment workflow was used.
+
+#### Classification impact for Agent A
+
+| Front / sub-gate | Updated classification | Exact meaning |
+|---|---|---|
+| P-01 — exact source out-reference liveness | **VERIFIED (time-bounded observation)** | The specified UTxO was present once at the observed Preprod tip and carried the configured historical Pool singleton and physical asset quantity during this observation interval. This result expires as a liveness claim as the chain advances. |
+| P-15 — physical candidate asset in the Pool | **OBSERVED LIVE; NORMATIVE MAPPING OPEN** | The exact asset unit is now confirmed on the candidate UTxO, but it remains the Preprod `tUSDM` candidate. The observation does not approve it as the protocol's Preprod accounting unit or equate it to mainnet USDM. |
+| P-01 — EV1–EV7/current admission | **NOT REQUALIFIED / BLOCKED** | This collector only observes exact out-reference liveness and physical asset facts. It is not the source-set qualification pipeline, it does not create `DEPLOYMENT_APPROVED`, and it does not bind EEV to an authoritative Issue decision. |
+| P-02 — Pyth → MintPolicy | **UNCHANGED: PRODUCTION BINDING OPEN** | No Pyth feed, signature, quote carrier or MintPolicy was part of this observation. |
+| P-05 / P-06 / P-16 — admission, expiry and real Issue | **UNCHANGED: INTEGRATION BLOCKED** | No control-state admission, transaction body, expiry, wallet signature, minted NFT or confirmed Issue transaction was evaluated. |
+
+#### Next action
+
+1. Keep DEC-3 closed and resolve the Preprod asset representation/denomination only through existing D-10/D-11 and D-13/GOV-02. Do not infer parity from the live token.
+2. After the normative asset identity and required deployment source contract are approved, re-run the existing `preprod-direct-usdm-source-set.mjs` using the actual deployment manifest to create a fresh `OBSERVED_NOT_QUALIFIED` source-set. Do not treat this read-only observation as a substitute for EV1–EV7 requalification.
+3. Only after fresh source-set evidence is reviewed may the separately controlled qualification/approval process be considered. Do not use the approval workflow as a read-only observer.
+4. Continue to block first Issue until qualified EEV, authoritative B2 admission, final transaction-body/input binding, policy-derived expiry and confirmed ledger/post-state evidence all agree.
+
+**Safety boundary:** no issue of tokens, USD/USDM conversion, oracle authorization, deployment approval, code promotion, wallet signature, workflow dispatch into an approval workflow, or ledger transaction was performed by this observation. Overall status remains **PARTIAL / OPEN**.
