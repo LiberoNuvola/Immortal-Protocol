@@ -2261,3 +2261,16 @@ The exact-head workflow [PRE-RICH Emulator Reveal #39727002870](https://github.c
 **Next action:** inspect the exact run's Pool-only classification/error. If it identifies the existing evaluator fault, research the legacy evaluator/API and existing history before any validator change. Preserve the 16,384-byte protocol limit, existing acceptance predicates, V3 and Reveal semantics; do not supply fabricated ExUnits. Any candidate fix requires exact-head source tests and must keep the Claim owner/signature equivalence question open until explicit positive and negative Claim contexts are tested.
 
 **Current verdict:** both reference publications pass only in-memory setup; canonical Reveal local evaluation remains FAILED at the B1PrizePool Spend[1] path; final Reveal CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT YET PROVEN; P-03/P-04 remain INTEGRATION_BLOCKED. No real Cardano ledger transaction was submitted. Audit remains PARTIAL / OPEN.
+
+
+### 10.60 Agent B — isolated-publisher funding input was underfunded; classify pre-build failure precisely — 2026-10-22
+
+**Owner:** Agent B. **Status:** fixture hypothesis rejected by current-head evidence; replacement value not yet selected/validated.
+
+[PRE-RICH Emulator Reveal Conformance #39726613822](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613822), exact source SHA `218f4f32b802a2f969e71f77ab9e7ad3afc478a4`, completed `failure`. Fresh Plutus export, artifact binding and isolated emulator smoke passed, but all three profiles (canonical, diagnostic budget, diagnostic size) failed at `prize-reference-complete:start` with `InputsExhaustedError`. The isolated payer UTxO of 3,000,000 lovelace did not cover the builder's reference-script output/minimum-value plus fee requirements; this occurred before serialized publication CBOR or a size comparison existed.
+
+Therefore this run does **not** show the independent publisher fix passed or failed the 16,384-byte limit. It establishes only that the fixture funding amount is insufficient for this library's reference-script-output requirements. The previously observed result remains the exact source `5208318...` run #39726370402: both reference publications completed in the in-memory Emulator, then the local Reveal evaluator failed at Spend[1] before final-CBOR serialization; its diagnostic route then failed because Blockfrost was not configured.
+
+No validator or protocol limit was changed. Do not infer publication size from the `InputsExhaustedError` path. Next use an isolated publisher UTxO funded above the library's required output minimum and fee (derived/reported from the exact builder/PParams, not guessed), then re-run the canonical publication and final Reveal-size diagnostic. Since the Haskell V2 Claim candidate is included in the current Integration Lab, avoid touching its triggering source/workflow until that run reaches the Claim step or concludes, unless a blocker requires it.
+
+**Current verdict:** current isolated-payer run: pre-build `InputsExhaustedError`, CBOR NOT PRODUCED; previous emulator run: both refs published, Haskell Reveal evaluator failed; final Reveal-spend CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**, overall audit **PARTIAL / OPEN**.
