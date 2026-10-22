@@ -1418,3 +1418,52 @@ The branch-name query returned 25 names; the continuation query at cursor `MjU` 
 Live compare says current `main` is `97b09a38742098f17a61eb07734c401aeedccc06`; PR #19/#23 bases are 9 commits behind, PR #28 base is 5 behind, and PR #35 base matches. Current green is 32 commits ahead / 0 behind protocol-source anchor `3373b3044b9c251da1ec217d128f5dcb3c87c894`; the compare response lists only 10 coordination/evidence paths. Keep that protocol-source anchor for existing evidence.
 
 No PR or branch state changed. Audit remains **PARTIAL / OPEN**.
+
+### 10.42 USDM/Pyth execution dispatch — 2026-10-22
+
+Operational allocation only. This section does not amend DEC-3, select a denomination model, qualify a feed, authorize a conversion, or authorize protocol implementation.
+
+#### A. Normative lane — W1-A
+
+**Target:** existing decision records in the Notion Control Center; canonical synthesis/checkpoint on `work/immortal-green-closure`.
+
+- Keep DEC-3 **CLOSED**: USDM is the reference/accounting unit and other supported settlement assets must satisfy exact equivalence under a verified valuation contract. Do not derive (1\ USDM = 1\ USD) from DEC-3.
+- Route the unresolved denomination/source question into existing **D-10** (multi-asset valuation/settlement) and **D-11** (oracle authorization/freshness/latency), under the approval boundary of **D-13/GOV-02**. Do not create a duplicate D-number or silently close a decision in implementation.
+- The authorized decision record must name the normative owner/approval path, canonical source and version, scope (PRE-RICH-only or IMMORTAL-wide), the selected existing option (A/B/C), failure behavior, and conformance fixtures. Until approved: no conversion formula, unit constant, `OracleQuote`, `Economic.totalUsdmValue`, or MintPolicy semantics may change.
+
+#### B. Parallel evidence lane — W1-B
+
+**Target:** existing source inventory/evidence records; no new branch.
+
+Collect evidence without asserting economic admissibility:
+
+1. **Settlement asset:** exact target network; authenticated observation/transaction reference; qualified UTxO tx hash/output index; USDM policy ID and asset-name bytes/hex; token decimals/unit; observed quantity; evidence timestamp/slot. Do not use ticker text as identity.
+2. **Pyth candidate:** exact product/type and feed ID; pair and quote denomination; publisher/source metadata; price and exponent representation; signed-update format and verification path; update timestamp/slot and the provider's validity/freshness metadata. Record which values are source facts and which still need normative authorization.
+3. **Traceability:** source URL or API reference, captured response/artifact digest, retrieval time, network and implementation/version identifiers. A listing or unsigned/static fixture is discovery material, not production qualification.
+
+Existing source facts at this checkpoint: `src/config.ts` blob `37c75e237e4c47ab2ea3f04f43f76ad57bf71636` does not define canonical USDM policy/name or Pyth feed ID; `.env.example` blob `e0d934726a30e787ff74469ba8cb79ab0a026424` leaves `DIRECT_USDM_UNIT` commented; the inspected Pyth feed ID 16 is ADA/USD, not ADA/USDM. These facts do not identify the intended USDM token or qualify a feed.
+
+#### C. Conditional engineering lanes
+
+- **W1-C conversion contract:** blocked on normative approval. After approval, define exact integer/rational arithmetic, exponent bounds, rounding, overflow, freshness validation and fail-closed behavior strictly from the approved rule; add positive and adversarial conformance vectors.
+- **W1-D production quote binding:** blocked on W1-A, W1-B and W1-C. Demonstrate that the authenticated quote consumed by the production MintPolicy is the same quote/asset/denomination accepted by the approved contract. Test wrong-feed, wrong-asset, stale update, malformed signature/update, incorrect exponent and payment under/over the exact amount. Require native-ledger evidence on an exact source SHA; evaluator-only tests are insufficient.
+- **W2 B1 first Issue:** remains an independent gate. Requalify direct-USDM EEV from the exact qualified PrizePool UTxO and prove authoritative admission, candidate-transaction binding, wallet signature and ledger confirmation. No conversion decision by itself authorizes Issue.
+- **W3 Reveal/P2.8:** continue only on the previously assigned branch/workflow from the dispatch board; isolate transaction size and reference-script witness evidence. Do not alter V3 or Reveal semantics.
+- **W4 Materios/B3:** continue on `work/b3-materios-provenance-evidence` as an independent acquisition/verification lane. A change of acquisition source must carry a reproducible hypothesis and real witness evidence; do not repeat a failed GRANDPA witness attempt without one.
+- **W0/W5 coordination:** record a status change only with the exact source/target SHA, relevant blob IDs, focused test command/run, evidence artifact and limitations. A passing generic CI run or a documentation-only commit does not close a specialist gate.
+
+#### Closure predicates and current state
+
+| Work item | Required closure evidence | State |
+|---|---|---|
+| W1-A denomination/source decision | Approved existing decision record, explicit scope and conformance fixtures | **OPEN — no option selected** |
+| W1-B asset/feed inventory | Authenticated target-network asset identity plus source-qualified feed/update metadata and evidence digest | **IN PROGRESS — ticker/feed ID alone insufficient** |
+| W1-C conversion contract | Versioned arithmetic and failure contract traced to the approved decision | **BLOCKED on W1-A** |
+| W1-D MintPolicy binding | Exact quote-to-predicate binding plus adversarial native-ledger results | **BLOCKED on W1-A/B/C** |
+| W2 first Issue | Live EEV direct-USDM, authoritative admission, transaction binding and confirmed ledger result | **BLOCKED independently** |
+| W3 Reveal/P2.8 | Under-limit transaction and actual reference-script witness evidenced on target ledger | **OPEN / INTEGRATION-BLOCKED** |
+| W4 Materios/B3 | Authentic witness captured and cryptographically verified at the required trust boundary | **OPEN / BLOCKED** |
+| W5 semantic audit | SHA-pinned review record and evidence-based classification per critical blob | **PARTIAL / OPEN** |
+
+**Boundary:** metadata acquisition may proceed immediately. No conversion option, price parity, token identity, oracle authorization, freshness threshold, or production binding is approved by this dispatch. No protocol source, workflow, branch topology, deployment, V3/Reveal semantics, or ledger state is changed by this record. Overall audit remains **PARTIAL / OPEN**.
+
