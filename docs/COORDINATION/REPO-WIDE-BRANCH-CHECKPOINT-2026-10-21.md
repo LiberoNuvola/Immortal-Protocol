@@ -2026,3 +2026,24 @@ The Claim owner/signature traversal source reduction is promising for script siz
 **Next action:** remove only the logically redundant Claim conjunct pdStatus datum /= Claimed, which is subsumed by the preceding pdStatus datum == Revealed, and run fresh exact-head export/size and regression gates. This targets a source-level no-op predicate rather than changing economics, Claim ownership, signature requirements, Reveal semantics or V3. Then add/execute explicit Claim owner-signature positive and negative evidence before treating the owner-traversal optimization as ready.
 
 **Current verdict:** parameterized PrizeValidator 16,153 B; canonical publication 16,386 / 16,384 B; final Reveal spending CBOR NOT MEASURED; Claim equivalence NOT YET PROVEN; P-03/P-04 remain **INTEGRATION_BLOCKED**; no real-ledger transaction submitted. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.55 Agent B — remove unreachable Claim status guard and rerun exact-head size gate — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). Status: candidate source change committed; exact-head runs in progress.
+
+#### Change
+
+Commit [af56179fba836229f9a4463bbcd82ef619cec0f8](https://github.com/LiberoNuvola/Immortal-Protocol/commit/af56179fba836229f9a4463bbcd82ef619cec0f8) changes only plutus/PrizeValidator.hs from blob a13eba943016af35a7fc39ac568a39d0b7a1be19 to 2455f8283d87ff74a94b1b8bca1d1f96d60ae8b2. It removes the Claim condition pdStatus datum /= Claimed, which is unreachable after the immediately preceding condition pdStatus datum == Revealed succeeds for a valid typed PrizeStatus. It does not change Claim economics, owner extraction, signatory membership, Reveal predicates, V3 or protocol constants. Nevertheless it changes compiled code and must be checked by fresh export and conformance before retaining as an optimization.
+
+#### Triggered exact-head Actions
+
+- [PRE-RICH Emulator Reveal Conformance #39725693094](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693094), exact source SHA af56179fba836229f9a4463bbcd82ef619cec0f8; was in canonical Plutus setup when inspected.
+- [IMMORTAL Haskell Semantic Conformance #39725693412](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693412), exact same source SHA; was in Haskell setup when inspected.
+- [IMMORTAL Cardano Integration Lab #39725693023](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725693023) was cancelled after the new push due to the workflow concurrency group. It provides no integration result for af56179f.
+
+For context, the immediately prior exact-head result on d6c9fd34d91933197c9d73e9caf3342b3d549623 was: parameterized PrizeValidator 16,153 B; canonical publication builder guard failed at 16,386 / 16,384 B (2 over), while diagnostic unsigned publication CBOR was 16,344 B under a local ceiling 100,000. The final Reveal spending CBOR remained unmeasured because the legacy diagnostic builder failed with “Blockfrost not set. Can't calculate ex units.” The redundant-guard removal is intended to gain margin; no new size result is claimed until af56179f is freshly exported and run.
+
+**Next action:** read exact-head run #39725693094 for fresh script payload and canonical publication guard; read #39725693412 for source-level conformance. Preserve the 16,384-byte limit and do not infer Claim semantic equivalence from a smaller script alone. Explicit Claim owner-signature positive/negative evidence remains open. No deployment, reference-script update or ledger submission was performed.
+
+**Current verdict:** exact size after the redundant-guard removal NOT YET MEASURED; Claim owner/signature equivalence NOT YET PROVEN; final Reveal spending CBOR NOT MEASURED; P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit **PARTIAL / OPEN**.
