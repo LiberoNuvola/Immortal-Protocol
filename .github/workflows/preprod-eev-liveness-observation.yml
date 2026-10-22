@@ -1,0 +1,42 @@
+name: PRE-RICH Preprod EEV — Read-only UTxO Liveness
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/preprod-eev-liveness-observation.mjs"
+      - ".github/workflows/preprod-eev-liveness-observation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: Observe historical EEV candidate without approval or transaction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact observation source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Verify observer syntax
+        run: node --check audit/cardano-integration/preprod-eev-liveness-observation.mjs
+
+      - name: Query exact Preprod out-reference read-only
+        env:
+          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+          EEV_OBSERVATION_PATH: audit/preprod-eev-observation/preprod-eev-liveness.json
+        run: node audit/cardano-integration/preprod-eev-liveness-observation.mjs
+
+      - name: Upload exact-ref observation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-eev-liveness-${{ github.sha }}
+          path: audit/preprod-eev-observation/preprod-eev-liveness.json
+          if-no-files-found: error
+          retention-days: 30
