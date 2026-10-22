@@ -2274,3 +2274,22 @@ Therefore this run does **not** show the independent publisher fix passed or fai
 No validator or protocol limit was changed. Do not infer publication size from the `InputsExhaustedError` path. Next use an isolated publisher UTxO funded above the library's required output minimum and fee (derived/reported from the exact builder/PParams, not guessed), then re-run the canonical publication and final Reveal-size diagnostic. Since the Haskell V2 Claim candidate is included in the current Integration Lab, avoid touching its triggering source/workflow until that run reaches the Claim step or concludes, unless a blocker requires it.
 
 **Current verdict:** current isolated-payer run: pre-build `InputsExhaustedError`, CBOR NOT PRODUCED; previous emulator run: both refs published, Haskell Reveal evaluator failed; final Reveal-spend CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**, overall audit **PARTIAL / OPEN**.
+
+
+### 10.61 Agent B — reconcile isolated publication wallets with the Pool-only probe run — 2026-10-22
+
+A source inspection after §10.60 found an intervening commit already present on the current test source: [218f4f32b802a2f969e71f77ab9e7ad3afc478a4](https://github.com/LiberoNuvola/Immortal-Protocol/commit/218f4f32b802a2f969e71f77ab9e7ad3afc478a4), “test(p2.8): isolate reference publication fee wallets”. This supersedes the simpler second-UTxO adjustment as the current intended fixture design. It:
+- seeds a dedicated 3 ADA emulator UTxO for a PrizeValidator publication wallet;
+- seeds a separate dedicated 3 ADA emulator UTxO for a B1PrizePool publication wallet;
+- uses independent publisher wallets, separate from the game wallet and reference-script holder;
+- selects those publisher wallets for the respective reference-script transactions, isolating near-limit publication fee/coin-selection from the game wallet.
+
+The previous exact run [#39726370402](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726370402) on SHA 5208318... confirmed both publications after the additional ADA-only game-wallet input, but stopped at Reveal's Spend[1] evaluator failure. It did NOT test the isolated-publisher-wallet revision.
+
+The later workflow/diagnostic commit [269240e0aa946136f6ad324785297f0ff286d50b](https://github.com/LiberoNuvola/Immortal-Protocol/commit/269240e0aa946136f6ad324785297f0ff286d50b) includes the publisher-wallet separation and adds the Pool-only evaluator probe step. Exact-head run [PRE-RICH Emulator Reveal #39727002870](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39727002870) is still IN_PROGRESS at Setup canonical Plutus CI at last inspection, with no new test/log evidence at the Reveal stage. Do not use it as evidence that the new wallet separation or Pool probe passed.
+
+#### Status and next action
+
+Historical handoff [SESSION-2026-09-22-7ed-HANDOFF.md](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/SESSION-2026-09-22-7ed-HANDOFF.md) already records a high-budget Pool-only probe as EVALUATOR_VALUE_FAILURE / NonConstrScrutinized at the B1PrizePool Value/valueOf path on its historical source snapshot. Current B1PrizePool source uses explicit AssocMap lookup inside assetAmount rather than the old valueOf call, so the historical root-cause label is supporting context only, not a current-source reproduction. The exact current Pool-only probe should establish whether the same evaluator issue persists on current compiled source; no production validator change is authorized by the historical note.
+
+**Current verdict:** current publisher-wallet separation and Pool-only probe run pending/stalled in setup; no new evaluation evidence; both reference publications passed the prior in-memory run; canonical Reveal Spend[1] evaluator blocker remains; final Reveal CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT PROVEN. P-03/P-04 remain INTEGRATION_BLOCKED, no real ledger transaction submitted, overall audit PARTIAL / OPEN.
