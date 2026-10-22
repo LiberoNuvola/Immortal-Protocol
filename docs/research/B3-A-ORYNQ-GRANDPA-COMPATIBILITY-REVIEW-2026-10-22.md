@@ -90,3 +90,34 @@ Do not treat storage inclusion as finality, or a valid runtime execution proof o
 - B3-C: OPEN — runtime/source correspondence and independently verified execution proof remain separate.
 - PR #35: keep draft.
 - No deployment, on-chain transaction, or production claim was made by this review.
+
+
+## 5. Direct source comparison — current Materios verifier (2026-10-22)
+
+Exact files inspected on `work/b3-materios-provenance-evidence`:
+- `poc/materios-grandpa/src/verifier.ts` (blob `b6831e4b9f52e244e98d8f02fb1c10f025da2728`)
+- `poc/materios-grandpa/src/authority.ts` (blob `b6aab2acb434490dc0809af92195bab1ca98d86c`)
+- `poc/materios-checkpoint/src/capture-finalized.ts` (blob `bd9bf935ca70e31b4d0e66c345bf3e55b4ae0250`)
+- `poc/materios-checkpoint/src/rpc.ts` (blob `d1edb50d02ff5ea8176e987644a2d3a8b1d188b9`)
+
+### Confirmed good properties
+
+- `verifyFinality` explicitly compares checkpoint `chainId` and `genesisHash` with the supplied trusted authority state, binds justification target hash/number to the checkpoint, checks signer uniqueness, signature validity, authority membership, weighted quorum, and optionally ancestry.
+- Authority transitions are intended to flow through `trustedAuthorityStateFromVerifiedTransition`, which checks the transition marker/hash and binds chain/genesis, source set id, and source authority-set identity.
+- Capture code explicitly labels RPC data and raw GRANDPA bytes as untrusted evidence; `grandpa_proveFinality` documentation correctly warns that the embedded justification may target a descendant and that the proof's requested block and unknown-header path must be independently bound.
+- The upstream equivocation test suite is substantially richer than a simple one-signature-per-voter model, including multiple signed precommits, forks, target-height relabelling and ancestry relationships.
+
+### Remaining trust-boundary issue to resolve before claiming permissionless bootstrap
+
+The current TypeScript `TrustedAuthorityState` is a structural interface. `validateAuthorityState` checks shape only; it does not establish provenance. The interface's `trust?: never` and comments about a verified-transition construction boundary are compile-time/API conventions, not a cryptographic proof that the initial state came from an authenticated Materios genesis/checkpoint. A caller can construct a structurally valid object literal unless all call sites and the deployment boundary enforce a separately authenticated bootstrap.
+
+This is not a finding that signature/quorum code is wrong. It is a finding that **the first trusted authority state is still the root-of-trust decision**. The transition function can preserve a valid trust chain after a verified transition, but cannot manufacture trust in its initial `current` state. Required follow-up:
+1. Locate and audit every production/test call site that creates `TrustedAuthorityState`.
+2. Define the authenticated bootstrap source for Materios genesis hash, initial GRANDPA set id, and authority list; bind all three together.
+3. Make the API boundary make unverified bootstrap construction explicit and impossible to confuse with verified state (for example, a runtime-checked opaque constructor/brand backed by verified bootstrap evidence, not just a TS interface).
+4. Add adversarial tests showing an arbitrary caller-supplied authority set cannot be promoted to trusted state merely by passing shape validation.
+5. Preserve chain-id/genesis mismatch tests, but do not treat those checks as proof that the expected identity itself was authentic.
+
+### Differential decision
+
+Do not port Orynq's Midnight set-length assumptions. Reuse its adversarial test concepts and compare semantics one by one. The immediate priority is bootstrap provenance and the boundary between `AuthoritySetEvidence`, `TrustedAuthorityState`, and verified transition results, before optimizing set-walk performance or declaring B3-A closed.
