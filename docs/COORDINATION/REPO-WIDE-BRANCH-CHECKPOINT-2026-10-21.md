@@ -2683,3 +2683,21 @@ The current readiness script now hashes the actual EV1–EV7 file bytes and requ
 - No branch was created; no wallet action, transaction, approval workflow, V3/Reveal semantic change, or normative decision occurred.
 
 **Status:** provenance mismatch concretely confirmed; fresh live evidence and governed re-approval remain outstanding. Overall audit remains **PARTIAL / OPEN**.
+
+
+## 10.19 — Materios GRANDPA bootstrap trust-boundary audit (2026-10-22)
+
+Direct comparison completed against the existing Materios GRANDPA verifier and Orynq's upstream adversarial test suite. Detailed evidence: [B3-A Orynq GRANDPA Compatibility Review](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/b3-materios-provenance-evidence/docs/research/B3-A-ORYNQ-GRANDPA-COMPATIBILITY-REVIEW-2026-10-22.md) (updated commit `bda13a9df8c94558b332279288ae4d8d59bf0ebc`).
+
+**Confirmed:** the verifier checks checkpoint chain ID/genesis against the supplied authority state, exact justification target, signatures, distinct signers, authority membership, weighted quorum, and optional ancestry. The capture client explicitly treats RPC output and raw finality bytes as untrusted transport evidence.
+
+**New blocker to close:** `TrustedAuthorityState` is currently a structural TypeScript interface; `validateAuthorityState` validates shape, not provenance. The transition function can carry forward an authenticated trust chain only if its initial `current` state was genuinely authenticated. The genesis hash + initial set id + authority list bootstrap must therefore be independently anchored and all creation call sites audited. A configured `chain_id` string or compile-time type is not sufficient evidence of chain identity.
+
+**Next actions (B3 branch):**
+1. Enumerate every creation/call site for `TrustedAuthorityState` and trace whether it can receive RPC/caller-supplied data.
+2. Specify and implement the authenticated Materios bootstrap boundary without changing consensus semantics.
+3. Add fail-closed tests for arbitrary/unverified initial authority state, cross-chain reused keys/set IDs, wrong genesis, stale checkpoint, and transition gaps.
+4. Differentially map Orynq tests to Materios tests; adapt only protocol-general cases, not Midnight's 300-block set-length assumptions.
+5. Run the relevant verifier test suite and record exact command, commit SHA, and output before changing status.
+
+**Status remains OPEN:** B3-A is not closed until bootstrap provenance and real Materios finality material are verified. B3-B exact storage inclusion and B3-C execution proof remain separate and open. No deployment/on-chain transaction; PR #35 remains draft; V3/Reveal semantics untouched.
