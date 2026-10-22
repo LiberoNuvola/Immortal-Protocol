@@ -29,6 +29,10 @@ import {
 import { Client, preprod } from '@evolution-sdk/evolution'
 import { PythLazerClient } from '@pythnetwork/pyth-lazer-sdk'
 import {
+  PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
+  validatePythPreprodPolicyId,
+} from './pythPreprodConfig.mts'
+import {
   getPythScriptHash,
   getPythState,
 } from '@pythnetwork/pyth-lazer-cardano-js'
@@ -96,7 +100,7 @@ async function writeEvidence(evidence: Record<string, unknown>): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const policyId = validHex(required('PYTH_CARDANO_POLICY_ID'), 56, 'PYTH_CARDANO_POLICY_ID')
+  const policyId = validatePythPreprodPolicyId(required('PYTH_CARDANO_POLICY_ID'))
   const lazerToken = required('PYTH_LAZER_TOKEN')
   const readClient = Client.make(preprod).withKoios({
     baseUrl: 'https://preprod.koios.rest/api/v1',
@@ -109,8 +113,15 @@ async function main(): Promise<void> {
   const common = {
     schema: 'immortal-pyth-native-ledger-probe-v1',
     network: 'cardano-preprod',
-    probe: 'Pyth Lazer ADA/USD signed-update consumer, feed ID 16',
+    probe: 'Pyth Pro/Lazer ADA/USD signed-update consumer, feed ID 16',
+    pythProduct: 'Pyth Pro (formerly Pyth Lazer); not Pyth Core',
     pythPolicyId: policyId,
+    pythPolicyIdSource: PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
+    pythPolicyIdPinnedToPublishedPreprodDeployment: true,
+    priceFeedId: FEED_ID_ADA_USD,
+    priceFeedPair: 'ADA/USD',
+    quoteCurrency: 'USD',
+    usdmConversion: 'NOT_APPLIED',
     pythStateUnit: stateUnit,
     pythStateResolvedFrom: 'Pyth SDK via Koios',
     pythWithdrawalScriptHash: pythWithdrawScriptHash,
