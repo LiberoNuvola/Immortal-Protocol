@@ -21,17 +21,20 @@ const validator = { type: 'PlutusV2', script: artifact.cborHex }
 const treasuryAddress = lucid.utils.validatorToAddress(validator)
 const treasuryScriptHash = lucid.utils.validatorToScriptHash(validator)
 
-const response = await fetch(`${KOIOS}/address_info`, {
+const response = await fetch(`${KOIOS}/address_utxos`, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ _addresses: [treasuryAddress] }),
 })
-if (!response.ok) throw new Error(`KOIOS_ADDRESS_INFO_HTTP_${response.status}`)
+if (!response.ok) throw new Error(`KOIOS_ADDRESS_UTXOS_HTTP_${response.status}`)
 const rows = await response.json()
-const info = Array.isArray(rows) ? rows.find((r) => r?.address === treasuryAddress) : undefined
-if (!info) throw new Error('TREASURY_ADDRESS_NOT_RETURNED_BY_KOIOS')
+if (!Array.isArray(rows)) throw new Error('KOIOS_ADDRESS_UTXOS_INVALID_RESPONSE')
+const addressRows = rows.filter((row) => row?.address === treasuryAddress)
+if (addressRows.length !== rows.length) {
+  throw new Error('KOIOS_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS')
+}
 
-const utxos = (info.utxo_set ?? []).map((u) => {
+const utxos = addressRows.map((u) => {
   const assets = Object.fromEntries((u.asset_list ?? []).map((a) => [
     String(a.policy_id) + String(a.asset_name ?? ''),
     String(a.quantity),
@@ -60,7 +63,7 @@ const observation = {
   treasuryScriptHash,
   treasuryArtifactPath: ARTIFACT_PATH,
   treasuryArtifactSha256: createHash('sha256').update(artifactText).digest('hex'),
-  source: { provider: 'Koios', endpoint: 'POST /address_info', responseAddressMatched: true },
+  source: { provider: 'Koios', endpoint: 'POST /address_utxos', responseAddressMatched: addressRows.every((u) => u.address === treasuryAddress), returnedUtxoRows: rows.length },
   assetIdentity: {
     tADA: 'native lovelace (testnet ADA; 1000000 lovelace per ADA)',
     tUSDM: { policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX, unit: TUSDM_UNIT },
