@@ -1213,7 +1213,7 @@ async function main() {
         );
 
       const budgetOverrun =
-        /execution went over budget|went over budget|Mem -\\d+|CPU -\\d+/i.test(
+        /execution went over budget|went over budget|Mem -\d+|CPU -\d+/i.test(
           message,
         );
 
