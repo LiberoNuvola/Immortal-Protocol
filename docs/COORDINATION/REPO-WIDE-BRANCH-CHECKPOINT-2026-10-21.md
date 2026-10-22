@@ -1467,3 +1467,42 @@ Existing source facts at this checkpoint: `src/config.ts` blob `37c75e237e4c47ab
 
 **Boundary:** metadata acquisition may proceed immediately. No conversion option, price parity, token identity, oracle authorization, freshness threshold, or production binding is approved by this dispatch. No protocol source, workflow, branch topology, deployment, V3/Reveal semantics, or ledger state is changed by this record. Overall audit remains **PARTIAL / OPEN**.
 
+### 10.43 EEV asset identity and Pyth source facts — 2026-10-22
+
+This is a source-evidence correction to the interpretation of the historical EEV approval artifact. It does not change the artifact or revoke/alter on-chain state. It narrows what that artifact proves.
+
+#### Exact asset in historical EEV artifact
+
+GitHub Actions run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) emitted artifact `immortal-preprod-eev-approved`, artifact ID `12324421376`, SHA-256 `d219db29890d55e3a63dd9a7ff3b0f04ec53e710a7e77688c8a48610c06d094c`. The artifact's `preprod-direct-usdm-source-set.json` and deployment/qualification manifests state:
+
+- Network: `cardano-preprod`.
+- Candidate source UTxO: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`, at `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`.
+- Asset unit in the file: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+- Decoded native asset identity: policy ID `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`; asset-name hex `0014df10745553444d`; CIP-68 label 333 followed by `tUSDM`.
+- Recorded physical quantity `1000000000` atomic units; the artifact assumes six ledger decimals and derives `100000` IMMORTAL USDM sub-units (1,000 accounting units at 100 sub-units per unit).
+- Observation time `2026-10-21T05:57:26.613Z`, chain-tip slot `136879045`; the artifact's own freshness model is `LIVE_UTXO_REVALIDATION`.
+
+The exact unit matches the preprod `tUSDM` identity published in the x402 Cardano scheme specification. That specification separately identifies mainnet USDM as policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`, and explicitly states that both policy ID and asset name differ on Preprod; it names the Preprod suffix as `tUSDM` ([x402 Cardano scheme, lines 318–320](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_cardano.md#L318-L320)). Cardano's CIP-68 description identifies label 333 as the user-facing fungible-token form, with label 100 used for its reference token ([Cardano CIP-68 glossary](https://cardano.org/glossary/cip-68/)).
+
+**Classification:** the historical artifact identifies and quantifies the Preprod `tUSDM` test asset. It does **not**, by itself, establish that this test token is normatively admitted as the canonical settlement asset for the PRE-RICH accounting unit, nor does it prove equivalence to mainnet USDM. A network-specific Preprod test-asset mapping requires explicit source-of-truth approval. If the deployment is intended to prove use of issuer USDM rather than a test surrogate, this artifact is the wrong asset identity for that claim.
+
+The source-set observation is from 21 October, not a current spend-status check. Its stated `LIVE_UTXO_REVALIDATION` rule still requires a fresh lookup of the exact out-reference immediately before Issue admission and transaction binding. Do not reuse its approval as current live-UTxO evidence.
+
+#### Pyth feed identity and verification mechanics
+
+Official Pyth/Cardano material identifies numeric feed ID `16` in the Pyth Pro/Lazer integration as `ADA/USD`, with USD quote and exponent `-8`; the Pyth Terminal catalog reports three minimum publishers and a `fixed_rate@200ms` minimum channel ([Pyth Terminal ADA/USD feed](https://app.pyth.com/explore/Crypto.ADA%2FUSD); [Cardano Developer Portal Pyth integration](https://developers.cardano.org/docs/build/integrate/oracles/pyth/)). Pyth Core and Pyth Pro feed-ID catalogues are distinct, so an ID must always be recorded together with its product/type and network.
+
+The Cardano integration guide describes fetching a signed update off-chain and verifying it on-chain via the Pyth withdrawal-script path. It also warns that signature verification alone does not enforce freshness; the application/validator must check the update timestamp if a freshness window is required. This is technical behavior, not authorization of feed 16 for USDM valuation and not a governance-approved threshold.
+
+The historical EEV artifact's separate legacy Oracle State record has empty `assetPolicyHex`/`assetNameHex` and null `timestampMs`, with `authorityKind=DEPLOYMENT_WALLET_SIGNED`; the deployment manifest labels it a compatibility oracle for the existing fixed Preprod ADA settlement path. It is not proof of a Pyth-signed ADA/USD or ADA/USDM quote and does not bind a quote to MintPolicy.
+
+#### Corrected dispatch
+
+1. **W1-B asset identity:** technical Preprod candidate is now identified as `tUSDM`; determine/approve whether this exact test asset is the canonical network-specific settlement unit for Preprod. Mainnet USDM remains a distinct asset identity.
+2. **W1-B Pyth inventory:** feed 16 is established as ADA/USD under Pyth Pro/Lazer, not ADA/USDM. Continue gathering the deployed Pyth State identity, exact signed-update format/path and relevant transaction/evidence references; no quote is qualified by this catalog evidence.
+3. **W1-A D-10/D-11/D-13:** the policy question is now concrete: whether and under what scope a Preprod `tUSDM` surrogate represents the protocol accounting unit, and what source-qualified relation admits non-USDM asset valuation. Decision authority must be explicit; DEC-3 remains CLOSED without implying USD parity.
+4. **W1-C/W1-D:** remain blocked until the preceding normative and source-qualification gates close. Do not route feed 16 into MintPolicy as a shortcut.
+5. **W2 first Issue:** keep blocked until the exact Pool UTxO is revalidated live, the accepted Preprod asset identity is approved, and the admission/transaction/ledger binding is demonstrated.
+
+**Status correction:** historical EEV qualification/approval exists for its exact recorded candidate and evidence digest; current live revalidation is **NOT ESTABLISHED by that artifact alone**. Qualification of the test asset as the normative Preprod settlement unit is **OPEN**. Production Pyth→MintPolicy binding is **BLOCKED**. No code, workflow, branch topology, V3/Reveal semantics, deployment or ledger transaction was modified. Audit remains **PARTIAL / OPEN**.
+
