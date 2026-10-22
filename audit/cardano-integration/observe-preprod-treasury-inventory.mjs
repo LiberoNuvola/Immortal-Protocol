@@ -128,6 +128,40 @@ const preHolders = preHolderRows.map((holder) => {
   }
 })
 const preHolderAddresses = new Set(preHolders.map((holder) => holder.address))
+// Discover script-controlled addresses among current canonical tUSDM holders.
+const holderAddressInfo = []
+for (let offset = 0; offset < tUSDMHolders.length; offset += 40) {
+  const batch = tUSDMHolders.slice(offset, offset + 40).map((holder) => holder.address)
+  const infoResponse = await fetch(`${KOIOS}/address_info`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ _addresses: batch }),
+  })
+  if (!infoResponse.ok) throw new Error(`KOIOS_HOLDER_ADDRESS_INFO_HTTP_${infoResponse.status}`)
+  const infoRows = await infoResponse.json()
+  if (!Array.isArray(infoRows)) throw new Error('KOIOS_HOLDER_ADDRESS_INFO_INVALID_RESPONSE')
+  holderAddressInfo.push(...infoRows)
+}
+const tUSDMScriptAddressHolders = holderAddressInfo
+  .filter((info) => info?.script_address === true)
+  .map((info) => ({
+    address: String(info.address),
+    balanceLovelace: String(info.balance ?? '0'),
+    tUSDMAtomic: tUSDMHolders.find((holder) => holder.address === info.address)?.quantityAtomic ?? '0',
+    utxoCount: Array.isArray(info.utxo_set) ? info.utxo_set.length : null,
+    utxos: (info.utxo_set ?? []).map((u) => ({
+      ref: String(u.tx_hash) + '#' + String(u.tx_index),
+      lovelace: String(u.value),
+      datumHash: u.datum_hash == null ? null : String(u.datum_hash),
+      inlineDatumPresent: u.inline_datum != null,
+      assets: (u.asset_list ?? []).map((a) => ({
+        policyId: String(a.policy_id),
+        assetNameHex: String(a.asset_name ?? ''),
+        quantity: String(a.quantity),
+      })),
+    })),
+  }))
+
 const tUSDMAndPREHolderIntersection = tUSDMHolders
   .filter((holder) => preHolderAddresses.has(holder.address))
   .map((holder) => ({
@@ -190,6 +224,15 @@ const observation = {
     tUSDMAtomic: historicalTotalTusdm.toString(),
     tUSDM: formatSixDecimals(historicalTotalTusdm),
     utxos: historicalUtxos,
+  },
+  tUSDMScriptAddressHolderDiscovery: {
+    provider: 'Koios',
+    endpoint: 'POST /address_info',
+    searchedHolderCount: tUSDMHolders.length,
+    returnedAddressInfoCount: holderAddressInfo.length,
+    scriptAddressHolderCount: tUSDMScriptAddressHolders.length,
+    candidates: tUSDMScriptAddressHolders,
+    interpretation: 'Candidate discovery only. Script-address custody does not identify the configured Treasury without exact script hash/address binding.',
   },
   PREHolderDiscovery: {
     provider: 'Koios',
