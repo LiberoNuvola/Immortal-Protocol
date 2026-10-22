@@ -1404,3 +1404,17 @@ Read-only source inventory; this is not a quote qualification or economic decisi
 - `preprod-real-reveal.mjs` blob `996e8615af2902f2d254fb99a7b4a620b6e74fd4`: uses hardcoded fixture values and a zero-filled oracle-policy placeholder; diagnostic harness only.
 
 **Dispatch:** obtain the exact USDM policy ID/name from an authenticated target-network observation; confirm token units; identify the exact Pyth feed type/ID and signed-update verification path; record freshness and failure rules. Do not infer asset identity from ticker or from PRE's policy. Do not treat ADA/USD as ADA/USDM. No conversion option is selected, and no production implementation is authorized. B3/Materios remains an independent active lane. Audit remains **PARTIAL / OPEN**.
+
+
+### 10.41 Live PR refresh — 2026-10-22
+
+The branch-name query returned 25 names; the continuation query at cursor `MjU` returned zero more and `cursor=null`. This closes name pagination only, not current-tree or semantic review.
+
+- **PR #19:** OPEN, non-draft, non-mergeable; head `d7c115e93cf570d26ec7cd5d77524e866e7ddf08`, base `8c6873e1d50115659727c82c294426b9a946f1fa`, 413 files (+117,644/−2,204). HOLD; do not promote as a whole.
+- **PR #23:** OPEN/DRAFT, mergeable; head `9ba77f967fa8f40395bef8c6cee77bf449d94dad`, base `8c6873e...`, 27 files. Keep draft; UI diff has provider/runtime/V3-adjacent scope.
+- **PR #28:** OPEN, mergeable; head `b8530c26ab40531f7f8b7965dc6f74bd05ec7850`, base `aafad1d24ff678253a045e27114c7e544b2060c3`, 3 files. Hold for exact security-sensitive diff review.
+- **PR #35:** OPEN/DRAFT, mergeable; head `7bca8d91b65d7af1261d8b7cc4f28f496a73fcba`, base `97b09a38742098f17a61eb07734c401aeedccc06`, 14 files. Keep draft pending governance-control and V3 boundary review.
+
+Live compare says current `main` is `97b09a38742098f17a61eb07734c401aeedccc06`; PR #19/#23 bases are 9 commits behind, PR #28 base is 5 behind, and PR #35 base matches. Current green is 32 commits ahead / 0 behind protocol-source anchor `3373b3044b9c251da1ec217d128f5dcb3c87c894`; the compare response lists only 10 coordination/evidence paths. Keep that protocol-source anchor for existing evidence.
+
+No PR or branch state changed. Audit remains **PARTIAL / OPEN**.
