@@ -7,12 +7,16 @@ on:
     paths:
       - "poc/aiken-pyth-ada-usd/**"
       - "scripts/testPythSignedUpdatePreprod.mts"
+      - "scripts/pythPreprodConfig.mts"
+      - "scripts/pythPreprodConfig.test.mts"
       - ".github/workflows/pyth-ada-usd-probe.yml"
       - ".github/workflows/pyth-native-ledger-probe.yml"
   pull_request:
     paths:
       - "poc/aiken-pyth-ada-usd/**"
       - "scripts/testPythSignedUpdatePreprod.mts"
+      - "scripts/pythPreprodConfig.mts"
+      - "scripts/pythPreprodConfig.test.mts"
       - ".github/workflows/pyth-ada-usd-probe.yml"
       - ".github/workflows/pyth-native-ledger-probe.yml"
   workflow_dispatch:
@@ -44,6 +48,9 @@ jobs:
             @evolution-sdk/evolution@0.5.9 \
             @pythnetwork/pyth-lazer-cardano-js@0.1.0 \
             @pythnetwork/pyth-lazer-sdk@5.2.0
+
+      - name: Verify pinned official Pyth Pro Preprod policy ID
+        run: node --import=tsx ./scripts/pythPreprodConfig.test.mts
 
       - name: Type-check runner without requiring secrets or submitting transactions
         run: |
