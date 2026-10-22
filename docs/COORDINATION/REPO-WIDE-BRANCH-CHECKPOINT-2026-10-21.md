@@ -1641,3 +1641,34 @@ Focused review of `scripts/testPythSignedUpdatePreprod.mts` blob `fdfb24b90bba73
 - **C — first:** select a materially different, identified Materios proof source before any repeated probe; document preflight evidence for B3-A and B3-B separately. In parallel, audit JEV status without claiming unattended autonomy until the subsequent scheduled cycle completes.
 
 **Baseline at dispatch time:** checkpoint source blob before this addition = `6042a41a4bc203caa0a14b35bae6b738676bf364`. Current high-level states remain as previously recorded: first Issue BLOCKED; Pyth native-ledger positive and negative NOT RUN; MintPolicy binding NOT IMPLEMENTED; Reveal/P2.8 INTEGRATION-BLOCKED; Materios B3 OPEN/BLOCKED; JEV autonomy INCONCLUSIVE; universal/paper claims OPEN. This section assigns ownership and reporting, not completion. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.47 Agent B — diagnostic-only CBOR capture for Reveal size probe — 2026-10-22
+
+**Owner:** Agent B (P-03 / P-04).  
+**Status:** IN_PROGRESS; source change committed, exact-head Actions still running when this note was written.
+
+#### Baseline evidence and diagnosis
+
+- PRE-RICH Emulator Reveal Conformance run [#39646783971](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646783971), source SHA 1300b79d7460f2abcd79767d5d16dd2564aad064, failed its canonical size gate with maxTxSize=16384 and Found: 16782: 398 bytes over the ledger bound. This is the actual previous measured canonical emulator result, not a current-head PASS.
+- The same run's diagnostic size probe enlarged its local maxTxSize to 100,000, then failed in local script evaluation before CBOR measurement: “Spend[0] attempted to instantiate a non-polymorphic term”. This evaluator/CEK error is separate from size acceptance and gave no final serialized witness census.
+- Static source review showed audit/cardano-integration/reveal-ledger-trace.ts already emits final-CBOR reference-input and Plutus-witness counts through revealDiag, but the latest Integration Lab [#39646784077](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39646784077) was cancelled before the real economic Reveal/P2.8 steps. The app/Preprod runner still lacks the same final-CBOR assertion; do not infer reference-witness conversion from readFrom(...) source syntax alone.
+- Acceptance contract remains [P2.8 Reveal remediation v0.1](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/audits/P2.8-REVEAL-REFERENCE-SCRIPT-REMEDIATION-v0.1.md): actual transaction <= 16,384 bytes; no inline fallback; exact context must subsequently enter native Cardano-ledger evaluation.
+
+#### Narrow diagnostic change
+
+Commit [2bc9ac350f36f9e721d43b772231966d4ab4a8a6](https://github.com/LiberoNuvola/Immortal-Protocol/commit/2bc9ac350f36f9e721d43b772231966d4ab4a8a6) changes only src/__tests__/immortal-cardano-reveal-emulator-b1.mjs (new blob 73de3bbe06cea49fa69875b8502c935915c89966, previous blob d9112597f1c0d534604df238738e043522cc0670):
+
+1. When and only when P2_8_B1_SIZE_PROBE=1, the canonical Reveal builder calls complete({ localUPLCEval: false }) so the diagnostic can attempt serialization without the independent local CEK evaluation. It exits after logging and before signing/submission; this is not acceptance or ledger evidence.
+2. The size probe now reports serialized byte count, body/witness-set sizes, spending inputs, reference-input outrefs, counts and CBOR byte sizes for embedded Plutus V1/V2/V3 witnesses, and the script/datum/redeemer component diagnostics. It no longer asserts without inspection that reference scripts are absent from the witness set.
+
+No validator, V3 carrier, protocol parameter, economic rule, production transaction builder, workflow definition or ledger state was changed. The patch is a measurement aid, not the fix for the 398-byte overrun.
+
+#### Exact-head validation in progress
+
+- [PRE-RICH Emulator Reveal Conformance #960 / run 39722987266](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722987266), source SHA 2bc9ac350f36f9e721d43b772231966d4ab4a8a6; at update time the job was still in progress before the fresh Plutus build and Reveal steps.
+- [IMMORTAL Cardano Integration Lab #2033 / run 39722987352](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722987352), same source SHA; at update time dependency installation was still in progress. Its later stages must still be classified individually; they are not implied to pass by workflow startup.
+
+**Next action:** retrieve the exact-head emulator logs. First check that canonical acceptance still reports the real protocol bound; separately check whether the diagnostic logs final CBOR and the actual script/reference-input census. If serialization still cannot be obtained, record the specific failure and do not dispatch an identical rerun. If CBOR is obtained, decide the next builder correction only after its embeddedScriptCount and reference-input set identify what is actually serialized.
+
+**Current status:** P-03 INTEGRATION_BLOCKED; P-04 INTEGRATION_BLOCKED; no transaction submitted by this Agent B step. The result expected from this change is improved diagnosis only, not closure.
