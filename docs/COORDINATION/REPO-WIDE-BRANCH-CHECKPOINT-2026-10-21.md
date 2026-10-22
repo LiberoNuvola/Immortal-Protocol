@@ -1933,3 +1933,41 @@ This is an artifact/source drift signal that requires reconciliation: the size g
 4. Keep P-03/P-04 INTEGRATION_BLOCKED, the 16,384-byte ceiling unchanged and the review focused on the exact current source/build. No deploy, real transaction, merge, or validator semantics change was performed.
 
 Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.53 Agent B — Claim owner/signatory traversal reduction candidate — 2026-10-22
+
+**Status:** source candidate committed; exact-head compilation/conformance pending. This is not a closed semantic review.
+
+#### Why this candidate was selected
+
+The current fresh build makes the shared PrizeValidator factory 16,559 bytes and its parameterized script 16,688 bytes, beyond the publication ceiling. The current Claim implementation derives the ticket owner from typed TxInfo for the payout address, but also traverses raw TxInfo input/value maps independently via rawTicketOwnerHash/rawOwnerSigned for owner-signature membership. Git history shows the raw owner/signature path had been refactored before; txSignedBy was later avoided because Yaci/Scalus Plutus V2 evaluation reported a raw Data/ByteString mismatch at signatory membership.
+
+#### Narrow source change
+
+Commit [d6c9fd34d91933197c9d73e9caf3342b3d549623](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d6c9fd34d91933197c9d73e9caf3342b3d549623) changes only plutus/PrizeValidator.hs (blob a13eba943016af35a7fc39ac568a39d0b7a1be19). It removes the duplicate raw-input owner/value-map parser and changes the Claim owner signature expression to:
+- derive maybeOwner once from typed TxInfo using the existing ticketOwnerPkh lookup (already the input to claimantValue);
+- decode signatories from raw BuiltinData, preserving the raw-Data equality route rather than using txSignedBy;
+- check whether toBuiltinData maybeOwner is a member of those raw signatories.
+
+The intent is to preserve the on-ledger predicate “the current ticket owner is a transaction signer” while eliminating a second parser over the raw input list and Value maps. The function/validator bytecode and validator hash necessarily change if the build differs. This source refactor is a candidate only: exact equivalence for all accepted and rejected Claim contexts has NOT YET BEEN ESTABLISHED. It must not be treated as a deployment-ready or semantically closed change. No V3 carrier or Reveal predicate was edited; no live reference script or ledger state was changed.
+
+#### Exact-head validations triggered
+
+The following Actions were automatically created for exact source SHA d6c9fd34d91933197c9d73e9caf3342b3d549623:
+
+- [PRE-RICH Emulator Reveal Conformance #39725072071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072071)
+- [IMMORTAL Cardano Integration Lab #39725072011](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072011)
+- [IMMORTAL Haskell Semantic Conformance #39725072040](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39725072040)
+
+At checkpoint append time these were still in progress/pending. The previous generic passes do not validate this source change. Await exact-head results and inspect fresh generated artifact hashes and parameterized PrizeValidator bytes.
+
+#### Acceptance before treating the candidate as usable
+
+1. Exact-head Plutus build and semantic conformance pass.
+2. Fresh compiled PrizeValidator factory and parameterized bytes are smaller enough that the canonical single-reference-script publication transaction actually fits within maxTxSize 16,384, with a reasonable recorded margin. A smaller file alone is not sufficient.
+3. Add or run explicit Claim owner/signature positive and negative context cases proving the same owner/payout/signatory behavior for the exact source. A generic compile/pass or Reveal fixture does not establish Claim equivalence.
+4. Re-run canonical Reveal without local parameter changes. Only then can the workflow progress past reference publication; final Reveal CBOR and native P2.8 remain separate gates.
+5. Since the validator script hash changes, do not promote it or update a deployed reference-script UTxO without separate identity reconciliation and a reviewed, authorized deployment procedure.
+
+**Current verdict:** candidate in validation; fresh build size delta NOT YET AVAILABLE; Claim equivalence NOT YET PROVEN; canonical publication and final Reveal size NOT YET CLOSED; P-03/P-04 remain **INTEGRATION_BLOCKED**. Overall audit remains **PARTIAL / OPEN**.
