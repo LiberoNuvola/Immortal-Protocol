@@ -228,3 +228,16 @@ A further source triangulation was performed against the public Materios reposit
 - The hosted raw JSON can be viewed through a text extraction service, but that representation is truncated/normalized and therefore unsuitable for hashing exact bytes or reconstructing the genesis state. No exact download or SHA-256 verification has been achieved.
 
 **Decision:** keep the bootstrap blocker OPEN. Do not infer the missing checksum, hash a transformed text extract, or treat a same-project GitHub file as equivalent. Next operational path is to obtain the exact hosted bytes through a byte-preserving download (e.g. curl on an operator/CI runner), verify the full manifest entry, and archive the raw bytes + computed SHA-256 + provenance. Then independently rebuild genesis with a pinned Substrate SDK and extract GRANDPA genesis storage. No test suite was run, no authority set/set ID was authenticated, and no production bootstrap was implemented in this follow-up.
+
+
+### 2026-10-22 — Byte-preserving acquisition path added (not yet executed)
+
+Added `scripts/b3/fetch-materios-genesis-artifacts.sh` and `docs/research/B3-A-MATERIOS-GENESIS-ARTIFACT-ACQUISITION.md` on `work/b3-materios-provenance-evidence`.
+
+- Script commit: `192389b5b9dd955b7a8b015ec8fecbeae1d9e7c1` (preserves downloaded manifest/spec even on verification failure).
+- Acquisition instructions commit: `8babab0577bb8a2c0c2ec7a81f6723c0d04bc100`.
+- Script uses curl to download the exact hosted `SHA256SUMS` and raw JSON, requires one exact filename entry with a full SHA-256 digest, computes the digest over downloaded bytes and fails closed on mismatch. It records URL, UTC timestamp, byte count and both digest values on success.
+- This is an operational path prepared for an ordinary HTTPS-capable runner. **It has not been executed in this environment**, and therefore no digest, raw artifact, genesis reconstruction, authority list, or set ID has been verified.
+- The publisher manifest and artifact share a host; a match is integrity relative to that manifest, not independent authenticity. Continue to require a separate reviewed/pinned genesis identity and pinned SDK reconstruction before closing bootstrap.
+
+Status stays OPEN/BLOCKER; no tests or deployment; V3/Reveal untouched.
