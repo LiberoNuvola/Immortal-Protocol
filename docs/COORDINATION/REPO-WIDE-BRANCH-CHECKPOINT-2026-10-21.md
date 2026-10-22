@@ -1506,3 +1506,35 @@ The historical EEV artifact's separate legacy Oracle State record has empty `ass
 
 **Status correction:** historical EEV qualification/approval exists for its exact recorded candidate and evidence digest; current live revalidation is **NOT ESTABLISHED by that artifact alone**. Qualification of the test asset as the normative Preprod settlement unit is **OPEN**. Production Pyth→MintPolicy binding is **BLOCKED**. No code, workflow, branch topology, V3/Reveal semantics, deployment or ledger transaction was modified. Audit remains **PARTIAL / OPEN**.
 
+### 10.44 Exact Pyth Pro Preprod identity and current probe boundary — 2026-10-22
+
+Read-only source review of the exact current Green source blobs. This is not signed-update ledger acceptance and does not bind Pyth into production Issue settlement.
+
+#### Pyth Pro deployment identity
+
+The official Pyth Pro (Lazer) contract-address page lists Cardano Preprod as `c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45`; its linked explorer target is explicitly a Cardano minting-policy page: [Pyth Pro contract addresses](https://docs.pyth.network/price-feeds/pro/contract-addresses#cardano), [Preprod policy explorer](https://preprod.cexplorer.io/policy/c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45). This is the source-qualified Pyth Pro candidate policy ID for the Preprod probe, not proof that a transaction used it or that a live State UTxO was successfully resolved in this pass. Pyth Core is a separate product/deployment; do not substitute its policy.
+
+#### Exact source review and bounded existing CI evidence
+
+- `poc/aiken-pyth-ada-usd/lib/immortal/ada_usd_probe.ak`, blob `9f314ddcde19fb7a795dc282bb7a076791a685a9`: isolated consumer selects exactly one feed ID 16 (ADA/USD), checks positive price and both update/feed-update timestamps against the transaction validity upper bound using a one-hour constant, and preserves raw price/exponent. These are source checks and synthetic unit tests; the module is explicitly a probe, not the deployed quote carrier or production MintPolicy.
+- `poc/aiken-pyth-ada-usd/validators/ada_usd_probe.ak`, blob `e2cd17e520917162e5540f3669c1ed4121f579a6`: isolated V3 consumer matches its datum to the tuple extracted from the signed update; no PRE-RICH issue path is called.
+- `plutus/PythQuoteCarrierBinding.hs`, blob `669b99a0e4564504012bda8402b706d0ae7a9a9b`: candidate Haskell helper checks unique carrier input/output, singleton conservation, zero mint/burn, datum decodability, and address/Value continuity; it extracts the continuation tuple. The helper itself does **not** verify the Pyth signature or independently enforce the feed ID/freshness rule; it relies on the exact carrier validator also executing in the same transaction. It is not currently called by MintPolicy.
+- `plutus/MintPolicy.hs`, blob `0d59fc05b4c11873984fffd10014bd46d8470509`, and `plutus/Economic.hs`, blob `e50366a65ce34e9433d5ff179dfc03a35a24c1a1`: scoped call-path review confirms `atomicTreasuryPaymentValid` still calls `Economic.totalUsdmValue`, whose `oraclePriceFor` uses legacy Oracle State reference inputs. There is no Pyth quote-carrier → production Treasury-equality binding.
+- `.github/workflows/pyth-ada-usd-probe.yml`, blob `2d310e43052261436f9342ce46dc024e0696b0e3`, and run [#39659905806](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806) at source SHA `2106daa5f4c93c20cbe2479ae9fa08db0d8f59f6`: both jobs succeeded for synthetic tests/build and type-checking the guarded runner. Artifact [#12374150310](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806) contains source/compile evidence. This run did not execute `pyth-native-ledger-probe.yml`, did not fetch a genuine signed update, and did not submit a transaction.
+- `.github/workflows/pyth-native-ledger-probe.yml`, blob `5c0a4264ab48878a54b21f18a1188e4126a3a37d`: explicit manual inputs are `pyth_policy_id` and `submit_preprod`; submission defaults to false. The runner `scripts/testPythSignedUpdatePreprod.mts`, blob `fdfb24b90bba739c17bb4afcd4c6f51c0cc7406a`, has a no-submit mode that resolves the configured Pyth State and fetches an authentic Lazer update, producing `PREPARED_NOT_SUBMITTED`. Setting submission true would use the dedicated test mnemonic, fund a probe output and submit test transactions; it is a distinct explicit action and remains unperformed.
+
+#### Fresh UTxO check — limitation, not a pass
+
+The historical EEV artifact remains dated 2026-10-21 and cannot prove current out-reference status. I attempted a current lookup of `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` through the available explorer/API interfaces, but this session did not expose a successful live Koios `POST /address_info` or `POST /utxo_info` response; the container also has no direct network/DNS access. Therefore the current UTxO is **NOT VERIFIED** here. Do not mark the source spent or unspent by inference.
+
+The existing source-set runner `audit/cardano-integration/preprod-direct-usdm-source-set.mjs`, blob `9cf28d31bf72e0aea6c077538e97e7399ed0d04b`, already performs the correct exact-ref check via Koios, checks the pool singleton and configured asset unit, captures a fresh tip/time and fail-closes unless the exact UTxO is the single live row. The existing EEV approval workflow `.github/workflows/pre-rich-b1-eev-approval.yml`, blob `a9d9efe08cf34ac5c67db29dc78088f60c44ebee`, runs observation, qualification and then creates a new `DEPLOYMENT_APPROVED` artifact under the `PREPROD-EEV-APPROVAL` environment. It is an approval workflow, not merely a read-only query; do not rerun it as a substitute for a separately scoped freshness observation or without the intended approval action.
+
+#### Dispatch
+
+1. Use `c7d51d897fdfceb7682f4a1a9ef428a027ec0582cadee158429f7e45` only as the documented Pyth Pro Preprod policy candidate for the isolated probe. First use manual native-ledger workflow with `submit_preprod=false` to obtain actual Pyth State resolution + genuine signed-update digest, not as a ledger proof.
+2. If and when explicitly authorized, run the same isolated probe with `submit_preprod=true` and the dedicated test wallet to prove native-ledger signature acceptance and tampered-update rejection. This demonstrates only the Pyth probe, not PRE-RICH MintPolicy binding.
+3. Independently obtain fresh EEV source observation using the exact qualified B1 Pool and deployment-approved `tUSDM` unit. Reconcile asset-policy approval before treating `tUSDM` as the accounting settlement unit. Do not reuse the prior snapshot.
+4. After normative D-10/D-11 authorization, implement and test the exact carrier-to-MintPolicy equality binding. Until then, no production conversion or MintPolicy change is authorized.
+
+**Status:** Pyth signed-update Preprod acceptance **NOT RUN / OPEN**; Haskell carrier → MintPolicy binding **NOT IMPLEMENTED**; current EEV UTxO liveness **NOT VERIFIED IN THIS PASS**; first Issue **BLOCKED**. No code, workflow, branch topology, wallet action, deployment, V3/Reveal semantics or ledger transaction was modified. Audit remains **PARTIAL / OPEN**.
+
