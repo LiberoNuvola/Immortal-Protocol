@@ -518,6 +518,16 @@ async function main() {
               1n,
           },
         },
+        // Keep a separate ADA-only UTxO so the second reference-script
+        // publication remains fundable if this legacy Emulator/Lucid path
+        // consumes the setup change UTxO on the first publication. This is
+        // test-fixture liquidity only; no protocol semantics are changed.
+        {
+          address: walletAddress,
+          assets: {
+            lovelace: 100_000_000n,
+          },
+        },
       ],
       emulatorProtocolParameters,
     );
