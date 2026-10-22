@@ -1718,3 +1718,34 @@ Do not run `.github/workflows/pre-rich-b1-eev-approval.yml` as if it were a read
 5. Keep B2 control, expiry binding, quote-to-MintPolicy binding and confirmed first Issue as separate acceptance gates.
 
 No USDM/USD parity, conversion, oracle authorization, expiry rule, code promotion, workflow dispatch, wallet action, ledger submission, deployment, V3/Reveal change or ledger-state change is authorized by this intake. Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.49 Agent B — correct legacy Lucid diagnostic option and second exact-head run — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04).  
+**Status:** source correction committed; exact-head Reveal run is IN PROGRESS at checkpoint append time.
+
+#### Result of first diagnostic attempt
+
+PRE-RICH Emulator Reveal Conformance [run #39722987266](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722987266) completed failure on source SHA 2bc9ac350f36f9e721d43b772231966d4ab4a8a6.
+
+- Canonical acceptance still failed at maxTxSize=16384, reporting Found: 16782 (398 bytes above limit).
+- The size-probe attempt still did not emit CBOR/counters; error was “Spend[1] attempted to instantiate a non-polymorphic term” before the measurement block.
+- The workflow’s diagnostic step appeared success only because it has continue-on-error: true; the log itself ends with “Process completed with exit code 1”. This is NOT a successful measurement.
+- Source inspection confirmed the repository pins lucid-cardano@0.10.11; the previous probe passed the Evolution-style localUPLCEval option into this legacy builder API, so it did not disable the setting this implementation actually reads. The legacy API exposes nativeUplc for this path.
+
+#### Narrow correction and exact source identity
+
+Commit [f2dd0384ba3d43d02cac40b970a03b771bf4c894](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f2dd0384ba3d43d02cac40b970a03b771bf4c894) changes only src/__tests__/immortal-cardano-reveal-emulator-b1.mjs (blob 92282f9b92e00dac2ba9f1249e9e81285ba39ef3). In the size probe only, the builder now passes { nativeUplc: false } rather than { localUPLCEval: false }. The probe returns before signing/submission, remains diagnostic-only, and must not be used as transaction acceptance/ledger evidence.
+
+No protocol validator, economic rule, V3 carrier, Reveal semantics, production builder, workflow or ledger state was modified.
+
+#### Exact-head validation started
+
+- [PRE-RICH Emulator Reveal Conformance #39723673393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673393) is running on exact source SHA f2dd0384ba3d43d02cac40b970a03b771bf4c894. At checkpoint append time its setup/build pipeline was not yet at the Reveal steps.
+- [IMMORTAL Cardano Integration Lab #39723673382](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673382) ended cancelled before giving current-head native P2.8 evidence. This does not change P-04 status.
+- The automatic current-head Documentation Link Check [#39723673456](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673456) passed on f2dd0384.
+
+**Next action:** read run #39723673393 after completion. If nativeUplc:false allows a serialized CBOR, inspect exact transaction bytes, expected two reference inputs and embedded Plutus V1/V2/V3 counts. Otherwise record the actual exception and stop repeating the same no-result probe. Do not infer reference-witness correctness from a structural test or a step-level continue-on-error PASS.
+
+**Current verdict:** canonical Reveal size = previously observed 16,782 / 16,384 bytes; fresh probe measurement NOT YET AVAILABLE; native P2.8 NOT ESTABLISHED; P-03/P-04 remain INTEGRATION_BLOCKED; no transaction submitted by this Agent B step. Overall audit remains PARTIAL / OPEN.
