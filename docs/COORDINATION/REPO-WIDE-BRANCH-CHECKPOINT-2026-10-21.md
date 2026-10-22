@@ -2306,3 +2306,23 @@ This run adds no new evidence about the original `Spend[1] attempted to instanti
 **Next action:** let current Integration Lab [#39726613781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39726613781), source SHA 218f4f32…, advance through Claim Haskell V2. After its Claim step/result is observed, correct the emulator fixture funding on the isolated publisher wallets using a value derived from the exact protocol's minimum-UTxO/output calculation plus fee margin; then rerun the distinct Pool-only probe. Do not infer ExUnits, script failure or ledger acceptance from `InputsExhaustedError`.
 
 **Current verdict:** isolated Pool-only evaluation NOT REACHED; final Reveal-spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature result pending in Lab #39726613781. P-03/P-04 remain **INTEGRATION_BLOCKED**; overall audit **PARTIAL / OPEN**.
+
+
+### 10.62 Agent B — publisher fee input exhaustion and updated Pool evaluator classification — 2026-10-22
+
+**Evidence:** Pool-only diagnostic workflow run [#39727002870](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39727002870), source SHA 269240e0aa946136f6ad324785297f0ff286d50b, reached its newly added diagnostic step but failed before the diagnostic Pool branch could run. The size-probe profile logged a 16,106-byte parameterized PrizeValidator and then InputsExhaustedError at prize-reference-complete. The latest source already isolated the reference publisher wallets, but they each had only 3 ADA. An output carrying a 16KB script plus fee/change could consume more than that remainder can fund.
+
+#### Test-only correction
+
+Commit [fb1dec848505f67c922c722db708712a6744f581](https://github.com/LiberoNuvola/Immortal-Protocol/commit/fb1dec848505f67c922c722db708712a6744f581) changes only src/__tests__/immortal-cardano-reveal-emulator-b1.mjs (blob f052b44ca4782dd0513c6c27067df38fa34622cf):
+- each dedicated emulator-only publisher UTxO is increased from 3 ADA to 10 ADA, so publication fee and valid change are covered without using the game wallet;
+- the Pool-only diagnostic classification recognizes the current observed “attempted to instantiate a non-polymorphic term” evaluator error as an evaluator failure;
+- the diagnostic label now names the current direct assetAmount/AssocMap lookup path rather than the old valueOf helper.
+
+No production transaction builder, validator logic, V3/Reveal semantics, protocol size limit, or ledger state changed.
+
+#### Exact-head validation
+
+New workflow [PRE-RICH Emulator Reveal #39727481872](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39727481872) was queued on exact source SHA fb1dec848505f67c922c722db708712a6744f581. It must demonstrate that publication can be completed with the isolated 10 ADA fee source, then report what the Pool-only diagnostic actually sees. Do not infer success until the log has reached the diagnostic step and printed its classification.
+
+**Current verdict:** current probe run #39727002870 did not reach Pool-only test due to publisher funding; fresh exact-head run #39727481872 pending; canonical Reveal still fails at local evaluator Spend[1] on the last completed main profile; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; Claim owner/signature equivalence NOT PROVEN. P-03/P-04 remain **INTEGRATION_BLOCKED**, no real transaction submitted, audit **PARTIAL / OPEN**.
