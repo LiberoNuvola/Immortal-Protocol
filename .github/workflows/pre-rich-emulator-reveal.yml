@@ -105,6 +105,15 @@ jobs:
           P2_8_B1_BUDGET_PROBE: "1"
         run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
 
+      - name: Isolate B1PrizePool Value evaluator path (diagnostic only; not acceptance evidence)
+        if: always()
+        continue-on-error: true
+        env:
+          P2_8_B1_POOL_VALUE_PROBE: "1"
+          P2_8_B1_BUDGET_PROBE: "1"
+          P2_8_B1_SIZE_PROBE: "1"
+        run: node src/__tests__/immortal-cardano-reveal-emulator-b1.mjs
+
       - name: Measure Reveal transaction size components (diagnostic only)
         if: always()
         continue-on-error: true
