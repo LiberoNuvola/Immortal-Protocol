@@ -1675,3 +1675,46 @@ No validator, V3 carrier, protocol parameter, economic rule, production transact
 
 
 Checkpoint maintenance note (2026-10-22): Documentation Link Check run [39722987246](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722987246) identified the stale relative path above. It was corrected from `../audit/...` (which resolved under `docs/`) to `../../audit/...` (repository-root `audit/`). This is a documentation-link correction only; it does not alter P-03/P-04 status or protocol source.
+
+
+### 10.48 Agent A intake triangulation — 2026-10-22
+
+This section records the required read-only hand-off verification before the next Agent A economic/Issue action. It consolidates already-existing evidence only; it does not qualify a new asset/feed, approve a conversion, perform a successful live UTxO revalidation, or authorize an Issue.
+
+#### Checkpoint and Notion alignment
+
+- GitHub checkpoint source was fetched from `work/immortal-green-closure`; source HEAD immediately before this append was `59727bacd13464c05cd601d5e2c8dec98ed271bd`. The previous checkpoint entry §10.47 belongs to Agent B and is preserved unchanged.
+- Notion [PRE-RICH — Control Center](https://app.notion.com/p/3d9c4454-d6d5-81e6-80d5-e5d3f3a9df79) was fetched at 2026-10-22 04:28:02 UTC. It indexed §10.46 / commit `485e7843392448ecac8e243223aaec3f5d79f98b`; it was therefore behind Agent B's later §10.47 source update. After this canonical checkpoint commit, append a short pointer to the exact latest GitHub commit in the existing Control Center. Notion remains an index, not a competing work plan.
+- Notion [02 — Decision Log](https://app.notion.com/p/3d9c4454-d6d5-81f6-b1df-f9bd9fa360fb) marks DEC-3 CLOSED for the USDM reference/accounting unit and exact value-equivalence contract. It does not define 1 USDM = 1 USD. The unresolved denomination/source choice remains with existing D-10/D-11 under D-13/GOV-02; no new decision ID or implementation permission is inferred.
+
+#### Source triangulation — Agent A fronts
+
+| Front | Evidence from current repository plus decision records | Classification |
+|---|---|---|
+| P-01 — first Issue / direct-USDM EEV | Historical approval run [39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679) generated EV1–EV7 and `DEPLOYMENT_APPROVED` for `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` at 2026-10-21 05:57:26 UTC, slot 136879045. That snapshot does not prove the exact out-reference remains live/unspent, and an EEV approval does not authorize Issue. | **BLOCKED — live source and end-to-end Issue not established** |
+| P-02 — Pyth quote → MintPolicy | Pyth Pro/Lazer feed 16 is ADA/USD, not ADA/USDM. `MintPolicy.atomicTreasuryPaymentValid` still calls `Economic.totalUsdmValue`, and `Economic.oraclePriceFor` reads the legacy Oracle State quote. Carrier binding and exact-rational conversion are isolated candidates, not production-bound. | **TESTED_BOUNDED — production binding OPEN/BLOCKED** |
+| P-05 — B2 control / authoritative admission | Provider/control code exists, but exact live control identity, authenticated current observation, qualified liquidity and final transaction-body/input binding still need same-head evidence. | **IMPLEMENTED_UNPROVEN / INTEGRATION_BLOCKED** |
+| P-06 — expiry binding | The application V1 expiry profile exists, but the mint path must bind `issuedAt`/`expiresAt` to the approved policy/state and authorized transaction; Issue #20 remains open. | **INTEGRATION_BLOCKED** |
+| P-15 — EEV perimeter / qualified asset | The historical direct-USDM artifact describes Preprod `tUSDM`: policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`, asset-name hex `0014df10745553444d`, reported six ledger decimals and quantity `1000000000`. The record does not approve this test asset as the canonical Preprod accounting unit; it also does not establish mainnet identity or liquidation value for ADA/PRE. | **HISTORICALLY OBSERVED; CURRENT LIVENESS AND NORMATIVE MAPPING OPEN** |
+| P-16 — Cardano settlement / wallet / Claim | Source and conformance evidence exists, but current public runtime identity, authoritative user-wallet signing, exact final transaction-body binding and matching confirmed on-chain output have not been established by this source review. | **TESTED_BOUNDED AT SOURCE LEVEL; REAL USER ISSUE NOT ESTABLISHED** |
+
+The controlling EEV perimeter remains `PRE-RICH-EEV-USDM-DIRECT-V1`. Its existing `audit/cardano-integration/preprod-direct-usdm-source-set.mjs` requires the real deployment manifest and explicit `PREPROD_TUSDM_UNIT`, then queries the exact B1 Pool address through Koios and fails closed unless the precise out-reference is uniquely live and holds the configured pool singleton and physical asset. This session attempted an external read-only lookup but DNS/network resolution was unavailable; therefore no live unspent/spent result is claimed. Do not replace the source contract with a hand-built query or cached EEV.
+
+Do not run `.github/workflows/pre-rich-b1-eev-approval.yml` as if it were a read-only freshness check: it re-observes, re-qualifies EV1–EV7 and materializes deployment approval. The public EEV approval artifact remains historical until an exact-current source-set observation is captured and reviewed.
+
+#### Current-head CI and operational limits
+
+- The prior current-head run at `485e7843392448ecac8e243223aaec3f5d79f98b` passed Adapter Sale [39722513685](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722513685), Portability [39722513821](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722513821), Governability [39722513626](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722513626) and Protocol Declaration [39722513662](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39722513662).
+- Documentation Link Check failed on `485e7843` and `56ab9f77` due to a bad relative link in this checkpoint; Agent B's subsequent correction commit `59727bacd13464c05cd601d5e2c8dec98ed271bd` fixed the path. The current-head docs result at pre-append HEAD `59727bacd13464c05cd601d5e2c8dec98ed271bd` is [run 39723133255](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723133255) with conclusion `success`.
+- Isolated Pyth software CI [39659905806](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39659905806) passed synthetic Aiken checks/build and TypeScript typecheck only. The Pyth native-ledger workflow was not dispatched; positive native-ledger acceptance and native-ledger tampered-update rejection remain **NOT RUN**.
+- Live PR #19 read immediately before this append: OPEN, draft=false, mergeable=false, 413 changed files, head `59727bacd13464c05cd601d5e2c8dec98ed271bd`, base `8c6873e1d50115659727c82c294426b9a946f1fa`. It remains a broad review surface; no bulk promotion or merge is authorized by this intake.
+
+#### First Agent A sequence
+
+1. Keep DEC-3 closed and route denomination/source policy to D-10/D-11 under D-13/GOV-02; no USD/USDM parity inference.
+2. Resolve whether this network-specific Preprod `tUSDM` identity is governed as the representation of the accounting unit; until approved, physical observation and normative admissibility must remain separate claims.
+3. Once the asset identity, deployment manifest and source contract are available, run the existing read-only exact-out-reference observation, record fresh tip/slot, retrieval timestamp, `txHash#index`, physical quantity and evidence digest, then re-fetch/verify that exact output against the actual final Issue transaction.
+4. Separately retain the Pyth probe in preparation-only mode until an explicit approved test-wallet action and necessary credentials exist. Do not claim Pyth signature acceptance without a confirmed transaction.
+5. Keep B2 control, expiry binding, quote-to-MintPolicy binding and confirmed first Issue as separate acceptance gates.
+
+No USDM/USD parity, conversion, oracle authorization, expiry rule, code promotion, workflow dispatch, wallet action, ledger submission, deployment, V3/Reveal change or ledger-state change is authorized by this intake. Overall audit remains **PARTIAL / OPEN**.
