@@ -1880,3 +1880,56 @@ This section records one narrow Issue-authority hardening patch and the current 
 6. No Issue, wallet action, approval workflow, deployment, conversion, or ledger transaction was performed in this slice.
 
 Overall audit remains **PARTIAL / OPEN**.
+
+
+### 10.52 Agent B — fresh compiled validator size exceeds the Cardano publication ceiling; artifact drift recorded — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). **Status:** measured blocker; root-cause investigation remains OPEN.
+
+#### Exact-head instrumentation result
+
+PRE-RICH Emulator Reveal Conformance [run #39724168595](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39724168595) ran the fresh-export workflow and failed in canonical mode during PrizeValidator reference-script publication. The log at 2026-10-22T04:49:53Z reports the following from the script instances actually loaded after the fresh Plutus build/export:
+
+| Measurement | Value |
+|---|---:|
+| Fresh PrizeValidator factory script payload bytes | 16,559 |
+| Fresh parameterized PrizeValidator script payload bytes | **16,688** |
+| Canonical reference-publication size guard result | 16,782 / 16,384 bytes |
+| Diagnostic unsigned/complete PrizeValidator publication CBOR measured with local size ceiling 100,000 | **16,879 bytes** |
+| Fresh B1PrizePool factory script payload bytes | 11,357 |
+| Fresh parameterized B1PrizePool script payload bytes | 11,513 |
+| Diagnostic B1PrizePool publication CBOR measured with local size ceiling 100,000 | 11,704 bytes |
+
+The parameterized PrizeValidator payload alone is 304 bytes larger than the 16,384-byte transaction maximum, before output encoding, fee/change and transaction metadata. Thus the single reference-script publication cannot fit within the current size ceiling in this measured build. The canonical builder's failure at 16,782 and the diagnostic CBOR size of 16,879 are both over the cap; preserve both readings as different observations from the normal and diagnostic construction profiles rather than merging the numbers. The diagnostic profile's 100,000-byte limit is local instrumentation only, not protocol acceptance.
+
+#### Fresh-build artifact mismatch against tracked JSON
+
+The workflow explicitly ran the fresh Plutus export and then copied those generated files to the test consumer before running the fixture. Its log records these fresh JSON SHA-256 digests:
+
+- PrizeValidator factory JSON: b9e7a4dddc802e7db7c549dc591effa4ac05c6e2b40a42d94390c92915538695
+- B1PrizePool factory JSON: 85ee9ee816b8081f34e91ea738597cf40e67db17e1b3105393ced0d533cbc615
+
+By contrast, the Git-tracked factory JSON blobs currently fetched from the checkpoint branch have materially smaller cborHex payloads:
+
+| Tracked path | Blob SHA | Tracked factory payload bytes | Fresh build payload bytes |
+|---|---|---:|---:|
+| src/plutusScripts/prizeValidatorFactory.plutus.json | 183ebe92b31924aa19799dff8ec687b9b9bb9a22 | 9,760 | 16,559 |
+| src/plutusScripts/b1PrizePoolFactory.plutus.json | 9efbac15e5dbf8ed5c2133ce0c6068c2c43c8de6 | 7,543 | 11,357 |
+
+This is an artifact/source drift signal that requires reconciliation: the size gate must be evaluated against the freshly exported artifact derived from current Plutus source, not the smaller checked-in JSON copied before build. The mismatch by itself does not identify whether the cause is source evolution, compiler/build configuration, or stale generated artifacts; don't edit/replace deployed artifacts or claim equivalence without reviewing the export path and source/build identity.
+
+#### What this proves and does not prove
+
+- **Proven for this current run's generated artifact:** the parameterized PrizeValidator script payload (16,688 bytes) already exceeds the ledger transaction size limit. Publishing it as one reference script cannot meet the 16,384-byte bound in this build.
+- **Not proven:** a final Reveal-spending transaction size. The diagnostic path did publish both reference scripts under its local 100,000-byte ceiling, but then failed during Reveal completion with “Blockfrost not set. Can't calculate ex units” after nativeUplc was disabled. No final Reveal CBOR or witness count was emitted.
+- **Not proven:** a successful on-ledger publication, an accepted Reveal, or native P2.8 evaluation. All these measurements are from the in-memory emulator; no real ledger submission occurred in this Agent B run.
+- The earlier ~17,571-byte Preprod builder observation remains a different evidence path and is not merged with the 16,782 / 16,879 publication-transaction observations.
+
+#### Next controlled action
+
+1. Reconcile generated source/build identities: inspect export-scripts compiler and artifact-generation parameters against the tracked JSON SHA and exact Haskell source. Record exact build/compiler versions and script hashes before replacing any generated file.
+2. Since the fresh parameterized payload alone exceeds the limit, do not spend more runs optimizing only the publication transaction wrapper. Identify a semantics-preserving compiler/serialization optimization hypothesis or prepare a separately reviewed architectural proposal. No validator/V3/Reveal semantic change is authorized by these measurements.
+3. Independently resolve how to obtain final Reveal CBOR without using fabricated ExUnits. The current legacy emulator path with nativeUplc:false requires Blockfrost, which is not configured; do not claim final-spend sizing until a real evaluator path or a rigorously bounded non-acceptance diagnostic is explicitly established.
+4. Keep P-03/P-04 INTEGRATION_BLOCKED, the 16,384-byte ceiling unchanged and the review focused on the exact current source/build. No deploy, real transaction, merge, or validator semantics change was performed.
+
+Overall audit remains **PARTIAL / OPEN**.
