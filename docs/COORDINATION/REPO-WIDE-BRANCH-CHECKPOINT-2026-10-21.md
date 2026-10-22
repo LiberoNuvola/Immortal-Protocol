@@ -1803,3 +1803,35 @@ The same classification correction is reflected in the semantic dossier [SEMANTI
 Separately, the corrected diagnostic parameter nativeUplc: false is under exact-head validation in [PRE-RICH Emulator Reveal #39723673393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673393), source SHA f2dd0384ba3d43d02cac40b970a03b771bf4c894. At this section's append time, the run remained in Setup canonical Plutus CI and had not reached the Reveal steps; no positive diagnostic result is yet claimed.
 
 **Next sequence:** (1) read the f2dd0384... run through publication and Reveal diagnostic; (2) record raw validator bytes plus publication CBOR/size at the publication boundary; (3) obtain final Reveal spending CBOR and inspect exact reference inputs and embedded Plutus witness counts; (4) only then choose a narrow byte-size/builder remediation, keeping validator/V3/Reveal semantics unchanged. P-03/P-04 remain **INTEGRATION_BLOCKED**; no ledger transaction was submitted.
+
+
+### 10.51 Agent B — measured diagnostics at the reference-script publication boundary — 2026-10-22
+
+**Owner:** Agent B (P-03/P-04). Status: instrumentation committed; exact-head validation pending.
+
+#### New evidence from the nativeUplc diagnostic attempt
+
+Run [PRE-RICH Emulator Reveal #39723673393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39723673393), source SHA f2dd0384ba3d43d02cac40b970a03b771bf4c894, completed failure. Its canonical path again failed while completing the PrizeValidator reference-script publication transaction at 16,782 / 16,384 bytes. The size-profile path passed publication under its local diagnostic-only ceiling but then failed Reveal completion with “Blockfrost not set. Can't calculate ex units” after passing nativeUplc:false to the legacy builder. No final Reveal CBOR was emitted; step-level green was due to continue-on-error and is not a successful size measurement.
+
+#### Source change for publication boundary observability
+
+Commit [3f3016fbc6af6c5d5572c7b6b99bdd097d66bcee](https://github.com/LiberoNuvola/Immortal-Protocol/commit/3f3016fbc6af6c5d5572c7b6b99bdd097d66bcee) changes only src/__tests__/immortal-cardano-reveal-emulator-b1.mjs (blob b5bf9cbdc97b0201942b5ee2f30fe0f3b58f5bd2).
+
+Before the first publication transaction’s complete(), the test now prints:
+- raw byte lengths for the parameterized PrizeValidator and B1PrizePool scripts;
+- factory script byte lengths and each script hash;
+- the active emulator maxTxSize.
+
+In diagnostic-only size mode, it also measures the serialized CBOR length of the PrizeValidator and B1PrizePool publication transactions when each builder completes. These are explicitly labelled publication transaction sizes, not Reveal spending size. The canonical path logs script payload lengths before hitting its real 16,384-byte publication limit, which makes the current blocker measurable even when complete() rejects.
+
+This patch does not alter validator bytecode, protocol parameters, economics, V3/Reveal semantics, production builder, workflow configuration or ledger state. The test still uses only an in-memory emulator fixture.
+
+#### Exact-head validation started
+
+- [PRE-RICH Emulator Reveal Conformance #39724168595](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39724168595) runs on source SHA 3f3016fbc6af6c5d5572c7b6b99bdd097d66bcee.
+- [IMMORTAL Cardano Integration Lab #39724168616](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39724168616) is the companion current-head lab; no native P2.8 result is established yet.
+- At the first post-dispatch inspection, both were queued/pending; no measurements from this new instrumentation are claimed yet.
+
+**Next action:** retrieve the run logs. The key first result is raw parameterized script length; the diagnostic run must then report each complete publication transaction size. Do not interpret publication size as Reveal spending size. After the publication blocker is measured, the Reveal final-CBOR path remains a separate issue because legacy Lucid cannot use nativeUplc:false in this emulator without a Blockfrost evaluator. Do not inject synthetic ExUnits into an acceptance path or call such evidence a ledger result.
+
+**Current verdict:** PrizeValidator publication transaction previously measured at 16,782 / 16,384; fresh script payload lengths and independent publication CBOR sizes are pending; final Reveal spending CBOR NOT MEASURED; native P2.8 NOT ESTABLISHED; P-03/P-04 remain **INTEGRATION_BLOCKED**; no real ledger transaction was submitted. Overall audit remains **PARTIAL / OPEN**.
