@@ -295,3 +295,11 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - This is a reusable helper only. It does not yet validate action-specific Prize status transitions, ticket NFT mint/burn, expiry, signatures, canonical oracle valuation, payout settlement, or the B1 Pool physical-value delta. It is not wired into the Pool validator (no deployable Aiken B1 Pool entrypoint exists yet).
 - **Verification status:** commit exists on `work/immortal-green-closure`; an Actions run for this exact commit was not visible at checkpoint update time. Do not mark the module compiled until the Aiken check/build workflow reports success.
 - Next: confirm Aiken compilation, then add tests for missing/duplicate Prize inputs and outputs, missing/unresolvable datums, and mismatched own datum; only then wire the resolver into the five action-specific transaction predicates.
+
+
+## Prize resolver regression tests added — 2026-10-23 19:19 UTC
+
+- Added five typed-transaction tests to `b1_pool_prize_context.ak` in commit [`cd42fcd5`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/cd42fcd5dcc52a801051768b175e5c23bafad888): unique input/output resolution, duplicate Prize input rejection, duplicate Prize output rejection, missing input datum rejection, and mismatch between the actual consumed datum and the supplied spending datum.
+- The preceding commit `7144de55` passed the Aiken B1 PrizePool Claim Slice workflow, including Aiken checks and build. That result covers the resolver module before these five new tests were added; it is **not** proof that the new test additions compile.
+- The exact `cd42fcd5` Aiken B1 PrizePool Claim Slice run is queued at [run #](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40010383925). Await its final result before declaring the resolver+tests gate green.
+- This remains context-resolution infrastructure, not a full action validator and not a deployed Pool candidate.
