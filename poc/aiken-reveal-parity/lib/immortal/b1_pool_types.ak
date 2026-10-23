@@ -1,20 +1,4 @@
-use aiken/crypto.{ScriptHash}
-
-/// Wire-compatible B1 PrizePool schema extracted from plutus/Types.hs.
-/// Constructor order and field order are part of the on-chain Data API.
-/// This module is a migration slice, not a deployable validator.
-pub type B1PrizePoolDatum {
-  B1PrizePoolDatum {
-    total_liquidity: Int,
-    pending_liabilities: Int,
-    unresolved_reserve: Int,
-    unresolved_ticket_count: Int,
-    locked_jackpot: Int,
-    jackpot_threshold: Int,
-    suspended_classes: Int,
-    prize_hash: ScriptHash,
-  }
-}
+use immortal/reveal_types.{B1PrizePoolDatum}
 
 /// Haskell constructor order is compatibility-sensitive:
 /// FundTreasury=0, TicketIssued=1, TicketRevealed=2,
