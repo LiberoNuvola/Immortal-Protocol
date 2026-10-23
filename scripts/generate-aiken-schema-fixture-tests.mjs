@@ -118,6 +118,11 @@ if (!Number.isInteger(crypto.row1OutcomeIndex) || !Number.isInteger(crypto.row2O
 }
 const required = [
   'PrizeDatum.pending',
+  'PrizeStatus.Pending',
+  'PrizeStatus.Revealed',
+  'PrizeStatus.Claimed',
+  'BeaconStatus.BeaconPending',
+  'BeaconStatus.BeaconReady',
   'PrizeAction.SyncBeacon',
   'PrizeAction.Reveal',
   'PrizeAction.Claim',
@@ -322,6 +327,26 @@ test beacon_target_serialisation_matches_haskell_fixture() {
     mainchain_ref: #"303130323033",
     version: #"7631",
   }) == #"${fixtures['BeaconTarget']}"
+}
+
+test prize_status_pending_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.Pending) == #"${fixtures['PrizeStatus.Pending']}"
+}
+
+test prize_status_revealed_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.Revealed) == #"${fixtures['PrizeStatus.Revealed']}"
+}
+
+test prize_status_claimed_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.Claimed) == #"${fixtures['PrizeStatus.Claimed']}"
+}
+
+test beacon_status_pending_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.BeaconPending) == #"${fixtures['BeaconStatus.BeaconPending']}"
+}
+
+test beacon_status_ready_serialisation_matches_haskell_fixture() {
+  serialise_data(reveal_types.BeaconReady) == #"${fixtures['BeaconStatus.BeaconReady']}"
 }
 
 test pending_prize_datum_serialisation_matches_haskell_fixture() {
