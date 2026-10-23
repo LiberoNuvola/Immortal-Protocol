@@ -13,6 +13,7 @@ import {
 
 import {
   hashSelectionInputs,
+  hashAuthoritySetTransitionStatement,
   verifySelectionInputsCommitment,
   verifyActivationBlockBinding,
   verifyAuthoritySetTransition,
@@ -226,6 +227,55 @@ describe("authority trust boundary integration", () => {
       trustedAuthorityStateFromVerifiedTransition(
         currentTrustedState(),
         forged
+      )
+    ).toThrow("INVALID_VERIFIED_AUTHORITY_SET_TRANSITION");
+  });
+
+  it("rejects a forged verified marker even when its public statement hash is correct", async () => {
+    const verified = await verifyAuthoritySetTransition(
+      baseStatement(),
+      {
+        verify() {
+          return true;
+        }
+      }
+    );
+
+    // Reproduce every public field and a matching hash, but not the original
+    // object identity registered inside the verification module.
+    const forged = {
+      ...verified,
+      __verifiedAuthoritySetTransition: "verified" as const,
+      statementHash: hashAuthoritySetTransitionStatement(
+        verified.publicStatement
+      )
+    };
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        forged
+      )
+    ).toThrow("INVALID_VERIFIED_AUTHORITY_SET_TRANSITION");
+  });
+
+  it("rejects mutation of a transition after its proof boundary", async () => {
+    const verified = await verifyAuthoritySetTransition(
+      baseStatement(),
+      {
+        verify() {
+          return true;
+        }
+      }
+    );
+
+    // Typed readonly does not make Uint8Array contents immutable at runtime.
+    verified.publicStatement.toAuthorities[0].publicKey[0] ^= 0xff;
+
+    expect(() =>
+      trustedAuthorityStateFromVerifiedTransition(
+        currentTrustedState(),
+        verified
       )
     ).toThrow("INVALID_VERIFIED_AUTHORITY_SET_TRANSITION");
   });
