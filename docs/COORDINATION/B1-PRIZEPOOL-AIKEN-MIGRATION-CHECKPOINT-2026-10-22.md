@@ -363,3 +363,11 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - Exact-SHA workflow [#26](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40017835789) for commit `4ad394387b756ffcf4df84c67b486d8166404a21` completed successfully.
 - `aiken check` (including the isolated harness tests and type checking) and the isolated V3 prototype build both passed. The added `ticket_issued_context_rejects_missing_prize_output` and `ticket_issued_context_rejects_duplicate_prize_outputs` tests are now verified green on that exact source SHA.
 - This closes the pending test status only. It does not make the Prize-context helper a deployable Pool validator, nor prove ledger-level parity or transaction-context coverage beyond the tested cases.
+
+
+## TicketIssued price/status negative tests verified — 2026-10-23
+
+- Commit [`95c603e0`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/95c603e057f25a8c7e92f5fe7bb9bf4e3fc4f504) adds `ticket_issued_context_rejects_zero_action_price` and `ticket_issued_context_rejects_non_pending_output`.
+- Exact-SHA workflow [Aiken B1 PrizePool Claim Slice #40020401920](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40020401920) completed successfully: harness tests/type checking and isolated V3 prototype build both passed.
+- The TicketIssued Prize-context slice now has explicit negative coverage for absent/duplicate Prize outputs, absent/non-singleton ticket mint, action-price mismatch/zero, and non-Pending status. The existing helper also requires zero prize amount and non-empty ticket policy/name, but dedicated tests for those latter datum conditions remain desirable.
+- These are unit/harness results only. The helper is not a deployable B1PrizePool validator and this run does not establish transaction-level parity or on-ledger equivalence.
