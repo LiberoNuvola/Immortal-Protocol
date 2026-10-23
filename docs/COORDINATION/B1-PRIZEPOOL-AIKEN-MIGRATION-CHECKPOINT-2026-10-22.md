@@ -198,3 +198,27 @@ The three workflows triggered by commit `e8a3ccd5d7768310befede651927414d040e678
 - [Documentation Link Check #39938987422](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987422): **SUCCESS**.
 
 This confirms the isolated composition and its workflow checks pass. Scope remains unchanged: no complete deployable Aiken B1PrizePool validator, no transaction-context/authority-NFT/oracle-value proof, no differential ledger twins, and no V2-to-V3 deployment decision. Overall migration status remains **NOT GREEN**. Do not change the passing V3 carrier or switch the production Pool path based on these results alone.
+
+## CI follow-up — isolated accounting predicates for all B1 actions (2026-10-23)
+
+Commit `9df672353b4e6e8dafd0aa6308eaef44f59b166c` adds pure datum-accounting predicates and focused tests for the four actions not covered by the existing Claim accounting slice:
+
+- `FundTreasury`: liquidity increases; all other Pool datum accounting fields remain unchanged; pre/post projected solvency holds.
+- `TicketIssued(price)`: positive price; reserve increases by exactly price; unresolved ticket count increases by one; other protected/accounting fields remain unchanged; pre/post solvency holds.
+- `TicketRevealed(price)`: positive price, nonnegative payout, reserve decreases by price, unresolved count decreases by one, liabilities increase by payout, other protected fields remain unchanged; pre/post solvency holds.
+- `TicketExpired`: positive price and unresolved count; reserve decreases by price and cannot underflow; unresolved count decreases by one; liabilities and other protected fields remain unchanged; pre/post solvency holds.
+
+These are pure harness predicates only. They do not validate the transaction context, continuing datum uniqueness, Prize input/output uniqueness or status, NFT mint/authority, signatures, expiry bounds, oracle valuation, or the physical Pool value delta. They are not a deployable validator and must not be used to switch the production path.
+
+### CI evidence on exact commit `9df672353b4e6e8dafd0aa6308eaef44f59b166c`
+
+- [Aiken B1 PrizePool Claim Slice #39939965687](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965687): **SUCCESS**. Job `aiken-check`; pinned Aiken installation, isolated harness tests/type checking, and isolated V3 prototype build all passed.
+- [Aiken Reveal Parity #39939965671](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965671): **SUCCESS**. Canonical Haskell fixture generation, generated Aiken tests, serialization parity, Aiken check/build/size steps, and parity evidence gate passed.
+- [IMMORTAL Portability Conformance #39939965583](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965583): **SUCCESS**.
+- [Cardano Adapter Sale Conformance #39939965578](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965578): **SUCCESS**.
+- [Protocol Declaration Conformance #39939965574](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965574): **SUCCESS**.
+- [Documentation Link Check #39939965618](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965618): **SUCCESS**.
+- [Algorithmic Governability Adversarial Lab #39939965666](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965666): **SUCCESS**.
+- [IMMORTAL Cardano Integration Lab #39939965624](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965624): was still **IN PROGRESS** at checkpoint update time; no result claimed.
+
+Overall status remains **NOT GREEN**. The five action branches are now represented by pure accounting slices in the harness, but the full Aiken Pool validator, authenticated transaction-context checks, complete branch-level differential ledger fixtures, V2-to-V3 deployment compatibility, paired-validator topology, and actual integration-ledger evidence remain open. The already-passing V3 carrier and the Haskell reference were not changed.
