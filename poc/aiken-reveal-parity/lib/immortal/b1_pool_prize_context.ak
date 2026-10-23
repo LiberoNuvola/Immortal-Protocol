@@ -479,3 +479,87 @@ test ticket_revealed_context_rejects_negative_payout() {
   )
   !ticket_revealed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 100, 1_000)
 }
+
+
+/// Pool-side TicketClaimed Prize-datum slice. It checks Revealed -> Claimed,
+/// preserves the normative ticket identity and payout, and binds the redeemer
+/// amount to the consumed payout. Owner NFT/signature and canonical oracle-valued
+/// payment plus Pool physical-value delta must be validated separately.
+pub fn ticket_claimed_prize_context_is_valid(
+  tx: transaction.Transaction,
+  prize_hash: ScriptHash,
+  expected_pool_hash: ScriptHash,
+  claimed_amount: Int,
+) -> Bool {
+  when (only_prize_input(tx, prize_hash), only_prize_output(tx, prize_hash)) is {
+    (Some(before), Some(after)) ->
+      before.datum.prize_pool_hash == expected_pool_hash
+        && after.datum.prize_pool_hash == expected_pool_hash
+        && before.datum.status == Revealed
+        && after.datum.status == Claimed
+        && same_prize_identity(before.datum, after.datum)
+        && before.datum.prize_amount > 0
+        && before.datum.prize_amount == after.datum.prize_amount
+        && claimed_amount == before.datum.prize_amount
+    _ -> False
+  }
+}
+
+fn test_claimed_datum(payout: Int) -> PrizeDatum {
+  let before = test_revealed_datum(payout)
+  PrizeDatum {
+    ticket_policy: before.ticket_policy,
+    ticket_name: before.ticket_name,
+    player_commitment: before.player_commitment,
+    price_usdm: before.price_usdm,
+    commitment: before.commitment,
+    game_version: before.game_version,
+    ticket_nonce: before.ticket_nonce,
+    prize_amount: before.prize_amount,
+    payment_policy: before.payment_policy,
+    payment_name: before.payment_name,
+    status: Claimed,
+    result: before.result,
+    prize_tier: before.prize_tier,
+    beacon_target: before.beacon_target,
+    beacon_status: before.beacon_status,
+    beacon_value: before.beacon_value,
+    mc_hash: before.mc_hash,
+    materios_context: before.materios_context,
+    prize_pool_hash: before.prize_pool_hash,
+    issued_at: before.issued_at,
+    expires_at: before.expires_at,
+    row1_tier: before.row1_tier,
+    row2_tier: before.row2_tier,
+  }
+}
+
+test ticket_claimed_context_accepts_unchanged_payout() {
+  let before = test_revealed_datum(250)
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_claimed_datum(250)))],
+  )
+  ticket_claimed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 250)
+}
+
+test ticket_claimed_context_rejects_changed_payout() {
+  let before = test_revealed_datum(250)
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_claimed_datum(249)))],
+  )
+  !ticket_claimed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 250)
+}
+
+test ticket_claimed_context_rejects_wrong_claim_amount() {
+  let before = test_revealed_datum(250)
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_claimed_datum(250)))],
+  )
+  !ticket_claimed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 249)
+}
