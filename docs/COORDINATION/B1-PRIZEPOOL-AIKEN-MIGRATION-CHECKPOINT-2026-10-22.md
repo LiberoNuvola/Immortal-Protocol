@@ -126,3 +126,12 @@ The current Aiken package targets Plutus V3 while the production Haskell Pool va
 - [Aiken B1 PrizePool Claim Slice run #39936351139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351139) completed **SUCCESS** on the exact source commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0`. Both `aiken check` and `aiken build` steps passed with pinned Aiken `v1.1.22`.
 - [Aiken Reveal Parity run #39936351134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351134) was still in progress at the time of this update; it is not included in the PASS claim above.
 - This closes only the compilation/unit-test gate for the isolated solvency slice. It does not close the complete Pool validator or deployment gates.
+
+
+### CI follow-up — Reveal parity result confirmed (2026-10-23)
+
+- [Aiken Reveal Parity run #39936351134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351134) has now completed with conclusion **SUCCESS** on exact source commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0` (workflow run #191, push event, branch `work/immortal-green-closure`).
+- Combined with [Aiken B1 PrizePool Claim Slice #39936351139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351139), both workflows triggered by the solvency-slice commit are now confirmed successful.
+- Evidence scope remains limited: the workflows prove isolated Aiken package checking/building and the tests/serialization gates encoded in each workflow. They do **not** prove a complete deployable Pool validator, Haskell/Aiken transaction acceptance parity, or ledger deployment.
+- The Haskell reference remains the normative behavioral inventory. Any complete Aiken candidate must preserve all five action branches and the three global guards before comparing branch-level outcomes. Do not wire the pure solvency helper into a deployable path until its arithmetic and datum decoding are exercised in the full candidate with differential fixtures.
+- Status remains **NOT GREEN**. Next gate: create a complete candidate only after the implementation maps every helper and branch in `plutus/B1PrizePool.hs` to the Aiken transaction context, with explicit V2→V3 and paired-validator deployment decisions; no production path switch and no changes to the passing V3 carrier.
