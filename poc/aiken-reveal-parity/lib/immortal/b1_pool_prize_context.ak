@@ -101,6 +101,31 @@ pub fn resolved_prize_input_matches(
 }
 
 
+/// Mirrors the B1PrizePool TicketIssued Prize-output checks. The Pool datum
+/// accounting and global authority/solvency guards remain separate predicates.
+pub fn ticket_issued_prize_context_is_valid(
+  tx: transaction.Transaction,
+  prize_hash: ScriptHash,
+  action_price: Int,
+) -> Bool {
+  when only_prize_output(tx, prize_hash) is {
+    Some(after) ->
+      action_price > 0
+        && after.datum.status == Pending
+        && after.datum.prize_amount == 0
+        && after.datum.ticket_policy != #""
+        && after.datum.ticket_name != #""
+        && assets.quantity_of(
+          tx.mint,
+          after.datum.ticket_policy,
+          after.datum.ticket_name,
+        ) == 1
+        && after.datum.price_usdm == action_price
+    None -> False
+  }
+}
+
+
 const test_prize_hash: ScriptHash = #"09"
 const test_other_hash: ScriptHash = #"08"
 
@@ -177,6 +202,32 @@ fn test_prize_tx(
     outputs,
     fee: 0,
     mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
+  }
+}
+
+
+fn test_prize_tx_with_mint(
+  inputs: List<transaction.Input>,
+  outputs: List<transaction.Output>,
+  mint: assets.Value,
+) -> transaction.Transaction {
+  transaction.Transaction {
+    inputs,
+    reference_inputs: [],
+    outputs,
+    fee: 0,
+    mint,
     certificates: [],
     withdrawals: [],
     validity_range: transaction.placeholder.validity_range,
@@ -647,4 +698,51 @@ test ticket_expired_context_rejects_wrong_pool_binding() {
     1_000,
   )
   !ticket_expired_prize_context_is_valid(tx, test_prize_hash, test_prize_hash)
+}
+
+
+test ticket_issued_context_accepts_exact_minted_pending_ticket() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    mint,
+  )
+  ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_missing_ticket_mint() {
+  let datum = test_prize_datum()
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    assets.zero,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_non_singleton_ticket_mint() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 2)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    mint,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_action_price_mismatch() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    mint,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 101)
 }
