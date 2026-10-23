@@ -493,3 +493,27 @@ The operator-kit public endpoints provide receipts, attestations, liveness heart
 **B3-B storage-proof path: PASS. B3-A GRANDPA finality and authenticated authority transition: OPEN. Overall B3: NOT APPROVED.** The drand Plutus V3 PoC is a separate result: it proves that a real Quicknet BLS signature can be verified by the isolated local Cardano script, but it does not authenticate Materios blocks or committee transitions.
 
 Do not spend further cycles increasing the scan window against the same two RPC surfaces unless their capabilities change. The next evidence-producing action is to identify a genuinely reachable public proof source that returns SDK-native `FinalityProof` / justification bytes and a path to authenticated authority-set transitions. Otherwise, keep Materios claims limited to receipts and storage proofs, and keep randomness-source claims separate from Materios finality.
+
+
+## Fresh CI + upstream recheck — 2026-10-23 (B3 verifier run #104)
+
+Source runs:
+- [Materios B3 execution-proof verifier — run #104](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39933665986), commit `11fae8a1f030bcbe177eab6ee2ae99a96f080ca6`.
+- [Materios Canonical Evidence & Finality Boundary — run #159](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39933665932), same commit.
+
+Observed CI:
+- Canonical Evidence & Finality Boundary: **SUCCESS**. Runtime authenticity guard tests and corrected expectations pass.
+- B3 execution-proof verifier: Rust verifier tests/formatting **PASS**; finalized-state capture **PASS as extraction only**; live storage proof **PASS**; real GRANDPA witness job **FAIL**, leaving B3-A **OPEN**.
+- Both public RPC endpoints (`/rpc`, `/preprod-rpc`) returned the same finalized head at height 2,409,483 during this run. Both returned `grandpa_proveFinality` as JSON-RPC `-32601 / method-not-found`; the finalized block's `justifications` field was `null`.
+- The collector scanned heights 2,408,715–2,409,483 (769 block heights) and found no FRNK justification. It wrote and uploaded a bounded negative diagnostic artifact: [run #104 artifact](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39933665986/artifacts/12493185719). This proves only what these RPC responses exposed during this bounded observation; it does not prove absence of GRANDPA consensus finality.
+
+### Upstream state rechecked
+
+- Materios `main` is now observed at [`7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`](https://github.com/Flux-Point-Studios/materios/commit/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30), dated 2026-10-21.
+- The live source [`partnerchain/node/src/rpc.rs`](https://github.com/Flux-Point-Studios/materios/blob/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30/partnerchain/node/src/rpc.rs) still merges only System, Orinq Receipts and MOTRA RPC modules; it does not register the standard GRANDPA RPC module.
+- [Upstream issue #50](https://github.com/Flux-Point-Studios/materios/issues/50), requesting the narrow execution-proof RPC `materios_b3_calculateCommitteeProof`, is **closed**, but its issue record has no comments and the current RPC source does not contain that registration. Closure alone is not implementation evidence. This endpoint would provide execution proof for authority-selection inputs; it is not itself a substitute for GRANDPA finality proof.
+- No code or configuration change has been made to Materios upstream by this audit.
+
+### Decision / next action
+
+Do **not** repeat a larger scan against the same two RPC URLs while their capabilities remain unchanged. The current failure is source availability, not a demonstrated defect in the GRANDPA signature verifier. Next evidence-producing path: find an already reachable, independent public proof publisher/archive that returns SDK-native GRANDPA `FinalityProof` or justification bytes and supports an authenticated authority-transition chain. If none exists, B3-A remains **OPEN**, Materios claims stay scoped to receipts/storage proofs, and overall B3 remains **NOT APPROVED**. Do not infer finality from `chain_getFinalizedHead`, authority data served by the same RPC, storage proofs, or operator attestations.
