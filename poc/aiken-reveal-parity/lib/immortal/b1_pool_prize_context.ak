@@ -792,3 +792,71 @@ test ticket_issued_context_rejects_non_pending_output() {
   )
   !ticket_issued_prize_context_is_valid(tx, test_prize_hash, datum.price_usdm)
 }
+
+
+fn test_prize_datum_with_issue_fields(
+  ticket_policy: ByteArray,
+  ticket_name: ByteArray,
+  prize_amount: Int,
+) -> PrizeDatum {
+  PrizeDatum {
+    ticket_policy,
+    ticket_name,
+    player_commitment: #"0102",
+    price_usdm: 100,
+    commitment: #"0304",
+    game_version: #"7631",
+    ticket_nonce: 1,
+    prize_amount,
+    payment_policy: #"0b",
+    payment_name: #"02",
+    status: Pending,
+    result: #"00",
+    prize_tier: 0,
+    beacon_target: BeaconTarget {
+      network_id: 0,
+      round: 0,
+      mainchain_ref: #"00",
+      version: #"7631",
+    },
+    beacon_status: BeaconPending,
+    beacon_value: #"00",
+    mc_hash: #"00",
+    materios_context: #"00",
+    prize_pool_hash: test_other_hash,
+    issued_at: 1,
+    expires_at: 1000,
+    row1_tier: 0,
+    row2_tier: 0,
+  }
+}
+
+test ticket_issued_context_rejects_nonzero_prize_amount() {
+  let datum = test_prize_datum_with_issue_fields(#"0a", #"01", 1)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    assets.zero,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_empty_ticket_policy() {
+  let datum = test_prize_datum_with_issue_fields(#"", #"01", 0)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    assets.zero,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_empty_ticket_name() {
+  let datum = test_prize_datum_with_issue_fields(#"0a", #"", 0)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    assets.zero,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
