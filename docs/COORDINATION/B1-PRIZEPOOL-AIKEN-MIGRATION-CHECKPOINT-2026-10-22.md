@@ -119,3 +119,10 @@ The current Aiken package targets Plutus V3 while the production Haskell Pool va
 - Six Aiken unit tests cover the exact solvency boundary, one sub-unit insolvency, negative liabilities, negative unresolved count, protected locked jackpot, and negative reserve.
 - This is deliberately a pure, isolated parity slice. It is not yet wired into an on-chain Pool validator and does not prove transaction-context, authority-NFT, oracle valuation, paired-validator, or ledger parity.
 - CI triggered on commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0`: [Aiken B1 PrizePool Claim Slice #39936351139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351139) and [Aiken Reveal Parity #39936351134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351134). Initial observation: both runs were pending/in progress; do not mark this addition PASS until the run results are checked.
+
+
+### CI result for the solvency slice
+
+- [Aiken B1 PrizePool Claim Slice run #39936351139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351139) completed **SUCCESS** on the exact source commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0`. Both `aiken check` and `aiken build` steps passed with pinned Aiken `v1.1.22`.
+- [Aiken Reveal Parity run #39936351134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351134) was still in progress at the time of this update; it is not included in the PASS claim above.
+- This closes only the compilation/unit-test gate for the isolated solvency slice. It does not close the complete Pool validator or deployment gates.
