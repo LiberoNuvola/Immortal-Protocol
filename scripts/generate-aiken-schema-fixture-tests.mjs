@@ -305,19 +305,19 @@ use immortal/game_rules.{generate_symbols, row_outcome_index}
 use immortal/reveal_context_guards.{RevealPoolState, expire_window_open, reveal_pool_transition_is_valid, reveal_window_open}
 
 test sync_beacon_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(0, [])) == #"${fixtures['PrizeAction.SyncBeacon']}"
+  serialise_data(reveal_types.SyncBeacon) == #"${fixtures['PrizeAction.SyncBeacon']}"
 }
 
 test reveal_secret_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(1, [b_data(#"736563726574")])) == #"${fixtures['PrizeAction.Reveal']}"
+  serialise_data(reveal_types.Reveal(#"736563726574")) == #"${fixtures['PrizeAction.Reveal']}"
 }
 
 test claim_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(2, [])) == #"${fixtures['PrizeAction.Claim']}"
+  serialise_data(reveal_types.Claim) == #"${fixtures['PrizeAction.Claim']}"
 }
 
 test expire_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(3, [])) == #"${fixtures['PrizeAction.Expire']}"
+  serialise_data(reveal_types.Expire) == #"${fixtures['PrizeAction.Expire']}"
 }
 
 test beacon_target_serialisation_matches_haskell_fixture() {
