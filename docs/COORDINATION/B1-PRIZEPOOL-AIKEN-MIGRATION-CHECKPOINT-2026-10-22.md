@@ -331,3 +331,5 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 
 - The exact-SHA workflow [#21](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40012852721) for `5d5a1b17` completed successfully (`aiken check` and `aiken build`).
 - Commit `93cca12a` adds two typed tests for the expiry lower-bound guard (valid at `expires_at`; rejected one unit earlier), with a finite transaction validity interval. The exact-SHA workflow is pending; do not count those tests as green until it completes.
+
+- The first test-bearing commit `93cca12a` failed `aiken check` (the job log only exposes exit code 1, without a compiler diagnostic). Commit `34a19d8a` simplifies the test fixture to use `interval.after(lower)` instead of constructing the interval record inline. Its exact-SHA workflow must be checked before accepting the expiry tests.
