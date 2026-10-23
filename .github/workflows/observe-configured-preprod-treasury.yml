@@ -15,18 +15,17 @@ jobs:
       KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
       PREPROD_TREASURY_ADDRESS: ${{ vars.PREPROD_TREASURY_ADDRESS }}
       PREPROD_TREASURY_SCRIPT_HASH: ${{ vars.PREPROD_TREASURY_SCRIPT_HASH }}
-      PREPROD_TREASURY_BINDING_REFERENCE: ${{ vars.PREPROD_TREASURY_BINDING_REFERENCE }}
       TREASURY_OBSERVATION_OUTPUT: audit/preprod-evidence/configured-treasury-observation.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - name: Check observer JavaScript syntax
         run: node --check audit/cardano-integration/observe-configured-preprod-treasury.mjs
-      - name: Observe configured Treasury address and exact UTxOs
+      - name: Observe Treasury derived from the committed validator artifact
         run: node audit/cardano-integration/observe-configured-preprod-treasury.mjs
       - name: Upload read-only observation
         if: always() && hashFiles('audit/preprod-evidence/configured-treasury-observation.json') != ''
