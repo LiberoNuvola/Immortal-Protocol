@@ -92,3 +92,14 @@ The same Notion control-center entry says the earlier source observation was at 
 - Latest documentation/conformance runs for commit `da0f29386e6809ba178e0d722049a8fdb77bcd34` are green: Documentation Link Check [39899137883](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137883), Protocol Declaration [39899137884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137884), Cardano Adapter Sale [39899137859](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137859), Portability [39899137970](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137970), and Algorithmic Governability [39899137899](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137899). These are code/documentation conformance only.
 - At the time of this check, Integration Lab run [39899115419](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899115419) and Aiken Reveal Parity run [39899115424](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899115424) were still in progress on a different commit (`c1cf860c6587e74181a793b9188c0be605393b9b`). Their eventual results must be evaluated on their own SHA and must not be conflated with Treasury/EEV evidence.
 - No workflow was dispatched and no transaction was submitted during this review. V3 and Reveal semantics remain untouched.
+
+## CI refresh — 2026-10-23 04:20 UTC
+
+Latest runs on `work/immortal-green-closure` were checked against their exact commit SHAs:
+
+- Checkpoint commit `aed69a6f53fc57260145658a10c1245827a9313b`: Protocol Declaration Conformance `39899502847`, Cardano Adapter Sale Conformance `39899502938`, IMMORTAL Portability Conformance `39899502872`, Algorithmic Governability Adversarial Lab `39899502865`, and Documentation Link Check `39899502967` all completed successfully.
+- Reveal Parity run `39899115424` on `c1cf860c6587e74181a793b9188c0be605393b9b` subsequently completed successfully. This records test status only; no Reveal semantics or code were changed here.
+- IMMORTAL Cardano Integration Lab run `39899115419` on the same `c1cf860c6587e74181a793b9188c0be605393b9b` was still in progress at the real TicketIssued 500x solvency boundary trace when checked; downstream lab steps remain pending. Do not infer a final pass/fail from this intermediate state.
+- The latest successful runs above are conformance/documentation checks, not proof of a live Treasury identity, Treasury swap route, liquidatable inventory, or EEV qualification. The existing address-derivation workflow only derives a script address from the committed validator artifact and explicitly emits `verifiedOnLedger: false`; it does not establish a deployment-configured Treasury UTxO.
+- No workflow was dispatched, no approval was created, and no transaction was built, signed, or submitted during this refresh.
+
