@@ -222,3 +222,22 @@ These are pure harness predicates only. They do not validate the transaction con
 - [IMMORTAL Cardano Integration Lab #39939965624](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39939965624): was still **IN PROGRESS** at checkpoint update time; no result claimed.
 
 Overall status remains **NOT GREEN**. The five action branches are now represented by pure accounting slices in the harness, but the full Aiken Pool validator, authenticated transaction-context checks, complete branch-level differential ledger fixtures, V2-to-V3 deployment compatibility, paired-validator topology, and actual integration-ledger evidence remain open. The already-passing V3 carrier and the Haskell reference were not changed.
+
+## CI follow-up — negative accounting tests and integration lab (2026-10-23)
+
+Commit `c30057d276b4f6ce3e47c04a701a19f6ba8da33f` adds seven negative tests to the pure accounting harness predicates in `poc/aiken-reveal-parity/lib/immortal/b1_pool_types.ak`. The change does not modify the Haskell reference validator or the already-passing V3 carrier.
+
+All eight workflows triggered on this exact commit have now completed successfully:
+
+- [Aiken B1 PrizePool Claim Slice #39941199103](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199103): **SUCCESS** — isolated harness tests/type-check and isolated V3 prototype build.
+- [Aiken Reveal Parity #39941199219](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199219): **SUCCESS** — canonical Haskell fixture generation, serialization parity, build/size checks, and parity evidence gate.
+- [IMMORTAL Cardano Integration Lab #39941199271](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199271): **SUCCESS** — the workflow's full job completed, including Yaci/native-ledger smoke checks and active traces for Reveal, FundTreasury with canonical oracle valuation, TicketIssued at the 500x solvency boundary, Expire, and Prize + Haskell B1PrizePool Claim; P2.8 ledger evidence gate and predeploy structural gate also passed.
+- [Cardano Adapter Sale Conformance #39941199241](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199241): **SUCCESS**.
+- [Protocol Declaration Conformance #39941199200](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199200): **SUCCESS**.
+- [IMMORTAL Portability Conformance #39941199162](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199162): **SUCCESS**.
+- [Algorithmic Governability Adversarial Lab #39941199154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199154): **SUCCESS**.
+- [Documentation Link Check #39941199134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39941199134): **SUCCESS**.
+
+Interpretation is deliberately scoped: these results validate the current CI and integration-lab scenarios. They do **not** establish that the isolated Aiken harness is a complete deployable B1 Pool validator, nor that it has full transaction-context parity with the Haskell validator across all five actions. The complete validator must still reproduce global guards, authority-NFT and Prize topology, signatures, expiry bounds, canonical physical-value/oracle deltas, and all branch-specific datum invariants. Differential positive/negative ledger twins, transaction-size feasibility, and the governed Plutus V2-to-V3 / paired-validator deployment path remain open.
+
+Overall migration status remains **NOT GREEN**. Do not switch the production Pool path, change the Haskell reference, or modify the passing V3 carrier based on these workflow results alone.
