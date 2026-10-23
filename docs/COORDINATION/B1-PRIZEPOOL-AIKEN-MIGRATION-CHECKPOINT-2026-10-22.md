@@ -241,3 +241,22 @@ All eight workflows triggered on this exact commit have now completed successful
 Interpretation is deliberately scoped: these results validate the current CI and integration-lab scenarios. They do **not** establish that the isolated Aiken harness is a complete deployable B1 Pool validator, nor that it has full transaction-context parity with the Haskell validator across all five actions. The complete validator must still reproduce global guards, authority-NFT and Prize topology, signatures, expiry bounds, canonical physical-value/oracle deltas, and all branch-specific datum invariants. Differential positive/negative ledger twins, transaction-size feasibility, and the governed Plutus V2-to-V3 / paired-validator deployment path remain open.
 
 Overall migration status remains **NOT GREEN**. Do not switch the production Pool path, change the Haskell reference, or modify the passing V3 carrier based on these workflow results alone.
+
+## Next executable gate — transaction-context boundary (2026-10-23)
+
+The follow-up inspection of the integration workflow and its exact run logs confirms an important scope boundary:
+
+- The passing active Reveal, FundTreasury, TicketIssued, and Expire traces exercise the isolated Aiken V3 candidate path in the local Yaci lab.
+- The step named **“Execute Aiken Prize + Haskell B1PrizePool Claim trace”** explicitly uses the Haskell B1PrizePool validator for the Pool leg. It is not evidence that an Aiken B1 Pool validator has executed Claim.
+- The wrong-secret Reveal twin was submitted to Yaci and rejected by validator execution; the log records that original inputs were preserved. This is useful negative evidence for the isolated Aiken PrizeValidator + Haskell Pool composition, not full Pool migration parity.
+- The reference-script publication probe's signed publication transaction is measured separately from the complete Reveal spending transaction. The publication pass must not be used to close the full production transaction-size or V2-to-V3 gates.
+
+### Required implementation sequence
+
+1. **Pool global context guard:** implement and test the canonical B1 Pool transaction-context checks against the typed Aiken transaction model: exactly one own Pool input, exactly one continuing Pool output with a decodable datum, and the Pool authority NFT singleton present exactly once in both transaction inputs and outputs and in the own Pool input/output. Keep the Haskell reference as the normative oracle for the behavior.
+2. **Bind action accounting to authenticated context:** connect the existing pure five-action datum predicates to the authenticated pre/post datum and transaction context. Do not treat pure accounting predicates as validators.
+3. **Add action-specific context guards:** reproduce Prize input/output uniqueness and datum identity, ticket mint/name matching for Issue, owner signature and canonical oracle-valued settlement for Claim, payout/effective-pool and status checks for Reveal, and lower-bound expiry finality for Expire. FundTreasury must use the existing canonical oracle/value recomputation, not a direct-balance assumption.
+4. **Differential ledger twins:** for each action, run positive and adversarial negative transactions against the Aiken candidate and canonical Haskell reference using equivalent fixtures; record acceptance/rejection, context, script version, transaction bytes, ExUnits, and evidence hashes.
+5. **Deployment gates remain independent:** prove full transaction-size feasibility and explicitly govern the Plutus V2-to-V3 and paired Prize/Pool validator/hash topology before any production-path switch.
+
+Do not modify the already-passing V3 carrier, change economic semantics, or claim migration GREEN from the current integration-lab pass. The first implementation target is the global transaction-context guard, followed by wiring the action branches to it; the current isolated harness is not yet that validator.
