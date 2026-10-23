@@ -191,6 +191,31 @@ jobs:
       - name: Probe current Yaci cost models with Lucid Evolution
         run: node --import tsx/esm audit/cardano-integration/evolution-cost-model-probe.ts
 
+      - name: Diagnose Yaci transaction-evaluation endpoint contract
+        continue-on-error: true
+        run: |
+          set +e
+          status=$(curl --silent --show-error --max-time 10 \\
+            -o /tmp/yaci-evaluation-probe.json -w '%{http_code}' \\
+            -X POST http://localhost:8080/api/v1/utils/txs/evaluate \\
+            -H 'Content-Type: application/cbor' --data-binary '{}')
+          rc=$?
+          set -e
+          echo "http_status=${status:-none}"
+          echo "curl_exit_code=$rc"
+          if [ -f /tmp/yaci-evaluation-probe.json ]; then
+            node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const raw = readFileSync("/tmp/yaci-evaluation-probe.json", "utf8");
+              let parsed;
+              try { parsed = JSON.parse(raw); } catch {}
+              console.log("response_bytes=" + Buffer.byteLength(raw));
+              console.log("response_top_level_keys=" + (parsed && typeof parsed === "object" ? Object.keys(parsed).join(",") : "non-json-or-non-object"));
+              console.log("response_preview=" + raw.slice(0, 1200).replace(/[\\r\\n\\t]+/g, " "));
+            '
+          fi
+          echo "diagnostic_only=true; empty payload is not a valid transaction and does not establish evaluation compatibility"
+
       - name: Execute V3 carrier against native Cardano ledger
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
