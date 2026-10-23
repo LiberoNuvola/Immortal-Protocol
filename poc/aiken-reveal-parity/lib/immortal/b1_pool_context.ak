@@ -6,7 +6,7 @@
 /// validator and does not replace the canonical Haskell reference.
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
-use cardano/address.{Script}
+use cardano/address.{Script, from_script}
 use cardano/assets.{AssetName, PolicyId}
 use cardano/assets
 use cardano/transaction
@@ -187,7 +187,6 @@ pub fn pool_global_context_is_valid(
 
 // Synthetic transaction-context fixtures. These prove the guard against Aiken's
 // typed transaction model; they are not serialized ledger transactions.
-use cardano/address.{from_script}
 
 const context_test_pool_hash: ScriptHash = #"09"
 const context_test_other_hash: ScriptHash = #"08"
@@ -324,7 +323,16 @@ test pool_context_rejects_missing_input_datum() {
 
 test pool_context_rejects_datum_argument_not_matching_input() {
   let actual = context_test_datum()
-  let altered = B1PrizePoolDatum { ..actual, total_liquidity: 600_001 }
+  let altered = B1PrizePoolDatum {
+    total_liquidity: 600_001,
+    pending_liabilities: actual.pending_liabilities,
+    unresolved_reserve: actual.unresolved_reserve,
+    unresolved_ticket_count: actual.unresolved_ticket_count,
+    locked_jackpot: actual.locked_jackpot,
+    jackpot_threshold: actual.jackpot_threshold,
+    suspended_classes: actual.suspended_classes,
+    prize_hash: actual.prize_hash,
+  }
   let value = context_test_value()
   let own_ref = context_test_ref(0)
   let tx = context_test_tx(
