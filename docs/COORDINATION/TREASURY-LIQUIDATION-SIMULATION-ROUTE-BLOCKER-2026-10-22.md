@@ -103,3 +103,13 @@ Latest runs on `work/immortal-green-closure` were checked against their exact co
 - The latest successful runs above are conformance/documentation checks, not proof of a live Treasury identity, Treasury swap route, liquidatable inventory, or EEV qualification. The existing address-derivation workflow only derives a script address from the committed validator artifact and explicitly emits `verifiedOnLedger: false`; it does not establish a deployment-configured Treasury UTxO.
 - No workflow was dispatched, no approval was created, and no transaction was built, signed, or submitted during this refresh.
 
+## Deployment binding re-check — 2026-10-23
+
+A fresh tracked-tree scan at commit `435af3eac896fe73c48c6397530ec9e364592470` found no committed `preprod-deployment.json`, `preprod-direct-usdm-deployment.json`, `preprod-oracle-state-deployment.json`, or generated `treasury-address.json`; only `.env.example` matched the environment-file scan. GitHub code search also found `VITE_TREASURY_ADDRESS` only as a deployment-configured variable in `src/config.ts`, an empty placeholder in `.env.example`, and descriptive references in the Treasury surface map. This is evidence that the live deployment binding is not committed in the scanned tree, **not** evidence that repository/environment secrets are absent; secret values are not readable through this audit.
+
+The address-derivation workflow deterministically derives a candidate from `plutus/out/treasury.plutus.json` and explicitly marks `verifiedOnLedger: false`. It is not a substitute for the deployment-bound address plus an observed live UTxO.
+
+Integration Lab run `39899115419` (commit `c1cf860c6587e74181a793b9188c0be605393b9b`) later ended as **cancelled**, not passed. Its earlier in-progress state must not be cited as a successful final run. This audit did not rerun it because it is a devnet integration workflow and the cancellation reason is not established here.
+
+Next evidence needed: a non-secret deployment manifest or public deployment record that binds the configured Treasury script hash/address to the exact network and deployed validator version, followed by read-only exact UTxO observation. If the deployment binding exists only in GitHub environment configuration, a permitted workflow should emit a sanitized, signed/hash-bound manifest without exposing secrets or performing funding/approval actions. Do not infer the configured address from the user's wallet or from the unparameterized script address.
+
