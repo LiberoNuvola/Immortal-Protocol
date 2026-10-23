@@ -328,3 +328,6 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - Commit `87260e35` passed Aiken workflow #20: `aiken check` and `aiken build` succeeded after adding the missing `Claimed` import.
 - Commit `5d5a1b17` adds `ticket_expired_prize_context_is_valid`: unique Prize input, configured Pool binding, Pending status, zero payout, positive ticket price, and finite transaction lower bound at/after `expires_at`.
 - This is a context helper, not a complete validator branch. Pool reserve/count accounting, solvency, authority NFT and physical-value context remain separate. The exact-SHA workflow for `5d5a1b17` still needs verification.
+
+- The exact-SHA workflow [#21](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40012852721) for `5d5a1b17` completed successfully (`aiken check` and `aiken build`).
+- Commit `93cca12a` adds two typed tests for the expiry lower-bound guard (valid at `expires_at`; rejected one unit earlier), with a finite transaction validity interval. The exact-SHA workflow is pending; do not count those tests as green until it completes.
