@@ -135,3 +135,46 @@ The current Aiken package targets Plutus V3 while the production Haskell Pool va
 - Evidence scope remains limited: the workflows prove isolated Aiken package checking/building and the tests/serialization gates encoded in each workflow. They do **not** prove a complete deployable Pool validator, Haskell/Aiken transaction acceptance parity, or ledger deployment.
 - The Haskell reference remains the normative behavioral inventory. Any complete Aiken candidate must preserve all five action branches and the three global guards before comparing branch-level outcomes. Do not wire the pure solvency helper into a deployable path until its arithmetic and datum decoding are exercised in the full candidate with differential fixtures.
 - Status remains **NOT GREEN**. Next gate: create a complete candidate only after the implementation maps every helper and branch in `plutus/B1PrizePool.hs` to the Aiken transaction context, with explicit V2→V3 and paired-validator deployment decisions; no production path switch and no changes to the passing V3 carrier.
+
+
+## Implementation inventory — branch-by-branch Pool contract (2026-10-23)
+
+This inventory was checked against `plutus/B1PrizePool.hs` at the current `work/immortal-green-closure` branch head. It is a requirements map for a future complete Aiken candidate, not an implementation claim.
+
+### Global preconditions, before action dispatch
+
+Every action must preserve all three existing global guards:
+
+1. `solvencyInvariant datum` on the pre-state, using `B1LegacyAdapter` and the governed PRE-RICH profile.
+2. `singletonPoolTokenValid`: the configured pool authority NFT totals exactly one unit across all inputs and all outputs, and exactly one unit is present in the own Pool input and continuing Pool output.
+3. `countOwnInputs ctx == 1`: exactly one input spends the Pool script.
+
+The continuing Pool output must resolve to exactly one decodable datum of the expected schema. This is a shared structural dependency, not an optional branch-specific check.
+
+### Action matrix
+
+| Action | Existing Haskell requirements that must survive the port |
+| --- | --- |
+| `FundTreasury` | Recompute the continuing Pool value through the existing authenticated oracle/value path; datum liquidity equals recomputed value and strictly increases; liabilities, reserve, unresolved count, locked jackpot, jackpot threshold, suspended classes, and prize hash are unchanged; post-state solvency holds. |
+| `TicketIssued(price)` | Price is positive; exactly one decodable Prize output; status Pending and prize amount zero; ticket policy/name nonempty; matching Ticket NFT is minted in this transaction; datum price equals redeemer; liquidity/liabilities/locked jackpot/threshold/suspended classes/prize hash unchanged; unresolved count increases by one; reserve increases by the governed issue delta; post-state solvency holds. |
+| `TicketRevealed(price)` | Positive unresolved count; exactly one Prize input and output; input is Pending; ticket identity and price are preserved; output status is Revealed; payout is nonnegative and no greater than the existing effective-pool calculation; Pool liquidity and protected fields remain unchanged; unresolved count decreases by one; reserve changes by the governed reveal delta; pending liabilities change by the governed reveal delta; post-state solvency holds. |
+| `TicketClaimed(amount)` | Amount positive and no greater than pre-state pending liabilities; exactly one Prize input and output; input Revealed and output Claimed; ticket identity and prize amount are immutable; owner is derived from the ticket NFT input and signs; owner output has exactly the required oracle-valued USDM amount under the current equality check; physical Pool oracle-valued amount decreases by exactly the claim amount; reserve/count/locked jackpot/threshold/suspended classes/prize hash unchanged; liquidity decreases by amount; liabilities follow `liabilityClaimDelta`; post-state solvency holds. |
+| `TicketExpired` | Positive unresolved count; exactly one decodable Prize input; transaction lower bound is at/after expiry; Prize datum binds to this Pool script; ticket is Pending with zero payout and positive price; liquidity/locked jackpot/threshold/suspended classes/prize hash unchanged; unresolved count decreases by one; reserve follows the governed expiry delta and remains nonnegative; liabilities unchanged; post-state solvency holds. |
+
+### Helper-level dependencies to map explicitly
+
+- Datum and action constructor/field order must remain compatible with the canonical Haskell Plutus Data fixtures.
+- `findSingleContinuingDatum`, Prize input/output uniqueness, and the Pool script identity must be reproduced; merely matching datum arithmetic is insufficient.
+- `Economic.totalUsdmValue` for claimant settlement and `Economic.poolUsdmValue` for the Pool delta are distinct normative calculations. Do not replace either with an assumed direct USDM balance or merge the two meanings.
+- The Pool validator currently uses `PlutusLedgerApi.V2`; the isolated Aiken harness uses Plutus V3. Script-version and paired Prize/Pool hash topology are separate gates and must not be inferred from successful Aiken unit tests.
+- Keep the existing Haskell validator as the behavioral reference until valid and invalid transaction twins have been run against both implementations on the same context/ledger fixtures.
+
+### Gate status
+
+- [x] Branch-level requirements inventoried from the Haskell reference.
+- [ ] Full Aiken validator implements all five branches and global guards.
+- [ ] Differential positive/negative transaction fixtures for all branches.
+- [ ] Actual ledger/context acceptance parity and transaction-size feasibility.
+- [ ] Explicitly governed V2-to-V3 and paired-validator deployment path.
+
+Overall migration remains **NOT GREEN**. The inventory is deliberately documentation-only; it does not activate or replace any production validator.
