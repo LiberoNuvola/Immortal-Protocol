@@ -10,6 +10,22 @@ if (document.schema !== 'pre-rich-reveal-plutus-data-v3') {
   throw new Error(`Unsupported fixture schema: ${document.schema}`);
 }
 const fixtures = document.fixtures ?? {};
+const poolActionFixtures = [
+  ['FundTreasury', 'B1PrizePoolAction.FundTreasury', 'constr_data(0, [])'],
+  ['TicketIssued', 'B1PrizePoolAction.TicketIssued', 'constr_data(1, [i_data(100)])'],
+  ['TicketRevealed', 'B1PrizePoolAction.TicketRevealed', 'constr_data(2, [i_data(100)])'],
+  ['TicketClaimed', 'B1PrizePoolAction.TicketClaimed', 'constr_data(3, [i_data(250)])'],
+  ['TicketExpired', 'B1PrizePoolAction.TicketExpired', 'constr_data(4, [])'],
+];
+for (const [, key] of poolActionFixtures) {
+  if (typeof fixtures[key] !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(fixtures[key])) {
+    throw new Error('Missing or malformed canonical Haskell action fixture: ' + key);
+  }
+}
+const poolActionTests = poolActionFixtures.map(([name, key, expr]) =>
+  '\ntest b1_pool_action_' + name + '_serialisation_matches_haskell_fixture() {\n'
+  + '  serialise_data(' + expr + ') == #"' + fixtures[key] + '"\n}\n'
+).join(String.fromCharCode(10));
 const semanticFixtures = document.semanticFixtures ?? {};
 const rowTierCases = semanticFixtures.rowTierCases;
 if (!Array.isArray(rowTierCases) || rowTierCases.length !== 5) {
@@ -352,6 +368,8 @@ test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
     b_data(#"3036"),
   ])) == #"${fixtures['B1PrizePoolDatum']}"
 }
+
+${poolActionTests}
 
 ${rowTierTests}
 ${prizeAmountTests}
