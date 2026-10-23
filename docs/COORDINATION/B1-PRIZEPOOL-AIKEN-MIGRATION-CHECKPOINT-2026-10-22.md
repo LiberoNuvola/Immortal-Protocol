@@ -379,3 +379,10 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - The additional tests reject a nonzero initial `prize_amount`, an empty ticket policy, and an empty ticket name in a TicketIssued Prize output.
 - Combined with the earlier verified tests, the TicketIssued Prize-context helper now has focused coverage for invalid price, non-Pending status, nonzero payout, empty ticket identity fields, absent/duplicate Prize outputs, absent/non-singleton mint, and action-price mismatch.
 - This is still only a transaction-context helper within the isolated harness. The Pool accounting predicate, global guards, complete validator entry point, differential ledger tests, and deployment compatibility remain open.
+
+
+## TicketIssued Pool accounting negative tests verified — 2026-10-24
+
+- Exact-SHA workflow [Aiken B1 PrizePool Claim Slice #40041258930](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40041258930) completed successfully on source commit [`6221759b`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/6221759bd2bd33e5a71c154db3bd8ef9bf799377). The isolated harness tests/type checking and V3 prototype build both passed.
+- Six new tests reject TicketIssued transitions that mutate total liquidity, pending liabilities, locked jackpot, jackpot threshold, suspended classes, or prize hash. These complement existing checks for exact reserve increase, unresolved count increment, positive price, and pre/post solvency.
+- The tests exercise the pure datum accounting predicate only. They do not establish the actual continuing Pool UTxO value, authority NFT conservation, transaction-level oracle valuation, or a complete deployable validator.
