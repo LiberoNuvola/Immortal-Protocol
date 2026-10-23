@@ -10,7 +10,7 @@ use cardano/assets.{AssetName, PolicyId}
 use cardano/assets
 use cardano/address.{Script, from_script}
 use cardano/transaction
-use immortal/reveal_types.{BeaconPending, BeaconTarget, Pending, PrizeDatum}
+use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconTarget, Pending, Revealed, PrizeDatum}
 
 pub type ResolvedPrizeInput {
   ResolvedPrizeInput {
@@ -282,4 +282,110 @@ test prize_context_rejects_mismatched_spending_datum() {
     [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
   )
   !resolved_prize_input_matches(tx, ref, test_prize_hash, altered)
+}
+
+
+/// Compares fields that define the ticket's immutable identity across a
+/// Pool-observed transition. Action-specific code must separately validate
+/// status, payout, beacon/result fields, expiry, minting, signatures and value.
+pub fn same_prize_identity(before: PrizeDatum, after: PrizeDatum) -> Bool {
+  before.ticket_policy == after.ticket_policy
+    && before.ticket_name == after.ticket_name
+    && before.player_commitment == after.player_commitment
+    && before.price_usdm == after.price_usdm
+    && before.commitment == after.commitment
+    && before.game_version == after.game_version
+    && before.ticket_nonce == after.ticket_nonce
+    && before.payment_policy == after.payment_policy
+    && before.payment_name == after.payment_name
+    && before.prize_pool_hash == after.prize_pool_hash
+    && before.issued_at == after.issued_at
+    && before.expires_at == after.expires_at
+}
+
+/// Resolves the unique consumed and continuing Prize outputs, then verifies
+/// that the ticket identity and Pool binding are preserved. This deliberately
+/// does not assert that a particular action/status transition is valid.
+pub fn unique_prize_transition_preserves_identity(
+  tx: transaction.Transaction,
+  prize_hash: ScriptHash,
+  expected_pool_hash: ScriptHash,
+) -> Bool {
+  when (only_prize_input(tx, prize_hash), only_prize_output(tx, prize_hash)) is {
+    (Some(before), Some(after)) ->
+      before.datum.prize_pool_hash == expected_pool_hash
+        && after.datum.prize_pool_hash == expected_pool_hash
+        && same_prize_identity(before.datum, after.datum)
+    _ -> False
+  }
+}
+
+test prize_identity_accepts_action_fields_changing() {
+  let before = test_prize_datum()
+  let after = PrizeDatum {
+    ticket_policy: before.ticket_policy,
+    ticket_name: before.ticket_name,
+    player_commitment: before.player_commitment,
+    price_usdm: before.price_usdm,
+    commitment: before.commitment,
+    game_version: before.game_version,
+    ticket_nonce: before.ticket_nonce,
+    prize_amount: 250,
+    payment_policy: before.payment_policy,
+    payment_name: before.payment_name,
+    status: Revealed,
+    result: #"aa",
+    prize_tier: 2,
+    beacon_target: before.beacon_target,
+    beacon_status: BeaconReady,
+    beacon_value: #"bb",
+    mc_hash: #"cc",
+    materios_context: #"dd",
+    prize_pool_hash: before.prize_pool_hash,
+    issued_at: before.issued_at,
+    expires_at: before.expires_at,
+    row1_tier: 2,
+    row2_tier: 1,
+  }
+  same_prize_identity(before, after)
+}
+
+test prize_identity_rejects_price_mutation() {
+  let before = test_prize_datum()
+  let after = PrizeDatum {
+    ticket_policy: before.ticket_policy,
+    ticket_name: before.ticket_name,
+    player_commitment: before.player_commitment,
+    price_usdm: before.price_usdm + 1,
+    commitment: before.commitment,
+    game_version: before.game_version,
+    ticket_nonce: before.ticket_nonce,
+    prize_amount: before.prize_amount,
+    payment_policy: before.payment_policy,
+    payment_name: before.payment_name,
+    status: before.status,
+    result: before.result,
+    prize_tier: before.prize_tier,
+    beacon_target: before.beacon_target,
+    beacon_status: before.beacon_status,
+    beacon_value: before.beacon_value,
+    mc_hash: before.mc_hash,
+    materios_context: before.materios_context,
+    prize_pool_hash: before.prize_pool_hash,
+    issued_at: before.issued_at,
+    expires_at: before.expires_at,
+    row1_tier: before.row1_tier,
+    row2_tier: before.row2_tier,
+  }
+  !same_prize_identity(before, after)
+}
+
+test prize_transition_requires_configured_pool_binding() {
+  let datum = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(datum))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+  )
+  !unique_prize_transition_preserves_identity(tx, test_prize_hash, test_prize_hash)
 }
