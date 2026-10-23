@@ -80,3 +80,15 @@ The same Notion control-center entry says the earlier source observation was at 
 - The settlement-asset parameterization record is not a numerical or execution authorization: deployment-specific price/affordability parameters remain open. No new governance decision authorizing a Preprod tUSDM settlement profile or a Treasury liquidation route was found in the reviewed records.
 - Therefore the next qualifying evidence is still deployment-bound: identify the actual configured Treasury via `VITE_TREASURY_ADDRESS` or a known transaction/UTxO reference bound to the canonical Treasury script, then independently establish a concrete route and execution evidence. Do not choose among the 281 tUSDM holders by balance or script shape.
 - No workflow was dispatched, no transaction was submitted, and no V3/Reveal semantics were changed by this cross-check.
+
+
+## Workflow safety boundary — direct-USDM bootstrap is not a liquidation probe
+
+**Rechecked:** 2026-10-23 against `.github/workflows/immortal-cardano-preprod.yml`.
+
+- The workflow exposes manual input `bootstrap_direct_usdm`. Its job verifies `PREPROD_REVEAL_SEED`, materializes Oracle State, bootstraps a direct-USDM B1 PrizePool, and then creates source-set and EV1–EV7 qualification artifacts. This is a chain-changing bootstrap path, not a read-only Treasury inventory check and not an asset-to-USDM swap.
+- Do not dispatch this job as a substitute for finding the configured Treasury or proving liquidation. It can sign/submit transactions and its artifacts would not, by themselves, prove an existing Treasury-owned asset can be sold.
+- The current simulator remains arithmetic-only. It accepts `OBSERVED_EXECUTION` as a caller-supplied label and explicitly says external evidence must substantiate it; the label is not authenticated by code.
+- Latest documentation/conformance runs for commit `da0f29386e6809ba178e0d722049a8fdb77bcd34` are green: Documentation Link Check [39899137883](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137883), Protocol Declaration [39899137884](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137884), Cardano Adapter Sale [39899137859](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137859), Portability [39899137970](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137970), and Algorithmic Governability [39899137899](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899137899). These are code/documentation conformance only.
+- At the time of this check, Integration Lab run [39899115419](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899115419) and Aiken Reveal Parity run [39899115424](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899115424) were still in progress on a different commit (`c1cf860c6587e74181a793b9188c0be605393b9b`). Their eventual results must be evaluated on their own SHA and must not be conflated with Treasury/EEV evidence.
+- No workflow was dispatched and no transaction was submitted during this review. V3 and Reveal semantics remain untouched.
