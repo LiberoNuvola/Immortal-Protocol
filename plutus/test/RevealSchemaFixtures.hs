@@ -752,6 +752,11 @@ main = do
           , "fixtures" .=
               object
                 [ "PrizeDatum.pending" .= hexData samplePrizeDatum
+                , "PrizeStatus.Pending" .= hexData Pending
+                , "PrizeStatus.Revealed" .= hexData Revealed
+                , "PrizeStatus.Claimed" .= hexData Claimed
+                , "BeaconStatus.BeaconPending" .= hexData BeaconPending
+                , "BeaconStatus.BeaconReady" .= hexData BeaconReady
                 , "PrizeAction.SyncBeacon" .= hexData SyncBeacon
                 , "PrizeAction.Reveal" .= hexData (Reveal "secret")
                 , "PrizeAction.Claim" .= hexData Claim
