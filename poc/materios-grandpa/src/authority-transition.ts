@@ -175,6 +175,40 @@ export interface VerifiedAuthoritySetTransition {
   readonly __verifiedAuthoritySetTransition: "verified";
 }
 
+// Runtime provenance for verified results. A public TypeScript brand is not
+// an authentication boundary: callers can reproduce its string fields and hash.
+const verifiedTransitionDigests = new WeakMap<object, string>();
+
+/**
+ * Returns true only for the exact object created by this module after its
+ * supplied proof verifier accepted it, and only while its statement remains
+ * byte-for-byte consistent with the digest captured at verification time.
+ */
+export function isAuthenticVerifiedAuthoritySetTransition(
+  transition: VerifiedAuthoritySetTransition
+): boolean {
+  if (transition === null || typeof transition !== "object") {
+    return false;
+  }
+
+  const recordedDigest = verifiedTransitionDigests.get(transition);
+  if (recordedDigest === undefined) {
+    return false;
+  }
+
+  try {
+    const currentDigest = hashAuthoritySetTransitionStatement(
+      transition.publicStatement
+    );
+    return (
+      recordedDigest === bytesToHex(currentDigest) &&
+      equalBytes(transition.statementHash, currentDigest)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export interface AuthoritySetTransitionPublicStatement {
   readonly protocolVersion: 1;
   readonly chainId: string;
@@ -213,15 +247,22 @@ export async function verifyAuthoritySetTransition(
     );
   }
 
-  return {
+  const statementHash =
+    hashAuthoritySetTransitionStatement(publicStatement);
+  const result: VerifiedAuthoritySetTransition = {
     kind: "verified-materios-authority-set-transition",
     publicStatement,
-    statementHash:
-      hashAuthoritySetTransitionStatement(
-        publicStatement
-      ),
+    statementHash,
     __verifiedAuthoritySetTransition: "verified"
   };
+
+  // Record identity and digest privately; neither can be forged by copying
+  // the public fields or by recomputing the public statement hash.
+  verifiedTransitionDigests.set(
+    result,
+    bytesToHex(statementHash)
+  );
+  return result;
 }
 
 export function authoritySetTransitionPublicStatement(
