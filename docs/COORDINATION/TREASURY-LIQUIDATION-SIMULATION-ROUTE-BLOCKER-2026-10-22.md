@@ -185,3 +185,12 @@ Added a separate, manual-only observation path on `work/immortal-green-closure`:
 - No workflow was dispatched as part of adding this path, and no live observation was produced. The three environment variables have not been verified as configured. Therefore Treasury identity/custody, liquidation route, swap execution, and QNE remain OPEN.
 
 This is a safer read-only diagnostic surface, not a closure of the Treasury blocker. The next gate is to populate the variables only from a reviewed deployment record, then run this manual observer and independently validate the recorded binding evidence.
+
+
+## Manual observer availability gate — 2026-10-23
+
+A follow-up GitHub API check attempted to fetch `.github/workflows/observe-configured-preprod-treasury.yml` from `main` and received `404 NOT_FOUND`. The same file is present on `work/immortal-green-closure` (blob `7499f4fb7f568f9bab693658436731034619c246`). A default-branch code search for `observe-configured-preprod-treasury` returned no matches. Together, these checks indicate that the workflow is not currently available on `main` and therefore should not be assumed runnable from the standard Actions UI. This is a bounded repository/API finding; it does not reveal whether DEMETER environment variables exist.
+
+The workflow on the work branch has `workflow_dispatch`, read-only `contents: read`, and checks out `work/immortal-green-closure` explicitly. It expects three non-secret DEMETER environment variables. No open PR was found that specifically promotes this observer; the visible open PRs found by repository search concern other workstreams. Do not merge an unrelated PR or promote the whole work branch just to make this workflow dispatchable.
+
+**Disposition / next gate:** the observer implementation exists but is not yet an operationally available default-branch workflow. Promote only this reviewed read-only observer path through the normal review process, or use an already available read-only workflow to obtain the deployment-bound inputs. Do not create a new branch, automatically merge, dispatch deployment/bootstrap/approval workflows, or infer Treasury identity from the unparameterized validator. No workflow was dispatched and no transaction or V3/Reveal change was made during this check.
