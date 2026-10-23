@@ -213,3 +213,81 @@ test claim_accounting_rejects_changed_suspended_classes() {
   !claim_accounting_transition_matches(before, after, 12_500)
 }
 
+test claim_accounting_rejects_changed_unresolved_ticket_count() {
+  let before =
+    B1PrizePoolDatum {
+      total_liquidity: 100_000,
+      pending_liabilities: 12_500,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  let after =
+    B1PrizePoolDatum {
+      total_liquidity: 87_500,
+      pending_liabilities: 0,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 1,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  !claim_accounting_transition_matches(before, after, 12_500)
+}
+
+test claim_accounting_rejects_changed_prize_hash() {
+  let before =
+    B1PrizePoolDatum {
+      total_liquidity: 100_000,
+      pending_liabilities: 12_500,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  let after =
+    B1PrizePoolDatum {
+      total_liquidity: 87_500,
+      pending_liabilities: 0,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"aabbcc",
+    }
+  !claim_accounting_transition_matches(before, after, 12_500)
+}
+
+test claim_accounting_rejects_wrong_liquidity_delta() {
+  let before =
+    B1PrizePoolDatum {
+      total_liquidity: 100_000,
+      pending_liabilities: 12_500,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  let after =
+    B1PrizePoolDatum {
+      total_liquidity: 87_499,
+      pending_liabilities: 0,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  !claim_accounting_transition_matches(before, after, 12_500)
+}
+
