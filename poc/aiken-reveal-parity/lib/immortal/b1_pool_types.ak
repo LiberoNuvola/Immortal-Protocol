@@ -1,3 +1,4 @@
+use immortal/b1_pool_solvency.{b1_pool_solvency_is_valid}
 use immortal/reveal_types.{B1PrizePoolDatum}
 
 /// Haskell constructor order is compatibility-sensitive:
@@ -291,3 +292,69 @@ test claim_accounting_rejects_wrong_liquidity_delta() {
   !claim_accounting_transition_matches(before, after, 12_500)
 }
 
+
+
+/// Combines the isolated accounting transition with the existing B1 solvency
+/// projection on both datum states. This remains a pure test-harness predicate;
+/// it does not validate transaction context, NFT authority, or oracle values.
+pub fn pool_claim_transition_with_solvency_is_valid(
+  before: B1PrizePoolDatum,
+  after: B1PrizePoolDatum,
+  claimed_amount: Int,
+) -> Bool {
+  b1_pool_solvency_is_valid(before)
+    && b1_pool_solvency_is_valid(after)
+    && claim_accounting_transition_matches(before, after, claimed_amount)
+}
+
+test claim_transition_composes_accounting_and_solvency() {
+  let before =
+    B1PrizePoolDatum {
+      total_liquidity: 600_000,
+      pending_liabilities: 12_500,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  let after =
+    B1PrizePoolDatum {
+      total_liquidity: 587_500,
+      pending_liabilities: 0,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  pool_claim_transition_with_solvency_is_valid(before, after, 12_500)
+}
+
+test claim_transition_rejects_insolvent_pre_state() {
+  let before =
+    B1PrizePoolDatum {
+      total_liquidity: 512_999,
+      pending_liabilities: 12_500,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  let after =
+    B1PrizePoolDatum {
+      total_liquidity: 500_499,
+      pending_liabilities: 0,
+      unresolved_reserve: 1_000,
+      unresolved_ticket_count: 2,
+      locked_jackpot: 500,
+      jackpot_threshold: 5_000,
+      suspended_classes: 0,
+      prize_hash: #"001122",
+    }
+  !pool_claim_transition_with_solvency_is_valid(before, after, 12_500)
+}
