@@ -13,7 +13,7 @@ jobs:
     environment: DEMETER
     env:
       KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
-      PREPROD_TREASURY_ADDRESS: ${{ vars.PREPROD_TREASURY_ADDRESS }}
+      PREPROD_TREASURY_ADDRESS: ${{ vars.VITE_TREASURY_ADDRESS }}
       PREPROD_TREASURY_SCRIPT_HASH: ${{ vars.PREPROD_TREASURY_SCRIPT_HASH }}
       TREASURY_OBSERVATION_OUTPUT: audit/preprod-evidence/configured-treasury-observation.json
     steps:
