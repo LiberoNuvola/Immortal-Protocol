@@ -49,7 +49,7 @@ The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harn
 
 - [x] Extended the canonical Haskell fixture producer in `plutus/test/RevealSchemaFixtures.hs` to emit Plutus Data encodings for all five `B1PrizePoolAction` constructors: `FundTreasury`, `TicketIssued 100`, `TicketRevealed 100`, `TicketClaimed 250`, and `TicketExpired`.
 - [x] Extended `scripts/generate-aiken-schema-fixture-tests.mjs` to require those Haskell-produced fixtures and generate Aiken `serialise_data` differential tests for constructor tags and payloads; updated `.github/workflows/aiken-reveal-parity.yml` to fail closed if any action fixture is missing or malformed.
-- [ ] The new B1 action serialization differential tests are awaiting the Aiken Reveal Parity workflow on the exact final source commit. Do not count them as passing until that run succeeds.
+- [x] B1 action serialization differential tests passed on source commit `9a598e7d944974c1b1314e629a4caf4dccb4d860`: [Aiken Reveal Parity run #39917959260](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39917959260) completed successfully. The job generated canonical Haskell Plutus Data fixtures, generated Aiken tests from them, executed Haskell-to-Aiken serialization parity tests, compiled the package, and enforced the fail-closed evidence gate.
 
 ## Required implementation sequence
 
