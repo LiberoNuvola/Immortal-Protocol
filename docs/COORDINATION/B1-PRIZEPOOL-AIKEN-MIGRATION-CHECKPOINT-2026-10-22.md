@@ -333,3 +333,11 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - Commit `93cca12a` adds two typed tests for the expiry lower-bound guard (valid at `expires_at`; rejected one unit earlier), with a finite transaction validity interval. The exact-SHA workflow is pending; do not count those tests as green until it completes.
 
 - The first test-bearing commit `93cca12a` failed `aiken check` (the job log only exposes exit code 1, without a compiler diagnostic). Commit `34a19d8a` simplifies the test fixture to use `interval.after(lower)` instead of constructing the interval record inline. Its exact-SHA workflow must be checked before accepting the expiry tests.
+
+
+## Expiry test verification — 2026-10-23 19:50 UTC
+
+- The exact-SHA workflow [#23](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40013025297) for commit `34a19d8a` completed successfully. The finite-lower-bound expiry tests passed, and both `aiken check` and the isolated V3 prototype build succeeded. This closes the previously pending fixture/test verification; the original failure on `93cca12a` remains unexplained because its log had no compiler diagnostic.
+- Commit [`f8cb7a58`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f8cb7a582bab0dd8182f38da85a7f114cf80dea7) adds a negative regression test proving that `ticket_expired_prize_context_is_valid` rejects a datum whose configured Pool hash does not match the expected Pool hash.
+- Its exact-SHA workflow [#24](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40014187720) completed successfully: `aiken check` and the isolated V3 prototype build both passed.
+- Scope remains deliberately limited: expiry context and Pool accounting are separate pure/context slices. There is still no deployable Aiken B1PrizePool validator, and no claim of ledger-level or production parity follows from these harness results.
