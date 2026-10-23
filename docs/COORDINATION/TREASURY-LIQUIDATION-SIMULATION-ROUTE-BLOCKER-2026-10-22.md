@@ -141,3 +141,20 @@ The provenance check was completed against the exact workflow definition and exa
 - The historical source set still dates from 2026-10-21 and the approval itself explicitly requires live UTxO revalidation plus authenticated control state, ProtectedCapital provenance, viability/liquidity evidence and authoritative Issue decision before Issue admission. The pin reconciliation does not make that source set fresh, prove a Treasury swap, prove the configured Treasury address, or authorize a new workflow run.
 
 On the checkpoint commit, `Algorithmic Governability Adversarial Lab` run [#39923842713](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39923842713) and `IMMORTAL Portability Conformance` run [#39923842729](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39923842729) both completed successfully on SHA `12c715d00026a800ce2a83fbd78646190c37c886`. These are documentation/conformance signals only and do not close the Treasury route blocker.
+
+
+## Post-reconciliation CI and route-search refresh — 2026-10-23
+
+After the source-pin correction was committed as `2649d6d4dfb6c91bc8bf70b4e326d75f04247c36`, all five branch workflows completed successfully on that exact SHA:
+
+- [Protocol Declaration Conformance #39925809505](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39925809505)
+- [Cardano Adapter Sale Conformance #39925809678](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39925809678)
+- [Documentation Link Check #39925809512](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39925809512)
+- [Algorithmic Governability Adversarial Lab #39925809783](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39925809783)
+- [IMMORTAL Portability Conformance #39925809686](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39925809686)
+
+These checks pass for the documented source-pin correction and repository conformance; none executes a Treasury swap or proves live deployment binding.
+
+A fresh GitHub code-search pass on the repository returned no matches for `swapExact`, `Minswap`, or `SundaeSwap`. `VITE_TREASURY_ADDRESS` appears as a runtime environment read in `src/config.ts`, as a blank placeholder in `.env.example`, and in explanatory documentation; no deployment value is present in searchable committed source. This is bounded evidence only: external DEX adapters, private environment values, or non-indexed paths cannot be ruled out by code search alone.
+
+**Operational next gate remains external/deployment-bound:** obtain a non-secret authenticated manifest or known transaction/UTxO reference proving the configured Treasury address and deployed script hash on Preprod, then read-only observe its exact UTxOs. Only after identity/custody is established should a concrete route be evaluated. No workflow was dispatched, no transaction was built/signed/submitted, and V3/Reveal were untouched during this refresh.
