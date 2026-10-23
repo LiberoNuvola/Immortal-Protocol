@@ -335,13 +335,10 @@ const fullContextImports = [
 ];
 
 if (!source.includes(contextImport)) throw new Error('Generated Aiken fixture import anchor not found');
-if (!source.includes('use immortal/reveal_transition') && !source.includes('use immortal/reveal_types')) {
-  source = source.replace(
-    contextImport,
-    contextImport + '\nuse immortal/reveal_transition\nuse immortal/reveal_types',
-  );
-} else if (!source.includes('use immortal/reveal_transition') || !source.includes('use immortal/reveal_types')) {
-  throw new Error('Generated Aiken fixture imports are partially installed; refusing duplicate or ambiguous mutation');
+for (const importLine of ['use immortal/reveal_transition', 'use immortal/reveal_types']) {
+  if (!source.includes(importLine)) {
+    source = source.replace(contextImport, contextImport + '\n' + importLine);
+  }
 }
 const endAnchor = 'test haskell_crypto_player_commitment() {';
 if (!source.includes(endAnchor)) throw new Error('Generated Aiken test insertion point not found');
