@@ -489,3 +489,45 @@ test ticket_expired_rejects_reserve_underflow() {
   let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: -50, unresolved_ticket_count: 1, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
   !pool_ticket_expired_transition_matches(before, after, 100)
 }
+
+test fund_treasury_rejects_non_increasing_liquidity() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_fund_treasury_transition_matches(before, after)
+}
+
+test ticket_issued_rejects_wrong_unresolved_count() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_100, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_issued_transition_matches(before, after, 100)
+}
+
+test ticket_issued_rejects_insolvent_post_state() {
+  let before = B1PrizePoolDatum { total_liquidity: 513_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 513_000, pending_liabilities: 12_500, unresolved_reserve: 1_100, unresolved_ticket_count: 3, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_issued_transition_matches(before, after, 100)
+}
+
+test ticket_revealed_rejects_wrong_unresolved_count() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_600, unresolved_reserve: 900, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_revealed_transition_matches(before, after, 100, 100)
+}
+
+test ticket_revealed_rejects_negative_price() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_600, unresolved_reserve: 1_100, unresolved_ticket_count: 1, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_revealed_transition_matches(before, after, -100, 100)
+}
+
+test ticket_expired_rejects_wrong_liability_delta() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_499, unresolved_reserve: 900, unresolved_ticket_count: 1, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_expired_transition_matches(before, after, 100)
+}
+
+test ticket_expired_rejects_wrong_unresolved_count() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 900, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_expired_transition_matches(before, after, 100)
+}
