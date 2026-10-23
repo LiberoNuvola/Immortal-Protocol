@@ -1,0 +1,50 @@
+name: Aiken B1 PrizePool Claim Slice
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "poc/aiken-reveal-parity/**"
+      - ".github/workflows/aiken-b1-pool-slice.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "poc/aiken-reveal-parity/**"
+      - ".github/workflows/aiken-b1-pool-slice.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiken-b1-pool-slice-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aiken-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+
+      - name: Install pinned Aiken
+        uses: aiken-lang/setup-aiken@v1
+        with:
+          version: v1.1.22
+
+      - name: Verify toolchain
+        run: aiken --version
+
+      - name: Run isolated harness tests and type checking
+        working-directory: poc/aiken-reveal-parity
+        run: aiken check
+
+      - name: Build isolated V3 prototype
+        working-directory: poc/aiken-reveal-parity
+        run: |
+          set -euo pipefail
+          aiken build
+          test -s plutus.json
