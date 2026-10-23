@@ -178,3 +178,13 @@ The continuing Pool output must resolve to exactly one decodable datum of the ex
 - [ ] Explicitly governed V2-to-V3 and paired-validator deployment path.
 
 Overall migration remains **NOT GREEN**. The inventory is deliberately documentation-only; it does not activate or replace any production validator.
+
+
+## Composed Claim accounting + solvency slice (2026-10-23)
+
+- Updated `poc/aiken-reveal-parity/lib/immortal/b1_pool_types.ak` at commit `e8a3ccd5d7768310befede651927414d040e678a`.
+- Added `pool_claim_transition_with_solvency_is_valid`, a pure harness predicate that composes the existing Claim accounting transition with `b1_pool_solvency_is_valid` on both the pre- and post-datum.
+- Added a positive test for an accounting-correct transition with solvent pre/post states and a negative test for an insolvent pre-state. This deliberately does not pretend a valid claim transition can turn a solvent state insolvent when liquidity and liabilities both decrease by the same amount.
+- The helper remains isolated: no transaction context, authority NFT, ticket owner/signature, oracle valuation, physical Pool value delta, or on-chain validator has been added.
+- Workflows triggered on exact commit `e8a3ccd5d7768310befede651927414d040e678a` were observed in progress at checkpoint time: [Aiken Reveal Parity](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987311), [Aiken B1 PrizePool Claim Slice](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987315), and [Documentation Link Check](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987422). Do not count this new composition as passing until the runs complete successfully.
+- The branch-by-branch Haskell contract inventory is recorded above. The complete deployable Aiken Pool validator and all ledger/deployment parity gates remain **NOT GREEN**.
