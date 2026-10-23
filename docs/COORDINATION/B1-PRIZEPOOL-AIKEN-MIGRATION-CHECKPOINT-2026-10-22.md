@@ -315,3 +315,9 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - This is only the Prize-context slice. Pool datum accounting deltas, universal solvency, authority NFT, canonical oracle/value context and a full validator entry point remain separate requirements. It is not production parity by itself.
 - Exact-SHA workflow [#18](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40011592171) for `288698e3` completed successfully, including `aiken check` and `aiken build`.
 - The next commit [`5ab94fd7`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5ab94fd7bae54ebdf7a03163dd34e1ba9edf0183) adds a TicketClaimed Prize-datum slice: `Revealed → Claimed`, stable ticket identity, positive unchanged payout and claimed amount bound to the consumed datum. Three tests cover valid unchanged payout, payout mutation, and redeemer amount mismatch. Its exact-SHA workflow result is pending verification.
+
+
+## TicketClaimed CI failure and import fix — 2026-10-23
+
+- The first workflow for commit [`5ab94fd7`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5ab94fd7bae54ebdf7a03163dd34e1ba9edf0183), [run #19](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40011659890), failed during `aiken check`; the build step was skipped. Inspection identified the missing `Claimed` constructor import in `b1_pool_prize_context.ak`.
+- Commit [`87260e35`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/87260e35e2f614382f2f25e48150e27d47946309) adds the missing import. This is a targeted compile fix; do not count TicketClaimed tests as passing until the exact-SHA Aiken workflow succeeds.
