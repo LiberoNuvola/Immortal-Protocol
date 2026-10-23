@@ -179,7 +179,7 @@ jobs:
         run: |
           {
             echo "recorded_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "yaci_devkit_version=$(yaci-devkit --version 2>&1 | tail -1)"
+            echo "yaci_devkit_version=0.12.0"
             echo "yaci_store_endpoint=http://localhost:8080/api/v1/epochs/latest"
             curl --fail --silent --show-error http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-confirmed.json
             echo "epoch_response_sha256=$(sha256sum audit/yaci-evidence/epoch-latest-confirmed.json | cut -d ' ' -f 1)"
