@@ -603,16 +603,7 @@ fn test_prize_tx_with_lower_bound(
     mint: assets.zero,
     certificates: [],
     withdrawals: [],
-    validity_range: interval.Interval {
-      lower_bound: interval.Bound {
-        bound_type: interval.Finite(lower),
-        is_inclusive: True,
-      },
-      upper_bound: interval.Bound {
-        bound_type: interval.PositiveInfinity,
-        is_inclusive: False,
-      },
-    },
+    validity_range: interval.after(lower),
     extra_signatories: [],
     redeemers: [],
     datums: transaction.placeholder.datums,
