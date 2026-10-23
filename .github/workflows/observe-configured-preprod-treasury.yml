@@ -1,0 +1,37 @@
+name: Observe Configured Preprod Treasury
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: DEMETER
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_TREASURY_ADDRESS: ${{ vars.PREPROD_TREASURY_ADDRESS }}
+      PREPROD_TREASURY_SCRIPT_HASH: ${{ vars.PREPROD_TREASURY_SCRIPT_HASH }}
+      PREPROD_TREASURY_BINDING_REFERENCE: ${{ vars.PREPROD_TREASURY_BINDING_REFERENCE }}
+      TREASURY_OBSERVATION_OUTPUT: audit/preprod-evidence/configured-treasury-observation.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/immortal-green-closure
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Observe configured Treasury address and exact UTxOs
+        run: node audit/cardano-integration/observe-configured-preprod-treasury.mjs
+      - name: Upload read-only observation
+        if: always() && hashFiles('audit/preprod-evidence/configured-treasury-observation.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: configured-preprod-treasury-observation
+          path: audit/preprod-evidence/configured-treasury-observation.json
+          if-no-files-found: error
