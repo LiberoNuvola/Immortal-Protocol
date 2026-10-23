@@ -6,6 +6,7 @@
 /// rules. This module is not a validator entry point.
 use aiken/collection/list
 use aiken/crypto.{ScriptHash}
+use aiken/interval
 use cardano/assets.{AssetName, PolicyId}
 use cardano/assets
 use cardano/address.{Script, from_script}
@@ -562,4 +563,28 @@ test ticket_claimed_context_rejects_wrong_claim_amount() {
     [test_prize_output(test_prize_hash, transaction.InlineDatum(test_claimed_datum(250)))],
   )
   !ticket_claimed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 249)
+}
+
+
+/// Pool-side TicketExpired Prize-context slice. The transaction's own finite
+/// lower validity bound must reach expires_at; expiry is never accepted from a
+/// caller-supplied timestamp. Pool reserve/count accounting remains a separate
+/// predicate, and this helper is not a complete validator branch.
+pub fn ticket_expired_prize_context_is_valid(
+  tx: transaction.Transaction,
+  prize_hash: ScriptHash,
+  expected_pool_hash: ScriptHash,
+) -> Bool {
+  when only_prize_input(tx, prize_hash) is {
+    Some(before) ->
+      before.datum.prize_pool_hash == expected_pool_hash
+        && before.datum.status == Pending
+        && before.datum.prize_amount == 0
+        && before.datum.price_usdm > 0
+        && when tx.validity_range.lower_bound.bound_type is {
+          interval.Finite(lower) -> lower >= before.datum.expires_at
+          _ -> False
+        }
+    None -> False
+  }
 }
