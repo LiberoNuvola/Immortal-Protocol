@@ -321,3 +321,10 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 
 - The first workflow for commit [`5ab94fd7`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5ab94fd7bae54ebdf7a03163dd34e1ba9edf0183), [run #19](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40011659890), failed during `aiken check`; the build step was skipped. Inspection identified the missing `Claimed` constructor import in `b1_pool_prize_context.ak`.
 - Commit [`87260e35`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/87260e35e2f614382f2f25e48150e27d47946309) adds the missing import. This is a targeted compile fix; do not count TicketClaimed tests as passing until the exact-SHA Aiken workflow succeeds.
+
+
+## Update 2026-10-23 — TicketExpired
+
+- Commit `87260e35` passed Aiken workflow #20: `aiken check` and `aiken build` succeeded after adding the missing `Claimed` import.
+- Commit `5d5a1b17` adds `ticket_expired_prize_context_is_valid`: unique Prize input, configured Pool binding, Pending status, zero payout, positive ticket price, and finite transaction lower bound at/after `expires_at`.
+- This is a context helper, not a complete validator branch. Pool reserve/count accounting, solvency, authority NFT and physical-value context remain separate. The exact-SHA workflow for `5d5a1b17` still needs verification.
