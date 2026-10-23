@@ -588,3 +588,60 @@ pub fn ticket_expired_prize_context_is_valid(
     None -> False
   }
 }
+
+
+fn test_prize_tx_with_lower_bound(
+  inputs: List<transaction.Input>,
+  outputs: List<transaction.Output>,
+  lower: Int,
+) -> transaction.Transaction {
+  transaction.Transaction {
+    inputs,
+    reference_inputs: [],
+    outputs,
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: interval.Interval {
+      lower_bound: interval.Bound {
+        bound_type: interval.Finite(lower),
+        is_inclusive: True,
+      },
+      upper_bound: interval.Bound {
+        bound_type: interval.PositiveInfinity,
+        is_inclusive: False,
+      },
+    },
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
+  }
+}
+
+test ticket_expired_context_accepts_expired_pending_zero_payout() {
+  let datum = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx_with_lower_bound(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(datum))],
+    [],
+    1_000,
+  )
+  ticket_expired_prize_context_is_valid(tx, test_prize_hash, test_other_hash)
+}
+
+test ticket_expired_context_rejects_early_lower_bound() {
+  let datum = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx_with_lower_bound(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(datum))],
+    [],
+    999,
+  )
+  !ticket_expired_prize_context_is_valid(tx, test_prize_hash, test_other_hash)
+}
