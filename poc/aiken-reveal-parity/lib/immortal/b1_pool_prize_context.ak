@@ -289,18 +289,11 @@ test prize_context_rejects_mismatched_spending_datum() {
 /// Pool-observed transition. Action-specific code must separately validate
 /// status, payout, beacon/result fields, expiry, minting, signatures and value.
 pub fn same_prize_identity(before: PrizeDatum, after: PrizeDatum) -> Bool {
+  // Match the normative Haskell Pool identity predicate exactly. Price,
+  // status, payout, Pool binding and all other action fields are validated
+  // separately by the relevant action guard; do not broaden identity here.
   before.ticket_policy == after.ticket_policy
     && before.ticket_name == after.ticket_name
-    && before.player_commitment == after.player_commitment
-    && before.price_usdm == after.price_usdm
-    && before.commitment == after.commitment
-    && before.game_version == after.game_version
-    && before.ticket_nonce == after.ticket_nonce
-    && before.payment_policy == after.payment_policy
-    && before.payment_name == after.payment_name
-    && before.prize_pool_hash == after.prize_pool_hash
-    && before.issued_at == after.issued_at
-    && before.expires_at == after.expires_at
 }
 
 /// Resolves the unique consumed and continuing Prize outputs, then verifies
@@ -350,13 +343,13 @@ test prize_identity_accepts_action_fields_changing() {
   same_prize_identity(before, after)
 }
 
-test prize_identity_rejects_price_mutation() {
+test prize_identity_rejects_ticket_name_mutation() {
   let before = test_prize_datum()
   let after = PrizeDatum {
     ticket_policy: before.ticket_policy,
-    ticket_name: before.ticket_name,
+    ticket_name: #"ff",
     player_commitment: before.player_commitment,
-    price_usdm: before.price_usdm + 1,
+    price_usdm: before.price_usdm,
     commitment: before.commitment,
     game_version: before.game_version,
     ticket_nonce: before.ticket_nonce,
