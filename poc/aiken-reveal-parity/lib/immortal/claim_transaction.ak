@@ -345,12 +345,19 @@ fn pool_claim_transition_is_valid(
                   None -> False
                   Some(next_pool) ->
                     and {
+                      // Match the existing Haskell TicketClaimed accounting.
+                      // These are parity guards, not a complete Pool validator.
+                      payout > 0,
+                      payout <= old_pool.pending_liabilities,
                       old_pool.prize_hash == prize_hash,
                       next_pool.prize_hash == prize_hash,
                       next_pool.total_liquidity == old_pool.total_liquidity - payout,
                       next_pool.pending_liabilities == old_pool.pending_liabilities - payout,
                       next_pool.unresolved_reserve == old_pool.unresolved_reserve,
                       next_pool.unresolved_ticket_count == old_pool.unresolved_ticket_count,
+                      next_pool.locked_jackpot == old_pool.locked_jackpot,
+                      next_pool.jackpot_threshold == old_pool.jackpot_threshold,
+                      next_pool.suspended_classes == old_pool.suspended_classes,
                     }
                 }
             }
