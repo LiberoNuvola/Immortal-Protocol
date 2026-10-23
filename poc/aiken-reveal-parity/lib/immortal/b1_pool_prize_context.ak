@@ -767,3 +767,28 @@ test ticket_issued_context_rejects_duplicate_prize_outputs() {
   let tx = test_prize_tx_with_mint([], [output, output], mint)
   !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
 }
+
+
+test ticket_issued_context_rejects_zero_action_price() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    mint,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 0)
+}
+
+test ticket_issued_context_rejects_non_pending_output() {
+  let datum = test_revealed_datum(0)
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let tx = test_prize_tx_with_mint(
+    [],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(datum))],
+    mint,
+  )
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, datum.price_usdm)
+}
