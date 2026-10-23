@@ -69,3 +69,14 @@ The Notion **PRE-RICH — Control Center**, entry dated 2026-10-22 (checkpoint �
 The same Notion control-center entry says the earlier source observation was at `2026-10-21T05:57:26.613Z` and required `LIVE_UTXO_REVALIDATION` immediately before admission. The exact out-reference was not freshly revalidated in the evidence reviewed here. The configured Preprod tUSDM unit is identified as policy `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9` plus asset name `0014df10745553444d`; however, governance approval of this test-network asset as the settlement unit for IMMORTAL/PRE-RICH is a separate decision and must not be inferred from the asset identity alone.
 
 **Disposition:** historical EEV approval is not sufficient to close P-01 or authorize Issue. Required sequence remains: current reviewed source bytes → fresh exact-Pool live source-set → EV1–EV7 qualification with source and evidence digests bound together → separately authorized new approval → live UTxO revalidation at admission. This is not the same as identifying a Treasury liquidation route; both the deployment Treasury identity/custody and any asset-to-USDM execution route remain unproven. No approval workflow was dispatched and no transaction was submitted during this check.
+
+
+## Notion governance cross-check — settlement equivalence versus liquidation
+
+**Checked:** 2026-10-23; Notion pages `11 — EconomicFeeTarget Parameterization & PRE Settlement Asset Decision Record v0.1`, `18 — PRE Settlement Asset Granularity, Price Domain & Concrete Affordability Parameters v0.1`, and `23 — DApp → Cardano Adapter Operational Bridge & Live Conformance v0.1`.
+
+- The recorded settlement rule (DEC-3) keeps **USDM as the economic reference unit** and allows USDM, ADA, or another supported asset only when the exact required USDM-equivalent value is established by the active verified price reference and settlement precision. Overpayment and underpayment are invalid.
+- This is a settlement-conformance rule; it does **not** prove a Treasury-to-USDM swap route, actual liquidity, execution cost, minimum-output protection, or a completed ledger transaction. The DApp → Adapter operational bridge remains OPEN.
+- The settlement-asset parameterization record is not a numerical or execution authorization: deployment-specific price/affordability parameters remain open. No new governance decision authorizing a Preprod tUSDM settlement profile or a Treasury liquidation route was found in the reviewed records.
+- Therefore the next qualifying evidence is still deployment-bound: identify the actual configured Treasury via `VITE_TREASURY_ADDRESS` or a known transaction/UTxO reference bound to the canonical Treasury script, then independently establish a concrete route and execution evidence. Do not choose among the 281 tUSDM holders by balance or script shape.
+- No workflow was dispatched, no transaction was submitted, and no V3/Reveal semantics were changed by this cross-check.
