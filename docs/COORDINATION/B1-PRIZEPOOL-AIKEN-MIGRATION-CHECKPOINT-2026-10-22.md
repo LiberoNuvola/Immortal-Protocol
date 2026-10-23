@@ -356,3 +356,10 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 
 - Commit [`4ad39438`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/4ad394387b756ffcf4df84c67b486d8166404a21) adds two negative tests to `ticket_issued_prize_context_is_valid`: rejection when no Prize output is present and rejection when two outputs appear at the configured Prize script hash.
 - The exact-SHA Aiken workflow [#26](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40017835789) is queued at the time of this checkpoint update. Do not count these two new tests as green until this exact run completes successfully.
+
+
+## TicketIssued resolver negative tests verified — 2026-10-23
+
+- Exact-SHA workflow [#26](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40017835789) for commit `4ad394387b756ffcf4df84c67b486d8166404a21` completed successfully.
+- `aiken check` (including the isolated harness tests and type checking) and the isolated V3 prototype build both passed. The added `ticket_issued_context_rejects_missing_prize_output` and `ticket_issued_context_rejects_duplicate_prize_outputs` tests are now verified green on that exact source SHA.
+- This closes the pending test status only. It does not make the Prize-context helper a deployable Pool validator, nor prove ledger-level parity or transaction-context coverage beyond the tested cases.
