@@ -110,3 +110,12 @@ The current Aiken package targets Plutus V3 while the production Haskell Pool va
 - Aiken Claim context predicate: prototype; not production/deployment evidence.
 - Complete Aiken B1 PrizePool validator: **NOT IMPLEMENTED / NOT GREEN**.
 - V2-to-V3 ledger compatibility, paired validator topology, differential transaction outcomes, and transaction-size feasibility: **OPEN**.
+
+
+## Follow-up implementation — isolated B1 solvency slice (2026-10-23)
+
+- Added `poc/aiken-reveal-parity/lib/immortal/b1_pool_solvency.ak` at commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0`.
+- The function `b1_pool_solvency_is_valid` ports the existing legacy B1 projection into the universal solvency equation: protected capital = pending liabilities + (500 × unresolved reserve) + locked jackpot. It also checks non-negative liquidity, liabilities, unresolved reserve/count, and locked jackpot, matching the current `B1LegacyAdapter.legacyB1ToUniversalEconomicState` and `UniversalEconomicKernel.solvencyInvariant` projection.
+- Six Aiken unit tests cover the exact solvency boundary, one sub-unit insolvency, negative liabilities, negative unresolved count, protected locked jackpot, and negative reserve.
+- This is deliberately a pure, isolated parity slice. It is not yet wired into an on-chain Pool validator and does not prove transaction-context, authority-NFT, oracle valuation, paired-validator, or ledger parity.
+- CI triggered on commit `0bbcfb7a6117fa6319ec6dce9f346b185c4c80c0`: [Aiken B1 PrizePool Claim Slice #39936351139](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351139) and [Aiken Reveal Parity #39936351134](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39936351134). Initial observation: both runs were pending/in progress; do not mark this addition PASS until the run results are checked.
