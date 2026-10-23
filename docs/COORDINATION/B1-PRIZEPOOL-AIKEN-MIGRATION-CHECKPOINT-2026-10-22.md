@@ -305,3 +305,12 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - A source comparison against `plutus/B1PrizePool.hs` then caught an important parity constraint: the normative Haskell identity predicate compares **only** `ticket_policy` and `ticket_name`; price, status, payout, Pool binding and other fields have separate action-specific guards. Commit [`93a92887`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/93a92887401cf32dbe8e39b7ea0b765301dc734b) narrows `same_prize_identity` to those exact two fields and changes the negative regression test to mutate the ticket name. Its exact workflow [#17](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40011390339) completed successfully, including `aiken check` and `aiken build`.
 - `unique_prize_transition_preserves_identity` additionally checks configured Pool-hash binding; it does not validate the action-specific status transition, ticket NFT mint/burn, expiry, signatures, canonical oracle valuation, payout settlement, or B1 Pool physical-value delta.
 - This remains context-resolution infrastructure, not a full action validator and not a deployed Pool candidate.
+
+
+## TicketRevealed Prize-context slice added — 2026-10-23
+
+- Commit [`288698e3`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/288698e35aa287b463d9083dde3d1fb5106be935) adds `ticket_revealed_prize_context_is_valid` to `b1_pool_prize_context.ak`.
+- The helper resolves exactly one Prize input and output, requires configured Pool-hash binding on both datums, checks `Pending → Revealed`, compares ticket identity using only `ticket_policy` + `ticket_name` (matching the Haskell predicate), binds both datum prices to the action price, and reads payout from the continuing Prize datum while enforcing `0 <= payout <= pre_state_effective_pool`.
+- Four focused tests cover the valid transition, payout above the pre-state pool, action-price mismatch, and negative payout.
+- This is only the Prize-context slice. Pool datum accounting deltas, universal solvency, authority NFT, canonical oracle/value context and a full validator entry point remain separate requirements. It is not production parity by itself.
+- Exact-SHA Aiken workflow result for `288698e3` is pending verification; do not call this addition green until its workflow completes successfully.
