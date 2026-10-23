@@ -38,6 +38,7 @@ import Types
   ( BeaconStatus (..)
   , BeaconTarget (..)
   , B1PrizePoolDatum (..)
+  , B1PrizePoolAction (..)
   , PrizeAction (..)
   , PrizeDatum (..)
   , PrizeStatus (..)
@@ -757,6 +758,11 @@ main = do
                 , "PrizeAction.Expire" .= hexData Expire
                 , "BeaconTarget" .= hexData sampleTarget
                 , "B1PrizePoolDatum" .= hexData samplePoolDatum
+                , "B1PrizePoolAction.FundTreasury" .= hexData FundTreasury
+                , "B1PrizePoolAction.TicketIssued" .= hexData (TicketIssued 100)
+                , "B1PrizePoolAction.TicketRevealed" .= hexData (TicketRevealed 100)
+                , "B1PrizePoolAction.TicketClaimed" .= hexData (TicketClaimed 250)
+                , "B1PrizePoolAction.TicketExpired" .= hexData TicketExpired
                 ]
           , "cryptoFixtures" .= cryptoFixtures
           , "transitionFixtures" .= transitionFixtures
