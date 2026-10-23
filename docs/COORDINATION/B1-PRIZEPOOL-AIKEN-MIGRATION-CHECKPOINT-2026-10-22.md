@@ -286,3 +286,12 @@ Review of the normative branches in `plutus/B1PrizePool.hs` confirms that compos
 **Important:** the existing `price_usdm` and payout arguments used by any shared test helper are not authoritative merely because they are passed into a function. For `TicketRevealed`, payout comes from the continuing Prize datum; for `TicketExpired`, reserve release comes from the consumed Prize datum; for `TicketClaimed`, the owner and payout settlement are transaction-derived and oracle-valued. These bindings must be implemented in the candidate and tested against the Haskell reference, not replaced with caller-supplied values or raw token-balance comparisons.
 
 Next safe coding gate: introduce action-specific Prize-context resolvers and positive/negative typed transaction fixtures, then compose each resolver with its existing accounting predicate. Do not add a production Pool validator entry point or claim full context parity until the five branches are wired and the candidate compiles. Production topology, Plutus V2/V3 compatibility, ledger twins, and full transaction-size feasibility remain independent open gates.
+
+
+## Prize context resolver module added — 2026-10-23 19:18 UTC
+
+- Added `poc/aiken-reveal-parity/lib/immortal/b1_pool_prize_context.ak` in commit [`7144de55`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/7144de55a181354083c31efd11281a2b14f6378a).
+- The module resolves exactly one input/output at a configured Prize script hash, decodes inline or witness datums fail-closed, and can verify that the resolved consumed datum equals the datum supplied to the spending validator.
+- This is a reusable helper only. It does not yet validate action-specific Prize status transitions, ticket NFT mint/burn, expiry, signatures, canonical oracle valuation, payout settlement, or the B1 Pool physical-value delta. It is not wired into the Pool validator (no deployable Aiken B1 Pool entrypoint exists yet).
+- **Verification status:** commit exists on `work/immortal-green-closure`; an Actions run for this exact commit was not visible at checkpoint update time. Do not mark the module compiled until the Aiken check/build workflow reports success.
+- Next: confirm Aiken compilation, then add tests for missing/duplicate Prize inputs and outputs, missing/unresolvable datums, and mismatched own datum; only then wire the resolver into the five action-specific transaction predicates.
