@@ -81,3 +81,32 @@ The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harn
 **Not GREEN** until all of the following are evidenced: buildable deployable Aiken Pool validator; encoding compatibility; positive and negative ledger twins; parity against Haskell on the same fixtures; workflow uses the fresh Aiken artifact; no stale Plutus JSON fallback; V3 carrier unchanged and still independently passing.
 
 This checkpoint records the current migration boundary and acceptance criteria. It does not claim implementation, parity, or deployment.
+
+
+## Audit follow-up — 2026-10-23
+
+### Source-level confirmation
+
+The current branch was re-read at `work/immortal-green-closure` before this note was added. The Aiken harness remains configured with `plutus = "v3"` and Aiken `v1.1.22`; its README explicitly describes it as an isolated parity prototype, not a deployable validator.
+
+The existing Haskell `plutus/B1PrizePool.hs` Claim branch has mandatory global guards before dispatching on the action:
+- pre-state `solvencyInvariant`;
+- singleton pool authority NFT conserved as exactly one unit across inputs and outputs, including the own Pool input/output;
+- exactly one input from the Pool script.
+
+Its `TicketClaimed` branch additionally verifies the prize input/output, owner signature, oracle-valued claimant payout, physical Pool value delta using `Economic.poolUsdmValue`, immutable Pool fields, accounting deltas, and post-state solvency.
+
+The Aiken `claim_transaction.ak` function is explicitly a Prize-validator transaction-context predicate. Its `pool_claim_transition_is_valid` helper checks only a subset of the Pool datum/accounting transition and explicitly defers the authority NFT, physical Pool value delta, and complete Pool validator responsibilities. It must not be treated as the Pool validator or as proof that the complete Claim path is all-Aiken.
+
+### Implementation boundary
+
+Do not solve this gap by adding a Claim-only replacement for `B1PrizePool.hs`, by weakening the existing Haskell checks, or by changing the passing V3 carrier. The next implementation unit is a complete, separately identifiable Aiken B1 PrizePool validator candidate that preserves every action branch (`FundTreasury`, `TicketIssued`, `TicketRevealed`, `TicketClaimed`, `TicketExpired`) and the global guards, then receives differential tests against the Haskell reference and real ledger/context validation.
+
+The current Aiken package targets Plutus V3 while the production Haskell Pool validator targets Plutus V2. Deployment compatibility and the paired Prize/Pool script-hash topology remain explicit gates; typed serialization and isolated unit tests do not close them.
+
+### Status after this audit
+
+- Typed schema/action serialization: previously passing CI evidence remains valid for the tested schemas/actions only.
+- Aiken Claim context predicate: prototype; not production/deployment evidence.
+- Complete Aiken B1 PrizePool validator: **NOT IMPLEMENTED / NOT GREEN**.
+- V2-to-V3 ledger compatibility, paired validator topology, differential transaction outcomes, and transaction-size feasibility: **OPEN**.
