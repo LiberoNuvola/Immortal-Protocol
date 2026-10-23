@@ -11,11 +11,11 @@ if (document.schema !== 'pre-rich-reveal-plutus-data-v3') {
 }
 const fixtures = document.fixtures ?? {};
 const poolActionFixtures = [
-  ['FundTreasury', 'B1PrizePoolAction.FundTreasury', 'FundTreasury'],
-  ['TicketIssued', 'B1PrizePoolAction.TicketIssued', 'TicketIssued(100)'],
-  ['TicketRevealed', 'B1PrizePoolAction.TicketRevealed', 'TicketRevealed(100)'],
-  ['TicketClaimed', 'B1PrizePoolAction.TicketClaimed', 'TicketClaimed(250)'],
-  ['TicketExpired', 'B1PrizePoolAction.TicketExpired', 'TicketExpired'],
+  ['FundTreasury', 'B1PrizePoolAction.FundTreasury', 'reveal_types.FundTreasury'],
+  ['TicketIssued', 'B1PrizePoolAction.TicketIssued', 'reveal_types.TicketIssued(100)'],
+  ['TicketRevealed', 'B1PrizePoolAction.TicketRevealed', 'reveal_types.TicketRevealed(100)'],
+  ['TicketClaimed', 'B1PrizePoolAction.TicketClaimed', 'reveal_types.TicketClaimed(250)'],
+  ['TicketExpired', 'B1PrizePoolAction.TicketExpired', 'reveal_types.TicketExpired'],
 ];
 for (const [, key] of poolActionFixtures) {
   if (typeof fixtures[key] !== 'string' || !/^(?:[0-9a-f]{2})+$/.test(fixtures[key])) {
@@ -294,7 +294,7 @@ use aiken/builtin.{b_data, constr_data, i_data, serialise_data}
 use aiken/crypto
 use aiken/primitive/bytearray
 use immortal/reveal_rules.{PrizeTable, classify_row_tier, prize_amount_for_tier, row_payout_total}
-use immortal/reveal_types.{B1PrizePoolAction, FundTreasury, TicketClaimed, TicketExpired, TicketIssued, TicketRevealed}
+use immortal/reveal_types
 use immortal/beacon.{BeaconTarget, derive_beacon, derive_symbols_seed, derive_ticket_seed, encode_beacon_target, field, player_commitment, ticket_commitment}
 use immortal/game_rules.{generate_symbols, row_outcome_index}
 use immortal/reveal_context_guards.{RevealPoolState, expire_window_open, reveal_pool_transition_is_valid, reveal_window_open}
