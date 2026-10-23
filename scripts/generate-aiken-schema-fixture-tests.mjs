@@ -325,36 +325,36 @@ test beacon_target_serialisation_matches_haskell_fixture() {
 }
 
 test pending_prize_datum_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(0, [
-    b_data(#"6131"),
-    b_data(#"3031"),
-    b_data(#"3032"),
-    i_data(100),
-    b_data(#"3033"),
-    b_data(#"636c61737369632d362d7631"),
-    i_data(7),
-    i_data(0),
-    b_data(#"3034"),
-    b_data(#"3035"),
-    constr_data(0, []),
-    b_data(#""),
-    i_data(0),
-    constr_data(0, [
-      i_data(0),
-      i_data(42),
-      b_data(#"303130323033"),
-      b_data(#[0x76, 0x31]),
-    ]),
-    constr_data(1, []),
-    b_data(#"3036"),
-    b_data(#"3037"),
-    b_data(#"3038"),
-    b_data(#"3039"),
-    i_data(1000),
-    i_data(9000),
-    i_data(0),
-    i_data(0),
-  ])) == #"${fixtures['PrizeDatum.pending']}"
+  serialise_data(reveal_types.PrizeDatum {
+    ticket_policy: #"6131",
+    ticket_name: #"3031",
+    player_commitment: #"3032",
+    price_usdm: 100,
+    commitment: #"3033",
+    game_version: #"636c61737369632d362d7631",
+    ticket_nonce: 7,
+    prize_amount: 0,
+    payment_policy: #"3034",
+    payment_name: #"3035",
+    status: reveal_types.Pending,
+    result: #"",
+    prize_tier: 0,
+    beacon_target: reveal_types.BeaconTarget {
+      network_id: 0,
+      round: 42,
+      mainchain_ref: #"303130323033",
+      version: #"7631",
+    },
+    beacon_status: reveal_types.BeaconReady,
+    beacon_value: #"3036",
+    mc_hash: #"3037",
+    materios_context: #"3038",
+    prize_pool_hash: #"3039",
+    issued_at: 1000,
+    expires_at: 9000,
+    row1_tier: 0,
+    row2_tier: 0,
+  }) == #"${fixtures['PrizeDatum.pending']}"
 }
 
 test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
