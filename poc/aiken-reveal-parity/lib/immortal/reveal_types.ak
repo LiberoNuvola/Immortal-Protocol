@@ -72,3 +72,13 @@ pub type B1PrizePoolDatum {
     prize_hash: ScriptHash,
   }
 }
+
+/// Redeemer wire schema matching Types.hs B1PrizePoolAction constructor order.
+/// Keep these variants in the same order as the canonical Haskell type.
+pub type B1PrizePoolAction {
+  FundTreasury
+  TicketIssued(Int)
+  TicketRevealed(Int)
+  TicketClaimed(Int)
+  TicketExpired
+}
