@@ -269,3 +269,20 @@ Do not modify the already-passing V3 carrier, change economic semantics, or clai
 - [x] Aiken B1 PrizePool Claim Slice run [#13](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884509) on exact commit `97809d19ba11589c82fc2c7d2e414a695d82b24b` completed **SUCCESS**: `aiken check` and `aiken build` passed.
 - [ ] Aiken Reveal Parity run [#197](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884366) and Integration Lab [#2088](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884371) were still running when this entry was written; record their final outcomes separately before treating them as evidence.
 - [ ] This remains a tested **context-guard module**, not a deployable `B1PrizePool` validator. The guard is not yet wired into all five action branches, and the tests are synthetic typed-transaction fixtures rather than Yaci/native-ledger transaction twins. Do not declare the migration GREEN, switch the production Pool path, modify the Haskell reference, or touch the passing V3 carrier.
+
+
+## Action-context binding review — 2026-10-23
+
+Review of the normative branches in `plutus/B1PrizePool.hs` confirms that composing the global guard with the current pure accounting predicates is necessary but not sufficient. Before any candidate dispatcher can be treated as a validator, each branch must bind its amounts and post-state to authenticated transaction context:
+
+| Action | Existing accounting predicate | Context that must be bound before acceptance |
+|---|---|---|
+| `FundTreasury` | liquidity increase + invariant fields + solvency | Recomputed canonical oracle-valued physical Pool output; it must equal post-datum liquidity. |
+| `TicketIssued(priceUsdm)` | reserve/count deltas + solvency | Exactly one decodable Prize input at configured Prize hash; Pending, zero prize amount, valid ticket identity; `pdPriceUsdm == priceUsdm`; matching Ticket NFT mint in the same transaction. |
+| `TicketRevealed(priceUsdm)` | reserve/liability/count deltas + solvency | Unique Prize input and output; Pending-to-Revealed status; immutable ticket identity; input/output price binding; payout derived from output Prize datum and bounded by pre-state effective pool. |
+| `TicketClaimed(claimedAmount)` | liquidity/liability deltas + invariant fields + solvency | Unique Prize input/output; Revealed-to-Claimed status; unchanged ticket identity and payout; owner derived from the input holding exactly one ticket NFT and owner signature; canonical oracle-valued owner payment; canonical `Economic.poolUsdmValue` input/output delta exactly equal to claim amount. |
+| `TicketExpired` | reserve/count release + solvency | Unique Prize input; transaction at/after `pdExpiresAt`; Prize datum bound to this Pool script hash; Pending status and zero payout; reserve release derived from Prize price. |
+
+**Important:** the existing `price_usdm` and payout arguments used by any shared test helper are not authoritative merely because they are passed into a function. For `TicketRevealed`, payout comes from the continuing Prize datum; for `TicketExpired`, reserve release comes from the consumed Prize datum; for `TicketClaimed`, the owner and payout settlement are transaction-derived and oracle-valued. These bindings must be implemented in the candidate and tested against the Haskell reference, not replaced with caller-supplied values or raw token-balance comparisons.
+
+Next safe coding gate: introduce action-specific Prize-context resolvers and positive/negative typed transaction fixtures, then compose each resolver with its existing accounting predicate. Do not add a production Pool validator entry point or claim full context parity until the five branches are wired and the candidate compiles. Production topology, Plutus V2/V3 compatibility, ledger twins, and full transaction-size feasibility remain independent open gates.
