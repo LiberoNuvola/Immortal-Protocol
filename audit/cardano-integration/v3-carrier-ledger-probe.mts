@@ -1,6 +1,7 @@
-/** Ledger-native V3 carrier mint probe against the local Yaci Conway devnet.
- * Intentionally bypasses Lucid UPLC evaluation: the signed transaction is submitted
- * to the real local Cardano node, so acceptance/rejection comes from ledger semantics.
+/** V3 carrier mint probe against the local Yaci Conway devnet.
+ * localUPLCEval:false disables Lucid's local UPLC evaluator, but does not bypass
+ * provider-side transaction evaluation during complete(). The transaction is only
+ * submitted to the ledger if provider evaluation and transaction completion succeed.
  */
 import { readFileSync } from 'node:fs'
 import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script } from '@lucid-evolution/lucid'
