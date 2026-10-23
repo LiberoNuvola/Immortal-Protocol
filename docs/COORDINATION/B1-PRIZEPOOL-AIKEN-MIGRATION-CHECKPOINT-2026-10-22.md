@@ -41,7 +41,9 @@ The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harn
 - [x] GitHub Actions run [#1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39897916470) on commit `78a3747277f7dd2a9e9aedd3dab8d8baafe9d3a2` succeeded. The harness tests/type-checking and isolated V3 prototype build both passed.
 - [x] Removed the duplicate Aiken `B1PrizePoolDatum` declaration from `b1_pool_types.ak`; it now imports the canonical harness schema from `immortal/reveal_types`.
 - [x] GitHub Actions run [#2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39898385512) on commit `b69507765199c50d7cea2a73f42e3bff95f14eb1` succeeded after that schema-reuse refactor.
-- [ ] The new slice is still not a deployable validator and does not by itself implement the transaction-context Claim checks, authenticated oracle valuation, pool authority NFT checks, or universal solvency invariant. No claim of on-ledger parity or deployment is made.
+- [x] Tightened `pool_claim_transition_is_valid` in [`claim_transaction.ak`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/poc/aiken-reveal-parity/lib/immortal/claim_transaction.ak): payout must be positive and no greater than the old pending liabilities; accounting transition checks liquidity and liabilities deltas; reserve, unresolved ticket count, locked jackpot, jackpot threshold, suspended classes, and prize hash must remain invariant as specified by the slice.
+- [x] GitHub Actions run [#3](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899115433) on commit `c1cf860c6587e74181a793b9188c0be605393b9b` succeeded. Job `aiken-check` completed successfully, including isolated harness tests/type checking and the isolated V3 prototype build.
+- [ ] The new slice is still not a deployable validator and does not by itself implement the transaction-context Claim checks, authenticated oracle valuation, pool authority NFT checks, or universal solvency invariant. Run #3 is compile/harness evidence only, not on-ledger parity or deployment evidence.
 
 ## Required implementation sequence
 
@@ -50,6 +52,7 @@ The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harn
 - [ ] Implement a deployable B1PrizePool Aiken validator with compatible parameters, datum, redeemers, and script purpose; do not treat the Reveal parity harness as deployable without an explicit architecture change.
 - [ ] Add differential fixtures for valid and invalid `TicketClaimed` transactions.
 - [ ] Negative tests: missing/duplicate Prize input or output, wrong status, changed ticket identity, altered payout, absent owner signature, NFT not held by the signing owner, wrong owner payment, wrong pool value delta, duplicate/missing pool token, multiple pool inputs/outputs, wrong accounting fields, insolvent post-state.
+- [ ] Add targeted negative tests for the newly added slice guards (zero payout, payout above pending liabilities, mutation of locked jackpot, jackpot threshold, or suspended classes) where fixture construction permits; do not count unimplemented tests as passed.
 - [ ] Positive test: valid revealed ticket, exact payout, valid owner signature, canonical oracle valuation, exact Pool accounting transition, solvent post-state.
 - [ ] Run the compiled Aiken Pool validator on the local ledger with the Aiken Prize validator and compare accepted/rejected outcomes to the existing Haskell implementation on identical fixtures.
 - [ ] Bind the generated Aiken artifact and its hash into the integration workflow; only then make the Aiken Pool path active.
