@@ -10,7 +10,7 @@ use cardano/assets.{AssetName, PolicyId}
 use cardano/assets
 use cardano/address.{Script, from_script}
 use cardano/transaction
-use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconTarget, Pending, Revealed, PrizeDatum}
+use immortal/reveal_types.{BeaconPending, BeaconReady, BeaconTarget, Claimed, Pending, Revealed, PrizeDatum}
 
 pub type ResolvedPrizeInput {
   ResolvedPrizeInput {
