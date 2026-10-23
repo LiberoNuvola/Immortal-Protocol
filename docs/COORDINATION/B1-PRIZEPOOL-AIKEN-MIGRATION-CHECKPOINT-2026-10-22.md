@@ -341,3 +341,12 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - Commit [`f8cb7a58`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f8cb7a582bab0dd8182f38da85a7f114cf80dea7) adds a negative regression test proving that `ticket_expired_prize_context_is_valid` rejects a datum whose configured Pool hash does not match the expected Pool hash.
 - Its exact-SHA workflow [#24](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40014187720) completed successfully: `aiken check` and the isolated V3 prototype build both passed.
 - Scope remains deliberately limited: expiry context and Pool accounting are separate pure/context slices. There is still no deployable Aiken B1PrizePool validator, and no claim of ledger-level or production parity follows from these harness results.
+
+
+## TicketIssued Prize-context slice — 2026-10-23 20:00 UTC
+
+- Commit [`51c8b1c8`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/51c8b1c8739a74f974d7212b94bbe641f4f9ded5) adds `ticket_issued_prize_context_is_valid` to `b1_pool_prize_context.ak`.
+- The helper follows the Haskell `TicketIssued` Prize-side checks: exactly one decodable Prize output at the configured script hash; positive action price; output datum status `Pending`; zero prize amount; non-empty ticket policy and name; mint quantity for that exact ticket NFT equal to one; and Prize datum price equal to the action parameter.
+- Four tests cover the valid exact mint, absent mint, mint quantity of two, and action-price mismatch.
+- Exact-SHA Aiken workflow [#25](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40014335786) completed successfully: `aiken check` and isolated V3 prototype build passed.
+- This helper checks only the Prize output and the matching mint quantity. It does not prove the mint is the only asset minted, does not verify any additional ticket-policy constraints, and does not replace Pool datum accounting, global solvency, authority NFT, or physical/oracle value guards. No deployable Aiken B1PrizePool entrypoint exists yet.
