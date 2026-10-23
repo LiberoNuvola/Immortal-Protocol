@@ -46,6 +46,11 @@ The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harn
 - [ ] The new slice is still not a deployable validator and does not by itself implement the transaction-context Claim checks, authenticated oracle valuation, pool authority NFT checks, or universal solvency invariant. Passing unit/harness CI is not on-ledger parity or deployment evidence.
 - [x] Added focused negative unit tests in `b1_pool_types.ak` for zero payout and mutations of locked jackpot, jackpot threshold, and suspended classes (commit `8449da9a7be12f7f34e6c1c8679093172c00195f`); Aiken B1 PrizePool Claim Slice run [#39899937537](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899937537) and Reveal Parity run [#39899937575](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39899937575) succeeded.
 
+
+- [x] Extended the canonical Haskell fixture producer in `plutus/test/RevealSchemaFixtures.hs` to emit Plutus Data encodings for all five `B1PrizePoolAction` constructors: `FundTreasury`, `TicketIssued 100`, `TicketRevealed 100`, `TicketClaimed 250`, and `TicketExpired`.
+- [x] Extended `scripts/generate-aiken-schema-fixture-tests.mjs` to require those Haskell-produced fixtures and generate Aiken `serialise_data` differential tests for constructor tags and payloads; updated `.github/workflows/aiken-reveal-parity.yml` to fail closed if any action fixture is missing or malformed.
+- [ ] The new B1 action serialization differential tests are awaiting the Aiken Reveal Parity workflow on the exact final source commit. Do not count them as passing until that run succeeds.
+
 ## Required implementation sequence
 
 - [ ] Establish exact Haskell/Aiken Data encoding compatibility for `B1PrizePoolDatum`, `B1PrizePoolAction`, and all nested types.
