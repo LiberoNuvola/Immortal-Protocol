@@ -188,3 +188,13 @@ Overall migration remains **NOT GREEN**. The inventory is deliberately documenta
 - The helper remains isolated: no transaction context, authority NFT, ticket owner/signature, oracle valuation, physical Pool value delta, or on-chain validator has been added.
 - Workflows triggered on exact commit `e8a3ccd5d7768310befede651927414d040e678a` were observed in progress at checkpoint time: [Aiken Reveal Parity](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987311), [Aiken B1 PrizePool Claim Slice](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987315), and [Documentation Link Check](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987422). Do not count this new composition as passing until the runs complete successfully.
 - The branch-by-branch Haskell contract inventory is recorded above. The complete deployable Aiken Pool validator and all ledger/deployment parity gates remain **NOT GREEN**.
+
+## CI follow-up — composed Claim accounting + solvency slice (2026-10-23)
+
+The three workflows triggered by commit `e8a3ccd5d7768310befede651927414d040e678a` have now completed successfully:
+
+- [Aiken Reveal Parity #39938987311](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987311): **SUCCESS**, exact head SHA `e8a3ccd5d7768310befede651927414d040e678a`.
+- [Aiken B1 PrizePool Claim Slice #39938987315](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987315): **SUCCESS**.
+- [Documentation Link Check #39938987422](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39938987422): **SUCCESS**.
+
+This confirms the isolated composition and its workflow checks pass. Scope remains unchanged: no complete deployable Aiken B1PrizePool validator, no transaction-context/authority-NFT/oracle-value proof, no differential ledger twins, and no V2-to-V3 deployment decision. Overall migration status remains **NOT GREEN**. Do not change the passing V3 carrier or switch the production Pool path based on these results alone.
