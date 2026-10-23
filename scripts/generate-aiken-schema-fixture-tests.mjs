@@ -316,12 +316,12 @@ test expire_serialisation_matches_haskell_fixture() {
 }
 
 test beacon_target_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(0, [
-    i_data(0),
-    i_data(42),
-    b_data(#"303130323033"),
-    b_data(#[0x76, 0x31]),
-  ])) == #"${fixtures['BeaconTarget']}"
+  serialise_data(reveal_types.BeaconTarget {
+    network_id: 0,
+    round: 42,
+    mainchain_ref: #"303130323033",
+    version: #"7631",
+  }) == #"${fixtures['BeaconTarget']}"
 }
 
 test pending_prize_datum_serialisation_matches_haskell_fixture() {
@@ -358,16 +358,16 @@ test pending_prize_datum_serialisation_matches_haskell_fixture() {
 }
 
 test b1_prize_pool_datum_serialisation_matches_haskell_fixture() {
-  serialise_data(constr_data(0, [
-    i_data(100000),
-    i_data(1000),
-    i_data(500),
-    i_data(8),
-    i_data(2000),
-    i_data(5000),
-    i_data(0),
-    b_data(#"3036"),
-  ])) == #"${fixtures['B1PrizePoolDatum']}"
+  serialise_data(reveal_types.B1PrizePoolDatum {
+    total_liquidity: 100000,
+    pending_liabilities: 1000,
+    unresolved_reserve: 500,
+    unresolved_ticket_count: 8,
+    locked_jackpot: 2000,
+    jackpot_threshold: 5000,
+    suspended_classes: 0,
+    prize_hash: #"3036",
+  }) == #"${fixtures['B1PrizePoolDatum']}"
 }
 
 ${poolActionTests}
