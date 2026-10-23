@@ -1,8 +1,8 @@
 # B1PrizePool Aiken Migration — Claim Contract Checkpoint
 
-**Date:** 2026-10-22  
+**Date:** 2026-10-23  
 **Branch:** `work/immortal-green-closure`  
-**Status:** specification checkpoint only — no Aiken B1PrizePool validator is implemented or qualified by this document.
+**Status:** specification + compiling accounting slice; no deployable Aiken B1PrizePool validator is implemented or qualified by this document.
 
 ## Decision
 
@@ -33,6 +33,15 @@ The following are existing requirements to preserve, not new rules:
 The contract contains two different value checks: (a) the owner payout is valued using `Economic.totalUsdmValue`; (b) the physical Pool input/output delta is valued using `Economic.poolUsdmValue`. A port must preserve those canonical valuation paths and their oracle/state bindings. Do not simplify either check to a single-asset comparison unless a separate governed change explicitly changes the economic contract.
 
 The existing `B1PrizePoolDatum` Aiken type declaration in the Reveal parity harness is only a schema declaration; it is not evidence of a working Pool validator. Haskell's `solvencyInvariant` delegates into the universal economic state/kernel, so a port must reproduce that exact calculation or establish differential equivalence using canonical fixtures. A superficial `TicketClaimed`-only validator would omit the global guards and other state transitions required by the deployed Pool contract.
+
+## Progress recorded on 2026-10-23
+
+- [x] Added `poc/aiken-reveal-parity/lib/immortal/b1_pool_types.ak` as an isolated accounting migration slice with three tests: exact transition accepted, reserve mutation rejected, and payout exceeding pending liability rejected.
+- [x] Added `.github/workflows/aiken-b1-pool-slice.yml`, pinned to Aiken `v1.1.22`, running `aiken check` and `aiken build`.
+- [x] GitHub Actions run [#1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39897916470) on commit `78a3747277f7dd2a9e9aedd3dab8d8baafe9d3a2` succeeded. The harness tests/type-checking and isolated V3 prototype build both passed.
+- [x] Removed the duplicate Aiken `B1PrizePoolDatum` declaration from `b1_pool_types.ak`; it now imports the canonical harness schema from `immortal/reveal_types`.
+- [x] GitHub Actions run [#2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39898385512) on commit `b69507765199c50d7cea2a73f42e3bff95f14eb1` succeeded after that schema-reuse refactor.
+- [ ] The new slice is still not a deployable validator and does not by itself implement the transaction-context Claim checks, authenticated oracle valuation, pool authority NFT checks, or universal solvency invariant. No claim of on-ledger parity or deployment is made.
 
 ## Required implementation sequence
 
