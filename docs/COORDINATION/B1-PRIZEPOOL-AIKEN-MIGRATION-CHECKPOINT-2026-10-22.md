@@ -350,3 +350,9 @@ Next safe coding gate: introduce action-specific Prize-context resolvers and pos
 - Four tests cover the valid exact mint, absent mint, mint quantity of two, and action-price mismatch.
 - Exact-SHA Aiken workflow [#25](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40014335786) completed successfully: `aiken check` and isolated V3 prototype build passed.
 - This helper checks only the Prize output and the matching mint quantity. It does not prove the mint is the only asset minted, does not verify any additional ticket-policy constraints, and does not replace Pool datum accounting, global solvency, authority NFT, or physical/oracle value guards. No deployable Aiken B1PrizePool entrypoint exists yet.
+
+
+## TicketIssued resolver negative coverage — 2026-10-23 20:05 UTC
+
+- Commit [`4ad39438`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/4ad394387b756ffcf4df84c67b486d8166404a21) adds two negative tests to `ticket_issued_prize_context_is_valid`: rejection when no Prize output is present and rejection when two outputs appear at the configured Prize script hash.
+- The exact-SHA Aiken workflow [#26](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40017835789) is queued at the time of this checkpoint update. Do not count these two new tests as green until this exact run completes successfully.
