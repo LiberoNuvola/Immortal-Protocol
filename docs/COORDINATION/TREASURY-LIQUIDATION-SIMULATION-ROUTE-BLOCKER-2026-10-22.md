@@ -170,3 +170,18 @@ Read-only source check of `.github/workflows/immortal-cardano-preprod.yml` and `
 - No workflow was dispatched and no transaction was built, signed, or submitted during this check. No code, V3, or Reveal semantics were changed.
 
 **Disposition:** treat the current manifest-generation path as blocked by a workflow/script contract mismatch. The safe next engineering task is to separate a genuinely read-only Treasury identity/UTxO observer from any deployment or Reveal harness, and define the manifest's provenance fields from a verified deployment record. Do not repurpose the current Reveal harness or run the manual deploy job as a workaround. The actual configured Treasury address remains unproven; route, swap execution, and QNE remain open.
+
+
+## Read-only configured Treasury observer — 2026-10-23
+
+Added a separate, manual-only observation path on `work/immortal-green-closure`:
+
+- Script: [`audit/cardano-integration/observe-configured-preprod-treasury.mjs`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/cardano-integration/observe-configured-preprod-treasury.mjs)
+- Workflow: [`.github/workflows/observe-configured-preprod-treasury.yml`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/observe-configured-preprod-treasury.yml)
+- Workflow requires the non-secret DEMETER environment variables `PREPROD_TREASURY_ADDRESS`, `PREPROD_TREASURY_SCRIPT_HASH`, and `PREPROD_TREASURY_BINDING_REFERENCE`. If absent or malformed, the observer fails closed. It does not derive the configured address from the current unparameterized validator artifact.
+- Before querying Koios, it checks that the configured address is a Preprod script address and its payment credential matches the separately supplied script hash. It then records exact returned UTxOs and the canonical tUSDM unit, timestamp, totals, and evidence digest.
+- Safety: the workflow is manual-only, has read-only repository permissions, and does not sign, fund, bootstrap, approve, or submit transactions. It does not dispatch the old Reveal harness or alter V3/Reveal.
+- **Important limit:** `PREPROD_TREASURY_BINDING_REFERENCE` is explicitly caller-supplied and the script labels it `CALLER_SUPPLIED_NOT_CRYPTOGRAPHICALLY_VERIFIED`. The script proves address↔script-hash consistency and reads the ledger; it does not itself authenticate that the reference is an authorized deployment record or prove protocol control. Reviewers must verify the supplied binding reference independently.
+- No workflow was dispatched as part of adding this path, and no live observation was produced. The three environment variables have not been verified as configured. Therefore Treasury identity/custody, liquidation route, swap execution, and QNE remain OPEN.
+
+This is a safer read-only diagnostic surface, not a closure of the Treasury blocker. The next gate is to populate the variables only from a reviewed deployment record, then run this manual observer and independently validate the recorded binding evidence.
