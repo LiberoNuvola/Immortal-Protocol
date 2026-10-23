@@ -26,6 +26,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check observer JavaScript syntax
+        run: node --check audit/cardano-integration/observe-configured-preprod-treasury.mjs
       - name: Observe configured Treasury address and exact UTxOs
         run: node audit/cardano-integration/observe-configured-preprod-treasury.mjs
       - name: Upload read-only observation
