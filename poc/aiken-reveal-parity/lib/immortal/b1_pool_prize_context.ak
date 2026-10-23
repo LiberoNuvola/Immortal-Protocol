@@ -746,3 +746,24 @@ test ticket_issued_context_rejects_action_price_mismatch() {
   )
   !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 101)
 }
+
+
+test ticket_issued_context_rejects_missing_prize_output() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let tx = test_prize_tx_with_mint([], [], mint)
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
+
+test ticket_issued_context_rejects_duplicate_prize_outputs() {
+  let datum = test_prize_datum()
+  let mint = assets.zero
+    |> assets.add(datum.ticket_policy, datum.ticket_name, 1)
+  let output = test_prize_output(
+    test_prize_hash,
+    transaction.InlineDatum(datum),
+  )
+  let tx = test_prize_tx_with_mint([], [output, output], mint)
+  !ticket_issued_prize_context_is_valid(tx, test_prize_hash, 100)
+}
