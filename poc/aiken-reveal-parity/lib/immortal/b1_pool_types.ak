@@ -568,3 +568,22 @@ test ticket_issued_rejects_prize_hash_mutation() {
   let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_100, unresolved_ticket_count: 3, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"aabbcc" }
   !pool_ticket_issued_transition_matches(before, after, 100)
 }
+
+
+test ticket_issued_rejects_zero_price() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 3, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_issued_transition_matches(before, after, 0)
+}
+
+test ticket_issued_rejects_negative_price() {
+  let before = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 600_000, pending_liabilities: 12_500, unresolved_reserve: 900, unresolved_ticket_count: 3, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_issued_transition_matches(before, after, -100)
+}
+
+test ticket_issued_rejects_insolvent_pre_state() {
+  let before = B1PrizePoolDatum { total_liquidity: 512_999, pending_liabilities: 12_500, unresolved_reserve: 1_000, unresolved_ticket_count: 2, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  let after = B1PrizePoolDatum { total_liquidity: 512_999, pending_liabilities: 12_500, unresolved_reserve: 1_100, unresolved_ticket_count: 3, locked_jackpot: 500, jackpot_threshold: 5_000, suspended_classes: 0, prize_hash: #"001122" }
+  !pool_ticket_issued_transition_matches(before, after, 100)
+}
