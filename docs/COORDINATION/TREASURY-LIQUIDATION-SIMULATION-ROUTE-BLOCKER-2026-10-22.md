@@ -113,3 +113,18 @@ Integration Lab run `39899115419` (commit `c1cf860c6587e74181a793b9188c0be605393
 
 Next evidence needed: a non-secret deployment manifest or public deployment record that binds the configured Treasury script hash/address to the exact network and deployed validator version, followed by read-only exact UTxO observation. If the deployment binding exists only in GitHub environment configuration, a permitted workflow should emit a sanitized, signed/hash-bound manifest without exposing secrets or performing funding/approval actions. Do not infer the configured address from the user's wallet or from the unparameterized script address.
 
+
+## Historical EEV approval artifact inspection — 2026-10-23
+
+Downloaded and inspected existing GitHub Actions artifacts without dispatching a workflow:
+
+- Direct-USDM deployment artifact from run [#39540626322](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39540626322), artifact ID `12319471653`, SHA-256 of the uploaded ZIP reported by Actions `8db815c0a773f0a6c6fe26d7b82c6a2a9fa41e94873598b68dffe4b0213bda99`.
+- Approved EEV artifact from run [#39552468679](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679), artifact ID `12324421376`.
+
+The direct-USDM manifest records network `cardano-preprod`, a derived B1 PrizePool address/hash, exact canonical tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9` + asset name `0014df10745553444d`, quantity `1000000000` atomic units, and EEV conversion `100000` sub-units. It explicitly says `bootstrap.txHash=null` and `reusedExisting=true`: this run reused an already-existing direct-USDM Pool rather than executing a swap. The manifest's `treasuryHash` is a topology value derived by `buildScriptsFromLucid`; it does not bind a configured `VITE_TREASURY_ADDRESS` or identify a Treasury UTxO.
+
+The approved artifact contains a nested `DEPLOYMENT_APPROVED` decision bound to the direct-USDM Pool candidate and hashes for the qualification, source set, deployment manifest and Oracle State. It explicitly limits its effect: it does not authorize Issue admission; live UTxO revalidation and authenticated control state, ProtectedCapital provenance, viability/liquidity evidence and authoritative Issue decision remain required. The source set used for that approval was observed on 2026-10-21 and references exact Pool out-ref `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`; it is historical evidence, not a fresh observation as of this checkpoint.
+
+**Classification update:** the direct-USDM EEV candidate did have a historical successful EV1–EV7 qualification and a separate approval artifact. Therefore do not describe the direct-USDM candidate as never approved. The remaining blocker in this workstream is different: no proof of Treasury asset-to-USDM execution/liquidation or actual route proceeds has been found, and the direct-USDM Pool artifact is not a Treasury deployment binding. The earlier provenance discrepancy about required EV source paths at the approval workflow's pinned commit remains to be reconciled before treating that historical approval as reproducible from the current source tree.
+
+No workflow was dispatched and no chain state was changed while retrieving or inspecting these artifacts.
