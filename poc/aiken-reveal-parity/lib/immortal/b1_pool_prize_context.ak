@@ -382,3 +382,100 @@ test prize_transition_requires_configured_pool_binding() {
   )
   !unique_prize_transition_preserves_identity(tx, test_prize_hash, test_prize_hash)
 }
+
+
+/// Pool-side TicketRevealed context slice. It binds the action price to both
+/// datums, requires Pending -> Revealed, preserves the normative ticket identity,
+/// and derives payout from the continuing Prize datum. Pool accounting deltas,
+/// solvency, authority NFT and oracle/value context remain separate checks.
+pub fn ticket_revealed_prize_context_is_valid(
+  tx: transaction.Transaction,
+  prize_hash: ScriptHash,
+  expected_pool_hash: ScriptHash,
+  action_price_usdm: Int,
+  pre_state_effective_pool: Int,
+) -> Bool {
+  when (only_prize_input(tx, prize_hash), only_prize_output(tx, prize_hash)) is {
+    (Some(before), Some(after)) ->
+      before.datum.prize_pool_hash == expected_pool_hash
+        && after.datum.prize_pool_hash == expected_pool_hash
+        && before.datum.status == Pending
+        && after.datum.status == Revealed
+        && same_prize_identity(before.datum, after.datum)
+        && action_price_usdm > 0
+        && before.datum.price_usdm == action_price_usdm
+        && after.datum.price_usdm == action_price_usdm
+        && after.datum.prize_amount >= 0
+        && after.datum.prize_amount <= pre_state_effective_pool
+    _ -> False
+  }
+}
+
+fn test_revealed_datum(payout: Int) -> PrizeDatum {
+  let before = test_prize_datum()
+  PrizeDatum {
+    ticket_policy: before.ticket_policy,
+    ticket_name: before.ticket_name,
+    player_commitment: before.player_commitment,
+    price_usdm: before.price_usdm,
+    commitment: before.commitment,
+    game_version: before.game_version,
+    ticket_nonce: before.ticket_nonce,
+    prize_amount: payout,
+    payment_policy: before.payment_policy,
+    payment_name: before.payment_name,
+    status: Revealed,
+    result: #"aa",
+    prize_tier: 1,
+    beacon_target: before.beacon_target,
+    beacon_status: BeaconReady,
+    beacon_value: #"bb",
+    mc_hash: #"cc",
+    materios_context: #"dd",
+    prize_pool_hash: before.prize_pool_hash,
+    issued_at: before.issued_at,
+    expires_at: before.expires_at,
+    row1_tier: 1,
+    row2_tier: 0,
+  }
+}
+
+test ticket_revealed_context_accepts_bound_pending_to_revealed() {
+  let before = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_revealed_datum(250)))],
+  )
+  ticket_revealed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 100, 1_000)
+}
+
+test ticket_revealed_context_rejects_payout_above_pre_state_pool() {
+  let before = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_revealed_datum(1_001)))],
+  )
+  !ticket_revealed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 100, 1_000)
+}
+
+test ticket_revealed_context_rejects_wrong_action_price() {
+  let before = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_revealed_datum(250)))],
+  )
+  !ticket_revealed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 101, 1_000)
+}
+
+test ticket_revealed_context_rejects_negative_payout() {
+  let before = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(before))],
+    [test_prize_output(test_prize_hash, transaction.InlineDatum(test_revealed_datum(-1)))],
+  )
+  !ticket_revealed_prize_context_is_valid(tx, test_prize_hash, test_other_hash, 100, 1_000)
+}
