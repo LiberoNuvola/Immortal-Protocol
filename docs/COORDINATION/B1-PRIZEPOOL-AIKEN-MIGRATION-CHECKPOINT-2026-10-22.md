@@ -260,3 +260,12 @@ The follow-up inspection of the integration workflow and its exact run logs conf
 5. **Deployment gates remain independent:** prove full transaction-size feasibility and explicitly govern the Plutus V2-to-V3 and paired Prize/Pool validator/hash topology before any production-path switch.
 
 Do not modify the already-passing V3 carrier, change economic semantics, or claim migration GREEN from the current integration-lab pass. The first implementation target is the global transaction-context guard, followed by wiring the action branches to it; the current isolated harness is not yet that validator.
+
+
+## Implementation update — global Pool context guard slice (2026-10-23 19:15 UTC)
+
+- [x] Hardened `poc/aiken-reveal-parity/lib/immortal/b1_pool_context.ak` in commit [`97809d19`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/97809d19ba11589c82fc2c7d2e414a695d82b24b): `pool_global_context_is_valid` now decodes the datum from the actual Pool input and requires it to equal the supplied pre-state datum before checking the continuing Pool output.
+- [x] Added six typed-transaction tests for valid context, missing continuing output, duplicate Pool input, missing input datum, mismatched supplied pre-state, duplicate authority NFT outside the Pool output, and authority NFT not preserved in the Pool output. (Seven context tests total including the listed authority coverage.)
+- [x] Aiken B1 PrizePool Claim Slice run [#13](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884509) on exact commit `97809d19ba11589c82fc2c7d2e414a695d82b24b` completed **SUCCESS**: `aiken check` and `aiken build` passed.
+- [ ] Aiken Reveal Parity run [#197](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884366) and Integration Lab [#2088](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40009884371) were still running when this entry was written; record their final outcomes separately before treating them as evidence.
+- [ ] This remains a tested **context-guard module**, not a deployable `B1PrizePool` validator. The guard is not yet wired into all five action branches, and the tests are synthetic typed-transaction fixtures rather than Yaci/native-ledger transaction twins. Do not declare the migration GREEN, switch the production Pool path, modify the Haskell reference, or touch the passing V3 carrier.
