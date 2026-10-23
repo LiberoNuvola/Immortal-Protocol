@@ -699,7 +699,7 @@ describe("authority transition boundary", () => {
         forged
       )
     ).toThrow(
-      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION"
     );
   });
 
@@ -724,7 +724,7 @@ describe("authority transition boundary", () => {
         forged
       )
     ).toThrow(
-      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION_HASH"
+      "INVALID_VERIFIED_AUTHORITY_SET_TRANSITION"
     );
   });
 
