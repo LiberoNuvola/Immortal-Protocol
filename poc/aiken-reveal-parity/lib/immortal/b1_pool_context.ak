@@ -156,22 +156,207 @@ pub fn pool_global_context_is_valid(
         when only_script_input(tx.inputs, pool_hash) is {
           None -> False
           Some(pool_input) ->
-            when only_script_output(tx.outputs, pool_hash) is {
+            when decode_pool_datum(tx, pool_input.output) is {
               None -> False
-              Some(pool_output) ->
-                when decode_pool_datum(tx, pool_output) is {
-                  None -> False
-                  Some(after) ->
-                    pool_authority_singleton_amounts_are_valid(
-                      authority_amount_in_inputs(tx.inputs, pool_policy, pool_name),
-                      authority_amount_in_outputs(tx.outputs, pool_policy, pool_name),
-                      assets.quantity_of(pool_input.output.value, pool_policy, pool_name),
-                      assets.quantity_of(pool_output.value, pool_policy, pool_name),
-                    )
-                      && b1_pool_solvency_is_valid(after)
+              Some(actual_before) ->
+                if actual_before != before {
+                  False
+                } else {
+                  when only_script_output(tx.outputs, pool_hash) is {
+                    None -> False
+                    Some(pool_output) ->
+                      when decode_pool_datum(tx, pool_output) is {
+                        None -> False
+                        Some(after) ->
+                          pool_authority_singleton_amounts_are_valid(
+                            authority_amount_in_inputs(tx.inputs, pool_policy, pool_name),
+                            authority_amount_in_outputs(tx.outputs, pool_policy, pool_name),
+                            assets.quantity_of(pool_input.output.value, pool_policy, pool_name),
+                            assets.quantity_of(pool_output.value, pool_policy, pool_name),
+                          )
+                            && b1_pool_solvency_is_valid(after)
+                      }
+                  }
                 }
             }
         }
       }
   }
+}
+
+
+// Synthetic transaction-context fixtures. These prove the guard against Aiken's
+// typed transaction model; they are not serialized ledger transactions.
+use cardano/address.{from_script}
+
+const context_test_pool_hash: ScriptHash = #"09"
+const context_test_other_hash: ScriptHash = #"08"
+const context_test_authority_policy: PolicyId = #"0a"
+const context_test_authority_name: AssetName = #"01"
+
+fn context_test_datum() -> B1PrizePoolDatum {
+  B1PrizePoolDatum {
+    total_liquidity: 600_000,
+    pending_liabilities: 12_500,
+    unresolved_reserve: 1_000,
+    unresolved_ticket_count: 2,
+    locked_jackpot: 500,
+    jackpot_threshold: 5_000,
+    suspended_classes: 0,
+    prize_hash: #"001122",
+  }
+}
+
+fn context_test_value() -> assets.Value {
+  assets.from_lovelace(10_000_000)
+    |> assets.add(context_test_authority_policy, context_test_authority_name, 1)
+}
+
+fn context_test_output(
+  hash: ScriptHash,
+  value: assets.Value,
+  datum: transaction.Datum,
+) -> transaction.Output {
+  transaction.Output {
+    address: from_script(hash),
+    value,
+    datum,
+    reference_script: None,
+  }
+}
+
+fn context_test_input(
+  reference: transaction.OutputReference,
+  hash: ScriptHash,
+  value: assets.Value,
+  datum: transaction.Datum,
+) -> transaction.Input {
+  transaction.Input {
+    output_reference: reference,
+    output: context_test_output(hash, value, datum),
+  }
+}
+
+fn context_test_ref(index: Int) -> transaction.OutputReference {
+  transaction.OutputReference {
+    transaction_id: transaction.placeholder.id,
+    output_index: index,
+  }
+}
+
+fn context_test_tx(
+  inputs: List<transaction.Input>,
+  outputs: List<transaction.Output>,
+) -> transaction.Transaction {
+  transaction.Transaction {
+    inputs,
+    reference_inputs: [],
+    outputs,
+    fee: 0,
+    mint: assets.zero,
+    certificates: [],
+    withdrawals: [],
+    validity_range: transaction.placeholder.validity_range,
+    extra_signatories: [],
+    redeemers: [],
+    datums: transaction.placeholder.datums,
+    id: transaction.placeholder.id,
+    votes: [],
+    proposal_procedures: [],
+    current_treasury_amount: None,
+    treasury_donation: None,
+  }
+}
+
+test pool_context_accepts_unique_pool_and_authority_nft() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum))],
+  )
+  pool_global_context_is_valid(
+    tx,
+    own_ref,
+    context_test_pool_hash,
+    context_test_authority_policy,
+    context_test_authority_name,
+    datum,
+  )
+}
+
+test pool_context_rejects_missing_continuing_output() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
+}
+
+test pool_context_rejects_duplicate_pool_input() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [
+      context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(datum)),
+      context_test_input(context_test_ref(1), context_test_pool_hash, value, transaction.InlineDatum(datum)),
+    ],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum))],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
+}
+
+test pool_context_rejects_missing_input_datum() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.NoDatum)],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum))],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
+}
+
+test pool_context_rejects_datum_argument_not_matching_input() {
+  let actual = context_test_datum()
+  let altered = B1PrizePoolDatum { ..actual, total_liquidity: 600_001 }
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(actual))],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(actual))],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, altered)
+}
+
+test pool_context_rejects_duplicate_authority_nft_outside_pool_output() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let own_ref = context_test_ref(0)
+  let extra = context_test_output(context_test_other_hash, value, transaction.NoDatum)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [
+      context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum)),
+      extra,
+    ],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
+}
+
+test pool_context_rejects_authority_nft_not_preserved_in_pool_output() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let no_authority = assets.from_lovelace(10_000_000)
+  let own_ref = context_test_ref(0)
+  let tx = context_test_tx(
+    [context_test_input(own_ref, context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [context_test_output(context_test_pool_hash, no_authority, transaction.InlineDatum(datum))],
+  )
+  !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
 }
