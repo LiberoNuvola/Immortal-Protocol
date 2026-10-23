@@ -6,6 +6,7 @@ import {
 import {
   authoritySetIdentity,
   hashAuthoritySetTransitionStatement,
+  isAuthenticVerifiedAuthoritySetTransition,
   validateAuthoritySetTransitionPublicStatement,
   type VerifiedAuthoritySetTransition
 } from "./authority-transition.js";
@@ -106,6 +107,7 @@ export function trustedAuthorityStateFromVerifiedTransition(
   transition: VerifiedAuthoritySetTransition
 ): TrustedAuthorityState {
   if (
+    !isAuthenticVerifiedAuthoritySetTransition(transition) ||
     transition.kind !==
       "verified-materios-authority-set-transition" ||
     transition.__verifiedAuthoritySetTransition !==
