@@ -636,3 +636,15 @@ test ticket_expired_context_rejects_early_lower_bound() {
   )
   !ticket_expired_prize_context_is_valid(tx, test_prize_hash, test_other_hash)
 }
+
+
+test ticket_expired_context_rejects_wrong_pool_binding() {
+  let datum = test_prize_datum()
+  let ref = test_prize_ref(0)
+  let tx = test_prize_tx_with_lower_bound(
+    [test_prize_input(ref, test_prize_hash, transaction.InlineDatum(datum))],
+    [],
+    1_000,
+  )
+  !ticket_expired_prize_context_is_valid(tx, test_prize_hash, test_prize_hash)
+}
