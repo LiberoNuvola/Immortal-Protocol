@@ -135,7 +135,7 @@ jobs:
           print("Scoped repository TS modules to ESM for Cardano trace runner")
 
       - name: Install pinned Yaci DevKit
-        run: npm install -g @bloxbean/yaci-devkit@0.12.0-beta5
+        run: npm install -g @bloxbean/yaci-devkit@0.12.0
 
       - name: Start isolated Cardano devnet
         run: |
@@ -171,7 +171,7 @@ jobs:
             echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
-            echo "yaci=0.12.0-beta5"
+            echo "yaci=0.12.0"
             echo "run_id=$GITHUB_RUN_ID"
             echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
