@@ -385,3 +385,33 @@ pub fn pool_continuing_datum_matches(
     None -> False
   }
 }
+
+test pool_context_continuing_datum_matches_actual_output() {
+  let datum = context_test_datum()
+  let value = context_test_value()
+  let tx = context_test_tx(
+    [context_test_input(context_test_ref(0), context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum))],
+  )
+  pool_continuing_datum_matches(tx, context_test_pool_hash, datum)
+}
+
+test pool_context_continuing_datum_rejects_mismatched_expected_after() {
+  let datum = context_test_datum()
+  let altered = B1PrizePoolDatum {
+    total_liquidity: datum.total_liquidity + 1,
+    pending_liabilities: datum.pending_liabilities,
+    unresolved_reserve: datum.unresolved_reserve,
+    unresolved_ticket_count: datum.unresolved_ticket_count,
+    locked_jackpot: datum.locked_jackpot,
+    jackpot_threshold: datum.jackpot_threshold,
+    suspended_classes: datum.suspended_classes,
+    prize_hash: datum.prize_hash,
+  }
+  let value = context_test_value()
+  let tx = context_test_tx(
+    [context_test_input(context_test_ref(0), context_test_pool_hash, value, transaction.InlineDatum(datum))],
+    [context_test_output(context_test_pool_hash, value, transaction.InlineDatum(datum))],
+  )
+  !pool_continuing_datum_matches(tx, context_test_pool_hash, altered)
+}
