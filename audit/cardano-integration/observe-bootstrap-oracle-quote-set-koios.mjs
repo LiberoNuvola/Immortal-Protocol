@@ -1,3 +1,4 @@
+// Operational note (2026-10-24): trigger a read-only Preprod Oracle quote-set observation; no signing, submission, or state mutation.
 import { createHash } from 'node:crypto'
 import { Data } from 'lucid-cardano'
 import { inspectOracleDatum } from './oracleQuoteSetObservation.mjs'
