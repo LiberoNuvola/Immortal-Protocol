@@ -3009,3 +3009,15 @@ Artifact [12492463295](https://github.com/LiberoNuvola/Immortal-Protocol/actions
 **Strict limitation:** this closes the narrow cryptographic storage-proof check against the supplied observed StateRoot, not authenticated finality of that StateRoot. The receipt certification field reports `signers: 0`; a nonzero `certHash` is not a signer/finality proof. Therefore C2/P-10 remains **PARTIAL** in the end-to-end B3 composition until the target header/root is anchored by independently verified B3-A finality and the exact canonical anchor/receipt semantics are reconciled. No finality claim is inferred from the RPC's finalized-head response.
 
 This inspection used the existing run/artifact only; no redundant workflow was launched. No source code or protocol semantics were changed.
+
+
+### 10.28 — Agent C: Materios upstream delta recheck (2026-10-24)
+
+Read-only recheck of `Flux-Point-Studios/materios` via GitHub connector:
+
+- Latest commit returned by the upstream repository query remains merge commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`, dated 2026-10-21, for Rust sccache/CI.
+- Recent listed changes include CI caching, launch-preflight guards, genesis-committee guard, IDP window handling and db-sync follower integration; none of those commit summaries is a GRANDPA justification/RPC implementation.
+- Current upstream code search for `grandpa_proveFinality` returned no matches; prior targeted inspection of `partnerchain/node/src/rpc.rs` found no registered `materios_b3_calculateCommitteeProof` or standard GRANDPA RPC assembly. This is evidence of no identified implementation in the inspected source, not proof that no private/operator archive source exists.
+- No new relevant upstream proof/finality PR was returned in the targeted query. No source was modified upstream and no identical RPC scan was rerun.
+
+**C3 remains BLOCKED / INTEGRATION_BLOCKED.** Next action stays: acquire a genuinely new authorized archive/FullClient proof source or obtain upstream implementation plus deployed endpoint evidence. Do not infer execution proof from a closed issue, dependency, similarly named client method or observation-only endpoint.
