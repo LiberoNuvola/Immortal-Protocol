@@ -1,0 +1,105 @@
+name: PRE-RICH Preprod EEV — Source Qualification Only
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - ".github/workflows/preprod-eev-qualification.yml"
+      - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-qualification.mjs"
+      - "audit/cardano-integration/eev-approval-integrity.mjs"
+      - "audit/cardano-integration/eev-approval-integrity.test.mjs"
+      - "audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md"
+      - "docs/02-certification/EEV_ORACLE_AND_VALUATION_CONTRACT.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: preprod-eev-source-qualification
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    name: Re-observe exact Pool and qualify EV1-EV7 without approval
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      PREPROD_TUSDM_UNIT: e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d
+      PREPROD_EVIDENCE_DIR: audit/preprod-evidence
+      PREPROD_DEPLOYMENT_MANIFEST: audit/preprod-evidence/preprod-direct-usdm-deployment.json
+      PREPROD_ORACLE_STATE_MANIFEST: audit/preprod-evidence/preprod-oracle-state-deployment.json
+    steps:
+      - name: Checkout exact qualification source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore deployment identity manifests only
+        uses: actions/download-artifact@v4
+        with:
+          name: immortal-preprod-eev-approved
+          run-id: 39552468679
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: audit/preprod-evidence
+
+      - name: Discard historical source-set and qualification
+        run: |
+          rm -f audit/preprod-evidence/preprod-direct-usdm-source-set.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-qualification.json
+          rm -f audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json
+          test -s audit/preprod-evidence/preprod-direct-usdm-deployment.json
+          test -s audit/preprod-evidence/preprod-oracle-state-deployment.json
+
+      - name: Enforce approved asset identity and parse qualification scripts
+        run: |
+          node --check audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+          node --check audit/cardano-integration/preprod-direct-usdm-qualification.mjs
+          node --check audit/cardano-integration/eev-approval-integrity.mjs
+          test "$PREPROD_TUSDM_UNIT" = "e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d"
+
+      - name: Re-observe exact live B1 PrizePool UTxO
+        run: node audit/cardano-integration/preprod-direct-usdm-source-set.mjs
+
+      - name: Re-qualify EV1-EV7 at this exact commit
+        run: node audit/cardano-integration/preprod-direct-usdm-qualification.mjs
+
+      - name: Verify current EV1-EV7 digests and no approval
+        run: |
+          node --test audit/cardano-integration/eev-approval-integrity.test.mjs
+          node --input-type=module - <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          import { assertArtifactEvidenceHash, assertQualificationEvidenceMatchesRepository } from './audit/cardano-integration/eev-approval-integrity.mjs'
+          const dir = 'audit/preprod-evidence/'
+          const q = JSON.parse(await readFile(dir + 'preprod-direct-usdm-qualification.json', 'utf8'))
+          const s = JSON.parse(await readFile(dir + 'preprod-direct-usdm-source-set.json', 'utf8'))
+          const d = JSON.parse(await readFile(dir + 'preprod-direct-usdm-deployment.json', 'utf8'))
+          if (q.status !== 'qualified') throw new Error('qualification status is not qualified')
+          if (q.deploymentApproval !== null) throw new Error('qualification must not contain deployment approval')
+          if (s.status !== 'OBSERVED_NOT_QUALIFIED') throw new Error('source-set must remain unapproved observation evidence')
+          if (s.source.directUsdmUnit !== process.env.PREPROD_TUSDM_UNIT) throw new Error('source-set asset identity mismatch')
+          if (s.source.b1PrizePoolUtxo !== d.utxos.pool) throw new Error('source-set does not bind exact deployment Pool out-reference')
+          assertArtifactEvidenceHash(q, 'qualification')
+          assertArtifactEvidenceHash(s, 'sourceSet')
+          assertArtifactEvidenceHash(d, 'deployment')
+          await assertQualificationEvidenceMatchesRepository(q, process.cwd())
+          console.log(JSON.stringify({ status: q.status, profile: q.schema, directUsdmUnit: s.source.directUsdmUnit, poolOutRef: s.source.b1PrizePoolUtxo, physicalAtomicQuantity: s.derivation.atomicQuantity, verifiedUsdmSubunits: s.derivation.verifiedUsdmSubunits, qualifiedProperties: q.qualifiedProperties, deploymentApproval: 'NOT_CREATED', qualificationEvidenceHash: q.evidenceHash }, null, 2))
+          NODE
+
+      - name: Upload source qualification evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-eev-qualified-source-${{ github.sha }}
+          path: audit/preprod-evidence/
+          if-no-files-found: error
+          retention-days: 30
