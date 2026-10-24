@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { generateRegistry } from "./jev-verification-registry-generator.mjs";
+import { classifyLedgerEvaluation, generateRegistry } from "./jev-verification-registry-generator.mjs";
 import { validateRegistry } from "./validate-jev-verification-registry.mjs";
 
 const base = {
@@ -126,5 +126,30 @@ assert.match(generateRegistry(passingSubset).notes.join(" "), /no protocol-wide 
 const skippedOverFail = structuredClone(base);
 skippedOverFail.checks[1].stepOutcome = "skipped";
 assert.equal(generateRegistry(skippedOverFail).overallResult, "NOT_RUN");
+
+const successfulLedgerReport = [
+  { redeemer: { purpose: "spend", index: 0 }, status: "success", logs: [], ex_units: { memory: 123, steps: 456 } },
+  { redeemer: { purpose: "mint", index: 0 }, status: "success", logs: [], ex_units: { memory: 789, steps: 101112 } },
+];
+assert.equal(classifyLedgerEvaluation(successfulLedgerReport), "success", "all semantic redeemers with ExUnits establish evaluator success");
+
+const validatorFailureReport = [
+  { redeemer: { purpose: "spend", index: 0 }, status: "failure", failure: "ValidationFailure (EvaluationError ...)" },
+];
+assert.equal(classifyLedgerEvaluation(validatorFailureReport), "failure", "typed Plutus ValidationFailure is a genuine validator failure");
+
+const missingScriptReport = [
+  { redeemer: { purpose: "spend", index: 0 }, status: "failure", failure: "MissingScript ..." },
+];
+assert.equal(classifyLedgerEvaluation(missingScriptReport), "unknown", "MissingScript is blocked context, not validator failure");
+
+const contextErrorReport = [
+  { redeemer: { purpose: "spend", index: 0 }, status: "failure", failure: "ContextError ..." },
+];
+assert.equal(classifyLedgerEvaluation(contextErrorReport), "unknown", "context translation errors cannot be accepted as validator failures");
+assert.equal(classifyLedgerEvaluation([]), "unknown", "empty evaluator reports cannot pass");
+assert.equal(classifyLedgerEvaluation([{ status: "success" }]), "unknown", "success without ExUnits cannot pass");
+assert.equal(classifyLedgerEvaluation([{ status: "failure", failure: "IncompatibleBudget ..." }]), "unknown", "non-validation ledger failures remain blocked");
+assert.equal(classifyLedgerEvaluation(null), "unknown", "missing semantic report remains blocked");
 
 console.log("JEV registry generator tests passed.");
