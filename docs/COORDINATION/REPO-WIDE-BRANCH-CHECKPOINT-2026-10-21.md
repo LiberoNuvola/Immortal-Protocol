@@ -3879,3 +3879,38 @@ Assign the evidence/evaluator repair to Agent B. Decode the exact transaction bo
 Then rerun the same evidence-bound native ledger evaluator. Acceptance requires either a fully successful ledger evaluation with ExUnits or a genuine ledger-originated validator failure for the exact Reveal transaction. `MissingScript` or missing context must remain non-acceptance/SAFE_STALL. Update the JEV registry to derive the P2.8 check from the semantic evaluator report, not merely a zero exit code from report generation. Do not change validator code, V3/Reveal semantics, transaction meaning, economics or production behavior to manufacture a PASS.
 
 **Status:** root cause strongly supported by exact matching refs/hashes and source-level omission, but the repair and exact-head retest remain open. The currently running later devnet lab run must be allowed to complete; no changes to `audit/cardano-integration/**` were made in this action.
+
+### Agent B — certification manifest structural gate — 2026-10-24
+
+**Classification:** structural CI evidence only. This entry records the fail-closed manifest validator and its exact-head GitHub Actions run. It does not change any protocol, economic, deployment, ledger, or certification status.
+
+#### Exact implementation and workflow evidence
+
+- Branch: `work/immortal-green-closure`
+- Commit: `f828dcfa253756da91dbe5de483c7ac0528a2bb7`
+- Commit message: `Add fail-closed certification manifest gate`
+- Workflow run: [IMMORTAL Certification Manifest Validation #40078996418](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40078996418)
+- Workflow conclusion: `success`
+- Job: `manifest-validation` — `success`
+- Verified steps: manifest JSON parsing; fail-closed checker tests; current manifest validation; explicit confirmation that `--require-closure` remains rejected.
+- Local test suite on the same committed implementation: 5 passed, 0 failed.
+- Manifest: `docs/02-certification/IMMORTAL-CLOSURE-EVIDENCE-MANIFEST.json`
+- Checker: `scripts/immortal-certification-gate.mjs`
+- Regression tests: `scripts/test-immortal-certification-gate.mjs`
+
+#### What this evidence establishes
+
+The structural validator accepts the current manifest, rejects malformed manifest inputs, rejects a gate marked `GREEN` without runtime verification, and does not permit `--require-closure` to certify the project. All seven manifest gates remain `OPEN`.
+
+This run demonstrates only that the structural checks and fail-closed behavior passed on the exact commit above. It does not independently authenticate workflow artifacts or their digests, prove native Cardano validator execution, establish real Preprod Reveal success, verify Materios finality/storage proofs, establish ProtectedCapital provenance, or certify EEV/Kc/Ω and RF8 conditions.
+
+#### Certification-manifest reconciliation
+
+The canonical `FINALIZATION-CERTIFICATION-MANIFEST-20260925.md` remains unchanged because no closure predicate has been satisfied by this structural workflow. Its existing gates remain open, including P2.8 native evaluator, Reveal budget, Materios/B3, B4/B5/B6, RF8 whole-program, and independent assurance. `Protocol Usage Fee` remains `OPEN POLICY`.
+
+No changes were made to V3 or Reveal semantics, economic constants, payout bounds, expiry rules, oracle rules, authority selection, or protocol limits.
+
+#### Next step
+
+Continue with the existing evidence-specific blockers and record each result against its exact commit, workflow, artifact or live observation, and scope. Do not promote a successful structural CI run into a runtime or live-ledger certification.
+
