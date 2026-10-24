@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import { fetchAllAddressUtxos } from './koios-address-utxos.mjs'
 
 const address = 'addr_test1' + 'q'.repeat(50)
-const row = (tx_hash, tx_index = 0) => ({ address, tx_hash, tx_index, value: '1000000', asset_list: [] })
+const row = (tx_hash, tx_index = 0, rowAddress = address) => ({
+  address: rowAddress,
+  tx_hash,
+  tx_index,
+  value: '1000000',
+  asset_list: [],
+})
 const response = (rows, ok = true, status = 200) => ({
   ok,
   status,
@@ -41,7 +47,6 @@ const response = (rows, ok = true, status = 200) => ({
       baseUrl: 'https://preprod.koios.rest/api/v1',
       address,
       pageSize: 1,
-      maxPages: 3,
       fetchImpl: async url => {
         const offset = Number(new URL(url).searchParams.get('offset'))
         return response(offset === 0 ? [row('same')] : [row('same')])
@@ -58,7 +63,10 @@ const response = (rows, ok = true, status = 200) => ({
       address,
       pageSize: 1,
       maxPages: 2,
-      fetchImpl: async () => response([row(Math.random().toString())]),
+      fetchImpl: async url => {
+        const offset = Number(new URL(url).searchParams.get('offset'))
+        return response([row('unique-' + offset)])
+      },
     }),
     /KOIOS_ADDRESS_UTXOS_PAGINATION_LIMIT_REACHED/,
   )
@@ -70,10 +78,21 @@ const response = (rows, ok = true, status = 200) => ({
       baseUrl: 'https://preprod.koios.rest/api/v1',
       address,
       pageSize: 2,
-      fetchImpl: async () => response([row('wrong-address').address = 'addr_test1wrong']),
+      fetchImpl: async () => response([row('wrong-address', 0, 'addr_test1wrong')]),
     }),
-    /KOIOS_ADDRESS_UTXO_ROW_INVALID|KOIOS_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS/,
+    /KOIOS_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS/,
   )
 }
 
-process.stdout.write('KOIOS_ADDRESS_UTXOS_PAGINATION_TESTS=PASS\n')
+{
+  await assert.rejects(
+    fetchAllAddressUtxos({
+      baseUrl: 'https://preprod.koios.rest/api/v1',
+      address,
+      fetchImpl: async () => response([{ address, tx_index: 0 }]),
+    }),
+    /KOIOS_ADDRESS_UTXO_ROW_INVALID/,
+  )
+}
+
+process.stdout.write('KOIOS_ADDRESS_UTXOS_PAGINATION_TESTS=PASS\\n')
