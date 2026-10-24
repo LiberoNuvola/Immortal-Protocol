@@ -160,3 +160,15 @@ All five relevant conformance/documentation workflows have now completed success
 - [IMMORTAL Portability Conformance #40068369200](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068369200) — success
 
 These results close the CI check for that documentation/checkpoint SHA only. They do not qualify the physical `tUSDM` unit, produce fresh EV1–EV7, authorize EEV deployment, establish production Pyth→MintPolicy binding, verify Treasury liquidation, or prove a real wallet Issue. P-01/P-02/P-05/P-06/P-15/P-16 retain their previously recorded blockers.
+
+
+### Agent A CI follow-up — checkpoint SHA verified (2026-10-24)
+
+All five relevant conformance/documentation workflows completed successfully on checkpoint source SHA `3afdacba14cf224fafb1142ad6deb755f267bb93`:
+- [Documentation Link Check #40068710183](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710183) — success
+- [Algorithmic Governability Adversarial Lab #40068710333](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710333) — success
+- [Protocol Declaration Conformance #40068710131](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710131) — success
+- [Cardano Adapter Sale Conformance #40068710120](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710120) — success
+- [IMMORTAL Portability Conformance #40068710077](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710077) — success
+
+This confirms CI for the updated checkpoint itself. It does not qualify the physical `tUSDM` asset, close the normative USDM denomination decision, produce fresh EV1–EV7, authorize EEV approval, prove Treasury liquidation, or establish a real wallet Issue. P-01/P-02/P-05/P-06/P-15/P-16 remain gated by their recorded evidence and decisions. No protocol code, V3/Reveal semantics, workflow dispatch, approval, wallet signature, transaction, or on-chain state was changed.
