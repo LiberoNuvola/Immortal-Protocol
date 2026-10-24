@@ -2979,3 +2979,8 @@ See [acquisition procedure](https://github.com/LiberoNuvola/Immortal-Protocol/bl
 - The source-set producer requires PREPROD_TUSDM_UNIT and an exact live Pool out-reference; it emits OBSERVED_NOT_QUALIFIED. The EEV approval workflow is a separately gated manual approval workflow and has not been dispatched by this audit.
 - Treasury scenario simulation labels USER_SUPPLIED_SCENARIO versus OBSERVED_EXECUTION, but its inputs are supplied parameters; do not infer an executed swap from SCENARIO_PASS.
 - No wallet signature, approval dispatch, DEX transaction, or funds movement was performed in this pass.
+
+
+### 10.26 — Agent C erratum: exact B3 run source SHA (2026-10-24)
+
+Section 10.25 contains a transcription error in the B3 workflow source SHA. The exact `head_sha` reported by run [#39933665986](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39933665986) and its artifacts is `11fae8a1f030bcbe177eab6ee2ae99a96f080ca6`, not `11fae8a1f030bcbe98eab6ee2ae99a96f080ca6`. This erratum corrects the identifier only; it does not alter the evidence classification or claim a newer branch HEAD. The B3 run's verifier and live-storage jobs passed; the real GRANDPA witness job failed with `NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN`. Current checkpoint blob was re-fetched before this append; preceding Agent A additions are preserved.
