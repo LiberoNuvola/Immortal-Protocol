@@ -3158,3 +3158,62 @@ This review is source-level and uses existing artifacts only. The connected GitH
 - **Next evidence-producing action:** request from an authorized Materios full/archive-node operator either (a) the exact SCALE-encoded `FinalityProof<Header>` / GRANDPA justification and ancestry for a named finalized block, or (b) a signed operational endpoint/source commitment that can be independently queried. Bind it to chain genesis, block hash/number and runtime/spec version; acquire the authority-transition proof back to the authenticated genesis set. If unavailable, keep B3-A BLOCKED and do not widen the same RPC scan.
 - **No code change, deployment, on-chain operation, or test run** was performed in this continuation. No B3 status is upgraded.
 
+
+
+## 10.26 — Agent B: valid-CBOR provider contract and Yaci log redaction hardening (2026-10-24)
+
+**Classification:** integration diagnosis + CI security hardening. No economic rules, V3 carrier logic, Reveal semantics, validator code, or Preprod state were changed. The code changes are limited to the CI workflow, an isolated local-devnet evaluation probe, and a shared Yaci-log sanitizer with synthetic tests.
+
+### A. Exact PR state and runs
+
+- PR #36 remains OPEN / DRAFT; branch `review/treasury-readonly-observer`.
+- New commit: [`75427c3813aa2e77aad84970ed5298fde6d333ca`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/75427c3813aa2e77aad84970ed5298fde6d333ca).
+- Files in the commit:
+  - `.github/workflows/immortal-cardano-lab.yml`
+  - `audit/cardano-integration/yaci-evaluation-contract-probe.mts`
+  - `audit/cardano-integration/sanitize-yaci-log.mjs`
+  - `audit/cardano-integration/sanitize-yaci-log.test.mjs`
+- The older Integration Lab [#40066734558](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066734558), SHA `fb3164cb7d3fa4bce839f38fb4b14548d3cc78f9`, was still generating Plutus artifacts and had not started Yaci. After the sanitizer commit, GitHub marked it **cancelled** at 2026-10-24T05:45:22Z, before Yaci startup.
+- Replacement Integration Lab [#40067396869](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40067396869), SHA `75427c3813aa2e77aad84970ed5298fde6d333ca`, is **IN PROGRESS**. Its sanitizer test passed before dependency installation/Yaci, then it entered Haskell setup. Provider evaluation has not run yet. No result is inferred from the workflow being in progress.
+- Same-SHA Protocol Declaration Conformance [#40067396823](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40067396823) and Algorithmic Governability [#40067396831](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40067396831) completed successfully for their scopes only.
+- Green checkpoint branch run group at `41dd9b084c9d0ccaad1303a3583a364815a4bf95` completed success for Documentation Link Check [#40067538838], Portability [#40067538854], Algorithmic Governability [#40067538805], Protocol Declaration [#40067538806], and Adapter Sale [#40067538810]. These checks do not close Yaci provider compatibility.
+
+### B. Provider contract confirmed from the versioned sources
+
+- Immortal's lockfile resolves `@lucid-evolution/lucid@0.6.5` with `@lucid-evolution/provider@0.2.4`.
+- The pinned provider implementation ([source at release commit](https://github.com/Anastasia-Labs/lucid-evolution/blob/69cb625e5fc6ac61656c7fa50c5260cf35f945ff/packages/provider/src/blockfrost.ts)) issues `POST /utils/txs/evaluate/utxos`, `Content-Type: application/json`, body `{"cbor":"<transaction CBOR as hex>" }`, and reads `result.EvaluationResult`.
+- Yaci DevKit `v0.12.0` config ([`download.properties`](https://github.com/bloxbean/yaci-devkit/blob/v0.12.0/applications/cli/config/download.properties)) pins Yaci Store `2.0.7`. The versioned [`TxUtilController`](https://github.com/bloxbean/yaci-store/blob/v2.0.7/components/submit/src/main/java/com/bloxbean/cardano/yaci/store/submit/controller/TxUtilController.java) exposes:
+  - `POST /utils/txs/evaluate` for a CBOR-content-type body;
+  - `POST /utils/txs/evaluate/utxos` for JSON containing hex text `cbor`.
+- Its [`TxEvaluationService`](https://github.com/bloxbean/yaci-store/blob/v2.0.7/components/submit/src/main/java/com/bloxbean/cardano/yaci/store/submit/service/TxEvaluationService.java) wraps v5 evaluator success in `result.EvaluationResult`, matching the consumer shape Lucid expects when evaluation succeeds.
+- Therefore, prior diagnostic run #2113 did **not** test the provider's actual route: it sent invalid `{}` as `application/cbor` to `/utils/txs/evaluate`. Its HTTP 400 was reachability/parser evidence only, not compatibility evidence.
+- The new probe builds an unsigned, no-Plutus transaction locally and in memory, compares Lucid's JSON route with the classic route, and invokes the locked provider's own `evaluateTx`. It records endpoint status, bounded response schema/error summaries, CBOR length/hash and evidence path. It never signs or submits this probe transaction, invents exunits, or alters V3/Reveal semantics.
+- **Known minor diagnostic defect:** the current `evaluatorModeMatch` regular expression has an escaping error and can report `NOT_RECORDED` even when the log contains the evaluator mode. The raw sanitized Yaci log remains available to inspect, but the structured mode field must be treated as invalid until corrected. Defer this correction until run #40067396869 completes, because the workflow has `cancel-in-progress: true` and another branch update would cancel the active run.
+
+### C. Credential/artifact finding and fix
+
+- A direct scan of the still-unexpired artifact from run #2086 (ID `12525975775`) found 40 unique 121-character tokens in the `ed25519e_sk...` format in `yaci.log`, next to Payment Key / Staking Key labels. Values and fingerprints were not copied into logs, comments, or evidence.
+- A separate scan of the prior run #2113 artifact (ID `12549495517`) found no `ed25519e_sk` tokens—the existing regex covered that key format—but one `Mnemonic:` field still contained the local test-wallet phrase. This violates the artifact no-seed rule even though the phrase belongs to the local-devnet test fixture. No phrase is reproduced here.
+- New shared sanitizer `sanitize-yaci-log.mjs` removes ANSI CSI codes before pattern processing, redacts `Mnemonic:` phrases, redacts labelled Payment/Staking Key tokens, and redacts unlabelled `ed25519e_sk...` tokens.
+- Synthetic regression `sanitize-yaci-log.test.mjs` verifies each category with fake, non-secret values. Run #40067396869 step `Verify Yaci log sanitizer with synthetic fixtures` completed **success** before Yaci startup.
+- The workflow uses the shared sanitizer for timeout output and sanitizes the log in place before stdout/artifact upload. If final sanitization fails, it deletes the raw log rather than uploading it and marks failure.
+- **Security remains BLOCKED — OWNER ACTION REQUIRED:** artifacts #2086 and #2113 are not retroactively repaired by source changes; the connector still provides no artifact deletion action. Owner to remove/restrict access to both artifacts if supported, confirm that the generated devnet keys and local wallet fixture were never reused, and rotate/revoke any reusable credential. No conclusion of “no real key reuse” can be drawn from repository evidence alone.
+
+### D. State update
+
+| Gate | Status at this refresh | Evidence / blocker |
+|---|---|---|
+| Valid-CBOR provider contract | **YELLOW — TEST IN PROGRESS** | Run #40067396869 has not yet reached Yaci/provider evaluation; exact route/schema are grounded in pinned source, runtime result pending. |
+| Evaluator mode in structured evidence | **YELLOW — PARTIAL** | Raw log can evidence mode; new probe's mode regex needs correction after the active run finishes. |
+| New Yaci log sanitizer | **GREEN — TESTED BOUNDED** | Synthetic test passed in run #40067396869 before Yaci startup; artifact-level verification of this replacement run remains pending. |
+| Historical artifacts | **BLOCKED — EXTERNAL** | Artifacts #2086 and #2113 remain available and require owner containment. |
+| V3 / Reveal | **UNCHANGED** | No validator/source/semantic edits; the replacement run has not yet reached V3. |
+| Treasury Observer / Preprod address | **BLOCKED — EXTERNAL** | No observer dispatch; `DEMETER / vars.VITE_TREASURY_ADDRESS` still needs independent owner verification. |
+
+### E. Next actions
+
+1. Let run #40067396869 reach the valid-CBOR probe; inspect actual HTTP responses, provider result/error, evaluator mode in the sanitized log and artifact digest. Do not rerun before checking concurrency.
+2. After that run completes, fix mode extraction on the existing PR branch, then run focused sanitizer and Integration Lab tests only after checking no active same-ref run.
+3. Repository owner contains artifacts #12525975775 and #12549495517 and confirms non-reuse of any exposed credentials. The Treasury Observer remains disabled until the configured address is independently verified.
+
+**Overall classification:** PARTIAL / OPEN. The sanitizer regression passed, but Yaci provider evaluation on the new head has not yet been observed. No Preprod transaction, signing, bootstrap, mint, swap or Treasury action was performed.
