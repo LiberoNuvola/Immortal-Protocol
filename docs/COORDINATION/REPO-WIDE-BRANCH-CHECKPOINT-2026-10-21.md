@@ -3976,3 +3976,31 @@ These statuses are not economic qualification, native-ledger acceptance, or auth
   - Subsequent P2.8 ledger evidence/resource/invariant steps were skipped after the decoder compile failure. Do not classify this as a validator pass/fail.
 - Cardano Ledger Audit Runner #40079905149 was still compiling the runner during the last observation; no final conclusion recorded.
 - Agent C has not modified the decoder or prompt generator: both are outside the Mitsuro integration audit scope and require Agent B/JEV owner to make the scoped fix. Do not alter V3/Reveal semantics or economic policy.
+
+### Agent A — fresh read-only EEV candidate revalidation — 2026-10-24 16:11 UTC
+
+**Classification:** read-only exact-out-reference revalidation. No economic conversion, EV1–EV7 qualification, deployment approval, wallet signature, transaction construction/submission, or ledger mutation occurred.
+
+#### Exact run and source provenance
+
+- Existing read-only workflow: [PRE-RICH Preprod EEV — Read-only UTxO Liveness, run #40071991887](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991887), **attempt 2**, completed successfully.
+- Rerun job: `120920654993`; completion/log timestamp: `2026-10-24T16:11:17Z`.
+- Source commit checked out by this observation: `64fe7471caefc7f27d006cd814b50d4c76d6f64c`.
+- Observer source blob on that commit and on the current `work/immortal-green-closure` ref is identical: `44b84bd3bb1cd12a2b3d6ce9c00f9b8f98bd9df3`. This confirms the observation logic is still the same tracked source; it does not make the older workflow commit the current branch HEAD.
+- Artifact: [preprod-eev-liveness artifact #12566815005](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991887/artifacts/12566815005), 1,428 bytes, created `2026-10-24T16:11:17Z`, expiry `2026-11-23T16:11:17Z`. GitHub-reported SHA-256 of the uploaded ZIP: `67a389aab1fd42f9505af4508b656a6890b380d07c25b822cb02c566eeec9234`. The observation's address-info response digest remains `b1f6e6faa1e79ed828fac55c0e84d4118beb48b541f1361cc83f0d3f4007f8a6`.
+
+#### Re-observed physical state
+
+- Network: `cardano-preprod`.
+- Exact candidate out-reference: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`.
+- Configured B1 PrizePool address: `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`.
+- Observer result: `LIVE_CANDIDATE_OUTREF_AND_ASSETS_MATCH`; exact out-reference match count `1`.
+- Physical quantities: `5,000,000` lovelace, Pool singleton quantity `1`, candidate Preprod `tUSDM` quantity `1,000,000,000` atomic units.
+- Chain tip was stable across the observation: block height `5,330,469`, absolute slot `137,175,074`, hash `6b89c57c1666534cf763030643e7620bbe25f2b9adce997f4b90c1a7c2e9b589` (block time reported by Koios: `1792858274`).
+
+#### Disposition
+
+This revalidates liveness and physical asset presence for the **same historical candidate out-reference** at the later sampled tip. It does not prove a fresh EV1–EV7 source-set, governed canonical-USDM identity, USD/USDM conversion, executable liquidation value, ProtectedCapital/R1-Kc viability, or deployment approval. It also does not prove that the out-reference will still be live at a future Issue admission; the exact input must be revalidated again at that boundary.
+
+Keep `tUSDM = OBSERVED_NOT_QUALIFIED`, keep the A/B/C USD–USDM rule open, and keep P-01/P-02/P-16 blocked. No approval or bootstrap workflow was dispatched. No protocol code, economics, V3/Reveal semantics, or branch topology changed.
+
