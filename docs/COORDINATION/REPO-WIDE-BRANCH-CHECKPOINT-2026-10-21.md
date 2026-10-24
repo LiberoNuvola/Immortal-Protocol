@@ -3073,3 +3073,74 @@ Read-only recheck of `Flux-Point-Studios/materios` via GitHub connector:
 - No branch created/deleted; no merge, rebase, force-push, cherry-pick, deployment, wallet operation, transaction or protocol-semantic change.
 
 **Overall status:** PARTIAL. C1/C3 remain externally blocked; C2 is a scoped storage-proof PASS but end-to-end PARTIAL; C5 autonomy remains INCONCLUSIVE; universal viability/portability and Paper Tranche 1 remain OPEN. Next order: (1) authorized genesis/GRANDPA source; (2) finish U-02 consumer map and U-04 fixture inventory; (3) inspect live JEV run chronology and registry scheduling; (4) refresh U-10 claim/evidence map; (5) trace U-09 public UI bindings; (6) exact-head fingerprint and Aegis validation when a runner is available.
+
+
+### 10.30 — Agent C: Materios Receipt lineage / current-ref recheck — 2026-10-24
+
+**Purpose:** assess the upstream announcement “Full provenance lineage traced end-to-end for every Materios Receipt is now LIVE on our explorer” against the current upstream source and IMMORTAL's open B3 obligations. This is a scoped source review, not an assertion that every live Receipt has been independently verified.
+
+#### Exact refs and source identities observed
+
+- IMMORTAL <code>work/immortal-green-closure</code> HEAD at review start: <code>60bc25f6c381b0d4494dc74381683859a5216eaa</code> (commit message: <code>docs(coordination): record Agent A Treasury observer source audit</code>, 2026-10-24T05:38:27Z). The central checkpoint file blob fetched from this branch is <code>edbdd5d2387d38caf60e4666411ffc5515e8090d</code>.
+- IMMORTAL <code>work/b3-materios-provenance-evidence</code> HEAD: <code>722aef11c5f557897bbf8a51774cfec7a89af3f3</code>. Existing B3 verifier evidence remains bound to workflow run #39933665986 / source SHA <code>11fae8a1f030bcbe177eab6ee2ae99a96f080ca6</code>; the branch tip includes a documentation-only update to the GRANDPA handoff, not a new witness.
+- IMMORTAL <code>main</code> HEAD observed: <code>97b09a38742098f17a61eb07734c401aeedccc06</code>.
+- IMMORTAL <code>merge/workflow-b-closed-main</code> HEAD: <code>7bca8d91b65d7af1261d8b7cc4f28f496a73fcba</code>; PR #35 remains OPEN/DRAFT, base <code>main</code> at <code>97b09a38742098f17a61eb07734c401aeedccc06</code>, head <code>merge/workflow-b-closed-main</code>; no merge or governance promotion performed.
+- Materios upstream <code>main</code> HEAD: <code>7d5c36e7dcd60824d84353e93df5d4a03c9c6c30</code>, dated 2026-10-21T09:20:18Z (merge of CI sccache PR #110). No post-HEAD code change implementing GRANDPA RPC was identified in the inspected source.
+- Upstream file blob SHAs at that HEAD: <code>tools/explorer/app.py</code> = <code>fc7e8f045f9319c2aa6ceb11c83ec5fc5f5076a1</code>; <code>tools/explorer/chain.py</code> = <code>18d79766bb49efdd89c6c10ff14c928dd6a3411a</code>; <code>tools/materios-verify/materios_verify/core.py</code> = <code>bcd21c3c942e3a3b7fbac234865b69050283831a</code>; <code>tools/explorer/static/app.js</code> = <code>b5c214e943dfff17237f837e65fbbbb9a922a270</code>.
+
+#### C0 — lineage source audit
+
+| Lineage element | Source / verification method found | Classification and limit |
+|---|---|---|
+| Receipt identity and on-chain fields | <code>/api/receipt/{receipt_id}</code> queries <code>OrinqReceipts.Receipts</code>; returns content, schema, locator, manifest, safety, monitor and attestation-evidence hashes plus availability certificate hash. | **On-chain query surface identified**; live Receipt samples/count not obtained in this pass. |
+| Availability certificate / certificate hash | <code>verify_receipt</code> reads <code>availability_cert_hash</code> from Receipt storage and queries current committee members/threshold. | Hash and current committee are queried; this code path does not independently prove certificate signers or authenticate the initial/transitioned authority set. |
+| Context-bound checkpoint leaf | Core verifier computes SHA-256 over <code>"materios-checkpoint-v1" || chain_id || receipt_id || cert_hash</code>. | **Locally recomputed** by the slow verifier. |
+| Anchor and Merkle root | Slow path scans <code>AnchorSubmitted</code> events, queries <code>OrinqReceipts.Anchors</code>, and can reconstruct a batch from certified events. | **On-chain queries + local reconstruction**; bounded scan window and historical pruning can cause misses. |
+| Merkle inclusion | Exact single-leaf root/leaf equality, batch-history reconstruction or on-chain reconstruction is used. | Some paths verify a root relationship; a supplied sibling-proof is not used for every possible batch path. Coverage requires test evidence. |
+| Manifest integrity | If a matching local batch manifest exists, its canonical JSON hash is recomputed and compared with the anchor's manifest hash. If no manifest is available, step 6 is explicitly marked passed with a warning. | **Conditional verification; missing manifest is fail-open at this step**, so this is not a universal mandatory manifest-integrity proof. |
+| <code>AvailabilityCertified</code> event | Slow path scans a bounded block range and compares event certificate hash to Receipt storage. If the event is not found in the range, step 7 is marked passed with a warning. | **Conditional event cross-check; missing event is fail-open at this step**, not proof the event exists or matches. |
+| Cardano L1 anchor | The explorer's pre-indexed fast path returns a Cardano transaction hash and <code>verified_at</code> from the blob-gateway verification index. The inspected slow-path <code>verify_receipt</code> has no Cardano L1 anchor-verification step. | **Operator/index-provided claim in fast path; not independently verified by the inspected slow verifier.** |
+| Finality / GRANDPA justification | The inspected Receipt verifier does not verify a GRANDPA justification, authenticated genesis trust anchor, or authority transition. | **Absent from this lineage verifier.** Must remain a separate B3-A/B3-C obligation. |
+| Freshness / cache | Receipt, anchor, and verification endpoints use caches; receipt/anchor details use 30 seconds or permanent cache, while the verification-index fast path trusts the index response. | Cache/index freshness and publisher independence require explicit validation. |
+| Coverage of every Receipt | <code>/api/receipts</code> exposes pagination (max 100/page); <code>/api/verify/{id}</code> verifies one ID at a time. No evidence in this audit proves every historical/current/pending/stale/failed Receipt was individually verified. | **NOT PROVEN**. The announcement's “every Receipt” coverage claim is not independently established by repository source alone. |
+
+#### High-priority C0 finding — pre-indexed verification fast path can overstate verification
+
+In <code>tools/explorer/app.py</code>, <code>/api/verify/{receipt_id}</code> queries <code>{BLOB_GATEWAY_URL}/verification/{clean_id}</code>. When the response status is HTTP 200, the handler returns <code>verified: true</code> and synthesizes nine <code>pass</code> steps from fields in that index response. The inspected path does not compare those values against a fresh on-chain Receipt, recompute the checkpoint leaf, verify the Merkle proof/manifest, cross-check the <code>AvailabilityCertified</code> event, verify the Cardano transaction, or verify GRANDPA finality before emitting those pass statuses. A stale or incorrectly populated index record could therefore be presented as a fully verified lineage by this route. This is a source-level risk finding; no live exploitation or bad production record is claimed.
+
+The slow path delegates to <code>verify_receipt</code>, but that function also treats a missing manifest as supplementary/pass and a missing event within the bounded scan as supplementary/pass. Its <code>FULLY_VERIFIED</code> result therefore means the implemented Receipt/checkpoint checks passed under those code-path conditions; it must not be interpreted as GRANDPA finality, authority-transition authentication, or independently proven Cardano anchoring.
+
+#### Live explorer and Notion limits
+
+- Direct reads of <code>https://materios.fluxpointstudios.com/</code>, <code>/api/chain-info</code>, <code>/api/receipts?limit=2</code>, and a verification endpoint were attempted through the available web reader; the host was reported inaccessible to that reader. Therefore this pass **did not** verify the deployed explorer's current UI, runtime API responses, current Receipt count, or all-Receipt coverage. Source code on GitHub and the live deployment must not be conflated.
+- Notion search/fetch was available. “MATERIOS B3-A — Authority Transition Triangulation — 11 Oct 2026” still records the real cryptographic witness/finality boundary OPEN; “Workflow C — IMMORTAL V2 Autonomous Verification & Execution v0.1” remains DESIGN/RECONCILIATION ONLY — OPEN; the PRE-RICH Control Center's 2026-10-22 note says the genesis trust anchor and initial authority set are not yet authenticated. These agree with, and do not supersede, the GitHub evidence boundaries.
+- No upstream file was modified, no external issue/PR was created, and no live RPC scan was repeated.
+
+#### C0 impact on B3
+
+| Front | Result after this review | What the lineage announcement changes |
+|---|---|---|
+| C0 Receipt provenance | **PARTIAL / SOURCE AUDIT** | Adds a useful explorer evidence surface, but “every Receipt” coverage and live deployment behavior are not independently demonstrated; fast-path and missing-evidence fail-open cases need upstream correction or a stronger consumer verifier. |
+| C1 / P-09 B3-A GRANDPA | **BLOCKED** | No justification/FinalityProof bytes or authenticated authority transitions supplied by the inspected lineage. |
+| C2 / P-10 B3-B storage proof | **PARTIAL** | No change to existing storage-proof result; its supplied StateRoot remains unauthenticated for finality purposes until C1 is closed. |
+| C3 / P-11 B3-C authority selection | **BLOCKED** | Receipt lineage does not prove canonical selector execution or bind selector inputs/result to an authenticated transition. |
+| C4 / P-12 Workflow B | **PARTIAL** | Must consume explicit verifier results and provenance digests, not the explorer's display label or a gateway's HTTP-200 record. |
+| C5–C15 | **No status upgrade from this finding** | Keep the latest status matrix in §10.29; a Receipt lineage feature does not discharge kernel, JEV autonomy, adapter, paper, public UI, sponsorship, Beacon, CAROB THREE, artifact reuse or Aegis obligations. |
+
+#### Required upstream handoff — minimum safe contract
+
+Ask the Materios explorer/blob-gateway owner to provide:
+
+1. A versioned, immutable verification record keyed by exact Receipt ID and chain genesis, containing raw Receipt/certificate data, certificate signer identities and signed payload or independently verifiable attestation bytes, checkpoint leaf, Merkle siblings and leaf index, anchor ID/root/manifest bytes, event block/hash, Cardano transaction bytes or transaction ID plus independently queryable inclusion evidence, and timestamps/source block hashes.
+2. A verifier result generated from those raw materials, with per-step result and explicit <code>NOT_RUN</code> / <code>MISSING</code> / <code>STALE</code> states. HTTP 200 or record existence must never imply every step passed.
+3. The verification-index record digest, schema/verifier version, source block hash, creation time and refresh/freshness policy; consumers must be able to reject stale or mismatched records.
+4. A separate GRANDPA evidence interface returning SDK-compatible SCALE <code>FinalityProof&lt;Header&gt;</code> / FRNK justification bytes and required ancestry headers for an exact target, plus a reproducible authenticated-genesis/authority-transition chain. Receipt lineage is not a substitute.
+5. A bounded export/list of the complete Receipt-ID universe and statuses, with pagination/snapshot semantics, so a verifier can enumerate and report coverage rather than sampling only recent/certified entries.
+
+IMMORTAL should consume this as untrusted evidence and independently verify each cryptographic claim. Do not make the explorer itself a trust anchor.
+
+#### No local code change / no new test run
+
+This review is source-level and uses existing artifacts only. The connected GitHub capability exposed repository reads and file updates but no workflow-dispatch action or local shell/test runner; no new unit test, live workflow, transaction or upstream patch was executed. The last relevant B3 proof workflow remains run #39933665986 on source SHA <code>11fae8a1f030bcbe177eab6ee2ae99a96f080ca6</code>: verifier and B3-B storage proof passed, real GRANDPA witness acquisition failed. Do not upgrade it based on this source review.
+
+**Overall Agent C status remains PARTIAL.** C0 is now classified as PARTIAL with concrete source-level overclaim risks; C1 and C3 remain externally blocked; C2 remains a narrow storage-proof PASS but end-to-end PARTIAL; C4 remains governance PARTIAL; C5 remains INCONCLUSIVE; C6.1/C6.4/C6.5/C7/C11/C12/C14/C15 remain PARTIAL; C6.2/C6.3/C8/C13 remain BLOCKED; C9/C10 remain NOT RUN. See §10.29 for the per-front evidence and next actions, supplemented by this C0 finding. The single highest-leverage next action is to obtain a new authorized source that returns real GRANDPA justification bytes and an authenticated genesis/authority-transition chain; independently, upstream should correct the explorer's verification-index fast path and fail-open missing-manifest/event semantics.
