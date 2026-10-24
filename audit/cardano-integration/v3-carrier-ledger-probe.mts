@@ -6,6 +6,7 @@
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId, type Script } from '@lucid-evolution/lucid'
+import { sanitizeEvaluationDiagnosticText } from './sanitize-yaci-evaluation-error.mjs'
 
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
 const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
@@ -125,6 +126,16 @@ globalThis.fetch = async (input, init = {}) => {
       && Object.prototype.hasOwnProperty.call(parsed, 'fault')),
     errorFieldType: parsed && typeof parsed === 'object' ? typeof parsed.error : 'absent',
     messageFieldType: parsed && typeof parsed === 'object' ? typeof parsed.message : 'absent',
+    // Preserve only bounded, redacted server diagnostics; never persist the raw body.
+    statusCode: parsed && typeof parsed === 'object'
+      ? sanitizeEvaluationDiagnosticText(String(parsed.status_code ?? ''), 80)
+      : null,
+    sanitizedError: parsed && typeof parsed === 'object'
+      ? sanitizeEvaluationDiagnosticText(parsed.error, 320)
+      : null,
+    sanitizedMessage: parsed && typeof parsed === 'object'
+      ? sanitizeEvaluationDiagnosticText(parsed.message, 320)
+      : null,
   })
   return response
 }
