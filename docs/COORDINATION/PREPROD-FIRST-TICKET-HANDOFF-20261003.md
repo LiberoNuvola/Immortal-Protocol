@@ -104,3 +104,29 @@ The candidate unit e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014d
 - P-16: no confirmed user-wallet Ticket NFT Issue is evidenced. No wallet signing, approval dispatch, or transaction submission was performed in this pass.
 
 See the central six-front matrix and exact-SHA workflow inventory in [REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md](REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md).
+
+
+### Agent A continuation — Treasury observer source audit, 2026-10-24 (follow-up)
+
+Verified current branch HEAD before this note: `abde45b2ef149997de2813bf808d8144a5fe76a7` (`work/immortal-green-closure`). No new branch created.
+
+The existing Treasury workflows and scripts were inspected directly on this branch:
+
+- `.github/workflows/observe-configured-preprod-treasury.yml` invokes `audit/cardano-integration/observe-configured-preprod-treasury.mjs` in the `DEMETER` environment and requires `PREPROD_TREASURY_ADDRESS`, `PREPROD_TREASURY_SCRIPT_HASH`, and `PREPROD_TREASURY_BINDING_REFERENCE`.
+- The observer verifies that the configured Preprod address has a script payment credential matching the supplied script hash and reads address UTxOs from Koios. Its output explicitly labels the binding reference `CALLER_SUPPLIED_NOT_CRYPTOGRAPHICALLY_VERIFIED`; it does not establish authorized deployment, protocol control, a liquidation route, a swap, or QNE.
+- `.github/workflows/observe-preprod-treasury-inventory.yml` derives an address from the checked-in `plutus/out/treasury.plutus.json`, then observes balances and token holders. This is useful inventory evidence but is not, by itself, proof that this artifact is the currently authorized deployment.
+- `.github/workflows/treasury-liquidation-simulation.yml` and `audit/cardano-integration/treasury-liquidation-simulation.mjs` perform deterministic arithmetic over caller-supplied values. `OBSERVED_EXECUTION` is only an input label; the simulator itself does not fetch a DEX quote, construct/sign/submit a swap, or verify proceeds.
+
+**Execution status:** these workflows were source-audited only in this follow-up. No Treasury observation workflow was dispatched, no live artifact was downloaded, and no swap was attempted. Do not interpret the code review as a fresh ledger observation.
+
+### Exact-SHA CI refresh — 2026-10-24
+
+The latest coordination/documentation commit on the working branch is `abde45b2ef149997de2813bf808d8144a5fe76a7`. The following checks completed successfully on that SHA: [Portability Conformance #40066742664](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066742664), [Governability Adversarial Lab #40066742656](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066742656), [Protocol Declaration Conformance #40066742609](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066742609), [Cardano Adapter Sale Conformance #40066742536](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066742536), and [Documentation Link Check #40066742615](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066742615). These are conformance/documentation results; they do not certify EEV qualification, live Treasury state, Pyth quote authenticity, or a real ticket issuance.
+
+The latest reviewed operational blockers remain unchanged:
+1. Obtain a governed, source-backed decision on whether the candidate Preprod `tUSDM` unit is the canonical accounting USDM. Do not infer identity from ticker, presence, or conversion scale.
+2. Only after that decision, produce a fresh exact-Pool-UTxO observation and reproducible EV1–EV7 evidence with independently verified digests; separately authorize the deployment approval.
+3. Keep the Treasury inventory read-only. A liquidation scenario remains scenario evidence until a route, execution, costs, and actual USDM received are independently verified.
+4. Keep first Issue fail-closed until authoritative admission and the final transaction body are bound to authenticated current evidence, then verify the Ticket NFT in the intended wallet UTxO after on-chain confirmation.
+
+No economic constants, expiry semantics, V3 carrier, Reveal semantics, or wallet/transaction state were changed in this follow-up.
