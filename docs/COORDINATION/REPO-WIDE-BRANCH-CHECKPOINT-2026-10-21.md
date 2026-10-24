@@ -3797,3 +3797,32 @@ Keep the gates separate:
 
 **Next safe action:** use the existing dedicated read-only Oracle quote-set observation path (which reports shape, timestamp, publisher match and freshness but never claims external-price truth) to materialize a structured current-state artifact; then separately plan and authorize any legitimate quote refresh/source-verification path. Do not rerun the existing bootstrap expecting it to update an existing singleton.
 
+
+
+### Agent A — fresh Oracle re-observation, configuration gap, and completed lab evidence — 2026-10-24
+
+**Classification:** fresh read-only Preprod observation plus exact CI/workflow evidence. No on-chain update, wallet signature, treasury movement, deployment, or Issue transaction was attempted.
+
+#### Read-only Oracle observation
+
+[Oracle Quote-Set Read-Only Observation #40074119480](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40074119480) ran on commit `d61e3fbde1dcfa8914d31ff98c7d26c63bd2e316`.
+
+- **Bootstrap-wallet Koios observer: SUCCESS**; structured artifact [#12552830349](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40074119480/artifacts/12552830349).
+- Observation chain tip: block `5,329,007`, absolute slot `137,143,580`, observed at `2026-10-24T07:26:20Z`.
+- Exact historical singleton remains `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`; datum SHA-256 remains `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+- Fresh classification: `schema=legacy-single-quote`, constructor 0, one ADA quote, `fresh=false`, blocker `STALE_TIMESTAMP`; quote age `1,345,649,858 ms` (~373.79 hours) against the existing one-hour maximum. `sourceTruthProven=false`, `externalPriceSourceVerified=false`, `configuredPublicPagesRuntimeIdentityProven=false`, `multiAssetSettlementAuthorisedByThisObservation=false`.
+- Observation operation flags: `signed=false`, `submitted=false`, `stateChanged=false`.
+
+The second job, [Observe the exact configured Preprod Oracle singleton](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40074119480/job/120813721476), failed during **configuration validation before it queried the configured singleton**. Its log reports these missing required values: `BLOCKFROST_PROJECT_ID`, `ORACLE_STATE_ADDRESS`, `ORACLE_STATE_POLICY_ID`, `ORACLE_STATE_TOKEN_NAME_HEX`, and `ORACLE_PUBLISHER_PKH`. No artifact was produced by that job. Do not treat the bootstrap-wallet observation as proof of the public Pages runtime configuration, and do not fill these fields from guessed identity data. The exact configured observation needs its approved runtime configuration and Blockfrost credential before it can run.
+
+#### Integration Lab reconciliation
+
+The preceding [IMMORTAL Cardano Integration Lab #40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767) **completed SUCCESS** on SHA `64fe7471caefc7f27d006cd814b50d4c76d6f64c`. It passed the native Yaci UTxO decoder, P2.8 ledger evidence gate, resource audit, invariant/provenance guards, Claim address binding, predeploy structural gate, evidence packet publication and Notion registration. Its sanitized packet is [artifact #12552077534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767/artifacts/12552077534). This remains a successful devnet/native-ledger lab, not a real ticket issuance to the user's wallet.
+
+The comment-only observer trigger created a new exact-head [Integration Lab run #40074119471](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40074119471) on SHA `d61e3fbde1dcfa8914d31ff98c7d26c63bd2e316`. At this checkpoint update it is **IN_PROGRESS**, with `Setup canonical Plutus CI` active; no conclusion is claimed for this second run. On the same SHA, frontend build, documentation links, economic conformance, conformance, declaration conformance, credentials/security, and read-only Preprod context checks have passed. The configured Oracle observation is the one failed job due to missing configuration; manual/preprod mutation jobs were skipped.
+
+#### Disposition and next gate
+
+Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; Issue #37 remains the open normative decision for exact asset identity and USD/USDM rule. Independently, the observed Oracle state remains a stale legacy single-quote datum and the exact configured runtime observer remains blocked on missing configuration. No qualification, EEV approval, settlement authorization, or first Issue is inferred from the CI pass.
+
+Next safe steps: supply the authorized runtime values and Blockfrost credential for the configured read-only observer; separately resolve Oracle quote-source truth and a legitimate, authorized quote-refresh/quote-set deployment path. Do not rerun the existing bootstrap as a presumed refresh, and do not change V3, Reveal, kernel constants, or economic semantics.
