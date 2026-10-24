@@ -3965,3 +3965,14 @@ These statuses are not economic qualification, native-ledger acceptance, or auth
 3. Test OS-level read/write/network/secret boundaries in a disposable environment before any writer integration.
 4. Extend the certification checker only after a reviewed contract is agreed: exact source SHA, canonical workflow/run IDs, artifact digest and freshness, evidence class/provenance, and fail-closed mismatch handling. Keep structural CI separate from runtime certification.
 5. Reconcile branch protection and required status checks through an explicitly authorized GitHub administration action; the repository branch is currently unprotected.
+
+
+#### Agent C follow-up — exact failures inspected after checkpoint update
+
+- Integration Lab #40079905198, job `devnet-integration`:
+  - `Run native Yaci UTxO decoder conformance` fails to compile at `audit/cardano-ledger-runner/YaciUTxO.hs:54:55`.
+  - Compiler diagnostic: `Illegal type: ‘11’ Perhaps you intended to use DataKinds` at `natVersion @11`. This is a language-extension/compiler configuration issue in the decoder harness; it is not evidence about reference-script correctness yet.
+  - `Generate JEV operational prompt from validated registry` fails because the generated prompt exceeds 7,000 characters. The builder deliberately refuses truncation to preserve safety boundaries. This is a separate bounded JEV prompt-size issue; tests of the prompt generator passed but the live registry instance exceeds the cap.
+  - Subsequent P2.8 ledger evidence/resource/invariant steps were skipped after the decoder compile failure. Do not classify this as a validator pass/fail.
+- Cardano Ledger Audit Runner #40079905149 was still compiling the runner during the last observation; no final conclusion recorded.
+- Agent C has not modified the decoder or prompt generator: both are outside the Mitsuro integration audit scope and require Agent B/JEV owner to make the scoped fix. Do not alter V3/Reveal semantics or economic policy.
