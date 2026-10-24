@@ -1,5 +1,9 @@
-import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import {
+  assertArtifactEvidenceHash,
+  assertQualificationEvidenceMatchesRepository,
+  digestJson as digest,
+} from './eev-approval-integrity.mjs'
 
 const EVIDENCE_DIR =
   process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
@@ -33,25 +37,6 @@ function requiredString(value, field) {
     throw new Error(field + ' is required')
   }
   return value.trim()
-}
-
-function digest(value) {
-  return createHash('sha256')
-    .update(
-      JSON.stringify(value, (_key, item) =>
-        typeof item === 'bigint' ? item.toString() : item,
-      ),
-      'utf8',
-    )
-    .digest('hex')
-}
-
-function requiredDigest(value, field) {
-  const normalized = requiredString(value, field)
-  if (!/^[0-9a-fA-F]{64}$/.test(normalized)) {
-    throw new Error(field + ' must be a 32-byte hex digest')
-  }
-  return normalized.toLowerCase()
 }
 
 const action = requiredString(
@@ -89,6 +74,17 @@ const oracleState = JSON.parse(
   await readFile(ORACLE_STATE, 'utf8'),
 )
 
+// Recompute all evidence digests from the parsed canonical contents. Digest
+// shape alone is insufficient for a privileged deployment-approval action.
+const sourceSetEvidenceHash = assertArtifactEvidenceHash(sourceSet, 'sourceSet')
+const deploymentEvidenceHash = assertArtifactEvidenceHash(deployment, 'deployment')
+const oracleEvidenceHash = assertArtifactEvidenceHash(oracleState, 'oracleState')
+const qualificationEvidenceHash = assertArtifactEvidenceHash(qualification, 'qualification')
+
+// EV1-EV7 must identify exactly the reviewed source paths and the current
+// repository bytes at this approval workflow's checked-out commit.
+await assertQualificationEvidenceMatchesRepository(qualification, process.cwd())
+
 if (qualification?.status !== 'qualified') {
   throw new Error('EEV qualification is not qualified')
 }
@@ -108,6 +104,30 @@ if (sourceSet?.deploymentApproval?.status !== 'PENDING') {
   throw new Error('source-set deployment status is not PENDING')
 }
 
+if (deployment?.network !== 'cardano-preprod' || sourceSet?.network !== 'cardano-preprod') {
+  throw new Error('deployment and source-set must both identify Cardano Preprod')
+}
+
+if (oracleState?.network !== 'cardano-preprod' ||
+    oracleState?.status !== 'MATERIALIZED' ||
+    oracleState?.authorityKind !== 'DEPLOYMENT_WALLET_SIGNED') {
+  throw new Error('Oracle State is not an authenticated materialized Cardano Preprod source')
+}
+
+const oracleIdentity = oracleState?.oracleState
+const oracleConfiguration = deployment?.oracleConfiguration
+if (!oracleIdentity?.policyId || !oracleIdentity?.tokenNameHex ||
+    !oracleIdentity?.publisherPkh || !oracleIdentity?.address || !oracleIdentity?.utxo) {
+  throw new Error('Oracle State manifest lacks the exact singleton identity')
+}
+if (oracleConfiguration?.statePolicyId !== oracleIdentity.policyId ||
+    oracleConfiguration?.stateTokenNameHex !== oracleIdentity.tokenNameHex ||
+    oracleConfiguration?.publisherPkh !== oracleIdentity.publisherPkh ||
+    oracleConfiguration?.address !== oracleIdentity.address ||
+    oracleConfiguration?.utxo !== oracleIdentity.utxo) {
+  throw new Error('deployment Oracle State configuration does not match the hashed Oracle State manifest')
+}
+
 if (deployment?.profileCandidate !== PROFILE_VERSION) {
   throw new Error('deployment manifest profileCandidate mismatch')
 }
@@ -116,31 +136,39 @@ if (sourceSet?.profileVersion !== PROFILE_VERSION) {
   throw new Error('source-set profile mismatch')
 }
 
+if (sourceSet?.source?.kind !== 'CARDANO_LIVE_UTXO' ||
+    sourceSet?.freshness?.model !== 'LIVE_UTXO_REVALIDATION' ||
+    sourceSet?.derivation?.version !== 'direct-usdm-v1' ||
+    sourceSet?.derivation?.rounding !== 'FLOOR') {
+  throw new Error('source-set does not match the declared direct-USDM live-source contract')
+}
+
+if (sourceSet?.source?.directUsdmUnit !== deployment?.assets?.directUsdmUnit) {
+  throw new Error('source-set direct-USDM unit does not match deployment asset identity')
+}
+if (sourceSet?.source?.b1PrizePoolUtxo !== deployment?.utxos?.pool ||
+    sourceSet?.source?.b1PrizePoolAddress !== deployment?.topology?.b1PrizePoolAddress ||
+    sourceSet?.source?.poolSingletonUnit !== deployment?.assets?.poolUnit) {
+  throw new Error('source-set does not match the exact deployed B1 PrizePool candidate')
+}
+
 if (qualification?.sourceSet?.poolInputReference !== sourceSet?.source?.b1PrizePoolUtxo) {
   throw new Error('qualification/source-set Pool reference mismatch')
+}
+if (qualification?.sourceSet?.directUsdmUnit !== sourceSet?.source?.directUsdmUnit ||
+    qualification?.sourceSet?.sourceEvidenceHash !== sourceSetEvidenceHash ||
+    qualification?.sourceSet?.statusAtQualification !== sourceSet.status ||
+    qualification?.sourceSet?.poolAddress !== sourceSet.source.b1PrizePoolAddress ||
+    qualification?.sourceSet?.observedPhysicalAtoms !== sourceSet.derivation.atomicQuantity ||
+    qualification?.sourceSet?.observedUsdmSubunits !== sourceSet.derivation.verifiedUsdmSubunits ||
+    qualification?.sourceSet?.freshnessModel !== sourceSet.freshness.model) {
+  throw new Error('qualification does not bind the complete current source-set facts')
 }
 
 if (qualification?.sourceReference !==
     'cardano:preprod/utxo/' + sourceSet.source.b1PrizePoolUtxo) {
   throw new Error('qualification sourceReference does not match source-set')
 }
-
-const sourceSetEvidenceHash = requiredDigest(
-  sourceSet.evidenceHash,
-  'sourceSet.evidenceHash',
-)
-const deploymentEvidenceHash = requiredDigest(
-  deployment.evidenceHash,
-  'deployment.evidenceHash',
-)
-const oracleEvidenceHash = requiredDigest(
-  oracleState.evidenceHash,
-  'oracleState.evidenceHash',
-)
-const qualificationEvidenceHash = requiredDigest(
-  qualification.evidenceHash,
-  'qualification.evidenceHash',
-)
 
 const candidateId =
   PROFILE_VERSION + ':' + sourceSet.source.b1PrizePoolUtxo
