@@ -1,3 +1,5 @@
+// Operational note (2026-10-24): this observer performs a read-only exact-out-reference query; it never qualifies the candidate or approves EEV.
+
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 
