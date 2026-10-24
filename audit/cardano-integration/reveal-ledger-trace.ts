@@ -423,6 +423,19 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
+for (const [label, utxo] of [['Prize', prizeUtxo], ['B1PrizePool', poolUtxo]] as const) {
+  const datum = (utxo as any).datum
+  console.log(JSON.stringify({
+    revealInputDatumDiagnostic: label,
+    datumType: typeof datum,
+    datumLength: typeof datum === 'string' ? datum.length : null,
+    datumPrefix: typeof datum === 'string' ? datum.slice(0, 24) : null,
+    datumSuffix: typeof datum === 'string' ? datum.slice(-24) : null,
+    datumIsEvenLengthHex: typeof datum === 'string' && datum.length > 0 && datum.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(datum),
+    datumHash: (utxo as any).datumHash ?? null,
+  }))
+}
+
 const reveal = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
