@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, nativeScriptFromJson, type Script, type UTxO } from 'lucid-cardano'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, scriptFromNative, mintingPolicyToId, validatorToScriptHash, validatorToAddress, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -63,7 +63,7 @@ type NativeScript = { type: 'sig'; keyHash: string } | {
 }
 
 function nativePolicy(lucid: any, keyHash: string): Script {
-  return nativeScriptFromJson({
+  return scriptFromNative({
     type: 'all',
     scripts: [{ type: 'sig', keyHash }],
   } as NativeScript)
@@ -153,7 +153,7 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid.new(provider, 'Preprod')
+const lucid = await Lucid(provider, 'Preprod')
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
@@ -162,23 +162,28 @@ console.log(JSON.stringify({
     Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
   ),
 }, null, 2))
-lucid.selectWalletFromSeed(SEED)
+lucid.selectWallet.fromSeed(SEED)
 
-const address = await lucid.wallet.address()
+const address = await lucid.wallet().address()
 const details = getAddressDetails(address)
 const keyHash = details.paymentCredential && details.paymentCredential.hash
 if (!keyHash) throw new Error('test wallet has no payment key hash')
 
 const testPolicy = nativePolicy(lucid, keyHash)
-const testPolicyId = typeof lucid.utils.mintingPolicyToId === 'function' ? lucid.utils.mintingPolicyToId(testPolicy) : lucid.utils.validatorToScriptHash(testPolicy)
+const testPolicyId = typeof mintingPolicyToId === 'function' ? mintingPolicyToId(testPolicy) : validatorToScriptHash(testPolicy)
 const poolTokenNameHex = '504f4f4c'
 const liquidityTokenNameHex = '5553444d'
 const poolUnit = testPolicyId + poolTokenNameHex
 const liquidityUnit = testPolicyId + liquidityTokenNameHex
 const ticketUnit = testPolicyId + TICKET_NAME_HEX
 
+const lucidCompat = {
+  ...lucid,
+  utils: { validatorToScriptHash, mintingPolicyToId, validatorToAddress: (script: Script) => validatorToAddress('Preprod', script) },
+}
+
 const scripts = buildScriptsFromLucid(
-  lucid,
+  lucidCompat,
   defaultPrizeTable,
   keyHash,
   ORACLE_STATE_POLICY_ID,
@@ -303,19 +308,19 @@ const bootstrap = await lucid
     },
     Data.void(),
   )
-  .attachMintingPolicy(testPolicy)
-  .payToContract(
+  .attach.MintingPolicy(testPolicy)
+  .pay.ToContract(
     scripts.b1PrizePoolAddress,
-    { inline: Data.to(prePoolDatum) },
+    { kind: 'inline', value: Data.to(prePoolDatum) },
     {
       lovelace: 5_000_000n,
       [poolUnit]: 1n,
       [liquidityUnit]: TOTAL_LIQUIDITY_USDM,
     },
   )
-  .payToContract(
+  .pay.ToContract(
     scripts.prizeAddress,
-    { inline: Data.to(prePrizeDatum) },
+    { kind: 'inline', value: Data.to(prePrizeDatum) },
     {
       lovelace: 3_000_000n,
       [ticketUnit]: 1n,
@@ -324,7 +329,7 @@ const bootstrap = await lucid
   .addSigner(address)
   .complete()
 
-const bootstrapSigned = await bootstrap.sign().complete()
+const bootstrapSigned = await bootstrap.sign.withWallet().complete()
 const bootstrapHash = await bootstrapSigned.submit()
 await lucid.awaitTx(bootstrapHash)
 
@@ -377,25 +382,17 @@ const preStateFingerprint = hashJson({
 // Publish the two validator scripts as reference-script UTxOs before building Reveal.
 const prizeReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.prizeValidator as Script },
-    { lovelace: 2_000_000n },
-  )
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.prizeValidator as Script)
   .complete()
-const prizeReferenceSigned = await prizeReferenceTx.sign().complete()
+const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
 const prizeReferenceHash = await prizeReferenceSigned.submit()
 await lucid.awaitTx(prizeReferenceHash)
 
 const poolReferenceTx = await lucid
   .newTx()
-  .payToAddressWithData(
-    address,
-    { scriptRef: scripts.b1PrizePool as Script },
-    { lovelace: 2_000_000n },
-  )
+  .pay.ToAddressWithData(address, undefined, { lovelace: 2_000_000n }, scripts.b1PrizePool as Script)
   .complete()
-const poolReferenceSigned = await poolReferenceTx.sign().complete()
+const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
 const poolReferenceHash = await poolReferenceSigned.submit()
 await lucid.awaitTx(poolReferenceHash)
 
@@ -417,12 +414,12 @@ const poolReferenceInput = {
   scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
 }
 
-const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
-const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
-if (lucid.utils.validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
+const expectedPrizeHash = validatorToScriptHash(scripts.prizeValidator as Script)
+const expectedPoolHash = validatorToScriptHash(scripts.b1PrizePool as Script)
+if (validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
   throw new Error('PrizeValidator reference script hash mismatch')
 }
-if (lucid.utils.validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
+if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
@@ -431,14 +428,14 @@ const reveal = await lucid
   .readFrom([prizeReferenceInput, poolReferenceInput])
   .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
   .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
-  .payToContract(
+  .pay.ToContract(
     scripts.prizeAddress as string,
-    { inline: Data.to(postPrizeDatum) },
+    { kind: 'inline', value: Data.to(postPrizeDatum) },
     prizeUtxo.assets,
   )
-  .payToContract(
+  .pay.ToContract(
     scripts.b1PrizePoolAddress as string,
-    { inline: Data.to(postPoolDatum) },
+    { kind: 'inline', value: Data.to(postPoolDatum) },
     poolUtxo.assets,
   )
   .addSigner(address)
@@ -453,10 +450,10 @@ let signedReveal: any = null
  */
 const executionAdapter = createCardanoExecutionAdapter({
   signTx: async (tx: unknown) => {
-    signedReveal = await lucid.signTx(tx as any)
+    signedReveal = await (tx as any).sign.withWallet().complete()
     return signedReveal
   },
-  submitTx: async (signedTx: unknown) => lucid.submitTx(signedTx as any),
+  submitTx: async (signedTx: unknown) => (signedTx as any).submit(),
 })
 const submission = await executionAdapter.submitInfrastructure(reveal)
 const txHash = submission.transactionRef
@@ -548,7 +545,7 @@ assertCardanoObservedTransitionBinding(evidence, {
 let replayRejected = false
 let replayError = ''
 try {
-  await lucid.submitTx(signedReveal)
+  await signedReveal.submit()
 } catch (error) {
   replayRejected = true
   replayError = error instanceof Error ? error.message : String(error)
