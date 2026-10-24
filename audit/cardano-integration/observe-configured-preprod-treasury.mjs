@@ -102,7 +102,8 @@ const evidence = {
   },
   limitations: [
     'The address and script hash are derived from the Treasury artifact committed at the observed workflow commit.',
-    'Pagination is fetched until a response contains fewer rows than the requested page size; duplicate output references and non-terminating pagination fail closed.',
+    'Pagination uses a stable tx_hash/tx_index ordering and continues until a response contains fewer rows than the requested page size; duplicate output references and non-terminating pagination fail closed.',
+    'Koios pagination is not an atomic ledger snapshot; chain changes during the observation can still affect cross-page consistency.',
     'This does not independently prove that the artifact belongs to an authorized release or that the configured deployment is the current canonical protocol deployment.',
     'Balances do not prove a DEX route, execution proceeds, minimum-output protection, execution costs, or QNE.',
   ],
