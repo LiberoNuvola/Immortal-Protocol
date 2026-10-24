@@ -2869,3 +2869,85 @@ See [acquisition procedure](https://github.com/LiberoNuvola/Immortal-Protocol/bl
 - No code patch or new workflow dispatch was performed by this review. No transaction, deployment, merge, rebase, cherry-pick, or branch creation/deletion occurred.
 - Global states remain OPEN where proof/decision criteria are unmet. Next priority order: (1) byte-preserving Materios genesis artifact acquisition + authenticated bootstrap; (2) inspect B3-B artifact's exact block/root/key/value independently; (3) verify JEV run sequence/registry and schedule dependency; (4) complete U-02 consumer map and U-04 fixture inventory; (5) build the U-10 claim-to-evidence matrix; (6) exact-head refresh for Aegis and artifact reuse.
 
+
+
+## 10.25 — Agent B live refresh: Yaci/Lucid, Treasury Observer, credentials and swap path (2026-10-24)
+
+**Classification:** operational evidence refresh; coordination only. No economic rules, V3/Reveal semantics, scripts, validators, ledger state, branch topology or deployment configuration were changed by this section.
+
+### A. Exact run / branch / PR state
+
+- Repository: `LiberoNuvola/Immortal-Protocol`.
+- PR #36: [Treasury read-only observer](https://github.com/LiberoNuvola/Immortal-Protocol/pull/36), OPEN / DRAFT, base `main` at `97b09a38742098f17a61eb07734c401aeedccc06`, head `review/treasury-readonly-observer` at `f46e118dd76e0752e26e0fa46ce85404aae2847b`.
+- Integration Lab run [#40064065979](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40064065979), run number 2113, completed **failure** on that exact head. The diagnostic shell correction worked: unlike run #40042037100, curl reached the endpoint.
+- Step summary: fresh Haskell/Plutus artifact generation PASS; Yaci startup/readiness PASS; devnet smoke transaction PASS; cost-model probe PASS; evaluation endpoint diagnostic completed (diagnostic-only); V3 carrier provider evaluation FAILED; Reveal, FundTreasury, Expire, raw P2.8 materialization and downstream native gates SKIPPED. Step 20's green conclusion is not compatibility evidence because it is `continue-on-error: true`.
+- Same-SHA sibling runs [Protocol Declaration Conformance #40064065980](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40064065980) and [Algorithmic Governability #40064065989](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40064065989) completed successfully for their own scopes; they do not close B1 provider integration.
+- Evidence artifact [immortal-cardano-lab-evidence, ID 12549495517](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40064065979/artifacts/12549495517), size 10,919 bytes, digest `sha256:5712d6c207013bf275a475e1743fee1d56d3dc5b9b26f5c89fb0106c0d23213b`, not expired at observation time.
+- The workflow declares `concurrency.group=-github-workflows-immortal-cardano-lab-yml-${{ github.ref }}` and `cancel-in-progress: true`. Do not dispatch or rerun while another same-ref lab run is active; re-check concurrency immediately before any future dispatch.
+
+### B. Yaci / Lucid provider diagnosis
+
+- The endpoint diagnostic sends `POST http://localhost:8080/api/v1/utils/txs/evaluate`, `Content-Type: application/cbor`, body `{}`.
+- Observed result at 2026-10-24T05:17:26Z: HTTP 400, curl exit 0, 86-byte JSON response, keys `status_code,error,message`, response `{"status_code":400,"error":"Bad Request","message":"Invalid Hexadecimal Character: {"}`.
+- Classification: **diagnostic only**. The empty payload is not a valid CBOR transaction; this response establishes endpoint reachability and a parser complaint, not the valid transaction request/response contract.
+- Yaci startup log explicitly reports `Yaci Store tx evaluator mode: ogmios`; Ogmios starts at the local configured endpoint. Therefore the effective evaluator mode is observed, not inferred from docs.
+- The cost-model probe passed and confirmed the expected vector shape/lengths for its bounded check (including Plutus V2 length 332). This proves protocol-parameter and cost-model retrieval, not provider evaluation.
+- V3 step fails in `@lucid-evolution/provider/dist/index.js:529` while handling `evaluate`: `TypeError: Cannot use 'in' operator to search for 'EvaluationResult' in undefined`; Lucid wraps it as `EvaluatorError`, evaluator `provider`. The stack identifies an undefined provider-returned object; it does not yet reveal whether the endpoint route, request encoding, response content type/schema, or Ogmios-backed evaluator response causes it.
+- `localUPLCEval: false` does not bypass provider evaluation. No exunits fabricated; no evaluator bypass; no V3 or Reveal source changes.
+- Next diagnostic should use a genuine unsigned transaction CBOR already built in the local devnet trace and call the exact endpoint with the expected body encoding. In parallel, inspect the installed `@lucid-evolution/provider` 0.6.x implementation and compare required route, headers, CBOR representation, response JSON schema and error handling. Keep request/response fixtures non-secret and bounded. First use a read-only source/log inspection; run a new workflow only after checking current run status/concurrency and declaring a new falsifiable diagnostic hypothesis.
+
+### C. B2 workflow reliability
+
+- Run #2113 verifies Haskell/Plutus export, Yaci persistence until steps execute, HTTP readiness, local-ledger smoke and artifact upload. It does not verify V3 provider evaluation or Reveal because the V3 step fails before those consumers.
+- The previously broken diagnostic shell continuation is corrected on `f46e118dd76e0752e26e0fa46ce85404aae2847b`; this run proves the diagnostic now reaches Yaci and returns a bounded response.
+- Yaci CLI lifecycle workaround remains in place: no `yaci-devkit info` or version invocation while the node is running. Readiness is via HTTP endpoint.
+- Redaction currently targets `ed25519e_sk[[:alnum:]]+` before log stdout and in-place before artifact upload. This is only a single token-format pattern; it is not a complete credential-format audit. The run output/artifact must still be reviewed for seeds, JSON wallet files, alternate secret encodings and accidental environment dumps.
+
+### D. Credential/artifact incident
+
+- Historical run [#40006508503](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40006508503) still has an unexpired `immortal-cardano-lab-evidence` artifact, ID `12525975775`, 23,459 bytes, digest `sha256:8c0e65a9f45d5e50e3379049eb028decab989d41177b8d8b0ee05cbc44e511c8`.
+- Prior log review identified ephemeral devnet signing-key material. Treat that credential as compromised and never reproduce it. Available connector actions do not expose artifact deletion/retention mutation, so removal or access restriction is **OWNER ACTION REQUIRED**.
+- Perimeter evidence so far is consistent with ephemeral local-Yaci/devnet test-wallet material; the inspected logs do not establish exposure of a user wallet/Preprod signing key. This is not proof that the key was never reused. Repository owner must confirm the wallet derivation source and non-reuse, rotate/revoke any reusable material if applicable, inspect all historic artifacts/logs, and remove/restrict the compromised artifact where supported.
+- Required hardening test: synthetic fixtures for every known secret representation (including the exact ephemeral key serialization observed, without using real values), asserting redaction before stdout and artifact creation. Add negative tests that scan prepared artifacts for seed phrases, secret-key prefixes, known wallet JSON field names, and raw seed/private-key files. Do not claim the current regex closes this gate.
+
+### E. Treasury read-only observer
+
+- PR #36 remains OPEN / DRAFT. Its workflow is manual, has `permissions: contents: read`, uses GitHub environment `DEMETER`, Koios Preprod and does not contain sign/submit/bootstrap calls. **It was not dispatched.**
+- Observer script derives the Plutus V2 script hash and address from `src/plutusScripts/treasury.plutus.json`, hashes the source artifact, compares the derived address to `PREPROD_TREASURY_ADDRESS`, optionally cross-checks `PREPROD_TREASURY_SCRIPT_HASH`, requests `POST /address_utxos`, validates returned address rows, aggregates lovelace and configured canonical tUSDM atomic quantity, and hashes the evidence object.
+- Gaps from static inspection: no explicit request timeout/retry/rate-limit classification; no chain slot/tip field in the observation (only runner `observedAt`); asset row shape assumes `asset_list` entries contain `policy_id`, `asset_name`, and `quantity`; output is one timestamped observation without an independent reproducibility comparison. Add bounded timeout + explicit HTTP/network failure classification, capture provider tip/slot (or mark unavailable), validate transaction hashes/indices/quantities/assets before BigInt aggregation, and add synthetic schema tests before promoting it.
+- The environment variable `DEMETER / vars.VITE_TREASURY_ADDRESS` cannot be read through the available connector. Therefore configured address to derived address matching is **BLOCKED — EXTERNAL**. Owner must independently compare the value against the exact deployment artifact/release and report only match/mismatch (do not disclose secrets). Do not run the observer until that gate is satisfied.
+- The script correctly states `authorizedReleaseProven=false`, `canonicalTreasuryDeploymentProven=false`, `liquidationRouteVerified=false`, `swapExecuted=false`, `qneProven=false`. It must not be presented as EEV or PrizePool evidence.
+
+### F. Preprod / bootstrap / evidence classes
+
+- `audit/pre-genesis-genesis/derive-preprod-treasury-address.mts` sets `verifiedOnLedger:false` and `ledgerReference:null`; it derives an address from a local artifact via a local endpoint. It is **local derivation**, not a Preprod Treasury UTxO observation.
+- `audit/cardano-integration/preprod-real-reveal.mjs` contains hardcoded fixture-like economic/oracle constants and, when supplied with the Preprod seed and invoked, signs/submits bootstrap and reference-script publication transactions and then a Reveal unless the deploy-only path stops before Reveal. This workflow/script was not run as part of this audit. It must remain outside the allowed execution path absent a separate explicit operational authorization.
+- Local Yaci smoke transaction proves local devnet transaction acceptance only. It does not establish Preprod deployment or canonical Treasury identity.
+- Historical EEV approval artifact remains bound to its historical source ref/time; it does not authorize a current Issue and does not prove an actual user Ticket NFT was minted.
+
+### G. Treasury swap / liquidation path
+
+- Targeted GitHub code search for `Minswap Treasury swap`, `SundaeSwap Treasury` and `swap tADA tUSDM` returned no matching code results on the repository's default-branch search index. This is not proof of global absence or all-branch absence.
+- Static review of `plutus/Treasury.hs` shows the `Distribute` validator checks threshold, percentage split and lovelace payments to four script hashes. It does not implement a DEX route, quote, asset sale, swap, min-output constraint or execution-cost guard.
+- Status: no verified implementation or completed swap evidence found within this scoped check. Classify as **NOT_PROVEN / implementation gap suspected** until all existing branches/history and DEX-related files/workflows have been searched systematically. No swap was built, signed or submitted. tADA/tUSDM balances and the read-only observer do not imply a liquidation capability.
+- Technical interface needed from Agent A/C before any implementation: explicitly named DEX adapter/route, asset-unit identities, quote validity and source, minimum output/slippage bound under an approved policy, fee/execution budget, failure/partial-fill behavior, and evidence fields. This is a dependency proposal, not a new economic rule or implementation.
+
+### H. B-front status matrix at this refresh
+
+| Front | Status | Exact evidence / reason | Next owner action |
+|---|---|---|---|
+| B1 — Yaci/Lucid evaluation | **RED — FAILED** | Run #40064065979 on `f46e118d...`; diagnostic returns HTTP 400 only for malformed empty payload; V3 fails at provider response handling. | Agent B: isolate valid-CBOR request/response schema, preserve V3/Reveal semantics. |
+| B2 — Yaci lifecycle / workflow | **YELLOW — PARTIAL** | Run #2113: setup, readiness, local smoke, cost model, artifact upload pass; evaluation consumer fails. | Agent B: correct diagnostic contract and fail classification; no rerun without concurrency check. |
+| B3 — credential/artifact safety | **BLOCKED — EXTERNAL** | Historic run #2086 artifact still unexpired and accessible; current redaction covers one key syntax only. | Repository owner: inspect/remove or restrict historic artifact, confirm no key reuse; Agent B: add synthetic redaction/scan tests. |
+| B4 — Treasury Observer | **YELLOW — PARTIAL / BLOCKED — EXTERNAL** | Static path reviewed; no workflow execution; configured address variable not independently readable; no explicit fetch timeout/tip slot. | Owner verifies configured address; Agent B adds bounded read-only robustness tests after branch review. |
+| B5 — on-chain evidence distinctions | **YELLOW — PARTIAL** | Local Yaci smoke success and local address derivation only; no evidence of canonical Treasury deployment or first real ticket from this run. | Record each real claim against exact network, transaction/UTxO, slot and verifier. |
+| B6 — Treasury swap/liquidation | **NOT_PROVEN** | No route found by targeted indexed search; Treasury.hs only implements distribution of lovelace. | Complete branch/history search; report interface gaps to Agent A/C. |
+| B7 — coordination | **YELLOW — PARTIAL** | This refresh binds exact branch, commit, run, step/log, artifact ID/digest and owner actions. | Reconcile latest checkpoint/Notion index after commit; keep historical snapshots immutable. |
+
+### I. Next three actions
+
+1. **Agent B:** inspect installed `@lucid-evolution/provider` at the exact lockfile version and build a valid-CBOR, local-devnet-only provider contract diagnostic using the existing workflow's transaction CBOR; compare exact route and schema, without bypassing evaluation.
+2. **Repository owner:** contain historical artifact `12525975775` from run #2086 and confirm the devnet key material was never reused; add formal redaction/scan fixtures before another lab publication.
+3. **Repository owner + Agent B:** independently verify `DEMETER / vars.VITE_TREASURY_ADDRESS` matches the address derived from the exact approved Treasury artifact, then add observer timeout/schema/tip tests before any manual observer dispatch.
+
+**Current overall classification:** PARTIAL / OPEN. No GREEN upgrade. No on-chain Preprod action. V3 carrier and Reveal source/semantics remain unchanged.
