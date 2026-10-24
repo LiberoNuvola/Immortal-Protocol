@@ -15,7 +15,7 @@ const CANDIDATE = Object.freeze({
   poolAddress: 'addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e',
   poolSingletonUnit: '9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e504f4f4c2d444952454354',
   physicalAssetCandidateUnit: 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d',
-  identityClassification: 'HISTORICAL_PREPROD_TUSDM_CANDIDATE_NOT_NORMATIVELY_APPROVED',
+  identityClassification: 'NORMATIVELY_APPROVED_FOR_CARDANO_PREPROD_EEV_PROFILE_ONLY',
 })
 
 const [targetTxHash, targetOutputIndexText] = CANDIDATE.sourceOutRef.split('#')
@@ -141,7 +141,7 @@ async function main() {
     noDeploymentApprovalCreated: true,
     noTransactionBuiltSignedOrSubmitted: true,
     explicitNonClaims: [
-      'This observation does not qualify tUSDM as the normative Preprod accounting unit.',
+      'Normative physical-asset eligibility for this exact Preprod profile is approved; this observation alone does not qualify the live source-set or complete EV1-EV7.',
       'This observation does not establish mainnet USDM identity or USD/USDM parity.',
       'This observation is not EV1-EV7 qualification or deployment approval.',
       'This observation does not establish control state, viability, authoritative Issue admission, expiry binding or Claim readiness.',
