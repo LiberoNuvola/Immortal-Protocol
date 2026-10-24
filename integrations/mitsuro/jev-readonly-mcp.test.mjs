@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { callTool, handleMessage, tools } from "./jev-readonly-mcp.mjs";
 const sha = "e1d396a37d2abb3a6a1acb50dff56ad52942696a";
 function fakeFetch(data, requests = []) {
@@ -41,4 +43,16 @@ test("initialize and tools/list use JSON-RPC", async () => {
   await handleMessage({ jsonrpc: "2.0", id: 2, method: "tools/list" }, s => lines.push(JSON.parse(s)));
   assert.equal(lines[0].result.serverInfo.name, "immortal-jev-readonly");
   assert.equal(lines[1].result.tools.length, 4);
+});
+
+test("documented relative-path invocation starts the stdio MCP server", () => {
+  const entry = fileURLToPath(new URL("./jev-readonly-mcp.mjs", import.meta.url));
+  const input = JSON.stringify({ jsonrpc: "2.0", id: 7, method: "initialize", params: { protocolVersion: "2024-11-05" } }) + "\\n";
+  const child = spawnSync(process.execPath, [entry], { input, encoding: "utf8", timeout: 3000 });
+  assert.equal(child.error, undefined, child.error?.message);
+  assert.equal(child.status, 0, child.stderr);
+  const line = child.stdout.trim().split("\\n")[0];
+  const message = JSON.parse(line);
+  assert.equal(message.id, 7);
+  assert.equal(message.result.serverInfo.name, "immortal-jev-readonly");
 });
