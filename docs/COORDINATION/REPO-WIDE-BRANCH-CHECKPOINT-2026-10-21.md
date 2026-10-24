@@ -3553,3 +3553,41 @@ These workspace pages help classify scope and open decisions; the checked CAROB 
 - **Status delta:** none. C0 remains PARTIAL; C1 and C3 remain BLOCKED_EXTERNAL; C2 remains PARTIAL; all C4–C15 labels remain as listed in §10.35 and §10.36. This section adds fresh source confirmation, not closure evidence.
 
 **Next concrete actions:** (1) prepare/maintainer-review the smallest upstream C0 fail-closed patch plus negative tests for HTTP-200 stale/index-only responses, missing manifest, missing event, and unavailable Cardano/GRANDPA verification; do not publish it without authorization; (2) continue C6.2 consumer-map completion and negative bypass regressions on the assigned IMMORTAL branch; (3) keep C1/C3 waiting on a new authorized evidence source rather than repeating unchanged RPC scans.
+
+
+### 10.37 — Agent B: valid-CBOR provider contract, V3-response capture and artifact security (2026-10-24)
+
+**Classification:** operational evidence refresh; no economic rules, validator, V3 carrier semantics, Reveal semantics, Preprod state or deployment configuration changed. Checkpoint-only commit on `work/immortal-green-closure`.
+
+#### B1 — Evidence that separates generic provider compatibility from the V3 failure
+
+- PR #36 is OPEN / DRAFT at `review/treasury-readonly-observer`, head `565851fdaa356ef4e82e6abc909664cf1854ca83`, base `main` at `97b09a38742098f17a61eb07734c401aeedccc06`.
+- Integration Lab [#40067396869](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40067396869), source `75427c3813aa2e77aad84970ed5298fde6d333ca`, completed **failure**. Its valid-CBOR provider-contract step passed using an unsigned, no-Plutus local transaction: both the standard JSON endpoint `/utils/txs/evaluate/utxos` and the classic CBOR endpoint `/utils/txs/evaluate` returned HTTP 200 and `result.EvaluationResult`. The probe transaction was not signed or submitted.
+- The same run's V3 carrier probe still failed with `EvaluatorError: Cannot use 'in' operator to search for 'EvaluationResult' in undefined` from `@lucid-evolution/provider/dist/index.js:529`. Reveal and all later dependent gates were skipped. Therefore the provider routes can handle the tested ordinary transaction; the cause is not yet identified for the script-bearing V3 request. Do not call this a V3 ledger rejection.
+- Commit `565851fdaa356ef4e82e6abc909664cf1854ca83` adds a diagnostic-only tap to `audit/cardano-integration/v3-carrier-ledger-probe.mts` (blob `534a8dfac42dad4254617b615554b51460b3d58c`). It observes only the actual `POST /utils/txs/evaluate/utxos` response metadata/schema, status, content type, response hash and request CBOR length/hash; it stores no raw CBOR or raw response body and returns the original response unchanged.
+- Run [#40069579992](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069579992), job `120799915902`, was still **in progress** at the last API check and had not advanced beyond `Generate fresh Plutus validator artifacts`. Sanitizer-fixture tests, project dependency install, isolated lab dependency install, Haskell setup and Plutus native dependency setup were successful; Yaci startup, evaluation contract verification, V3 request/response capture and Reveal had not run. Job logs were unavailable. The actual V3 response-capture result is **PENDING**.
+- Do not start a competing Integration Lab while #40069579992 remains active: the workflow uses `cancel-in-progress: true`. If the run remains before Yaci with no progress, the repository owner should inspect/cancel it through GitHub Actions UI before deciding whether to retry; the currently available connector does not expose a cancel operation.
+
+#### B3 — Sanitizer regression and artifact-level result
+
+- Directly downloaded artifact from #40067396869, ID `12550099229`, contained 11 files; `yaci.log` was 33,270 bytes. The log showed 40 `[REDACTED_SIGNING_KEY]` markers and one `[REDACTED_MNEMONIC]` marker; scans found no raw `ed25519e_sk` tokens, no raw 12–24-word mnemonic sequence, and no ANSI CSI escape sequences. No secret values or fingerprints were reproduced.
+- The sanitizer's synthetic-fixture step passed in the workflow. Classification: **GREEN — TESTED BOUNDED for artifact #12550099229 only**.
+- Historical artifacts remain an external containment task: run #2086 artifact ID `12525975775` was previously found to contain raw ephemeral devnet signing keys; run #2113 artifact ID `12549495517` was previously found to contain a local-devnet mnemonic. Both were unexpired on the last artifact-list check. The code correction cannot retroactively sanitize those ZIPs; available connector actions cannot delete or change artifact retention. **Owner action:** restrict/delete both artifacts where supported, confirm no credential reuse, and rotate/revoke any material that was reused or not strictly ephemeral. No secrets are reproduced in this checkpoint.
+
+#### B4 — Treasury observer remains blocked
+
+- PR #36 observer workflow was not dispatched. It binds `DEMETER / vars.VITE_TREASURY_ADDRESS` to its configured path; that variable cannot be independently read by the available connector. Owner must verify address/script-hash/release binding before any dispatch.
+- The green-branch observer variant uses an address/hash plus caller-supplied `PREPROD_TREASURY_BINDING_REFERENCE`, and explicitly labels that reference `CALLER_SUPPLIED_NOT_CRYPTOGRAPHICALLY_VERIFIED`. It does not make the deployment reference authoritative by itself.
+- Static review gaps remain: explicit Koios timeout, transport/rate-limit classification and slot/tip evidence. Runner wall-clock `observedAt` alone is not a chain slot. Status stays **YELLOW / BLOCKED — EXTERNAL**; no Preprod read workflow was run in this pass.
+
+#### B6 — Swap/liquidation evidence boundary
+
+- Cross-branch recursive path census covered 26 existing branch trees, each returned `truncated=false`. The only paths named for DEX/swap/liquidation were the scenario simulator, its tests, manual simulation workflow and route-blocker note on `work/immortal-green-closure`; no matching route files were found in the other 25 tree snapshots. This is a path-level audit, not proof about external integrations or differently named code.
+- The simulator's five synthetic tests passed locally. The simulator performs arithmetic over caller-supplied asset value removed, gross USDM proceeds, costs, pre-EEV and ProtectedCapital; it does not query or execute a DEX/AMM route, build/sign/submit a swap, or authenticate actual proceeds. No DEX route, confirmed swap, net-proceeds ledger evidence or QNE proof is established.
+- `plutus/Treasury.hs` remains the legacy lovelace distribution validator; it does not contain a Treasury asset swap action. B6 remains **NOT_PROVEN for executable liquidation**.
+
+#### Green-branch exact-head conformance status
+
+On green HEAD `000991ee3bf417f4ab5b65344148b4e17796a590`, all five following bounded workflows completed success: [Algorithmic Governability #40069993736](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069993736), [Documentation Link Check #40069993727](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069993727), [Cardano Adapter Sale #40069993715](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069993715), [Protocol Declaration #40069993753](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069993753), and [Portability #40069993728](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069993728). A subsequent coordination-only green HEAD `3b3d05b804a27546d3d3fd0e4ee80b7963a4aea4` also completed those five workflow scopes successfully (runs #40070281237, #40070281224, #40070281227, #40070281238, #40070281261). These are conformance/documentation results, not evidence that the PR Cardano lab passed, that Reveal executed, or that a Treasury swap occurred.
+
+**Overall Agent B status:** PARTIAL / OPEN. Generic Yaci evaluation of a valid no-Plutus transaction is verified; actual V3 provider response/ledger acceptance is pending, Reveal remains skipped, historical artifact containment remains owner-blocked, the Treasury Observer remains blocked on independent deployment binding, and executable Treasury liquidation is NOT_PROVEN. No Preprod transaction, signature, bootstrap, mint, swap or deployment was performed.
