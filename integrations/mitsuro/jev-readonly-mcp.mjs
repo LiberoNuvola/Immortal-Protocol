@@ -3,6 +3,9 @@
  * Read-only MCP bridge for Mitsuro -> public IMMORTAL JEV/GitHub evidence.
  * No GitHub token, filesystem access, subprocesses, or mutating API calls.
  */
+import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+
 const OWNER = "LiberoNuvola";
 const REPO = "Immortal-Protocol";
 const BRANCH = "work/immortal-green-closure";
@@ -100,7 +103,7 @@ export async function handleMessage(message, write = line => process.stdout.writ
     }
   } else if (id !== undefined) write(responseLine(id, undefined, new Error("method not supported")));
 }
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   let buffer = "";
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", chunk => {
