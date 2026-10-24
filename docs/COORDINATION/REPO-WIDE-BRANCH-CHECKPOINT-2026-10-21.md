@@ -4052,3 +4052,40 @@ The approval producer's content-integrity check is now exercised end-to-end with
 
 The normative blocker recorded in [Issue #37](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37) remains open: exact Preprod asset eligibility and USD/USDM option A/B/C must still be explicitly adopted by the specification authority. No privileged EEV approval workflow or bootstrap was dispatched. Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; keep P-01/P-02/P-16 blocked.
 
+### Agent A — authority decision and fresh Preprod EV1–EV7 qualification — 2026-10-24 17:21 UTC
+
+#### Normative decision adopted
+
+The specification authority explicitly decided that the exact configured tUSDM candidate may be admitted as a physical `VerifiedUSDM` asset **for the Cardano Preprod `PRE-RICH-EEV-USDM-DIRECT-V1` profile only**:
+
+- Policy ID: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`.
+- Asset name hex: `0014df10745553444d`.
+- Full unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+
+The decision removes the *normative asset-eligibility* blocker for this exact Preprod profile. It does not make this token a mainnet asset, establish issuer redemption or market-price guarantees, define `1 USDM = 1 USD`, or select USD/USDM conversion option A/B/C. That separate conversion decision remains open.
+
+Normative record: [decision memo commit f9207cf](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f9207cf927d1345fa955c21c5ba22d84e1e5765a). The direct-USDM source-set producer now hard-enforces this exact asset unit. The read-only liveness observer labels it as normatively eligible only for this Preprod profile.
+
+#### Fresh live observation and EV1–EV7 qualification
+
+- [Read-only exact-out-reference observation #3](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40115634476) — SUCCESS, same source unit and exact Pool out-reference.
+- [PRE-RICH Preprod EEV — Source Qualification Only #1](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40115758508) — **SUCCESS** on source/workflow SHA `657dce68ab386680f79928c18d1d39e5aabe0cfa`.
+- Exact B1 PrizePool out-reference: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`; live match count: 1.
+- Pool singleton quantity: `1`; physical exact Preprod tUSDM quantity: `1,000,000,000` atomic units.
+- Declared direct-USDM profile derivation: `floor(1,000,000,000 × 100 / 1,000,000) = 100,000` IMMORTAL USDM sub-units.
+- EV1–EV7 digests were recomputed from the current repository sources and checked against the qualification artifact.
+- Qualification evidence hash: `488cb982534f2f2c00dca1adadc59b30573fff9566b6c206e6588a6047112545`.
+- Artifact: [preprod-eev-qualified-source-657dce68ab386680f79928c18d1d39e5aabe0cfa](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40115758508/artifacts/12568351314).
+
+The qualification artifact has `status: qualified` and `deploymentApproval: null`. The source-set remains an observation artifact with deployment approval pending. This is an explicit separation between source/EV1–EV7 qualification and deployment authorization.
+
+#### Current gate status
+
+- **Preprod physical-asset eligibility:** NORMATIVELY ACCEPTED for the exact unit above.
+- **Live source-set / EV1–EV7:** QUALIFIED by the exact workflow and artifact above.
+- **EEV deployment approval:** NOT CREATED by this work; remains a separate privileged gate.
+- **USD/USDM conversion A/B/C:** OPEN. Any flow depending on an unselected USD/USDM conversion must fail closed.
+- **Authoritative Issue admission / Ticket delivery:** NOT AUTHORIZED by this qualification.
+
+No bootstrap, treasury sale, signing, transaction construction/submission or real Issue was performed by the qualification workflow. The old approved artifact was used only to restore the existing deployment and Oracle identity manifests; its historical source-set and qualification were deleted before fresh re-observation, and no old approved-qualification artifact was reused as the new result.
+
