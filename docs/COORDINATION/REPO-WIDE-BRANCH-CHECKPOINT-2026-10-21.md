@@ -3528,3 +3528,28 @@ These workspace pages help classify scope and open decisions; the checked CAROB 
 - Acceptance route: decide whether the declaration helper is to remain intentionally unused in V1 or be wired only after its authoritative inputs and verifier contract are specified; add negative cases for stale/missing/ambiguous/mismatched source state; then validate the published surface against exact source and evidence refs. Do not turn local timestamp or provider query into a finality claim.
 - No protocol code, public HTML copy, C0 patch, economic logic, V3/Reveal semantics or deployment was changed in this review. C7/C12 status did not upgrade.
 
+
+
+### 10.37 — Agent C: current-ref checkpoint/C0 confirmation and execution boundary — 2026-10-24
+
+**Checkpoint read first:** current file blob `76fc02962af3248268175159714c97ca182c492e`; its tail already contains sections 10.35 and 10.36, including the current C0–C15 status register and recent C6.2/C7/C12 work. Those newer entries supersede older summaries where they differ. No status is upgraded merely by rereading them.
+
+#### Exact-ref reconfirmation
+
+- IMMORTAL coordination branch: `work/immortal-green-closure`; checkpoint blob immediately before this append: `76fc02962af3248268175159714c97ca182c492e`. The latest branch-visible coordination state includes §10.36; prior known checkpoint commit `41dd9b084c9d0ccaad1303a3583a364815a4bf95` is not treated as the current tip solely because it was cited in an earlier mandate.
+- Materios upstream `main`: `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`. Latest repository commit search remains on the 21 Oct 2026 sccache/CI merge; no later source commit surfaced in the current query.
+- Re-fetched current source blobs: `tools/explorer/app.py` `fc7e8f045f9319c2aa6ceb11c83ec5fc5f5076a1`; `tools/materios-verify/materios_verify/core.py` `bcd21c3c942e3a3b7fbac234865b69050283831a`; B3 `poc/materios-checkpoint/src/rpc.ts` `74f983d5980f25452c6517024528528fdbbfce43`; B3 authority proof contract remains present and continues to prohibit a local selector substitute.
+- Exact Materios source review reconfirmed the `/api/verify/{receipt_id}` index fast path: any HTTP 200 from `/verification/{id}` yields `verified: true` and nine synthetic `pass` statuses. The exception path silently falls through to scanning. This remains a source-level fail-open defect/risk; no live exploitation or deployment behavior is asserted.
+- The existing source review still identifies slow-path missing-manifest and missing-event cases as warning-plus-pass, and does not implement independent GRANDPA finality, authority-transition authentication, or Cardano L1 inclusion verification. “Every Receipt lineage is live” is therefore not independently demonstrated by this source snapshot.
+- Search of the IMMORTAL traceability matrix on `main` found existing formal results including shared-reserve counterexample T18 and composition obligations C-COMP/X1–X7; this is documentation evidence, not a substitute for executing universal-kernel conformance fixtures. C6.1 remains PARTIAL, C6.2 remains BLOCKED_INTERNAL, and C6.3 remains BLOCKED_INTERNAL per §10.35.
+- Current open PR search still surfaces PR #35 as draft/bootstrap and PR #36 as a draft read-only Treasury observer; neither is merged or evidence of deployment. Do not change governance state or run the observer until its own configuration prerequisite is independently satisfied.
+
+#### Action in this cycle
+
+- **Executed:** re-read the current checkpoint and exact Materios source files; inspected the full fast-path handler; searched the current IMMORTAL traceability matrix and open PR set.
+- **Files changed:** this checkpoint only.
+- **Tests / workflows / RPC:** `NOT_RUN`; no local runner was available in this connector-only pass, and no repeated scan was sent to the already-known RPC endpoints.
+- **Side effects:** no upstream edit, no PR/issue created, no branch created/deleted, no merge/promotion, no deployment, no wallet/signature/transaction, no economic or V3/Reveal semantic change.
+- **Status delta:** none. C0 remains PARTIAL; C1 and C3 remain BLOCKED_EXTERNAL; C2 remains PARTIAL; all C4–C15 labels remain as listed in §10.35 and §10.36. This section adds fresh source confirmation, not closure evidence.
+
+**Next concrete actions:** (1) prepare/maintainer-review the smallest upstream C0 fail-closed patch plus negative tests for HTTP-200 stale/index-only responses, missing manifest, missing event, and unavailable Cardano/GRANDPA verification; do not publish it without authorization; (2) continue C6.2 consumer-map completion and negative bypass regressions on the assigned IMMORTAL branch; (3) keep C1/C3 waiting on a new authorized evidence source rather than repeating unchanged RPC scans.
