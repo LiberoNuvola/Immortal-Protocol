@@ -4004,3 +4004,32 @@ This revalidates liveness and physical asset presence for the **same historical 
 
 Keep `tUSDM = OBSERVED_NOT_QUALIFIED`, keep the A/B/C USD–USDM rule open, and keep P-01/P-02/P-16 blocked. No approval or bootstrap workflow was dispatched. No protocol code, economics, V3/Reveal semantics, or branch topology changed.
 
+### Agent A — EEV approval evidence-integrity hardening and exact-SHA CI — 2026-10-24
+
+**Classification:** off-chain approval-evidence integrity hardening only. No valuation rule, canonical asset identity, economic constant, EEV value, or deployment authorization was selected or changed.
+
+#### Implementation
+
+- Commit `c21f4dabb07c94137831e7de084f21f6c3634b3c` updates `audit/cardano-integration/preprod-direct-usdm-approve.mjs`.
+- The approval producer now recomputes the content hashes for the source-set, deployment manifest, Oracle State manifest, and EEV qualification; a digest field with valid hex syntax is not sufficient.
+- Before generating `DEPLOYMENT_APPROVED`, it checks EV1–EV7 canonical references and verifies each digest against the current repository source bytes.
+- It also verifies the Preprod Oracle State singleton identity against the deployment's Oracle configuration and binds the qualification's source-set facts (asset unit, physical quantity, derived sub-units, Pool address/out-reference and freshness model) back to the exact hashed source-set.
+- New module `audit/cardano-integration/eev-approval-integrity.mjs` and regression `audit/cardano-integration/eev-approval-integrity.test.mjs` cover artifact-content mutation, non-canonical EV references, mismatching current-source digests and missing source bytes. The focused test is included in `.github/workflows/pre-rich-direct-usdm-conformance.yml`.
+
+#### Exact-head evidence
+
+Final code/workflow commit: `8c8bffde05b80a31ccb628c2be7275d5be91bb8b`.
+
+- [PRE-RICH Direct-USDM Conformance #40110916650](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916650) — SUCCESS. The approval-integrity step, source-script syntax checks, focused direct-USDM tests, authority/admission conformance and browser build passed. The new Node test reported `eev-approval-integrity: artifact hashes, canonical EV references and current source digests verified; tampering rejected`.
+- [Cardano Adapter Sale Conformance #40110916668](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916668) — SUCCESS.
+- [Protocol Declaration Conformance #40110916573](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916573) — SUCCESS.
+- [Documentation Link Check #40110916616](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916616) — SUCCESS.
+- [Algorithmic Governability Adversarial Lab #40110916688](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916688) — SUCCESS.
+- [IMMORTAL Portability Conformance #40110916553](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40110916553) — SUCCESS.
+
+#### Scope and remaining blocker
+
+This closes the identified hash-recomputation gap in the **EEV approval producer's manifest/source validation path** for the exact tested SHA. It does not itself authenticate issuer redemption or establish that the candidate asset is the protocol's canonical accounting USDM. It does not select USD/USDM alternative A/B/C, prove the candidate's market/redeemable value, create a qualified live EV1–EV7 certificate, authorize deployment, certify R1/Kc/Ω viability, or authorize a real Issue.
+
+Issue #37 remains the source of the unresolved normative decision. Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; keep EEV approval inactive and P-01/P-02/P-16 blocked until the competent specification authority records the exact Preprod asset scope and the USD/USDM rule. No approval workflow, bootstrap, wallet signature, or financial transaction was invoked by this work.
+
