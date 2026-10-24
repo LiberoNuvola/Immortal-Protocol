@@ -7,13 +7,23 @@ const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
 const OUTPUT = 'audit/yaci-evidence/evaluation-contract.json'
 const TIMEOUT_MS = 10_000
 
+// Apply a bounded timeout to Lucid's own provider request as well as the raw probes.
+const originalFetch = globalThis.fetch.bind(globalThis)
+globalThis.fetch = async (input, init = {}) => {
+  const url = typeof input === 'string' ? input : String(input?.url ?? '')
+  if (url.includes('/utils/txs/evaluate/utxos') && !init.signal) {
+    return originalFetch(input, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) })
+  }
+  return originalFetch(input, init)
+}
+
 function topKeys(value) {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? Object.keys(value)
     : []
 }
 
-function responseSummary(path, status, contentType, raw, parsed, cbor) {
+function responseSummary(path, status, contentType, raw, parsed, cbor, isJson) {
   const result = parsed && typeof parsed === 'object' ? parsed.result : undefined
   const messageValue = parsed && typeof parsed === 'object'
     ? (parsed.message ?? parsed.error ?? parsed.fault)
@@ -28,7 +38,7 @@ function responseSummary(path, status, contentType, raw, parsed, cbor) {
     httpOk: status >= 200 && status < 300,
     contentType: contentType ?? null,
     responseBytes: Buffer.byteLength(raw),
-    isJson: parsed !== null,
+    isJson,
     topLevelKeys: topKeys(parsed),
     resultKeys: topKeys(result),
     evaluationResultPresent: Boolean(
@@ -49,8 +59,9 @@ async function postJsonContract(path, body, cbor) {
     })
     const raw = await response.text()
     let parsed = null
-    try { parsed = JSON.parse(raw) } catch {}
-    return responseSummary(path, response.status, response.headers.get('content-type'), raw, parsed, cbor)
+    let isJson = false
+    try { parsed = JSON.parse(raw); isJson = true } catch {}
+    return responseSummary(path, response.status, response.headers.get('content-type'), raw, parsed, cbor, isJson)
   } catch (error) {
     return {
       path,
@@ -74,8 +85,9 @@ async function postClassicContract(path, cbor) {
     })
     const raw = await response.text()
     let parsed = null
-    try { parsed = JSON.parse(raw) } catch {}
-    return responseSummary(path, response.status, response.headers.get('content-type'), raw, parsed, cbor)
+    let isJson = false
+    try { parsed = JSON.parse(raw); isJson = true } catch {}
+    return responseSummary(path, response.status, response.headers.get('content-type'), raw, parsed, cbor, isJson)
   } catch (error) {
     return {
       path,
@@ -94,6 +106,7 @@ function classifyProviderError(error) {
   if (/400|bad request|invalid hexadecimal/i.test(message)) return 'PROVIDER_BAD_REQUEST'
   if (/fetch failed|timeout|timed out|aborted/i.test(message)) return 'TRANSPORT_OR_TIMEOUT'
   if (/EvaluateTransaction fails/i.test(message)) return 'PROVIDER_RESULT_SCHEMA_REJECTED'
+  if (/PROVIDER_RETURNED_NON_ARRAY/i.test(message)) return 'PROVIDER_RETURNED_NON_ARRAY'
   return 'PROVIDER_EVALUATION_ERROR'
 }
 
@@ -131,10 +144,11 @@ const classicRoute = await postClassicContract('/utils/txs/evaluate', cbor)
 let providerCall
 try {
   const redeemers = await provider.evaluateTx(cbor)
+  if (!Array.isArray(redeemers)) throw new Error('PROVIDER_RETURNED_NON_ARRAY')
   providerCall = {
     status: 'PASS',
-    returnedRedeemerCount: Array.isArray(redeemers) ? redeemers.length : null,
-    returnedArray: Array.isArray(redeemers),
+    returnedRedeemerCount: redeemers.length,
+    returnedArray: true,
   }
 } catch (error) {
   providerCall = {
@@ -144,11 +158,15 @@ try {
   }
 }
 
+const yaciLog = readFileSync('audit/yaci-evidence/yaci.log', 'utf8')
+const evaluatorModeMatch = yaciLog.match(/Yaci Store tx evaluator mode:\\s*([a-z]+)/i)
+const evaluatorMode = evaluatorModeMatch ? evaluatorModeMatch[1].toLowerCase() : 'NOT_RECORDED'
+
 const evidence = {
   schema: 'IMMORTAL-YACI-LUCID-EVALUATION-CONTRACT-v1',
   observedAt: new Date().toISOString(),
   endpointBase: API,
-  yaciEvaluatorMode: 'read from Yaci startup log by the workflow; expected observation is recorded separately in yaci.log',
+  yaciEvaluatorMode: evaluatorMode,
   providerPackage: '@lucid-evolution/provider@0.2.4 (locked via @lucid-evolution/lucid@0.6.5)',
   providerExpectedRequest: {
     method: 'POST',

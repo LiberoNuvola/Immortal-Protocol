@@ -32,6 +32,9 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Verify Yaci log sanitizer with synthetic fixtures
+        run: node audit/cardano-integration/sanitize-yaci-log.test.mjs
+
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
 
@@ -154,7 +157,7 @@ jobs:
           done
           echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
           # Never print raw Yaci startup logs: the CLI may include ephemeral credentials.
-          sed -E 's/ed25519e_sk[[:alnum:]]+/[REDACTED]/g' audit/yaci-evidence/yaci.log | tail -300 || true
+          node audit/cardano-integration/sanitize-yaci-log.mjs < audit/yaci-evidence/yaci.log | tail -300 || true
           exit 1
 
       - name: Derive funded CI test wallet
@@ -239,9 +242,17 @@ jobs:
         if: always()
         run: |
           curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
-          # Redact ephemeral signing-key tokens before stdout and artifact upload.
-          sed -E -i 's/ed25519e_sk[[:alnum:]]+/[REDACTED]/g' audit/yaci-evidence/yaci.log
-          tail -500 audit/yaci-evidence/yaci.log || true
+          # Sanitize keys and mnemonic phrases before stdout and artifact upload.
+          if [ -f audit/yaci-evidence/yaci.log ]; then
+            if node audit/cardano-integration/sanitize-yaci-log.mjs < audit/yaci-evidence/yaci.log > /tmp/immortal-yaci.log.redacted; then
+              mv /tmp/immortal-yaci.log.redacted audit/yaci-evidence/yaci.log
+              tail -500 audit/yaci-evidence/yaci.log || true
+            else
+              echo "YACI_LOG_SANITIZATION_FAILED=1; removing raw log before artifact upload" | tee -a audit/yaci-evidence/bootstrap.txt
+              rm -f audit/yaci-evidence/yaci.log /tmp/immortal-yaci.log.redacted
+              exit 1
+            fi
+          fi
 
       - name: Upload laboratory evidence
         if: always()
