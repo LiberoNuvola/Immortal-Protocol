@@ -28,7 +28,7 @@ export function classifyLedgerEvaluation(report) {
     return "unknown";
   }
   if (failures.length === 0) return "success";
-  if (failures.some((entry) => typeof entry.failure !== "string" || !/^ValidationFailure\\b/.test(entry.failure))) {
+  if (failures.some((entry) => typeof entry.failure !== "string" || !/^ValidationFailure\b/.test(entry.failure))) {
     return "unknown";
   }
   return "failure";
