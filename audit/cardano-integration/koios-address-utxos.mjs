@@ -35,6 +35,7 @@ export async function fetchAllAddressUtxos({
     const url = new URL(baseUrl.replace(/\/+$/, '') + '/address_utxos')
     url.searchParams.set('offset', String(offset))
     url.searchParams.set('limit', String(pageSize))
+    url.searchParams.set('order', 'tx_hash.asc,tx_index.asc')
 
     const response = await fetchImpl(url, {
       method: 'POST',
