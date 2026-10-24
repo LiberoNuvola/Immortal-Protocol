@@ -3217,3 +3217,42 @@ This review is source-level and uses existing artifacts only. The connected GitH
 3. Repository owner contains artifacts #12525975775 and #12549495517 and confirms non-reuse of any exposed credentials. The Treasury Observer remains disabled until the configured address is independently verified.
 
 **Overall classification:** PARTIAL / OPEN. The sanitizer regression passed, but Yaci provider evaluation on the new head has not yet been observed. No Preprod transaction, signing, bootstrap, mint, swap or Treasury action was performed.
+
+
+## 10.27 — Agent B B6 correction: Treasury scenario simulator exists; real DEX route remains unproven (2026-10-24)
+
+**Classification:** bounded code/test audit across branch trees plus local execution of the simulator's existing synthetic test suite. No DEX, route, swap, Treasury operation, or Preprod transaction was constructed or submitted.
+
+### What exists
+
+The current `work/immortal-green-closure` tree at `eab461e7b7cfe3c4ca37c9c5987f055212116c3a` contains:
+- [Manual workflow: `treasury-liquidation-simulation.yml`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/treasury-liquidation-simulation.yml)
+- [Simulator: `treasury-liquidation-simulation.mjs`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/cardano-integration/treasury-liquidation-simulation.mjs)
+- [Synthetic tests: `treasury-liquidation-simulation.test.mjs`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/cardano-integration/treasury-liquidation-simulation.test.mjs)
+- [Route blocker / evidence limitations: `TREASURY-LIQUIDATION-SIMULATION-ROUTE-BLOCKER-2026-10-22.md`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/TREASURY-LIQUIDATION-SIMULATION-ROUTE-BLOCKER-2026-10-22.md)
+
+The workflow is manual-only and takes explicit input values for asset quantity/scale, asset value removed from EEV, gross USDM proceeds, execution costs, pre-sale EEV and ProtectedCapital. The script performs deterministic integer arithmetic, creates a digest, and checks net proceeds / post-buffer conditions. It expressly states that this is arithmetic over supplied inputs, not DEX/AMM execution; `OBSERVED_EXECUTION` is only a caller-supplied label and external evidence must independently substantiate it.
+
+### Test evidence
+
+I reconstructed the exact simulator and test file contents from the verified branch files into a temporary local test directory and ran:
+
+`node --test treasury-liquidation-simulation.test.mjs`
+
+Result: **5/5 tests passed** (scenario pass, buffer erosion, negative post-buffer, missing input rejection, and costs exceeding gross proceeds). This is a local test of the checked source contents; it is not a GitHub Actions run or any on-chain/DEX evidence. The manual workflow was not dispatched.
+
+### Branch-wide structural search
+
+Fetched non-truncated recursive Git trees for all 26 refs returned by the repository's current branch listing. The explicit liquidation simulator workflow/script/test/blocker paths are present on `work/immortal-green-closure`; the other 25 reviewed branch tree snapshots did not contain similarly named swap/DEX/liquidation implementation paths. This is a path-level census, not a line-by-line semantic audit of all historical blobs, and does not prove no swap logic could exist under a differently named file or external adapter.
+
+Targeted indexed code searches for Minswap, SundaeSwap, `swapExact`, `swapAssets`, and `tADA tUSDM` returned no implementation matches on the indexed default-branch content. Combined with the inspected `plutus/Treasury.hs` (legacy `Distribute` only), no concrete route was found that binds a Treasury-owned asset input, a specific DEX/AMM pool/route, min-USDM output/slippage protection, execution costs, and the received USDM to one transaction.
+
+### Updated B6 state
+
+- **Scenario arithmetic simulator:** IMPLEMENTED; its five synthetic tests pass locally.
+- **Treasury DEX/AMM integration:** NOT_PROVEN / no verified route found in the checked scope.
+- **Actual swap execution / net proceeds / ledger transaction evidence:** NOT_PROVEN.
+- **Treasury deployment identity/custody:** remains separately blocked; the historic route-blocker document explains that artifact-derived Treasury candidates returned zero UTxOs while the deployment-configured `VITE_TREASURY_ADDRESS` is not independently exposed in public source. Do not infer the Treasury address from holders or balances.
+- **QNE or economic viability:** not proven by one scenario. No new economic policy or pricing/route assumption has been introduced.
+
+**Next step:** ask Agent A/C to supply the governed asset valuation and execution-cost contract and an independently evidenced Treasury identity; then select a concrete route only if already authorized. Any later route proof must bind exact transaction CBOR/hash, Treasury-owned input UTxO, pool/route identity, minimum output, actual received canonical USDM, fees, and authenticated post-state EEV/ProtectedCapital. Until that evidence exists, the simulator remains a scenario calculator, not liquidation readiness.
