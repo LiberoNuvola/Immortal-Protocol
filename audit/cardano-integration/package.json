@@ -5,6 +5,9 @@
     "@lucid-evolution/lucid": "0.6.5",
     "ws": "8.18.3"
   },
+  "overrides": {
+    "@anastasia-labs/cardano-multiplatform-lib-nodejs": "6.2.0-2"
+  },
   "scripts": {
     "preprod:wallet": "node preprod-wallet-utxo.mjs"
   }
