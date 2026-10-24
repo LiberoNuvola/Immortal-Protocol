@@ -18,18 +18,38 @@ node integrations/mitsuro/jev-readonly-mcp.mjs
 It speaks newline-delimited JSON-RPC over stdio and opens no listening port.
 
 ## Mitsuro configuration example
-Review current Mitsuro docs first. Add as a project MCP server only after code review, then explicitly connect it. Do not auto-connect. Example only; this file does not activate the server:
+Review current Mitsuro docs first. Add as a project MCP server only after code review, then explicitly connect it. Do not auto-connect. The exact tool allowlist below is intentional; `inherit` leaves approval behavior under Mitsuro's existing policy rather than silently granting new approval. Example only; this file does not activate the server:
+
 ```json
 {
   "mcpServers": {
     "immortal-jev-readonly": {
       "command": "node",
       "args": ["integrations/mitsuro/jev-readonly-mcp.mjs"],
-      "cwd": "."
+      "cwd": ".",
+      "enabled": true,
+      "required": false,
+      "startupTimeoutMs": 15000,
+      "toolTimeoutMs": 15000,
+      "tools": {
+        "allow": [
+          "get_branch_head",
+          "get_ci_status",
+          "read_jev_registry",
+          "read_allowed_file"
+        ],
+        "approval": {
+          "get_branch_head": "inherit",
+          "get_ci_status": "inherit",
+          "read_jev_registry": "inherit",
+          "read_allowed_file": "inherit"
+        }
+      }
     }
   }
 }
 ```
+
 Mitsuro must be granted only the process permission required to launch Node. Network egress to api.github.com should be restricted at OS/container level if the MCP permission model cannot independently limit outbound destinations.
 
 ## Tools
