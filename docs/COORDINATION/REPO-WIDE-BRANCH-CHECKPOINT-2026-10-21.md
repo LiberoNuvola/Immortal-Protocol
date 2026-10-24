@@ -3817,7 +3817,7 @@ The second job, [Observe the exact configured Preprod Oracle singleton](https://
 
 #### Integration Lab reconciliation
 
-The preceding [IMMORTAL Cardano Integration Lab #40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767) **completed SUCCESS** on SHA `64fe7471caefc7f27d006cd814b50d4c76d6f64c`. It passed the native Yaci UTxO decoder, P2.8 ledger evidence gate, resource audit, invariant/provenance guards, Claim address binding, predeploy structural gate, evidence packet publication and Notion registration. Its sanitized packet is [artifact #12552077534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767/artifacts/12552077534). This remains a successful devnet/native-ledger lab, not a real ticket issuance to the user's wallet.
+The preceding [IMMORTAL Cardano Integration Lab #40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767) **completed SUCCESS** on SHA `64fe7471caefc7f27d006cd814b50d4c76d6f64c`. It passed the native Yaci UTxO decoder, resource audit, invariant/provenance guards, Claim address binding, predeploy structural gate, evidence-packet checks and Notion-ledger publisher test. **P2.8 qualification correction:** the evidence-gate command exited successfully as a program and wrote a report, but that report is `LEDGER_ALIGNED_EVALUATION_FAILURE`, with two `MissingScript` failures, zero Plutus execution failures, zero context failures and two other ledger failures. The workflow-step SUCCESS therefore proves report generation, not successful validator execution or semantic A/B closure. Its sanitized packet is [artifact #12552077534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767/artifacts/12552077534). This remains a successful devnet/native-ledger lab, not a real ticket issuance to the user's wallet.
 
 The comment-only observer trigger created a new exact-head [Integration Lab run #40074119471](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40074119471) on SHA `d61e3fbde1dcfa8914d31ff98c7d26c63bd2e316`. At this checkpoint update it is **IN_PROGRESS**, with `Setup canonical Plutus CI` active; no conclusion is claimed for this second run. On the same SHA, frontend build, documentation links, economic conformance, conformance, declaration conformance, credentials/security, and read-only Preprod context checks have passed. The configured Oracle observation is the one failed job due to missing configuration; manual/preprod mutation jobs were skipped.
 
@@ -3826,3 +3826,28 @@ The comment-only observer trigger created a new exact-head [Integration Lab run 
 Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; Issue #37 remains the open normative decision for exact asset identity and USD/USDM rule. Independently, the observed Oracle state remains a stale legacy single-quote datum and the exact configured runtime observer remains blocked on missing configuration. No qualification, EEV approval, settlement authorization, or first Issue is inferred from the CI pass.
 
 Next safe steps: supply the authorized runtime values and Blockfrost credential for the configured read-only observer; separately resolve Oracle quote-source truth and a legitimate, authorized quote-refresh/quote-set deployment path. Do not rerun the existing bootstrap as a presumed refresh, and do not change V3, Reveal, kernel constants, or economic semantics.
+
+
+### Agent A — P2.8 evaluation report is MissingScript, not a validator execution result — 2026-10-24
+
+**Classification:** exact artifact and log inspection of successful workflow run [#40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767), commit `64fe7471caefc7f27d006cd814b50d4c76d6f64c`. This is a correction to interpreting the step's CI conclusion; no validator or ledger state was changed.
+
+#### Actual evaluator output
+
+The evidence artifact [#12552077534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767/artifacts/12552077534) contains `ledger-evaluation-report.json` with **two failures**, one for each spending redeemer:
+- redeemer index 0: `MissingScript`, script hash `2ae08dc31517cd5c7790e3b9fca44fa7b6a3e440d3ff4251969e7785`;
+- redeemer index 1: `MissingScript`, script hash `fb2e439f4b12621e7548c59b22b3e4c0009475ab6ce904d400233c6a`.
+
+The same job log records `REDEEMER_ENTRIES=2`, `REDEEMER_SUCCESSES=0`, `REDEEMER_FAILURES=2`, `PLUTUS_EXECUTION_FAILURES=0`, `LEDGER_CONTEXT_FAILURES=0`, `OTHER_LEDGER_FAILURES=2`, `RESULT: LEDGER_ALIGNED_EVALUATION_FAILURE`. The runner prints `ACCEPTANCE: B` for the typed-failure report, but the actual failure class is `MissingScript`, not a `ValidationFailure` produced by executing a validator.
+
+The manifest is additionally marked `script_artifacts: null`, `typed_context_ready: false`, `reference_inputs: 0`. Accordingly, this packet does **not** prove a Plutus execution result or the documented B outcome of a ledger-originated script failure for the exact Reveal context. It is not evidence that the economic validator failed or passed; it shows the evaluator could not find the scripts for the two spending purposes.
+
+#### Registry interpretation problem
+
+The generated `verification-registry.json` reports `overallResult: PASS` and `P2.8.LEDGER.EVIDENCE.GATE: PASS` because its evidence is linked to the workflow step's successful process exit. That step status does not distinguish "report generation succeeded" from "semantic acceptance achieved". Therefore the registry PASS must not be promoted as P2.8 A/B acceptance. The lab may still be reported as a successful workflow run for its other traces/tests, with this evaluator criterion explicitly open.
+
+#### Next action and ownership boundary
+
+Route the bounded fix to the evidence/evaluator owner (Agent B): inspect why the exact transaction packet reaches `evaluateConwayTx` without scripts for the two spending purposes; preserve manifest and context binding; then either materialize the exact script/reference witness inputs required by the same submitted transaction or classify the run as SAFE_STALL / non-acceptance. Extend registry generation/tests so `P2.8.LEDGER.EVIDENCE.GATE` cannot show PASS solely from a zero-exit process when the report has `MissingScript` or `PLUTUS_EXECUTION_FAILURES=0`. Do not change V3/Reveal semantics, validator code, transaction meaning, or economic rules to force a PASS.
+
+**P2.8 disposition:** workflow run SUCCESS; native evaluator report `LEDGER_ALIGNED_EVALUATION_FAILURE`; required P2.8 semantic A/B acceptance remains **OPEN** pending exact script-bearing context and report-aware classification.
