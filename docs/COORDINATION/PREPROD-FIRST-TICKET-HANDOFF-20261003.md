@@ -84,3 +84,23 @@ Existing implementation surfaces include:
 - Do not treat the expired deployed ticket as the first real user ticket.
 - Do not invent a different expiry horizon for testing.
 - Do not claim the first Preprod ticket until Issue is signed/confirmed and the subsequent Reveal is also confirmed and reconstructed.
+
+
+## Agent A continuation — 2026-10-24
+
+Current execution branch verified as work/immortal-green-closure; the short branch name green does not exist in the current branch list. Do not dispatch the EEV approval workflow until the Preprod tUSDM/canonical-USDM identity decision and the current EV1–EV7 qualification chain are resolved.
+
+### Exact-SHA direct-USDM tests
+Commit [b6379b62](https://github.com/LiberoNuvola/Immortal-Protocol/commit/b6379b6284c92fb6c1e992767d88af827d03c582) adds three fail-closed regressions to DirectUsdmEev.test.ts: negative physical quantity, unrelated ADA/PRE-like asset substitution, and malformed ticker-like asset unit. The focused [PRE-RICH Direct-USDM Conformance run #40066013357](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013357) and [Issue Admission Boundary CI #40066013305](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013305) both succeeded on that exact SHA.
+
+### Blocker decision
+The candidate unit e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d is a physical Preprod tUSDM candidate. Its presence in the Pool UTxO and the arithmetic conversion to 100 IMMORTAL subunits per whole token do not establish canonical USDM identity. The source-set producer correctly emits OBSERVED_NOT_QUALIFIED; the approval workflow remains a separate guarded step and was not run.
+
+### Remaining gates
+- P-01: fresh source-set and EV1–EV7 qualification with verified content digests, exact live Pool UTxO and approved asset mapping; fresh separately authorized EevDeploymentApproval bound to those exact inputs.
+- P-02: production Pyth → MintPolicy denomination/signature binding and native-ledger positive/tampered quote tests remain unproven; feed 16 is ADA/USD, not evidence of a USDM quote.
+- P-05/P-06: final transaction-body/input binding and issuance snapshot → issuedAt/expiresAt binding remain open at the actual Issue boundary.
+- P-15: read-only Treasury observer and scenario simulator exist, but no verified asset→USDM execution route or executed swap is evidenced.
+- P-16: no confirmed user-wallet Ticket NFT Issue is evidenced. No wallet signing, approval dispatch, or transaction submission was performed in this pass.
+
+See the central six-front matrix and exact-SHA workflow inventory in [REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md](REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md).
