@@ -149,3 +149,14 @@ Sources checked:
 - [Repository — Pyth/USDM unit-conversion decision](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md)
 
 No protocol code, economic constants, V3/Reveal semantics, workflow dispatch, approval, wallet signature, transaction or on-chain state was changed.
+
+### Exact-SHA CI closure for governance crosswalk — 2026-10-24
+
+All five relevant conformance/documentation workflows have now completed successfully on source SHA `69ff7b75e9d88672f34e12dd2719e644db02afb0`:
+- [Documentation Link Check #40068368967](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068368967) — success
+- [Algorithmic Governability Adversarial Lab #40068369014](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068369014) — success
+- [Cardano Adapter Sale Conformance #40068369065](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068369065) — success
+- [Protocol Declaration Conformance #40068369098](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068369098) — success
+- [IMMORTAL Portability Conformance #40068369200](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068369200) — success
+
+These results close the CI check for that documentation/checkpoint SHA only. They do not qualify the physical `tUSDM` unit, produce fresh EV1–EV7, authorize EEV deployment, establish production Pyth→MintPolicy binding, verify Treasury liquidation, or prove a real wallet Issue. P-01/P-02/P-05/P-06/P-15/P-16 retain their previously recorded blockers.
