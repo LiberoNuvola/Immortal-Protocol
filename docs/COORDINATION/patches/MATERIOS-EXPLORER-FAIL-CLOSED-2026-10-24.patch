@@ -1,8 +1,7 @@
 diff --git a/tools/explorer/app.py b/tools/explorer/app.py
-index fc7e8f045f9319c2aa6ceb11c83ec5fc5f5076a1..0000000000000000000000000000000000000000 100644
 --- a/tools/explorer/app.py
 +++ b/tools/explorer/app.py
-@@ -1,38 +1,6 @@
+@@ -447,41 +447,12 @@
  @app.get("/api/verify/{receipt_id}")
  async def verify(receipt_id: str, scan_window: int = 100):
 -    """Run verification — tries pre-indexed record first, falls back to block scan."""
@@ -50,10 +49,9 @@ index fc7e8f045f9319c2aa6ceb11c83ec5fc5f5076a1..00000000000000000000000000000000
  import json, sys
  sys.path.insert(0, '/app/materios-verify')
 diff --git a/tools/materios-verify/materios_verify/core.py b/tools/materios-verify/materios_verify/core.py
-index bcd21c3c942e3a3b7fbac234865b69050283831a..0000000000000000000000000000000000000000 100644
 --- a/tools/materios-verify/materios_verify/core.py
 +++ b/tools/materios-verify/materios_verify/core.py
-@@ -39,6 +39,9 @@ class VerificationReport:
+@@ -50,6 +50,9 @@ class VerificationReport:
      anchor: Optional[dict] = None
      committee_size: int = 0
      threshold: int = 0
@@ -63,7 +61,7 @@ index bcd21c3c942e3a3b7fbac234865b69050283831a..00000000000000000000000000000000
  
      def to_dict(self) -> dict:
          return {
-@@ -50,6 +53,9 @@ class VerificationReport:
+@@ -62,5 +65,8 @@ class VerificationReport:
              "leaf_hash": self.leaf_hash,
              "committee_size": self.committee_size,
              "threshold": self.threshold,
@@ -72,7 +70,7 @@ index bcd21c3c942e3a3b7fbac234865b69050283831a..00000000000000000000000000000000
 +            "cardano_l1_anchor_verified": self.cardano_l1_anchor_verified,
              "anchor": self.anchor,
              "steps": [
-@@ -68,6 +74,34 @@ class VerificationReport:
+@@ -76,6 +82,32 @@ class VerificationReport:
          }
  
  
@@ -105,7 +103,7 @@ index bcd21c3c942e3a3b7fbac234865b69050283831a..00000000000000000000000000000000
  # ---------------------------------------------------------------------------
  # Merkle tree
  # ---------------------------------------------------------------------------
-@@ -337,8 +371,8 @@ def verify_receipt(
+@@ -632,7 +664,8 @@ def verify_receipt(
          step6.details["cert_count"] = manifest.get("count")
      else:
 -        step6.passed = True  # supplementary — don't fail when manifest unavailable
@@ -116,7 +114,7 @@ index bcd21c3c942e3a3b7fbac234865b69050283831a..00000000000000000000000000000000
      report.steps.append(step6)
  
      # Step 7: AvailabilityCertified event
-@@ -356,8 +390,9 @@ def verify_receipt(
+@@ -650,15 +683,10 @@ def verify_receipt(
          if not step7.passed:
              step7.details["error"] = "cert_hash mismatch between event and storage"
      else:
@@ -138,10 +136,9 @@ index bcd21c3c942e3a3b7fbac234865b69050283831a..00000000000000000000000000000000
 +    report.result = _classify_report_result(report, checkpoint_found)
 diff --git a/tools/materios-verify/tests/test_fail_closed_verification.py b/tools/materios-verify/tests/test_fail_closed_verification.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000
 --- /dev/null
 +++ b/tools/materios-verify/tests/test_fail_closed_verification.py
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,67 @@
 +"""Regression tests for fail-closed Receipt verification decisions."""
 +import sys
 +import unittest
