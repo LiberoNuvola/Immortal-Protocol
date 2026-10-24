@@ -47,11 +47,11 @@ test("initialize and tools/list use JSON-RPC", async () => {
 
 test("documented relative-path invocation starts the stdio MCP server", () => {
   const entry = fileURLToPath(new URL("./jev-readonly-mcp.mjs", import.meta.url));
-  const input = JSON.stringify({ jsonrpc: "2.0", id: 7, method: "initialize", params: { protocolVersion: "2024-11-05" } }) + "\\n";
+  const input = JSON.stringify({ jsonrpc: "2.0", id: 7, method: "initialize", params: { protocolVersion: "2024-11-05" } }) + "\n";
   const child = spawnSync(process.execPath, [entry], { input, encoding: "utf8", timeout: 3000 });
   assert.equal(child.error, undefined, child.error?.message);
   assert.equal(child.status, 0, child.stderr);
-  const line = child.stdout.trim().split("\\n")[0];
+  const line = child.stdout.trim().split("\n")[0];
   const message = JSON.parse(line);
   assert.equal(message.id, 7);
   assert.equal(message.result.serverInfo.name, "immortal-jev-readonly");
