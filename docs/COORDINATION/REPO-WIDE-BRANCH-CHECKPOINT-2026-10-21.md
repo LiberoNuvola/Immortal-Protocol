@@ -3331,3 +3331,23 @@ Downloaded existing GitHub Actions artifact [#12492463295](https://github.com/Li
 - No upstream code modification, new PR, deployment, on-chain transaction, wallet operation, signature, Treasury run or branch promotion occurred.
 
 **Agent C overall status remains PARTIAL.** There are concrete new verifications for repository HEADs and B3-B artifact integrity, but no C0–C15 front is upgraded to PASS by this pass. The highest-leverage independent work is C6.2 consumer mapping/C14 evidence manifest; external request stays necessary for C1/C3. This register is non-normative and does not supersede the source-of-truth hierarchy.
+
+## 10.XXX — 2026-10-24 Agent A: Notion governance-authority crosswalk for USDM / EEV
+
+**Classification:** source triangulation only; no normative decision adopted.
+
+- Notion `02 — Decision Log` closes DEC-3 only as the rule that USDM is the economic/reference unit and other supported settlement assets must satisfy exact USDM equivalence under a verified valuation contract. DEC-3 does not identify a specific Cardano token and does not establish USD/USDM parity.
+- Notion `09 — Definitive Decision Register` lists D-10 multi-asset as OPEN, D-11 oracle authorization/freshness/latency as OPEN, and D-13 governance authorization as OPEN.
+- Notion `GOV-02 — Authority / Permission Matrix` prohibits maintainers from unilaterally redefining canonical economic semantics and requires applicable adoption gates before canonicalization. `PRE-RICH Governance Architecture v0.1` says it is a future/specification architecture rather than an active DAO, and that specification authority is retained by the project owner during the current development phase.
+- The connected-source search for Slack/Drive/etc. was unavailable because Notion connector search requires Business access. Findings are therefore limited to accessible Notion pages and repository evidence; no claim of exhaustive connected-source coverage.
+
+**Next action:** route a scoped decision proposal to the currently authorized specification owner and record adoption through the applicable canonicalization process. The proposal must separately resolve: (1) accounting-unit semantics, (2) exact Cardano policy ID + asset name permitted as physical `VerifiedUSDM`, and (3) any USD/USDM or oracle conversion rule. Agent A must not infer or adopt any of these values.
+
+**Gate status unchanged:** candidate `tUSDM` remains `OBSERVED_NOT_QUALIFIED`; P-01/P-02/P-16 remain blocked. Do not dispatch EEV approval before the asset/denomination decision and current evidence chain are complete. No protocol code, economic constants, V3/Reveal semantics, workflow dispatch, approval, wallet signature, transaction, or on-chain state changed.
+
+Source links:
+- Notion DEC-3: https://app.notion.com/p/3d9c4454d6d581f6b1dff9bd9fa360fb
+- Notion D-10/D-11/D-13: https://app.notion.com/p/3d9c4454d6d5811e8bece49c16cf2c9d
+- Notion GOV-02: https://app.notion.com/p/3dfc4454d6d58107828eedf372de5242
+- Notion PRE-RICH Governance Architecture: https://app.notion.com/p/3dfc4454d6d58194aa72cfb27d234166
+- Repository decision record: `audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md`
