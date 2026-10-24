@@ -425,6 +425,21 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
 
 for (const [label, utxo] of [['Prize', prizeUtxo], ['B1PrizePool', poolUtxo]] as const) {
   const datum = (utxo as any).datum
+  let dataApiDecodeOk = false
+  let dataApiRoundTripEqualsInput: boolean | null = null
+  let dataApiRoundTripLength: number | null = null
+  let dataApiDecodeError: string | null = null
+  if (typeof datum === 'string') {
+    try {
+      const decoded = Data.from(datum)
+      const roundTrip = Data.to(decoded)
+      dataApiDecodeOk = true
+      dataApiRoundTripEqualsInput = roundTrip.toLowerCase() === datum.toLowerCase()
+      dataApiRoundTripLength = roundTrip.length
+    } catch (error) {
+      dataApiDecodeError = error instanceof Error ? error.message : String(error)
+    }
+  }
   console.log(JSON.stringify({
     revealInputDatumDiagnostic: label,
     datumType: typeof datum,
@@ -433,6 +448,10 @@ for (const [label, utxo] of [['Prize', prizeUtxo], ['B1PrizePool', poolUtxo]] as
     datumSuffix: typeof datum === 'string' ? datum.slice(-24) : null,
     datumIsEvenLengthHex: typeof datum === 'string' && datum.length > 0 && datum.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(datum),
     datumHash: (utxo as any).datumHash ?? null,
+    dataApiDecodeOk,
+    dataApiRoundTripEqualsInput,
+    dataApiRoundTripLength,
+    dataApiDecodeError,
   }))
 }
 
