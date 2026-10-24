@@ -86,3 +86,34 @@ The repository-wide CI for code-bearing SHA `e3dbacc7da4d7488c1bd9ba11df80bdbcc3
 - GitGuardian's run was **neutral**, with the scanner skipped because the PR exceeded its configured scan size. Do not interpret neutral as clean secret-scan evidence.
 
 No test in this CI set proves every `UniversalEconomicState` consumer, every script hash/address/deployment path, or every V3 lifecycle mutation goes through the universal admission composition. Therefore the source-map status remains **C6.2 BLOCKED_INTERNAL / RF8 OPEN**. Next action is still an exhaustive exact-head consumer/export/address inventory and action-level bypass regressions; tests must fail if a new economic path is introduced without classification and a refinement argument.
+
+## Follow-up — negative bypass regression contract (prepared, not executed)
+
+**Purpose:** make the remaining C6.2/RF8 gap testable without changing validator semantics or claiming that the universal gate is already authoritative. This section is a test contract, not a report of passing tests.
+
+### Required action-to-entrypoint matrix
+
+| Economic route | Existing entrypoint/surface to bind | Negative regression that must fail closed | Evidence required to close |
+|---|---|---|---|
+| SALE / ticket mint | `plutus/MintPolicy.hs`; off-chain `src/mint.ts`; current `plutus/export/Export.hs` | Candidate state violates canonical solvency/protected-capital admissibility while local SALE predicates would otherwise pass; reject before signing/submission and at validator boundary. | Same canonical fixture applied to gate and SALE predicate; transaction/script execution result; exact exported script hash. |
+| Pool lifecycle / state transition | `plutus/B1PrizePool.hs`; `PRE-RICH/onchain/PreRichEconomicAdmission.hs` | A candidate post-state breaks solvency or required viability while satisfying only the local action predicate; reject. | Action-specific validator test plus projection/gate equivalence over the same fixture. |
+| REVEAL loss/win | `plutus/PrizeValidator.hs` dispatch to `validateReveal`; exported PrizeValidator factory | A transition bypasses candidate-state admissibility or protected-capital invariant; reject without changing Reveal semantics. | Existing Reveal semantics preserved; paired negative fixtures and exact compiled/exported script identity. |
+| CLAIM | `plutus/PrizeValidator.hs` dispatch to `validateClaim` | Payout/transition would violate the canonical post-state invariant even if local Claim conditions pass; reject. | Claim-specific validator fixture, post-state comparison, exact export binding. |
+| EXPIRE | `plutus/PrizeValidator.hs` dispatch to `validateExpire` | Expiry path changes state/value in a way that violates the same canonical invariant; reject. | Expiry-specific validator fixture, expiry-finality semantics unchanged, exact export binding. |
+| Treasury distribution | `plutus/Treasury.hs` `Distribute` action | Distribution leaves the post-state outside the approved admissible region while local distribution checks pass; reject. | Treasury-specific validator fixture and explicit classification of whether this action is inside the universal economic perimeter. |
+| Control / Beacon transitions | `plutus/BeaconRegistry.hs` and its actual export/address consumers | An unauthorized or economically material control transition changes the admissible state without authenticated source binding; reject. | Control-state trust contract, action reachability, exported script/address identity, negative unauthorized-state fixture. |
+| Counter / supporting state | `plutus/CounterValidator.hs` plus all consumers | A counter update can be replayed, skipped, or detached from its economically relevant transition; reject where the transaction contract requires atomic binding. | Consumer graph showing whether counter mutation can independently affect issuance or economic state; transaction-level negative fixture. |
+
+### Mandatory source-map guard
+
+The static guard must enumerate imports/references of `UniversalEconomicState`, `UniversalEconomicKernel`, `EconomicGate`, `PreRichEconomicAdmission`, and `CanonicalEconomicState`; enumerate active exports/factories and every script hash/address/deployment manifest consumer; and fail when a new economic entrypoint, action branch, exported validator, or deployment binding appears without a row in the action matrix. A direct `signTx`/`submitTx` allowlist is not a substitute for this guard.
+
+### Pass criteria and stop conditions
+
+1. Each economically material action has an explicit in-scope/out-of-scope decision derived from existing normative sources; this document cannot make that decision.
+2. Each in-scope action has a canonical fixture that passes the authoritative composition and a paired bypass fixture that fails at the actual validator/action boundary.
+3. If local predicates intentionally differ syntactically, a reviewable refinement argument demonstrates they imply the same canonical admissibility relation for the action's reachable states.
+4. The source guard is run on the exact code SHA; the predeploy gate runs build, script export, generated/frontend CBOR comparison and TypeScript check; test artifacts record source SHA, toolchain, test command, results and digest.
+5. No GREEN/C6.2 closure until legacy addresses/UTxOs, current export reachability and deployment references are independently reconciled.
+
+**Current execution status:** specification prepared from the existing source map only. No repository checkout/shell runner was available in this pass; no test file or validator was changed, no tests/build/export/deployment query ran, and no C6.2 status upgrade is claimed.
