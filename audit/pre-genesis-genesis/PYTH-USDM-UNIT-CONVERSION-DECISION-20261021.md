@@ -1,6 +1,6 @@
 # Pyth USD/ADA → IMMORTAL USDM Settlement — Unit/Conversion Decision
 
-**Status:** RESEARCHED / NORMATIVE DECISION OPEN / NO IMPLEMENTATION AUTHORIZED  
+**Status:** PARTIAL NORMATIVE DECISION RECORDED — PREPROD PHYSICAL-ASSET ELIGIBILITY ACCEPTED / USD↔USDM CONVERSION A/B/C STILL OPEN  
 **Date:** 2026-10-21  
 **Scope:** conversion units at the Pyth-to-MintPolicy boundary only.
 
@@ -128,3 +128,31 @@ The robust architecture should keep those identities explicit even if governance
 **Recommendation for normative review (not an approved decision):** define the accounting-unit meaning and its relationship to USD explicitly, independently of native-token identity. If governance intends USDM sub-units to be USD-denominated accounting units, state that rule normatively; convert raw Pyth ADA/USD data using the exact rational price/exponent and the already-governed conservative rounding contract. If instead USDM denotes a token-relative unit, require an independently verified USD/USDM ratio or an exact asset/USDM quote. In either case, physical USDM tokens accepted as assets must still be bound by exact policy ID/name and an authorized valuation source; ticker-only parity is insufficient.
 
 Until the relevant normative owner adopts one route, Options A/B/C in §4 remain OPEN. No `D = 1` constant, feed ID, rounding update, or production compatibility path is authorized by this research. The production `MintPolicy` must continue to be classified as not Pyth-bound until the exact quote consumed by the Treasury equality check is verified in the same transaction.
+## 9. Normative decision by the specification authority — Preprod physical asset eligibility — 2026-10-24
+
+**Decision status: ACCEPTED for the explicitly scoped Cardano Preprod EEV profile.** The specification authority has explicitly decided that the configured Preprod tUSDM candidate may be admitted for its intended purpose: it may count as the physical `VerifiedUSDM` asset in the exact qualified B1 PrizePool UTxO, subject to live identity/out-reference verification and the remaining EV1–EV7 and deployment/admission gates.
+
+### 9.1 Exact scope and identity
+
+- Network: **Cardano Preprod only**.
+- Policy ID: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`.
+- Asset name (hex): `0014df10745553444d`.
+- Full asset unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+- Permitted role: count the physically present quantity of this exact asset in the exact, currently revalidated, qualified B1 PrizePool UTxO for the Preprod direct-USDM EEV profile.
+- Rationale recorded by the authority: this candidate is intentionally configured for this Preprod use case; admission is a governed protocol choice, not an inference from the ticker or from a passing CI run.
+
+### 9.2 Explicit limits
+
+This decision:
+- does **not** make this Preprod asset identical to any mainnet USDM asset;
+- does **not** establish issuer-backed USD redemption or a continuously fixed secondary-market price;
+- does **not** define `1 USDM = 1 USD` or select a USD/USDM conversion route;
+- does **not** by itself qualify a live source-set, certify EV1–EV7, create EEV deployment approval, satisfy authoritative Issue admission, or authorize a real Issue.
+
+The physical asset's exact policy ID and asset name remain mandatory; ticker-only matches are not accepted. Live UTxO identity, quantity, freshness, datum/source references and all evidence digests must be revalidated for the exact Pool out-reference before qualification.
+
+### 9.3 Decision boundary still open
+
+The specification authority has **not yet selected** Option A, B or C in §4 for any valuation path that converts USD-denominated observations into protocol USDM units. No USD/USDM parity is inferred. The conversion contract, source authority, freshness/precision bounds, rounding, failure behavior and review gate remain open until the authority records that separate decision.
+
+**Operational consequence:** remove the normative *asset-eligibility* blocker for this exact Preprod profile and proceed with source-set/EV1–EV7 qualification work using this exact unit. Keep the USD/USDM conversion decision open; keep any workflow that requires an unselected USD/USDM conversion fail-closed. This is not a blanket production or mainnet authorization.
