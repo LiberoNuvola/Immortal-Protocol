@@ -3629,3 +3629,56 @@ On green HEAD `000991ee3bf417f4ab5b65344148b4e17796a590`, all five following bou
 - Endpoint reachability and the no-Plutus provider happy path: **GREEN for that narrow claim only**.
 - Plutus-script evaluation/provider contract: **RED / OPEN** until the current V3 response tap reveals a valid, bounded result and V3 transaction completes without evaluator bypass.
 - The diagnostic must not be promoted to successful Plutus evaluation, V3 ledger acceptance, Reveal acceptance, or Preprod evidence.
+
+### Agent A — USDM candidate identity, authority boundary, and current-head CI — 2026-10-24
+
+**Classification:** read-only source triangulation + coordination checkpoint. This entry does not make a normative decision and does not authorize implementation, approval, bootstrap, or a real Issue.
+
+#### 1. Current exact-SHA conformance evidence
+
+Current `work/immortal-green-closure` HEAD at the start of this update: `89405ca9b138aab541299d9e403011515030688f`. The five bounded conformance/documentation workflows on that exact SHA `89405ca9b138aab541299d9e403011515030688f` completed successfully:
+
+- [Cardano Adapter Sale Conformance #40071007156](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071007156) — SUCCESS
+- [IMMORTAL Portability Conformance #40071007079](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071007079) — SUCCESS
+- [Algorithmic Governability Adversarial Lab #40071007105](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071007105) — SUCCESS
+- [Documentation Link Check #40071007071](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071007071) — SUCCESS
+- [Protocol Declaration Conformance #40071007108](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071007108) — SUCCESS
+
+These results establish only those workflow scopes at this exact SHA. They do not prove current live UTxO liveness, fresh EV1–EV7 qualification, EEV deployment approval, a Treasury swap, or a confirmed wallet Issue.
+
+#### 2. Exact Preprod test-asset identity cross-check
+
+The active repository bootstrap workflow and `Adapter/CARDANO/observation/DirectUsdmEev.ts` pin the candidate as:
+
+- Network: `cardano-preprod`
+- Policy ID: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c9`
+- Asset name hex: `0014df10745553444d`
+- Combined unit: `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`
+
+The official [x402 Cardano scheme specification](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_cardano.md) explicitly says the Preprod `tUSDM` policy ID and asset name differ from mainnet USDM. The [Cardano Foundation x402 demo](https://github.com/cardano-foundation/x402-cardano-demo) separately identifies its SDK Preprod `tUSDM` and Masumi's `tUSDM` as distinct tokens. [Moneta's published policy-ID page](https://moneta.global/policy-id/) identifies its mainnet USDM as policy `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad`, asset name `0014df105553444d`.
+
+**Interpretation limit:** this identifies the configured x402 Preprod test asset and distinguishes it from the published mainnet asset. It does not prove issuer-backed USD redemption, market parity, or automatic admissibility as the protocol's canonical settlement asset. A governance decision may explicitly scope a test asset to Preprod, but that scope must be recorded rather than inferred from the ticker.
+
+#### 3. Normative decision crosswalk
+
+The accessible Notion `02 — Decision Log` records DEC-3 as **CLOSED at the economic-semantic level**: USDM is the reference unit and settlement through another supported asset must equal the required USDM amount under a verified valuation contract. That closed principle does not itself choose a specific network token or establish a USD/USDM conversion rule.
+
+The repository's USDM conversion memo remains `RESEARCHED / NORMATIVE DECISION OPEN / NO IMPLEMENTATION AUTHORIZED`. Options remain:
+- A — governed USD/USDM parity or fixed ratio;
+- B — independently verified USD/USDM conversion;
+- C — authenticated quote already denominated in USDM.
+
+The decision must also distinguish the accounting unit from the exact physical Cardano asset eligible as `VerifiedUSDM`. The repository governance crosswalk says the project owner currently retains specification authority during this development phase and that agents must not adopt these values unilaterally.
+
+Decision tracker: [Issue #37 — canonical USDM unit, Cardano asset identity, and USD conversion rule](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37). On this update, the Issue is OPEN and assigned to `LiberoNuvola`; a read-only identity cross-check comment is recorded at [issue comment #6381041422](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6381041422). No authority decision was present in the Issue at the last check.
+
+#### 4. Current gate disposition and exact next actions
+
+- `tUSDM = OBSERVED_NOT_QUALIFIED`; physical observation and normative admissibility remain separate.
+- P-01/P-02/P-16 remain blocked; EEV approval remains inactive for the current candidate.
+- No fresh live exact-PrizePool source-set / EV1–EV7 requalification was executed in this pass.
+- No treasury liquidation, workflow bootstrap/approval dispatch, wallet signature, deployment, transaction, or on-chain state change occurred.
+- V3, Reveal semantics, economic constants, and production price-consumption behavior were not changed.
+
+**Next actions:** (1) the authorized specification owner records the permitted Preprod asset identity/scope and separately adopts the USD/USDM rule or selects an authorized source already denominated in USDM; (2) only after that decision, re-observe the exact qualified B1 PrizePool UTxO and regenerate source-set/EV1–EV7 evidence against current repository bytes; (3) evaluate EEV deployment approval and authoritative Issue admission as separate gates; (4) verify a confirmed Issue and the expected Ticket NFT in the intended wallet. Connected-source search for Slack/Drive/email was unavailable to this pass because the Notion connector requires Business access; this entry therefore makes no claim about those unsearched surfaces.
+
