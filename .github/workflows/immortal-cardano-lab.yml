@@ -38,6 +38,9 @@ jobs:
       - name: Verify Yaci evaluation error sanitizer with synthetic fixtures
         run: node audit/cardano-integration/sanitize-yaci-evaluation-error.test.mjs
 
+      - name: Verify Yaci evaluator mode extraction with synthetic fixtures
+        run: node audit/cardano-integration/extract-yaci-evaluator-mode.test.mjs
+
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
 

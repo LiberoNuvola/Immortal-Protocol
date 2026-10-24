@@ -3,6 +3,8 @@ import { sanitizeEvaluationDiagnosticText } from './sanitize-yaci-evaluation-err
 
 const longHex = 'ab'.repeat(80)
 const address = 'addr1' + 'q'.repeat(45)
+const testnetAddress = 'addr_test1' + 'q'.repeat(45)
+const testnetStakeAddress = 'stake_test1' + 'q'.repeat(45)
 const privateKey = 'ed25519e_sk' + 'A'.repeat(110)
 
 assert.equal(
@@ -13,7 +15,17 @@ assert.equal(
 assert.equal(
   sanitizeEvaluationDiagnosticText('invalid context for ' + address),
   'invalid context for [ADDRESS_REDACTED]',
-  'Cardano addresses must be redacted',
+  'mainnet Cardano addresses must be redacted',
+)
+assert.equal(
+  sanitizeEvaluationDiagnosticText('invalid context for ' + testnetAddress),
+  'invalid context for [ADDRESS_REDACTED]',
+  'testnet payment addresses must be redacted',
+)
+assert.equal(
+  sanitizeEvaluationDiagnosticText('invalid stake context for ' + testnetStakeAddress),
+  'invalid stake context for [ADDRESS_REDACTED]',
+  'testnet stake addresses must be redacted',
 )
 assert.equal(
   sanitizeEvaluationDiagnosticText('bad key ' + privateKey),

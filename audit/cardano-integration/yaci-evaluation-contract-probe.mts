@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { extractYaciEvaluatorMode } from './extract-yaci-evaluator-mode.mjs'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { Blockfrost, Lucid } from '@lucid-evolution/lucid'
 
@@ -159,8 +160,7 @@ try {
 }
 
 const yaciLog = readFileSync('audit/yaci-evidence/yaci.log', 'utf8')
-const evaluatorModeMatch = yaciLog.match(/Yaci Store tx evaluator mode:\\s*([a-z]+)/i)
-const evaluatorMode = evaluatorModeMatch ? evaluatorModeMatch[1].toLowerCase() : 'NOT_RECORDED'
+const evaluatorMode = extractYaciEvaluatorMode(yaciLog)
 
 const evidence = {
   schema: 'IMMORTAL-YACI-LUCID-EVALUATION-CONTRACT-v1',
