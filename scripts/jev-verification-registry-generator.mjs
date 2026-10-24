@@ -12,6 +12,29 @@ const isUri = (v) => { if (typeof v !== "string") return false; try { const u = 
 const fail = (p, m) => { throw new Error(p + ": " + m); };
 
 /**
+ * Classify the native Cardano-ledger semantic report, never the runner's process
+ * exit code. A report containing only typed Plutus ValidationFailure entries is
+ * a genuine validator failure. MissingScript, ContextError, missing ExUnits,
+ * malformed output, and any other unresolved ledger failure remain BLOCKED.
+ */
+export function classifyLedgerEvaluation(report) {
+  if (!Array.isArray(report) || report.length === 0) return "unknown";
+  if (report.some((entry) => !isObject(entry) || !["success", "failure"].includes(entry.status))) return "unknown";
+
+  const failures = report.filter((entry) => entry.status === "failure");
+  const successes = report.filter((entry) => entry.status === "success");
+
+  if (successes.some((entry) => !isObject(entry.ex_units) || Object.keys(entry.ex_units).length === 0)) {
+    return "unknown";
+  }
+  if (failures.length === 0) return "success";
+  if (failures.some((entry) => typeof entry.failure !== "string" || !/^ValidationFailure\\b/.test(entry.failure))) {
+    return "unknown";
+  }
+  return "failure";
+}
+
+/**
  * Generate a registry from explicit GitHub Actions step outcomes.
  * Does not query APIs, scrape arbitrary logs, infer transaction metrics, or certify protocol-wide GREEN.
  */
