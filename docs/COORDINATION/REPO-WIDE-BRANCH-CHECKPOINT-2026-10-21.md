@@ -3851,3 +3851,31 @@ The generated `verification-registry.json` reports `overallResult: PASS` and `P2
 Route the bounded fix to the evidence/evaluator owner (Agent B): inspect why the exact transaction packet reaches `evaluateConwayTx` without scripts for the two spending purposes; preserve manifest and context binding; then either materialize the exact script/reference witness inputs required by the same submitted transaction or classify the run as SAFE_STALL / non-acceptance. Extend registry generation/tests so `P2.8.LEDGER.EVIDENCE.GATE` cannot show PASS solely from a zero-exit process when the report has `MissingScript` or `PLUTUS_EXECUTION_FAILURES=0`. Do not change V3/Reveal semantics, validator code, transaction meaning, or economic rules to force a PASS.
 
 **P2.8 disposition:** workflow run SUCCESS; native evaluator report `LEDGER_ALIGNED_EVALUATION_FAILURE`; required P2.8 semantic A/B acceptance remains **OPEN** pending exact script-bearing context and report-aware classification.
+
+
+### Agent A — P2.8 MissingScript root-cause trace: reference-script UTxOs omitted from evaluator context — 2026-10-24
+
+**Classification:** read-only source/CBOR/CI-log cross-check from run [#40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767), workflow SHA `64fe7471caefc7f27d006cd814b50d4c76d6f64c`. This is a strongly supported evaluator-context root-cause candidate; the fix has not yet been implemented or rerun.
+
+#### Exact reference inputs and validator hashes
+
+The exact serialized Reveal transaction in `reveal-tx.cbor` / `tx.cbor` is 1,245 bytes and has **zero embedded Plutus scripts** in its witness set (the log's `reference-script-raw-cbor` reports V1/V2/V3 script counts all zero). Its body includes these two reference inputs, which the workflow itself recorded immediately before finalization:
+
+- `080181411c7b96e555ff40f21b7720dd2874abcf32a1fe05330b54859377bdee#0` — PrizeValidator reference input, Plutus V3, script hash `fb2e439f4b12621e7548c59b22b3e4c0009475ab6ce904d400233c6a`.
+- `b3a5a61fe2ed92ed539b0306995dc9e42dd20a08e87266be24e3bbdf603fbcf5#0` — B1PrizePool reference input, Plutus V2, script hash `2ae08dc31517cd5c7790e3b9fca44fa7b6a3e440d3ff4251969e7785`.
+
+Those hashes exactly match the two `MissingScript` hashes in `ledger-evaluation-report.json` (B1PrizePool at spending redeemer index 0, PrizeValidator at index 1).
+
+#### Materializer/decoder mismatch
+
+- `audit/cardano-integration/materialize-p28-ledger-context.mjs` fetches `/txs/{hash}/utxos`, verifies the consumed input refs, then serializes only that response's `observed.inputs` as the evaluator UTxO context. Its manifest computes `input_classification.reference_inputs` by counting `utxos.inputs.filter(input => input.reference === true)`; the saved manifest reports **0 reference inputs**, even though the transaction CBOR and trace logs prove two are present.
+- `audit/cardano-ledger-runner/YaciUTxO.hs` decodes only `root.observed.inputs` into the ledger `UTxO` map. Its reference-script handling explicitly rejects a non-null `script_ref` as `REFERENCE_SCRIPT_BODY_UNSUPPORTED`, and the constructed `BabbageTxOut` hardcodes the reference-script field to `SNothing`.
+- The report then records `MissingScript` for the exact two scripts referenced by those out-refs. This is consistent with the native evaluator receiving spending inputs and redeemers but not the reference-script UTxOs/reference script bodies needed to resolve those scripts.
+
+#### Required bounded repair / verification
+
+Assign the evidence/evaluator repair to Agent B. Decode the exact transaction body to enumerate reference inputs; fetch each exact reference UTxO from the local Yaci ledger with its script reference and provenance; include them in the typed ledger UTxO context; implement/verify native decoding of the script-reference body so the ledger evaluator can resolve the correct V2/V3 script hashes. Fail closed if a referenced UTxO is missing, the reference script hash does not match the redeemer-required hash, or script bytes/version are not decoded faithfully.
+
+Then rerun the same evidence-bound native ledger evaluator. Acceptance requires either a fully successful ledger evaluation with ExUnits or a genuine ledger-originated validator failure for the exact Reveal transaction. `MissingScript` or missing context must remain non-acceptance/SAFE_STALL. Update the JEV registry to derive the P2.8 check from the semantic evaluator report, not merely a zero exit code from report generation. Do not change validator code, V3/Reveal semantics, transaction meaning, economics or production behavior to manufacture a PASS.
+
+**Status:** root cause strongly supported by exact matching refs/hashes and source-level omission, but the repair and exact-head retest remain open. The currently running later devnet lab run must be allowed to complete; no changes to `audit/cardano-integration/**` were made in this action.
