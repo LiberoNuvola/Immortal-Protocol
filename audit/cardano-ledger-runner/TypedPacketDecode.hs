@@ -41,7 +41,7 @@ import qualified Data.Text.Read as TR
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Lens.Micro ((^.))
-import YaciUTxO (decodeYaciUTxO)
+import YaciUTxO (decodeYaciUTxOAtVersion)
 
 decodeConwayPParams :: BS.ByteString -> Either String (PParams ConwayEra)
 decodeConwayPParams = eitherDecodeStrict'
@@ -53,8 +53,10 @@ decodeConwayTx pp bytes = do
     Left err -> Left (show err)
     Right tx -> Right tx
 
-decodeConwayUTxO :: BS.ByteString -> Either String (UTxO ConwayEra)
-decodeConwayUTxO = decodeYaciUTxO
+decodeConwayUTxO :: PParams ConwayEra -> BS.ByteString -> Either String (UTxO ConwayEra)
+decodeConwayUTxO pp bytes = do
+  version <- protocolVersionToBinaryVersion pp
+  decodeYaciUTxOAtVersion version bytes
 
 decodeYaciSystemStart :: BS.ByteString -> Either String SystemStart
 decodeYaciSystemStart bytes = do
