@@ -3383,3 +3383,41 @@ All five relevant conformance/documentation workflows completed successfully on 
 - [IMMORTAL Portability Conformance #40068710077](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068710077) — success
 
 This confirms CI for the updated checkpoint itself. It does not qualify the physical `tUSDM` asset, close the normative USDM denomination decision, produce fresh EV1–EV7, authorize EEV approval, prove Treasury liquidation, or establish a real wallet Issue. P-01/P-02/P-05/P-06/P-15/P-16 remain gated by their recorded evidence and decisions. No protocol code, V3/Reveal semantics, workflow dispatch, approval, wallet signature, transaction, or on-chain state was changed.
+
+
+### 10.34 — Agent C: consumer export reachability, exact-SHA CI scope, and Materios patch proposal — 2026-10-24
+
+**Current ref at start of this appendix:** `work/immortal-green-closure` was `65b30757205bad8fe05be783be8fcb445bd7cd62` before the consumer-map follow-up commit. This appendix is documentation-only; no normative or runtime files were changed.
+
+#### C6.2/RF8 — export consumer follow-up
+
+- Extended [`UNIVERSAL-KERNEL-CONSUMER-MAP-2026-10-24.md`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/UNIVERSAL-KERNEL-CONSUMER-MAP-2026-10-24.md). Its refreshed blob SHA is `1645a8fab08868b351c2f4149fb9737f92720d66`, created by commit `d2c1b6569310aee988e3153d712535dfaecf16ad`.
+- `plutus/export/Export.hs` blob `b33cd08b2d9dc6800215e771f18d561c87bc34c7` imports/emits the active B1 factory set but not legacy `PrizePool.hs`. Classify legacy PrizePool as **not emitted by current Export.hs**; do not infer it has never been deployed or that no historical UTxO/address references it.
+- `src/loadValidator.ts` blob `004c8d2281da0cb062b2e7387b597b6bd7578ae3` imports the frontend B1 factory envelopes. Six generated/frontend Plutus artifacts were fetched and their blob IDs matched pairwise (Treasury, CounterValidator, B1PrizePool factory, MintPolicy factory, PrizeValidator factory, BeaconRegistry). This is source-file equality, not proof of a fresh local build or on-chain deployment identity.
+- The repo's `scripts/predeploy-check.mjs` blob `efc0eecb6ddb37ad63528d3dc15953ab7898970c` contains the required build/export/CBOR synchronization/TypeScript gate, but the gate was **NOT_RUN** in this pass because no local checkout/shell runner was available. No attempt was made to bypass this limitation.
+
+#### Exact-SHA CI results and boundary
+
+The relevant new completed CI runs checked out code-bearing SHA `e3dbacc7da4d7488c1bd9ba11df80bdbcc377267` (the subsequent changes from that revision through `65b3075...` and this checkpoint appendix are documentation-only):
+
+- [Cardano Adapter Sale Conformance #4617](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068561581): **SUCCESS**. Jobs `economic-conformance` and `frontend-build` completed successfully. Logs include 99 passing Vitest tests in 13 files, separate Cardano adapter-conformance run, observation and relayer checks, and 25 passing Issue admission bridge/provider tests; frontend `npm run build` also passed.
+- [Protocol Declaration Conformance #3438](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40068561563): **SUCCESS**. Four files / 16 tests passed; `npx tsc --noEmit` passed.
+- `scripts/check-rf8-production-boundary.mjs` blob `84c14ec9758ec49602290a8e811ac2cb63debd7f` reported `RF8 PRODUCTION BOUNDARY CHECK: PASS`. Its actual scope is restricted to TypeScript/JavaScript direct `.signTx()`/`.submitTx()` calls under `src`, `Adapter/CARDANO`, and `relayer`, plus source-level assertions that `mint.ts` and `gameFlow.ts` use the EconomicAdmission submission helpers. It does **not** establish all validator paths invoke the universal gate or that every local on-chain predicate is a semantics-preserving refinement.
+- GitGuardian result on the same checks context was **NEUTRAL**, explaining the pull request exceeded the scan-size limit. It is not evidence of a clean secret scan.
+
+Therefore these tests support the exact-SHA off-chain boundary and conformance scope, but do not close RF8 or C6.2. Keep **C6.2 = BLOCKED_INTERNAL / RF8 = OPEN** pending full consumer + script-address/export/deployment reachability map and negative bypass regression for each economically material action. C6.1/C6.3 and all other C0–C15 statuses remain unchanged by these runs.
+
+#### C0 — upstream fail-closed proposal prepared, not applied
+
+Created two review-only artifacts on the IMMORTAL coordination branch:
+
+- [Fail-closed proposal](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/MATERIOS-EXPLORER-FAIL-CLOSED-PROPOSAL-2026-10-24.md), blob `3a54c940fff47dd09267f1de388c8635c4b0af42`.
+- [Unified diff proposal](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/patches/MATERIOS-EXPLORER-FAIL-CLOSED-2026-10-24.patch), blob `b098dd2ba46b8651f38870a49dec1e574773d9b8`; 8 hunks; declared hunk line counts structurally checked against the text.
+
+The proposal targets exact upstream base `Flux-Point-Studios/materios@7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` and covers the verification-index fast path, missing-manifest/event handling, report classification requiring explicit default-false flags for GRANDPA finality, authenticated authority-set provenance and Cardano L1 inclusion, and negative regression vectors. It deliberately keeps reports partial until those missing proof implementations are real and independently wired. It does **not** implement a GRANDPA verifier, authority transition verifier or Cardano inclusion verifier.
+
+**Testing/application status:** no upstream checkout was available to run `git apply --check`, pytest or UI tests; patch integration, all proposed tests and upstream CI remain **NOT_RUN**. The diff's hunk-count check is only text-structure validation, not patch-application validation. Materios upstream was not modified; no issue/PR was published. C0 remains **PARTIAL**, not closed. An authorized maintainer should apply/review the proposal on a disposable upstream checkout, execute the named tests and broader verifier/explorer CI, and preserve a fail-closed public UI for `PARTIALLY_VERIFIED`.
+
+#### No-go / unchanged boundaries
+
+No tests were run locally in this pass. No protocol code, V3/Reveal semantics, economic constants, canonical authority set, branch topology, governance or deployment state changed. No wallet/transaction/signature, external workflow dispatch, merge/promotion or direct upstream update occurred. No status in C0–C15 was upgraded based solely on the added documents or the code-bearing SHA CI listed above.
