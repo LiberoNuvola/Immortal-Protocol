@@ -3757,3 +3757,43 @@ The source-level implementation blocker has therefore narrowed: the old fixed-AD
 
 No Oracle datum was written, no deployment, wallet signature, transaction or real Issue was performed, and no V3/Reveal/economic semantics changed. The read-only EEV liveness result in the immediately preceding section is not a quote-source observation and does not discharge any of these settlement gates.
 
+### Agent A — live Oracle singleton is legacy-schema and freshness-blocked — 2026-10-24
+
+**Classification:** read-only current Preprod wallet-UTxO observation plus datum/source inspection. No Oracle update, signature, transaction or approval was performed.
+
+#### Exact current singleton evidence
+
+Artifact from [IMMORTAL Cardano Preprod Context #40071991781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991781): [artifact #12550799091](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991781/artifacts/12550799091). Its `preprod-wallet-utxo.json` records observation time `2026-10-24T06:54:07.531Z`, Preprod slot `137141641`, tip hash `dcbb882597282b9fa759a2c99bb013866284efe3efe954eca2e95c33a0a5635d`, and the following singleton:
+
+- Exact UTxO: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Singleton unit: `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e4f5241434c45` (policy `9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e`, token name hex `4f5241434c45`, quantity 1).
+- This identity and exact out-reference match the Oracle State recorded in historical EEV artifact [#12324421376](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39552468679/artifacts/12324421376), so this is not an inferred ticker match.
+- Inline datum CBOR: `d8799f404018641b000001a11c98ac9e581c69fe256b67d8f11822a34b250ab8ba271bdedb513daf99e618b6bc89ff`; datum CBOR SHA-256 `aeb64ac953285ef1dcf2aa017ee09bbe94ffc93c7ddb177b29e579a9078191b2`.
+
+The datum decodes structurally to **legacy OracleDatum constructor 0** with exactly one quote: ADA identity (empty policy and asset name), integer quote `100`, timestamp `1791481130142` ms, configured publisher `69fe256b67d8f11822a34b250ab8ba271bdedb513daf99e618b6bc89`. It is not the additive `OracleQuoteSet` constructor 1; therefore this deployed datum does not supply the quote set needed to value mixed ADA/token settlement baskets.
+
+#### Freshness finding
+
+- Quote timestamp: **2026-10-08 17:38:50.142 UTC**.
+- Wallet-UTxO observation time: **2026-10-24 06:54:07.531 UTC**.
+- Observed quote age: **1,343,717,389 ms = 373.255 hours**.
+- Existing maximum age in `src/issueSettlement.ts`, `audit/cardano-integration/oracleQuoteSetObservation.mjs`, and `Adapter/CARDANO/observation/OracleTypes.hs`: **3,600,000 ms = 1 hour**.
+
+Thus this current Oracle quote is over the existing freshness limit by `1,340,117,389` ms. The current Issue settlement builder's freshness guard should reject this ADA quote as stale; the Plutus validity/freshness predicate remains authoritative as well. The Oracle datum's quote/publisher fields alone do not prove external price-source truth: the repository observation helper expressly records `sourceTruthProven: false` and `sourceQualificationStatus: NOT_PROVEN_BY_DATUM_ALONE`.
+
+#### Why rerunning the existing bootstrap is not a refresh
+
+In `audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs`, when exactly one Oracle State singleton already exists, the workflow sets `reusedExisting = true` and uses the existing inline datum; the fresh `Date.now()` timestamp and datum construction are only in the no-existing-singleton branch. Therefore rerunning that bootstrap will not refresh this quote. An update/republication mechanism and its authorization/source contract must be separately reviewed before any state-changing operation. No such operation was run here.
+
+#### First-Issue gate impact
+
+This is a concrete settlement blocker **independent of** the open normative decision about whether the physical Preprod `tUSDM` may count as `VerifiedUSDM` for the EEV profile. Even if that identity decision were adopted, the Issue path would still need a currently fresh, publisher-matched, source-qualified quote in the deployed Oracle State and, for non-ADA baskets, a deployed quote-set datum with all required asset quotes. The existing TypeScript builder/conformance success does not make this old live datum fresh or turn constructor 0 into constructor 1.
+
+Keep the gates separate:
+- `tUSDM = OBSERVED_NOT_QUALIFIED`; A/B/C USD/USDM decision remains open.
+- Current Oracle datum = legacy ADA-only quote, stale under the existing one-hour guard; multi-asset quote set not present in this UTxO.
+- No EEV approval, Oracle update, bootstrap transaction, wallet signature, Issue transaction or on-chain mutation occurred.
+- V3, Reveal semantics and economic conversion/freshness constants remain unchanged.
+
+**Next safe action:** use the existing dedicated read-only Oracle quote-set observation path (which reports shape, timestamp, publisher match and freshness but never claims external-price truth) to materialize a structured current-state artifact; then separately plan and authorize any legitimate quote refresh/source-verification path. Do not rerun the existing bootstrap expecting it to update an existing singleton.
+
