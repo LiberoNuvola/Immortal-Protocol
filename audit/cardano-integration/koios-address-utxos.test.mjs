@@ -35,6 +35,7 @@ const response = (rows, ok = true, status = 200) => ({
   assert.equal(result.rows.length, 3)
   assert.equal(calls[0].url.searchParams.get('offset'), '0')
   assert.equal(calls[0].url.searchParams.get('limit'), '2')
+  assert.equal(calls[0].url.searchParams.get('order'), 'tx_hash.asc,tx_index.asc')
   assert.equal(calls[1].url.searchParams.get('offset'), '2')
   assert.equal(calls[1].url.searchParams.get('limit'), '2')
   assert.equal(calls[0].init.method, 'POST')
@@ -95,4 +96,4 @@ const response = (rows, ok = true, status = 200) => ({
   )
 }
 
-process.stdout.write('KOIOS_ADDRESS_UTXOS_PAGINATION_TESTS=PASS\\n')
+process.stdout.write('KOIOS_ADDRESS_UTXOS_PAGINATION_TESTS=PASS\n')
