@@ -23,8 +23,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Check observer JavaScript syntax
-        run: node --check audit/cardano-integration/observe-configured-preprod-treasury.mjs
+      - name: Check observer and pagination helper syntax
+        run: |
+          node --check audit/cardano-integration/observe-configured-preprod-treasury.mjs
+          node --check audit/cardano-integration/koios-address-utxos.mjs
+      - name: Test Koios UTxO pagination and fail-closed behavior
+        run: node audit/cardano-integration/koios-address-utxos.test.mjs
       - name: Observe Treasury derived from the committed validator artifact
         run: node audit/cardano-integration/observe-configured-preprod-treasury.mjs
       - name: Upload read-only observation
