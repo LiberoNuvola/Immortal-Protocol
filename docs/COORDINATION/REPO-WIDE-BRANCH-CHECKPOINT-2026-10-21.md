@@ -3914,3 +3914,54 @@ No changes were made to V3 or Reveal semantics, economic constants, payout bound
 
 Continue with the existing evidence-specific blockers and record each result against its exact commit, workflow, artifact or live observation, and scope. Do not promote a successful structural CI run into a runtime or live-ledger certification.
 
+
+
+### Agent C — Mitsuro integration and certification-gate reconciliation — 2026-10-24
+
+**Classification:** read-only audit delta; no Mitsuro connection or runtime isolation has been demonstrated. No deployment, wallet action, or autonomous write is authorized by this entry.
+
+#### Current remote state observed
+- Branch `work/immortal-green-closure` HEAD at audit: `3301fcf7d14be000799e4ffad41dfbf620ebac8d`; GitHub reports `protected: false`.
+- Branch `work/b3-materios-provenance-evidence` HEAD: `722aef11c5f557897bbf8a51774cfec7a89af3f3`; GitHub reports `protected: false`.
+- `main` HEAD: `97b09a38742098f17a61eb07734c401aeedccc06`; protected.
+- Ruleset `Protect main` is active, but currently requires 0 approving reviews and lists no required status checks.
+- Exact-name repository code search for `Mitsuro` returned no matches. This establishes only that the current GitHub code-search query found no match, not that no external deployment/configuration exists.
+
+#### Mitsuro boundary
+The reviewed Mitsuro documentation describes centralized tool authorization, but autonomous mode permits configured tools without per-call prompting. Its tool-system documentation explicitly distinguishes filesystem-root/path policy from an OS sandbox; Hive architecture also treats the service environment as a security boundary until a stronger child-worker boundary is deployed. Therefore a prompt, workspace path, or “read-only” instruction is not evidence of OS-level isolation.
+
+**Integration status: NOT CONNECTED / NOT QUALIFIED.** The available evidence does not identify a live Mitsuro instance connected to this repository, the actual service account, effective filesystem/network permissions, secret exposure, or an isolated runtime test. Do not integrate Mitsuro as a repository writer until those controls are externally enforced and tested. Initial role should be read-only analysis with no write-capable GitHub token, no wallet/production secrets, and a disposable checkout.
+
+#### Certification gate: corrected interpretation of current branch
+The earlier red-team report’s statement that no separately named closure workflow was found is stale against the current branch inventory. Current branch has `.github/workflows/immortal-certification-gate.yml`, `scripts/immortal-certification-gate.mjs`, tests, and `docs/02-certification/IMMORTAL-CLOSURE-EVIDENCE-MANIFEST.json`.
+
+The current checker is **structural/fail-closed only**:
+- it requires manifest schema/policy/repository identity and the seven G1–G7 gates;
+- it requires declared evidence classes for each gate;
+- it rejects any gate marked GREEN/CLOSED because runtime verification is not enabled;
+- `--require-closure` deliberately fails with “contratti di prova runtime non sono ancora implementati”;
+- current manifest lists G1–G7 as OPEN and their evidence arrays are empty.
+
+Therefore a structural workflow exists, but the evidence-backed repo-wide certification/promotion gate is still incomplete. It does not yet authenticate exact-head workflow run IDs, artifact digests/freshness, evidence provenance, or source-file hashes as an end-to-end closure predicate. Do not mark F11.5 closed.
+
+#### Exact-head CI observation
+On `3301fcf7d14be000799e4ffad41dfbf620ebac8d`:
+- IMMORTAL Portability Conformance #40079905223: success.
+- Algorithmic Governability Adversarial Lab #40079905216: success.
+- JEV Verification Registry Contract #40079905132: success.
+- Protocol Declaration Conformance #40079905140: success.
+- Cardano Adapter Sale Conformance #40079905119: success.
+- IMMORTAL Cardano Preprod Context #40079905086: success.
+- Security Credential Boundary #40079905065: success.
+- Documentation Link Check #40079905066: success.
+- IMMORTAL Cardano Integration Lab #40079905198: failure. The `Run native Yaci UTxO decoder conformance` step failed; downstream P2.8 evidence/resource/invariant gates were skipped. The JEV operational prompt generation step also failed, although its generator tests passed.
+- Cardano Ledger Audit Runner #40079905149 was still in progress at the time of this audit; no conclusion inferred.
+
+These statuses are not economic qualification, native-ledger acceptance, or authorization for first Issue.
+
+#### Next bounded actions
+1. Inspect exact failure output for native Yaci UTxO decoder conformance and JEV operational prompt generation; repair only with a scoped, evidence-backed change and re-run exact-head CI.
+2. Obtain actual Mitsuro deployment/configuration evidence from the operator; do not infer connectivity from upstream docs.
+3. Test OS-level read/write/network/secret boundaries in a disposable environment before any writer integration.
+4. Extend the certification checker only after a reviewed contract is agreed: exact source SHA, canonical workflow/run IDs, artifact digest and freshness, evidence class/provenance, and fail-closed mismatch handling. Keep structural CI separate from runtime certification.
+5. Reconcile branch protection and required status checks through an explicitly authorized GitHub administration action; the repository branch is currently unprotected.
