@@ -3351,3 +3351,17 @@ Source links:
 - Notion GOV-02: https://app.notion.com/p/3dfc4454d6d58107828eedf372de5242
 - Notion PRE-RICH Governance Architecture: https://app.notion.com/p/3dfc4454d6d58194aa72cfb27d234166
 - Repository decision record: `audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md`
+
+
+### 10.33 — Agent C: universal kernel consumer map and reachability limits — 2026-10-24
+
+**Purpose:** register the new scoped C6.2/RF8 consumer map and its exact source anchors. The new map is evidence mapping, not normative text or a closure claim.
+
+- New document: [`docs/COORDINATION/UNIVERSAL-KERNEL-CONSUMER-MAP-2026-10-24.md`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/UNIVERSAL-KERNEL-CONSUMER-MAP-2026-10-24.md); blob `03944ff08b6712ec1a39c7a9de06261965d40320`; introduced by commit `94f9991f2d5f6377e97f0f67e8f114758d4e7d5c`.
+- The map pins green source refs inspected from `70a0b0cc3ef9136c9e2972a085b27d8705c9ff5f`; the latest coordination-only green HEAD moves to the map commit. It records the universal aggregate type, `UniversalEconomicKernel`, `EconomicGate`, PRE-RICH projection/admission, Cardano `CanonicalEconomicState` and `EconomicObservation`, plus the main concrete Plutus mutation surfaces and test files.
+- Exact call-boundary conclusion: `PreRichEconomicAdmission` composes structural transition, candidate state, projection, externally supplied truth/freshness/completeness/liquidity booleans and `executionAdmissible`; its existence does not show all production validators reach it. `B1PrizePool` calls universal solvency, but `MintPolicy`, `PrizeValidator`, `Treasury` and legacy `PrizePool` do not show direct `EconomicGate` calls in the reviewed sources. A predicate/import mismatch alone does not prove unsoundness; it means the common-gate/refinement relation is not yet proven.
+- `Adapter/CARDANO/observation/EconomicObservation.ts` accepts a shape-valid canonical state, rejects negative timestamps, and retains optional `stateHash`; that function does not recompute the hash, authenticate origin or test age. Its documented input contract assumes an already-derived state, so callers must prove/bind that precondition rather than calling the wrapper itself an authenticated observation.
+- Existing RF8 audits `RF8_NO_SIDE_DOOR_SURFACE_AUDIT_20260924.md` and `RF8_ECONOMIC_SURFACE_REACHABILITY_DELTA_20260924.md` already described missing whole-program reachability evidence. This map consolidates source identities and localizes next steps; it does not invent a new economic abstraction, amend policy or change any validator.
+- **C6.2 remains BLOCKED_INTERNAL; RF8 remains OPEN.** The map does not exhaust every type consumer, script export/address/deployment ref, or deployed-path edge. No tests or workflows were executed as part of this source-map pass. Exact closure still requires whole-tree consumer/build/export reachability classification plus a negative bypass regression for each economically material path; if local predicates are intentional, show each is a semantics-preserving refinement of the same canonical admissibility relation.
+
+**No protocol code, V3/Reveal semantics, economic constants or governance states changed.** No merge/promotion, deployment, on-chain action, or Materios upstream modification was performed.
