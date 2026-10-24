@@ -1,0 +1,32 @@
+name: Mitsuro Read-only MCP Contract
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "integrations/mitsuro/**"
+      - ".github/workflows/mitsuro-readonly-mcp.yml"
+  pull_request:
+    paths:
+      - "integrations/mitsuro/**"
+      - ".github/workflows/mitsuro-readonly-mcp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  readonly-mcp-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: node --check integrations/mitsuro/jev-readonly-mcp.mjs
+      - name: Contract tests
+        run: node --test integrations/mitsuro/jev-readonly-mcp.test.mjs
