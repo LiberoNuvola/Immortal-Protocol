@@ -1,0 +1,59 @@
+name: IMMORTAL Certification Manifest Validation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "docs/02-certification/IMMORTAL-CLOSURE-EVIDENCE-MANIFEST.json"
+      - "scripts/immortal-certification-gate.mjs"
+      - "scripts/test-immortal-certification-gate.mjs"
+      - ".github/workflows/immortal-certification-gate.yml"
+  pull_request:
+    paths:
+      - "docs/02-certification/IMMORTAL-CLOSURE-EVIDENCE-MANIFEST.json"
+      - "scripts/immortal-certification-gate.mjs"
+      - "scripts/test-immortal-certification-gate.mjs"
+      - ".github/workflows/immortal-certification-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: immortal-certification-manifest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifest-validation:
+    name: manifest-validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate manifest JSON
+        run: |
+          node -e "JSON.parse(require('node:fs').readFileSync('docs/02-certification/IMMORTAL-CLOSURE-EVIDENCE-MANIFEST.json', 'utf8')); console.log('Manifest JSON OK')"
+
+      - name: Run fail-closed checker tests
+        run: node --test scripts/test-immortal-certification-gate.mjs
+
+      - name: Validate current manifest
+        run: node scripts/immortal-certification-gate.mjs
+
+      - name: Confirm closure is not being falsely certified
+        run: |
+          if node scripts/immortal-certification-gate.mjs --require-closure; then
+            echo "ERROR: closure unexpectedly accepted"
+            exit 1
+          else
+            echo "Expected result: closure remains blocked"
+          fi

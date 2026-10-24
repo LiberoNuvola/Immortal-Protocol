@@ -1,0 +1,84 @@
+
+{
+  "schemaVersion": "immortal-closure-evidence-manifest/v1",
+  "policyVersion": "2026-10-24.v1",
+  "repository": "LiberoNuvola/Immortal-Protocol",
+  "note": "This manifest is a gate-status register, not a certification. GREEN/CLOSED entries require the exact evidence classes enforced by the reviewed checker, successful canonical workflow runs, non-expired Actions artifacts with GitHub-reported SHA-256 digests, and unchanged source-file hashes. OPEN and INCONCLUSIVE are valid outcomes.",
+  "gates": [
+    {
+      "id": "G1",
+      "title": "Native Cardano ledger",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "native-cardano-ledger",
+        "persisted-ledger-evaluation-packet"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G2",
+      "title": "Real Preprod Reveal",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "real-preprod-reveal",
+        "observed-transaction-size",
+        "real-reveal-ledger-evaluation"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G3",
+      "title": "Materios / B3 canonicality",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "grandpa-finality-witness",
+        "state-storage-proof",
+        "authority-transition-provenance"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G4",
+      "title": "Protected capital / Economic Gate / V3↔Cardano",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "protected-capital-provenance",
+        "economic-gate-runtime-evidence",
+        "v3-cardano-semantic-correspondence"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G5",
+      "title": "Governance execution and replay",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "governance-runtime-evidence",
+        "canonical-replay-evidence"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G6",
+      "title": "Genesis Treasury / Oracle / carrier",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "canonical-treasury-witness",
+        "authenticated-oracle-witness",
+        "genesis-carrier-evidence"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G7",
+      "title": "Deployment certification",
+      "status": "OPEN",
+      "requiredEvidenceClasses": [
+        "eev-ev1-ev7-deployment-approval",
+        "viability-kc-omega-certificate",
+        "rf8-no-side-door-evidence"
+      ],
+      "evidence": []
+    }
+  ]
+}
