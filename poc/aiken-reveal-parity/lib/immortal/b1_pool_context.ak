@@ -368,3 +368,20 @@ test pool_context_rejects_authority_nft_not_preserved_in_pool_output() {
   )
   !pool_global_context_is_valid(tx, own_ref, context_test_pool_hash, context_test_authority_policy, context_test_authority_name, datum)
 }
+
+/// Binds the continuing Pool output to the exact post-state datum used by an
+/// action's accounting predicate. Must be composed with pool_global_context_is_valid.
+pub fn pool_continuing_datum_matches(
+  tx: transaction.Transaction,
+  pool_hash: ScriptHash,
+  expected_after: B1PrizePoolDatum,
+) -> Bool {
+  when only_script_output(tx.outputs, pool_hash) is {
+    Some(output) ->
+      when decode_pool_datum(tx, output) is {
+        Some(actual_after) -> actual_after == expected_after
+        None -> False
+      }
+    None -> False
+  }
+}
