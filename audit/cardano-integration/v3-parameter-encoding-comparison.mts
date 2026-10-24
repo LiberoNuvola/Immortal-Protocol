@@ -30,7 +30,39 @@ const variants = [
   { id: 'legacy-builtin-data-wrapper', tokenParam: new Constr(0, [TOKEN_NAME_HEX]) },
 ]
 const results = []
+const providerResponses = []
+const originalFetch = globalThis.fetch.bind(globalThis)
+let activeVariant = 'setup'
+globalThis.fetch = async (input, init = {}) => {
+  const url = typeof input === 'string' ? input : String(input?.url ?? input)
+  const method = String(init.method ?? 'GET').toUpperCase()
+  const response = await originalFetch(input, init)
+  if (method === 'POST' && url.includes('/utils/txs/evaluate/utxos')) {
+    let raw = ''
+    try { raw = await response.clone().text() } catch {}
+    let parsed = null
+    try { parsed = JSON.parse(raw) } catch {}
+    const safeMessage = parsed && typeof parsed.message === 'string'
+      ? sanitizeEvaluationDiagnosticText(parsed.message, 1800)
+      : null
+    providerResponses.push({
+      variant: activeVariant,
+      endpoint: '/utils/txs/evaluate/utxos',
+      httpStatus: response.status,
+      httpOk: response.ok,
+      responseSha256: createHash('sha256').update(raw).digest('hex'),
+      responseBytes: Buffer.byteLength(raw),
+      topLevelKeys: parsed && typeof parsed === 'object' ? Object.keys(parsed) : [],
+      sanitizedError: parsed && typeof parsed.error === 'string'
+        ? sanitizeEvaluationDiagnosticText(parsed.error, 240)
+        : null,
+      sanitizedMessage: safeMessage,
+    })
+  }
+  return response
+}
 for (const variant of variants) {
+  activeVariant = variant.id;
   try {
     const policy: Script = {
       type: 'PlutusV2',
@@ -76,6 +108,7 @@ const evidence = {
   noTransactionSignedOrSubmitted: true,
   noProtocolOrV3RevealSemanticsChanged: true,
   results,
+  providerResponses,
   interpretation: 'A successful complete() is provider-evaluation/build evidence only; neither variant is submitted.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
