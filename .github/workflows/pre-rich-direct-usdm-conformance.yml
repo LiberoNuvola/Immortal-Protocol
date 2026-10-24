@@ -10,6 +10,9 @@ on:
       - "Adapter/CARDANO/observation/PreprodDirectUsdmObservation.ts"
       - "Adapter/CARDANO/observation/PreprodDirectUsdmObservation.test.ts"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
+      - "audit/cardano-integration/eev-approval-integrity.mjs"
+      - "audit/cardano-integration/eev-approval-integrity.test.mjs"
       - "audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs"
       - "relayer/preprodIssueAdmissionProvider.js"
@@ -64,6 +67,12 @@ jobs:
           node relayer/preprodIssueAuthorityEnvelope.test.js
           node relayer/preprodIssueAdmissionProvider.test.mjs
           npx vitest run             Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.test.ts             src/__tests__/preRichIssueAdmissionBridge.test.ts             --reporter=verbose
+
+      - name: Verify EEV approval evidence integrity
+        run: |
+          node --check audit/cardano-integration/preprod-direct-usdm-approve.mjs
+          node --check audit/cardano-integration/eev-approval-integrity.mjs
+          node --test audit/cardano-integration/eev-approval-integrity.test.mjs
 
       - name: Parse direct-USDM audit scripts
         run: |
