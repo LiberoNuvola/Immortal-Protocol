@@ -4033,3 +4033,22 @@ This closes the identified hash-recomputation gap in the **EEV approval producer
 
 Issue #37 remains the source of the unresolved normative decision. Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; keep EEV approval inactive and P-01/P-02/P-16 blocked until the competent specification authority records the exact Preprod asset scope and the USD/USDM rule. No approval workflow, bootstrap, wallet signature, or financial transaction was invoked by this work.
 
+### Agent A — approval-producer integration regression — 2026-10-24 16:20 UTC
+
+**Classification:** synthetic integration test of the privileged approval producer. The test used temporary fixture manifests and a synthetic token only; it did not invoke GitHub's privileged approval workflow, use a wallet seed, or submit any transaction.
+
+#### Exact-head result
+
+- Final tested source/workflow SHA: `9fb3755a547b69a47ec1d403f65fb114b3dae4e2`.
+- [PRE-RICH Direct-USDM Conformance #40111096223](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40111096223) — **SUCCESS**.
+- Step `Verify EEV approval evidence integrity` passed both:
+  - `eev-approval-integrity.test.mjs`: valid artifact hashes and canonical EV1–EV7 references pass; changed artifact content, non-canonical source references, changed EV digests and missing source bytes reject.
+  - `preprod-direct-usdm-approve.test.mjs`: a fully synthetic but internally consistent manifest chain produces a temporary approval artifact; changing the source-set after hashing is rejected; changing EV2's digest and re-hashing the outer qualification is still rejected against the current repository source bytes.
+- Other steps in the same workflow passed the direct-USDM unit tests, strict provider typecheck, authority/admission conformance, script syntax checks and browser build.
+
+#### What is and is not closed
+
+The approval producer's content-integrity check is now exercised end-to-end with synthetic fixtures on this exact SHA. This does not prove the external authority's economic truth, a live newly qualified EV1–EV7 artifact, the canonical-USDM governance decision, R1/Kc/Ω viability, or deployment approval. The synthetic test artifact exists only in temporary test storage and is removed by the test.
+
+The normative blocker recorded in [Issue #37](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37) remains open: exact Preprod asset eligibility and USD/USDM option A/B/C must still be explicitly adopted by the specification authority. No privileged EEV approval workflow or bootstrap was dispatched. Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; keep P-01/P-02/P-16 blocked.
+
