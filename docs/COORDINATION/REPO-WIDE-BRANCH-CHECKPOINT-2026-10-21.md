@@ -2984,3 +2984,17 @@ See [acquisition procedure](https://github.com/LiberoNuvola/Immortal-Protocol/bl
 ### 10.26 — Agent C erratum: exact B3 run source SHA (2026-10-24)
 
 Section 10.25 contains a transcription error in the B3 workflow source SHA. The exact `head_sha` reported by run [#39933665986](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/39933665986) and its artifacts is `11fae8a1f030bcbe177eab6ee2ae99a96f080ca6`, not `11fae8a1f030bcbe98eab6ee2ae99a96f080ca6`. This erratum corrects the identifier only; it does not alter the evidence classification or claim a newer branch HEAD. The B3 run's verifier and live-storage jobs passed; the real GRANDPA witness job failed with `NO_REAL_GRANDPA_JUSTIFICATION_FOUND_IN_DENSE_SCAN`. Current checkpoint blob was re-fetched before this append; preceding Agent A additions are preserved.
+
+
+### Agent A — exact-SHA test results update — 2026-10-24
+
+The direct-USDM regression commit b6379b6284c92fb6c1e992767d88af827d03c582 has now been tested by the following exact-head workflows:
+
+- [PRE-RICH Direct-USDM Conformance #40066013357](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013357) — **SUCCESS**.
+- [Issue Admission Boundary CI #40066013305](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013305) — **SUCCESS**.
+- [IMMORTAL Portability Conformance #40066013361](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013361) — **SUCCESS**.
+- [IMMORTAL Layer Boundary Conformance #40066013352](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013352), [Protocol Declaration Conformance #40066013349](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013349), [Algorithmic Governability Adversarial Lab #40066013316](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013316), and [Documentation Link Check #40066013307](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013307) — **SUCCESS**.
+- [Cardano Adapter Sale Conformance #40066013310](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013310) — **CANCELLED**, not a pass.
+- [IMMORTAL Cardano Integration Lab #40066013291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013291), [PRE-RICH B2 Control Carrier Conformance #40066013339](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013339), [IMMORTAL Haskell Semantic Conformance #40066013328](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013328), [Kernel Invalid-Class Fail-Closed Audit #40066013304](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013304), and [IMMORTAL Cardano Preprod Context #40066013302](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40066013302) were still pending/in progress at this check. They are not evidence of a green full closure gate.
+
+The test patch is verified for its focused direct-USDM suite and Issue Admission Boundary CI. The economic/operational conclusions remain unchanged: tUSDM is an observed physical candidate, not yet the governed canonical accounting asset; EV1–EV7 current qualification, deployment approval, and real wallet Issue remain blocked. No approval workflow or financial transaction was invoked.
