@@ -3725,3 +3725,35 @@ The same push also ran [IMMORTAL Cardano Preprod Context #40071991781](https://g
 
 **Next gate:** the authorized specification owner must decide whether this exact Preprod test asset is allowed as the Preprod representation of the accounting unit and separately adopt a USD/USDM rule. Only after those decisions should the project re-run the full direct-USDM source-set/EV1–EV7 qualification and evaluate approval/admission separately. No kernel, economic constants, V3 or Reveal semantics changed.
 
+### Agent A — first-Issue settlement builder: exact-head TS evidence and remaining ledger gate — 2026-10-24
+
+**Classification:** current source + exact-head off-chain conformance evidence. Not live Issue authorization or on-chain settlement proof.
+
+#### Current implementation truth (avoid repeating the superseded fixed-ADA claim)
+
+The current source on observer commit `64fe7471caefc7f27d006cd814b50d4c76d6f64c` does **not** use the legacy fixed `TICKET_PAYMENT_LOVELACE` as the Issue settlement amount:
+
+- `src/issueSettlement.ts` blob `7729346aca2bd0be3065e4994ff3ff947b12379e` decodes legacy OracleDatum and the additive OracleQuoteSet, validates exact asset identity, publisher, freshness, precision and exact integer-valued USDM-subunit equality, and derives buyer-selected quantities only from authenticated quotes.
+- `src/mint.ts` blob `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534` calls `deriveAdaIssueSettlementLovelace` for ADA-only settlement or `buildIssueSettlementAssets` for an explicitly supplied basket; it checks the completed Treasury Value, output-specific minimum ADA and finite validity upper bound before adapter submission.
+- `src/__tests__/issueSettlementConformance.test.ts` blob `211d0caf760609bdc01de12035f45087c699a9fb` supplies synthetic tests for datum schema, exact quotes, stale/future/mismatched publisher rejection, quote-set duplicates, basket equality, completed output, TTL and minimum ADA.
+- `plutus/MintPolicy.hs` blob `0d59fc05b4c11873984fffd10014bd46d8470509` continues to require `Economic.totalUsdmValue(TreasuryOutput) == pdPriceUsdm`; `plutus/Economic.hs` blob `e50366a65ce34e9433d5ff179dfc03a35a24c1a1` continues to value every non-zero output asset using a matching Oracle quote, the fixed economic ADA exclusion and existing integer ceiling conversion.
+- Predeploy gate source `scripts/predeploy-check.mjs` blob `efc0eecb6ddb37ad63528d3dc15953ab7898970c` keeps settlement construction and script build/export synchronization in the release gate.
+
+#### Exact-head conformance evidence
+
+[Cardano Adapter Sale Conformance #40071991794](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991794) completed SUCCESS on the same observer commit. Its `economic-conformance` job passed the focused Vitest command including `src/__tests__/issueSettlementConformance.test.ts`, adapter admission/provider tests, RF8 boundary audit and other bounded conformance tests. Its `frontend-build` job passed `npm run build`.
+
+This demonstrates the current TypeScript builder/conformance path and build. It does **not** establish Haskell Plutus compile/export, generated artifact synchronization/sizes, native-ledger execution of the quote-set payment, the actual deployed Oracle State datum constructor, or an authenticated quote-source truth contract.
+
+#### Next execution gate and scope
+
+[IMMORTAL Cardano Integration Lab #40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767) was still running at the last check, with `Setup canonical Plutus CI` complete and `Generate fresh Plutus validator artifacts` active. No Plutus/native-ledger conclusion is claimed until it completes.
+
+The source-level implementation blocker has therefore narrowed: the old fixed-ADA builder is superseded by a quote-derived settlement builder, and its focused TypeScript tests/frontend build have passed on the cited exact SHA. The remaining first-Issue settlement gates are:
+1. complete exact-head Plutus build/test/export and script/hash/size re-audit;
+2. observe and decode the **currently deployed** Oracle State datum by its exact singleton UTxO, confirming whether it is the legacy single-quote constructor or the new quote-set constructor and which authorized quotes it actually contains;
+3. produce evidence that a concrete Treasury basket passes both the completed-transaction-body check and the authoritative Plutus equality check on a native ledger;
+4. keep EEV profile qualification and canonical Preprod `tUSDM` admission separate from ordinary ticket payment settlement.
+
+No Oracle datum was written, no deployment, wallet signature, transaction or real Issue was performed, and no V3/Reveal/economic semantics changed. The read-only EEV liveness result in the immediately preceding section is not a quote-source observation and does not discharge any of these settlement gates.
+
