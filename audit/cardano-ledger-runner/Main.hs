@@ -479,7 +479,7 @@ decodeTypedArtifacts evidenceDir runEvaluation = do
           safeStall "BABBAGE_TX_NATIVE_DECODE_FAILED"
 
         Right tx ->
-          case decodeConwayUTxO utxoBytes of
+          case decodeConwayUTxO pp utxoBytes of
             Left err -> do
               putStrLn ("UTXO_ERROR: " <> err)
               safeStall "YACI_UTXO_NATIVE_DECODE_FAILED"
