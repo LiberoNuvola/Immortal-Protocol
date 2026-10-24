@@ -209,3 +209,47 @@ index 0000000000000000000000000000000000000000..00000000000000000000000000000000
 +
 +if __name__ == "__main__":
 +    unittest.main()
+
+diff --git a/tools/explorer/test_verification_fail_closed.py b/tools/explorer/test_verification_fail_closed.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000
+--- /dev/null
++++ b/tools/explorer/test_verification_fail_closed.py
+@@ -0,0 +1,37 @@
++"""Structural regression: the explorer route must not synthesize proof passes."""
++import ast
++import unittest
++from pathlib import Path
++
++
++APP = Path(__file__).with_name("app.py")
++
++
++class VerificationRouteFailClosedTests(unittest.TestCase):
++    def test_verify_route_has_no_synthetic_verified_true_or_step_passes(self):
++        tree = ast.parse(APP.read_text(encoding="utf-8"))
++        route = next(
++            node for node in tree.body
++            if isinstance(node, ast.AsyncFunctionDef) and node.name == "verify"
++        )
++        for node in ast.walk(route):
++            if not isinstance(node, ast.Dict):
++                continue
++            entries = {}
++            for key, value in zip(node.keys, node.values):
++                if isinstance(key, ast.Constant):
++                    entries[key.value] = value
++            verified = entries.get("verified")
++            self.assertFalse(
++                isinstance(verified, ast.Constant) and verified.value is True,
++                "HTTP/index response must not synthesize verified=True",
++            )
++            status = entries.get("status")
++            self.assertFalse(
++                isinstance(status, ast.Constant) and status.value == "pass",
++                "verification steps must be produced by actual verifier outcomes",
++            )
++
++
++if __name__ == "__main__":
++    unittest.main()
