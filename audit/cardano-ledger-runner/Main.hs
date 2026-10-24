@@ -247,10 +247,16 @@ evaluateLedger tx pp utxo epochInfo systemStart evidenceDir = do
         then do
           putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS"
           putStrLn "ACCEPTANCE: A — exact artifact evaluated under Cardano-ledger semantics."
-        else do
-          putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_FAILURE"
-          putStrLn
-            "ACCEPTANCE: B — Cardano-ledger produced a typed failure report; failure class is recorded above and in the per-redeemer JSON."
+        else
+          if executionFailures == failures
+            then do
+              putStrLn "RESULT: LEDGER_ALIGNED_EVALUATION_FAILURE"
+              putStrLn
+                "ACCEPTANCE: B — every reported redeemer failure is a Cardano-ledger Plutus ValidationFailure for the exact transaction."
+            else do
+              putStrLn "RESULT: SAFE_STALL"
+              putStrLn "ACCEPTANCE: NONE — one or more failures are unresolved script/context/ledger failures, not proven Plutus validator failures."
+              safeStall "NON_EXECUTION_LEDGER_FAILURE"
 
 
 inspectManifest :: FilePath -> FilePath -> Bool -> IO ()
