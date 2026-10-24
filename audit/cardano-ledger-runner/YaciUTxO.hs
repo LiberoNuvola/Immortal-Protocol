@@ -1,13 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module YaciUTxO
   ( decodeYaciUTxO
+  , decodeYaciUTxOAtVersion
   ) where
 
 import Cardano.Ledger.Address (decodeAddrEither)
 import Cardano.Ledger.Babbage.TxOut (BabbageTxOut (..))
 import Cardano.Ledger.Conway (ConwayEra)
 import Cardano.Ledger.BaseTypes (StrictMaybe (..), TxIx (..))
+import Cardano.Ledger.Binary (decodeFullAnnotator, decCBOR, natVersion)
+import Cardano.Ledger.Binary.Version (Version)
+import Cardano.Ledger.Core (Script, ScriptHash, hashScript)
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Mary.Value
   ( AssetName (..)
@@ -34,6 +39,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Short (toShort)
 import qualified Data.Map.Strict as Map
@@ -45,18 +51,21 @@ import qualified Data.Text as Text
 import qualified Data.Text.Read as TR
 
 decodeYaciUTxO :: BS.ByteString -> Either String (UTxO ConwayEra)
-decodeYaciUTxO bytes = do
+decodeYaciUTxO = decodeYaciUTxOAtVersion (natVersion @11)
+
+decodeYaciUTxOAtVersion :: Version -> BS.ByteString -> Either String (UTxO ConwayEra)
+decodeYaciUTxOAtVersion version bytes = do
   root <- eitherDecodeStrict' bytes
   observed <- objectField root "observed"
   inputs <- arrayField observed "inputs"
-  parsed <- traverse parseInput inputs
+  parsed <- traverse (parseInput version) inputs
   let txIns = map fst parsed
   if Set.size (Set.fromList txIns) /= length txIns
     then Left "DUPLICATE_YACI_UTXO_INPUT"
     else Right (UTxO (Map.fromList parsed))
 
-parseInput :: Aeson.Value -> Either String (TxIn, BabbageTxOut ConwayEra)
-parseInput value = do
+parseInput :: Version -> Aeson.Value -> Either String (TxIn, BabbageTxOut ConwayEra)
+parseInput version value = do
   txHash <- textField value "tx_hash"
   outputIndex <- integerValueField value "output_index"
   if outputIndex < 0 || outputIndex > 65535
@@ -78,16 +87,9 @@ parseInput value = do
 
   datum <- parseDatum value
   referenceScriptHash <- optionalTextField value "reference_script_hash"
-  referenceScriptBody <- optionalNullableField value "script_ref"
-  case (referenceScriptHash, referenceScriptBody) of
-    (Nothing, Nothing) -> pure ()
-    (Just hashText, Nothing)
-      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
-      | otherwise -> Left "REFERENCE_SCRIPT_BODY_MISSING"
-    (Nothing, Just _) -> Left "REFERENCE_SCRIPT_HASH_MISSING"
-    (Just hashText, Just _)
-      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
-      | otherwise -> Left "REFERENCE_SCRIPT_BODY_UNSUPPORTED"
+  referenceScriptBody <- optionalTextField value "script_ref"
+  isReferenceInput <- optionalBoolField value "reference"
+  referenceScript <- parseReferenceScript version isReferenceInput referenceScriptHash referenceScriptBody
 
   pure
     ( txIn
@@ -95,10 +97,40 @@ parseInput value = do
         addr
         maryValue
         datum
-        SNothing
+        referenceScript
     )
 
 parseMaryValue :: [Aeson.Value] -> Either String MaryValue
+
+parseReferenceScript
+  :: Version
+  -> Bool
+  -> Maybe Text
+  -> Maybe Text
+  -> Either String (StrictMaybe (Script ConwayEra))
+parseReferenceScript version isReferenceInput mHash mBody =
+  case (mHash, mBody) of
+    (Nothing, Nothing)
+      | isReferenceInput -> Right SNothing
+      | otherwise -> Right SNothing
+    (Just hashText, Nothing)
+      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
+      | isReferenceInput -> Left "REFERENCE_SCRIPT_BODY_MISSING"
+      | otherwise -> Right SNothing
+    (Nothing, Just _) -> Left "REFERENCE_SCRIPT_HASH_MISSING"
+    (Just hashText, Just bodyHex)
+      | Text.null hashText -> Left "REFERENCE_SCRIPT_HASH_EMPTY"
+      | otherwise -> do
+          bodyBytes <- decodeHexText "script_ref" bodyHex
+          script <- case decodeFullAnnotator version "Yaci reference script" decCBOR (BSL.fromStrict bodyBytes) of
+            Left err -> Left ("REFERENCE_SCRIPT_CBOR_INVALID:" <> show err)
+            Right decoded -> Right decoded
+          expectedHash <- parseNative "ScriptHash" (String (strip0x hashText))
+          if hashScript @ConwayEra script == expectedHash
+            then Right (SJust script)
+            else Left "REFERENCE_SCRIPT_HASH_MISMATCH"
+
+
 parseMaryValue items = do
   (mLovelace, assets) <- foldM step (Nothing, Map.empty) items
 
@@ -217,6 +249,15 @@ optionalTextField value key = do
     Just Null -> Right Nothing
     Just (String t) -> Right (Just t)
     Just _ -> Left ("FIELD_NOT_TEXT:" <> Text.unpack key)
+
+optionalBoolField :: Aeson.Value -> Text -> Either String Bool
+optionalBoolField value key = do
+  object <- asObject value
+  case KeyMap.lookup (Key.fromText key) object of
+    Nothing -> Right False
+    Just Null -> Right False
+    Just (Bool flag) -> Right flag
+    Just _ -> Left ("FIELD_NOT_BOOLEAN:" <> Text.unpack key)
 
 optionalNullableField :: Aeson.Value -> Text -> Either String (Maybe Aeson.Value)
 optionalNullableField value key = do
