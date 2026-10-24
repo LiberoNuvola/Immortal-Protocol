@@ -3682,3 +3682,46 @@ Decision tracker: [Issue #37 — canonical USDM unit, Cardano asset identity, an
 
 **Next actions:** (1) the authorized specification owner records the permitted Preprod asset identity/scope and separately adopts the USD/USDM rule or selects an authorized source already denominated in USDM; (2) only after that decision, re-observe the exact qualified B1 PrizePool UTxO and regenerate source-set/EV1–EV7 evidence against current repository bytes; (3) evaluate EEV deployment approval and authoritative Issue admission as separate gates; (4) verify a confirmed Issue and the expected Ticket NFT in the intended wallet. Connected-source search for Slack/Drive/email was unavailable to this pass because the Notion connector requires Business access; this entry therefore makes no claim about those unsearched surfaces.
 
+### Agent A — fresh exact Preprod EEV candidate liveness observation — 2026-10-24
+
+**Classification:** fresh read-only liveness and physical-asset observation only. Not normative asset approval, EV1–EV7 requalification, EEV deployment approval, or Issue authorization.
+
+#### Run and source provenance
+
+- Observer-only source commit: [`64fe7471caefc7f27d006cd814b50d4c76d6f64c`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/64fe7471caefc7f27d006cd814b50d4c76d6f64c). The only executable-file change was a comment above the imports; no observer logic changed.
+- Read-only workflow: [PRE-RICH Preprod EEV — Read-only UTxO Liveness #40071991887](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991887) — SUCCESS.
+- Artifact: [`preprod-eev-liveness-64fe7471caefc7f27d006cd814b50d4c76d6f64c`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991887/artifacts/12551587799), ID `12551587799`, created 2026-10-24 06:53:46 UTC, SHA-256 over the returned address-info object `b1f6e6faa1e79ed828fac55c0e84d4118beb48b541f1361cc83f0d3f4007f8a6`.
+- Query interval: `2026-10-24T06:53:44.331Z` to `2026-10-24T06:53:45.810Z`.
+- Both tip reads returned the same Preprod tip: block height `5,328,917`, absolute slot `137,141,557`, block hash `be70535dcf88a78e8b39b8daf233e02f23dbc6aab851b7e32b115778739d21fa`, block time `2026-10-24T06:52:37Z`.
+
+#### Observed physical facts
+
+Exact historical candidate UTxO: `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` at the configured B1 PrizePool address `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`.
+
+- Exact out-reference match count: **1**.
+- Observation status: `LIVE_CANDIDATE_OUTREF_AND_ASSETS_MATCH`.
+- Lovelace quantity: `5,000,000`.
+- Configured Pool singleton quantity: `1`.
+- Candidate physical Preprod `tUSDM` atomic quantity: `1,000,000,000`.
+- Inline datum present; datum bytes SHA-256: `713c19f73c32fb981cc048102deedbaa13549a4c714495839fdd8d80898eb3e7`.
+- Asset-list SHA-256: `6db7809ba6d2f7ed26cbf1ace737b2ccb62a13e00e4f7f9837b3bb8947077428`.
+
+#### Scope limit and disposition
+
+The observation confirms that this exact historical out-reference and the expected singleton/physical candidate asset were present in the sampled Preprod state. It does **not** establish that the candidate token is normatively admitted as `VerifiedUSDM`, that the physical token has USD redemption parity, or that the output qualifies as the protocol's economic EEV. No economic conversion was applied by this observer; no EV1–EV7 qualification, deployment approval, transaction construction/signature/submission, or on-chain mutation occurred.
+
+Keep `tUSDM = OBSERVED_NOT_QUALIFIED`; keep the USD/USDM choice A/B/C open; keep P-01/P-02/P-16 blocked. The observation does not establish fresh SourceSet/EV1–EV7 evidence or authoritative Issue admission.
+
+#### Same-commit workflow reconciliation
+
+On observer commit `64fe7471caefc7f27d006cd814b50d4c76d6f64c`, these five conformance/documentation gates all completed SUCCESS:
+- [Cardano Adapter Sale Conformance #40071991794](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991794)
+- [Documentation Link Check #40071991770](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991770)
+- [Algorithmic Governability Adversarial Lab #40071991779](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991779)
+- [Protocol Declaration Conformance #40071991824](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991824)
+- [IMMORTAL Portability Conformance #40071991773](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991773)
+
+The same push also ran [IMMORTAL Cardano Preprod Context #40071991781](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991781), which completed SUCCESS for its read-only Preprod context/boundary-conformance job; the manual-only V3 observation, deployment, direct-USDM bootstrap and real Reveal jobs were all SKIPPED. [Security Credential Boundary #40071991768](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991768) completed SUCCESS. [IMMORTAL Cardano Integration Lab #40071991767](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40071991767) remained in progress at the last check in its `devnet-integration` job; no result is claimed until it completes. That lab is not the user's personal Preprod ticket flow.
+
+**Next gate:** the authorized specification owner must decide whether this exact Preprod test asset is allowed as the Preprod representation of the accounting unit and separately adopt a USD/USDM rule. Only after those decisions should the project re-run the full direct-USDM source-set/EV1–EV7 qualification and evaluate approval/admission separately. No kernel, economic constants, V3 or Reveal semantics changed.
+
