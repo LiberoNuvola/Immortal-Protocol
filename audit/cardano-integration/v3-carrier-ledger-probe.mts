@@ -134,7 +134,7 @@ globalThis.fetch = async (input, init = {}) => {
       ? sanitizeEvaluationDiagnosticText(parsed.error, 320)
       : null,
     sanitizedMessage: parsed && typeof parsed === 'object'
-      ? sanitizeEvaluationDiagnosticText(parsed.message, 320)
+      ? sanitizeEvaluationDiagnosticText(parsed.message, 1800)
       : null,
   })
   return response
