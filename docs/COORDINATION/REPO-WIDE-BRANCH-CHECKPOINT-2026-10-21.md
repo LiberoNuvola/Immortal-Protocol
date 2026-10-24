@@ -3421,3 +3421,97 @@ The proposal targets exact upstream base `Flux-Point-Studios/materios@7d5c36e7dc
 #### No-go / unchanged boundaries
 
 No tests were run locally in this pass. No protocol code, V3/Reveal semantics, economic constants, canonical authority set, branch topology, governance or deployment state changed. No wallet/transaction/signature, external workflow dispatch, merge/promotion or direct upstream update occurred. No status in C0–C15 was upgraded based solely on the added documents or the code-bearing SHA CI listed above.
+
+
+### 10.35 — Agent C: Notion reconciliation, JEV scheduler contradiction, evidence manifest, and C0–C15 status normalization — 2026-10-24
+
+#### Refs rechecked before this update
+
+- `work/immortal-green-closure` HEAD before this checkpoint append: `754f0fde613fa172fa9ce6964858ae47177090a9`.
+- `work/b3-materios-provenance-evidence`: `722aef11c5f557897bbf8a51774cfec7a89af3f3`.
+- `review/treasury-readonly-observer`: advanced to `565851fdaa356ef4e82e6abc909664cf1854ca83`; its latest change is a diagnostic evidence capture in `audit/cardano-integration/v3-carrier-ledger-probe.mts`. Agent C did not edit this branch; see branch commit and respective agent handoff for interpretation.
+- `main`: `97b09a38742098f17a61eb07734c401aeedccc06`.
+- `merge/workflow-b-closed-main`: `7bca8d91b65d7af1261d8b7cc4f28f496a73fcba`.
+- `b1-hardening`: `c561393e7eb842529aeaa272377e5afe0138d085`.
+- Materios upstream `main`: `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`.
+- PR #35 remains OPEN/DRAFT/unmerged. No branch topology or governance change performed.
+
+#### C14 — scoped reusable-evidence manifest added
+
+Created [`docs/COORDINATION/AGENT-C-EVIDENCE-REUSE-MANIFEST-2026-10-24.md`](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/AGENT-C-EVIDENCE-REUSE-MANIFEST-2026-10-24.md), current blob `9b20cd334c4bf62085452cf04cd534bea83d4a29`, commit `754f0fde613fa172fa9ce6964858ae47177090a9`.
+
+It catalogues the B3-B storage artifact, two code-bearing exact-SHA conformance runs, five exact-HEAD CI runs on `2869177...`, five CI runs on the documentation commit `4b352381...`, the Materios C0 source review/patch proposal, six generated/frontend script artifact pairs, and the current JEV schedule contradiction. The item-level table separates reusable claims from limitations and explicitly records `NOT_RUN` where proof/tests were not executed. The catalogue is **scoped**, not yet the complete automated repository-wide evidence index; C14 remains PARTIAL.
+
+Latest exact-HEAD workflows observed on `4b3523814713690b64abd1629601e3bd0f097401` were all SUCCESS:
+- [Cardano Adapter Sale Conformance #40069566957](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566957)
+- [Protocol Declaration Conformance #40069566966](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566966)
+- [IMMORTAL Portability Conformance #40069566940](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566940)
+- [Algorithmic Governability Adversarial Lab #40069566994](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566994)
+- [Documentation Link Check #40069566942](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566942)
+
+Those workflows ran before the manifest was extended at `754f0fde...`; the intervening changes are documentation-only. They do not prove any external Materios claim, live transaction, deployment, economic approval, or C6.2 closure.
+
+#### Notion triangulation and precise status deltas
+
+Notion is treated here as project-state/work-program evidence, not a cryptographic trust anchor. Relevant pages and last-edit dates observed:
+- [Autonomous Verification Control Plane](https://app.notion.com/p/3e2c4454d6d5819cbec1c6edede714b3?pvs=204), 2026-10-24 05:52 UTC.
+- [Workflow C — Autonomous Verification & Execution](https://app.notion.com/p/3fdc4454d6d581378702e9ae9d9fee85?pvs=204), 2026-10-18.
+- [CAROB Repository Gate](https://app.notion.com/p/3efc4454d6d58118bc68e3013e3260b1?pvs=204) and [CAROB E14 requirements](https://app.notion.com/p/3efc4454d6d5816085c2e7e8d7b4a1c3?pvs=204), 2026-10-04.
+- [IMMORTAL V2 Strategy Exploration](https://app.notion.com/p/3f0c4454d6d58148b23bdda21d3e1349?pvs=204), 2026-10-08.
+- [Economic Usage Fee & Adapter Settlement Workflow](https://app.notion.com/p/3e0c4454d6d581f9b78fd05de6ea7763?pvs=204) and [Fee-Bearing Transition Matrix](https://app.notion.com/p/3e0c4454d6d581dbbff3fff71321aa95?pvs=204), 2026-09-19.
+- [Beacon 4 workflow](https://app.notion.com/p/3f3c4454d6d5813aa9b2f9b78a324336?pvs=204), 2026-10-11; [B1 hardening work program](https://app.notion.com/p/3f7c4454d6d581e78e38f8983b12ed54?pvs=204), 2026-10-12.
+These workspace pages help classify scope and open decisions; the checked CAROB pages identify themselves as research/gate documents, not implementation verification.
+
+**C5 status change: INCONCLUSIVE → BLOCKED_INTERNAL.**
+- The Control Plane page asserts that an hourly JEV automation was enabled, but an actual current task-state query returned that task disabled, with its last run at `2026-10-19T07:42:01Z`; the saved operating prompt authorizes only `release/public-main-curated-2026-09-24`, which conflicts with this mandate’s branch `work/immortal-green-closure`. The two-step required autonomous loop (first scheduled run consumes a branch-bound prompt and records its exact result; second scheduled run resumes from that record without user input) remains unobserved.
+- Repo-side JEV workflow `.github/workflows/jev-materios-live-ingress.yml` is manual `workflow_dispatch` and explicitly says it only extracts a checkpoint; it does not verify GRANDPA, storage proof or canonicality. Registry generation intentionally marks those missing checks skipped/NOT_RUN and returns non-PASS.
+- No scheduler was enabled/retargeted and no workflow was dispatched in this pass. Next action requires explicit, coherent branch authorization for the existing scheduler, then observe two complete scheduled iterations with branch-bound prompt, run, registry, artifact digest and Notion registration. Do not infer autonomy from a workflow schema or green build.
+
+**C9 status change: NOT_RUN → NOT_APPLICABLE for IMMORTAL V1 closure.**
+- Notion labels Strategy Exploration an IMMORTAL V2 future draft and explicitly says it is not part of V1 closure and must not introduce scope creep.
+- Current `state-explorer.html` blob `7d070b45bcb8a2477ea5813dc8ba151cdbe6ae3c` is read-only conceptual explanatory UI, not a candidate-strategy runtime or oracle.
+- No strategy execution was run. Keep the V2 idea in the roadmap, but do not manufacture a V1 runtime/test to close this front. If/when V2 receives an authorized implementation scope, define candidates, execution boundary, state fixtures and expected results first.
+
+**C10 status change: NOT_RUN → BLOCKED_INTERNAL.**
+- Notion’s fee workflow is marked CONSOLIDATED only for observed-cost learning and has explicit OPEN numerical/parameterization questions; the fee-bearing transition matrix remains OPEN and Workflow C describes sponsorship versus application balance as research alternatives, not a frozen decision.
+- No current repository source/test establishes an implemented Cardano fee-sponsorship product. Tests/transactions: NOT_RUN; no funds or transactions were used.
+- Next action: reconcile Fee Ownership/Transition Matrix, cost model and signed-transaction authorization boundary against normative source hierarchy; submit any exact unresolved policy questions to the owner. Once an authorized specification exists, add offline replay/auth/limits/error tests and only then run them. Do not invent fee coefficients, sponsor commitments, or an alternative transaction-signing path.
+
+**C13 status change: BLOCKED_EXTERNAL → BLOCKED_INTERNAL (research gate).**
+- The previously reported absence of CAROB code in IMMORTAL’s tracked tree remains true, but current Notion material makes the actual gate explicit: Repository Gate says **DEFERRED / do not create a repository** until E1–E4 prove a domain-blind capability, domain substitution, adapter blindness, and REJECT preservation; E14 says Carob first needs a domain profile, evidence semantics, scope/authority rules, conformance vectors and existing-stack integration mappings, not a new runtime.
+- Therefore an unknown upstream code repository is not the immediate blocker. The blocker is incomplete internal E1–E4/profile/conformance work, and creating a Carob repo or importing PRE-RICH semantics would violate the current decision. No repo was created and no new AI certainty/voting threshold was invented.
+- Next action: continue within CAROB’s authorized research/workspace scope with E1–E4 and a replayable cross-domain reject-preservation fixture; field pipeline/NFT criteria follow the profile decision, not before it.
+
+#### Current C0–C15 status register
+
+| ID | Current classification | Status delta vs §10.32 | Closure-critical next action |
+|---|---|---|---|
+| C0 Receipt provenance | **PARTIAL** | unchanged | Maintainer-reviewed application/tests of the fail-closed proposal against the exact Materios base; then independently verify finality, authority transitions, L1 inclusion and full Receipt coverage. |
+| C1 B3-A GRANDPA | **BLOCKED_EXTERNAL** | unchanged | Authorized full/archive-node operator supplies real SCALE finality proof/FRNK justification and ancestry; verify target, signatures/quorum and authenticated authority transitions. |
+| C2 B3-B storage | **PARTIAL** | unchanged | Re-run native verifier from the artifact bytes on a reproducible runner and bind the target to authenticated finality; interpret `signers=0` without overclaim. |
+| C3 B3-C authority selection | **BLOCKED_EXTERNAL** | unchanged | Real exact-block runtime execution proof plus genesis-bound authority-transition chain; no local selector. |
+| C4 Workflow B / promotion | **PARTIAL** | unchanged | Reconcile PR #35 candidate refs and review fail-closed gates; no merge/promotion. |
+| C5 JEV autonomy | **BLOCKED_INTERNAL** | INCONCLUSIVE → BLOCKED_INTERNAL | Resolve scheduler disabled/branch mismatch; observe two consecutive scheduled branch-bound iterations and evidence registration. |
+| C6.1 Universal kernel | **PARTIAL** | unchanged | Map invariants to implementations and run chain-neutral fixture set; CK1–CK8 certificate remains open. |
+| C6.2 Consumer/boundary map | **BLOCKED_INTERNAL** | unchanged | Complete all type/action/script-export/address/deployment consumers; prove per-action refinement and add negative bypass regressions. |
+| C6.3 Kc/Ω viability | **BLOCKED_INTERNAL** | unchanged | Produce the required invariant/certificate over authoritative Ω and prove non-vacuity/inductiveness without invented constants. |
+| C6.4 Reference adapter | **PARTIAL** | unchanged | Run the full reference-adapter contract suite at a pinned code head with serialization/error/replay evidence. |
+| C6.5 Multi-adapter | **PARTIAL** | unchanged | Run shared canonical vectors against a second implemented adapter; documentation alone is insufficient. |
+| C7 Public observability | **PARTIAL** | unchanged | Trace every public badge/value to a verified evidence object and test stale/missing/mismatched cases. |
+| C8 Paper Tranche 1 | **BLOCKED_INTERNAL** | unchanged | Freeze claims against exact source/test/artifact refs; release audit currently says NOT READY. |
+| C9 Strategy Explorer for V1 | **NOT_APPLICABLE** | NOT_RUN → NOT_APPLICABLE | Retain as future V2 roadmap only; re-open after a specific authorized V2 implementation scope. |
+| C10 Fee sponsorship | **BLOCKED_INTERNAL** | NOT_RUN → BLOCKED_INTERNAL | Resolve normative ownership/parameterization choices first; implementation/security tests remain NOT_RUN. |
+| C11 Beacon 4 | **PARTIAL** | unchanged | Keep HYPOTHESIS/OPEN; freeze quorum/schema via authorized governance before verifier/deployment claims. |
+| C12 Public surface | **PARTIAL** | unchanged | UI/API/status labels must distinguish implemented/tested/verified/deployed/live with a traceable source. |
+| C13 CAROB THREE | **BLOCKED_INTERNAL** | BLOCKED_EXTERNAL → BLOCKED_INTERNAL | E1–E4/profile/conformance research; repository gate remains deferred, no new repo. |
+| C14 Evidence reuse | **PARTIAL** | unchanged | Extend the scoped manifest to all evidence-producing workflows and machine-enforce source/digest/freshness matching. |
+| C15 Aegis | **PARTIAL** | unchanged | Execute the existing adversarial runner against the real relevant implementation; synthetic/offline model evidence remains scoped only. |
+
+#### Test / operation log for this continuation
+
+- **Executed:** re-fetched current branch list, current checkpoint, C0 source proposal, universal consumer map, scoped evidence manifest; queried actual JEV scheduler status; fetched current Notion Workflow C, Control Plane, Carob Repository Gate/E14, Strategy Explorer, fee workflow, Beacon 4 and Aegis pages; queried exact workflow status on SHA `4b352381...`.
+- **Existing CI observed:** five workflows on `4b352381...` were SUCCESS (links above); their scope is recorded in the evidence manifest. Prior detailed code-bearing CI at `e3dbacc...` remains a separate exact-SHA observation.
+- **Tests run in this continuation:** no local test suite, native B3 verifier, predeploy check, upstream Materios tests, JEV ingress or JEV scheduled run was executed. Mark all of those NOT_RUN.
+- **Side effects:** docs-only IMMORTAL coordination commits; no protocol implementation/normative change, no direct upstream Materios update, no scheduler activation/retarget, no merge, promotion, deploy, wallet, signature, transaction or funds operation.
+
+**Overall Agent C remains PARTIAL.** Concrete progress now includes a fail-closed Materios proposal (not applied), C6.2 source map plus export reachability, a scoped C14 evidence-reuse manifest, a fresh authenticated artifact-digest check, exact-SHA CI triangulation, and a resolved C5 automation-state contradiction. External B3-A/C source evidence and internal C6 consumer/viability, C8 claims, C10 specification and CAROB E1–E4 remain open.
