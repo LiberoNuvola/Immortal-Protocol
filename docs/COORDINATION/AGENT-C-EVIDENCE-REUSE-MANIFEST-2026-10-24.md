@@ -44,3 +44,18 @@ On the reviewed green code ref, these pairs were fetched from GitHub; the blob S
 **C14 = PARTIAL.** This catalog makes the cited evidence reusable with explicit target and scope. It is not yet a complete repo-wide inventory of all artifacts or a machine-enforced cache/freshness policy.
 
 Next action: derive a machine-readable evidence index from all existing CI/workflow artifact records, validate its schema and add stale/mismatched-source negative regression tests on a CI-capable runner. Do not reuse any record beyond its stated claim or trust boundary.
+
+
+## Follow-up: exact current-head documentation CI
+
+The manifest's creation commit was `4b3523814713690b64abd1629601e3bd0f097401`. After that docs-only commit, five workflow runs were observed on that **exact** SHA, all with `conclusion=success`:
+
+| Run | Workflow | Exact SHA | Conclusion | Scope |
+|---|---|---|---|---|
+| [#40069566957](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566957) | Cardano Adapter Sale Conformance | `4b3523814713690b64abd1629601e3bd0f097401` | SUCCESS | Sale/economic conformance and frontend build workflow. |
+| [#40069566966](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566966) | Protocol Declaration Conformance | `4b3523814713690b64abd1629601e3bd0f097401` | SUCCESS | Protocol declaration conformance workflow. |
+| [#40069566940](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566940) | IMMORTAL Portability Conformance | `4b3523814713690b64abd1629601e3bd0f097401` | SUCCESS | Portability conformance workflow. |
+| [#40069566994](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566994) | Algorithmic Governability Adversarial Lab | `4b3523814713690b64abd1629601e3bd0f097401` | SUCCESS | The `no-result-dependent-authority` job passed. |
+| [#40069566942](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069566942) | Documentation Link Check | `4b3523814713690b64abd1629601e3bd0f097401` | SUCCESS | Documentation link check only. |
+
+No run above is a new Materios proof, an on-chain observation, a local predeploy build or proof of C6.2/RF8 closure. GitGuardian neutral/large-PR is still not a clean scan result.
