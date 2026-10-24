@@ -13,6 +13,7 @@ on:
       - "audit/cardano-integration/preprod-direct-usdm-approve.mjs"
       - "audit/cardano-integration/eev-approval-integrity.mjs"
       - "audit/cardano-integration/eev-approval-integrity.test.mjs"
+      - "audit/cardano-integration/preprod-direct-usdm-approve.test.mjs"
       - "audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs"
       - "relayer/preprodIssueAdmissionProvider.js"
@@ -73,6 +74,7 @@ jobs:
           node --check audit/cardano-integration/preprod-direct-usdm-approve.mjs
           node --check audit/cardano-integration/eev-approval-integrity.mjs
           node --test audit/cardano-integration/eev-approval-integrity.test.mjs
+          node --test audit/cardano-integration/preprod-direct-usdm-approve.test.mjs
 
       - name: Parse direct-USDM audit scripts
         run: |
