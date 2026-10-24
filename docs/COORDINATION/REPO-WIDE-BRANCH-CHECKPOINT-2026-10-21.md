@@ -3603,3 +3603,29 @@ On green HEAD `000991ee3bf417f4ab5b65344148b4e17796a590`, all five following bou
 - **Tests/build/export/deployment:** NOT_RUN. No validator/source/test code changed; no branch topology, economics, V3/Reveal semantics, workflow, deployment, wallet or ledger state changed.
 
 **Status:** C6.2 remains **BLOCKED_INTERNAL / RF8 OPEN**. This narrows the test obligation but does not provide negative-regression execution or complete address/deployment reachability evidence. C0 remains PARTIAL and C1/C3 remain BLOCKED_EXTERNAL; no C0 patch was applied upstream.
+
+
+## 10.26 — Agent B follow-up: valid-CBOR contract probe PASS does not close V3 evaluation (2026-10-24)
+
+**New evidence after §10.25.** Exact source commit: PR #36 head `565851fdaa356ef4e82e6abc909664cf1854ca83` (`ci: capture sanitized V3 provider evaluation response`). No changes to economic semantics, V3 logic, Reveal logic or Preprod operations are implied.
+
+### Run #2119 — valid local-CBOR endpoint contract
+
+- Run [#40067396869](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40067396869), head `75427c3813aa2e77aad84970ed5298fde6d333ca`, completed **failure**.
+- Step 21, `Verify Yaci evaluation contract with valid local transaction CBOR`, passed. Evidence artifact ID `12550099229`, digest `sha256:0bf42c08d24477bf343e7ebd5442504a62b9787ca09aacc5e2316ba8030454e9`.
+- A locally built unsigned, no-Plutus transaction (376 hex characters; SHA-256 `cf676e6e4596e7179e8bdc6f2751ebbeffddc21ee244b87453a98e587dc46823`) was not signed, submitted or used to mutate the ledger.
+- Both `POST /utils/txs/evaluate/utxos` with JSON `{cbor: ...}` and `POST /utils/txs/evaluate` with the transaction CBOR text returned HTTP 200, JSON response (162 bytes), top-level keys `type,version,servicename,methodname,result`, and `result.EvaluationResult`. Direct `provider.evaluateTx(cbor)` returned an array of length 0. This verifies the endpoint/provider's no-Plutus happy path only; it does **not** prove Plutus script evaluation or V3 acceptance.
+- Despite that step passing, step 22 V3 carrier still failed at `@lucid-evolution/provider/dist/index.js:529` with `Cannot use 'in' operator to search for 'EvaluationResult' in undefined`; Reveal and downstream steps were skipped. The blocker is therefore narrower than a generally wrong endpoint route/schema: investigate the script-bearing transaction's request/response, redeemer/evaluation context, additional UTxO set, and provider error parsing.
+
+### New V3 response tap — pending verification
+
+- Head `565851fdaa356ef4e82e6abc909664cf1854ca83` adds sanitized response observation in `audit/cardano-integration/v3-carrier-ledger-probe.mts`, storing request path/content-type/body keys, CBOR length/hash, HTTP status, content type, response byte count/hash and response-shape flags; it does not store raw CBOR or raw response body.
+- Current Integration Lab run [#40069579992](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40069579992), run #2120, is **IN_PROGRESS** at `Generate fresh Plutus validator artifacts`. It has not reached the provider probe, so no conclusion is available yet. Do not launch a same-ref run while this job is active; the workflow uses `cancel-in-progress: true`.
+- Static issue found in the new contract probe: the evaluator-mode regex is written `/Yaci Store tx evaluator mode:\\s*([a-z]+)/i`, which matches a literal backslash plus `s` rather than whitespace. Its evidence artifact will report `NOT_RECORDED` even when the startup log clearly reports `ogmios`. Fix this only after run #2120 completes, to avoid cancelling its evidence run; add a synthetic regression for the mode parser.
+- `audit/cardano-integration/package.json` pins `@lucid-evolution/lucid` 0.6.5 but there is no committed isolated `audit/cardano-integration/package-lock.json` at the inspected ref; `npm install --prefix audit/cardano-integration` therefore does not provide a lockfile-backed transitive resolution. Add a lockfile and use `npm ci --prefix audit/cardano-integration` in a separately reviewed reproducibility fix, after the active run.
+
+### Updated B1 status
+
+- Endpoint reachability and the no-Plutus provider happy path: **GREEN for that narrow claim only**.
+- Plutus-script evaluation/provider contract: **RED / OPEN** until the current V3 response tap reveals a valid, bounded result and V3 transaction completes without evaluator bypass.
+- The diagnostic must not be promoted to successful Plutus evaluation, V3 ledger acceptance, Reveal acceptance, or Preprod evidence.
