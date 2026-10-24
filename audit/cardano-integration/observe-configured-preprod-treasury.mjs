@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { dirname } from 'node:path'
 import { Emulator, Lucid } from 'lucid-cardano'
+import { fetchAllAddressUtxos } from './koios-address-utxos.mjs'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
 const CONFIGURED_ADDRESS = process.env.PREPROD_TREASURY_ADDRESS?.trim()
@@ -40,17 +41,13 @@ if (EXPECTED_SCRIPT_HASH && EXPECTED_SCRIPT_HASH !== derivedScriptHash) {
   throw new Error('IDENTITY_MISMATCH: PREPROD_TREASURY_SCRIPT_HASH differs from the script hash derived from ' + ARTIFACT_PATH)
 }
 
-const response = await fetch(KOIOS + '/address_utxos', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ _addresses: [derivedAddress] }),
+const observation = await fetchAllAddressUtxos({
+  baseUrl: KOIOS,
+  address: derivedAddress,
 })
-if (!response.ok) throw new Error('KOIOS_ADDRESS_UTXOS_HTTP_' + response.status)
-const rows = await response.json()
-if (!Array.isArray(rows)) throw new Error('KOIOS_ADDRESS_UTXOS_INVALID_RESPONSE')
-if (rows.some(row => row?.address !== derivedAddress)) {
-  throw new Error('KOIOS_RETURNED_UTXO_FOR_UNEXPECTED_ADDRESS')
-}
+const { rows, pagesFetched, pageSize, complete } = observation
+if (!complete) throw new Error('KOIOS_ADDRESS_UTXOS_INCOMPLETE_OBSERVATION')
+
 const utxos = rows.map(row => {
   const assets = Object.fromEntries((row.asset_list ?? []).map(asset => [
     String(asset.policy_id).toLowerCase() + String(asset.asset_name ?? '').toLowerCase(),
@@ -65,7 +62,7 @@ const utxos = rows.map(row => {
 })
 const totalTusdm = utxos.reduce((sum, utxo) => sum + BigInt(utxo.canonicalTusdmAtomic), 0n)
 const evidence = {
-  schema: 'IMMORTAL-CONFIGURED-PREPROD-TREASURY-OBSERVATION-v2',
+  schema: 'IMMORTAL-CONFIGURED-PREPROD-TREASURY-OBSERVATION-v3',
   observedAt: new Date().toISOString(),
   network: 'cardano-preprod',
   identity: {
@@ -77,7 +74,14 @@ const evidence = {
     configuredAddressMatchesDerivedAddress: true,
     optionalConfiguredScriptHashMatches: EXPECTED_SCRIPT_HASH ? true : null,
   },
-  source: { provider: 'Koios', endpoint: 'POST /address_utxos', returnedRows: rows.length },
+  source: {
+    provider: 'Koios',
+    endpoint: 'POST /address_utxos',
+    returnedRows: rows.length,
+    pagesFetched,
+    pageSize,
+    paginationComplete: complete,
+  },
   assetIdentity: { canonicalTusdmUnit: TUSDM_UNIT, policyId: TUSDM_POLICY_ID, assetNameHex: TUSDM_ASSET_NAME_HEX },
   totals: {
     utxoCount: utxos.length,
@@ -89,6 +93,7 @@ const evidence = {
     repositoryArtifactIdentityChecked: true,
     configuredAddressMatchesDerivedAddress: true,
     ledgerObservationObtained: true,
+    paginationCompletenessChecked: true,
     authorizedReleaseProven: false,
     canonicalTreasuryDeploymentProven: false,
     liquidationRouteVerified: false,
@@ -97,6 +102,7 @@ const evidence = {
   },
   limitations: [
     'The address and script hash are derived from the Treasury artifact committed at the observed workflow commit.',
+    'Pagination is fetched until a response contains fewer rows than the requested page size; duplicate output references and non-terminating pagination fail closed.',
     'This does not independently prove that the artifact belongs to an authorized release or that the configured deployment is the current canonical protocol deployment.',
     'Balances do not prove a DEX route, execution proceeds, minimum-output protection, execution costs, or QNE.',
   ],
@@ -111,6 +117,9 @@ console.log(JSON.stringify({
   sourceArtifact: ARTIFACT_PATH,
   sourceArtifactSha256: artifactSha256,
   utxoCount: utxos.length,
+  pagesFetched,
+  pageSize,
+  paginationComplete: complete,
   canonicalTusdmAtomic: totalTusdm.toString(),
   evidenceHash: evidence.evidenceHash,
   output: OUTPUT_PATH,
