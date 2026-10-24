@@ -1,5 +1,7 @@
 # IMMORTAL Roadmap
 
+> **Scope:** IMMORTAL universal / repository-level roadmap. PRE-RICH-facing roadmap: `docs/ROADMAP.md`. This document does not create normative protocol semantics.
+
 **Status:** Experimental / Open Source / Research & Development  
 **Baseline:** September 2026
 
@@ -68,6 +70,17 @@ Additional applications may specialize IMMORTAL with their own economic policy, 
 - [x] Licensing baseline recorded
 - [ ] Final repository-wide SPDX/provenance audit
 - [ ] Public contribution workflow hardened
+  - [x] Non-normative evidence-gated workflow proposal drafted: `docs/04-guides/PUBLIC-CONTRIBUTION-WORKFLOW.md`
+  - [x] GitHub Auto-merge integration plan and challenge-disposition lifecycle drafted: `docs/04-guides/GITHUB-AUTO-MERGE-INTEGRATION.md`
+  - [x] Extend `audit/algorithmic-governability` with adversarial contribution-acceptance and Auto-merge precondition cases; Workflow B run 388 passed
+  - [ ] Review and adopt response windows, challenge categories, and conflict-of-interest handling
+  - [ ] Enable and verify repository Auto-merge / branch rules / required checks (Auto-merge is currently disabled)
+  - [ ] Require independent review and selected CI status checks on `main` (current `Protect main` ruleset has zero required approvals and an empty required-check list)
+  - [x] Implement initial read-only PR evidence-eligibility workflow: `.github/workflows/contribution-evidence-gate.yml` + `scripts/contribution-evidence-gate.mjs`
+  - [x] Self-test stronger-review clearance, active-challenge blocking, conservative normative routing, and narrow documentation allowlist; Workflow B run 406 passed against the same gate-script blob staged for PR #35
+  - [ ] Merge the gate into a target/base branch before it can execute on ordinary PRs targeting that branch
+  - [ ] Make the evidence-eligibility status a required check only after reviewing the fail-closed stronger-review route
+  - [ ] Validate the process on representative PRs and verify approval/check requirements before marking this item complete
 - [ ] Reproducible release process
 
 ## 5. Verification gates

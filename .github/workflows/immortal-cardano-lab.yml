@@ -153,7 +153,16 @@ jobs:
             sleep 2
           done
           echo "YACI_STORE_READY=0" | tee audit/yaci-evidence/bootstrap.txt
-          tail -300 audit/yaci-evidence/yaci.log || true
+          if [[ -f audit/yaci-evidence/yaci.log ]]; then
+            sed -E -i \
+              -e 's/(Payment Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Staking Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Private Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Mnemonic[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Seed[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              audit/yaci-evidence/yaci.log
+            tail -200 audit/yaci-evidence/yaci.log || true
+          fi
           exit 1
 
       - name: Derive funded CI test wallet
@@ -165,8 +174,10 @@ jobs:
       - name: Record devnet information
         run: |
           {
-            echo "branch=work/immortal-green-closure"
-            echo "workflow_sha=$GITHUB_SHA"
+            echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+            echo "base_ref=${GITHUB_BASE_REF:-}"
+            echo "event_sha=$GITHUB_SHA"
+            echo "checkout_sha=$(git rev-parse HEAD)"
             echo "head_sha=${{ github.event.pull_request.head.sha || github.sha }}"
             echo "node=$(node --version)"
             echo "npm=$(npm --version)"
@@ -174,10 +185,54 @@ jobs:
             echo "run_id=$GITHUB_RUN_ID"
             echo "test_address=${{ steps.wallet.outputs.address }}"
           } | tee audit/yaci-evidence/manifest.txt
+      # Do not call "yaci-devkit info" here: non-interactive mode can terminate
+      # the live devnet. Record data observed during startup instead.
       - name: Record Yaci cluster timing/configuration
         run: |
-          yaci-devkit info | tee audit/yaci-evidence/yaci-devkit-info.txt
+          # P2.8 consumes three labeled timing values. Normalize them from the
+          # live Yaci startup log; do not spawn a second CLI against the devnet.
+          python - <<'PY'
+          import re
+          from pathlib import Path
 
+          log_path = Path("audit/yaci-evidence/yaci.log")
+          if not log_path.is_file():
+              raise SystemExit("YACI_STARTUP_LOG_MISSING")
+          log = log_path.read_text(encoding="utf-8", errors="replace")
+          log = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", log)
+          labels = {
+              "Start Time": r"\[(?:💡\s*)?Start Time\]\s*(\S+)",
+              "Epoch Length": r"\[(?:💡\s*)?Epoch Length\]\s*(\S+)",
+              "Slot Length": r"\[(?:💡\s*)?Slot Length\]\s*(\S+)",
+          }
+          values = {}
+          for label, pattern in labels.items():
+              matches = re.findall(pattern, log)
+              if not matches:
+                  raise SystemExit("YACI_STARTUP_TIMING_MISSING: " + label)
+              values[label] = matches[-1]
+          for label in ("Start Time", "Epoch Length"):
+              if not re.fullmatch(r"[0-9]+", values[label]):
+                  raise SystemExit("YACI_STARTUP_TIMING_INVALID: " + label + "=" + values[label])
+          if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", values["Slot Length"]):
+              raise SystemExit("YACI_STARTUP_TIMING_INVALID: Slot Length=" + values["Slot Length"])
+          normalized = "".join(f"[{label}] {values[label]}\n" for label in labels)
+          Path("audit/yaci-evidence/yaci-devkit-info.txt").write_text(normalized, encoding="utf-8")
+          print(normalized, end="")
+          PY
+          {
+            echo "startup_command=yaci-devkit up --enable-yaci-store"
+            echo "yaci_version=0.12.0-beta5"
+            echo "yaci_store_api=http://localhost:8080/api/v1"
+            echo "yaci_store_ready=PASS"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "timing_source=normalized Yaci startup log"
+            echo "normalized_timing_file=yaci-devkit-info.txt"
+            echo "epoch_latest_snapshot:"
+            cat audit/yaci-evidence/epoch-latest.json
+            echo "startup_parameters:"
+            grep -E 'Node port|Submit Api Port|Protocol Magic|Block Time|Slot Length|Epoch Length' audit/yaci-evidence/yaci.log | tail -20 || true
+          } | tee audit/yaci-evidence/yaci-runtime-info.txt
       - name: Execute real Cardano ledger smoke transaction
         run: node audit/cardano-integration/ledger-smoke.mjs
 
@@ -229,7 +284,16 @@ jobs:
         if: always()
         run: |
           curl --fail --silent http://localhost:8080/api/v1/epochs/latest > audit/yaci-evidence/epoch-latest-final.json || true
-          tail -500 audit/yaci-evidence/yaci.log || true
+          if [[ -f audit/yaci-evidence/yaci.log ]]; then
+            sed -E -i \
+              -e 's/(Payment Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Staking Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Private Key[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Mnemonic[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              -e 's/(Seed[^:]*:[[:space:]]*).*/\1[REDACTED]/I' \
+              audit/yaci-evidence/yaci.log
+            tail -200 audit/yaci-evidence/yaci.log || true
+          fi
 
       - name: Upload laboratory evidence
         if: always()

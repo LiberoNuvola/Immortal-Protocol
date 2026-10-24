@@ -6,6 +6,10 @@ on:
       - work/immortal-green-closure
   pull_request:
 
+# The lab executes repository code; keep its token read-only.
+permissions:
+  contents: read
+
 jobs:
   no-result-dependent-authority:
     runs-on: ubuntu-latest
@@ -13,5 +17,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
+          node-version: 22
+      - name: Run no-result-dependent-authority invariant checks
+        run: node audit/algorithmic-governability/no-result-dependent-authority.mjs
+      - name: Test contribution evidence gate policy
+        if: ${{ hashFiles('scripts/contribution-evidence-gate.mjs') != '' }}
+        run: node scripts/contribution-evidence-gate.mjs --self-test

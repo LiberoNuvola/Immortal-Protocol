@@ -1,0 +1,58 @@
+name: Contribution Evidence Gate
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
+
+# Unprivileged PR context: this workflow reads PR metadata only. It checks out
+# the base commit, never the contributor's code, and never writes to GitHub.
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: contribution-evidence-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  evidence-gate:
+    name: contribution-evidence-eligibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base-branch policy code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirm trusted policy exists on base
+        shell: bash
+        run: |
+          missing=()
+          for path in scripts/contribution-evidence-gate.mjs audit/algorithmic-governability/contribution-acceptance-boundary.mjs; do
+            if [[ ! -f "$path" ]]; then missing+=("$path"); fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            message="BOOTSTRAP_REVIEW_REQUIRED: trusted policy file(s) absent from the target/base commit: ${missing[*]}. Refusing to execute pull-request-supplied policy code. This initial adoption PR needs separate human review; this result is not an eligibility verdict."
+            echo "::error title=Bootstrap review required::$message"
+            echo -e "# Contribution evidence gate\n\n**Decision:** BOOTSTRAP_REVIEW_REQUIRED\n\n$message" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Validate contribution-gate policy fixtures
+        run: node scripts/contribution-evidence-gate.mjs --self-test
+
+      - name: Contribution-acceptance governability model
+        run: node audit/algorithmic-governability/contribution-acceptance-boundary.mjs
+
+      - name: Evaluate contribution declaration and scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/contribution-evidence-gate.mjs

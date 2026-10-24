@@ -11,43 +11,55 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
-import qualified PlutusTx.AssocMap as AssocMap
-
-{-# INLINABLE ownMintEntries #-}
-ownMintEntries :: CurrencySymbol -> Value -> [(TokenName, Integer)]
-ownMintEntries cs value =
-  case AssocMap.lookup cs (getValue value) of
-    Nothing -> []
-    Just tokens -> AssocMap.toList tokens
-
-{-# INLINABLE mintedExactlyOne #-}
-mintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
-mintedExactlyOne cs expectedName value =
-  case ownMintEntries cs value of
-    [(name, amount)] -> name == expectedName && amount == 1
-    _ -> False
 
 {-# INLINABLE seedConsumed #-}
 seedConsumed :: TxOutRef -> TxInfo -> Bool
 seedConsumed seed info =
-  let
+  go (txInfoInputs info)
+  where
     go [] = False
-    go (i:is) = txInInfoOutRef i == seed || go is
-  in go (txInfoInputs info)
+    go (i:is) =
+      txInInfoOutRef i == seed || go is
 
 {-# INLINABLE mkPolicy #-}
-mkPolicy :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+mkPolicy
+  :: TxOutRef
+  -> TokenName
+  -> ()
+  -> ScriptContext
+  -> Bool
 mkPolicy seed tokenName _ ctx =
-  seedConsumed seed (scriptContextTxInfo ctx)
-  && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
+  let
+    info = scriptContextTxInfo ctx
+    ownCs = ownCurrencySymbol ctx
+    expected = singleton ownCs tokenName 1
+  in
+       seedConsumed seed info
+    && txInfoMint info == expected
 
 {-# INLINABLE wrap #-}
-wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrap seed tokenName _ ctx =
+-- Lucid applyParamsToScript supplies Plutus Data constants. Decode the seed
+-- and token name at the ABI boundary before entering the typed policy logic.
+wrap
+  :: BuiltinData
+  -> BuiltinData
+  -> BuiltinData
+  -> BuiltinData
+  -> BuiltinUnit
+wrap seedData tokenNameData _ ctx =
   check
-    (mkPolicy seed tokenName () (unsafeFromBuiltinData ctx))
+    (mkPolicy
+      (unsafeFromBuiltinData seedData)
+      (unsafeFromBuiltinData tokenNameData)
+      ()
+      (unsafeFromBuiltinData ctx))
 
 compiledPolicyFactory
   :: CompiledCode
-       (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+       ( BuiltinData
+         -> BuiltinData
+         -> BuiltinData
+         -> BuiltinData
+         -> BuiltinUnit
+       )
 compiledPolicyFactory = $$(compile [|| wrap ||])
