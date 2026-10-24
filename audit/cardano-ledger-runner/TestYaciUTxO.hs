@@ -354,21 +354,22 @@ main = do
 
   badRefScript <- mutated "reference script hash without body"
     "\"reference_script_hash\": null"
-    ("\"reference_script_hash\": \"" <> replicate 56 'a' <> "\"")
-  assertLeft "reference script hash without body is rejected" "REFERENCE_SCRIPT_BODY_MISSING"
+    ("\"reference_script_hash\": \"" <> replicate 56 'a' <> "\", \"reference\": true")
+  assertLeft "reference input script hash without body is rejected" "REFERENCE_SCRIPT_BODY_MISSING"
     (decodeYaciUTxO (B8.pack badRefScript))
 
   bodyWithoutHash <- mutated "reference script body without hash"
-    "\"script_ref\": null" "\"script_ref\": {}"
+    "\"script_ref\": null" "\"script_ref\": \"00\""
   assertLeft "reference script body without hash is rejected" "REFERENCE_SCRIPT_HASH_MISSING"
     (decodeYaciUTxO (B8.pack bodyWithoutHash))
 
-  hashAndBody <- mutated "reference script hash and body"
-    "\"reference_script_hash\": null" ("\"reference_script_hash\": \"" <> replicate 56 'a' <> "\"")
-  hashAndBody <- mutatedFrom "reference script hash/body pair" hashAndBody
-    "\"script_ref\": null" "\"script_ref\": {}"
-  assertLeft "non-null reference script is not silently dropped" "REFERENCE_SCRIPT_BODY_UNSUPPORTED"
-    (decodeYaciUTxO (B8.pack hashAndBody))
+  malformedRefScript <- mutatedFrom "malformed serialized reference script" packet
+    "\"reference_script_hash\": null"
+    ("\"reference_script_hash\": \"" <> replicate 56 'a' <> "\", \"reference\": true")
+  malformedRefScript <- mutatedFrom "malformed serialized reference script body" malformedRefScript
+    "\"script_ref\": null" "\"script_ref\": \"00\""
+  assertLeft "malformed reference script CBOR is rejected" "REFERENCE_SCRIPT_CBOR_INVALID"
+    (decodeYaciUTxO (B8.pack malformedRefScript))
 
   emptyRefScriptHash <- mutated "empty reference script hash"
     "\"reference_script_hash\": null" "\"reference_script_hash\": \"\""
@@ -382,7 +383,7 @@ main = do
 
   badRefScriptBodyType <- mutated "reference script body of wrong type"
     "\"script_ref\": null" "\"script_ref\": true"
-  assertLeft "wrong reference script body type is not silently ignored" "REFERENCE_SCRIPT_HASH_MISSING"
+  assertLeft "wrong reference script body type is rejected" "FIELD_NOT_TEXT:script_ref"
     (decodeYaciUTxO (B8.pack badRefScriptBodyType))
 
   assertLeft "malformed JSON is rejected" "expecting record key literal"
