@@ -195,10 +195,7 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          status=$(curl --silent --show-error --max-time 10 \\
-            -o /tmp/yaci-evaluation-probe.json -w '%{http_code}' \\
-            -X POST http://localhost:8080/api/v1/utils/txs/evaluate \\
-            -H 'Content-Type: application/cbor' --data-binary '{}')
+          status=$(curl --silent --show-error --max-time 10 -o /tmp/yaci-evaluation-probe.json -w '%{http_code}' -X POST http://localhost:8080/api/v1/utils/txs/evaluate -H 'Content-Type: application/cbor' --data-binary '{}')
           rc=$?
           set -e
           echo "http_status=${status:-none}"
@@ -211,7 +208,7 @@ jobs:
               try { parsed = JSON.parse(raw); } catch {}
               console.log("response_bytes=" + Buffer.byteLength(raw));
               console.log("response_top_level_keys=" + (parsed && typeof parsed === "object" ? Object.keys(parsed).join(",") : "non-json-or-non-object"));
-              console.log("response_preview=" + raw.slice(0, 1200).replace(/[\\r\\n\\t]+/g, " "));
+              console.log("response_preview=" + raw.slice(0, 1200).replace(/[\r\n\t]+/g, " "));
             '
           fi
           echo "diagnostic_only=true; empty payload is not a valid transaction and does not establish evaluation compatibility"
