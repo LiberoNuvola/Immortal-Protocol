@@ -537,6 +537,7 @@ jobs:
           set -euo pipefail
           node --input-type=module <<'NODE'
           import fs from 'node:fs/promises';
+          import { classifyLedgerEvaluation } from './scripts/jev-verification-registry-generator.mjs';
           const outcome = (v) => ['success','failure','cancelled','skipped'].includes(v) ? v : 'unknown';
           const metadata = {
             repository: process.env.GITHUB_REPOSITORY,
@@ -548,6 +549,16 @@ jobs:
             executionContext: 'devnet',
           };
           const evidenceRefs = [{ kind: 'workflow-run', uri: process.env.RUN_URL }];
+          let p28SemanticOutcome = 'unknown';
+          try {
+            const report = JSON.parse(await fs.readFile('audit/yaci-evidence/ledger-evaluation-report.json', 'utf8'));
+            p28SemanticOutcome = classifyLedgerEvaluation(report);
+          } catch {
+            // Missing/unreadable report is not evidence of successful evaluation.
+          }
+          if (p28SemanticOutcome === 'unknown' && ['skipped', 'cancelled'].includes(outcome(process.env.P28_EVIDENCE_GATE_OUTCOME))) {
+            p28SemanticOutcome = outcome(process.env.P28_EVIDENCE_GATE_OUTCOME);
+          }
           const checks = [
             {
               checkId: 'V3.CARRIER.LEDGER',
@@ -660,9 +671,14 @@ jobs:
             {
               checkId: 'P2.8.LEDGER.EVIDENCE.GATE',
               requirementRef: 'IMMORTAL Cardano Integration Lab / Run P2.8 ledger evidence gate against this lab packet',
-              stepOutcome: outcome(process.env.P28_EVIDENCE_GATE_OUTCOME),
+              stepOutcome: p28SemanticOutcome,
               evidenceRefs,
-              limitations: ['This is scoped to this commit, run attempt, and local Yaci context; it is not Preprod/mainnet qualification.'],
+              limitations: [
+                'The result is derived from ledger-evaluation-report.json, not the report-generation process exit code.',
+                'Only all-success redeemer entries with ExUnits produce PASS; only typed Plutus ValidationFailure entries produce FAIL.',
+                'MissingScript, ContextError, malformed/missing reports, and other unresolved ledger failures remain BLOCKED.',
+                'This is scoped to this commit, run attempt, and local Yaci context; it is not Preprod/mainnet qualification.',
+              ],
             },
             {
               checkId: 'P2.8.RESOURCE.FOOTPRINT',
