@@ -1,0 +1,211 @@
+diff --git a/tools/explorer/app.py b/tools/explorer/app.py
+index fc7e8f045f9319c2aa6ceb11c83ec5fc5f5076a1..0000000000000000000000000000000000000000 100644
+--- a/tools/explorer/app.py
++++ b/tools/explorer/app.py
+@@ -1,38 +1,6 @@
+ @app.get("/api/verify/{receipt_id}")
+ async def verify(receipt_id: str, scan_window: int = 100):
+-    """Run verification — tries pre-indexed record first, falls back to block scan."""
++    """Run the chain verifier; index records are not cryptographic evidence."""
+     import asyncio
+ 
+-    # Fast path: check verification index (instant, no block scanning)
+-    if BLOB_GATEWAY_URL:
+-        try:
+-            clean_id = receipt_id.replace("0x", "")
+-            vi_resp = req.get(f"{BLOB_GATEWAY_URL}/verification/{clean_id}", timeout=3)
+-            if vi_resp.status_code == 200:
+-                vi = vi_resp.json()
+-                # Return a pre-built verification report
+-                return {
+-                    "receipt_id": receipt_id,
+-                    "verified": True,
+-                    "source": "verification_index",
+-                    "steps": [
+-                        {"index": 0, "label": "Connect to Materios chain", "status": "pass"},
+-                        {"index": 1, "label": "Query on-chain receipt", "status": "pass"},
+-                        {"index": 2, "label": "Check availability certificate", "status": "pass",
+-                         "details": {"cert_hash": vi.get("cert_hash", "")}},
+-                        {"index": 3, "label": "Compute checkpoint leaf hash", "status": "pass",
+-                         "details": {"leaf_hash": vi.get("leaf_hash", "")}},
+-                        {"index": 4, "label": "Search for checkpoint anchor", "status": "pass",
+-                         "details": {"anchor_id": vi.get("anchor_id", ""), "anchor_block": vi.get("anchor_block", 0)}},
+-                        {"index": 5, "label": "Verify Merkle inclusion", "status": "pass",
+-                         "details": {"merkle_root": vi.get("merkle_root", ""), "batch_size": vi.get("checkpoint_batch_size", 0)}},
+-                        {"index": 6, "label": "Verify manifest hash", "status": "pass"},
+-                        {"index": 7, "label": "Locate AvailabilityCertified event", "status": "pass"},
+-                        {"index": 8, "label": "Verify Cardano L1 anchor", "status": "pass",
+-                         "details": {"cardano_tx_hash": vi.get("cardano_tx_hash", ""), "verified_at": vi.get("verified_at", "")}},
+-                    ],
+-                }
+-        except Exception:
+-            pass  # Fall through to block scanning
+-
+-    # Slow path: scan blocks for anchor events
++    # Never infer verification from index existence / HTTP 200. Execute the
++    # chain verifier below for every request; this verifier's result remains
++    # partial until its required trust-boundary proofs are independently wired.
++    # Chain scan: find and check available receipt/anchor evidence.
+     script = f"""
+ import json, sys
+ sys.path.insert(0, '/app/materios-verify')
+diff --git a/tools/materios-verify/materios_verify/core.py b/tools/materios-verify/materios_verify/core.py
+index bcd21c3c942e3a3b7fbac234865b69050283831a..0000000000000000000000000000000000000000 100644
+--- a/tools/materios-verify/materios_verify/core.py
++++ b/tools/materios-verify/materios_verify/core.py
+@@ -39,6 +39,9 @@ class VerificationReport:
+     anchor: Optional[dict] = None
+     committee_size: int = 0
+     threshold: int = 0
++    grandpa_finality_verified: bool = False
++    authority_set_provenance_verified: bool = False
++    cardano_l1_anchor_verified: bool = False
+ 
+     def to_dict(self) -> dict:
+         return {
+@@ -50,6 +53,9 @@ class VerificationReport:
+             "leaf_hash": self.leaf_hash,
+             "committee_size": self.committee_size,
+             "threshold": self.threshold,
++            "grandpa_finality_verified": self.grandpa_finality_verified,
++            "authority_set_provenance_verified": self.authority_set_provenance_verified,
++            "cardano_l1_anchor_verified": self.cardano_l1_anchor_verified,
+             "anchor": self.anchor,
+             "steps": [
+@@ -68,6 +74,34 @@ class VerificationReport:
+         }
+ 
+ 
++def _mark_required_evidence_missing(step: StepResult, reason: str) -> None:
++    """Keep required-but-unavailable evidence non-positive."""
++    step.passed = False
++    step.details["status"] = "MISSING"
++    step.warnings.append(reason)
++
++
++def _classify_report_result(
++    report: VerificationReport, checkpoint_found: bool,
++) -> VerificationResult:
++    """Only return FULLY_VERIFIED when every required trust boundary is proven."""
++    all_steps_pass = all(s.passed for s in report.steps)
++    if (
++        report.cert_hash
++        and all_steps_pass
++        and checkpoint_found
++        and report.grandpa_finality_verified
++        and report.authority_set_provenance_verified
++        and report.cardano_l1_anchor_verified
++    ):
++        return VerificationResult.FULLY_VERIFIED
++    if report.cert_hash:
++        return VerificationResult.PARTIALLY_VERIFIED
++    return VerificationResult.NOT_VERIFIED
++
++
+ # ---------------------------------------------------------------------------
+ # Merkle tree
+ # ---------------------------------------------------------------------------
+@@ -337,8 +371,8 @@ def verify_receipt(
+         step6.details["cert_count"] = manifest.get("count")
+     else:
+-        step6.passed = True  # supplementary — don't fail when manifest unavailable
+-        step6.warnings.append("Manifest data not available")
++        _mark_required_evidence_missing(
++            step6, "Manifest data not available; manifest hash was not verified",
++        )
+     report.steps.append(step6)
+ 
+     # Step 7: AvailabilityCertified event
+@@ -356,8 +390,9 @@ def verify_receipt(
+         if not step7.passed:
+             step7.details["error"] = "cert_hash mismatch between event and storage"
+     else:
+-        step7.warnings.append(f"Event not found in last {scan_window} blocks (may be older)")
+-        step7.passed = True  # supplementary — don't fail on missing old events
++        _mark_required_evidence_missing(
++            step7, f"AvailabilityCertified event not found in last {scan_window} blocks",
++        )
+     report.steps.append(step7)
+ 
+     # Summary
+-    all_pass = all(s.passed for s in report.steps)
+-    if cert_hash_on_chain != ZERO_HASH and all_pass and checkpoint_found:
+-        report.result = VerificationResult.FULLY_VERIFIED
+-    elif cert_hash_on_chain != ZERO_HASH:
+-        report.result = VerificationResult.PARTIALLY_VERIFIED
+-    else:
+-        report.result = VerificationResult.NOT_VERIFIED
++    report.result = _classify_report_result(report, checkpoint_found)
+diff --git a/tools/materios-verify/tests/test_fail_closed_verification.py b/tools/materios-verify/tests/test_fail_closed_verification.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000
+--- /dev/null
++++ b/tools/materios-verify/tests/test_fail_closed_verification.py
+@@ -0,0 +1,70 @@
++"""Regression tests for fail-closed Receipt verification decisions."""
++import sys
++import unittest
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[3]
++sys.path.insert(0, str(ROOT / "tools" / "materios-verify"))
++
++from materios_verify.core import (
++    StepResult,
++    VerificationReport,
++    VerificationResult,
++    _classify_report_result,
++    _mark_required_evidence_missing,
++)
++
++
++class FailClosedVerificationTests(unittest.TestCase):
++    def make_report(self):
++        report = VerificationReport(receipt_id="0x" + "11" * 32, rpc_url="mock://")
++        report.cert_hash = "0x" + "22" * 32
++        report.steps = [StepResult(step=i, title=f"step-{i}", passed=True) for i in range(8)]
++        return report
++
++    def test_missing_manifest_never_passes(self):
++        step = StepResult(step=6, title="Verify manifest hash", passed=True)
++        _mark_required_evidence_missing(step, "manifest unavailable")
++        self.assertFalse(step.passed)
++        self.assertEqual(step.details["status"], "MISSING")
++
++    def test_missing_availability_event_never_passes(self):
++        step = StepResult(step=7, title="Locate AvailabilityCertified event", passed=True)
++        _mark_required_evidence_missing(step, "event unavailable")
++        self.assertFalse(step.passed)
++        self.assertEqual(step.details["status"], "MISSING")
++
++    def test_steps_passing_without_grandpa_authority_and_cardano_proofs_is_partial(self):
++        report = self.make_report()
++        self.assertEqual(
++            _classify_report_result(report, checkpoint_found=True),
++            VerificationResult.PARTIALLY_VERIFIED,
++        )
++
++    def test_full_result_requires_every_independent_proof_flag(self):
++        report = self.make_report()
++        report.grandpa_finality_verified = True
++        report.authority_set_provenance_verified = True
++        report.cardano_l1_anchor_verified = True
++        self.assertEqual(
++            _classify_report_result(report, checkpoint_found=True),
++            VerificationResult.FULLY_VERIFIED,
++        )
++
++    def test_any_failed_step_blocks_full_result(self):
++        report = self.make_report()
++        report.grandpa_finality_verified = True
++        report.authority_set_provenance_verified = True
++        report.cardano_l1_anchor_verified = True
++        report.steps[6].passed = False
++        self.assertEqual(
++            _classify_report_result(report, checkpoint_found=True),
++            VerificationResult.PARTIALLY_VERIFIED,
++        )
++
++
++if __name__ == "__main__":
++    unittest.main()
