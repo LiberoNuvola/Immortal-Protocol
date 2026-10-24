@@ -130,3 +130,22 @@ The latest reviewed operational blockers remain unchanged:
 4. Keep first Issue fail-closed until authoritative admission and the final transaction body are bound to authenticated current evidence, then verify the Ticket NFT in the intended wallet UTxO after on-chain confirmation.
 
 No economic constants, expiry semantics, V3 carrier, Reveal semantics, or wallet/transaction state were changed in this follow-up.
+## 2026-10-24 — Governance authority crosswalk for the USDM blocker
+
+A read-only cross-check of the linked Notion decision records narrows the next action; it does not change the economic decision:
+
+- **DEC-3 — Settlement by exact USDM equivalence** is CLOSED: USDM is the economic/reference unit, and settlement in another supported asset must match the required USDM-equivalent amount under a verified valuation contract. It does **not** identify a particular Cardano token or establish USD/USDM parity.
+- The Notion **09 — Definitive Decision Register** still marks **D-10 multi-asset OPEN**, **D-11 oracle authorization/freshness/latency OPEN**, and **D-13 governance authorization OPEN**. The repo's `PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md` likewise retains the denomination/parity choice as open.
+- **GOV-02 — Authority / Permission Matrix** states that maintainers cannot unilaterally redefine canonical economic semantics and that canonicalization requires the applicable adoption gates. The **PRE-RICH Governance Architecture** page explicitly describes itself as a future/specification architecture, not an active DAO; during the present development phase it says specification authority is retained by the project owner. This describes the current authority boundary, not a decision that selects any asset or parity option.
+- The Notion connected-source search for Slack/Drive/etc. could not run because that connector requires Notion Business access. This pass therefore verifies the accessible Notion pages and repository records only; it does not claim exhaustive coverage of connected discussions.
+
+**Operational disposition:** prepare/route a scoped decision proposal to the currently authorized specification owner and record the decision through the applicable canonicalization process. The proposal must explicitly separate (a) accounting-unit semantics, (b) the exact Cardano asset policy ID + asset name permitted as physical `VerifiedUSDM`, and (c) any USD/USDM or oracle conversion rule. No agent should infer or adopt those values. Until the decision is adopted and source-backed, keep `tUSDM` as `OBSERVED_NOT_QUALIFIED`, do not dispatch EEV approval, and keep P-01/P-02/P-16 blocked.
+
+Sources checked:
+- [Notion — 02 Decision Log (DEC-3)](https://app.notion.com/p/3d9c4454d6d581f6b1dff9bd9fa360fb)
+- [Notion — 09 Definitive Decision Register (D-10/D-11/D-13)](https://app.notion.com/p/3d9c4454d6d5811e8bece49c16cf2c9d)
+- [Notion — GOV-02 Authority / Permission Matrix](https://app.notion.com/p/3dfc4454d6d58107828eedf372de5242)
+- [Notion — PRE-RICH Governance Architecture](https://app.notion.com/p/3dfc4454d6d58194aa72cfb27d234166)
+- [Repository — Pyth/USDM unit-conversion decision](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md)
+
+No protocol code, economic constants, V3/Reveal semantics, workflow dispatch, approval, wallet signature, transaction or on-chain state was changed.
