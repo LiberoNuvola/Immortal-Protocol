@@ -5,6 +5,7 @@ const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v
 const EVIDENCE_DIR = process.env.PREPROD_EVIDENCE_DIR ?? 'audit/preprod-evidence'
 const DEPLOYMENT_MANIFEST = process.env.PREPROD_DEPLOYMENT_MANIFEST ?? EVIDENCE_DIR + '/preprod-deployment.json'
 const TUSDM_UNIT = process.env.PREPROD_TUSDM_UNIT?.trim()
+const APPROVED_PREPROD_TUSDM_UNIT = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d'
 
 const IMMORTAL_USDM_SUBUNITS_PER_USDM = 100n
 const TUSDM_ATOMIC_UNITS_PER_TOKEN = 1_000_000n
@@ -52,6 +53,10 @@ async function tip() {
 
 if (!TUSDM_UNIT || !/^[0-9a-fA-F]{56,}$/.test(TUSDM_UNIT)) {
   throw new Error('PREPROD_TUSDM_UNIT is required and must be the deployment-approved native-asset unit; no asset identity is invented here')
+}
+
+if (TUSDM_UNIT.toLowerCase() !== APPROVED_PREPROD_TUSDM_UNIT) {
+  throw new Error('PREPROD_TUSDM_UNIT is not the specification-authority-approved Cardano Preprod asset for PRE-RICH-EEV-USDM-DIRECT-V1')
 }
 
 await mkdir(EVIDENCE_DIR, { recursive: true })
