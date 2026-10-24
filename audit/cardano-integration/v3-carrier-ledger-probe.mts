@@ -36,7 +36,9 @@ if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') 
 const policy: Script = {
   type: 'PlutusV2',
   script: applyParamsToScript(artifact.cborHex, [
-    new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
+    // TxOutRef encodes as Constr 0 [txId-bytes, output-index]; TxId is a newtype,
+    // so adding a nested Constr around the hash changes the on-chain parameter shape.
+    new Constr(0, [seed.txHash, BigInt(seed.outputIndex)]),
     new Constr(0, [TOKEN_NAME_HEX]),
   ]),
 }
