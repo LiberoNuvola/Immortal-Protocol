@@ -4089,3 +4089,11 @@ The qualification artifact has `status: qualified` and `deploymentApproval: null
 
 No bootstrap, treasury sale, signing, transaction construction/submission or real Issue was performed by the qualification workflow. The old approved artifact was used only to restore the existing deployment and Oracle identity manifests; its historical source-set and qualification were deleted before fresh re-observation, and no old approved-qualification artifact was reused as the new result.
 
+### Exact Preprod asset allowlist regression — 2026-10-24
+
+The source-set producer now rejects any `PREPROD_TUSDM_UNIT` other than the exact authority-approved Preprod unit, before reading deployment manifests or querying the network. Regression test `audit/cardano-integration/preprod-direct-usdm-source-set.test.mjs` proves a different native-asset unit is rejected for the explicit normative identity guard.
+
+- [PRE-RICH Direct-USDM Conformance #118](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40115896625) — SUCCESS on `05d32bb0de374e4726361380b67754f4a1073716`.
+- The direct-USDM tests passed (10 + 22 tests), the approval-integrity tests passed, and the new asset-identity rejection regression passed.
+- This is a code/conformance guard only; it does not grant deployment approval or select USD/USDM conversion option A/B/C.
+
