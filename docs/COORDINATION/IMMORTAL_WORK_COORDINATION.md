@@ -2067,3 +2067,35 @@ The existing V3 carrier, B1 PrizePool and Oracle singleton references are also n
 
 **STATUS: EXISTING COUNTER REUSE REJECTED AS UNSAFE ON CURRENT EVIDENCE; NO SUITABLE ROUND-ANCHOR MECHANISM PROVEN; F4 OPEN. V3 AND REVEAL UNCHANGED.**
 
+## 44.63 — AGENT B F4 — ONE-SHOT POLICY INVENTORY / REUSE DECISION — 2026-10-25
+
+**Scope:** inspect existing one-shot minting policies to decide whether one can already enforce canonical Beacon round-anchor uniqueness. Design/source audit only; no code, schema, deployment or on-chain changes.
+
+### Existing policies inspected on `work/immortal-green-closure`
+
+- `PRE-RICH/onchain/GenesisCarrierMintPolicy.hs` (blob `c95a16b03258201a29b2593daecb8aa512fb259b`): parameterized by one seed `TxOutRef` and configured token name; requires the seed input to be consumed and exactly one token entry of quantity 1 under its own currency symbol. The one-shot seed is effective for a single Genesis carrier identity, not for arbitrary per-round anchors.
+- `PRE-RICH/onchain/V3EconomicStateCarrierMintPolicy.hs` (blob `b778d8a559d4050a565ac5f49a8d5cccb5451b42`): parameterized by seed and token name; requires the seed to be consumed and the complete mint value to equal exactly one token. It is a V3 economic-state carrier authority, not a Beacon round policy.
+- `PRE-RICH/onchain/PreRichControlCarrierMintPolicy.hs` (blob `03e6b4bc9caf8866eca57c4ba1e987799cb49b15`): same seed-consumption/exact-singleton-mint pattern for the authenticated control carrier. It does not encode Beacon round identity or trust evidence.
+- `plutus/export/Export.hs` (blob `b33cd08b2d9dc6800215e771f18d561c87bc34c7`) exports these three carrier mint-policy factories, alongside the ticket MintPolicy and BeaconRegistry validator. No Beacon round-anchor mint-policy factory is exported there.
+
+### Reuse decision
+
+**No existing one-shot policy is reusable as-is for Beacon round anchors.** Each existing policy is parameterized and named for a different singleton authority. Reusing its policy ID/token would conflate Genesis, V3 economic state, or B2 control identity with Beacon round identity; using one seed-bound policy for all rounds would also only establish one one-shot issuance, not a distinct canonical anchor for every round.
+
+The source does establish that the repository has working *design patterns* for seed-bound one-shot singleton assets. A new Beacon-specific policy could adapt that pattern, but that is a new protocol surface, not a safe configuration-only reuse. In particular, one-shot uniqueness of a single token does not by itself prove uniqueness for an unbounded set of round IDs. A per-round policy would require an authoritative, non-replayable seed/creation authority for each round; a global policy would need an on-chain state transition that serializes and binds each round creation. Neither mechanism is evidenced for Beacon today.
+
+### Minimum proof obligations for any proposed new policy
+
+1. Bind the created asset to the canonical round identity, with a deterministic encoding/domain separator.
+2. Prove the creation authority cannot be reused to create a competing anchor for that same round, including parallel competing transactions and any burn/reissue route.
+3. Require Issue to validate the exact anchor asset and its round identity, not merely find a datum at the registry script address.
+4. Ensure the anchor and Pending registry datum are created atomically; later Pending→Ready publication must preserve the same identity and frozen trust/evidence commitment.
+5. Demonstrate positive and adversarial ledger tests for two competing Pending anchors, wrong-round token, wrong token name/policy, burn attempt, replayed seed, and mismatched trust/evidence digest.
+6. Keep this independent of ticket serial Counter semantics and do not alter V3 or Reveal during this spike.
+
+### Result
+
+**F4 remains OPEN.** The audit found reusable implementation patterns, but no existing Beacon-compatible unique-anchor mechanism or evidence of its deployment. The next step is a design/test-only prototype proposal for a dedicated Beacon anchor authority and its binding to the registry/Issue path; it must be reviewed before any code or schema changes. Existing ticket commitment/Reveal compatibility remains a separately coordinated gate.
+
+**No implementation, validator, datum schema, deployment, transaction submission, or on-chain state changed.**
+
