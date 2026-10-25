@@ -2365,3 +2365,29 @@ An admin/relayer key or committee authorizes Pending creation. This can be simpl
 - User's general policy remains: evaluate the most trustless/permissionless solution first; any downgrade requires a reproducible higher-tier failure, explicit failure code, transparent record and frozen selected mode. This does not by itself authorize a specific F4 implementation or schema migration.
 
 **STATUS: DESIGN OPTIONS AND ACCEPTANCE TEST CONTRACT RECORDED; NO NORMATIVE OPTION SELECTED, NO PROTOCOL CODE CHANGED. NEXT STEP: compare candidate A against current validator/transaction constraints, then bring only unresolved normative choice(s) to the user before implementation.**
+
+
+## 44.73 — AGENT B F4 — SERIALIZED REGISTRY FEASIBILITY / COMMITMENT AUTHORITY — 2026-10-25
+
+Follow-up to §44.72: candidate A is a promising mechanism for preventing concurrent writes, but **serialization alone is not sufficient**.
+
+### Source check
+
+- `plutus/CounterValidator.hs` is a monotonic integer counter: it checks one continuing counter output with value `n+1` and value preservation. It has no round identity, canonical commitment, or registry-token binding. It is not a Beacon registry authority and must not be repurposed.
+- The current `BeaconRegistryDatum` remains seven fields and has no authenticated `GameRoundCommitment`. `GameRoundCommitment` exists as a type and off-chain derivation, but there is no on-chain canonical source that forces a creator to use the right game ID/configuration before the first anchor is accepted.
+- Therefore a permissionless singleton transition that accepts arbitrary caller-supplied commitment bytes could serialize a bad first write or enable griefing. It would fix the race but not establish the intended round identity.
+
+### Additional mandatory design condition
+
+Before candidate A can be implemented, define how the canonical round identity/configuration is fixed *before* the permissionless create transaction. Candidate sources to evaluate, without selecting one yet:
+1. immutable protocol/game configuration already authenticated by an existing on-chain datum or parameter;
+2. a prior explicit commitment transaction whose uniqueness and update rules are independently enforced;
+3. an authority/committee attestation, which is a weaker trust tier and only eligible under the user's explicit reproducible-failure downgrade policy.
+
+A client-supplied hash, a datum field that is not checked by the validator, or a caller-selected seed does not satisfy this condition. The final create transaction must validate the exact canonical commitment and bind it into the unique anchor. The selected trust mode and evidence must be frozen and auditable.
+
+### Next bounded task
+
+Continue read-only inventory of existing immutable config/round identity carriers and validator references to determine whether candidate 1 already exists and can be reused without repurposing unrelated state. If not, report the minimal unresolved authority decision; do not implement a new singleton, alter schemas, or modify Issue/Reveal semantics before that decision.
+
+**STATUS: SERIALIZATION CANDIDATE REFINED; PRE-EXISTING CANONICAL COMMITMENT AUTHORITY NOT YET FOUND. F4 REMAINS OPEN; NO CODE CHANGE.**
