@@ -27,6 +27,7 @@ const cases = [
   { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'decode-seed-explicitly', file: 'plutus/out/v3DiagnosticDecodeSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'raw-decode-seed-and-name', file: 'plutus/out/v3DiagnosticRawDecodeSeedAndName.plutus.json', paramType: 'builtin-data-two' },
+  { id: 'raw-decode-seed-name-singleton', file: 'plutus/out/v3DiagnosticRawDecodeSeedAndNameSingleton.plutus.json', paramType: 'builtin-data-two' },
   { id: 'raw-decode-name-mint-only', file: 'plutus/out/v3DiagnosticRawDecodeNameMintOnly.plutus.json', paramType: 'raw-token-name-only' },
   { id: 'seed-consumed-only', file: 'plutus/out/v3DiagnosticSeedConsumedOnly.plutus.json', paramType: 'typed-txoutref' },
   { id: 'seed-consumed-serialized', file: 'plutus/out/v3DiagnosticSeedConsumedSerialized.plutus.json', paramType: 'typed-txoutref' },
@@ -118,7 +119,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v10',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v11',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -127,7 +128,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality and explicitly decode both seed TxOutRef and TokenName from BuiltinData; compare typed TokenName parameter application against a raw-BuiltinData TokenName-only mint check; TxOutRef and TokenName parameter forms are explicitly compared. All cases are diagnostic only.',
+  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality; compare both TokenName Data encodings for the typed parameter factories; compare raw BuiltinData parameter wrappers against equivalent typed validation logic, including the exact singleton Value predicate. All cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
