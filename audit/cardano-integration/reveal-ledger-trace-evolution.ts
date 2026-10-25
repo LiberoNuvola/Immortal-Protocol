@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -61,14 +61,12 @@ type NativeScript = { type: 'sig'; keyHash: string } | {
 }
 
 function nativePolicy(_lucid: any, keyHash: string): Script {
-  // Lucid Evolution's Script shape represents native scripts directly.
-  return {
-    type: 'Native',
-    script: {
-      type: 'all',
-      scripts: [{ type: 'sig', keyHash }],
-    },
-  } as Script
+  // Evolution expects the native-script CBOR encoding in Script.script;
+  // construct it through the supported helper rather than passing JSON as CBOR.
+  return scriptFromNative({
+    type: 'all',
+    scripts: [{ type: 'sig', keyHash }],
+  })
 }
 
 function hashJson(value: unknown): string {
