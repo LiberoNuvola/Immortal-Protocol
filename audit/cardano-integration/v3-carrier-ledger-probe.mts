@@ -174,7 +174,7 @@ providerWithProbeBudget.evaluateTx = async () => {
     noProductionV3OrRevealSemanticsChanged: true,
   }
   mkdirSync('audit/yaci-evidence', { recursive: true })
-  writeFileSync(PROBE_BUDGET_EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\\n')
+  writeFileSync(PROBE_BUDGET_EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n')
   return [{
     redeemer_tag: 'mint',
     redeemer_index: 0,
