@@ -533,7 +533,9 @@ const directCmlDatumParseDiagnostic = (label: string, utxo: UTxO) => {
     }))
     throw error
   } finally {
-    parsed?.free?.()
+    // Do not manually free this diagnostic object: the CML WASM module is
+    // shared with Lucid's lazy builder in this process. Preserve the parser
+    // result until process exit to rule out cross-call WASM lifetime effects.
   }
 }
 directCmlDatumParseDiagnostic('Prize', prizeUtxo)
