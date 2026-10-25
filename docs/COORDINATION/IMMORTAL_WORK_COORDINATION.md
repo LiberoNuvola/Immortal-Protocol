@@ -5,9 +5,9 @@
 > **Authority:** this file is **NON-NORMATIVE**. It cannot change protocol semantics. Canonical Constitution/specifications and explicit normative decisions remain authoritative.
 >
 > **Working branch:** `work/immortal-green-closure`
-> **Snapshot:** 2026-09-27
-> **Observed HEAD:** `dbe1ec746685ba5d7524050130e24750c1e35a1a`
-> **HEAD change:** `docs: register Orynq anchor-id triangulation`
+> **Snapshot:** 2026-10-25
+> **Coordination policy update:** `fd039c2591095d5dc51afa956742c66e3bbf9d02` — general checkpoint established as multi-agent coordination control plane
+> **HEAD rule:** read the live branch HEAD from GitHub at every session start; this file's historical entries are not a substitute for current refs or run evidence.
 
 ---
 
