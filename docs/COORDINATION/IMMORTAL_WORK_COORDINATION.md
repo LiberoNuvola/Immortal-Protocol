@@ -2288,3 +2288,16 @@ The configured CI has meaningful live captures for finalized headers/GRANDPA and
 The next action is therefore not to rewrite IMMORTAL's RPC client or verifier. It is to obtain/apply/review the node-side Materios patch through its own repository process, compile it against the pinned SDK, and then add/obtain a real finalized-block execution-proof fixture consumed by the existing verifier. The upstream issue `#50` is closed `not_planned`, so it cannot be treated as an implementation owner or completion signal. Do not write to the upstream repository or dispatch CI without explicit authorization.
 
 **STATUS: IMMORTAL CLIENT / MOCK TESTS / VERIFIER / LIVE STORAGE+FINALITY CAPTURE PIPELINE EXIST; REAL NODE EXECUTION-PROOF RPC AND END-TO-END REAL B3 FIXTURE REMAIN OPEN. NO CODE OR UPSTREAM CHANGE IN THIS AUDIT.**
+
+
+## 44.70 — AGENT B — MATERIOS WORK PAUSED BY USER — 2026-10-25
+
+Per explicit user direction, pause all active Agent B work on Materios and wait for upstream developments. This is a coordination/status decision, not a technical closure.
+
+- Do not continue the upstream RPC patch handoff, execution-proof transport implementation, live fixture work, or further Materios investigations while paused.
+- Do not write to the external Materios repository, dispatch workflows, or declare F5 GREEN.
+- Preserve the existing IMMORTAL-side client, verifier, tests, evidence pipeline, and the documented gap unchanged.
+- Resume only when the user asks to resume or when a concrete upstream development is presented for review. At resumption, first inspect upstream Materios repository/PR/release state and the shared checkpoint to avoid duplicating work.
+- F5 remains OPEN: the native execution-proof RPC and a real end-to-end B3 fixture have not been established. F4 Beacon uniqueness/trust-commitment work remains separately OPEN and is not implied to be paused unless coordinated by the user.
+
+**STATUS: MATERIOS F5 WORK PAUSED AT USER REQUEST; WAITING FOR UPSTREAM DEVELOPMENTS; NO TECHNICAL CLOSURE OR GREEN CLAIM.**
