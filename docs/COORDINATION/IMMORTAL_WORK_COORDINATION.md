@@ -1928,3 +1928,49 @@ The existing `src/beaconTrust.ts` helper already encodes B3 → B2 → B1 priori
 Do not ask the user to choose the trust hierarchy again. Perform a source-grounded comparison of the smallest viable on-chain enforcement boundaries (extend the round registry vs. a separate immutable round/trust commitment), evaluating how each can enforce: unique round binding, B3→B2→B1 qualification/fallback transparency, mode/evidence freeze, and ticket-commitment linkage. Report the comparison and implementation delta before editing protocol schemas or validators. No normative semantics are to be invented; do not touch V3 or Reveal, create branches, or claim GREEN without evidence.
 
 **No implementation code or on-chain state changed in this checkpoint update.**
+
+
+## 44.60 — AGENT B F4 — ON-CHAIN BINDING OPTIONS COMPARISON — 2026-10-25
+
+**Scope:** source-grounded comparison of extending the existing round registry versus a separate immutable round/trust commitment. Source inspected on `work/b3-materios-provenance-evidence`; this branch is evidence for the audit, not automatically the deployment baseline. No implementation files changed.
+
+### Existing evidence reviewed
+
+- `src/beaconTrust.ts` (SHA `e9ce2f73be14b85ed4af84863ef40bc68a6625a8`): helper priority is B3_VERIFIED → B2_ATTESTED → B1_AUTHORIZED, but repository source audit found no operational round-creation/mint call sites.
+- `src/createRound.ts` (SHA `4112d87b7b6d88d77da0bbaee5ed2e172527609e`): initial Pending registry UTxO is currently created by a plain `payToContract`; source comment explicitly acknowledges no on-chain creation validator constraint and competing Pending entries for the same round are possible.
+- `src/registryDatum.ts` (SHA `0d611c29fe4f74b9b2fa4cd328e8fe2edb5f48f4`) and `plutus/Types.hs` (SHA `a10b2ce9b74b2e91dc7d75577996dc9abb555930`): current `BeaconRegistryDatum` has seven fields and no trust mode/evidence commitment; `GameRoundCommitment` is a separate type not embedded in the registry datum.
+- `plutus/BeaconRegistry.hs` (SHA `184f4178139dde01845853dcc0ab51371949ec9b`): validator authenticates the Pending→Ready transition via the configured relayer and deterministic beacon derivation; it does not authenticate source trust mode/proof validity and does not constrain creation of the initial Pending output.
+- `plutus/MintPolicy.hs` (SHA `0d59fc05b4c11873984fffd10014bd46d8470509`): Issue reads a registry reference and checks target/round/Pending status, but not trust mode/evidence. The ticket commitment currently covers ticket identity, player commitment, game version, nonce, price and encoded BeaconTarget only.
+- `plutus/Beacon.hs` (SHA `3c9065e7b6b2b9484d845d03078dca165e40f031`), `src/beacon.ts` (SHA `4ad58dedb68bb3db1b52900b113126105dcd8766`) and `plutus/PrizeValidator.hs` (SHA `dab86e7f25dc160b3331861fec3042c4f3005a02`): the same ticket commitment is recomputed during Reveal using the existing fields and target. A persistent trust binding cannot simply be added to the issuance hash alone; the commitment data and Reveal-side recomputation must remain byte-for-byte consistent. This would require a PrizeDatum/commitment-interface and Reveal-validator compatibility change, even if the random outcome derivation itself is left unchanged.
+
+### Comparison
+
+**Option B — extend the existing registry datum**
+- Add a canonical trust-mode value and evidence digest/reference to the registry round state; ensure the Pending→Ready transition preserves those fields and the validator prevents changes.
+- Wire the B3→B2→B1 qualification/fallback record into round creation before freezing the selected result.
+- Update Issue/MintPolicy to validate the selected mode/evidence binding and include its canonical digest in the ticket binding.
+- Still must solve the currently unguarded initial Pending creation / duplicate-round problem. Merely adding fields to the datum does not establish a unique canonical round. A round-uniqueness/anchor mechanism must be enforced on-chain.
+- Lowest conceptual surface area because the existing registry already serves as the Issue reference, but changes a live datum schema and registry validator and still has the Reveal commitment-compatibility dependency.
+
+**Option C — separate immutable round/trust commitment**
+- Create a distinct round commitment carrying round identity, selected trust mode and evidence digest; Issue must reference and validate it, and the ticket binding must include its canonical commitment hash.
+- Must have on-chain uniqueness and immutability enforcement (e.g. a canonical one-per-round anchor/token/policy rule); a separate UTxO by itself is not immutable or unique.
+- Adds another reference object, deployment/configuration surface and reference-input/transaction-size overhead. It does not remove the need to keep ticket commitment data and Reveal-side recomputation consistent.
+- Cleaner separation of round identity/trust provenance from the existing operational Beacon registry, but larger integration footprint and no evidence in this audit that a suitable existing carrier already satisfies all required invariants.
+
+### Technical conclusion
+
+**Provisional smallest-delta direction: extend the existing registry (B), but only together with a separately proven on-chain uniqueness rule for the canonical round anchor.** It reuses the existing registry reference and avoids introducing an additional trust-carrier UTxO. This is a technical recommendation, not permission to edit the schema or validator. If the unique-anchor invariant cannot be expressed safely within the existing registry architecture, reopen C with an explicit cost comparison.
+
+The trust policy remains exactly as reaffirmed in 44.59: try B3 first, then B2, then B1 only after a recorded, reproducible qualification failure; publish an auditable decision trail; freeze the selected mode and evidence binding for the round; never silently downgrade. The fallback process does not itself prove that a tier's underlying evidence is valid.
+
+### Required implementation gates before code changes
+
+1. Identify and specify the on-chain one-round/one-canonical-anchor invariant and how the initial Pending output is created without allowing competing anchors.
+2. Specify the canonical serialization/hash of mode + evidence digest + round identity, including failure/audit record representation; do not treat an off-chain log as cryptographic proof.
+3. Map compatibility changes across `Types.hs`, `registryDatum.ts`, `createRound.ts`, `BeaconRegistry.hs`, `MintPolicy.hs`, `Beacon.hs`/TS mirror, `PrizeDatum` serialization, and `PrizeValidator.hs` Reveal commitment verification.
+4. Add conformance tests for strongest-available selection, explicit fallback reasons, invalid/missing evidence fail-closed behavior, no duplicate canonical round anchor, immutable mode/evidence binding, and ticket/round/evidence cross-binding.
+5. Keep B3-A/B/C evidence gates separate. Do not label B3 available merely because the selector prefers B3; real proof/verification qualification must pass.
+6. Existing guardrail remains: do not change V3 or Reveal semantics in this front. Because the persistent ticket commitment requires Reveal-side compatibility work, keep implementation blocked and coordinate/authorize that bounded contract change explicitly rather than smuggling it into an unrelated patch.
+
+**STATUS: architecture comparison recorded; no implementation/schema/validator/deployment/on-chain changes; F4 remains OPEN.**
