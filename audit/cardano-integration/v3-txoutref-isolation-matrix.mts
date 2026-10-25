@@ -69,13 +69,12 @@ for (const item of cases) {
     if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
       throw new Error('invalid diagnostic policy artifact')
     }
-    // Lucid parameter application must match the compiled Plutus type: TokenName
-    // is encoded as Constr(0,[bytestring]) in the typed policy path. The raw
-    // BuiltinData diagnostic deliberately receives the bare bytestring Data so
-    // its explicit unsafeFromBuiltinData path remains independently testable.
-    const nameParam = item.paramType === 'builtin-data-two' || item.paramType === 'raw-token-name-only'
-      ? TOKEN_NAME_HEX
-      : new Constr(0, [TOKEN_NAME_HEX])
+    // TokenName's Plutus Data representation is the underlying bytestring.
+    // Passing Constr(0,[bytestring]) instead causes the evaluator's
+    // "expected bytestring; actual data" mismatch. Keep the TxOutRef parameter
+    // separately constructor-encoded; the raw BuiltinData cases still test
+    // explicit decoding at the validator boundary.
+    const nameParam = TOKEN_NAME_HEX
     const params = item.paramType === 'token-name-only' || item.paramType === 'raw-token-name-only'
       ? [nameParam]
       : [seedParam, nameParam]
@@ -115,7 +114,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v8',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v9',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
