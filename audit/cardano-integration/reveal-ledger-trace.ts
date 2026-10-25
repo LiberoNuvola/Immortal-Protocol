@@ -786,6 +786,66 @@ const poolRevealRedeemer = Data.to(c(2, [PRICE_USDM]))
 const postPrizeDatumCbor = Data.to(postPrizeDatum)
 const postPoolDatumCbor = Data.to(postPoolDatum)
 
+/*
+ * Construction-only probes for the observed Reveal inputs. Each transaction
+ * is completed independently to localize Lucid's lazy datum conversion failure.
+ * These probes do not sign or submit, and the authoritative Reveal builder below
+ * remains unchanged.
+ */
+const probeRevealCollectCompletion = async (
+  label: string,
+  input: UTxO,
+  redeemer: string,
+  outputAddress: string,
+  outputDatum: string,
+) => {
+  try {
+    await lucid
+      .newTx()
+      .readFrom([prizeReferenceInput, poolReferenceInput])
+      .collectFrom([input], redeemer)
+      .pay.ToContract(
+        outputAddress,
+        { kind: 'inline', value: outputDatum },
+        input.assets,
+      )
+      .addSigner(address)
+      .validTo(Number(revealValidTo()))
+      .complete({ localUPLCEval: false })
+    console.log(JSON.stringify({
+      revealCollectFromCompletionProbe: label,
+      status: 'PASS',
+      signed: false,
+      submitted: false,
+    }))
+  } catch (error) {
+    console.error(JSON.stringify({
+      revealCollectFromCompletionProbe: label,
+      status: 'FAIL',
+      signed: false,
+      submitted: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error && typeof error === 'object' && 'stack' in error
+        ? String((error as { stack?: unknown }).stack ?? '')
+        : null,
+    }))
+  }
+}
+await probeRevealCollectCompletion(
+  'Prize-only',
+  prizeUtxo,
+  prizeRevealRedeemer,
+  scripts.prizeAddress as string,
+  postPrizeDatumCbor,
+)
+await probeRevealCollectCompletion(
+  'B1PrizePool-only',
+  poolUtxo,
+  poolRevealRedeemer,
+  scripts.b1PrizePoolAddress as string,
+  postPoolDatumCbor,
+)
+
 const revealBuilder = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
