@@ -39,7 +39,8 @@ const policy: Script = {
     // TxOutRef encodes as Constr 0 [txId-bytes, output-index]; TxId is a newtype,
     // so adding a nested Constr around the hash changes the on-chain parameter shape.
     new Constr(0, [seed.txHash, BigInt(seed.outputIndex)]),
-    new Constr(0, [TOKEN_NAME_HEX]),
+    // TokenName is a newtype over BuiltinByteString, so its Plutus Data encoding is B <bytes>, not a constructor.
+    TOKEN_NAME_HEX,
   ]),
 }
 const policyId = mintingPolicyToId(policy)
