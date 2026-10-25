@@ -10,6 +10,7 @@ module V3CarrierDiagnosticPolicies
   , readInputsFactory
   , compareSeedFactory
   , decodeSeedFactory
+  , rawDecodeSeedAndNameFactory
   , seedConsumedFactory
   , seedConsumedSerializedFactory
   , assocMapMintFactory
@@ -63,6 +64,24 @@ wrapDecodeSeed :: BuiltinData -> TokenName -> BuiltinData -> BuiltinData -> Buil
 wrapDecodeSeed seedData name _ ctx =
   check (mkDecodeSeed seedData name () (unsafeFromBuiltinData ctx))
 
+
+
+-- Diagnostic boundary: both parameters arrive as BuiltinData and are decoded
+-- explicitly, isolating compiler-generated parameter decoding from validator logic.
+{-# INLINABLE mkRawDecodeSeedAndName #-}
+mkRawDecodeSeedAndName :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+mkRawDecodeSeedAndName seedData nameData _ ctx =
+  let
+    seed = unsafeFromBuiltinData seedData :: TxOutRef
+    name = unsafeFromBuiltinData nameData :: TokenName
+    decodedContext = unsafeFromBuiltinData ctx :: ScriptContext
+  in check (diagnosticSeedConsumed seed (scriptContextTxInfo decodedContext)
+       && diagnosticMintedExactlyOne (ownCurrencySymbol decodedContext) name
+            (txInfoMint (scriptContextTxInfo decodedContext)))
+
+{-# INLINABLE wrapRawDecodeSeedAndName #-}
+wrapRawDecodeSeedAndName :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapRawDecodeSeedAndName = mkRawDecodeSeedAndName
 
 {-# INLINABLE diagnosticSeedConsumed #-}
 diagnosticSeedConsumed :: TxOutRef -> TxInfo -> Bool
@@ -158,6 +177,10 @@ assocMapMintFactory = $$(compile [|| wrapAssocMapMintOnly ||])
 singletonMintFactory
   :: CompiledCode (TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
+
+rawDecodeSeedAndNameFactory
+  :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
+rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
 
 seedConsumedSerializedFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
