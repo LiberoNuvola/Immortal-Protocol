@@ -10,6 +10,9 @@ module V3CarrierDiagnosticPolicies
   , readInputsFactory
   , compareSeedFactory
   , decodeSeedFactory
+  , seedConsumedFactory
+  , assocMapMintFactory
+  , singletonMintFactory
   ) where
 
 import PlutusLedgerApi.V2
@@ -57,6 +60,59 @@ wrapCompareSeed seedData name _ ctx =
 wrapDecodeSeed :: BuiltinData -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
 wrapDecodeSeed seedData name _ ctx =
   check (mkDecodeSeed seedData name () (unsafeFromBuiltinData ctx))
+
+
+{-# INLINABLE diagnosticSeedConsumed #-}
+diagnosticSeedConsumed :: TxOutRef -> TxInfo -> Bool
+diagnosticSeedConsumed seed info =
+  let
+    go [] = False
+    go (i:is) = txInInfoOutRef i == seed || go is
+  in go (txInfoInputs info)
+
+{-# INLINABLE diagnosticMintEntries #-}
+diagnosticMintEntries :: CurrencySymbol -> Value -> [(TokenName, Integer)]
+diagnosticMintEntries cs value =
+  case AssocMap.lookup cs (getValue value) of
+    Nothing -> []
+    Just tokens -> AssocMap.toList tokens
+
+{-# INLINABLE diagnosticMintedExactlyOne #-}
+diagnosticMintedExactlyOne :: CurrencySymbol -> TokenName -> Value -> Bool
+diagnosticMintedExactlyOne cs expectedName value =
+  case diagnosticMintEntries cs value of
+    [(name, amount)] -> name == expectedName && amount == 1
+    _ -> False
+
+{-# INLINABLE mkSeedConsumedOnly #-}
+mkSeedConsumedOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+mkSeedConsumedOnly seed _ _ ctx =
+  diagnosticSeedConsumed seed (scriptContextTxInfo ctx)
+
+{-# INLINABLE mkAssocMapMintOnly #-}
+mkAssocMapMintOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+mkAssocMapMintOnly _ tokenName _ ctx =
+  diagnosticMintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
+
+{-# INLINABLE mkSingletonMintOnly #-}
+mkSingletonMintOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+mkSingletonMintOnly _ tokenName _ ctx =
+  txInfoMint (scriptContextTxInfo ctx) == singleton (ownCurrencySymbol ctx) tokenName 1
+
+{-# INLINABLE wrapSeedConsumedOnly #-}
+wrapSeedConsumedOnly :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapSeedConsumedOnly seed name _ ctx =
+  check (mkSeedConsumedOnly seed name () (unsafeFromBuiltinData ctx))
+
+{-# INLINABLE wrapAssocMapMintOnly #-}
+wrapAssocMapMintOnly :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapAssocMapMintOnly seed name _ ctx =
+  check (mkAssocMapMintOnly seed name () (unsafeFromBuiltinData ctx))
+
+{-# INLINABLE wrapSingletonMintOnly #-}
+wrapSingletonMintOnly :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapSingletonMintOnly seed name _ ctx =
+  check (mkSingletonMintOnly seed name () (unsafeFromBuiltinData ctx))
 
 noContextFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
