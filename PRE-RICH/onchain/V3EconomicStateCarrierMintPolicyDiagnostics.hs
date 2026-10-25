@@ -9,6 +9,9 @@ module V3EconomicStateCarrierMintPolicyDiagnostics
   ( compiledAlwaysPassFactory
   , compiledSeedOnlyFactory
   , compiledMintOnlyFactory
+  , compiledSeedParamOnlyFactory
+  , compiledTokenNameParamOnlyFactory
+  , compiledContextInputsOnlyFactory
   ) where
 
 import PlutusLedgerApi.V2
@@ -59,3 +62,32 @@ compiledSeedOnlyFactory =
 
 compiledMintOnlyFactory =
   $$(compile [|| mintOnlyWrap ||])
+
+-- These extra probes separate parameter decoding from ScriptContext decoding.
+-- They are intentionally small and remain test-only artifacts.
+{-# INLINABLE seedParamOnlyWrap #-}
+seedParamOnlyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+seedParamOnlyWrap seedData _ _ _ =
+  let seed = unsafeFromBuiltinData seedData :: TxOutRef
+  in check (txOutRefIdx seed >= 0)
+
+{-# INLINABLE tokenNameParamOnlyWrap #-}
+tokenNameParamOnlyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+tokenNameParamOnlyWrap _ tokenNameData _ _ =
+  let tokenName = unsafeFromBuiltinData tokenNameData :: TokenName
+  in check (tokenName == TokenName "ECONOMICSTATE")
+
+{-# INLINABLE contextInputsOnlyWrap #-}
+contextInputsOnlyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+contextInputsOnlyWrap _ _ _ ctx =
+  let info = scriptContextTxInfo (unsafeFromBuiltinData ctx :: ScriptContext)
+  in check (not (null (txInfoInputs info)))
+
+compiledSeedParamOnlyFactory =
+  $$(compile [|| seedParamOnlyWrap ||])
+
+compiledTokenNameParamOnlyFactory =
+  $$(compile [|| tokenNameParamOnlyWrap ||])
+
+compiledContextInputsOnlyFactory =
+  $$(compile [|| contextInputsOnlyWrap ||])
