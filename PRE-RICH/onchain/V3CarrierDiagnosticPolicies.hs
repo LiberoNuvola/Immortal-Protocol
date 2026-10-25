@@ -11,6 +11,7 @@ module V3CarrierDiagnosticPolicies
   , compareSeedFactory
   , decodeSeedFactory
   , seedConsumedFactory
+  , seedConsumedSerializedFactory
   , assocMapMintFactory
   , singletonMintFactory
   ) where
@@ -90,14 +91,29 @@ mkSeedConsumedOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
 mkSeedConsumedOnly seed _ _ ctx =
   diagnosticSeedConsumed seed (scriptContextTxInfo ctx)
 
+
+{-# INLINABLE mkSeedConsumedSerialized #-}
+mkSeedConsumedSerialized :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
+mkSeedConsumedSerialized seed _ _ ctx =
+  let
+    seedData = toBuiltinData seed
+    go [] = False
+    go (i:is) = toBuiltinData (txInInfoOutRef i) == seedData || go is
+  in go (txInfoInputs (scriptContextTxInfo ctx))
+
+{-# INLINABLE wrapSeedConsumedSerialized #-}
+wrapSeedConsumedSerialized :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapSeedConsumedSerialized seed name _ ctx =
+  check (mkSeedConsumedSerialized seed name () (unsafeFromBuiltinData ctx))
+
 {-# INLINABLE mkAssocMapMintOnly #-}
-mkAssocMapMintOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkAssocMapMintOnly _ tokenName _ ctx =
+mkAssocMapMintOnly :: TokenName -> () -> ScriptContext -> Bool
+mkAssocMapMintOnly tokenName _ ctx =
   diagnosticMintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
 
 {-# INLINABLE mkSingletonMintOnly #-}
-mkSingletonMintOnly :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkSingletonMintOnly _ tokenName _ ctx =
+mkSingletonMintOnly :: TokenName -> () -> ScriptContext -> Bool
+mkSingletonMintOnly tokenName _ ctx =
   txInfoMint (scriptContextTxInfo ctx) == singleton (ownCurrencySymbol ctx) tokenName 1
 
 {-# INLINABLE wrapSeedConsumedOnly #-}
@@ -106,14 +122,14 @@ wrapSeedConsumedOnly seed name _ ctx =
   check (mkSeedConsumedOnly seed name () (unsafeFromBuiltinData ctx))
 
 {-# INLINABLE wrapAssocMapMintOnly #-}
-wrapAssocMapMintOnly :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrapAssocMapMintOnly seed name _ ctx =
-  check (mkAssocMapMintOnly seed name () (unsafeFromBuiltinData ctx))
+wrapAssocMapMintOnly :: TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapAssocMapMintOnly name _ ctx =
+  check (mkAssocMapMintOnly name () (unsafeFromBuiltinData ctx))
 
 {-# INLINABLE wrapSingletonMintOnly #-}
-wrapSingletonMintOnly :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrapSingletonMintOnly seed name _ ctx =
-  check (mkSingletonMintOnly seed name () (unsafeFromBuiltinData ctx))
+wrapSingletonMintOnly :: TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapSingletonMintOnly name _ ctx =
+  check (mkSingletonMintOnly name () (unsafeFromBuiltinData ctx))
 
 noContextFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
@@ -142,3 +158,7 @@ assocMapMintFactory = $$(compile [|| wrapAssocMapMintOnly ||])
 singletonMintFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
+
+seedConsumedSerializedFactory
+  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+seedConsumedSerializedFactory = $$(compile [|| wrapSeedConsumedSerialized ||])
