@@ -2458,3 +2458,85 @@ The user need not choose every code detail yet. The unresolved normative choice 
 Cardano's eUTXO model supports the underlying mechanism: consumed UTxOs cannot be spent twice, concurrent spends of the same state conflict, and reference inputs can share immutable data without consuming it. These ledger properties support the candidate but do not decide PRE-RICH's normative configuration authority. See Cardano documentation on [eUTXO concurrency](https://developers.cardano.org/docs/get-started/technical-concepts/eutxo/) and [reference inputs, CIP-31](https://cips.cardano.org/cip/CIP-0031).
 
 **STATUS: CONCRETE TRUSTLESS-FIRST CANDIDATE AND TRADE-OFF RECORDED; REQUIRES USER'S NORMATIVE ACCEPTANCE BEFORE IMPLEMENTATION. F4 OPEN; NO CODE CHANGE. F5/MATERIOS STILL PAUSED.**
+
+
+## 44.76 — AGENT B F4 — VERSIONED SCHEMA / MIGRATION BLUEPRINT (DESIGN ONLY) — 2026-10-25
+
+This blueprint converts candidate D (§44.75) into a reviewable implementation sequence. It is **non-normative** and does not authorize source changes. It deliberately names logical fields rather than freezing constructor order, serialization, hash encoding, or commitment domain; those must be specified and reviewed before implementation.
+
+### Proposed version boundary
+
+Create a new explicit Beacon/Issue commitment version (name/version identifier to be finalized in the normative spec). Do not silently reinterpret existing V1/V2 datum bytes or existing ticket NFTs. The migration must define:
+- which ticket/schema versions can still be issued;
+- whether legacy pending tickets can be revealed under their original semantics;
+- the exact activation boundary for the new version;
+- whether old and new validators coexist and how a ticket chooses its version;
+- a fail-closed rule for missing or mismatched version tags.
+
+### Logical data contract (field names are illustrative)
+
+1. **Deployment-pinned immutable profile**
+   - network/domain identifier;
+   - canonical game identifier;
+   - canonical configuration hash;
+   - protocol/schema version;
+   - bootstrap seed UTxO reference and singleton policy/artifact identity.
+   These values must be fixed by validator/policy parameters and independently reproduced from the deployed artifacts. A public transaction caller must not supply replacements.
+2. **Dedicated round-state datum**
+   - schema version;
+   - pinned profile/config hash;
+   - current canonical round index/identity;
+   - current canonical GameRoundCommitment;
+   - singleton authority token identity;
+   - transition state needed to prove exactly one valid continuation.
+   Every transition validates the old state and emits exactly one valid continuation carrying the same authority token. The precise datum and value-preservation rules remain to be specified.
+3. **BeaconRegistry datum vNext**
+   - existing registry fields retained only as required by compatibility;
+   - explicit schema/version tag;
+   - canonical game/config/profile hash;
+   - canonical round identity;
+   - authenticated GameRoundCommitment;
+   - trust-mode commitment/hash.
+   The registry validator must prove the commitment against the authenticated round-state authority, not merely check nonempty bytes or a relayer signature.
+4. **Issue-time frozen ticket commitment**
+   - include the authenticated registry/round commitment and trust-mode commitment in a new domain-separated ticket commitment version;
+   - Issue must verify the referenced canonical registry anchor on-chain and persist the same values in the ticket's on-chain datum/commitment representation;
+   - the client may calculate candidate values but cannot be the authority for accepting them.
+5. **Reveal-time verification**
+   - compare the ticket's frozen schema version, round commitment and trust-mode commitment against the exact canonical fields established at Issue;
+   - reject missing, altered, substituted or version-incompatible values;
+   - preserve legacy behavior only for explicitly supported legacy versions; do not modify existing Reveal semantics as part of this design note.
+
+### Implementation order once the normative design is approved
+
+A. Freeze the encoding spec first: canonical byte encoding, domain separators, hash preimages, field ordering, integer normalization, network/config identity, and cross-language golden vectors for TypeScript/Haskell.
+
+B. Implement the dedicated authority/policy and state validator in isolation; prove one-shot bootstrap, correct initial datum, singleton quantity/destination, monotonic sequential transition, and stale-state conflict behavior. Do not reuse Counter, V3, B2 or B1 state.
+
+C. Extend registry datum/validator and TypeScript serializer/parser together. Add golden round-trip vectors and negative tests for missing or mismatched commitment/version fields.
+
+D. Extend Issue admission/validator and ticket datum/commitment version in a separately reviewable change. Verify canonical registry reference and freeze the commitment on-chain. Do not change the old commitment domain in place.
+
+E. Extend Reveal only under the selected versioned migration and with the owner of the Reveal front coordinating the exact compatibility contract. Agent B must not independently alter Reveal or duplicate Agent A's diagnostic work.
+
+F. Add end-to-end conformance tests from bootstrap → round transition → registry publication → Issue → Reveal, plus adversarial/property tests listed in §44.72 and §44.75. Then collect build, CI, ledger/runtime and deployment-certification evidence separately; source compilation alone is not GREEN.
+
+### Cross-language and adversarial test minimum
+
+- Identical commitment bytes/hash from Haskell and TypeScript for the same fixture, including boundary integers and malformed/empty byte fields.
+- Wrong schema version, config hash, network/domain, round identity, trust mode, registry UTxO or singleton token: reject.
+- Duplicate initialization, duplicate round, stale state, skipped round and concurrent state spends: reject or deterministically serialize according to the selected sequential rule.
+- Registry commitment altered after off-chain calculation: on-chain validation rejects.
+- Issue attempts with a client-only commitment, noncanonical registry output or mismatched profile: reject.
+- Ticket datum and commitment disagree, Reveal receives a different round/trust commitment, or a legacy ticket is presented under new-version rules: reject.
+- Valid vNext path passes while supported legacy fixtures retain their specified behavior.
+- Artifact hashes and deployment manifest reproduce exactly; evidence identifies source commit, toolchain, schema version, network and validator/policy hashes.
+
+### Explicitly unresolved (normative, not to be guessed by implementation)
+
+1. Accept or reject the deployment-pinned configuration + permissionless sequential-round architecture.
+2. Select exact canonical identity fields, commitment encoding/domain and schema/version numbers.
+3. Define migration activation and the handling of already-issued/pending tickets.
+4. Define the governance/approval procedure for bootstrap artifact/configuration and later upgrades.
+
+**STATUS: MIGRATION BLUEPRINT RECORDED FOR REVIEW; NO SOURCE, SCHEMA, WORKFLOW OR DEPLOYMENT CHANGED. F4 REMAINS OPEN. F5/MATERIOS REMAINS PAUSED.**
