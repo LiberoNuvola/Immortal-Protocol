@@ -1706,3 +1706,89 @@ commit `d456be3ebe243187778c6d35e861137a36b8bfb2`.
 No production validator change is made in this pass because the repository does not yet contain a canonical on-chain decision-authority mechanism that can be reused without inventing new protocol semantics.
 
 Closure must be sourced from the existing architecture and must make the carrier transition non-malleably correspond to the existing economic decision/admission path. V3 semantics, Reveal semantics, EEV rules and B1 liquidity rules remain unchanged.
+
+## 44.54 — GENERAL CHECKPOINT AS MULTI-AGENT COORDINATION CONTROL PLANE — 2026-10-25
+
+**Purpose:** this general checkpoint is the mandatory coordination layer for all agents/sessions working on IMMORTAL. It coordinates work and evidence; it does not replace normative authority, implementation sources, or ledger evidence.
+
+### 44.54.1 Mandatory pre-flight before any work
+
+Before investigating, editing, testing, or reporting a front, every agent MUST:
+
+1. Read this checkpoint and the latest operational handoff.
+2. Identify the canonical work branch and its exact HEAD SHA from GitHub; never assume the branch name implies the current contents.
+3. Read the relevant recent commit(s), PR diff, workflow runs, and evidence artifacts on that exact SHA.
+4. Search the checkpoint and recent handoffs for the same front, symptom, hypothesis, test, and prior PASS/FAIL.
+5. Compare the candidate branch with the canonical work branch when they differ. Explicitly report divergence and identify which evidence applies to which commit.
+6. Record a front lease before substantive work: owner/agent, exact branch+SHA, scope, hypothesis, planned action, acceptance criterion, and status.
+
+If any of these checks cannot be completed, the agent must state the limitation and must not present old or branch-local evidence as current.
+
+### 44.54.2 One canonical work front; no duplicate diagnosis
+
+- For an active front, one agent/session is the **driver**; other agents may perform bounded independent review, but must not repeat the same experiment without stating what new uncertainty the repetition resolves.
+- A front lease is unique by front_id. Before starting a test, search for an existing lease or recent evidence with the same front_id and objective.
+- If the front is already PASS at the required evidence layer on the canonical SHA, stop re-running it. Verify provenance and artifact identity, then move to the first downstream unresolved gate.
+- A failure on a divergent review/audit branch is branch-local evidence. It is not automatically a regression of the canonical branch and must not reopen a gate already passed elsewhere.
+- If branch comparison reveals duplicated work, pause the duplicate path, reconcile the exact commits and test harnesses, and resume only the unresolved delta.
+- Do not create branches unless the user explicitly authorizes it. Do not merge, rebase, force-update refs, deploy, sign, or submit on-chain transactions without the required authorization.
+
+### 44.54.3 Evidence record required for every status claim
+
+Every PASS/FAIL/OPEN claim must include:
+
+- front_id and acceptance criterion;
+- branch name and full source commit SHA;
+- workflow/run URL and attempt, if applicable;
+- artifact/evidence reference and its source commit;
+- environment/ledger and relevant toolchain or protocol-parameter identity;
+- exact result and the layer proven (source, unit, CI, simulation, Yaci, native ledger, Preprod, certification);
+- what the result does not prove;
+- next unresolved dependency and owner.
+
+A result from one SHA must never be silently attributed to another SHA. Historical evidence remains historical unless artifact/source identity and applicability are independently revalidated.
+
+### 44.54.4 Coordination state machine
+
+Use only these operational states:
+
+- **UNTRIAGED** — evidence and owner not yet reconciled.
+- **READY** — scope, canonical SHA, owner, and acceptance criterion recorded.
+- **IN_PROGRESS** — one named driver is executing the bounded task.
+- **BLOCKED** — a named dependency or decision prevents progress.
+- **PASS_AT_LAYER** — acceptance criterion passed at a stated evidence layer and exact SHA; not a general GREEN declaration.
+- **REVIEW_REQUIRED** — independent review or cross-branch reconciliation remains.
+- **CLOSED** — required evidence layers are complete, provenance is bound, and the checkpoint records the closure basis.
+
+A status may move backwards when new evidence invalidates applicability. “CI green”, “source implemented”, “Yaci accepted”, “native ledger accepted”, “Preprod observed”, and “certified” are distinct states and must never be conflated.
+
+### 44.54.5 Current reconciliation — V3 carrier vs Reveal
+
+- The operational reference is work/immortal-green-closure; the exact HEAD must be re-read from GitHub at the start of each run.
+- The review/treasury-readonly-observer branch and PR #36 are a divergent audit line, not an alternate canonical V3 development front. PR #36 remains Draft.
+- Integration Lab #2246 on review HEAD e6a21b4287c6d39c7b07d08e7f527683b0b524bd reported a native Yaci ledger rejection of its typed V3 carrier path (data isn't supported in 'case'). This is evidence for that exact review-branch artifact/harness only; it does not by itself invalidate a carrier PASS recorded on the canonical work branch.
+- Therefore no new carrier probe should be started from the review branch merely to repeat that failure. First bind the previously reported carrier PASS to its exact work-branch SHA, run URL, artifact and ledger evidence. If that evidence meets the acceptance criterion, mark the carrier PASS at that layer and continue at the first downstream unresolved gate.
+- Reveal remains a separate gate. Do not modify V3 production logic or Reveal semantics as part of coordination/reconciliation. Do not change the production ABI or policy ID based only on the review-branch diagnostic.
+
+### 44.54.6 Agent handoff contract
+
+Every agent handoff must start with a compact header:
+
+    FRONT:
+    DRIVER:
+    CANONICAL BRANCH@SHA:
+    WORKING BRANCH@SHA (if different):
+    STATE:
+    ACCEPTANCE CRITERION:
+    LATEST EVIDENCE:
+    DUPLICATE-WORK CHECK:
+    NEXT ACTION:
+    BLOCKER / USER DECISION REQUIRED:
+
+The receiving agent must acknowledge the front and continue from the stated evidence. If the evidence contradicts the current checkpoint, it must update/reconcile the checkpoint before launching another experiment.
+
+### 44.54.7 Authority and safety boundaries
+
+This checkpoint can assign work, record dependencies, and classify evidence. It cannot invent or approve protocol economics, change normative semantics, authorize deployment, or promote a release. Normative/economic decisions remain with the user and the canonical authority hierarchy above. Missing evidence must remain OPEN/BLOCKED rather than being inferred from successful adjacent tests.
+
+**Initial state:** coordination rule adopted; carrier PASS provenance reconciliation still required before its exact commit/run can be treated as the operative baseline. No production code or on-chain state is changed by this entry.
