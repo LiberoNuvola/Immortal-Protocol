@@ -481,6 +481,26 @@ if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoo
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
+// Diagnose provider datum encoding before Lucid Evolution's CML parser consumes it.
+const datumDiagnostic = (label: string, utxo: UTxO, expected: unknown) => {
+  const datum = (utxo as any).datum
+  const expectedCbor = Data.to(expected as any)
+  const isHex = typeof datum === 'string' && datum.length % 2 === 0 && /^[0-9a-f]*$/i.test(datum)
+  console.log(JSON.stringify({
+    revealInputDatumDiagnostic: label,
+    datumType: datum === null ? 'null' : typeof datum,
+    datumLength: typeof datum === 'string' ? datum.length : null,
+    datumPrefix: typeof datum === 'string' ? datum.slice(0, 48) : null,
+    datumIsEvenHex: isHex,
+    datumSha256: typeof datum === 'string' ? createHash('sha256').update(datum).digest('hex') : null,
+    expectedCborLength: expectedCbor.length,
+    matchesExpectedCbor: typeof datum === 'string' && datum === expectedCbor,
+    datumHash: (utxo as any).datumHash ?? null,
+  }))
+}
+datumDiagnostic('Prize', prizeUtxo, prePrizeDatum)
+datumDiagnostic('B1PrizePool', poolUtxo, prePoolDatum)
+
 const reveal = await lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
