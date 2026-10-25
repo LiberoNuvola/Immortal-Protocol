@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, nativeScriptFromJson, mintingPolicyToId, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -60,11 +60,15 @@ type NativeScript = { type: 'sig'; keyHash: string } | {
   scripts: NativeScript[]
 }
 
-function nativePolicy(lucid: any, keyHash: string): Script {
-  return nativeScriptFromJson({
-    type: 'all',
-    scripts: [{ type: 'sig', keyHash }],
-  } as NativeScript)
+function nativePolicy(_lucid: any, keyHash: string): Script {
+  // Lucid Evolution's Script shape represents native scripts directly.
+  return {
+    type: 'Native',
+    script: {
+      type: 'all',
+      scripts: [{ type: 'sig', keyHash }],
+    },
+  } as Script
 }
 
 function hashJson(value: unknown): string {
