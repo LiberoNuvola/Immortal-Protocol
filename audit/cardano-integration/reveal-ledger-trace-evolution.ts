@@ -501,11 +501,37 @@ const datumDiagnostic = (label: string, utxo: UTxO, expected: unknown) => {
 datumDiagnostic('Prize', prizeUtxo, prePrizeDatum)
 datumDiagnostic('B1PrizePool', poolUtxo, prePoolDatum)
 
-const reveal = await lucid
+const revealBase = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
-  .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
-  .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+
+let revealWithPrize: any
+try {
+  revealWithPrize = revealBase.collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+  console.log(JSON.stringify({ revealCollectFromStage: 'Prize', status: 'PASS' }))
+} catch (error) {
+  console.error(JSON.stringify({
+    revealCollectFromStage: 'Prize',
+    status: 'FAIL',
+    error: error instanceof Error ? error.message : String(error),
+  }))
+  throw error
+}
+
+let revealWithBothInputs: any
+try {
+  revealWithBothInputs = revealWithPrize.collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+  console.log(JSON.stringify({ revealCollectFromStage: 'B1PrizePool', status: 'PASS' }))
+} catch (error) {
+  console.error(JSON.stringify({
+    revealCollectFromStage: 'B1PrizePool',
+    status: 'FAIL',
+    error: error instanceof Error ? error.message : String(error),
+  }))
+  throw error
+}
+
+const reveal = await revealWithBothInputs
   .pay.ToContract(
     scripts.prizeAddress as string,
     { kind: 'inline', value: Data.to(postPrizeDatum) },
