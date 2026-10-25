@@ -30,8 +30,9 @@ const cases = [
   { id: 'raw-decode-name-mint-only', file: 'plutus/out/v3DiagnosticRawDecodeNameMintOnly.plutus.json', paramType: 'raw-token-name-only' },
   { id: 'seed-consumed-only', file: 'plutus/out/v3DiagnosticSeedConsumedOnly.plutus.json', paramType: 'typed-txoutref' },
   { id: 'seed-consumed-serialized', file: 'plutus/out/v3DiagnosticSeedConsumedSerialized.plutus.json', paramType: 'typed-txoutref' },
-  { id: 'assocmap-mint-only', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'token-name-only' },
-  { id: 'singleton-mint-only', file: 'plutus/out/v3DiagnosticSingletonMintOnly.plutus.json', paramType: 'token-name-only' },
+  // Compare both Data encodings against a validator whose Haskell parameter is typed TokenName.
+  { id: 'assocmap-mint-only-bare-bytes', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'token-name-only-bare' },
+  { id: 'singleton-mint-only-constr-bytes', file: 'plutus/out/v3DiagnosticSingletonMintOnly.plutus.json', paramType: 'token-name-only-constr' },
 ]
 const results = []
 const providerResponses = []
@@ -69,13 +70,16 @@ for (const item of cases) {
     if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
       throw new Error('invalid diagnostic policy artifact')
     }
-    // TokenName's Plutus Data representation is the underlying bytestring.
-    // Passing Constr(0,[bytestring]) instead causes the evaluator's
-    // "expected bytestring; actual data" mismatch. Keep the TxOutRef parameter
-    // separately constructor-encoded; the raw BuiltinData cases still test
-    // explicit decoding at the validator boundary.
-    const nameParam = TOKEN_NAME_HEX
-    const params = item.paramType === 'token-name-only' || item.paramType === 'raw-token-name-only'
+    // Both direct typed-TokenName encodings are kept as independent probes:
+    // bare bytestring Data versus Constr(0,[bytestring]) Data. The v9 run showed
+    // that bare bytes still reaches the typed parameter as BuiltinData and fails
+    // with "expected: bytestring; actual: data"; this matrix checks whether the
+    // constructor-wrapped shape changes that failure. Raw BuiltinData cases are
+    // separate and explicitly decode at the validator boundary.
+    const nameParam = item.paramType === 'token-name-only-constr'
+      ? new Constr(0, [TOKEN_NAME_HEX])
+      : TOKEN_NAME_HEX
+    const params = item.paramType.startsWith('token-name-only-') || item.paramType === 'raw-token-name-only'
       ? [nameParam]
       : [seedParam, nameParam]
     const policy: Script = {
@@ -114,7 +118,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v9',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v10',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -123,7 +127,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality and explicitly decode both seed TxOutRef and TokenName from BuiltinData; compare typed TokenName parameter application against a raw-BuiltinData TokenName-only mint check; only the TxOutRef uses constructor encoding. All cases are diagnostic only.',
+  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality and explicitly decode both seed TxOutRef and TokenName from BuiltinData; compare typed TokenName parameter application against a raw-BuiltinData TokenName-only mint check; TxOutRef and TokenName parameter forms are explicitly compared. All cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
