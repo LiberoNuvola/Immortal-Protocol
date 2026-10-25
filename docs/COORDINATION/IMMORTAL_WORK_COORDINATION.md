@@ -2540,3 +2540,39 @@ F. Add end-to-end conformance tests from bootstrap → round transition → regi
 4. Define the governance/approval procedure for bootstrap artifact/configuration and later upgrades.
 
 **STATUS: MIGRATION BLUEPRINT RECORDED FOR REVIEW; NO SOURCE, SCHEMA, WORKFLOW OR DEPLOYMENT CHANGED. F4 REMAINS OPEN. F5/MATERIOS REMAINS PAUSED.**
+
+
+## 44.77 — AGENT B F4 — IMPLEMENTATION INSERTION-POINT / DEPENDENCY AUDIT — 2026-10-25
+
+Read-only follow-up to §44.76. Current branch source was re-fetched; no protocol code was changed.
+
+### Confirmed insertion points and coupling
+
+| Layer | Current source / behavior | Required vNext seam | Regression boundary |
+|---|---|---|---|
+| Commitment primitive | `plutus/Beacon.hs`: `deriveGameRoundCommitment` already hashes game ID, round, config hash and protocol version; `ticketCommitment` binds ticket ID, player commitment, game version, nonce, price and encoded BeaconTarget. | Specify a new domain/versioned commitment preimage that binds canonical round/profile and trust-mode commitment; mirror exact encoding in TypeScript and Haskell. | Do not mutate existing `ticketDomain` or existing digest semantics in place. |
+| Registry representation | `plutus/Types.hs`: `BeaconRegistryDatum` has seven fields and no `GameRoundCommitment`, schema version, config hash or trust-mode commitment. `src/registryDatum.ts` serializes exactly those seven fields and explicitly documents the gap. | Add a separately versioned registry representation and synchronized serializer/parser/golden vectors. | Constructor field order is serialized data; appending fields without a version/compatibility plan risks datum decoding breakage. |
+| Registry transition | `plutus/BeaconRegistry.hs`: Pending→Ready checks relayer signature, receipt/context nonempty, one own input, same target/round/relayer and deterministic beacon derivation. | Require the canonical round-state authority/commitment and prove the output preserves the same canonical profile/round commitment. Initial Pending creation still needs a uniqueness/authority rule. | A relayer signature authenticates the publisher, not the canonical game/config identity. |
+| Issue / mint | `plutus/MintPolicy.hs:newPrizeDatumValid` checks ticket fields, pool binding, existing ticket commitment, and a referenced registry in Pending state with matching target/round. `src/mint.ts` serializes PrizeDatum fields 0..22. | New-version Issue must verify the authenticated canonical anchor and freeze the profile/round/trust commitments in the vNext ticket representation/digest. | Preserve current commitment checks for legacy version; no client-only field is authoritative. |
+| Sync / Reveal | `plutus/PrizeValidator.hs:validateSyncBeacon` reads registry from reference inputs and compares target/round/beacon receipt fields. Reveal recomputes current ticket commitment from the legacy preimage. | New-version path must compare the same frozen commitment from Issue; migration rules must state exactly which validator branch each ticket version follows. | This is an interface dependency, not permission for Agent B to edit Reveal independently or change its current semantics. |
+| Deployment identity | `src/config.ts` and validator loading provide deployment IDs/parameters, but no authenticated on-chain canonical config carrier was found in the inspected interfaces. | Deployment manifest must bind network/domain, game ID, config hash, protocol/schema version, seed UTxO and exact compiled policy/validator hashes. | Environment variables alone are not an on-chain authority; deployment artifacts must be independently reproduced. |
+
+### Feasibility conclusions
+
+1. The hash primitive already exists, so vNext does not need an invented hashing algorithm; it needs a normative encoding/domain specification and on-chain enforcement.
+2. The most consequential change is the **cross-layer representation migration**: Types/datum ↔ Haskell validators ↔ TypeScript serializers/builders ↔ mint policy/Issue ↔ Reveal. Updating only `registryFlow.ts` or `registryDatum.ts` cannot close the on-chain trust gap.
+3. The current Issue path already reads registry data via reference inputs in the Prize validator; reference inputs are appropriate for reading immutable config without consuming it, provided the config identity and datum are authenticated. The mutable round-state UTxO remains a separate serialized authority. Cardano docs confirm reference inputs are visible to scripts without being consumed, and that spending validators inspect datum, redeemer and transaction context. Sources: [CIP-31](https://cips.cardano.org/cip/CIP-0031), [Cardano validator context](https://developers.cardano.org/docs/developers/curriculum/smart-contracts/datum-redeemer-context/).
+4. No current source evidence establishes an authenticated canonical round/config carrier that can be reused as-is. This remains a bounded audit, not a claim about every historical branch or deployed artifact.
+5. No compile/test/ledger evidence was produced by this read-only audit. F4 remains OPEN; nothing is GREEN by implication.
+
+### Recommended execution sequence after explicit design approval
+
+- **Gate 0 — Normative freeze:** approve the authority architecture, ordering rule, exact fields/domains/encoding, and old-ticket activation/compatibility policy.
+- **Gate 1 — Encoding-only fixtures:** add cross-language golden vectors for commitment and datum encoding without changing deployed validator behavior.
+- **Gate 2 — New authority in isolation:** dedicated one-shot bootstrap and sequential state transition; test duplicate initialization, wrong profile, replay, stale-state and concurrency.
+- **Gate 3 — Registry vNext:** add the versioned datum and on-chain state/commitment verification with legacy fixtures.
+- **Gate 4 — Issue vNext:** verify canonical registry/profile and freeze the same commitment into a new ticket commitment version.
+- **Gate 5 — Reveal integration:** coordinate with the Reveal owner; implement only the approved version branch and run legacy + vNext conformance.
+- **Gate 6 — Evidence:** independent build/hash reproduction, unit/property tests, CI, ledger runtime and deployment evidence; report each layer separately.
+
+**STATUS: INSERTION-POINT AND DEPENDENCY MATRIX RECORDED; READ-ONLY AUDIT ONLY. NO SOURCE/SCHEMA/WORKFLOW/DEPLOYMENT CHANGE. F4 OPEN. F5/MATERIOS STILL PAUSED.**
