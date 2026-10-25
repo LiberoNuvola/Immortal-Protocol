@@ -539,6 +539,47 @@ const directCmlDatumParseDiagnostic = (label: string, utxo: UTxO) => {
 directCmlDatumParseDiagnostic('Prize', prizeUtxo)
 directCmlDatumParseDiagnostic('B1PrizePool', poolUtxo)
 
+/*
+ * Isolate the lazy Lucid builder conversion per observed script input.
+ * These probes only call complete(); they do not sign or submit a transaction.
+ * Provider UTxOs, datums and redeemers remain unchanged.
+ */
+const probeCollectFromCompletion = async (label: string) => {
+  try {
+    let probe: any = lucid.newTx().readFrom([prizeReferenceInput, poolReferenceInput])
+    if (label === 'Prize-only') {
+      probe = probe
+        .collectFrom([prizeUtxo], c(1, [toHex(playerSecret)]))
+        .pay.ToContract(
+          scripts.prizeAddress as string,
+          { kind: 'inline', value: Data.to(postPrizeDatum) },
+          prizeUtxo.assets,
+        )
+    } else {
+      probe = probe
+        .collectFrom([poolUtxo], c(2, [PRICE_USDM]))
+        .pay.ToContract(
+          scripts.b1PrizePoolAddress as string,
+          { kind: 'inline', value: Data.to(postPoolDatum) },
+          poolUtxo.assets,
+        )
+    }
+    await probe.addSigner(address).validTo(Number(expiresAt)).complete()
+    console.log(JSON.stringify({ revealCollectFromCompletionProbe: label, status: 'PASS' }))
+  } catch (error) {
+    console.error(JSON.stringify({
+      revealCollectFromCompletionProbe: label,
+      status: 'FAIL',
+      error: error instanceof Error ? error.message : String(error),
+      stack: error && typeof error === 'object' && 'stack' in error
+        ? String((error as { stack?: unknown }).stack ?? '')
+        : null,
+    }))
+  }
+}
+await probeCollectFromCompletion('Prize-only')
+await probeCollectFromCompletion('B1PrizePool-only')
+
 const revealBase = lucid
   .newTx()
   .readFrom([prizeReferenceInput, poolReferenceInput])
