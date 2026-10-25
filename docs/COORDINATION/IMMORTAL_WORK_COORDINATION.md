@@ -1850,3 +1850,27 @@ This checkpoint can assign work, record dependencies, and classify evidence. It 
 Trace the actual round-creation and ticket-commitment path on the canonical work branch and identify the existing authoritative state boundary for freezing mode + beacon + evidenceRef + roundId. If the current on-chain schema cannot represent that binding, report the exact schema/validator gap for normative authorization; do not silently extend the datum, alter validator semantics, substitute a TypeScript selector, or promote synthetic fixtures to production evidence.
 
 **No source code, validator schema, deployment, or on-chain state was changed by this audit.** V3 and Reveal remain outside this front.
+
+
+## 44.58 — AGENT B F4 — ROUND-LIFECYCLE TRACE / EXACT INTEGRATION GAP — 2026-10-25
+
+Follow-up to 44.57. The actual create/mint/registry path has now been traced at source level on work/b3-materios-provenance-evidence. This remains a source audit, not a claim that this branch is the canonical deployment baseline.
+
+### Trace
+
+- src/createRound.ts: createPendingRound accepts only target, relayerPkh and optional funding. It writes the initial BeaconPending registry UTxO using the current seven-field BeaconRegistryDatum. Its own security comment says initial Pending creation is not constrained by an on-chain validator, so competing Pending entries can be created for the same round.
+- src/registryDatum.ts + plutus/Types.hs: BeaconRegistryDatum contains only brRound, brTarget, brStatus, brBeaconValue, brMcHash, brMateriosContext and brRelayerPkh. It has no trust mode, selected evidenceRef, verifiedAt, or GameRoundCommitment field. GameRoundCommitment exists as a separate Haskell type, but is not embedded in BeaconRegistryDatum.
+- src/mint.ts: the Issue/mint path uses DEFAULT_ROUND_ID = 0 unless its existing options override it; constructs a BeaconTarget; selects a Pending registry UTxO by round; optionally checks the relayer PKH client-side; then derives the ticket commitment from ticket identity/player commitment/version/nonce/price/encoded BeaconTarget. No call to selectBeaconMode or assertFrozenBeaconMode was found in the source path.
+- plutus/MintPolicy.hs: the on-chain Issue policy checks sameTarget, brRound == btRound and brStatus == BeaconPending. It does not validate or freeze B1/B2/B3 mode or a mode-specific evidence reference.
+- src/registryFlow.ts: publishRoundBeacon validates GameRoundCommitment inputs off-chain, derives R, and publishes BeaconReady. The file explicitly acknowledges that the on-chain Pending datum does not carry GameRoundCommitment and the current validator does not authenticate it.
+
+### Exact classification
+
+1. The lifecycle freeze gap is not merely a missing helper call in tests: the active round creation API and current on-chain registry representation have no field/binding for trust mode plus evidence reference.
+2. The current ticket commitment binds the BeaconTarget, not a verified trust mode/evidence object. B1 registry authorization proves the designated relayer authorized publication and the supplied R is derived from supplied context; it does not prove B3/B2/B1 provenance.
+3. Client-only mode selection/freeze would improve fail-closed UX but would not close the on-chain binding or prevent a competing Pending registry entry.
+4. No normative change is authorized by this audit. Do not alter BeaconRegistryDatum, MintPolicy, BeaconRegistry validator, or ticket commitment semantics until the user decides the required binding and compatibility/deployment strategy.
+
+### Next step
+
+Report this precise gap for the user's normative decision. After authorization, implement only the selected boundary and add conformance tests that prove the chosen mode/evidence/round binding at round creation, ticket commitment and on-chain validation. Until then, F4 lifecycle integration and the B1 registry commitment gap remain OPEN. No code, validator schema, branch count, deployment or on-chain state changed in this trace.
