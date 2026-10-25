@@ -1792,3 +1792,20 @@ The receiving agent must acknowledge the front and continue from the stated evid
 This checkpoint can assign work, record dependencies, and classify evidence. It cannot invent or approve protocol economics, change normative semantics, authorize deployment, or promote a release. Normative/economic decisions remain with the user and the canonical authority hierarchy above. Missing evidence must remain OPEN/BLOCKED rather than being inferred from successful adjacent tests.
 
 **Initial state:** coordination rule adopted; carrier PASS provenance reconciliation still required before its exact commit/run can be treated as the operative baseline. No production code or on-chain state is changed by this entry.
+
+
+## 44.55 PREPROD-REVEAL — SINGLE DRIVER LEASE — 2026-10-25
+
+**Front lease ID:** `PREPROD-REVEAL/collectFrom-CML-datum-parser`
+
+- **Driver:** current session operating PR #38 (Reveal trace diagnostic).
+- **Canonical coordination branch@SHA:** `work/immortal-green-closure@da799005d5a6d4f7db71576902d2217e4ebf79d4`.
+- **Working branch@SHA:** `fix/preprod-eev-approval-pin@e3d9d425e63a69f905b4d91c6c779a88b209b7ed`.
+- **State:** `IN_PROGRESS` (diagnostic CI run queued/running at record time).
+- **Scope:** isolate which `collectFrom` input triggers CML's `PlutusData.from_cbor_hex` WASM crash in the Yaci Integration Lab. Diagnostic-only; no production validator, V3, Reveal semantics, economic rules, or transaction-size limit changes.
+- **Latest evidence:** Integration Lab #2247, run [40207613544](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40207613544), failed at Reveal before transaction construction. Both provider datums were even-length hex and matched the locally expected CBOR exactly: Prize 658 hex characters; B1PrizePool 96. Error remained `RuntimeError: memory access out of bounds` in CML parsing during `collectFrom`.
+- **Next experiment:** commit [e3d9d42](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e3d9d425e63a69f905b4d91c6c779a88b209b7ed) wraps the two `collectFrom` calls separately and emits a stage marker. Integration Lab #2248: [run 40210264223](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40210264223), observed `IN_PROGRESS` at this record.
+- **Acceptance criterion:** identify the first failing input/stage with exact-SHA CI evidence, then implement only the minimal adapter/fixture correction justified by that evidence. If the builder completes, measure serialized Reveal CBOR against observed `maxTxSize=16384`; do not raise the limit.
+- **Duplicate-work check:** Agent A's assigned P2.8 work is native Cardano-ledger evaluation/context materialization (F3.2–F3.4); this lease is the preceding Lucid/Yaci Reveal transaction-builder crash. Share resulting raw ledger/evidence artifacts with Agent A when useful, but do not duplicate its native evaluator investigation. The `copilot/fix-real-preprod-reveal-job` branch is not treated as an active duplicate based on its latest commit (2026-10-21, EEV governance metadata only); recheck before expanding scope.
+- **Coordination rule:** while this lease is active, no other session should repeat the same Yaci `collectFrom`/CML parser experiment on another branch. Independent review is welcome if it addresses a different uncertainty and cites its own exact SHA.
+- **Protected boundaries:** V3 carrier is already PASS in the current trace and is not to be modified. This diagnostic does not qualify Reveal, Preprod, economic admission, or first-user Issue.
