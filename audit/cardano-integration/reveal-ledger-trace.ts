@@ -160,15 +160,33 @@ const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
 console.log(JSON.stringify({
-  protocolParametersCostModelLengths: Object.fromEntries(
+  protocolParametersCostModels: Object.fromEntries(
     Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [
       k,
-      Array.isArray(v) ? v.length : typeof v,
+      Array.isArray(v)
+        ? { representation: 'array', length: v.length }
+        : v !== null && typeof v === 'object'
+          ? {
+              representation: 'object',
+              keyCount: Object.keys(v as Record<string, unknown>).length,
+              firstKeys: Object.keys(v as Record<string, unknown>).slice(0, 8),
+              lastKeys: Object.keys(v as Record<string, unknown>).slice(-8),
+            }
+          : { representation: typeof v },
     ]),
   ),
   maxTxSize: protocolParameters.maxTxSize ?? null,
 }, null, 2))
-const lucid = await Lucid.new(provider, 'Preprod')
+let lucid: any
+try {
+  lucid = await Lucid.new(provider, 'Preprod')
+} catch (error) {
+  console.error(JSON.stringify({
+    lucidInitializationError: error instanceof Error ? error.message : String(error),
+    lucidInitializationStack: error instanceof Error ? error.stack : null,
+  }, null, 2))
+  throw error
+}
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
