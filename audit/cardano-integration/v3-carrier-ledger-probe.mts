@@ -36,11 +36,11 @@ if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') 
 const policy: Script = {
   type: 'PlutusV2',
   script: applyParamsToScript(artifact.cborHex, [
-    // TxOutRef encodes as Constr 0 [txId-bytes, output-index]; TxId is a newtype,
-    // so adding a nested Constr around the hash changes the on-chain parameter shape.
-    new Constr(0, [seed.txHash, BigInt(seed.outputIndex)]),
-    // TokenName is a newtype over BuiltinByteString, so its Plutus Data encoding is B <bytes>, not a constructor.
-    TOKEN_NAME_HEX,
+    // Match the established V3 deploy/remote probes: TxOutRef is encoded as
+    // Constr 0 [Constr 0 [txId-bytes], output-index] for this compiled artifact.
+    new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
+    // Match the established V3 probes' TokenName IsData encoding.
+    new Constr(0, [TOKEN_NAME_HEX]),
   ]),
 }
 const policyId = mintingPolicyToId(policy)
