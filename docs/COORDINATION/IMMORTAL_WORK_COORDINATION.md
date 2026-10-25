@@ -2301,3 +2301,24 @@ Per explicit user direction, pause all active Agent B work on Materios and wait 
 - F5 remains OPEN: the native execution-proof RPC and a real end-to-end B3 fixture have not been established. F4 Beacon uniqueness/trust-commitment work remains separately OPEN and is not implied to be paused unless coordinated by the user.
 
 **STATUS: MATERIOS F5 WORK PAUSED AT USER REQUEST; WAITING FOR UPSTREAM DEVELOPMENTS; NO TECHNICAL CLOSURE OR GREEN CLAIM.**
+
+
+## 44.71 — AGENT B F4 — IMPLEMENTATION BOUNDARY RECHECK — 2026-10-25
+
+**Scope:** F4 read-only source audit after pausing F5/Materios. No normative or protocol code changes.
+
+### Current implementation boundary confirmed
+
+- `plutus/BeaconRegistry.hs` validates the spend-side `BeaconPending → BeaconReady` transition: one own input, designated relayer signature, nonempty receipt fields, exactly one continuing registry output, stable target/round/relayer and deterministic beacon derivation. It does not constrain the creation of the initial Pending output or enforce a unique registry anchor for a round.
+- `src/createRound.ts` creates that Pending output with an ordinary `payToContract`; its own comment explicitly acknowledges there is no on-chain creation constraint. A client-side relayer check is not a uniqueness or consensus guarantee.
+- `plutus/Types.hs` defines `GameRoundCommitment` as a type, but the seven-field `BeaconRegistryDatum` does not contain it. `src/registryFlow.ts` validates the supplied commitment off-chain and explicitly says the current datum/validator do not authenticate it. `src/registryDatum.ts` deliberately serializes only the seven current fields.
+- `plutus/Beacon.hs` / `src/beacon.ts` already share a canonical `ticketCommitment` that binds ticket ID, player commitment, game version, nonce, price and encoded BeaconTarget. No `roundTrustCommitmentHash` is currently part of that commitment or persisted in `PrizeDatum`.
+- The counter validator remains a simple monotonic counter, and the existing ticket serial counter must not be repurposed as round-anchor uniqueness authority.
+
+### Consequence / bounded next work
+
+F4 is a protocol-representation gap, not a missing client-side check. Closing it requires a coordinated, versioned on-chain design for (1) non-replayable/unique round-anchor creation and (2) authenticated binding of the chosen round/trust commitment across registry, Issue and Reveal. A client-only filter cannot close either property. Any change to datum shape, ticket commitment, mint policy or Reveal validation is a compatibility-sensitive protocol change and must not be silently introduced under this audit.
+
+No implementation was made because the uniqueness authority and versioned migration semantics are normative design choices; the existing checkpoint already records that they require explicit coordinated approval. No V3 or Reveal behavior was changed. F5/Materios remains paused per §44.70.
+
+**STATUS: F4 SOURCE BOUNDARY RECONFIRMED; INITIAL-PENDING UNIQUENESS AND ON-CHAIN GAME-ROUND/TRUST COMMITMENT BINDING REMAIN OPEN. NEXT ACTION IS TO PREPARE A TESTABLE VERSIONED CHANGESET ONLY AFTER THE REQUIRED DESIGN CHOICE IS AUTHORIZED.**
