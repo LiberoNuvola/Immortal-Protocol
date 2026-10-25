@@ -2576,3 +2576,35 @@ Read-only follow-up to §44.76. Current branch source was re-fetched; no protoco
 - **Gate 6 — Evidence:** independent build/hash reproduction, unit/property tests, CI, ledger runtime and deployment evidence; report each layer separately.
 
 **STATUS: INSERTION-POINT AND DEPENDENCY MATRIX RECORDED; READ-ONLY AUDIT ONLY. NO SOURCE/SCHEMA/WORKFLOW/DEPLOYMENT CHANGE. F4 OPEN. F5/MATERIOS STILL PAUSED.**
+
+
+## 44.78 — AGENT A — REVEAL BUILDER COMPLETION PROBES / INTEGRATION LAB #2253 — 2026-10-25
+
+Run: [IMMORTAL Cardano Integration Lab #2253](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40222957767), source commit `6b250be5c8dbef0d08b5a1efe4ff1b9bce3aef60`; completed `failure`.
+
+### Reveal diagnostic findings
+
+- Both construction-only probes emitted `BUILDER_COMPLETION_PASS`:
+  - `Prize-only`
+  - `B1PrizePool-only`
+- These probes temporarily stubbed `providerWithEvaluation.evaluateTx` with synthetic ExUnits, called Lucid `complete({ localUPLCEval: false })`, and restored the real evaluator in `finally`. They were unsigned, not submitted, and explicitly report `ledgerValidation: NOT_RUN`.
+- This is evidence that the builder-completion path did **not** reproduce the earlier `memory access out of bounds` under the synthetic-evaluator isolation. It does not prove that the original failure was caused by the evaluator, nor that isolated one-input transactions are valid ledger contexts.
+- The canonical Reveal trace ran with the real evaluator after restoration. Its reference-script preflight reported 1,139 bytes, both expected reference inputs present, zero embedded Plutus scripts, and `maxTxSize=16384`. The serialized canonical trace transaction reported 1,245 bytes, `belowMaxTxSize=true`, payout 200, and `replayRejected=true`. The replay rejection is expected evidence that replay of the already-consumed transaction is rejected; it is not a Reveal failure. The trace's transaction/reference and execution-budget diagnostics were emitted without changing V3 or Reveal semantics.
+- The isolated Aiken V3 candidate's wrong-secret twin was rejected by native Yaci. This is candidate-path evidence only; it is not a claim that the experimental candidate is semantically identical to the canonical production Haskell Plutus V2 validator.
+
+### Overall lab outcome and unrelated blockers
+
+The workflow concluded `failure` due to two later checks:
+
+1. Native Yaci UTxO decoder conformance failed to compile: `YaciUTxO.hs:54:55 — Illegal type: ‘11’ Perhaps you intended to use DataKinds`, at `natVersion @11`.
+2. JEV operational prompt generation refused to truncate a generated prompt exceeding 7,000 characters. Its dedicated generator test still passed.
+
+The JEV registry/evidence packet and Notion evidence ledger steps completed successfully; later evidence records identify the decoder as failed and dependent gates as skipped. These two workflow blockers do not negate the builder-probe results, but they prevent the whole Integration Lab from being GREEN.
+
+### Next action boundary
+
+- Keep V3 carrier, Reveal semantics, and `maxTxSize=16384` unchanged.
+- Do not rerun the lab merely to repeat the completed probes. First fix the bounded Haskell compile issue in coordination with the owner of `audit/cardano-ledger-runner/YaciUTxO.hs`, and handle the JEV prompt-size contract without truncating safety boundaries.
+- The original Lucid/CML conversion concern is **not reproduced in the isolated builder-completion probes**, but remains only partially resolved: the synthetic evaluator is a diagnostic boundary, not a root-cause proof. Preserve the canonical real-evaluator ledger path as the authoritative integration evidence.
+
+**STATUS: BOTH ISOLATED BUILDER-COMPLETION PROBES PASS; CANONICAL TRACE FITS THE 16,384-BYTE LIMIT AND REPLAY IS REJECTED; INTEGRATION LAB FAILS ON SEPARATE DECODER-COMPILE AND JEV-PROMPT-LENGTH CHECKS. NO V3/REVEAL SEMANTICS CHANGED.**
