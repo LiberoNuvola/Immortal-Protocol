@@ -153,15 +153,22 @@ const wallet = JSON.parse(
   readFileSync('/tmp/immortal-yaci-test-wallet.json', 'utf8'),
 )
 const provider = new Blockfrost(API, '')
-const lucid = await Lucid.new(provider, 'Preprod')
+// Read and print raw Yaci protocol parameters before Lucid initializes its
+// evaluator. This distinguishes provider payload problems from evaluator
+// initialization failures without changing validator or Reveal semantics.
 const protocolParameters = await provider.getProtocolParameters()
 const jsonReplacer = (_key: string, value: unknown) =>
   typeof value === 'bigint' ? value.toString() : value
 console.log(JSON.stringify({
   protocolParametersCostModelLengths: Object.fromEntries(
-    Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v.length : typeof v]),
+    Object.entries(protocolParameters.costModels ?? {}).map(([k, v]) => [
+      k,
+      Array.isArray(v) ? v.length : typeof v,
+    ]),
   ),
+  maxTxSize: protocolParameters.maxTxSize ?? null,
 }, null, 2))
+const lucid = await Lucid.new(provider, 'Preprod')
 lucid.selectWalletFromSeed(SEED)
 
 const address = await lucid.wallet.address()
