@@ -53,4 +53,4 @@ wrap seedData tokenNameData _ ctxData =
 compiledPolicyFactory
   :: CompiledCode
        (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-compiledPolicyFactory = $(compile [|| wrap ||])
+compiledPolicyFactory = $$(compile [|| wrap ||])
