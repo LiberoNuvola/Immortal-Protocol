@@ -34,107 +34,37 @@ compiledCborHex code =
     . SBS.fromShort
     $ serialiseCompiledCode code
 
-writeScriptJson
-  :: FilePath
-  -> Text
-  -> Text
-  -> IO ()
+writeScriptJson :: FilePath -> Text -> Text -> IO ()
 writeScriptJson path description cborHex = do
-  let env =
-        object
-          [ "type"        .= ("PlutusScriptV2" :: Text)
-          , "description" .= description
-          , "cborHex"     .= cborHex
-          ]
-
-  BSL.writeFile
-    path
-    (Aeson.encode env)
-
-  putStrLn
-    ("wrote " <> path)
+  let env = object
+        [ "type" .= ("PlutusScriptV2" :: Text)
+        , "description" .= description
+        , "cborHex" .= cborHex
+        ]
+  BSL.writeFile path (Aeson.encode env)
+  putStrLn ("wrote " <> path)
 
 main :: IO ()
 main = do
   cwd <- getCurrentDirectory
-
-  -- The Cabal package lives in ./plutus. Export paths are therefore
-  -- normalized relative to the invocation directory:
-  --   repo root  -> plutus/out
-  --   repo/plutus -> out
-  -- This prevents the accidental repo/plutus/plutus/out layout.
-  let outputDir =
-        if takeFileName cwd == "plutus"
-          then "out"
-          else "plutus/out"
-
+  let outputDir = if takeFileName cwd == "plutus" then "out" else "plutus/out"
   createDirectoryIfMissing True outputDir
 
-  writeScriptJson
-    (outputDir <> "/treasury.plutus.json")
-    "PreRich Treasury validator"
-    (compiledCborHex Treasury.compiledValidator)
-
-  writeScriptJson
-    (outputDir <> "/prizeValidatorFactory.plutus.json")
-    "PreRich Prize validator factory (apply BeaconRegistry ScriptHash, PrizeTable, Oracle State singleton identity, oracle publisher off-chain)"
-    (compiledCborHex PrizeValidator.compiledValidatorFactory)
-
-  writeScriptJson
-    (outputDir <> "/counterValidator.plutus.json")
-    "PreRich Counter validator"
-    (compiledCborHex CounterValidator.compiledValidator)
-
-  writeScriptJson
-    (outputDir <> "/mintPolicyFactory.plutus.json")
-    "PreRich Mint policy factory (apply CounterHash, PrizeValidatorHash, BeaconRegistryHash, TreasuryHash, B1PrizePoolHash, Oracle State singleton identity, oracle publisher off-chain)"
-    (compiledCborHex MintPolicy.compiledPolicyFactory)
-
-  writeScriptJson
-    (outputDir <> "/beaconRegistry.plutus.json")
-    "PreRich BeaconRegistry validator (B1 authorized beacon publication, one UTxO per round)"
-    (compiledCborHex BeaconRegistry.compiledValidator)
-
-  writeScriptJson
-    (outputDir <> "/genesisRegimeCarrier.plutus.json")
-    "PreRich Genesis regime carrier validator"
-    (compiledCborHex GenesisRegimeCarrier.compiledValidator)
-
-  writeScriptJson
-    (outputDir <> "/genesisCarrierMintPolicy.plutus.json")
-    "PreRich Genesis regime carrier one-shot mint policy factory"
-    (compiledCborHex GenesisCarrierMintPolicy.compiledPolicyFactory)
-
-  writeScriptJson
-    (outputDir <> "/v3EconomicStateCarrier.plutus.json")
-    "PreRich V3 economic state carrier validator"
-    (compiledCborHex V3EconomicStateCarrier.compiledValidator)
-
-  writeScriptJson
-    (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json")
-    "PreRich V3 economic state carrier one-shot mint policy factory"
-    (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
+  writeScriptJson (outputDir <> "/treasury.plutus.json") "PreRich Treasury validator" (compiledCborHex Treasury.compiledValidator)
+  writeScriptJson (outputDir <> "/prizeValidatorFactory.plutus.json") "PreRich Prize validator factory (apply BeaconRegistry ScriptHash, PrizeTable, Oracle State singleton identity, oracle publisher off-chain)" (compiledCborHex PrizeValidator.compiledValidatorFactory)
+  writeScriptJson (outputDir <> "/counterValidator.plutus.json") "PreRich Counter validator" (compiledCborHex CounterValidator.compiledValidator)
+  writeScriptJson (outputDir <> "/mintPolicyFactory.plutus.json") "PreRich Mint policy factory (apply CounterHash, PrizeValidatorHash, BeaconRegistryHash, TreasuryHash, B1PrizePoolHash, Oracle State singleton identity, oracle publisher off-chain)" (compiledCborHex MintPolicy.compiledPolicyFactory)
+  writeScriptJson (outputDir <> "/beaconRegistry.plutus.json") "PreRich BeaconRegistry validator (B1 authorized beacon publication, one UTxO per round)" (compiledCborHex BeaconRegistry.compiledValidator)
+  writeScriptJson (outputDir <> "/genesisRegimeCarrier.plutus.json") "PreRich Genesis regime carrier validator" (compiledCborHex GenesisRegimeCarrier.compiledValidator)
+  writeScriptJson (outputDir <> "/genesisCarrierMintPolicy.plutus.json") "PreRich Genesis regime carrier one-shot mint policy factory" (compiledCborHex GenesisCarrierMintPolicy.compiledPolicyFactory)
+  writeScriptJson (outputDir <> "/v3EconomicStateCarrier.plutus.json") "PreRich V3 economic state carrier validator" (compiledCborHex V3EconomicStateCarrier.compiledValidator)
+  writeScriptJson (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json") "PreRich V3 economic state carrier one-shot mint policy factory" (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
 
   -- Diagnostic-only policies: isolated from production V3 and Reveal.
-  writeScriptJson
-    (outputDir <> "/v3DiagnosticNoContext.plutus.json")
-    "Diagnostic baseline: ignores ScriptContext"
-    (compiledCborHex V3CarrierDiagnosticPolicies.noContextFactory)
+  writeScriptJson (outputDir <> "/v3DiagnosticNoContext.plutus.json") "Diagnostic baseline: ignores ScriptContext" (compiledCborHex V3CarrierDiagnosticPolicies.noContextFactory)
+  writeScriptJson (outputDir <> "/v3DiagnosticReadInputs.plutus.json") "Diagnostic: decodes ScriptContext and reads txInfoInputs" (compiledCborHex V3CarrierDiagnosticPolicies.readInputsFactory)
+  writeScriptJson (outputDir <> "/v3DiagnosticCompareSeed.plutus.json") "Diagnostic: compares TxOutRef serialized as BuiltinData" (compiledCborHex V3CarrierDiagnosticPolicies.compareSeedFactory)
+  writeScriptJson (outputDir <> "/v3DiagnosticDecodeSeed.plutus.json") "Diagnostic: explicitly decodes TxOutRef from BuiltinData" (compiledCborHex V3CarrierDiagnosticPolicies.decodeSeedFactory)
 
-  writeScriptJson
-    (outputDir <> "/v3DiagnosticReadInputs.plutus.json")
-    "Diagnostic: decodes ScriptContext and reads txInfoInputs"
-    (compiledCborHex V3CarrierDiagnosticPolicies.readInputsFactory)
-
-  writeScriptJson
-    (outputDir <> "/v3DiagnosticCompareSeed.plutus.json")
-    "Diagnostic: reads txInfoInputs and compares TxOutRef"
-    (compiledCborHex V3CarrierDiagnosticPolicies.compareSeedFactory)
-
-  writeScriptJson
-    (outputDir <> "/b1PrizePoolFactory.plutus.json")
-    "PreRich B1 PrizePool factory (apply PrizeValidator ScriptHash, Oracle State singleton identity, oracle publisher, pool singleton token off-chain)"
-    (compiledCborHex B1PrizePool.compiledValidatorFactory)
-
-  putStrLn
-    ("Done. JSON scripts written to " <> outputDir)
+  writeScriptJson (outputDir <> "/b1PrizePoolFactory.plutus.json") "PreRich B1 PrizePool factory (apply PrizeValidator ScriptHash, Oracle State singleton identity, oracle publisher, pool singleton token off-chain)" (compiledCborHex B1PrizePool.compiledValidatorFactory)
+  putStrLn ("Done. JSON scripts written to " <> outputDir)
