@@ -1987,3 +1987,54 @@ The same minimal probes are a candidate to port into the existing `audit/cardano
 
 **STATUS: RUN #2251 REVEAL FAIL CONFIRMED / CML DIRECT PARSE PASS / LUCID COMPLETION CONVERSION FAIL / MINIMAL PORT IDENTIFIED BUT NOT APPLIED**
 
+
+
+## 44.61 — AGENT B F4 — CANONICAL ROUND ANCHOR / COMMITMENT DELTA — 2026-10-25
+
+Follow-up to 44.60. This narrows the next implementation gate to the missing invariant and the exact ticket-commitment compatibility surface. Source inspection only; no implementation files changed.
+
+### 1. Canonical-round uniqueness: current state and minimum invariant
+
+- `src/createRound.ts` creates the Pending registry output with a plain `payToContract` and no mint-policy or validator execution that authorizes creation. It therefore cannot establish one canonical registry UTxO per round.
+- A datum field containing `roundId`, mode or a commitment hash is not by itself unique: Cardano permits multiple UTxOs with the same datum.
+- A client query that finds one registry UTxO is not a consensus rule and cannot close the duplicate-anchor risk.
+- The protocol needs an on-chain canonical anchor invariant: for each canonical round identity, exactly one active anchor is accepted by Issue; a competing anchor must be impossible to create or unusable by every protocol path.
+
+### 2. Candidate enforcement pattern to prototype (not yet implemented)
+
+**Preferred candidate for an engineering spike:** a unique round-anchor NFT/state transition, issued under an on-chain policy that is bound to a canonical round-creation input/state transition, with the NFT held by the registry UTxO and checked by Issue. If round IDs are sequential, a singleton round-counter/state UTxO could serialize creation and advance atomically with creation of the anchor. The design must establish that the policy cannot mint a second accepted anchor for the same canonical round and that the token cannot be burned/reissued to bypass uniqueness. A deterministic token name alone is not sufficient.
+
+Before choosing this pattern, inspect whether an existing authoritative singleton/counter can be reused without coupling unrelated ticket serials to round creation. The current ticket counter is not assumed to be an adequate round counter. Do not deploy a new policy or alter ticket-counter semantics during the spike.
+
+**Alternative:** a separate one-shot seed UTxO / per-round parameterized mint policy. It may give strong uniqueness, but requires a trustworthy way to establish each round's seed and may create additional script/configuration complexity. No existing evidence in this audit proves that this mechanism is already implemented.
+
+### 3. Canonical trust commitment fields
+
+The frozen on-chain commitment must bind, at minimum:
+- canonical round identity (`roundId` plus the existing canonical game/configuration/version commitment, once authenticated);
+- selected trust mode (B3_VERIFIED, B2_ATTESTED, or B1_AUTHORIZED);
+- Beacon target/value identity;
+- a cryptographic digest/reference for the selected evidence bundle and qualification result;
+- a version/domain separator for the encoding.
+
+The audit record must preserve the attempted higher tiers and their explicit failure codes before a lower tier is selected. The chain-bound digest should commit to a canonical, deterministic representation of that record; a mutable URL or plain text log alone is not sufficient. Exact field encoding, digest domain and treatment of timestamps/large evidence bundles still need an engineering spec and conformance vectors.
+
+### 4. Ticket commitment and Reveal compatibility: exact affected surface
+
+The existing commitment function in `plutus/Beacon.hs` and its TS mirror `src/beacon.ts` includes ticket ID, player commitment, game version, nonce, price and encoded BeaconTarget. `MintPolicy.hs` verifies this commitment during Issue; `PrizeValidator.hs` recomputes it during Reveal. Therefore the trust commitment must be added through a synchronized versioned commitment scheme and persist in authenticated ticket data (or be immutably recoverable from a uniquely bound on-chain anchor that Reveal verifies). Changing only the issuance calculation is incorrect.
+
+The smallest plausible compatibility design to evaluate is to bind a `roundTrustCommitmentHash` into the ticket commitment and persist the same hash in `PrizeDatum`, with both Issue and Reveal validating it against the canonical round anchor. This requires a schema change to `PrizeDatum`, TS datum builders, the Haskell/TS commitment functions, MintPolicy, and Reveal verification. It is not approved for implementation yet; preserve the existing V2 commitment semantics until the versioned migration plan and tests are reviewed. Do not change random-result derivation.
+
+### 5. Required spike and acceptance tests
+
+The next bounded engineering spike should be test-only/design-first and answer:
+1. Can the candidate anchor mechanism reject two competing Pending anchors for the same round under adversarial transaction construction?
+2. Can Issue reject a registry reference whose anchor token, round identity, mode, or evidence digest does not match the canonical commitment?
+3. Can the registry transition Pending→Ready preserve the frozen mode/evidence digest while publishing the beacon, with no change to trust tier?
+4. Can Reveal validate the same round-trust commitment without changing random-result derivation?
+5. Does fallback produce a deterministic, auditable record: B3 attempted first; each failed tier has a reproducible reason; only then is the next tier eligible?
+6. Does any path accept missing/invalid evidence, a duplicate anchor, an altered evidence digest, or silent downgrade? Every such case must fail closed.
+
+### Status / guardrails
+
+Architecture recommendation remains **B (extend existing registry)** only as a provisional smallest-delta direction, contingent on a sound unique-anchor mechanism. The trust hierarchy/fallback policy is already decided by the user and must not be re-asked. No code/schema/validator/deployment/on-chain state changed. V3 and Reveal semantics remain protected; any later ticket-commitment compatibility change must be coordinated and explicitly reviewed, not smuggled into a Beacon-only patch. F4 remains **OPEN**.
