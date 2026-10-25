@@ -12,6 +12,7 @@ on:
       - "audit/**"
       - "src/**"
       - "plutus/**"
+      - "PRE-RICH/onchain/**"
       - "Adapter/**"
       - ".github/workflows/**"
   workflow_dispatch:
