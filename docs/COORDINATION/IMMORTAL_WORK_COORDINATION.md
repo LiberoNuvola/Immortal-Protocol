@@ -2038,3 +2038,32 @@ The next bounded engineering spike should be test-only/design-first and answer:
 ### Status / guardrails
 
 Architecture recommendation remains **B (extend existing registry)** only as a provisional smallest-delta direction, contingent on a sound unique-anchor mechanism. The trust hierarchy/fallback policy is already decided by the user and must not be re-asked. No code/schema/validator/deployment/on-chain state changed. V3 and Reveal semantics remain protected; any later ticket-commitment compatibility change must be coordinated and explicitly reviewed, not smuggled into a Beacon-only patch. F4 remains **OPEN**.
+
+## 44.62 — AGENT B F4 — EXISTING COUNTER REUSE SPIKE — 2026-10-25
+
+**Scope:** bounded source audit to determine whether the existing Counter/Singleton can safely serialize canonical Beacon round creation. Read-only audit; no code, schema, validator, deployment or on-chain changes.
+
+### Files and evidence inspected on `work/immortal-green-closure`
+
+- `plutus/CounterValidator.hs` (blob `29d3bcf6d6a4a0b4348cfa5e17a61ec822093870`): the validator accepts the counter transition `n -> n+1`, requires exactly one continuing counter output at its own address, and prevents draining its lovelace. It does not encode a round identity or bind a counter step to BeaconRegistry creation.
+- `plutus/MintPolicy.hs` (blob `0d59fc05b4c11873984fffd10014bd46d8470509`): the counter input is part of the ticket sale path and the counter-derived value is used to derive the serial ticket token name. This is ticket issuance state, not a round-creation authority.
+- `src/mint.ts` (blob `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534`): documents and implements the sale flow with Counter `n -> n+1`; the default round ID is separately configured as `DEFAULT_ROUND_ID = 0`.
+- `src/createRound.ts` (blob `4112d87b7b6d88d77da0bbaee5ed2e172527609e`): creates a Pending registry output with `payToContract`; its own security comment says initial Pending creation is not constrained by an on-chain validator and competing Pending entries for the same round are possible.
+- `plutus/BeaconRegistry.hs` (blob `184f4178139dde01845853dcc0ab51371949ec9b`): validates the authorized Pending→Ready publication transition, including relayer signature, deterministic beacon derivation and preservation of existing target/round/relayer fields. It does not govern initial Pending creation or enforce a one-anchor-per-round minting invariant.
+
+### Finding
+
+**The existing ticket Counter is not a safe drop-in round counter.** Its current invariant serializes ticket issuance; it has no round identity and is not atomically bound to creating a canonical Beacon anchor. Reusing it would couple round creation to ticket serial issuance, while its present validator alone would not establish the required canonical round uniqueness.
+
+The existing V3 carrier, B1 PrizePool and Oracle singleton references are also not established by the inspected source as round-creation counters. Their existence or singleton identity does not automatically authorize Beacon anchor creation. No inspected source evidence establishes an already-deployed, suitable round-counter singleton or a round-anchor minting policy.
+
+### Spike conclusion / next bounded gate
+
+1. Do **not** repurpose the ticket Counter or change its semantics.
+2. Do **not** claim uniqueness from a deterministic token name, client-side singleton query, or datum equality.
+3. The next design/test-only spike should inventory actual minting policies and deployment parameterization for an already-existing one-shot/unique anchor mechanism. If none has a provable round-bound invariant, record that a dedicated round-anchor policy/state transition is a new protocol surface requiring explicit design review and authorization.
+4. Any candidate must adversarially demonstrate that two Pending anchors for one canonical round cannot both be accepted by Issue, including burn/reissue and competing-transaction cases. A candidate round counter must advance atomically with anchor creation and must not be the ticket serial counter.
+5. Keep trust-mode/evidence binding and ticket commitment/Reveal compatibility as separate gates. No commitment/schema edits in this spike.
+
+**STATUS: EXISTING COUNTER REUSE REJECTED AS UNSAFE ON CURRENT EVIDENCE; NO SUITABLE ROUND-ANCHOR MECHANISM PROVEN; F4 OPEN. V3 AND REVEAL UNCHANGED.**
+
