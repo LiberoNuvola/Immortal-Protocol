@@ -1,5 +1,5 @@
 /** Diagnostic-only isolation matrix for the V3 TxOutRef evaluator failure.
- * Uses three temporary diagnostic policies; never signs or submits transactions.
+ * Uses temporary diagnostic policies; never signs or submits transactions.
  * Production V3 and Reveal sources/semantics are not changed.
  */
 import { createHash } from 'node:crypto'
@@ -22,9 +22,10 @@ const seed = utxos[0]
 const seedParam = new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)])
 
 const cases = [
-  { id: 'no-context-baseline', file: 'plutus/out/v3DiagnosticNoContext.plutus.json' },
-  { id: 'read-inputs-only', file: 'plutus/out/v3DiagnosticReadInputs.plutus.json' },
-  { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json' },
+  { id: 'no-context-baseline', file: 'plutus/out/v3DiagnosticNoContext.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'read-inputs-only', file: 'plutus/out/v3DiagnosticReadInputs.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json', paramType: 'builtin-data' },
+  { id: 'decode-seed-explicitly', file: 'plutus/out/v3DiagnosticDecodeSeed.plutus.json', paramType: 'builtin-data' },
 ]
 const results = []
 const providerResponses = []
@@ -76,6 +77,7 @@ for (const item of cases) {
       .complete({ localUPLCEval: false })
     results.push({
       case: item.id,
+      paramType: item.paramType,
       policyId,
       txBuilt: true,
       signed: false,
@@ -86,6 +88,7 @@ for (const item of cases) {
   } catch (error) {
     results.push({
       case: item.id,
+      paramType: item.paramType,
       txBuilt: false,
       signed: false,
       submitted: false,
@@ -96,7 +99,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v1',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v2',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -105,7 +108,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'The first case that changes from pass to fail localizes the evaluator boundary; all cases are diagnostic only.',
+  interpretation: 'Compare raw BuiltinData comparison with explicit TxOutRef decoding; all cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
