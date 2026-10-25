@@ -174,7 +174,7 @@ console.log(JSON.stringify({
               sampleEntries: Object.entries(v as Record<string, unknown>).slice(0, 6),
               keyShape: (() => {
                 const keys = Object.keys(v as Record<string, unknown>)
-                const numericKeys = keys.filter((key) => /^\\d+$/.test(key))
+                const numericKeys = keys.filter((key) => /^\d+$/.test(key))
                 const values = Object.values(v as Record<string, unknown>)
                 return {
                   numericKeyCount: numericKeys.length,
