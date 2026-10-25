@@ -26,6 +26,9 @@ const cases = [
   { id: 'read-inputs-only', file: 'plutus/out/v3DiagnosticReadInputs.plutus.json', paramType: 'typed-txoutref' },
   { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'decode-seed-explicitly', file: 'plutus/out/v3DiagnosticDecodeSeed.plutus.json', paramType: 'builtin-data' },
+  { id: 'seed-consumed-only', file: 'plutus/out/v3DiagnosticSeedConsumedOnly.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'assocmap-mint-only', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'singleton-mint-only', file: 'plutus/out/v3DiagnosticSingletonMintOnly.plutus.json', paramType: 'typed-txoutref' },
 ]
 const results = []
 const providerResponses = []
@@ -99,7 +102,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v2',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v3',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -108,7 +111,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare raw BuiltinData comparison with explicit TxOutRef decoding; all cases are diagnostic only.',
+  interpretation: 'Compare seed-consumption and isolated mint-value checks (AssocMap versus singleton equality); all cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
