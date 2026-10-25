@@ -16,10 +16,6 @@ import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
 
-{-# INLINABLE mkNoContext #-}
-mkNoContext :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkNoContext _ _ _ _ = True
-
 {-# INLINABLE mkReadInputs #-}
 mkReadInputs :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
 mkReadInputs _ _ _ ctx =
