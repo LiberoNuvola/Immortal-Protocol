@@ -1974,3 +1974,16 @@ The trust policy remains exactly as reaffirmed in 44.59: try B3 first, then B2, 
 6. Existing guardrail remains: do not change V3 or Reveal semantics in this front. Because the persistent ticket commitment requires Reveal-side compatibility work, keep implementation blocked and coordinate/authorize that bounded contract change explicitly rather than smuggling it into an unrelated patch.
 
 **STATUS: architecture comparison recorded; no implementation/schema/validator/deployment/on-chain changes; F4 remains OPEN.**
+
+## 44.49 REVEAL PROBE RESULT — RUN #2251 — 2026-10-25
+
+Run #2251 (`40215140216`, head `889e827566e83884d4597fc5136f59b677c5dd66`) has now completed with **FAIL**. The native-ledger V3 carrier step passed; the active Reveal step failed.
+
+The Evolution trace records both provider datums as strings whose CBOR exactly matches the expected fixture encoding (Prize length 658 hex characters; B1PrizePool length 96). Direct `PlutusData.from_cbor_hex` calls pass for both. However, both isolated `collectFrom(...).complete()` probes fail with `RuntimeError: memory access out of bounds` in `PlutusData.from_cbor_hex`, called from Lucid Evolution `TxUtils.ts:60` / `Collect.ts:61`. The subsequent stage probes show the `collectFrom` calls themselves can be created; the failure occurs during completion/conversion. This is strong localization, not yet proof of a specific library defect or of an unsafe lifetime issue.
+
+### Coordination-branch follow-up
+
+The same minimal probes are a candidate to port into the existing `audit/cardano-integration/reveal-ledger-trace.ts` on this branch, using its already-bound observed UTxOs, reference inputs, redeemers and post-state datums. They must remain construction-only (no signing/submission), emit independent PASS/FAIL evidence, and leave the authoritative full trace in place. The attempted source-file write through the GitHub connector was blocked and **no source-code change was made** in this step. No additional lab run was launched.
+
+**STATUS: RUN #2251 REVEAL FAIL CONFIRMED / CML DIRECT PARSE PASS / LUCID COMPLETION CONVERSION FAIL / MINIMAL PORT IDENTIFIED BUT NOT APPLIED**
+
