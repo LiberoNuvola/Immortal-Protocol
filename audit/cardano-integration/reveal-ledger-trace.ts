@@ -169,8 +169,22 @@ console.log(JSON.stringify({
           ? {
               representation: 'object',
               keyCount: Object.keys(v as Record<string, unknown>).length,
-              firstKeys: Object.keys(v as Record<string, unknown>).slice(0, 8),
-              lastKeys: Object.keys(v as Record<string, unknown>).slice(-8),
+              firstKeys: Object.keys(v as Record<string, unknown>).slice(0, 12),
+              lastKeys: Object.keys(v as Record<string, unknown>).slice(-12),
+              sampleEntries: Object.entries(v as Record<string, unknown>).slice(0, 6),
+              keyShape: (() => {
+                const keys = Object.keys(v as Record<string, unknown>)
+                const numericKeys = keys.filter((key) => /^\\d+$/.test(key))
+                const values = Object.values(v as Record<string, unknown>)
+                return {
+                  numericKeyCount: numericKeys.length,
+                  nonNumericKeyCount: keys.length - numericKeys.length,
+                  minNumericKey: numericKeys.length ? Math.min(...numericKeys.map(Number)) : null,
+                  maxNumericKey: numericKeys.length ? Math.max(...numericKeys.map(Number)) : null,
+                  allValuesNumeric: values.every((value) => typeof value === 'number' || (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)))),
+                  valueTypes: [...new Set(values.slice(0, 20).map((value) => value === null ? 'null' : typeof value))],
+                }
+              })(),
             }
           : { representation: typeof v },
     ]),
@@ -183,7 +197,10 @@ try {
 } catch (error) {
   console.error(JSON.stringify({
     lucidInitializationError: error instanceof Error ? error.message : String(error),
-    lucidInitializationStack: error instanceof Error ? error.stack : null,
+    lucidInitializationStack: error && typeof error === 'object' && 'stack' in error ? String((error as { stack?: unknown }).stack ?? '') : null,
+    lucidInitializationErrorType: error === null ? 'null' : typeof error,
+    lucidInitializationErrorConstructor: error && typeof error === 'object' && 'constructor' in error ? String((error as { constructor?: { name?: string } }).constructor?.name ?? '') : null,
+    lucidInitializationErrorJson: (() => { try { return JSON.stringify(error) } catch { return '[unserializable]' } })(),
   }, null, 2))
   throw error
 }
