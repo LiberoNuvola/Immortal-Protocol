@@ -2224,3 +2224,30 @@ Source: [pinned StorageProof implementation](https://github.com/paritytech/polka
 The SDK serialization question is resolved at source level; an IMMORTAL-side execution-proof verifier and storage-proof verifier already exist. This narrows F5 but does not close it. Still missing on the evidence inspected here: the Materios node RPC transport on upstream main, a real finalized Materios fixture, independently authenticated block/state-root/runtime-code bindings, and an end-to-end result crossing `VerifiedAuthoritySetTransition` with finality checked separately. No claim that the existing Rust crate was built or run in this session.
 
 **STATUS: SCALE `StorageProof` ENCODING CONFIRMED AT PINNED TAG; EXISTING CONSUMER FOUND; REAL MATERIOS FIXTURE / RPC / END-TO-END B3 EVIDENCE OPEN. NO IMPLEMENTATION, DEPLOYMENT, OR ON-CHAIN CHANGE.**
+
+
+## 44.65 — AGENT A — REVEAL COMPLETION PROBES / RUN #2252 RESULT — 2026-10-25
+
+Run #2252 (40218479088, source commit 45ab69666ae275dbe4641c96142d03ee1106d500) completed with overall FAIL, but the active Reveal trace itself progressed through successful build, size preflight, submission and replay rejection.
+
+### What the run proves
+
+- Both newly-added isolated probes reached the Yaci/Ogmios evaluator rather than reproducing the prior memory access out of bounds from Lucid's PlutusData.from_cbor_hex conversion.
+- Prize-only was rejected during script evaluation with a generic validator failure and no useful trace.
+- B1PrizePool-only was rejected with the explicit trace: B1PrizePool: exactly one decodable prize input required. This is expected for a transaction that spends only the pool and omits its coupled Prize input; the isolated probes are therefore not valid ledger transactions and their FAIL statuses must not be interpreted as a fresh datum-conversion failure.
+- The full canonical Reveal trace completed: preflight reports 1,139 bytes <= 16,384 with zero embedded Plutus scripts and both reference inputs present; the signed transaction was 1,245 bytes; the trace reports replayRejected: true. Thus the active Reveal transaction was built, submitted and its replay was rejected in this run.
+- V3 carrier step and the other main candidate traces, including the isolated Aiken Reveal positive/negative ledger twins, passed.
+
+### Why the overall workflow failed
+
+The run's terminal failures were later, separate checks:
+1. Run native Yaci UTxO decoder conformance failed with a Haskell compile error: Illegal type: ‘11’ Perhaps you intended to use DataKinds.
+2. JEV operational prompt generation failed closed because the generated prompt exceeded its 7,000-character limit; the dedicated prompt-generator test itself passed.
+
+These two failures do not establish a failure in the canonical Reveal transaction.
+
+### Next diagnostic refinement
+
+The current isolated probes call Lucid complete(), which invokes the configured evaluator; omitting the coupled input makes script evaluation fail and obscures the narrower builder-conversion question. If another probe is needed, isolate builder completion from ledger evaluation using a clearly labelled, temporary test-only evaluator stub with bounded synthetic ExUnits, restored in a finally block. Such evidence must be explicitly classified as construction-only, never ledger acceptance. Do not sign/submit those probe transactions. Keep the existing full Reveal path as the authoritative ledger test.
+
+STATUS: FULL REVEAL TRACE BUILT/SUBMITTED; SIZE GATE PASS; REPLAY REJECTED. PRIOR CML MEMORY-BOUNDS FAILURE NOT REPRODUCED IN RUN #2252. ISOLATED PROBE FAILS ARE DUE TO INVALID SINGLE-INPUT SCRIPT CONTEXTS; NOT A VALID LEDGER VERDICT. LAB OVERALL FAILS LATER AT UTxO DECODER COMPILATION AND JEV PROMPT SIZE. V3 AND REVEAL SEMANTICS UNCHANGED.
