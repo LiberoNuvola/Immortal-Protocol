@@ -13,6 +13,7 @@
 
 import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, validatorToScriptHash, validatorToAddress, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
+import { PlutusData } from '@anastasia-labs/cardano-multiplatform-lib-nodejs'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 import { buildScriptsFromLucid } from '../../src/loadValidator'
@@ -500,6 +501,43 @@ const datumDiagnostic = (label: string, utxo: UTxO, expected: unknown) => {
 }
 datumDiagnostic('Prize', prizeUtxo, prePrizeDatum)
 datumDiagnostic('B1PrizePool', poolUtxo, prePoolDatum)
+
+/*
+ * Reproduce the exact CML parser call used by Lucid's toPartial() before the
+ * lazy transaction builder consumes either input. This is diagnostic only:
+ * parse the provider's observed CBOR unchanged and never substitute fixture
+ * data for the ledger datum.
+ */
+const directCmlDatumParseDiagnostic = (label: string, utxo: UTxO) => {
+  const datum = (utxo as any).datum
+  if (typeof datum !== 'string') {
+    console.log(JSON.stringify({
+      directCmlDatumParseDiagnostic: label,
+      status: 'SKIP',
+      reason: 'provider datum is not a string',
+    }))
+    return
+  }
+  let parsed: any = null
+  try {
+    parsed = PlutusData.from_cbor_hex(datum)
+    console.log(JSON.stringify({
+      directCmlDatumParseDiagnostic: label,
+      status: 'PASS',
+    }))
+  } catch (error) {
+    console.error(JSON.stringify({
+      directCmlDatumParseDiagnostic: label,
+      status: 'FAIL',
+      error: error instanceof Error ? error.message : String(error),
+    }))
+    throw error
+  } finally {
+    parsed?.free?.()
+  }
+}
+directCmlDatumParseDiagnostic('Prize', prizeUtxo)
+directCmlDatumParseDiagnostic('B1PrizePool', poolUtxo)
 
 const revealBase = lucid
   .newTx()
