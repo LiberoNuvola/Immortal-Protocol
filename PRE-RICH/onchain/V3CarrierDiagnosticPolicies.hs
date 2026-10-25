@@ -180,7 +180,7 @@ singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 rawDecodeSeedAndNameFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
+rawDecodeSeedAndNameFactory = $$(compile [|| wrapRawDecodeSeedAndName ||])
 
 seedConsumedSerializedFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
