@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, validatorToScriptHash, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, validatorToScriptHash, validatorToAddress, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -220,8 +220,18 @@ const poolUnit = testPolicyId + poolTokenNameHex
 const liquidityUnit = testPolicyId + liquidityTokenNameHex
 const ticketUnit = testPolicyId + TICKET_NAME_HEX
 
+// The shared script builder still expects the legacy Lucid utils surface.
+const lucidCompat = {
+  ...lucid,
+  utils: {
+    validatorToScriptHash,
+    mintingPolicyToId,
+    validatorToAddress: (script: Script) => validatorToAddress('Preprod', script),
+  },
+}
+
 const scripts = buildScriptsFromLucid(
-  lucid,
+  lucidCompat,
   defaultPrizeTable,
   keyHash,
   ORACLE_STATE_POLICY_ID,
