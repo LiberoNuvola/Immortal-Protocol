@@ -1905,3 +1905,26 @@ Therefore the Evolution file is **not a drop-in replacement**. Do not cherry-pic
 
 **STATUS: BRANCH MISMATCH CONFIRMED / SAFE PORT NOT YET APPLIED / RUN #2251 NOT YET REVEAL-TERMINAL AT CHECK TIME**
 
+
+
+## 44.59 — AGENT B F4 — REAFFIRMED NORMATIVE POLICY: TRUSTLESS-FIRST, TRANSPARENT FALLBACK — 2026-10-25
+
+**User clarification:** this is an already-decided normative policy, not an open choice to re-litigate. IMMORTAL must start from the most trustless/permissionless Beacon mode available and descend only when a higher mode fails, through a transparent process.
+
+### Normative policy to preserve
+
+1. For a new round, attempt/select the strongest available verified mode in this order: **B3_VERIFIED → B2_ATTESTED → B1_AUTHORIZED**.
+2. A lower mode may be selected only when the higher mode has failed an explicit, reproducible qualification check; lack of evidence, verifier failure, timeout, invalid proof, or unavailable dependency must be recorded as a specific failure reason. Do not silently downgrade.
+3. Publish an auditable decision record for each attempted mode and the selected mode: round ID, Beacon identity/value, mode, evidence reference or digest, verifier/qualification result, failure code and relevant timestamps/version identifiers. Preserve privacy/security constraints and do not treat a log alone as cryptographic proof.
+4. Once the selected mode and round commitment are frozen, the mode/value/evidence binding cannot silently change mid-round. Any exceptional recovery/restart must follow an explicit protocol rule and leave a verifiable audit trail; agents must not invent that rule.
+5. This policy does not itself prove B3/B2/B1 evidence valid. B3-A/B/C gates and on-chain enforcement remain separately evidenced requirements.
+
+### Operational implementation gap
+
+The existing `src/beaconTrust.ts` helper already encodes B3 → B2 → B1 priority and a no-change assertion, but the preceding source trace found no operational call sites in round creation/mint. The current seven-field `BeaconRegistryDatum` does not bind trust mode/evidence, and `MintPolicy.hs` does not enforce that binding. Thus policy intent exists, but the lifecycle/on-chain enforcement remains **OPEN**.
+
+### Next bounded action
+
+Do not ask the user to choose the trust hierarchy again. Perform a source-grounded comparison of the smallest viable on-chain enforcement boundaries (extend the round registry vs. a separate immutable round/trust commitment), evaluating how each can enforce: unique round binding, B3→B2→B1 qualification/fallback transparency, mode/evidence freeze, and ticket-commitment linkage. Report the comparison and implementation delta before editing protocol schemas or validators. No normative semantics are to be invented; do not touch V3 or Reveal, create branches, or claim GREEN without evidence.
+
+**No implementation code or on-chain state changed in this checkpoint update.**
