@@ -2099,3 +2099,14 @@ The source does establish that the repository has working *design patterns* for 
 
 **No implementation, validator, datum schema, deployment, transaction submission, or on-chain state changed.**
 
+
+
+## 44.64 — AGENT A — COORDINATION-TRACE COMPLETION PROBES APPLIED — 2026-10-25
+
+The two construction-only Reveal completion probes have now been added to the existing `audit/cardano-integration/reveal-ledger-trace.ts` on `work/immortal-green-closure` (source change commit `45ab69666ae275dbe4641c96142d03ee1106d500`). The probes independently exercise `Prize-only` and `B1PrizePool-only` using the already observed UTxOs, bound reference-script inputs, redeemers, and post-state datum CBOR.
+
+Each probe calls Lucid `.complete({ localUPLCEval: false })` and emits separate PASS/FAIL evidence; it does not sign or submit. The existing authoritative Reveal builder and trace remain immediately afterward and unchanged. No validator, datum schema, economic rule, V3 carrier, maxTxSize setting, or on-chain state was changed.
+
+The branch advanced again while this work was being verified; current branch head at checkpoint update: `16e3051231218fa2af63dc8ba08fe4b0dd43af0b`. The source blob was verified on the shared branch and contains both probe labels. No workflow-dispatch action is exposed through the connected GitHub tools, so a new lab run has not been manually dispatched from this session. Check the push-triggered Actions run for this branch before drawing conclusions; do not launch a duplicate run if one is already active.
+
+**STATUS: MINIMAL PROBES COMMITTED AND VERIFIED ON COORDINATION BRANCH / CI RESULT PENDING. V3 AND REVEAL SEMANTICS UNCHANGED.**
