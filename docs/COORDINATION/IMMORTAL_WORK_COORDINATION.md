@@ -2608,3 +2608,47 @@ The JEV registry/evidence packet and Notion evidence ledger steps completed succ
 - The original Lucid/CML conversion concern is **not reproduced in the isolated builder-completion probes**, but remains only partially resolved: the synthetic evaluator is a diagnostic boundary, not a root-cause proof. Preserve the canonical real-evaluator ledger path as the authoritative integration evidence.
 
 **STATUS: BOTH ISOLATED BUILDER-COMPLETION PROBES PASS; CANONICAL TRACE FITS THE 16,384-BYTE LIMIT AND REPLAY IS REJECTED; INTEGRATION LAB FAILS ON SEPARATE DECODER-COMPILE AND JEV-PROMPT-LENGTH CHECKS. NO V3/REVEAL SEMANTICS CHANGED.**
+
+
+## 44.78 — AGENT B F4 — EXISTING TEST COVERAGE / GOLDEN-VECTOR GAP AUDIT — 2026-10-25
+
+Read-only test inventory on the live `work/immortal-green-closure` branch. No tests or protocol code were changed and no test command was executed.
+
+### Existing coverage located
+
+- `src/__tests__/beaconTrust.test.ts` tests off-chain trust-mode selection and prevents silent downgrade after a round commitment. It does **not** prove that the selected mode/commitment is authenticated on-chain or stored in BeaconRegistryDatum/PrizeDatum.
+- `src/registryFlow.ts` recomputes `deriveGameRoundCommitment` and rejects off-chain mismatches, but its own documentation acknowledges the seven-field on-chain registry does not persist/authenticate the commitment.
+- `src/beacon.ts` and `plutus/Beacon.hs` mirror the current field encoding and derivation domains. The reviewed test inventory did not identify a dedicated cross-language golden-vector suite for `deriveGameRoundCommitment`, `encodeBeaconTarget`, `ticketCommitment`, or BeaconRegistry datum serialization.
+- `src/registryDatum.ts` documents its seven-field constructor order. The reviewed inventory did not identify a focused round-trip/negative-test suite for this datum.
+- Issue admission tests exist, but the inspected Issue bridge tests are focused on authoritative economic admission evidence; their presence is not evidence that a canonical Beacon round/config/trust commitment is enforced by the minting policy.
+
+This is a bounded search of the current branch's discovered `src/__tests__` inventory and inspected files, not a proof that no related fixture exists elsewhere. Before claiming absence globally, implementation work should search the full test tree and CI workflows again.
+
+### Test additions required before any schema implementation is accepted
+
+**Tier A — byte-level compatibility (no validator semantics changed):**
+1. Fixed fixtures for game ID, round ID, config hash, protocol version, BeaconTarget, ticket fields and expected canonical preimage bytes/hash.
+2. Same fixtures evaluated by TypeScript and Haskell; compare exact bytes where exported and exact digest otherwise.
+3. Boundary cases: zero and positive round IDs, multi-byte fields, empty byte strings where the encoding permits them, long integers, and negative integer rejection/normalization according to the already-established legacy contract. Do not decide a new negative-value policy implicitly.
+4. Datum serialization round-trip tests that assert exact constructor index, field count, order, and byte encodings.
+
+**Tier B — trust binding and schema versions:**
+1. Mutate one field at a time: game ID, config hash, protocol/schema version, network/domain, round ID, trust-mode commitment, registry identity and singleton policy/name.
+2. Reject absent, duplicate, malformed or conflicting vNext fields.
+3. Verify that a commitment supplied only by the client or off-chain registryFlow cannot satisfy on-chain Issue admission.
+4. Ensure legacy ticket fixtures still select legacy semantics, and vNext fixtures cannot be interpreted as legacy or vice versa.
+5. Test registry → Issue → Reveal equality of the frozen commitment, coordinated with the Reveal owner.
+
+**Tier C — state-machine / ledger behavior:**
+1. Duplicate bootstrap and counterfeit singleton token reject.
+2. Concurrent round-state spends allow at most one transition from the same state; stale retries are deterministic.
+3. Replay, duplicate round, skipped round and wrong profile reject according to the approved sequential rule.
+4. Full positive and negative end-to-end tests on a local ledger emulator first, then Yaci/Cardano runtime evidence under a separately reviewed workflow.
+
+### Implementation safety conclusion
+
+The safest immediate implementation unit, **after normative encoding/version approval**, is the isolated golden-vector and serialization conformance layer. It can expose Haskell/TypeScript drift before adding a new state machine or changing ticket datum constructors. Until the encoding and migration policy are approved, do not create a speculative vNext domain name, assign schema version numbers, or modify protocol source.
+
+Cardano CIP-31 confirms reference inputs allow transactions to read UTxOs without consuming them, but that feature does not authenticate a datum by itself; contract logic must still bind the expected identity. Source: [CIP-31 Reference inputs](https://cips.cardano.org/cip/CIP-0031).
+
+**STATUS: EXISTING COVERAGE AND TEST GAPS MAPPED; NO TEST EXECUTION AND NO SOURCE CHANGE. F4 OPEN. F5/MATERIOS REMAINS PAUSED.**
