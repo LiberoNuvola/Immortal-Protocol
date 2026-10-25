@@ -1809,3 +1809,15 @@ This checkpoint can assign work, record dependencies, and classify evidence. It 
 - **Duplicate-work check:** Agent A's assigned P2.8 work is native Cardano-ledger evaluation/context materialization (F3.2–F3.4); this lease is the preceding Lucid/Yaci Reveal transaction-builder crash. Share resulting raw ledger/evidence artifacts with Agent A when useful, but do not duplicate its native evaluator investigation. The `copilot/fix-real-preprod-reveal-job` branch is not treated as an active duplicate based on its latest commit (2026-10-21, EEV governance metadata only); recheck before expanding scope.
 - **Coordination rule:** while this lease is active, no other session should repeat the same Yaci `collectFrom`/CML parser experiment on another branch. Independent review is welcome if it addresses a different uncertainty and cites its own exact SHA.
 - **Protected boundaries:** V3 carrier is already PASS in the current trace and is not to be modified. This diagnostic does not qualify Reveal, Preprod, economic admission, or first-user Issue.
+
+## 44.56 PREPROD-REVEAL — CML PARSER EXPERIMENT RESULT — 2026-10-25
+
+**Front lease ID:** `PREPROD-REVEAL/collectFrom-CML-datum-parser`
+
+- **State:** `IN_PROGRESS`; first discriminator completed, next bounded isolation required.
+- **Source branch@SHA:** `fix/preprod-eev-approval-pin@7c4d5aab7c489163060dd95232de9023904eb994`.
+- **Run:** Integration Lab #2249, [40212607739](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40212607739), failed at Reveal step 22; job evidence artifact ID `12606973389`, SHA-256 `9ecaa43471e7d533e5699623a17db33c851d288af311db2b4dfd874d0a64d11c`.
+- **Observed evidence:** both direct CML `PlutusData.from_cbor_hex` calls PASS for the exact provider datums (Prize: 658 hex characters; B1PrizePool: 96). Both `collectFrom` stage markers also PASS, then lazy builder completion fails in Lucid `Collect.ts:61` at `PlutusData.from_cbor_hex` with `RuntimeError: memory access out of bounds`.
+- **Layer proven:** diagnostic Yaci Integration Lab only. This rules out a simple failure of direct parsing of either observed datum; it does not prove which lazy builder input/operation triggers the crash, successful transaction completion, tx size, Reveal ledger acceptance, Preprod, or economic admission.
+- **Next action:** isolate each input in its own diagnostic builder completion path on this same leased branch, using unchanged observed UTxOs/datums and no production semantics changes. Record whether the crash reproduces for Prize-only, B1PrizePool-only, or only the combined builder. If completion gets past the parser, retain the first downstream error and do not claim Reveal PASS.
+- **Guardrails:** V3 remains untouched; no change to Reveal semantics, economic rules, ABI, policy ID, or `maxTxSize=16384`. Do not start the equivalent experiment on another branch.
