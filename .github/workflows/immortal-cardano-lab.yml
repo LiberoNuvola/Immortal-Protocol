@@ -199,7 +199,7 @@ jobs:
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
       - name: Execute real economic Reveal transition trace
-        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace.ts
+        run: node --import tsx/esm audit/cardano-integration/reveal-ledger-trace-evolution.ts
 
       - name: Execute real FundTreasury canonical Oracle valuation trace
         run: node --import tsx/esm audit/cardano-integration/fund-treasury-oracle-valuation-trace.ts
