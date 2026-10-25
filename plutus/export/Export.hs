@@ -25,6 +25,7 @@ import qualified GenesisRegimeCarrier
 import qualified GenesisCarrierMintPolicy
 import qualified V3EconomicStateCarrier
 import qualified V3EconomicStateCarrierMintPolicy
+import qualified V3CarrierDiagnosticPolicies
 
 compiledCborHex :: CompiledCode a -> Text
 compiledCborHex code =
@@ -113,6 +114,22 @@ main = do
     (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json")
     "PreRich V3 economic state carrier one-shot mint policy factory"
     (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
+
+  -- Diagnostic-only policies: isolated from production V3 and Reveal.
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticNoContext.plutus.json")
+    "Diagnostic baseline: ignores ScriptContext"
+    (compiledCborHex V3CarrierDiagnosticPolicies.noContextFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticReadInputs.plutus.json")
+    "Diagnostic: decodes ScriptContext and reads txInfoInputs"
+    (compiledCborHex V3CarrierDiagnosticPolicies.readInputsFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticCompareSeed.plutus.json")
+    "Diagnostic: reads txInfoInputs and compares TxOutRef"
+    (compiledCborHex V3CarrierDiagnosticPolicies.compareSeedFactory)
 
   writeScriptJson
     (outputDir <> "/b1PrizePoolFactory.plutus.json")
