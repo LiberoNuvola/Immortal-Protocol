@@ -11,6 +11,7 @@ module V3CarrierDiagnosticPolicies
   , compareSeedFactory
   , decodeSeedFactory
   , rawDecodeSeedAndNameFactory
+  , rawDecodeSeedAndNameSingletonFactory
   , rawDecodeNameMintOnlyFactory
   , seedConsumedFactory
   , seedConsumedSerializedFactory
@@ -83,6 +84,24 @@ mkRawDecodeSeedAndName seedData nameData _ ctx =
 {-# INLINABLE wrapRawDecodeSeedAndName #-}
 wrapRawDecodeSeedAndName :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
 wrapRawDecodeSeedAndName = mkRawDecodeSeedAndName
+
+-- Same raw-Data ABI as the passing probe, but check the exact singleton Value
+-- predicate used by the historical mint-policy implementation.
+{-# INLINABLE mkRawDecodeSeedAndNameSingleton #-}
+mkRawDecodeSeedAndNameSingleton :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+mkRawDecodeSeedAndNameSingleton seedData nameData _ ctx =
+  let
+    seed = unsafeFromBuiltinData seedData :: TxOutRef
+    name = unsafeFromBuiltinData nameData :: TokenName
+    decodedContext = unsafeFromBuiltinData ctx :: ScriptContext
+    info = scriptContextTxInfo decodedContext
+  in check (diagnosticSeedConsumed seed info
+       && txInfoMint info == singleton (ownCurrencySymbol decodedContext) name 1)
+
+{-# INLINABLE wrapRawDecodeSeedAndNameSingleton #-}
+wrapRawDecodeSeedAndNameSingleton :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapRawDecodeSeedAndNameSingleton = mkRawDecodeSeedAndNameSingleton
+
 
 -- Isolate TokenName parameter decoding from the TxOutRef parameter entirely.
 {-# INLINABLE mkRawDecodeNameMintOnly #-}
@@ -195,7 +214,11 @@ singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 rawDecodeSeedAndNameFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameFactory = $$(compile [|| wrapRawDecodeSeedAndName ||])
+rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
+
+rawDecodeSeedAndNameSingletonFactory
+  :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
+rawDecodeSeedAndNameSingletonFactory = $(compile [|| wrapRawDecodeSeedAndNameSingleton ||])
 
 rawDecodeNameMintOnlyFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
