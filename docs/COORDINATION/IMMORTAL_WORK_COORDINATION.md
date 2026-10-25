@@ -2322,3 +2322,46 @@ F4 is a protocol-representation gap, not a missing client-side check. Closing it
 No implementation was made because the uniqueness authority and versioned migration semantics are normative design choices; the existing checkpoint already records that they require explicit coordinated approval. No V3 or Reveal behavior was changed. F5/Materios remains paused per §44.70.
 
 **STATUS: F4 SOURCE BOUNDARY RECONFIRMED; INITIAL-PENDING UNIQUENESS AND ON-CHAIN GAME-ROUND/TRUST COMMITMENT BINDING REMAIN OPEN. NEXT ACTION IS TO PREPARE A TESTABLE VERSIONED CHANGESET ONLY AFTER THE REQUIRED DESIGN CHOICE IS AUTHORIZED.**
+
+
+## 44.72 — AGENT B F4 — PERMISSIONLESS UNIQUENESS DESIGN OPTIONS / TEST CONTRACT — 2026-10-25
+
+**Purpose:** prepare the F4 next-step design/test contract without changing protocol semantics or selecting a normative architecture. Materios/F5 remains paused under §44.70.
+
+### Hard invariant to close
+
+For a canonical game-round identity, there must be at most one accepted on-chain round anchor, and Issue/Reveal must authenticate the same frozen anchor/trust commitment. A client query that picks one among multiple Pending UTxOs is not an invariant. The current seven-field registry datum and current ticket commitment do not persist/authenticate a dedicated trust commitment.
+
+### Candidate A — permissionless serialized registry state (preferred first to evaluate)
+
+A protocol-controlled singleton state UTxO, protected by a dedicated spending validator and a non-reissuable singleton asset, serializes round-anchor creation. Creation remains permissionless if the validator allows any caller to advance the state while requiring the exact next canonical round/identity and exactly one corresponding anchor output. The transition consumes the sole state UTxO and recreates it with a monotonic sequence/commitment update, so concurrent attempts conflict on the same input. The validator must prevent skipped/replayed round identities and authenticate the anchor output. This candidate is not yet proven to support arbitrary out-of-order round IDs; do not assume that it does.
+
+### Candidate B — one-shot anchor asset per round
+
+A round anchor carries a unique native asset whose policy can mint only once using a specific seed UTxO. Cardano's one-shot UTxO pattern provides uniqueness for that policy. However, a separate arbitrary seed/policy chosen by each caller does NOT guarantee one global canonical anchor for a round: the canonical seed/policy derivation and round-identity binding must themselves be protocol-defined and non-conflicting. Therefore this is not a drop-in fix unless a unique canonical seed authority is established.
+
+### Candidate C — permissioned creation
+
+An admin/relayer key or committee authorizes Pending creation. This can be simpler, but it weakens permissionlessness and introduces authority/key governance. It is a fallback only if the higher trustless options are shown to fail under a reproducible, explicitly classified reason and the user's already-decided downgrade policy is followed. No silent fallback.
+
+### Shared test contract (required whichever design is selected)
+
+1. Two concurrent create attempts for the same canonical round: at most one can be accepted.
+2. Duplicate/replayed round ID after anchor exists: reject.
+3. Different round ID with same GameRoundCommitment, and same round ID with altered commitment: reject.
+4. Wrong network, mainchain reference, game config hash, protocol version, asset policy/name, or trust-mode commitment: reject.
+5. Issue referencing a non-canonical/competing anchor: reject on-chain.
+6. Reveal whose stored commitment differs from the Issue-time frozen commitment: reject on-chain.
+7. Replayed/burned/reissued anchor asset or counterfeit token under a different policy: reject.
+8. Multiple registry outputs, missing singleton, malformed datum, or absent continuation/state token: fail closed.
+9. Valid canonical creation → Issue → Reveal path: pass, preserving existing V2 behavior unless and until a separately versioned migration is approved.
+10. Property/model test concurrent submissions and arbitrary round ordering; record whether ordering is supported or prohibited by the chosen rule.
+
+### Compatibility / safety boundary
+
+- Do not repurpose the ticket serial Counter, V3 carrier, B2 control singleton, or any unrelated singleton as the Beacon authority.
+- Do not change the current ticket commitment domain/version or append fields to PrizeDatum/BeaconRegistryDatum until a versioned schema/validator migration is explicitly selected and its old/new compatibility behavior is tested.
+- Do not touch V3 or Reveal semantics as part of this design-only work.
+- User's general policy remains: evaluate the most trustless/permissionless solution first; any downgrade requires a reproducible higher-tier failure, explicit failure code, transparent record and frozen selected mode. This does not by itself authorize a specific F4 implementation or schema migration.
+
+**STATUS: DESIGN OPTIONS AND ACCEPTANCE TEST CONTRACT RECORDED; NO NORMATIVE OPTION SELECTED, NO PROTOCOL CODE CHANGED. NEXT STEP: compare candidate A against current validator/transaction constraints, then bring only unresolved normative choice(s) to the user before implementation.**
