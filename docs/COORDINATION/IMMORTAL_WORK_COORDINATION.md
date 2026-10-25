@@ -1874,3 +1874,34 @@ Follow-up to 44.57. The actual create/mint/registry path has now been traced at 
 ### Next step
 
 Report this precise gap for the user's normative decision. After authorization, implement only the selected boundary and add conformance tests that prove the chosen mode/evidence/round binding at round creation, ticket commitment and on-chain validation. Until then, F4 lifecycle integration and the B1 registry commitment gap remain OPEN. No code, validator schema, branch count, deployment or on-chain state changed in this trace.
+
+## 44.48 REVEAL DIAGNOSTIC BRANCH RECONCILIATION — 2026-10-25
+
+Agent A rechecked the Reveal diagnostic lineage against the live coordination branch and PR #38. This entry is an operational coordination record only; it does not change protocol or validator semantics.
+
+### Refs and evidence
+
+- Coordination branch `work/immortal-green-closure`: HEAD `1af9acc8580aaa74976efbe0acd90cba8417d707`.
+- PR #38 head branch `fix/preprod-eev-approval-pin`: diagnostic commit `889e827566e83884d4597fc5136f59b677c5dd66`.
+- Preceding diagnostic commit `61941eb87cf4810e9ae179501315ebab466224a4` added isolated Lucid `collectFrom(...).complete()` probes for Prize-only and B1PrizePool-only inputs.
+- `889e827` removes manual freeing of the CML diagnostic parse object to test whether WASM object lifetime interferes with Lucid's lazy builder.
+- Run #2251 (`40215140216`) was still `in_progress` at this check; its job had not reached the Reveal execution step. It is not yet evidence for either PASS or FAIL of the Reveal probe.
+
+### Compatibility finding
+
+The coordination branch already contains `audit/cardano-integration/reveal-ledger-trace.ts` (blob `89958e2c7b026ea9f680cbd24dff78cedc15aaab`). That trace already builds the Reveal transaction with the two reference inputs, both `collectFrom` inputs, and post-state outputs; it performs reference-script preflight and serialized-CBOR size checks.
+
+PR #38 instead contains `audit/cardano-integration/reveal-ledger-trace-evolution.ts` (blob `ec2c1d1d25e61c33bb091657a1397d1a7c4a578a`). It has a distinct implementation/import set, including a direct `PlutusData.from_cbor_hex` diagnostic and the two isolated completion probes. The PR workflow invokes this Evolution trace; the coordination-branch workflow invokes the existing `reveal-ledger-trace.ts` for its active Reveal path.
+
+Therefore the Evolution file is **not a drop-in replacement**. Do not cherry-pick the two commits alone, replace the existing trace, or change the workflow target without a compatibility review. The minimal candidate for future alignment is to adapt only the isolated builder-completion probes to the existing coordination-branch trace, after confirming its local variable/API compatibility; the CML object-lifetime probe is specific to the Evolution trace's `PlutusData` parser call and must not be copied as though it tested the same code path.
+
+### Guardrails and next action
+
+- Keep V3 carrier untouched.
+- Do not change Reveal semantics, transaction size limits, or economic rules.
+- Do not create a branch, duplicate the lab run, or merge/cherry-pick the PR.
+- Preserve run #2251 as evidence for the PR's diagnostic path. Recheck its terminal status before interpreting it.
+- If the failure remains reproducible on the coordination branch, add only bounded diagnostic probes to its existing trace and use the existing workflow path; distinguish construction-only evidence from ledger execution evidence.
+
+**STATUS: BRANCH MISMATCH CONFIRMED / SAFE PORT NOT YET APPLIED / RUN #2251 NOT YET REVEAL-TERMINAL AT CHECK TIME**
+
