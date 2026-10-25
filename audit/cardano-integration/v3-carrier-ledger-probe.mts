@@ -36,10 +36,10 @@ if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') 
 const policy: Script = {
   type: 'PlutusV2',
   script: applyParamsToScript(artifact.cborHex, [
-    // Match the flat TxOutRef Data shape used by Cardano's Plutus ledger API:
-    // Constr 0 [txId-bytes, output-index].
-    new Constr(0, [seed.txHash, BigInt(seed.outputIndex)]),
-    // Keep the existing compiled-policy TokenName shape while isolating TxOutRef.
+    // Match the parameter encoding already used by deployV3Carrier.mts:
+    // TxOutRef = Constr 0 [Constr 0 [txId-bytes], output-index].
+    new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
+    // TokenName uses the same constructor encoding as the deployment path.
     new Constr(0, [TOKEN_NAME_HEX]),
   ]),
 }
