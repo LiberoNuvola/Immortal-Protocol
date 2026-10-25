@@ -112,7 +112,7 @@ compiledTypedSeedParamOnlyFactory =
   $$(compile [|| typedSeedParamOnlyWrap ||])
 
 compiledTypedTokenNameParamOnlyFactory =
-  $(compile [|| typedTokenNameParamOnlyWrap ||])
+  $$(compile [|| typedTokenNameParamOnlyWrap ||])
 
 -- Corrected probes model Lucid's external parameter application: parameters
 -- arrive as BuiltinData and must be decoded explicitly. TokenName is encoded
@@ -138,7 +138,7 @@ decodedPolicyWrap seedData tokenNameData _ ctxData =
          && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint info))
 
 compiledDecodedParamsOnlyFactory =
-  $(compile [|| decodedParamsOnlyWrap ||])
+  $$(compile [|| decodedParamsOnlyWrap ||])
 
 compiledDecodedPolicyFactory =
-  $(compile [|| decodedPolicyWrap ||])
+  $$(compile [|| decodedPolicyWrap ||])
