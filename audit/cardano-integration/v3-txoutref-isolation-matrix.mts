@@ -106,6 +106,14 @@ for (const item of cases) {
     })
     void tx
   } catch (error) {
+    const caughtError = sanitizeEvaluationDiagnosticText(String(error?.message ?? error), 1200)
+    // Lucid 0.6.5 may throw a secondary "EvaluationResult in undefined" error
+    // after the provider returns HTTP 400. Prefer the recorded, sanitized Yaci
+    // response as the primary diagnostic and retain Lucid's wrapper error
+    // separately so the matrix cannot misclassify the cause.
+    const providerFailure = [...providerResponses].reverse().find(
+      (response) => response.case === item.id && response.httpOk === false,
+    )
     results.push({
       case: item.id,
       paramType: item.paramType,
@@ -113,13 +121,16 @@ for (const item of cases) {
       signed: false,
       submitted: false,
       result: 'EVALUATION_OR_BUILD_FAIL',
-      error: sanitizeEvaluationDiagnosticText(String(error?.message ?? error), 1200),
+      providerHttpStatus: providerFailure?.httpStatus ?? null,
+      providerResponseSha256: providerFailure?.responseSha256 ?? null,
+      error: providerFailure?.sanitizedMessage ?? caughtError,
+      wrapperError: providerFailure ? caughtError : null,
     })
   }
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v11',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v12',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
