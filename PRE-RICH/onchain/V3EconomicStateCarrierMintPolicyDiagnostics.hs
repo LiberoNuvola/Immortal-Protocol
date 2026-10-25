@@ -83,7 +83,9 @@ tokenNameParamOnlyWrap _ tokenNameData _ _ =
 contextInputsOnlyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
 contextInputsOnlyWrap _ _ _ ctx =
   let info = scriptContextTxInfo (unsafeFromBuiltinData ctx :: ScriptContext)
-  in check (not (null (txInfoInputs info)))
+  in case txInfoInputs info of
+       [] -> check False
+       _  -> check True
 
 compiledSeedParamOnlyFactory =
   $$(compile [|| seedParamOnlyWrap ||])
