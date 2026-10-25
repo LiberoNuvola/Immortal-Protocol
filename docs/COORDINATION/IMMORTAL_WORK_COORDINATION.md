@@ -1821,3 +1821,32 @@ This checkpoint can assign work, record dependencies, and classify evidence. It 
 - **Layer proven:** diagnostic Yaci Integration Lab only. This rules out a simple failure of direct parsing of either observed datum; it does not prove which lazy builder input/operation triggers the crash, successful transaction completion, tx size, Reveal ledger acceptance, Preprod, or economic admission.
 - **Next action:** isolate each input in its own diagnostic builder completion path on this same leased branch, using unchanged observed UTxOs/datums and no production semantics changes. Record whether the crash reproduces for Prize-only, B1PrizePool-only, or only the combined builder. If completion gets past the parser, retain the first downstream error and do not claim Reveal PASS.
 - **Guardrails:** V3 remains untouched; no change to Reveal semantics, economic rules, ABI, policy ID, or `maxTxSize=16384`. Do not start the equivalent experiment on another branch.
+
+
+## 44.57 — AGENT B F4/F5 — BEACON/MATERIOS SOURCE AUDIT — 2026-10-25
+
+**Purpose:** record a bounded source audit of the Agent B front without duplicating the active Reveal/Yaci diagnostic and without changing Beacon, B3, or economic semantics.
+
+**Scope:** work/b3-materios-provenance-evidence source surfaces, checked against the canonical coordination checkpoint. This entry records source-level evidence only; the inspected branch is not implicitly promoted to the canonical implementation baseline.
+
+### Evidence and findings
+
+1. **B3-A — GRANDPA finality / authority history remains OPEN.** The branch's poc/materios-grandpa/test/README.md explicitly states that the PoC uses synthetic fixtures, has no real Materios finalized-block/justification/authenticated authority-transition fixture, and deliberately fails closed with ANCESTRY_NOT_VERIFIED when verifyAncestry: true. The authority transition verifier requires an injected proof verifier; the repository does not provide a production cryptographic implementation for that transition boundary.
+2. **B3-B — storage authentication remains a separate gate.** The existing research contract keeps finality/authority/ancestry, finalized StateRoot, storage membership/value, and B3-C succinct verification distinct. A checkpoint extraction or valid storage proof alone does not establish canonical finality.
+3. **Authoritative selector provenance is correctly not reimplemented in TypeScript.** poc/materios-grandpa/test/MATERIOS-AUTHORITY-SELECTION-PROOF-CONTRACT.md requires proof of canonical runtime identity, execution block/state commitment, branch witness, exact SCALE inputs, and resulting committee. A local runtime API result alone is explicitly insufficient.
+4. **Trust-mode helpers exist but operational integration is not evidenced.** src/beaconTrust.ts defines selectBeaconMode and assertFrozenBeaconMode; src/__tests__/beaconTrust.test.ts tests priority/fallback and rejection of downgrade. Repository code search found no call sites beyond the helper module and its tests. Therefore round-creation/commitment freeze is not yet proven operationally integrated.
+5. **The B1 registry has an explicit representation gap.** src/registryFlow.ts says GameRoundCommitment is checked off-chain but is not stored in the current seven-field BeaconRegistryDatum; plutus/BeaconRegistry.hs does not authenticate it. Do not claim that off-chain consistency checks create an on-chain binding.
+
+### Classification
+
+- B3-A real finality and authenticated authority-transition evidence: **OPEN**.
+- B3-B real StateRoot-bound storage proof/value evidence: **OPEN**.
+- B3-C succinct/Cardano verification: **OPEN**.
+- Trust-mode freeze at actual round creation/commitment: **OPEN — source-level helper/tests only; no operational call-site evidence found**.
+- B1 registry round-commitment binding: **OPEN — known schema/validator representation gap**.
+
+### Next bounded action
+
+Trace the actual round-creation and ticket-commitment path on the canonical work branch and identify the existing authoritative state boundary for freezing mode + beacon + evidenceRef + roundId. If the current on-chain schema cannot represent that binding, report the exact schema/validator gap for normative authorization; do not silently extend the datum, alter validator semantics, substitute a TypeScript selector, or promote synthetic fixtures to production evidence.
+
+**No source code, validator schema, deployment, or on-chain state was changed by this audit.** V3 and Reveal remain outside this front.
