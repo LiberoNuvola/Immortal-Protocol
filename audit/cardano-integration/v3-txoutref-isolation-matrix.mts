@@ -69,7 +69,7 @@ for (const item of cases) {
     }
     const policy: Script = {
       type: 'PlutusV2',
-      script: applyParamsToScript(artifact.cborHex, item.paramType === 'token-name-only' ? [new Constr(0, [TOKEN_NAME_HEX])] : [seedParam, new Constr(0, [TOKEN_NAME_HEX])]),
+      script: applyParamsToScript(artifact.cborHex, item.paramType === 'token-name-only' ? [TOKEN_NAME_HEX] : [seedParam, TOKEN_NAME_HEX]),
     }
     const policyId = mintingPolicyToId(policy)
     const unit = policyId + TOKEN_NAME_HEX
@@ -103,7 +103,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v5',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v6',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -112,7 +112,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality; all TokenName parameters use the explicit Plutus Data constructor expected by the typed parameter. All cases are diagnostic only.',
+  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality; TokenName parameters are passed as raw bytestring Data; only the TxOutRef uses constructor encoding. All cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
