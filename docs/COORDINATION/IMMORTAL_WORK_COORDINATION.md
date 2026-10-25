@@ -2391,3 +2391,29 @@ A client-supplied hash, a datum field that is not checked by the validator, or a
 Continue read-only inventory of existing immutable config/round identity carriers and validator references to determine whether candidate 1 already exists and can be reused without repurposing unrelated state. If not, report the minimal unresolved authority decision; do not implement a new singleton, alter schemas, or modify Issue/Reveal semantics before that decision.
 
 **STATUS: SERIALIZATION CANDIDATE REFINED; PRE-EXISTING CANONICAL COMMITMENT AUTHORITY NOT YET FOUND. F4 REMAINS OPEN; NO CODE CHANGE.**
+
+
+## 44.74 — AGENT B F4 — CANONICAL ROUND CONFIG AUTHORITY INVENTORY — 2026-10-25
+
+Read-only inventory following §44.73. No implementation, schema, deployment or workflow changes.
+
+### Sources inspected on `work/immortal-green-closure`
+
+- `plutus/Types.hs`: `GameRoundCommitment` is a standalone type; `BeaconRegistryDatum` still has seven fields and does not carry it. `PrizeDatum` carries `pdGameVersion` and `pdBeaconTarget`, but no frozen `roundTrustCommitmentHash` or canonical configuration hash.
+- `plutus/BeaconRegistry.hs`: the validator authenticates the relayer's publication transition and deterministic derivation from supplied receipt/context; it does not authenticate a pre-existing canonical game configuration or constrain initial Pending creation.
+- `src/config.ts`: network is declared as Preprod and deployment identities (addresses/policy IDs/token names) are loaded from environment variables. These identify deployment components but are not an on-chain canonical game/round configuration authority.
+- `src/loadValidator.ts`: script factories are parameterized with existing validator/script identities and B1 dependencies; no already-established canonical game-round configuration carrier was identified in the inspected interface.
+- `src/preRichIssueAdmissionBridge.ts`: authoritative Issue admission and economic transition evidence are a separate admission boundary; the inspected type surface does not establish a canonical on-chain Beacon round/config commitment.
+- Existing B1 PrizePool, V3 carrier, B2 control and serial Counter identities are application/economic/deployment components. None may be repurposed as Beacon authority without a separately authorized protocol design.
+
+### Result
+
+**Candidate 1 from §44.73 is NOT FOUND in the inspected current interfaces.** This is a bounded source audit, not proof that no such carrier exists anywhere in every branch or deployment artifact; however, no existing authenticated on-chain carrier is available to reuse from the reviewed path without changing protocol representation.
+
+The minimum unresolved design decision is now precise: decide how the canonical game/config/round identity becomes authoritative *before* permissionless anchor creation, and how its frozen trust-mode commitment is bound across registry → Issue → Reveal. The implementation cannot safely infer this from environment configuration, client-supplied hashes, a relayer-signed receipt, or unrelated singleton tokens.
+
+### Next action boundary
+
+Do not create a new singleton, alter `BeaconRegistryDatum`/`PrizeDatum`, change ticket commitment domains, or touch Issue/Reveal/V3 until the user authorizes a versioned design. Continue to prioritize a permissionless/trustless option; a lower tier requires a reproducible higher-tier failure and an explicit auditable downgrade decision. F5/Materios remains paused under §44.70.
+
+**STATUS: F4 READ-ONLY INVENTORY RECORDED; NO REUSABLE CANONICAL ROUND-CONFIG AUTHORITY IDENTIFIED IN THE INSPECTED INTERFACES. F4 REMAINS OPEN; NO CODE CHANGE.**
