@@ -37,11 +37,36 @@ References:
 - [Plutus Ledger API V2 — TokenName](https://plutus.cardano.intersectmbo.org/haddock/master/plutus-ledger-api/PlutusLedgerApi-Data-V2.html)
 - [Lucid Evolution — Applying Parameters](https://no-witness-labs.github.io/lucid-evolution/documentation/smart-contract-interactions/applying-parameters)
 
-## Follow-up diagnostic
+## Follow-up diagnostic — v11 result
 
-On head `9046b8c5fc0b68b74be7e73039766edbe067817f`, matrix schema v11 adds `raw-decode-seed-name-singleton`: the raw `BuiltinData` ABI plus explicit decoding, followed by the exact `txInfoMint == singleton ... 1` predicate. It exists to separate the ABI boundary from the predicate form used by the carrier mint policy.
+On head `9046b8c5fc0b68b74be7e73039766edbe067817f`, matrix schema v11 adds `raw-decode-seed-name-singleton`: the raw `BuiltinData` ABI plus explicit decoding, followed by the exact `txInfoMint == singleton ... 1` predicate. It separates the ABI boundary from the mint predicate used by the carrier policy.
 
-At the latest verification snapshot, [Cardano Integration Lab #2240](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40200880730) had not produced an evidence artifact and was still at `Generate fresh Plutus validator artifacts`. The v11 outcome is therefore **pending**, not PASS.
+Run [IMMORTAL Cardano Integration Lab #2241](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40202737054), head `22e4badb74fdfd8594f8f16661fc823027a1abaf`, uploaded artifact `immortal-cardano-lab-evidence` (artifact ID `12603272638`, SHA-256 `29ebd385a511769f81f82ceffbd39fda91f0e5baca0770d078d0574a18ca5d28`). The matrix schema is `IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v11`.
+
+### v11 evidence
+
+The following raw-`BuiltinData` cases all returned HTTP 200 from the Yaci/Ogmios evaluation endpoint and completed Lucid transaction construction. They were **not signed or submitted**:
+
+- `compare-seed-txoutref`
+- `decode-seed-explicitly`
+- `raw-decode-seed-and-name`
+- `raw-decode-seed-name-singleton`
+- `raw-decode-name-mint-only`
+
+The new `raw-decode-seed-name-singleton` case specifically passed with the exact singleton-`Value` predicate. This shows the predicate can evaluate when both parameters cross the wrapper as `BuiltinData` and are explicitly decoded.
+
+The typed cases still fail in the evaluator:
+
+- `seed-consumed-only` and `seed-consumed-serialized`: `'case' over a value of a built-in type failed with data isn't supported in 'case'`.
+- `assocmap-mint-only-bare-bytes` and `singleton-mint-only-constr-bytes`: `Type mismatch: expected: bytestring; actual: data`.
+
+The production carrier step (step 26) failed before ledger submission. The provider response in `v3-provider-evaluation-response.json` was HTTP 400 with a Plutus `EvaluationFailure`; Lucid then raised the secondary `Cannot use 'in' operator to search for 'EvaluationResult' in undefined`. The native ledger accepted the separate smoke transaction, but **did not accept the V3 carrier**. Reveal and later gates were skipped.
+
+### Updated interpretation
+
+The strongest supported diagnosis is an ABI boundary mismatch in the current parameterized factory: a raw-`BuiltinData` wrapper with explicit decoding passes, while equivalent typed-parameter probes fail. The new singleton probe rules out the claim that the exact singleton mint predicate alone causes the observed failure. It does not prove that Yaci is the only possible source of incompatibility, nor is it ledger acceptance evidence.
+
+The production mint-policy factory has **not** been changed in this diagnostic work. Switching its factory ABI to `BuiltinData` would alter the compiled script bytes and future policy ID; this requires a separate explicit change/redeployment decision, with independent review and a new native-ledger acceptance run.
 
 ## Guardrails
 
