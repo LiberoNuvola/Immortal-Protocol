@@ -2191,3 +2191,36 @@ Thus the earlier design-only wording that suggested constructing `BlockId<Block>
 Materios already declares `sc-client-api` through the workspace and `FullClient` is the concrete service client, so no additional dependency is indicated. This confirms a minimal technical integration path but not successful compilation, runtime behavior, proof verification or a real fixture. Before implementation, confirm `StorageProof` SCALE serialization/API on the same pinned tag and settle the versioned envelope, proof hash domain, RPC exposure/authentication and input limits during review; do not invent these as normative decisions.
 
 **STATUS: EXACT EXECUTION-PROOF API SIGNATURE CONFIRMED AGAINST PINNED TAG; DESIGN ONLY. F5 OPEN. NO UPSTREAM OR ON-CHAIN CHANGE.**
+
+
+## 44.68 — AGENT B F5 — PINNED STORAGEPROOF SCALE CONTRACT / CONSUMER RECHECK — 2026-10-25
+
+**Scope:** close the remaining source-level question from 44.67: whether the pinned SDK `StorageProof` has canonical SCALE serialization, and whether IMMORTAL already has an independent consumer. Read-only source audit; no implementation or upstream writes.
+
+### Pinned SDK fact
+
+At `paritytech/polkadot-sdk` tag `polkadot-stable2409-4`, `substrate/primitives/trie/src/storage_proof.rs` defines:
+
+```rust
+#[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
+pub struct StorageProof {
+    trie_nodes: BTreeSet<Vec<u8>>,
+}
+```
+
+Therefore `StorageProof` supports native SCALE `Encode`/`Decode` at the exact SDK tag. Its node collection is a `BTreeSet`, and the source exposes iteration in lexicographical order. This supports using the SDK's own SCALE encoding as the transport serialization for the proof object, provided the producer and verifier pin compatible type/revision and the verifier rejects malformed or trailing bytes. It does **not** define the RPC envelope serialization, proof-commitment hash algorithm/domain, or canonical JSON/hex policy; those remain explicit review decisions, not inferred defaults.
+
+Source: [pinned StorageProof implementation](https://github.com/paritytech/polkadot-sdk/blob/polkadot-stable2409-4/substrate/primitives/trie/src/storage_proof.rs).
+
+### IMMORTAL consumer recheck
+
+- `poc/materios-execution-verifier/src/lib.rs` already SCALE-decodes `StorageProof`, rejects trailing bytes, checks the runtime WASM Blake2-256 against an expected hash, and calls the SDK's `execution_proof_check` against a supplied state root. It compares the reproduced runtime result with the expected result.
+- `poc/materios-execution-verifier/src/storage.rs` independently checks a storage proof against an expected state root/key/value and rejects malformed SCALE, trailing bytes, root mismatch and value mismatch.
+- The current unit fixtures in `storage.rs` are locally synthesized trie fixtures (e.g. key `anchor` / value `anchor-record`). They are useful for verifier mechanics only and do not satisfy the real Materios finalized-block fixture contract.
+- The verifier README explicitly leaves GRANDPA finality, canonical block identity, deployed runtime/WASM provenance, selector semantics and the surrounding authority transition to outer B3 verification.
+
+### Finding / remaining gates
+
+The SDK serialization question is resolved at source level; an IMMORTAL-side execution-proof verifier and storage-proof verifier already exist. This narrows F5 but does not close it. Still missing on the evidence inspected here: the Materios node RPC transport on upstream main, a real finalized Materios fixture, independently authenticated block/state-root/runtime-code bindings, and an end-to-end result crossing `VerifiedAuthoritySetTransition` with finality checked separately. No claim that the existing Rust crate was built or run in this session.
+
+**STATUS: SCALE `StorageProof` ENCODING CONFIRMED AT PINNED TAG; EXISTING CONSUMER FOUND; REAL MATERIOS FIXTURE / RPC / END-TO-END B3 EVIDENCE OPEN. NO IMPLEMENTATION, DEPLOYMENT, OR ON-CHAIN CHANGE.**
