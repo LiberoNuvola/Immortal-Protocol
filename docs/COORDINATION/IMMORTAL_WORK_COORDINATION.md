@@ -2251,3 +2251,14 @@ These two failures do not establish a failure in the canonical Reveal transactio
 The current isolated probes call Lucid complete(), which invokes the configured evaluator; omitting the coupled input makes script evaluation fail and obscures the narrower builder-conversion question. If another probe is needed, isolate builder completion from ledger evaluation using a clearly labelled, temporary test-only evaluator stub with bounded synthetic ExUnits, restored in a finally block. Such evidence must be explicitly classified as construction-only, never ledger acceptance. Do not sign/submit those probe transactions. Keep the existing full Reveal path as the authoritative ledger test.
 
 STATUS: FULL REVEAL TRACE BUILT/SUBMITTED; SIZE GATE PASS; REPLAY REJECTED. PRIOR CML MEMORY-BOUNDS FAILURE NOT REPRODUCED IN RUN #2252. ISOLATED PROBE FAILS ARE DUE TO INVALID SINGLE-INPUT SCRIPT CONTEXTS; NOT A VALID LEDGER VERDICT. LAB OVERALL FAILS LATER AT UTxO DECODER COMPILATION AND JEV PROMPT SIZE. V3 AND REVEAL SEMANTICS UNCHANGED.
+
+
+## 44.66 — AGENT A — PROBE REFINEMENT TO SEPARATE BUILDER FROM EVALUATOR — 2026-10-25
+
+After inspecting run #2252, the two single-input probes were refined in source commit 6b250be5c8dbef0d08b5a1efe4ff1b9bce3aef60. Each probe now temporarily replaces the provider evaluator with a labelled construction-only stub returning synthetic ExUnits, runs Lucid complete(), and restores the original evaluator in finally. Output statuses are explicitly BUILDER_COMPLETION_PASS/FAIL with ledgerValidation=NOT_RUN; the probe transactions are never signed or submitted. The canonical Reveal path executes after the evaluator has been restored and continues to use the real evaluator and authoritative ledger submission.
+
+This refinement is specifically intended to avoid treating the expected script failure from a deliberately incomplete single-input transaction as a builder conversion failure. Synthetic ExUnits are diagnostic scaffolding only and do not qualify transaction execution, solvency, or ledger acceptance.
+
+Branch head verified after the source commit: 6b250be5c8dbef0d08b5a1efe4ff1b9bce3aef60. No fresh run for this commit was visible in the workflow-run query at checkpoint time; inspect Actions before starting anything manually, and do not duplicate an automatically triggered run.
+
+**STATUS: PROBE NOW SEPARATES LUCID BUILDER COMPLETION FROM SCRIPT EVALUATION; RESULT PENDING CI. CANONICAL REVEAL REMAINS THE ONLY LEDGER-AUTHORITATIVE PATH. V3, REVEAL SEMANTICS AND maxTxSize UNCHANGED.**
