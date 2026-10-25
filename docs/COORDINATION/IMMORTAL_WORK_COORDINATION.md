@@ -2262,3 +2262,29 @@ This refinement is specifically intended to avoid treating the expected script f
 Branch head verified after the source commit: 6b250be5c8dbef0d08b5a1efe4ff1b9bce3aef60. No fresh run for this commit was visible in the workflow-run query at checkpoint time; inspect Actions before starting anything manually, and do not duplicate an automatically triggered run.
 
 **STATUS: PROBE NOW SEPARATES LUCID BUILDER COMPLETION FROM SCRIPT EVALUATION; RESULT PENDING CI. CANONICAL REVEAL REMAINS THE ONLY LEDGER-AUTHORITATIVE PATH. V3, REVEAL SEMANTICS AND maxTxSize UNCHANGED.**
+
+
+## 44.69 — AGENT B F5 — LIVE-CI COVERAGE / EXECUTION-PROOF GAP — 2026-10-25
+
+**Scope:** reconcile the current IMMORTAL CI and RPC client with the external Materios implementation gap, so existing work is not repeated. Source/CI configuration audit only.
+
+### Existing IMMORTAL-side coverage found
+
+- `.github/workflows/materios-evidence-conformance.yml` runs the canonical-evidence tests, `test:execution-proof`, `test:rpc-b3`, TypeScript typecheck, and the Materios GRANDPA test/build suite.
+- `.github/workflows/materios-b3-execution-verifier.yml` runs Rust formatting and verifier tests. Its non-PR jobs separately capture finalized-state evidence, attempt a real GRANDPA witness, and capture/verify a live storage proof.
+- `poc/materios-checkpoint/src/rpc.ts` already contains `getCommitteeExecutionProof(callDataHex, at)`, sending the exact block hash and call-data hex to `materios_b3_calculateCommitteeProof`. The local tests exercise this through a mock JSON-RPC server; those tests validate client contract/response handling, not availability of the method on the real node.
+- `docs/04-verification/MATERIOS-B3-NODE-RPC-PATCH-HANDOFF.md` explicitly labels the upstream node-side patch as **defined / not applied**.
+
+### External upstream recheck
+
+Fetched `Flux-Point-Studios/materios` `main` again:
+- `partnerchain/node/src/rpc.rs` remains blob `30827863c7b8f6fb507b008cee9f572ec48fe06f`; `create_full` registers System, Orinq Receipts and MOTRA only. No `materios_b3_calculateCommitteeProof` registration is present.
+- `partnerchain/node/Cargo.toml` remains blob `efcacffc9412c239370b81449b08e9198adaf8d2`; `sc-client-api` is already a direct workspace dependency, but the proposed RPC registration and direct encoding/hex dependencies are not present in the inspected `rpc.rs`.
+
+### Exact remaining gap
+
+The configured CI has meaningful live captures for finalized headers/GRANDPA and storage proofs, plus mock tests for the execution-proof client. It does **not** demonstrate a live native execution proof from Materios, because the public node source still lacks the RPC transport. No successful current CI run was independently confirmed in this source audit, and no workflow was dispatched.
+
+The next action is therefore not to rewrite IMMORTAL's RPC client or verifier. It is to obtain/apply/review the node-side Materios patch through its own repository process, compile it against the pinned SDK, and then add/obtain a real finalized-block execution-proof fixture consumed by the existing verifier. The upstream issue `#50` is closed `not_planned`, so it cannot be treated as an implementation owner or completion signal. Do not write to the upstream repository or dispatch CI without explicit authorization.
+
+**STATUS: IMMORTAL CLIENT / MOCK TESTS / VERIFIER / LIVE STORAGE+FINALITY CAPTURE PIPELINE EXIST; REAL NODE EXECUTION-PROOF RPC AND END-TO-END REAL B3 FIXTURE REMAIN OPEN. NO CODE OR UPSTREAM CHANGE IN THIS AUDIT.**
