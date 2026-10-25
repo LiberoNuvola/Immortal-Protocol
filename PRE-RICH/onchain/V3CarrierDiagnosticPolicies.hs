@@ -19,7 +19,9 @@ import PlutusTx.Prelude
 {-# INLINABLE mkReadInputs #-}
 mkReadInputs :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
 mkReadInputs _ _ _ ctx =
-  length (txInfoInputs (scriptContextTxInfo ctx)) > 0
+  case txInfoInputs (scriptContextTxInfo ctx) of
+    [] -> False
+    _ -> True
 
 {-# INLINABLE mkCompareSeed #-}
 mkCompareSeed :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
