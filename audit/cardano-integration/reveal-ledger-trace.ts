@@ -799,6 +799,15 @@ const probeRevealCollectCompletion = async (
   outputAddress: string,
   outputDatum: string,
 ) => {
+  // Construction-only probe: stub the evaluator temporarily so invalid
+  // single-input script contexts cannot mask the Lucid/CML datum conversion
+  // boundary. These synthetic ExUnits are not evidence of ledger execution.
+  const originalEvaluateTx = providerWithEvaluation.evaluateTx
+  providerWithEvaluation.evaluateTx = async () => [{
+    redeemer_tag: 'spend',
+    redeemer_index: 0,
+    ex_units: { mem: 1_000_000, steps: 100_000_000 },
+  }]
   try {
     await lucid
       .newTx()
@@ -814,21 +823,27 @@ const probeRevealCollectCompletion = async (
       .complete({ localUPLCEval: false })
     console.log(JSON.stringify({
       revealCollectFromCompletionProbe: label,
-      status: 'PASS',
+      status: 'BUILDER_COMPLETION_PASS',
+      evaluator: 'temporary-synthetic-exunits-stub',
       signed: false,
       submitted: false,
+      ledgerValidation: 'NOT_RUN',
     }))
   } catch (error) {
     console.error(JSON.stringify({
       revealCollectFromCompletionProbe: label,
-      status: 'FAIL',
+      status: 'BUILDER_COMPLETION_FAIL',
+      evaluator: 'temporary-synthetic-exunits-stub',
       signed: false,
       submitted: false,
+      ledgerValidation: 'NOT_RUN',
       error: error instanceof Error ? error.message : String(error),
       stack: error && typeof error === 'object' && 'stack' in error
         ? String((error as { stack?: unknown }).stack ?? '')
         : null,
     }))
+  } finally {
+    providerWithEvaluation.evaluateTx = originalEvaluateTx
   }
 }
 await probeRevealCollectCompletion(
