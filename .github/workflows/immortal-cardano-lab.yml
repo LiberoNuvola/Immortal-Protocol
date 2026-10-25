@@ -206,6 +206,9 @@ jobs:
       - name: Compare V3 parameter encodings (diagnostic only; no submission)
         run: node --import tsx/esm audit/cardano-integration/v3-parameter-encoding-comparison.mts
 
+      - name: Isolate V3 TxOutRef evaluator boundary (diagnostic only; no submission)
+        run: node --import tsx/esm audit/cardano-integration/v3-txoutref-isolation-matrix.mts
+
       - name: Execute V3 carrier against native Cardano ledger
         run: node --import tsx/esm audit/cardano-integration/v3-carrier-ledger-probe.mts
 
