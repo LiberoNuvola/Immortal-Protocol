@@ -19,6 +19,8 @@ const address = await lucid.wallet().address()
 
 const variants = [
   { name: 'always-pass', path: 'plutus/out/v3DiagnosticAlwaysPass.plutus.json' },
+  { name: 'typed-seed-param-only', path: 'plutus/out/v3DiagnosticTypedSeedParamOnly.plutus.json' },
+  { name: 'typed-token-name-param-only', path: 'plutus/out/v3DiagnosticTypedTokenNameParamOnly.plutus.json' },
   { name: 'seed-param-only', path: 'plutus/out/v3DiagnosticSeedParamOnly.plutus.json' },
   { name: 'token-name-param-only', path: 'plutus/out/v3DiagnosticTokenNameParamOnly.plutus.json' },
   { name: 'context-inputs-only', path: 'plutus/out/v3DiagnosticContextInputsOnly.plutus.json' },
