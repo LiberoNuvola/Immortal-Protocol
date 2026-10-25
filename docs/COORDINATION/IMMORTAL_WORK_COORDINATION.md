@@ -2178,3 +2178,16 @@ Execution:
 7. GRANDPA/finality and state-root checks are never inferred from successful RPC execution alone.
 
 **STATUS: DESIGN CONTRACT ONLY. NO UPSTREAM CODE CHANGE. F5 REMAINS OPEN UNTIL IMPLEMENTATION, PINNED-TAG BUILD/TESTS, REAL FIXTURE AND INDEPENDENT VERIFICATION PASS.**
+
+
+## 44.67 — AGENT B F5 — PINNED SDK SIGNATURE VERIFIED / RPC CONTRACT CORRECTION — 2026-10-25
+
+Read-only source verification against the exact SDK tag used by Materios. The file `substrate/client/api/src/proof_provider.rs` at `paritytech/polkadot-sdk` tag `polkadot-stable2409-4` defines `ProofProvider<Block>::execution_proof` as:
+
+`fn execution_proof(&self, hash: Block::Hash, method: &str, call_data: &[u8]) -> sp_blockchain::Result<(Vec<u8>, StorageProof)>`
+
+Thus the earlier design-only wording that suggested constructing `BlockId<Block>` and calling `execution_proof(&block_id, ...)` is incorrect for this pinned tag. The implementation contract is corrected: parse the supplied exact `at` into `Block::Hash`, then call `client.execution_proof(at_hash, method, &call_data)` with the trait in scope. The method returns execution result bytes plus a `StorageProof`; it does not itself establish GRANDPA finality. The authoritative source is [the pinned SDK source](https://github.com/paritytech/polkadot-sdk/blob/polkadot-stable2409-4/substrate/client/api/src/proof_provider.rs).
+
+Materios already declares `sc-client-api` through the workspace and `FullClient` is the concrete service client, so no additional dependency is indicated. This confirms a minimal technical integration path but not successful compilation, runtime behavior, proof verification or a real fixture. Before implementation, confirm `StorageProof` SCALE serialization/API on the same pinned tag and settle the versioned envelope, proof hash domain, RPC exposure/authentication and input limits during review; do not invent these as normative decisions.
+
+**STATUS: EXACT EXECUTION-PROOF API SIGNATURE CONFIRMED AGAINST PINNED TAG; DESIGN ONLY. F5 OPEN. NO UPSTREAM OR ON-CHAIN CHANGE.**
