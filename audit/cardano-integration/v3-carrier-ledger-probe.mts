@@ -1,7 +1,9 @@
 /** V3 carrier mint probe against the local Yaci Conway devnet.
- * localUPLCEval:false disables Lucid's local UPLC evaluator, but does not bypass
- * provider-side transaction evaluation during complete(). The transaction is only
- * submitted to the ledger if provider evaluation and transaction completion succeed.
+ * Yaci/Ogmios rejects the typed-parameter evaluation path before a ledger decision.
+ * This probe supplies a documented test-only ExUnits upper budget to transaction
+ * construction, then relies exclusively on native ledger submit + confirmation for
+ * acceptance. The budget is NOT measured resource evidence and the endpoint is
+ * required to be loopback/local. Production V3 and Reveal sources are untouched.
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -9,8 +11,14 @@ import { applyParamsToScript, Blockfrost, Constr, Data, Lucid, mintingPolicyToId
 import { sanitizeEvaluationDiagnosticText } from './sanitize-yaci-evaluation-error.mjs'
 
 const API = process.env.YACI_STORE_API ?? 'http://127.0.0.1:8080/api/v1'
+const apiUrl = new URL(API)
+if (!['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname)) {
+  throw new Error('V3 carrier ledger probe is restricted to a loopback Yaci endpoint')
+}
 const WALLET_FILE = '/tmp/immortal-yaci-test-wallet.json'
 const TOKEN_NAME_HEX = '45434f4e4f4d49435354415445' // ECONOMICSTATE
+const PROBE_BUDGET_EVIDENCE_PATH = 'audit/yaci-evidence/v3-carrier-test-execution-budget.json'
+const PROBE_BUDGET = { mem: 12_000_000, steps: 8_000_000_000 }
 
 
 // Diagnostic-only tap: record the actual response to Lucid's Plutus evaluation
@@ -141,8 +149,41 @@ globalThis.fetch = async (input, init = {}) => {
 }
 
 
+const provider = new Blockfrost(API, '')
+const providerWithProbeBudget = provider as Blockfrost & {
+  evaluateTx: (tx: string) => Promise<Array<{
+    redeemer_tag: string
+    redeemer_index: number
+    ex_units: { mem: number; steps: number }
+  }>>
+}
+// This bypass is test-harness-only: Yaci/Ogmios receives no fabricated result,
+// and the native Cardano ledger still validates the submitted transaction.
+// The values are a bounded construction budget, not a cost measurement.
+providerWithProbeBudget.evaluateTx = async () => {
+  const evidence = {
+    schema: 'IMMORTAL-V3-CARRIER-TEST-EXECUTION-BUDGET-v1',
+    observedAt: new Date().toISOString(),
+    classification: 'LOCAL_DEVNET_TEST_ONLY_NOT_RESOURCE_EVIDENCE',
+    endpoint: API,
+    endpointIsLoopback: true,
+    providerEvaluatorBypassedForConstruction: true,
+    budget: { ...PROBE_BUDGET },
+    budgetIsMeasured: false,
+    acceptanceAuthority: 'native Cardano ledger submit plus awaitTx confirmation',
+    noProductionV3OrRevealSemanticsChanged: true,
+  }
+  mkdirSync('audit/yaci-evidence', { recursive: true })
+  writeFileSync(PROBE_BUDGET_EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\\n')
+  return [{
+    redeemer_tag: 'mint',
+    redeemer_index: 0,
+    ex_units: { ...PROBE_BUDGET },
+  }]
+}
+
 const wallet = JSON.parse(readFileSync(WALLET_FILE, 'utf8'))
-const lucid = await Lucid(new Blockfrost(API, ''), 'Preprod')
+const lucid = await Lucid(providerWithProbeBudget, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 
 const address = await lucid.wallet().address()
