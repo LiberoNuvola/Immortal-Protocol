@@ -27,6 +27,7 @@ const cases = [
   { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'decode-seed-explicitly', file: 'plutus/out/v3DiagnosticDecodeSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'raw-decode-seed-and-name', file: 'plutus/out/v3DiagnosticRawDecodeSeedAndName.plutus.json', paramType: 'builtin-data-two' },
+  { id: 'raw-decode-name-mint-only', file: 'plutus/out/v3DiagnosticRawDecodeNameMintOnly.plutus.json', paramType: 'raw-token-name-only' },
   { id: 'seed-consumed-only', file: 'plutus/out/v3DiagnosticSeedConsumedOnly.plutus.json', paramType: 'typed-txoutref' },
   { id: 'seed-consumed-serialized', file: 'plutus/out/v3DiagnosticSeedConsumedSerialized.plutus.json', paramType: 'typed-txoutref' },
   { id: 'assocmap-mint-only', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'token-name-only' },
@@ -72,10 +73,10 @@ for (const item of cases) {
     // is encoded as Constr(0,[bytestring]) in the typed policy path. The raw
     // BuiltinData diagnostic deliberately receives the bare bytestring Data so
     // its explicit unsafeFromBuiltinData path remains independently testable.
-    const nameParam = item.paramType === 'builtin-data-two'
+    const nameParam = item.paramType === 'builtin-data-two' || item.paramType === 'raw-token-name-only'
       ? TOKEN_NAME_HEX
       : new Constr(0, [TOKEN_NAME_HEX])
-    const params = item.paramType === 'token-name-only'
+    const params = item.paramType === 'token-name-only' || item.paramType === 'raw-token-name-only'
       ? [nameParam]
       : [seedParam, nameParam]
     const policy: Script = {
@@ -114,7 +115,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v7',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v8',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -123,7 +124,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality and explicitly decode both seed TxOutRef and TokenName from BuiltinData; TokenName parameters are passed as raw bytestring Data; only the TxOutRef uses constructor encoding. All cases are diagnostic only.',
+  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality and explicitly decode both seed TxOutRef and TokenName from BuiltinData; compare typed TokenName parameter application against a raw-BuiltinData TokenName-only mint check; only the TxOutRef uses constructor encoding. All cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
