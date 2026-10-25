@@ -420,8 +420,9 @@ const prizeReferenceTx = await lucid
   .newTx()
   .pay.ToAddressWithData(
     address,
-    { scriptRef: scripts.prizeValidator as Script },
+    { kind: 'inline', value: Data.void() },
     { lovelace: 2_000_000n },
+    scripts.prizeValidator as Script,
   )
   .complete()
 const prizeReferenceSigned = await prizeReferenceTx.sign.withWallet().complete()
@@ -432,8 +433,9 @@ const poolReferenceTx = await lucid
   .newTx()
   .pay.ToAddressWithData(
     address,
-    { scriptRef: scripts.b1PrizePool as Script },
+    { kind: 'inline', value: Data.void() },
     { lovelace: 2_000_000n },
+    scripts.b1PrizePool as Script,
   )
   .complete()
 const poolReferenceSigned = await poolReferenceTx.sign.withWallet().complete()
