@@ -25,6 +25,7 @@ import qualified GenesisRegimeCarrier
 import qualified GenesisCarrierMintPolicy
 import qualified V3EconomicStateCarrier
 import qualified V3EconomicStateCarrierMintPolicy
+import qualified V3EconomicStateCarrierMintPolicyDiagnostics
 
 compiledCborHex :: CompiledCode a -> Text
 compiledCborHex code =
@@ -113,6 +114,21 @@ main = do
     (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json")
     "PreRich V3 economic state carrier one-shot mint policy factory"
     (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticAlwaysPass.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy that always passes; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledAlwaysPassFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticSeedOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy checking seed consumption only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledSeedOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticMintOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy checking minted asset only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledMintOnlyFactory)
 
   writeScriptJson
     (outputDir <> "/b1PrizePoolFactory.plutus.json")
