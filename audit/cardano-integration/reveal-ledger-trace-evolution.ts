@@ -11,7 +11,7 @@
  * production token economics and does not replace the existing validators.
  */
 
-import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, type Script, type UTxO } from '@lucid-evolution/lucid'
+import { Constr, Data, Lucid, Blockfrost, getAddressDetails, mintingPolicyToId, scriptFromNative, validatorToScriptHash, type Script, type UTxO } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
@@ -462,12 +462,12 @@ const poolReferenceInput = {
   scriptRef: (poolReferenceUtxo as any).scriptRef ?? scripts.b1PrizePool,
 }
 
-const expectedPrizeHash = lucid.utils.validatorToScriptHash(scripts.prizeValidator as Script)
-const expectedPoolHash = lucid.utils.validatorToScriptHash(scripts.b1PrizePool as Script)
-if (lucid.utils.validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
+const expectedPrizeHash = validatorToScriptHash(scripts.prizeValidator as Script)
+const expectedPoolHash = validatorToScriptHash(scripts.b1PrizePool as Script)
+if (validatorToScriptHash((prizeReferenceInput as any).scriptRef) !== expectedPrizeHash) {
   throw new Error('PrizeValidator reference script hash mismatch')
 }
-if (lucid.utils.validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
+if (validatorToScriptHash((poolReferenceInput as any).scriptRef) !== expectedPoolHash) {
   throw new Error('B1PrizePool reference script hash mismatch')
 }
 
