@@ -25,6 +25,7 @@ import qualified GenesisRegimeCarrier
 import qualified GenesisCarrierMintPolicy
 import qualified V3EconomicStateCarrier
 import qualified V3EconomicStateCarrierMintPolicy
+import qualified V3EconomicStateCarrierMintPolicyDiagnostics
 
 compiledCborHex :: CompiledCode a -> Text
 compiledCborHex code =
@@ -113,6 +114,56 @@ main = do
     (outputDir <> "/v3EconomicStateCarrierMintPolicy.plutus.json")
     "PreRich V3 economic state carrier one-shot mint policy factory"
     (compiledCborHex V3EconomicStateCarrierMintPolicy.compiledPolicyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticAlwaysPass.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy that always passes; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledAlwaysPassFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticSeedOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy checking seed consumption only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledSeedOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticMintOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy checking minted asset only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledMintOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticSeedParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy decoding TxOutRef parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledSeedParamOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticTokenNameParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy decoding TokenName parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledTokenNameParamOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticContextInputsOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy decoding ScriptContext and checking inputs only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledContextInputsOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticTypedSeedParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy accessing typed TxOutRef parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledTypedSeedParamOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticTypedTokenNameParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy accessing typed TokenName parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledTypedTokenNameParamOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticDecodedParamsOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy explicitly decoding TxOutRef and TokenName BuiltinData params; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledDecodedParamsOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticDecodedPolicy.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy explicitly decoding parameters and checking seed plus mint; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledDecodedPolicyFactory)
 
   writeScriptJson
     (outputDir <> "/b1PrizePoolFactory.plutus.json")
