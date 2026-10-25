@@ -2131,3 +2131,50 @@ The branch advanced again while this work was being verified; current branch hea
 Next bounded action: obtain an explicit implementation path/owner for the transport task or build an isolated, reviewable implementation proposal against the pinned `polkadot-stable2409-4` API. Do not duplicate authority selection in TypeScript; do not use synthetic proof as runtime evidence. The real finalized-block fixture and independent verification remain separate acceptance gates. No upstream changes, IMMORTAL code/schema changes, deployment, or on-chain actions were performed.
 
 **STATUS: F5 RPC TRANSPORT NOT EVIDENCED ON UPSTREAM MAIN; REAL FIXTURE AND B3 VERIFICATION OPEN.**
+
+
+## 44.66 — AGENT B F5 — MINIMAL RPC IMPLEMENTATION CONTRACT (DESIGN ONLY) — 2026-10-25
+
+**Purpose:** turn the missing Materios RPC into an implementable, reviewable task without writing to the external repository or confusing execution proof with finality.
+
+### Source/API facts confirmed
+
+- Materios workspace partnerchain/Cargo.toml blob df28b401485b3a5fb736ce02ddde8bc7917e6109 pins the Substrate/Polkadot SDK crates to Git tag polkadot-stable2409-4, including sc-client-api.
+- Node dependency file partnerchain/node/Cargo.toml blob efcacffc9412c239370b81449b08e9198adaf8d2 already declares sc-client-api = { workspace = true }; no new SDK dependency is indicated.
+- partnerchain/node/src/service.rs blob 33298f0fbce45ea7f333728302ee8080eaf12ec8 defines FullClient = sc_service::TFullClient<Block, RuntimeApi, WasmExecutor<...>>. The service already has a concrete client object to pass into RPC dependencies.
+- partnerchain/node/src/rpc.rs blob 30827863c7b8f6fb507b008cee9f572ec48fe06f currently has no ProofProvider<Block> bound/import or B3 RPC registration. create_full consumes FullDeps { client, pool }, so the least invasive integration point is an additional method registered on the existing module, using the same client.
+- The workspace declares the pinned SDK tag, but the current source file alone does not establish that a proposed implementation compiles; compile and tests against that exact tag remain mandatory.
+
+### Proposed thin RPC contract (not implemented)
+
+Method: materios_b3_calculateCommitteeProof
+
+Input:
+- at: exact 32-byte block hash; reject absent/malformed values. Never substitute best/head state.
+- method: non-empty runtime API method name; reject absent/empty values.
+- callData: exact SCALE-encoded bytes, accepted as strict hex or base64 only if one encoding is chosen and versioned; reject malformed input.
+
+Execution:
+1. Parse at into the pinned runtime's Block::Hash and construct the exact BlockId<Block> required by sc_client_api::ProofProvider<Block>::execution_proof.
+2. Invoke only client.execution_proof(&block_id, &method, &call_data) (exact signature to compile-check against the pinned tag). Preserve returned result bytes and proof bytes without semantic reinterpretation.
+3. Return a versioned deterministic envelope with schema/version, chain/runtime identity, exact at, method, call-data bytes or cryptographic hash, execution result bytes, serialized proof, proof-system/version identifier and proof commitment. Canonical encoding and hash domain must be specified before fixture generation; do not improvise them in the RPC.
+4. Return structured errors for invalid inputs, unknown/unavailable block state, execution failure and proof-generation failure. No fallback to best state and no synthetic response.
+
+### Trust boundary / non-goals
+
+- The execution proof authenticates a runtime execution only under its supported verifier and required code/state witnesses. It does not prove that at is GRANDPA-finalized.
+- Finalized header, GRANDPA justification/set ID, ancestry, storage/state-root binding and authority-transition verification remain separate artifacts/results as required by MATERIOS-B3-REAL-FIXTURE-CONTRACT-v1.md.
+- The RPC must not calculate or reimplement committee selection, accept an operator-selected committee as proof, or mark the returned result as VerifiedAuthoritySetTransition.
+- Exact method allowlisting versus arbitrary runtime method invocation, input/output limits, RPC exposure/authentication and envelope hash algorithm are explicit implementation-review items; do not silently invent a policy for them.
+
+### Minimum test matrix before considering transport complete
+
+1. Exact block hash + exact method + exact call data are reflected in the response commitment.
+2. Missing/malformed hash, empty method and malformed bytes are rejected.
+3. An unavailable/unknown block and execution/proof errors fail closed; no head-state substitution.
+4. Mutating each input independently changes the committed request identity or produces a failure.
+5. Output encoding is deterministic and versioned; proof serialization round-trips.
+6. An integration test on a real Materios node produces a non-synthetic fixture; independent verification is tested separately.
+7. GRANDPA/finality and state-root checks are never inferred from successful RPC execution alone.
+
+**STATUS: DESIGN CONTRACT ONLY. NO UPSTREAM CODE CHANGE. F5 REMAINS OPEN UNTIL IMPLEMENTATION, PINNED-TAG BUILD/TESTS, REAL FIXTURE AND INDEPENDENT VERIFICATION PASS.**
