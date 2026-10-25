@@ -11,6 +11,7 @@ module V3CarrierDiagnosticPolicies
   , compareSeedFactory
   , decodeSeedFactory
   , rawDecodeSeedAndNameFactory
+  , rawDecodeNameMintOnlyFactory
   , seedConsumedFactory
   , seedConsumedSerializedFactory
   , assocMapMintFactory
@@ -82,6 +83,20 @@ mkRawDecodeSeedAndName seedData nameData _ ctx =
 {-# INLINABLE wrapRawDecodeSeedAndName #-}
 wrapRawDecodeSeedAndName :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
 wrapRawDecodeSeedAndName = mkRawDecodeSeedAndName
+
+-- Isolate TokenName parameter decoding from the TxOutRef parameter entirely.
+{-# INLINABLE mkRawDecodeNameMintOnly #-}
+mkRawDecodeNameMintOnly :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+mkRawDecodeNameMintOnly nameData _ ctx =
+  let
+    name = unsafeFromBuiltinData nameData :: TokenName
+    decodedContext = unsafeFromBuiltinData ctx :: ScriptContext
+  in check (diagnosticMintedExactlyOne (ownCurrencySymbol decodedContext) name
+       (txInfoMint (scriptContextTxInfo decodedContext)))
+
+{-# INLINABLE wrapRawDecodeNameMintOnly #-}
+wrapRawDecodeNameMintOnly :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapRawDecodeNameMintOnly = mkRawDecodeNameMintOnly
 
 {-# INLINABLE diagnosticSeedConsumed #-}
 diagnosticSeedConsumed :: TxOutRef -> TxInfo -> Bool
@@ -180,7 +195,11 @@ singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 rawDecodeSeedAndNameFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameFactory = $$(compile [|| wrapRawDecodeSeedAndName ||])
+rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
+
+rawDecodeNameMintOnlyFactory
+  :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
+rawDecodeNameMintOnlyFactory = $(compile [|| wrapRawDecodeNameMintOnly ||])
 
 seedConsumedSerializedFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
