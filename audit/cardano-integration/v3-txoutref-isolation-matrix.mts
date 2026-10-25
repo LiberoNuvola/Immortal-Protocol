@@ -68,9 +68,19 @@ for (const item of cases) {
     if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
       throw new Error('invalid diagnostic policy artifact')
     }
+    // Lucid parameter application must match the compiled Plutus type: TokenName
+    // is encoded as Constr(0,[bytestring]) in the typed policy path. The raw
+    // BuiltinData diagnostic deliberately receives the bare bytestring Data so
+    // its explicit unsafeFromBuiltinData path remains independently testable.
+    const nameParam = item.paramType === 'builtin-data-two'
+      ? TOKEN_NAME_HEX
+      : new Constr(0, [TOKEN_NAME_HEX])
+    const params = item.paramType === 'token-name-only'
+      ? [nameParam]
+      : [seedParam, nameParam]
     const policy: Script = {
       type: 'PlutusV2',
-      script: applyParamsToScript(artifact.cborHex, item.paramType === 'token-name-only' ? [TOKEN_NAME_HEX] : [seedParam, TOKEN_NAME_HEX]),
+      script: applyParamsToScript(artifact.cborHex, params),
     }
     const policyId = mintingPolicyToId(policy)
     const unit = policyId + TOKEN_NAME_HEX
