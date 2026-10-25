@@ -73,3 +73,15 @@ compareSeedFactory = $$(compile [|| wrapCompareSeed ||])
 decodeSeedFactory
   :: CompiledCode (BuiltinData -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 decodeSeedFactory = $$(compile [|| wrapDecodeSeed ||])
+
+seedConsumedFactory
+  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+seedConsumedFactory = $$(compile [|| wrapSeedConsumedOnly ||])
+
+assocMapMintFactory
+  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+assocMapMintFactory = $$(compile [|| wrapAssocMapMintOnly ||])
+
+singletonMintFactory
+  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
