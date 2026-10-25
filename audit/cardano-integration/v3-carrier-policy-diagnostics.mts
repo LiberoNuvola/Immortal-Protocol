@@ -17,7 +17,12 @@ const lucid = await Lucid(provider, 'Preprod')
 lucid.selectWallet.fromSeed(wallet.seed)
 const address = await lucid.wallet().address()
 
-const variants = [
+type DiagnosticVariant = {
+  name: string
+  path: string
+  tokenNameEncoding?: 'constructor' | 'bytes'
+}
+const variants: DiagnosticVariant[] = [
   { name: 'always-pass', path: 'plutus/out/v3DiagnosticAlwaysPass.plutus.json' },
   { name: 'typed-seed-param-only', path: 'plutus/out/v3DiagnosticTypedSeedParamOnly.plutus.json' },
   { name: 'typed-token-name-param-only', path: 'plutus/out/v3DiagnosticTypedTokenNameParamOnly.plutus.json' },
@@ -26,7 +31,10 @@ const variants = [
   { name: 'context-inputs-only', path: 'plutus/out/v3DiagnosticContextInputsOnly.plutus.json' },
   { name: 'seed-only', path: 'plutus/out/v3DiagnosticSeedOnly.plutus.json' },
   { name: 'mint-only', path: 'plutus/out/v3DiagnosticMintOnly.plutus.json' },
-] as const
+  { name: 'token-name-param-only-bytes', path: 'plutus/out/v3DiagnosticTokenNameParamOnly.plutus.json', tokenNameEncoding: 'bytes' },
+  { name: 'decoded-params-only', path: 'plutus/out/v3DiagnosticDecodedParamsOnly.plutus.json', tokenNameEncoding: 'bytes' },
+  { name: 'decoded-policy', path: 'plutus/out/v3DiagnosticDecodedPolicy.plutus.json', tokenNameEncoding: 'bytes' },
+]
 const results: Array<Record<string, unknown>> = []
 
 for (const variant of variants) {
@@ -38,11 +46,18 @@ for (const variant of variants) {
     if (artifact.type !== 'PlutusScriptV2' || typeof artifact.cborHex !== 'string') {
       throw new Error('invalid diagnostic artifact: ' + variant.path)
     }
+    const tokenNameEncoding = variant.tokenNameEncoding ?? 'constructor'
+    const tokenNameParameter =
+      tokenNameEncoding === 'bytes' ? TOKEN_NAME_HEX : new Constr(0, [TOKEN_NAME_HEX])
+    const parameterEncoding = {
+      seed: 'Constr(0, [Constr(0, [B(txHash)]), I(outputIndex)])',
+      tokenName: tokenNameEncoding === 'bytes' ? 'B(tokenNameBytes)' : 'Constr(0, [B(tokenNameBytes)])',
+    }
     const policy: Script = {
       type: 'PlutusV2',
       script: applyParamsToScript(artifact.cborHex, [
         new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
-        new Constr(0, [TOKEN_NAME_HEX]),
+        tokenNameParameter,
       ]),
     }
     const policyId = mintingPolicyToId(policy)
@@ -56,14 +71,23 @@ for (const variant of variants) {
     const signed = await tx.sign.withWallet().complete()
     const txHash = await signed.submit()
     await lucid.awaitTx(txHash)
-    results.push({ variant: variant.name, outcome: 'ACCEPTED_BY_NATIVE_LEDGER', txHash, seedRef: seed.txHash + '#' + seed.outputIndex, policyId })
+    results.push({ variant: variant.name, outcome: 'ACCEPTED_BY_NATIVE_LEDGER', txHash, seedRef: seed.txHash + '#' + seed.outputIndex, policyId, parameterEncoding })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     // Keep the actual evaluator diagnosis, not only the large serialized script/base64 prefix.
     const marker = 'The plutus evaluation error is:'
     const markerAt = message.lastIndexOf(marker)
     const diagnostic = markerAt >= 0 ? message.slice(markerAt, markerAt + 1000) : message.slice(-1200)
-    results.push({ variant: variant.name, outcome: 'REJECTED_OR_ERRORED', error: diagnostic })
+    const tokenNameEncoding = variant.tokenNameEncoding ?? 'constructor'
+    results.push({
+      variant: variant.name,
+      outcome: 'REJECTED_OR_ERRORED',
+      parameterEncoding: {
+        seed: 'Constr(0, [Constr(0, [B(txHash)]), I(outputIndex)])',
+        tokenName: tokenNameEncoding === 'bytes' ? 'B(tokenNameBytes)' : 'Constr(0, [B(tokenNameBytes)])',
+      },
+      error: diagnostic,
+    })
   }
 }
 

@@ -14,6 +14,8 @@ module V3EconomicStateCarrierMintPolicyDiagnostics
   , compiledContextInputsOnlyFactory
   , compiledTypedSeedParamOnlyFactory
   , compiledTypedTokenNameParamOnlyFactory
+  , compiledDecodedParamsOnlyFactory
+  , compiledDecodedPolicyFactory
   ) where
 
 import PlutusLedgerApi.V2
@@ -110,4 +112,33 @@ compiledTypedSeedParamOnlyFactory =
   $$(compile [|| typedSeedParamOnlyWrap ||])
 
 compiledTypedTokenNameParamOnlyFactory =
-  $$(compile [|| typedTokenNameParamOnlyWrap ||])
+  $(compile [|| typedTokenNameParamOnlyWrap ||])
+
+-- Corrected probes model Lucid's external parameter application: parameters
+-- arrive as BuiltinData and must be decoded explicitly. TokenName is encoded
+-- as a bytestring Data value, not Constr 0 [bytestring].
+{-# INLINABLE decodedParamsOnlyWrap #-}
+decodedParamsOnlyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+decodedParamsOnlyWrap seedData tokenNameData _ _ =
+  let
+    seed = unsafeFromBuiltinData seedData :: TxOutRef
+    tokenName = unsafeFromBuiltinData tokenNameData :: TokenName
+  in check (txOutRefIdx seed >= 0 && tokenName == TokenName "ECONOMICSTATE")
+
+{-# INLINABLE decodedPolicyWrap #-}
+decodedPolicyWrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+decodedPolicyWrap seedData tokenNameData _ ctxData =
+  let
+    seed = unsafeFromBuiltinData seedData :: TxOutRef
+    tokenName = unsafeFromBuiltinData tokenNameData :: TokenName
+    ctx = unsafeFromBuiltinData ctxData :: ScriptContext
+    info = scriptContextTxInfo ctx
+  in check
+       (seedConsumed seed info
+         && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint info))
+
+compiledDecodedParamsOnlyFactory =
+  $(compile [|| decodedParamsOnlyWrap ||])
+
+compiledDecodedPolicyFactory =
+  $(compile [|| decodedPolicyWrap ||])
