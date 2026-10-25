@@ -12,6 +12,8 @@ module V3EconomicStateCarrierMintPolicyDiagnostics
   , compiledSeedParamOnlyFactory
   , compiledTokenNameParamOnlyFactory
   , compiledContextInputsOnlyFactory
+  , compiledTypedSeedParamOnlyFactory
+  , compiledTypedTokenNameParamOnlyFactory
   ) where
 
 import PlutusLedgerApi.V2
@@ -91,3 +93,19 @@ compiledTokenNameParamOnlyFactory =
 
 compiledContextInputsOnlyFactory =
   $$(compile [|| contextInputsOnlyWrap ||])
+
+{-# INLINABLE typedSeedParamOnlyWrap #-}
+typedSeedParamOnlyWrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+typedSeedParamOnlyWrap seed _ _ _ =
+  check (txOutRefIdx seed >= 0)
+
+{-# INLINABLE typedTokenNameParamOnlyWrap #-}
+typedTokenNameParamOnlyWrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+typedTokenNameParamOnlyWrap _ tokenName _ _ =
+  check (tokenName == TokenName "ECONOMICSTATE")
+
+compiledTypedSeedParamOnlyFactory =
+  $$(compile [|| typedSeedParamOnlyWrap ||])
+
+compiledTypedTokenNameParamOnlyFactory =
+  $$(compile [|| typedTokenNameParamOnlyWrap ||])
