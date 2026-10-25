@@ -195,11 +195,11 @@ singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 rawDecodeSeedAndNameFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
+rawDecodeSeedAndNameFactory = $$(compile [|| wrapRawDecodeSeedAndName ||])
 
 rawDecodeNameMintOnlyFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeNameMintOnlyFactory = $(compile [|| wrapRawDecodeNameMintOnly ||])
+rawDecodeNameMintOnlyFactory = $$(compile [|| wrapRawDecodeNameMintOnly ||])
 
 seedConsumedSerializedFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
