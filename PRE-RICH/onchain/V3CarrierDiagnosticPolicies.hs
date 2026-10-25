@@ -214,11 +214,11 @@ singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 rawDecodeSeedAndNameFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameFactory = $(compile [|| wrapRawDecodeSeedAndName ||])
+rawDecodeSeedAndNameFactory = $$(compile [|| wrapRawDecodeSeedAndName ||])
 
 rawDecodeSeedAndNameSingletonFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
-rawDecodeSeedAndNameSingletonFactory = $(compile [|| wrapRawDecodeSeedAndNameSingleton ||])
+rawDecodeSeedAndNameSingletonFactory = $$(compile [|| wrapRawDecodeSeedAndNameSingleton ||])
 
 rawDecodeNameMintOnlyFactory
   :: CompiledCode (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
