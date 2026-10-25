@@ -1881,7 +1881,7 @@ Agent A rechecked the Reveal diagnostic lineage against the live coordination br
 
 ### Refs and evidence
 
-- Coordination branch `work/immortal-green-closure`: HEAD `1af9acc8580aaa74976efbe0acd90cba8417d707`.
+- Coordination branch `work/immortal-green-closure`: pre-update HEAD `1af9acc8580aaa74976efbe0acd90cba8417d707`; this checkpoint update is commit `b669290c378c7f1aa2c84885bfae63410a10be7a`.
 - PR #38 head branch `fix/preprod-eev-approval-pin`: diagnostic commit `889e827566e83884d4597fc5136f59b677c5dd66`.
 - Preceding diagnostic commit `61941eb87cf4810e9ae179501315ebab466224a4` added isolated Lucid `collectFrom(...).complete()` probes for Prize-only and B1PrizePool-only inputs.
 - `889e827` removes manual freeing of the CML diagnostic parse object to test whether WASM object lifetime interferes with Lucid's lazy builder.
