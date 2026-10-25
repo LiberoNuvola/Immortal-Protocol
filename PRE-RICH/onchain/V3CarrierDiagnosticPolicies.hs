@@ -23,12 +23,14 @@ mkReadInputs _ _ _ ctx =
     [] -> False
     _ -> True
 
+-- Keep the seed parameter as BuiltinData to avoid decoding it as TxOutRef.
+-- This distinguishes parameter decoding from equality/serialization behavior.
 {-# INLINABLE mkCompareSeed #-}
-mkCompareSeed :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
-mkCompareSeed seed _ _ ctx =
+mkCompareSeed :: BuiltinData -> TokenName -> () -> ScriptContext -> Bool
+mkCompareSeed seedData _ _ ctx =
   let
     go [] = False
-    go (i:is) = txInInfoOutRef i == seed || go is
+    go (i:is) = toBuiltinData (txInInfoOutRef i) == seedData || go is
   in go (txInfoInputs (scriptContextTxInfo ctx))
 
 {-# INLINABLE wrapNoContext #-}
@@ -42,9 +44,9 @@ wrapReadInputs seed name _ ctx =
   check (mkReadInputs seed name () (unsafeFromBuiltinData ctx))
 
 {-# INLINABLE wrapCompareSeed #-}
-wrapCompareSeed :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrapCompareSeed seed name _ ctx =
-  check (mkCompareSeed seed name () (unsafeFromBuiltinData ctx))
+wrapCompareSeed :: BuiltinData -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrapCompareSeed seedData name _ ctx =
+  check (mkCompareSeed seedData name () (unsafeFromBuiltinData ctx))
 
 noContextFactory
   :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
@@ -55,5 +57,5 @@ readInputsFactory
 readInputsFactory = $$(compile [|| wrapReadInputs ||])
 
 compareSeedFactory
-  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+  :: CompiledCode (BuiltinData -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 compareSeedFactory = $$(compile [|| wrapCompareSeed ||])
