@@ -146,6 +146,16 @@ main = do
     (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledContextInputsOnlyFactory)
 
   writeScriptJson
+    (outputDir <> "/v3DiagnosticTypedSeedParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy accessing typed TxOutRef parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledTypedSeedParamOnlyFactory)
+
+  writeScriptJson
+    (outputDir <> "/v3DiagnosticTypedTokenNameParamOnly.plutus.json")
+    "TEST ONLY: V3 carrier diagnostic policy accessing typed TokenName parameter only; isolated devnet only"
+    (compiledCborHex V3EconomicStateCarrierMintPolicyDiagnostics.compiledTypedTokenNameParamOnlyFactory)
+
+  writeScriptJson
     (outputDir <> "/b1PrizePoolFactory.plutus.json")
     "PreRich B1 PrizePool factory (apply PrizeValidator ScriptHash, Oracle State singleton identity, oracle publisher, pool singleton token off-chain)"
     (compiledCborHex B1PrizePool.compiledValidatorFactory)
