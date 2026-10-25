@@ -27,8 +27,9 @@ const cases = [
   { id: 'compare-seed-txoutref', file: 'plutus/out/v3DiagnosticCompareSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'decode-seed-explicitly', file: 'plutus/out/v3DiagnosticDecodeSeed.plutus.json', paramType: 'builtin-data' },
   { id: 'seed-consumed-only', file: 'plutus/out/v3DiagnosticSeedConsumedOnly.plutus.json', paramType: 'typed-txoutref' },
-  { id: 'assocmap-mint-only', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'typed-txoutref' },
-  { id: 'singleton-mint-only', file: 'plutus/out/v3DiagnosticSingletonMintOnly.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'seed-consumed-serialized', file: 'plutus/out/v3DiagnosticSeedConsumedSerialized.plutus.json', paramType: 'typed-txoutref' },
+  { id: 'assocmap-mint-only', file: 'plutus/out/v3DiagnosticAssocMapMintOnly.plutus.json', paramType: 'token-name-only' },
+  { id: 'singleton-mint-only', file: 'plutus/out/v3DiagnosticSingletonMintOnly.plutus.json', paramType: 'token-name-only' },
 ]
 const results = []
 const providerResponses = []
@@ -68,7 +69,7 @@ for (const item of cases) {
     }
     const policy: Script = {
       type: 'PlutusV2',
-      script: applyParamsToScript(artifact.cborHex, [seedParam, TOKEN_NAME_HEX]),
+      script: applyParamsToScript(artifact.cborHex, item.paramType === 'token-name-only' ? [TOKEN_NAME_HEX] : [seedParam, TOKEN_NAME_HEX]),
     }
     const policyId = mintingPolicyToId(policy)
     const unit = policyId + TOKEN_NAME_HEX
@@ -102,7 +103,7 @@ for (const item of cases) {
 }
 
 const evidence = {
-  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v3',
+  schema: 'IMMORTAL-V3-TXOUTREF-ISOLATION-MATRIX-v4',
   observedAt: new Date().toISOString(),
   classification: 'DIAGNOSTIC_ONLY_NOT_LEDGER_EVIDENCE',
   seedRef: seed.txHash + '#' + seed.outputIndex,
@@ -111,7 +112,7 @@ const evidence = {
   noProductionV3OrRevealSemanticsChanged: true,
   cases: results,
   providerResponses,
-  interpretation: 'Compare seed-consumption and isolated mint-value checks (AssocMap versus singleton equality); all cases are diagnostic only.',
+  interpretation: 'Compare typed TxOutRef equality against serialized BuiltinData equality; mint-only cases use their exact TokenName-only parameter shape. All cases are diagnostic only.',
 }
 mkdirSync('audit/yaci-evidence', { recursive: true })
 writeFileSync(OUTPUT, JSON.stringify(evidence, null, 2) + '\n')
