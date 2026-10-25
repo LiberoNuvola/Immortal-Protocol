@@ -19,6 +19,9 @@ const address = await lucid.wallet().address()
 
 const variants = [
   { name: 'always-pass', path: 'plutus/out/v3DiagnosticAlwaysPass.plutus.json' },
+  { name: 'seed-param-only', path: 'plutus/out/v3DiagnosticSeedParamOnly.plutus.json' },
+  { name: 'token-name-param-only', path: 'plutus/out/v3DiagnosticTokenNameParamOnly.plutus.json' },
+  { name: 'context-inputs-only', path: 'plutus/out/v3DiagnosticContextInputsOnly.plutus.json' },
   { name: 'seed-only', path: 'plutus/out/v3DiagnosticSeedOnly.plutus.json' },
   { name: 'mint-only', path: 'plutus/out/v3DiagnosticMintOnly.plutus.json' },
 ] as const
@@ -54,7 +57,11 @@ for (const variant of variants) {
     results.push({ variant: variant.name, outcome: 'ACCEPTED_BY_NATIVE_LEDGER', txHash, seedRef: seed.txHash + '#' + seed.outputIndex, policyId })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    results.push({ variant: variant.name, outcome: 'REJECTED_OR_ERRORED', error: message.slice(0, 1600) })
+    // Keep the actual evaluator diagnosis, not only the large serialized script/base64 prefix.
+    const marker = 'The plutus evaluation error is:'
+    const markerAt = message.lastIndexOf(marker)
+    const diagnostic = markerAt >= 0 ? message.slice(markerAt, markerAt + 1000) : message.slice(-1200)
+    results.push({ variant: variant.name, outcome: 'REJECTED_OR_ERRORED', error: diagnostic })
   }
 }
 
