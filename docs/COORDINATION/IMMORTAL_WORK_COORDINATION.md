@@ -2417,3 +2417,44 @@ The minimum unresolved design decision is now precise: decide how the canonical 
 Do not create a new singleton, alter `BeaconRegistryDatum`/`PrizeDatum`, change ticket commitment domains, or touch Issue/Reveal/V3 until the user authorizes a versioned design. Continue to prioritize a permissionless/trustless option; a lower tier requires a reproducible higher-tier failure and an explicit auditable downgrade decision. F5/Materios remains paused under §44.70.
 
 **STATUS: F4 READ-ONLY INVENTORY RECORDED; NO REUSABLE CANONICAL ROUND-CONFIG AUTHORITY IDENTIFIED IN THE INSPECTED INTERFACES. F4 REMAINS OPEN; NO CODE CHANGE.**
+
+
+## 44.75 — AGENT B F4 — TRUSTLESS-FIRST CANDIDATE DESIGN / AUTHORITY TRADE-OFF — 2026-10-25
+
+Follow-up to §44.74. Design analysis only; no normative option selected and no protocol code changed.
+
+### Candidate D — immutable configuration commitment + dedicated permissionless round-state machine
+
+This is the strongest concrete candidate found for further evaluation, while preserving the user's trustless-first policy:
+
+1. **Pin the canonical profile at deployment:** the dedicated Beacon-round validator/policy is parameterized by the canonical game ID, configuration hash, protocol/schema version, network/domain and a unique bootstrap seed reference. These values must be frozen in the deployment manifest and reproduced from the exact script artifact/hash. This avoids letting the first public caller choose the game configuration. It is still a deployment-time trust boundary: whoever authorizes the initial artifact/configuration must be governed and audited.
+2. **Create one dedicated singleton authority:** a one-shot policy tied to the specified seed UTxO mints one non-reissuable state token into the new Beacon round-state UTxO. The minting policy checks the exact token name/quantity and the required script destination/initial datum. No existing B1/B2/V3/counter token is reused.
+3. **Permissionless sequential advancement:** any caller may propose the next round, but the spending validator requires the singleton token on the consumed state UTxO, the exact next round identity, the deployment-pinned game/config/version/network, and a correctly derived commitment. It requires exactly one continuing state output with the same singleton and incremented round/commitment. Competing transactions conflict on the same state input, so at most one transition from that state can confirm.
+4. **Anchor binding:** the registry anchor must carry the exact canonical round commitment accepted by the state transition. Issue must verify that anchor against the same commitment and freeze it into the ticket's commitment domain; Reveal must compare against the Issue-time frozen value. This necessarily requires a versioned registry/ticket datum and commitment migration, not a client-only patch.
+5. **Read-only shared config alternative:** if the configuration must be readable without serializing every Issue, publish the immutable config UTxO as a reference input. Reference inputs avoid read contention, but only help if the referenced datum/script identity is itself authenticated and cannot be substituted. The mutable round-state singleton remains separate.
+
+### What this candidate does and does not guarantee
+
+- It can make **round creation permissionless after deployment** and serialize conflicting advances without a continuously authorized relayer.
+- It does not magically make the initial deployment/configuration self-authenticating. The canonical config hash and bootstrap seed/authority must be fixed by a reviewed artifact and governance process; a caller-selected hash is insufficient.
+- The sequential state machine naturally disallows skipped or arbitrary out-of-order round IDs unless a different canonical allocation rule is explicitly designed. Do not claim arbitrary ordering.
+- A one-shot token proves uniqueness only for that policy/seed. It does not prove the semantic correctness of game configuration or cross-contract commitment binding by itself.
+- A fixed deployment parameter can make a malicious first state transition impossible under the validator, but upgrades/new policy versions still require explicit governance and compatibility rules.
+
+### Minimal decision required before implementation
+
+The user need not choose every code detail yet. The unresolved normative choice is whether PRE-RICH accepts a **deployment-pinned canonical configuration plus permissionless sequential round state** as the initial F4 trustless design, including its ordering constraint and versioned Issue/Reveal migration. If not, an alternative authority model must be explicitly specified. No lower-trust tier is proposed as an automatic fallback.
+
+### Acceptance checks before any GREEN claim
+
+- Bootstrap seed and singleton token can be minted exactly once, to the required script address with the canonical initial datum.
+- Caller cannot alter pinned game/config/version/network or initialize a competing authority.
+- Two concurrent transitions from the same state: at most one confirms; stale-state retry is deterministic.
+- Skip, replay, duplicate round, wrong commitment and wrong trust mode all reject.
+- Registry, Issue and Reveal compare the same frozen commitment across the versioned schema.
+- Existing ticket versions are handled explicitly and remain unchanged unless migration policy says otherwise.
+- Independent build reproduces the deployed script hashes; model/property tests cover sequence transitions and adversarial initialization.
+
+Cardano's eUTXO model supports the underlying mechanism: consumed UTxOs cannot be spent twice, concurrent spends of the same state conflict, and reference inputs can share immutable data without consuming it. These ledger properties support the candidate but do not decide PRE-RICH's normative configuration authority. See Cardano documentation on [eUTXO concurrency](https://developers.cardano.org/docs/get-started/technical-concepts/eutxo/) and [reference inputs, CIP-31](https://cips.cardano.org/cip/CIP-0031).
+
+**STATUS: CONCRETE TRUSTLESS-FIRST CANDIDATE AND TRADE-OFF RECORDED; REQUIRES USER'S NORMATIVE ACCEPTANCE BEFORE IMPLEMENTATION. F4 OPEN; NO CODE CHANGE. F5/MATERIOS STILL PAUSED.**
