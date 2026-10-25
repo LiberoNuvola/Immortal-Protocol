@@ -66,6 +66,7 @@ main = do
   writeScriptJson (outputDir <> "/v3DiagnosticCompareSeed.plutus.json") "Diagnostic: compares TxOutRef serialized as BuiltinData" (compiledCborHex V3CarrierDiagnosticPolicies.compareSeedFactory)
   writeScriptJson (outputDir <> "/v3DiagnosticDecodeSeed.plutus.json") "Diagnostic: explicitly decodes TxOutRef from BuiltinData" (compiledCborHex V3CarrierDiagnosticPolicies.decodeSeedFactory)
   writeScriptJson (outputDir <> "/v3DiagnosticSeedConsumedOnly.plutus.json") "Diagnostic: checks only whether the typed seed TxOutRef is consumed" (compiledCborHex V3CarrierDiagnosticPolicies.seedConsumedFactory)
+  writeScriptJson (outputDir <> "/v3DiagnosticSeedConsumedSerialized.plutus.json") "Diagnostic: checks seed consumption using serialized TxOutRef BuiltinData equality" (compiledCborHex V3CarrierDiagnosticPolicies.seedConsumedSerializedFactory)
   writeScriptJson (outputDir <> "/v3DiagnosticAssocMapMintOnly.plutus.json") "Diagnostic: checks only the minted value through AssocMap" (compiledCborHex V3CarrierDiagnosticPolicies.assocMapMintFactory)
   writeScriptJson (outputDir <> "/v3DiagnosticSingletonMintOnly.plutus.json") "Diagnostic: checks only minted value equality with singleton" (compiledCborHex V3CarrierDiagnosticPolicies.singletonMintFactory)
 
