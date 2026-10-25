@@ -42,12 +42,15 @@ mkPolicy seed tokenName _ ctx =
   && mintedExactlyOne (ownCurrencySymbol ctx) tokenName (txInfoMint (scriptContextTxInfo ctx))
 
 {-# INLINABLE wrap #-}
-wrap :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrap seed tokenName _ ctx =
-  check
-    (mkPolicy seed tokenName () (unsafeFromBuiltinData ctx))
+wrap :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit
+wrap seedData tokenNameData _ ctxData =
+  let
+    seed = unsafeFromBuiltinData seedData :: TxOutRef
+    tokenName = unsafeFromBuiltinData tokenNameData :: TokenName
+    ctx = unsafeFromBuiltinData ctxData :: ScriptContext
+  in check (mkPolicy seed tokenName () ctx)
 
 compiledPolicyFactory
   :: CompiledCode
-       (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
-compiledPolicyFactory = $$(compile [|| wrap ||])
+       (BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> BuiltinUnit)
+compiledPolicyFactory = $(compile [|| wrap ||])

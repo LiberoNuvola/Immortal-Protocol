@@ -39,8 +39,8 @@ const policy: Script = {
     // Match the parameter encoding already used by deployV3Carrier.mts:
     // TxOutRef = Constr 0 [Constr 0 [txId-bytes], output-index].
     new Constr(0, [new Constr(0, [seed.txHash]), BigInt(seed.outputIndex)]),
-    // TokenName uses the same constructor encoding as the deployment path.
-    new Constr(0, [TOKEN_NAME_HEX]),
+    // TokenName is Plutus bytestring Data; pass the bytes directly.
+    TOKEN_NAME_HEX,
   ]),
 }
 const policyId = mintingPolicyToId(policy)
