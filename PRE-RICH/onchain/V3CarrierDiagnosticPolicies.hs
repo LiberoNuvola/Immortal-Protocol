@@ -152,11 +152,11 @@ seedConsumedFactory
 seedConsumedFactory = $$(compile [|| wrapSeedConsumedOnly ||])
 
 assocMapMintFactory
-  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+  :: CompiledCode (TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 assocMapMintFactory = $$(compile [|| wrapAssocMapMintOnly ||])
 
 singletonMintFactory
-  :: CompiledCode (TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
+  :: CompiledCode (TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit)
 singletonMintFactory = $$(compile [|| wrapSingletonMintOnly ||])
 
 seedConsumedSerializedFactory
