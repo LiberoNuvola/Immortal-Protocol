@@ -35,7 +35,7 @@ mkCompareSeed seed _ _ ctx =
 
 {-# INLINABLE wrapNoContext #-}
 wrapNoContext :: TxOutRef -> TokenName -> BuiltinData -> BuiltinData -> BuiltinUnit
-wrapNoContext seed name _ _ = check (mkNoContext seed name () (unsafeFromBuiltinData (toBuiltinData ())))
+wrapNoContext _ _ _ _ = check True
 -- The no-context baseline intentionally does not decode ScriptContext.
 
 {-# INLINABLE wrapReadInputs #-}
