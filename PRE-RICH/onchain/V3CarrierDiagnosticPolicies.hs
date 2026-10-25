@@ -19,6 +19,7 @@ import PlutusLedgerApi.V2
 import PlutusLedgerApi.V2.Contexts
 import PlutusTx
 import PlutusTx.Prelude
+import qualified PlutusTx.AssocMap as AssocMap
 
 {-# INLINABLE mkReadInputs #-}
 mkReadInputs :: TxOutRef -> TokenName -> () -> ScriptContext -> Bool
