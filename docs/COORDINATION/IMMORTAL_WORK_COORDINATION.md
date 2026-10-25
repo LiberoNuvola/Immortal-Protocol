@@ -2110,3 +2110,24 @@ Each probe calls Lucid `.complete({ localUPLCEval: false })` and emits separate 
 The branch advanced again while this work was being verified; current branch head at checkpoint update: `16e3051231218fa2af63dc8ba08fe4b0dd43af0b`. The source blob was verified on the shared branch and contains both probe labels. No workflow-dispatch action is exposed through the connected GitHub tools, so a new lab run has not been manually dispatched from this session. Check the push-triggered Actions run for this branch before drawing conclusions; do not launch a duplicate run if one is already active.
 
 **STATUS: MINIMAL PROBES COMMITTED AND VERIFIED ON COORDINATION BRANCH / CI RESULT PENDING. V3 AND REVEAL SEMANTICS UNCHANGED.**
+
+
+## 44.65 — AGENT B F5 — MATERIOS EXECUTION-PROOF RPC IMPLEMENTATION RECHECK — 2026-10-25
+
+**Scope:** verify whether the external Materios execution-proof transport requested by issue #50 is actually present. Read-only cross-repository audit; no external repository writes and no local implementation/deployment.
+
+### Evidence checked
+
+- Upstream issue [Flux-Point-Studios/materios#50](https://github.com/Flux-Point-Studios/materios/issues/50), titled `B3: expose finalized execution proof via materios_b3_calculateCommitteeProof RPC`, is **closed** with `state_reason: not_planned` (closed 2026-09-26). Its body specifies exact block/method/callData binding, the SDK `ProofProvider::execution_proof(...)` path, a versioned deterministic proof envelope, and a real finalized-block fixture. Closure is not implementation evidence.
+- Upstream `partnerchain/node/src/rpc.rs` on `main` was fetched at blob `30827863c7b8f6fb507b008cee9f572ec48fe06f`. The file registers System, Orinq Receipts and MOTRA RPC modules only; no B3 execution-proof RPC is registered there.
+- Repository code search for the exact name `materios_b3_calculateCommitteeProof` returned no implementation match.
+- IMMORTAL's `poc/materios-grandpa/test/MATERIOS-B3-REAL-FIXTURE-CONTRACT-v1.md` (blob `bb78e7d1bca3531860c03aab51d54d2e5d20471e`) still requires a real finalized checkpoint, real GRANDPA justification, native execution proof, state-root/storage proof where applicable, separate verification results, and exact hashes/versions/inputs before closure.
+- The existing anchor triangulation note (blob `ebc464d9839fdfd523b2cb5806e0aa63a53c144a`) still identifies semantic binding from PRE-RICH round/checkpoint to canonical `anchorId` as unresolved; the observed SDK formula remains a producer convention, not a normative rule.
+
+### Finding and gate status
+
+**F5 transport remains OPEN.** Issue #50 being closed as `not_planned` must not be mistaken for a delivered RPC. The currently inspected upstream `main` source does not register the method, and no exact-name implementation was found. Consequently, there is no basis here to claim a real native execution-proof fixture or B3 certification.
+
+Next bounded action: obtain an explicit implementation path/owner for the transport task or build an isolated, reviewable implementation proposal against the pinned `polkadot-stable2409-4` API. Do not duplicate authority selection in TypeScript; do not use synthetic proof as runtime evidence. The real finalized-block fixture and independent verification remain separate acceptance gates. No upstream changes, IMMORTAL code/schema changes, deployment, or on-chain actions were performed.
+
+**STATUS: F5 RPC TRANSPORT NOT EVIDENCED ON UPSTREAM MAIN; REAL FIXTURE AND B3 VERIFICATION OPEN.**
