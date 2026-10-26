@@ -2756,3 +2756,15 @@ Following §44.80, added a focused test harness intended to execute the actual c
 - No datum schema, commitment domain, uniqueness authority, Issue/Reveal behavior, V3, deployment or Materios component was changed. F4 remains open pending separate normative resolution of the on-chain uniqueness/authenticated-binding design; F5/Materios remains paused.
 
 **STATUS: PLUTUS CEK VECTOR SUITE WIRED INTO HASKELL CONFORMANCE WORKFLOW; EXECUTION RESULT PENDING. NO GREEN CLAIM.**
+
+
+## 44.82 — AGENT B — CEK HARNESS STATIC API REVIEW — 2026-10-26
+
+Follow-up to §44.81, after re-fetching the test, Cabal target and workflow from the current shared branch.
+
+- Confirmed the test file and Cabal suite are present and the Haskell conformance workflow invokes the new target on pushes affecting `plutus/**` or the workflow file.
+- Cross-checked the use of `evaluationResultMatchesHaskell` against the upstream Plutus Haddock. Its documented shape is `CompiledCode a -> (Eq r, Show r => r -> r -> k) -> hask -> k`, consistent with comparing each compiled `Bool` result against `True`. This is a static API-shape check against published Plutus docs, **not** confirmation that the repository's exact pinned dependency set compiles this test.
+- GitHub connector search did not expose a run/status for this push. No test was executed here. Do not dispatch a workflow manually; observe the automatic push workflow or request an authorized runner's result.
+- If the exact pinned toolchain rejects imports, splices, or the evaluator call, fix the harness only and retain the TypeScript-derived expected values unless independent evidence proves a vector wrong.
+
+**STATUS: STATIC REVIEW COMPLETE; EXACT-TOOLCHAIN BUILD AND CEK RESULTS STILL PENDING. NO CROSS-LANGUAGE PASS CLAIM.**
