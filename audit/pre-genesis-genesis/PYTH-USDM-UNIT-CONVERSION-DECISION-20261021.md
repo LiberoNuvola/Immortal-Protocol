@@ -299,3 +299,11 @@ This entry aligns the memo with the shared repository checkpoint. It updates sou
 
 See the [shared repository checkpoint](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md) for the coordinated routing and no-repeat boundary. No production code, schema, Oracle quote semantics, economic formulas, V3, Reveal, deployment, EEV approval or Issue authorization changed.
 
+## 18. Agent A — fresh Orcfax explorer liveness re-check — 2026-10-26
+
+A fresh public-web re-check of the Orcfax Explorer still lists the two configured candidate feeds, `CER/ADA-USDM/3` and `CER/ADA-USD/3`, as sponsored, but their latest-value entries are now surfaced as **4 months old**, and the explorer reports **+0 published facts today (UTC)**. Source: [Orcfax Explorer](https://explorer.orcfax.io/). This is an indexed/public explorer observation, not direct ledger proof; it must not be overstated as proof that no fresh on-chain UTxO exists.
+
+This makes the source gate more restrictive, not less: current surfaced evidence does not meet the configured 3600-second heartbeat. Do not use either displayed value in settlement or derive a USD/USDM ratio from them. Next evidence must be the exact on-chain feed UTxOs/facts, datum/feed identities and publication timestamps, independently checked against the relevant Cardano ledger/network. If no fresh fact can be obtained, record the candidate as blocked for lack of fresh evidence and move to another operational source candidate without weakening the freshness contract.
+
+Option B remains selected, but source qualification and implementation remain OPEN/BLOCKED. No code, schema, conversion formula, rounding rule, V3/Reveal semantics, deployment, EEV approval or Issue authorization changed.
+
