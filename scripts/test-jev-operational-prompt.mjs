@@ -31,7 +31,7 @@ const registry = {
 
 const prompt = buildOperationalPrompt(registry);
 assert.match(prompt, /JEV OPERATIONAL PROMPT/);
-assert.match(prompt, /REVEAL\.TRACE: FAIL/);
+assert.match(prompt, /REVEAL\.TRACE FAIL/);
 assert.match(prompt, /inspect the referenced run\/log\/artifact/i);
 assert.match(prompt, /current branch HEAD/i);
 assert.match(prompt, /Notion page insertion order is not execution recency/i);
