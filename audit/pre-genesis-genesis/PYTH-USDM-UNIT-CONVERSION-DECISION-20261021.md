@@ -1,6 +1,6 @@
 # Pyth USD/ADA → IMMORTAL USDM Settlement — Unit/Conversion Decision
 
-**Status:** PARTIAL NORMATIVE DECISION RECORDED — PREPROD PHYSICAL-ASSET ELIGIBILITY ACCEPTED / USD↔USDM CONVERSION A/B/C STILL OPEN  
+**Status:** OPTION B SELECTED BY PROTOCOL AUTHORITY ON 2026-10-26 — SEPARATE USD/USDM CONVERSION REQUIRED / SOURCE AND IMPLEMENTATION CONTRACT STILL OPEN  
 **Date:** 2026-10-21  
 **Scope:** conversion units at the Pyth-to-MintPolicy boundary only.
 
@@ -47,14 +47,14 @@ For illustration only, suppose a synthetic Pyth price is `69,508,700 × 10^-8 = 
 
 The safer candidate is to retain the exact integer/exponent pair and apply the established final `ceilingDiv` once to the complete asset quantity. This still needs source-of-truth approval as a versioned PriceReference representation and actual Plutus/TypeScript parity tests; it must not be introduced as an undocumented semantic upgrade.
 
-## 4. Unresolved unit binding
+## 4. Unit binding decision — Option B selected on 2026-10-26
 
-The source-of-truth hierarchy must choose one of the following. This document does not silently select it.
+The protocol authority selected **Option B: verify USD/USDM separately**. This is a normative selection of the conversion approach, not a claim that a suitable feed has already been identified or qualified. Option A (implicit/fixed parity) is not authorized. Option C is not selected. The implementation and source qualification remain open.
 
 | Option | Rule | Consequence | Trust / unresolved issue |
 |---|---|---|---|
 | **A. Define USD/USDM parity** | Normatively define `1 USDM = 1 USD` for all settlement valuation, or give an exact fixed ratio and boundary | ADA/USD can be converted into USDM under the rational formula above | This is a constitutional/economic definition, not an implementation assumption; must be explicitly governed and independently reviewed |
-| **B. Verify USD/USDM separately** | Require a source-qualified, fresh USD/USDM conversion and compute the exact ratio with ADA/USD | Does not assume parity | Adds a second source/feed, another freshness/precision path and another availability dependency |
+| **B. Verify USD/USDM separately — SELECTED** | Require a source-qualified, fresh USD/USDM conversion and compute the exact ratio with ADA/USD | Does not assume parity | Adds a second source/feed, another freshness/precision path and another availability dependency; exact provider/feed and contract remain unqualified |
 | **C. Use a quote already denominated in USDM** | The source itself publishes the asset/USDM price, with authenticated exact asset identity | Uses legacy unit without an implicit USD bridge | The checked Pyth ADA/USD feed is not such a quote; current legacy Oracle State is publisher-authorized but source truth is not proven by its datum |
 
 Do not create a fourth implicit option by labelling `USD/ADA` as `USDM/ADA` in an off-chain adapter. That merely moves the trust claim out of sight.
@@ -81,16 +81,18 @@ However, **source authenticity and unit conversion are distinct obligations**:
 
 All three must hold in the same accepted Issue transaction. Passing any one of them does not close the other two.
 
-## 7. Recommended next step
+## 7. Next implementation gates after Option B selection
 
-Under the current source-of-truth hierarchy, do not change the Oracle singleton schema, `OracleQuote`, `Economic.totalUsdmValue`, or MintPolicy price semantics until the parity/quote denomination choice is approved. The most conservative engineering route is:
+The selected approach is B, but do not change the Oracle singleton schema, `OracleQuote`, `Economic.totalUsdmValue`, or MintPolicy price semantics until the source and versioned contract are specified. Required gates:
 
-1. propose Option A only if the intended meaning of “USDM” is indeed a one-to-one USD accounting unit; otherwise evaluate Option B or C;
-2. freeze the exact rational field representation, exponent bounds, numerator/denominator calculation and rounding behavior in a versioned PriceReference contract;
-3. implement the conversion as a separate pure Haskell/TypeScript/Aiken differential test surface and show that every accepted value is consistent with the approved formula;
-4. only then bind the Aiken carrier output into Plutus V2 MintPolicy and verify both together on a native Cardano ledger.
+1. Identify a candidate USD/USDM source and verify that its exact pair direction is **USD per USDM** (or define the exact inverse rational), its network/deployment, source identity, asset/issuer identity, precision, timestamp semantics, update cadence, and access/licensing constraints.
+2. Qualify the source against manipulation/liquidity risk and freshness. A signature verifier alone is insufficient: the consuming validator must enforce a governed freshness window and fail closed when either leg is missing, stale, invalid, or outside supported bounds.
+3. Bind ADA/USD and USD/USDM observations to the same accepted Issue transaction, or define a formally approved bounded timestamp-skew rule. Never silently combine observations from incompatible time windows.
+4. Freeze an exact integer-rational representation, pair direction, exponent bounds, overflow/resource limits, final rounding rule and failure predicates in a versioned PriceReference contract. Preserve raw price/exponent data; do not pre-round the quote off-chain.
+5. Implement pure Haskell/TypeScript/Aiken differential tests for the complete two-feed conversion, including reciprocal/direction mistakes, zero/negative/overflow prices, stale or mismatched timestamps, missing feed, confidence/spread bounds where supported, and ceiling-rounding boundaries.
+6. Only after those gates, bind the source-authenticated observations into the canonical Plutus V2 MintPolicy settlement path and validate on the native ledger. Keep the existing Pyth carrier and MintPolicy semantics unchanged until the contract is approved.
 
-No parity rule, source, conversion constant, oracle update, production code, deployment or real Issue is changed by this memo.
+This decision does **not** define USDM as always equal to USD, guarantee redemption or a market peg, choose a feed provider, authorize a production oracle update, approve deployment, or authorize a real Issue.
 
 
 ## 8. External source and token-identity cross-check — 2026-10-22
@@ -169,3 +171,16 @@ A bounded inspection of the current `work/immortal-green-closure` source found n
 **Finding:** Option C is architecturally preferable only if an actual source can be qualified, but it is **not implementation-ready on current evidence**. No direct ADA/USDM feed is selected or claimed to exist. The next non-normative investigation is to inventory candidate Cardano market/oracle sources and test whether one can satisfy the canonical source-authentication, manipulation/liquidity, freshness, exact asset identity, decimal and fail-closed requirements. If no candidate meets those requirements, return to the authority for an explicit choice between B and another governed route; do not relabel ADA/USD as ADA/USDM.
 
 This entry changes no protocol semantics, oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, deployment state, or Issue authorization.
+
+
+## 10. Option B decision recorded — 2026-10-26
+
+The protocol authority explicitly selected **Option B** in the operating conversation on 2026-10-26. This supersedes the earlier statement that A/B/C remained undecided. The selection is limited to the architecture of settlement conversion: use an independently verified USD/USDM rate alongside ADA/USD, rather than assuming parity or using a direct ADA/USDM quote.
+
+### External integration constraints checked
+
+- Pyth's Cardano Pro integration guide documents ADA/USD feed ID 16 and explains that its transaction-level signature verification does **not** itself enforce price freshness; the consuming validator must check timestamps. See [Pyth — Use Prices on Cardano](https://docs.pyth.network/price-feeds/pro/use-prices-on-blockchain/cardano).
+- Pyth's published Cardano material describes an institutional pricing layer and expansion of feed coverage, but this does not prove that a USD/USDM feed is currently available or approved for this application. See [Pyth Pro on Cardano](https://www.pyth.network/blog/pyth-pro-is-live-on-cardano-the-pricing-layer-cardano-defi-has-been-waiting-for).
+- Public issuer material distinguishes reserve/redemption mechanics from secondary-market price behavior. It is context, not an oracle input or protocol guarantee. See [Moneta USDM Lite Paper](https://moneta.global/USDM%20Lite%20Paper.pdf).
+
+**Source qualification status:** no concrete USD/USDM feed ID/provider, authenticated Cardano verifier path, or source freshness contract is qualified by this memo. The source-selection task remains open. Do not infer feed availability from the existence of Pyth Pro, an issuer reserve statement, or an observed market price.
