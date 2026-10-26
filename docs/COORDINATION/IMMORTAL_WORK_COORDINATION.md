@@ -2936,3 +2936,23 @@ This is a **full successful local Yaci Integration Lab run**, including P2.8 nat
 No normative economic decision was made. Existing V3 carrier and canonical Reveal semantics were not altered by the Yaci normalization fix. Materios remains PAUSED. Do not dispatch another duplicate lab run; coordinate any next action against the exact latest branch head and the remaining authoritative-admission / R1-Kc certificate blocker.
 
 **STATUS: INTEGRATION LAB #2270 = PASS ON SHA `8f1e2eb`; P2.8 MATERIALIZATION, DECODER, LEDGER EVALUATION AND PREDEPLOY STRUCTURAL GATE ALL PASS; PRODUCTION/PREPROD DEPLOYMENT REMAINS BLOCKED BY ITS SEPARATE QUALIFICATION REQUIREMENTS.**
+
+
+## 44.90 — AGENT B — THIRD BEACON TEST COMPILER DIAGNOSTIC AND IMPORT CLEANUP — 2026-10-26
+
+Inspected the completed automatic Haskell Semantic Conformance run [40379279491](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40379279491), exact head `8f1e2eb79d044623cfdfcfd7e28891a2956fbb0e). The Beacon suite advanced past parsing but failed while compiling the test module with the exact diagnostic:
+
+```
+test/BeaconCommitmentVectorsTest.hs:12:5: error:
+Module ‘Prelude’ does not export ‘(:)’
+```
+
+Removed the fragile `NoImplicitPrelude` + manually enumerated Prelude import list and replaced it with the conventional `import Prelude hiding ((==))`. This preserves the intentional unqualified PlutusTx `(==)` inside compiled expressions and the qualified host comparison `Haskell.==` used by the evaluator helper; all ordinary Haskell names and list constructors now come from Prelude normally. No vector values, Beacon production implementation, or test assertions changed.
+
+Committed to the existing branch as `a01f2892268379b4400fea147abdb9397898213a`; source blob `83cfc8fc5069d2ea0efa8006155e3e6d4eda20f4`. This is a targeted response to the compiler error. The next automatic exact-head Haskell run must confirm whether compilation and CEK vector evaluation proceed.
+
+Coordination note: other branch work has independently recorded Yaci Integration Lab #2270 as passing on SHA `8f1e2eb`; that result is separate evidence and does not change the Beacon Haskell suite's failure on that SHA. Do not conflate those workflows.
+
+F4 remains OPEN for on-chain canonical round uniqueness and authenticated commitment binding. V3 and Reveal semantics remain untouched by this Agent B edit. F5/Materios remains PAUSED. No normative design selected; no manual workflow dispatch.
+
+**STATUS: THIRD EXACT COMPILER FAILURE IDENTIFIED AND IMPORT BLOCK SIMPLIFIED; COMMIT `a01f289` AWAITS AUTOMATIC HASKELL CONFORMANCE. NO BEACON GREEN CLAIM.**
