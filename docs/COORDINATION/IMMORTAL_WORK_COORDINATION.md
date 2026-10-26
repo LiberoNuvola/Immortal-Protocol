@@ -2848,3 +2848,23 @@ This independently checks the expected values against the documented algorithm; 
 F4 remains OPEN: vectors do not establish on-chain uniqueness or authenticated commitment binding across Registry → Issue → Reveal. No normative design selected. No V3, Reveal semantics, deployment or Materios change; F5/Materios remains PAUSED.
 
 **STATUS: ALL THREE EXPECTED VECTOR VALUES INDEPENDENTLY RECOMPUTED AND MATCH; AUTOMATED TS/PLUTUS TEST EXECUTION STILL UNVERIFIED. NO GREEN CLAIM.**
+
+
+## 44.87 — AGENT B — FIX EXACT CI FAILURE IN BEACON CEK TEST IMPORT — 2026-10-26
+
+Recovered the actual GitHub Actions run that had been missed by the previous commit-status lookup: [IMMORTAL Haskell Semantic Conformance run 40275034320](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40275034320), on commit `f28a8b39d4bbd6c7f74c299ba697f53293b364e6`. The pinned GHC 9.6.7 toolchain successfully completed dependency installation and the first three Haskell suites; the new Beacon suite failed at parse time before any vector was executed:
+
+```
+test/BeaconCommitmentVectorsTest.hs:12:6: error: [GHC-58481]
+parse error on input ‘[’
+```
+
+The offending import-list item was written as `([])`. Corrected only that syntax to `[]` in `plutus/test/BeaconCommitmentVectorsTest.hs`, commit `2269bfd4c9321a86b1d5a33ecea68ae1b64ad888`. Re-fetched the file and verified the corrected import is present (blob `e9c31f6083b91a376882dfa83a6faa14b6781a8a`). This is a source-level response to the exact compiler diagnostic; it does not yet establish that compilation proceeds or that CEK vectors pass.
+
+### Verification / coordination
+- The run above is a confirmed **FAIL**, not an unobserved run. Its job log shows the Beacon test step failed at Haskell parsing; later suites were skipped.
+- The source fix was committed to the existing `work/immortal-green-closure` branch; no branch created and no workflow manually dispatched. Wait for the branch-push workflow on the fix commit and inspect its exact-head logs.
+- Keep all expected vector values and `Beacon.hs` semantics unchanged unless the next compiler/runtime evidence shows a separate issue.
+- F4 remains OPEN for canonical round uniqueness and authenticated commitment binding. V3 and Reveal semantics untouched; F5/Materios remains PAUSED.
+
+**STATUS: FIRST EXACT TOOLCHAIN FAILURE IDENTIFIED AND MINIMALLY FIXED; RE-RUN/CEK RESULTS PENDING. NO GREEN CLAIM.**
