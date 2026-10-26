@@ -16,6 +16,8 @@ import Prelude
   , (++)
   )
 
+import qualified Prelude as Haskell
+
 import Beacon
   ( deriveGameRoundCommitment
   , encodeBeaconTarget
@@ -87,12 +89,12 @@ assert condition label =
 main :: IO ()
 main = do
   assert
-    (evaluationResultMatchesHaskell targetVector (==) True)
+    (evaluationResultMatchesHaskell targetVector (Haskell.==) True)
     "Plutus CEK BeaconTarget encoding matches TypeScript golden vector"
   assert
-    (evaluationResultMatchesHaskell roundCommitmentVector (==) True)
+    (evaluationResultMatchesHaskell roundCommitmentVector (Haskell.==) True)
     "Plutus CEK GameRoundCommitment matches TypeScript golden vector"
   assert
-    (evaluationResultMatchesHaskell ticketCommitmentVector (==) True)
+    (evaluationResultMatchesHaskell ticketCommitmentVector (Haskell.==) True)
     "Plutus CEK ticketCommitment V2 matches TypeScript golden vector"
   putStrLn "ALL BEACON CROSS-LANGUAGE VECTORS PASSED"
