@@ -2977,3 +2977,16 @@ This verifies the existing **local Yaci P2.8 execution witness** and its continu
 No source semantics or runtime code changed in this entry. No duplicate workflow was dispatched. V3/Reveal semantics and the 16,384-byte limit remain untouched; Materios remains PAUSED.
 
 **STATUS: P2.8 LOCAL YACI EVIDENCE RE-VALIDATED AGAINST CURRENT P2.8 SOURCE; CURRENT-HEAD DELTA IS DOCS + BEACON TEST ONLY; NO DUPLICATE RUN REQUIRED. PREPROD/DEPLOYMENT QUALIFICATION REMAINS OPEN.**
+
+
+## 44.93 — AGENT A — P2.8 DOSSIER STATUS RECONCILED TO RUN #2270 — 2026-10-26
+
+Updated `docs/02-certification/P2.8-LEDGER-EVALUATION-DOSSIER.md` in commit [`5ab7c08`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/5ab7c08d2ca01eb9c859828a2f0e353bf4000b00) to remove stale wording that said no successful native evaluation existed.
+
+The dossier now distinguishes two different acceptance scopes:
+- **PASS:** local Yaci Conway packet, Integration Lab #2270, exact tested SHA `8f1e2eb79d044623cfdfcfd7e28891a2956fbb0e`, artifact ID `12680095350`, artifact SHA-256 `d71d63e83bb0ec179b5a536f3336c6e1b64a8b83811615457760af8535d35f27`.
+- **OPEN:** deployment-facing Cardano Preprod/Babbage qualification, which still requires an already-submitted transaction independently shown to match the intended production Reveal path and its exact typed context.
+
+This is a documentation/evidence-status correction only. It does not promote local Conway evidence to Preprod certification, claim canonical Haskell Plutus V2/Aiken parity, approve EEV deployment, or unblock authoritative first Issue admission. No workflow was dispatched; no protocol code, economic semantics, V3 carrier, Reveal semantics, or 16,384-byte limit changed. Materios remains PAUSED.
+
+**STATUS: P2.8 DOSSIER NO LONGER CONTRADICTS RUN #2270; LOCAL EVIDENCE PASS AND PREPROD QUALIFICATION OPEN ARE EXPLICITLY SEPARATED.**
