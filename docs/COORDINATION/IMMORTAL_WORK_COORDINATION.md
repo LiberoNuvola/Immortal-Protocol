@@ -2892,3 +2892,23 @@ The branch-push workflow has automatically queued new work on exact SHA `8f1e2eb
 F4 remains OPEN for on-chain canonical round uniqueness and authenticated commitment binding. No normative design selected; V3 and Reveal semantics untouched; F5/Materios remains PAUSED.
 
 **STATUS: SECOND PARSE FAILURE REPRODUCED FROM EXACT CI LOG AND MINIMALLY FIXED; NEW EXACT-HEAD CI PENDING. NO GREEN CLAIM.**
+
+
+## 44.90 — AGENT B — P2.8 NATIVE YACI CONTEXT AND REDEEMER EVALUATION VERIFIED — 2026-10-26
+
+Reviewed the completed evidence artifacts for [IMMORTAL Cardano Integration Lab run #2269](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40374182330), exact workflow head `2269bfd4c9321a86b1d5a33ecea68ae1b64ad888`. This is the run that followed the native Yaci field-normalization change; run #2267 on `cf596d1` had been cancelled during canonical Plutus toolchain setup before reaching P2.8.
+
+### P2.8 evidence from run #2269
+- `Materialize raw Yaci ledger context for P2.8`: **success**.
+- `Run native Yaci UTxO decoder conformance`: **success**.
+- `Run P2.8 ledger evidence gate against this lab packet`: **success**.
+- The evidence manifest classifies 5 transaction inputs, including exactly 2 reference inputs. Both exact reference UTxOs were fetched from Yaci; `utxo.json` contains both with `reference: true`, populated `script_ref`, `reference_script_hash`, normalized `amount`, and `ledger_address_hex`.
+- `ledger-evaluation-report.json` contains two spending redeemer entries, indices 1 and 2, each with `status: success`, empty failure logs, and measured ExUnits. No `MissingScript` or `ContextError` is present in this native evaluator report.
+- The sanitized evidence artifact was uploaded as artifact ID `12678720668`; its registry records the P2.8 materialization, decoder, ledger-evidence gate, and resource-footprint checks as PASS.
+
+### Scope and remaining boundary
+The workflow was subsequently cancelled during `Run predeploy structural gate` as newer branch pushes arrived. Therefore this is **confirmed local Yaci P2.8 ledger-evaluation evidence for the exact run/head**, not a successful conclusion for the entire Integration Lab, not Preprod/mainnet qualification, and not deployment approval. The report proves the two recorded spending redeemers evaluated successfully in this materialized context; it does not independently establish full production Haskell/Aiken parity or authoritative Issue admission.
+
+No V3 carrier, Reveal semantics, economic constants, or Materios work was changed. Materios remains PAUSED. Preserve the evidence artifact and avoid re-running P2.8 on another branch; next coordination step is to verify whether the latest branch head needs a fresh exact-head Integration Lab after the current concurrent agent changes settle.
+
+**STATUS: P2.8 NATIVE YACI EVALUATION PASS ON RUN #2269 / SHA `2269bfd`; OVERALL WORKFLOW CANCELLED LATER, FULL LAB/DEPLOYMENT NOT GREEN.**
