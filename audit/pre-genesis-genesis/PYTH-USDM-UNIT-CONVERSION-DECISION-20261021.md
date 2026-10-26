@@ -307,3 +307,12 @@ This makes the source gate more restrictive, not less: current surfaced evidence
 
 Option B remains selected, but source qualification and implementation remain OPEN/BLOCKED. No code, schema, conversion formula, rounding rule, V3/Reveal semantics, deployment, EEV approval or Issue authorization changed.
 
+
+
+## 19. Agent A — Preprod deployment evidence gap confirmed in Orcfax integration docs — 2026-10-26
+
+A second source check found an additional qualification gap beyond freshness: Orcfax's published “Consuming Orcfax Statements” deployment table lists the Fact Statement Pointer deployment for **mainnet**, lists a hash for **preview**, and records **preprod: n/a**. The preview configuration's feed status is `showcase`, not evidence of an operational Preprod deployment. Source: [Orcfax consuming statements / deployment table](https://docs.orcfax.io/consume) and [Orcfax feed overview](https://docs.orcfax.io/feed-overview).
+
+This documentation is not a live ledger query and may lag the network, so it does not prove that no independently deployed or newer deployment exists. It does mean the existing evidence bundle cannot claim a canonical Orcfax Preprod integration: no exact current Preprod FSP identity, publisher/validation identity, feed UTxO, or fresh datum witness has been established. The mainnet Explorer evidence also continues to surface the two candidate feeds as months stale ([ADA-USDM fact](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645), [ADA-USD fact](https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb)).
+
+**Disposition:** keep Orcfax blocked for IMMORTAL settlement until direct ledger evidence establishes both exact feed identities, the authentic publication mechanism/current validator identity, fresh timestamps within the approved 3600-second heartbeat, compatible timestamps, and a reproducible network-specific witness. Do not treat Preview `showcase` status as Preprod qualification, and do not relax freshness to accommodate old data. If this evidence cannot be obtained, classify the candidate `BLOCKED_NO_FRESH_ORCFAX_FACT` / no qualified Preprod deployment and move to another separately governed operational source. Option B remains selected; implementation remains blocked. No production code, schema, conversion formula, MintPolicy, V3/Reveal, deployment, EEV approval or Issue authorization changed.
