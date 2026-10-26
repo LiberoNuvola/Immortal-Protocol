@@ -66,6 +66,7 @@ library
         GovernanceFinality
         ReferenceAdapter
     other-modules:
+        GovernanceConformance
     build-depends:
         base ^>=4.18.2,
         plutus-core ^>=1.67.0.0,
