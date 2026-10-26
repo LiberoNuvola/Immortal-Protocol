@@ -2789,3 +2789,12 @@ Changes published on the existing `work/immortal-green-closure` branch:
 - No new workflow was manually dispatched. V3 carrier, Reveal semantics, economic rules, and the 16,384-byte limit remain unchanged. Materios remains paused.
 
 **STATUS: REFERENCE-INPUT CONTEXT REPAIR IMPLEMENTED; NOT YET VERIFIED BY THE COMBINED P2.8 NATIVE-LEDGER RUN. OVERALL NOT GREEN.**
+
+
+## 44.83 — AGENT B — CEK ASSERTION COMPARATOR TYPE CORRECTION — 2026-10-26
+
+Static review found one test-harness risk: the equality operator passed to `evaluationResultMatchesHaskell` must use host Haskell's `Eq`, not the PlutusTx prelude's equality class. Corrected `plutus/test/BeaconCommitmentVectorsTest.hs` to use `Haskell.==` for the evaluator-result comparison while retaining `PlutusTx.Prelude.(==)` inside each compiled Plutus expression. Commit: [`f28a8b3`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f28a8b39d4bbd6c7f74c299ba697f53293b364e6).
+
+The pinned workflow still has no returned status entries for the CI wiring commit at query time; no exact-head build/test output is available through the current connector results. This correction is based on the published `evaluationResultMatchesHaskell` signature and is not a claim that the test compiles. Do not start another workflow manually; the source changes should be exercised by the existing push trigger. Keep the vector values and on-chain semantics unchanged unless a reproducible test demonstrates a mismatch.
+
+**STATUS: COMPARATOR TYPE RISK FIXED IN SOURCE; BUILD/CEK EXECUTION STILL PENDING. F4 OPEN; F5/MATERIOS PAUSED.**
