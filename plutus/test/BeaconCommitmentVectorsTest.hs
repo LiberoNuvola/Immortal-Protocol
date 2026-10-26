@@ -9,7 +9,7 @@ import Prelude
   , IO
   , Integer
   , String
-  , ([])
+  , []
   , (:)
   , error
   , putStrLn
