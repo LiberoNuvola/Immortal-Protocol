@@ -184,3 +184,21 @@ The protocol authority explicitly selected **Option B** in the operating convers
 - Public issuer material distinguishes reserve/redemption mechanics from secondary-market price behavior. It is context, not an oracle input or protocol guarantee. See [Moneta USDM Lite Paper](https://moneta.global/USDM%20Lite%20Paper.pdf).
 
 **Source qualification status:** no concrete USD/USDM feed ID/provider, authenticated Cardano verifier path, or source freshness contract is qualified by this memo. The source-selection task remains open. Do not infer feed availability from the existence of Pyth Pro, an issuer reserve statement, or an observed market price.
+
+
+## 11. Agent A source-provider inventory — 2026-10-26
+
+This is a source discovery result, not feed qualification.
+
+| Candidate / evidence | What it establishes | Why it does not yet satisfy Option B |
+|---|---|---|
+| **Pyth Pro** — official [Cardano integration](https://docs.pyth.network/price-feeds/pro/use-prices-on-blockchain/cardano) and [feed catalogue](https://docs.pyth.network/pro/price-feed-ids) | Cardano integration supports signed price updates; the documented example uses ADA/USD feed ID 16. The contract must enforce freshness itself. | The inspected material did not identify a concrete USD/USDM feed ID or a Cardano-verifiable deployment for this application. Do not invent an ID. |
+| **Charli3** — [official site](https://charli3.io/) and [technical docs](https://docs.charli3.io/) | Charli3 advertises Cardano-native oracle services, configurable feeds and multi-DEX/API-source integration capabilities. This makes it a plausible provider to ask about a custom USD/USDM feed. | No exact USD/USDM feed, source list, deployment address, datum schema, freshness rule, security/economic specification or Preprod witness has been verified for IMMORTAL. Provider capability is not an existing qualified feed. |
+| **Public DEX/market dashboards** — e.g. [USDM market overview](https://realtap.app/token/c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d) and [Cardano stablecoin peg tracker](https://danonight.com/cardano/stablecoins) | Market prices and liquidity can be observed; USDM can trade away from USD parity. These are useful discovery/monitoring references. | A website/API snapshot is not, by itself, an authenticated on-chain oracle datum or a governed source. A single DEX pool or dashboard must not be promoted to settlement authority without manipulation, depth, outlier, freshness and exact asset-identity qualification. |
+| **Issuer / reserve disclosures** — [Moneta USDM product information](https://moneta.global/products/usdm/) | Issuer material describes the intended USD peg, reserve and redemption framework. | That describes issuer/contractual design and reserves, not an independently verified, transaction-time market USD/USDM rate. Treating it as the numeric conversion would silently revert to Option A. |
+
+### Finding and next action
+
+No candidate is qualified yet. **Charli3 is the first Cardano-native provider candidate for a bounded technical/source inquiry**, because its public technical material describes configurable Cardano oracle feeds and multiple source adapters; this is not an endorsement or a claim that it already publishes USD/USDM. The required inquiry is whether it can supply an independently sourced USD-per-USDM observation with documented underlying sources, aggregation/outlier policy, exact feed and datum identity, freshness semantics, deployment addresses, and a verifiable Preprod example. In parallel, verify Pyth's current programmatic feed catalogue for an exact USD/USDM symbol before ruling it out; the web UI/catalogue evidence reviewed here was not enough to prove universal absence.
+
+Until a provider returns concrete artifacts, the integration remains blocked: no guessed feed ID, no hardcoded 1:1 ratio, no off-chain-only quote accepted as authoritative, and no fallback to a stale Oracle State. The current task is provider/source qualification, not code modification.
