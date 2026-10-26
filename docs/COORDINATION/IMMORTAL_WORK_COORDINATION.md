@@ -3106,3 +3106,24 @@ Inventory currently operational Cardano-compatible oracle/source paths and exact
 No production code, oracle schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
 
 **STATUS: OPTION B SELECTED; PYTH DIRECT QUOTE NOT QUALIFIED; CHARLI3 HOSTED SERVICE CEASED; SOURCE ARCHITECTURE AND QUALIFICATION OPEN.**
+
+
+## 45.00 — AGENT A — ORCFAX ADA-USD + ADA-USDM CANDIDATE PATH; LIVENESS OPEN — 2026-10-26
+
+Agent A found a concrete pair-path candidate in Orcfax's public feed configuration. Full evidence and guardrails are in decision memo section 15, commit [`a73ba00`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a73ba0086de8f90e177880ab429b36ad53323cb2).
+
+### Feed configuration evidence
+- Mainnet configuration version `2026.05.18.0001` lists `ADA-USD` (CEX median, 3600-second interval, 1% deviation, `sponsored`) and `ADA-USDM` (DEX weighted mean, 3600-second interval, 2% deviation, `sponsored`).
+- Preview configuration version `2025.10.09.0002` lists both pairs as `showcase`, not production sponsorship.
+- References: [Mainnet feed configuration](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/mainnet/cer-feeds.json), [Preview feed configuration](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/preview/cer-feeds.json), [feed policy](https://docs.orcfax.io/feed-overview).
+
+Under the provider's base-quote naming convention, the **candidate** derivation is:
+
+`USD per USDM = (USD per ADA from ADA-USD) / (USDM per ADA from ADA-USDM)`
+
+This is not yet a qualified implementation. Both exact feed identities, datum formats, timestamps/freshness, precision and validity windows must be verified. Mainnet status `sponsored` means support depends on sponsorship; Preview `showcase` is not production qualification.
+
+### Blocking evidence gap
+The public Orcfax Explorer could not be retrieved successfully in this pass, and the indexed page material exposed facts/collection timestamps several months old. The feed-config repository is dated 2026-05-18 and does not prove current publication or fresh Preprod values. Next: verify current Preprod publication and exact datum identity for both feeds, publisher/support status, compatible observation times, and a reproducible fresh on-chain witness. Missing or stale either leg => fail closed.
+
+**STATUS: OPTION B SELECTED; ORCFAX PAIR PATH IDENTIFIED; CURRENT LIVENESS AND PREPROD VERIFIER EVIDENCE NOT YET VERIFIED; NO PRODUCTION IMPLEMENTATION OR ISSUE AUTHORIZATION.** Charli3 remains ceased/hosted service unavailable; Materios remains PAUSED.
