@@ -53,7 +53,7 @@ manyChecks.checks = Array.from({ length: 30 }, (_, index) => ({
 }));
 const manyPrompt = buildOperationalPrompt(manyChecks);
 assert.ok(manyPrompt.length < 7001, "many checks with one shared run URL should fit the prompt budget");
-assert.match(manyPrompt, /evidence: this run/);
+assert.match(manyPrompt, /R:this run/);
 assert.match(manyPrompt, /Hard boundaries:/);
 
 assert.throws(() => buildOperationalPrompt({}), /registry.subject is required/);
