@@ -3089,3 +3089,20 @@ Continue provider/source qualification for a concrete Charli3 specification or a
 No production code, oracle schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Materios remains PAUSED.
 
 **STATUS: OPTION B SELECTED; PYTH CATALOGUE CHECK COMPLETE; NO QUALIFIED MONETA USD/USDM FEED FOUND IN THIS CATALOGUE QUERY; SOURCE QUALIFICATION STILL OPEN.**
+
+
+## 44.99 — AGENT A — CHARLI3 CEASED OPERATIONS; PROVIDER PATH REASSESSMENT — 2026-10-26
+
+The current [official Charli3 site](https://charli3.io/) states that Charli3 Oracle **ceased operations in May 2026**, while its open-source solutions remain available. The site directs users to its official X account for contract support. A contemporaneous ecosystem report also reproduced the May 25, 2026 service-pause announcement ([report and transcript](https://learncardano.io/podcasts/cardano-ada-news-update-strike-perps-indigo-v3-charli3-more-29-may-2026/)). Decision memo section 14 records the finding in commit [`edd5ea4`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/edd5ea433c435aa48a88ec8c09e01a40418e85b5).
+
+### Operational consequence
+- Charli3 must not be treated as an available hosted provider for a live USD/USDM feed.
+- Its open-source code may be considered only as a reference for an independently operated oracle, with explicit governance and ownership of node operators, data sources, funding, monitoring, upgrades/security, deployment and Preprod qualification. This is not an existing qualified source.
+- The Pyth catalogue check (§44.98 / memo §13) found no qualified market quote for the exact Moneta USDM asset; Mountain Protocol's similarly named feed is inactive and refers to a different token, while Moneta's reserves feed is not a USD-per-USDM market quote.
+
+### Next bounded action
+Inventory currently operational Cardano-compatible oracle/source paths and exact Moneta USDM market pairs available on-chain. Do not select one as normative authority yet. For each candidate, require authenticated observations, unambiguous pair direction, source provenance, aggregation/manipulation controls, precision, freshness and timestamp-skew rules, and an independently verifiable Preprod witness. A DEX-derived cross-rate remains only a candidate until pool identity, liquidity/depth, manipulation bounds, and atomic observation semantics can be governed and verified. No single pool/dashboard becomes settlement authority by default.
+
+No production code, oracle schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
+
+**STATUS: OPTION B SELECTED; PYTH DIRECT QUOTE NOT QUALIFIED; CHARLI3 HOSTED SERVICE CEASED; SOURCE ARCHITECTURE AND QUALIFICATION OPEN.**
