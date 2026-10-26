@@ -3142,3 +3142,17 @@ Both configured heartbeats are 3600 seconds. The surfaced latest-value ages exce
 The Explorer could not be fetched directly by the web fetcher in this pass, so indexed search results are discovery evidence only; revalidate exact datum identities, values, publication slots/timestamps, and feed activity from the ledger. Next action: verify whether the publisher still publishes fresh facts and whether both feed datums can be independently observed on Preprod. If not, drop Orcfax for settlement and assess another governed source. No production code, schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed.
 
 **STATUS: ORCFAX IS A CONCRETE PAIR-PATH CANDIDATE BUT FAILS CURRENT FRESHNESS EVIDENCE; OPTION B STILL BLOCKED.**
+
+## 45.02 — AGENT B — BEACON CEK FAILURE ROOT-CAUSE CANDIDATE — 2026-10-26
+
+The completed first-run isolation [#40393627899](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40393627899) failed after compiling all 52 library modules and compiling the Beacon test executable. The decisive error remains:
+
+`undefined symbol: prezmrichzmplutuszm0zi1zi0zi0zminplace_GovernanceConformance_lifecycleEventAdmissible_info`
+
+The source module `IMMORTAL/governance/GovernanceConformance.hs` exports `lifecycleEventAdmissible`, and `GovernanceCanonicalReplay.hs` imports it. However, `plutus/pre-rich-plutus.cabal` did not declare `GovernanceConformance` in either `exposed-modules` or `other-modules` (the latter stanza was empty). This is a concrete package-manifest inconsistency and a plausible cause of the unresolved in-place dynamic symbol.
+
+Agent B added `GovernanceConformance` to the library's `other-modules` list in commit [`48f79b0`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/48f79b078c1e654e694b82e6a8ab15241ad442cf) on the existing `work/immortal-green-closure` branch. This declares the existing internal module to Cabal; it does not change its implementation or protocol semantics.
+
+**Validation pending:** the new commit must pass the Beacon CEK test and print all three vector PASS lines before F4 can be advanced. If the same undefined symbol persists, inspect GHC package registration/link metadata next. V3, canonical Reveal semantics and Beacon vectors were not changed. Materios remains PAUSED.
+
+**STATUS: MANIFEST INCONSISTENCY FIX COMMITTED; CI EVIDENCE PENDING; F4 OPEN.**
