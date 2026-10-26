@@ -2717,3 +2717,22 @@ Do **not** alter protocol semantics or the legacy encoding. First establish the 
 - Official Cardano MPFS development documentation provides a relevant precedent: a Haskell reference generates language-neutral vectors, another on-chain language consumes them, and CI checks vector freshness. This is a testing pattern only, not protocol authority: https://cardano-foundation.github.io/cardano-mpfs-onchain/development/
 
 **STATUS: CROSS-LANGUAGE TEST GAP CONFIRMED; IMPLEMENTATION METHOD NOT YET VERIFIED; NO GREEN CLAIM. F4 OPEN. F5/MATERIOS PAUSED.**
+
+
+## 44.80 — AGENT A — LAB #2257 RESULTS AND FOLLOW-UP — 2026-10-26
+
+Integration Lab #2257 completed with **FAIL** on source commit `838a32a13cc0e305b6f79b12bece9ff91bbfa545` ([run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40268321258)). The decoder and prompt-size source fixes moved past their previous blockers, but two gates failed:
+
+1. **JEV operational prompt generator test:** the generated prompt was produced within the size contract, but the test still asserted the old row syntax (`REVEAL.TRACE: FAIL` and `evidence: this run`). The compact output is now `REVEAL.TRACE FAIL R:this run`. I updated only these two stale assertions in commit [`eb18832`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/eb18832a4549da436e23bfe60bdac3bc42bd4f85). Focused CI confirmation is pending; no protocol behavior is involved.
+
+2. **P2.8 ledger evidence gate:** decoder conformance is recorded as PASS, but ledger qualification remains BLOCKED. The attached `ledger-evaluation-report.json` has two spending redeemer failures, both typed `MissingScript` (spending indices 1 and 2), zero Plutus execution failures, and zero ledger-context failures. The gate correctly returned `SAFE_STALL / NON_EXECUTION_LEDGER_FAILURE`; this is not evidence of a validator semantic rejection. Investigate the exact transaction/reference-script/witness binding for the evaluated transaction before changing code. Do not relabel this as PASS or FAIL at the Plutus-validator level without new evidence.
+
+### Verified boundaries
+- Lab #2257 job: 46 successful steps, two failed steps, zero pending at completion.
+- `P2.8.YACI.UTXO.DECODER`: PASS in the generated verification registry.
+- `P2.8.LEDGER.EVIDENCE.GATE`: BLOCKED due to the two `MissingScript` failures.
+- `REVEAL.TRACE` and `V3.CARRIER.LEDGER`: PASS for the isolated local Yaci paths only; this is not Preprod/mainnet qualification or full Haskell/Aiken parity.
+- The generated JEV prompt is present in the artifact and retains the safety/freshness boundaries.
+- No V3 carrier, Reveal semantics, economic rules, or 16,384-byte transaction limit changed. No branch created; Materios remains paused.
+
+**STATUS: DECODER COMPILE/CONFORMANCE BLOCKER CLEARED IN LAB #2257; JEV TEST EXPECTATIONS CORRECTED IN `eb18832`; P2.8 LEDGER QUALIFICATION STILL BLOCKED BY MISSING SCRIPT WITNESSES/REFERENCES. OVERALL NOT GREEN.**
