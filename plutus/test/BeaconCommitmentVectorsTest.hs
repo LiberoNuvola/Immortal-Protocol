@@ -1,19 +1,9 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Prelude
-  ( Bool (False, True)
-  , IO
-  , Integer
-  , String
-  , (:)
-  , error
-  , putStrLn
-  , (++)
-  )
+import Prelude hiding ((==))
 
 import qualified Prelude as Haskell
 
