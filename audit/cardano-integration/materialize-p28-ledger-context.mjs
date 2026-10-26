@@ -480,13 +480,27 @@ const referenceUtxoDetails = await Promise.all(referenceInputs.map(async (ref) =
   const outputIndex = Number(outputIndexText)
   const response = await fetch(API + '/utxos/' + txHash + '/' + outputIndex)
   if (!response.ok) throw new Error('Yaci exact reference UTxO lookup failed for ' + ref + ': HTTP ' + response.status)
-  const detail = await response.json()
-  if (typeof detail.tx_hash !== 'string' || detail.tx_hash.toLowerCase() !== txHash.toLowerCase() ||
-      detail.output_index !== outputIndex) {
+  const rawDetail = await response.json()
+  if (typeof rawDetail.tx_hash !== 'string' || rawDetail.tx_hash.toLowerCase() !== txHash.toLowerCase() ||
+      rawDetail.output_index !== outputIndex) {
     throw new Error('Yaci exact reference UTxO identity mismatch for ' + ref)
   }
-  if (typeof detail.address !== 'string') {
-    throw new Error('Yaci exact reference UTxO lacks address for ' + ref + '; responseKeys=' + JSON.stringify(Object.keys(detail)) + '; responsePreview=' + JSON.stringify(detail).slice(0, 1200))
+
+  // Yaci Store's exact /utxos/{txHash}/{index} endpoint uses its native schema:
+  // owner_addr and amounts. Normalize only these field names into the
+  // Blockfrost-compatible shape consumed by the existing native ledger decoder.
+  const detail = {
+    ...rawDetail,
+    address: rawDetail.address ?? rawDetail.owner_addr,
+    amount: rawDetail.amount ?? rawDetail.amounts,
+    data_hash: rawDetail.data_hash ?? null,
+    inline_datum: rawDetail.inline_datum ?? null,
+  }
+  if (typeof detail.address !== 'string' || detail.address.length === 0) {
+    throw new Error('Yaci exact reference UTxO lacks address/owner_addr for ' + ref)
+  }
+  if (!Array.isArray(detail.amount)) {
+    throw new Error('Yaci exact reference UTxO lacks amount/amounts array for ' + ref)
   }
   if (typeof detail.script_ref !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(detail.script_ref)) {
     throw new Error('Yaci exact reference UTxO lacks valid serialized script_ref bytes for ' + ref)
