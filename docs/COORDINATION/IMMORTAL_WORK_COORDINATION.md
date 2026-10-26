@@ -2768,3 +2768,24 @@ Follow-up to §44.81, after re-fetching the test, Cabal target and workflow from
 - If the exact pinned toolchain rejects imports, splices, or the evaluator call, fix the harness only and retain the TypeScript-derived expected values unless independent evidence proves a vector wrong.
 
 **STATUS: STATIC REVIEW COMPLETE; EXACT-TOOLCHAIN BUILD AND CEK RESULTS STILL PENDING. NO CROSS-LANGUAGE PASS CLAIM.**
+
+
+## 44.81 — AGENT A — P2.8 REFERENCE-INPUT CONTEXT REPAIR — 2026-10-26
+
+Inspection of the #2262 evidence packet ([run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40271989995)) narrowed the `MissingScript` blocker to a context-materialization gap:
+
+- Reveal's signed CBOR diagnostics recorded the exact two reference inputs (one Plutus V3, one Plutus V2) and zero embedded Plutus scripts, as expected for reference-script spending.
+- The same run's P2.8 manifest reported `reference_inputs: 0`, an empty `reference_script_utxos`, and `script_artifacts: null`; the native evaluator therefore had the two spending script inputs but no reference-script UTxOs available in its reconstructed UTxO context. The ledger report's two `MissingScript` entries match the two spent script hashes.
+- This is strong evidence of missing reference-input context in the P2.8 evidence materializer, not evidence of a Reveal validator semantic rejection. The finding remains scoped to local Yaci evidence and must be confirmed by a fresh native-ledger evaluation.
+
+Changes published on the existing `work/immortal-green-closure` branch:
+1. Commit [`b518b1e`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/b518b1e30f3a640aab7aba1d9b0f79080d4de6fc): extract the exact reference-input outrefs from the signed Reveal CBOR, compare them to the two validated reference-script UTxOs, and persist them into `reveal-transition.json`.
+2. Commit [`3416b3e`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/3416b3ed94bf6c93faf565a2034a61e5b94a122b): have the P2.8 materializer fetch each exact reference UTxO by outref and append its full context plus serialized `script_ref` and `reference_script_hash` into the native runner's `utxo.json`; manifest counts now include those reference inputs. Missing/invalid reference evidence fails closed.
+
+### Verification in progress
+- Integration Lab #2263 is running on the producer change (`b518b1e`); do not interpret it as validation of the materializer change.
+- Integration Lab #2264 is queued/pending on the combined head (`3416b3e`): [run](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40274963276). This is the decisive run for the context repair.
+- JEV Verification Registry Contract #51 is queued on the same combined head.
+- No new workflow was manually dispatched. V3 carrier, Reveal semantics, economic rules, and the 16,384-byte limit remain unchanged. Materios remains paused.
+
+**STATUS: REFERENCE-INPUT CONTEXT REPAIR IMPLEMENTED; NOT YET VERIFIED BY THE COMBINED P2.8 NATIVE-LEDGER RUN. OVERALL NOT GREEN.**
