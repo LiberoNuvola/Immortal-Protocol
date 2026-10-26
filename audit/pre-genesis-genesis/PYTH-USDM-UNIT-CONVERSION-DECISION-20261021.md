@@ -269,3 +269,20 @@ This is a **candidate derivation**, not an implementation approval. The two valu
 The public Orcfax Explorer could not be fetched successfully during this pass, and the visible index material showed last facts/collection timestamps several months old. The repository's feed configuration is dated 2026-05-18 and does not prove current publication, Preprod deployment, current datum identity, or usable fresh values. The next evidence gate is therefore to verify current Mainnet and Preprod publication of both exact feed IDs, datum layouts, timestamps, publisher/support status, and a reproducible fresh on-chain witness. If either leg is stale/unavailable, conversion must fail closed.
 
 This makes Orcfax the **first concrete pair-path candidate** found after Charli3 ceased operations, but not yet a qualified source for IMMORTAL. Do not infer USD/USDM from the issuer's 1:1 claim or from a dashboard. No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed.
+
+
+## 16. Agent A — Orcfax exact feed IDs found; publication too stale for settlement — 2026-10-26
+
+The public Orcfax Explorer search results identify the configured feeds as:
+- `CER/ADA-USDM/3` — Moneta USDM quoted in ADA terms; latest-value display `0.1628` with age shown as 27 days at retrieval. The page's selected fact is dated 2026-06-14 and states 1 ADA = 0.1684 USDM.
+- `CER/ADA-USD/3` — ADA priced in USD; latest-value display `0.1633` with age shown as about 2 months at retrieval. The selected fact is dated 2026-06-18.
+
+Sources: [ADA-USDM feed explorer result](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645) and [ADA-USD feed explorer result](https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb). These values are evidence of prior publication, not current rates.
+
+The configured heartbeat is 3600 seconds for both feeds. The displayed ages are far outside that interval, so neither quote can currently satisfy a one-hour freshness requirement on the available evidence. Do not use these stale values in a ticket-price calculation.
+
+The candidate cross-rate remains mathematically:
+`USD per USDM = (USD per ADA from CER/ADA-USD/3) / (USDM per ADA from CER/ADA-USDM/3)`
+but only after both exact feed observations are independently verified, fresh, precision-normalized without premature rounding, and compatible under an explicit timestamp-skew rule. Current evidence fails the freshness gate. The Explorer itself was not directly retrievable through the web fetcher in this pass; feed details above come from indexed feed-specific search results and must be revalidated against the live chain before any implementation.
+
+**Finding:** Orcfax is the only concrete exact two-feed path identified so far, but it is **not presently qualified** because current liveness/freshness and Preprod witnesses are not established. Next, investigate whether the feed publisher is still publishing and whether a fresh Preprod or Mainnet observation can be verified from the ledger; if not, abandon this candidate for settlement and evaluate a separately governed source. No production code, schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed.
