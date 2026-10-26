@@ -156,3 +156,16 @@ The physical asset's exact policy ID and asset name remain mandatory; ticker-onl
 The specification authority has **not yet selected** Option A, B or C in §4 for any valuation path that converts USD-denominated observations into protocol USDM units. No USD/USDM parity is inferred. The conversion contract, source authority, freshness/precision bounds, rounding, failure behavior and review gate remain open until the authority records that separate decision.
 
 **Operational consequence:** remove the normative *asset-eligibility* blocker for this exact Preprod profile and proceed with source-set/EV1–EV7 qualification work using this exact unit. Keep the USD/USDM conversion decision open; keep any workflow that requires an unselected USD/USDM conversion fail-closed. This is not a blanket production or mainnet authorization.
+
+
+## 9. Agent A source-availability check — 2026-10-26
+
+A bounded inspection of the current `work/immortal-green-closure` source found no qualified direct ADA/USDM quote path that can currently be promoted as Option C:
+
+- The documented Pyth input is ADA/USD, whose raw integer price and exponent are USD-denominated; it is not a direct USDM quote.
+- The existing B1 FundTreasury valuation trace uses a fixed synthetic `ADA_PRICE_USDM_SUBUNITS = 80` for its bounded valuation test. That fixture is not evidence of a live ADA/USDM source, nor does it qualify a feed for settlement.
+- The current branch's cited Oracle/valuation contract and unit-conversion decision do not identify an authenticated, freshness-bounded ADA/USDM feed with frozen asset identity, precision, rounding and failure semantics.
+
+**Finding:** Option C is architecturally preferable only if an actual source can be qualified, but it is **not implementation-ready on current evidence**. No direct ADA/USDM feed is selected or claimed to exist. The next non-normative investigation is to inventory candidate Cardano market/oracle sources and test whether one can satisfy the canonical source-authentication, manipulation/liquidity, freshness, exact asset identity, decimal and fail-closed requirements. If no candidate meets those requirements, return to the authority for an explicit choice between B and another governed route; do not relabel ADA/USD as ADA/USDM.
+
+This entry changes no protocol semantics, oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, deployment state, or Issue authorization.
