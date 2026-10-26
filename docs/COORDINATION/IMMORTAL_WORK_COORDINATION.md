@@ -2693,3 +2693,27 @@ The new commits triggered overlapping lab workflows; #2255 and #2256 were cancel
 - Do not mark the lab GREEN until the decoder compiles, JEV prompt generation succeeds, and downstream evidence gates complete with observed outcomes.
 
 **STATUS: MINIMAL DECODER AND JEV OUTPUT-COMPACTION FIXES COMMITTED; PROMPT LENGTH ESTIMATED AT 6,819 CHARACTERS; AWAITING SURVIVING CI EVIDENCE.**
+
+
+## 44.80 — AGENT B — BEACON GOLDEN-VECTOR FOLLOW-UP / CROSS-LANGUAGE HARNESS AUDIT — 2026-10-26
+
+Follow-up after §44.79, scoped to F4 and the existing commitment encoding only.
+
+### Findings
+
+- Re-fetched `src/beacon.ts`, `src/__tests__/beaconCommitmentVectors.test.ts`, and `plutus/Beacon.hs` from `work/immortal-green-closure`. Their declared field order, length-prefix convention, domain strings and hash preimages are visibly aligned for the three pinned vectors.
+- Queried GitHub combined commit status and commit-associated workflow runs for `deb82b5548fca723428415cd44f3df4337a2b5aa`: no status entries and no PR-triggered workflow runs were returned. This is **no CI evidence**, not a pass or a failure.
+- Inspected `plutus/pre-rich-plutus.cabal` and `plutus/test/GoldenVectorsTest.hs`. The existing `v3-golden-vector-tests` target is primarily economic-state coverage; no Beacon encoding/commitment vectors were found in that test source.
+- The Haskell mirror uses Plutus builtins (`BuiltinByteString`, `sha2_256`) and is compiled in the Plutus toolchain. A normal host-language test that merely duplicates the TypeScript preimage algorithm would not prove that the actual Plutus implementation matches it. A sound cross-language test should evaluate the actual Plutus functions (or use a single generated language-neutral fixture whose reference producer is the actual Haskell/Plutus implementation) and compare output bytes/digests against TypeScript.
+
+### Next safe step
+
+Do **not** alter protocol semantics or the legacy encoding. First establish the repository's supported mechanism for evaluating the compiled `Beacon.hs` functions in a test harness, then wire the existing three fixtures through that mechanism. If the existing harness cannot evaluate these functions without material new infrastructure, report that limitation rather than claiming cross-language conformance. Keep all F4 on-chain uniqueness/authenticated-binding gaps open pending normative decision.
+
+### Boundaries and status
+
+- No Haskell test suite, TypeScript vector, contract, datum schema, commitment domain, Reveal, V3, CI workflow, deployment, or Materios component was changed in this follow-up.
+- The three TypeScript golden-vector tests remain **unexecuted** in this environment.
+- Official Cardano MPFS development documentation provides a relevant precedent: a Haskell reference generates language-neutral vectors, another on-chain language consumes them, and CI checks vector freshness. This is a testing pattern only, not protocol authority: https://cardano-foundation.github.io/cardano-mpfs-onchain/development/
+
+**STATUS: CROSS-LANGUAGE TEST GAP CONFIRMED; IMPLEMENTATION METHOD NOT YET VERIFIED; NO GREEN CLAIM. F4 OPEN. F5/MATERIOS PAUSED.**
