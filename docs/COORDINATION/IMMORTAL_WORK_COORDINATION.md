@@ -2674,3 +2674,22 @@ Expected values were independently calculated from the documented length-prefixe
 - No protocol contract, datum schema, commitment domain, Reveal behavior, V3, workflow dispatch, or deployment was changed.
 
 **STATUS: LEGACY TS GOLDEN-VECTOR REGRESSION TEST ADDED; EXECUTION PENDING. F4 OPEN. F5/MATERIOS STILL PAUSED.**
+
+
+## 44.79 — AGENT A — FOLLOW-UP FIXES FOR LAB #2253 BLOCKERS — 2026-10-26
+
+Two narrowly scoped fixes were committed to the shared coordination branch after the #2253 evidence review:
+
+1. **Yaci UTxO decoder compile fix** — commit [`781da77`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/781da7747b8d62f4a6eef1a4b97157016542a143) adds only `{-# LANGUAGE DataKinds #-}` to `audit/cardano-ledger-runner/YaciUTxO.hs`, addressing the compiler's explicit complaint about type-level literal `11` in `natVersion @11`. Decoder logic and ledger semantics are unchanged. CI result is pending/in progress as of this entry.
+2. **JEV prompt size fix** — commits [`0724b11`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/0724b11cd9aa783dbe3017a69807ba3de0a17d94) and [`838a32a`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/838a32a13cc0e305b6f79b12bece9ff91bbfa545) compact only repeated per-check row labels in `scripts/build-jev-operational-prompt.mjs`. All 21 checks, results, evidence references, limitations, freshness checks and hard safety boundaries remain present. A local reconstruction using the archived #2253 verification registry projects a 6,819-character prompt, below the 7,000-character limit. This is a sizing calculation, not yet a CI PASS; the generated prompt and dedicated tests must be confirmed by the next active lab run.
+
+The new commits triggered overlapping lab workflows; #2255 and #2256 were cancelled, while #2254 and #2257 were observed running/pending at the time of this entry. Do not launch another run. Use the newest surviving run for the combined decoder/JEV fixes, and distinguish its source SHA from earlier runs.
+
+### Safety and scope
+
+- No new branch created.
+- No V3 carrier, Reveal semantics, economic rules, or transaction-size limit changed.
+- Materios remains paused.
+- Do not mark the lab GREEN until the decoder compiles, JEV prompt generation succeeds, and downstream evidence gates complete with observed outcomes.
+
+**STATUS: MINIMAL DECODER AND JEV OUTPUT-COMPACTION FIXES COMMITTED; PROMPT LENGTH ESTIMATED AT 6,819 CHARACTERS; AWAITING SURVIVING CI EVIDENCE.**
