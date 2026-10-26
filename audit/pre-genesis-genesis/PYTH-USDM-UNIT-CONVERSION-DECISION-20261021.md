@@ -215,3 +215,22 @@ A further inspection of the providers' current public catalogue surfaces narrowe
 ### Updated conclusion
 
 There is still **no identified, source-qualified USD-per-USDM feed** ready for IMMORTAL. The next evidence-bearing action is to obtain (a) a successful programmatic Pyth catalogue response and search its canonical symbol/instrument metadata for USD/USDM or an equivalent pair with unambiguous direction, and (b) a concrete Charli3 answer/feed specification rather than inferring availability from general provider capability. If either candidate is found, it must still pass exact pair direction, source provenance, aggregation/manipulation policy, precision/exponent, freshness and timestamp-skew rules, verifier/deployment identity on Preprod, and reproducible on-chain witness checks. Until then, Option B remains selected architecturally but unimplemented; fail closed when either price observation is unavailable or stale. No production code, feed ID, schema, V3, Reveal, deployment, EEV approval or Issue authorization changed.
+
+
+## 13. Agent A — successful live Pyth catalogue query — 2026-10-26
+
+This check successfully queried Pyth Pro's public Symbology & Reference Data endpoint using its documented `query=USDM` filter:
+- [Pyth catalogue query for USDM](https://pyth.dourolabs.app/v1/symbols?query=USDM)
+- [Pyth Symbology & Reference Data documentation](https://docs.pyth.network/pro/symbology-reference)
+
+The returned results included:
+- `Crypto.USDM/USD`, Pyth Pro ID `609`, description **MOUNTAIN PROTOCOL USD / US DOLLAR**, state **inactive**, exponent `-8`, minimum publishers `1`. This is a different asset and is inactive; it is not a valid feed for the Cardano Moneta USDM token.
+- `Crypto.NAV.USDM/RESERVES`, Pyth Pro ID `3326`, description **US DOLLAR MONETA / RESERVES**, state **stable**, exponent `-8`, minimum publishers `2`. Its pair is USDM/reserves, not USD per USDM, so it does not satisfy Option B's required conversion quote.
+- `Crypto.NAV.USDM1/USD`, Pyth Pro ID `3324`, description **US DOLLAR M1 / US DOLLAR**, state **stable**, exponent `-8`. This is not the Moneta USDM token's market price and must not be substituted for it.
+- No returned result identified a stable, active, exact Moneta USDM/USD or USD/Moneta-USDM market feed.
+
+The result demonstrates why symbol-name matching alone is unsafe: the short name `USDMUSD` refers to Mountain Protocol USD, not Moneta USDM. Per Pyth's documentation, the fully qualified symbol describes the instrument and `pyth_lazer_id` is the stable identifier; nevertheless, neither name nor identifier alone establishes that the source meets IMMORTAL's contract.
+
+**Finding:** the live catalogue did not reveal an immediately usable Pyth Pro feed for Moneta USDM/USD. This is a scoped finding about the public Pyth Pro catalogue response at check time, not a claim that no provider can ever create such a feed. Pyth is not qualified for the second leg of Option B on this evidence. Continue to require a concrete Charli3 specification/provider confirmation or another independently sourced, governed USD-per-Moneta-USDM feed, with exact source and Preprod verifier evidence.
+
+No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Option B remains selected; the conversion remains unimplemented and must fail closed when either quote is missing, stale, misdirected, or unqualified.
