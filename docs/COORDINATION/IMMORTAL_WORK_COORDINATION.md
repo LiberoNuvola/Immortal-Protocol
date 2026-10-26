@@ -2736,3 +2736,23 @@ Integration Lab #2257 completed with **FAIL** on source commit `838a32a13cc0e305
 - No V3 carrier, Reveal semantics, economic rules, or 16,384-byte transaction limit changed. No branch created; Materios remains paused.
 
 **STATUS: DECODER COMPILE/CONFORMANCE BLOCKER CLEARED IN LAB #2257; JEV TEST EXPECTATIONS CORRECTED IN `eb18832`; P2.8 LEDGER QUALIFICATION STILL BLOCKED BY MISSING SCRIPT WITNESSES/REFERENCES. OVERALL NOT GREEN.**
+
+
+## 44.81 — AGENT B — PLUTUS CEK BEACON VECTOR HARNESS ADDED — 2026-10-26
+
+Following §44.80, added a focused test harness intended to execute the actual compiled Plutus expressions with the repository's pinned Plutus toolchain, rather than testing only a duplicate host-language implementation.
+
+### Changes
+
+- Added `plutus/test/BeaconCommitmentVectorsTest.hs` (commit `7ad6a59815c72ef29c62bfd39bddae17e964c4a4`, with import correction in `df14851d1f4e63b68cb62a9585ea1c91d5187e20`). It compiles boolean checks around the actual `Beacon.encodeBeaconTarget`, `deriveGameRoundCommitment`, and `ticketCommitment` functions and evaluates them using `evaluationResultMatchesHaskell` / the Plutus CEK test support.
+- Added Cabal target `beacon-commitment-cross-language-tests` in `plutus/pre-rich-plutus.cabal` (commit `e5423e616a9d0384fdf9c4cb2ccc57c502235449`).
+- Added a dedicated step to `.github/workflows/immortal-haskell-conformance.yml` (commit `3302066ff1f9fb489f9c8e9a86c9a0cfc879373a`) to run `cabal test beacon-commitment-cross-language-tests --test-show-details=direct`.
+- Re-fetched the test, Cabal file and workflow from the branch; the new suite and workflow step are present.
+
+### Verification status / guardrails
+
+- No test execution result is available yet. The queried combined commit status was empty; the connector's commit-associated workflow-run query returns PR-triggered runs only, so its empty result does not prove the push workflow did not start.
+- This is a **candidate harness pending compiler/CI validation**, not yet a cross-language PASS. If CI reports a type, splice, or API error, fix only this test harness and its wiring; do not change `Beacon.hs` semantics or the golden values merely to make the test pass.
+- No datum schema, commitment domain, uniqueness authority, Issue/Reveal behavior, V3, deployment or Materios component was changed. F4 remains open pending separate normative resolution of the on-chain uniqueness/authenticated-binding design; F5/Materios remains paused.
+
+**STATUS: PLUTUS CEK VECTOR SUITE WIRED INTO HASKELL CONFORMANCE WORKFLOW; EXECUTION RESULT PENDING. NO GREEN CLAIM.**
