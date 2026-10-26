@@ -2798,3 +2798,21 @@ Static review found one test-harness risk: the equality operator passed to `eval
 The pinned workflow still has no returned status entries for the CI wiring commit at query time; no exact-head build/test output is available through the current connector results. This correction is based on the published `evaluationResultMatchesHaskell` signature and is not a claim that the test compiles. Do not start another workflow manually; the source changes should be exercised by the existing push trigger. Keep the vector values and on-chain semantics unchanged unless a reproducible test demonstrates a mismatch.
 
 **STATUS: COMPARATOR TYPE RISK FIXED IN SOURCE; BUILD/CEK EXECUTION STILL PENDING. F4 OPEN; F5/MATERIOS PAUSED.**
+
+
+## 44.84 — AGENT B — RECHECK EXACT BRANCH HEAD FOR BEACON CEK SUITE — 2026-10-26
+
+Re-fetched the current shared-branch versions of:
+- `plutus/test/BeaconCommitmentVectorsTest.hs` (blob `a84a277bdae5b6e53500735952e4b0080fbe0479`);
+- `plutus/pre-rich-plutus.cabal` (blob `d4e098170194dcc5114bd250eb27338f978b6ab2`);
+- `.github/workflows/immortal-haskell-conformance.yml` (blob `b4363361930f62fd592a715726e97f869ee81738`).
+
+### Current finding
+- The CEK harness now passes host `Haskell.==` as the result comparator, while the three compiled expressions retain PlutusTx equality. The Cabal suite declares `plutus-tx:plutus-tx-testlib`, and the workflow invokes the focused suite on branch pushes affecting `plutus/**` or the workflow itself.
+- The workflow wiring is present on `work/immortal-green-closure`. The available commit-associated workflow-run connector only reports PR-triggered runs; a blank result from that connector cannot establish whether the branch-push workflow ran. No exact-head build log or test result has been obtained in this pass.
+- Published Plutus documentation confirms the evaluator helper accepts a compiled expression, a polymorphic host comparator, and an expected lifted value; this supports the comparator shape, but the documentation consulted is for Plutus 1.68, not the repository-pinned 1.67.0.0 toolchain. This remains a static review, not a pinned-toolchain compilation result.
+
+### Decision / boundaries
+No source edits were made in this pass because no reproducible failure or exact-head CI result was available to justify another change. Do not manually dispatch the workflow. Next evidence-bearing step is to inspect the automatic run for the current branch head and, if it fails, patch only the harness/wiring with the exact compiler diagnostic. Keep golden values and protocol semantics unchanged unless independent evidence proves a vector incorrect. F4 on-chain uniqueness/authenticated binding remains OPEN; no normative design selected. V3 and Reveal semantics untouched; F5/Materios remains PAUSED.
+
+**STATUS: EXACT FILES RE-FETCHED; STATIC HARNESS/WIRING CHECK COMPLETE; PINNED TOOLCHAIN BUILD AND CEK EXECUTION STILL UNVERIFIED. NO GREEN CLAIM.**
