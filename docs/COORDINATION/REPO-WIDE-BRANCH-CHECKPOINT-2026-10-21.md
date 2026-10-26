@@ -4097,3 +4097,19 @@ The source-set producer now rejects any `PREPROD_TUSDM_UNIT` other than the exac
 - The direct-USDM tests passed (10 + 22 tests), the approval-integrity tests passed, and the new asset-identity rejection regression passed.
 - This is a code/conformance guard only; it does not grant deployment approval or select USD/USDM conversion option A/B/C.
 
+### USD/USDM source gate reconciliation — 2026-10-26 (Agent A)
+
+This section reconciles the current source-search result with the conversion decision memo. It is a source-discovery / coordination update only; it does not qualify a feed, change economic semantics, or authorize code/deployment/Issue changes.
+
+- **Decision:** Option B remains the selected architecture: independently verify USD per exact Moneta USDM alongside ADA/USD. No fixed 1:1 assumption is authorized.
+- **Pyth catalogue:** the live catalogue query returned `Crypto.USDM/USD` (Pyth Pro ID 609), described as Mountain Protocol USD and marked inactive; `Crypto.NAV.USDM/RESERVES` (ID 3326) is a reserves pair, not USD per USDM; and `Crypto.NAV.USDM1/USD` (ID 3324) identifies USD M1, not the target token. None qualifies as the required second leg. This is a scoped catalogue observation, not a claim that no provider could ever list a suitable feed.
+- **Charli3:** its official site says hosted oracle operations ceased in May 2026. Its open-source code may be considered only as a separately governed/operator-run implementation; it is not a currently qualified hosted source.
+- **Orcfax candidate:** configured exact pair path exists as `CER/ADA-USD/3` (USD per ADA) and `CER/ADA-USDM/3` (USDM per ADA). Candidate cross-rate is `USD/USDM = (USD/ADA) / (USDM/ADA)`, but only when both observations are authenticated, exact-asset-bound, fresh and timestamp-compatible under an approved contract. The public explorer's surfaced `ADA-USDM` value was 27 days old at retrieval and the selected fact was dated 2026-06-14; `ADA-USD` material was around two months old and its selected fact dated 2026-06-18. With a configured 3600-second heartbeat, those observations fail freshness and must not be used for settlement.
+- **Current classification:** source discovery has found an Orcfax *candidate path*, not a qualified live feed pair. Need exact current feed/datum identity, publication/liveness evidence on Cardano, source/provenance and aggregation policy, timestamp/freshness/skew constraints, precision/exponent handling and a reproducible Preprod witness before implementation.
+- **No-repeat routing:** Agent A owns this source qualification gate. Do not ask Agent B to alter the Pyth carrier/V3/Reveal or production `MintPolicy` while the source/contract gate remains open. Do not rerun the same static Pyth catalogue query unchanged; next evidence must be fresh feed-specific ledger/source bytes or a confirmed provider/operational response.
+- **Fail-closed:** no guessed feed ID, ticker-only asset identity, reserve feed substituted as a market price, stale quote, hardcoded peg, or off-chain-only quote may satisfy Issue settlement. Keep any USD/USDM-dependent flow blocked until the conversion source and versioned contract are approved.
+
+Evidence pointers: [Pyth USDM catalogue query](https://pyth.dourolabs.app/v1/symbols?query=USDM); [Orcfax ADA-USDM feed](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645); [Orcfax ADA-USD feed](https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb); [Orcfax live explorer](https://explorer.orcfax.io/).
+
+No production code, Oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, `MintPolicy`, V3/Reveal semantics, deployment, EEV approval, wallet signature, or Issue authorization was changed by this update.
+
