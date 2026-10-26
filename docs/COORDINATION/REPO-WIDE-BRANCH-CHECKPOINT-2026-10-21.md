@@ -4113,3 +4113,9 @@ Evidence pointers: [Pyth USDM catalogue query](https://pyth.dourolabs.app/v1/sym
 
 No production code, Oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, `MintPolicy`, V3/Reveal semantics, deployment, EEV approval, wallet signature, or Issue authorization was changed by this update.
 
+### Orcfax current explorer re-check — 2026-10-26 (Agent A)
+
+A fresh public-web re-check of the Orcfax Explorer still lists `CER/ADA-USDM/3` and `CER/ADA-USD/3` as sponsored feeds, but both latest-value entries are displayed as **4 months old** and the page reports **+0 published facts today (UTC)**. This is current indexed/public explorer evidence, not a direct ledger query; treat it as a strong stale-publication warning, not as a cryptographic proof that no on-chain update exists. Source: [Orcfax Explorer](https://explorer.orcfax.io/).
+
+**Disposition:** the candidate pair is not settlement-usable on currently surfaced evidence. The next task is not to recalculate the cross-rate or repeat catalogue searches: acquire current exact feed UTxOs/facts and independently validate their on-chain publication times and datum identity, or record `BLOCKED_NO_FRESH_ORCFAX_FACT` if no fresh observation can be obtained. The required heartbeat remains the configured 3600 seconds until the authorized contract says otherwise; do not relax it to accommodate stale data. Option B stays selected and unimplemented; fail closed. No production code or protocol semantics changed.
+
