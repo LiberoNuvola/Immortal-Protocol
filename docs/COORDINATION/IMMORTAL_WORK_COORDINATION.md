@@ -2912,3 +2912,27 @@ The workflow was subsequently cancelled during `Run predeploy structural gate` a
 No V3 carrier, Reveal semantics, economic constants, or Materios work was changed. Materios remains PAUSED. Preserve the evidence artifact and avoid re-running P2.8 on another branch; next coordination step is to verify whether the latest branch head needs a fresh exact-head Integration Lab after the current concurrent agent changes settle.
 
 **STATUS: P2.8 NATIVE YACI EVALUATION PASS ON RUN #2269 / SHA `2269bfd`; OVERALL WORKFLOW CANCELLED LATER, FULL LAB/DEPLOYMENT NOT GREEN.**
+
+
+## 44.91 — AGENT B — COMPLETE INTEGRATION LAB GREEN ON EXACT RUN #2270 — 2026-10-26
+
+Follow-up to §44.90: the automatic [IMMORTAL Cardano Integration Lab run #2270](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40379279411) completed with **workflow conclusion `success`** on exact SHA `8f1e2eb79d044623cfdfcfd7e28891a2956fbb0e`. This run is the first full successful Integration Lab after the native Yaci reference UTxO normalization. No manual dispatch was used.
+
+### Exact-run evidence
+- `Materialize raw Yaci ledger context for P2.8`: success.
+- `Run native Yaci UTxO decoder conformance`: success.
+- `Run P2.8 ledger evidence gate against this lab packet`: success.
+- `Run predeploy structural gate`: success.
+- The workflow's final conclusion is success; the sanitized evidence registry reports `overallResult: PASS`.
+- Artifact: [immortal-cardano-lab-evidence, ID 12680095350](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40379279411/artifacts/12680095350), SHA-256 `d71d63e83bb0ec179b5a536f3336c6e1b64a8b83811615457760af8535d35f27`.
+- Manifest binds the evidence to run ID `40379279411`, attempt 1, exact SHA above, local Yaci Conway / protocol major 11, transaction `211a3a8384e1e91c09b687d96e3ea489478f9f8da83bb49cd48ccf965bdf6261`.
+- Manifest classifies 5 inputs, including 2 reference inputs. Both exact Yaci UTxOs are present in `utxo.json` with `reference: true`, non-empty `script_ref`, populated `reference_script_hash`, normalized `amount`, and `ledger_address_hex`.
+- `ledger-evaluation-report.json` contains two `ConwaySpending` redeemers (indices 0 and 1), both `status: success`, empty logs, and measured ExUnits; no `MissingScript` or `ContextError` appears in that report.
+- The resource audit reads the observed Conway protocol parameter `maxTxSizeBytes = 16384`; the largest listed transaction CBOR is 12,173 bytes. This statement applies only to the listed measured artifacts and is not a claim that every production Reveal transaction fits the limit.
+
+### Correct scope
+This is a **full successful local Yaci Integration Lab run**, including P2.8 native ledger evaluation and the predeploy structural gate. It is not Cardano Preprod/mainnet qualification, not a production ticket issuance, and not authoritative Issue admission/deployment approval. The isolated Aiken V3 Reveal candidate has its own explicit fixture-only limitations in the registry; do not interpret those checks as proof of canonical Haskell Plutus V2 parity.
+
+No normative economic decision was made. Existing V3 carrier and canonical Reveal semantics were not altered by the Yaci normalization fix. Materios remains PAUSED. Do not dispatch another duplicate lab run; coordinate any next action against the exact latest branch head and the remaining authoritative-admission / R1-Kc certificate blocker.
+
+**STATUS: INTEGRATION LAB #2270 = PASS ON SHA `8f1e2eb`; P2.8 MATERIALIZATION, DECODER, LEDGER EVALUATION AND PREDEPLOY STRUCTURAL GATE ALL PASS; PRODUCTION/PREPROD DEPLOYMENT REMAINS BLOCKED BY ITS SEPARATE QUALIFICATION REQUIREMENTS.**
