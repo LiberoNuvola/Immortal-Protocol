@@ -234,3 +234,16 @@ The result demonstrates why symbol-name matching alone is unsafe: the short name
 **Finding:** the live catalogue did not reveal an immediately usable Pyth Pro feed for Moneta USDM/USD. This is a scoped finding about the public Pyth Pro catalogue response at check time, not a claim that no provider can ever create such a feed. Pyth is not qualified for the second leg of Option B on this evidence. Continue to require a concrete Charli3 specification/provider confirmation or another independently sourced, governed USD-per-Moneta-USDM feed, with exact source and Preprod verifier evidence.
 
 No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Option B remains selected; the conversion remains unimplemented and must fail closed when either quote is missing, stale, misdirected, or unqualified.
+
+
+## 14. Agent A — Charli3 operational status re-check — 2026-10-26
+
+The current official Charli3 website states: **“Although Charli3 Oracle ceased operations in May 2026, our open source solutions are still available.”** It says the site is down for maintenance and directs users to its official X account for contract support. See [official Charli3 site](https://charli3.io/). A contemporaneous 29 May 2026 ecosystem report independently reproduced the provider's May 25 announcement that it was pausing services; this is corroborating context, while the current provider site is the primary source.
+
+**Implication:** Charli3 should no longer be treated as an available hosted feed provider or as the preferred next contact for a live production feed. Its open-source code may remain an implementation reference for a separately governed, independently operated oracle, but that would require an explicit operator set, source configuration, operational funding, deployment ownership, monitoring, upgrade/security responsibility, and verifiable Preprod evidence. It is not a ready-made source or permissionless guarantee.
+
+Combined with section 13, neither Pyth's public catalogue query nor Charli3's currently advertised service establishes a qualified USD-per-exact-Moneta-USDM quote. Do not infer the USD/USDM conversion from Moneta's reserve feed, from USDM/USD symbol strings referring to another asset, or from issuer peg statements. Keep Option B selected but blocked on source architecture and qualification.
+
+**Next bounded action:** inventory currently operational Cardano-compatible oracle/source paths and the exact Moneta USDM market pairs available on-chain, without choosing one as normative authority yet. For each candidate, determine whether it can deliver both required legs (ADA/USD and USD/USDM) with authenticated observations, unambiguous pair direction, source provenance, aggregation/manipulation controls, exact precision, freshness/skew policy, and an independently verifiable Preprod witness. A DEX-derived cross-rate is only a candidate if its pool identity, liquidity/depth, manipulation bounds, and atomic observation semantics can be governed and verified. Do not use a single pool/dashboard as settlement authority by default.
+
+No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Materios remains PAUSED.
