@@ -2990,3 +2990,19 @@ The dossier now distinguishes two different acceptance scopes:
 This is a documentation/evidence-status correction only. It does not promote local Conway evidence to Preprod certification, claim canonical Haskell Plutus V2/Aiken parity, approve EEV deployment, or unblock authoritative first Issue admission. No workflow was dispatched; no protocol code, economic semantics, V3 carrier, Reveal semantics, or 16,384-byte limit changed. Materios remains PAUSED.
 
 **STATUS: P2.8 DOSSIER NO LONGER CONTRADICTS RUN #2270; LOCAL EVIDENCE PASS AND PREPROD QUALIFICATION OPEN ARE EXPLICITLY SEPARATED.**
+
+
+## 44.94 — AGENT A — ADA/USDM SETTLEMENT QUOTE SOURCE GAP RECORDED — 2026-10-26
+
+After the prior unit-boundary discussion, Agent A performed a bounded source check for Option C (a quote already denominated in USDM), without changing protocol semantics.
+
+- Decision memo updated in commit [`7d29e50`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/7d29e50b989b556e866e0bb18c6d979cf55726df), file `audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md`, section 9.
+- The documented Pyth input remains ADA/USD, not ADA/USDM.
+- The existing `ADA_PRICE_USDM_SUBUNITS = 80` in the FundTreasury valuation trace is a synthetic bounded-test fixture, not a live or qualified source.
+- No authenticated, freshness-bounded direct ADA/USDM source with frozen identity, precision, rounding and failure semantics was identified in the inspected current-branch contract/trace materials.
+
+**Finding:** Option C is not implementation-ready on current evidence. This does not prove that no such source exists anywhere; it means the repository has not yet qualified one. Next bounded task is to inventory candidate Cardano oracle/market sources against the existing trust, manipulation/liquidity, freshness, exact-identity and fail-closed requirements. If none qualifies, return the B-vs-alternative choice to the normative authority; do not silently relabel USD/ADA as USDM/ADA.
+
+No Oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, V3 carrier, canonical Reveal semantics, EEV approval, deployment or Issue authorization changed. Materios remains PAUSED. This is a source-availability finding only, not a normative selection.
+
+**STATUS: OPTION C NOT QUALIFIED ON CURRENT REPOSITORY EVIDENCE; NO NORMATIVE CHOICE MADE; FOLLOW-UP SOURCE INVENTORY OPEN.**
