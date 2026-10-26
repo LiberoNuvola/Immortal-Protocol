@@ -286,3 +286,16 @@ The candidate cross-rate remains mathematically:
 but only after both exact feed observations are independently verified, fresh, precision-normalized without premature rounding, and compatible under an explicit timestamp-skew rule. Current evidence fails the freshness gate. The Explorer itself was not directly retrievable through the web fetcher in this pass; feed details above come from indexed feed-specific search results and must be revalidated against the live chain before any implementation.
 
 **Finding:** Orcfax is the only concrete exact two-feed path identified so far, but it is **not presently qualified** because current liveness/freshness and Preprod witnesses are not established. Next, investigate whether the feed publisher is still publishing and whether a fresh Preprod or Mainnet observation can be verified from the ledger; if not, abandon this candidate for settlement and evaluate a separately governed source. No production code, schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed.
+
+## 17. Agent A — coordinated source-gate reconciliation — 2026-10-26
+
+This entry aligns the memo with the shared repository checkpoint. It updates source status only; it does not change the selected conversion architecture or authorize implementation.
+
+- **Pyth:** The live `query=USDM` catalogue returned Mountain Protocol's inactive `Crypto.USDM/USD` (ID 609), Moneta's `Crypto.NAV.USDM/RESERVES` (ID 3326, a reserves pair), and `Crypto.NAV.USDM1/USD` (ID 3324, a different instrument). None is an active, qualified market USD-per-exact-Moneta-USDM quote.
+- **Charli3:** Hosted operations ceased in May 2026 per its official site. Open-source components are not a live qualified source without a separately governed operator/source/deployment arrangement.
+- **Orcfax:** `CER/ADA-USD/3` and `CER/ADA-USDM/3` form a concrete *candidate pair path*. Under the configured base/quote semantics, `USD/USDM = (USD/ADA)/(USDM/ADA)`. The explorer surfaced ADA-USDM data 27 days old at retrieval and ADA-USD data around two months old, far outside the configured 3600-second heartbeat. This candidate therefore fails the current freshness gate on available evidence.
+- **Disposition:** Option B remains selected; source qualification remains OPEN/BLOCKED. Do not modify production valuation or MintPolicy until both observations can be authenticated and exact-asset-bound, with approved timestamp-skew/freshness, precision, manipulation controls, and a reproducible Preprod witness. Any missing, stale, mismatched, or unqualified leg must fail closed.
+- **Next evidence:** obtain fresh on-chain feed-specific facts/UTxOs and verifier/deployment identity for both Orcfax legs, or find a different operational source and qualify it from primary evidence. Do not repeat static catalogue searches without a new input or treat the existence of a configured pair as current publication.
+
+See the [shared repository checkpoint](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/REPO-WIDE-BRANCH-CHECKPOINT-2026-10-21.md) for the coordinated routing and no-repeat boundary. No production code, schema, Oracle quote semantics, economic formulas, V3, Reveal, deployment, EEV approval or Issue authorization changed.
+
