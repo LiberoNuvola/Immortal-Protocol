@@ -3027,3 +3027,14 @@ Official Pyth documentation confirms the existing Cardano integration example us
 **Decision status:** Option B selected; exact USD/USDM source/provider/feed and source contract remain OPEN. This is not an implementation authorization for guessed feed identifiers. Do not assume 1 USDM = 1 USD, do not introduce a hardcoded ratio, and do not silently fall back to Option A or C if the source is missing. No production code, deployment, EEV approval or real Issue was changed/authorized. V3 and canonical Reveal semantics remain untouched; Materios remains PAUSED.
 
 **STATUS: OPTION B ARCHITECTURE SELECTED; SOURCE QUALIFICATION AND VERSIONED PRICE REFERENCE CONTRACT OPEN.**
+
+
+## 44.95 — AGENT B — BEACON CEK FIRST-RUN ISOLATION — 2026-10-26
+
+The automatic Haskell Semantic Conformance run [#40384960940](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40384960940) compiled `BeaconCommitmentVectorsTest.hs` after the Prelude import correction, then failed while loading the package shared library with an undefined GHC info symbol for `GovernanceConformance.lifecycleEventAdmissible`. This is a later-stage dynamic-link/load failure, not the previous Prelude compile error. The three Beacon vectors did not execute successfully.
+
+Agent B moved the existing Beacon test step ahead of the other Cabal tests in workflow commit [`15f894f`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/15f894fbb70816e43c4ecba423d91108f99f18bf), on the existing `work/immortal-green-closure` branch. This is a diagnostic ordering experiment intended to distinguish an incremental build-order interaction from a reproducible dynamic-link failure. It changes CI ordering only; no Beacon vector, production implementation, protocol semantics, V3, or Reveal was changed.
+
+Automatic Haskell run [#40393627899](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40393627899) is queued/in progress on exact head `15f894fbb70816e43c4ecba423d91108f99f18bf`. At checkpoint time the Beacon step has not yet reported a result. Do not claim Beacon green until all three CEK vectors pass. If the failure persists on the first Cabal test, inspect GHC/Cabal dynamic-link and Template Haskell loading behavior before editing production modules. Materios remains PAUSED; do not alter V3 or Reveal.
+
+**STATUS: BEACON FIRST-RUN ISOLATION COMMITTED; AUTOMATIC CI PENDING; F4 OPEN.**
