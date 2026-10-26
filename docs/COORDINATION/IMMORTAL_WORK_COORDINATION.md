@@ -2956,3 +2956,24 @@ Coordination note: other branch work has independently recorded Yaci Integration
 F4 remains OPEN for on-chain canonical round uniqueness and authenticated commitment binding. V3 and Reveal semantics remain untouched by this Agent B edit. F5/Materios remains PAUSED. No normative design selected; no manual workflow dispatch.
 
 **STATUS: THIRD EXACT COMPILER FAILURE IDENTIFIED AND IMPORT BLOCK SIMPLIFIED; COMMIT `a01f289` AWAITS AUTOMATIC HASKELL CONFORMANCE. NO BEACON GREEN CLAIM.**
+
+
+## 44.92 — AGENT A — P2.8 EXACT-HEAD RECONCILIATION AFTER LAB #2270 — 2026-10-26
+
+Agent A independently rechecked the P2.8 runner/context path and compared the successful Integration Lab source SHA against the current coordination branch head.
+
+### Source and evidence reconciliation
+
+- Current coordination branch HEAD observed before this checkpoint append: `5d3953db6efd8896835b9de5ac9ced81f84fcf64`.
+- Successful local Yaci Integration Lab: [run #2270](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40379279411), exact tested SHA `8f1e2eb79d044623cfdfcfd7e28891a2956fbb0e`.
+- Commit comparison reports the current head is five commits ahead of the tested SHA, and the only changed paths in that interval are this coordination checkpoint and `plutus/test/BeaconCommitmentVectorsTest.hs`. No P2.8 materializer, native ledger runner, UTxO decoder, or Integration Lab workflow source changed in that interval. Therefore no duplicate P2.8 lab run is justified solely to retest the current documentation/Beacon-test-only head delta.
+- Run #2270 completed with workflow conclusion `success`. Its P2.8 context materialization, native Yaci UTxO decoder, ledger-evidence gate, and predeploy structural gate all passed. The evidence packet binds to local Yaci Conway / protocol major 11 and records both exact reference UTxOs and two successful `ConwaySpending` redeemer evaluations with measured ExUnits.
+- Independent source inspection confirms the runner uses typed Conway `Tx`, `UTxO`, `PParams`, `EpochInfo`, and `SystemStart` inputs and invokes the Cardano-ledger `evalTxExUnitsWithLogs` boundary. The materializer checks the raw Yaci protocol major rather than guessing it, and the typed timing decoder fails closed on missing/mismatched timing evidence.
+
+### Scope and status
+
+This verifies the existing **local Yaci P2.8 execution witness** and its continued applicability to the current head's unchanged P2.8 source. It does not promote local Conway execution to Cardano Preprod qualification, production Reveal acceptance, first-user Issue admission, or deployment certification. The real Preprod Reveal and deployment-specific certification chain remain separate open gates. The historical P2.8 dossier contains older status text and should not be read as overriding the exact-run artifact evidence above; update its status only through a separately reviewed evidence-document pass.
+
+No source semantics or runtime code changed in this entry. No duplicate workflow was dispatched. V3/Reveal semantics and the 16,384-byte limit remain untouched; Materios remains PAUSED.
+
+**STATUS: P2.8 LOCAL YACI EVIDENCE RE-VALIDATED AGAINST CURRENT P2.8 SOURCE; CURRENT-HEAD DELTA IS DOCS + BEACON TEST ONLY; NO DUPLICATE RUN REQUIRED. PREPROD/DEPLOYMENT QUALIFICATION REMAINS OPEN.**
