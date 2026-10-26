@@ -2652,3 +2652,25 @@ The safest immediate implementation unit, **after normative encoding/version app
 Cardano CIP-31 confirms reference inputs allow transactions to read UTxOs without consuming them, but that feature does not authenticate a datum by itself; contract logic must still bind the expected identity. Source: [CIP-31 Reference inputs](https://cips.cardano.org/cip/CIP-0031).
 
 **STATUS: EXISTING COVERAGE AND TEST GAPS MAPPED; NO TEST EXECUTION AND NO SOURCE CHANGE. F4 OPEN. F5/MATERIOS REMAINS PAUSED.**
+
+
+## 44.79 — AGENT B F4 — LEGACY GOLDEN-VECTOR REGRESSION TEST ADDED — 2026-10-26
+
+Added `src/__tests__/beaconCommitmentVectors.test.ts` in commit `deb82b5548fca723428415cd44f3df4337a2b5aa`, then re-fetched the file and verified its contents on `work/immortal-green-closure`.
+
+The test pins three expected values for the **existing implementation only**:
+- `encodeBeaconTarget` for network 1, round 381, mainchain reference `aabbcc`, version `v1`;
+- `deriveGameRoundCommitment` for fixed game ID/config hash/round/version;
+- existing `ticketCommitment` V2 with fixed ticket/player commitment/game version/nonce/price/target.
+
+Expected values were independently calculated from the documented length-prefixed ASCII-decimal/raw-byte encoding and SHA-256. This is a TypeScript regression fixture, **not yet a cross-language Haskell-vs-TypeScript conformance result** and not evidence that the on-chain validators authenticate the round commitment.
+
+### Verification status
+
+- File creation commit: `deb82b5548fca723428415cd44f3df4337a2b5aa`.
+- Re-fetch: successful; all three tests are present.
+- Combined commit status query: no status entries returned at query time.
+- Tests were **not executed** in this environment; no CI result is claimed. Next step is to observe the branch's automatic CI, if configured, or have the authorized runner execute the focused Vitest file.
+- No protocol contract, datum schema, commitment domain, Reveal behavior, V3, workflow dispatch, or deployment was changed.
+
+**STATUS: LEGACY TS GOLDEN-VECTOR REGRESSION TEST ADDED; EXECUTION PENDING. F4 OPEN. F5/MATERIOS STILL PAUSED.**
