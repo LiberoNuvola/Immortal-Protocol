@@ -3127,3 +3127,18 @@ This is not yet a qualified implementation. Both exact feed identities, datum fo
 The public Orcfax Explorer could not be retrieved successfully in this pass, and the indexed page material exposed facts/collection timestamps several months old. The feed-config repository is dated 2026-05-18 and does not prove current publication or fresh Preprod values. Next: verify current Preprod publication and exact datum identity for both feeds, publisher/support status, compatible observation times, and a reproducible fresh on-chain witness. Missing or stale either leg => fail closed.
 
 **STATUS: OPTION B SELECTED; ORCFAX PAIR PATH IDENTIFIED; CURRENT LIVENESS AND PREPROD VERIFIER EVIDENCE NOT YET VERIFIED; NO PRODUCTION IMPLEMENTATION OR ISSUE AUTHORIZATION.** Charli3 remains ceased/hosted service unavailable; Materios remains PAUSED.
+
+
+## 45.01 — AGENT A — ORCFAX EXACT FEED IDS KNOWN; BOTH OBSERVATIONS FAIL FRESHNESS — 2026-10-26
+
+Follow-up to §45.00: public feed-specific Explorer search results identify `CER/ADA-USDM/3` and `CER/ADA-USD/3`. Details and caveats are in decision memo section 16, commit [`d921807`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d92180744d0f86cb5d3d8d4b2e544056a05debf7).
+
+- `CER/ADA-USDM/3`: Explorer search result displays latest value `0.1628`, age 27 days at retrieval; a selected historical fact dated 2026-06-14 states 1 ADA = 0.1684 USDM.
+- `CER/ADA-USD/3`: Explorer search result displays latest value `0.1633`, age about 2 months at retrieval; a selected historical fact dated 2026-06-18.
+- Feed-specific references: [ADA-USDM](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645), [ADA-USD](https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb).
+
+Both configured heartbeats are 3600 seconds. The surfaced latest-value ages exceed that interval by a wide margin. Therefore these observations **fail freshness and must not be used for settlement**. The cross-rate remains only a candidate formula: `USD per USDM = (USD per ADA) / (USDM per ADA)`, using exact, fresh, authenticated, precision-normalized observations and a governed timestamp-skew rule.
+
+The Explorer could not be fetched directly by the web fetcher in this pass, so indexed search results are discovery evidence only; revalidate exact datum identities, values, publication slots/timestamps, and feed activity from the ledger. Next action: verify whether the publisher still publishes fresh facts and whether both feed datums can be independently observed on Preprod. If not, drop Orcfax for settlement and assess another governed source. No production code, schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed.
+
+**STATUS: ORCFAX IS A CONCRETE PAIR-PATH CANDIDATE BUT FAILS CURRENT FRESHNESS EVIDENCE; OPTION B STILL BLOCKED.**
