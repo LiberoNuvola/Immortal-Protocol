@@ -486,7 +486,7 @@ const referenceUtxoDetails = await Promise.all(referenceInputs.map(async (ref) =
     throw new Error('Yaci exact reference UTxO identity mismatch for ' + ref)
   }
   if (typeof detail.address !== 'string') {
-    throw new Error('Yaci exact reference UTxO lacks address for ' + ref)
+    throw new Error('Yaci exact reference UTxO lacks address for ' + ref + '; responseKeys=' + JSON.stringify(Object.keys(detail)) + '; responsePreview=' + JSON.stringify(detail).slice(0, 1200))
   }
   if (typeof detail.script_ref !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(detail.script_ref)) {
     throw new Error('Yaci exact reference UTxO lacks valid serialized script_ref bytes for ' + ref)
