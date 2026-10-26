@@ -465,51 +465,64 @@ if (unexpectedScriptInputs.length > 0) {
     }))))
 }
 
-const referenceInputs = utxos.inputs.filter((input) => input.reference === true)
-const referenceUtxoDetails = await Promise.all(referenceInputs.map(async (input) => {
-  if (typeof input.tx_hash !== 'string' || !Number.isSafeInteger(input.output_index)) {
-    throw new Error('Yaci reference input lacks exact tx_hash/output_index')
-  }
-  const ref = input.tx_hash.toLowerCase() + '#' + input.output_index
-  const response = await fetch(API + '/utxos/' + input.tx_hash + '/' + input.output_index)
+const referenceInputs = transition.referenceInputs
+if (!Array.isArray(referenceInputs) || referenceInputs.length === 0 ||
+    new Set(referenceInputs).size !== referenceInputs.length ||
+    referenceInputs.some((ref) => typeof ref !== 'string' || !/^[0-9a-f]{64}#[0-9]+$/i.test(ref))) {
+  throw new Error('Reveal transition lacks exact serialized reference input references')
+}
+const consumedRefSet = new Set(expectedRefs)
+if (referenceInputs.some((ref) => consumedRefSet.has(ref.toLowerCase()))) {
+  throw new Error('Reveal reference inputs overlap consumed spending inputs')
+}
+const referenceUtxoDetails = await Promise.all(referenceInputs.map(async (ref) => {
+  const [txHash, outputIndexText] = ref.split('#')
+  const outputIndex = Number(outputIndexText)
+  const response = await fetch(API + '/utxos/' + txHash + '/' + outputIndex)
   if (!response.ok) throw new Error('Yaci exact reference UTxO lookup failed for ' + ref + ': HTTP ' + response.status)
   const detail = await response.json()
-  if (typeof detail.tx_hash !== 'string' || detail.tx_hash.toLowerCase() !== input.tx_hash.toLowerCase() ||
-      detail.output_index !== input.output_index) {
+  if (typeof detail.tx_hash !== 'string' || detail.tx_hash.toLowerCase() !== txHash.toLowerCase() ||
+      detail.output_index !== outputIndex) {
     throw new Error('Yaci exact reference UTxO identity mismatch for ' + ref)
+  }
+  if (typeof detail.address !== 'string') {
+    throw new Error('Yaci exact reference UTxO lacks address for ' + ref)
   }
   if (typeof detail.script_ref !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(detail.script_ref)) {
     throw new Error('Yaci exact reference UTxO lacks valid serialized script_ref bytes for ' + ref)
   }
-  if (typeof detail.reference_script_hash !== 'string' ||
-      typeof input.reference_script_hash !== 'string' ||
-      detail.reference_script_hash.toLowerCase() !== input.reference_script_hash.toLowerCase()) {
-    throw new Error('Yaci exact reference UTxO script hash mismatch for ' + ref)
+  if (typeof detail.reference_script_hash !== 'string' || !/^[0-9a-f]{56}$/i.test(detail.reference_script_hash)) {
+    throw new Error('Yaci exact reference UTxO lacks valid reference_script_hash for ' + ref)
   }
   return {
-    ref,
-    endpoint: API + '/utxos/' + input.tx_hash + '/' + input.output_index,
+    ref: ref.toLowerCase(),
+    endpoint: API + '/utxos/' + txHash + '/' + outputIndex,
     script_ref_sha256: sha256(Buffer.from(detail.script_ref, 'hex')),
     reference_script_hash: detail.reference_script_hash.toLowerCase(),
     script_ref: detail.script_ref.toLowerCase(),
+    utxo: { ...detail, reference: true, collateral: false },
   }
 }))
 const referenceDetailByRef = new Map(referenceUtxoDetails.map((detail) => [detail.ref, detail]))
 const observedWithLedgerAddresses = {
   ...utxos,
-  inputs: utxos.inputs.map((input) => {
-    if (typeof input.address !== 'string') throw new Error('Yaci consumed/reference input lacks address')
-    const ref = typeof input.tx_hash === 'string' && Number.isSafeInteger(input.output_index)
-      ? input.tx_hash.toLowerCase() + '#' + input.output_index
-      : null
-    const referenceDetail = input.reference === true ? referenceDetailByRef.get(ref) : null
-    if (input.reference === true && !referenceDetail) throw new Error('Exact reference script evidence missing for ' + String(ref))
-    return {
-      ...input,
-      ...(referenceDetail ? { script_ref: referenceDetail.script_ref } : {}),
-      ledger_address_hex: cardanoAddressToLedgerHex(input.address),
-    }
-  }),
+  inputs: [
+    ...utxos.inputs.map((input) => {
+      if (typeof input.address !== 'string') throw new Error('Yaci consumed input lacks address')
+      if (input.reference === true) throw new Error('Yaci spending-input endpoint unexpectedly marked a spending input as a reference input')
+      return {
+        ...input,
+        ledger_address_hex: cardanoAddressToLedgerHex(input.address),
+      }
+    }),
+    ...referenceUtxoDetails.map((referenceDetail) => ({
+      ...referenceDetail.utxo,
+      reference: true,
+      collateral: false,
+      script_ref: referenceDetail.script_ref,
+      ledger_address_hex: cardanoAddressToLedgerHex(referenceDetail.utxo.address),
+    })),
+  ],
 }
 
 await writeFile(EVIDENCE_DIR + '/tx.cbor', txCbor)
@@ -580,10 +593,11 @@ const manifest = {
   transaction_hash: txHash,
   inputs: transition.consumedUtxos,
   input_classification: {
-    total_inputs: utxos.inputs.length,
+    total_inputs: utxos.inputs.length + referenceUtxoDetails.length,
+    spending_inputs: economicInputs.length,
     economic_inputs: economicInputs.length,
     collateral_inputs: utxos.inputs.filter((input) => input.collateral === true).length,
-    reference_inputs: utxos.inputs.filter((input) => input.reference === true).length,
+    reference_inputs: referenceUtxoDetails.length,
   },
   acquisition_source: {
     yaci_store_api: API,
@@ -605,7 +619,7 @@ const manifest = {
   sha256: hashes,
   materialization: {
     transaction: 'copied byte-for-byte from reveal-tx.cbor',
-    reference_scripts: 'each exact reference input is fetched from Yaci /utxos/{txHash}/{index}; serialized script_ref bytes and reference_script_hash are bound into utxo.json and the manifest',
+    reference_scripts: 'reference input references are extracted from the signed transaction CBOR; each exact UTxO is fetched from Yaci /utxos/{txHash}/{index}; serialized script_ref bytes, reference_script_hash, and full UTxO context are bound into utxo.json and the manifest',
     protocol_parameters: 'canonical Conway PParams JSON mapped from raw Yaci protocol fields; Plutus cost-model arrays matched exactly against Lucid observation',
     protocol_parameters_raw: 'fetched directly from Yaci /epochs/latest/parameters; protocol_major_ver is the authoritative PV11 gate',
     utxo: 'fetched directly from Yaci Store for transactionRef; consumed input references cross-checked against Reveal trace',
