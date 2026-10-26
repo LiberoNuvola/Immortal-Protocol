@@ -7,7 +7,10 @@ module Main where
 import Prelude
   ( Bool (False, True)
   , IO
+  , Integer
   , String
+  , ([])
+  , (:)
   , error
   , putStrLn
   , (++)
@@ -24,6 +27,7 @@ import PlutusTx.Code (CompiledCode)
 import PlutusTx.Prelude
   ( consByteString
   , emptyByteString
+  , (==)
   )
 import PlutusTx.Test.Run.Code (evaluationResultMatchesHaskell)
 import Types (BeaconTarget (..))
