@@ -3067,3 +3067,25 @@ Pyth documents a programmatically discoverable feed catalogue at its Symbology &
 **Next evidence gate:** obtain a successful live Pyth catalogue response and search canonical symbols/pair direction; separately obtain a concrete Charli3 feed/source/deployment specification or provider confirmation. Any candidate must evidence underlying sources, aggregation/outlier/manipulation policy, pair direction, precision/exponent, freshness/timestamp-skew contract, exact Preprod verifier/deployment identity and a reproducible on-chain witness. No guessed feed ID or hardcoded parity; missing/stale quote must fail closed. No production code, Oracle schema, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
 
 **STATUS: OPTION B SELECTED; LIVE FEED SOURCE STILL UNVERIFIED; NO PRODUCTION IMPLEMENTATION AUTHORIZED.**
+
+
+## 44.98 — AGENT A — LIVE PYTH CATALOGUE RESPONSE; NO QUALIFIED MONETA USD/USDM FEED — 2026-10-26
+
+Agent A successfully retrieved the Pyth Pro Symbology & Reference Data API using its documented `query=USDM` filter. Evidence and interpretation are recorded in decision memo section 13, commit [`fa5fd78`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/fa5fd78c73656817ae8495e69a565b29738d396b).
+
+### Exact catalogue findings
+- `Crypto.USDM/USD`, Pyth Pro ID `609`, is described as **MOUNTAIN PROTOCOL USD / US DOLLAR** and has state **inactive**. It is not Moneta's USDM and cannot be used for this conversion.
+- `Crypto.NAV.USDM/RESERVES`, Pyth Pro ID `3326`, is described as **US DOLLAR MONETA / RESERVES** and has state **stable**, but it is a reserves instrument, not a USD-per-Moneta-USDM quote.
+- `Crypto.NAV.USDM1/USD`, Pyth Pro ID `3324`, is **US DOLLAR M1 / US DOLLAR**, not the Moneta USDM token's market price.
+- The filtered response showed no stable, active feed identified as the Moneta USDM/USD market price or its unambiguously inverted USD/Moneta-USDM quote.
+
+References: [Pyth live filtered catalogue](https://pyth.dourolabs.app/v1/symbols?query=USDM), [Pyth symbology reference](https://docs.pyth.network/pro/symbology-reference).
+
+### Decision and next gate
+This is a bounded negative finding about the public Pyth Pro catalogue response at check time, not a claim that no custom feed can ever be offered. Do not use the inactive Mountain Protocol feed, the reserves instrument, the USDM1/USD feed, or a hardcoded 1:1 parity. Pyth is **not qualified** as the second leg of Option B on current evidence.
+
+Continue provider/source qualification for a concrete Charli3 specification or another source that provides USD per the exact Moneta USDM asset, including provenance, aggregation/outlier and manipulation policy, pair direction, precision/exponent, freshness and timestamp-skew rules, exact Preprod verifier/deployment identity, and a reproducible on-chain witness. Fail closed when either quote is absent, stale, misdirected, or unqualified.
+
+No production code, oracle schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Materios remains PAUSED.
+
+**STATUS: OPTION B SELECTED; PYTH CATALOGUE CHECK COMPLETE; NO QUALIFIED MONETA USD/USDM FEED FOUND IN THIS CATALOGUE QUERY; SOURCE QUALIFICATION STILL OPEN.**
