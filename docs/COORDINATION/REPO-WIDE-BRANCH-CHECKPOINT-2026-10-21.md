@@ -4119,3 +4119,10 @@ A fresh public-web re-check of the Orcfax Explorer still lists `CER/ADA-USDM/3` 
 
 **Disposition:** the candidate pair is not settlement-usable on currently surfaced evidence. The next task is not to recalculate the cross-rate or repeat catalogue searches: acquire current exact feed UTxOs/facts and independently validate their on-chain publication times and datum identity, or record `BLOCKED_NO_FRESH_ORCFAX_FACT` if no fresh observation can be obtained. The required heartbeat remains the configured 3600 seconds until the authorized contract says otherwise; do not relax it to accommodate stale data. Option B stays selected and unimplemented; fail closed. No production code or protocol semantics changed.
 
+
+
+### Orcfax Preprod deployment evidence gap — 2026-10-26 (Agent A)
+
+A check of Orcfax's published integration deployment table records its Fact Statement Pointer as deployed on mainnet and preview, but `preprod: n/a`; preview feeds marked `showcase` are not Preprod qualification. Source: [Orcfax consuming statements](https://docs.orcfax.io/consume). This documentation can lag the live network and is not direct ledger proof, so the finding is **missing canonical deployment evidence**, not proof that no independent deployment exists.
+
+Combined with public Explorer facts for `CER/ADA-USDM/3` and `CER/ADA-USD/3` surfaced as months old ([USDM leg](https://explorer.orcfax.io/feeds/CER/ADA-USDM/facts/5cbbb7ee-a232-4f36-844a-5c00ceaeb645), [USD leg](https://explorer.orcfax.io/feeds/CER/ADA-USD/facts/11aa4839-0760-4079-8d0d-524e16d8d3eb)), Orcfax remains **candidate only / BLOCKED** for USD/USDM settlement. Required before reconsideration: exact current feed UTxOs and datum identities for both legs, current validator/FSP authenticity, publication timestamps within the governed 3600-second heartbeat, compatible timestamp-skew policy, precision handling, and a reproducible network-specific witness. Do not infer Preview equals Preprod, do not relax freshness, and do not change production economics, MintPolicy, Oracle schema, V3/Reveal or Issue/deployment gates. Option B remains selected; no USD/USDM implementation is approved.
