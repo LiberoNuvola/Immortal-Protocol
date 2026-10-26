@@ -247,3 +247,25 @@ Combined with section 13, neither Pyth's public catalogue query nor Charli3's cu
 **Next bounded action:** inventory currently operational Cardano-compatible oracle/source paths and the exact Moneta USDM market pairs available on-chain, without choosing one as normative authority yet. For each candidate, determine whether it can deliver both required legs (ADA/USD and USD/USDM) with authenticated observations, unambiguous pair direction, source provenance, aggregation/manipulation controls, exact precision, freshness/skew policy, and an independently verifiable Preprod witness. A DEX-derived cross-rate is only a candidate if its pool identity, liquidity/depth, manipulation bounds, and atomic observation semantics can be governed and verified. Do not use a single pool/dashboard as settlement authority by default.
 
 No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed. Materios remains PAUSED.
+
+
+## 15. Agent A — Orcfax two-leg candidate identified; liveness/qualification unresolved — 2026-10-26
+
+The official Orcfax CER feed repository contains both required pair names in its Mainnet configuration:
+- `ADA-USD`: source `cex`, calculation `median`, interval 3600 seconds, deviation 1%, status `sponsored`.
+- `ADA-USDM`: source `dex`, calculation `weighted mean`, interval 3600 seconds, deviation 2%, status `sponsored`.
+The configuration is version `2026.05.18.0001`. The Preview configuration also lists both pairs, but marks them `showcase` (version `2025.10.09.0002`), which is not production sponsorship. See the [Orcfax Mainnet feed configuration](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/mainnet/cer-feeds.json), [Preview feed configuration](https://raw.githubusercontent.com/orcfax/cer-feeds/main/feeds/preview/cer-feeds.json), and [Orcfax feed policy documentation](https://docs.orcfax.io/feed-overview).
+
+### Potential conversion, only if both observations are authenticated and compatible
+
+Under Orcfax's base-quote naming convention, `ADA-USD` represents USD per ADA and `ADA-USDM` represents USDM per ADA. In principle:
+
+`USD per USDM = (USD per ADA) / (USDM per ADA)`
+
+This is a **candidate derivation**, not an implementation approval. The two values must be read from exact, authenticated feed identities, with compatible timestamps/freshness, precision, and validity windows. Mainnet configuration status `sponsored` implies provider support depends on sponsorship; the Preview pair status `showcase` is not production qualification.
+
+### Important liveness gap
+
+The public Orcfax Explorer could not be fetched successfully during this pass, and the visible index material showed last facts/collection timestamps several months old. The repository's feed configuration is dated 2026-05-18 and does not prove current publication, Preprod deployment, current datum identity, or usable fresh values. The next evidence gate is therefore to verify current Mainnet and Preprod publication of both exact feed IDs, datum layouts, timestamps, publisher/support status, and a reproducible fresh on-chain witness. If either leg is stale/unavailable, conversion must fail closed.
+
+This makes Orcfax the **first concrete pair-path candidate** found after Charli3 ceased operations, but not yet a qualified source for IMMORTAL. Do not infer USD/USDM from the issuer's 1:1 claim or from a dashboard. No production code, price schema, feed ID, MintPolicy, V3, Reveal, deployment, EEV approval, or Issue authorization changed.
