@@ -38,7 +38,7 @@ export function buildOperationalPrompt(registry) {
       return subject.workflowRunUrl && uri === subject.workflowRunUrl ? "this run" : uri;
     }).join(", ") || "no evidence reference";
     const limits = c.limitations.join("; ") || "none recorded";
-    return `- ${c.checkId}: ${c.result}; evidence: ${refs}; limitations: ${limits}`;
+    return `- ${c.checkId} ${c.result} | refs ${refs} | limits ${limits}`;
   }).join("\n");
   const run = subject.workflowRunUrl || subject.workflowRunId || "not supplied";
   const prompt = [
