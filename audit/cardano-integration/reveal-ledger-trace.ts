@@ -1235,6 +1235,21 @@ if (!txResponse.ok) {
 }
 const txUtxos = await txResponse.json()
 
+const serializedReferenceInputs: string[] = []
+const serializedReferenceCollection = CML.Transaction.from_cbor_hex(txCbor).body().reference_inputs?.()
+if (!serializedReferenceCollection) {
+  throw new Error('Reveal signed CBOR lacks a reference_inputs collection')
+}
+for (let i = 0; i < Number(serializedReferenceCollection.len()); i++) {
+  const input = serializedReferenceCollection.get(i)
+  serializedReferenceInputs.push(input.transaction_id().to_hex().toLowerCase() + '#' + Number(input.index()))
+}
+const expectedReferenceInputs = [ref(prizeReferenceInput), ref(poolReferenceInput)].map(value => value.toLowerCase()).sort()
+if (JSON.stringify([...serializedReferenceInputs].sort()) !== JSON.stringify(expectedReferenceInputs)) {
+  throw new Error('Serialized Reveal reference inputs do not match the two validated reference-script UTxOs: ' +
+    JSON.stringify({ serializedReferenceInputs, expectedReferenceInputs }))
+}
+
 writeFileSync(
   'audit/yaci-evidence/reveal-transition.json',
   JSON.stringify({
@@ -1262,6 +1277,7 @@ writeFileSync(
       fingerprint: postStateFingerprint,
     },
     consumedUtxos: [ref(prizeUtxo), ref(poolUtxo)],
+    referenceInputs: serializedReferenceInputs.sort(),
     producedUtxos: [ref(postPrize), ref(postPool)],
     executableLiquidityCorrelation: {
       observationReference: executableLiquidityObservation.observationReference,
