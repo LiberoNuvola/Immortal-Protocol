@@ -3006,3 +3006,24 @@ After the prior unit-boundary discussion, Agent A performed a bounded source che
 No Oracle schema, `OracleQuote`, `Economic.totalUsdmValue`, MintPolicy, V3 carrier, canonical Reveal semantics, EEV approval, deployment or Issue authorization changed. Materios remains PAUSED. This is a source-availability finding only, not a normative selection.
 
 **STATUS: OPTION C NOT QUALIFIED ON CURRENT REPOSITORY EVIDENCE; NO NORMATIVE CHOICE MADE; FOLLOW-UP SOURCE INVENTORY OPEN.**
+
+
+## 44.95 — AGENT A — OPTION B SELECTED: SEPARATE USD/USDM RATE REQUIRED — 2026-10-26
+
+The protocol authority explicitly selected **Option B**: independently verify USD/USDM rather than assuming parity or selecting a direct ADA/USDM quote. The decision memo records this in commit [`d3c27a8`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d3c27a8d84156b5bc386b95e80ddd717b0d7bddf), file `audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md`.
+
+### Required conversion and safety gates
+
+- Consume ADA/USD and USD/USDM as separate, source-authenticated values; define the USD-per-USDM pair direction (or an exact reciprocal) explicitly.
+- Both legs need exact source/feed identity, governed precision/exponents, timestamps, freshness bounds and fail-closed behavior. Either missing/stale/invalid leg rejects settlement.
+- Bind both observations into the same accepted Issue transaction, unless a normative specification explicitly approves a bounded timestamp-skew rule.
+- Preserve raw integer price/exponent and perform exact rational arithmetic with one final governed rounding operation; no off-chain pre-rounding.
+- Freeze numerator/denominator representation, supported exponent/overflow bounds, confidence/spread checks where supported, failure predicates and cross-language differential tests before changing `OracleQuote`, `Economic.totalUsdmValue`, or MintPolicy semantics.
+
+### Source investigation result
+
+Official Pyth documentation confirms the existing Cardano integration example uses ADA/USD feed ID 16 and warns that signature verification does not itself enforce freshness; the consuming contract must check timestamps ([Pyth Cardano guide](https://docs.pyth.network/price-feeds/pro/use-prices-on-blockchain/cardano), [Pyth feed catalogue](https://docs.pyth.network/pro/price-feed-ids)). The catalogue is dynamically discoverable, but this check did not establish a concrete USD/USDM feed ID or qualify one for this application. Pyth Pro's existence or ability to request expanded feed coverage is not evidence that a suitable USD/USDM feed is currently available, contractually usable, or deployed/verified on Cardano Preprod.
+
+**Decision status:** Option B selected; exact USD/USDM source/provider/feed and source contract remain OPEN. This is not an implementation authorization for guessed feed identifiers. Do not assume 1 USDM = 1 USD, do not introduce a hardcoded ratio, and do not silently fall back to Option A or C if the source is missing. No production code, deployment, EEV approval or real Issue was changed/authorized. V3 and canonical Reveal semantics remain untouched; Materios remains PAUSED.
+
+**STATUS: OPTION B ARCHITECTURE SELECTED; SOURCE QUALIFICATION AND VERSIONED PRICE REFERENCE CONTRACT OPEN.**
