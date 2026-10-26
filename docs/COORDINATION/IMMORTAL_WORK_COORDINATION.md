@@ -3038,3 +3038,21 @@ Agent B moved the existing Beacon test step ahead of the other Cabal tests in wo
 Automatic Haskell run [#40393627899](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40393627899) is queued/in progress on exact head `15f894fbb70816e43c4ecba423d91108f99f18bf`. At checkpoint time the Beacon step has not yet reported a result. Do not claim Beacon green until all three CEK vectors pass. If the failure persists on the first Cabal test, inspect GHC/Cabal dynamic-link and Template Haskell loading behavior before editing production modules. Materios remains PAUSED; do not alter V3 or Reveal.
 
 **STATUS: BEACON FIRST-RUN ISOLATION COMMITTED; AUTOMATIC CI PENDING; F4 OPEN.**
+
+
+## 44.96 — AGENT A — USD/USDM SOURCE INVENTORY; CHARLI3 CANDIDATE ONLY — 2026-10-26
+
+Following Option B selection, Agent A inspected public provider documentation and market-data references and recorded the evidence in decision memo commit [`b1d439b`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/b1d439b7f1215ea1fd368283d51ab51700f6277d), section 11.
+
+### Source findings
+
+- **Pyth Pro:** official Cardano guide documents ADA/USD feed ID 16 and requires consumer-side freshness checks. The inspected public material did not identify a concrete USD/USDM feed ID qualified for this app/Preprod. This is not proof no such feed exists; confirm via current programmatic feed catalogue/provider.
+- **Charli3:** its public material advertises configurable Cardano oracle feeds and multi-DEX/API-source adapters. It is a plausible provider for a custom source, but no exact USD/USDM feed, underlying source list, deployment/datum identity, freshness contract, or Preprod witness has been verified for IMMORTAL.
+- **Market dashboards/DEX pools:** useful for source discovery and manipulation/liquidity analysis, but an off-chain dashboard snapshot or one pool ratio is not itself an authenticated, governed on-chain settlement quote.
+- **Issuer/reserve material:** useful context about USDM's intended peg and reserve framework, but using that claim as the numeric rate would reintroduce the unselected fixed-parity assumption rather than independently measure USD/USDM.
+
+### Next bounded action
+
+Contact/inspect Charli3's concrete feed catalogue and ask whether a USD-per-USDM feed can be sourced and delivered through a verifier path on Cardano Preprod. In parallel, check Pyth's programmatic symbol API for an exact USD/USDM feed before ruling it out. Require documented underlying sources, aggregation/outlier and manipulation controls, exact feed/datum identity, pair direction, precision, timestamp/freshness semantics, deployment addresses, and a verifiable Preprod example. Do not code against an unconfirmed provider response or guessed identifier.
+
+**STATUS: OPTION B SELECTED; CHARLI3 IS A PROVIDER CANDIDATE, NOT A QUALIFIED SOURCE; PYTH USD/USDM FEED NOT YET VERIFIED; SOURCE QUALIFICATION OPEN.** No production code, Oracle schema, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
