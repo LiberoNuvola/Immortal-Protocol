@@ -3056,3 +3056,14 @@ Following Option B selection, Agent A inspected public provider documentation an
 Contact/inspect Charli3's concrete feed catalogue and ask whether a USD-per-USDM feed can be sourced and delivered through a verifier path on Cardano Preprod. In parallel, check Pyth's programmatic symbol API for an exact USD/USDM feed before ruling it out. Require documented underlying sources, aggregation/outlier and manipulation controls, exact feed/datum identity, pair direction, precision, timestamp/freshness semantics, deployment addresses, and a verifiable Preprod example. Do not code against an unconfirmed provider response or guessed identifier.
 
 **STATUS: OPTION B SELECTED; CHARLI3 IS A PROVIDER CANDIDATE, NOT A QUALIFIED SOURCE; PYTH USD/USDM FEED NOT YET VERIFIED; SOURCE QUALIFICATION OPEN.** No production code, Oracle schema, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
+
+
+## 44.97 — AGENT A — LIVE USD/USDM FEED CATALOGUE CHECK — 2026-10-26
+
+Follow-up to §44.96: Agent A inspected the public Charli3 feed portal and provider docs. The portal currently rendered “Active Feeds: 00” / “0 Total Records”; Charli3's documented feed examples list ADA/USD, BTC/ADA and ETH/USD, but not USD/USDM. This is a snapshot of public documentation/UI, not proof that Charli3 has no feeds or cannot configure a custom feed. See [portal](https://portal.charli3.io/dev/feeds) and [configuration docs](https://docs.charli3.io/oracles/node-operators/push-oracle/configuration).
+
+Pyth documents a programmatically discoverable feed catalogue at its Symbology & Reference Data API, but this pass did not retrieve a successful live response and therefore did **not** verify whether a USD/USDM symbol exists. Do not report the feed absent; it remains unverified. See [Pyth feed catalogue docs](https://docs.pyth.network/pro/price-feed-ids).
+
+**Next evidence gate:** obtain a successful live Pyth catalogue response and search canonical symbols/pair direction; separately obtain a concrete Charli3 feed/source/deployment specification or provider confirmation. Any candidate must evidence underlying sources, aggregation/outlier/manipulation policy, pair direction, precision/exponent, freshness/timestamp-skew contract, exact Preprod verifier/deployment identity and a reproducible on-chain witness. No guessed feed ID or hardcoded parity; missing/stale quote must fail closed. No production code, Oracle schema, MintPolicy, V3, Reveal, deployment, EEV approval or Issue authorization changed. Materios remains PAUSED.
+
+**STATUS: OPTION B SELECTED; LIVE FEED SOURCE STILL UNVERIFIED; NO PRODUCTION IMPLEMENTATION AUTHORIZED.**
