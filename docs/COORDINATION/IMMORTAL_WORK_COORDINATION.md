@@ -2831,3 +2831,20 @@ This is a **CI observability gap**, not a test pass and not a test failure. No w
 F4 remains OPEN for on-chain canonical round uniqueness and authenticated commitment binding. No normative choice made; no protocol semantics, V3, Reveal or Materios changed. F5/Materios remains PAUSED.
 
 **STATUS: NO CI RESULT VISIBLE THROUGH AVAILABLE LOOKUPS; TEST EXECUTION UNVERIFIED. NO GREEN CLAIM.**
+
+
+## 44.86 — AGENT B — INDEPENDENT RECOMPUTATION OF BEACON GOLDEN VECTORS — 2026-10-26
+
+To make progress despite the unavailable exact-head CI result, re-fetched the TypeScript source `src/beacon.ts`, its focused tests `src/__tests__/beaconCommitmentVectors.test.ts`, and the Plutus source `plutus/Beacon.hs` from `work/immortal-green-closure`. Independently recomputed the three fixed fixtures using a separate host-side implementation of the documented length-prefixed ASCII-decimal/raw-byte encoding and SHA-256.
+
+### Results
+- BeaconTarget encoding: `31313333383133aabbcc327631` — matches the checked-in fixture.
+- GameRoundCommitment: `319820630ca9c2e09d872270d8cc090dd264b1e0c0f43be2bb5bd4a5971a4e74` — matches the checked-in fixture.
+- Existing V2 ticket commitment: `018c2f8b435091e59ad1a4db011e9d41536bdcd1bac141c69fc42f74f329dd0b` — matches the checked-in fixture.
+
+This independently checks the expected values against the documented algorithm; it is **not** execution of the checked-in Vitest suite, not execution of Plutus CEK, and not proof of exact cross-language runtime conformance. The earlier CI observability limitation remains unchanged. No source edit was necessary based on this recomputation.
+
+### Boundaries
+F4 remains OPEN: vectors do not establish on-chain uniqueness or authenticated commitment binding across Registry → Issue → Reveal. No normative design selected. No V3, Reveal semantics, deployment or Materios change; F5/Materios remains PAUSED.
+
+**STATUS: ALL THREE EXPECTED VECTOR VALUES INDEPENDENTLY RECOMPUTED AND MATCH; AUTOMATED TS/PLUTUS TEST EXECUTION STILL UNVERIFIED. NO GREEN CLAIM.**
