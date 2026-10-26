@@ -93,6 +93,10 @@ jobs:
         working-directory: plutus
         run: cabal test pyth-ada-usd-conversion-tests
 
+      - name: Beacon commitment cross-language conformance
+        working-directory: plutus
+        run: cabal test beacon-commitment-cross-language-tests --test-show-details=direct
+
       - name: Golden vector conformance
         working-directory: plutus
         run: cabal test v3-golden-vector-tests
