@@ -23,12 +23,14 @@ import { fileURLToPath } from "node:url";
 
 import {
   decodeGrandpaJustification,
+  encodeLocalizedPrecommitPayload,
 } from "./grandpa.js";
 import {
   verifyFinality,
 } from "./verifier.js";
 import {
   nobleEd25519,
+  verifyEd25519,
 } from "./crypto.js";
 import {
   bytesToHex,
@@ -1016,6 +1018,54 @@ async function main(): Promise<void> {
         : String(error);
   }
 
+  // Test the localized GRANDPA signing payload against each embedded signer key
+  // for the observed current set ID and its predecessor. This is only a
+  // cryptographic encoding/set-ID diagnostic: signer IDs are supplied by the
+  // untrusted justification, and no authority membership, weight, quorum, or
+  // authority-transition provenance is inferred from a match.
+  const localizedSignatureDiagnostic = {
+    status: "DIAGNOSTIC_ONLY" as const,
+    observed_set_id: setId.toString(),
+    candidates: [] as Array<{
+      candidate_set_id: string;
+      valid_signatures: number;
+      total_signatures: number;
+      invalid_signer_indexes: number[];
+    }>,
+    trust_scope: "Untrusted signer IDs from raw justification; tests localized payload/set-id hypothesis only. Not authority authentication, quorum, or finality.",
+  };
+  const candidateSetIds = [setId, ...(setId > 0n ? [setId - 1n] : [])];
+  for (const candidateSetId of candidateSetIds) {
+    let validSignatures = 0;
+    const invalidSignerIndexes: number[] = [];
+    for (let index = 0; index < justification.commit.precommits.length; index++) {
+      const signed = justification.commit.precommits[index]!;
+      try {
+        const payload = encodeLocalizedPrecommitPayload(
+          signed.precommit,
+          justification.round,
+          candidateSetId,
+        );
+        const valid = await verifyEd25519(
+          nobleEd25519,
+          signed.signer,
+          signed.signature,
+          payload,
+        );
+        if (valid) validSignatures++;
+        else invalidSignerIndexes.push(index);
+      } catch {
+        invalidSignerIndexes.push(index);
+      }
+    }
+    localizedSignatureDiagnostic.candidates.push({
+      candidate_set_id: candidateSetId.toString(),
+      valid_signatures: validSignatures,
+      total_signatures: justification.commit.precommits.length,
+      invalid_signer_indexes: invalidSignerIndexes,
+    });
+  }
+
   // Diagnostic only: the authority set visible at the target's post-state
   // can differ from the set that signed finality for the target if a set change
   // is enacted at this boundary. Never treat a parent-state match as authenticated
@@ -1179,6 +1229,7 @@ async function main(): Promise<void> {
         })),
       },
       cryptographic_verification: cryptoVerification,
+      localized_signature_diagnostic: localizedSignatureDiagnostic,
     },
     transition: {
       status:
