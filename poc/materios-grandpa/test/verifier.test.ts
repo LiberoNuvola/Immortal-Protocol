@@ -678,4 +678,51 @@ describe("B3-A chain label regression", () => {
       )
     ).rejects.toMatchObject({ code: "CHAIN_ID_MISMATCH" });
   });
+
+  it("snapshots checkpoint, authority state and justification before async signature verification", async () => {
+    const checkpoint = makeCheckpoint();
+    const trusted = makeState();
+    const justification = makeJustification([1, 2, 3]);
+    let release!: () => void;
+    let entered!: () => void;
+    const waiting = new Promise<void>(resolve => { entered = resolve; });
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const crypto: Ed25519Verifier = {
+      async verify() {
+        entered();
+        await gate;
+        return true;
+      }
+    };
+
+    try {
+      const pending = verifyFinality(
+        checkpoint,
+        justification,
+        trusted,
+        crypto,
+        { verifyAncestry: false }
+      );
+      await waiting;
+
+      checkpoint.blockHash.fill(0xcc);
+      checkpoint.genesisHash.fill(0xdd);
+      trusted.setId = 4261n;
+      trusted.genesisHash.fill(0xee);
+      trusted.authorities[0]!.publicKey.fill(0xff);
+      justification.commit.targetHash.fill(0xab);
+      justification.commit.precommits[0]!.signature.fill(0x00);
+      release();
+
+      await expect(pending).resolves.toMatchObject({
+        verified: true,
+        setId: 0n,
+        signedWeight: 3n,
+        totalWeight: 4n
+      });
+    } finally {
+      release();
+    }
+  });
+
 });
