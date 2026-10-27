@@ -3480,3 +3480,18 @@ The fresh run no longer has the earlier target/parent-pruning problem for the ta
 Next work should be non-duplicative and evidence-led: (1) preserve this second independent target as a regression vector for the localized payload diagnostic; (2) ask the Materios upstream/operator to explain why `GrandpaApi_current_set_id` returns `4352` while the target justification signatures verify only under `4261`, with the exact target hash/round and raw FRNK digest attached; and (3) obtain either a genesis-rooted authority-set transition proof or a node/RPC route that exposes verifiable runtime code/execution/finality evidence. Do not launch another identical boundary wait until there is a specific change to the witness path or a confirmed endpoint that can resolve the missing provenance.
 
 **STATUS: FRESH TARGET AUTHORITY API READ GREEN; RAW FRNK + CROSS-ROUTE HEADER BINDING GREEN; 4/4 SIGNATURES VERIFY ONLY UNDER INFERRED 4261, NOT OBSERVED 4352; AUTHORITY TRANSITION PROVENANCE MISSING; PUBLIC RUNTIME-CODE/FINALITY RPC UNAVAILABLE; B3-A OPEN; NO LIVE TRANSACTION.**
+
+## 45.24 — AGENT A — FIX RUNTIME-CODE ACQUISITION RPC METHOD — 2026-10-27
+
+The fresh target artifact exposed a correctable acquisition defect: `capture-finalized.ts` requested `state_getCode`, which the public RPC rejects as `-32601 Method not found`. Substrate exposes runtime WASM through the well-known storage item `:code`; query it using standard `state_getStorage` at the exact block hash (`0x3a636f6465`), not a nonexistent standard RPC method.
+
+Applied on the existing `work/immortal-green-closure` branch:
+- `poc/materios-checkpoint/src/rpc.ts`: `getRuntimeCode(at)` now reads `:code` via `state_getStorage` at the exact hash and fails closed if absent.
+- `poc/materios-checkpoint/test-rpc-b3.ts`: unit expectation and both runtime-capture mocks updated to require the exact `:code` storage key and block hash.
+- Fix commit: `b7fe03ea03eaa66a02a55b9e4fd55e3ad411a99f`.
+- Test commit: `6e576c28ef179f8ac8b7ebaa4ac086b761d2384e`.
+- [Materios Canonical Evidence & Finality Boundary #178](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551713798) — SUCCESS on the test commit.
+- [Documentation Link Check #2522](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551713799) — SUCCESS.
+- [Materios B3 execution-proof verifier #124](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015) was still pending at checkpoint time; do not report the unit/integration test as passed until this run completes and its test logs are inspected.
+
+This repairs only the runtime-code evidence acquisition path. It does not resolve the GRANDPA set-ID conflict or prove runtime-code identity: returned WASM bytes still need an independently trusted hash/runtime identity and a state-root-bound proof. B3-A remains OPEN; do not infer set ID 4261 as trusted, weaken signature checks, or submit a live transaction.
