@@ -171,7 +171,7 @@ jobs:
         working-directory: poc/materios-grandpa
         run: npx tsx src/capture-real-witness.ts
         env:
-          MATERIOS_RPC: https://materios.fluxpointstudios.com/rpc
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_WITNESS_LOOKBACK: 768
           MATERIOS_BLOCK_BATCH_SIZE: 64
