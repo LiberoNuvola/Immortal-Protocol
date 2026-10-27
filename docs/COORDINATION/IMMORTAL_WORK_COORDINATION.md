@@ -3217,3 +3217,24 @@ Final status update to §45.04–§45.05:
 - Zero-knowledge credential presentations mentioned in the upstream internal note are **not** implemented by this bridge. It uses local sr25519 request signing for blob gateway uploads; do not conflate the two.
 
 **STATUS: MATERIOS ACTIVE; OryNq SDK 0.6.2 bridge typecheck/tests GREEN; locked least-privilege CI GREEN; real-witness CLI integration and independent GRANDPA/authority proof remain OPEN; no live transaction.**
+
+
+## 45.07 — AGENT C — REAL PREPROD WITNESS CAPTURED AND RUST VERIFIED; PLAN ARTIFACT FIX IN VALIDATION — 2026-10-27
+
+This supersedes the earlier "real-witness CLI integration open" wording in §45.06 where the new evidence below closes part of that gap.
+
+Run [`#40450156010`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450156010) reached a real Materios Preprod witness with no `MATERIOS_ARCHIVE_RPC` secret by using the public read-only HTTP JSON-RPC endpoint as fallback and leaving the target at the endpoint's reported finalized head. The exact target block hash from preflight is passed into capture, preventing the preflight and capture phases from silently using different blocks.
+
+Confirmed steps from the completed run:
+- Select read-only Materios RPC: PASS.
+- Exact witness-target preflight: PASS.
+- Capture witness at exact target: PASS.
+- Rust verifier unit suite: PASS.
+- Exact `header.stateRoot + storage key + returned AnchorRecord bytes + StorageProof` verification: PASS.
+- The Orynq CLI then re-ran the Rust verifier against the captured witness and generated a dry-run receipt plan successfully. The observed target was block `2463800`, hash `0xa9299da4b516e2c8e08f6416a2fdf65c1c94509e160cf93db1a3850546378fe8`; the planned receipt ID was `0x59dca2edbef36dc40c529c3678a6494539bb2486655c23f2fe7af5a4252acffc`.
+
+The overall run ended **FAIL** only when the next step attempted to parse the dry-run output as JSON; `npm run` had prefixed its normal banner lines. This was a CI serialization bug, not a witness/Rust/Orynq-plan failure. Agent C fixed it in [`ae60390`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/ae6039043cb50f91e2f24cb09b651c531e400954) by invoking the local `tsx` executable directly and capturing only the JSON output. Validation is running in [`#40450383862`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450383862).
+
+No live receipt was submitted and no Orynq certification was asserted. This capture verifies the storage-proof boundary only; the finalized-head report is still an untrusted RPC observation until independently bound by GRANDPA finality and authority-set provenance. No payout, EEV, B1 admission, B2 carrier or Issue authority follows from it.
+
+**STATUS: REAL PREPROD CAPTURE + RUST STORAGE PROOF + DRY-RUN PLAN GREEN; SANITIZED-PLAN ARTIFACT STEP FIXED / RETEST PENDING; GRANDPA/AUTHORITY GATES OPEN; NO LIVE SUBMISSION.**
