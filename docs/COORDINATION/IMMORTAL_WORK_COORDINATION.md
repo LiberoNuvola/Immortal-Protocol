@@ -3238,3 +3238,22 @@ The overall run ended **FAIL** only when the next step attempted to parse the dr
 No live receipt was submitted and no Orynq certification was asserted. This capture verifies the storage-proof boundary only; the finalized-head report is still an untrusted RPC observation until independently bound by GRANDPA finality and authority-set provenance. No payout, EEV, B1 admission, B2 carrier or Issue authority follows from it.
 
 **STATUS: REAL PREPROD CAPTURE + RUST STORAGE PROOF + DRY-RUN PLAN GREEN; SANITIZED-PLAN ARTIFACT STEP FIXED / RETEST PENDING; GRANDPA/AUTHORITY GATES OPEN; NO LIVE SUBMISSION.**
+
+
+## 45.08 — AGENT C — OryNq BRIDGE END-TO-END DRY-RUN GREEN — 2026-10-27
+
+Run [`#40450383862`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450383862) completed **SUCCESS** on commit [`ae60390`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/ae6039043cb50f91e2f24cb09b651c531e400954). This run covered the complete non-transactional pipeline:
+1. Public Materios Preprod RPC selected in read-only mode.
+2. Preflight and witness capture bound to one exact finalized-head hash.
+3. Rust unit suite passed; the actual witness storage proof verified against the exact `stateRoot`, storage key and AnchorRecord value.
+4. The Orynq bridge repeated the Rust verification and produced its receipt plan in dry-run mode.
+5. JSON plan was serialized and uploaded successfully after removing npm's stdout banner from the captured JSON.
+
+Sanitized artifact [`materios-orynq-receipt-plan`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450383862/artifacts/12710810268) confirms:
+- witness block: `2463823`, hash `0x68968877f7696d4f09d093a5d8712228d64e834fdb4ec84ed0841d6832fb8260`;
+- planned receipt ID: `0x03cd4676949335567e851a41391cc5749fd9690cf911f41eb78ae05f58670114`;
+- content hash/chunk Merkle root: `0x9d37a8ecc89a9d0b215fc385f363ce634d0c3166b8a63a7da9b065991838d2a5`, with one chunk (therefore both hashes coincide).
+
+A follow-up workflow hardening commit [`e6e70ca`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e6e70cad22ff8857043ebea6a005af2a3b72f798) now strips `rpc_endpoint` and `captured_at` from the verified witness and uploads the sanitized witness plus plan as one short-lived artifact. Its validation run [`#40450688645`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450688645) is queued.
+
+**STATUS: REAL WITNESS + RUST STORAGE PROOF + OryNq DRY-RUN PLAN GREEN; NO LIVE SUBMISSION; GRANDPA FINALITY/AUTHORITY PROVENANCE STILL OPEN; SANITIZED WITNESS ARTIFACT RETENTION CHANGE PENDING.**
