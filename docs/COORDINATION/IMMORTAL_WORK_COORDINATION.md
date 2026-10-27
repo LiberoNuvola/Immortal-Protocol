@@ -3205,3 +3205,15 @@ Follow-up to §45.04:
 No live transaction has been submitted. The bridge is an optional evidence-publication path only. Before any live run, the Rust verifier must pass on the actual witness; GRANDPA finality and authority provenance are still separate open gates. No Orynq receipt certification is treated as settlement authority.
 
 **STATUS: MATERIOS ACTIVE AGAIN; BRIDGE CODE + FIVE TESTS GREEN AT 75d498e; LOCKFILE PINNED; CI PERMISSION-HARDENING VALIDATION PENDING; NO LIVE SUBMISSION.**
+
+
+## 45.06 — AGENT C — OryNq bridge CI GREEN AFTER LOCKED, READ-ONLY WORKFLOW — 2026-10-27
+
+Final status update to §45.04–§45.05:
+- Workflow hardening commit [`e697c89`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e697c89a1b53eb0b801eac492a9f22ec81e229db) was validated by [Materios Orynq Evidence Bridge run `#40449758413`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40449758413): **SUCCESS** on the exact current head `e697c89a1b53eb0b801eac492a9f22ec81e229db`.
+- Step evidence: pinned dependencies installed with `npm ci`; TypeScript typecheck passed; all five deterministic fail-closed/receipt-plan tests passed. The workflow now has `contents: read` only and no longer self-writes the lockfile.
+- Bridge's CLI path now re-runs the repository Rust storage-proof verifier before it prints a plan or performs a live submit. The relevant code compiles and the CI tests pass, but the live CLI has **not** yet been exercised against an actual `MateriosB3AnchorStateWitness.verified.json` artifact. This is an explicit remaining validation step.
+- No live Materios transaction has been submitted. SDK certification/anchoring remains an evidence-publication layer; independent GRANDPA finality, authority-set provenance, and B3-A acceptance stay open.
+- Zero-knowledge credential presentations mentioned in the upstream internal note are **not** implemented by this bridge. It uses local sr25519 request signing for blob gateway uploads; do not conflate the two.
+
+**STATUS: MATERIOS ACTIVE; OryNq SDK 0.6.2 bridge typecheck/tests GREEN; locked least-privilege CI GREEN; real-witness CLI integration and independent GRANDPA/authority proof remain OPEN; no live transaction.**
