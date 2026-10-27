@@ -393,3 +393,23 @@ The public-Koios observer completed successfully in GitHub Actions:
 **Scope of the finding:** this is a successful, live query and a negative finding for the exact pair within Minswap V2's configured Preprod pool credential. It does not prove that no ADA/tUSDM pool exists in Minswap V1, Stableswap, another DEX, or another test asset deployment. In particular, it is not a USD/USDM conversion witness or price quote. The DEX route for this exact Preprod pair remains unavailable in V2 and should not be developed further against a guessed pool.
 
 The workflow and observer remain read-only: no transaction was built, signed or submitted. Qualification remains `OBSERVED_NOT_QUALIFIED`; the Option B source and consumer contract are still unqualified. No parity is assumed, and EEV approval/Issue remain separately gated.
+
+## 28. Expanded live Preprod scan: Minswap V1/V2/StableSwap and non-Minswap script candidates — 2026-10-27
+
+The expanded read-only observer completed successfully in [GitHub Actions run #40458245138](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138), with [artifact ID 12713512727](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138/artifacts/12713512727). It ran from the current `work/immortal-green-closure` source and queried public Koios endpoints only.
+
+**Minswap coverage:**
+- Exact configured Preprod tUSDM UTxOs scanned for Minswap V1: 969; rows at the pinned V1 pool payment credential: 0; parsed V1 states: 0.
+- Minswap V2 pool-authentication UTxOs at the configured testnet pool credential: 455; V2 pool states decoded: 455; parse rejects: 0; exact ADA / pinned Preprod-tUSDM candidates: 0.
+- SDK-configured Preprod StableSwap pools: 3; exact pinned-tUSDM membership: 0.
+- Overall result: `NO_EXACT_ADA_TUSDM_PAIR_FOUND_IN_MINSWAP_V1_V2_CONFIGURED_STABLESWAP`.
+
+**Same-tip consistency for run #8:** before and after the scan, Koios returned block `5340350`, absolute slot `137397443`, hash `61c6385399a9b1601f1c535cc848272d3b1f12bffd94afc9ae0c75865f44c7b6`. The snapshot reports `chainTipUnchanged: true`; observation interval was `2026-10-27T05:55:29.834Z`–`2026-10-27T05:55:33.198Z`. Evidence SHA-256: `ef572fbfeaae493ed6e065b7e79d552358f4ce168153260c81ebc8b2adac659d`.
+
+**Other script UTxOs containing the exact test tUSDM:** the observer checked Shelley address checksums and reconciled all 969 encoded payment credentials with Koios `payment_cred`; address decode failures: 0, credential mismatches: 0. It found 15 non-Minswap script-credential groups. Two external outputs with tUSDM + ADA + other assets + datum evidence, after excluding the known Immortal/B1 PrizePool singleton, were independently re-queried by exact address/out-reference:
+- `50ac85a0fded8f8285c0ddcdf937f692ab8f63dcf74b4833e3659fd2f5ef719c#0`, payment credential `fd75e24c9ea915ce8e48d3ff1d0c54ad09cc01191c24416ad7dba4a3`, held `100000000` tUSDM atomic units, `1015788430` lovelace and 14 other asset units. Inline datum/hash and asset quantities matched the independent second read.
+- `f27b6b913bebca852dfbb8ec4585ec5925c1d04ed05ea9cb96720712c9df11cd#1`, payment credential `94bca9c099e84ffd90d150316bb44c31a78702239076a0a80ea4a469`, held `123` tUSDM atomic units, `2521350` lovelace and 5 other asset units. Inline datum/hash and asset quantities matched the independent second read.
+
+Both were recorded as `LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL`. These reads establish only that the exact outputs and datum/value witnesses were still live and matched at re-query time. They do not identify the scripts' protocol semantics and are **not** evidence that either output is a DEX pool. The known B1 PrizePool at `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` was explicitly excluded from these external candidates by its exact Pool singleton unit.
+
+**Disposition:** this closes the current configured Minswap V1/V2/StableSwap discovery attempt for this exact Preprod asset pair; it does not exhaust every DEX/protocol or prove any other script UTxO to be a market. Do not derive a price from these balances. Option B is still selected as an approach only: no qualified USD/USDM source or versioned consumer contract was found, no parity is assumed, and `tUSDM = OBSERVED_NOT_QUALIFIED` remains the qualification state for USD/USDM conversion. No transaction was built, signed or submitted; no EEV approval or Issue is authorized.
