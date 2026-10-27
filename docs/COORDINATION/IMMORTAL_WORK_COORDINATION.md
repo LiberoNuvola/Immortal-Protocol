@@ -1834,3 +1834,18 @@ The full diagnostic scan already isolated 4261 as the only signature-valid candi
 
 - [Materios Canonical Evidence & Finality Boundary #181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843264): **SUCCESS**. Includes `npm test --prefix poc/materios-grandpa` and `npm run build --prefix poc/materios-grandpa`; both passed with the snapshot-hardening regression included.
 - [Materios B3 execution-proof verifier #127](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291): Rust verifier tests **SUCCESS**, finalized-state capture **SUCCESS**, and native B3-B live-storage proof **SUCCESS**. The `real-grandpa-witness` job was still in progress at this check, so overall run remains pending; this does not change the existing B3-A open status.
+
+
+### CI final outcome — B3 verifier run #127
+
+[Run #127](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291) completed with the expected fail-closed result:
+- TypeScript GRANDPA verifier typecheck: **PASS**.
+- Rust verifier formatting/tests: **PASS**.
+- Finalized-state capture: **PASS**.
+- Native B3-B live storage proof: **PASS**.
+- Real GRANDPA witness: **FAIL CLOSED**, current observed set ID 4352 does not verify the four signatures; transition witness remains not found. This reproduces the known B3-A blocker, not a regression from immutable-input hardening.
+- Fresh artifact: [materios-real-grandpa-witness, artifact 12754769126](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291/artifacts/12754769126), ZIP SHA-256 `b8ed9369cdd6d699dabaae1d5f861329f3b533919e88b1e3f4a2f2f0acb7802c`.
+
+The focused boundary workflow [#181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843264) is **SUCCESS**, including the GRANDPA unit suite and TypeScript build. No set-ID scan was added or repeated as a new diagnostic; this run's capture follows the existing workflow and confirms the same authority-provenance gap.
+
+**Updated status: SDK-derived immutable-input hardening 🟢 validated / B3-B storage proof 🟢 / B3-A authenticated finality + historical authority provenance 🔴 OPEN.**
