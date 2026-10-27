@@ -32,6 +32,22 @@ const RPC = (() => {
 })();
 
 const BLOCK_HASH_OVERRIDE = process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH;
+const TARGET_SOURCE_OVERRIDE = process.env.MATERIOS_B3_TARGET_SOURCE;
+
+function checkpointSource(): string {
+  if (TARGET_SOURCE_OVERRIDE === "current finalized-head response") {
+    return "chain_getFinalizedHead response (untrusted until independent finality verification)";
+  }
+  if (TARGET_SOURCE_OVERRIDE === "explicit block hash") {
+    return "explicit block hash (untrusted until independent finality verification)";
+  }
+  if (TARGET_SOURCE_OVERRIDE !== undefined) {
+    throw new Error("MATERIOS_B3_TARGET_SOURCE must be current finalized-head response or explicit block hash");
+  }
+  return BLOCK_HASH_OVERRIDE
+    ? "explicit block hash (untrusted until independent finality verification)"
+    : "chain_getFinalizedHead response (untrusted until independent finality verification)";
+}
 
 const STORAGE_KEY =
   process.env.MATERIOS_B3_ANCHOR_STORAGE_KEY ??
@@ -68,9 +84,7 @@ async function main(): Promise<void> {
     target: {
       block_hash: blockHash,
       block_number: blockNumber.toString(),
-      checkpoint_source: BLOCK_HASH_OVERRIDE
-        ? "explicit block hash (untrusted until independent finality verification)"
-        : "chain_getFinalizedHead response (untrusted until independent finality verification)",
+      checkpoint_source: checkpointSource(),
       state_root: header.stateRoot,
       storage_key: STORAGE_KEY,
     },
