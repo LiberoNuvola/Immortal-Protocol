@@ -3579,3 +3579,46 @@ The working branch was verified at code/workflow SHA `bde369cb23853f7a31f330d87a
 No normative economic rules, V3 carrier, Reveal semantics, EEV qualification/authority, Materios trust boundary, deployment, wallet signing, or transaction submission changed.
 
 **STATUS: FAIL-CLOSED REFERENCE EVALUATOR IMPLEMENTED; CI INVOCATION ADDED; RUN RESULT PENDING; SDK FACADE STILL NOT STARTED.**
+
+
+## 45.29 — AGENT B — EXACT-HEAD REFERENCE CONFORMANCE + NATIVE P2.8 EVIDENCE — 2026-10-27
+
+Latest verified Integration Lab run: [#40562306009](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40562306009), exact head `cc374da958bc5e7017779974dbb29ef998d06f8d` on `work/immortal-green-closure`. Overall job conclusion: **SUCCESS**. Evidence artifact: [immortal-cardano-lab-evidence.zip](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40562306009/artifacts/12763368218).
+
+### Reference economic conformance
+The Haskell runner actually executed against the canonical `UniversalEconomicKernel`; output:
+- V01 PASS: protected capital 700, raw surplus 300, solvency True.
+- V02 PASS: protected capital 1000, raw surplus 0, solvency True.
+- V03 PASS: protected capital 1000, raw surplus 0, solvency False.
+- V04 PASS: protected capital 0, raw surplus 0, solvency True.
+- V05 PASS: protected capital 8500, raw surplus 1500, solvency True.
+- V06 PASS: protected capital 9500, raw surplus 500, solvency True.
+- V07.case1 PASS: protected capital 2000, raw surplus 3000.
+- V07.case2 PASS: protected capital 4500, raw surplus 500.
+- V10 PASS: protected capital 500, raw surplus 500.
+- V08 and V09 remain explicitly pending (`pending-schema-extraction`, `pending-certified-kernel-fixture`).
+- Final marker: `REFERENCE_CONFORMANCE_RESULT|PASS_EXECUTABLE_VECTORS|pending=2`.
+
+Thus the executable seed vectors pass; this is **not full portability closure** while V08/V09 remain pending.
+
+### Native Cardano-ledger/P2.8 evidence
+The same exact-head run produced and bound the current-run artifacts; the fail-closed native runner reported:
+- manifest SHA-256 binding verified;
+- workflow commit/run binding verified;
+- transaction slot/time binding verified;
+- transaction reference/CBOR binding verified;
+- typed Conway context decoded with native Ledger types;
+- 2 redeemer entries, 2 successes, 0 redeemer failures, 0 Plutus execution failures, 0 ledger-context failures, 0 other ledger failures;
+- `RESULT: LEDGER_ALIGNED_EVALUATION_SUCCESS`, acceptance A for this exact artifact under Cardano-ledger semantics.
+The P2.8 evidence-gate step completed successfully. Resource audit used observed protocol parameters (`maxTxSizeBytes=16384`); this run measured `prizeValidatorFactory` script bytes 15,977 and `b1PrizePoolFactory` script bytes 11,357, plus CBOR transaction artifacts for the recorded traces.
+
+This upgrades the prior P2.8 status from “no fresh exact-head native evaluation evidence verified” to **native ledger evaluation evidence PASS for this run/local Yaci context**. It does not qualify Preprod/mainnet or prove deployment/readiness for a real user ticket. Keep the environment boundary explicit.
+
+### Remaining cautions / next gate
+- Overall Integration Lab workflow: SUCCESS on this exact commit, including the native V3 carrier, isolated Aiken Reveal positive/negative twins, Reveal/Expire/FundTreasury/TicketIssued/Claim traces, and evidence packet generation.
+- This does not mean all optional builder diagnostics passed: the log contains synthetic-exUnits-stub completion probes returning `BUILDER_COMPLETION_FAIL` (`signed=false`, `submitted=false`, `ledgerValidation=NOT_RUN`). Treat them as builder-probe findings, not ledger validation failures or successful transactions; investigate separately if that probe remains a required acceptance criterion.
+- Do not change V3 carrier or Reveal semantics based on these synthetic probe outputs.
+- SDK façade remains gated until V08/V09 and the intended SDK acceptance scope are resolved; no SDK façade implementation started in this checkpoint.
+- No Preprod/mainnet transaction, user wallet signing, deployment, economic rule change, or Materios work was performed.
+
+**STATUS: EXACT-HEAD LAB SUCCESS; EXECUTABLE REFERENCE VECTORS PASS WITH V08/V09 PENDING; P2.8 NATIVE LEDGER EVIDENCE PASS IN LOCAL YACI ONLY; PREPROD/MAINNET AND FULL PORTABILITY CLOSURE REMAIN OPEN.**
