@@ -116,16 +116,17 @@ jobs:
           PY
 
       - name: Re-verify proof and dry-run the Orynq receipt plan
+        working-directory: poc/materios-orynq-bridge
         run: |
-          npm --prefix poc/materios-orynq-bridge run anchor > /tmp/orynq-receipt-plan.json
-          cat /tmp/orynq-receipt-plan.json
+          ./node_modules/.bin/tsx src/anchor-verified-evidence.ts > "$RUNNER_TEMP/orynq-receipt-plan.json"
+          cat "$RUNNER_TEMP/orynq-receipt-plan.json"
 
       - name: Materialize sanitized receipt plan
         if: always() && hashFiles('poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json') != ''
         run: |
           node - <<'NODE'
           const fs = require("node:fs");
-          const output = JSON.parse(fs.readFileSync("/tmp/orynq-receipt-plan.json", "utf8"));
+          const output = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/orynq-receipt-plan.json", "utf8"));
           if (output.mode !== "dry-run" || !output.plan) {
             throw new Error("Ory n q bridge did not produce a dry-run plan".replaceAll(" ", ""));
           }
