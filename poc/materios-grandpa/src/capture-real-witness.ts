@@ -1043,7 +1043,10 @@ async function main(): Promise<void> {
   // cryptographic encoding/set-ID diagnostic: signer IDs are supplied by the
   // untrusted justification, and no authority membership, weight, quorum, or
   // authority-transition provenance is inferred from a match.
-  const signatureSearchFloor = setId > 256n ? setId - 256n : 0n;
+  // Search the entire non-negative set-id range up to the observed ID.
+  // This is still diagnostic only: it narrows the signing-payload hypothesis,
+  // but cannot authenticate any historical authority set or transition.
+  const signatureSearchFloor = 0n;
   const localizedSignatureDiagnostic = {
     status: "DIAGNOSTIC_ONLY" as const,
     observed_set_id: setId.toString(),
@@ -1061,10 +1064,10 @@ async function main(): Promise<void> {
     }>,
     trust_scope: "Untrusted signer IDs from raw justification; bounded set-id search tests only localized-payload hypothesis. A matching set ID is not authority authentication, quorum, or finality.",
   };
-  // GRANDPA set IDs are monotonic. Search a bounded recent historical window
-  // to distinguish a post-transition/current-state mismatch from a malformed
-  // payload. Never accept the discovered ID as trusted state without proving
-  // the authority transition from the genesis trust anchor.
+  // GRANDPA set IDs are monotonic. Search every candidate ID from genesis
+  // (0) through the observed current ID to distinguish a localized-payload
+  // set-ID mismatch from a malformed payload. Never accept a discovered ID
+  // as trusted state without proving the authority transition from genesis.
   for (let candidateSetId = setId; candidateSetId >= signatureSearchFloor; candidateSetId--) {
     let validSignatures = 0;
     const invalidSignerIndexes: number[] = [];
