@@ -114,6 +114,81 @@ function sdkValueFromRow(row) {
   return Object.entries(assets).map(([unit, quantity]) => ({ unit, quantity }))
 }
 
+
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+
+function bech32Polymod(values) {
+  const generators = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+  let checksum = 1
+  for (const value of values) {
+    const top = checksum >>> 25
+    checksum = ((checksum & 0x1ffffff) << 5) ^ value
+    for (let i = 0; i < 5; i++) if ((top >>> i) & 1) checksum ^= generators[i]
+  }
+  return checksum >>> 0
+}
+
+function bech32HrpExpand(hrp) {
+  const values = []
+  for (const ch of hrp) values.push(ch.charCodeAt(0) >>> 5)
+  values.push(0)
+  for (const ch of hrp) values.push(ch.charCodeAt(0) & 31)
+  return values
+}
+
+function convertBits(values, fromBits, toBits, pad) {
+  let accumulator = 0
+  let bits = 0
+  const out = []
+  const mask = (1 << toBits) - 1
+  for (const value of values) {
+    if (value < 0 || (value >>> fromBits) !== 0) throw new Error('BECH32_DATA_RANGE')
+    accumulator = (accumulator << fromBits) | value
+    bits += fromBits
+    while (bits >= toBits) {
+      bits -= toBits
+      out.push((accumulator >>> bits) & mask)
+    }
+  }
+  if (pad) {
+    if (bits) out.push((accumulator << (toBits - bits)) & mask)
+  } else if (bits >= fromBits || ((accumulator << (toBits - bits)) & mask) !== 0) {
+    throw new Error('BECH32_INVALID_PADDING')
+  }
+  return out
+}
+
+function decodeCardanoShelleyPaymentCredential(address) {
+  if (typeof address !== 'string') return null
+  const separator = address.lastIndexOf('1')
+  if (separator <= 0 || address.length - separator < 7) return null
+  const hrp = address.slice(0, separator)
+  const raw = address.slice(separator + 1).toLowerCase()
+  const values = []
+  for (const ch of raw) {
+    const value = BECH32_CHARSET.indexOf(ch)
+    if (value < 0) return null
+    values.push(value)
+  }
+  if (bech32Polymod([...bech32HrpExpand(hrp), ...values]) !== 1) return null
+  const payload = convertBits(values.slice(0, -6), 5, 8, false)
+  if (payload.length < 29) return null
+  const header = payload[0]
+  const addressType = header >>> 4
+  const paymentCredentialHex = Buffer.from(payload.slice(1, 29)).toString('hex')
+  const scriptPaymentCredential = [1, 3, 5, 7].includes(addressType)
+  const keyPaymentCredential = [0, 2, 4, 6].includes(addressType)
+  if (!scriptPaymentCredential && !keyPaymentCredential) return null
+  return {
+    hrp,
+    networkId: header & 15,
+    addressType,
+    scriptPaymentCredential,
+    keyPaymentCredential,
+    paymentCredentialHex,
+  }
+}
+
 function rowOutRef(row) {
   return {
     txHash: String(row.tx_hash ?? '').toLowerCase(),
@@ -336,6 +411,56 @@ async function main() {
   const v2PairCandidates = decodedV2Pools.filter((candidate) => exactAdaTusdmPair(candidate.pool))
 
   const tusdmRows = await queryAssetUtxos(TUSDM_POLICY, TUSDM_NAME)
+  const otherScriptCredentialGroups = new Map()
+  let addressDecodeFailures = 0
+  let paymentCredentialMismatches = 0
+  let testnetAddressRows = 0
+  for (const row of tusdmRows) {
+    const decoded = decodeCardanoShelleyPaymentCredential(String(row.address ?? ''))
+    if (!decoded) {
+      addressDecodeFailures += 1
+      continue
+    }
+    if (decoded.networkId === 0) testnetAddressRows += 1
+    if (decoded.paymentCredentialHex !== String(row.payment_cred ?? '').toLowerCase()) {
+      paymentCredentialMismatches += 1
+      continue
+    }
+    if (!decoded.scriptPaymentCredential) continue
+    const credential = decoded.paymentCredentialHex
+    if (credential === V1_POOL_SCRIPT_HASH || credential === V2_POOL_SCRIPT_HASH) continue
+    const list = otherScriptCredentialGroups.get(credential) ?? []
+    list.push({ row, decoded })
+    otherScriptCredentialGroups.set(credential, list)
+  }
+  const otherScriptCredentialSummary = [...otherScriptCredentialGroups.entries()]
+    .map(([paymentCredential, entries]) => {
+      const tokenRows = entries.map(({ row }) => {
+        const assets = decodeLedgerAssets(row.asset_list, row.value)
+        const otherUnits = Object.keys(assets).filter((unit) => unit !== ADA_UNIT && unit !== TUSDM_UNIT)
+        return {
+          outRef: String(row.tx_hash).toLowerCase() + '#' + Number(row.tx_index),
+          address: String(row.address),
+          addressType: entries[0].decoded.addressType,
+          blockHeight: row.block_height == null ? null : String(row.block_height),
+          blockTime: row.block_time == null ? null : String(row.block_time),
+          tUsdmAtomic: String(assets[TUSDM_UNIT] ?? '0'),
+          lovelace: String(assets[ADA_UNIT] ?? '0'),
+          otherAssetCount: otherUnits.length,
+          otherAssetUnits: otherUnits.slice(0, 8),
+          datumHash: row.datum_hash ?? null,
+          hasInlineDatum: Boolean(normalizeHex(row.inline_datum)),
+          inlineDatumBytesLength: normalizeHex(row.inline_datum)?.length ? normalizeHex(row.inline_datum).length / 2 : 0,
+        }
+      })
+      return {
+        paymentCredential,
+        utxoCount: entries.length,
+        likelyPoolShapeCount: tokenRows.filter((row) => BigInt(row.tUsdmAtomic) > 0n && BigInt(row.lovelace) > 0n && row.otherAssetCount >= 1 && (row.hasInlineDatum || row.datumHash)).length,
+        samples: tokenRows.slice(0, 3),
+      }
+    })
+    .sort((a, b) => b.utxoCount - a.utxoCount)
   const v1PoolCredentialRows = tusdmRows.filter((row) =>
     String(row.payment_cred ?? '').toLowerCase() === V1_POOL_SCRIPT_HASH
   )
@@ -409,6 +534,16 @@ async function main() {
         sdkConfiguredPreprodPools: configuredStablePools.length,
         exactTusdmPairMembership: stableTUsdmPools.length,
         poolAssetLists: configuredStablePools.map((pool) => pool.assets),
+      },
+      otherScriptCredentialCandidates: {
+        method: 'Decode and checksum-check Cardano Shelley address headers for each live UTxO carrying exact Preprod tUSDM; reconcile encoded payment credential with Koios payment_cred; exclude known Minswap V1/V2 credentials.',
+        exactTUsdmUtxosScanned: tusdmRows.length,
+        addressDecodeFailures,
+        paymentCredentialMismatches,
+        testnetAddressRows,
+        nonMinswapScriptPaymentCredentialGroups: otherScriptCredentialGroups.size,
+        groups: otherScriptCredentialSummary.slice(0, 25),
+        limitation: 'A script credential plus tUSDM is only a candidate surface, not proof of a DEX pool. Each candidate requires protocol identification and exact out-reference/datum verification before classification.',
       },
       exactOutRefRequery: 'POST /address_utxos for exact-pair candidate(s) only',
       maxAssetUtxoScanRows: MAX_UTXOS,
