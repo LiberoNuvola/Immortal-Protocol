@@ -69,7 +69,7 @@ instance FromJSON Vector where
       <*> o .:? "cases"
 
 instance FromJSON LocalityCase where
-  parseJSON = withObject "LocalityCase" $ \\o ->
+  parseJSON = withObject "LocalityCase" $ \o ->
     LocalityCase
       <$> o .: "eev"
       <*> o .: "protectedCapital"
