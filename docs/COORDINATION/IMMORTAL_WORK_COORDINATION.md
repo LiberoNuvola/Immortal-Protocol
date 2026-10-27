@@ -3674,3 +3674,21 @@ Read-only follow-up on the exact owner of the two pending portability vectors. T
 4. Do not start SDK façade, create branches, alter V3/Reveal semantics, submit Preprod transactions, or change economic constants in this step.
 
 **STATUS: V08 SEMANTICS CLOSED BUT CANONICAL UNIVERSAL EXECUTABLE OWNER NOT YET IDENTIFIED; V09 BLOCKED BY ABSENT INSTANTIATED K_c CERTIFICATE (CONFIRMED IN RESIDUAL OBLIGATION REGISTER); NO SEMANTIC SHORTCUT ACCEPTED.**
+
+
+## 45.32 AGENT B — SDK READINESS / V08 UNIVERSAL TRANSITION OWNER (2026-10-27)
+
+**Working branch exact HEAD observed before this documentation update:** `776963a143bea02def3f231d5834f347460f6609`. The SDK inventory follow-up is recorded in `docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md`; its update commit is `3f82e1608d3d5f241bd12b970a235646b72ea4e2`.
+
+### Findings
+- The universal state/kernel/reference runner are aggregate economic predicates and portability-vector machinery; no universal lifecycle/action transition model was found in those exact-head files.
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` implements Issue/Reveal/Claim/Expire but is coupled to `EconomicStateV3`, `EconomicProfile`, ticket classes and V3 application state. It must not be silently relabeled as the universal transition owner.
+- PRE-RICH expiry policy/evidence remains profile-specific; `verification/finite_model_checks.py::expiry_absorbing_check` is abstract-model evidence only.
+- **V08 remains pending** until the canonical universal transition contract/owner is identified or normatively decided and implementation conformance is added.
+- **V09 remains pending** until the concrete deployment/profile certificate for `K_c` and its required evidence exist. SDK types may carry evidence references; they cannot manufacture or imply certification.
+
+### SDK execution boundary
+Parallel work may document API contracts, versioned chain-neutral evidence envelopes, export-to-test ownership, and a release gate that explicitly reports pending conformance. Do not yet create a duplicate TypeScript kernel, universal transition API, package facade, or claim full SDK qualification. No protocol semantics, economic constants, V3 carrier, Reveal semantics, EEV authority, wallet signing, deployment, transaction submission, or Materios work was changed.
+
+### Next gate
+Map proposed public exports to existing canonical implementations and focused tests, then run the relevant CI against an exact SHA. In parallel, treat V08 as an architecture/contract gap—not as permission to import PRE-RICH expiry duration or equate the V3 transition with universal IMMORTAL.
