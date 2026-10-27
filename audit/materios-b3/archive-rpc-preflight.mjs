@@ -7,10 +7,10 @@
  * capture + independent verifier pipeline.
  */
 
+import { appendFileSync } from "node:fs";
+
 const RPC = process.env.MATERIOS_ARCHIVE_RPC;
-const BLOCK_HASH =
-  process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH ??
-  "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e";
+const BLOCK_HASH_OVERRIDE = process.env.MATERIOS_B3_ANCHOR_BLOCK_HASH;
 const STORAGE_KEY =
   process.env.MATERIOS_B3_ANCHOR_STORAGE_KEY ??
   "0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55";
@@ -51,10 +51,14 @@ function requireHex(value, field) {
   return value;
 }
 
+const BLOCK_HASH = BLOCK_HASH_OVERRIDE
+  ? requireHash(BLOCK_HASH_OVERRIDE, "MATERIOS_B3_ANCHOR_BLOCK_HASH")
+  : requireHash(await rpc("chain_getFinalizedHead"), "chain_getFinalizedHead");
+const TARGET_MODE = BLOCK_HASH_OVERRIDE ? "explicit block hash" : "current finalized-head response";
 const header = await rpc("chain_getHeader", [BLOCK_HASH]);
 if (!header || typeof header !== "object") throw new Error("chain_getHeader: invalid header");
 const stateRoot = requireHash(header.stateRoot, "header.stateRoot");
-const blockNumber = requireHash(BLOCK_HASH, "target block hash") && header.number;
+const blockNumber = header.number;
 
 const storageValue = await rpc("state_getStorage", [STORAGE_KEY, BLOCK_HASH]);
 if (storageValue === null) throw new Error("state_getStorage: exact historical key returned null");
@@ -70,9 +74,13 @@ if (!Array.isArray(proof.proof) || proof.proof.length === 0) {
 }
 for (let i = 0; i < proof.proof.length; i++) requireHex(proof.proof[i], `state_getReadProof.proof[${i}]`);
 
-console.log("B3-B archive RPC preflight: PASS");
+console.log("B3-B RPC witness-target preflight: PASS");
+console.log("target_mode=", TARGET_MODE);
 console.log("block_hash=", BLOCK_HASH);
 console.log("block_number=", blockNumber);
+if (process.env.GITHUB_OUTPUT) {
+  appendFileSync(process.env.GITHUB_OUTPUT, `block_hash=${BLOCK_HASH}\nblock_number=${blockNumber}\ntarget_mode=${TARGET_MODE}\n`, "utf8");
+}
 console.log("state_root=", stateRoot);
 console.log("storage_value_bytes=", (storageValue.length - 2) / 2);
 console.log("proof_nodes=", proof.proof.length);
