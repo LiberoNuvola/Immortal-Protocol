@@ -3438,3 +3438,14 @@ Next attempt is designed to capture the next 512-block boundary while its runtim
 Expected result of the next boundary capture: query `GrandpaApi_grandpa_authorities` and `GrandpaApi_current_set_id` at both target and parent immediately after finalization; compare those with the set ID inferred by the signatures. Even if target/parent state is available, keep it labelled untrusted until the genesis-rooted Materios authority-transition proof is authenticated. No new branch, no V3/Reveal changes, no live transaction.
 
 **STATUS: RAW FRNK CAPTURE GREEN; 4/4 SIGNATURES + 4/5 QUORUM/ANCESTRY PASS ONLY UNDER INFERRED SET ID 4261; AUTHORITY SET-ID PROVENANCE STILL OPEN; NEXT BOUNDARY 2471424 CAPTURE ARMED; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.21 — AGENT C — INFERRED SET-ID SIGNATURE PASS IS DIAGNOSTIC ONLY — 2026-10-27
+
+The raw FRNK capture from [run #40548126634](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548126634), artifact [12752923922](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548126634/artifacts/12752923922), now contains a stronger bounded diagnostic: for target block `2470912` (`0x82d0e8cfd8646e40a370290283dfc94c9c14f592f3a7f2a0d4ae9a71f73da96d`), all 4/4 Ed25519 signatures verify when the localized GRANDPA payload uses candidate set ID `4261`. The existing full verifier then reports `SIGNATURE_QUORUM_ANCESTRY_PASS_UNTRUSTED` with signed weight `4` of total `5`; the observed current runtime API returns set ID `4352`, which yields `INVALID_SIGNATURE`. The raw signer IDs match the keys in the currently observed authority list.
+
+This is **not** a finality PASS: set ID `4261` was inferred by a bounded signature search, not read from authenticated historical state; the target and parent runtime states are pruned; the currently observed authority list is only a current-state fallback; and the authority-set transition history from trusted genesis is not proven. Do not promote the inferred set ID or diagnostic result to `TrustedAuthorityState`, do not weaken the verifier, and do not submit a live receipt.
+
+A fresh-target workflow is active on the same B3 branch. [Run #40548408573](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573), source head `a66493791dc426a4a6a213fd1dc5b9b7a34b84e7`, selects boundary `2471424` and waits for it to become finalized so the runtime authority state can be queried while recent. The verifier and live storage-proof jobs have passed in this run; the WebSocket capture/real-witness job is still running. Inspect its resulting artifact before changing the diagnostic classification.
+
+**STATUS: RAW FRNK AND CROSS-ROUTE HEADER BINDING GREEN; 4/4 SIGNATURES + 4/5 WEIGHT + ANCESTRY PASS ONLY UNDER INFERRED SET ID 4261; AUTHENTICATED SET-ID/TRANSITION STILL MISSING; FRESH TARGET CAPTURE ACTIVE; B3-A OPEN; NO LIVE TRANSACTION.**
