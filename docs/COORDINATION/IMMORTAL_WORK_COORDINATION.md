@@ -3705,3 +3705,24 @@ Map proposed public exports to existing canonical implementations and focused te
 - No SDK package facade or runtime API was created; no protocol semantics, V3 carrier, Reveal, economic constants, EEV authority, wallet signing, deployment, transaction submission, or Materios work changed.
 
 **Next gate:** exact-head focused CI for the existing adapter/evidence suites and a design decision for the universal lifecycle transition contract. Only then define package exports/API compatibility tests; do not turn pending V08/V09 into success by changing labels or adding synthetic fixtures.
+
+
+## 45.34 AGENT B — EXACT-HEAD SDK/PROTOCOL CI RECHECK (2026-10-27)
+
+The live working branch HEAD is `324bc48ffb1ae44853044fea1812628541cc2032` (`docs(coordination): record SDK export map and portability pass`). Fresh GitHub Actions results have now been polled for that exact SHA:
+
+- [IMMORTAL Portability Conformance #40579659046](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659046): **SUCCESS**.
+- [Protocol Declaration Conformance #40579659067](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659067): **SUCCESS**.
+- [Cardano Adapter Sale Conformance #40579658987](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579658987): **SUCCESS**.
+- [Documentation Link Check #40579659055](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659055): **SUCCESS**.
+- [Algorithmic Governability Adversarial Lab #40579659182](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659182): **SUCCESS**.
+
+The earlier Cardano Adapter Sale run #40579636315 on the immediately preceding docs commit was cancelled; the newer run above completed successfully on the current HEAD and supersedes it for current-head evidence.
+
+### Interpretation and next gate
+
+This establishes that the listed workflow runs completed successfully on the exact current branch HEAD. It does **not** close V08 (universal lifecycle/expiry transition owner remains unresolved) or V09 (no instantiated, evidenced concrete `K_c` certificate); it is not full portability certification, not Preprod qualification, and not evidence that a real ticket has been issued or purchased. P2.8's native-ledger evidence remains scoped to the previously recorded exact artifact/local Yaci context.
+
+No SDK facade or duplicate TypeScript kernel was introduced. No V3 carrier, Reveal semantics, economic constants, Agent A EEV/Issue authority, wallet signing, deployment, transaction submission, or paused Materios work was changed.
+
+**STATUS: CURRENT-HEAD WORKFLOW SET GREEN; V08/V09 AND REAL PREPROD ISSUE/PURCHASE REMAIN OPEN.**
