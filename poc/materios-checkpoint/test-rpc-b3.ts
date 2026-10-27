@@ -199,7 +199,7 @@ test('getGrandpaFinalityProof rejects malformed proof transport', async () => {
   }
 })
 
-test('getRuntimeCode requests state_getCode at the exact block', async () => {
+test('getRuntimeCode reads :code storage at the exact block', async () => {
   const target = `0x${'11'.repeat(32)}`
   let seenMethod = ''
   let seenParams: unknown[] = []
@@ -216,8 +216,8 @@ test('getRuntimeCode requests state_getCode at the exact block', async () => {
     const rpc = new MateriosRpc(server.endpoint)
     const code = await rpc.getRuntimeCode(target)
     assert.equal(code, '0x6000')
-    assert.equal(seenMethod, 'state_getCode')
-    assert.deepEqual(seenParams, [target])
+    assert.equal(seenMethod, 'state_getStorage')
+    assert.deepEqual(seenParams, ['0x3a636f6465', target])
   } finally {
     await server.close()
   }
@@ -423,7 +423,7 @@ test('collectCommitteeExecutionEvidence rejects runtime identity drift', async (
       return
     }
 
-    if (body.method === 'state_getCode') {
+    if (body.method === 'state_getStorage' && body.params?.[0] === '0x3a636f6465') {
       res.end(JSON.stringify({
         jsonrpc: '2.0',
         id: body.id,
@@ -505,7 +505,7 @@ test('collector rejects proof call-data drift', async () => {
       return
     }
 
-    if (body.method === 'state_getCode') {
+    if (body.method === 'state_getStorage' && body.params?.[0] === '0x3a636f6465') {
       res.end(JSON.stringify({ jsonrpc: '2.0', id: body.id, result: '0x6000' }))
       return
     }
