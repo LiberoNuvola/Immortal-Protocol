@@ -189,3 +189,27 @@ This pass inspected the actual files through the active branch ref `work/immorta
 6. Keep P2.8 acceptance separate: inspect the exact-head `ledger-evaluation-report.json`, report binding, reference-input UTxOs and actual redeemer outcomes.
 
 **Status after this pass:** test/workflow map recorded from branch-resolved files; exact branch HEAD SHA and fresh test execution remain unverified. No code, test, workflow, or protocol semantics changed.
+
+
+## Follow-up: executable reference conformance hardening (2026-10-27)
+
+A concrete gap was found while inspecting `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs`: it printed actual and expected fields but did not compare them, silently skipped unhandled executable vectors, represented V05's protected-capital decomposition as a single aggregate field, and did not execute V07's nested locality cases. That meant the script's output was diagnostic, not a fail-closed conformance gate.
+
+Changes made on the existing working branch:
+- The evaluator now compares actual kernel results with each available expected value and exits non-zero on mismatch.
+- An executable vector with an unsupported shape now fails instead of being silently ignored.
+- V05 builds `UniversalEconomicState` from the six supplied protected-capital components, so the kernel must reproduce the expected aggregate.
+- V07's nested locality cases are now executed independently.
+- V10 now routes its CAR + other protected-capital aggregate through the canonical `UniversalEconomicKernel` instead of duplicating `max(0, EEV - PC)` in the runner.
+- Pending vectors are printed explicitly, and the final marker says `PASS_EXECUTABLE_VECTORS` with a pending count, not full portability closure.
+- Added a step to `.github/workflows/immortal-cardano-lab.yml` after canonical Plutus setup to run this evaluator and persist `audit/yaci-evidence/reference-conformance.txt`.
+
+Commits on `work/immortal-green-closure`:
+- Initial fail-closed assertions: `a170c9270d6cbdc9684402fec5ad66e1eb7cc62f`
+- Workflow invocation: `d226dab0f504935413588a937b630714defed21d`
+- Decomposition/locality coverage and parser corrections: `60248611d763b98de0fe12727d48928ce59bb296`, `db67f9add287757cd00a1dc0d85670886121c74c`, `2ec76f308170aec2842b49903d0f806e59d1ff17`
+- Final CAR-through-kernel adjustment: `bde369cb23853f7a31f330d87a232211b1c606f6`
+
+The current branch comparison confirms `work/immortal-green-closure` is exactly at `bde369cb23853f7a31f330d87a232211b1c606f6`. The exposed status endpoint currently returns no status checks for that SHA; this is **not** evidence that the new step passed. The runner could not be executed locally in this environment. The CI step is now configured to execute it; inspect the actual lab run and uploaded `reference-conformance.txt` before declaring the change validated. V08/V09 remain pending and overall portability conformance remains incomplete.
+
+No economic semantics, V3 carrier, Reveal semantics, EEV authority, Materios trust boundary, wallet signing, deployment, or transaction submission was changed.
