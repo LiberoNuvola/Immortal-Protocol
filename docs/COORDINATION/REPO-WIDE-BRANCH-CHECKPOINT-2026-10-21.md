@@ -4253,3 +4253,11 @@ The fresh GRANDPA witness artifact showed that `state_getCode` returns `-32601 M
 - [Materios B3 execution-proof verifier #124](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015) was pending when recorded; inspect it before claiming the checkpoint RPC tests passed.
 
 This improves runtime-code acquisition only. The WASM remains untrusted until its hash is anchored to a trusted runtime identity/state proof. It does not solve the repeated GRANDPA set-ID mismatch: fresh block 2471424 signatures verify 4/4 under inferred 4261 and 0/4 under runtime-returned 4352. B3-A remains OPEN; no live transaction.
+
+### Agent A — live confirmation of runtime WASM acquisition fix; witness job still blocked (2026-10-27)
+
+The corrected `:code` query was exercised by [Materios B3 execution-proof run #124](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015). Overall workflow result: FAILURE because this branch's GRANDPA capture job lacks the separate WebSocket probe step and direct `grandpa_subscribeJustifications` returned `METHOD_NOT_FOUND`. Rust verifier tests and live storage-proof jobs passed; finalized-state capture passed.
+
+Finalized-state artifact [12754214870](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015/artifacts/12754214870), JSON SHA-256 `1ad442dc1a9d01aefb0dce85aa150ffbb6697b26df327db4d96bf53bbb6d6e82`, confirms runtime WASM was acquired via exact `:code` storage at finalized block `2471591` / hash `1ca50d7ccf0156c34a0942b4020af15b52d6a2edf9bddb4523ac362d136d4636`. Byte length `857434`; SHA-256 `4f4ee403ab22cd1f35c96aebaa2ba37508611e976a603e6b22b2ea03ec68f3d2`; Blake2-256 `98cab6b1b3d84179fdb252ce281e842310a48461c5e8ea802ea5fd5b33c91c7b`. These are observed byte hashes, not an independently trusted runtime identity. Set ID remains `4352`; `grandpa_proveFinality` remains unavailable. Agent C's separate B3 branch has the WebSocket probe and independently reproduces the 4261-vs-4352 signature mismatch; see central coordination §45.23–45.24.
+
+Next: Agent C should review the small `:code` fix/test commits `b7fe03e` and `6e576c2` already documented in its branch coordination note, rather than Agent A duplicating the B3 WebSocket workflow. No protocol semantics changed; B3-A remains OPEN.
