@@ -70,6 +70,7 @@ jobs:
         env:
           MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC || 'https://materios.fluxpointstudios.com/rpc' }}
           MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ steps.preflight.outputs.block_hash }}
+          MATERIOS_B3_TARGET_SOURCE: ${{ steps.preflight.outputs.target_mode }}
           MATERIOS_B3_ANCHOR_STORAGE_KEY: ${{ secrets.MATERIOS_B3_ANCHOR_STORAGE_KEY || '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55' }}
         run: npm run capture:anchor --prefix poc/materios-checkpoint
 
