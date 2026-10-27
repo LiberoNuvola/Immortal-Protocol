@@ -1764,3 +1764,35 @@ Materios issue #50 (`materios_b3_calculateCommitteeProof`) is **closed as `not_p
 No new branch, no verifier weakening, no live receipt, no finality claim.
 
 **STATUS: B3-B LIVE STORAGE PROOF 🟢 / B3-A GRANDPA FINALITY + AUTHORITY-SET PROVENANCE 🔴 OPEN.**
+
+
+## 45.24 MATERIOS FULL SET-ID SCAN RESULT — RUN #40551078687 — 2026-10-27
+
+Run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551078687  
+Code HEAD tested: `3f5914892c741f8be877957ec4c3a68c87ae43b1`  
+Current branch includes checkpoint follow-up commit `b8c3936f5d0502d8b0ba7a1075c7ac005ce7e56b`.
+
+### CI result
+
+- `verifier`: PASS (format + Rust verifier tests).
+- `finalized-state-capture`: PASS.
+- `live-storage-proof`: PASS.
+- `real-grandpa-witness`: FAIL as intended by fail-closed finality gate.
+
+The new witness artifact is `materios-real-grandpa-witness`, artifact ID `12755326644`, SHA-256 `425cb37c06000d6242bdf5e91f97630ea5b8bf5d2f9108c733325de35f78d146`.
+
+### Full-domain diagnostic
+
+The expanded scan tested **4,353 set IDs (0 through 4352)**. Exactly one ID matched at least one embedded signature: `4261`; all four embedded signatures verify under that localized payload. Under the currently observed five-authority list, the diagnostic weighted result is 4/5 and ancestry passes.
+
+This strengthens the conclusion that the captured justification was localized with set ID 4261, rather than 4352. It still does not prove that the authority list is the historical set at 2471424, authenticate the set ID, or prove the transition history. The artifact explicitly retains:
+- `cryptographic_finality=false`;
+- `authority_transition_provenance=false`;
+- `overall_status=OPEN`;
+- transition witness `NOT_FOUND_IN_PROBE_WINDOW`.
+
+### Decision
+
+The signature payload hypothesis is now narrowed across the entire non-negative domain up to the observed current ID. Do not spend another run repeating this same scan. The next work must obtain a new class of evidence: authenticated historical authority-set state/transition or a proof-capable archive/node source. The public RPC still lacks `grandpa_proveFinality` and `state_getCode`; upstream issue #50 for a committee execution-proof RPC is closed as `not_planned`.
+
+**STATUS: SET-ID LOCALIZATION 🟢 / B3-B STORAGE PROOF 🟢 / B3-A AUTHENTICATED FINALITY + AUTHORITY PROVENANCE 🔴 OPEN.**
