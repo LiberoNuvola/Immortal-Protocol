@@ -1082,6 +1082,58 @@ async function main(): Promise<void> {
     }
   }
 
+  // Run the existing full verifier under each set ID that makes one or more
+  // embedded signatures valid. This remains diagnostic because both the
+  // candidate set ID and the authority list's historical provenance are
+  // untrusted; this result must never flip the authoritative crypto gate.
+  const candidateSetVerification = {
+    status: "DIAGNOSTIC_ONLY" as const,
+    results: [] as Array<{
+      candidate_set_id: string;
+      status: string;
+      signed_weight: string | null;
+      total_weight: string | null;
+      error: string | null;
+    }>,
+    trust_scope: "Uses an inferred candidate set ID and the currently observed authority list. Even a signature/quorum/ancestry pass is not authenticated historical finality.",
+  };
+  for (const candidateSetId of localizedSignatureDiagnostic.search_window.matching_set_ids) {
+    try {
+      const candidateResult = await verifyFinality(
+        {
+          chainId: CHAIN_ID,
+          genesisHash: hexToBytes(genesisHash, "genesis hash"),
+          blockHash: hexToBytes(witness.blockHash, "witness block hash"),
+          blockNumber: witness.blockNumber,
+        },
+        justification,
+        {
+          chainId: CHAIN_ID,
+          genesisHash: hexToBytes(genesisHash, "genesis hash"),
+          setId: BigInt(candidateSetId),
+          authorities,
+        },
+        nobleEd25519,
+        { verifyAncestry: true },
+      );
+      candidateSetVerification.results.push({
+        candidate_set_id: candidateSetId,
+        status: "SIGNATURE_QUORUM_ANCESTRY_PASS_UNTRUSTED",
+        signed_weight: candidateResult.signedWeight.toString(),
+        total_weight: candidateResult.totalWeight.toString(),
+        error: null,
+      });
+    } catch (error) {
+      candidateSetVerification.results.push({
+        candidate_set_id: candidateSetId,
+        status: "SIGNATURE_QUORUM_ANCESTRY_FAIL_UNTRUSTED",
+        signed_weight: null,
+        total_weight: null,
+        error: error instanceof Error ? error.name + ": " + error.message : String(error),
+      });
+    }
+  }
+
   // Diagnostic only: the authority set visible at the target's post-state
   // can differ from the set that signed finality for the target if a set change
   // is enacted at this boundary. Never treat a parent-state match as authenticated
@@ -1246,6 +1298,7 @@ async function main(): Promise<void> {
       },
       cryptographic_verification: cryptoVerification,
       localized_signature_diagnostic: localizedSignatureDiagnostic,
+      candidate_set_verification: candidateSetVerification,
     },
     transition: {
       status:
