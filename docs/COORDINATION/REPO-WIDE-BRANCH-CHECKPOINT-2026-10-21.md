@@ -4243,3 +4243,13 @@ Cross-checked the completed [Materios B3 execution-proof run #40548408573](https
 - Do not trust the inferred ID, weaken the verifier, or rerun an identical boundary wait. Next useful action is a specific upstream/operator query about the observed set-ID/signature conflict, plus obtaining a genesis-rooted transition proof or an RPC route exposing verifiable runtime-code/execution/finality evidence. Details: [central coordination §45.23](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/IMMORTAL_WORK_COORDINATION.md).
 
 No live transaction or receipt was submitted. No V3/Reveal or production semantics were changed.
+
+### Agent A — runtime WASM acquisition path corrected after fresh Materios capture (2026-10-27)
+
+The fresh GRANDPA witness artifact showed that `state_getCode` returns `-32601 Method not found` on the public Materios RPC. This is an observer bug, not proof that runtime WASM is unavailable: Substrate exposes the runtime code under the `:code` storage key. On `work/immortal-green-closure`, `MateriosRpc.getRuntimeCode(at)` now queries `state_getStorage("0x3a636f6465", exactBlockHash)` and fails closed if absent; tests now assert that exact method/key/hash. Commits: fix `b7fe03ea03eaa66a02a55b9e4fd55e3ad411a99f`, tests `6e576c28ef179f8ac8b7ebaa4ac086b761d2384e`.
+
+- [Materios Canonical Evidence & Finality Boundary #178](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551713798) — SUCCESS.
+- [Documentation Link Check #2522](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551713799) — SUCCESS.
+- [Materios B3 execution-proof verifier #124](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015) was pending when recorded; inspect it before claiming the checkpoint RPC tests passed.
+
+This improves runtime-code acquisition only. The WASM remains untrusted until its hash is anchored to a trusted runtime identity/state proof. It does not solve the repeated GRANDPA set-ID mismatch: fresh block 2471424 signatures verify 4/4 under inferred 4261 and 0/4 under runtime-returned 4352. B3-A remains OPEN; no live transaction.
