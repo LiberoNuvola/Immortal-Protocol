@@ -7,12 +7,12 @@ on:
         description: "Exact latest Rust-verified Materios witness block number"
         required: true
         type: string
-        default: "2463858"
+        default: "2464283"
       target_block_hash:
         description: "Exact latest Rust-verified Materios witness block hash"
         required: true
         type: string
-        default: "0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9"
+        default: "0xfc96cd4817f2dda1838c5271e7b60e50064c16c6a293c8e2611d17952d179ca2"
       wait_seconds:
         description: "Maximum P2P proof observation window"
         required: true
@@ -86,8 +86,8 @@ jobs:
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_BOOTNODE: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
-          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2463858' }}
-          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9' }}
+          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464283' }}
+          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0xfc96cd4817f2dda1838c5271e7b60e50064c16c6a293c8e2611d17952d179ca2' }}
           SMOLDOT_MAX_WAIT_SECONDS: ${{ github.event.inputs.wait_seconds || '360' }}
           SMOLDOT_EVIDENCE_OUT: ${{ runner.temp }}/materios-smoldot-evidence.json
         run: node poc/materios-smoldot/capture-finality.mjs
