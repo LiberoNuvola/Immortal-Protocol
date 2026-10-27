@@ -3536,3 +3536,24 @@ This means a file move or API rewrite would cross real application and evidence 
 P2.8: the current status docs and Reveal remediation spec still distinguish reference-script size remediation from actual native-ledger execution success. The workflow source invokes the native evaluator, but I did not verify a fresh exact-head run artifact that proves success with redeemer/ExUnits or a genuine ledger-originated failure. Therefore I do not declare P2.8 closed, and I do not modify the evaluator based on a green workflow label alone. Required evidence is latest run ID + exact head SHA + artifact digest + `ledger-evaluation-report.json` and its binding.
 
 **STATUS: SDK CONSUMER MAP ADDED; NO CODE REFACTOR; P2.8 CURRENT-HEAD EVIDENCE NOT VERIFIED IN THIS PASS; NO CLOSURE CLAIM.**
+
+
+## 45.27 — AGENT B — SDK TEST / WORKFLOW MAP — 2026-10-27
+
+Follow-up inventory commit: [`04afcd33610902f8ec525b88d277f7267849aa55`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/04afcd33610902f8ec525b88d277f7267849aa55). Updated artifact: [IMMORTAL SDK cross-branch inventory](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md).
+
+Mapped existing test and workflow boundaries without modifying code:
+- `src/__tests__/immortal-reveal-conformance.test.ts`: canonical-state projection and Reveal contract;
+- `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts`: action/pre-state/post-state fingerprint binding and negative twins;
+- `Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.test.ts`: observed transition/transaction binding;
+- `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`: fail-closed pre-sign admission/input/liquidity checks;
+- `Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json` + `ReferenceEconomicConformance.hs`: existing chain-neutral reference surface, but the vector file is explicitly `executable-seed` and V08/V09 remain pending;
+- `.github/workflows/adapter-sale-conformance.yml`: grouped focused boundary tests + build;
+- `.github/workflows/immortal-cardano-preprod.yml`: live Preprod context + conformance binding, with manual-only observation/bootstrap options;
+- `.github/workflows/immortal-cardano-lab.yml`: Yaci integration and native P2.8 evaluator/evidence packet.
+
+Important limitation: the GitHub connector resolved the working branch files and returned blob SHAs, but its exposed branch search did not return the branch's commit SHA. I am not claiming exact HEAD pinning or fresh test execution from source inspection alone. The inventory now records this explicitly and sets the next gate: resolve exact HEAD, run the focused tests there, then build a thin compatibility façade with contract tests—no file moves or parallel economic kernel.
+
+P2.8 remains separate and OPEN pending inspection of an exact-head `ledger-evaluation-report.json`, its byte-binding artifact, reference-input UTxOs and actual redeemer outcomes. No workflow dispatch, wallet signing, transaction submission, or protocol-semantic change was performed.
+
+**STATUS: TEST/WORKFLOW MAP RECORDED; EXACT HEAD + FRESH TEST RUN STILL UNVERIFIED; NO SDK IMPLEMENTATION STARTED.**
