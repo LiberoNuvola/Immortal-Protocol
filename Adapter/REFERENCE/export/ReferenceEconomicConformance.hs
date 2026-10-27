@@ -163,7 +163,7 @@ emit v =
       , vectorCases v
       )
     of
-      ("V07", _, _, _, _, _, _, Just cases) ->
+      ("V07", _, _, _, _, _, Just cases) ->
         mapM_ (emitLocalityCase (vectorId v)) (zip [1 :: Int ..] cases)
       ("V10", Just eev, Nothing, Just expected, Just car, Just other, _) -> do
         let pc = car + other
