@@ -4323,3 +4323,16 @@ Rechecked completed Actions runs and read the full job logs for the Cardano Lab,
 Successful companion checks at the same source head: Documentation Link Check #40562306123, Algorithmic Governability Adversarial Lab #40562305855, IMMORTAL Portability Conformance #40562305871, and Protocol Declaration Conformance #40562305992. The portability workflow remains a limited executable-vector pass; it does not resolve V08/V09.
 
 **Agent A disposition:** this follow-up is evidence triage only. The two build/conformance defects are assigned to Agent B; no duplicate patch, new branch, semantic change, wallet signing, or transaction submission was performed. First-ticket EEV/Authoritative Issue Admission remains independently gated.
+
+
+### P2.8 evidence artifact inspection — run #40562306009 (2026-10-27)
+
+Agent A downloaded and inspected artifact [12763368218](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40562306009/artifacts/12763368218), ZIP SHA-256 `eb663d6dea959f4450081427fe8f0e1df402d77c3b12f7d13c51721e94418d15`, from exact head `cc374da958bc5e7017779974dbb29ef998d06f8d`.
+
+- `ledger-evaluation-report.json` contains two redeemer entries, both `status: success` with ExUnits (spending redeemer indexes 1 and 2). Its SHA-256 is `848b18828633ec18f02e0973bf5d50dfd077ee439dcf00d46fe862170c3a731c`.
+- `ledger-evaluation-binding.txt` binds transaction CBOR SHA-256 `97145e1d742aa3bf09d034f6eeb7e6da0e3c7eeab9d1c64d49f6d5058a76ce37`, protocol parameters, UTxO snapshot, epoch info, system start and evaluation report by content hashes.
+- `verification-registry.json` reports PASS for `P2.8.CONTEXT.MATERIALIZATION`, `P2.8.YACI.UTXO.DECODER`, and `P2.8.LEDGER.EVIDENCE.GATE`; the registry explicitly limits this evidence to the exact commit/run and local Yaci context, not Preprod/mainnet. The manifest classifies the context as `raw-yaci-context-materialized` on `local-yaci-devnet` / Conway protocol major 11.
+- `reference-conformance.txt` records V01–V07 and V10 as executable-vector PASS but V08 (`pending-schema-extraction`) and V09 (`pending-certified-kernel-fixture`) as pending.
+- The resource audit reports observed max transaction size 16,384 bytes and measured candidate transaction/script sizes for this run; these measurements do not qualify unrelated production transaction paths.
+
+**Disposition correction:** for this exact local Yaci evidence packet, P2.8's report-aware native-ledger evidence gate is now supported as **PASS**, rather than merely inferred from the workflow's exit code. This closes only the scoped P2.8 local run; it does not close V08/V09, the historical canonical Haskell Reveal-size issue, Haskell/Aiken semantic equivalence, production Preprod qualification, EEV, or first Issue. Do not change V3/Reveal semantics.
