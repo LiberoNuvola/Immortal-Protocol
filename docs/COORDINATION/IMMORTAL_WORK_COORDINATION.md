@@ -3458,3 +3458,25 @@ The fresh-state run [#40548408573](https://github.com/LiberoNuvola/Immortal-Prot
 No target-bound raw witness artifact has been published yet. Do not start another identical run while this wait is active. If target `2471424` finalizes in time, the subsequent capture step will prefer its cross-route-verified WebSocket payload over the older HTTP witness and query target/parent runtime state immediately. If the wait expires or target/parent state is already pruned, classify the acquisition result and do not claim a finality pass.
 
 **STATUS: INFERRED SET-ID 4261 DIAGNOSTIC ONLY; TARGET 2471424 CAPTURE WAIT ACTIVE; NO TARGET-BOUND WITNESS YET; B3-A OPEN; NO LIVE TRANSACTION.**
+
+## 45.23 — AGENT C / AGENT A CROSS-CHECK — FRESH TARGET REPRODUCES SET-ID 4261 SIGNATURE HYPOTHESIS, BUT NO TRUSTED FINALITY — 2026-10-27
+
+Inspected the completed fresh-boundary workflow [run #40548408573](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573), pinned to source head `a66493791dc426a4a6a213fd1dc5b9b7a34b84e7). The run's Rust verifier, finalized-state capture and live storage-proof jobs passed, but `real-grandpa-witness` failed at cryptographic finality verification. Evidence artifact: [`materios-real-grandpa-witness`, ID 12754441369](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12754441369); raw JSON SHA-256 `7bd6f51b606f2e9edb9a606c3b1e0c6d5b9b1968749f22a040685de17e92b270`. Separate finalized-state artifact: [ID 12753497694](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12753497694).
+
+### Fresh target facts
+
+- Finalized target: block `2471424`, hash `dcf28d0d21715e914000db6f10e216c8702fc39cd3275368746da3158cf2d16c`, state root `17383edcff2af5dd54c1785fe4622d9533e8471ab66c7221daece8e48748bf59`.
+- The capture successfully queried GRANDPA authorities and set ID at the exact target state. The returned set ID is `4352`, with five authorities; target-state lookup itself is not the missing part for this target.
+- Its 574-byte raw FRNK justification has round `46478`, four precommits, all four targeting the exact commit target `2471424`, and no ancestry headers.
+- Independently re-parsed the artifact bytes and checked the standard localized Ed25519 payload using Python's independent `cryptography` Ed25519 implementation. Under candidate set ID `4261`, **4/4 signatures verify**; under observed target-state set ID `4352`, **0/4 verify**. All four signers are members of the five-key authority list returned at the target. A bounded search of `4096..4352` found exactly one all-signature match: `4261`. This reproduces the same inferred candidate observed at block `2470912`; it is stronger repeatability evidence for the payload/set-ID mismatch hypothesis, not authority authentication.
+- With set ID `4352`, the existing verifier returns `INVALID_SIGNATURE`. The artifact's parent-state diagnostic also fails signature verification under `4352`.
+- The dense scan covered blocks `2470400..2471424` and found the target justification, but no authority-transition witness in the configured probe window. `provenance_verified=false`; `b3a_claim.overall_status=OPEN`.
+- The public RPC returns `METHOD_NOT_FOUND` for both `state_getCode` and `grandpa_proveFinality`; WebSocket justification capture succeeded and matched the target header across routes. The lack of runtime-code and standard finality-proof endpoints remains a transport/provenance gap.
+
+### Interpretation and next action
+
+The fresh run no longer has the earlier target/parent-pruning problem for the target block: exact-target runtime authority state is available. However, this does **not** authenticate the transition history, and the current-state API's set ID still conflicts with the only ID under which all four signatures verify. Do not choose `4261` merely because signatures verify, do not weaken the verifier, and do not mark B3-A green.
+
+Next work should be non-duplicative and evidence-led: (1) preserve this second independent target as a regression vector for the localized payload diagnostic; (2) ask the Materios upstream/operator to explain why `GrandpaApi_current_set_id` returns `4352` while the target justification signatures verify only under `4261`, with the exact target hash/round and raw FRNK digest attached; and (3) obtain either a genesis-rooted authority-set transition proof or a node/RPC route that exposes verifiable runtime code/execution/finality evidence. Do not launch another identical boundary wait until there is a specific change to the witness path or a confirmed endpoint that can resolve the missing provenance.
+
+**STATUS: FRESH TARGET AUTHORITY API READ GREEN; RAW FRNK + CROSS-ROUTE HEADER BINDING GREEN; 4/4 SIGNATURES VERIFY ONLY UNDER INFERRED 4261, NOT OBSERVED 4352; AUTHORITY TRANSITION PROVENANCE MISSING; PUBLIC RUNTIME-CODE/FINALITY RPC UNAVAILABLE; B3-A OPEN; NO LIVE TRANSACTION.**
