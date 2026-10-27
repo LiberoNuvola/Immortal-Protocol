@@ -154,3 +154,38 @@ Proceed to a dependency-map/conformance audit, not a broad refactor:
 3. Build a package/export proposal with no moves initially.
 4. Run the relevant existing conformance tests at that exact head.
 5. Keep P2.8 and SDK readiness as separate statuses.
+
+
+## Follow-up: test/workflow map (2026-10-27)
+
+This pass inspected the actual files through the active branch ref `work/immortal-green-closure`. The connector returned content/blob SHAs for each file, but did not expose the branch ref's commit SHA directly; therefore the file-level pins below are reproducible blob identities, not a claim that the active branch HEAD has been pinned. Resolve the exact HEAD SHA before implementation or reporting a test result.
+
+### Contract tests and their current role
+
+| Seam | Test / evidence file | What it presently checks | SDK implication |
+|---|---|---|---|
+| Canonical economic state + PRE-RICH Reveal projection | `src/__tests__/immortal-reveal-conformance.test.ts` (blob `f7cff6732ffe20a2ae47b12f05ba49a5abbd9bda`) | Projects observed B1 state into `CanonicalEconomicState`, validates units/decomposition, and exercises the Reveal transition shape | Keep as compatibility contract; do not treat its TypeScript projection as independent normative authority |
+| Admission ↔ transition evidence | `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts` (blob `e387c46e87fb0a5151e53851fcb65da13a2d82aa`) | Matching action, pre-state, post-state and 32-byte fingerprints; negative twins for malformed/mismatched values | Direct candidate for core contract tests, with explicit distinction between structural binding and authenticity |
+| Observed transition binding | `Adapter/CARDANO/observation/CardanoObservedTransitionEvidence.test.ts` (blob `88f1d5d3911bdccbfa91f3683ec08434e78008eb`) | Action, pre/post observation fingerprints and transaction reference must match | Adapter-specific evidence contract; keep environment label and trust level explicit |
+| Economic submission boundary | `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` (blob `c7a2e880eb394582e31fd677bca088bbb429bb10`) | Requires admission, checks completed transaction input binding, pool identity/value, action and liquidity, and fails before signing on invalid witnesses | Preserve pre-sign negative-twin coverage; never let SDK schema validation itself authorize signing |
+| Reference portability vectors | `Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json` (blob `18334f0a12a333c4da796e9c15fe93454c2dd1cf`) | V01–V07 and V10 have some executable expected values; V08/V09 remain pending and the file labels itself `executable-seed` | Not yet a complete certified conformance suite; status/pending vectors must remain visible |
+| Haskell reference evaluator | `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs` (blob `1e45fddd856005e4d7721d6107bc84b7c90381fd`) | Reads the vector JSON and emits normalized reference results for vectors with supported shapes | Conformance tool, not a public runtime API; run against the canonical Haskell kernel and record exact toolchain/SHA before package design |
+
+### Existing workflow entry points
+
+| Workflow | Invocation / scope observed on active branch | Evidence boundary |
+|---|---|---|
+| `.github/workflows/adapter-sale-conformance.yml` (blob `1fa2d9a2370f64c7a3b005fb96bda588439f5b20`) | Push on `work/immortal-green-closure`; runs the focused Vitest boundary group, `immortal-cardano-adapter-conformance.test.ts`, Preprod observation, Issue-admission tests, and RF8 production-boundary audit; separate frontend build job | Best existing grouped contract-test gate for Cardano SDK façade, but contains Agent A/EEV-adjacent tests and must not be reinterpreted as EEV approval or end-to-end ledger proof |
+| `.github/workflows/immortal-cardano-preprod.yml` (blob `799f550c265d8fcc152441df9819d7cc5637b56f`) | Push paths include Adapter/audit/Plutus files; runs live Preprod context probe and `immortal-reveal-conformance.test.ts`, then binds observation to exact conformance snapshot; manual inputs can enable V3 observation or direct-USDM evidence bootstrap | Separate live observation/evidence from local contract conformance. Do not dispatch privileged/bootstrap inputs as part of SDK discovery |
+| `.github/workflows/immortal-cardano-lab.yml` (blob `45d7f987efdc62980258381ddb5e9691dcc2c8eb`) | Push on working branch; compiles Plutus, starts Yaci devnet, runs lifecycle traces, materializes P2.8 context, runs native decoder conformance and the native Ledger evaluator, uploads evidence | Integration/evaluator evidence, not a package unit test. Do not call P2.8 closed until exact-head report and byte-binding artifact are inspected |
+
+### What remains before SDK implementation
+
+1. Pin the actual working branch HEAD SHA using a Git ref/commit endpoint (the current connector surface returned branch name and file blob SHAs but not its resolved commit SHA).
+2. Execute the focused tests at that SHA, rather than infer a pass from workflow definitions or prior CI.
+3. Add a conformance harness for the portability vector file that fails explicitly on pending vectors rather than silently skipping them; keep pending-vector status non-green for a claim of full portability closure.
+4. Establish the Haskell reference evaluator's canonical build/run command and capture normalized output + toolchain fingerprint.
+5. Draft a compatibility façade and API contract tests only after the above; no file moves and no parallel TypeScript kernel.
+6. Keep P2.8 acceptance separate: inspect the exact-head `ledger-evaluation-report.json`, report binding, reference-input UTxOs and actual redeemer outcomes.
+
+**Status after this pass:** test/workflow map recorded from branch-resolved files; exact branch HEAD SHA and fresh test execution remain unverified. No code, test, workflow, or protocol semantics changed.
