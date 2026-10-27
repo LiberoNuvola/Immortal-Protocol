@@ -7,17 +7,17 @@ on:
         description: "Exact latest Rust-verified Materios witness block number"
         required: true
         type: string
-        default: "2464310"
+        default: "2464531"
       target_block_hash:
         description: "Exact latest Rust-verified Materios witness block hash"
         required: true
         type: string
-        default: "0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69"
+        default: "0x91fb7cca7ff9ed11c981e524446978750691b376df2eb615322a6bf83834d2a7"
       target_state_root:
         description: "Exact stateRoot from the same Rust-verified witness"
         required: true
         type: string
-        default: "0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa"
+        default: "0xfa97240573061c759e447042f86db343d9a323e57184f2ec8382bef43d88a3b4"
       wait_seconds:
         description: "Maximum P2P proof observation window"
         required: true
@@ -97,9 +97,9 @@ jobs:
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_BOOTNODE: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
-          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464310' }}
-          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69' }}
-          MATERIOS_TARGET_STATE_ROOT: ${{ github.event.inputs.target_state_root || '0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa' }}
+          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464531' }}
+          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0x91fb7cca7ff9ed11c981e524446978750691b376df2eb615322a6bf83834d2a7' }}
+          MATERIOS_TARGET_STATE_ROOT: ${{ github.event.inputs.target_state_root || '0xfa97240573061c759e447042f86db343d9a323e57184f2ec8382bef43d88a3b4' }}
           SMOLDOT_MAX_WAIT_SECONDS: ${{ github.event.inputs.wait_seconds || '360' }}
           SMOLDOT_EVIDENCE_OUT: ${{ runner.temp }}/materios-smoldot-evidence.json
         run: node poc/materios-smoldot/capture-finality.mjs
