@@ -124,7 +124,7 @@ function describeAssetUnit(unit, quantity) {
   const bytes = Buffer.from(assetNameHex, 'hex')
   const decoded = bytes.toString('utf8')
   const roundTrips = Buffer.from(decoded, 'utf8').equals(bytes)
-  const printableAscii = roundTrips && /^[\\x20-\\x7e]*$/.test(decoded)
+  const printableAscii = roundTrips && /^[ -~]*$/.test(decoded)
   return {
     unit,
     policyId,
