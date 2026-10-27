@@ -707,7 +707,7 @@ describe("B3-A chain label regression", () => {
 
       checkpoint.blockHash.fill(0xcc);
       checkpoint.genesisHash.fill(0xdd);
-      trusted.setId = 4261n;
+      Object.assign(trusted, { setId: 4261n });
       trusted.genesisHash.fill(0xee);
       trusted.authorities[0]!.publicKey.fill(0xff);
       justification.commit.targetHash.fill(0xab);
