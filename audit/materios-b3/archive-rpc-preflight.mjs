@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * Fail-closed preflight for the Materios historical RPC required by B3-B.
+ * Fail-closed preflight for the Materios state witness required by B3-B.
  *
- * This does not prove canonicality. It proves that the supplied RPC can
- * actually serve the exact historical state witness needed by the existing
- * capture + independent verifier pipeline.
+ * This does not prove canonicality. By default it selects the endpoint's
+ * reported finalized-head hash and checks that the exact header, storage
+ * value and read proof can be fetched at that hash. An explicit older block
+ * can be supplied for archive-capable endpoints. The capture and independent
+ * verifier stages must use the same returned block hash.
  */
 
 import { appendFileSync } from "node:fs";
