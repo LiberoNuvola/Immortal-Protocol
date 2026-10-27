@@ -1,0 +1,65 @@
+name: Minswap Preprod tUSDM Pool Read-Only Observation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/observe-minswap-preprod-tusdm-pool.mjs"
+      - ".github/workflows/minswap-preprod-tusdm-observation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  observe-preprod-pool:
+    name: Observe exact ADA / pinned Preprod tUSDM V2 pool
+    runs-on: ubuntu-24.04
+    environment: DEMETER
+    timeout-minutes: 15
+    env:
+      BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID || vars.VITE_BLOCKFROST_PROJECT_ID }}
+      KOIOS_PREPROD_URL: ${{ vars.KOIOS_PREPROD_URL || 'https://preprod.koios.rest/api/v1' }}
+    steps:
+      - name: Checkout branch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure JSR registry required by Minswap SDK
+        run: printf '%s\n' '@jsr:registry=https://npm.jsr.io' >> "$HOME/.npmrc"
+
+      - name: Install isolated read-only observation dependencies
+        run: npm install --prefix audit/cardano-integration --no-audit --no-fund @minswap/sdk@0.5.0 @blockfrost/blockfrost-js@5.5.0
+
+      - name: Validate provider configuration without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${BLOCKFROST_PROJECT_ID:-}" ]]; then
+            echo "BLOCKFROST_PROJECT_ID missing; provider values are intentionally redacted."
+            exit 1
+          fi
+          echo "Blockfrost Preprod provider configured; value redacted."
+
+      - name: Query the exact pair and independently verify its live UTxO through Koios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit/preprod-evidence
+          node --experimental-wasm-modules audit/cardano-integration/observe-minswap-preprod-tusdm-pool.mjs 2>&1 | tee audit/preprod-evidence/minswap-preprod-tusdm-pool-observation.json
+
+      - name: Upload read-only observation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-preprod-tusdm-pool-observation-${{ github.sha }}
+          path: audit/preprod-evidence/minswap-preprod-tusdm-pool-observation.json
+          if-no-files-found: warn
+          retention-days: 30
