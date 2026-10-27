@@ -4204,3 +4204,17 @@ This resolves the present discovery attempt for the exact ADA / pinned Preprod t
 ### Agent A — asset-name anti-spoofing caveat for external script candidates (2026-10-27)
 
 A focused source check of external candidate `50ac85a0fded8f8285c0ddcdf937f692ab8f63dcf74b4833e3659fd2f5ef719c#0` found a native-asset name `HydraHeadV2` under policy `4f7a59304309bf7059fe7a3ed4fb9daaaa842dd7da1521cf38d56faf`. This does **not** authenticate it as a genuine Hydra Head or a DEX pool. Hydra's own upstream security scenarios explicitly show a counterfeit `HydraHeadV2` token under a permissive minting policy; its policy ID must match the real Head's policy: [official Hydra security scenario](https://github.com/cardano-scaling/hydra/blob/e016d0a20d59ba1e7d34b7074ac0eeeed65201d1/hydra-cluster/src/Hydra/Cluster/SecurityScenarios.hs#L178-L186). Keep the output `LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL` until policy/script derivation and protocol-specific witnesses are validated. The second external candidate is likewise unidentified. Details are recorded in memo §29; no production semantics changed.
+
+### Agent A — corrected external asset-name diagnostics and run #10 recheck (2026-10-27)
+
+The read-only observer now reports exact asset-name hex, printable UTF-8 labels and atomic quantities for external script candidates. Fix commit `32d68ea35095d7a126aaf9518cfb05b891c6ee81` was validated by [Minswap run #10](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40459277681), [artifact ID 12713143990](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40459277681/artifacts/12713143990) — SUCCESS. Result remains `NO_EXACT_ADA_TUSDM_PAIR_FOUND_IN_MINSWAP_V1_V2_CONFIGURED_STABLESWAP`; evidence SHA-256 `7d532a1fc50154543997e49c2d22a3a70b1264b9af1582debea3b0ff5f083002`.
+
+- Minswap V1: 969 exact Preprod tUSDM UTxOs scanned, 0 known pool-credential matches.
+- Minswap V2: 455 pool-auth UTxOs decoded, 0 parse rejects, 0 exact ADA/tUSDM pair.
+- Configured Preprod StableSwap: 3 pools, 0 contain exact tUSDM.
+- External script out-ref `50ac85a0fded8f8285c0ddcdf937f692ab8f63dcf74b4833e3659fd2f5ef719c#0` rechecked with matching datum/value; holds 100,000,000 tUSDM atomic, 1,015,788,430 lovelace, BTC asset quantity 129,720, plus policy-bound tokens including a name `HydraHeadV2`. Token name is not protocol authentication; the upstream Hydra project documents a counterfeit `HydraHeadV2` token risk. Keep this output unclassified as a pool.
+- External script out-ref `f27b6b913bebca852dfbb8ec4585ec5925c1d04ed05ea9cb96720712c9df11cd#1` rechecked with matching datum/value; it contains 123 tUSDM atomic, 2,521,350 lovelace, and other tokens `SIRIUS-B` 123, `RIGEL` 123, `SIRIUS-A` 246, `VEGA` 231, `USDr` 14,436,931. Protocol identity/market semantics remain unknown. Both script UTxOs are only `LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL`.
+
+**Temporal bound:** this run's Koios tip moved from block 5,340,390 / slot 137,398,081 to block 5,340,393 / slot 137,398,118. This is a bounded query interval, not an atomic snapshot. Exact external out-references were re-queried and their datum/value witnesses matched at re-query time.
+
+Memo §30 records detailed values. Conversion qualification remains blocked: Option B approach selected, no USD/USDM source/consumer contract qualified, no parity assumed, no transaction signed/submitted, EEV approval/Issue remain gated.
