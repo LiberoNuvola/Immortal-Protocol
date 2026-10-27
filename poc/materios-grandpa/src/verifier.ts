@@ -238,13 +238,75 @@ function verifyPrecommitAncestry(
   }
 }
 
+function snapshotCheckpoint(input: CanonicalCheckpoint): CanonicalCheckpoint {
+  return {
+    chainId: input.chainId,
+    genesisHash: new Uint8Array(input.genesisHash),
+    blockHash: new Uint8Array(input.blockHash),
+    blockNumber: input.blockNumber
+  };
+}
+
+function snapshotTrustedAuthorityState(input: TrustedAuthorityState): TrustedAuthorityState {
+  return {
+    chainId: input.chainId,
+    genesisHash: new Uint8Array(input.genesisHash),
+    setId: input.setId,
+    authorities: input.authorities.map(authority => ({
+      publicKey: new Uint8Array(authority.publicKey),
+      weight: authority.weight
+    }))
+  };
+}
+
+function snapshotJustification(input: GrandpaJustification): GrandpaJustification {
+  return {
+    round: input.round,
+    commit: {
+      targetHash: new Uint8Array(input.commit.targetHash),
+      targetNumber: input.commit.targetNumber,
+      precommits: input.commit.precommits.map(signed => ({
+        precommit: {
+          targetHash: new Uint8Array(signed.precommit.targetHash),
+          targetNumber: signed.precommit.targetNumber
+        },
+        signer: new Uint8Array(signed.signer),
+        signature: new Uint8Array(signed.signature)
+      }))
+    },
+    votesAncestries: (input.votesAncestries ?? []).map(header => ({
+      hash: new Uint8Array(header.hash),
+      parentHash: new Uint8Array(header.parentHash),
+      number: header.number,
+      stateRoot: new Uint8Array(header.stateRoot),
+      extrinsicsRoot: new Uint8Array(header.extrinsicsRoot),
+      digest: {
+        logs: header.digest.logs.map(log => {
+          if (log.kind === "RuntimeEnvironmentUpdated") return { kind: log.kind };
+          if (log.kind === "Other") return { kind: log.kind, data: new Uint8Array(log.data) };
+          return { kind: log.kind, engineId: new Uint8Array(log.engineId), data: new Uint8Array(log.data) };
+        })
+      },
+      rawHeader: new Uint8Array(header.rawHeader),
+      encoding: header.encoding
+    }))
+  };
+}
+
 export async function verifyFinality(
-  checkpoint: CanonicalCheckpoint,
-  justification: GrandpaJustification,
-  trusted: TrustedAuthorityState,
+  checkpointInput: CanonicalCheckpoint,
+  justificationInput: GrandpaJustification,
+  trustedInput: TrustedAuthorityState,
   crypto: Ed25519Verifier,
-  options: VerificationOptions
+  optionsInput: VerificationOptions
 ): Promise<VerificationResult> {
+  // Match Orynq's immutable-input hardening: own every verification input
+  // before the first asynchronous signature check can yield control.
+  const checkpoint = snapshotCheckpoint(checkpointInput);
+  const justification = snapshotJustification(justificationInput);
+  const trusted = snapshotTrustedAuthorityState(trustedInput);
+  const options = { verifyAncestry: optionsInput.verifyAncestry };
+
   try {
     validateAuthorityState(trusted);
   } catch {
