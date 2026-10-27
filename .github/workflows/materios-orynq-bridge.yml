@@ -115,24 +115,30 @@ jobs:
           PY
 
       - name: Re-verify proof and dry-run the Orynq receipt plan
-        run: npm --prefix poc/materios-orynq-bridge run anchor
+        run: |
+          npm --prefix poc/materios-orynq-bridge run anchor > /tmp/orynq-receipt-plan.json
+          cat /tmp/orynq-receipt-plan.json
 
-      - name: Upload sanitized receipt plan inputs
+      - name: Materialize sanitized receipt plan
         if: always() && hashFiles('poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json') != ''
         run: |
-          node --input-type=module - <<'NODE'
-          import { readFileSync, writeFileSync } from "node:fs";
-          import { buildOrynqReceiptPlan } from "./poc/materios-orynq-bridge/src/anchor-verified-evidence.ts";
-          const packet = JSON.parse(readFileSync("poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json", "utf8"));
-          const plan = buildOrynqReceiptPlan(packet);
-          writeFileSync("poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json", JSON.stringify({
-            evidenceSchema: plan.evidenceSchema,
-            witnessBlockHash: plan.witnessBlockHash,
-            witnessBlockNumber: plan.witnessBlockNumber,
-            contentHash: plan.contentHash,
-            receiptId: plan.receiptId,
-            chunkMerkleRoot: plan.chunkMerkleRoot,
-            chunkCount: plan.chunkCount,
-            byteLength: plan.byteLength
-          }, null, 2) + "\n");
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const output = JSON.parse(fs.readFileSync("/tmp/orynq-receipt-plan.json", "utf8"));
+          if (output.mode !== "dry-run" || !output.plan) {
+            throw new Error("Ory n q bridge did not produce a dry-run plan".replaceAll(" ", ""));
+          }
+          fs.writeFileSync(
+            "poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json",
+            JSON.stringify(output.plan, null, 2) + "\n"
+          );
           NODE
+
+      - name: Upload sanitized receipt plan
+        if: always() && hashFiles('poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-orynq-receipt-plan
+          path: poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json
+          if-no-files-found: error
+          retention-days: 14
