@@ -15,6 +15,7 @@ const TUSDM_POLICY = TUSDM_UNIT.slice(0, 56)
 const TUSDM_NAME = TUSDM_UNIT.slice(56)
 const ADA_UNIT = 'lovelace'
 const V1_POOL_SCRIPT_HASH = bech32ScriptHashToHex(DexV1Constant.POOL_SCRIPT_HASH)
+const EXPECTED_V1_POOL_SCRIPT_HASH = 'e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309'
 const V2_CONFIG = DexV2Constant.CONFIG[NetworkId.TESTNET]
 const V2_POOL_SCRIPT_HASH = V2_CONFIG.poolScriptHash.toLowerCase()
 const V2_AUTH_UNIT = V2_CONFIG.poolAuthenAsset.toLowerCase()
@@ -27,14 +28,14 @@ function bech32ScriptHashToHex(value) {
   const alphabet = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
   const separator = value.lastIndexOf('1')
   if (separator <= 0 || value.slice(0, separator) !== 'script') {
-    throw new Error('MIN​​SWAP_SCRIPT_HASH_BECH32_INVALID'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_SCRIPT_HASH_BECH32_INVALID')
   }
   const encoded = value.slice(separator + 1)
-  if (encoded.length <= 6) throw new Error('MIN​​SWAP_SCRIPT_HASH_BECH32_TOO_SHORT'.replaceAll('\u200b', ''))
+  if (encoded.length <= 6) throw new Error('MINSWAP_SCRIPT_HASH_BECH32_TOO_SHORT')
   const data = []
   for (const char of encoded.slice(0, -6)) {
     const n = alphabet.indexOf(char)
-    if (n < 0) throw new Error('MIN​​SWAP_SCRIPT_HASH_BECH32_CHAR_INVALID'.replaceAll('\u200b', ''))
+    if (n < 0) throw new Error('MINSWAP_SCRIPT_HASH_BECH32_CHAR_INVALID')
     data.push(n)
   }
   let accumulator = 0
@@ -49,10 +50,10 @@ function bech32ScriptHashToHex(value) {
     }
   }
   if (bits >= 5 || ((accumulator << (8 - bits)) & 0xff) !== 0) {
-    throw new Error('MIN​​SWAP_SCRIPT_HASH_BECH32_PADDING_INVALID'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_SCRIPT_HASH_BECH32_PADDING_INVALID')
   }
   const result = Buffer.from(bytes).toString('hex')
-  if (!/^[0-9a-f]{56}$/.test(result)) throw new Error('MIN​​SWAP_SCRIPT_HASH_LENGTH_INVALID'.replaceAll('\u200b', ''))
+  if (!/^[0-9a-f]{56}$/.test(result)) throw new Error('MINSWAP_SCRIPT_HASH_LENGTH_INVALID')
   return result
 }
 
@@ -184,7 +185,7 @@ function observeV2Pool(row) {
     datumHex,
   )
   const authQuantity = BigInt(value.find((item) => item.unit === V2_AUTH_UNIT)?.quantity ?? '0')
-  if (authQuantity !== 1n) throw new Error('MIN​​SWAP_V2_POOL_AUTHENTICATION_ASSET_QUANTITY_INVALID'.replaceAll('\u200b', ''))
+  if (authQuantity !== 1n) throw new Error('MINSWAP_V2_POOL_AUTHENTICATION_ASSET_QUANTITY_INVALID')
   return { row, ref, pool, datumHex, value }
 }
 
@@ -200,7 +201,7 @@ function observeV1Pool(row) {
   const pool = new PoolV1.State(ref.address, { txHash: ref.txHash, index: ref.outputIndex }, value, datumHash)
   const nfts = value.filter((item) => item.unit.startsWith(DexV1Constant.POOL_NFT_POLICY_ID))
   if (nfts.length !== 1 || BigInt(nfts[0].quantity) !== 1n) {
-    throw new Error('MIN​​SWAP_V1_POOL_NFT_IDENTITY_INVALID'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_V1_POOL_NFT_IDENTITY_INVALID')
   }
   return { row, ref, pool, datumHash, value }
 }
@@ -302,12 +303,12 @@ async function verifyV1Candidate(candidate) {
 }
 
 async function main() {
-  if (V1_POOL_SCRIPT_HASH.length !== 56 || !/^[0-9a-f]{56}$/.test(V2_POOL_SCRIPT_HASH)) {
-    throw new Error('MIN​​SWAP_TESTNET_CONFIG_INVALID'.replaceAll('\u200b', ''))
+  if (V1_POOL_SCRIPT_HASH !== EXPECTED_V1_POOL_SCRIPT_HASH || !/^[0-9a-f]{56}$/.test(V2_POOL_SCRIPT_HASH)) {
+    throw new Error('MINSWAP_TESTNET_CONFIG_INVALID')
   }
   // Sanity-check bech32 decoding against the SDK's canonical V2 script hash.
   if (bech32ScriptHashToHex(V2_CONFIG.poolScriptHashBech32) !== V2_POOL_SCRIPT_HASH) {
-    throw new Error('MIN​​SWAP_SCRIPT_HASH_DECODER_CROSSCHECK_FAILED'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_SCRIPT_HASH_DECODER_CROSSCHECK_FAILED')
   }
 
   const observedAt = new Date().toISOString()
@@ -362,6 +363,8 @@ async function main() {
   const rawTipAfter = await koiosGet('/tip')
   const tipAfter = tipSummary(Array.isArray(rawTipAfter) ? rawTipAfter[0] : rawTipAfter)
   if (BigInt(tipAfter.slot) < BigInt(tipBefore.slot)) throw new Error('KOIOS_CHAIN_TIP_MOVED_BACKWARDS')
+  const chainTipUnchanged = tipBefore.slot === tipAfter.slot && tipBefore.blockHash === tipAfter.blockHash
+  const completedAt = new Date().toISOString()
 
   let status
   if (mismatchCount > 0) status = 'BLOCKED_POOL_OUTREF_OR_LEDGER_WITNESS_MISMATCH'
@@ -413,8 +416,13 @@ async function main() {
     },
     poolObservations,
     chainTip: { before: tipBefore, after: tipAfter },
+    snapshotConsistency: {
+      chainTipUnchanged,
+      sameSlot: tipBefore.slot === tipAfter.slot,
+      warning: chainTipUnchanged ? null : 'The chain advanced while separate read-only queries ran; treat this as a bounded observation interval, not an atomic same-slot snapshot.',
+    },
     observedAt,
-    completedAt: new Date().toISOString(),
+    completedAt,
     guardrails: {
       mainnetMonetaUsdmIdentityUsed: false,
       usdUsdmConversionQualified: false,
