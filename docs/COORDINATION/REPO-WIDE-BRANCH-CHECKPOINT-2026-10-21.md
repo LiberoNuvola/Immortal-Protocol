@@ -4150,3 +4150,8 @@ Minswap is the first pool family to inspect because Moneta's current guide descr
 ### Agent A — Minswap Preprod discovery gate (2026-10-27)
 
 The official Minswap SDK documents a testnet adapter that queries V2 pools by exact asset pair. Moneta's published USDM identity is explicitly labelled Mainnet; it must not be assumed to be the Preprod asset. This review did not obtain a direct Preprod pool UTxO or datum, so no DEX source is qualified. Next: verify the exact Preprod USDM asset first, then perform a read-only Minswap V2 pool lookup and preserve the pool variant, UTxO reference, inline datum, reserves, fees, slot and evidence digest. If the asset is absent on Preprod, mark this route unavailable for that network. No production or protocol semantics changed; Option B remains unimplemented and Issue remains fail-closed. See memo section 23.
+
+
+### Preprod test-token identity recovered from existing B1 workflow — 2026-10-27 (Agent A)
+
+The existing B1 EEV workflow and source-set verifier already pin Preprod tUSDM to `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`. This is the test token used by the direct-tUSDM EEV profile, not Moneta's Mainnet USDM (`c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad` + `0014df105553444d`). Minswap V2 is documented as deployed on Preprod and its SDK supports exact-pair pool lookup; a read-only ADA/tUSDM pool lookup can test integration mechanics, but even a successful result cannot qualify the USD/USDM settlement conversion. No live pool UTxO/datum was acquired in this step. Keep Option B blocked and fail-closed; no production code or semantics changed. See memo section 24.
