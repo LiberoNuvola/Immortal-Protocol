@@ -320,13 +320,9 @@ async function main() {
   const rawTipBefore = await koiosGet('/tip')
   const tipBefore = tipSummary(Array.isArray(rawTipBefore) ? rawTipBefore[0] : rawTipBefore)
 
-  // Discover V1 pools from the known Minswap V1 script first, then filter by exact Moneta USDM unit.
-  // This avoids scanning every global USDM-holder UTxO before identifying its pool-script credential.
-  const allV1ScriptRows = await queryScriptUtxos(V1_POOL_SCRIPT_HASH)
-  const usdmRows = allV1ScriptRows.filter((row) => {
-    const assets = decodeAssets(row.asset_list, row.value)
-    return BigInt(assets[MONETA_USDM_UNIT] ?? '0') > 0n
-  })
+  // Query the exact Mainnet Moneta USDM unit in bounded pages, then retain only the pinned Minswap V1 pool credential.
+  // Small pages plus bounded retries avoid the large first-page timeout seen with 500-row Koios requests.
+  const usdmRows = await queryAssetUtxos(USDM_POLICY, USDM_NAME)
   const v1Rows = usdmRows.filter((row) => String(row.payment_cred ?? '').toLowerCase() === V1_POOL_SCRIPT_HASH)
   const v1Pools = []
   let v1Rejected = 0
@@ -395,7 +391,7 @@ async function main() {
       provider: 'Koios Mainnet public API',
       readOnly: true,
       maxAssetUtxoScanRows: MAX_UTXOS,
-      v1: { scannedV1ScriptUtxos: allV1ScriptRows.length, scannedExactUsdmPoolUtxos: usdmRows.length, poolScriptHash: V1_POOL_SCRIPT_HASH, poolCredentialRows: v1Rows.length, parseRejects: v1Rejected, exactAdaUsdmCandidates: v1Pools.length },
+      v1: { scannedExactUsdmUtxos: usdmRows.length, poolScriptHash: V1_POOL_SCRIPT_HASH, poolCredentialRows: v1Rows.length, parseRejects: v1Rejected, exactAdaUsdmCandidates: v1Pools.length },
       v2: { authAsset: V2_AUTH_UNIT, poolScriptHash: V2_POOL_SCRIPT_HASH, scannedPoolAuthUtxos: v2Rows.length, poolCredentialRows: v2CredentialRows.length, parseRejects: v2Rejected, exactAdaUsdmCandidates: v2Pools.length },
       stableSwap: { configuredPools: stableConfigs.length, livePoolObservationsWithMonetaUsdm: stableObservations, configuredPoolsContainingMonetaUsdm: stableConfigsWithMoneta.length, exactAdaUsdmConfigPairs: exactStableAdaUsdmConfigs.length },
       mainnetMonetaIdentityUsed: true,
