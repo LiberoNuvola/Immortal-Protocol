@@ -16,7 +16,7 @@
  * authenticated.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -670,6 +670,108 @@ async function main(): Promise<void> {
     (block) => extractGrandpaJustification(block.signed) !== null,
   );
 
+  // The public WebSocket route may retain a historical FRNK justification
+  // even when its HTTP route strips the same field. Consume that independent
+  // acquisition only after binding the exact target header across both routes
+  // and recomputing its Substrate header hash locally.
+  const websocketEvidencePath = process.env.MATERIOS_WS_EVIDENCE_PATH?.trim();
+  let websocketFallbackStatus = websocketEvidencePath ? "NOT_ATTEMPTED" : "NOT_CONFIGURED";
+  let websocketFallbackError: string | null = null;
+  if (witnessedBlocks.length === 0 && websocketEvidencePath) {
+    try {
+      const websocketEvidence = JSON.parse(
+        readFileSync(websocketEvidencePath, "utf8"),
+      ) as {
+        chain_id?: unknown;
+        identity?: { genesis_hash_match?: unknown };
+        historical_candidate_probe?: {
+          requested_block_number?: unknown;
+          returned_block_number?: unknown;
+          requested_block_hash?: unknown;
+          status?: unknown;
+          header?: unknown;
+          justifications?: { entries?: Array<Record<string, unknown>> };
+        };
+      };
+      const candidate = websocketEvidence.historical_candidate_probe;
+      if (websocketEvidence.chain_id !== CHAIN_ID ||
+          websocketEvidence.identity?.genesis_hash_match !== true) {
+        throw new Error("WEBSOCKET_CHAIN_IDENTITY_NOT_CONFIRMED");
+      }
+      if (candidate?.status !== "FRNK_JUSTIFICATION_CAPTURED_UNVERIFIED") {
+        throw new Error("WEBSOCKET_HISTORICAL_FRNK_NOT_CAPTURED");
+      }
+      const candidateNumber = Number(candidate.returned_block_number);
+      if (!Number.isSafeInteger(candidateNumber) ||
+          candidateNumber !== Number(candidate.requested_block_number)) {
+        throw new Error("WEBSOCKET_CANDIDATE_NUMBER_MISMATCH");
+      }
+      const candidateHash = requireHash(
+        candidate.requested_block_hash,
+        "WebSocket candidate block hash",
+      );
+      const frnkEntries = (candidate.justifications?.entries ?? []).filter(
+        entry => entry.engineId === GRANDPA_ENGINE_ID &&
+          typeof entry.rawPayloadHex === "string",
+      );
+      if (frnkEntries.length !== 1) {
+        throw new Error("WEBSOCKET_FRNK_PAYLOAD_COUNT_MISMATCH");
+      }
+      const rawPayloadHex = frnkEntries[0]!.rawPayloadHex as string;
+      const rawPayload = hexToBytes(rawPayloadHex, "WebSocket FRNK payload");
+      if (rawPayload.length === 0) {
+        throw new Error("WEBSOCKET_FRNK_PAYLOAD_EMPTY");
+      }
+      const observedPayloadHash = String(frnkEntries[0]!.payloadSha256 ?? "").toLowerCase();
+      if (observedPayloadHash !== sha256Hex(rawPayloadHex).slice(2)) {
+        throw new Error("WEBSOCKET_FRNK_PAYLOAD_SHA256_MISMATCH");
+      }
+
+      const rpcCandidate = recentBlocks.find(block => block.number === candidateNumber);
+      if (!rpcCandidate || rpcCandidate.hash !== candidateHash) {
+        throw new Error("WEBSOCKET_CANDIDATE_HASH_NOT_MATCHED_BY_HTTP_ROUTE");
+      }
+      const websocketHeader = candidate.header as SubstrateHeader;
+      const normalizeHeader = (header: SubstrateHeader) => JSON.stringify({
+        parentHash: requireHash(header.parentHash, "header.parentHash"),
+        number: parseBlockNumber(header.number, "header.number").toString(),
+        stateRoot: requireHash(header.stateRoot, "header.stateRoot"),
+        extrinsicsRoot: requireHash(header.extrinsicsRoot, "header.extrinsicsRoot"),
+        digestLogs: Array.isArray(header.digest?.logs)
+          ? header.digest.logs.map(log => String(log).toLowerCase())
+          : null,
+      });
+      if (normalizeHeader(websocketHeader) !== normalizeHeader(rpcCandidate.signed.block.header)) {
+        throw new Error("WEBSOCKET_HTTP_HEADER_FIELDS_MISMATCH");
+      }
+
+      // Dynamic import avoids adding a compile-time dependency on a sibling PoC
+      // package; the workflow installs the pinned checkpoint package first.
+      const bridgeModuleSpecifier = "../../materios-smoldot/target-ancestry-bridge.mjs";
+      const bridgeModule = await import(bridgeModuleSpecifier);
+      const computedHeaderHash = String(
+        bridgeModule.hashMateriosHeader(websocketHeader),
+      ).toLowerCase();
+      if (computedHeaderHash !== candidateHash) {
+        throw new Error("WEBSOCKET_HEADER_HASH_BINDING_FAILED");
+      }
+
+      const signedWithJustification: SignedBlock = {
+        ...rpcCandidate.signed,
+        justifications: [[GRANDPA_ENGINE_ID, rawPayloadHex]] as [string, string][],
+      };
+      witnessedBlocks.push({
+        number: candidateNumber,
+        hash: candidateHash,
+        signed: signedWithJustification,
+      });
+      websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+    } catch (error) {
+      websocketFallbackStatus = "REJECTED";
+      websocketFallbackError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
   if (witnessedBlocks.length === 0) {
     // Preserve a machine-readable, bounded negative observation before failing.
     // This is diagnostic evidence only: absence in this RPC scan does not imply
@@ -694,6 +796,11 @@ async function main(): Promise<void> {
         dense_scan_end: finalizedHeightNumber,
         dense_scan_blocks: recentBlocks.length,
         blocks_with_grandpa_justification: [],
+        websocket_fallback: {
+          status: websocketFallbackStatus,
+          error: websocketFallbackError,
+          evidence_path_configured: Boolean(websocketEvidencePath),
+        },
         scan_manifest: recentBlocks.map((block) => ({
           block_number: block.number,
           block_hash: block.hash,
@@ -913,6 +1020,11 @@ async function main(): Promise<void> {
       dense_scan_start: scanStart,
       dense_scan_end: finalizedHeightNumber,
       dense_scan_blocks: recentBlocks.length,
+      websocket_fallback: {
+        status: websocketFallbackStatus,
+        error: websocketFallbackError,
+        evidence_path_configured: Boolean(websocketEvidencePath),
+      },
       blocks_with_grandpa_justification: witnessedBlocks.map(
         (block) => ({
           blockNumber: block.number,
