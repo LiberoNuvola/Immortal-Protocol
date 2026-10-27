@@ -1887,3 +1887,54 @@ The published Preprod chain spec also pins `PREPROD_V6_GENESIS` and the genesis 
 **Additional security constraint from Orynq's own manifest:** GRANDPA signatures do not bind a chain ID or genesis hash. Matching local `chainId`/`genesisHash` metadata therefore does not independently prove that a justification's signers were authorized on this chain; the chain-specific trust root and authority-transition history are essential. A cross-chain or earlier-incarnation replay must remain in the threat model.
 
 **Status: Orynq checkpoint-walk pattern identified / public Materios GRANDPA RPC exposure gap identified from source / live genesis-to-target authority walk still blocked on a proof-capable source.**
+
+---
+
+# 12. Operational addendum — Materios B3-A pause checkpoint (2026-10-27)
+
+This addendum supersedes the older snapshot metadata above for the current Materios B3-A workstream only. The older sections remain historical coordination context; they are not evidence of the current branch HEAD.
+
+## Scope and repository boundary
+
+- IMMORTAL-side working branch: `work/b3-materios-provenance-evidence`.
+- No changes, issues, pull requests, or other writes are to be made in repositories outside Libero Nuvola without explicit authorization.
+- No new branch is to be created for this work.
+- V3 carrier and Reveal semantics remain out of scope and must not be changed.
+- No live transaction, receipt submission, or state-changing chain action is authorized.
+
+## Evidence status
+
+- Materios target block previously inspected: `2471424`, hash `0xdcf28d0d21715e914000db6f10e216c8702fc39cd3275368746da3158cf2d16c`; GRANDPA round `46478`.
+- Observed runtime authority set ID: `4352`. All four observed precommit signatures fail verification against that set.
+- A bounded diagnostic scan of candidate set IDs `0..4352` found `4261` as the only candidate matching all four signatures. This is an inferred candidate only; it is not authenticated historical authority state.
+- The candidate `4261` result must remain classified `SIGNATURE_QUORUM_ANCESTRY_PASS_UNTRUSTED`. The transition witness was not found in the probe window.
+- Current closure claims remain false: `cryptographic_finality=false`, `authority_transition_provenance=false`, `overall_status=OPEN`.
+- Do not repeat the full candidate-ID scan unless new upstream evidence materially changes the inputs.
+
+## IMMORTAL-side changes and bounded CI
+
+- The verifier snapshots checkpoint, trusted authority state, justification (including nested signer/signature and ancestry data), and verification options before asynchronous signature verification.
+- Regression coverage exercises mutation during the asynchronous verification boundary.
+- Materios Canonical Evidence & Finality Boundary run: [#181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843264) — success.
+- Materios B3 execution-proof verifier run: [#127](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291) — expected fail-closed on the real GRANDPA witness; typecheck, Rust tests, finalized-state capture, and native B3-B storage proof passed, while historical authority-transition provenance remains unproven.
+- These are bounded software/fixture results, not production B3 certification.
+
+## Upstream observations — read-only research only
+
+- The inspected public Materios node RPC aggregation source did not register the GRANDPA proof RPC methods used by the probe; the live endpoint also returned method-not-found for `grandpa_proveFinality` and `grandpa_subscribeJustifications`.
+- This source/live observation is a likely RPC capability gap, but the exact deployed node binary has not yet been proven identical to the inspected public source.
+- Orynq's newer checkpoint-advance implementation is a useful design reference: walk authority-set changes from a checkpoint already trusted by the verifier, validate each transition, and preserve an append-only transcript. Do not copy chain-specific assumptions blindly.
+- The published Materios genesis spec is only a candidate trust root until its genesis hash and initial authority state are compared with the live Preprod chain. That comparison is still open.
+- No writes to Materios or Orynq repositories have been made or are authorized by this checkpoint.
+
+## Pause / resume gate
+
+Materios remains **PAUSED pending upstream commits or new read-only evidence**. On resumption, first check for new upstream commits and then:
+
+1. establish the live Preprod genesis hash and compare it with the exact candidate chain spec;
+2. obtain an authenticated initial authority checkpoint or equivalent trust anchor;
+3. only then assess a bounded GRANDPA checkpoint walk and transition transcript;
+4. retain fail-closed behavior if any link is missing.
+
+Do not trust set ID `4261` merely because its signatures match. Do not mark B3-A closed until authority-set provenance and finality are independently verified.
+
