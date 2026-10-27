@@ -859,33 +859,112 @@ async function main(): Promise<void> {
     firstWitness.hash,
   );
 
-  const authoritiesHex = await rpc<string>(
-    "state_call",
-    [
-      "GrandpaApi_grandpa_authorities",
-      "0x",
-      witness.blockHash,
-    ],
-  );
-
-  const setIdHex = await rpc<string>(
-    "state_call",
-    [
-      "GrandpaApi_current_set_id",
-      "0x",
-      witness.blockHash,
-    ],
-  );
-
-  const authorities = decodeAuthorityList(authoritiesHex);
-  const setId = decodeSetId(setIdHex);
-
   const justification = decodeGrandpaJustification(
     hexToBytes(
       witness.justificationHex,
       "GRANDPA justification",
     ),
   );
+
+  let authorityStateSource = witness.blockHash;
+  let authorityStateFallback = false;
+  let authorityStateOriginalError: string | null = null;
+  let authoritiesHex: string;
+  let setIdHex: string;
+
+  try {
+    authoritiesHex = await rpc<string>(
+      "state_call",
+      [
+        "GrandpaApi_grandpa_authorities",
+        "0x",
+        witness.blockHash,
+      ],
+    );
+    setIdHex = await rpc<string>(
+      "state_call",
+      [
+        "GrandpaApi_current_set_id",
+        "0x",
+        witness.blockHash,
+      ],
+    );
+  } catch (historicalError) {
+    authorityStateOriginalError =
+      historicalError instanceof Error
+        ? historicalError.message
+        : String(historicalError);
+    // Public RPC has demonstrated state pruning for historical blocks. A
+    // current-state fallback is diagnostic only: signatures/quorum may be
+    // checked against the returned set, but this does NOT authenticate that
+    // set's historical provenance. Never silently label it as target state.
+    authorityStateSource = finalizedHash;
+    authorityStateFallback = true;
+    try {
+      authoritiesHex = await rpc<string>(
+        "state_call",
+        [
+          "GrandpaApi_grandpa_authorities",
+          "0x",
+          finalizedHash,
+        ],
+      );
+      setIdHex = await rpc<string>(
+        "state_call",
+        [
+          "GrandpaApi_current_set_id",
+          "0x",
+          finalizedHash,
+        ],
+      );
+    } catch (fallbackError) {
+      const outDir = join(HERE, "..", "out");
+      mkdirSync(outDir, { recursive: true });
+      const diagnostics = {
+        schema_version: "materios-real-grandpa-witness-v1",
+        chain_id: CHAIN_ID,
+        status: "BLOCKED_AUTHORITY_STATE_PRUNED",
+        finalized_head: {
+          block_number: finalizedHeight.toString(),
+          block_hash: finalizedHash,
+          state_root: finalizedHeader.stateRoot,
+        },
+        witness: {
+          block_number: witness.blockNumber.toString(),
+          block_hash: witness.blockHash,
+          parent_hash: witness.header.parentHash,
+          state_root: witness.header.stateRoot,
+          extrinsics_root: witness.header.extrinsicsRoot,
+          justification_engine: GRANDPA_ENGINE_ID,
+          justification_hex: witness.justificationHex,
+          justification_sha256: witness.justificationSha256,
+          justification_round: justification.round.toString(),
+          commit_target_hash: bytesToHex(justification.commit.targetHash),
+          commit_target_number: justification.commit.targetNumber.toString(),
+        },
+        authority_state: {
+          target_state_error: authorityStateOriginalError,
+          fallback_state_source: finalizedHash,
+          fallback_state_error:
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+          provenance_verified: false,
+        },
+        b3a_claim: {
+          cryptographic_finality: false,
+          authority_transition_provenance: false,
+          overall_status: "OPEN_AUTHORITY_STATE_UNAVAILABLE",
+        },
+      };
+      const outDirPath = join(outDir, "MateriosRealGrandpaWitness.json");
+      writeFileSync(outDirPath, JSON.stringify(diagnostics, null, 2) + "\n", "utf8");
+      console.error("B3-A OPEN: raw FRNK captured, but no authority state was available for verification");
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  const authorities = decodeAuthorityList(authoritiesHex);
+  const setId = decodeSetId(setIdHex);
 
   const cryptoVerification = {
     status: "FAIL" as "PASS" | "FAIL",
@@ -980,6 +1059,15 @@ async function main(): Promise<void> {
       block_number: finalizedHeight.toString(),
       block_hash: finalizedHash,
       state_root: finalizedHeader.stateRoot,
+    },
+    authority_state: {
+      source_block_hash: authorityStateSource,
+      source_kind: authorityStateFallback ? "CURRENT_FINALIZED_STATE_FALLBACK" : "EXACT_PROOF_TARGET_STATE",
+      target_state_error: authorityStateOriginalError,
+      provenance_verified: false,
+      note: authorityStateFallback
+        ? "Signatures/quorum are checked against a runtime API set returned at the current finalized head because historical target state was pruned. This is diagnostic cryptographic evidence only; it does not authenticate the authority set at the proof target."
+        : "Runtime API authority state was returned at the exact proof target but remains untrusted until an authenticated authority transition is verified."
     },
     witness: {
       block_number: witness.blockNumber.toString(),
