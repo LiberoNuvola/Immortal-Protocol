@@ -97,7 +97,7 @@ jobs:
           MATERIOS_CHAIN_ID: materios_preprod_v6
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_BOOTNODE: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
-          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464283' }}
+          MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464310' }}
           MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69' }}
           MATERIOS_TARGET_STATE_ROOT: ${{ github.event.inputs.target_state_root || '0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa' }}
           SMOLDOT_MAX_WAIT_SECONDS: ${{ github.event.inputs.wait_seconds || '360' }}
