@@ -27,6 +27,13 @@ data Vector = Vector
   , vectorCarAmount :: Maybe Integer
   , vectorOtherProtectedCapital :: Maybe Integer
   , vectorDecomposition :: Maybe Decomposition
+  , vectorCases :: Maybe [LocalityCase]
+  }
+
+data LocalityCase = LocalityCase
+  { localityEev :: Integer
+  , localityProtectedCapital :: Integer
+  , localityExpectedRawSurplus :: Integer
   }
 
 data Decomposition = Decomposition
@@ -59,6 +66,14 @@ instance FromJSON Vector where
       <*> o .:? "carAmount"
       <*> o .:? "otherProtectedCapital"
       <*> o .:? "decomposition"
+      <*> o .:? "cases"
+
+instance FromJSON LocalityCase where
+  parseJSON = withObject "LocalityCase" $ \\o ->
+    LocalityCase
+      <$> o .: "eev"
+      <*> o .: "protectedCapital"
+      <*> o .: "expectedRawSurplus"
 
 instance FromJSON Decomposition where
   parseJSON = withObject "Decomposition" $ \o ->
@@ -145,9 +160,12 @@ emit v =
       , vectorExpected v
       , vectorCarAmount v
       , vectorOtherProtectedCapital v
+      , vectorCases v
       )
     of
-      ("V10", Just eev, Nothing, Just expected, Just car, Just other) -> do
+      ("V07", _, _, _, _, _, _, Just cases) ->
+        mapM_ (emitLocalityCase (vectorId v)) (zip [1 :: Int ..] cases)
+      ("V10", Just eev, Nothing, Just expected, Just car, Just other, _) -> do
         let pc = car + other
             surplus = max 0 (eev - pc)
         checkExpected "V10.protectedCapital" (expectedProtectedCapital expected) pc
@@ -157,7 +175,7 @@ emit v =
               ++ "|protectedCapital=" ++ show pc
               ++ "|rawSurplus=" ++ show surplus
           )
-      (_, Just eev, Just declaredPc, Just expected, _, _) -> do
+      (_, Just eev, Just declaredPc, Just expected, _, _, _) -> do
         let state = stateFor declaredPc (vectorDecomposition v)
             actualPc = protectedCapital state
             actualSurplus = rawSurplus eev state
@@ -175,3 +193,20 @@ emit v =
       _ ->
         putStrLn ("FAIL|" ++ vectorId v ++ "|unsupported executable vector shape")
           >> exitFailure
+
+emitLocalityCase :: String -> (Int, LocalityCase) -> IO ()
+emitLocalityCase vectorName (index, localityCase) = do
+  let declaredPc = localityProtectedCapital localityCase
+      state = stateFor declaredPc Nothing
+      actualPc = protectedCapital state
+      actualSurplus = rawSurplus (localityEev localityCase) state
+  checkExpected (vectorName ++ ".case" ++ show index ++ ".protectedCapital") (Just declaredPc) actualPc
+  checkExpected
+    (vectorName ++ ".case" ++ show index ++ ".rawSurplus")
+    (Just (localityExpectedRawSurplus localityCase))
+    actualSurplus
+  putStrLn
+    ( "PASS|" ++ vectorName ++ ".case" ++ show index
+        ++ "|protectedCapital=" ++ show actualPc
+        ++ "|rawSurplus=" ++ show actualSurplus
+    )
