@@ -28,7 +28,7 @@ const TARGET_GRANDPA_METHODS = [
 // witness at block 2463858. The number only selects an untrusted RPC candidate;
 // the header and FRNK payload must be verified locally before use.
 const FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
-  process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "2464256"
+  process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "2464768"
 );
 if (!Number.isSafeInteger(FINALITY_CANDIDATE_BLOCK_NUMBER) ||
     FINALITY_CANDIDATE_BLOCK_NUMBER < 0) {
