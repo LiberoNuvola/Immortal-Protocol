@@ -4289,3 +4289,12 @@ Correct interpretation: this payment script is consistent with an official Hydra
 - Both out-references and their datum/value evidence matched the independent Koios re-read. Both are now identified as non-DEX protocol outputs; no market price is inferred from their holdings.
 
 This resolves the two strongest external script candidates surfaced by the broad tUSDM scan, while the configured Minswap V1/V2/StableSwap exact-pair result remains negative. It does not exhaust all Cardano DEXes and does not qualify any USD/USDM source. Option B remains selected but unqualified; no parity, transaction, EEV approval, or Issue authorization.
+
+
+### Agent A — Mainnet Moneta-USDM run #4 inspected: CANCELLED, no on-chain conclusion (2026-10-27)
+
+Inspected [run #40546067834](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40546067834), source commit `f3dcf7458397598dc73b521d90cd2ae8abbab44c`, job logs and artifact ID [12754795928](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40546067834/artifacts/12754795928). Checkout, Node setup, JSR configuration and SDK installation completed. The query step was cancelled at the workflow's 20-minute timeout while the observer was running; the uploaded observation JSON is empty (0 bytes). There is no valid Mainnet pool result in this run.
+
+Source inspection of `audit/cardano-integration/observe-minswap-mainnet-moneta-usdm.mjs` (blob `c724fd8a4fcac41f17c2a1f05015e19c140859f4`) shows the observer pages the exact Mainnet Moneta-USDM asset UTxOs in 100-row batches, bounded at 25,000 rows, with up to four attempts and 45-second request timeouts, then separately scans the Minswap V2 pool-auth asset and configured pool candidates. The log does not expose which exact request remained pending at cancellation; excessive scan duration is a plausible operational cause, not a confirmed diagnosis.
+
+Classification: `CANCELLED / NO RESULT`; never interpret this artifact as `NO_EXACT_ADA_MONETA_USDM_PAIR_FOUND`. Do not rerun an identical scan unchanged. Next step should add bounded progress/diagnostic markers and a fail-closed incomplete-scan artifact or otherwise reduce the query scope with a justified, exact-asset strategy, while retaining the distinction between a completed negative scan and an incomplete query. Mainnet Moneta-USDM remains distinct from Preprod tUSDM; a discovered pool would still be `OBSERVED_NOT_QUALIFIED`, not USD/USDM conversion approval. No parity, transaction, EEV approval or Issue is authorized.
