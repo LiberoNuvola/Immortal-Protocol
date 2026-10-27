@@ -49,26 +49,27 @@ jobs:
         with:
           workspaces: "poc/materios-execution-verifier"
 
-      - name: Require archive-capable Materios RPC
+      - name: Select read-only Materios RPC
         env:
-          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC || 'https://materios.fluxpointstudios.com/rpc' }}
         run: |
           if [ -z "$MATERIOS_ARCHIVE_RPC" ]; then
-            echo "B3-B BLOCKED: MATERIOS_ARCHIVE_RPC secret is required to obtain the target witness." >&2
+            echo "B3-B BLOCKED: no Materios HTTP JSON-RPC endpoint configured." >&2
             exit 1
           fi
 
-      - name: Preflight the exact historical witness target
+      - name: Preflight exact witness target
+        id: preflight
         env:
-          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
-          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ secrets.MATERIOS_B3_ANCHOR_BLOCK_HASH || '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e' }}
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC || 'https://materios.fluxpointstudios.com/rpc' }}
+          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ secrets.MATERIOS_B3_ANCHOR_BLOCK_HASH }}
           MATERIOS_B3_ANCHOR_STORAGE_KEY: ${{ secrets.MATERIOS_B3_ANCHOR_STORAGE_KEY || '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55' }}
         run: node audit/materios-b3/archive-rpc-preflight.mjs
 
-      - name: Capture witness at the same exact block
+      - name: Capture witness at the exact preflight block
         env:
-          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
-          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ secrets.MATERIOS_B3_ANCHOR_BLOCK_HASH || '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e' }}
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC || 'https://materios.fluxpointstudios.com/rpc' }}
+          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ steps.preflight.outputs.block_hash }}
           MATERIOS_B3_ANCHOR_STORAGE_KEY: ${{ secrets.MATERIOS_B3_ANCHOR_STORAGE_KEY || '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55' }}
         run: npm run capture:anchor --prefix poc/materios-checkpoint
 
