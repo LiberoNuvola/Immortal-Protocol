@@ -3649,3 +3649,28 @@ Follow-up inspection after the exact-head lab success identifies the safe next s
 - Continue on `work/immortal-green-closure`; do not create another branch.
 
 **STATUS: V08 CONTRACT LOCATED BUT EXECUTABLE FIXTURE OWNER MUST BE VERIFIED; V09 REQUIRES A REAL CERTIFIED-KERNEL FIXTURE; SYNTHETIC BUILDER PROBE SEPARATED FROM NATIVE LEDGER EVIDENCE.**
+
+
+## 45.31 — AGENT B — CANONICAL FIXTURE OWNER AUDIT (V08/V09) — 2026-10-27
+
+Read-only follow-up on the exact owner of the two pending portability vectors. This confirms a real distinction between already-defined semantics and the evidence required to mark a vector executable.
+
+### V08 — expiry finality: reusable behavior exists, but at profile scope
+- Universal rule: `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md` I9 and `IMMORTAL/docs/CONFORMANCE.md` C8 require no resurrection of expired rights/liabilities.
+- PRE-RICH already defines the application-specific expiry lifecycle in `PRE-RICH/docs/GAME-ECONOMY.md`; `plutus/PrizeValidator.hs` implements an explicit EXPIRE transition that consumes a pending PrizeDatum and emits no continuing PrizeDatum. PRE-RICH's duration policy is application/profile scope and must not be imported into a chain-neutral IMMORTAL vector.
+- `verification/finite_model_checks.py::expiry_absorbing_check` checks an abstract three-state model (live/settled/expired), and its own file explicitly says it is abstract-model evidence, not implementation evidence.
+- Decision: do not label V08 fully executable merely by wiring the existing finite abstract check into the economic-kernel runner. The current reference runner exercises `UniversalEconomicKernel`, whose aggregate state has no lifecycle/expiry field. V08 needs a separately identified canonical transition-model owner and a test that invokes that model, or must remain pending with this scope boundary explicit.
+
+### V09 — concrete certificate instance does not exist in the checked-in package
+- `docs/03-audit/RESIDUAL_OBLIGATION_REGISTER.md` R1 says the `K_c` certificate instance is not in the package because `𝒮, A, Ω, T, Safe` are deliberately uninstantiated.
+- `docs/01-formal-records/10_FINAL_AUDIT_CLOSURE_MATRIX.md` records R1 as **PARTIALLY DISCHARGED**: theory is present, instance certification remains external. `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md` defines the VC/CK obligations but is a specification, not an instantiated certificate.
+- `IMMORTAL/kernel/EconomicGate.hs::viabilityGate` takes `safePostState` and `allOmegaSuccessorsInCertifiedKernel` booleans. It enforces their conjunction but explicitly does not manufacture or certify `K_c`.
+- Decision: no honest certified-kernel fixture is available to bind V09 to in this repo snapshot. Keep V09 pending. Closing it requires a profile/deployment to declare `S, A, Ω, T, Safe`, publish `K_c), discharge CK1–CK8/VC1–VC6 with evidence, and provide a non-vacuity witness where live viability is claimed. A boolean truth-table test would test the gate implementation, not the certificate.
+
+### Next authorized work
+1. Find/identify the canonical transition-model interface for universal expiry finality; do not conflate it with PRE-RICH or governance proposal finality.
+2. Keep V09 blocked on the missing concrete certificate package; do not fabricate a certificate or reinterpret finite random-model results as deployment evidence.
+3. Continue investigating the synthetic builder probe independently; native P2.8 remains PASS only for the exact local-Yaci artifact.
+4. Do not start SDK façade, create branches, alter V3/Reveal semantics, submit Preprod transactions, or change economic constants in this step.
+
+**STATUS: V08 SEMANTICS CLOSED BUT CANONICAL UNIVERSAL EXECUTABLE OWNER NOT YET IDENTIFIED; V09 BLOCKED BY ABSENT INSTANTIATED K_c CERTIFICATE (CONFIRMED IN RESIDUAL OBLIGATION REGISTER); NO SEMANTIC SHORTCUT ACCEPTED.**
