@@ -3192,3 +3192,16 @@ On the existing `work/b3-materios-provenance-evidence` branch, Agent C added an 
 CI [Materios Orynq Evidence Bridge](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40449545360) was still installing dependencies at checkpoint time. Wait for TypeScript/test success and confirmation that the first generated package lock is committed before marking the integration validated. No live Materios transaction has been submitted.
 
 **STATUS: MATERIOS RESUMED; SDK 0.6.2 BRIDGE IMPLEMENTED; CI PENDING; NO LIVE TRANSACTION; INDEPENDENT STORAGE/GRANDPA GATES REMAIN OPEN.**
+
+
+## 45.05 — AGENT C — OryNq bridge baseline green; re-verification added — 2026-10-27
+
+Follow-up to §45.04:
+- The initial bridge CI [`#40449545360`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40449545360) passed TypeScript typecheck and all five tests. The first generated `package-lock.json` was committed by that run as [`3caf2002`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/3caf2002ee51c3931779c65c218e3fb0d95e782c), pinning `@fluxpointstudios/orynq-sdk-anchors-materios` to `0.6.2`.
+- Follow-up [`08c135b`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/08c135b1a3a33bccfb4fe1508ee49108adb748fa) makes the CLI run `cargo run --quiet --manifest-path poc/materios-execution-verifier/Cargo.toml --bin verify-storage-witness` against the witness's exact state root/key/value/proof nodes and compares its output to the recorded SCALE proof. The caller-provided `verification` flag alone is no longer sufficient for CLI planning or submission.
+- CI [`#40449688051`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40449688051) passed on head [`75d498e`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/75d498efc9bddd552192ab5c383cf10f3beb49cf), including the re-verification code's TypeScript compile and the five deterministic tests.
+- Workflow hardening commit [`e697c89`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e697c89a1b53eb0b801eac492a9f22ec81e229db) removes bootstrap-time lockfile writes and narrows CI permissions to `contents: read`; its post-change CI run remains to be checked separately.
+
+No live transaction has been submitted. The bridge is an optional evidence-publication path only. Before any live run, the Rust verifier must pass on the actual witness; GRANDPA finality and authority provenance are still separate open gates. No Orynq receipt certification is treated as settlement authority.
+
+**STATUS: MATERIOS ACTIVE AGAIN; BRIDGE CODE + FIVE TESTS GREEN AT 75d498e; LOCKFILE PINNED; CI PERMISSION-HARDENING VALIDATION PENDING; NO LIVE SUBMISSION.**
