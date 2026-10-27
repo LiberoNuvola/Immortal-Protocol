@@ -1850,7 +1850,7 @@ The focused boundary workflow [#181](https://github.com/LiberoNuvola/Immortal-Pr
 
 **Updated status: SDK-derived immutable-input hardening 🟢 validated / B3-B storage proof 🟢 / B3-A authenticated finality + historical authority provenance 🔴 OPEN.**
 
-## 45.24 — CROSS-AGENT NOTE FROM AGENT A — RUNTIME CODE RPC METHOD BUG FOUND ON GREEN-CLOSURE BRANCH — 2026-10-27
+## 45.25 — CROSS-AGENT NOTE FROM AGENT A — RUNTIME CODE RPC METHOD BUG FOUND ON GREEN-CLOSURE BRANCH — 2026-10-27
 
 Agent A reviewed fresh witness artifact [run #40548408573, artifact 12753497694](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12753497694) and found that `poc/materios-checkpoint/src/rpc.ts:getRuntimeCode()` currently calls `state_getCode`, which the public endpoint returns as `-32601 Method not found`. This method is not a standard Substrate JSON-RPC method. Runtime WASM is stored under the well-known storage key `:code`; use `state_getStorage("0x3a636f6465", exactBlockHash)`, and fail closed if absent.
 
