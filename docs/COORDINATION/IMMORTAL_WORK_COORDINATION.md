@@ -1828,3 +1828,9 @@ The fixed Orynq blob-receipt path is the evidence-custody layer for the eventual
 The full diagnostic scan already isolated 4261 as the only signature-valid candidate in 0..4352. Do not rerun that scan. The next decisive input remains an authenticated historical authority-set transition/state witness or a proof-capable archive/node source. Once that source exists, use the corrected Orynq receipt pipeline to preserve the exact proof/evidence packet and its chain-of-custody.
 
 **STATUS: immutable-input hardening IMPLEMENTED / CI PENDING / Orynq artifact anchoring READY TO APPLY TO A NEW AUTHENTIC WITNESS / B3-A FINALITY + HISTORICAL AUTHORITY PROVENANCE OPEN.**
+
+
+### CI follow-up — 2026-10-27 17:35 UTC
+
+- [Materios Canonical Evidence & Finality Boundary #181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843264): **SUCCESS**. Includes `npm test --prefix poc/materios-grandpa` and `npm run build --prefix poc/materios-grandpa`; both passed with the snapshot-hardening regression included.
+- [Materios B3 execution-proof verifier #127](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291): Rust verifier tests **SUCCESS**, finalized-state capture **SUCCESS**, and native B3-B live-storage proof **SUCCESS**. The `real-grandpa-witness` job was still in progress at this check, so overall run remains pending; this does not change the existing B3-A open status.
