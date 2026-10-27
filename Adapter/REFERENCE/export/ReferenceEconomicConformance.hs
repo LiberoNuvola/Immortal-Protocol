@@ -29,7 +29,8 @@ data Vector = Vector
   }
 
 data Expected = Expected
-  { expectedRawSurplus :: Maybe Integer
+  { expectedProtectedCapital :: Maybe Integer
+  , expectedRawSurplus :: Maybe Integer
   , expectedSolvency :: Maybe Bool
   }
 
@@ -50,7 +51,10 @@ instance FromJSON Vector where
 
 instance FromJSON Expected where
   parseJSON = withObject "Expected" $ \o ->
-    Expected <$> o .:? "rawSurplus" <*> o .:? "solvency"
+    Expected
+      <$> o .:? "protectedCapital"
+      <*> o .:? "rawSurplus"
+      <*> o .:? "solvency"
 
 stateFor :: Integer -> UniversalEconomicState
 stateFor pc =
@@ -65,35 +69,71 @@ main = do
       Right value -> pure value
 
   putStrLn "IMMORTAL_REFERENCE_CONFORMANCE_V1"
+  mapM_ reportPending (filter (\v -> vectorStatus v /= Nothing) (vectors file))
   mapM_ emit (filter (\v -> vectorStatus v == Nothing) (vectors file))
+  putStrLn "REFERENCE_CONFORMANCE_RESULT|PASS"
+
+reportPending :: Vector -> IO ()
+reportPending v =
+  putStrLn
+    ( "PENDING|"
+        ++ vectorId v
+        ++ "|"
+        ++ maybe "unspecified" id (vectorStatus v)
+    )
+
+checkExpected :: (Eq a, Show a) => String -> Maybe a -> a -> IO ()
+checkExpected field expected actual =
+  case expected of
+    Nothing -> pure ()
+    Just expectedValue
+      | expectedValue == actual -> pure ()
+      | otherwise ->
+          putStrLn
+            ( "FAIL|"
+                ++ field
+                ++ "|expected="
+                ++ show expectedValue
+                ++ "|actual="
+                ++ show actual
+            )
+            >> exitFailure
 
 emit :: Vector -> IO ()
 emit v =
-  case (vectorId v, vectorEev v, vectorProtectedCapital v, vectorExpected v, vectorCarAmount v, vectorOtherProtectedCapital v) of
-    ("V10", Just eev, Nothing, Just expected, Just car, Just other) -> do
-      let pc = car + other
-          surplus = max 0 (eev - pc)
-          expectedSurplus = maybe "NA" show (expectedRawSurplus expected)
-      putStrLn
-        ( "V10"
-          ++ "|carAmount=" ++ show car
-          ++ "|protectedCapital=" ++ show pc
-          ++ "|rawSurplus=" ++ show surplus
-          ++ "|expectedRawSurplus=" ++ expectedSurplus
-        )
-    (_, Just eev, Just pc, Just expected, _, _) -> do
-      let state = stateFor pc
-          actualPc = protectedCapital state
-          actualSurplus = rawSurplus eev state
-          actualSolvency = solvencyInvariant eev state
-          expectedSurplus = maybe "NA" show (expectedRawSurplus expected)
-          expectedSolvent = maybe "NA" show (expectedSolvency expected)
-      putStrLn
-        ( vectorId v
-          ++ "|protectedCapital=" ++ show actualPc
-          ++ "|rawSurplus=" ++ show actualSurplus
-          ++ "|solvency=" ++ show actualSolvency
-          ++ "|expectedRawSurplus=" ++ expectedSurplus
-          ++ "|expectedSolvency=" ++ expectedSolvent
-        )
-    _ -> pure ()
+  case
+      ( vectorId v
+      , vectorEev v
+      , vectorProtectedCapital v
+      , vectorExpected v
+      , vectorCarAmount v
+      , vectorOtherProtectedCapital v
+      )
+    of
+      ("V10", Just eev, Nothing, Just expected, Just car, Just other) -> do
+        let pc = car + other
+            surplus = max 0 (eev - pc)
+        checkExpected "V10.protectedCapital" (expectedProtectedCapital expected) pc
+        checkExpected "V10.rawSurplus" (expectedRawSurplus expected) surplus
+        putStrLn
+          ( "PASS|V10"
+              ++ "|protectedCapital=" ++ show pc
+              ++ "|rawSurplus=" ++ show surplus
+          )
+      (_, Just eev, Just pc, Just expected, _, _) -> do
+        let state = stateFor pc
+            actualPc = protectedCapital state
+            actualSurplus = rawSurplus eev state
+            actualSolvency = solvencyInvariant eev state
+        checkExpected (vectorId v ++ ".protectedCapital") (expectedProtectedCapital expected) actualPc
+        checkExpected (vectorId v ++ ".rawSurplus") (expectedRawSurplus expected) actualSurplus
+        checkExpected (vectorId v ++ ".solvency") (expectedSolvency expected) actualSolvency
+        putStrLn
+          ( "PASS|" ++ vectorId v
+              ++ "|protectedCapital=" ++ show actualPc
+              ++ "|rawSurplus=" ++ show actualSurplus
+              ++ "|solvency=" ++ show actualSolvency
+          )
+      _ ->
+        putStrLn ("FAIL|" ++ vectorId v ++ "|unsupported executable vector shape")
+          >> exitFailure
