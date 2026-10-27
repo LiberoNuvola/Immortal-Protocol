@@ -7,12 +7,17 @@ on:
         description: "Exact latest Rust-verified Materios witness block number"
         required: true
         type: string
-        default: "2464283"
+        default: "2464310"
       target_block_hash:
         description: "Exact latest Rust-verified Materios witness block hash"
         required: true
         type: string
-        default: "0xfc96cd4817f2dda1838c5271e7b60e50064c16c6a293c8e2611d17952d179ca2"
+        default: "0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69"
+      target_state_root:
+        description: "Exact stateRoot from the same Rust-verified witness"
+        required: true
+        type: string
+        default: "0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa"
       wait_seconds:
         description: "Maximum P2P proof observation window"
         required: true
@@ -27,6 +32,12 @@ on:
 
 permissions:
   contents: read
+
+# Multiple commits can touch this probe while its bounded P2P wait is running.
+# Keep only the newest run for this branch to avoid redundant light-client builds.
+concurrency:
+  group: materios-smoldot-p2p-finality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   p2p-proof-capture:
@@ -87,7 +98,8 @@ jobs:
           MATERIOS_GENESIS_HASH: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf"
           MATERIOS_BOOTNODE: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
           MATERIOS_TARGET_BLOCK_NUMBER: ${{ github.event.inputs.target_block_number || '2464283' }}
-          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0xfc96cd4817f2dda1838c5271e7b60e50064c16c6a293c8e2611d17952d179ca2' }}
+          MATERIOS_TARGET_BLOCK_HASH: ${{ github.event.inputs.target_block_hash || '0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69' }}
+          MATERIOS_TARGET_STATE_ROOT: ${{ github.event.inputs.target_state_root || '0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa' }}
           SMOLDOT_MAX_WAIT_SECONDS: ${{ github.event.inputs.wait_seconds || '360' }}
           SMOLDOT_EVIDENCE_OUT: ${{ runner.temp }}/materios-smoldot-evidence.json
         run: node poc/materios-smoldot/capture-finality.mjs
