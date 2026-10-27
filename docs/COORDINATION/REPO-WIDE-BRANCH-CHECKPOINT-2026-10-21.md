@@ -4336,3 +4336,16 @@ Agent A downloaded and inspected artifact [12763368218](https://github.com/Liber
 - The resource audit reports observed max transaction size 16,384 bytes and measured candidate transaction/script sizes for this run; these measurements do not qualify unrelated production transaction paths.
 
 **Disposition correction:** for this exact local Yaci evidence packet, P2.8's report-aware native-ledger evidence gate is now supported as **PASS**, rather than merely inferred from the workflow's exit code. This closes only the scoped P2.8 local run; it does not close V08/V09, the historical canonical Haskell Reveal-size issue, Haskell/Aiken semantic equivalence, production Preprod qualification, EEV, or first Issue. Do not change V3/Reveal semantics.
+
+
+## 45.34 AGENT A — ADAPTER SALE + SDK CHECKS AT EXACT HEAD 324bc48 (2026-10-27)
+
+Rechecked Actions runs created for the SDK export-map update at exact source HEAD `324bc48ffb1ae44853044fea1812628541cc2032`.
+
+- [Cardano Adapter Sale Conformance #40579658987](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579658987) — **SUCCESS**. Both `economic-conformance` and `frontend-build` jobs completed successfully. The economic job passed the focused `AuthoritativeIssueAdmission.test.ts`, `preRichIssueAdmissionBridge.test.ts`, and `HaskellIssueAdmissionProvider.test.ts` suites, plus the repository-wide RF8 production-boundary audit. Frontend `npm run build` also passed. This is contract/build evidence on the exact SHA, not an EEV approval, live Preprod Issue, or wallet transaction.
+- [IMMORTAL Portability Conformance #40579659046](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659046) — **SUCCESS** for its two TypeScript suites. It does not execute the Haskell reference evaluator; V08/V09 remain pending.
+- [Protocol Declaration Conformance #40579659067](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659067) — **SUCCESS**, including protocol declaration tests and typecheck.
+- [Documentation Link Check #40579659055](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659055) and [Algorithmic Governability Adversarial Lab #40579659182](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40579659182) — **SUCCESS**.
+- The duplicate Adapter Sale run #40579636315 on the earlier inventory commit was cancelled after the exact-HEAD run started; no failure is inferred from that cancellation.
+
+**Agent A disposition:** the focused Issue-admission contract tests are green, so the next blocker is not this TypeScript boundary suite. Live Issue still requires fresh Preprod observation, qualified current EEV evidence and current deployment approval/admission binding; none is established by these tests. No wallet signing, transaction submission, protocol change, V3/Reveal edit, new branch or EEV approval occurred.
