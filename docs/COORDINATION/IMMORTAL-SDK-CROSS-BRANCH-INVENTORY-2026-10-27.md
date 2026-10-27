@@ -112,3 +112,45 @@ This is a proposed boundary, not a commitment to publish these exact package nam
 ## Next step
 
 Continue the read-only cross-branch audit of exact branch heads, package manifests, module consumers and tests. Update the central coordination checkpoint with this inventory. Do not start a new SDK implementation branch or refactor the kernel yet.
+
+
+## Follow-up: consumer map and P2.8 closure check (2026-10-27)
+
+A second pass used GitHub code search on the default branch as a **read-only corroboration source**, while retaining `work/immortal-green-closure` as the implementation surface per `docs/IMMORTAL-SYSTEM-MAP.md`. Default-branch search is not a substitute for pinning and rechecking the working branch head before implementation.
+
+### Observed consumer map
+
+| Candidate | Direct consumers located by code search | Consequence |
+|---|---|---|
+| `CanonicalEconomicState.ts` | `EconomicObservation.ts`, `src/__tests__/immortal-reveal-conformance.test.ts`, `audit/cardano-integration/preprod-conformance-binding.mjs` | It is not isolated: moving it requires updating app tests and evidence-source lists, not just the observation module |
+| `CanonicalTransitionEvidence.ts` | `EconomicAdmissionTransitionBinding.ts`, `src/preRichIssueAdmissionBridge.ts`, `src/__tests__/caes-transition-closure.test.ts`, `audit/cardano-integration/reveal-ledger-trace.ts`, `audit/cardano-integration/expire-ledger-trace.ts` | A shared evidence contract would touch Issue-admission and lifecycle evidence paths; use a compatibility façade first, not a file move |
+| `CardanoExecutionAdapter.ts` | `src/txHelpers.ts`, `src/mint.ts`, `src/adSettlement.ts`, lifecycle trace runners, adapter and CAES tests | It is a real application integration boundary already. SDK MVP should wrap it without changing its signing/submission semantics |
+| `EconomicAdmissionTransitionBinding.ts` | `src/__tests__/caes-transition-closure.test.ts`, its own regression test, and Issue-admission composition | Preserve current pre-sign binding and negative-twin coverage; do not conflate structural matching with cryptographic verification |
+| Portability vector JSON + Haskell reference evaluator | Search found the vector/evaluator files and docs referencing them, but no reliable direct import of the JSON from a TypeScript package was found | Treat this as a separate conformance-tooling surface; inspect its execution workflow before proposing package exports |
+
+### Duplicate-definition and packaging findings
+
+- The root `package.json` is an app/tooling manifest with Vite, Vitest, Lucid and operational scripts; no explicit public SDK export surface was identified.
+- The canonical economic state is chain-neutral by its stated semantics but physically located in `Adapter/CARDANO/serialization`. That is a naming/layout mismatch, not sufficient reason for a refactor.
+- Canonical transition evidence carries protocol/profile/adapter versions and fingerprints but currently uses broad strings for fields such as action class and environment. A future schema should tighten enums/normalization only through a versioned compatibility proposal.
+- The current evidence validator proves shape and field binding only. It must not return a status named `verified` or `finalized` unless an independent verifier has actually established that property.
+- Code search did not establish any duplicate canonical economic-state definition that can safely be removed. No delete/rename is proposed.
+
+### P2.8 check: not closed by documentation or a green workflow label
+
+The currently visible system/status documents continue to classify typed Ledger Reveal evaluation as **IN PROGRESS** and full P2.8 evidence as requiring an exact-head native report. The Reveal remediation document explicitly distinguishes reference-script size relief from script execution success and ledger acceptance. The workflow source invokes the native evaluator, but that fact alone does not prove the latest run produced an acceptable report.
+
+I could not establish from the available run evidence in this pass that a fresh exact-head P2.8 packet had produced either:
+- `LEDGER_ALIGNED_EVALUATION_SUCCESS` with actual redeemer results/ExUnits; or
+- a genuine ledger-originated script failure with complete, hash-bound context.
+
+Therefore I do **not** reopen implementation or call P2.8 closed based on a workflow status. Keep the existing remediation path and obtain the latest run ID, exact head SHA, artifact digest and `ledger-evaluation-report.json` before changing the evaluator. This preserves the earlier user report of a green lab run as a lead to verify, not as evidence already inspected.
+
+### Current recommendation
+
+Proceed to a dependency-map/conformance audit, not a broad refactor:
+1. Pin the active branch head and the exact source SHA for each candidate.
+2. Collect the current test names and workflow invocations for the five candidate seams above.
+3. Build a package/export proposal with no moves initially.
+4. Run the relevant existing conformance tests at that exact head.
+5. Keep P2.8 and SDK readiness as separate statuses.
