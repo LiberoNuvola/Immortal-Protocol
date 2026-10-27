@@ -93,8 +93,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p audit/yaci-evidence
-          cd IMMORTAL
-          cabal --project-file=../cabal.project exec -- runghc -i./kernel -i./state ../Adapter/REFERENCE/export/ReferenceEconomicConformance.hs | tee ../audit/yaci-evidence/reference-conformance.txt
+          # Run from repository root: cabal.project package paths (including ./plutus)
+          # are resolved relative to the current working directory by this CI setup.
+          cabal --project-file=cabal.project exec -- runghc -iIMMORTAL/kernel -iIMMORTAL/state Adapter/REFERENCE/export/ReferenceEconomicConformance.hs | tee audit/yaci-evidence/reference-conformance.txt
 
       # Generate validators from the exact source snapshot tested below.
       - name: Generate fresh Plutus validator artifacts
