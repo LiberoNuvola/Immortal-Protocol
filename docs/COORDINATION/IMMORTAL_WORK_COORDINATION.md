@@ -1861,3 +1861,29 @@ Agent A has implemented this correction and a focused test on `work/immortal-gre
 - On Agent C's branch, the current B3 workflow already has the WebSocket capability/witness probe and passes `MATERIOS_WS_EVIDENCE_PATH`; the :code correction has **not** been ported here. Agent C should review/cherry-pick the two small changes if useful, rather than Agent A independently duplicating the B3 workflow or set-ID diagnostics.
 
 This correction only improves runtime-WASM acquisition. It does not resolve the recurring signature/set-ID conflict, authenticate runtime code, or close B3-A. No production semantics or live transaction changed.
+
+
+### Orynq GRANDPA checkpoint-walk audit — 2026-10-27
+
+Reviewed upstream Orynq SDK's recent GRANDPA verifier changes, beyond the immutable-input fix:
+
+- [`checkpoint-advance.ts`](https://github.com/Flux-Point-Studios/orynq-sdk/blob/main/packages/anchors-midnight/src/checkpoint-advance.ts) implements an append-only checkpoint advancement transcript with predecessor/root identity, sequence, prior digest, proof transcript, headers and successor checkpoint. It verifies every advancement against a predecessor checkpoint already trusted by the caller.
+- [`grandpa.ts`](https://github.com/Flux-Point-Studios/orynq-sdk/blob/main/packages/anchors-midnight/src/grandpa.ts) walks set changes using `grandpa_proveFinality` plus `chain_getHeader`, checks the outgoing set's justification, reads the next set from the FRNK digest, and refuses invalid/forced/delayed transitions. Relevant hardening includes [commit `90fc397111a98b2d6fe47771e82003cdcaa429d5`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/90fc397111a98b2d6fe47771e82003cdcaa429d5).
+- **Do not transplant the Midnight implementation verbatim.** Its chain-specific header encoding/runtime details need Materios adaptation. Its transferable method is trusted-checkpoint-to-checkpoint verification and an append-only proof transcript.
+
+### New upstream blocker isolated in published Materios source
+
+The public [Materios node RPC module](https://github.com/Flux-Point-Studios/materios/blob/main/partnerchain/node/src/rpc.rs) currently merges only System, Orinq Receipts and MOTRA RPC modules; it does not register a GRANDPA RPC module. The node service does instantiate `GrandpaBlockImport` and `grandpa_link` ([`service.rs`](https://github.com/Flux-Point-Studios/materios/blob/main/partnerchain/node/src/service.rs)), but that state is not wired into `create_full` in the published RPC module. This matches the observed `grandpa_proveFinality` / `grandpa_subscribeJustifications` method-not-found result and suggests a node RPC exposure gap, not merely an undocumented endpoint.
+
+The published Preprod chain spec also pins `PREPROD_V6_GENESIS` and the genesis GRANDPA authority keys in [`chain_spec_preprod.rs`](https://github.com/Flux-Point-Studios/materios/blob/main/partnerchain/node/src/chain_spec_preprod.rs). This provides a candidate trust root only after its genesis hash and authority set are matched against the live chain and the exact deployed chain spec/runtime. Do not silently substitute a repository's current main branch for the deployed genesis configuration.
+
+### Required path to resolve set-ID 4261
+
+1. Pin and verify the live `materios_preprod_v6` genesis hash and genesis GRANDPA authorities against the published/deployed chain spec.
+2. Obtain an archive/proof source for `grandpa_proveFinality` and `chain_getHeader`, or ask Materios to expose a read-only GRANDPA proof RPC using its existing GRANDPA link/state.
+3. Adapt the Orynq checkpoint-walk model to Materios header/digest encoding and verify every intermediate set change from the authenticated root checkpoint to the target. Preserve proofs and headers in an append-only transcript whose successor is accepted only from a verified predecessor.
+4. Keep the existing signature search diagnostic-only. Do not adopt set ID 4261 merely because signatures validate under it.
+
+**Additional security constraint from Orynq's own manifest:** GRANDPA signatures do not bind a chain ID or genesis hash. Matching local `chainId`/`genesisHash` metadata therefore does not independently prove that a justification's signers were authorized on this chain; the chain-specific trust root and authority-transition history are essential. A cross-chain or earlier-incarnation replay must remain in the threat model.
+
+**Status: Orynq checkpoint-walk pattern identified / public Materios GRANDPA RPC exposure gap identified from source / live genesis-to-target authority walk still blocked on a proof-capable source.**
