@@ -3499,3 +3499,25 @@ Applied on the existing `work/immortal-green-closure` branch:
 **Confirmed effect of the :code fix:** finalized-state artifact [12754214870](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015/artifacts/12754214870), JSON SHA-256 `1ad442dc1a9d01aefb0dce85aa150ffbb6697b26df327db4d96bf53bbb6d6e82`, now records `runtime_code.status=captured` at exact finalized block `2471591` (hash `1ca50d7ccf0156c34a0942b4020af15b52d6a2edf9bddb4523ac362d136d4636`). Runtime WASM length: `857434` bytes; SHA-256 `4f4ee403ab22cd1f35c96aebaa2ba37508611e976a603e6b22b2ea03ec68f3d2`; Substrate-native Blake2-256 `98cab6b1b3d84179fdb252ce281e842310a48461c5e8ea802ea5fd5b33c91c7b`. These are observed hashes of bytes returned by the public RPC, not yet a trusted runtime identity or source-reproducibility proof. The capture still reports set ID `4352`, five authorities, and `grandpa_proveFinality: METHOD_NOT_FOUND`.
 
 This repairs and live-validates runtime-code acquisition only. It does not resolve the GRANDPA set-ID conflict or prove runtime-code identity: returned WASM bytes still need an independently trusted hash/runtime identity and a state-root-bound proof. B3-A remains OPEN; do not infer set ID 4261 as trusted, weaken signature checks, or submit a live transaction.
+
+
+## 45.25 — AGENT B — CROSS-BRANCH IMMORTAL SDK INVENTORY (DISCOVERY ONLY) — 2026-10-27
+
+Created `docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md` on the existing `work/immortal-green-closure` branch (inventory commit `79336d655eba03ced2bf58984cde72628038e3d8`).
+
+The inventory identifies reusable existing seams rather than implementing a second kernel:
+- `Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json` and `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs` as the conformance/reference starting point;
+- `Adapter/CARDANO/serialization/CanonicalEconomicState.ts`, `Adapter/CARDANO/observation/EconomicObservation.ts`, `Adapter/CARDANO/runtime/EconomicAdmission.ts`, and `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` as existing Cardano-boundary types/functions;
+- `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` and `EconomicAdmissionTransitionBinding.ts` as evidence-shape/binding candidates, with an explicit caveat that schema validation does not establish cryptographic truth;
+- the research-only `Adapter/MIDNIGHT/*` boundary and `poc/materios-orynq-bridge/*` on Agent C's branch as design examples, not core SDK dependencies.
+
+Cross-branch guardrails:
+- Do not cherry-pick whole historical audit branches; their histories diverge and duplicate path names.
+- Do not relocate kernel/state code until consumers and conformance tests are mapped.
+- Do not move EEV qualification into the SDK (Agent A ownership) or continue Materios/B3 work while paused (Agent C ownership).
+- P2.8 native ledger materializer/runner is not an SDK acceptance API until its reference-script UTxO context issue is resolved and exact-head native evaluation evidence is produced.
+- No SDK implementation branch, code refactor, deployment, transaction submission, or protocol-semantic change has been made.
+
+**Initial conclusion:** no public IMMORTAL SDK package surface was identified in the first pass. Existing modules provide building blocks, but they are scattered across chain-neutral/reference and Cardano-specific directories. Proposed design-only MVP is a thin core contract/evidence façade, a Cardano adapter wrapper, and a conformance package; no duplicated economic kernel. Before implementation, finish exact branch-head pinning, consumer/dependency mapping, duplicate-definition review, and relevant conformance tests.
+
+**STATUS: SDK CROSS-BRANCH INVENTORY v0.1 RECORDED; DESIGN/RECONNAISSANCE ONLY; NO IMPLEMENTATION AUTHORIZED YET.**
