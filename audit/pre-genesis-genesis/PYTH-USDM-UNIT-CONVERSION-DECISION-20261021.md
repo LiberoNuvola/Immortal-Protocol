@@ -376,6 +376,20 @@ A dedicated read-only observation path has been added on `work/immortal-green-cl
 - For a returned pool, the script re-queries the exact address/out-reference through Koios and compares the inline datum bytes, lovelace value and tUSDM atomic quantity. Missing or mismatched witnesses fail closed. A missing V2 pair is reported as a scoped V2 lookup miss, not proof that no Minswap pool exists in every protocol variant.
 - The observer is read-only: it does not build, sign or submit a transaction. Its explicit status remains `OBSERVED_NOT_QUALIFIED`; the Preprod token must not be confused with Moneta Mainnet USDM.
 
-The script and workflow were committed on the existing branch (observer source hardened through commit `05a24c1ad7b27494ab71049dae7d79b40e2f665e`; workflow `b0316c750265ed60784f7a8146da12a8e97474a4`). A live run result and artifact digest are not yet captured in this decision memo, so **no live Minswap pool is claimed at this stage**. Even a matching Preprod pool would prove test integration mechanics only and would not qualify USD/USDM conversion.
+The initial Blockfrost-backed workflow was executed twice and stopped before the chain query because `BLOCKFROST_PROJECT_ID` was absent from the GitHub Actions environment; those failures are provider-configuration failures, not pool findings. Agent A then replaced that dependency with direct public Koios discovery using the exact Minswap V2 pool-authentication asset and SDK-configured testnet payment credential. This removed the credential blocker and generated the live result recorded in §27.
 
 The decision record remains: Option B is the selected approach, but no qualifying USD/USDM source or versioned conversion-consumer contract has been approved. No change was made to OracleQuote, `Economic.totalUsdmValue`, MintPolicy, V3, Reveal, economic constants, deployment approval, or Issue authorization.
+
+
+## 27. Live Koios check: no exact ADA / Preprod-tUSDM pair in Minswap V2 — 2026-10-27
+
+The public-Koios observer completed successfully in GitHub Actions:
+
+- Workflow run [#40457199176](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457199176), completed **success**; artifact [ID 12713226154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457199176/artifacts/12713226154).
+- Observed at `2026-10-27T05:46:39.548Z`. Koios tip before and after the query was unchanged: block `5340313`, absolute slot `137396789`, hash `52889995bf1e22c56180aa76e41475684832b4af24693030ac6f7fdd6285f93f`.
+- The query enumerated `455` live UTxOs carrying Minswap V2's testnet pool-authentication asset under payment credential `d6ba9b7509eac866288ff5072d2a18205ac56f744bc82dcd808cb8fe`; all `455` decoded as V2 pool states, with `0` parse rejects.
+- Exact pair candidates for `lovelace` + Preprod tUSDM `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`: `0`. Therefore no exact pool out-reference existed to perform the second address/out-reference witness query against. The emitted status is `NO_EXACT_ADA_TUSDM_PAIR_FOUND_IN_MINSWAP_V2`; evidence SHA-256: `aeb1559b58961a2d9b3be0dce2eebafc04af1cbfb3d0eb1edfe7731bfc0fa689`.
+
+**Scope of the finding:** this is a successful, live query and a negative finding for the exact pair within Minswap V2's configured Preprod pool credential. It does not prove that no ADA/tUSDM pool exists in Minswap V1, Stableswap, another DEX, or another test asset deployment. In particular, it is not a USD/USDM conversion witness or price quote. The DEX route for this exact Preprod pair remains unavailable in V2 and should not be developed further against a guessed pool.
+
+The workflow and observer remain read-only: no transaction was built, signed or submitted. Qualification remains `OBSERVED_NOT_QUALIFIED`; the Option B source and consumer contract are still unqualified. No parity is assumed, and EEV approval/Issue remain separately gated.
