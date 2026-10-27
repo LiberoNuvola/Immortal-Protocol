@@ -1706,3 +1706,30 @@ commit `d456be3ebe243187778c6d35e861137a36b8bfb2`.
 No production validator change is made in this pass because the repository does not yet contain a canonical on-chain decision-authority mechanism that can be reused without inventing new protocol semantics.
 
 Closure must be sourced from the existing architecture and must make the carrier transition non-malleably correspond to the existing economic decision/admission path. V3 semantics, Reveal semantics, EEV rules and B1 liquidity rules remain unchanged.
+
+## 45.22 MATERIOS GRANDPA WITNESS — RUN #40548408573 — 2026-10-27
+
+Run: https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573  
+Branch: `work/b3-materios-provenance-evidence`  
+HEAD: `a66493791dc426a4a6a213fd1dc5b9b7a34b84e7`
+
+### Results
+
+- `verifier`: PASS (format + Rust verifier tests).
+- `finalized-state-capture`: PASS. Captured finalized block 2471377; exact-hash runtime APIs reported GRANDPA set ID 4352 and five authorities. The public RPC does not expose `state_getCode` or `grandpa_proveFinality` (`-32601 Method not found`).
+- `live-storage-proof`: PASS (B3-B evidence).
+- `real-grandpa-witness`: FAIL closed at cryptographic finality verification for block 2471424, hash `0xdcf28d0d21715e914000db6f10e216c8702fc39cd3275368746da3158cf2d16c`, round 46478. The raw FRNK justification was captured; set ID 4352 yields 0/4 valid signatures.
+- Bounded diagnostic search over set IDs 4096–4352 finds candidate 4261 with 4/4 signatures valid. With the observed authority list, diagnostic quorum/ancestry reports signed weight 4/5, but remains explicitly `SIGNATURE_QUORUM_ANCESTRY_PASS_UNTRUSTED`.
+- Exact-target runtime authority state was returned, but `provenance_verified=false`; transition witness was `NOT_FOUND_IN_PROBE_WINDOW`.
+
+Artifacts:
+- Real GRANDPA witness: artifact 12754441369, SHA-256 `70e1e1b406df1cd0dfb0ed4bd9ca2a525b3c16c7b19770565fc32c9015599344`.
+- Finalized state capture: artifact 12753497694, SHA-256 `a5a51231cee9d4d2e69fb7d29d6d3ca40ac92b4a8272d345ba1207f6cac86738`.
+
+### Classification and next gate
+
+The run confirms acquisition capability, not authenticated finality. Candidate set ID 4261 remains an inferred diagnostic hypothesis; the run does not prove it was the authentic historical set or establish transitions from 4261 to the currently observed set 4352. Do not create a `TrustedAuthorityState` from this candidate and do not weaken signature/quorum checks.
+
+Next required evidence is an authenticated authority-set transition chain (or a cryptographically verified historical runtime-state/execution proof) binding the candidate set to the exact target. Public RPC lacks the finality-proof and runtime-code endpoints, so a configured archival/proof-capable source or upstream Materios RPC implementation is needed. No live receipt or production claim is authorized.
+
+**STATUS: B3-B LIVE STORAGE PROOF 🟢 / B3-A AUTHENTICATED GRANDPA FINALITY + AUTHORITY PROVENANCE 🔴 OPEN.**
