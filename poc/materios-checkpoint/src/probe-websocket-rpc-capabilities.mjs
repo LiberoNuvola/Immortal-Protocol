@@ -485,6 +485,32 @@ async function main() {
     // older verified witness at block 2463858. This may expose stored FRNK bytes
     // even though this public endpoint does not implement grandpa_proveFinality.
     try {
+      const waitSeconds = Number(process.env.MATERIOS_FINALITY_WAIT_SECONDS || "900");
+      const waitDeadline = Date.now() + Math.max(0, waitSeconds) * 1000;
+      while (
+        (!Number.isSafeInteger(evidence.identity.finalized_head_number) ||
+         evidence.identity.finalized_head_number < FINALITY_CANDIDATE_BLOCK_NUMBER) &&
+        Date.now() < waitDeadline
+      ) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        const finalized = await rpc("chain_getFinalizedHead", []);
+        const finalizedError = methodError(finalized);
+        if (finalizedError || typeof finalized.result !== "string") {
+          throw new Error("Unable to refresh finalized head while waiting for candidate");
+        }
+        const finalizedHeader = await rpc("chain_getHeader", [finalized.result]);
+        const headerError = methodError(finalizedHeader);
+        if (headerError || !isObject(finalizedHeader.result) ||
+            typeof finalizedHeader.result.number !== "string" ||
+            !/^0x[0-9a-f]+$/i.test(finalizedHeader.result.number)) {
+          throw new Error("Unable to read current finalized height while waiting for candidate");
+        }
+        evidence.identity.finalized_head = finalized.result;
+        evidence.identity.finalized_head_number = Number(BigInt(finalizedHeader.result.number));
+      }
+      evidence.historical_candidate_probe.finalized_head_number_at_probe =
+        evidence.identity.finalized_head_number;
+      evidence.historical_candidate_probe.wait_seconds_configured = waitSeconds;
       const hashResponse = await rpc("chain_getBlockHash", [FINALITY_CANDIDATE_BLOCK_NUMBER]);
       const hashError = methodError(hashResponse);
       if (hashError) {
