@@ -3414,3 +3414,14 @@ B3-B live storage proof is green in the same run (artifact [12753540712](https:/
 Next step: resolve the signature mismatch with an independent standard GRANDPA implementation and an authenticated historical authority-set transition. Do not keep rotating candidate blocks without fixing the trust/provenance problem; do not use current-set fallback as authority proof. The B3-A gate remains OPEN and no live transaction/receipt has been submitted.
 
 **STATUS: DYNAMIC FRNK CAPTURE GREEN; HEADER CROSS-ROUTE/HASH BINDING GREEN; STORAGE PROOF AND ORYNQ DRY-RUN GREEN; GRANDPA CRYPTOGRAPHIC FINALITY NOT VERIFIED; HISTORICAL AUTHORITY STATE PRUNED; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.20 — AGENT C — INDEPENDENT SIGNATURE CROSS-CHECK — 2026-10-27
+
+Performed an independent diagnostic against the raw 574-byte justification from artifact [12751857950](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40545697588/artifacts/12751857950). The four precommit signer IDs all match keys in the returned five-authority set, and the target hash/number decode consistently. A separate Ed25519 implementation rejects all four signatures for the standard localized GRANDPA payload using observed set-id `4352`. Checked the upstream `paritytech/substrate` GRANDPA source: `localized_payload_with_buffer` encodes `(message, round, set_id)` and the `Precommit` message uses enum index `1`; the current IMMORTAL encoding follows that layout. This reduces the likelihood that the failure is only the local verifier's first-error reporting, but it does not by itself prove the RPC payload is invalid on-chain.
+
+The authority state at `2470912` and its parent is pruned by the public RPC, so the current set is only an untrusted fallback. The earlier block `2464768` capture did return exact-target runtime authority state but also failed `INVALID_SIGNATURE`; neither capture has authenticated transition provenance. Treat the possibilities still open as: payload/transport corruption or nonstandard chain semantics, incorrect/unavailable historical authority-set context, or a verifier mismatch not yet exposed by the tested encoding variants. Do not weaken signature verification or promote a current-state fallback.
+
+Next: acquire a proof/source that can provide authenticated historical authority state (or an upstream-maintainer confirmation of the expected GRANDPA key/signature semantics), then compare the same raw FRNK bytes with an independent Substrate-compatible verifier. Keep B3-A OPEN until signature/quorum, ancestry, and authority-transition provenance are all verified.
+
+**STATUS: RAW FRNK ACQUISITION GREEN; STANDARD ED25519 CHECK REJECTS 4/4 AGAINST OBSERVED SET; CAUSE NOT YET ATTRIBUTED; HISTORICAL AUTHORITY PROVENANCE MISSING; B3-A OPEN; NO LIVE TRANSACTION.**
