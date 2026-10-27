@@ -167,12 +167,14 @@ emit v =
         mapM_ (emitLocalityCase (vectorId v)) (zip [1 :: Int ..] cases)
       ("V10", Just eev, Nothing, Just expected, Just car, Just other, _) -> do
         let pc = car + other
-            surplus = max 0 (eev - pc)
-        checkExpected "V10.protectedCapital" (expectedProtectedCapital expected) pc
+            state = stateFor pc Nothing
+            actualPc = protectedCapital state
+            surplus = rawSurplus eev state
+        checkExpected "V10.protectedCapital" (expectedProtectedCapital expected) actualPc
         checkExpected "V10.rawSurplus" (expectedRawSurplus expected) surplus
         putStrLn
           ( "PASS|V10"
-              ++ "|protectedCapital=" ++ show pc
+              ++ "|protectedCapital=" ++ show actualPc
               ++ "|rawSurplus=" ++ show surplus
           )
       (_, Just eev, Just declaredPc, Just expected, _, _, _) -> do
