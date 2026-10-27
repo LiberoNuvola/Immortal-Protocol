@@ -14,6 +14,7 @@ const TUSDM_UNIT = 'e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014
 const TUSDM_POLICY = TUSDM_UNIT.slice(0, 56)
 const TUSDM_NAME = TUSDM_UNIT.slice(56)
 const ADA_UNIT = 'lovelace'
+const IMMORTAL_B1_POOL_SINGLETON_UNIT = '9ada0966f747542f84af2bc352d564685d77f3839ec0b053a1b7700e504f4f4c2d444952454354'
 const V1_POOL_SCRIPT_HASH = bech32ScriptHashToHex(DexV1Constant.POOL_SCRIPT_HASH)
 const EXPECTED_V1_POOL_SCRIPT_HASH = 'e1317b152faac13426e6a83e06ff88a4d62cce3c1634ab0a5ec13309'
 const V2_CONFIG = DexV2Constant.CONFIG[NetworkId.TESTNET]
@@ -461,6 +462,88 @@ async function main() {
       }
     })
     .sort((a, b) => b.utxoCount - a.utxoCount)
+
+  // Inspect external script UTxOs with a pool-like asset/datum shape without assuming they are DEX pools.
+  // The known B1 PrizePool singleton is explicitly separated from these external candidates.
+  const externalScriptCandidateRows = []
+  for (const [paymentCredential, entries] of otherScriptCredentialGroups.entries()) {
+    for (const { row, decoded } of entries) {
+      const assets = decodeLedgerAssets(row.asset_list, row.value)
+      const tUsdmAtomic = BigInt(assets[TUSDM_UNIT] ?? '0')
+      const lovelace = BigInt(assets[ADA_UNIT] ?? '0')
+      const otherUnits = Object.keys(assets).filter((unit) => unit !== ADA_UNIT && unit !== TUSDM_UNIT)
+      const hasDatumEvidence = Boolean(normalizeHex(row.inline_datum) || row.datum_hash)
+      const isKnownB1Pool = otherUnits.includes(IMMORTAL_B1_POOL_SINGLETON_UNIT)
+      if (tUsdmAtomic <= 0n || lovelace <= 0n || otherUnits.length < 1 || !hasDatumEvidence || isKnownB1Pool) continue
+      const outRef = rowOutRef(row)
+      requireValidOutRef(outRef)
+      externalScriptCandidateRows.push({
+        paymentCredential,
+        decoded,
+        row,
+        outRef,
+        assets,
+        otherUnits,
+        tUsdmAtomic,
+        lovelace,
+      })
+    }
+  }
+  externalScriptCandidateRows.sort((a, b) => {
+    if (a.otherUnits.length !== b.otherUnits.length) return b.otherUnits.length - a.otherUnits.length
+    if (a.tUsdmAtomic !== b.tUsdmAtomic) return a.tUsdmAtomic > b.tUsdmAtomic ? -1 : 1
+    return a.outRef.txHash.localeCompare(b.outRef.txHash)
+  })
+
+  const externalScriptCandidateObservations = []
+  for (const candidate of externalScriptCandidateRows.slice(0, 10)) {
+    const exact = await findLiveOutRef(candidate.outRef.address, candidate.outRef.txHash, candidate.outRef.outputIndex)
+    if (exact.length !== 1) {
+      externalScriptCandidateObservations.push({
+        status: 'BLOCKED_EXTERNAL_SCRIPT_OUTREF_NOT_UNIQUELY_LIVE',
+        paymentCredential: candidate.paymentCredential,
+        outRef: candidate.outRef.txHash + '#' + candidate.outRef.outputIndex,
+        exactKoiosMatches: exact.length,
+      })
+      continue
+    }
+    const direct = exact[0]
+    const directAssets = decodeLedgerAssets(direct.asset_list, direct.value)
+    const originalDatumHex = normalizeHex(candidate.row.inline_datum)
+    const directDatumHex = normalizeHex(direct.inline_datum)
+    const datumHashMatches =
+      (candidate.row.datum_hash ?? null) === (direct.datum_hash ?? null)
+    const assetsMatch =
+      String(direct.address ?? '') === candidate.outRef.address &&
+      String(direct.payment_cred ?? '').toLowerCase() === candidate.paymentCredential &&
+      (directAssets[TUSDM_UNIT] ?? '0') === candidate.tUsdmAtomic.toString() &&
+      (directAssets[ADA_UNIT] ?? '0') === candidate.lovelace.toString() &&
+      candidate.otherUnits.every((unit) => (directAssets[unit] ?? '0') === (candidate.assets[unit] ?? '0'))
+    const datumMatches =
+      originalDatumHex && directDatumHex
+        ? originalDatumHex === directDatumHex
+        : datumHashMatches
+    externalScriptCandidateObservations.push({
+      status: assetsMatch && datumMatches ? 'LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL' : 'BLOCKED_EXTERNAL_SCRIPT_WITNESS_MISMATCH',
+      paymentCredential: candidate.paymentCredential,
+      address: candidate.outRef.address,
+      addressType: candidate.decoded.addressType,
+      outRef: candidate.outRef.txHash + '#' + candidate.outRef.outputIndex,
+      blockHeight: direct.block_height == null ? null : String(direct.block_height),
+      blockTime: direct.block_time == null ? null : String(direct.block_time),
+      tUsdmAtomic: String(directAssets[TUSDM_UNIT] ?? '0'),
+      lovelace: String(directAssets[ADA_UNIT] ?? '0'),
+      otherAssetUnits: Object.keys(directAssets).filter((unit) => unit !== ADA_UNIT && unit !== TUSDM_UNIT),
+      datumHash: direct.datum_hash ?? null,
+      datumHashMatchesFirstRead: datumHashMatches,
+      inlineDatumMatchesFirstRead: Boolean(originalDatumHex && directDatumHex && originalDatumHex === directDatumHex),
+      inlineDatumCborHex: directDatumHex,
+      inlineDatumValue: direct.inline_datum?.value ?? null,
+      assetsMatchFirstRead: assetsMatch,
+      conclusion: 'Exact live output rechecked independently through Koios. Script identity/protocol semantics are not known from this check; do not call this a DEX pool without a protocol-specific witness.',
+    })
+  }
+
   const v1PoolCredentialRows = tusdmRows.filter((row) =>
     String(row.payment_cred ?? '').toLowerCase() === V1_POOL_SCRIPT_HASH
   )
@@ -543,6 +626,13 @@ async function main() {
         testnetAddressRows,
         nonMinswapScriptPaymentCredentialGroups: otherScriptCredentialGroups.size,
         groups: otherScriptCredentialSummary.slice(0, 25),
+        externalScriptCandidatesAfterExcludingKnownB1Pool: {
+          count: externalScriptCandidateRows.length,
+          independentlyRequeried: externalScriptCandidateObservations.length,
+          candidates: externalScriptCandidateObservations,
+          meaning: 'Each candidate is an exact script-address UTxO holding tUSDM, ADA, another native asset and datum evidence, not an assertion that the script is a pool or DEX.',
+        },
+        knownImmortalB1PoolSingletonUnit: IMMORTAL_B1_POOL_SINGLETON_UNIT,
         limitation: 'A script credential plus tUSDM is only a candidate surface, not proof of a DEX pool. Each candidate requires protocol identification and exact out-reference/datum verification before classification.',
       },
       exactOutRefRequery: 'POST /address_utxos for exact-pair candidate(s) only',
