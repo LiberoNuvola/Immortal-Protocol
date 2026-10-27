@@ -4218,3 +4218,16 @@ The read-only observer now reports exact asset-name hex, printable UTF-8 labels 
 **Temporal bound:** this run's Koios tip moved from block 5,340,390 / slot 137,398,081 to block 5,340,393 / slot 137,398,118. This is a bounded query interval, not an atomic snapshot. Exact external out-references were re-queried and their datum/value witnesses matched at re-query time.
 
 Memo §30 records detailed values. Conversion qualification remains blocked: Option B approach selected, no USD/USDM source/consumer contract qualified, no parity assumed, no transaction signed/submitted, EEV approval/Issue remain gated.
+
+### Agent A — Mainnet Moneta-USDM discovery is fail-closed; latest scan pending (2026-10-27)
+
+Mainnet Moneta USDM is distinct from Preprod test tUSDM. The canonical Mainnet unit is `c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad0014df105553444d` (6 decimals).
+
+- [Run #40459726791](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40459726791): Koios `/asset_utxos` returned HTTP 504 on broad global USDM-holder discovery; result was `OBSERVATION_FAILED_CLOSED`, not a negative pool finding.
+- [Run #40544836774](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40544836774): syntax error in the request helper; no on-chain result.
+- [Run #40545003507](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40545003507): the unbounded V1 script UTxO request timed out; result `OBSERVATION_FAILED_CLOSED`, no on-chain conclusion.
+- Corrected observer now uses bounded Koios retry/timeouts and 100-row pagination for the exact Mainnet USDM unit, then filters by the pinned Minswap V1 payment credential. [Run #40546067834](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40546067834) is still pending at this checkpoint update. Read its final artifact before recording a conclusion.
+
+No failed/pending run can be interpreted as “no pool found”. The Preprod finding remains limited to the configured Minswap V1/V2/StableSwap sets for exact test tUSDM; `tUSDM = OBSERVED_NOT_QUALIFIED`. No parity is assumed, no USD/USDM conversion source or consumer contract is qualified, and no transaction/EEV approval/Issue is authorized.
+
+**External script token-name caveat (memo §29):** one rechecked Preprod script UTxO contains an asset named `HydraHeadV2` under a policy not authenticated as a genuine Hydra Head. Hydra's upstream security scenario explicitly warns that a counterfeit asset may reuse this token name; token name alone is not protocol identity. Keep both external script UTxOs `LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL` until exact policy/script derivation and protocol-specific witnesses establish semantics.
