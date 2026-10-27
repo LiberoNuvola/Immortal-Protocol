@@ -1796,3 +1796,35 @@ This strengthens the conclusion that the captured justification was localized wi
 The signature payload hypothesis is now narrowed across the entire non-negative domain up to the observed current ID. Do not spend another run repeating this same scan. The next work must obtain a new class of evidence: authenticated historical authority-set state/transition or a proof-capable archive/node source. The public RPC still lacks `grandpa_proveFinality` and `state_getCode`; upstream issue #50 for a committee execution-proof RPC is closed as `not_planned`.
 
 **STATUS: SET-ID LOCALIZATION 🟢 / B3-B STORAGE PROOF 🟢 / B3-A AUTHENTICATED FINALITY + AUTHORITY PROVENANCE 🔴 OPEN.**
+
+
+## B3 UPDATE — Orynq SDK changes and immutable verifier inputs (2026-10-27)
+
+**Working branch:** `work/b3-materios-provenance-evidence`
+
+### Upstream changes reviewed
+
+- Orynq SDK commit [`50e288b247f0e80d19e5a2a9a1705b9d4455c830`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/50e288b247f0e80d19e5a2a9a1705b9d4455c830) merges the Materios blob-receipt chunk-Merkle-root fix.
+- Orynq SDK commit [`12948b823ba961f66a696f28e78bfbb52ac2f58e`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/12948b823ba961f66a696f28e78bfbb52ac2f58e) fixes falsy/null schema-hash handling and adds a two-chunk regression that distinguishes the chunk Merkle root from the content hash.
+- Orynq SDK commit [`a8372eab562beaa37c806270065ec0bd51c0761b`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/a8372eab562beaa37c806270065ec0bd51c0761b) snapshots finality checkpoints and request inputs before asynchronous verification.
+- Orynq SDK commit [`6e2c1c9c04040151edc8f57a1ab647dd43a5304f`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/6e2c1c9c04040151edc8f57a1ab647dd43a5304f) snapshots the prepared byte buffer and summary before asynchronous settlement.
+
+### Applied locally to the B3 verifier
+
+The IMMORTAL GRANDPA verifier now takes owned snapshots of the checkpoint, trusted authority state, justification (including signer/signature bytes and ancestry headers), and verification options before its first asynchronous signature call. This transfers the upstream immutable-input security pattern without importing Midnight-specific APIs or changing GRANDPA semantics.
+
+- Implementation commit: [`4cca06036b8d312ec1fd65ad122e822298197f5b`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/4cca06036b8d312ec1fd65ad122e822298197f5b)
+- Mutation-during-await regression commit: [`e7d40055b006cca780ccd947bfa6f08f2cb2cf26`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e7d40055b006cca780ccd947bfa6f08f2cb2cf26)
+- CI run: [Materios B3 execution-proof verifier #126](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551746492) — pending at checkpoint update.
+
+### How the Materios anchoring fix will be used
+
+The fixed Orynq blob-receipt path is the evidence-custody layer for the eventual B3 evidence packet: exact artifact bytes/content hash, chunk manifest, correct chunk Merkle root, receipt/certification identifiers, and external Cardano anchor reference must be recorded together. Use the SDK's corrected `anchors-materios` implementation (0.6.2+ where applicable); do not reimplement its Merkle calculation in IMMORTAL.
+
+**Trust boundary:** an anchored/certified receipt proves the integrity/custody and anchoring of the submitted bytes. It does not establish that set ID 4261 or the observed authority list was historically canonical, and it does not itself prove GRANDPA finality. Do not mark B3-A closed from receipt certification alone.
+
+### Remaining blocker / next action
+
+The full diagnostic scan already isolated 4261 as the only signature-valid candidate in 0..4352. Do not rerun that scan. The next decisive input remains an authenticated historical authority-set transition/state witness or a proof-capable archive/node source. Once that source exists, use the corrected Orynq receipt pipeline to preserve the exact proof/evidence packet and its chain-of-custody.
+
+**STATUS: immutable-input hardening IMPLEMENTED / CI PENDING / Orynq artifact anchoring READY TO APPLY TO A NEW AUTHENTIC WITNESS / B3-A FINALITY + HISTORICAL AUTHORITY PROVENANCE OPEN.**
