@@ -46,3 +46,8 @@ Pinned source references:
 - Smoldot issue: https://github.com/paritytech/smoldot/issues/3288
 - Materios raw chain spec endpoint: https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json
 - Materios public P2P bootnode from the operator docs: /dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM
+
+
+## Current B3 witness target
+
+The automation default is the latest storage-proof-verified checkpoint at block `2463858` (`0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9`). The P2P bridge limits ancestry reconstruction to 512 parent edges by default. Override the target only when there is a specific independently captured witness to bind; a different valid proof target without a verified path back to the selected witness remains insufficient.
