@@ -115,6 +115,25 @@ function sdkValueFromRow(row) {
   return Object.entries(assets).map(([unit, quantity]) => ({ unit, quantity }))
 }
 
+function describeAssetUnit(unit, quantity) {
+  if (unit === ADA_UNIT) {
+    return { unit, policyId: null, assetNameHex: null, assetNameUtf8: 'lovelace', quantity: String(quantity) }
+  }
+  const policyId = unit.slice(0, 56)
+  const assetNameHex = unit.slice(56)
+  const bytes = Buffer.from(assetNameHex, 'hex')
+  const decoded = bytes.toString('utf8')
+  const roundTrips = Buffer.from(decoded, 'utf8').equals(bytes)
+  const printableAscii = roundTrips && /^[\\x20-\\x7e]*$/.test(decoded)
+  return {
+    unit,
+    policyId,
+    assetNameHex,
+    assetNameUtf8: printableAscii ? decoded : null,
+    quantity: String(quantity),
+  }
+}
+
 
 const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
 
@@ -449,6 +468,7 @@ async function main() {
           lovelace: String(assets[ADA_UNIT] ?? '0'),
           otherAssetCount: otherUnits.length,
           otherAssetUnits: otherUnits.slice(0, 8),
+          otherAssets: otherUnits.slice(0, 20).map((unit) => describeAssetUnit(unit, assets[unit])),
           datumHash: row.datum_hash ?? null,
           hasInlineDatum: Boolean(normalizeHex(row.inline_datum)),
           inlineDatumBytesLength: normalizeHex(row.inline_datum)?.length ? normalizeHex(row.inline_datum).length / 2 : 0,
@@ -534,6 +554,9 @@ async function main() {
       tUsdmAtomic: String(directAssets[TUSDM_UNIT] ?? '0'),
       lovelace: String(directAssets[ADA_UNIT] ?? '0'),
       otherAssetUnits: Object.keys(directAssets).filter((unit) => unit !== ADA_UNIT && unit !== TUSDM_UNIT),
+      otherAssets: Object.keys(directAssets)
+        .filter((unit) => unit !== ADA_UNIT && unit !== TUSDM_UNIT)
+        .map((unit) => describeAssetUnit(unit, directAssets[unit])),
       datumHash: direct.datum_hash ?? null,
       datumHashMatchesFirstRead: datumHashMatches,
       inlineDatumMatchesFirstRead: Boolean(originalDatumHex && directDatumHex && originalDatumHex === directDatumHex),
