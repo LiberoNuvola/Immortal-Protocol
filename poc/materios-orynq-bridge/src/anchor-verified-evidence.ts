@@ -1,6 +1,8 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   MateriosProvider,
   merkleRoot,
@@ -10,6 +12,7 @@ import {
 
 const MAX_PACKET_BYTES = 32 * 1024 * 1024;
 const VERIFIED_SCOPE = "exact header.stateRoot + exact storage key + exact returned value";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 type JsonRecord = Record<string, unknown>;
 
@@ -180,6 +183,61 @@ export function buildOrynqReceiptPlan(input: unknown): OrynqReceiptPlan {
   };
 }
 
+
+/**
+ * Re-run the repository's Rust storage-proof verifier before exposing the
+ * witness to a live submitter. The JSON's verification flag alone is not a
+ * cryptographic attestation and is never accepted as a substitute for this
+ * local verification.
+ */
+function verifyStorageProofWithRust(input: unknown): void {
+  if (!isRecord(input)) throw new Error("INVALID_MATERIOS_EVIDENCE_PACKET");
+  const target = recordField(input, "target", "witness");
+  const anchor = recordField(input, "anchor_record", "witness");
+  const proof = recordField(input, "storage_proof", "witness");
+  const stateRoot = hexField(target, "state_root", "target", 32);
+  const storageKey = hexField(target, "storage_key", "target");
+  const expectedValue = hexField(anchor, "scale_hex", "anchor_record");
+  const expectedProofHex = hexField(proof, "scale_hex", "storage_proof");
+  const nodeValues = field(proof, "nodes", "storage_proof");
+  if (!Array.isArray(nodeValues) || nodeValues.length === 0) {
+    throw new Error("INVALID_MATERIOS_STORAGE_PROOF_NODES");
+  }
+  const nodes = nodeValues.map((node, index) => {
+    if (typeof node !== "string" || node.length === 0) {
+      throw new Error("INVALID_MATERIOS_STORAGE_PROOF_NODE_" + index);
+    }
+    const normalized = node.startsWith("0x") ? node : "0x" + node;
+    if (!/^[0-9a-fA-F]+$/.test(normalized.slice(2)) || normalized.length % 2 !== 0) {
+      throw new Error("INVALID_MATERIOS_STORAGE_PROOF_NODE_" + index);
+    }
+    return normalized.toLowerCase();
+  });
+  const manifest = resolve(REPO_ROOT, "poc/materios-execution-verifier/Cargo.toml");
+  const run = spawnSync(
+    "cargo",
+    ["run", "--quiet", "--manifest-path", manifest, "--bin", "verify-storage-witness", "--", stateRoot, storageKey, expectedValue],
+    {
+      cwd: REPO_ROOT,
+      input: nodes.join("\n") + "\n",
+      encoding: "utf8",
+      timeout: 600_000,
+      maxBuffer: MAX_PACKET_BYTES * 2
+    }
+  );
+  if (run.error) {
+    throw new Error("MATERIOS_RUST_VERIFIER_EXECUTION_FAILED: " + run.error.message);
+  }
+  if (run.status !== 0) {
+    const details = (run.stderr ?? "").trim().slice(-2000);
+    throw new Error("MATERIOS_RUST_STORAGE_PROOF_INVALID" + (details ? ": " + details : ""));
+  }
+  const verifiedProofHex = (run.stdout ?? "").trim().toLowerCase();
+  if (verifiedProofHex !== expectedProofHex) {
+    throw new Error("MATERIOS_RUST_VERIFIER_OUTPUT_MISMATCH");
+  }
+}
+
 function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value || value.trim().length === 0) throw new Error("REQUIRED_ENV_" + name);
@@ -191,11 +249,16 @@ async function main(): Promise<void> {
   const submit = args.includes("--submit");
   const waitForAnchor = args.includes("--wait-for-anchor");
   const inputPathArg = args.find((arg) => !arg.startsWith("--"));
-  const inputPath = resolve(inputPathArg ?? "poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json");
+  if (waitForAnchor && !submit) throw new Error("WAIT_FOR_ANCHOR_REQUIRES_SUBMIT");
+  if (submit && process.env.MATERIOS_CONFIRM_SUBMISSION !== "YES") {
+    throw new Error("LIVE_SUBMISSION_REQUIRES_MATERIOS_CONFIRM_SUBMISSION_YES");
+  }
+  const inputPath = resolve(REPO_ROOT, inputPathArg ?? "poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json");
   const raw = await readFile(inputPath);
   if (raw.byteLength > MAX_PACKET_BYTES) throw new Error("MATERIOS_EVIDENCE_PACKET_SIZE_INVALID");
   const packet: unknown = JSON.parse(raw.toString("utf8"));
   const plan = buildOrynqReceiptPlan(packet);
+  verifyStorageProofWithRust(packet);
 
   const planSummary = {
     evidenceSchema: plan.evidenceSchema,
@@ -216,13 +279,6 @@ async function main(): Promise<void> {
       nextStep: "To submit a transaction, pass --submit and set MATERIOS_CONFIRM_SUBMISSION=YES."
     }, null, 2));
     return;
-  }
-
-  if (requiredEnv("MATERIOS_CONFIRM_SUBMISSION") !== "YES") {
-    throw new Error("LIVE_SUBMISSION_REQUIRES_MATERIOS_CONFIRM_SUBMISSION_YES");
-  }
-  if (waitForAnchor && !args.includes("--submit")) {
-    throw new Error("WAIT_FOR_ANCHOR_REQUIRES_SUBMIT");
   }
 
   const provider = new MateriosProvider({
@@ -301,7 +357,7 @@ async function main(): Promise<void> {
   }
 }
 
-if (import.meta.url === new URL(process.argv[1] ?? "", "file:").href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
