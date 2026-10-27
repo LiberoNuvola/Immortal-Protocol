@@ -106,6 +106,9 @@ jobs:
           with open(src, encoding="utf-8") as f:
               packet = json.load(f)
           packet["storage_proof"]["scale_hex"] = os.environ["PROOF_SCALE_HEX"]
+          # The endpoint and capture time are not part of the proof and may disclose operator metadata.
+          packet.pop("rpc_endpoint", None)
+          packet.pop("captured_at", None)
           packet["verification"] = {
               "state_root_storage_proof": "verified",
               "scope": "exact header.stateRoot + exact storage key + exact returned value"
@@ -128,7 +131,7 @@ jobs:
           const fs = require("node:fs");
           const output = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/orynq-receipt-plan.json", "utf8"));
           if (output.mode !== "dry-run" || !output.plan) {
-            throw new Error("Ory n q bridge did not produce a dry-run plan".replaceAll(" ", ""));
+            throw new Error("Orynq bridge did not produce a dry-run plan");
           }
           fs.writeFileSync(
             "poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json",
@@ -136,11 +139,13 @@ jobs:
           );
           NODE
 
-      - name: Upload sanitized receipt plan
-        if: always() && hashFiles('poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json') != ''
+      - name: Upload sanitized witness and Orynq receipt plan
+        if: always() && hashFiles('poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json') != '' && hashFiles('poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: materios-orynq-receipt-plan
-          path: poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json
+          name: materios-b3-verified-witness-and-orynq-plan
+          path: |
+            poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json
+            poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json
           if-no-files-found: error
           retention-days: 14
