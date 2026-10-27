@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
   hashMateriosHeader,
   verifySequentialHeaderBridge,
@@ -126,4 +127,46 @@ test("deduplicates period offsets and fails closed on unbounded probe input", ()
   assert.deepEqual(withJustificationPeriodOffsets(511, [0, 1, 1], 512, 1), [0, 1, 2]);
   assert.throws(() => withJustificationPeriodOffsets(2463858, [5000], 512, 1), /CANDIDATE_OFFSET_OUT_OF_RANGE/);
   assert.throws(() => withJustificationPeriodOffsets(-1, [], 512, 1), /TARGET_BLOCK_NUMBER_INVALID/);
+});
+
+ 
+test("keeps the workflow witness tuple aligned with capture defaults", () => {
+  const script = readFileSync(new URL("./capture-finality.mjs", import.meta.url), "utf8");
+  const workflow = readFileSync(new URL("../../.github/workflows/materios-smoldot-p2p-finality-probe.yml", import.meta.url), "utf8");
+
+  const scriptValue = (key) => {
+    const line = script.split("\n").find((entry) => entry.trim().startsWith(key + ":"));
+    assert.ok(line, "missing " + key + " in capture defaults");
+    return line.slice(line.indexOf(":") + 1).trim().replace(/,$/, "").replace(/^"/, "").replace(/"$/, "");
+  };
+  const workflowInputDefault = (name) => {
+    const lines = workflow.split("\n");
+    const start = lines.findIndex((line) => line.trim() === name + ":");
+    assert.notEqual(start, -1, "missing workflow input " + name);
+    const defaultLine = lines.slice(start + 1, start + 8).find((line) => line.includes("default:"));
+    assert.ok(defaultLine, "missing default for workflow input " + name);
+    return defaultLine.split(":").slice(1).join(":").trim().replace(/^"/, "").replace(/"$/, "");
+  };
+  const environmentFallback = (name) => {
+    const line = workflow.split("\n").find((entry) => entry.includes(name + ":"));
+    assert.ok(line, "missing environment variable " + name);
+    const marker = "|| '";
+    const start = line.indexOf(marker);
+    assert.notEqual(start, -1, "missing environment fallback for " + name);
+    const remainder = line.slice(start + marker.length);
+    const end = remainder.indexOf("'");
+    assert.notEqual(end, -1, "malformed environment fallback for " + name);
+    return remainder.slice(0, end);
+  };
+
+  const tuple = [
+    ["targetNumber", "target_block_number", "MATERIOS_TARGET_BLOCK_NUMBER"],
+    ["targetHash", "target_block_hash", "MATERIOS_TARGET_BLOCK_HASH"],
+    ["targetStateRoot", "target_state_root", "MATERIOS_TARGET_STATE_ROOT"]
+  ];
+  for (const [scriptKey, inputKey, environmentKey] of tuple) {
+    const expected = scriptValue(scriptKey);
+    assert.equal(workflowInputDefault(inputKey), expected, inputKey + " differs from capture default " + scriptKey);
+    assert.equal(environmentFallback(environmentKey), expected, environmentKey + " differs from capture default " + scriptKey);
+  }
 });
