@@ -4188,3 +4188,15 @@ Latest observer: [Minswap Preprod run #40458245138](https://github.com/LiberoNuv
 - The known B1 PrizePool out-ref `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` is explicitly excluded from the external-candidate set by its Pool singleton unit.
 
 This resolves the present discovery attempt for the exact ADA / pinned Preprod tUSDM pair across the SDK-configured Minswap V1, V2 and StableSwap sets only. It does not prove no alternative DEX exists and supplies no USD/USDM price. Option B remains the selected approach, but no qualifying conversion source/consumer contract is approved; no parity is assumed, no transaction was built/signed/submitted, and EEV approval/Issue remain gated. The detailed evidence is in memo §28.
+
+### Agent A — expanded live tUSDM scan and exact external-script rechecks (2026-10-27)
+
+Latest observer: [Minswap Preprod run #40458245138](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138), [artifact ID 12713512727](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138/artifacts/12713512727). Current result remains `NO_EXACT_ADA_TUSDM_PAIR_FOUND_IN_MINSWAP_V1_V2_CONFIGURED_STABLESWAP`; qualification remains `OBSERVED_NOT_QUALIFIED`.
+
+- Exact Preprod tUSDM UTxOs scanned: 969. Address checksum decode failures: 0. Encoded payment-credential vs Koios mismatch: 0.
+- Minswap V1 credential matches: 0. Minswap V2: 455 pool-auth UTxOs decoded, 0 parse rejects, 0 exact ADA/tUSDM pair. Configured Preprod StableSwap pools: 3, 0 include exact test tUSDM.
+- Koios tip was unchanged through run #8: block 5,340,350 / slot 137,397,443 / hash `61c6385399a9b1601f1c535cc848272d3b1f12bffd94afc9ae0c75865f44c7b6`. Evidence SHA-256: `ef572fbfeaae493ed6e065b7e79d552358f4ce168153260c81ebc8b2adac659d`.
+- The scan found 15 non-Minswap script-credential groups holding tUSDM. Two external candidates excluding the known B1 PrizePool were re-queried by exact address/out-ref and their live assets/datum matched: `50ac85a0fded8f8285c0ddcdf937f692ab8f63dcf74b4833e3659fd2f5ef719c#0` (100,000,000 tUSDM atomic; 1,015,788,430 lovelace; 14 other native units) and `f27b6b913bebca852dfbb8ec4585ec5925c1d04ed05ea9cb96720712c9df11cd#1` (123 tUSDM atomic; 2,521,350 lovelace; 5 other native units). Both are marked `LIVE_SCRIPT_UTXO_RECHECKED_NOT_CLASSIFIED_AS_POOL`; protocol semantics remain unproven. Do not treat them as DEX pools or price feeds absent protocol-specific witnesses.
+- The known B1 PrizePool out-ref `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0` is explicitly excluded from the external-candidate set by its Pool singleton unit.
+
+This resolves the present discovery attempt for the exact ADA / pinned Preprod tUSDM pair across the SDK-configured Minswap V1, V2 and StableSwap sets only. It does not prove no alternative DEX exists and supplies no USD/USDM price. Option B remains the selected approach, but no qualifying conversion source/consumer contract is approved; no parity is assumed, no transaction was built/signed/submitted, and EEV approval/Issue remain gated. The detailed evidence is in memo §28.
