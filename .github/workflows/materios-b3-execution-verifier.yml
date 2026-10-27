@@ -167,13 +167,24 @@ jobs:
             }
           }
           NODE
+      - name: Install pinned WebSocket probe dependencies
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - name: Capture raw historical FRNK candidate over WebSocket
+        working-directory: poc/materios-checkpoint
+        run: node src/probe-websocket-rpc-capabilities.mjs
+        env:
+          MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER: 2464256
+          MATERIOS_WS_EVIDENCE_OUT: out/MateriosWebSocketRpcProbe.json
+
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
         run: npx tsx src/capture-real-witness.ts
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_CHAIN_ID: materios_preprod_v6
-          MATERIOS_WITNESS_LOOKBACK: 768
+          MATERIOS_WITNESS_LOOKBACK: 1024
+          MATERIOS_WS_EVIDENCE_PATH: ${{ github.workspace }}/poc/materios-checkpoint/out/MateriosWebSocketRpcProbe.json
           MATERIOS_BLOCK_BATCH_SIZE: 64
 
       - name: Upload real GRANDPA witness
