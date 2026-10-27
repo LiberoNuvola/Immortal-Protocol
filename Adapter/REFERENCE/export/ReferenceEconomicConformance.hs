@@ -68,10 +68,15 @@ main = do
       Left err -> putStrLn ("REFERENCE_ERROR|" ++ err) >> exitFailure
       Right value -> pure value
 
+  let pendingVectors = filter (\v -> vectorStatus v /= Nothing) (vectors file)
+      executableVectors = filter (\v -> vectorStatus v == Nothing) (vectors file)
   putStrLn "IMMORTAL_REFERENCE_CONFORMANCE_V1"
-  mapM_ reportPending (filter (\v -> vectorStatus v /= Nothing) (vectors file))
-  mapM_ emit (filter (\v -> vectorStatus v == Nothing) (vectors file))
-  putStrLn "REFERENCE_CONFORMANCE_RESULT|PASS"
+  mapM_ reportPending pendingVectors
+  mapM_ emit executableVectors
+  putStrLn
+    ( "REFERENCE_CONFORMANCE_RESULT|PASS_EXECUTABLE_VECTORS|pending="
+        ++ show (length pendingVectors)
+    )
 
 reportPending :: Vector -> IO ()
 reportPending v =
