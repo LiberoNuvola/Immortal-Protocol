@@ -24,6 +24,17 @@ const TARGET_GRANDPA_METHODS = [
   "grandpa_unsubscribeJustifications",
 ];
 
+// This is the next 512-block boundary after the previously Rust-verified
+// witness at block 2463858. The number only selects an untrusted RPC candidate;
+// the header and FRNK payload must be verified locally before use.
+const FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
+  process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "2464256"
+);
+if (!Number.isSafeInteger(FINALITY_CANDIDATE_BLOCK_NUMBER) ||
+    FINALITY_CANDIDATE_BLOCK_NUMBER < 0) {
+  throw new Error("MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER must be a non-negative safe integer");
+}
+
 function sha256Bytes(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -260,6 +271,22 @@ async function main() {
       entries: [],
       error: null,
     },
+    historical_candidate_probe: {
+      requested_block_number: FINALITY_CANDIDATE_BLOCK_NUMBER,
+      status: "NOT_ATTEMPTED",
+      requested_block_hash: null,
+      returned_block_number: null,
+      state_root: null,
+      header: null,
+      justifications: {
+        field: "unknown",
+        entry_count: null,
+        frnk_entry_count: null,
+        entries: [],
+      },
+      error: null,
+      trust_scope: "Untrusted public WebSocket RPC transport; a raw FRNK payload is not finality until IMMORTAL independently verifies its target header, ancestry, signatures/quorum and authenticated authority history.",
+    },
     errors: eventErrors,
     claims: {
       public_websocket_connection_available: false,
@@ -452,6 +479,68 @@ async function main() {
       }
     } catch (error) {
       evidence.identity.finalized_head_error = error instanceof Error ? error.message : String(error);
+    }
+
+    // Probe the explicit historical GRANDPA boundary that can finalize the
+    // older verified witness at block 2463858. This may expose stored FRNK bytes
+    // even though this public endpoint does not implement grandpa_proveFinality.
+    try {
+      const hashResponse = await rpc("chain_getBlockHash", [FINALITY_CANDIDATE_BLOCK_NUMBER]);
+      const hashError = methodError(hashResponse);
+      if (hashError) {
+        evidence.historical_candidate_probe.status = hashError.classification;
+        evidence.historical_candidate_probe.error = hashError;
+      } else if (typeof hashResponse.result !== "string" ||
+          !/^0x[0-9a-f]{64}$/i.test(hashResponse.result)) {
+        evidence.historical_candidate_probe.status =
+          hashResponse.result === null ? "BLOCK_HASH_UNAVAILABLE" : "MALFORMED_BLOCK_HASH";
+        evidence.historical_candidate_probe.result_type = typeof hashResponse.result;
+      } else {
+        evidence.historical_candidate_probe.requested_block_hash = hashResponse.result.toLowerCase();
+        const blockResponse = await rpc("chain_getBlock", [hashResponse.result]);
+        const blockError = methodError(blockResponse);
+        if (blockError) {
+          evidence.historical_candidate_probe.status = blockError.classification;
+          evidence.historical_candidate_probe.error = blockError;
+        } else if (!isObject(blockResponse.result) ||
+            !isObject(blockResponse.result.block) ||
+            !isObject(blockResponse.result.block.header)) {
+          evidence.historical_candidate_probe.status = "BLOCK_BODY_UNAVAILABLE";
+          evidence.historical_candidate_probe.response_type = typeof blockResponse.result;
+        } else {
+          const header = blockResponse.result.block.header;
+          const headerNumber = typeof header.number === "string" && /^0x[0-9a-f]+$/i.test(header.number)
+            ? Number(BigInt(header.number))
+            : null;
+          const justifications = describeJustifications(blockResponse.result.justifications);
+          evidence.historical_candidate_probe.returned_block_number = headerNumber;
+          evidence.historical_candidate_probe.state_root =
+            typeof header.stateRoot === "string" ? header.stateRoot.toLowerCase() : null;
+          evidence.historical_candidate_probe.header = {
+            parentHash: header.parentHash ?? null,
+            number: header.number ?? null,
+            stateRoot: header.stateRoot ?? null,
+            extrinsicsRoot: header.extrinsicsRoot ?? null,
+            digest: header.digest ?? null,
+          };
+          evidence.historical_candidate_probe.justifications = justifications;
+          evidence.historical_candidate_probe.status =
+            headerNumber !== FINALITY_CANDIDATE_BLOCK_NUMBER
+              ? "HEADER_NUMBER_MISMATCH"
+              : (justifications.frnkEntryCount > 0
+                  ? "FRNK_JUSTIFICATION_CAPTURED_UNVERIFIED"
+                  : "BLOCK_RETURNED_NO_FRNK_JUSTIFICATION");
+          if (justifications.frnkEntryCount > 0) {
+            evidence.claims.raw_grandpa_finality_payload_captured = true;
+            evidence.claims.raw_grandpa_justification_captured = true;
+            evidence.claims.raw_payload_hashes_recorded = true;
+          }
+        }
+      }
+    } catch (error) {
+      evidence.historical_candidate_probe.status = "TRANSPORT_OR_RPC_ERROR";
+      evidence.historical_candidate_probe.error =
+        error instanceof Error ? error.message : String(error);
     }
 
     // Directly invoke proof RPC even if omitted by the WebSocket catalogue.
