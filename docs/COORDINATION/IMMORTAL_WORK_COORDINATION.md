@@ -3692,3 +3692,16 @@ Parallel work may document API contracts, versioned chain-neutral evidence envel
 
 ### Next gate
 Map proposed public exports to existing canonical implementations and focused tests, then run the relevant CI against an exact SHA. In parallel, treat V08 as an architecture/contract gap—not as permission to import PRE-RICH expiry duration or equate the V3 transition with universal IMMORTAL.
+
+
+## 45.33 AGENT B — SDK EXPORT MAP + EXACT-HEAD PORTABILITY PASS (2026-10-27)
+
+- Exact tested HEAD: `74d37a0a27543546cb8e1254489af440f4b5032d`.
+- Portability run [#40578528997](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40578528997) completed SUCCESS on that exact SHA. The `conformance` job passed `src/__tests__/immortal-portability-conformance.test.ts` and `src/__tests__/immortal-cardano-universal-boundary.test.ts`.
+- Scope limit: bounded tests pass; V08 and V09 remain explicitly pending. This is not full portability certification and does not resolve the universal transition owner or the concrete `K_c) certificate.
+- Added export → canonical implementation → existing test mapping in `docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md` (update commit `e5ce1e1968585e57c5a71696b25813ea7ae7b79a`).
+- Candidate surfaces mapped: canonical state shape; Haskell universal reference kernel; versioned transition evidence; admission/evidence binding; Cardano execution adapter; observation/projection; portability vectors/reference runner; V3 transition (not universal); PRE-RICH Issue/USDM (Agent A-owned, not SDK core).
+- Existing evidence/authentication limitation is explicit: digest-shaped strings and matching fields are not proof of transaction authenticity or fresh economic observation.
+- No SDK package facade or runtime API was created; no protocol semantics, V3 carrier, Reveal, economic constants, EEV authority, wallet signing, deployment, transaction submission, or Materios work changed.
+
+**Next gate:** exact-head focused CI for the existing adapter/evidence suites and a design decision for the universal lifecycle transition contract. Only then define package exports/API compatibility tests; do not turn pending V08/V09 into success by changing labels or adding synthetic fixtures.
