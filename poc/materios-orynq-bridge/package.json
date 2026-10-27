@@ -1,0 +1,22 @@
+{
+  "name": "immortal-materios-orynq-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "anchor": "tsx src/anchor-verified-evidence.ts"
+  },
+  "dependencies": {
+    "@fluxpointstudios/orynq-sdk-anchors-materios": "0.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.3.0",
+    "tsx": "4.19.0",
+    "typescript": "5.9.2"
+  }
+}
