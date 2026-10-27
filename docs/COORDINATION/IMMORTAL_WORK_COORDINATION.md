@@ -3156,3 +3156,16 @@ Agent B added `GovernanceConformance` to the library's `other-modules` list in c
 **Validation pending:** the new commit must pass the Beacon CEK test and print all three vector PASS lines before F4 can be advanced. If the same undefined symbol persists, inspect GHC package registration/link metadata next. V3, canonical Reveal semantics and Beacon vectors were not changed. Materios remains PAUSED.
 
 **STATUS: MANIFEST INCONSISTENCY FIX COMMITTED; CI EVIDENCE PENDING; F4 OPEN.**
+
+
+## 45.03 — AGENT B — BEACON TEST DEPENDENCY FIX; VALIDATION RUNNING — 2026-10-27
+
+The first rerun after §45.02 passed library compilation but failed while compiling `BeaconCommitmentVectorsTest.hs`:
+
+`Could not load module ‘Plinth.Plugin’`; GHC identified hidden package `plutus-tx-plugin-1.67.0.0` and recommended adding it to the component's `build-depends`.
+
+Agent B added `plutus-tx-plugin ^>=1.67.0.0` to the `beacon-commitment-cross-language-tests` stanza only, commit [`0941f21`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/0941f217ec8da58d8e05e80124864faf70486deb), on the existing `work/immortal-green-closure` branch. This is a test-component dependency declaration; it does not alter Beacon vectors, protocol semantics, V3 or Reveal.
+
+Validation run: [IMMORTAL Haskell Semantic Conformance #40448943389](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40448943389) was in progress at checkpoint time. Branch HEAD had advanced to `ebb0ae553941ba0dab1c0a3e46300fdf243a16d3`, so continue coordinating against the current branch head and shared checkpoint; do not assume the test has passed until logs show the three vectors and the final success marker.
+
+**STATUS: EXPLICIT TEST DEPENDENCY ADDED; CI PENDING; F4 OPEN; V3/REVEAL UNCHANGED; MATERIOS REMAINS PAUSED.**
