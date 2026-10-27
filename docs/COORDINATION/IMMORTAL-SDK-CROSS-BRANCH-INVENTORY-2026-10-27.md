@@ -243,3 +243,33 @@ The SDK can advance in parallel only on non-authoritative scaffolding:
 V09 remains a certification blocker, not an SDK packaging task. The SDK may represent certificate references/evidence in a typed envelope, but cannot generate or assert the missing concrete `K_c` certificate, instantiate `S, A, Ω, T, Safe`, or turn booleans into a proof.
 
 **Next actionable gate:** finish the API/export-to-test map and run the existing focused CI on an exact SHA; in parallel, escalate the V08 universal transition-contract gap as an architecture decision rather than silently treating V3 as universal. No code, protocol semantics, transaction, wallet, deployment, V3 carrier, Reveal, EEV, or Materios work was changed by this audit.
+
+
+## Follow-up: SDK export-to-implementation-to-test map (2026-10-27)
+
+### Exact-head CI evidence
+The live branch HEAD is now `74d37a0a27543546cb8e1254489af440f4b5032d`. Portability workflow run [#40578528997](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40578528997) completed **success** on that exact SHA. Job `conformance` passed:
+- `npx vitest run src/__tests__/immortal-portability-conformance.test.ts`
+- `node --import=tsx --test src/__tests__/immortal-cardano-universal-boundary.test.ts`
+
+This proves those two bounded test suites pass at that SHA. It does **not** close V08/V09 or imply full portability certification; the tests explicitly preserve V08 and V09 as pending.
+
+### Candidate export map (no package facade implemented)
+
+| Proposed public surface | Canonical implementation/source today | Existing test/verification owner | Exposure decision / guardrail |
+|---|---|---|---|
+| Chain-neutral economic state type + shape validator | `Adapter/CARDANO/serialization/CanonicalEconomicState.ts` | `src/__tests__/immortal-reveal-conformance.test.ts`; projection boundary Haskell tests | Re-export candidate for `@immortal/core` only after dependency/import audit. Validation is shape/non-negativity only; not authenticity, freshness, EEV, viability or transition authorization. |
+| Universal protected-capital/surplus reference behavior | `IMMORTAL/kernel/UniversalEconomicKernel.hs`; `IMMORTAL/state/UniversalEconomicState.hs` | `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs`; portability workflow; `src/__tests__/immortal-portability-conformance.test.ts` | Haskell remains the reference authority. Do not add a TypeScript economic-kernel implementation. Publish vectors/runner tooling before any runtime wrapper. |
+| Chain-neutral transition-evidence envelope | `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` | `src/__tests__/canonical-transition-evidence.test.ts`; `audit/cardano-integration/expire-ledger-trace.ts` consumes it | Type/schema candidate for core after a schema-version field and clear authenticity boundary are specified. Current validator checks non-empty strings, digest shape, uniqueness and field equality; it does not recompute fingerprints or authenticate the transaction. |
+| Admission-to-evidence binding | `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` | `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts`; `src/__tests__/caes-transition-closure.test.ts` | Keep as evidence binding contract; never market it as economic admission or cryptographic proof. |
+| Cardano execution/sign/submit adapter | `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`; `Adapter/CARDANO/runtime/EconomicAdmission.ts` | `src/__tests__/cardano-execution-adapter.test.ts`; `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`; `src/__tests__/rf8-submission-boundary.test.ts` | Candidate for `@immortal/adapter-cardano`, preserving CIP-30 wallet signing and existing fail-closed submission boundary. Do not expose as a generic chain-neutral core operation. |
+| Cardano observation/projection | `PRE-RICH/src/PreRichCardanoObservationProjection.ts`; `Adapter/CARDANO/observation/EconomicObservation.ts` | `src/__tests__/immortal-cardano-universal-boundary.test.ts`; Preprod observation test suites | Separate generic shape acceptance from PRE-RICH projection and source-authentication. Keep profile and deployment source qualification out of core. |
+| Portability vectors + normalized runner | `Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json`; `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs` | `src/__tests__/immortal-portability-conformance.test.ts`; `plutus/test/PortabilityVectorConformanceTest.hs`; workflow above | Candidate for `@immortal/conformance`. Pending vectors must cause a non-qualified release status; passing executable vectors alone is not full conformance. |
+| V3 transition/actions | `IMMORTAL/kernel/EconomicTransitionV3.hs`; `IMMORTAL/state/EconomicStateV3.hs` | `IMMORTAL/conformance/RefinementV3.hs` and relevant Plutus conformance suites | Do not export as a universal transition API. Keep profile/V3 scope explicit until V08's universal transition contract is resolved. |
+| Deployment-specific PRE-RICH Issue admission / direct-USDM evidence | `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` and Agent A's qualification artifacts | Agent A-owned EEV/Issue admission suites and privileged workflows | Not an SDK core export. SDK may transport an already qualified evidence envelope but cannot derive/approve EEV or bypass R1/Kc. |
+
+### What is and is not now validated
+- **Validated at exact SHA:** portability seed tests and Cardano universal-boundary observation tests pass in run #40578528997.
+- **Source-mapped but not claimed newly executed here:** the evidence binding, Cardano execution adapter, admission, and CAES composition tests listed above.
+- **Still open:** V08 universal transition owner/contract; V09 concrete certified `K_c`; export surface and schema versioning; package-level API/compatibility tests; full conformance qualification.
+- **No package code or protocol semantics changed:** this update records evidence and ownership only.
