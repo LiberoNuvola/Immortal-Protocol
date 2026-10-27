@@ -21,6 +21,7 @@ on:
       - "poc/materios-checkpoint/package.json"
       - "poc/materios-checkpoint/package-lock.json"
       - "poc/materios-grandpa/**"
+      - "poc/materios-smoldot/**"
       - ".github/workflows/materios-evidence-conformance.yml"
   pull_request:
     branches:
@@ -48,6 +49,10 @@ jobs:
         with:
           node-version: 22
       - run: npm ci --prefix poc/materios-checkpoint --ignore-scripts
+      - name: Test Materios witness-to-GRANDPA target ancestry bridge
+        run: node --test poc/materios-smoldot/target-ancestry-bridge.test.mjs
+      - name: Syntax-check pinned Smoldot evidence capture
+        run: node --check poc/materios-smoldot/capture-finality.mjs
       - run: npx --prefix poc/materios-checkpoint tsx --test poc/materios-checkpoint/test-canonicalEvidence.ts
       - run: npm run test:execution-proof --prefix poc/materios-checkpoint
       - run: npm run test:rpc-b3 --prefix poc/materios-checkpoint
