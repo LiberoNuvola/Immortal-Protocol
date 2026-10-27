@@ -3345,3 +3345,12 @@ Fix committed on the existing B3 branch `work/b3-materios-provenance-evidence` a
 B3-A remains **OPEN** until a real raw GRANDPA justification is captured, bound to a reconstructed matching target header and witness ancestry, and independently verified along with authenticated authority history/transition. Existing Rust storage proof, sanitized Orynq dry-run and verifier tests remain green. No live transaction or receipt submission.
 
 **STATUS: MIXED-TARGET DEFAULT FIXED; VALIDATION RERUN QUEUED; REAL GRANDPA PROOF NOT YET CAPTURED; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.15 — AGENT C — UPSTREAM GRANDPA PRUNING HYPOTHESIS — 2026-10-27
+
+Independent source review found an upstream operational note in [Materios Operator Kit at commit `7d5c36e`](https://github.com/Flux-Point-Studios/materios/blob/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30/docs/OPERATOR_KIT.md#L59-L74): it describes a full-node sync floor associated with historical GRANDPA-justification pruning and notes that a justification-retaining public sync node was being deployed. This is a **plausible hypothesis only**, not proof that the Smoldot light-client stall has the same cause. Run `#40455355288` recorded only warp-sync progress/idle states at block `97069`; its captured logs do not contain direct peer-ban, duplicate-request, or pruning evidence.
+
+Keep the corrected exact-witness probe `#40456422345` running to completion. If it still stalls at the same warp-sync block, do not merely repeat identical probes or treat the upstream note as proven. Next evidence-seeking step should qualify whether the announced justification-retaining sync endpoint exists and can supply raw GRANDPA bytes for independent local verification. Any such endpoint is a **transport/source**, not a trust anchor: IMMORTAL must still bind the proof to a reconstructed header/witness ancestry and verify signatures/quorum plus authenticated authority transition. No finality claim and no live transaction.
+
+**STATUS: WORKFLOW TARGET DEFAULT FIXED; RERUN ACTIVE; JUSTIFICATION-PRUNING CAUSE ONLY A HYPOTHESIS; B3-A OPEN; NO LIVE TRANSACTION.**
