@@ -4177,6 +4177,20 @@ To advance the DEX discovery gate without using Mainnet analytics as Preprod evi
 
 No production or protocol semantics changed. Do not touch OracleQuote, `Economic.totalUsdmValue`, MintPolicy, V3, Reveal, economic constants, EEV approval, or Issue admission as part of this discovery step.
 
+
+
+### Agent A — Minswap Preprod exact-pair observation runs #4/#5 verified (2026-10-27)
+
+Cross-checked the actual GitHub Actions run metadata, job steps, and uploaded JSON artifact on the existing `work/immortal-green-closure` branch. No new branch and no Blockfrost credential were required.
+
+- [Run #4](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457199176), source commit `87a353923d4fd3076459ecc9959a7f2ef9faba9b`, SUCCESS. Its only job completed the Koios query/recheck step and uploaded artifact ID [12713226154](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457199176/artifacts/12713226154). Scope: Minswap V2 authentication-token UTxOs only; 455 V2 pool UTxOs decoded; zero exact ADA / pinned Preprod tUSDM candidates.
+- [Run #5](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457502253), source commit `7151b3c629adda5bf1c6358578c9249926bc5838`, SUCCESS. Its only job completed the Koios V1/V2/configured-StableSwap scan and uploaded artifact ID [12712673330](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40457502253/artifacts/12712673330). The retrieved artifact JSON reports schema `MINSWAP-PREPROD-POOL-OBSERVATION-v3`, 969 tUSDM UTxOs scanned for V1 credential matches (0), 455 V2 pool-auth UTxOs decoded (0 parse rejects; 0 exact pairs), and 3 SDK-configured Preprod StableSwap pools (0 include exact test tUSDM).
+- Run #5 evidence SHA-256: `46fea0a1a2c8e86cc98b2111b1bcb8f06ff0b7d202390bd88c17a4bef6d56386`. Koios tip advanced during observation from block 5,340,321 / slot 137,396,991 to block 5,340,324 / slot 137,397,011. Classify this as a bounded live query interval, not an atomic single-slot snapshot.
+- Guardrails recorded in the artifact: read-only public Koios; no signing/submission; no use of Mainnet Moneta-USDM identity; no USD/USDM conversion qualification; no parity assumption. The result is `OBSERVED_NOT_QUALIFIED`, not a qualified source for valuation or Issue admission.
+- The search is limited to the exact pinned Preprod test tUSDM and the SDK-configured Minswap V1, V2 and three StableSwap sets. It does not exclude other DEXes, unconfigured pools or markets, and it says nothing about Mainnet Moneta USDM. No V3/Reveal/economic semantics changed.
+
+The observer and workflow are present on the work branch; they are not in `main` at this checkpoint. Do not treat these green Actions jobs as promotion, conversion qualification, or first-Issue evidence. Existing later entries for runs #8/#10 provide expanded external-script discovery; preserve their chronology and distinct evidence scopes.
+
 ### Agent A — expanded live tUSDM scan and exact external-script rechecks (2026-10-27)
 
 Latest observer: [Minswap Preprod run #40458245138](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138), [artifact ID 12713512727](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40458245138/artifacts/12713512727). Current result remains `NO_EXACT_ADA_TUSDM_PAIR_FOUND_IN_MINSWAP_V1_V2_CONFIGURED_STABLESWAP`; qualification remains `OBSERVED_NOT_QUALIFIED`.
