@@ -1733,3 +1733,34 @@ The run confirms acquisition capability, not authenticated finality. Candidate s
 Next required evidence is an authenticated authority-set transition chain (or a cryptographically verified historical runtime-state/execution proof) binding the candidate set to the exact target. Public RPC lacks the finality-proof and runtime-code endpoints, so a configured archival/proof-capable source or upstream Materios RPC implementation is needed. No live receipt or production claim is authorized.
 
 **STATUS: B3-B LIVE STORAGE PROOF 🟢 / B3-A AUTHENTICATED GRANDPA FINALITY + AUTHORITY PROVENANCE 🔴 OPEN.**
+
+
+## 45.23 MATERIOS SET-ID DIAGNOSTIC EXPANSION — 2026-10-27
+
+Follow-up to run #40548408573 and section 45.22.
+
+### Evidence review
+
+The downloaded real-witness artifact confirms:
+- exact target block 2471424, hash `0xdcf28d0d21715e914000db6f10e216c8702fc39cd3275368746da3158cf2d16c`;
+- the FRNK justification is bound to that exact target;
+- observed runtime set ID 4352 and five unit-weight authorities fail signature verification (0/4);
+- candidate ID 4261 validates all four signatures and the current observed authority list yields signed weight 4/5, but the artifact labels this diagnostic-only and `provenance_verified=false`;
+- the parent/target runtime authority observations are not cryptographic historical provenance;
+- no authority-transition witness was found in the probe window;
+- public RPC lacks `grandpa_proveFinality` and `state_getCode`.
+
+### Diagnostic improvement committed
+
+Commit `3f5914892c741f8be877957ec4c3a68c87ae43b1` widens the localized GRANDPA payload/set-ID diagnostic search from the last 257 IDs to the full range `0..observed_set_id`. This can establish whether 4261 is the only set ID matching the signatures in that bounded domain. It does **not** authenticate 4261, establish authority membership at the target, or promote the result to finality. The authoritative verifier remains unchanged and fail-closed.
+
+### Upstream proof-RPC dependency
+
+Materios issue #50 (`materios_b3_calculateCommitteeProof`) is **closed as `not_planned`**, with no comments and no linked implementation evidence: https://github.com/Flux-Point-Studios/materios/issues/50. Therefore do not assume the proposed runtime execution-proof RPC exists or is being implemented. The next viable paths are:
+1. locate an existing deployed proof-capable/archive RPC or a reproducible node endpoint;
+2. otherwise coordinate a new upstream implementation request before treating runtime execution proof as available;
+3. keep GRANDPA finality justification and authority-selection execution proof as separate evidence artifacts.
+
+No new branch, no verifier weakening, no live receipt, no finality claim.
+
+**STATUS: B3-B LIVE STORAGE PROOF 🟢 / B3-A GRANDPA FINALITY + AUTHORITY-SET PROVENANCE 🔴 OPEN.**
