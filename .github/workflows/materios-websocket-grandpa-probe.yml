@@ -1,5 +1,9 @@
 name: Materios WebSocket GRANDPA Probe
 
+concurrency:
+  group: materios-websocket-grandpa-probe-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
