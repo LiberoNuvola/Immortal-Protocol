@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: materios-orynq-bridge-${{ github.ref }}
@@ -23,34 +23,15 @@ jobs:
     steps:
       - name: Checkout exact B3 head
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Detect first lockfile generation
-        id: lock
-        working-directory: poc/materios-orynq-bridge
-        run: |
-          if [ -f package-lock.json ]; then
-            echo "bootstrap=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install pinned Orynq bridge dependencies
         working-directory: poc/materios-orynq-bridge
-        env:
-          BOOTSTRAP_LOCK: ${{ steps.lock.outputs.bootstrap }}
-        run: |
-          if [ "$BOOTSTRAP_LOCK" = "true" ]; then
-            npm install --ignore-scripts --no-audit --no-fund
-          else
-            npm ci --ignore-scripts --no-audit --no-fund
-          fi
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Typecheck bridge
         working-directory: poc/materios-orynq-bridge
@@ -59,14 +40,3 @@ jobs:
       - name: Test receipt planning and fail-closed boundaries
         working-directory: poc/materios-orynq-bridge
         run: npm test
-
-      - name: Commit the initial generated lockfile
-        if: steps.lock.outputs.bootstrap == 'true' && github.ref == 'refs/heads/work/b3-materios-provenance-evidence'
-        env:
-          BRANCH_NAME: ${{ github.ref_name }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add poc/materios-orynq-bridge/package-lock.json
-          git commit -m "build(materios): lock Orynq bridge dependencies"
-          git push origin "$BRANCH_NAME"
