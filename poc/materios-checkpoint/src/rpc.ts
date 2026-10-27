@@ -183,9 +183,14 @@ async getReadProof(keys: readonly string[], at: string): Promise<StorageReadProo
  * to an independently trusted runtime identity.
  */
 async getRuntimeCode(at: string): Promise<string> {
-  const hash = requireHash(at, "state_getCode block hash");
-  const value = await this.call<unknown>("state_getCode", [hash]);
-  return requireHex(value, "state_getCode");
+  const hash = requireHash(at, "runtime code block hash");
+  // Substrate exposes runtime WASM as the well-known :code storage item;
+  // state_getCode is not a standard JSON-RPC method.
+  const value = await this.getStorage("0x3a636f6465", hash);
+  if (value === null) {
+    throw new Error("runtime code is absent at the requested block");
+  }
+  return value;
 }
 
 /**
