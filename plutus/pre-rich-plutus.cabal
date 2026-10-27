@@ -192,6 +192,7 @@ test-suite beacon-commitment-cross-language-tests
         plutus-core ^>=1.67.0.0,
         plutus-ledger-api ^>=1.67.0.0,
         plutus-tx ^>=1.67.0.0,
+        plutus-tx-plugin ^>=1.67.0.0,
         plutus-tx:plutus-tx-testlib,
         pre-rich-plutus
     default-language: Haskell2010
