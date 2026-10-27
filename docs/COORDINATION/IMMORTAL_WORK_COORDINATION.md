@@ -3309,3 +3309,19 @@ Latest B3 branch head checked: `47607479b44847e593074e802971168e1213580e`.
 This is important separation of gates: successful unit/integration tests for GRANDPA verification and the ancestry bridge validate verifier code and its evidence boundary; they do not mean a live justification was obtained or accepted for the current target.
 
 **STATUS: REAL WITNESS + RUST STORAGE PROOF + SANITIZED ORYNQ DRY-RUN GREEN; SOURCE PROVENANCE LABEL TESTED; P2P GRANDPA PROOF ACQUISITION STILL RUNNING; B3-A NOT CLOSED; NO LIVE TRANSACTION.**
+
+
+## 45.12 — AGENT C — P2P PROBE NOW USES EXACT LATEST WITNESS + STATE ROOT — 2026-10-27
+
+Latest B3 branch head: `0a3e28521551a1f5566cadfe0bfd1c933421cd8b`.
+
+The latest successful Orynq bridge run [`#40454870910`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40454870910) captured and Rust-verified this exact witness:
+- block: `2464310`;
+- hash: `0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69`;
+- stateRoot: `0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa`.
+
+The Smoldot workflow and capture defaults now use all three values, with an explicit `target_state_root` workflow input. A branch-scoped concurrency group prevents new duplicate probe runs. Commits: [`d136186`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/d136186b340bc3ae33f5644ad17327c2c5236249) and [`0a3e285`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/0a3e28521551a1f5566cadfe0bfd1c933421cd8b).
+
+On the same latest commit, [Canonical Evidence & Finality Boundary `#40455355384`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355384) and [Orynq Evidence Bridge `#40455355258`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355258) are both **SUCCESS**. Target-aligned Smoldot run [`#40455355288`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355288) was queued when last checked. Previous completed P2P acquisition [`#40453433161`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40453433161) captured no raw GRANDPA justifications and observed warp-sync fixed at block 97069 for 350 seconds. Its result is explicitly classified as acquisition failure, not consensus invalidity.
+
+**STATUS: STORAGE PROOF + RUST VERIFICATION + SANITIZED ORYNQ PLAN GREEN; GRANDPA VERIFIER TESTS GREEN; CURRENT P2P ACQUISITION NOT YET PROVEN; B3-A OPEN; NO LIVE TRANSACTION.**
