@@ -4155,3 +4155,8 @@ The official Minswap SDK documents a testnet adapter that queries V2 pools by ex
 ### Preprod test-token identity recovered from existing B1 workflow — 2026-10-27 (Agent A)
 
 The existing B1 EEV workflow and source-set verifier already pin Preprod tUSDM to `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`. This is the test token used by the direct-tUSDM EEV profile, not Moneta's Mainnet USDM (`c48cbb3d5e57ed56e276bc45f99ab39abe94e6cd7ac39fb402da47ad` + `0014df105553444d`). Minswap V2 is documented as deployed on Preprod and its SDK supports exact-pair pool lookup; a read-only ADA/tUSDM pool lookup can test integration mechanics, but even a successful result cannot qualify the USD/USDM settlement conversion. No live pool UTxO/datum was acquired in this step. Keep Option B blocked and fail-closed; no production code or semantics changed. See memo section 24.
+
+
+### Agent A — Minswap API network boundary and no-assumption gate (2026-10-27)
+
+Minswap's documented public metrics API is explicitly Mainnet (`api-mainnet-prod.minswap.org`), so do not use it to claim a Preprod pool or UTxO. The official SDK offers an exact-pair V2 lookup with a Preprod provider, and Minswap's V2 contracts are deployed on Preprod; executing that read-only lookup requires a configured provider credential and still needs direct ledger verification of the returned pool UTxO/datum. Repository issue #37 remains authoritative: tUSDM is `OBSERVED_NOT_QUALIFIED`; do not qualify it from ticker, balance, branding or CI. No live Preprod pool witness was acquired here; no production code or semantics changed. See memo section 25.
