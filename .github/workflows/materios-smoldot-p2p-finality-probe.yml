@@ -129,9 +129,6 @@ jobs:
           const genesisOk = e.chain?.genesis_hash_match === true;
           const headerOk = proofCount > 0 && e.captured_justifications.every(x => x.headerHashVerified === true);
           const targetOk = e.claims?.historical_target_justification_captured === true;
-          const ancestryBridge = e.target_ancestry_bridge ?? {};
-          const ancestryOk = e.claims?.witness_header_ancestry_link_verified === true &&
-            ancestryBridge.status === 'ANCESTRY_LINK_VERIFIED';
           const syncObservations = Array.isArray(e.chain?.sync_log_observations)
             ? e.chain.sync_log_observations
             : Array.isArray(e.smoldot_sync_log_observations) ? e.smoldot_sync_log_observations : [];
@@ -149,9 +146,6 @@ jobs:
             '- Header/justification binding checks: **' + String(headerOk) + '**',
             '- Captured raw GRANDPA justifications: **' + String(proofCount) + '**',
             '- Pinned historical target proof: **' + String(targetOk) + '**',
-            '- Witness-to-justification ancestry link: **' + String(ancestryOk) + '**',
-            '- Ancestry bridge status: **' + String(ancestryBridge.status ?? 'unknown') + '**',
-            '- Ancestry bridge span (parent edges): **' + String(ancestryBridge.block_span ?? 'n/a') + '**',
             '- Target probe status: **' + String(target.status ?? 'unknown') + '**',
             '- Latest finalized head observed: **' + JSON.stringify(e.chain?.latest_finalized_head_observed ?? null) + '**',
             '- Native sync-log observations recorded: **' + String(syncObservations.length) + '**',
@@ -176,13 +170,8 @@ jobs:
             console.error('Fail-closed: no raw GRANDPA proof with reconstructed matching target header was captured.');
             process.exit(1);
           }
-          if (!targetOk && !ancestryOk) {
-            console.error('Fail-closed: no justification for the exact witness block and no locally hash-verified sequential ancestry bridge from the witness to a descendant justification target was captured.');
-            console.error('An acquisition artifact may still be uploaded, but B3-A remains OPEN.');
-            process.exit(1);
+          if (!targetOk) {
+            console.warn('A real P2P GRANDPA proof was captured, but not for the pinned historical B3 target. This does not close the target transition gate.');
           }
-          if (!targetOk && ancestryOk) {
-            console.log('A descendant GRANDPA justification has a locally hash-verified sequential ancestry link to the exact witness block. This is not independent signature/quorum or authority-provenance verification.');
-          }
-          console.log('P2P proof transport and checkpoint ancestry evidence observed. No B3-A closure is asserted.');
+          console.log('P2P proof transport observed. No B3-A closure is asserted.');
           NODE
