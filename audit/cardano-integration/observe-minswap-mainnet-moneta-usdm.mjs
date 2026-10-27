@@ -45,7 +45,7 @@ function bech32ScriptHashToHex(value) {
   for (const ch of value.slice(0, separator)) expand.push(ch.charCodeAt(0) >>> 5)
   expand.push(0)
   for (const ch of value.slice(0, separator)) expand.push(ch.charCodeAt(0) & 31)
-  for (const n of values) {
+  for (const n of [...expand, ...values]) {
     const top = checksum >>> 25
     checksum = ((checksum & 0x1ffffff) << 5) ^ n
     for (let i = 0; i < 5; i++) if ((top >>> i) & 1) checksum ^= generators[i]
@@ -178,9 +178,10 @@ async function verifyV1(candidate) {
   const assetsMatch = Object.keys(originalAssets).length === Object.keys(assets).length && Object.entries(originalAssets).every(([unit, quantity]) => assets[unit] === quantity)
   const datumMatches = Boolean(candidate.datumHash && currentDatumHash === candidate.datumHash)
   const nftMatches = (assets[candidate.pool.nft] ?? '0') === '1'
+  const paymentCredentialMatches = String(row.payment_cred ?? '').toLowerCase() === V1_POOL_SCRIPT_HASH
   return {
     protocol: 'Minswap V1',
-    status: assetsMatch && datumMatches && nftMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
+    status: assetsMatch && datumMatches && nftMatches && paymentCredentialMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
     address: candidate.ref.address,
     outRef: candidate.ref.txHash + '#' + candidate.ref.index,
     assetA: candidate.pool.assetA,
@@ -192,6 +193,7 @@ async function verifyV1(candidate) {
     datumHashMatchesFirstRead: datumMatches,
     completeValueMatchesFirstRead: assetsMatch,
     poolNftQuantityOne: nftMatches,
+    paymentCredentialMatches,
     assets,
   }
 }
@@ -205,9 +207,10 @@ async function verifyV2(candidate) {
   const currentDatum = normalizeHex(row.inline_datum)
   const assetsMatch = Object.keys(originalAssets).length === Object.keys(assets).length && Object.entries(originalAssets).every(([unit, quantity]) => assets[unit] === quantity)
   const datumMatches = Boolean(candidate.datum && currentDatum && candidate.datum === currentDatum)
+  const paymentCredentialMatches = String(row.payment_cred ?? '').toLowerCase() === V2_POOL_SCRIPT_HASH
   return {
     protocol: 'Minswap V2',
-    status: assetsMatch && datumMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
+    status: assetsMatch && datumMatches && paymentCredentialMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
     address: candidate.ref.address,
     outRef: candidate.ref.txHash + '#' + candidate.ref.index,
     assetA: candidate.pool.assetA,
@@ -215,6 +218,7 @@ async function verifyV2(candidate) {
     datumCborHex: candidate.datum,
     datumMatchesFirstRead: datumMatches,
     completeValueMatchesFirstRead: assetsMatch,
+    paymentCredentialMatches,
     reservesFromDatum: { reserveA: String(candidate.pool.reserveA), reserveB: String(candidate.pool.reserveB) },
     valueReserves: candidate.pool.valueReserves.map((value) => value.toString()),
     fees: { feeA: candidate.pool.feeA.map(String), feeB: candidate.pool.feeB.map(String), feeShare: candidate.pool.feeShare?.map(String) ?? null },
