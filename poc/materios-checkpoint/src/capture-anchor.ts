@@ -1,14 +1,18 @@
 /**
- * Capture the exact historical Materios AnchorRecord witness required by B3-B.
+ * Capture the exact Materios AnchorRecord witness required by B3-B.
  *
  * Evidence extraction only. This tool does not claim finality, authority
  * provenance, or proof validity. It binds every read to one exact block hash.
  *
  * Usage:
- *   MATERIOS_ARCHIVE_RPC=<archive-http-rpc> npm run capture:anchor
+ *   MATERIOS_ARCHIVE_RPC=<materios-http-json-rpc> npm run capture:anchor
+ *
+ * By default the target is the endpoint's chain_getFinalizedHead response.
+ * Use an archive-capable endpoint when targeting an older block.
  *
  * Optional overrides:
  *   MATERIOS_B3_ANCHOR_BLOCK_HASH
+ *   MATERIOS_B3_TARGET_SOURCE
  *   MATERIOS_B3_ANCHOR_STORAGE_KEY
  */
 
@@ -25,7 +29,7 @@ const RPC = (() => {
   const value = process.env.MATERIOS_ARCHIVE_RPC;
   if (!value) {
     throw new Error(
-      "MATERIOS_ARCHIVE_RPC is required and must point to a historical-state-capable Materios RPC",
+      "MATERIOS_ARCHIVE_RPC is required and must serve state at the selected Materios block hash",
     );
   }
   return value;
