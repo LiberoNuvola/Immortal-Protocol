@@ -4145,3 +4145,8 @@ In parallel with the blocked Orcfax path, Agent A will evaluate whether a market
 ### DEX candidate narrowed to Minswap — mainnet discovery only (Agent A, 2026-10-27)
 
 Minswap is the first pool family to inspect because Moneta's current guide describes its ADA/USDM pool as the deepest USDM venue; Minswap API documentation identifies verified USDM with 6 decimals. A third-party GeckoTerminal result exposes a mainnet pool-contract lead but not a canonical current UTxO/datum and not a Preprod identity. These are discovery leads only. Next: query exact Preprod asset identity and actual live Preprod pool UTxOs, while keeping the mainnet pool candidate separately scoped. Do not transfer addresses or identities across networks; do not use dashboard prices as settlement inputs. See [memo §22](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md).
+
+
+### Agent A — Minswap Preprod discovery gate (2026-10-27)
+
+The official Minswap SDK documents a testnet adapter that queries V2 pools by exact asset pair. Moneta's published USDM identity is explicitly labelled Mainnet; it must not be assumed to be the Preprod asset. This review did not obtain a direct Preprod pool UTxO or datum, so no DEX source is qualified. Next: verify the exact Preprod USDM asset first, then perform a read-only Minswap V2 pool lookup and preserve the pool variant, UTxO reference, inline datum, reserves, fees, slot and evidence digest. If the asset is absent on Preprod, mark this route unavailable for that network. No production or protocol semantics changed; Option B remains unimplemented and Issue remains fail-closed. See memo section 23.
