@@ -3334,3 +3334,14 @@ The new single-run probe [`#40455355288`](https://github.com/LiberoNuvola/Immort
 No artifact/result is available from the current capture step yet. Do not interpret its running status as proof availability. The last completed capture remains `#40453433161`: zero raw justifications, target block unavailable through Smoldot RPC, warp sync stalled at block 97069 for 350 seconds.
 
 **STATUS: LATEST EXACT-WITNESS P2P CAPTURE IN PROGRESS; RAW GRANDPA PROOF NOT YET CAPTURED; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.14 — AGENT C — P2P TARGET NUMBER FALLBACK CORRECTED — 2026-10-27
+
+The completed target-aligned P2P probe [run #40455355288](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355288) exposed a workflow wiring defect: the workflow_dispatch input default and capture script used block `2464310`, but the environment fallback `MATERIOS_TARGET_BLOCK_NUMBER` still overrode it with stale block `2464283`. The run log records the mixed tuple: number `2464283` with the block hash and stateRoot for `2464310`. The ancestry bridge consequently returned `ANCESTRY_BRIDGE_UNAVAILABLE (CHECKPOINT_HEADER_NOT_HASH_BOUND_TO_WITNESS)`. The same run captured zero raw GRANDPA justifications and observed Smoldot warp sync stalled at block `97069` for 350 seconds. This is an acquisition/configuration failure, not evidence that Materios GRANDPA consensus is invalid.
+
+Fix committed on the existing B3 branch `work/b3-materios-provenance-evidence` as [`05327bd`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/05327bd7182b4e64ee50c5d76496a1418e707b3e): the environment fallback now uses `2464310`, aligning number, hash and stateRoot to the exact latest Rust-verified witness. No new branch was created. Push-triggered rerun [#40456422345](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40456422345) was queued when this section was written; verify its run/artifact before concluding the fix is effective.
+
+B3-A remains **OPEN** until a real raw GRANDPA justification is captured, bound to a reconstructed matching target header and witness ancestry, and independently verified along with authenticated authority history/transition. Existing Rust storage proof, sanitized Orynq dry-run and verifier tests remain green. No live transaction or receipt submission.
+
+**STATUS: MIXED-TARGET DEFAULT FIXED; VALIDATION RERUN QUEUED; REAL GRANDPA PROOF NOT YET CAPTURED; B3-A OPEN; NO LIVE TRANSACTION.**
