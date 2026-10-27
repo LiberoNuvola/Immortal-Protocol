@@ -4,20 +4,26 @@ on:
   workflow_dispatch:
     inputs:
       target_block_number:
-        description: "Exact previously observed B3 target block number"
+        description: "Exact latest Rust-verified Materios witness block number"
         required: true
         type: string
-        default: "1856408"
+        default: "2463858"
       target_block_hash:
-        description: "Exact previously observed B3 target block hash"
+        description: "Exact latest Rust-verified Materios witness block hash"
         required: true
         type: string
-        default: "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e"
+        default: "0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9"
       wait_seconds:
         description: "Maximum P2P proof observation window"
         required: true
         type: string
         default: "360"
+  push:
+    branches:
+      - work/b3-materios-provenance-evidence
+    paths:
+      - ".github/workflows/materios-smoldot-p2p-finality-probe.yml"
+      - "poc/materios-smoldot/capture-finality.mjs"
 
 permissions:
   contents: read
