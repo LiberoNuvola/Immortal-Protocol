@@ -8,6 +8,7 @@ on:
       - "poc/materios-orynq-bridge/**"
       - "poc/materios-checkpoint/**"
       - "poc/materios-execution-verifier/**"
+      - "poc/materios-smoldot/**"
       - "audit/materios-b3/archive-rpc-preflight.mjs"
       - ".github/workflows/materios-orynq-bridge.yml"
   workflow_dispatch:
