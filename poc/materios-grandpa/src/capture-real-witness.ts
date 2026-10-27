@@ -679,7 +679,7 @@ async function main(): Promise<void> {
   const websocketEvidencePath = process.env.MATERIOS_WS_EVIDENCE_PATH?.trim();
   let websocketFallbackStatus = websocketEvidencePath ? "NOT_ATTEMPTED" : "NOT_CONFIGURED";
   let websocketFallbackError: string | null = null;
-  if (witnessedBlocks.length === 0 && websocketEvidencePath) {
+  if (websocketEvidencePath) {
     try {
       const websocketEvidence = JSON.parse(
         readFileSync(websocketEvidencePath, "utf8"),
@@ -762,12 +762,32 @@ async function main(): Promise<void> {
         ...rpcCandidate.signed,
         justifications: [[GRANDPA_ENGINE_ID, rawPayloadHex]] as [string, string][],
       };
-      witnessedBlocks.push({
-        number: candidateNumber,
-        hash: candidateHash,
-        signed: signedWithJustification,
-      });
-      websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+      const existingIndex = witnessedBlocks.findIndex(
+        block => block.number === candidateNumber,
+      );
+      if (existingIndex >= 0) {
+        witnessedBlocks[existingIndex] = {
+          number: candidateNumber,
+          hash: candidateHash,
+          signed: signedWithJustification,
+        };
+        websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+      } else if (
+        witnessedBlocks.length === 0 ||
+        candidateNumber > witnessedBlocks[0]!.number
+      ) {
+        // Prefer a newer, independently cross-bound WebSocket candidate over
+        // an older HTTP witness whose historical runtime state may already be
+        // pruned. Keep the list in descending block-number order for firstWitness.
+        witnessedBlocks.unshift({
+          number: candidateNumber,
+          hash: candidateHash,
+          signed: signedWithJustification,
+        });
+        websocketFallbackStatus = "CAPTURED_HEADER_HASH_AND_CROSS_ROUTE_MATCH_VERIFIED";
+      } else {
+        websocketFallbackStatus = "CAPTURED_BUT_OLDER_THAN_HTTP_WITNESS_NOT_SELECTED";
+      }
     } catch (error) {
       websocketFallbackStatus = "REJECTED";
       websocketFallbackError = error instanceof Error ? error.message : String(error);
