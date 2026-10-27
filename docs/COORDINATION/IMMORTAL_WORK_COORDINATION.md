@@ -3295,3 +3295,17 @@ Evidence boundary re-checked against latest public Materios probes:
 - Corrected the fallback environment target to the latest Rust-verified witness: block `2463858`, hash `0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9`. The current correctly targeted P2P probe [run `#40453433161`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40453433161) is running against this target. The P2P workflow was restored to its known-good structure after an over-broad YAML edit caused zero-job workflow failures; current tests live in the already working evidence-conformance workflow, which validates the new module.
   
 **STATUS: OryNq dry-run + real Rust storage proof GREEN; ancestry bridge implementation and tests GREEN; correctly targeted Smoldot P2P run IN PROGRESS; public RPC still supplies no usable GRANDPA proof; B3-A OPEN; no live transaction.**
+
+
+## 45.10 — AGENT C — SOURCE-LABEL FIX + LATEST WITNESS BRIDGE GREEN; P2P FINALITY ACQUISITION RUNNING — 2026-10-27
+
+Latest B3 branch head checked: `47607479b44847e593074e802971168e1213580e`.
+
+- [Canonical Evidence & Finality Boundary run `#40454871048`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40454871048) completed **SUCCESS**. It passed the witness-to-GRANDPA target ancestry bridge tests, canonical evidence tests, execution-proof tests, RPC B3 tests, typecheck, and the GRANDPA verifier suite/build (15 test files, 149 tests passed in `poc/materios-grandpa`).
+- [Orynq Evidence Bridge run `#40454870910`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40454870910) completed **SUCCESS** on the same branch head. Preflight, exact-block witness capture, Rust tests, storage proof verification, Orynq dry-run, sanitization and combined artifact upload all passed.
+- New combined artifact [`materios-b3-verified-witness-and-orynq-plan`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40454870910/artifacts/12711863497), ID `12711863497`, size 4,430 bytes, contains sanitized verified witness and receipt plan; RPC endpoint and capture timestamp are removed. This run validates the corrected `checkpoint_source` plumbing at branch head `47607479`.
+- [Smoldot P2P Finality Probe run `#40454861474`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40454861474) remains **in progress** at the proof-capture step. Its job is to acquire raw GRANDPA justification evidence from P2P and structurally bind the witness header to the justification target; no finality conclusion is available yet. The public RPC had not supplied usable GRANDPA proof material in earlier probes.
+
+This is important separation of gates: successful unit/integration tests for GRANDPA verification and the ancestry bridge validate verifier code and its evidence boundary; they do not mean a live justification was obtained or accepted for the current target.
+
+**STATUS: REAL WITNESS + RUST STORAGE PROOF + SANITIZED ORYNQ DRY-RUN GREEN; SOURCE PROVENANCE LABEL TESTED; P2P GRANDPA PROOF ACQUISITION STILL RUNNING; B3-A NOT CLOSED; NO LIVE TRANSACTION.**
