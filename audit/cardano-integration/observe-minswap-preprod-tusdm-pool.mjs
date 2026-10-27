@@ -41,14 +41,20 @@ function decodeLedgerAssets(assetList = [], lovelace) {
     if (!item || typeof item.policy_id !== 'string' || typeof item.asset_name !== 'string' || item.quantity === undefined) {
       throw new Error('KOIOS_LEDGER_ASSET_ROW_MALFORMED')
     }
-    const unit = item.policy_id.toLowerCase() + item.asset_name.toLowerCase()
-    assets[unit] = String(item.quantity)
+    assets[item.policy_id.toLowerCase() + item.asset_name.toLowerCase()] = String(item.quantity)
   }
   return assets
 }
 
-function stringify(value) {
-  return typeof value === 'bigint' ? value.toString() : value
+function tipSummary(tip) {
+  if (!tip || tip.block_no == null || tip.abs_slot == null) {
+    throw new Error('KOIOS_CHAIN_TIP_MISSING_REQUIRED_FIELDS')
+  }
+  return {
+    blockNo: String(tip.block_no),
+    slot: String(tip.abs_slot),
+    blockHash: tip.hash ?? tip.block_hash ?? null,
+  }
 }
 
 async function main() {
@@ -56,14 +62,11 @@ async function main() {
     throw new Error('BLOCKFROST_PROJECT_ID is required; value intentionally not logged')
   }
 
+  const observedAt = new Date().toISOString()
   const blockfrost = new BlockFrostAPI({ projectId: BLOCKFROST_PROJECT_ID, network: 'preprod' })
   const adapter = new BlockfrostAdapter(NetworkId.TESTNET, blockfrost)
-  const observedAt = new Date().toISOString()
-  const tipRows = await koiosGet('/tip')
-  const chainTip = Array.isArray(tipRows) ? tipRows[0] : tipRows
-  if (!chainTip || chainTip.block_no == null || chainTip.abs_slot == null) {
-    throw new Error('KOIOS_CHAIN_TIP_MISSING_REQUIRED_FIELDS')
-  }
+  const rawTip = await koiosGet('/tip')
+  const chainTip = tipSummary(Array.isArray(rawTip) ? rawTip[0] : rawTip)
 
   const pool = await adapter.getV2PoolByPair(
     Asset.fromString(ADA_UNIT),
@@ -72,19 +75,25 @@ async function main() {
 
   if (!pool) {
     const snapshot = {
-      schema: 'MIN​​SWAP-PREPROD-V2-POOL-OBSERVATION-v1'.replaceAll('\u200b', ''),
+      schema: 'MINSWAP-PREPROD-V2-POOL-OBSERVATION-v1',
       network: NETWORK,
-      status: 'POOL_NOT_FOUND_BY_MIN​​SWAP_V2_ADAPTER'.replaceAll('\u200b', ''),
+      status: 'POOL_NOT_FOUND_BY_MINSWAP_V2_ADAPTER',
       qualification: 'OBSERVED_NOT_QUALIFIED',
-      candidatePair: { assetA: ADA_UNIT, assetB: TUSDM_UNIT, tokenPolicyId: TOKEN_POLICY, tokenNameHex: TOKEN_NAME_HEX, tokenDecimals: 6 },
-      source: { sdk: '@minswap/sdk@0.5.0', provider: 'Blockfrost Preprod', independentLedgerCheck: 'NOT_RUN_NO_SDK_POOL' },
-      chainTip: {
-        blockNo: String(chainTip.block_no),
-        slot: String(chainTip.abs_slot),
-        blockHash: chainTip.hash ?? null,
+      candidatePair: {
+        assetA: ADA_UNIT,
+        assetB: TUSDM_UNIT,
+        tokenPolicyId: TOKEN_POLICY,
+        tokenNameHex: TOKEN_NAME_HEX,
+        tokenDecimals: 6,
       },
+      source: {
+        sdk: '@minswap/sdk@0.5.0',
+        discoveryProvider: 'Blockfrost Preprod',
+        independentLedgerCheck: 'NOT_RUN_NO_SDK_POOL',
+      },
+      chainTip,
       observedAt,
-      conclusion: 'This V2 adapter did not return the exact ADA / pinned Preprod tUSDM pair. This is not proof that no pool exists in another Minswap version or elsewhere on Preprod.',
+      conclusion: 'The V2 adapter did not return this exact ADA / pinned Preprod tUSDM pair. This does not prove that no pool exists in another Minswap version or elsewhere on Preprod.',
     }
     snapshot.evidenceSha256 = sha256(snapshot)
     console.log(JSON.stringify(snapshot, null, 2))
@@ -93,14 +102,14 @@ async function main() {
 
   const assetSet = new Set([pool.assetA, pool.assetB])
   if (!assetSet.has(ADA_UNIT) || !assetSet.has(TUSDM_UNIT) || assetSet.size !== 2) {
-    throw new Error('MIN​​SWAP_SDK_RETURNED_DIFFERENT_ASSET_PAIR'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_SDK_RETURNED_DIFFERENT_ASSET_PAIR')
   }
 
   const txHash = String(pool.txIn?.txHash ?? '').toLowerCase()
   const outputIndex = Number(pool.txIn?.index)
   const poolAddress = String(pool.address ?? '')
   if (!/^[0-9a-f]{64}$/.test(txHash) || !Number.isSafeInteger(outputIndex) || outputIndex < 0 || !poolAddress) {
-    throw new Error('MIN​​SWAP_POOL_MISSING_CANONICAL_OUTREF_OR_ADDRESS'.replaceAll('\u200b', ''))
+    throw new Error('MINSWAP_POOL_MISSING_CANONICAL_OUTREF_OR_ADDRESS')
   }
 
   const rows = await koiosPost('/address_utxos', { _addresses: [poolAddress], _extended: true })
@@ -110,18 +119,19 @@ async function main() {
     Number(row.tx_index) === outputIndex &&
     String(row.address ?? '') === poolAddress
   )
+
   if (exact.length !== 1) {
     const snapshot = {
-      schema: 'MIN​​SWAP-PREPROD-V2-POOL-OBSERVATION-v1'.replaceAll('\u200b', ''),
+      schema: 'MINSWAP-PREPROD-V2-POOL-OBSERVATION-v1',
       network: NETWORK,
       status: 'BLOCKED_SDK_OUTREF_NOT_UNIQUELY_VERIFIED_BY_KOIOS',
       qualification: 'OBSERVED_NOT_QUALIFIED',
       candidatePair: { assetA: ADA_UNIT, assetB: TUSDM_UNIT, tokenPolicyId: TOKEN_POLICY, tokenNameHex: TOKEN_NAME_HEX, tokenDecimals: 6 },
       sdkPool: { address: poolAddress, txHash, outputIndex, assetA: pool.assetA, assetB: pool.assetB },
       koiosMatches: exact.length,
-      chainTip: { blockNo: String(chainTip.block_no), slot: String(chainTip.abs_slot), blockHash: chainTip.hash ?? null },
+      chainTip,
       observedAt,
-      conclusion: 'SDK-discovered pool out-reference was not found exactly once at the same address in the independent Koios query.',
+      conclusion: 'The SDK-discovered pool out-reference was not found exactly once at the same address in the independent Koios query.',
     }
     snapshot.evidenceSha256 = sha256(snapshot)
     console.log(JSON.stringify(snapshot, null, 2))
@@ -134,12 +144,12 @@ async function main() {
   const sdkDatum = normalizeHex(pool.datumRaw)
   const ledgerAssets = decodeLedgerAssets(ledger.asset_list, ledger.value)
   const directTUsdmAtomic = BigInt(ledgerAssets[TUSDM_UNIT] ?? '0')
-  const sdkTUsdmAtomic = BigInt(pool.value?.find?.((x) => x.unit === TUSDM_UNIT)?.quantity ?? '0')
+  const sdkTUsdmAtomic = BigInt(pool.value?.find?.((item) => item.unit === TUSDM_UNIT)?.quantity ?? '0')
   const datumMatches = Boolean(ledgerDatum && sdkDatum && ledgerDatum === sdkDatum)
-  const assetQuantityMatches = directTUsdmAtomic > 0n && (sdkTUsdmAtomic === 0n || directTUsdmAtomic === sdkTUsdmAtomic)
+  const assetQuantityMatches = directTUsdmAtomic > 0n && sdkTUsdmAtomic > 0n && directTUsdmAtomic === sdkTUsdmAtomic
 
   const snapshot = {
-    schema: 'MIN​​SWAP-PREPROD-V2-POOL-OBSERVATION-v1'.replaceAll('\u200b', ''),
+    schema: 'MINSWAP-PREPROD-V2-POOL-OBSERVATION-v1',
     network: NETWORK,
     status: datumMatches && assetQuantityMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
     qualification: 'OBSERVED_NOT_QUALIFIED',
@@ -159,9 +169,9 @@ async function main() {
       datumCborHex: sdkDatum,
       datumMatchesKoios: datumMatches,
       reservesFromDatum: { reserveA: String(pool.reserveA), reserveB: String(pool.reserveB) },
-      feeA: pool.feeA.map(stringify),
-      feeB: pool.feeB.map(stringify),
-      feeShare: pool.feeShare?.map(stringify) ?? null,
+      feeA: pool.feeA.map((value) => value.toString()),
+      feeB: pool.feeB.map((value) => value.toString()),
+      feeShare: pool.feeShare?.map((value) => value.toString()) ?? null,
       totalLiquidity: String(pool.totalLiquidity),
       lpAsset: pool.lpAsset,
       directLedger: {
@@ -175,7 +185,7 @@ async function main() {
         inlineDatumCborHex: ledgerDatum,
       },
     },
-    chainTip: { blockNo: String(chainTip.block_no), slot: String(chainTip.abs_slot), blockHash: chainTip.hash ?? null },
+    chainTip,
     observedAt,
     guardrails: {
       mainnetMonetaUsdmIdentityUsed: false,
