@@ -24,18 +24,15 @@ const TARGET_GRANDPA_METHODS = [
   "grandpa_unsubscribeJustifications",
 ];
 
-// This is the next 512-block boundary after the previously Rust-verified
-// witness at block 2463858. The number only selects an untrusted RPC candidate;
-// the header and FRNK payload must be verified locally before use.
+// A configured candidate is a hint, never a trust anchor. The runtime
+// selection below replaces it if it has fallen more than 1024 blocks behind
+// the observed finalized head; this keeps the candidate in the bounded HTTP
+// scan used to cross-check the WebSocket header. The target's FRNK payload is
+// always treated as untrusted until the local verifier validates it.
 const CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
   process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "0"
 );
-// Ignore the previous run's stale 2464256 override; this capture round is pinned
-// to the next 512-block GRANDPA boundary, 2464768. Newer explicit targets remain allowed.
-const FINALITY_CANDIDATE_BLOCK_NUMBER = Math.max(
-  CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER,
-  2464768,
-);
+let FINALITY_CANDIDATE_BLOCK_NUMBER = CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER;
 if (!Number.isSafeInteger(FINALITY_CANDIDATE_BLOCK_NUMBER) ||
     FINALITY_CANDIDATE_BLOCK_NUMBER < 0) {
   throw new Error("MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER must be a non-negative safe integer");
@@ -487,9 +484,39 @@ async function main() {
       evidence.identity.finalized_head_error = error instanceof Error ? error.message : String(error);
     }
 
-    // Probe the explicit historical GRANDPA boundary that can finalize the
-    // older verified witness at block 2463858. This may expose stored FRNK bytes
-    // even though this public endpoint does not implement grandpa_proveFinality.
+    // Select a recent 512-block GRANDPA boundary from the observed finalized
+    // head unless a configured candidate is still ahead or within the bounded
+    // 1024-block HTTP cross-route scan. This prevents a pinned historical target
+    // from becoming stale as the chain advances.
+    const observedFinalizedHeight = evidence.identity.finalized_head_number;
+    if (!Number.isSafeInteger(observedFinalizedHeight) || observedFinalizedHeight < 0) {
+      throw new Error("FINALIZED_HEAD_HEIGHT_UNAVAILABLE_FOR_CANDIDATE_SELECTION");
+    }
+    const currentFinalityBoundary =
+      Math.floor(observedFinalizedHeight / 512) * 512;
+    const configuredCandidateIsUsable =
+      CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER > observedFinalizedHeight ||
+      observedFinalizedHeight - CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER <= 1024;
+    FINALITY_CANDIDATE_BLOCK_NUMBER =
+      CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER > 0 && configuredCandidateIsUsable
+        ? CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER
+        : currentFinalityBoundary;
+    evidence.historical_candidate_probe.requested_block_number =
+      FINALITY_CANDIDATE_BLOCK_NUMBER;
+    evidence.historical_candidate_probe.target_selection = {
+      configured_candidate_block_number: CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER,
+      observed_finalized_head_number: observedFinalizedHeight,
+      selected_boundary_block_number: currentFinalityBoundary,
+      selected_block_number: FINALITY_CANDIDATE_BLOCK_NUMBER,
+      reason: FINALITY_CANDIDATE_BLOCK_NUMBER === CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER &&
+          CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER > 0
+        ? "CONFIGURED_CANDIDATE_STILL_WITHIN_RANGE"
+        : "LATEST_FINALIZED_512_BLOCK_BOUNDARY",
+      trust_scope: "UNTRUSTED CANDIDATE SELECTION ONLY",
+    };
+
+    // Probe the selected recent GRANDPA boundary. This may expose stored FRNK
+    // bytes even though this public endpoint does not implement grandpa_proveFinality.
     try {
       const waitSeconds = Number(process.env.MATERIOS_FINALITY_WAIT_SECONDS || "900");
       const waitDeadline = Date.now() + Math.max(0, waitSeconds) * 1000;
