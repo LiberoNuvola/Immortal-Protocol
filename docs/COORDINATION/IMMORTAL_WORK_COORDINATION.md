@@ -3521,3 +3521,18 @@ Cross-branch guardrails:
 **Initial conclusion:** no public IMMORTAL SDK package surface was identified in the first pass. Existing modules provide building blocks, but they are scattered across chain-neutral/reference and Cardano-specific directories. Proposed design-only MVP is a thin core contract/evidence façade, a Cardano adapter wrapper, and a conformance package; no duplicated economic kernel. Before implementation, finish exact branch-head pinning, consumer/dependency mapping, duplicate-definition review, and relevant conformance tests.
 
 **STATUS: SDK CROSS-BRANCH INVENTORY v0.1 RECORDED; DESIGN/RECONNAISSANCE ONLY; NO IMPLEMENTATION AUTHORIZED YET.**
+
+
+## 45.26 — AGENT B — SDK CONSUMER MAP + P2.8 EVIDENCE RECHECK — 2026-10-27
+
+Updated `docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md` (follow-up commit `e9d42fa16c3aaa1c31e43503541536db5dc10aa0`).
+
+Consumer mapping from read-only default-branch code search confirms:
+- `CanonicalEconomicState.ts` has consumers in `EconomicObservation.ts`, Reveal conformance tests and Preprod conformance source binding.
+- `CanonicalTransitionEvidence.ts` is consumed by admission/evidence binding, the Issue admission bridge, CAES composition tests and Reveal/Expire trace runners.
+- `CardanoExecutionAdapter.ts` is used by mint, tx helpers, ad settlement and lifecycle traces/tests.
+This means a file move or API rewrite would cross real application and evidence paths. The SDK MVP should start with a compatibility façade and contract tests, not renames or a parallel kernel.
+
+P2.8: the current status docs and Reveal remediation spec still distinguish reference-script size remediation from actual native-ledger execution success. The workflow source invokes the native evaluator, but I did not verify a fresh exact-head run artifact that proves success with redeemer/ExUnits or a genuine ledger-originated failure. Therefore I do not declare P2.8 closed, and I do not modify the evaluator based on a green workflow label alone. Required evidence is latest run ID + exact head SHA + artifact digest + `ledger-evaluation-report.json` and its binding.
+
+**STATUS: SDK CONSUMER MAP ADDED; NO CODE REFACTOR; P2.8 CURRENT-HEAD EVIDENCE NOT VERIFIED IN THIS PASS; NO CLOSURE CLAIM.**
