@@ -1016,6 +1016,90 @@ async function main(): Promise<void> {
         : String(error);
   }
 
+  // Diagnostic only: the authority set visible at the target's post-state
+  // can differ from the set that signed finality for the target if a set change
+  // is enacted at this boundary. Never treat a parent-state match as authenticated
+  // transition provenance; it only helps classify INVALID_SIGNATURE.
+  let parentStateDiagnostic: {
+    status: string;
+    source_block_hash: string;
+    set_id?: string;
+    authority_count?: number;
+    authority_public_keys?: string[];
+    verification_error?: string | null;
+    signed_weight?: string | null;
+    total_weight?: string | null;
+    error?: string;
+    trust_scope: string;
+  } = {
+    status: "NOT_ATTEMPTED",
+    source_block_hash: witness.header.parentHash,
+    trust_scope: "UNTRUSTED DIAGNOSTIC ONLY; parent-state signatures/quorum do not authenticate the authority transition or finality",
+  };
+
+  if (cryptoVerification.status === "FAIL") {
+    try {
+      const parentAuthoritiesHex = await rpc<string>(
+        "state_call",
+        [
+          "GrandpaApi_grandpa_authorities",
+          "0x",
+          witness.header.parentHash,
+        ],
+      );
+      const parentSetIdHex = await rpc<string>(
+        "state_call",
+        [
+          "GrandpaApi_current_set_id",
+          "0x",
+          witness.header.parentHash,
+        ],
+      );
+      const parentAuthorities = decodeAuthorityList(parentAuthoritiesHex);
+      const parentSetId = decodeSetId(parentSetIdHex);
+      parentStateDiagnostic = {
+        status: "CAPTURED_UNTRUSTED",
+        source_block_hash: witness.header.parentHash,
+        set_id: parentSetId.toString(),
+        authority_count: parentAuthorities.length,
+        authority_public_keys: parentAuthorities.map(authority => bytesToHex(authority.publicKey)),
+        verification_error: null,
+        signed_weight: null,
+        total_weight: null,
+        trust_scope: "UNTRUSTED DIAGNOSTIC ONLY; parent-state signatures/quorum do not authenticate the authority transition or finality",
+      };
+      try {
+        const parentResult = await verifyFinality(
+          {
+            chainId: CHAIN_ID,
+            genesisHash: hexToBytes(genesisHash, "genesis hash"),
+            blockHash: hexToBytes(witness.blockHash, "witness block hash"),
+            blockNumber: witness.blockNumber,
+          },
+          justification,
+          {
+            chainId: CHAIN_ID,
+            genesisHash: hexToBytes(genesisHash, "genesis hash"),
+            setId: parentSetId,
+            authorities: parentAuthorities,
+          },
+          nobleEd25519,
+          { verifyAncestry: true },
+        );
+        parentStateDiagnostic.status = "SIGNATURE_QUORUM_PASS_UNTRUSTED";
+        parentStateDiagnostic.signed_weight = parentResult.signedWeight.toString();
+        parentStateDiagnostic.total_weight = parentResult.totalWeight.toString();
+      } catch (error) {
+        parentStateDiagnostic.status = "SIGNATURE_QUORUM_FAIL_UNTRUSTED";
+        parentStateDiagnostic.verification_error =
+          error instanceof Error ? error.name + ": " + error.message : String(error);
+      }
+    } catch (error) {
+      parentStateDiagnostic.status = "PARENT_STATE_UNAVAILABLE";
+      parentStateDiagnostic.error = error instanceof Error ? error.message : String(error);
+    }
+  }
+
   let transitionWitness:
     | {
         blockNumber: number;
@@ -1060,6 +1144,7 @@ async function main(): Promise<void> {
       block_hash: finalizedHash,
       state_root: finalizedHeader.stateRoot,
     },
+    parent_state_diagnostic: parentStateDiagnostic,
     authority_state: {
       source_block_hash: authorityStateSource,
       source_kind: authorityStateFallback ? "CURRENT_FINALIZED_STATE_FALLBACK" : "EXACT_PROOF_TARGET_STATE",
