@@ -87,7 +87,7 @@ function tipSummary(tip) {
 }
 
 async function koiosRequest(path, init = {}) {
-  const label = 'KOIOS_' + path.split('?')[0].replace(/^\\//, '').toUpperCase()
+  const label = 'KOIOS_' + path.split('?')[0].replaceAll('/', '').toUpperCase()
   let lastError
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
