@@ -27,8 +27,14 @@ const TARGET_GRANDPA_METHODS = [
 // This is the next 512-block boundary after the previously Rust-verified
 // witness at block 2463858. The number only selects an untrusted RPC candidate;
 // the header and FRNK payload must be verified locally before use.
-const FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
-  process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "2464768"
+const CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER = Number(
+  process.env.MATERIOS_FINALITY_CANDIDATE_BLOCK_NUMBER || "0"
+);
+// Ignore the previous run's stale 2464256 override; this capture round is pinned
+// to the next 512-block GRANDPA boundary, 2464768. Newer explicit targets remain allowed.
+const FINALITY_CANDIDATE_BLOCK_NUMBER = Math.max(
+  CONFIGURED_FINALITY_CANDIDATE_BLOCK_NUMBER,
+  2464768,
 );
 if (!Number.isSafeInteger(FINALITY_CANDIDATE_BLOCK_NUMBER) ||
     FINALITY_CANDIDATE_BLOCK_NUMBER < 0) {
