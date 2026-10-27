@@ -4160,3 +4160,19 @@ The existing B1 EEV workflow and source-set verifier already pin Preprod tUSDM t
 ### Agent A — Minswap API network boundary and no-assumption gate (2026-10-27)
 
 Minswap's documented public metrics API is explicitly Mainnet (`api-mainnet-prod.minswap.org`), so do not use it to claim a Preprod pool or UTxO. The official SDK offers an exact-pair V2 lookup with a Preprod provider, and Minswap's V2 contracts are deployed on Preprod; executing that read-only lookup requires a configured provider credential and still needs direct ledger verification of the returned pool UTxO/datum. Repository issue #37 remains authoritative: tUSDM is `OBSERVED_NOT_QUALIFIED`; do not qualify it from ticker, balance, branding or CI. No live Preprod pool witness was acquired here; no production code or semantics changed. See memo section 25.
+
+### Agent A — read-only Minswap Preprod tUSDM pool observer added; live witness pending (2026-10-27)
+
+To advance the DEX discovery gate without using Mainnet analytics as Preprod evidence, Agent A added a scoped observer on this existing branch:
+
+- Script: [observe-minswap-preprod-tusdm-pool.mjs](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/audit/cardano-integration/observe-minswap-preprod-tusdm-pool.mjs)
+- Workflow: [minswap-preprod-tusdm-observation.yml](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/.github/workflows/minswap-preprod-tusdm-observation.yml)
+- Pair is fixed to ADA + the exact configured Preprod tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`; it does not reuse Moneta Mainnet USDM identity.
+- If the Minswap V2 SDK returns a pool, the observer re-queries its exact address/out-reference with Koios and requires one live match, equal inline datum bytes, and matching live lovelace/tUSDM amounts. Missing or mismatching evidence fails closed. A V2 miss is not generalized to all Minswap variants.
+- No transaction construction, signing, submission, deployment approval, or Issue authorization is performed. Output qualification is permanently `OBSERVED_NOT_QUALIFIED`.
+
+**Execution state:** the script/workflow are committed on `work/immortal-green-closure`, but no workflow artifact, direct Preprod pool out-reference or live result is yet recorded. Do not call a pool found until the workflow artifact is inspected; even a matching tUSDM pool is test integration evidence only, not a qualified USD/USDM conversion.
+
+**Decision-record synchronization:** the normative memo §4 records Option B selected by protocol authority on 2026-10-26. Issue #37's original description still carries older A/B/C-open wording; Agent A added a follow-up comment documenting that chronology and the remaining unqualified source/consumer-contract gates: [issue comment](https://github.com/LiberoNuvola/Immortal-Protocol/issues/37#issuecomment-6434260357). The Preprod eligibility decision does not imply mainnet identity, issuer redemption, or a USD parity claim.
+
+No production or protocol semantics changed. Do not touch OracleQuote, `Economic.totalUsdmValue`, MintPolicy, V3, Reveal, economic constants, EEV approval, or Issue admission as part of this discovery step.
