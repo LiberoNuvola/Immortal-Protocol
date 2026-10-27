@@ -213,3 +213,33 @@ Commits on `work/immortal-green-closure`:
 The current branch comparison confirms `work/immortal-green-closure` is exactly at `bde369cb23853f7a31f330d87a232211b1c606f6`. The exposed status endpoint currently returns no status checks for that SHA; this is **not** evidence that the new step passed. The runner could not be executed locally in this environment. The CI step is now configured to execute it; inspect the actual lab run and uploaded `reference-conformance.txt` before declaring the change validated. V08/V09 remain pending and overall portability conformance remains incomplete.
 
 No economic semantics, V3 carrier, Reveal semantics, EEV authority, Materios trust boundary, wallet signing, deployment, or transaction submission was changed.
+
+
+## Follow-up: exact-head SDK readiness and V08 transition-owner audit (2026-10-27)
+
+### Exact working ref
+The GitHub branch endpoint resolves `work/immortal-green-closure` to commit `776963a143bea02def3f231d5834f347460f6609` (commit message: `docs(coordination): record inspected P2.8 ledger evidence packet`). This live ref supersedes the older SHA recorded in the first-pass inventory. The inspection below is source-only; it does not claim a fresh build or test run.
+
+### V08: transition owner not found in the universal kernel
+Exact-head source inspection confirms:
+- `IMMORTAL/state/UniversalEconomicState.hs` is an application-neutral aggregate containing liabilities, unresolved reserve/count, exposure, and protected-capital components. It contains no lifecycle state, ticket status, action type, or expiry timestamp.
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs` exports arithmetic/invariant functions only: `protectedCapital`, `rawSurplus`, `nonNegativeState`, and `solvencyInvariant`. It does not define a universal state transition.
+- `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs` runs those aggregate economic predicates against portability vectors; it is not a lifecycle-transition runner.
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` does implement `Issue`, `Reveal`, `Claim`, and `Expire`, but its state/action contract is explicitly V3/profile-shaped: it imports `EconomicStateV3`, `EconomicProfile`, class state and the PRE-RICH economic kernel. Treating this as the universal lifecycle model would collapse the documented universal/profile boundary.
+- `PRE-RICH/src/PreRichExpiryPolicy.ts` and `PreRichExpiryEvidence.ts` define profile-owned expiry horizon/evidence, not a universal IMMORTAL lifecycle automaton.
+- `verification/finite_model_checks.py::expiry_absorbing_check` is explicitly an abstract finite model, not implementation evidence.
+
+**Finding:** the canonical universal executable transition owner required to close V08 is not present in the inspected universal state/kernel/reference-runner path. The V3 transition is a candidate refinement implementation, not a substitute for that missing universal contract. V08 therefore remains pending; do not wire the abstract check into the reference runner and call it implementation conformance, and do not import PRE-RICH's numeric horizon into IMMORTAL.
+
+### SDK disposition from this audit
+The SDK can advance in parallel only on non-authoritative scaffolding:
+1. Document the public API contract and package boundaries without moving files.
+2. Define a versioned, chain-neutral envelope for transition evidence, explicitly distinguishing shape validation from cryptographic authenticity and source/freshness verification.
+3. Map each proposed public export to its existing canonical implementation and owning conformance test.
+4. Keep a release gate that fails full-conformance qualification while V08/V09 are pending; the harness must report executable-vector pass and pending-vector count separately.
+5. Do not create a TypeScript economic-kernel mirror, universal transition API, new package facade, or adapter claims until the canonical transition contract and certificate acceptance criteria are resolved.
+
+### V09 interaction
+V09 remains a certification blocker, not an SDK packaging task. The SDK may represent certificate references/evidence in a typed envelope, but cannot generate or assert the missing concrete `K_c` certificate, instantiate `S, A, Ω, T, Safe`, or turn booleans into a proof.
+
+**Next actionable gate:** finish the API/export-to-test map and run the existing focused CI on an exact SHA; in parallel, escalate the V08 universal transition-contract gap as an architecture decision rather than silently treating V3 as universal. No code, protocol semantics, transaction, wallet, deployment, V3 carrier, Reveal, EEV, or Materios work was changed by this audit.
