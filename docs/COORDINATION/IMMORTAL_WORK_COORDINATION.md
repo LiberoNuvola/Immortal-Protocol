@@ -3622,3 +3622,30 @@ This upgrades the prior P2.8 status from “no fresh exact-head native evaluatio
 - No Preprod/mainnet transaction, user wallet signing, deployment, economic rule change, or Materios work was performed.
 
 **STATUS: EXACT-HEAD LAB SUCCESS; EXECUTABLE REFERENCE VECTORS PASS WITH V08/V09 PENDING; P2.8 NATIVE LEDGER EVIDENCE PASS IN LOCAL YACI ONLY; PREPROD/MAINNET AND FULL PORTABILITY CLOSURE REMAIN OPEN.**
+
+
+## 45.30 — AGENT B — V08/V09 GAP TRIAGE; NO SEMANTIC GUESSING — 2026-10-27
+
+Follow-up inspection after the exact-head lab success identifies the safe next step for the two pending reference vectors. This is a triage note only; no economic semantics or executable fixtures were changed.
+
+### V08 — expiry finality
+- The canonical invariant is I9 in `docs/00-normative/05_INVARIANTS_CONSERVATION_FINAL.md`: expiry cannot recreate rights or liabilities.
+- The Constitution also specifies the generic boundary: no claimability or new liability after expiry, no resurrection, and no late reveal recreating the right; exact application duration is not a universal IMMORTAL constant.
+- Existing model-check evidence (`verification/finite_model_checks.py` and `verification/FINITE_MODEL_CHECK_RESULTS.txt`) describes expiry as an absorbing state with no path back to live or settled.
+- Therefore V08 must be built from this already-defined transition/finality contract, with boundary cases and explicit expected outcomes. It must not invent an expiry duration, borrow governance proposal-finality rules as if they were ticket semantics, or encode PRE-RICH-specific rules as universal IMMORTAL constants. First locate the canonical executable state/transition model that owns expiry, then fixture that model.
+
+### V09 — safety/viability separation
+- The normative Constitution and invariant register distinguish immediate post-state safety from viability in the certified concrete kernel `K_c`; neither a boolean solvency check nor a synthetic `K_c` fixture is sufficient evidence for both.
+- The fixture must reference an existing certified-kernel/certificate fixture and preserve the distinction: a transition can pass immediate safety while failing the viability predicate. If no current certified fixture can support that counterexample, V09 remains pending and the missing certified fixture is a real upstream prerequisite; do not invent certificate values, `Ω`, coefficients, or a new economic rule to make the test pass.
+- Until that authoritative fixture is found and its provenance verified, keep V09 explicitly pending rather than weakening the fail-closed runner.
+
+### Independent diagnostic follow-up
+- The synthetic-exUnits-stub builder probe reported `BUILDER_COMPLETION_FAIL` because the evaluator returned an unexpected `spend:0` redeemer result. That probe had `signed=false`, `submitted=false`, and `ledgerValidation=NOT_RUN`; it is not evidence of a ledger failure and is not a successful transaction.
+- Triage its evaluator/redeemer association and whether this probe is an acceptance requirement before modifying any builder. Preserve the native P2.8 pass and do not touch the V3 carrier or Reveal semantics without a reproduced failure in the actual required path.
+
+### Gate disposition
+- No SDK façade until V08/V09 are backed by canonical executable evidence or the remaining dependency is explicitly recorded as an accepted blocker.
+- No Preprod submission, signing, deployment, changes to normative economic rules, or Materios work in this step.
+- Continue on `work/immortal-green-closure`; do not create another branch.
+
+**STATUS: V08 CONTRACT LOCATED BUT EXECUTABLE FIXTURE OWNER MUST BE VERIFIED; V09 REQUIRES A REAL CERTIFIED-KERNEL FIXTURE; SYNTHETIC BUILDER PROBE SEPARATED FROM NATIVE LEDGER EVIDENCE.**
