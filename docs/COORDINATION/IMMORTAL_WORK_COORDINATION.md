@@ -3169,3 +3169,26 @@ Agent B added `plutus-tx-plugin ^>=1.67.0.0` to the `beacon-commitment-cross-lan
 Validation run: [IMMORTAL Haskell Semantic Conformance #40448943389](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40448943389) was in progress at checkpoint time. Branch HEAD had advanced to `ebb0ae553941ba0dab1c0a3e46300fdf243a16d3`, so continue coordinating against the current branch head and shared checkpoint; do not assume the test has passed until logs show the three vectors and the final success marker.
 
 **STATUS: EXPLICIT TEST DEPENDENCY ADDED; CI PENDING; F4 OPEN; V3/REVEAL UNCHANGED; MATERIOS REMAINS PAUSED.**
+
+
+## 45.04 — AGENT C — MATERIOS UPSTREAM UPDATES ARRIVED; B3 BRIDGE RESUMED — 2026-10-27
+
+This section supersedes the pause wording in §45.02–§45.03 for Materios. The pause meant waiting for meaningful upstream work; the user has now confirmed that updates have arrived and asked to exploit them. Agent C's Materios work is active again.
+
+### Upstream changes confirmed
+- [orynq-sdk commit `552a6ac`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/552a6ac6eb56f62252d82644dde1f654fe57c6dc): `anchors-materios` 0.6.2 fixes blob receipts to use the Merkle root of uploaded chunk hashes and treats absent/zero schema hashes as blob receipts. The upstream regression tests cover multi-chunk blobs, zero schema hash and schema-class roots.
+- [orynq-sdk commit `b5d1d4e`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/b5d1d4e62fda22d95df6dbe43f4771c8c01b7cf8): quickstart trace receipts made certifiable.
+- [orynq-sdk commit `8373932`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/837393261797d99fec046a1a5f551d39822f9b6f): trace receipt hashes surfaced through CLI/MCP.
+- [orynq-sdk commit `207bcda`](https://github.com/Flux-Point-Studios/orynq-sdk/commit/207bcda1b112653a26cf44c29ae18a7cfdf3366e) hardens landed-set hints through the standing service/controller. This code is in the `anchors-midnight-submit` path, not a Materios finality verifier; use only the invariant that a block hint locates evidence and never vouches for it. Do not import Midnight-specific parameters or semantics into Materios.
+
+### Integration started
+On the existing `work/b3-materios-provenance-evidence` branch, Agent C added an isolated consumer bridge under `poc/materios-orynq-bridge/` (commit [`a733516`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a733516d796559fb4aca6648f5326340b1b0bbc1)):
+- Pins `@fluxpointstudios/orynq-sdk-anchors-materios` to `0.6.2`.
+- Consumes the existing `MateriosB3AnchorStateWitness.verified.json` artifact, rejects mismatched target/read-proof blocks and missing proof-verification scope, and omits the source RPC endpoint and capture-time metadata from the anchored payload.
+- Precomputes the content hash, receipt ID and chunk Merkle root; submission uses the SDK's blob receipt path with no semantic `schemaHash`.
+- Live submission is opt-in only (`--submit` plus `MATERIOS_CONFIRM_SUBMISSION=YES`); blob uploads use a local sr25519 signature rather than a shared raw gateway API key.
+- Does not replace the Rust storage-proof verifier or independent GRANDPA finality verification; anchoring a witness is not proof that the witness is true or final.
+
+CI [Materios Orynq Evidence Bridge](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40449545360) was still installing dependencies at checkpoint time. Wait for TypeScript/test success and confirmation that the first generated package lock is committed before marking the integration validated. No live Materios transaction has been submitted.
+
+**STATUS: MATERIOS RESUMED; SDK 0.6.2 BRIDGE IMPLEMENTED; CI PENDING; NO LIVE TRANSACTION; INDEPENDENT STORAGE/GRANDPA GATES REMAIN OPEN.**
