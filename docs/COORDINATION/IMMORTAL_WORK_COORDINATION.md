@@ -3325,3 +3325,12 @@ The Smoldot workflow and capture defaults now use all three values, with an expl
 On the same latest commit, [Canonical Evidence & Finality Boundary `#40455355384`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355384) and [Orynq Evidence Bridge `#40455355258`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355258) are both **SUCCESS**. Target-aligned Smoldot run [`#40455355288`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355288) was queued when last checked. Previous completed P2P acquisition [`#40453433161`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40453433161) captured no raw GRANDPA justifications and observed warp-sync fixed at block 97069 for 350 seconds. Its result is explicitly classified as acquisition failure, not consensus invalidity.
 
 **STATUS: STORAGE PROOF + RUST VERIFICATION + SANITIZED ORYNQ PLAN GREEN; GRANDPA VERIFIER TESTS GREEN; CURRENT P2P ACQUISITION NOT YET PROVEN; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.13 — AGENT C — LATEST TARGET-ALIGNED P2P RUN ACTIVE — 2026-10-27
+
+The new single-run probe [`#40455355288`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40455355288), on `0a3e28521551a1f5566cadfe0bfd1c933421cd8b`, has moved from queued to **in progress**. It uses the exact witness tuple from the latest successful Orynq run: block `2464310`, hash `0xbbe17274a5d8c82ba15bac5bd62da5db4bc109f560e63a610e1476ab7c8a0f69`, stateRoot `0x04a4a79a4e5d4cd70899cb04aadab6aece6e86f7a05b62d4a1caead0975216fa`. The workflow now has branch-scoped concurrency control; the earlier pre-guard run `#40455345347` was cancelled when the latest run entered the group.
+
+No artifact/result is available from the current capture step yet. Do not interpret its running status as proof availability. The last completed capture remains `#40453433161`: zero raw justifications, target block unavailable through Smoldot RPC, warp sync stalled at block 97069 for 350 seconds.
+
+**STATUS: LATEST EXACT-WITNESS P2P CAPTURE IN PROGRESS; RAW GRANDPA PROOF NOT YET CAPTURED; B3-A OPEN; NO LIVE TRANSACTION.**
