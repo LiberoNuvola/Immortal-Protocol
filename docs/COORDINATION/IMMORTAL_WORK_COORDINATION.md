@@ -3557,3 +3557,25 @@ Important limitation: the GitHub connector resolved the working branch files and
 P2.8 remains separate and OPEN pending inspection of an exact-head `ledger-evaluation-report.json`, its byte-binding artifact, reference-input UTxOs and actual redeemer outcomes. No workflow dispatch, wallet signing, transaction submission, or protocol-semantic change was performed.
 
 **STATUS: TEST/WORKFLOW MAP RECORDED; EXACT HEAD + FRESH TEST RUN STILL UNVERIFIED; NO SDK IMPLEMENTATION STARTED.**
+
+
+## 45.28 — AGENT B — REFERENCE CONFORMANCE MADE FAIL-CLOSED — 2026-10-27
+
+Implemented on the existing `work/immortal-green-closure` branch; no new branch. Main code/workflow head before this checkpoint entry: [`bde369cb23853f7a31f330d87a232211b1c606f6`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/bde369cb23853f7a31f330d87a232211b1c606f6). Full details are in the [SDK cross-branch inventory](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md).
+
+**Bug found:** `Adapter/REFERENCE/export/ReferenceEconomicConformance.hs` emitted expected/actual values without asserting equality; unsupported executable vectors were silently skipped; V05's decomposition was collapsed into one aggregate field; and V07's nested locality cases were not run. Thus the output was not a fail-closed conformance gate.
+
+**Fix made:**
+- Assert every expected kernel output that is present and exit non-zero on mismatch.
+- Fail on unsupported executable vector shapes rather than silently omit them.
+- Build V05's universal state from its six supplied protected-capital components and check the aggregate against both the declared and expected value.
+- Execute both V07 locality cases.
+- Route V10 through the canonical `UniversalEconomicKernel` rather than duplicating RawSurplus arithmetic in the runner.
+- Print V08/V09 as pending and label the final result `PASS_EXECUTABLE_VECTORS` with a pending count, not full conformance closure.
+- Invoke the evaluator from `.github/workflows/immortal-cardano-lab.yml` after canonical Plutus setup and persist `audit/yaci-evidence/reference-conformance.txt`.
+
+The working branch was verified at code/workflow SHA `bde369cb23853f7a31f330d87a232211b1c606f6` before this documentation update. The exposed combined-status endpoint returned no status records, and this environment could not execute the Haskell runner locally. Therefore **the implementation is committed but not yet test-validated**; inspect the actual Integration Lab run and its uploaded `reference-conformance.txt` before relying on it. V08/V09 remain pending, so overall portability conformance is still OPEN.
+
+No normative economic rules, V3 carrier, Reveal semantics, EEV qualification/authority, Materios trust boundary, deployment, wallet signing, or transaction submission changed.
+
+**STATUS: FAIL-CLOSED REFERENCE EVALUATOR IMPLEMENTED; CI INVOCATION ADDED; RUN RESULT PENDING; SDK FACADE STILL NOT STARTED.**
