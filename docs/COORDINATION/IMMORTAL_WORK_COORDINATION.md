@@ -3449,3 +3449,12 @@ This is **not** a finality PASS: set ID `4261` was inferred by a bounded signatu
 A fresh-target workflow is active on the same B3 branch. [Run #40548408573](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573), source head `a66493791dc426a4a6a213fd1dc5b9b7a34b84e7`, selects boundary `2471424` and waits for it to become finalized so the runtime authority state can be queried while recent. The verifier and live storage-proof jobs have passed in this run; the WebSocket capture/real-witness job is still running. Inspect its resulting artifact before changing the diagnostic classification.
 
 **STATUS: RAW FRNK AND CROSS-ROUTE HEADER BINDING GREEN; 4/4 SIGNATURES + 4/5 WEIGHT + ANCESTRY PASS ONLY UNDER INFERRED SET ID 4261; AUTHENTICATED SET-ID/TRANSITION STILL MISSING; FRESH TARGET CAPTURE ACTIVE; B3-A OPEN; NO LIVE TRANSACTION.**
+
+
+## 45.22 — AGENT C — NEXT-BOUNDARY CAPTURE RUNNING — 2026-10-27
+
+The fresh-state run [#40548408573](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573) is now active on commit [`a664937`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/a66493791dc426a4a6a213fd1dc5b9b7a34b84e7). Its `Capture raw historical FRNK candidate over WebSocket` step is waiting for configured target block `2471424` (next 512-block boundary), with the probe's 900-second wait. At launch, the finalized-state artifact [12753497694](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12753497694) observed block `2471377`, set ID `4352`, five authorities; the live storage-proof artifact [12754820488](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12754820488) captured block `2471376` shortly after. These are independent observations one block apart, not the target proof.
+
+No target-bound raw witness artifact has been published yet. Do not start another identical run while this wait is active. If target `2471424` finalizes in time, the subsequent capture step will prefer its cross-route-verified WebSocket payload over the older HTTP witness and query target/parent runtime state immediately. If the wait expires or target/parent state is already pruned, classify the acquisition result and do not claim a finality pass.
+
+**STATUS: INFERRED SET-ID 4261 DIAGNOSTIC ONLY; TARGET 2471424 CAPTURE WAIT ACTIVE; NO TARGET-BOUND WITNESS YET; B3-A OPEN; NO LIVE TRANSACTION.**
