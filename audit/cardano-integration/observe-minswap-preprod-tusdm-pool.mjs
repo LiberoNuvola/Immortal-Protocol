@@ -144,14 +144,22 @@ async function main() {
   const sdkDatum = normalizeHex(pool.datumRaw)
   const ledgerAssets = decodeLedgerAssets(ledger.asset_list, ledger.value)
   const directTUsdmAtomic = BigInt(ledgerAssets[TUSDM_UNIT] ?? '0')
+  const directLovelace = BigInt(ledgerAssets.lovelace ?? '0')
   const sdkTUsdmAtomic = BigInt(pool.value?.find?.((item) => item.unit === TUSDM_UNIT)?.quantity ?? '0')
+  const sdkLovelace = BigInt(pool.value?.find?.((item) => item.unit === ADA_UNIT)?.quantity ?? '0')
   const datumMatches = Boolean(ledgerDatum && sdkDatum && ledgerDatum === sdkDatum)
-  const assetQuantityMatches = directTUsdmAtomic > 0n && sdkTUsdmAtomic > 0n && directTUsdmAtomic === sdkTUsdmAtomic
+  const assetsMatch =
+    directTUsdmAtomic > 0n &&
+    sdkTUsdmAtomic > 0n &&
+    directTUsdmAtomic === sdkTUsdmAtomic &&
+    directLovelace > 0n &&
+    sdkLovelace > 0n &&
+    directLovelace === sdkLovelace
 
   const snapshot = {
     schema: 'MINSWAP-PREPROD-V2-POOL-OBSERVATION-v1',
     network: NETWORK,
-    status: datumMatches && assetQuantityMatches ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
+    status: datumMatches && assetsMatch ? 'OBSERVED_NOT_QUALIFIED' : 'BLOCKED_SDK_LEDGER_WITNESS_MISMATCH',
     qualification: 'OBSERVED_NOT_QUALIFIED',
     candidatePair: { assetA: ADA_UNIT, assetB: TUSDM_UNIT, tokenPolicyId: TOKEN_POLICY, tokenNameHex: TOKEN_NAME_HEX, tokenDecimals: 6 },
     source: {
@@ -181,6 +189,8 @@ async function main() {
         lovelace: ledgerAssets.lovelace,
         tusdmAtomic: directTUsdmAtomic.toString(),
         sdkValueTusdmAtomic: sdkTUsdmAtomic.toString(),
+        sdkValueLovelace: sdkLovelace.toString(),
+        directLovelaceMatchesSdkValue: directLovelace === sdkLovelace,
         assets: ledgerAssets,
         inlineDatumCborHex: ledgerDatum,
       },
@@ -198,7 +208,7 @@ async function main() {
 
   snapshot.evidenceSha256 = sha256(snapshot)
   console.log(JSON.stringify(snapshot, null, 2))
-  if (!datumMatches || !assetQuantityMatches) process.exitCode = 1
+  if (!datumMatches || !assetsMatch) process.exitCode = 1
 }
 
 main().catch((error) => {
