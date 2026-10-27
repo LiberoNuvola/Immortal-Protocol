@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { blake2b } from "../materios-checkpoint/node_modules/@noble/hashes/blake2.js";
+import { verifySequentialHeaderBridge } from "./target-ancestry-bridge.mjs";
 
 const DEFAULTS = {
   chainSpecUrl: "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
@@ -16,8 +17,8 @@ const DEFAULTS = {
   chainId: "materios_preprod_v6",
   genesisHash: "0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf",
   bootNode: "/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM",
-  targetNumber: 1856408,
-  targetHash: "0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e",
+  targetNumber: 2463858,
+  targetHash: "0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9",
   discoveryRpc: "https://materios.fluxpointstudios.com/preprod-rpc",
   candidateOffsets: [0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301],
   blockProbeTimeoutMs: 7000,
@@ -36,6 +37,7 @@ const config = {
   candidateOffsets: (process.env.MATERIOS_CANDIDATE_OFFSETS || DEFAULTS.candidateOffsets.join(","))
     .split(",").map(x => Number(x.trim())).filter(x => Number.isSafeInteger(x) && x >= 0),
   blockProbeTimeoutMs: Number(process.env.MATERIOS_BLOCK_PROBE_TIMEOUT_MS || DEFAULTS.blockProbeTimeoutMs),
+  maxAncestrySpan: Number(process.env.MATERIOS_ANCESTRY_MAX_SPAN || "512"),
   waitSeconds: Number(process.env.SMOLDOT_MAX_WAIT_SECONDS || DEFAULTS.waitSeconds),
   entry: process.env.SMOLDOT_ENTRY,
   out: process.env.SMOLDOT_EVIDENCE_OUT || path.resolve("poc/materios-smoldot/out/smoldot-finality-capture.json"),
@@ -521,6 +523,115 @@ async function scanHistoricalCandidates() {
   }
 }
 
+async function captureTargetAncestryBridge() {
+  const base = {
+    schema_version: "materios-b3-header-ancestry-bridge-v1",
+    status: "ANCESTRY_BRIDGE_UNAVAILABLE",
+    checkpoint: {
+      block_number: config.targetNumber,
+      block_hash: config.targetHash
+    },
+    max_span: config.maxAncestrySpan,
+    source: "Pinned Smoldot light-client RPC; public HTTP is used only for initial discovery, not ancestry headers.",
+    claims: {
+      header_encoding_hashes_verified: false,
+      parent_chain_link_verified: false,
+      grandpa_signature_quorum_verified: false,
+      authority_transition_verified: false,
+      b3_a_closed: false
+    }
+  };
+  if (!Number.isSafeInteger(config.maxAncestrySpan) || config.maxAncestrySpan < 1 || config.maxAncestrySpan > 4096) {
+    return { ...base, reason: "INVALID_MAX_ANCESTRY_SPAN" };
+  }
+  if (!targetProbe.headerHashVerified || !targetProbe.headerJson) {
+    return { ...base, reason: "WITNESS_CHECKPOINT_HEADER_NOT_VERIFIED" };
+  }
+
+  const candidates = captured
+    .filter(item => Number.isSafeInteger(item.targetNumber) &&
+      item.targetNumber >= config.targetNumber &&
+      item.targetNumber - config.targetNumber <= config.maxAncestrySpan)
+    .sort((a, b) => a.targetNumber - b.targetNumber);
+
+  if (candidates.length === 0) {
+    return {
+      ...base,
+      reason: captured.length === 0
+        ? "NO_GRANDPA_JUSTIFICATION_CAPTURED"
+        : "NO_JUSTIFICATION_TARGET_WITHIN_ANCESTRY_SPAN",
+      captured_target_numbers: captured.map(item => item.targetNumber)
+    };
+  }
+
+  const attempts = [];
+  for (const candidate of candidates) {
+    try {
+      const span = candidate.targetNumber - config.targetNumber;
+      const intermediateHeaders = [];
+      for (let blockNumber = config.targetNumber + 1; blockNumber < candidate.targetNumber; blockNumber++) {
+        const returnedHash = String(
+          await rpc("chain_getBlockHash", [blockNumber], config.blockProbeTimeoutMs)
+        ).toLowerCase();
+        if (!/^0x[0-9a-f]{64}$/.test(returnedHash)) {
+          throw new Error("P2P_CHAIN_GET_BLOCK_HASH_INVALID at block " + blockNumber);
+        }
+        const header = await rpc("chain_getHeader", [returnedHash], config.blockProbeTimeoutMs);
+        intermediateHeaders.push({ header, expectedHash: returnedHash });
+      }
+
+      const bridge = verifySequentialHeaderBridge({
+        checkpointHeader: targetProbe.headerJson,
+        checkpointNumber: config.targetNumber,
+        checkpointHash: config.targetHash,
+        intermediateHeaders,
+        proofTargetHeader: candidate.headerJson,
+        proofTargetNumber: candidate.targetNumber,
+        proofTargetHash: candidate.targetHash,
+        maxSpan: config.maxAncestrySpan
+      });
+
+      log("witness-to-justification ancestry link verified: " + config.targetNumber +
+        " -> " + candidate.targetNumber + " (" + span + " parent edges)");
+      return {
+        ...bridge,
+        max_span: config.maxAncestrySpan,
+        source: "Smoldot P2P RPC intermediate headers with locally reconstructed SCALE/Blake2 hashes; justification target header was locally hash-bound to captured GRANDPA bytes.",
+        selected_justification: {
+          target_block_number: candidate.targetNumber,
+          target_block_hash: candidate.targetHash,
+          round: candidate.round,
+          justification_bytes: candidate.justificationBytes,
+          justification_sha256: candidate.justificationSha256,
+          source: candidate.source
+        },
+        claims: {
+          header_encoding_hashes_verified: true,
+          parent_chain_link_verified: true,
+          grandpa_signature_quorum_verified: false,
+          authority_transition_verified: false,
+          b3_a_closed: false
+        },
+        attempts
+      };
+    } catch (error) {
+      const item = {
+        proof_target_number: candidate.targetNumber,
+        proof_target_hash: candidate.targetHash,
+        error: error instanceof Error ? error.message : String(error)
+      };
+      attempts.push(item);
+      log("ancestry bridge candidate failed: " + JSON.stringify(item));
+    }
+  }
+
+  return {
+    ...base,
+    reason: "NO_CANDIDATE_ANCESTRY_BRIDGE_VERIFIED",
+    attempts
+  };
+}
+
 async function main() {
   let spec;
   const finalErrors = [];
@@ -596,6 +707,9 @@ async function main() {
       await waitForProofSignal(3000);
     }
     const targetProof = captured.find(item => item.targetHash === config.targetHash) || null;
+    const targetAncestryBridge = await captureTargetAncestryBridge();
+    log("target ancestry bridge status: " + String(targetAncestryBridge.status) +
+      (targetAncestryBridge.reason ? " (" + targetAncestryBridge.reason + ")" : ""));
     const syncLogAssessment = assessSyncLogObservations(syncLogObservations);
     log("Smoldot sync-log assessment: " + JSON.stringify(syncLogAssessment));
     const evidence = {
@@ -633,6 +747,7 @@ async function main() {
         sync_log_assessment: syncLogAssessment,
       },
       target_probe: targetProbe,
+      target_ancestry_bridge: targetAncestryBridge,
       candidate_block_probes: candidateBlockProbes,
       candidate_scan: {
         offsets: [...new Set(config.candidateOffsets)].sort((a, b) => a - b),
@@ -646,6 +761,7 @@ async function main() {
         p2p_light_client_reports_expected_genesis: observedGenesis === config.genesisHash,
         header_hash_reconstructed_and_verified_for_each_captured_justification: captured.length > 0 && captured.every(item => item.headerHashVerified),
         historical_target_justification_captured: Boolean(targetProof),
+        witness_header_ancestry_link_verified: targetAncestryBridge.status === "ANCESTRY_LINK_VERIFIED",
         grandpa_signatures_verified_by_immortal: false,
         authenticated_authority_transition_verified_by_immortal: false,
         materios_native_execution_proof_captured: false,
@@ -693,6 +809,7 @@ async function main() {
         candidateOffsets: config.candidateOffsets,
         targetNumber: config.targetNumber,
         targetHash: config.targetHash,
+        maxAncestrySpan: config.maxAncestrySpan,
         smoldotCommit: config.smoldotCommit,
       },
       captured_justifications: captured,

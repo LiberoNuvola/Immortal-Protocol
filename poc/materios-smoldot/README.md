@@ -15,6 +15,7 @@ This probe tests a source-agnostic path that does not require a Materios validat
 7. Records Smoldot's own native GRANDPA warp-sync log observations, including status, timestamp and reported block number. It deliberately does **not** call the legacy `system_health` RPC: run #8 showed that calls timing out and subsequent `chain_getBlock` requests timing out in the same process.
 8. Derives a bounded `sync_log_assessment` such as `WARP_SYNC_STALLED_AT_FIXED_BLOCK` or `WARP_SYNC_ADVANCEMENT_OBSERVED`. It reports the observed block range and elapsed sample span. This is local diagnostic classification only; it cannot identify the underlying peer cause or make a finality claim.
 9. Reconstructs a proof target header's SCALE bytes and checks Blake2-256(header) against the justification's target hash. It writes a JSON acquisition artifact without calling the proof canonical or verified by IMMORTAL.
+10. When a descendant justification target is captured within the configured span, obtains the intervening headers from the pinned Smoldot RPC and verifies every header hash, block number and parent-hash edge from the exact storage-proof witness block to the justification target. The raw SCALE headers are preserved in the artifact for independent verification.
 
 ## Why this is the right boundary
 
@@ -33,7 +34,7 @@ A successful workflow means only that the P2P light-client path delivered at lea
 - that VerifiedAuthoritySetTransition was crossed;
 - that B3-A is closed.
 
-A live proof for a different block is useful proof-transport evidence, but is not a substitute for the exact historical transition witness. The target activation block has no GRANDPA digest of its own, so nearby descendant commit targets are probed; if a descendant justification is found, a sequential ancestry bridge back to the activation block is still required.
+A live proof for a different block is useful proof-transport evidence, but is not a substitute for the exact historical transition witness. The target activation block has no GRANDPA digest of its own, so nearby descendant commit targets are probed. The acquisition script attempts a bounded, exact, sequential header bridge back to the storage-proof checkpoint; every header hash and parent edge is checked locally. This bridge links the blocks structurally but does not independently verify justification signatures/quorum or the authority-set transition.
 
 ## Reproducibility
 
