@@ -1,0 +1,53 @@
+name: Minswap Mainnet Moneta USDM Pool Read-Only Observation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/observe-minswap-mainnet-moneta-usdm.mjs"
+      - ".github/workflows/minswap-mainnet-moneta-usdm-observation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  observe-mainnet-pool:
+    name: Observe exact ADA / Moneta Mainnet USDM pools
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      KOIOS_MAINNET_URL: ${{ vars.KOIOS_MAINNET_URL || 'https://api.koios.rest/api/v1' }}
+    steps:
+      - name: Checkout branch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Configure JSR registry required by Minswap SDK
+        run: printf '%s\n' '@jsr:registry=https://npm.jsr.io' >> "$HOME/.npmrc"
+
+      - name: Install isolated read-only observation dependency
+        run: npm install --prefix audit/cardano-integration --no-audit --no-fund @minswap/sdk@0.5.0
+
+      - name: Query exact Moneta Mainnet USDM pools through public Koios and recheck canonical out-references
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit/mainnet-evidence
+          node --experimental-wasm-modules audit/cardano-integration/observe-minswap-mainnet-moneta-usdm.mjs | tee audit/mainnet-evidence/minswap-mainnet-moneta-usdm-observation.json
+
+      - name: Upload read-only Mainnet observation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minswap-mainnet-moneta-usdm-observation-${{ github.sha }}
+          path: audit/mainnet-evidence/minswap-mainnet-moneta-usdm-observation.json
+          if-no-files-found: warn
+          retention-days: 30
