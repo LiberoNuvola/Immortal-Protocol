@@ -24,7 +24,7 @@ const V2_POOL_SCRIPT_HASH = V2_CONFIG.poolScriptHash.toLowerCase()
 const V2_AUTH_UNIT = V2_CONFIG.poolAuthenAsset.toLowerCase()
 const V2_AUTH_POLICY = V2_AUTH_UNIT.slice(0, 56)
 const V2_AUTH_NAME = V2_AUTH_UNIT.slice(56)
-const PAGE_SIZE = 500
+const PAGE_SIZE = 100
 const MAX_UTXOS = 25000
 
 function bech32ScriptHashToHex(value) {
@@ -86,21 +86,62 @@ function tipSummary(tip) {
   }
 }
 
+async function koiosRequest(path, init = {}) {
+  const label = 'KOIOS_' + path.split('?')[0].replace(/^\\//, '').toUpperCase()
+  let lastError
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(KOIOS + path, {
+        ...init,
+        headers: { accept: 'application/json', ...(init.headers ?? {}) },
+        signal: AbortSignal.timeout(45000),
+      })
+      const body = await response.text()
+      if (response.ok) {
+        try {
+          return JSON.parse(body)
+        } catch {
+          throw new Error(label + '_JSON_INVALID')
+        }
+      }
+      const retryable = [429, 500, 502, 503, 504].includes(response.status)
+      lastError = new Error(label + '_HTTP_' + response.status + ':' + body.slice(0, 180))
+      if (!retryable || attempt === 3) throw lastError
+    } catch (error) {
+      lastError = error
+      if (attempt === 3) throw lastError
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000 * (2 ** attempt)))
+  }
+  throw lastError ?? new Error(label + '_REQUEST_FAILED')
+}
+
 async function koiosGet(path) {
-  const response = await fetch(KOIOS + path, { headers: { accept: 'application/json' } })
-  if (!response.ok) throw new Error('KOIOS_' + path.replace(/^\//, '').toUpperCase() + '_HTTP_' + response.status)
-  return response.json()
+  return koiosRequest(path)
 }
 
 async function koiosPost(path, body) {
-  const response = await fetch(KOIOS + path, {
+  return koiosRequest(path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const text = await response.text()
-  if (!response.ok) throw new Error('KOIOS_' + path.split('?')[0].replace(/^\//, '').toUpperCase() + '_HTTP_' + response.status + ':' + text.slice(0, 250))
-  return JSON.parse(text)
+}
+
+async function queryScriptUtxos(scriptHash) {
+  if (!/^[0-9a-f]{56}$/.test(scriptHash)) throw new Error('KOIOS_MAINNET_SCRIPT_HASH_INVALID')
+  const rows = await koiosGet('/script_utxos?_script_hash=' + scriptHash + '&_extended=true')
+  if (!Array.isArray(rows)) throw new Error('KOIOS_MAINNET_SCRIPT_UTXOS_NOT_ARRAY')
+  const seen = new Set()
+  for (const row of rows) {
+    const ref = refOf(row)
+    validateRef(ref)
+    const key = ref.txHash + '#' + ref.index
+    if (seen.has(key)) throw new Error('KOIOS_MAINNET_DUPLICATE_SCRIPT_OUTREF')
+    seen.add(key)
+  }
+  if (rows.length > MAX_UTXOS) throw new Error('KOIOS_MAINNET_V1_SCRIPT_SCAN_EXCEEDS_BOUND')
+  return rows
 }
 
 function decodeAssets(assetList = [], lovelace) {
@@ -279,7 +320,13 @@ async function main() {
   const rawTipBefore = await koiosGet('/tip')
   const tipBefore = tipSummary(Array.isArray(rawTipBefore) ? rawTipBefore[0] : rawTipBefore)
 
-  const usdmRows = await queryAssetUtxos(USDM_POLICY, USDM_NAME)
+  // Discover V1 pools from the known Minswap V1 script first, then filter by exact Moneta USDM unit.
+  // This avoids scanning every global USDM-holder UTxO before identifying its pool-script credential.
+  const allV1ScriptRows = await queryScriptUtxos(V1_POOL_SCRIPT_HASH)
+  const usdmRows = allV1ScriptRows.filter((row) => {
+    const assets = decodeAssets(row.asset_list, row.value)
+    return BigInt(assets[MONETA_USDM_UNIT] ?? '0') > 0n
+  })
   const v1Rows = usdmRows.filter((row) => String(row.payment_cred ?? '').toLowerCase() === V1_POOL_SCRIPT_HASH)
   const v1Pools = []
   let v1Rejected = 0
@@ -348,7 +395,7 @@ async function main() {
       provider: 'Koios Mainnet public API',
       readOnly: true,
       maxAssetUtxoScanRows: MAX_UTXOS,
-      v1: { scannedExactUsdmUtxos: usdmRows.length, poolScriptHash: V1_POOL_SCRIPT_HASH, poolCredentialRows: v1Rows.length, parseRejects: v1Rejected, exactAdaUsdmCandidates: v1Pools.length },
+      v1: { scannedV1ScriptUtxos: allV1ScriptRows.length, scannedExactUsdmPoolUtxos: usdmRows.length, poolScriptHash: V1_POOL_SCRIPT_HASH, poolCredentialRows: v1Rows.length, parseRejects: v1Rejected, exactAdaUsdmCandidates: v1Pools.length },
       v2: { authAsset: V2_AUTH_UNIT, poolScriptHash: V2_POOL_SCRIPT_HASH, scannedPoolAuthUtxos: v2Rows.length, poolCredentialRows: v2CredentialRows.length, parseRejects: v2Rejected, exactAdaUsdmCandidates: v2Pools.length },
       stableSwap: { configuredPools: stableConfigs.length, livePoolObservationsWithMonetaUsdm: stableObservations, configuredPoolsContainingMonetaUsdm: stableConfigsWithMoneta.length, exactAdaUsdmConfigPairs: exactStableAdaUsdmConfigs.length },
       mainnetMonetaIdentityUsed: true,
