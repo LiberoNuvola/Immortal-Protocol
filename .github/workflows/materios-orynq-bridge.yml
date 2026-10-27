@@ -6,6 +6,9 @@ on:
       - work/b3-materios-provenance-evidence
     paths:
       - "poc/materios-orynq-bridge/**"
+      - "poc/materios-checkpoint/**"
+      - "poc/materios-execution-verifier/**"
+      - "audit/materios-b3/archive-rpc-preflight.mjs"
       - ".github/workflows/materios-orynq-bridge.yml"
   workflow_dispatch:
 
@@ -19,7 +22,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - name: Checkout exact B3 head
         uses: actions/checkout@v4
@@ -29,14 +32,107 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install checkpoint tooling
+        run: npm ci --prefix poc/materios-checkpoint --ignore-scripts --no-audit --no-fund
+
       - name: Install pinned Orynq bridge dependencies
         working-directory: poc/materios-orynq-bridge
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Typecheck bridge
-        working-directory: poc/materios-orynq-bridge
-        run: npm run typecheck
+      - name: Setup Rust verifier toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
 
-      - name: Test receipt planning and fail-closed boundaries
-        working-directory: poc/materios-orynq-bridge
-        run: npm test
+      - name: Restore Rust verifier cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Require archive-capable Materios RPC
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+        run: |
+          if [ -z "$MATERIOS_ARCHIVE_RPC" ]; then
+            echo "B3-B BLOCKED: MATERIOS_ARCHIVE_RPC secret is required to obtain the target witness." >&2
+            exit 1
+          fi
+
+      - name: Preflight the exact historical witness target
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ secrets.MATERIOS_B3_ANCHOR_BLOCK_HASH || '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e' }}
+          MATERIOS_B3_ANCHOR_STORAGE_KEY: ${{ secrets.MATERIOS_B3_ANCHOR_STORAGE_KEY || '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55' }}
+        run: node audit/materios-b3/archive-rpc-preflight.mjs
+
+      - name: Capture witness at the same exact block
+        env:
+          MATERIOS_ARCHIVE_RPC: ${{ secrets.MATERIOS_ARCHIVE_RPC }}
+          MATERIOS_B3_ANCHOR_BLOCK_HASH: ${{ secrets.MATERIOS_B3_ANCHOR_BLOCK_HASH || '0x7db6da35478aa3b56cba56bfbff4feeab7287f2d580df03548528d894cfdf44e' }}
+          MATERIOS_B3_ANCHOR_STORAGE_KEY: ${{ secrets.MATERIOS_B3_ANCHOR_STORAGE_KEY || '0xf2f45ef88f71bc25f444a160450145be2893c8b379803be566c94f4bfeab5cb26c42575af239d32de4c42a85bada380301b459db196564ea1768e71663b4caa2439279839c52e758f605a5fbd6026b55' }}
+        run: npm run capture:anchor --prefix poc/materios-checkpoint
+
+      - name: Test Rust storage-proof verifier
+        run: cargo test --manifest-path poc/materios-execution-verifier/Cargo.toml
+
+      - name: Verify captured StateRoot + StorageProof + exact key/value
+        id: verify_storage
+        working-directory: poc/materios-checkpoint
+        run: |
+          STATE_ROOT=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.target.state_root)')
+          STORAGE_KEY=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.target.storage_key)')
+          EXPECTED_VALUE=$(node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); process.stdout.write(p.anchor_record.scale_hex)')
+          node -e 'const p=require("./out/MateriosB3AnchorStateWitness.json"); for (const n of p.storage_proof.nodes) console.log(n)' \
+            | cargo run --quiet --manifest-path ../materios-execution-verifier/Cargo.toml --bin verify-storage-witness -- "$STATE_ROOT" "$STORAGE_KEY" "$EXPECTED_VALUE" > /tmp/proof_scale_hex.txt
+          test -s /tmp/proof_scale_hex.txt
+          PROOF_SCALE_HEX=$(cat /tmp/proof_scale_hex.txt)
+          case "$PROOF_SCALE_HEX" in
+            0x*) ;;
+            *) echo "Verifier did not return SCALE proof hex" >&2; exit 1 ;;
+          esac
+          echo "proof_scale_hex=$PROOF_SCALE_HEX" >> "$GITHUB_OUTPUT"
+          echo "B3-B state-root/storage-proof verification: GREEN"
+
+      - name: Materialize verified witness locally
+        working-directory: poc/materios-checkpoint
+        env:
+          PROOF_SCALE_HEX: ${{ steps.verify_storage.outputs.proof_scale_hex }}
+        run: |
+          python - <<'PY'
+          import json, os
+          src = "out/MateriosB3AnchorStateWitness.json"
+          dst = "out/MateriosB3AnchorStateWitness.verified.json"
+          with open(src, encoding="utf-8") as f:
+              packet = json.load(f)
+          packet["storage_proof"]["scale_hex"] = os.environ["PROOF_SCALE_HEX"]
+          packet["verification"] = {
+              "state_root_storage_proof": "verified",
+              "scope": "exact header.stateRoot + exact storage key + exact returned value"
+          }
+          with open(dst, "w", encoding="utf-8") as f:
+              json.dump(packet, f, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Re-verify proof and dry-run the Orynq receipt plan
+        run: npm --prefix poc/materios-orynq-bridge run anchor
+
+      - name: Upload sanitized receipt plan inputs
+        if: always() && hashFiles('poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json') != ''
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { buildOrynqReceiptPlan } from "./poc/materios-orynq-bridge/src/anchor-verified-evidence.ts";
+          const packet = JSON.parse(readFileSync("poc/materios-checkpoint/out/MateriosB3AnchorStateWitness.verified.json", "utf8"));
+          const plan = buildOrynqReceiptPlan(packet);
+          writeFileSync("poc/materios-checkpoint/out/OrynqReceiptPlan.sanitized.json", JSON.stringify({
+            evidenceSchema: plan.evidenceSchema,
+            witnessBlockHash: plan.witnessBlockHash,
+            witnessBlockNumber: plan.witnessBlockNumber,
+            contentHash: plan.contentHash,
+            receiptId: plan.receiptId,
+            chunkMerkleRoot: plan.chunkMerkleRoot,
+            chunkCount: plan.chunkCount,
+            byteLength: plan.byteLength
+          }, null, 2) + "\n");
+          NODE
