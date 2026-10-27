@@ -26,6 +26,16 @@ data Vector = Vector
   , vectorStatus :: Maybe String
   , vectorCarAmount :: Maybe Integer
   , vectorOtherProtectedCapital :: Maybe Integer
+  , vectorDecomposition :: Maybe Decomposition
+  }
+
+data Decomposition = Decomposition
+  { decompositionCrystallizedLiabilities :: Integer
+  , decompositionWorstCaseExposure :: Integer
+  , decompositionSafetyCapital :: Integer
+  , decompositionReserveProtection :: Integer
+  , decompositionMandatoryFutureCosts :: Integer
+  , decompositionAdditionalProtectedCapital :: Integer
   }
 
 data Expected = Expected
@@ -48,6 +58,17 @@ instance FromJSON Vector where
       <*> o .:? "status"
       <*> o .:? "carAmount"
       <*> o .:? "otherProtectedCapital"
+      <*> o .:? "decomposition"
+
+instance FromJSON Decomposition where
+  parseJSON = withObject "Decomposition" $ \o ->
+    Decomposition
+      <$> o .: "crystallizedLiabilities"
+      <*> o .: "worstCaseExposure"
+      <*> o .: "safetyCapital"
+      <*> o .: "reserveProtection"
+      <*> o .: "mandatoryFutureCosts"
+      <*> o .: "additionalProtectedCapital"
 
 instance FromJSON Expected where
   parseJSON = withObject "Expected" $ \o ->
@@ -56,9 +77,20 @@ instance FromJSON Expected where
       <*> o .:? "rawSurplus"
       <*> o .:? "solvency"
 
-stateFor :: Integer -> UniversalEconomicState
-stateFor pc =
-  UniversalEconomicState 0 0 0 0 0 0 0 pc
+stateFor :: Integer -> Maybe Decomposition -> UniversalEconomicState
+stateFor pc decomposition =
+  case decomposition of
+    Nothing -> UniversalEconomicState 0 0 0 0 0 0 0 pc
+    Just d ->
+      UniversalEconomicState
+        (decompositionCrystallizedLiabilities d)
+        0
+        0
+        (decompositionWorstCaseExposure d)
+        (decompositionSafetyCapital d)
+        (decompositionReserveProtection d)
+        (decompositionMandatoryFutureCosts d)
+        (decompositionAdditionalProtectedCapital d)
 
 main :: IO ()
 main = do
@@ -125,12 +157,13 @@ emit v =
               ++ "|protectedCapital=" ++ show pc
               ++ "|rawSurplus=" ++ show surplus
           )
-      (_, Just eev, Just pc, Just expected, _, _) -> do
-        let state = stateFor pc
+      (_, Just eev, Just declaredPc, Just expected, _, _) -> do
+        let state = stateFor declaredPc (vectorDecomposition v)
             actualPc = protectedCapital state
             actualSurplus = rawSurplus eev state
             actualSolvency = solvencyInvariant eev state
-        checkExpected (vectorId v ++ ".protectedCapital") (expectedProtectedCapital expected) actualPc
+        checkExpected (vectorId v ++ ".declaredProtectedCapital") (Just declaredPc) actualPc
+        checkExpected (vectorId v ++ ".expectedProtectedCapital") (expectedProtectedCapital expected) actualPc
         checkExpected (vectorId v ++ ".rawSurplus") (expectedRawSurplus expected) actualSurplus
         checkExpected (vectorId v ++ ".solvency") (expectedSolvency expected) actualSolvency
         putStrLn
