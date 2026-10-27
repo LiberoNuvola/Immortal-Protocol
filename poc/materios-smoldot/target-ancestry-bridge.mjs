@@ -2,6 +2,46 @@ import { blake2b } from "../materios-checkpoint/node_modules/@noble/hashes/blake
 
 const U32_MAX = 0xffffffffn;
 const HASH_RE = /^0x[0-9a-f]{64}$/i;
+const MAX_CANDIDATE_OFFSET = 4096;
+
+/**
+ * Add probes immediately around the next expected periodic GRANDPA
+ * justification block. Materios' pinned full-node service uses a 512-block
+ * justification period; this only guides acquisition and does not assert
+ * that any particular block actually has a justification.
+ */
+export function withJustificationPeriodOffsets(
+  targetBlockNumber,
+  configuredOffsets,
+  period = 512,
+  radius = 1
+) {
+  if (!Number.isSafeInteger(targetBlockNumber) || targetBlockNumber < 0 || targetBlockNumber > Number(U32_MAX)) {
+    throw new Error("TARGET_BLOCK_NUMBER_INVALID");
+  }
+  if (!Array.isArray(configuredOffsets)) throw new Error("CANDIDATE_OFFSETS_INVALID");
+  if (!Number.isSafeInteger(period) || period < 1 || period > MAX_CANDIDATE_OFFSET) {
+    throw new Error("JUSTIFICATION_PERIOD_INVALID");
+  }
+  if (!Number.isSafeInteger(radius) || radius < 0 || radius > 8) {
+    throw new Error("JUSTIFICATION_PERIOD_RADIUS_INVALID");
+  }
+
+  const offsets = new Set();
+  for (const offset of configuredOffsets) {
+    if (!Number.isSafeInteger(offset) || offset < 0 || offset > MAX_CANDIDATE_OFFSET) {
+      throw new Error("CANDIDATE_OFFSET_OUT_OF_RANGE");
+    }
+    offsets.add(offset);
+  }
+
+  const nextBoundary = (Math.floor(targetBlockNumber / period) + 1) * period;
+  for (let blockNumber = nextBoundary - radius; blockNumber <= nextBoundary + radius; blockNumber++) {
+    const offset = blockNumber - targetBlockNumber;
+    if (offset >= 0 && offset <= MAX_CANDIDATE_OFFSET) offsets.add(offset);
+  }
+  return [...offsets].sort((a, b) => a - b);
+}
 
 function normalizeHash(value, field) {
   if (typeof value !== "string" || !HASH_RE.test(value)) {

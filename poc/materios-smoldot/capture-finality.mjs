@@ -9,7 +9,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { blake2b } from "../materios-checkpoint/node_modules/@noble/hashes/blake2.js";
-import { verifySequentialHeaderBridge } from "./target-ancestry-bridge.mjs";
+import {
+  hashMateriosHeader,
+  verifySequentialHeaderBridge,
+  withJustificationPeriodOffsets
+} from "./target-ancestry-bridge.mjs";
 
 const DEFAULTS = {
   chainSpecUrl: "https://materios.fluxpointstudios.com/releases/chain-spec-v6-raw.json",
@@ -19,6 +23,8 @@ const DEFAULTS = {
   bootNode: "/dns4/bootnode.materios.fluxpointstudios.com/tcp/30333/p2p/12D3KooWPueKoxRAirTTKH4Y2qQAsJDegWMjS4k89Z7izCbZKgkM",
   targetNumber: 2463858,
   targetHash: "0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9",
+  targetStateRoot: "0x89c3bdfd6d05b091a45bde277d268b5603c264d40f1ee6aa67f02ae674fd20fe",
+  grandpaJustificationPeriod: 512,
   discoveryRpc: "https://materios.fluxpointstudios.com/preprod-rpc",
   candidateOffsets: [0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301],
   blockProbeTimeoutMs: 7000,
@@ -33,6 +39,8 @@ const config = {
   bootNode: process.env.MATERIOS_BOOTNODE || DEFAULTS.bootNode,
   targetNumber: Number(process.env.MATERIOS_TARGET_BLOCK_NUMBER || DEFAULTS.targetNumber),
   targetHash: (process.env.MATERIOS_TARGET_BLOCK_HASH || DEFAULTS.targetHash).toLowerCase(),
+  targetStateRoot: (process.env.MATERIOS_TARGET_STATE_ROOT || DEFAULTS.targetStateRoot).toLowerCase(),
+  grandpaJustificationPeriod: Number(process.env.MATERIOS_GRANDPA_JUSTIFICATION_PERIOD || DEFAULTS.grandpaJustificationPeriod),
   discoveryRpc: process.env.MATERIOS_DISCOVERY_RPC || DEFAULTS.discoveryRpc,
   candidateOffsets: (process.env.MATERIOS_CANDIDATE_OFFSETS || DEFAULTS.candidateOffsets.join(","))
     .split(",").map(x => Number(x.trim())).filter(x => Number.isSafeInteger(x) && x >= 0),
@@ -43,6 +51,16 @@ const config = {
   out: process.env.SMOLDOT_EVIDENCE_OUT || path.resolve("poc/materios-smoldot/out/smoldot-finality-capture.json"),
   smoldotCommit: process.env.SMOLDOT_COMMIT || "c898452405be712c6037ad956464b3fe9f9907f4",
 };
+const configuredCandidateOffsets = [...config.candidateOffsets];
+config.candidateOffsets = withJustificationPeriodOffsets(
+  config.targetNumber,
+  configuredCandidateOffsets,
+  config.grandpaJustificationPeriod,
+  1
+);
+const periodAlignedCandidateOffsets = config.candidateOffsets.filter(
+  offset => !configuredCandidateOffsets.includes(offset)
+);
 
 const startedAt = new Date().toISOString();
 const logTail = [];
@@ -529,11 +547,14 @@ async function captureTargetAncestryBridge() {
     status: "ANCESTRY_BRIDGE_UNAVAILABLE",
     checkpoint: {
       block_number: config.targetNumber,
-      block_hash: config.targetHash
+      block_hash: config.targetHash,
+      expected_state_root: config.targetStateRoot
     },
     max_span: config.maxAncestrySpan,
-    source: "Pinned Smoldot light-client RPC; public HTTP is used only for initial discovery, not ancestry headers.",
+    source: "Headers may be transported by the public HTTP RPC, which is explicitly untrusted. Every header is reconstructed as canonical SCALE and Blake2-256 bound to the child parent hash; the chain is then checked from the exact witness checkpoint to the locally hash-bound GRANDPA justification target.",
     claims: {
+      checkpoint_header_hash_verified: false,
+      checkpoint_state_root_matches_witness: false,
       header_encoding_hashes_verified: false,
       parent_chain_link_verified: false,
       grandpa_signature_quorum_verified: false,
@@ -544,8 +565,43 @@ async function captureTargetAncestryBridge() {
   if (!Number.isSafeInteger(config.maxAncestrySpan) || config.maxAncestrySpan < 1 || config.maxAncestrySpan > 4096) {
     return { ...base, reason: "INVALID_MAX_ANCESTRY_SPAN" };
   }
-  if (!targetProbe.headerHashVerified || !targetProbe.headerJson) {
-    return { ...base, reason: "WITNESS_CHECKPOINT_HEADER_NOT_VERIFIED" };
+  if (!/^0x[0-9a-f]{64}$/.test(config.targetStateRoot)) {
+    return { ...base, reason: "EXPECTED_WITNESS_STATE_ROOT_INVALID" };
+  }
+
+  const attempts = [];
+  let checkpointHeader = targetProbe.headerHashVerified ? targetProbe.headerJson : null;
+  let checkpointHeaderSource = checkpointHeader
+    ? "Smoldot P2P block response; SCALE/Blake2 hash recomputed locally"
+    : "untrusted public HTTP JSON-RPC header response; SCALE/Blake2 hash recomputed locally";
+
+  try {
+    if (!checkpointHeader) {
+      checkpointHeader = await discoveryRpc(
+        "chain_getHeader",
+        [config.targetHash],
+        config.blockProbeTimeoutMs * 2
+      );
+    }
+    const observedCheckpointNumber = parseHeaderNumber(checkpointHeader);
+    const observedCheckpointHash = hashMateriosHeader(checkpointHeader).toLowerCase();
+    const observedCheckpointStateRoot = String(checkpointHeader.stateRoot || "").toLowerCase();
+    if (observedCheckpointNumber !== config.targetNumber) {
+      throw new Error("CHECKPOINT_HEADER_NUMBER_MISMATCH expected=" + config.targetNumber + " observed=" + observedCheckpointNumber);
+    }
+    if (observedCheckpointHash !== config.targetHash) {
+      throw new Error("CHECKPOINT_HEADER_HASH_MISMATCH expected=" + config.targetHash + " observed=" + observedCheckpointHash);
+    }
+    if (observedCheckpointStateRoot !== config.targetStateRoot) {
+      throw new Error("CHECKPOINT_STATE_ROOT_MISMATCH expected=" + config.targetStateRoot + " observed=" + observedCheckpointStateRoot);
+    }
+  } catch (error) {
+    return {
+      ...base,
+      reason: "CHECKPOINT_HEADER_NOT_HASH_BOUND_TO_WITNESS",
+      checkpoint_header_source: checkpointHeaderSource,
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 
   const candidates = captured
@@ -560,28 +616,61 @@ async function captureTargetAncestryBridge() {
       reason: captured.length === 0
         ? "NO_GRANDPA_JUSTIFICATION_CAPTURED"
         : "NO_JUSTIFICATION_TARGET_WITHIN_ANCESTRY_SPAN",
+      checkpoint_header_source: checkpointHeaderSource,
+      checkpoint_header_hash_verified: true,
+      checkpoint_state_root_matches_witness: true,
       captured_target_numbers: captured.map(item => item.targetNumber)
     };
   }
 
-  const attempts = [];
   for (const candidate of candidates) {
     try {
       const span = candidate.targetNumber - config.targetNumber;
-      const intermediateHeaders = [];
-      for (let blockNumber = config.targetNumber + 1; blockNumber < candidate.targetNumber; blockNumber++) {
-        const returnedHash = String(
-          await rpc("chain_getBlockHash", [blockNumber], config.blockProbeTimeoutMs)
-        ).toLowerCase();
-        if (!/^0x[0-9a-f]{64}$/.test(returnedHash)) {
-          throw new Error("P2P_CHAIN_GET_BLOCK_HASH_INVALID at block " + blockNumber);
-        }
-        const header = await rpc("chain_getHeader", [returnedHash], config.blockProbeTimeoutMs);
-        intermediateHeaders.push({ header, expectedHash: returnedHash });
+      if (!candidate.headerJson) throw new Error("JUSTIFICATION_TARGET_HEADER_MISSING");
+      if (parseHeaderNumber(candidate.headerJson) !== candidate.targetNumber) {
+        throw new Error("JUSTIFICATION_TARGET_HEADER_NUMBER_MISMATCH");
+      }
+      if (hashMateriosHeader(candidate.headerJson).toLowerCase() !== candidate.targetHash.toLowerCase()) {
+        throw new Error("JUSTIFICATION_TARGET_HEADER_HASH_MISMATCH");
       }
 
+      // Walk backwards from the hash-bound justification target. Each next
+      // lookup is addressed by the child's parentHash, not by a trusted height
+      // lookup, and every response is then re-hashed before use.
+      const reversedIntermediateHeaders = [];
+      let childHeader = candidate.headerJson;
+      const headerDeadline = Date.now() + 180_000;
+      for (let blockNumber = candidate.targetNumber - 1; blockNumber > config.targetNumber; blockNumber--) {
+        if (Date.now() >= headerDeadline) throw new Error("ANCESTRY_HEADER_FETCH_DEADLINE_EXCEEDED");
+        const parentHash = String(childHeader.parentHash || "").toLowerCase();
+        if (!/^0x[0-9a-f]{64}$/.test(parentHash)) {
+          throw new Error("ANCESTRY_PARENT_HASH_MALFORMED at block " + (blockNumber + 1));
+        }
+        const remainingMs = headerDeadline - Date.now();
+        const header = await discoveryRpc(
+          "chain_getHeader",
+          [parentHash],
+          Math.min(5000, Math.max(1, remainingMs))
+        );
+        const observedNumber = parseHeaderNumber(header);
+        const observedHash = hashMateriosHeader(header).toLowerCase();
+        if (observedNumber !== blockNumber) {
+          throw new Error("ANCESTRY_HEADER_NUMBER_MISMATCH expected=" + blockNumber + " observed=" + observedNumber);
+        }
+        if (observedHash !== parentHash) {
+          throw new Error("ANCESTRY_HEADER_HASH_MISMATCH at block " + blockNumber);
+        }
+        reversedIntermediateHeaders.push({
+          header,
+          expectedHash: parentHash,
+          source: "untrusted HTTP header fetched by the child's parentHash and locally hash-bound"
+        });
+        childHeader = header;
+      }
+      const intermediateHeaders = reversedIntermediateHeaders.reverse();
+
       const bridge = verifySequentialHeaderBridge({
-        checkpointHeader: targetProbe.headerJson,
+        checkpointHeader,
         checkpointNumber: config.targetNumber,
         checkpointHash: config.targetHash,
         intermediateHeaders,
@@ -596,7 +685,8 @@ async function captureTargetAncestryBridge() {
       return {
         ...bridge,
         max_span: config.maxAncestrySpan,
-        source: "Smoldot P2P RPC intermediate headers with locally reconstructed SCALE/Blake2 hashes; justification target header was locally hash-bound to captured GRANDPA bytes.",
+        checkpoint_header_source: checkpointHeaderSource,
+        source: "The checkpoint header is hash-bound to the exact Rust-verified witness hash and stateRoot. Intermediate headers are fetched from an untrusted public HTTP endpoint by each child's parentHash; all header SCALE encodings, Blake2-256 hashes, block numbers and parent links are verified locally. The justification target header is independently hash-bound to the captured GRANDPA target hash.",
         selected_justification: {
           target_block_number: candidate.targetNumber,
           target_block_hash: candidate.targetHash,
@@ -606,6 +696,8 @@ async function captureTargetAncestryBridge() {
           source: candidate.source
         },
         claims: {
+          checkpoint_header_hash_verified: true,
+          checkpoint_state_root_matches_witness: true,
           header_encoding_hashes_verified: true,
           parent_chain_link_verified: true,
           grandpa_signature_quorum_verified: false,
@@ -627,6 +719,9 @@ async function captureTargetAncestryBridge() {
 
   return {
     ...base,
+    checkpoint_header_source: checkpointHeaderSource,
+    checkpoint_header_hash_verified: true,
+    checkpoint_state_root_matches_witness: true,
     reason: "NO_CANDIDATE_ANCESTRY_BRIDGE_VERIFIED",
     attempts
   };
@@ -699,6 +794,9 @@ async function main() {
       log("HTTP RPC reported finalized head unavailable: " + (error instanceof Error ? error.message : String(error)));
     }
 
+    log("periodic GRANDPA justification probes: period=" + config.grandpaJustificationPeriod +
+      " configuredOffsets=" + configuredCandidateOffsets.join(",") +
+      " addedOffsets=" + periodAlignedCandidateOffsets.join(","));
     scanDeadline = Date.now() + config.waitSeconds * 1000;
     await scanHistoricalCandidates();
     while (Date.now() < scanDeadline && captured.length === 0) {
@@ -751,6 +849,9 @@ async function main() {
       candidate_block_probes: candidateBlockProbes,
       candidate_scan: {
         offsets: [...new Set(config.candidateOffsets)].sort((a, b) => a - b),
+        configured_offsets: configuredCandidateOffsets,
+        grandpa_justification_period: config.grandpaJustificationPeriod,
+        period_aligned_added_offsets: periodAlignedCandidateOffsets,
         discovery_rpc: config.discoveryRpc,
         trust_scope: "HTTP RPC supplied candidate hashes/headers only. Each returned block header hash and each GRANDPA justification target are checked locally; discovery data does not confer finality.",
       },
@@ -809,6 +910,9 @@ async function main() {
         candidateOffsets: config.candidateOffsets,
         targetNumber: config.targetNumber,
         targetHash: config.targetHash,
+        targetStateRoot: config.targetStateRoot,
+        grandpaJustificationPeriod: config.grandpaJustificationPeriod,
+        candidateOffsets: config.candidateOffsets,
         maxAncestrySpan: config.maxAncestrySpan,
         smoldotCommit: config.smoldotCommit,
       },

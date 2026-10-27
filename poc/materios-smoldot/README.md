@@ -51,3 +51,10 @@ Pinned source references:
 ## Current B3 witness target
 
 The automation default is the latest storage-proof-verified checkpoint at block `2463858` (`0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9`). The P2P bridge limits ancestry reconstruction to 512 parent edges by default. Override the target only when there is a specific independently captured witness to bind; a different valid proof target without a verified path back to the selected witness remains insufficient.
+
+
+## Period-aligned justification probes
+
+Materios' pinned node service sets `GRANDPA_JUSTIFICATION_PERIOD = 512`. The P2P collector now augments the existing near-target probe offsets with `n-1, n, n+1` around the next multiple of that period (for the current witness at block 2463858, offsets 397–399). This is only a deterministic acquisition hint; each block must still return a real FRNK justification before it can enter the evidence packet.
+
+The witness checkpoint header may be retrieved through the public HTTP RPC if the Smoldot light client cannot serve its block body. HTTP is an untrusted byte transport only: the bridge recomputes the SCALE header hash, verifies it equals the witness hash, checks the pinned state root, and walks parent hashes backwards from a locally hash-bound justification target. It does not treat the HTTP endpoint's finalized-head claim as a trust anchor. GRANDPA signature/quorum verification and authority-set provenance remain separate gates.

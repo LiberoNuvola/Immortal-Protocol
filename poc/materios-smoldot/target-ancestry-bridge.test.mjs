@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   hashMateriosHeader,
-  verifySequentialHeaderBridge
+  verifySequentialHeaderBridge,
+  withJustificationPeriodOffsets
 } from "./target-ancestry-bridge.mjs";
 
 const zeroHash = "0x" + "00".repeat(32);
@@ -106,4 +107,23 @@ test("accepts a same-block proof target only when both hashes match", () => {
   });
   assert.equal(result.status, "ANCESTRY_LINK_VERIFIED");
   assert.equal(result.header_count, 1);
+});
+
+
+test("adds probes around the next 512-block justification boundary", () => {
+  const offsets = withJustificationPeriodOffsets(
+    2463858,
+    [0, 1, 52, 59, 60, 61, 119, 120, 121, 179, 180, 181, 239, 240, 241, 299, 300, 301],
+    512,
+    1
+  );
+  assert.deepEqual(offsets.slice(-3), [397, 398, 399]);
+  assert.ok(offsets.includes(0));
+  assert.ok(offsets.includes(301));
+});
+
+test("deduplicates period offsets and fails closed on unbounded probe input", () => {
+  assert.deepEqual(withJustificationPeriodOffsets(511, [0, 1, 1], 512, 1), [0, 1, 2]);
+  assert.throws(() => withJustificationPeriodOffsets(2463858, [5000], 512, 1), /CANDIDATE_OFFSET_OUT_OF_RANGE/);
+  assert.throws(() => withJustificationPeriodOffsets(-1, [], 512, 1), /TARGET_BLOCK_NUMBER_INVALID/);
 });
