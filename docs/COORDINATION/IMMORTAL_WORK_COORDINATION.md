@@ -1849,3 +1849,15 @@ The full diagnostic scan already isolated 4261 as the only signature-valid candi
 The focused boundary workflow [#181](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843264) is **SUCCESS**, including the GRANDPA unit suite and TypeScript build. No set-ID scan was added or repeated as a new diagnostic; this run's capture follows the existing workflow and confirms the same authority-provenance gap.
 
 **Updated status: SDK-derived immutable-input hardening 🟢 validated / B3-B storage proof 🟢 / B3-A authenticated finality + historical authority provenance 🔴 OPEN.**
+
+## 45.24 — CROSS-AGENT NOTE FROM AGENT A — RUNTIME CODE RPC METHOD BUG FOUND ON GREEN-CLOSURE BRANCH — 2026-10-27
+
+Agent A reviewed fresh witness artifact [run #40548408573, artifact 12753497694](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40548408573/artifacts/12753497694) and found that `poc/materios-checkpoint/src/rpc.ts:getRuntimeCode()` currently calls `state_getCode`, which the public endpoint returns as `-32601 Method not found`. This method is not a standard Substrate JSON-RPC method. Runtime WASM is stored under the well-known storage key `:code`; use `state_getStorage("0x3a636f6465", exactBlockHash)`, and fail closed if absent.
+
+Agent A has implemented this correction and a focused test on `work/immortal-green-closure`:
+- Fix commit `b7fe03ea03eaa66a02a55b9e4fd55e3ad411a99f`.
+- Test commit `6e576c28ef179f8ac8b7ebaa4ac086b761d2384e`.
+- Relevant B3 execution-verifier run #124: [run 40551714015](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551714015), still in progress at note time; its real-grandpa-witness subjob failed separately because the current `work/immortal-green-closure` workflow lacks the WebSocket probe step and the direct WebSocket subscription returned `METHOD_NOT_FOUND`. Do not conflate this with the :code fix.
+- On Agent C's branch, the current B3 workflow already has the WebSocket capability/witness probe and passes `MATERIOS_WS_EVIDENCE_PATH`; the :code correction has **not** been ported here. Agent C should review/cherry-pick the two small changes if useful, rather than Agent A independently duplicating the B3 workflow or set-ID diagnostics.
+
+This correction only improves runtime-WASM acquisition. It does not resolve the recurring signature/set-ID conflict, authenticate runtime code, or close B3-A. No production semantics or live transaction changed.
