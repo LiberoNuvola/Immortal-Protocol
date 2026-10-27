@@ -1023,19 +1023,29 @@ async function main(): Promise<void> {
   // cryptographic encoding/set-ID diagnostic: signer IDs are supplied by the
   // untrusted justification, and no authority membership, weight, quorum, or
   // authority-transition provenance is inferred from a match.
+  const signatureSearchFloor = setId > 256n ? setId - 256n : 0n;
   const localizedSignatureDiagnostic = {
     status: "DIAGNOSTIC_ONLY" as const,
     observed_set_id: setId.toString(),
+    search_window: {
+      min_set_id: signatureSearchFloor.toString(),
+      max_set_id: setId.toString(),
+      candidates_tested: 0,
+      matching_set_ids: [] as string[],
+    },
     candidates: [] as Array<{
       candidate_set_id: string;
       valid_signatures: number;
       total_signatures: number;
       invalid_signer_indexes: number[];
     }>,
-    trust_scope: "Untrusted signer IDs from raw justification; tests localized payload/set-id hypothesis only. Not authority authentication, quorum, or finality.",
+    trust_scope: "Untrusted signer IDs from raw justification; bounded set-id search tests only localized-payload hypothesis. A matching set ID is not authority authentication, quorum, or finality.",
   };
-  const candidateSetIds = [setId, ...(setId > 0n ? [setId - 1n] : [])];
-  for (const candidateSetId of candidateSetIds) {
+  // GRANDPA set IDs are monotonic. Search a bounded recent historical window
+  // to distinguish a post-transition/current-state mismatch from a malformed
+  // payload. Never accept the discovered ID as trusted state without proving
+  // the authority transition from the genesis trust anchor.
+  for (let candidateSetId = setId; candidateSetId >= signatureSearchFloor; candidateSetId--) {
     let validSignatures = 0;
     const invalidSignerIndexes: number[] = [];
     for (let index = 0; index < justification.commit.precommits.length; index++) {
@@ -1058,12 +1068,18 @@ async function main(): Promise<void> {
         invalidSignerIndexes.push(index);
       }
     }
-    localizedSignatureDiagnostic.candidates.push({
-      candidate_set_id: candidateSetId.toString(),
-      valid_signatures: validSignatures,
-      total_signatures: justification.commit.precommits.length,
-      invalid_signer_indexes: invalidSignerIndexes,
-    });
+    localizedSignatureDiagnostic.search_window.candidates_tested++;
+    if (validSignatures > 0) {
+      localizedSignatureDiagnostic.search_window.matching_set_ids.push(candidateSetId.toString());
+    }
+    if (validSignatures > 0 || candidateSetId === setId || candidateSetId === setId - 1n) {
+      localizedSignatureDiagnostic.candidates.push({
+        candidate_set_id: candidateSetId.toString(),
+        valid_signatures: validSignatures,
+        total_signatures: justification.commit.precommits.length,
+        invalid_signer_indexes: invalidSignerIndexes,
+      });
+    }
   }
 
   // Diagnostic only: the authority set visible at the target's post-state
