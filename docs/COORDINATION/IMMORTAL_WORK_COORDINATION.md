@@ -3257,3 +3257,18 @@ Sanitized artifact [`materios-orynq-receipt-plan`](https://github.com/LiberoNuvo
 A follow-up workflow hardening commit [`e6e70ca`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e6e70cad22ff8857043ebea6a005af2a3b72f798) now strips `rpc_endpoint` and `captured_at` from the verified witness and uploads the sanitized witness plus plan as one short-lived artifact. Its validation run [`#40450688645`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450688645) is queued.
 
 **STATUS: REAL WITNESS + RUST STORAGE PROOF + OryNq DRY-RUN PLAN GREEN; NO LIVE SUBMISSION; GRANDPA FINALITY/AUTHORITY PROVENANCE STILL OPEN; SANITIZED WITNESS ARTIFACT RETENTION CHANGE PENDING.**
+
+
+## 45.09 — AGENT C — SANITIZED REAL WITNESS ARTIFACT GREEN — 2026-10-27
+
+This supersedes the "artifact retention pending" statement in §45.08.
+
+- [Run `#40450688645`](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450688645) completed **SUCCESS** on branch head `e6e70cad22ff8857043ebea6a005af2a3b72f798`.
+- The [combined sanitized evidence artifact](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40450688645/artifacts/12710431625), ID `12710431625`, contains both `MateriosB3AnchorStateWitness.verified.json` (12,792 bytes) and `OrynqReceiptPlan.sanitized.json` (604 bytes); endpoint URL and capture timestamp are removed.
+- The witness carries 10 storage proof nodes; `storage_proof.at` equals its exact target block hash; the Rust verifier passed against its `stateRoot`, storage key and exact AnchorRecord value.
+- Target in this artifact: block `2463858`, hash `0x04c7818ffbc4f14dbd67e5d1e30d4e3e53bbd0ce58afac502358696c0d37d3d9`, state root `0x89c3bdfd6d05b091a45bde277d268b5603c264d40f1ee6aa67f02ae674fd20fe`.
+- Dry-run plan: receipt ID `0xf643d04ae43f67d530e958e32cba68b5b91f4fbb40773d3f1bab91cf000029e0`; content hash/chunk-Merkle root `0x5bf74218fb6369bc159a394948eafef5beab4a717c04f7a6cd4d2d8615b33023`; one chunk, 12,152 bytes. Because this is a blob receipt with one chunk, the SDK's chunk Merkle root equals the content hash.
+
+A follow-up metadata correctness pass adds explicit propagation of the preflight target mode into `checkpoint_source`: the artifact above is conservative but labels the selected hash as an "explicit block hash" even though this CI obtained it through `chain_getFinalizedHead`. Commits [`c39d8d2`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/c39d8d2f33ea4d7e36b7cb80ffc7cd0ca4b2b68c), [`4749dae`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/4749dae0d4cbfc6a32142fec3c2daf140fe3f8ce), [`37f2c72`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/37f2c727539b5b1b4530d011d662a76aa1ad61da) and [`da16da6`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/da16da6d623ae79acebe0888baca1f873df2c80f) carry this source-label fix and update the stale capture/preflight comments. Validate the latest branch head before treating that metadata correction as closed.
+
+**STATUS: REAL WITNESS + RUST STORAGE PROOF + OryNq DRY-RUN + SANITIZED COMBINED ARTIFACT GREEN; SOURCE-LABEL CORRECTION IN CI; NO LIVE RECEIPT; GRANDPA FINALITY AND AUTHORITY PROVENANCE REMAIN OPEN.**
