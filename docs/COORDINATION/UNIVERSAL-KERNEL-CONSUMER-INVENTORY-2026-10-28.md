@@ -158,3 +158,31 @@ This trace is **partially evidenced at source level**. It is not yet proof that 
 5. Keep RF8/U-02/U-03 OPEN pending those exact artifacts and tests.
 
 **Status:** Issue producer-to-runtime source path narrowed; authority/Ω soundness and full transaction-intent binding remain OPEN; no tests executed in this pass; no economic semantics or constants changed.
+
+
+## 2026-10-28 — Viability certificate validation boundary refined
+
+Follow-up inspection of `src/preRichIssueAdmissionBridge.ts` and `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` narrows the earlier limitation: the bridge does perform structural and deployment-binding validation on the viability certificate. The remaining gap is more specific than “certificate object is merely carried.”
+
+| Path | Blob SHA | Verified source behavior | Remaining proof boundary |
+|---|---|---|---|
+| `src/preRichIssueAdmissionBridge.ts` | `8e594655f68fb3c9f267703a85474e6fd1f25f8e` | Requires certificate ID/version, model/predicate/witness-selector/bounds references, a 64-hex digest, six VC proof records with non-empty references and 64-hex digests, ten evidence records with the same structural requirements, and deployment binding to Preprod network, carrier state, state hash, EEV snapshot and ProtectedCapital source. It also checks EEV deployment approval and EV1–EV7 evidence, plus protected-capital component/total consistency. | The inspected code validates shape, references, digest syntax and identity bindings. This is not itself a verifier for the contents of VC1–VC6, E1–E10, nor a mathematical proof that all relevant Ω successors remain in certified (K_c). The actual referenced artifacts and their verification semantics must be recovered. |
+| `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` | `886f8b62ea001c4d822777f4cc6e8a440dd57320` | Requires authority URL, public key, direct-USDM unit and deployed control identifiers; observes physical Pool USDM; calls `fetchSignedIssueAuthority`; compares authority Pool/EEV/timestamp to direct observation; requires carrier-binding signature and signed state/action/post-state digests. | This is a configured external authority integration, not a locally invented economic producer. The deployed endpoint/key/configuration and the authority's actual evidence-generation/verification process still need verification against the target environment. |
+| `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` | `f0c794892104b25e64e94f402c1dd0f5d604364e` | Rechecks the Haskell decision against authority-supplied values, requires the flags true, compares ProtectedCapital components/total and binds decision references. | Equality with signed/supplied inputs prevents inconsistent substitution but cannot upgrade a Boolean into a verified Ω proof. |
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | `1bed1a4e04d1c861a0d5ea317181cdf431215e3b` | Revalidates admission witness and checks exact input classification immediately before signing. | Its own comment states the full output/datum/redeemer/validity map is not yet bound to intent. This must be closed separately from viability proof. |
+
+### Refined conclusion
+
+The Issue admission route is stronger than a bare Boolean-only frontend path: it has a configured external authority interface, signature-related carrier binding, EEV qualification evidence, ProtectedCapital provenance, a typed viability-certificate envelope, deployment identity checks and a runtime admission boundary.
+
+However, **certificate structure and deployment binding are not the same as certificate verification**. The inspected bridge checks references and digest formats, but this pass did not retrieve or validate the actual referenced VC proof artifacts or identify an executable verifier that establishes the normative CK1–CK8 obligations over (K_c) and Ω. Therefore U-03 remains OPEN. This finding does not invalidate the implemented binding checks; it distinguishes what they establish from what they do not establish.
+
+### Immediate follow-up order
+
+1. Recover the schemas, canonical content/digests and verification code for VC1–VC6 and E1–E10. Determine whether the verifier checks the actual proof payload or only a manifest of references.
+2. Verify the configured Preprod authority URL/public key and the production implementation behind that endpoint; inspect the exact signed payload schema and signature verification path.
+3. Bind the viability certificate to the exact candidate action fingerprint and post-state, not only the observed carrier state and pre-state hash, or document the existing equivalent binding if it is present elsewhere.
+4. Close the documented full-transaction-intent gap in `CardanoExecutionAdapter` only after identifying existing normative requirements and tests; do not alter economic formulas or V3/Reveal semantics.
+5. Preserve U-02 and RF8 as OPEN until the all-surface reachability proof and bypass regressions are complete.
+
+**Status:** certificate structural/deployment validation confirmed; proof-content verification and full transaction-intent binding remain OPEN; no tests executed in this pass; no protocol semantics or constants changed.
