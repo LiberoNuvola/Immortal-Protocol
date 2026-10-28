@@ -5,9 +5,26 @@ import {
 } from './EconomicAdmission'
 import { assertAuthoritativeIssueAdmissionWitness } from './AuthoritativeIssueAdmission'
 
+type WalletInputUtxoLike = {
+  txHash: string
+  outputIndex: number
+  address?: string
+}
+
+type LucidWalletPort = {
+  getUtxos?: () => Promise<readonly WalletInputUtxoLike[]>
+}
+
 export type CardanoLucidExecutionPort = {
   signTx(tx: unknown): Promise<unknown>
   submitTx(signedTx: unknown): Promise<string>
+  /**
+   * Optional only for transactions with additional spending inputs. Legacy
+   * Lucid exposes wallet as an object; Lucid Evolution exposes wallet() as a
+   * getter. Additional inputs must be found in this selected wallet's UTxO
+   * list or the economic submission fails closed.
+   */
+  wallet?: LucidWalletPort | (() => LucidWalletPort)
 }
 
 export type CardanoSubmissionReceipt = {
@@ -87,19 +104,89 @@ function readCompletedTransactionInputs(tx: unknown): readonly string[] {
   return references
 }
 
-function assertAdmissionInputsAreInTransaction(
+function canonicalWalletUtxoReference(utxo: WalletInputUtxoLike): string {
+  if (!utxo || typeof utxo !== 'object') {
+    throw new Error('Connected wallet returned a malformed UTxO record')
+  }
+  if (
+    typeof utxo.txHash !== 'string' ||
+    !/^[0-9a-f]{64}$/i.test(utxo.txHash) ||
+    !Number.isSafeInteger(utxo.outputIndex) ||
+    utxo.outputIndex < 0
+  ) {
+    throw new Error('Connected wallet returned a malformed UTxO reference')
+  }
+  return canonicalInputReference(`${utxo.txHash}#${utxo.outputIndex}`)
+}
+
+async function readConnectedWalletInputReferences(
+  lucid: CardanoLucidExecutionPort,
+): Promise<ReadonlySet<string>> {
+  const walletCandidate = lucid.wallet
+  const wallet =
+    typeof walletCandidate === 'function'
+      ? walletCandidate.call(lucid)
+      : walletCandidate
+
+  if (!wallet || typeof wallet.getUtxos !== 'function') {
+    throw new Error(
+      'Cannot classify additional economic transaction inputs: connected wallet UTxO listing is unavailable',
+    )
+  }
+
+  let utxos: readonly WalletInputUtxoLike[]
+  try {
+    utxos = await wallet.getUtxos()
+  } catch {
+    throw new Error(
+      'Cannot classify additional economic transaction inputs: connected wallet UTxO listing failed',
+    )
+  }
+  if (!Array.isArray(utxos)) {
+    throw new Error(
+      'Cannot classify additional economic transaction inputs: connected wallet returned a malformed UTxO list',
+    )
+  }
+
+  const references = new Set<string>()
+  for (const utxo of utxos) {
+    const reference = canonicalWalletUtxoReference(utxo)
+    if (references.has(reference)) {
+      throw new Error('Connected wallet returned duplicate UTxO references')
+    }
+    references.add(reference)
+  }
+  return references
+}
+
+async function assertAdmissionInputsAreClassified(
   tx: unknown,
   declaredInputReferences: readonly string[],
-): void {
-  const actual = new Set(readCompletedTransactionInputs(tx))
+  lucid: CardanoLucidExecutionPort,
+): Promise<void> {
+  const actualInputs = readCompletedTransactionInputs(tx)
+  const actual = new Set(actualInputs)
   const declared = declaredInputReferences.map(canonicalInputReference)
   if (new Set(declared).size !== declared.length) {
     throw new Error('Economic admission input references contain duplicates')
   }
+
+  const declaredSet = new Set(declared)
   const missing = declared.filter((reference) => !actual.has(reference))
   if (missing.length > 0) {
     throw new Error(
       `Economic admission input references are not all present in the actual transaction body: ${missing.join(', ')}`,
+    )
+  }
+
+  const additionalInputs = actualInputs.filter((reference) => !declaredSet.has(reference))
+  if (additionalInputs.length === 0) return
+
+  const walletReferences = await readConnectedWalletInputReferences(lucid)
+  const unclassified = additionalInputs.filter((reference) => !walletReferences.has(reference))
+  if (unclassified.length > 0) {
+    throw new Error(
+      `Additional completed transaction inputs are not verified as connected-wallet UTxOs: ${unclassified.join(', ')}`,
     )
   }
 }
@@ -126,10 +213,11 @@ export function createCardanoExecutionAdapter(
     /**
      * Economic submission boundary.
      *
-     * The declared protocol inputs are checked against the completed Lucid
-     * transaction body before signing. Wallet/fee inputs selected by Lucid
-     * may also appear in the body; this check requires every admission-bound
-     * input to be present but does not yet classify additional inputs.
+     * Declared protocol inputs are checked against the completed Lucid body
+     * before signing. Additional spending inputs are allowed only when the
+     * selected wallet's UTxO listing independently contains each exact ref;
+     * unclassified extras fail closed. This is input classification only: it
+     * does not yet bind the full output/datum/redeemer/validity map to intent.
      */
     async submitEconomic(
       tx: unknown,
@@ -147,7 +235,7 @@ export function createCardanoExecutionAdapter(
       if (expectedActionClass === 'Issue') {
         assertAuthoritativeIssueAdmissionWitness(admission)
       }
-      assertAdmissionInputsAreInTransaction(tx, inputReferences)
+      await assertAdmissionInputsAreClassified(tx, inputReferences, lucid)
       return this.submitInfrastructure(tx)
     },
   }
