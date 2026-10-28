@@ -129,3 +129,14 @@ This is bounded CI evidence, not full portability certification. Agent A's fresh
 6. Which exact tests and release artifact will be mandatory before the first public SDK package?
 
 **Recommendation:** approve/revise this contract first. Do not implement the public facade until the review questions affecting authority and conformance are resolved.
+
+
+## 10. Repository packaging baseline (verified on current branch)
+
+The root `package.json` is currently an application-level manifest (Vite app, Vitest, Cardano libraries and operational scripts). The repository tree contains a root `package.json` and a few nested manifests for specific tools, but no root `pnpm-workspace.yaml` or `lerna.json` was found in the inspected tree. Therefore the candidate package names above describe *logical ownership boundaries*, not existing publishable packages or a ready monorepo.
+
+Before implementing packages, decide whether the first deliverable should be:
+1. a non-published internal API module with contract tests, or
+2. a real package/workspace with build output, export maps, dependency boundaries, versioning, package-level tests and publication/release evidence.
+
+Do not turn the current Vite application's root manifest into a public SDK package by accident, and do not add a workspace/package manager migration as a side effect of the contract proposal. Any packaging change should be separately scoped and tested.
