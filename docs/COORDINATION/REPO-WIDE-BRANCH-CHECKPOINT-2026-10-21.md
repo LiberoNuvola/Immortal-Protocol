@@ -4430,3 +4430,42 @@ The additional source-truth guard and its tests passed the following exact-head 
 - [IMMORTAL Cardano Preprod Context #40632765747](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765747) — SUCCESS. The separate [IMMORTAL Cardano Integration Lab #40632765612](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765612) was still in progress at last check and is not classified here.
 
 **Disposition:** direct physical tUSDM EV1–EV7 qualification remains green; current Oracle quote freshness is **STALE**, and external price-source truth is **NOT PROVEN**. First-Issue readiness is therefore **BLOCKED** independently of the EEV result and independently of any deployment approval. Do not refresh the timestamp without a genuinely authenticated new quote, infer USD/USDM parity, approve deployment, or submit a transaction. No wallet signing, transaction submission, V3/Reveal semantics, SDK packaging or Materios work changed.
+
+## 45.38 AGENT A — CHARLI3 PREPROD FEED OBSERVATION: BOTH DOCUMENTED RECORDS STALE (2026-10-28)
+
+### Read-only network observation
+
+Added `audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs` and `.github/workflows/charli3-preprod-feed-observation.yml` to read the exact feed-NFT UTxOs at the network-specific addresses published by Charli3, inspect inline datum CBOR and record freshness without signing, submitting, or mutating chain state.
+
+- Official feed config: [Charli3 Preprod network feed identities](https://docs.charli3.io/oracles/resources/networks/preprod).
+- Official datum format: [Charli3 Datum Standard](https://docs.charli3.io/oracles/overview/datum-standard). The datum schema permits optional price identity/precision fields; those fields cannot be inferred when absent.
+- First read-only run [#40633373252](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633373252) — **SUCCESS**, exact source SHA `f0e0a4b553694a0e5bd8b0530597339b372e2d48`; artifact [12792262931](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633373252/artifacts/12792262931). Manifest SHA-256 `aac6dccb27cc65b3a945f5d69e07059cc7c51f06904daef0bc9601f28d6cd910`; artifact ZIP SHA-256 `1d57202ea11379ff799aaff93c91bd83583a40f0b858cabb0b82a78ff7a92674`.
+- Chain tip: Conway block `5,343,991`, hash `5342077fdccf874aa8b23c9b212f46ed37d3308fe6e97658b2a2669385d2b8a5`, chain-tip time `2026-10-28T04:37:34Z`.
+
+### Exact feed-NFT observations
+
+**USDM/USD**
+- Officially documented feed identity was found as a unique live NFT at `addr_test1wr0q3fr83cr0zv4gfdvzcquqzy242hgmvt7ey2d938rtwugyc76x9`, exact out-reference `a71629ca1ef04971c27856830d5f4d5517462783df6c214357ca45e7be1777e5#1`; NFT unit `424f268a65632944ddfe17967208178082058cbe9044f53aee28697d4f7261636c6546656564`.
+- Datum contains a positive integer `rawPrice: 894250000`, but the price precision and base/quote identity metadata are absent from the observed PriceMap. The timestamp is `1708484427386` = **2024-02-21T03:00:27.386Z**; its expiry is `2024-02-21T04:00:27.386Z`. At the 2026-10-28 observation the timestamp is about **980 days old** and the record expired. Published maximum age is 1 hour.
+- Blockers: `STALE_TIMESTAMP`, `EXPIRED_PRICE_RECORD`, `MISSING_OR_UNSUPPORTED_PRECISION`, `EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED`, no extended provider/signatory metadata. This value cannot be used for USD/USDM conversion.
+
+**ADA/USD**
+- Officially documented feed identity was found as a unique live NFT at `addr_test1wzn5ee2qaqvly3hx7e0nk3vhm240n5muq3plhjcnvx9ppjgf62u6a`, exact out-reference `6f518a1d46d9bcb00ca0a62cf467e111fe27a66deaf294db4472b0fe46014f52#1`; NFT unit `1116903479e7320b8e4592207aaebf627898267fcd80e2d9646cbf074f7261636c6546656564`.
+- Datum contains `rawPrice: 407740`, but again lacks precision and base/quote identity metadata. Timestamp `1765707459510` = **2025-12-14T10:17:39.510Z**; expiry `2025-12-14T10:47:39.510Z**. The record is about **318 days old** and expired. Published maximum age is 30 minutes.
+- Blockers: `STALE_TIMESTAMP`, `EXPIRED_PRICE_RECORD`, `MISSING_OR_UNSUPPORTED_PRECISION`, `EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED`, no extended provider/signatory metadata. This datum cannot currently provide a qualified fresh ADA/USD leg.
+
+### Interpretation and correction
+
+Both feed-NFT UTxOs exist at the exact addresses in the official Preprod config, but their currently stored data are stale and expired. NFT presence alone does not establish the publisher’s current operation, datum authenticity, market truth or a safe settlement source. The probe therefore classifies the observation as `OBSERVED_NOT_QUALIFIED`; it does not infer a price scale, identity, USD/USDM conversion or provider liveness.
+
+A small summary defect was found after this first run: stale/expiry/precision blockers were visible on each price record but were not all propagated into the top-level blocker list. It is fixed by commit `7105fae1dd84ca5977590d2ef53fdb751f3e7470` (`fix(oracle-audit): surface stale Charli3 record blockers`), which also adds explicit per-feed `status: OBSERVED_NOT_QUALIFIED`. The new read-only observation run [#40633551365](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551365) was **in progress at checkpoint time**; its final result must be checked before marking the fix verified.
+
+Current general CI on exact SHA `7105fae1dd84ca5977590d2ef53fdb751f3e7470` passed:
+- [Cardano Adapter Sale #40633551405](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551405)
+- [IMMORTAL Portability #40633551404](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551404)
+- [Protocol Declaration #40633551388](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551388)
+- [Algorithmic Governability #40633551295](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551295)
+- [Documentation Link Check #40633551367](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551367)
+- [Security Credential Boundary #40633551393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551393)
+
+**Disposition:** Charli3 is an on-chain-observed but **unqualified / stale** candidate; no current market-price source was found by this probe. Do not use the old datum, infer a 1:1 peg, or change the production Oracle/MintPolicy. USD/USDM conversion and first-Issue readiness remain blocked. No signing, submission, approval, V3/Reveal, SDK or Materios changes were made.
