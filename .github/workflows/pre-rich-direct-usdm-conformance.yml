@@ -18,6 +18,8 @@ on:
       - "audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs"
       - "audit/cardano-integration/preprod-oracle-state-datum.mjs"
       - "audit/cardano-integration/preprod-oracle-state-datum.test.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.mjs"
+      - "audit/cardano-integration/preprod-first-issue-readiness.test.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-bootstrap.mjs"
       - "relayer/preprodIssueAdmissionProvider.js"
       - "relayer/preprodIssueAdmissionProvider.test.mjs"
@@ -82,6 +84,9 @@ jobs:
 
       - name: Test materialized Oracle State datum decoding
         run: node --test audit/cardano-integration/preprod-oracle-state-datum.test.mjs
+
+      - name: Test first-Issue readiness freshness gate
+        run: node --test audit/cardano-integration/preprod-first-issue-readiness.test.mjs
 
       - name: Parse direct-USDM audit scripts
         run: |
