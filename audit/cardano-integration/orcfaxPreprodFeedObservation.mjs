@@ -1,4 +1,5 @@
 import { Data } from '@lucid-evolution/lucid'
+import { createHash } from 'node:crypto'
 
 export const ORCFAX_PREPROD = Object.freeze({
   fspScriptHash: 'f4c6dcd7cf4ad371db15e2883811d489c4bd82c55a0d16ea73688e2e',
