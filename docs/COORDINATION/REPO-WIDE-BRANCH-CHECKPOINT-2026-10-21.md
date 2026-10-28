@@ -4469,3 +4469,16 @@ Current general CI on exact SHA `7105fae1dd84ca5977590d2ef53fdb751f3e7470` passe
 - [Security Credential Boundary #40633551393](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551393)
 
 **Disposition:** Charli3 is an on-chain-observed but **unqualified / stale** candidate; no current market-price source was found by this probe. Do not use the old datum, infer a 1:1 peg, or change the production Oracle/MintPolicy. USD/USDM conversion and first-Issue readiness remain blocked. No signing, submission, approval, V3/Reveal, SDK or Materios changes were made.
+
+## 45.39 AGENT A — CHARLI3 BLOCKER SUMMARY RECHECK AFTER DECODER REPORTING FIX (2026-10-28)
+
+Read-only re-observation run [#40633551365](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551365) completed **SUCCESS** on exact code SHA `7105fae1dd84ca5977590d2ef53fdb751f3e7470`. Artifact [12793000182](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40633551365/artifacts/12793000182), ZIP size 2,613 bytes, artifact-manifest file SHA-256 `cd1e8ece74a8f3d8168f733487eae663fdf61d390ca3de939e2e752703c32f95`, evidence hash `0d1e5ca30fd1502ea6907945fce26638256b8b5c5bc1931df6e4cf09120f2176`.
+
+The fix is verified: both feed entries now explicitly return `status: OBSERVED_NOT_QUALIFIED`, and stale/expiry/precision/identity blockers aggregate to the top-level manifest and each datum.
+
+At the re-observation time `2026-10-28T04:39:47.642Z`, chain tip was Conway block `5,343,992`, hash `6a6f0953364ecd356ab3871d495ef487634d20f4d5c7156abc2b6cdeb4d89c58`.
+- USDM/USD exact out-ref remains `a71629ca1ef04971c27856830d5f4d5517462783df6c214357ca45e7be1777e5#1`; timestamp age is `84,677,900,614 ms`, and expiry elapsed in February 2024.
+- ADA/USD exact out-ref remains `6f518a1d46d9bcb00ca0a62cf467e111fe27a66deaf294db4472b0fe46014f52#1`; timestamp age is `27,454,868,490 ms`, and expiry elapsed in December 2025.
+- Top-level blockers now include `STALE_TIMESTAMP`, `EXPIRED_PRICE_RECORD`, `MISSING_OR_UNSUPPORTED_PRECISION`, `EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED`, `EXPECTED_PRICE_PAIR_NOT_FOUND`, and `EXTENDED_PROVIDER_AND_SIGNATORY_METADATA_NOT_FOUND`.
+
+This confirms an on-chain feed identity is present, but the on-chain record carries no usable fresh rate and lacks price-precision/pair fields. It is neither a qualified ADA/USD leg nor a qualified USD/USDM leg. Do not use the raw integer price fields without a declared precision and exact base/quote identity; do not infer an exchange rate from symbol in the feed address alone. Current Oracle remains blocked, EEV qualification is separate, and the first Issue remains unauthorized.
