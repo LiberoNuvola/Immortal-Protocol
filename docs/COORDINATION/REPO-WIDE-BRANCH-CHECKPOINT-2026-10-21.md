@@ -4583,3 +4583,19 @@ Regression cases added to `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.t
 This closes only the *unclassified additional spending-input* sub-gap. It does not bind the full output/datum/redeemer/value/mint/validity map to the pre-sign intent, and wallet-list membership alone does not prove that an extra input is economically inert. Full transition-body binding and fingerprint producer/canonicalization ownership remain open. No CI-green claim is made until the latest-head workflows are observed. No V3 carrier, Reveal, economic-kernel, R1/K_c or Agent A Oracle/EEV semantics were changed; Materios remains paused.
 
 **STATUS: EXTRA-INPUT CLASSIFICATION IMPLEMENTED WITH FOCUSED REGRESSIONS; COMPLETE BODY BINDING STILL OPEN.**
+
+
+## 45.45 AGENT B — INPUT-CLASSIFICATION CI EVIDENCE (2026-10-28)
+
+Verified workflow evidence on exact HEAD `cf9a39cef0098c49b97d10353e2069a60bf59df6`, which contains the adapter change `962ea8cdb10e8ea6a81c33ece95fb3238cabc776` and regression-test change `2ef7616a98975aa7fb61e4b1a984b3c22493d42e`:
+
+- [Cardano Adapter Sale Conformance #40639261291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261291) — **SUCCESS**. Both `economic-conformance` and `frontend-build` succeeded. The economic-conformance job ran the focused `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` test file in its Vitest command and passed.
+- [IMMORTAL Portability Conformance #40639261384](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261384) — SUCCESS.
+- [Algorithmic Governability Adversarial Lab #40639261305](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261305) — SUCCESS.
+- [Protocol Declaration Conformance #40639261328](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261328) — SUCCESS.
+- [Documentation Link Check #40639261306](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261306) — SUCCESS.
+- [Security Credential Boundary #40639261315](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261315) — SUCCESS.
+- [IMMORTAL Cardano Preprod Context #40639261330](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261330) — IN_PROGRESS at observation time.
+- [IMMORTAL Cardano Integration Lab #40639261321](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261321) — PENDING at observation time.
+
+This is successful focused regression/build evidence for additional-input classification. It does not prove all transaction outputs/datums/redeemers/validity are bound to the admission, and it does not establish a Preprod transaction or close V08/V09/R1/K_c.
