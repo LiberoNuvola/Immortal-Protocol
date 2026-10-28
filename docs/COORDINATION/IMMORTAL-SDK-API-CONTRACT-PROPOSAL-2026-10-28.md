@@ -280,3 +280,17 @@ This increment leaves the existing economic admission, Haskell Issue fingerprint
 On branch HEAD `cf9a39cef0098c49b97d10353e2069a60bf59df6` (which includes the implementation and focused test commit), [Cardano Adapter Sale Conformance #40639261291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261291) completed **SUCCESS**. Both `economic-conformance` and `frontend-build` passed. The `economic-conformance` job explicitly ran `npx vitest run ... Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts ...` and passed; this includes the added positive/negative input-classification tests.
 
 On the same SHA, Documentation Link Check #40639261306, IMMORTAL Portability Conformance #40639261384, Algorithmic Governability Adversarial Lab #40639261305, Protocol Declaration Conformance #40639261328, and Security Credential Boundary #40639261315 completed successfully. The IMMORTAL Cardano Preprod Context #40639261330 was still in progress and the Integration Lab #40639261321 was pending at verification time. These results establish regression/build evidence for the input-classification increment; they do not establish full completed-body binding or Preprod settlement.
+
+
+### 11.9 Implemented increment — recheck spending inputs immediately before signing (2026-10-28)
+
+A narrow race-hardening increment is now present in `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`:
+
+- `assertAdmissionInputsAreClassified` returns the exact ordered spending-input references read from the completed transaction body.
+- After any asynchronous connected-wallet UTxO lookup, `submitEconomic` re-reads the completed transaction body immediately before invoking the signing port and rejects if the ordered input references differ from the validated snapshot.
+- This is input-set mutation detection only. It does **not** bind outputs, datums, redeemers, mint/burn, fees or validity fields to an approved transition intent, and it does not make the completed transaction object immutable.
+- `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` includes a negative twin that mutates the completed body inputs during the asynchronous wallet classification and asserts both `signTx` and `submitTx` remain uncalled.
+
+[Cardano Adapter Sale Conformance #40739908010](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40739908010) ran on exact SHA `201eb0d660b5e9d3be720ffed8e2b4f9c2490ec5`; both `economic-conformance` and `frontend-build` jobs completed successfully. Other exact-head workflows should be read from their own run results; this is not full body-binding conformance and does not close V08/V09 or R1/`K_c`.
+
+No fingerprint formula, economic rule, V3 carrier, Reveal semantics, Oracle/EEV producer, wallet signature, deployment or ledger submission was changed.

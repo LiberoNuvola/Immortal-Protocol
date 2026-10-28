@@ -414,3 +414,10 @@ The focused tests add a wallet-listed positive case and negative twins for an un
 ## Follow-up: CI verified for additional-input classification (2026-10-28)
 
 Cardano Adapter Sale Conformance [#40639261291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261291) completed SUCCESS on exact SHA `cf9a39cef0098c49b97d10353e2069a60bf59df6`, with both `economic-conformance` (including `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`) and `frontend-build` passing. Documentation Link Check, Portability, Algorithmic Governability, Protocol Declaration and Security Credential Boundary also completed successfully on that SHA. Preprod Context was still in progress and Integration Lab was pending at observation time. This validates the narrow adapter increment and build, not complete body binding or Preprod execution.
+
+
+## Follow-up: pre-sign spending-input mutation guard (2026-10-28)
+
+The adapter's additional-input classification now returns the ordered actual spending-input snapshot it validated. Immediately after the asynchronous classification finishes, `submitEconomic` reads the completed body again and rejects if the spending-input references changed before the signing port is called. A regression test mutates the body during wallet UTxO lookup and verifies that neither signing nor submission is invoked.
+
+The guard is intentionally narrow: it detects spending-input-set changes only, not output/datum/redeemer/value/mint/validity mutation. The Cardano Adapter Sale Conformance run [#40739908010](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40739908010) has both jobs green on exact SHA `201eb0d660b5e9d3be720ffed8e2b4f9c2490ec5`. Do not treat this as complete transaction-body binding or a V08/V09/R1 closure.

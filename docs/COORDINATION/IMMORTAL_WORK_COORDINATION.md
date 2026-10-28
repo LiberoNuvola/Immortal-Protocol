@@ -3903,3 +3903,20 @@ Next safe gate before runtime changes:
 This is a source audit and design map, not a claim that the runtime currently enforces full transition-to-transaction binding. No runtime code or protocol semantics changed, and no work was duplicated from Agent A's Oracle/EEV front. V08/V09 remain open.
 
 **STATUS: TRANSITION-BODY MAP RECORDED; PRODUCTION-WIRING DESIGN GAP MADE ACTIONABLE; NO RUNTIME/API SIGNATURE CHANGE.**
+
+
+## 45.43 AGENT B — PRE-SIGN SPENDING-INPUT MUTATION GUARD (2026-10-28)
+
+### Change
+
+A focused race-hardening guard was added to `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`. The actual spending-input references read from the completed Lucid body are returned from classification; after the potentially asynchronous wallet UTxO lookup, the adapter re-reads the body immediately before calling the signing port. If the ordered input references differ, economic submission rejects before both signing and submission.
+
+A regression in `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` mutates the body input set during the wallet-listing await and verifies `signTx` and `submitTx` are never called.
+
+### Validation and limits
+
+[Cardano Adapter Sale Conformance #40739908010](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40739908010) ran on exact SHA `201eb0d660b5e9d3be720ffed8e2b4f9c2490ec5`; `economic-conformance` and `frontend-build` both passed.
+
+This closes only the spending-input mutation window between classification and signing. It does not bind outputs, datums, redeemers, mint/burn, fees or validity fields to a reviewed transition intent, nor does it freeze the transaction object. V08/V09 and R1/`K_c` remain open. No fingerprint formula, economic rule, V3 carrier, Reveal semantics, Agent A Oracle/EEV producer, wallet signature, deployment or ledger submission was changed. No branch was created.
+
+**STATUS: INPUT-SET RECHECK BEFORE SIGNING TESTED; FULL COMPLETED-BODY BINDING REMAINS OPEN.**
