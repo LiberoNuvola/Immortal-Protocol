@@ -4399,3 +4399,34 @@ The same exact run re-observed the direct-USDM source and successfully re-qualif
 - All six current-commit workflows passed: [PRE-RICH Preprod EEV — Source Qualification Only #40632174413](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174413), [Cardano Adapter Sale #40632174433](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174433), [IMMORTAL Portability #40632174444](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174444), [Protocol Declaration #40632174403](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174403), [Algorithmic Governability #40632174448](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174448), and [Documentation Link Check #40632174505](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174505).
 
 **Disposition:** physical direct-tUSDM EV1–EV7 qualification is current as of its observation time. Oracle quote freshness is independently **BLOCKED / STALE**; the first-Issue readiness gate now rejects this state. Do not reset the on-chain timestamp with the same hardcoded quote, treat a read as a price update, infer USD/USDM parity, or mistake EEV qualification for `DEPLOYMENT_APPROVED` or Authoritative Issue Admission. No EEV approval, wallet signature, transaction submission, V3/Reveal change, SDK duplication, new branch or Materios work occurred.
+
+## 45.37 AGENT A — EXTERNAL ORACLE SOURCE-TRUTH GATE + FRESHNESS FAIL-CLOSED (2026-10-28)
+
+### Guard added after the timestamp-only check
+
+The Oracle contract separates a fresh timestamp from proof that the external price source is truthful. The live Oracle State is a deployment-wallet-signed **fixed compatibility quote**, not a separately qualified external ADA/USD or USD/USDM feed. A recent timestamp alone must not make that quote usable for settlement.
+
+- `audit/cardano-integration/preprod-oracle-state-liveness.mjs` now puts the existing quote-inspection vocabulary into the materialized manifest: `qualification.externalPriceSourceVerified: false`, `sourceQualificationStatus: NOT_PROVEN_BY_DATUM_ALONE`, and explicit limitations on publisher trust and settlement authorization. It hashes the resulting exact manifest. The script remains read-only and preserves the datum timestamp.
+- `audit/cardano-integration/preprod-first-issue-readiness.mjs` now verifies the Oracle State manifest's own `evidenceHash` against its exact contents, and independently requires `qualification.externalPriceSourceVerified === true` in addition to the timestamp being present, non-future and within `maxAgeMs`. A fresh-looking timestamp or a rehashed but unqualified compatibility quote no longer passes the source gate.
+- `audit/cardano-integration/preprod-first-issue-readiness.test.mjs` now uses a synthetically qualified Oracle fixture only for the positive logic test and has a negative twin for `externalPriceSourceVerified: false`, in addition to missing/stale/future timestamp paths. The fixture is test-only; it is not live Oracle qualification.
+- No source provider, quote, trust level, economic formula or protocol constant was invented or approved.
+
+### Live Preprod recheck after observer classification update
+
+[PRE-RICH Preprod EEV — Source Qualification Only #40632702232](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632702232), exact SHA `d63e5945299fbf36ebd0f2e2362e5c7e395442cf`, completed **SUCCESS**. Artifact [12791913625](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632702232/artifacts/12791913625), ZIP SHA-256 `39495bdac71131d6cb0796a669e679a1462383dc017d8dd639289ac0f5b8b561`.
+
+- Oracle State exact singleton remains `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`.
+- Datum timestamp remains `1791481130142` (`2026-10-08T17:38:50.142Z)); observed age `1,680,713,628 ms` against `maxAgeMs = 3,600,000`. Observer status remains `STALE` / `withinMaxAge: false`.
+- Oracle manifest explicitly records `externalPriceSourceVerified: false` and `sourceQualificationStatus: NOT_PROVEN_BY_DATUM_ALONE`; this is now machine-readable instead of existing only in narrative.
+- The exact B1 PrizePool UTxO was observed again at `2026-10-28T04:30:45.394Z`; the direct tUSDM quantity remained `1,000,000,000` atomic units / `100,000` IMMORTAL USDM subunits. EV1–EV7 qualified successfully, with qualification evidence hash `862f9f4dd354014001e8193cdb5c8ea4f4ff2a73788b77fd4025b4be0d774dc5`; approval remains null.
+
+### Exact-head conformance on `1b85b9195db72de25d554799ad08f8a1cf7eb57b`
+
+The additional source-truth guard and its tests passed the following exact-head workflows:
+- [Issue Admission Boundary CI #40632765589](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765589) — SUCCESS, including the first-Issue readiness evidence-chain test.
+- [PRE-RICH Direct-USDM Conformance #40632765585](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765585) — SUCCESS, including Oracle datum and readiness regressions.
+- [Cardano Adapter Sale Conformance #40632765577](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765577) — SUCCESS, both economic conformance and frontend build.
+- [IMMORTAL Portability #40632765642](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765642), [Protocol Declaration #40632765597](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765597), [Algorithmic Governability #40632765551](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765551), [Documentation Link Check #40632765542](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765542), and [Security Credential Boundary #40632765652](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765652) — SUCCESS.
+- [IMMORTAL Cardano Preprod Context #40632765747](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765747) — SUCCESS. The separate [IMMORTAL Cardano Integration Lab #40632765612](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632765612) was still in progress at last check and is not classified here.
+
+**Disposition:** direct physical tUSDM EV1–EV7 qualification remains green; current Oracle quote freshness is **STALE**, and external price-source truth is **NOT PROVEN**. First-Issue readiness is therefore **BLOCKED** independently of the EEV result and independently of any deployment approval. Do not refresh the timestamp without a genuinely authenticated new quote, infer USD/USDM parity, approve deployment, or submit a transaction. No wallet signing, transaction submission, V3/Reveal semantics, SDK packaging or Materios work changed.
