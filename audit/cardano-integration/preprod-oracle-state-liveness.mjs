@@ -143,6 +143,14 @@ const freshnessStatus = timestampAgeMs < 0n
 
 const refreshed = {
   ...oracle,
+  qualification: {
+    formatAndQuoteShapeInspected: true,
+    externalPriceSourceVerified: false,
+    configuredPublisherTrustIndependentlyEliminated: false,
+    multiAssetSettlementAuthorisedByThisObservation: false,
+    sourceQualificationStatus: 'NOT_PROVEN_BY_DATUM_ALONE',
+    note: 'This Oracle State is a configured fixed compatibility quote. Reading its datum, publisher field and timestamp does not verify an external market-price source. A separate source qualification evidence chain is required before settlement readiness.',
+  },
   datumSemantics: {
     ...oracle.datumSemantics,
     assetPolicyHex: decoded.assetPolicyHex,
