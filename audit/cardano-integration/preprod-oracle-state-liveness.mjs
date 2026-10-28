@@ -60,8 +60,18 @@ async function readTip() {
   if (!response.ok) throw new Error('Koios /tip failed: ' + response.status)
   const value = await response.json()
   const tip = Array.isArray(value) ? value[0] : value
-  if (!tip || tip.block_no === undefined || tip.hash === undefined) {
-    throw new Error('Koios /tip returned malformed chain-tip evidence')
+  if (
+    !tip ||
+    typeof tip.hash !== 'string' ||
+    !/^[0-9a-fA-F]{64}$/.test(tip.hash) ||
+    !Number.isSafeInteger(Number(tip.block_time)) ||
+    Number(tip.block_time) < 0 ||
+    !Number.isSafeInteger(Number(tip.block_no)) ||
+    Number(tip.block_no) < 0 ||
+    !Number.isSafeInteger(Number(tip.abs_slot)) ||
+    Number(tip.abs_slot) < 0
+  ) {
+    throw new Error('Koios /tip returned malformed Preprod chain-time evidence')
   }
   return tip
 }
@@ -100,6 +110,12 @@ if (deployment.walletAddress !== identity.address ||
   throw new Error('Oracle State singleton identity does not match the deployment manifest')
 }
 
+// Use the Cardano chain-tip block_time for quote-age classification. Runner
+// wall-clock time is retained only as observation metadata, never as ledger time.
+const chainTip = await readTip()
+const observedAtMs = BigInt(Number(chainTip.block_time)) * 1_000n
+const runnerObservedAt = new Date().toISOString()
+
 const parsed = parseRef(identity.utxo, 'oracleState.utxo')
 const rows = await post('/address_info', { _addresses: [identity.address] })
 const info = rows?.find(row => row?.address === identity.address) ?? rows?.[0]
@@ -133,7 +149,6 @@ const decoded = decodeOracleStateDatum(live.inline_datum.bytes, {
 const maxAgeMs = BigInt(requiredString(oracle?.datumSemantics?.maxAgeMs, 'datumSemantics.maxAgeMs'))
 if (maxAgeMs <= 0n) throw new Error('Oracle State maxAgeMs must be positive')
 
-const observedAtMs = BigInt(Date.now())
 const timestampAgeMs = observedAtMs - decoded.timestampMs
 const freshnessStatus = timestampAgeMs < 0n
   ? 'FUTURE_TIMESTAMP'
@@ -164,7 +179,8 @@ const refreshed = {
     address: identity.address,
     utxo: liveRef,
     observedAt: new Date(Number(observedAtMs)).toISOString(),
-    chainTip: await readTip(),
+    runnerObservedAt,
+    chainTip,
     timestampAgeMs: timestampAgeMs.toString(),
     freshnessStatus,
     withinMaxAge: freshnessStatus === 'FRESH',
