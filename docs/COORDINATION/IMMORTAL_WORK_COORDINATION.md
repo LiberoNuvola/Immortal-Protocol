@@ -3757,3 +3757,30 @@ The exact-head workflows establish bounded CI success, not full portability clos
 The SDK cross-branch inventory records the exact-head runs and the refined V08 boundary: [IMMORTAL SDK cross-branch inventory](https://github.com/LiberoNuvola/Immortal-Protocol/blob/work/immortal-green-closure/docs/COORDINATION/IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md).
 
 **STATUS: FIVE CURRENT-HEAD WORKFLOWS GREEN; V08 UNIVERSAL EXECUTABLE OWNER AND V09 CONCRETE CERTIFICATE REMAIN OPEN.**
+
+
+## 45.36 AGENT B — SDK API CONTRACT PROPOSAL; NO FACADE IMPLEMENTED (2026-10-28)
+
+### Coordination / exact-head context
+
+Agent A's current work is distinct and must not be duplicated: the repo-wide checkpoint records a fresh read-only Preprod direct-USDM source observation and EV1–EV7 qualification at 04:08 UTC. Its evidence explicitly remains `deploymentApproval: null` / `deploymentApprovalStatus: PENDING`; it does not authorize Issue or discharge R1/`K_c`.
+
+The five bounded CI workflows passed on exact SHA `6a71021404d1d0a354cbe2d948bffb84b3a54bac`. A new docs-only proposal was then committed as `7f2466fbcba1049e608541e61b369c0c554ad094`; CI for that newer head must be treated separately.
+
+### Deliverable
+
+Created [IMMORTAL SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) and indexed it in the [SDK cross-branch inventory](IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md).
+
+The proposal is explicitly **review draft, not approved API**. It defines candidate package ownership, a versioned evidence envelope, source/environment/assurance distinctions, compatibility/fail-closed rules and the required release gates. It does not create package code or change protocol semantics.
+
+Important guardrails:
+- `@immortal/core` is a proposed data-contract surface, not a duplicate TypeScript economic kernel; Haskell remains the reference authority.
+- Cardano build, wallet signature, submission and observed ledger result remain separate phases.
+- Evidence shape, source observation, profile qualification, deployment approval and ledger confirmation are separate assurance dimensions; proposed labels must be reconciled with existing normative vocabulary before implementation.
+- V08 remains open because the universal executable transition/expiry owner is not mapped to normative `T`.
+- V09 remains open pending a concrete, evidenced `K_c` certificate.
+- Agent A's direct-USDM EEV qualification does not substitute for deployment approval or authoritative Issue admission.
+
+No new branch, SDK facade, TypeScript kernel, wallet signing, deployment, transaction submission, economic change, V3/Reveal edit, or Materios work occurred.
+
+**STATUS: REVIEWABLE SDK CONTRACT DRAFT COMMITTED; WAITING ON EXACT-HEAD DOC CI AND OWNER REVIEW BEFORE IMPLEMENTATION.**
