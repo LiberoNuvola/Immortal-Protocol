@@ -511,3 +511,17 @@ Commit `ebcff2ed2b86989d648b9311c4da7ef66adc4b67` makes the Issue decision test 
 This allows the Haskell conformance log to supply producer-generated post-state and action-fingerprint values without guessing them. The change also explicitly imports `(++)`, which the test uses in its assertion messages and new vector output.
 
 **Still unverified:** no successful Haskell workflow log has been retrieved in this pass. Do not treat emitted vectors as available until the suite runs and the lines are captured from its actual output.
+
+
+## 2026-10-28 — Emit full canonical Issue vector preimages
+
+Commit `d382afbde0a8d1dcde6f80074486884e23dcb70c` extends the Haskell test's machine-readable output with:
+- exact canonical pre-state bytes as text;
+- exact canonical candidate-state bytes as text;
+- canonical action text;
+- action fingerprint preimage (`canonical action | pre-state hash | post-state hash`);
+- the three resulting SHA-256 digests.
+
+This gives a future CI-log consumer enough information to independently recompute the pre-state, post-state, and action digest from the exact serialization, and to detect whether a mismatch comes from serialization or hashing. It does not itself verify the generated values; the Haskell suite must execute first.
+
+**Run status:** the GitHub Actions run-listing capability available here only returned pull-request-triggered runs and returned none for the recent commits. The workflow page could not be retrieved through the web interface. No successful run or digest output has been observed yet.
