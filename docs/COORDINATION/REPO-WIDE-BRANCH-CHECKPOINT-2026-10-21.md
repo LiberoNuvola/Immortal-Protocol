@@ -4708,3 +4708,17 @@ A deeper read of the current bridge's live submission path and the upstream 0.7.
 **Required before adopting 0.7.0:** add a typed, sanitized error disposition path and regression tests. For `MateriosCertificationError`, preserve the submission result, receipt ID/transaction hash, failure stage, and certification/anchor status without retrying. For `inclusion-unknown`, resolve finalized inclusion before classifying the submission. Only `not-landed` may be retried, with the exact same receipt ID and payload. Keep raw signer material and private RPC/gateway configuration out of logs. Test each error class with mocked SDK errors before any live submission.
 
 This is a concrete compatibility/test requirement, not a claim that 0.7.0 has been installed or that runtime tests passed. Package/lockfile remain pinned to 0.6.2 until reproducible installation and test execution are available. No code, branch, signature or transaction was changed in this audit.
+
+### 45.50 MULTI-ORACLE IMPLEMENTATION GAP — CODE AUDIT (2026-10-28)
+
+A read-only source audit was completed and recorded in `audit/pre-genesis-genesis/MULTI-ORACLE-IMPLEMENTATION-GAP-20261028.md` (commit `05525cb5aec37e3e071de65c3bec612f9698ec2e`).
+
+Findings:
+- `Adapter/CARDANO/observation/OracleTypes.hs` supports an additive `OracleQuoteSet` data constructor for multiple asset-specific quotes in one Oracle State datum. This is multi-asset storage, not proof of independent multi-oracle aggregation.
+- `plutus/Economic.hs` `oraclePriceFor` still accepts a single configured publisher parameter and checks the selected quote against it. A quote set with observations from different publishers cannot currently be treated as a quorum through this entry point.
+- `Economic.totalUsdmValue` consumers identified: `plutus/MintPolicy.hs`, `plutus/B1PrizePool.hs`, and `plutus/PrizeValidator.hs`; changes to oracle resolution must be conformance-tested across all of them.
+- `plutus/test/EconomicOracleTest.hs` already includes a multi-asset quote-set vector, duplicate-identity rejection, and a characterization test documenting that the configured legacy Oracle State remains authoritative over an unqualified candidate quote.
+- USD/USDM remains unresolved at source/implementation level despite Option B being selected; no parity assumption is permitted.
+
+Disposition: documentation-only, non-normative. No quorum, threshold, freshness, source-weight or fallback rule selected. No economic kernel, V3/Reveal, transaction, deployment approval or branch topology changed. Next gate is source-registry/verification-predicate design and ledger-level conformance vectors, with transaction-size and execution-budget measurements before any production integration.
+
