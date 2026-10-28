@@ -198,6 +198,16 @@ check(oracle?.status === 'MATERIALIZED' &&
   oracle?.network === 'cardano-preprod' &&
   oracle?.oracleState?.utxo === deployment?.oracleConfiguration?.utxo,
   'Oracle State identity is bound to deployment')
+check(
+  /^[0-9a-f]{64}$/i.test(oracle?.evidenceHash ?? '') &&
+    digestWithoutEvidenceHash(oracle) === oracle?.evidenceHash,
+  'Oracle State evidence digest matches its exact manifest',
+)
+check(
+  oracle?.qualification?.externalPriceSourceVerified === true,
+  'Oracle external price source is independently verified',
+  'datum shape, a matching publisher field, and a fresh timestamp do not prove external price-source truth; an unqualified compatibility quote must remain blocked',
+)
 
 const timestampText = oracle?.datumSemantics?.timestampMs
 const maxAgeText = oracle?.datumSemantics?.maxAgeMs
