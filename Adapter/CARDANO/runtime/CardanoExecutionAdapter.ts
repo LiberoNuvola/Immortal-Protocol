@@ -163,7 +163,7 @@ async function assertAdmissionInputsAreClassified(
   tx: unknown,
   declaredInputReferences: readonly string[],
   lucid: CardanoLucidExecutionPort,
-): Promise<void> {
+): Promise<readonly string[]> {
   const actualInputs = readCompletedTransactionInputs(tx)
   const actual = new Set(actualInputs)
   const declared = declaredInputReferences.map(canonicalInputReference)
@@ -180,7 +180,7 @@ async function assertAdmissionInputsAreClassified(
   }
 
   const additionalInputs = actualInputs.filter((reference) => !declaredSet.has(reference))
-  if (additionalInputs.length === 0) return
+  if (additionalInputs.length === 0) return actualInputs
 
   const walletReferences = await readConnectedWalletInputReferences(lucid)
   const unclassified = additionalInputs.filter((reference) => !walletReferences.has(reference))
@@ -188,6 +188,20 @@ async function assertAdmissionInputsAreClassified(
     throw new Error(
       `Additional completed transaction inputs are not verified as connected-wallet UTxOs: ${unclassified.join(', ')}`,
     )
+  }
+  return actualInputs
+}
+
+function assertCompletedInputReferencesUnchanged(
+  tx: unknown,
+  validatedReferences: readonly string[],
+): void {
+  const currentReferences = readCompletedTransactionInputs(tx)
+  if (
+    currentReferences.length !== validatedReferences.length ||
+    currentReferences.some((reference, index) => reference !== validatedReferences[index])
+  ) {
+    throw new Error('Completed transaction spending inputs changed after economic admission validation')
   }
 }
 
@@ -235,7 +249,11 @@ export function createCardanoExecutionAdapter(
       if (expectedActionClass === 'Issue') {
         assertAuthoritativeIssueAdmissionWitness(admission)
       }
-      await assertAdmissionInputsAreClassified(tx, inputReferences, lucid)
+      const validatedInputReferences =
+        await assertAdmissionInputsAreClassified(tx, inputReferences, lucid)
+      // The wallet UTxO lookup above is asynchronous. Re-read the exact body
+      // inputs after that await and immediately before invoking the signing port.
+      assertCompletedInputReferencesUnchanged(tx, validatedInputReferences)
       return this.submitInfrastructure(tx)
     },
   }
