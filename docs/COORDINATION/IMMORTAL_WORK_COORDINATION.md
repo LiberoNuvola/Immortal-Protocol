@@ -3871,3 +3871,19 @@ Do not retrofit all transitions with a guessed evidence record, placeholder tran
 No package facade, protocol semantic change, economic constant change, V3/Reveal change, Agent A EEV/Issue authority change, wallet signature, deployment, transaction submission, new branch or Materios work was performed.
 
 **STATUS: PHASE-SPLIT API DESIGN ADDED TO THE SDK DRAFT; PRODUCTION-WIRING GAP TRACKED; NO RUNTIME CHANGE.**
+
+
+## 45.41 AGENT B — ACTION-FINGERPRINT PROVENANCE MATRIX (2026-10-28)
+
+A source-level audit identified different roles for the action fingerprints currently in the repository:
+
+- **Issue:** `PRE-RICH/onchain/PreRichIssueDecision.hs::produceIssueDecision` computes the decision fingerprint from the canonical Issue action plus the canonical pre-state and candidate post-state hashes. The Haskell provider transports it, and the production Issue builder places the admitted field in the V3 carrier redeemer.
+- **Reveal:** `audit/cardano-integration/reveal-ledger-trace.ts` constructs a `hashJson` action fingerprint from the local-Yaci fixture's actual input references and Reveal/game/result fields.
+- **Claim:** `audit/cardano-integration/claim-ledger-trace.ts` constructs a `hashJson` fingerprint from the fixture's prize/pool/wallet/oracle references and settlement/game fields.
+- **Expire:** `audit/cardano-integration/expire-ledger-trace.ts` constructs a `hashJson` fingerprint from fixture input refs, ticket identity, price and expiry fields.
+
+The Reveal/Claim/Expire formulas belong to observed local-Yaci audit traces; they are not current production pre-sign admission producers. The production `src/gameFlow.ts` functions accept `EconomicAdmissionWitness` and submit through the adapter, but this read-only audit did not find an application-level canonical fingerprint producer equivalent to the Haskell Issue decision.
+
+The [SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) now records a per-transition provenance matrix and a release gate for canonical fingerprint source ownership plus completed-transaction mapping. The helper equality regression remains helper-level; it does not close the production-wiring gap for all four economic actions.
+
+**Guardrail:** never reuse the post-transition harness `hashJson` as a live pre-sign authorization fingerprint by assumption. Do not alter V3 or Reveal semantics; resolve fingerprint canonicalization and transition-specific transaction mapping before runtime integration. No code or economic rules changed.

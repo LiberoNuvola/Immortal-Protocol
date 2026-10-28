@@ -377,3 +377,13 @@ The SDK API contract draft now makes the production-wiring gap explicit and prop
 The existing `CanonicalTransitionEvidence` includes `transactionRef` and is only structurally validated. Do not fabricate a placeholder reference or treat its matching fields as runtime proof. Repository call-site inspection found the general and Issue-specific binding helpers in tests, but not wired through all production Issue/Reveal/Claim/Expire submission paths; `submitEconomic` currently does not accept that evidence envelope.
 
 This remains draft architecture, not runtime implementation. The SDK API proposal now records this split as a release gate; do not change the adapter API or invent producer values until fingerprint ownership/canonicalization and transition-specific input/output binding have an agreed design.
+
+
+## Follow-up: transition-specific fingerprint provenance (2026-10-28)
+
+Read-only source review now distinguishes authoritative pre-sign decision fingerprints from post-transition observation fingerprints:
+- **Issue:** the canonical Haskell Issue decision derives the action fingerprint from the canonical Issue action plus pre/post-state hashes; the Issue builder carries the admitted fingerprint and authority signature through the carrier redeemer.
+- **Reveal / Claim / Expire:** the found `hashJson` fingerprints are built in local-Yaci audit trace scripts from fixture inputs and action-specific fields as observed around settlement. They are diagnostic transition-observation evidence, not producers for the production pre-sign admission witness.
+- **Production mapping gap:** `src/gameFlow.ts` receives `EconomicAdmissionWitness` for Reveal/Claim/Expire but does not expose an application-level canonical action-fingerprint producer analogous to the Haskell Issue path. The adapter sees admission and concrete input references; the generalized evidence helper is not called by production paths.
+
+The SDK draft now has an explicit transition-specific provenance matrix and a release gate for canonical fingerprint source ownership plus completed-transaction mapping. Do not transplant the harness `hashJson` formulas into production admission, claim universal fingerprint parity, or change V3 semantics. No runtime code was changed.

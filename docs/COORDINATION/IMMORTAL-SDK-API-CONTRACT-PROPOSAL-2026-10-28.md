@@ -53,6 +53,17 @@ Keep the phases explicit: build candidate → validate admission/intent and comp
 
 **Current production-wiring status:** call-site inspection found the general `assertEconomicAdmissionMatchesCanonicalEvidence` and Issue-specific `assertIssueAdmissionMatchesCanonicalEvidence` exercised by tests but not called by all production economic submission paths; `CardanoExecutionAdapter.submitEconomic` does not currently accept the combined evidence object. The fingerprint equality regression therefore validates a helper contract, not a universal runtime gate. Keep this explicit until the pre-sign/post-submit split, ownership and transition-specific mappings have been approved and wired into Issue/Reveal/Claim/Expire.
 
+#### Action-fingerprint provenance matrix (current evidence, not approval)
+
+| Transition | Current source found | What it establishes | Remaining boundary |
+|---|---|---|---|
+| Issue | `PRE-RICH/onchain/PreRichIssueDecision.hs::produceIssueDecision` derives `actionHash = digest(joinFields [canonicalIssueAction action, preHash, postHash])`; the Haskell provider transports the decision fingerprint and the Issue builder places it in the signed V3 carrier redeemer. | A canonical, pre-transition Issue-decision fingerprint source exists. | The V3 carrier signature/binding remains its own contract; a string equality in an SDK evidence helper is not a substitute for it or for on-chain validation. |
+| Reveal | `audit/cardano-integration/reveal-ledger-trace.ts` builds an observed `hashJson` fingerprint from action class, input references, ticket/game fields and result after the local Yaci transaction is observed. | A deterministic audit observation fingerprint for that fixture and environment. | It is not a production pre-sign admission fingerprint, and its harness is explicitly not the production economic-admission path. |
+| Claim | `audit/cardano-integration/claim-ledger-trace.ts` builds an observed `hashJson` fingerprint from the ticket, pool, owner-ticket and oracle references plus settlement/game fields after the local Yaci trace. | A deterministic audit observation fingerprint for that fixture and environment. | It is not a production pre-sign admission fingerprint; it must not be copied into a live admission witness. |
+| Expire | `audit/cardano-integration/expire-ledger-trace.ts` builds an observed `hashJson` fingerprint from ticket/pool inputs, policy/name, price and expiry after the local Yaci trace. | A deterministic audit observation fingerprint for that fixture and environment. | It is not a production pre-sign admission fingerprint; it must not be copied into a live admission witness. |
+
+The production `src/gameFlow.ts` Reveal/Claim/Expire functions accept an `EconomicAdmissionWitness` and submit through the adapter, but this source audit did not find an application-level canonical action-fingerprint producer equivalent to the Haskell Issue decision. Those transitions need explicit producer ownership and transaction-body mapping before a universal pre-sign binding can be wired. Do not normalize the audit `hashJson` formulas into a universal algorithm by assumption, change V3 semantics, or infer authority from a digest.
+
 ### 3.2 Admission binding
 
 Expose a binding result only as a relation between the supplied admission and the appropriate phase-specific evidence. The helper-level equality check now includes action class, action fingerprint and pre/post-state fingerprints; it is not currently wired as a universal production gate.
@@ -105,6 +116,7 @@ For direct-USDM EEV, the SDK may carry an already qualified evidence reference. 
 | Public export ownership | Approved package boundaries and owners | Proposal only |
 | Evidence schema | Versioning, canonicalization, timestamp and trust semantics | Open |
 | Pre-sign vs post-submit evidence | Separate intent/admission binding from actual transaction reference and ledger observation | Design proposed; runtime wiring open |
+| Per-action fingerprint provenance | Canonical pre-sign fingerprint producer and transaction-body mapping for Issue/Reveal/Claim/Expire | Issue source mapped; Reveal/Claim/Expire production producer mapping open |
 | Existing adapter contract tests | Exact-head focused CI and negative twins | Existing workflows green on previously pinned heads; recheck current head before implementation |
 | V08 universal transition | Canonical executable owner mapped to normative `T` and expiry finality, with conformance tests | Open |
 | V09 certified kernel | Concrete deployment/profile instance of `K_c`, declared `S,A,Ω,T,Safe`, CK/VC evidence and non-vacuity evidence where required | Open |
