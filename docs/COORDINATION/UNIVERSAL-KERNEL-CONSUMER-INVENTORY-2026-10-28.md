@@ -347,3 +347,36 @@ Do not replace the existing targeted checks or broaden the claim to “no output
 5. Keep U-03 (concrete `K_c`/`Ω` proof) and RF8/U-02 (whole-program reachability) open until their separate evidence criteria are met.
 
 **Change scope:** documentation only. No protocol code, tests, workflows, economic rules/constants, V3/Reveal semantics or transaction changed. No tests were executed.
+
+
+## 2026-10-28 — Canonical fingerprint producer and production binding boundary
+
+This pass follows the existing Issue fingerprint producer on the exact named branch and compares its contract with the production TypeScript Issue path. It is source inspection and a documentation-only update; no runtime code, economic rules, V3/Reveal semantics, workflows or transactions were changed.
+
+### Exact source anchors
+
+| Path | Blob SHA | Verified contract | Limitation |
+|---|---|---|---|
+| `PRE-RICH/onchain/PreRichIssueDecision.hs` | `ec37ea8e656fa399f1e57e2404e0c6a2c5b5ccee` | `canonicalV3State` is an explicit application-owned serialization of the V3 state fields in fixed order: liabilities, unresolved reserve/count, safety capital, reserve protection, mandatory future costs, class records, control state and Jackpot state. Integers use `show`, booleans use `1`/`0`, and fields are joined with `|`. SHA-256 is computed over the resulting bytes via `ByteString.Char8.pack`. `canonicalIssueAction` serializes Issue as `Issue|classId|price`; the action fingerprint is SHA-256 of `Issue action | pre-state hash | post-state hash`. | This is an Issue-specific V3 decision producer, not a generic serialization for every action or adapter. Delimiter/encoding compatibility must be preserved if any consumer is added. The fingerprints commit to the model state/action serialization, not the full Cardano transaction body. |
+| `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` | `6373b93260137d47892da2c4fb3d4ee8177c4bd1` | Equality-checks admission action class, action fingerprint, pre-state hash and post-state hash against the evidence record after structural validation. | Does not recompute the Haskell serialization/digests, calculate the transition, or bind transaction-body fields. |
+| `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` | `4c5f81a76edb14dbcf59412c6b0500c749264883` | Evidence includes action/profile/protocol/adapter metadata, pre/post-state fingerprints, action fingerprint and a transaction reference; validates digest shape and supports equality checks. | No normalized full-body commitment or proof that ledger effects represented by the transaction reference equal the declared post-state. |
+| `src/mint.ts` | `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534` | Production Issue constructs and completes the Lucid transaction, runs Treasury-value, TTL and minimum-ADA checks, then calls `submitEconomic(..., 'Issue')`. | In the inspected production path, there is no call to `assertEconomicAdmissionMatchesCanonicalEvidence` and no canonical evidence argument passed into the adapter submission. |
+| `src/__tests__/caes-transition-closure.test.ts` | `151fb521153262ce1bfe0fbf52d4173eb8c35a84` | Test-local `submitComposedEconomic` explicitly calls the evidence-binding helper before adapter submission and verifies mismatch rejection before signing. | The test demonstrates the helper composition, not that the Issue production builder uses it; its successful mock exposes only spending inputs. |
+
+### Result
+
+1. **An existing canonical serialization does exist** for the PRE-RICH Issue decision. It must be treated as the existing contract rather than replaced with an invented TypeScript hash scheme.
+2. **Its scope is narrower than full transaction intent.** The action fingerprint binds the Issue label/class/price and the model's pre/post-state hashes. It does not directly commit to the finalized Cardano transaction body, output datum/redeemer bytes, mint/burn set, reference inputs, validity interval, fees or carrier continuation.
+3. **Cross-language reproduction is not yet established by this pass.** The Haskell producer's explicit `ByteString.Char8` encoding and delimiter format are documented in source, but no byte-for-byte TypeScript implementation plus shared golden vectors was identified in the inspected paths.
+4. **Production composition remains OPEN.** The evidence-binding helper is tested, but its presence in the Issue production path is not established. This does not mean the on-chain validators are absent: they remain the final enforcement boundary and independently enforce their own constraints.
+5. **Do not implement yet by simply passing a caller-supplied evidence object.** The next safe step is to identify the intended trusted producer of `CanonicalTransitionEvidence`, confirm whether the normative CAES contract specifies how it is derived, then add shared golden vectors and a production composition point that fails before signing. Full body conformance must reuse existing normative transaction requirements and the pinned Lucid/CML API; it must not be inferred from the model fingerprint alone.
+
+### Next bounded checks
+
+- Trace the producer and intended trust owner of `CanonicalTransitionEvidence` across the exact branch, distinguishing audit scripts/tests from production entry points.
+- Establish shared Haskell/TypeScript golden vectors for the existing Issue serialization (state bytes, action bytes, pre/post digests and final action digest) without changing the serialization.
+- Only after that contract is confirmed, compose the existing equality check into the production Issue route and define a typed completed-body conformance check against the same admitted transition.
+- Add adversarial tests that prove mismatch rejection before signing; do not dispatch workflows or submit transactions.
+- Keep U-03 (`K_c`/`Ω)/infinite-horizon viability and RF8/U-02 whole-program reachability OPEN.
+
+**Change scope:** documentation only. No tests were run.
