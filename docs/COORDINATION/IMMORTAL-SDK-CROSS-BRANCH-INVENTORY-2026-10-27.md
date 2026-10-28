@@ -353,3 +353,16 @@ All six bounded workflows below completed successfully on exact HEAD `2ef5c425da
 - [PRE-RICH Direct-USDM Conformance #40631890559](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890559) — separate Agent A-owned qualification/conformance path.
 
 This closes only the missing equality binding between the witness and its evidence record. It does not recompute or cryptographically authenticate the action fingerprint, prove ledger inclusion, qualify EEV, approve Issue, or discharge R1/`K_c`. V08/V09 remain open; the SDK API document remains a review draft. Agent A's Oracle State freshness and direct-USDM work is separate and was not duplicated. No V3 carrier, Reveal semantics, economic constants, or wallet/deployment authority changed.
+
+
+## Follow-up: production wiring boundary for transition-evidence binding (2026-10-28)
+
+A call-site audit on the current branch clarifies the reach of the action-fingerprint equality fix:
+
+- `assertEconomicAdmissionMatchesCanonicalEvidence` is called from the CAES composition test and its focused tests; the production `CardanoExecutionAdapter.submitEconomic(...)` API does not accept a `CanonicalTransitionEvidence` argument and does not call this helper.
+- `assertIssueAdmissionMatchesCanonicalEvidence` in `src/preRichIssueAdmissionBridge.ts` also validates matching Issue action/state/action fingerprint fields, but a repository call-site search found its direct tests rather than a call in the production Issue submission path.
+- Production Issue still goes through `obtainAuthoritativeIssueAdmission` and `submitEconomic(..., 'Issue')`; Reveal/Claim/Expire similarly use the economic submission boundary without this evidence envelope.
+
+Therefore, the action-fingerprint equality is now covered by focused unit/CAES regression tests, but it is **not yet a universal production pre-sign gate**. Section 45.38 records a tested binding contract, not runtime enforcement across every transition.
+
+The next implementation decision is to define a separate pre-sign transition-intent/admission binding that can be validated before wallet authorization, and a post-submit/observed settlement record that supplies `transactionRef` and ledger confirmation afterwards. Reusing the current full `CanonicalTransitionEvidence` unchanged as a pre-sign object would conflate evidence known before signing with an outcome reference only available after submission. Do not synthesize a transaction reference, weaken validation, or retrofit all production flows without an agreed schema and explicit tests for Issue/Reveal/Claim/Expire. This does not alter V3/Reveal semantics, Agent A's EEV/Issue authority, or the current fail-closed input inspection in the adapter.

@@ -3826,3 +3826,26 @@ The fix proves equality binding only. It does not recompute or authenticate the 
 No new branch was created. No V3 carrier, Reveal semantics, economic constants, wallet signing, deployment, transaction submission, or Materios work was changed.
 
 **STATUS: ACTION-FINGERPRINT EQUALITY BINDING ADDED; CAES REGRESSION IN CI; SIX BOUNDED WORKFLOWS GREEN ON THE RECORDED EXACT SHA.**
+
+
+## 45.39 AGENT B — PRODUCTION CALL-SITE AUDIT: CAES BINDING NOT YET WIRED INTO RUNTIME (2026-10-28)
+
+### Precise scope of the fingerprint fix
+
+A follow-up read-only call-site audit refines the interpretation of section 45.38:
+
+- `assertEconomicAdmissionMatchesCanonicalEvidence` is exercised by `src/__tests__/caes-transition-closure.test.ts` and the unit tests. The production `CardanoExecutionAdapter.submitEconomic(...)` method does not accept `CanonicalTransitionEvidence` and does not invoke this binding.
+- `src/preRichIssueAdmissionBridge.ts` contains `assertIssueAdmissionMatchesCanonicalEvidence`, and that function compares the Issue action fingerprint as well as pre/post-state fingerprints. The call-site search found its tests, but not use within the production `src/mint.ts` Issue submission path.
+- The production Issue path still requires the existing authoritative admission via `obtainAuthoritativeIssueAdmission` and goes through `submitEconomic(..., 'Issue')`; other economic transitions likewise use `submitEconomic` without a `CanonicalTransitionEvidence` object.
+
+So the new fingerprint-equality assertion and its negative twins establish the binding helper's intended behavior, and the CAES test is now in CI, but this evidence binding is **not yet an enforced universal production pre-sign gate**. The earlier section 45.38 must be read as test/helper contract closure, not proof of production call-site integration.
+
+### Safe design next step
+
+Separate the two timing domains:
+1. a pre-sign transition-intent/admission binding carrying action class/fingerprint and canonical pre/post-state fingerprints, validated before wallet signing; and
+2. a post-submit settlement/observation evidence record that binds the actual transaction reference and independently observed ledger result.
+
+The current `CanonicalTransitionEvidence` requires a non-empty `transactionRef`; do not fabricate a placeholder or conflate a transaction prepared for signing with a submitted/ledger-observed outcome. Before changing the production adapter signature, map the canonical fingerprints actually produced for each of Issue/Reveal/Claim/Expire, decide schema ownership/versioning and fail-closed semantics, then add transition-specific regression tests proving mismatched action/state bindings stop before signing. Do not duplicate Agent A's Issue/EEV producer or change V3/Reveal semantics.
+
+**STATUS: HELPER-LEVEL FINGERPRINT BINDING TESTED; PRODUCTION-WIRING GAP IDENTIFIED AND EXPLICITLY OPEN.**
