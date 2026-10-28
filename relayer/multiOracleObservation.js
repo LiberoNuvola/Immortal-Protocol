@@ -26,7 +26,7 @@ function integerString(value, field, { nonNegative = false } = {}) {
     throw new Error(field + ' must be a safe integer or decimal string')
   }
   const text = String(value)
-  if (!/^-?(0|[1-9][0-9]*)$/.test(text)) {
+  if (!/^(0|-[1-9][0-9]*|[1-9][0-9]*)$/.test(text)) {
     throw new Error(field + ' must be a canonical decimal integer')
   }
   const parsed = BigInt(text)
