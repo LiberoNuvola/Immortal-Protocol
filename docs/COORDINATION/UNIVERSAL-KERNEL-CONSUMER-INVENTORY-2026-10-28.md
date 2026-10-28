@@ -404,3 +404,23 @@ The bounded exact-branch paths show three distinct layers that must not be confl
 Thus the next blocker is not merely “wire the existing helper.” Before any runtime change, the intended authoritative producer and byte-level contract for the canonical evidence must be identified. The production path cannot safely promote arbitrary caller-supplied evidence or local audit fingerprints into canonical authority.
 
 **Change scope:** documentation only. No tests were run.
+
+
+## 2026-10-28 — Canonical serialization contract: implementation/comment discrepancy
+
+A closer read of `PRE-RICH/onchain/PreRichIssueDecision.hs` identified a small but material contract discrepancy relevant to cross-language reproduction:
+
+- The comment above `canonicalV3State` says the serialization is deliberately explicit and independent of Haskell `Show`.
+- The implementation defines `i = P.show` and uses it for all integer fields and class records. The encoding is therefore explicitly ordered and delimiter-separated, but integer rendering is in fact delegated to `Prelude.show`.
+- Booleans are encoded explicitly as `1`/`0`; Jackpot status is encoded through explicit fixed literals; SHA-256 is applied to `ByteString.Char8.pack` of the resulting string.
+
+This does not by itself show a current fingerprint bug: the inspected numeric fields use integer values and the expected decimal rendering is straightforward. It does mean the source comment overstates independence from `Show`, and a TypeScript reproduction must be checked against actual golden vectors rather than inferred from the comment alone.
+
+### Safe resolution criteria
+
+1. Preserve the current byte output; do not alter Haskell serialization as part of this audit.
+2. Establish golden vectors from the existing Haskell implementation for representative boundary values (including zero, positive multi-digit integers, negative values if the domain/type permits them, multiple classes and all Jackpot statuses).
+3. Make the TypeScript reproduction match the exact bytes and SHA-256 outputs.
+4. Decide separately whether the comment should be corrected or the implementation intentionally changed; any change to bytes requires explicit compatibility review and coordinated versioning.
+
+**Classification:** serialization description / cross-language reproducibility OPEN. No runtime code or tests were changed or run in this pass.
