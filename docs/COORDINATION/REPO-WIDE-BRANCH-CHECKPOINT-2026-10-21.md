@@ -4650,3 +4650,23 @@ These five workflows are the complete set returned by the Actions API for this e
 The upstream Orynq commit list was rechecked; latest remains `d1e1548682d33a430c0f42ac53f88f01a652fefe` (PR #220 flaky-test stabilization). No newer upstream commit was returned. IMMORTAL's Materios bridge remains pinned to 0.6.2 pending a reproducible 0.7.0 lockfile plus install/typecheck/test evidence.
 
 **Next technical gate:** complete-body semantic binding remains the highest-priority SDK blocker. Do not change the Haskell fingerprint source, infer a fingerprint/canonicalization, or label V08/V09 closed without an approved per-action predicate profile and negative tests proving rejection before signing/submission. The current successful workflows do not constitute Preprod ticket settlement or close R1/K_c, Oracle or EEV gates.
+
+
+## 45.48 AGENT A — ORACLE DATUM TIMESTAMP DECODED; QUOTE STILL STALE (2026-10-28)
+
+### Exact-head evidence
+
+The read-only workflow [PRE-RICH Preprod EEV — Source Qualification Only #40632174413](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174413) completed SUCCESS on `work/immortal-green-closure` at source commit `dd3f0cded40e115b70210872914322e5d6ed678e`. It is deliberately a source-qualification workflow, not an approval or Issue transaction workflow.
+
+- Oracle datum decoder tests: 6/6 passed, including decoding the timestamp already present in the on-chain datum, and rejecting malformed CBOR, wrong constructor/field count, negative timestamps and mismatched price/asset/publisher.
+- The read-only observer queried the exact configured Oracle State singleton `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0` and decoded timestamp `1791481130142` ms. It records the actual value rather than substituting runner wall-clock time.
+- At the observed Cardano chain time in this run, `timestampAgeMs=1680373453` versus `maxAgeMs=3600000`; classification is `STALE` and `withinMaxAge=false`. This is a genuine live freshness blocker, not a parser defect.
+- The exact PrizePool UTxO was re-observed as `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`. Its direct physical tUSDM qualification produced `verifiedUsdmSubunits=100000`, with EV1–EV7 qualified for `PRE-RICH-EEV-USDM-DIRECT-V1` and qualification hash `7e7392c1d196a76d20ded3e6db3167a26d72f24fd00d4d9080296e879beef204`.
+- The source-set explicitly remains `OBSERVED_NOT_QUALIFIED` and the new qualification has `deploymentApproval: null` / approval `PENDING`. The workflow verifies there is no approval in this generated artifact and uploads source qualification evidence only (artifact ID `12792161360`, SHA-256 `39495bdac71131d6cb0796a669e679a1462383dc017d8dd639289ac0f5b8b561`).
+
+### Disposition
+
+The original producer defect is closed: an existing Oracle State singleton's inline datum is now decoded and its timestamp is validated. The on-chain timestamp has **not** been refreshed; the quote remains stale by roughly 19.45 days against a one-hour maximum. A fresh timestamp would not by itself prove external price-source truth: this is still a deployment-wallet-signed fixed compatibility quote, and the separate observation of the configured public Pages/runtime Oracle identity remains blocked by missing runtime configuration values, as recorded in §45.41.
+
+Do not bootstrap over or silently migrate the singleton, alter its datum, infer USD/USDM parity, or invoke privileged approval from this source-only result. Keep first-Issue readiness BLOCKED until the live Oracle quote/source, public-runtime identity, current evidence binding and R1/K_c authority package meet their existing gates. No wallet signature, deployment approval, transaction submission, V3/Reveal semantics change, new branch, or Materios work occurred.
+
