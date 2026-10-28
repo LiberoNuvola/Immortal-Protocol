@@ -4670,3 +4670,27 @@ The original producer defect is closed: an existing Oracle State singleton's inl
 
 Do not bootstrap over or silently migrate the singleton, alter its datum, infer USD/USDM parity, or invoke privileged approval from this source-only result. Keep first-Issue readiness BLOCKED until the live Oracle quote/source, public-runtime identity, current evidence binding and R1/K_c authority package meet their existing gates. No wallet signature, deployment approval, transaction submission, V3/Reveal semantics change, new branch, or Materios work occurred.
 
+
+
+### 45.48 CURRENT BRANCH TIP RECONCILIATION — 2026-10-28
+
+A new branch-tip commit appeared after the prior CI checkpoint:
+
+- Current observed `work/immortal-green-closure` HEAD: `e144a35161cdf6eb0928877343e753a11247858a`
+- Commit: [docs: pin Issue authority source and deployment evidence census](https://github.com/LiberoNuvola/Immortal-Protocol/commit/e144a35161cdf6eb0928877343e753a11247858a)
+- Its change is documentation-only. It pins an authority-source/deployment/artifact census and keeps VC1–VC6/E1–E10, U-03, U-02/RF8, and the concrete authority deployment qualification OPEN. It does not claim that a signed envelope proves its asserted economic facts.
+
+Exact-HEAD Actions recheck for `e144a35161cdf6eb0928877343e753a11247858a` returned these five completed successful workflows:
+- [Algorithmic Governability Adversarial Lab #40749078320](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40749078320) — SUCCESS.
+- [Documentation Link Check #40749078036](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40749078036) — SUCCESS.
+- [Protocol Declaration Conformance #40749078062](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40749078062) — SUCCESS.
+- [IMMORTAL Portability Conformance #40749078294](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40749078294) — SUCCESS.
+- [Cardano Adapter Sale Conformance #40749078258](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40749078258) — SUCCESS.
+
+This is documentation/conformance evidence only, not proof of complete transaction-body binding, production authority qualification, first-ticket Preprod settlement, or closure of R1/K_c, Oracle or EEV. The branch-tip census in the newer commit supersedes the older HEAD SHA recorded in earlier checkpoint paragraphs; retain older SHAs as historical evidence, not as the current ref.
+
+### Parallel Materios/Orynq recheck
+
+The latest upstream commit returned by the Orynq repository API remains `d1e1548682d33a430c0f42ac53f88f01a652fefe` (2026-10-28, PR #220 test stabilization); no newer upstream commit was returned. The IMMORTAL bridge branch remains at `cfb2de037da07396e32748e09c1f8438c96c5397` and pins `@fluxpointstudios/orynq-sdk-anchors-materios@0.6.2`. Its current source imports the four audited exports and has no custom error-code branch or resubmission loop. Keep 0.7.0 adoption gated on reproducible lockfile generation and executable install/typecheck/test evidence; do not infer runtime compatibility from source exports alone.
+
+**Current work disposition:** preserve both open tracks separately. SDK: next gate is an approved per-action body predicate profile plus pre-sign negative tests; authority source/certificate/deployment evidence is a separate gate. Materios: continue source-level compatibility analysis only until a deterministic install/test environment is available. No new branch, transaction, signature, deployment or V3/Reveal/economic semantics change was made in this pass.
