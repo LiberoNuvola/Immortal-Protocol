@@ -1,0 +1,131 @@
+# IMMORTAL SDK — API Contract Proposal (Draft)
+
+**Status:** REVIEW DRAFT — NOT AN APPROVED PUBLIC API  
+**Date:** 2026-10-28  
+**Working branch:** `work/immortal-green-closure`  
+**Scope:** API boundaries and compatibility contract only. This document does not implement a package, change protocol semantics, certify an adapter, or authorize deployment.
+
+## 1. Decision requested
+
+Review the proposed SDK boundary before any public package facade is implemented. The goal is to expose existing canonical contracts without duplicating the normative economic kernel, laundering evidence into authority, or hiding incomplete conformance.
+
+**Recommended sequencing:** approve package ownership and evidence semantics first; implement only after V08/V09 release-gate criteria and schema compatibility tests are agreed.
+
+## 2. Candidate package ownership
+
+| Candidate package | May expose | Must not do |
+|---|---|---|
+| `@immortal/core` | Versioned, chain-neutral data contracts; structural validators; typed references to evidence | Reimplement the Haskell economic kernel in TypeScript; approve EEV; claim source authenticity, freshness, viability, or ticket admission from shape validation |
+| `@immortal/adapter-cardano` | Cardano observations/projections, transaction-building/execution boundary, wallet hand-off and fail-closed submission contracts | Sign without explicit wallet authority; bypass current admission; convert an observation into deployment approval; claim generic chain neutrality |
+| `@immortal/conformance` | Portability vectors, normalized reference-runner invocation, test/evidence manifests and qualification status | Mark full portability green while required vectors remain pending; substitute a boolean gate for a concrete certificate |
+
+Package names are provisional and require repository/package-owner approval. Existing files remain in place initially; no mass moves or new parallel implementation are proposed.
+
+## 3. Candidate public contracts
+
+The following are *contract sketches*, not code to copy into runtime packages before review.
+
+### 3.1 Versioned transition evidence envelope
+
+Proposed minimum fields:
+
+- `schemaVersion`: explicit, immutable schema identifier (initial candidate: `immortal.transition-evidence/v1`).
+- `chain` and `environment`: identify the chain and distinguish local Yaci, Preprod, Mainnet, or other declared environments.
+- `action`: action identifier from a versioned action vocabulary; unknown values fail closed.
+- `preStateFingerprint` and `postStateFingerprint`: digest-encoded fingerprints with declared algorithm/encoding.
+- `transactionReference`: chain-specific transaction/observation reference where applicable.
+- `sourceReferences[]`: evidence locators, each with source type and observation time where the source provides it.
+- `assurance`: an explicit evidence level and verifier identity/version, never a caller-supplied claim that automatically grants authority.
+- `limitations[]`: unresolved checks such as source authenticity, freshness, profile qualification, or ledger inclusion.
+
+The current `CanonicalTransitionEvidence.ts` is only a structural validator. Before exporting it, the contract must define schema versioning, fingerprint algorithm and canonicalization, timestamp semantics, environment vocabulary, and the difference between *claimed* and *verified* assurance. A well-formed digest string is not a cryptographic proof; a transaction reference is not proof of ledger inclusion; a timestamp alone is not proof of freshness.
+
+### 3.2 Admission binding
+
+Expose a binding result only as a relation between the supplied admission and transition evidence. The result must not be named or documented as “economic admission approved” unless the authoritative admission procedure has independently completed and its evidence is verified.
+
+Preserve the existing pre-sign fail-closed boundary. Schema validation, fingerprint equality, or matching fields must never trigger wallet signing or transaction submission on their own.
+
+### 3.3 Canonical economic state
+
+The chain-neutral state type may be exported only as a data contract and shape validator. The normative calculation authority remains `IMMORTAL/kernel/UniversalEconomicKernel.hs` and its declared reference conformance path. No second TypeScript implementation of `ProtectedCapital`, `RawSurplus`, or viability is proposed.
+
+### 3.4 Cardano execution boundary
+
+The Cardano package can expose the existing adapter boundary with explicit wallet/user consent and explicit preconditions. It must retain:
+- authoritative admission as a prerequisite;
+- completed transaction/input binding checks before signing;
+- explicit environment and source labels;
+- fail-closed behavior for missing, stale, or mismatched evidence;
+- a clear separation between build, wallet signature, submission, and observed ledger result.
+
+A successful build is not a signed transaction; a signed transaction is not a submitted transaction; submission is not ledger acceptance; local Yaci evidence is not Preprod/Mainnet evidence.
+
+## 4. Assurance vocabulary — proposed, not yet normative
+
+Avoid a single boolean `verified`. Represent each evidence dimension separately:
+
+1. **STRUCTURE** — schema and field shapes validate.
+2. **SOURCE_OBSERVED** — an identified source was read at a recorded time.
+3. **PROFILE_QUALIFIED** — profile-specific qualification predicates and evidence checks passed.
+4. **DEPLOYMENT_APPROVED** — the current authoritative deployment-approval artifact exists and binds the applicable source/profile/deployment.
+5. **LEDGER_CONFIRMED** — the exact transaction is independently observed in the declared ledger environment.
+
+These are not automatically cumulative: each level requires its own verifier and evidence. A source observation may be real while unqualified; profile qualification does not imply deployment approval; local ledger confirmation does not imply Preprod/Mainnet confirmation. This vocabulary is a proposal and must be reconciled with existing normative statuses before implementation.
+
+For direct-USDM EEV, the SDK may carry an already qualified evidence reference. It must not calculate EEV from ADA/PRE/oracle prices, assert USD/USDM parity, or replace the separate deployment approval and R1/`K_c` gate.
+
+## 5. Compatibility and release rules
+
+- Every exported serialized contract has an explicit schema version.
+- Additive optional fields may be compatible only if old consumers fail safely and unknown assurance claims are not elevated.
+- Removing/renaming fields, changing canonicalization, digest semantics, action vocabulary, environment labels, or trust meaning requires a major version or a new schema identifier.
+- Unknown schema versions, unknown actions, malformed evidence, missing required references, or conflicting bindings fail closed.
+- Do not make a package release claim of “full IMMORTAL conformance” while V08/V09 or any required vector remain pending.
+- Package API tests must test both positive cases and negative twins for unknown versions, mismatched fingerprints, wrong environment, stale/missing source evidence, and invalid trust transitions.
+- Keep a source-to-export-to-test map and exact commit/toolchain fingerprint in every release evidence packet.
+
+## 6. Required release gates before implementation/qualification
+
+| Gate | Required evidence | Current disposition |
+|---|---|---|
+| Public export ownership | Approved package boundaries and owners | Proposal only |
+| Evidence schema | Versioning, canonicalization, timestamp and trust semantics | Open |
+| Existing adapter contract tests | Exact-head focused CI and negative twins | Existing workflows green on previously pinned heads; recheck current head before implementation |
+| V08 universal transition | Canonical executable owner mapped to normative `T` and expiry finality, with conformance tests | Open |
+| V09 certified kernel | Concrete deployment/profile instance of `K_c`, declared `S,A,Ω,T,Safe`, CK/VC evidence and non-vacuity evidence where required | Open |
+| Cardano release boundary | Build/sign/submit/ledger-result phases remain distinct; current admission required | Existing contract boundary; release tests required |
+| Preprod Issue | Current qualified EEV, deployment approval, authoritative admission binding and exact ledger evidence | Separate Agent A/deployment gate; not SDK qualification |
+
+## 7. Explicit non-goals
+
+This proposal does not:
+- close V08 or V09;
+- instantiate or certify `K_c`;
+- authorize or submit a PRE-RICH Issue transaction;
+- infer Moneta USD/USDM parity or convert the test token into Mainnet evidence;
+- modify KA/KC/KD, the price ladder, Genesis, treasury bootstrap, the 500× payout rule, V3 carrier, or Reveal semantics;
+- resume Materios work;
+- create a new branch or implement a public package facade.
+
+## 8. Current evidence context (2026-10-28)
+
+The working branch's five bounded workflows were green at exact HEAD `6a71021404d1d0a354cbe2d948bffb84b3a54bac`:
+- [IMMORTAL Portability Conformance #40630780102](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40630780102)
+- [Cardano Adapter Sale Conformance #40630780282](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40630780282)
+- [Protocol Declaration Conformance #40630780182](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40630780182)
+- [Algorithmic Governability Adversarial Lab #40630780202](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40630780202)
+- [Documentation Link Check #40630780184](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40630780184)
+
+This is bounded CI evidence, not full portability certification. Agent A's fresh direct-USDM observation/EV1–EV7 qualification is separately recorded in the repo-wide checkpoint; its artifact still has `deploymentApproval: null` and `deploymentApprovalStatus: PENDING`. The direct physical-source qualification does not approve Issue admission or resolve R1/`K_c`.
+
+## 9. Review questions
+
+1. Are the package ownership boundaries correct, especially keeping the Haskell kernel authoritative?
+2. Which existing schema/status vocabulary is already normative and must be reused instead of introducing synonyms?
+3. Who owns canonical fingerprinting and source/freshness verification?
+4. Who is the normative/executable owner for universal transition/expiry conformance (V08)?
+5. What deployment/profile will instantiate and certify `K_c` (V09)?
+6. Which exact tests and release artifact will be mandatory before the first public SDK package?
+
+**Recommendation:** approve/revise this contract first. Do not implement the public facade until the review questions affecting authority and conformance are resolved.
