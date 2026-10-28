@@ -63,6 +63,33 @@ assert condition label =
 
 main :: IO ()
 main = do
+  assert
+    (canonicalV3State (baseState { v3Jackpot = JackpotState 2 3 JackpotInactive 4 })
+      == "0|0|0|0|0|0|0|0|0|0|1|1|0|0|2|3|inactive|4")
+    "canonical Jackpot inactive serialization"
+  assert
+    (canonicalV3State (baseState { v3Jackpot = JackpotState 2 3 JackpotLocked 4 })
+      == "0|0|0|0|0|0|0|0|0|0|1|1|0|0|2|3|locked|4")
+    "canonical Jackpot locked serialization"
+  assert
+    (canonicalV3State (baseState { v3Jackpot = JackpotState 2 3 JackpotPayable 4 })
+      == "0|0|0|0|0|0|0|0|0|0|1|1|0|0|2|3|payable|4")
+    "canonical Jackpot payable serialization"
+  assert
+    (canonicalV3State (baseState { v3Jackpot = JackpotState 2 3 JackpotClosed 4 })
+      == "0|0|0|0|0|0|0|0|0|0|1|1|0|0|2|3|closed|4")
+    "canonical Jackpot closed serialization"
+  assert
+    (canonicalV3State
+      (baseState
+        { v3Classes =
+            [ TicketClassState 0 0 0 0 1 True
+            , TicketClassState 1 2 3 4 5 False
+            ]
+        })
+      == "0|0|0|0|0|0|0|0|0|0|1|1|1|2|3|4|5|0|0|0|0|inactive|0")
+    "canonical serialization preserves multiple class order and saleability"
+
   case produceIssueDecision input of
     Nothing -> error "FAIL: valid authoritative Issue decision was rejected"
     Just decision -> do
