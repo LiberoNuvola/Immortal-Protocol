@@ -18,6 +18,7 @@ import PreRichIssueDecision
   ( IssueDecisionInput (..)
   , produceIssueDecision
   , canonicalV3State
+  , canonicalIssueAction
   )
 
 baseState :: V3EconomicState
@@ -67,6 +68,12 @@ main = do
     Just decision -> do
       assert (idPreEEV decision == 500) "producer preserves authoritative pre-EEV"
       assert (canonicalV3State (idPreState decision) == canonicalV3State baseState) "producer retains exact pre-state for provenance"
+      assert
+        (canonicalV3State baseState == "0|0|0|0|0|0|0|0|0|0|1|1|0|0|0|0|inactive|0")
+        "canonical V3 pre-state serialization golden string"
+      assert
+        (canonicalIssueAction (idAction decision) == "Issue|0|1")
+        "canonical Issue action serialization golden string"
       assert (idCandidateEEV decision == 500) "producer preserves authoritative candidate EEV"
       assert (idAvailableExecutableLiquidity decision == 500) "producer preserves executable liquidity"
       assert (idDecisionReference decision == "decision:issue:test") "decision reference is carried"
