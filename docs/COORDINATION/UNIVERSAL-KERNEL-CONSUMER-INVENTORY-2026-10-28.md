@@ -424,3 +424,25 @@ This does not by itself show a current fingerprint bug: the inspected numeric fi
 4. Decide separately whether the comment should be corrected or the implementation intentionally changed; any change to bytes requires explicit compatibility review and coordinated versioning.
 
 **Classification:** serialization description / cross-language reproducibility OPEN. No runtime code or tests were changed or run in this pass.
+
+
+## 2026-10-28 — Issue fingerprint tests and executable boundary: evidence gap narrowed
+
+### Existing test coverage inspected
+
+- `plutus/test/PreRichIssueDecisionTest.hs` (blob `35e88f418767ceae04e14a1e91807920045ed6ae`) exercises acceptance/rejection and checks that the pre-state serialization is retained. For fingerprints it asserts only that pre-state, post-state and action digests have length 64. It does **not** assert the exact canonical serialized bytes or expected SHA-256 values.
+- `plutus/pre-rich-plutus.cabal` (blob `e8daf55df06a5ea3ba4494dca5e0a4a3033b4a27`) registers this as `issue-decision-tests`; the inspected test source does not currently provide golden vectors for the Issue fingerprint format.
+- `plutus/export/IssueAdmission.hs` (blob `60e412cc8ffb0965c0c469c43e641496c83a7bc2`) is the JSON executable boundary around `produceIssueDecision`. It serializes the decision output, but the inspected implementation does not export the raw `canonicalV3State` bytes as a dedicated golden-vector command. Its display field `actionText` uses colon separators for human-readable output; this is distinct from `canonicalIssueAction`'s pipe-delimited fingerprint input and must not be substituted into the fingerprint calculation.
+- `audit/pre-genesis-genesis/ISSUE-OBSERVATION-PRODUCER-GAP-v0.1.md` (blob `34b932d3a065440c07bb675a2c03094b5729d3be`) independently records the missing concrete observation/refinement producer between deployed Preprod observations and `IssueDecisionInput`. This means golden vectors alone would improve serialization assurance but would not close authoritative runtime provenance.
+
+### Consequence
+
+The current Haskell tests prove digest *shape*, not stable digest *meaning*. No golden vector should be fabricated from the comment or by reimplementing the algorithm in TypeScript first. The next implementation task, once runtime execution is available, is to add Haskell-generated fixtures for:
+- exact `canonicalV3State` bytes;
+- exact `canonicalIssueAction` bytes;
+- expected pre-state, candidate-state and action SHA-256 digests;
+- multiple class records and all Jackpot status variants.
+
+A cross-language consumer should then verify those fixtures byte-for-byte, and the fixture provenance must identify the Haskell source revision used to produce them. This can be done without changing the canonical output or any economic/V3/Reveal semantics.
+
+**Verification limit:** this pass inspected GitHub source only. No Haskell/TypeScript test was executed, no runtime code was changed, and no transaction/workflow was started.
