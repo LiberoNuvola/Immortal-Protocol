@@ -110,3 +110,51 @@ This section records exact file/blob anchors fetched from `work/immortal-green-c
 - Keep RF8, U-02 consumer/call graph, and U-03 certified infinite-horizon viability OPEN until the corresponding evidence exists.
 
 **Status:** targeted source-level pass recorded; inventory remains **INCOMPLETE**; no tests executed in this pass; no protocol semantics or constants changed.
+
+
+## 2026-10-28 — Issue decision producer and runtime binding trace
+
+This pass follows the PRE-RICH admission composition one layer further, through the Haskell Issue decision producer, Cardano observation reader/provider and runtime submission boundary. Exact file/blob anchors were fetched using the named branch ref; they are blob SHAs, not a claim that the branch tip has been independently resolved.
+
+| Path | Blob SHA | Observed evidence | Remaining limitation |
+|---|---|---|---|
+| `PRE-RICH/onchain/PreRichIssueDecision.hs` | `ec37ea8e656fa399f1e57e2404e0c6a2c5b5ccee` | `produceIssueDecision` calls `preRichEconomicAdmission`, then binds action + pre/post-state hashes into an action fingerprint. | It accepts `idiTruthVerified`, `idiEEVFresh`, `idiObligationsComplete` and `idiAllOmegaSuccessorsCertified` as input booleans and copies them into the decision; it does not derive the Ω certificate. |
+| `plutus/export/IssueAdmission.hs` | `60e412cc8ffb0965c0c469c43e641496c83a7bc2` | JSON input parser reads the same authority/freshness/completeness/Ω booleans and calls the Haskell decision producer. | Serialization/typing does not authenticate the truth of the fields. |
+| `relayer/preprodIssueObservationReader.js` | `77892b31de00d6f7eefd7955b5cfd410d7e36caf` | Requires an authority source or authoritative inputs; checks required fields, non-negative EEV/liquidity, observation timestamp, optional signed carrier decision hashes, and carries `viabilityCertificate` and ProtectedCapital provenance. | The inspected slice still accepts `allOmegaSuccessorsCertified` as a Boolean field. A certificate object is carried separately; its semantic validation and proof of binding to (K_c)/Ω are not established by this reader alone. |
+| `relayer/preprodIssueObservationProvider.js` | `ff55cfa0bc28ac8a1d3f46bb52dc88ee980950b5` | Checks observed Counter/Pool/control refs, optional runtime Pool value, required decision fields, and observation-reference equality. | This is input/reference consistency, not a viability proof. |
+| `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.ts` | `f0c794892104b25e64e94f402c1dd0f5d604364e` | Runs Haskell producer; checks action, EEV, Pool liquidity, all four Boolean flags against the observed decision input and requires them true; compares ProtectedCapital components/total and decision/observation references; returns witness with EEV and viability evidence. | It checks Boolean equality to the supplied observation input; that alone does not prove the Boolean derives from a sound Ω/Kc certificate. The viability certificate's schema/cryptographic verification must be followed through separately. |
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | `1bed1a4e04d1c861a0d5ea317181cdf431215e3b` | Economic submissions call `assertEconomicAdmission`; Issue submissions additionally call `assertAuthoritativeIssueAdmissionWitness`; transaction input references are rechecked immediately before signing. | The source comment explicitly limits binding: it checks input classification, but does not yet bind the full output/datum/redeemer/validity map to intent. This is a separate runtime transaction-intent boundary, not a substitute for Kc/Ω proof. |
+| `plutus/test/EconomicAdmissionTest.hs` | `b6bc5f4fcadfd1393a09ffa49c5997dd6d044186` | Finite tests reject false truth/freshness/completeness/Ω flags and exercise Issue/Reveal/Claim/Expire admission cases. | The Ω test supplies `False`; no test constructs or verifies a mathematical certificate covering every relevant successor. |
+| `plutus/test/EconomicGateTest.hs` | `28d6b0ac63c6a49ce30b0004656757442a56e7fa` | Tests gate rejection for unsafe state, bad inputs, and false successor-coverage Boolean. | Confirms Boolean gate behavior, not correctness of an upstream certificate producer. |
+| `plutus/pre-rich-plutus.cabal` | `e8daf55df06a5ea3ba4494dca5e0a4a3033b4a27` | Lists EconomicGate, UniversalEconomicKernel, PreRichEconomicAdmission, PreRichIssueDecision and test executables. | Build registration proves inclusion, not live production reachability or proof completion. |
+| `scripts/predeploy-check.mjs` | `efc0eecb6ddb37ad63528d3dc15953ab7898970c` | Contains a PRE-RICH B1 predeploy gate and runs `cabal build all -j1` / `cabal run exe:export-scripts`. | Static predeploy checks/build are not a whole-program reachability proof, a deployed verifier, or a successful real Issue transaction. |
+
+### Updated producer-to-ledger chain
+
+`Cardano observation + authority source`
+→ `preprodIssueObservationReader` (validates required fields and binds observed references)
+→ `preprodIssueObservationProvider` (checks refs and required input shape)
+→ `IssueAdmission.hs` JSON decode
+→ `PreRichIssueDecision.produceIssueDecision`
+→ `PreRichEconomicAdmission` / `EconomicGate` / Boolean Ω condition
+→ `HaskellIssueAdmissionProvider` (checks returned decision against observed input and PC provenance)
+→ `CardanoExecutionAdapter.submitEconomic` (admission witness and input-classification checks)
+→ wallet signing / transaction submission.
+
+This trace is **partially evidenced at source level**. It is not yet proof that the external authority source computes `allOmegaSuccessorsCertified` soundly, that the `viabilityCertificate` is cryptographically/semantically validated against the same candidate state and certified (K_c), or that the entire transaction body is bound to the admitted action.
+
+### Consequence for U-02 / U-03
+
+- **U-02 (consumer/reachability):** the PRE-RICH Issue route has a concrete source path through a server-side Haskell producer and a Cardano runtime admission boundary. That narrows the unknown; it does not discharge whole-program reachability for SALE, Reveal, Claim, Expire, Treasury, legacy pool and other deployed entry points.
+- **U-03 (certified viability):** the code and tests make the Boolean nature of the current proof boundary explicit. Existing finite tests establish fail-closed behavior when the flag is false; they do not establish that a true flag is justified.
+- **Separate runtime gap:** the Cardano execution adapter itself documents that it does not yet bind the full output/datum/redeemer/validity map to intent. Track this as a transaction-intent binding obligation, distinct from the economic kernel proof.
+
+### Required next targeted checks
+
+1. Inspect the exact implementation and tests of `assertAuthoritativeIssueAdmissionWitness`, the `ViabilityCertificateEvidence` type, and the source that signs/validates the certificate. Verify candidate-state, policy/version, horizon/Ω coverage and authority identity bindings; do not assume fields named “certificate” imply proof.
+2. Trace the actual configured `authoritySource` in Preprod workflows/deployment config, not only its interface, and determine whether it is a real verified producer or a fixture/configured Boolean source.
+3. Trace the full transaction intent (all inputs, outputs, datum, redeemer, validity range and mint) from witness through Lucid body to signature. Keep this separate from Kc/Ω certification.
+4. Resolve the branch tip SHA using an authoritative ref endpoint before calling this a HEAD-pinned inventory; connector search results are default-branch indexed and are not used as proof of branch HEAD.
+5. Keep RF8/U-02/U-03 OPEN pending those exact artifacts and tests.
+
+**Status:** Issue producer-to-runtime source path narrowed; authority/Ω soundness and full transaction-intent binding remain OPEN; no tests executed in this pass; no economic semantics or constants changed.
