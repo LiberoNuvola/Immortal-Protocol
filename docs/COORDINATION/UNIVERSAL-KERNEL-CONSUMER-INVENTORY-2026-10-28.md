@@ -59,3 +59,54 @@ Map known consumers and boundaries for `UniversalEconomicState`, `UniversalEcono
 - It does not claim a certified `K_c`, a complete `Ω`, or infinite-horizon safety.
 - It does not authorize refactoring V3, changing kernel semantics, creating another branch, or selecting a new adapter.
 - It does not establish that current branch HEAD equals the source anchors above; verify HEAD before extending this inventory.
+
+
+## 2026-10-28 — Targeted source-level reachability pass
+
+This section records exact file/blob anchors fetched from `work/immortal-green-closure`. These are **file blob SHAs**, not a claim about the branch HEAD SHA. The connector's code search indexes the default branch, so this pass uses explicit branch-ref file reads for the paths below. It is targeted evidence, not an exhaustive repository-wide import/call graph.
+
+### Exact source anchors
+
+| Path | Blob SHA | Observed symbol / call-site evidence | Classification |
+|---|---|---|---|
+| `IMMORTAL/kernel/EconomicGate.hs` | `8b8a06b4af1e2b5f4bac4f5faaa24f279d551127` | Exports `economicGate`, `viabilityGate`, `executionAdmissible`; `executionAdmissible` composes economic gate and viability gate. | Universal decision API; proof inputs are supplied values/booleans. |
+| `PRE-RICH/onchain/PreRichEconomicAdmission.hs` | `d8360b608f3bb32b7c74000de3ca3b5e3a907a9a` | Imports `EconomicGate`; runs V3 transition, projects candidate, constructs `EconomicGateInput`, checks universal solvency, then calls `executionAdmissible`. Parameters include `truthVerified`, `eevFresh`, `obligationsComplete`, and `allOmegaSuccessorsInCertifiedKernel`. | Concrete PRE-RICH composition, but upstream provenance and Ω certificate production are not established by this function. |
+| `PRE-RICH/onchain/PreRichEconomicProjection.hs` | `22cf16232594a0e7f6c52749feaf8bf0ea6e5b13` | Defines `projectPreRichState`; module also exposes a projection/solvency conformance predicate comparing V3 and universal solvency. | Profile-specific refinement boundary; a local equality is not full action-by-action or infinite-horizon proof. |
+| `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | `mkPolicy` calls `atomicTreasuryPaymentValid` and `atomicPoolReservationValid` in sale path; no direct named `economicGate` call observed in this source. | Independent Cardano sale/mint enforcement surface; refinement to canonical admissibility not established here. |
+| `plutus/B1PrizePool.hs` | `106368b510a52447aa3de7ce951cf615466fc5e8` | Imports `UniversalEconomicKernel`; local `solvencyInvariant` calls `UniversalEconomicKernel.solvencyInvariant`; `mkValidator` and multiple action branches invoke local solvency checks. | Universal solvency integration exists; this is not proof every action follows canonical Gate→Viability. |
+| `plutus/PrizeValidator.hs` | `2455f8283d87ff74a94b1b8bca1d1f96d60ae8b2` | Has direct `validateReveal`, `validateClaim`, `validateExpire` branches in `mkValidator`; no direct named universal gate call observed in source. | Separate lifecycle/accounting enforcement surface; refinement proof remains open. |
+| `plutus/Treasury.hs` | `8313ed0672ce2a18c6156fce01db0ea75efddd1c` | `mkValidator` handles `Distribute`; inspected module does not import the universal kernel/admission modules. | Separate treasury distribution surface; common canonical gate/refinement not evidenced. |
+| `plutus/PrizePool.hs` | `54c7ba920d89e2c6c43ecf09eb5359b180c9469c` | Has its own `mkValidator`; caller/deployment reachability not resolved by this file read. | Legacy pool surface; usage classification still required. |
+| `plutus/BeaconRegistry.hs` | `184f4178139dde01845853dcc0ab51371949ec9b` | Has a `mkValidator`; this inspection did not establish that it is an economic authority. | Supporting/protocol-state surface pending bounded role classification. |
+| `plutus/CounterValidator.hs` | `29d3bcf6d6a4a0b4348cfa5e17a61ec822093870` | Has a `mkValidator`; this inspection did not establish a universal-gate call. | Supporting issuance-counter surface; determine whether atomic pairing is sufficient. |
+| `src/mint.ts` | `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534` | Candidate sale transaction construction; no assertion here that off-chain code is authoritative. | Off-chain transaction builder; ledger validator remains authority. |
+| `src/gameFlow.ts` | `cab3f9d1c7c971b4127f9ae61d1477dc93454fd9` | Candidate game/lifecycle flow construction. | Off-chain orchestration; must be paired with on-chain validation. |
+
+### Reachability matrix (source-level, not certified)
+
+| Action/surface | Concrete entry observed | Named universal admission call observed in entry | What the current evidence supports |
+|---|---|---:|---|
+| PRE-RICH admission composition | `preRichEconomicAdmission` | Yes, via `executionAdmissible` | The composition exists; caller trust, witness provenance, and all live-entry reachability are still open. |
+| SALE | `MintPolicy.mkPolicy` | No | Atomic treasury/pool predicates are present; equivalence to the canonical relation is unproven. |
+| Pool lifecycle/accounting | `B1PrizePool.mkValidator` | Universal solvency only | Shared solvency predicate is used; complete Gate→Viability/action binding is unproven. |
+| REVEAL / CLAIM / EXPIRE | `PrizeValidator.mkValidator` → action validators | No | Local lifecycle/accounting predicates exist; canonical refinement and bypass regression are missing. |
+| TREASURY | `Treasury.mkValidator` | No | Independent distribution logic; normative equivalence or justified separation is not evidenced. |
+| Legacy pool | `PrizePool.mkValidator` | Not established | Need exact deployment/reference caller and live/unreachable classification. |
+| Beacon / counter | `BeaconRegistry.mkValidator`, `CounterValidator.mkValidator` | Not established | Their economic materiality and atomic pairing need classification, not assumption. |
+
+### Findings sharpened by this pass
+
+1. The universal gate and the PRE-RICH admission composition exist as source code, but a function's existence is not proof that all economic mutations reach it.
+2. The main open gap is now concretely split into (a) producer/provenance for gate inputs and Ω, (b) static reachability from all live economic entry points, and (c) a semantics-preserving refinement proof for paths that use local predicates instead of the named gate.
+3. The Cardano validators remain separate on-chain enforcement surfaces. Off-chain builders are not authority, and reference replay is not a ledger-level or infinite-horizon certificate.
+4. The current source pass does not identify or authorize a refactor. Do not homogenize validators by inserting a symbol solely to satisfy a search; first establish the normative relation and intended architecture.
+
+### Next evidence needed
+
+- Establish the exact branch HEAD through a ref/commit query before describing this inventory as HEAD-pinned; the file reads above only prove the returned path/blob versions on the named ref.
+- Complete recursive-tree and call-site search on that exact SHA, including imports, all references to `preRichEconomicAdmission`, `executionAdmissible`, `viabilityGate`, `projectPreRichState`, and validator script compilation/deployment wiring.
+- Trace each `EconomicGateInput` field to the authenticated source and show where Ω is derived or certified. A caller-provided Boolean is not itself a certificate.
+- Add negative bypass regressions and per-action V3↔universal state/output vectors before considering a second adapter.
+- Keep RF8, U-02 consumer/call graph, and U-03 certified infinite-horizon viability OPEN until the corresponding evidence exists.
+
+**Status:** targeted source-level pass recorded; inventory remains **INCOMPLETE**; no tests executed in this pass; no protocol semantics or constants changed.
