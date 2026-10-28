@@ -8,6 +8,7 @@ import {
   Data,
 } from '@lucid-evolution/lucid'
 import { createHash } from 'node:crypto'
+import { decodeOracleStateDatum } from './preprod-oracle-state-datum.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const KOIOS = process.env.KOIOS_PREPROD_URL ?? 'https://preprod.koios.rest/api/v1'
@@ -233,6 +234,25 @@ if (existing.length === 1) {
   }
 }
 
+if (!oracleStateUtxo?.datum) {
+  throw new Error('Oracle State singleton has no inline datum')
+}
+
+const decodedOracleDatum = decodeOracleStateDatum(oracleStateUtxo.datum, {
+  expectedPublisherPkh: walletKeyHash,
+  expectedAssetPolicyHex: ADA_ASSET_POLICY_HEX,
+  expectedAssetNameHex: ADA_ASSET_NAME_HEX,
+  expectedPriceUsdmSubunitsPerLovelace: ADA_PRICE_USDM_SUBUNITS_PER_LOVELACE,
+})
+
+if (oracleTimestamp !== undefined && decodedOracleDatum.timestampMs !== oracleTimestamp) {
+  throw new Error('Materialized Oracle State datum timestamp does not match the bootstrap transaction datum')
+}
+
+// When an existing singleton is reused, preserve the timestamp read from its
+// actual on-chain datum. Never synthesize a fresh time for an old datum.
+oracleTimestamp = decodedOracleDatum.timestampMs
+
 const manifest = {
   schema: 'IMMORTAL-PREPROD-ORACLE-STATE-DEPLOYMENT-v0.1',
   status: 'MATERIALIZED',
@@ -251,7 +271,7 @@ const manifest = {
     assetNameHex: ADA_ASSET_NAME_HEX,
     priceUsdmSubunitsPerLovelace: ADA_PRICE_USDM_SUBUNITS_PER_LOVELACE.toString(),
     scale: '1e6',
-    timestampMs: oracleTimestamp?.toString() ?? null,
+    timestampMs: oracleTimestamp.toString(),
     maxAgeMs: ORACLE_MAX_AGE_MS.toString(),
   },
   bootstrap: {
@@ -294,6 +314,7 @@ console.log(
       oracleStateUnit,
       oracleStateAddress: address,
       oracleStateUtxo: ref(oracleStateUtxo),
+      oracleTimestampMs: oracleTimestamp.toString(),
       bootstrapTxHash,
       manifest: EVIDENCE_DIR + '/preprod-oracle-state-deployment.json',
       evidenceHash: manifest.evidenceHash,
