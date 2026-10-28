@@ -68,6 +68,15 @@ describe('Economic admission ↔ canonical transition evidence', () => {
     ).toThrow('economic admission action does not match canonical evidence')
   })
 
+  it('rejects an action fingerprint mismatch', () => {
+    expect(() =>
+      assertEconomicAdmissionMatchesCanonicalEvidence(
+        { ...admission, actionFingerprint: '66'.repeat(32) },
+        evidence,
+      ),
+    ).toThrow('economic admission action fingerprint does not match canonical evidence')
+  })
+
   it('rejects a pre-state mismatch', () => {
     expect(() =>
       assertEconomicAdmissionMatchesCanonicalEvidence(
