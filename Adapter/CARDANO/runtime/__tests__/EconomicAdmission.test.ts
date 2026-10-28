@@ -94,6 +94,48 @@ describe('economic Cardano submission boundary', () => {
     expect(lucid.submitTx).toHaveBeenCalledWith('signed')
   })
 
+  it('rejects if completed spending inputs change during the asynchronous wallet classification', async () => {
+    const walletInput = '33'.repeat(32) + '#0'
+    const replacementInput = '44'.repeat(32) + '#1'
+    let bodyReferences = [pool0, walletInput]
+    const tx = {
+      toTransaction: () => ({
+        body: () => ({
+          inputs: () => ({
+            len: () => bodyReferences.length,
+            get: (index: number) => {
+              const [txHash, outputIndex] = bodyReferences[index].split('#')
+              return {
+                transaction_id: () => ({ to_hex: () => txHash }),
+                index: () => Number(outputIndex),
+              }
+            },
+          }),
+        }),
+      }),
+    }
+    const lucid = {
+      wallet: {
+        getUtxos: vi.fn().mockImplementation(async () => {
+          // Simulate a mutable completed transaction changing while the adapter
+          // awaits the connected wallet's UTxO list.
+          bodyReferences = [pool0, replacementInput]
+          return [{ txHash: '33'.repeat(32), outputIndex: 0, address: 'addr_test1_wallet' }]
+        }),
+      },
+      signTx: vi.fn(),
+      submitTx: vi.fn(),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(tx, admission, [pool0], [pool0]),
+    ).rejects.toThrow('Completed transaction spending inputs changed after economic admission validation')
+
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
   it('rejects an additional completed input that is not in the connected wallet UTxO list', async () => {
     const unclassifiedInput = '33'.repeat(32) + '#0'
     const lucid = {
