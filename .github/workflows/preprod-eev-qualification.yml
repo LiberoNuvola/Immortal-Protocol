@@ -8,6 +8,9 @@ on:
       - ".github/workflows/preprod-eev-qualification.yml"
       - "audit/cardano-integration/preprod-direct-usdm-source-set.mjs"
       - "audit/cardano-integration/preprod-direct-usdm-qualification.mjs"
+      - "audit/cardano-integration/preprod-oracle-state-liveness.mjs"
+      - "audit/cardano-integration/preprod-oracle-state-datum.mjs"
+      - "audit/cardano-integration/preprod-oracle-state-datum.test.mjs"
       - "audit/cardano-integration/eev-approval-integrity.mjs"
       - "audit/cardano-integration/eev-approval-integrity.test.mjs"
       - "audit/pre-genesis-genesis/PYTH-USDM-UNIT-CONVERSION-DECISION-20261021.md"
@@ -44,6 +47,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install repository dependencies for datum decoding
+        run: npm ci --no-audit --no-fund
+
       - name: Restore deployment identity manifests only
         uses: actions/download-artifact@v4
         with:
@@ -59,6 +65,14 @@ jobs:
           rm -f audit/preprod-evidence/preprod-direct-usdm-approved-qualification.json
           test -s audit/preprod-evidence/preprod-direct-usdm-deployment.json
           test -s audit/preprod-evidence/preprod-oracle-state-deployment.json
+
+      - name: Test Oracle State datum decoder
+        run: node --test audit/cardano-integration/preprod-oracle-state-datum.test.mjs
+
+      - name: Observe exact live Oracle State singleton and datum timestamp
+        run: |
+          node --check audit/cardano-integration/preprod-oracle-state-liveness.mjs
+          node audit/cardano-integration/preprod-oracle-state-liveness.mjs
 
       - name: Enforce approved asset identity and parse qualification scripts
         run: |
