@@ -7,6 +7,24 @@ import type { CanonicalTransitionEvidence } from '../../Adapter/CARDANO/observat
 
 const pool = '11'.repeat(32) + '#0'
 
+function completedLucidTransaction() {
+  const [txHash, indexText] = pool.split('#')
+  const outputIndex = Number(indexText)
+  return {
+    toTransaction: () => ({
+      body: () => ({
+        inputs: () => ({
+          len: () => 1,
+          get: (_index: number) => ({
+            transaction_id: () => ({ to_hex: () => txHash }),
+            index: () => outputIndex,
+          }),
+        }),
+      }),
+    }),
+  }
+}
+
 const admission: EconomicAdmissionWitness = {
   gateVersion: 'economic-gate-v1',
   admitted: true,
@@ -79,10 +97,7 @@ describe('CAES transition closure boundary', () => {
     const adapter = createCardanoExecutionAdapter(lucid)
 
     await expect(
-      submitComposedEconomic(adapter, {
-        canonicalPreState: admission.stateHash,
-        canonicalPostState: admission.postStateHash,
-      }, admission, evidence),
+      submitComposedEconomic(adapter, completedLucidTransaction(), admission, evidence),
     ).resolves.toEqual({ transactionRef: evidence.transactionRef })
 
     expect(lucid.signTx).toHaveBeenCalledTimes(1)
@@ -99,7 +114,7 @@ describe('CAES transition closure boundary', () => {
     await expect(
       submitComposedEconomic(
         adapter,
-        {},
+        completedLucidTransaction(),
         admission,
         { ...evidence, postStateFingerprint: 'cc'.repeat(32) },
       ),
