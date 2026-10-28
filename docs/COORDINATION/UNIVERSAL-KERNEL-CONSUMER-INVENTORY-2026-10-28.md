@@ -269,3 +269,39 @@ This makes the following path census pinned to that exact commit, unlike the ear
 - Once these are available, verify artifact bytes and signatures against the exact candidate state/action binding. Keep transaction-body intent binding as a separate blocker.
 
 **Change scope:** documentation only. No code, secret, transaction, workflow dispatch, economic constant, or V3/Reveal semantics changed. No tests were run.
+
+## 2026-10-28 — Runtime admission re-check: authority fail-closed and transaction-body boundary
+
+This pass re-read the current branch versions of the Issue runtime validator, Lucid-backed relayer provider, provider regression tests, and Cardano execution adapter. It is source inspection only; no test command or workflow was run in this pass.
+
+### Exact current file anchors
+
+| Path | Blob SHA | Verified behavior | What it does not establish |
+|---|---|---|---|
+| `Adapter/CARDANO/runtime/AuthoritativeIssueAdmission.ts` | `e3cc7af807972fd361e109c182092566b0c9cd62` | Validates the EEV qualification/approval shape, EV1–EV7 references and digest syntax, six ProtectedCapital components and total, VC1–VC6/E1–E10 references and digest syntax, Preprod deployment binding, carrier reference, state hash, EEV snapshot and ProtectedCapital source. Then checks runtime Counter/control/class/price/Pool/USDM correlation and delegates to `assertEconomicAdmission`. | It does not fetch the referenced artifacts, recompute their digests from canonical bytes, or run a proof checker for the viability theorem. The `allOmegaSuccessorsCertified === true` requirement checks a supplied assertion, not its derivation. |
+| `relayer/preprodIssueAdmissionProvider.js` | `8202eec79d5f9e2975aa251b9b8d66b863d5bf30` | Observes direct USDM in the exact live B1 PrizePool UTxO and requires a configured authority source (function or URL plus public key); caller-provided `authoritativeInputs` are rejected as untrusted. It checks deployment identity fields for Counter, Pool, carrier and B2 control. | A configured authority-source interface is not evidence that the upstream endpoint is deployed, qualified, or soundly derives EEV/ProtectedCapital/Ω. |
+| `relayer/preprodIssueAdmissionProvider.test.mjs` | `d63e173bf865faa582923cdcf8f5cf2209a11f88` | Contains a regression that rejects caller-supplied forged authority inputs when no authenticated authority source is configured, plus rejection cases for missing/unqualified EEV approval and wrong profile. | These are bounded fail-closed tests using fixtures; they are not live Preprod authority evidence and do not prove the true-flag case. This pass inspected the test source but did not execute it. |
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | `1bed1a4e04d1c861a0d5ea317181cdf431215e3b` | The current implementation reads spending inputs from the completed Lucid transaction body via `toTransaction().body().inputs()`, checks that declared protocol inputs are present, rejects duplicates, classifies extra inputs against the selected wallet's UTxO list, then re-reads the body inputs immediately before signing. | The code explicitly scopes this as input classification only. It does not bind the complete output set, datum/redeemer contents, mint/burn set, validity interval or other transaction-body fields to the admitted canonical action/post-state. |
+| `src/preRichIssueAdmissionBridge.ts` | `8e594655f68fb3c9c267703a85474e6fd1f25f8e` | Types the Issue witness and viability certificate, including pre-state deployment binding and separate state/action/post-state fingerprints in the economic witness path. | The type and structural binding do not independently recompute the candidate transition from the completed transaction body or validate proof artifact contents. |
+
+### Refined transaction-intent status
+
+The older boundary note that the adapter merely accepted a parallel caller-supplied input list is now too broad for the current source: the adapter has an explicit completed-body input reader and verifies declared inputs against it. Record this as **input-binding partially implemented**, not as a fully closed transaction-intent boundary.
+
+The remaining body-binding obligation is distinct and concrete: establish a supported canonicalization/verification path for the completed transaction's economically material outputs, datum/redeemer, mint, validity interval and related body fields, and compare those against the same admitted Issue action and post-state. The adapter's own comment confirms that this wider binding is not yet implemented. Do not infer that state/action/post-state digests automatically commit to every transaction-body field.
+
+### Refined authority / universal-kernel status
+
+1. The production-facing relayer now demonstrably fails closed when no authenticated authority source is configured; it does not trust browser/request economic values as a fallback.
+2. A real source-level authority server/provider path and structural witness validator exist. The unresolved blocker is the upstream source's qualification/deployment and the verifiable content behind EV1–EV7 and VC1–VC6/E1–E10, not the absence of all provider code.
+3. The universal viability boundary remains OPEN: the runtime requires the Ω flag to be true and checks certificate references/bindings, but no artifact-content verification or executable proof establishing concrete `K_c`, complete `Ω`, or unbounded-horizon viability was identified in this pass.
+4. RF8/U-02 whole-program reachability remains OPEN independently of the Issue path. This pass does not establish that every economically material mutator (including Reveal, Claim, Expire, Treasury and legacy paths) reaches a canonical admission gate or has an equivalent proved enforcement path.
+
+### Next evidence, in order
+
+- Obtain the public authority endpoint identity/health response, deployment commit and public-key fingerprint from the operator; compare with configured source and published identity without handling private key material.
+- Obtain the concrete EV1–EV7 and VC1–VC6/E1–E10 artifact manifest, canonical bytes, digest rules, verifier source/version and reproducible verification command.
+- Close the completed transaction-body binding against existing normative transaction-intent requirements and add adversarial regression cases before changing runtime code.
+- Continue the cross-repository action/call-site reachability census and retain U-02/RF8 and U-03 as OPEN until the required evidence exists.
+
+**Change scope:** documentation only. No code, economic rules/constants, V3/Reveal semantics, branch topology, workflow dispatch, or transaction changed. No tests were executed.
