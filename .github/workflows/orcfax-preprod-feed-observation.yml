@@ -1,0 +1,62 @@
+name: Orcfax Preprod CER Feeds — Read-Only Ledger Observation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/orcfaxPreprodFeedObservation.mjs"
+      - "audit/cardano-integration/orcfaxPreprodFeedObservation.test.mjs"
+      - "audit/cardano-integration/observe-orcfax-preprod-cer-feeds.mjs"
+      - ".github/workflows/orcfax-preprod-feed-observation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orcfax-preprod-cer-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Resolve official FSP pointer and inspect exact Preprod CER feed UTxOs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+      ORCFAX_PREPROD_OBSERVATION_PATH: audit/preprod-evidence/orcfax-preprod-feed-observation.json
+    steps:
+      - name: Checkout exact observation source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify decoder and observer syntax
+        run: |
+          node --check audit/cardano-integration/orcfaxPreprodFeedObservation.mjs
+          node --check audit/cardano-integration/observe-orcfax-preprod-cer-feeds.mjs
+
+      - name: Run Orcfax datum and exact-rational regression tests
+        run: node --test audit/cardano-integration/orcfaxPreprodFeedObservation.test.mjs
+
+      - name: Read-only Preprod chain observation
+        run: node audit/cardano-integration/observe-orcfax-preprod-cer-feeds.mjs
+
+      - name: Upload read-only ledger evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orcfax-preprod-cer-observation-${{ github.sha }}
+          path: audit/preprod-evidence/orcfax-preprod-feed-observation.json
+          if-no-files-found: warn
+          retention-days: 30
