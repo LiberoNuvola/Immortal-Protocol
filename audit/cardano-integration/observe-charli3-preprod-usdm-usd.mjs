@@ -291,8 +291,9 @@ function decodeFeed(datumHex, feed, tipMs) {
   }))
 
   const blockers = []
+  if (priceRecords.length === 0) blockers.push('NO_PRICE_RECORDS_FOUND')
+  for (const record of priceRecords) blockers.push(...record.blockers)
   if (matches.length !== 1) blockers.push(matches.length === 0 ? 'EXPECTED_PRICE_PAIR_NOT_FOUND' : 'DUPLICATE_EXPECTED_PRICE_PAIR')
-  else blockers.push(...matches[0].blockers)
   if (allExtendedFields.length === 0) blockers.push('EXTENDED_PROVIDER_AND_SIGNATORY_METADATA_NOT_FOUND')
   return {
     status: 'OBSERVED_NOT_QUALIFIED',
@@ -409,6 +410,7 @@ async function observeFeed(feed, tip, observedAt) {
     }
     return {
       ...base,
+      status: 'OBSERVED_NOT_QUALIFIED',
       outRef: String(utxo.tx_hash).toLowerCase() + '#' + Number(utxo.tx_index),
       lovelace: String(utxo.value),
       datum: decodeFeed(datumHex, feed, tip.blockTimeMs),
