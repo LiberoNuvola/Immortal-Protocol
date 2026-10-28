@@ -112,8 +112,12 @@ main = do
         "pre-state SHA-256 golden vector"
       assert (length (idPostStateHash decision) == 64) "post-state hash is SHA-256"
       assert (length (idActionFingerprint decision) == 64) "action fingerprint is SHA-256"
+      putStrLn ("ISSUE_VECTOR_PRE_STATE_CANONICAL=" ++ canonicalV3State (idPreState decision))
       putStrLn ("ISSUE_VECTOR_PRE_STATE_SHA256=" ++ idPreStateHash decision)
+      putStrLn ("ISSUE_VECTOR_CANDIDATE_STATE_CANONICAL=" ++ canonicalV3State (idCandidateState decision))
       putStrLn ("ISSUE_VECTOR_POST_STATE_SHA256=" ++ idPostStateHash decision)
+      putStrLn ("ISSUE_VECTOR_ACTION_CANONICAL=" ++ canonicalIssueAction (idAction decision))
+      putStrLn ("ISSUE_VECTOR_ACTION_HASH_PREIMAGE=" ++ canonicalIssueAction (idAction decision) ++ "|" ++ idPreStateHash decision ++ "|" ++ idPostStateHash decision)
       putStrLn ("ISSUE_VECTOR_ACTION_FINGERPRINT=" ++ idActionFingerprint decision)
 
   case produceIssueDecision (input { idiTruthVerified = False }) of
