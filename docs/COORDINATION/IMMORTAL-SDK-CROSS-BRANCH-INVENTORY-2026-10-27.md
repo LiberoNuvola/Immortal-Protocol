@@ -328,3 +328,28 @@ The branch was at `6a71021404d1d0a354cbe2d948bffb84b3a54bac` when its five bound
 ### Packaging constraint added after root-manifest inspection
 
 The root `package.json` is an application/Vite manifest, and the inspected tree has no root `pnpm-workspace.yaml` or `lerna.json`. The proposed `@immortal/*` names are therefore logical ownership boundaries only, not existing packages. The API proposal now requires an explicit choice between an internal non-published module and a separately scoped real package/workspace; no package manager migration or public packaging is implied.
+
+
+## Follow-up: admission-to-evidence action fingerprint binding (2026-10-28)
+
+### Gap found and correction
+
+Source review found that `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` checked action class and pre/post-state fingerprints but did not compare `EconomicAdmissionWitness.actionFingerprint` with `CanonicalTransitionEvidence.actionFingerprint`.
+
+The evidence-layer binding now compares the action fingerprint as well. Regression coverage:
+- `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts` rejects a mismatched action fingerprint.
+- `src/__tests__/caes-transition-closure.test.ts` verifies the composition rejects the mismatch before `signTx` and `submitTx`.
+- The CAES positive fixture now models a completed Lucid transaction and exposes the actual declared pool input via `toTransaction().body().inputs()`, matching the adapter's existing fail-closed contract.
+- `.github/workflows/adapter-sale-conformance.yml` now includes the CAES closure test in the adapter conformance gate.
+
+### Exact-head evidence
+
+All six bounded workflows below completed successfully on exact HEAD `2ef5c425da9762931ee440ba22ed12d40d9a3d85`:
+- [Cardano Adapter Sale Conformance #40631890587](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890587) — both `economic-conformance` and `frontend-build` passed.
+- [IMMORTAL Portability Conformance #40631890535](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890535).
+- [Protocol Declaration Conformance #40631890534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890534).
+- [Algorithmic Governability Adversarial Lab #40631890649](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890649).
+- [Documentation Link Check #40631890547](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890547).
+- [PRE-RICH Direct-USDM Conformance #40631890559](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890559) — separate Agent A-owned qualification/conformance path.
+
+This closes only the missing equality binding between the witness and its evidence record. It does not recompute or cryptographically authenticate the action fingerprint, prove ledger inclusion, qualify EEV, approve Issue, or discharge R1/`K_c`. V08/V09 remain open; the SDK API document remains a review draft. Agent A's Oracle State freshness and direct-USDM work is separate and was not duplicated. No V3 carrier, Reveal semantics, economic constants, or wallet/deployment authority changed.

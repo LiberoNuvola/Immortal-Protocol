@@ -3795,3 +3795,34 @@ Updated [SDK API contract proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-2
 Current exact-head CI is running on `92a8a90be1b84e3edc02d2895abde7d329eca3b0`; the docs link check is green, and the other four workflows were in progress/queued at last poll. Additional documentation-only commits have since triggered fresh workflows, so inspect the newest HEAD rather than assuming those results apply.
 
 **STATUS: SDK API DRAFT REFINED WITH PACKAGING REALITY; NO RUNTIME/PACKAGE IMPLEMENTATION.**
+
+
+## 45.38 AGENT B — ACTION FINGERPRINT BINDING + EXACT-HEAD CONFORMANCE (2026-10-28)
+
+### Coordination and bounded fix
+
+A read-only cross-check found a missing equality in `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts`: the bridge checked `actionClass`, the pre-state hash and the post-state hash, but did not compare `EconomicAdmissionWitness.actionFingerprint` with `CanonicalTransitionEvidence.actionFingerprint`.
+
+The bridge now rejects an action-fingerprint mismatch before the adapter signing boundary. Regression coverage includes:
+- a unit negative twin in `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.test.ts`;
+- a CAES composition negative twin proving `signTx` and `submitTx` are not called on mismatch;
+- an updated valid CAES fixture representing the completed Lucid transaction inputs required by the existing adapter;
+- inclusion of `src/__tests__/caes-transition-closure.test.ts` in the Cardano Adapter Sale Conformance command.
+
+### Validation
+
+The relevant suite initially exposed an under-specified *test fixture*, not an adapter implementation failure: the CAES positive case passed a plain object where the adapter requires `toTransaction().body().inputs()`. The fixture was corrected to include the exact declared pool input.
+
+All six bounded workflows below then passed on exact SHA `2ef5c425da9762931ee440ba22ed12d40d9a3d85`:
+- [Cardano Adapter Sale Conformance #40631890587](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890587) — `economic-conformance` and `frontend-build`;
+- [IMMORTAL Portability Conformance #40631890535](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890535);
+- [Protocol Declaration Conformance #40631890534](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890534);
+- [Algorithmic Governability Adversarial Lab #40631890649](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890649);
+- [Documentation Link Check #40631890547](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890547);
+- [PRE-RICH Direct-USDM Conformance #40631890559](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40631890559), an Agent A-owned path kept distinct from SDK work.
+
+The fix proves equality binding only. It does not recompute or authenticate the fingerprint, prove ledger inclusion, qualify EEV, approve Issue, or discharge R1/`K_c`. V08 and V09 remain open, and the SDK API contract remains a draft. The Oracle State readiness/freshness changes committed by the parallel Agent A front are separate, were not duplicated, and were preserved.
+
+No new branch was created. No V3 carrier, Reveal semantics, economic constants, wallet signing, deployment, transaction submission, or Materios work was changed.
+
+**STATUS: ACTION-FINGERPRINT EQUALITY BINDING ADDED; CAES REGRESSION IN CI; SIX BOUNDED WORKFLOWS GREEN ON THE RECORDED EXACT SHA.**
