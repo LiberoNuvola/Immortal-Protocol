@@ -219,3 +219,53 @@ This pass follows the Issue authority boundary from the signed envelope through 
 - Keep (K_c)/Ω certification and whole-program action reachability as explicit blockers until evidence closes them.
 
 **Change scope:** documentation only. No code, economic constants, V3/Reveal semantics, branches, or tests were changed/executed in this pass.
+
+## 2026-10-28 — Branch-HEAD pinning and authority deployment/artifact census
+
+This follow-up pins the source inspection to the exact branch tip and checks whether the authority implementation, referenced viability artifacts, and deployment configuration are present in the repository tree.
+
+### Reproducible source anchor
+
+The Git ref endpoint and recursive Git tree both returned branch HEAD:
+
+- Branch: `work/immortal-green-closure`
+- HEAD commit: `63371c74a2b7ced6f4133e3d0c3917bb926b3102`
+- Recursive tree: 1,134 entries, `truncated=false`
+- The HEAD equals the documentation commit from the previous pass at the time of this check.
+
+This makes the following path census pinned to that exact commit, unlike the earlier file-only inventory. It does not assert that the branch cannot advance after this observation.
+
+### Authority service findings
+
+| Path | Blob SHA | Finding |
+|---|---|---|
+| `relayer/issueAuthorityServer.js` | `69348a48d3848368936d6c8540629ba4ef50b266` | A concrete HTTP server exists at `POST /issue-admission`; it constructs `createPreprodAuthoritativeIssueProvider` using environment variables, Blockfrost Preprod and the Haskell producer. It requires an authority-source URL and public key, along with deployed Counter/Pool/V3/B2 identities. |
+| `relayer/preprodIssueAuthorityEnvelope.js` | `b5e7ddbe72483b61e96e202d6d2276a7c76467fb` | A separate module can sign a previously computed Issue witness and self-verify the resulting envelope. Its own comments explicitly say it does not calculate EEV, ProtectedCapital, viability, liquidity, control state or gate truth. |
+| `relayer/signedIssueAuthority.js` | `bf3c93307c168661b592ed1aaf35f861d342896e` | The server-side provider's configured authority-source URL is fetched and the response's canonical payload signature and carrier-binding signature are verified against the configured public key. This is cryptographic authenticity and consistency validation, not proof that the signer derived the economics or viability theorem correctly. |
+| `src/remoteAuthoritativeIssueAdmissionProvider.ts` | `d0da0cbd1cbea2f6983454863a48c4a70a6e89c6` | Defines a remote provider transport. The tree census did not establish a production construction call-site or deployed endpoint for this provider. |
+| `.env.example` | `e0d934726a30e787ff74469ba8cb79ab0a026424` | Documents placeholders for `VITE_ISSUE_AUTHORITY_ENDPOINT`, `ISSUE_AUTHORITY_SOURCE_URL`, and `ISSUE_AUTHORITY_PUBLIC_KEY`; it contains no configured production endpoint or public-key fingerprint. |
+| `docs/research/ISSUE-AUTHORITY-PRODUCER-QUALIFICATION-2026-09-28.md` | `95c41cc64243c48f06394446a5b3ee97da454433` | Existing qualification decision explicitly says not to implement a concrete authoritative producer until the authority source is qualified; its open requirements include authenticated control state, EEV perimeter/horizon and executable Pool liquidity. |
+
+### Viability artifact and deployment census
+
+- The recursive tree contains the viability-certificate *schema/validation code* and general formal-proof/audit documents, but no obvious standalone files named for VC1–VC6 or E1–E10 that could be fetched and hash-checked as the referenced deployment artifacts.
+- No conventional service deployment manifest for this Issue authority was found in the tree census (for example Dockerfile, Compose, Procfile, Railway/Fly/Render/Vercel service config). This is a bounded path-name census, not proof that no external deployment exists.
+- The source code has a concrete local server entry point, but repository source plus environment-variable placeholders do not establish a live service, actual endpoint, key fingerprint, key custody, deployment revision, or a reproducible certificate-verifier build.
+- The module `preprodIssueAuthorityEnvelope.js` can sign a witness whose Ω flag is already true; it does not turn that flag into a proof. The external signature protects who asserted the value, not the truth of the assertion.
+
+### Updated conclusion
+
+1. **Branch source is now pinned** to `63371c74a2b7ced6f4133e3d0c3917bb926b3102` for this census.
+2. **An authority server implementation exists**, so the earlier gap should not be described as “no provider implementation.” The unresolved issue is qualification and deployment of its upstream signed authority source, plus proof-content verification.
+3. **The actual upstream authority configuration remains unverified.** This pass did not query secret APIs or expose key material; those are neither necessary nor appropriate for a source-tree census. The next safe evidence is a public endpoint identity/health response, public-key fingerprint and deployment metadata supplied by the operator, compared with the pinned source/configuration.
+4. **VC1–VC6/E1–E10 artifact verification remains OPEN.** No corresponding concrete artifact bytes and verifier were identified in this repository tree, so no artifact digest was claimed verified.
+5. **U-03 and U-02/RF8 remain OPEN.** Neither the source pinning nor the signature chain proves a certified (K_c), complete Ω relation, infinite-horizon viability, or whole-program canonical-gate reachability.
+
+### Next targeted actions
+
+- Locate the operator's deployed authority endpoint and report only its public URL, health/status and deployment commit; do not reveal private signing material.
+- Obtain the public-key fingerprint from the configured deployment and compare it with the authority's published key identity.
+- Ask the authority operator for the VC1–VC6/E1–E10 artifact manifest, canonical bytes/digests, verifier source/version and reproducible verification command.
+- Once these are available, verify artifact bytes and signatures against the exact candidate state/action binding. Keep transaction-body intent binding as a separate blocker.
+
+**Change scope:** documentation only. No code, secret, transaction, workflow dispatch, economic constant, or V3/Reveal semantics changed. No tests were run.
