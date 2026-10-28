@@ -402,3 +402,10 @@ The safe next gate is to approve (not guess) per-transition fingerprint ownershi
 The SDK API contract proposal now contains a review-only phase-separated contract and per-action predicate inventory for Issue/Reveal/Claim/Expire. It separates pre-sign intent, completed-body validation, and submit/settlement observation; defines explicit classes for protocol inputs, wallet-balance inputs, reference inputs, protocol outputs, change, fee and validity; and lists adversarial conformance cases.
 
 This remains documentation/review only. Fingerprint producer/canonicalization for Reveal/Claim/Expire is not approved or available in production; Issue retains its Haskell decision source and V3 carrier contract. No fingerprint formula, fee ceiling, validity rule or economic rule was invented. Runtime adapter/API signatures and tests were not changed. V08/V09 and R1/K_c remain open; Agent A's Oracle/EEV work is separate and Materios remains paused.
+
+
+## Follow-up: additional completed-input classification implemented (2026-10-28)
+
+`CardanoExecutionAdapter.submitEconomic` now requires each actual additional spending input—beyond the caller-declared protocol input set—to be found in the selected wallet's UTxO listing. When the list cannot be read or any additional body reference is absent, the adapter rejects before signing/submission. The existing protocol-input subset check remains in force.
+
+The focused tests add a wallet-listed positive case and negative twins for an unclassified extra input and missing wallet-list capability. This closes only the *unclassified additional spending-input* sub-gap. Completed outputs/datum/redeemer/value/validity are not yet bound to the pre-sign intent; wallet membership alone is not proof that an extra UTxO is economically inert. V08/V09 and R1/K_c remain open; no V3/Reveal semantics or Agent A Oracle/EEV logic changed.
