@@ -66,7 +66,10 @@ async function koiosGetTip() {
  * script hash; query pagination is bounded and repeated pages fail closed.
  */
 async function fetchScriptPage(scriptHash, offset) {
+  // Koios currently exposes this lookup as GET /script_utxos on Preprod.
   const query = new URLSearchParams({
+    _script_hash: scriptHash,
+    _extended: 'true',
     limit: String(PAGE_SIZE),
     offset: String(offset),
   })
@@ -75,9 +78,8 @@ async function fetchScriptPage(scriptHash, offset) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
     try {
       const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ _script_hashes: [scriptHash], _extended: true }),
+        method: 'GET',
+        headers: { accept: 'application/json' },
       })
       if (!response.ok) {
         const error = new Error('KOIOS_SCRIPT_UTXOS_HTTP_' + response.status + '_HASH_' + scriptHash)
