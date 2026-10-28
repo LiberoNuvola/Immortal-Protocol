@@ -482,3 +482,12 @@ Commit: `9c38567f1b4cdee2ab772d42bf7b8aaa317098ac`.
 This is a deliberately narrow regression improvement: it pins the current state/action serialization contract without changing the serialization implementation, digest algorithm, economic rules, or V3/Reveal behavior. It does **not** yet pin expected SHA-256 values, candidate-state serialization, multiple-class vectors, or every Jackpot status. Those still require a Haskell-generated vector fixture and cross-language consumer.
 
 **Verification limit:** the source and commit diff were fetched and inspected through GitHub; Cabal/GHC tests were not run in this pass. The new assertions must not be reported as passing until the test suite executes in the repository's pinned environment.
+
+
+## 2026-10-28 — Expanded canonical serialization regression coverage
+
+Commit `8837ef4fd1c7e9603f2c309791e5eba2ac5652c2` extends `PreRichIssueDecisionTest.hs` with literal serialization assertions for all four currently defined Jackpot status labels (`inactive`, `locked`, `payable`, `closed`) and for an ordered two-class state with distinct saleability flags.
+
+These assertions pin the existing Haskell serializer's externally observable text shape. They do not change the serializer, economics, or state transition behavior. They also do not replace SHA-256 golden vectors: expected pre/post/action digests and a TypeScript consumer remain outstanding.
+
+**Verification limit:** commit diff and updated source were inspected through GitHub; no GHC/Cabal execution is available in this pass. Therefore the assertions are committed but their execution status is **UNVERIFIED**, not PASS. No workflow dispatch or transaction was initiated.
