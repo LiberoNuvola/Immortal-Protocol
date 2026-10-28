@@ -273,3 +273,10 @@ A narrow runtime increment is now present in `Adapter/CARDANO/runtime/CardanoExe
 This narrows the prior gap: unexplained additional spending inputs are no longer silently accepted as wallet balancing inputs. It does **not** close completed-body binding. The check classifies extra-input references using the connected wallet's own UTxO listing; it does not yet bind semantic outputs, datums, redeemers, values, mint/burn or validity to an approved transition intent, nor does wallet-list membership alone establish that an extra input is economically inert. Those remain explicit gates. Do not describe this increment as full transaction binding or as closing V08/V09.
 
 This increment leaves the existing economic admission, Haskell Issue fingerprint source, V3 carrier, Reveal semantics, economic policy and Agent A's Oracle/EEV work unchanged.
+
+
+### 11.8 CI evidence for the input-classification increment
+
+On branch HEAD `cf9a39cef0098c49b97d10353e2069a60bf59df6` (which includes the implementation and focused test commit), [Cardano Adapter Sale Conformance #40639261291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261291) completed **SUCCESS**. Both `economic-conformance` and `frontend-build` passed. The `economic-conformance` job explicitly ran `npx vitest run ... Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts ...` and passed; this includes the added positive/negative input-classification tests.
+
+On the same SHA, Documentation Link Check #40639261306, IMMORTAL Portability Conformance #40639261384, Algorithmic Governability Adversarial Lab #40639261305, Protocol Declaration Conformance #40639261328, and Security Credential Boundary #40639261315 completed successfully. The IMMORTAL Cardano Preprod Context #40639261330 was still in progress and the Integration Lab #40639261321 was pending at verification time. These results establish regression/build evidence for the input-classification increment; they do not establish full completed-body binding or Preprod settlement.
