@@ -387,3 +387,11 @@ Read-only source review now distinguishes authoritative pre-sign decision finger
 - **Production mapping gap:** `src/gameFlow.ts` receives `EconomicAdmissionWitness` for Reveal/Claim/Expire but does not expose an application-level canonical action-fingerprint producer analogous to the Haskell Issue path. The adapter sees admission and concrete input references; the generalized evidence helper is not called by production paths.
 
 The SDK draft now has an explicit transition-specific provenance matrix and a release gate for canonical fingerprint source ownership plus completed-transaction mapping. Do not transplant the harness `hashJson` formulas into production admission, claim universal fingerprint parity, or change V3 semantics. No runtime code was changed.
+
+## Follow-up: production transaction-body mapping audit (2026-10-28)
+
+A source-level map was added to the [SDK API contract proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md), covering the explicit Issue/Reveal/Claim/Expire spending inputs, reference inputs, application-declared outputs and existing pre-submit checks.
+
+The common adapter gate only requires the caller-declared protocol spending inputs to be a subset of the completed Lucid body. It does not classify any additional wallet/fee inputs, bind the full output/datum/redeemer map to the admission witness, or receive a phase-specific transition-intent record. This is intentional partly because Lucid may add balancing inputs/outputs, but it leaves an explicit classification and transaction-body-binding design task before production evidence wiring.
+
+The safe next gate is to approve (not guess) per-transition fingerprint ownership, protocol-vs-wallet/fee input classification, expected output/validity predicates and a phase-separated pre-sign/post-submit evidence contract. This remains an engineering/design gap, not a claim that current submission paths are universally bound to canonical transition evidence. No protocol or runtime code changed.

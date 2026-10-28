@@ -3887,3 +3887,19 @@ The Reveal/Claim/Expire formulas belong to observed local-Yaci audit traces; the
 The [SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) now records a per-transition provenance matrix and a release gate for canonical fingerprint source ownership plus completed-transaction mapping. The helper equality regression remains helper-level; it does not close the production-wiring gap for all four economic actions.
 
 **Guardrail:** never reuse the post-transition harness `hashJson` as a live pre-sign authorization fingerprint by assumption. Do not alter V3 or Reveal semantics; resolve fingerprint canonicalization and transition-specific transaction mapping before runtime integration. No code or economic rules changed.
+
+## 45.42 AGENT B — PRODUCTION TRANSITION BODY MAPPING (2026-10-28)
+
+A source-level transaction-body mapping audit has been added to the [SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) and indexed in the [SDK cross-branch inventory](IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md).
+
+The matrix records the current production builders for Issue/Reveal/Claim/Expire: protocol spending inputs, reference inputs, application-declared outputs, existing pre-submit checks and unresolved evidence binding. The critical shared boundary is now explicit: `CardanoExecutionAdapter.submitEconomic` checks the declared protocol inputs are a subset of the completed transaction's spending inputs, but does not classify additional Lucid wallet/fee inputs, bind the complete output/datum/redeemer map to the admission witness, or accept a phase-specific pre-sign transition-intent binding.
+
+Next safe gate before runtime changes:
+1. canonical fingerprint producer/encoding ownership for each action;
+2. reviewed input classification separating protocol state from legitimate wallet/fee balancing;
+3. reviewed output/redeemer/validity predicates for each transition;
+4. split pre-sign intent/admission from post-submit/observed-ledger evidence, then wire and test fail-closed composition.
+
+This is a source audit and design map, not a claim that the runtime currently enforces full transition-to-transaction binding. No runtime code or protocol semantics changed, and no work was duplicated from Agent A's Oracle/EEV front. V08/V09 remain open.
+
+**STATUS: TRANSITION-BODY MAP RECORDED; PRODUCTION-WIRING DESIGN GAP MADE ACTIONABLE; NO RUNTIME/API SIGNATURE CHANGE.**
