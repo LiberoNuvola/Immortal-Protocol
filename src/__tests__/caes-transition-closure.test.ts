@@ -108,4 +108,24 @@ describe('CAES transition closure boundary', () => {
     expect(lucid.signTx).not.toHaveBeenCalled()
     expect(lucid.submitTx).not.toHaveBeenCalled()
   })
+  it('stops before Cardano signing when the action fingerprint diverges', async () => {
+    const lucid = {
+      signTx: vi.fn(),
+      submitTx: vi.fn(),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      submitComposedEconomic(
+        adapter,
+        {},
+        { ...admission, actionFingerprint: 'dd'.repeat(32) },
+        evidence,
+      ),
+    ).rejects.toThrow('economic admission action fingerprint does not match canonical evidence')
+
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
 })
