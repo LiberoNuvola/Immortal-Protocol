@@ -395,3 +395,10 @@ A source-level map was added to the [SDK API contract proposal](IMMORTAL-SDK-API
 The common adapter gate only requires the caller-declared protocol spending inputs to be a subset of the completed Lucid body. It does not classify any additional wallet/fee inputs, bind the full output/datum/redeemer map to the admission witness, or receive a phase-specific transition-intent record. This is intentional partly because Lucid may add balancing inputs/outputs, but it leaves an explicit classification and transaction-body-binding design task before production evidence wiring.
 
 The safe next gate is to approve (not guess) per-transition fingerprint ownership, protocol-vs-wallet/fee input classification, expected output/validity predicates and a phase-separated pre-sign/post-submit evidence contract. This remains an engineering/design gap, not a claim that current submission paths are universally bound to canonical transition evidence. No protocol or runtime code changed.
+
+
+## Follow-up: proposed pre-sign/body-binding review gate (2026-10-28)
+
+The SDK API contract proposal now contains a review-only phase-separated contract and per-action predicate inventory for Issue/Reveal/Claim/Expire. It separates pre-sign intent, completed-body validation, and submit/settlement observation; defines explicit classes for protocol inputs, wallet-balance inputs, reference inputs, protocol outputs, change, fee and validity; and lists adversarial conformance cases.
+
+This remains documentation/review only. Fingerprint producer/canonicalization for Reveal/Claim/Expire is not approved or available in production; Issue retains its Haskell decision source and V3 carrier contract. No fingerprint formula, fee ceiling, validity rule or economic rule was invented. Runtime adapter/API signatures and tests were not changed. V08/V09 and R1/K_c remain open; Agent A's Oracle/EEV work is separate and Materios remains paused.
