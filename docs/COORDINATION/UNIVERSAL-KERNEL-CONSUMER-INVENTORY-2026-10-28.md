@@ -446,3 +446,26 @@ The current Haskell tests prove digest *shape*, not stable digest *meaning*. No 
 A cross-language consumer should then verify those fixtures byte-for-byte, and the fixture provenance must identify the Haskell source revision used to produce them. This can be done without changing the canonical output or any economic/V3/Reveal semantics.
 
 **Verification limit:** this pass inspected GitHub source only. No Haskell/TypeScript test was executed, no runtime code was changed, and no transaction/workflow was started.
+
+
+## 2026-10-28 — Existing golden-vector harness reuse check
+
+The follow-up searched the exact branch for existing golden-vector infrastructure before proposing a new fixture format.
+
+### What already exists
+
+- `plutus/test/GoldenVectorsTest.hs` (blob `59fb60f44f49b603cccb1aa6d6be26eee2215a5c`) already exercises V3 Issue/Reveal/Expire transitions, projection into `UniversalEconomicState`, and selected V3/universal kernel equivalence checks.
+- `plutus/pre-rich-plutus.cabal` (blob `e8daf55df06a5ea3ba4494dca5e0a4a3033b4a27`) registers that suite as `v3-golden-vector-tests` and separately registers `issue-decision-tests`.
+- `PRE-RICH/onchain/PreRichIssueDecision.hs` (blob `ec37ea8e656fa399f1e57e2404e0c6a2c5b5ccee`) is the source of truth for the current Issue serialization and digest computation.
+
+### Reuse conclusion
+
+The existing `GoldenVectorsTest.hs` is a useful **economic transition/projection** harness, but it is not a golden-vector harness for the Issue fingerprint bytes. It does not import `PreRichIssueDecision`, assert `canonicalV3State`/ `canonicalIssueAction` byte strings, or compare fixed SHA-256 digests. The separate `PreRichIssueDecisionTest.hs` still only checks digest length.
+
+Therefore, do not label the existing V3 transition fixtures as Issue fingerprint vectors and do not silently alter their schema. The narrowest implementation path is a dedicated Issue-serialization golden-vector suite (or a clearly separated section in the existing Issue decision suite), using the current Haskell functions unchanged and fixtures whose provenance records the exact source revision. A TypeScript test should consume the same literal fixture file and compare both serialization bytes and digest outputs.
+
+### Execution constraint and next gate
+
+GitHub source inspection confirms the gap and the reusable test target, but this environment has not executed Cabal/GHC. I have not generated or committed expected digests, because doing so without running the authoritative Haskell producer would risk presenting independently calculated values as Haskell-generated vectors. Before any golden fixture is called authoritative, run the Haskell producer in the project’s pinned build environment and capture its output; then add fixed expected values and a cross-language consumer. Keep observation/Yaci hashes in a separate schema and namespace.
+
+**Change scope:** this entry records the harness reuse check only. No runtime code, test source, Cabal configuration, workflow, economic rule, V3/Reveal semantics or transaction was changed. No tests or workflows were run.
