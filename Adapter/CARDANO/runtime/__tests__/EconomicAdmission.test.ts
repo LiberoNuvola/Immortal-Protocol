@@ -71,6 +71,69 @@ describe('economic Cardano submission boundary', () => {
   })
 
 
+  it('accepts additional completed inputs only when the connected wallet reports them', async () => {
+    const walletInput = '33'.repeat(32) + '#0'
+    const lucid = {
+      wallet: {
+        getUtxos: vi.fn().mockResolvedValue([
+          { txHash: '33'.repeat(32), outputIndex: 0, address: 'addr_test1_wallet' },
+        ]),
+      },
+      signTx: vi.fn().mockResolvedValue('signed'),
+      submitTx: vi.fn().mockResolvedValue('tx-wallet-balanced'),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
+    const tx = completedTxWithInputs([pool0, walletInput])
+
+    await expect(
+      adapter.submitEconomic(tx, admission, [pool0], [pool0]),
+    ).resolves.toEqual({ transactionRef: 'tx-wallet-balanced' })
+
+    expect(lucid.wallet.getUtxos).toHaveBeenCalledTimes(1)
+    expect(lucid.signTx).toHaveBeenCalledWith(tx)
+    expect(lucid.submitTx).toHaveBeenCalledWith('signed')
+  })
+
+  it('rejects an additional completed input that is not in the connected wallet UTxO list', async () => {
+    const unclassifiedInput = '33'.repeat(32) + '#0'
+    const lucid = {
+      wallet: { getUtxos: vi.fn().mockResolvedValue([]) },
+      signTx: vi.fn(),
+      submitTx: vi.fn(),
+    }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(
+        completedTxWithInputs([pool0, unclassifiedInput]),
+        admission,
+        [pool0],
+        [pool0],
+      ),
+    ).rejects.toThrow('not verified as connected-wallet UTxOs')
+
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when additional inputs exist but wallet UTxO listing is unavailable', async () => {
+    const unclassifiedInput = '33'.repeat(32) + '#0'
+    const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
+    const adapter = createCardanoExecutionAdapter(lucid)
+
+    await expect(
+      adapter.submitEconomic(
+        completedTxWithInputs([pool0, unclassifiedInput]),
+        admission,
+        [pool0],
+        [pool0],
+      ),
+    ).rejects.toThrow('connected wallet UTxO listing is unavailable')
+
+    expect(lucid.signTx).not.toHaveBeenCalled()
+    expect(lucid.submitTx).not.toHaveBeenCalled()
+  })
+
   it('rejects admission-bound inputs that are absent from the actual completed transaction body', async () => {
     const lucid = { signTx: vi.fn(), submitTx: vi.fn() }
     const adapter = createCardanoExecutionAdapter(lucid)
