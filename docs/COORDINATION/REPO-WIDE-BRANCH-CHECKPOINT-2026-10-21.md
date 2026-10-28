@@ -4599,3 +4599,37 @@ Verified workflow evidence on exact HEAD `cf9a39cef0098c49b97d10353e2069a60bf59d
 - [IMMORTAL Cardano Integration Lab #40639261321](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261321) — PENDING at observation time.
 
 This is successful focused regression/build evidence for additional-input classification. It does not prove all transaction outputs/datums/redeemers/validity are bound to the admission, and it does not establish a Preprod transaction or close V08/V09/R1/K_c.
+
+## 45.46 AGENT B — PARALLEL SDK + MATERIOS/ORYNQ COMPATIBILITY PASS (2026-10-28)
+
+### SDK / Cardano pre-sign boundary
+
+Current observed integration branch HEAD: `31e264169e16b95955d25de0cacdd9b173352fca` (`docs(coordination): record pre-sign input mutation guard`). It includes the narrow additional-input classification and pre-sign input-mutation guard.
+
+Exact-HEAD GitHub Actions checks observed on `31e264169e16b95955d25de0cacdd9b173352fca`:
+- [Declaration conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740245236) — SUCCESS.
+- [Conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740245053) — SUCCESS.
+- [No-result-dependent-authority](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740244832) — SUCCESS.
+- [Economic conformance](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740244727) — SUCCESS.
+- [Frontend build](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740244727) — SUCCESS.
+- [Documentation link check](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40740244663) — SUCCESS.
+
+GitGuardian returned neutral because the scan was skipped for size; do not describe this as a security scan pass. The pre-sign check remains limited to the spending-input reference set. Full body-to-intent binding for protocol outputs, datums, redeemers, asset values, mint/burn, fees and validity remains open; V08/V09 and the independent R1/K_c and Oracle/EEV gates remain open.
+
+### Materios / Orynq upstream compatibility audit
+
+Read-only inspection of Flux Point Studios' `orynq-sdk` main confirms `@fluxpointstudios/orynq-sdk-anchors-materios` version `0.7.0` in `packages/anchors-materios/package.json` and its changelog. The existing IMMORTAL bridge on `work/b3-materios-provenance-evidence` still pins `0.6.2` in both `poc/materios-orynq-bridge/package.json` and its lockfile.
+
+Compatibility findings:
+- The bridge uses `MateriosProvider`, `merkleRoot`, `prepareBlobData`, and `submitCertifiedReceipt`; the 0.7.0 package entry point continues to export those names and additionally exports `resolveInclusion`, `MateriosSubmissionError`, and the Merkle proof helpers.
+- The bridge does not currently branch on `err.code` or implement its own resubmission loop; its top-level handler reports the error message and exits. Therefore the documented breaking change from numeric `err.code` to the string `"not-landed"` has no identified direct call-site collision in this bridge.
+- 0.7.0 changes the core dependency to `@fluxpointstudios/orynq-sdk-core@^0.4.0` and strengthens submission/inclusion recovery semantics. A dependency bump must update the lockfile and be validated with install, typecheck and deterministic bridge tests before adoption.
+- The new `resolveInclusion` must only be used to resolve an `inclusion-unknown` result; a `MateriosCertificationError` after a landed receipt must never trigger receipt resubmission. No automatic retry behavior is added in this audit pass.
+
+No package version or lockfile was changed in this pass because an installable 0.7.0 lockfile and local test execution were not available through this read-only GitHub review. Do not claim the bridge has been upgraded or runtime-tested against 0.7.0.
+
+### Coordination / guardrails
+
+This is a parallel compatibility audit, not a resumption of the blocked B3-A/B3-B proof claim. Materios remains an optional Agent C bridge, separate from the SDK core and Cardano pre-sign work. No V3/Reveal semantics, economic rules, Agent A Oracle/EEV logic, signing, deployment or on-chain submission changed. No new branch was created.
+
+**STATUS: SDK narrow pre-sign regressions have exact-HEAD CI evidence; full transaction-body binding remains open. Orynq 0.7.0 compatibility has been source-audited but not installed or runtime-tested; dependency upgrade remains gated on reproducible lockfile and test evidence.**
