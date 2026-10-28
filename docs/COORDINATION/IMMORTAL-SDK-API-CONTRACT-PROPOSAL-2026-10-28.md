@@ -40,11 +40,24 @@ Proposed minimum fields:
 
 The current `CanonicalTransitionEvidence.ts` is only a structural validator. Before exporting it, the contract must define schema versioning, fingerprint algorithm and canonicalization, timestamp semantics, environment vocabulary, and the difference between *claimed* and *verified* assurance. A well-formed digest string is not a cryptographic proof; a transaction reference is not proof of ledger inclusion; a timestamp alone is not proof of freshness.
 
+#### Phase split required before runtime export
+
+The current combined evidence shape contains `transactionRef`, although a transaction reference and ledger result are not yet available at the pre-sign decision point. Do not reuse this full object as the only pre-sign contract or fabricate a placeholder transaction reference.
+
+The candidate contract should separate two records:
+
+1. **Pre-sign transition-intent binding** — a versioned, immutable record for the canonical action class, action fingerprint, pre-state fingerprint, candidate post-state fingerprint, environment/profile, authoritative admission reference and verifiers. It can be checked before wallet authorization. This binding alone does not prove the transaction body implements the claimed action; the adapter still must bind the actual completed transaction body to its declared inputs and the transition-specific input/output/action mapping.
+2. **Post-submit settlement/observation evidence** — a separate record created after submission, carrying the real transaction reference and evidence from the declared chain source (including environment and observed block/slot where available). Ledger inclusion/finality must be a separately verified claim, not inferred from a submitted transaction id.
+
+Keep the phases explicit: build candidate → validate admission/intent and completed transaction binding → wallet signature → submit → obtain the actual transaction reference → observe/verify the declared ledger result. A successful earlier phase never implies success of a later one.
+
+**Current production-wiring status:** call-site inspection found the general `assertEconomicAdmissionMatchesCanonicalEvidence` and Issue-specific `assertIssueAdmissionMatchesCanonicalEvidence` exercised by tests but not called by all production economic submission paths; `CardanoExecutionAdapter.submitEconomic` does not currently accept the combined evidence object. The fingerprint equality regression therefore validates a helper contract, not a universal runtime gate. Keep this explicit until the pre-sign/post-submit split, ownership and transition-specific mappings have been approved and wired into Issue/Reveal/Claim/Expire.
+
 ### 3.2 Admission binding
 
-Expose a binding result only as a relation between the supplied admission and transition evidence. The result must not be named or documented as “economic admission approved” unless the authoritative admission procedure has independently completed and its evidence is verified.
+Expose a binding result only as a relation between the supplied admission and the appropriate phase-specific evidence. The helper-level equality check now includes action class, action fingerprint and pre/post-state fingerprints; it is not currently wired as a universal production gate.
 
-Preserve the existing pre-sign fail-closed boundary. Schema validation, fingerprint equality, or matching fields must never trigger wallet signing or transaction submission on their own.
+Preserve the pre-sign fail-closed boundary. Schema validation, fingerprint equality, or matching fields must never trigger wallet signing or transaction submission on their own. Do not claim production enforcement until the adapter/API receives and validates an explicit pre-sign intent binding and all economic submission paths pass it.
 
 ### 3.3 Canonical economic state
 
@@ -91,6 +104,7 @@ For direct-USDM EEV, the SDK may carry an already qualified evidence reference. 
 |---|---|---|
 | Public export ownership | Approved package boundaries and owners | Proposal only |
 | Evidence schema | Versioning, canonicalization, timestamp and trust semantics | Open |
+| Pre-sign vs post-submit evidence | Separate intent/admission binding from actual transaction reference and ledger observation | Design proposed; runtime wiring open |
 | Existing adapter contract tests | Exact-head focused CI and negative twins | Existing workflows green on previously pinned heads; recheck current head before implementation |
 | V08 universal transition | Canonical executable owner mapped to normative `T` and expiry finality, with conformance tests | Open |
 | V09 certified kernel | Concrete deployment/profile instance of `K_c`, declared `S,A,Ω,T,Safe`, CK/VC evidence and non-vacuity evidence where required | Open |
