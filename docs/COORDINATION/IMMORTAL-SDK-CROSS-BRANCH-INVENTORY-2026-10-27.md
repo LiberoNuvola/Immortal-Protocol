@@ -273,3 +273,35 @@ This proves those two bounded test suites pass at that SHA. It does **not** clos
 - **Source-mapped but not claimed newly executed here:** the evidence binding, Cardano execution adapter, admission, and CAES composition tests listed above.
 - **Still open:** V08 universal transition owner/contract; V09 concrete certified `K_c`; export surface and schema versioning; package-level API/compatibility tests; full conformance qualification.
 - **No package code or protocol semantics changed:** this update records evidence and ownership only.
+
+
+## Follow-up: exact-head workflow gate + lifecycle contract cross-check (2026-10-28)
+
+### Exact current HEAD and workflow results
+
+The active branch resolved to `1b675e0c4c0a8dd6a61c158544872a67ef462426`. All five runs triggered by that exact SHA completed successfully:
+
+- [IMMORTAL Portability Conformance #40580323631](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40580323631): success; job `conformance`.
+- [Cardano Adapter Sale Conformance #40580323842](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40580323842): success; jobs `economic-conformance` and `frontend-build`.
+- [Protocol Declaration Conformance #40580323669](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40580323669): success; job `declaration-conformance`.
+- [Algorithmic Governability Adversarial Lab #40580323684](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40580323684): success; job `no-result-dependent-authority`.
+- [Documentation Link Check #40580324022](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40580324022): success.
+
+This is exact-head CI evidence for these bounded workflows. It is not full portability closure, certified `K_c`, live Preprod qualification, or proof of a user-purchasable ticket.
+
+### V08 cross-check: normative transition contract exists; universal executable owner still does not
+
+Additional source inspection resolves an ambiguity in the earlier note:
+
+- `docs/00-normative/04_STATE_TRANSITION_SPECIFICATION.md` defines the normative canonical form `(S, a, ω) → S′ = T(S,a,ω)`, requires authoritative inputs, complete post-state, separate `Safe` and certified-`K_c` viability checks, fail-closed rejection, atomic commit and history recording.
+- `PRE-RICH/onchain/PreRichLifecycleTransition.hs` is a concrete executable lifecycle boundary, but its own module contract makes it PRE-RICH/regime-specific. Its actions are `EnterQuiescent` and `MaintainQuiescent`; it does not define the universal ticket-expiry transition and must not be relabeled as that owner.
+- `IMMORTAL/kernel/EconomicTransitionV3.hs` implements profile-coupled Issue/Reveal/Claim/Expire, not the universal `T` contract.
+- `plutus/test/PreRichLifecycleTransitionTest.hs` tests the PRE-RICH lifecycle/QNE contract; it does not discharge universal V08 expiry-finality conformance.
+
+**Updated conclusion:** V08 is not missing normative intent; it is missing an identified, canonical, executable universal transition contract/model that maps the normative `T` and expiry-finality invariant to implementation conformance. This needs an architecture/normative owner decision, not an SDK-only alias or a test against the wrong lifecycle.
+
+### SDK gate decision
+
+The five workflows are green on the current HEAD, so the documentation/test-mapping stage is validated. The next safe SDK step remains a **reviewable API-contract proposal only**: package ownership, public type/schema versioning, evidence trust labels, and compatibility expectations. Do not create package facades or a parallel TypeScript kernel while V08/V09 remain open. Keep V09 blocked on an instantiated concrete `K_c` certificate and evidence; no synthetic fixture or green CI can replace it.
+
+No protocol semantics, economic constants, V3 carrier, Reveal semantics, Agent A EEV/Issue authority, wallet signing, deployment, transaction submission, or paused Materios work changed.
