@@ -305,3 +305,21 @@ Additional source inspection resolves an ambiguity in the earlier note:
 The five workflows are green on the current HEAD, so the documentation/test-mapping stage is validated. The next safe SDK step remains a **reviewable API-contract proposal only**: package ownership, public type/schema versioning, evidence trust labels, and compatibility expectations. Do not create package facades or a parallel TypeScript kernel while V08/V09 remain open. Keep V09 blocked on an instantiated concrete `K_c` certificate and evidence; no synthetic fixture or green CI can replace it.
 
 No protocol semantics, economic constants, V3 carrier, Reveal semantics, Agent A EEV/Issue authority, wallet signing, deployment, transaction submission, or paused Materios work changed.
+
+
+## Follow-up: reviewable SDK API contract proposal (2026-10-28)
+
+Added [IMMORTAL SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) as a draft-only design artifact; no package facade or runtime code was introduced.
+
+The proposal records:
+- candidate package ownership: `@immortal/core` for chain-neutral data contracts, `@immortal/adapter-cardano` for Cardano execution boundaries, and `@immortal/conformance` for vectors/runner/evidence;
+- a versioned transition-evidence envelope with explicit environment, source references, verifier/assurance and limitations;
+- a hard distinction between structural validity, source observation, profile qualification, deployment approval and exact-ledger confirmation;
+- compatibility rules and fail-closed API tests;
+- explicit gates for V08 universal executable transition ownership and V09 concrete `K_c` certification.
+
+These names and assurance levels are proposals, not approved normative vocabulary. Reuse existing canonical statuses where available; do not introduce competing status semantics without review. The Haskell universal kernel remains the reference authority; no TypeScript mirror is proposed.
+
+The branch was at `6a71021404d1d0a354cbe2d948bffb84b3a54bac` when its five bounded workflows completed successfully. The new proposal commit is `7f2466fbcba1049e608541e61b369c0c554ad094`; CI for the new documentation-only HEAD must be checked separately. Agent A's fresh direct-USDM source/EV1–EV7 qualification remains distinct from deployment approval: the artifact records `deploymentApproval: null` and `deploymentApprovalStatus: PENDING`.
+
+**STATUS: API CONTRACT DRAFT AVAILABLE FOR REVIEW; NO SDK IMPLEMENTATION; V08/V09 AND PREPROD ISSUE AUTHORITY REMAIN OPEN.**
