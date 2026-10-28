@@ -198,6 +198,30 @@ check(oracle?.status === 'MATERIALIZED' &&
   oracle?.network === 'cardano-preprod' &&
   oracle?.oracleState?.utxo === deployment?.oracleConfiguration?.utxo,
   'Oracle State identity is bound to deployment')
+
+const timestampText = oracle?.datumSemantics?.timestampMs
+const maxAgeText = oracle?.datumSemantics?.maxAgeMs
+const oracleTimestampMs =
+  typeof timestampText === 'string' && /^\\d+$/.test(timestampText)
+    ? Number(timestampText)
+    : Number.NaN
+const oracleMaxAgeMs =
+  typeof maxAgeText === 'string' && /^\\d+$/.test(maxAgeText)
+    ? Number(maxAgeText)
+    : Number.NaN
+const oracleNowMs = Date.now()
+const oracleTimestampFresh =
+  Number.isSafeInteger(oracleTimestampMs) &&
+  oracleTimestampMs > 0 &&
+  Number.isSafeInteger(oracleMaxAgeMs) &&
+  oracleMaxAgeMs > 0 &&
+  oracleTimestampMs <= oracleNowMs &&
+  oracleNowMs - oracleTimestampMs <= oracleMaxAgeMs
+check(
+  oracleTimestampFresh,
+  'Oracle State price timestamp is present, non-future, and within maxAgeMs',
+  'missing, malformed, stale, or future Oracle State timestamp; re-observe the existing datum and fail closed until it is fresh',
+)
 check(b2?.network === 'cardano-preprod' &&
   typeof b2?.controlAddress === 'string' &&
   typeof b2?.controlPolicyId === 'string' &&
