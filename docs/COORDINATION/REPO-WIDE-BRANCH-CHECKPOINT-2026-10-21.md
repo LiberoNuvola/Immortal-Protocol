@@ -4694,3 +4694,17 @@ This is documentation/conformance evidence only, not proof of complete transacti
 The latest upstream commit returned by the Orynq repository API remains `d1e1548682d33a430c0f42ac53f88f01a652fefe` (2026-10-28, PR #220 test stabilization); no newer upstream commit was returned. The IMMORTAL bridge branch remains at `cfb2de037da07396e32748e09c1f8438c96c5397` and pins `@fluxpointstudios/orynq-sdk-anchors-materios@0.6.2`. Its current source imports the four audited exports and has no custom error-code branch or resubmission loop. Keep 0.7.0 adoption gated on reproducible lockfile generation and executable install/typecheck/test evidence; do not infer runtime compatibility from source exports alone.
 
 **Current work disposition:** preserve both open tracks separately. SDK: next gate is an approved per-action body predicate profile plus pre-sign negative tests; authority source/certificate/deployment evidence is a separate gate. Materios: continue source-level compatibility analysis only until a deterministic install/test environment is available. No new branch, transaction, signature, deployment or V3/Reveal/economic semantics change was made in this pass.
+
+
+### 45.49 MATERIOS 0.7.0 MIGRATION GATE — PRESERVE POST-LANDING FAILURE EVIDENCE (2026-10-28)
+
+A deeper read of the current bridge's live submission path and the upstream 0.7.0 README/changelog found an additional migration requirement:
+
+- The bridge calls `submitCertifiedReceipt(...)` with certification and optional anchor waits. Its top-level `main().catch(...)` currently prints only `error.message` and sets a nonzero exit code.
+- In upstream 0.7.0, `MateriosCertificationError` explicitly means the receipt was already stored/submitted, but a later certification or anchor wait failed. The error carries the submission result and stage. The upstream contract says **never resubmit** this error.
+- The current bridge does not implement a retry loop, so no direct duplicate-resubmission path was found. However, its top-level error handler would not preserve the carried receipt result/tx hash/stage in the machine-readable evidence output if a 0.7.0 certification wait fails after landing.
+- Upstream 0.7.0 also specifies that `inclusion-unknown` must be settled via `resolveInclusion(provider, error)`, while `not-landed` is the only class safe to resubmit with the same receipt ID. No such typed recovery logic is currently implemented in the bridge.
+
+**Required before adopting 0.7.0:** add a typed, sanitized error disposition path and regression tests. For `MateriosCertificationError`, preserve the submission result, receipt ID/transaction hash, failure stage, and certification/anchor status without retrying. For `inclusion-unknown`, resolve finalized inclusion before classifying the submission. Only `not-landed` may be retried, with the exact same receipt ID and payload. Keep raw signer material and private RPC/gateway configuration out of logs. Test each error class with mocked SDK errors before any live submission.
+
+This is a concrete compatibility/test requirement, not a claim that 0.7.0 has been installed or that runtime tests passed. Package/lockfile remain pinned to 0.6.2 until reproducible installation and test execution are available. No code, branch, signature or transaction was changed in this audit.
