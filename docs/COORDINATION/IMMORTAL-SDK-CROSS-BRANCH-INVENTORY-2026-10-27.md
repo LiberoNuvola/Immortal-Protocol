@@ -366,3 +366,14 @@ A call-site audit on the current branch clarifies the reach of the action-finger
 Therefore, the action-fingerprint equality is now covered by focused unit/CAES regression tests, but it is **not yet a universal production pre-sign gate**. Section 45.38 records a tested binding contract, not runtime enforcement across every transition.
 
 The next implementation decision is to define a separate pre-sign transition-intent/admission binding that can be validated before wallet authorization, and a post-submit/observed settlement record that supplies `transactionRef` and ledger confirmation afterwards. Reusing the current full `CanonicalTransitionEvidence` unchanged as a pre-sign object would conflate evidence known before signing with an outcome reference only available after submission. Do not synthesize a transaction reference, weaken validation, or retrofit all production flows without an agreed schema and explicit tests for Issue/Reveal/Claim/Expire. This does not alter V3/Reveal semantics, Agent A's EEV/Issue authority, or the current fail-closed input inspection in the adapter.
+
+
+## Follow-up: phase-separated evidence API draft (2026-10-28)
+
+The SDK API contract draft now makes the production-wiring gap explicit and proposes separating:
+- a **pre-sign transition-intent/admission binding** with action class/fingerprint and canonical pre/post-state fingerprints; and
+- a **post-submit settlement/observation evidence record** carrying the actual transaction reference and any independently verified ledger result.
+
+The existing `CanonicalTransitionEvidence` includes `transactionRef` and is only structurally validated. Do not fabricate a placeholder reference or treat its matching fields as runtime proof. Repository call-site inspection found the general and Issue-specific binding helpers in tests, but not wired through all production Issue/Reveal/Claim/Expire submission paths; `submitEconomic` currently does not accept that evidence envelope.
+
+This remains draft architecture, not runtime implementation. The SDK API proposal now records this split as a release gate; do not change the adapter API or invent producer values until fingerprint ownership/canonicalization and transition-specific input/output binding have an agreed design.

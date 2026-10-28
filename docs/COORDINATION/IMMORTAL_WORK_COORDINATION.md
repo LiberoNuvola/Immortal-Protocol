@@ -3849,3 +3849,25 @@ Separate the two timing domains:
 The current `CanonicalTransitionEvidence` requires a non-empty `transactionRef`; do not fabricate a placeholder or conflate a transaction prepared for signing with a submitted/ledger-observed outcome. Before changing the production adapter signature, map the canonical fingerprints actually produced for each of Issue/Reveal/Claim/Expire, decide schema ownership/versioning and fail-closed semantics, then add transition-specific regression tests proving mismatched action/state bindings stop before signing. Do not duplicate Agent A's Issue/EEV producer or change V3/Reveal semantics.
 
 **STATUS: HELPER-LEVEL FINGERPRINT BINDING TESTED; PRODUCTION-WIRING GAP IDENTIFIED AND EXPLICITLY OPEN.**
+
+
+## 45.40 AGENT B — PHASE-SEPARATED TRANSITION EVIDENCE CONTRACT DRAFT (2026-10-28)
+
+The SDK API draft now records the newly confirmed runtime-wiring gap and a safe next design boundary.
+
+### Contract refinement
+
+The existing `CanonicalTransitionEvidence` object combines action/pre-state/post-state fingerprints with `transactionRef`. Since the real transaction reference becomes available after submit, it must not be fabricated or treated as a pre-sign field. We need two distinct evidence concepts before runtime export:
+
+1. **Pre-sign transition-intent/admission binding** — action class/fingerprint, pre-state and candidate post-state fingerprints, environment/profile and authoritative admission reference, validated before wallet authorization and bound to the actual transaction body by transition-specific checks.
+2. **Post-submit settlement/observation evidence** — the real transaction reference and chain observation, with ledger inclusion/finality verified separately.
+
+The API proposal was updated at [IMMORTAL SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md). It explicitly notes that the general and Issue-specific binding helpers are currently exercised by tests rather than wired into every production Issue/Reveal/Claim/Expire path; the existing `submitEconomic` signature does not receive the combined evidence object. The equality regression therefore proves helper behavior, **not universal runtime enforcement**.
+
+### Disposition
+
+Do not retrofit all transitions with a guessed evidence record, placeholder transaction reference or synthetic fingerprint. Before implementation, settle canonical fingerprint ownership/canonicalization, the pre-sign/post-submit schema split and the mapping between each action's witness and completed transaction inputs/outputs. Keep the current adapter input inspection and fail-closed behavior intact.
+
+No package facade, protocol semantic change, economic constant change, V3/Reveal change, Agent A EEV/Issue authority change, wallet signature, deployment, transaction submission, new branch or Materios work was performed.
+
+**STATUS: PHASE-SPLIT API DESIGN ADDED TO THE SDK DRAFT; PRODUCTION-WIRING GAP TRACKED; NO RUNTIME CHANGE.**
