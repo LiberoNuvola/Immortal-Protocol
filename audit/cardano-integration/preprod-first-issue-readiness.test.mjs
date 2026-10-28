@@ -118,6 +118,10 @@ try {
     status: 'MATERIALIZED',
     network: 'cardano-preprod',
     oracleState: { utxo: oracleUtxo },
+    datumSemantics: {
+      timestampMs: String(Date.now()),
+      maxAgeMs: '3600000',
+    },
     evidenceHash: '2'.repeat(64),
   }
   const qualification = withEvidenceHash({
@@ -223,6 +227,32 @@ try {
   assert.equal(ready.report.status, 'READY_FOR_WALLET_REVIEW')
   assert.equal(ready.report.safety.transactionsSubmitted, false)
   assert.equal(ready.report.safety.walletSigned, false)
+
+  const staleOracle = {
+    ...oracle,
+    datumSemantics: {
+      timestampMs: String(Date.now() - 3_600_001),
+      maxAgeMs: '3600000',
+    },
+  }
+  await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), staleOracle)
+  const staleTimestamp = runGate(env)
+  assert.equal(staleTimestamp.code, 2)
+  assert.ok(staleTimestamp.report.blockers.some(item =>
+    item.label === 'Oracle State price timestamp is present, non-future, and within maxAgeMs',
+  ))
+
+  const missingTimestampOracle = {
+    ...oracle,
+    datumSemantics: { timestampMs: null, maxAgeMs: '3600000' },
+  }
+  await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), missingTimestampOracle)
+  const missingTimestamp = runGate(env)
+  assert.equal(missingTimestamp.code, 2)
+  assert.ok(missingTimestamp.report.blockers.some(item =>
+    item.label === 'Oracle State price timestamp is present, non-future, and within maxAgeMs',
+  ))
+  await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), oracle)
 
   const invalidKey = runGate({ ...env, ISSUE_AUTHORITY_PUBLIC_KEY: 'not-a-public-key' })
   assert.equal(invalidKey.code, 2)
