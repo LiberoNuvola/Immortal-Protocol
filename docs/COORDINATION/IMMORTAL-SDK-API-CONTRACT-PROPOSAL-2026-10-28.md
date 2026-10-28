@@ -258,3 +258,18 @@ Before wiring this contract through every production submit path, add positive a
 Review and close the following before runtime integration: (a) canonical fingerprint producer/encoding ownership per action; (b) exact protocol-versus-wallet input and protocol-versus-change output classification; (c) versioned per-action input/redeemer/validity/output/datum/value predicate profiles; (d) phase-separated record and compatibility policy; and (e) negative twins proving failure before signing/submission.
 
 Until then this is a concrete contract proposal, not implementation or approval. V08/V09 remain open; concrete Issue certificate R1/K_c, Oracle qualification and EEV remain independent gates. No V3, Reveal, economic-kernel or Agent A-owned Oracle/EEV semantics are changed by this document.
+
+
+### 11.7 Implemented increment — additional spending-input classification (2026-10-28)
+
+A narrow runtime increment is now present in `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts`:
+
+- The adapter still requires each declared protocol spending input to exist in the completed transaction body.
+- It now also inspects every additional actual spending input. If extras exist, it obtains the selected wallet's UTxO list and requires each exact canonical `txHash#outputIndex` reference to appear there.
+- If the wallet UTxO listing is unavailable, fails, is malformed, contains duplicate references, or omits any extra body input, economic submission stops before calling either the wallet-signing port or the submit port.
+- The check is conditional on extra inputs; transactions with no additional inputs do not need the wallet listing call.
+- Positive/negative tests in `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts` cover a wallet-listed additional input, an extra input not present in the wallet list, and an unavailable wallet UTxO listing.
+
+This narrows the prior gap: unexplained additional spending inputs are no longer silently accepted as wallet balancing inputs. It does **not** close completed-body binding. The check classifies extra-input references using the connected wallet's own UTxO listing; it does not yet bind semantic outputs, datums, redeemers, values, mint/burn or validity to an approved transition intent, nor does wallet-list membership alone establish that an extra input is economically inert. Those remain explicit gates. Do not describe this increment as full transaction binding or as closing V08/V09.
+
+This increment leaves the existing economic admission, Haskell Issue fingerprint source, V3 carrier, Reveal semantics, economic policy and Agent A's Oracle/EEV work unchanged.
