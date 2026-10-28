@@ -186,3 +186,36 @@ However, **certificate structure and deployment binding are not the same as cert
 5. Preserve U-02 and RF8 as OPEN until the all-surface reachability proof and bypass regressions are complete.
 
 **Status:** certificate structural/deployment validation confirmed; proof-content verification and full transaction-intent binding remain OPEN; no tests executed in this pass; no protocol semantics or constants changed.
+
+## 2026-10-28 — Signed authority verification and execution-intent binding pass
+
+This pass follows the Issue authority boundary from the signed envelope through the runtime execution adapter. It is source inspection only; no protocol code or tests were changed.
+
+### Exact source anchors
+
+| Path | Blob SHA | Finding |
+|---|---|---|
+| `relayer/signedIssueAuthority.js` | `bf3c93307c168661b592ed1aaf35f861d342896e` | `fetchSignedIssueAuthority` fetches JSON from the configured URL and calls `verifySignedIssueAuthorityEnvelope`. The envelope verifier checks schema/version/action, expected Counter/control/Pool/carrier refs, class/price, observation ref, freshness window, direct-USDM unit, EEV qualification structure, ProtectedCapital sum/provenance, and viability certificate structure/deployment bindings. |
+| `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` | `886f8b62ea001c4d822777f4cc6e8a440dd57320` | Provider composes direct physical-USDM Pool observation, signed authority retrieval, then the Haskell Issue admission producer. It requires signed state/action/post-state digests and a carrier-binding signature before returning the witness. |
+| `Adapter/CARDANO/runtime/EconomicAdmission.ts` | `5949c1f5b60091f2b5f9b0a59d4274887b7151d2` | Runtime witness carries `stateHash`, `actionFingerprint`, and `postStateHash`; validator checks digest syntax, action class, liquidity/input references and pool correlation. These checks do not themselves recompute the canonical transition. |
+| `Adapter/CARDANO/runtime/AuthoritativeIssueAdmission.ts` | `[blob SHA not recorded in this pass]` | Performs extensive structural and binding checks for EEV qualification, ProtectedCapital and viability-certificate fields; calls `validateAuthoritativeIssueAdmissionDecision`. The inspected code validates artifact references/digest syntax, not artifact bytes or a mathematical Ω/Kc proof. |
+| `Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` | `1bed1a4e04d1c861a0d5ea317181cdf431215e3b` | `submitEconomic` validates the admission witness and exact completed spending-input references immediately before signing. The source comment explicitly says the full output/datum/redeemer/validity map is not yet bound to intent. |
+
+### Refined findings
+
+1. **Cryptographic envelope verification is implemented.** The authority module verifies the signed canonicalized payload using the configured public key, and separately verifies the carrier-binding signature over action class, decision/observation references, pre-state hash, action fingerprint and post-state hash. The module also enforces observation freshness against evaluation time. This is stronger than merely accepting booleans or digest-shaped strings.
+2. **The verified signer remains a trust boundary.** The signature proves that the configured key signed the payload; it does not independently prove that the authority computed the economic facts correctly. This pass did not establish the deployed `authorityUrl`, actual public-key material, key custody/rotation, or the implementation and provenance of the remote authority's certificate artifacts.
+3. **Certificate integrity is not proof verification.** VC1–VC6 and E1–E10 must be present with nonempty references and 32-byte digest syntax, and certificate bindings are compared to the observed carrier/state/EEV/ProtectedCapital sources. The inspected verifier does not fetch those artifacts, recompute their digests from artifact bytes, or execute a verifier for the infinite-horizon viability theorem. The signed `allOmegaSuccessorsCertified` boolean remains an authority assertion, not a locally established proof of (K_c) or Ω.
+4. **The action decision has a signed fingerprint binding, but transaction intent remains incomplete.** The signed envelope binds `actionFingerprint` and `postStateHash`, and the provider hands these values to the Haskell producer. The execution adapter rechecks spending inputs after an asynchronous wallet-input lookup, immediately before signing. It does not yet compare the completed transaction's outputs, datums, redeemers, validity interval and other economically material body fields to a canonical intent. Input immutability alone does not establish transaction-intent equivalence.
+5. **Configuration/deployment binding is still unresolved.** The provider factory requires URL and public key options, but this pass did not find a verified call site/configuration for the deployed endpoint and key. A source-level factory is not evidence that the authority service is live, correctly configured, or available on Preprod.
+6. **No change to universal-kernel status.** U-03 remains OPEN: no executable proof of concrete (K_c), complete Ω successor relation, or infinite-horizon viability was established. U-02/RF8 whole-program reachability also remains OPEN. These findings do not show that the cryptographic checks are absent; they delimit what those checks prove.
+
+### Next evidence required
+
+- Locate and verify the actual provider construction/configuration path, configured authority URL, public key fingerprint, and deployment environment without exposing private key material.
+- Retrieve the referenced VC1–VC6/E1–E10 artifacts and validate each digest against the artifact bytes; identify the verifier and its reproducible build/version.
+- Verify that the Haskell producer independently recomputes and matches the signed state/action/post-state fingerprints for the same candidate Issue.
+- Close the execution-intent gap by specifying and checking the exact canonical transaction body fields against the admitted intent, without changing V3/Reveal semantics or bypassing Cardano validators.
+- Keep (K_c)/Ω certification and whole-program action reachability as explicit blockers until evidence closes them.
+
+**Change scope:** documentation only. No code, economic constants, V3/Reveal semantics, branches, or tests were changed/executed in this pass.
