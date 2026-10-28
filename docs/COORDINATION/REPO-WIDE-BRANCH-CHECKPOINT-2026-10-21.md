@@ -4498,6 +4498,13 @@ R1 is explicitly **not discharged** by the universal model or finite test fixtur
 - Current `audit/preprod-issue/` tracked files are the initial-state, live-carrier and Issue/carrier-binding gap reports. No deployment-bound `K_c` certificate package (E1–E10 / VC1–VC6) is tracked there; `audit/preprod-evidence/` is generated workflow evidence, not a checked-in certificate.
 - Current `audit/cardano-integration/preprod-first-issue-readiness.mjs` blob `456cc66b2aaf3c9b32711616edc07e0d6fa302f0` checks for a provider module, a syntactically valid authority URL/key, EEV evidence/approval and Oracle source/freshness. It does not currently acquire and validate a fresh signed Issue authority envelope containing a current deployment-bound `K_c` certificate. URL/key presence alone must not be interpreted as certificate availability.
 
+### End-to-end authority producer boundary
+
+A current source audit of `relayer/issueAuthorityServer.js` (blob `69348a48d3848368936d6c8540629ba4ef50b266`) and `relayer/preprodIssueObservationReader.js` (blob `77892b31de00d6f7eefd7955b5cfd410d7e36caf`) confirms the in-repository server is only a live observation/transport bridge. It reads exact Counter, Pool, B2 control and V3 carrier UTxOs, then calls the separately configured `ISSUE_AUTHORITY_SOURCE_URL` using `ISSUE_AUTHORITY_PUBLIC_KEY`; the reader expressly does not calculate EEV, ProtectedCapital or viability. The repository therefore has a signed-authority **consumer/verifier** and a server bridge, but no in-repo producer that creates the concrete profile `K_c` proof package. This is an intentional separation, not permission to synthesize those values in the relayer.
+
+The preflight gate's checks that an authority URL and PEM key are syntactically present are configuration checks only. They are not proof that the external endpoint is deployed, responds with a current signed envelope, or possesses E1–E10/VC1–VC6 certification. Production readiness must remain blocked until that live envelope is obtained and matched against independently observed current refs and state hashes.
+
+
 ### Exact disposition and safe next gate
 
 **R1 / concrete `K_c`: BLOCKED / NOT CERTIFIED.** Do not set `allOmegaSuccessorsCertified=true`, do not accept a certificate merely because its fields/digests have the expected shape, and do not manufacture `S₀`, `χ`, `Wit`, QNE or proof refs from GoldenVectors/finite model tests.
