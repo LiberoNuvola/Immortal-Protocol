@@ -202,11 +202,11 @@ check(oracle?.status === 'MATERIALIZED' &&
 const timestampText = oracle?.datumSemantics?.timestampMs
 const maxAgeText = oracle?.datumSemantics?.maxAgeMs
 const oracleTimestampMs =
-  typeof timestampText === 'string' && /^\\d+$/.test(timestampText)
+  typeof timestampText === 'string' && /^\d+$/.test(timestampText)
     ? Number(timestampText)
     : Number.NaN
 const oracleMaxAgeMs =
-  typeof maxAgeText === 'string' && /^\\d+$/.test(maxAgeText)
+  typeof maxAgeText === 'string' && /^\d+$/.test(maxAgeText)
     ? Number(maxAgeText)
     : Number.NaN
 const oracleNowMs = Date.now()
