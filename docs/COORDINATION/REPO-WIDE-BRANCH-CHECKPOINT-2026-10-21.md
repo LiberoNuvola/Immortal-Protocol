@@ -4349,3 +4349,21 @@ Rechecked Actions runs created for the SDK export-map update at exact source HEA
 - The duplicate Adapter Sale run #40579636315 on the earlier inventory commit was cancelled after the exact-HEAD run started; no failure is inferred from that cancellation.
 
 **Agent A disposition:** the focused Issue-admission contract tests are green, so the next blocker is not this TypeScript boundary suite. Live Issue still requires fresh Preprod observation, qualified current EEV evidence and current deployment approval/admission binding; none is established by these tests. No wallet signing, transaction submission, protocol change, V3/Reveal edit, new branch or EEV approval occurred.
+
+## 45.35 AGENT A — FRESH PREPROD DIRECT-USDM EEV RE-OBSERVATION (2026-10-28)
+
+Read-only qualification job [#40397642433, attempt 2](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40397642433) was re-run to refresh the previously stale live observation. **SUCCESS** at 2026-10-28 04:08 UTC. It executed the exact-pool read, EV1–EV7 qualification, evidence-integrity checks, and uploaded artifact [12791302528](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40397642433/artifacts/12791302528). Source-run SHA: `01e4d76eedf1a86cc08ab98326c1bf12d0086a9e`. The qualification workflow and its three critical source/integrity scripts have the same blob SHAs on current `work/immortal-green-closure`: workflow `c0c1b07cf25bc84f9d359462016263ca27b2d0da`, source-set producer `4fb265e9f1430f785af4e47276427570ed1dee8e`, qualification producer `bb88050e3ccb0b349eb01afd013ecb22e8027502`, integrity checker `af1de856e7edce1e738e0d0e5c6879c0bce8b6ed`.
+
+### Observed physical-source evidence
+
+- `preprod-direct-usdm-source-set.json` — `status: OBSERVED_NOT_QUALIFIED`, `observedAt: 2026-10-28T04:08:51.170Z`, evidence hash `5de6f96952edb612482c013609f0b31ff0773fe4451a425a7bfc4e43591e43cc`.
+- Exact B1 PrizePool UTxO remains `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`, at `addr_test1wrhru9jt8jm600y2mltw300c9tu7cj5tuyew7lz0ex2p75gja592e`, with the expected pool singleton and exact Preprod tUSDM unit `e675b46e4d2242c991a8932a99db3044e80515ae14b4c4ccf6b3f4c90014df10745553444d`.
+- Direct physical quantity: `1,000,000,000` atomic units; profile derivation `floor(1,000,000,000 × 100 / 1,000,000) = 100,000` IMMORTAL USDM subunits, rounding `FLOOR`.
+- `preprod-direct-usdm-qualification.json` — `status: qualified`, EV1–EV7 all present, qualification evidence hash `4a8cd8181690a5801b017318e5fdbb48215c090907a77087cbcb07f88b67ebba`; this qualification artifact explicitly has `deploymentApproval: null` and governance `deploymentApprovalStatus: PENDING`.
+- Current artifact ZIP SHA-256: `fc5130f09bbf0ce8a3098542add8c780033a579a439318cc60dc96476edd3554`. Qualification JSON SHA-256: `6b330b07b76321c68a50d4545800a8a19ae0c0e544fc4a48735e0c278f4209b5`; source-set JSON SHA-256: `65d30b37b5d86488b6f05ae0d141471d4ee3652c2f0b8d63c264fe098817c0c7`.
+
+### Boundaries and next gate
+
+This refresh proves the source UTxO and the direct-USDM EV1–EV7 derivation at the observation timestamp only. It does **not** create `DEPLOYMENT_APPROVED`, certify USD/USDM parity or conversion, resolve the R1/`K_c` certificate, produce a current signed Issue-authority binding, authorize Issue admission, or issue/purchase a Ticket NFT. The source-set remains `OBSERVED_NOT_QUALIFIED` pending the separate deployment-approval decision.
+
+The same artifact shows the materialized Oracle State manifest's `datumSemantics.timestampMs: null` with `maxAgeMs: 3600000`; therefore its price timestamp cannot currently support a freshness claim. Keep the USD/USDM conversion route blocked independently of direct physical tUSDM qualification. Do not infer a peg or conflate the Preprod test token with Mainnet Moneta USDM. No wallet signing, transaction submission, approval, economic-semantic change, V3/Reveal edit, new branch, SDK duplication, or Materios work occurred.
