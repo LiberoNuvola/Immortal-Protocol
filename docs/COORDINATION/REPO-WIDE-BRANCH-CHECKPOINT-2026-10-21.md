@@ -4552,3 +4552,16 @@ The artifact's `preprod-direct-usdm-approved-qualification.json` records:
 The 2026-10-28 read-only qualification artifact on SHA `949b431874517df7981e0dc284b507fd4b2c07d3` has a **different** source-set hash `32e27f364ae7923a765a25b55953b67bd2c58a79a3fe1a6947ae42b9c1fcd534`, qualification hash `2d54ceddb89586bd682b91324e5341ebaf940f86e894db40fcebcf967e366336`, and Oracle evidence hash `70c73e5ced3b95d98cf94308e19d1836bc38132248dfa3d3286a9c89e2766c05`. Its newly generated qualification correctly has `deploymentApproval: null`: the current read-only run did not create or copy approval.
 
 **Correct interpretation:** a protected `DEPLOYMENT_APPROVED` historical record exists for the same exact Pool out-ref/profile; it must not be described as never having existed. However, it is tied to older evidence digests and does not satisfy the present first-Issue readiness gate's exact evidence binding. Whether the earlier candidate-level approval can be reused via the declared `LIVE_UTXO_REVALIDATION` rule or must be renewed is a governance/conformance question; do not silently rebind old approval to new hashes. Regardless, current Issue readiness remains **BLOCKED** independently because the live compatibility Oracle quote is stale, external price-source truth is unproven, the public Pages runtime Oracle identity cannot currently be observed (five repo variables/secrets missing), and the concrete R1/`K_c` authority package is not certified. No new approval, wallet signing, transaction submission, V3/Reveal change, new branch or Materios work occurred.
+
+
+## 45.43 AGENT B — PRE-SIGN TRANSITION/BODY-BINDING REVIEW GATE (2026-10-28)
+
+The SDK API contract proposal now records a review-only candidate for the pre-sign transition-intent and completed-body contract with three separated phases: pre-sign intent/admission provenance; inspection of the completed Lucid body before wallet signing; and submit receipt plus independently observed ledger evidence.
+
+The draft specifies role classification for protocol state inputs, wallet-balance inputs, reference inputs, protocol outputs/payments, wallet change, fees and validity fields. It records per-transition predicate inventories for Issue/Reveal/Claim/Expire and adversarial positive/negative cases; negative twins must prove that signing and submission are never called.
+
+Guardrails: no fingerprint formula, digest encoding, fee ceiling, validity rule or economic rule was invented. Issue retains its Haskell decision source and applicable V3 carrier binding; V3 and Reveal semantics are unchanged. Reveal/Claim/Expire local-Yaci trace hashes remain observations, not production pre-sign authorization. No runtime code, adapter API signature, public package, wallet action or transaction changed.
+
+V08/V09 remain open. Concrete R1/K_c, Oracle source/freshness and EEV/Issue-admission gates remain independent. Agent A's Oracle/EEV front was not duplicated; Materios remains paused.
+
+**STATUS: DRAFT CONTRACT DETAIL RECORDED; REVIEW GATES MADE TESTABLE; RUNTIME INTEGRATION STILL BLOCKED ON APPROVAL/PROVENANCE.**
