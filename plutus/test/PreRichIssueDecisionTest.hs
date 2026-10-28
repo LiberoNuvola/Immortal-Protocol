@@ -106,6 +106,9 @@ main = do
       assert (idDecisionReference decision == "decision:issue:test") "decision reference is carried"
       assert (idObservationReference decision == "observation:issue:test") "observation reference is carried"
       assert (length (idPreStateHash decision) == 64) "pre-state hash is SHA-256"
+      assert
+        (idPreStateHash decision == "f4023fbcd4876200c00daa2c947b0836aa7b25b81b4113c61d034214b6c4e42d")
+        "pre-state SHA-256 golden vector"
       assert (length (idPostStateHash decision) == 64) "post-state hash is SHA-256"
       assert (length (idActionFingerprint decision) == 64) "action fingerprint is SHA-256"
 
