@@ -323,3 +323,8 @@ These names and assurance levels are proposals, not approved normative vocabular
 The branch was at `6a71021404d1d0a354cbe2d948bffb84b3a54bac` when its five bounded workflows completed successfully. The new proposal commit is `7f2466fbcba1049e608541e61b369c0c554ad094`; CI for the new documentation-only HEAD must be checked separately. Agent A's fresh direct-USDM source/EV1–EV7 qualification remains distinct from deployment approval: the artifact records `deploymentApproval: null` and `deploymentApprovalStatus: PENDING`.
 
 **STATUS: API CONTRACT DRAFT AVAILABLE FOR REVIEW; NO SDK IMPLEMENTATION; V08/V09 AND PREPROD ISSUE AUTHORITY REMAIN OPEN.**
+
+
+### Packaging constraint added after root-manifest inspection
+
+The root `package.json` is an application/Vite manifest, and the inspected tree has no root `pnpm-workspace.yaml` or `lerna.json`. The proposed `@immortal/*` names are therefore logical ownership boundaries only, not existing packages. The API proposal now requires an explicit choice between an internal non-published module and a separately scoped real package/workspace; no package manager migration or public packaging is implied.
