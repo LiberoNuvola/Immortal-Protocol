@@ -3784,3 +3784,14 @@ Important guardrails:
 No new branch, SDK facade, TypeScript kernel, wallet signing, deployment, transaction submission, economic change, V3/Reveal edit, or Materios work occurred.
 
 **STATUS: REVIEWABLE SDK CONTRACT DRAFT COMMITTED; WAITING ON EXACT-HEAD DOC CI AND OWNER REVIEW BEFORE IMPLEMENTATION.**
+
+
+## 45.37 AGENT B — PACKAGING BASELINE AUDIT (2026-10-28)
+
+Read-only inspection of the root `package.json` and current tree adds a packaging constraint to the SDK proposal: the root manifest is the existing Vite application/operational project, and no root `pnpm-workspace.yaml` or `lerna.json` exists in the inspected tree. The proposed `@immortal/core`, `@immortal/adapter-cardano`, and `@immortal/conformance` names are logical ownership boundaries only, not existing packages.
+
+Updated [SDK API contract proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md) and indexed the constraint in the [SDK inventory](IMMORTAL-SDK-CROSS-BRANCH-INVENTORY-2026-10-27.md). Before implementation, the owner must choose between a non-published internal module and a separately scoped real package/workspace with build/export/dependency/version/release gates. No workspace migration or package facade was created.
+
+Current exact-head CI is running on `92a8a90be1b84e3edc02d2895abde7d329eca3b0`; the docs link check is green, and the other four workflows were in progress/queued at last poll. Additional documentation-only commits have since triggered fresh workflows, so inspect the newest HEAD rather than assuming those results apply.
+
+**STATUS: SDK API DRAFT REFINED WITH PACKAGING REALITY; NO RUNTIME/PACKAGE IMPLEMENTATION.**
