@@ -305,3 +305,45 @@ The remaining body-binding obligation is distinct and concrete: establish a supp
 - Continue the cross-repository action/call-site reachability census and retain U-02/RF8 and U-03 as OPEN until the required evidence exists.
 
 **Change scope:** documentation only. No code, economic rules/constants, V3/Reveal semantics, branch topology, workflow dispatch, or transaction changed. No tests were executed.
+
+## 2026-10-28 — Issue completed-body checks and CAES production call-site audit
+
+This pass traced the existing transaction-intent protections into the actual Issue builder, including the completed Lucid body, and distinguished production checks from evidence-binding helpers exercised by tests. Source inspection only; no tests or workflows were run.
+
+### Additional exact source anchors
+
+| Path | Blob SHA | Confirmed behavior | Remaining boundary |
+|---|---|---|---|
+| `src/issueSettlement.ts` | `7729346aca2bd0be3065e4994ff3ff947b12379e` | After `complete()`, reads the completed transaction body and requires exactly one Treasury output whose full multi-asset Value equals the derived basket; validates the finite TTL slot and output-specific minimum ADA using protocol parameters. | These are valuable, real completed-body checks, but they are scoped to the Treasury settlement and TTL/min-ADA. They do not validate every output, datum/redeemer, mint/burn set, spending validator path, reference-input set or carrier candidate state against the admitted canonical transition. |
+| `src/mint.ts` | `b9b1a7f4846e4cfdf8862368421b8ce7cf8b1534` | The Issue builder includes Counter spend/continuation, Ticket mint/delivery, B1 PrizePool spend/continuation, Treasury payment, Oracle/registry/control reference inputs and optional V3 carrier continuation. It calls the completed Treasury Value, TTL and min-ADA checks before `submitEconomic(..., 'Issue')`. | The inspected production call path does not call `assertEconomicAdmissionMatchesCanonicalEvidence` before submission. The action/pre/post-state evidence-binding helper is present elsewhere and tested, but its test composition is not evidence of an unconditional production call-site. The adapter itself still only checks actual spending-input classification, not the complete body-to-intent relation. |
+| `Adapter/CARDANO/observation/EconomicAdmissionTransitionBinding.ts` | `6373b93260137d47892da2c4fb3d4ee8177c4bd1` | Compares admission action class, action fingerprint, pre-state hash and candidate post-state hash against a `CanonicalTransitionEvidence` record. | Its own module comment says it does not compute economic truth or fingerprints; it validates equality of supplied fields, not the underlying transition or transaction-body realization. |
+| `Adapter/CARDANO/observation/CanonicalTransitionEvidence.ts` | `4c5f81a76edb14dbcf59412c6b0500c749264883` | Requires metadata, 32-byte fingerprint-shaped fields and a non-empty transaction reference; offers equality checks for action/pre-state/post-state/transaction reference. | The record does not itself carry a normalized full transaction-body commitment or prove that the transaction reference's observed ledger effects match the declared post-state. |
+| `src/__tests__/caes-transition-closure.test.ts` | `151fb521153262ce1bfe0fbf52d4173eb8c35a84` | Tests the composition helper before adapter signing and negative cases where supplied evidence fingerprints diverge. | The test's `submitComposedEconomic` helper explicitly performs the evidence comparison before calling the adapter. This does not establish that production `mintSerialNFT` uses the same composition. The successful test also uses a mock completed body exposing only spending inputs. |
+
+### Precise transaction-intent classification
+
+The Issue route is **not** missing all completed-body validation. Current code enforces:
+- actual spending-input presence/classification at the adapter boundary;
+- exact completed Treasury asset quantities;
+- a finite, expected validity upper-bound slot;
+- output-specific Treasury minimum ADA.
+
+However, the complete canonical action-to-body relation remains **OPEN**. In particular, the current evidence does not establish that every economically material output/datum/redeemer, mint quantity, reference input and optional carrier continuation corresponds to the same authoritative Issue decision and candidate post-state. The CAES evidence-binding helper checks matching fingerprints when called, but production call-site presence was not established in the inspected Issue builder.
+
+Do not replace the existing targeted checks or broaden the claim to “no output checks exist.” The closure task is to compose existing guards with a normative, typed body-to-intent validator and adversarial tests, while preserving the on-chain validators as final enforcement. Before implementing this, identify the canonical serialization/fingerprint contract and exact Lucid/CML APIs already pinned by the project; do not invent a new digest scheme.
+
+### Other normative evidence consulted
+
+`Adapter/CARDANO/docs/CARDANO-ADAPTER-COMPLETE-SYSTEM-SPECIFICATION.md` (blob `ba8917a4f65b3d2240ee6cb5ca4656219e0327fc`) defines the Adapter's role as translating/observing/realizing/reporting and says transaction provenance should identify consumed state, reference inputs, bound evidence, outputs, value changes, validator/redeemer path, validity interval, fees, execution result and resulting state. It also says a transaction reference/confirmation alone is not full IMMORTAL conformance evidence. This is an integrative specification, not a new economic rule.
+
+`IMMORTAL/docs/V3-CARDANO-SEMANTIC-EQUIVALENCE.md` (blob `3758fc1c1e98e50c1289ecd5273df2315ba1d62b`) continues to mark action-by-action V3/Cardano equivalence as partial and RF8/no-side-door proof as open; it specifically notes the Issue class-saleability predicate must be proved before commit or enforced by the validator.
+
+### Next implementation-safe sequence
+
+1. Locate the existing canonical action/state fingerprint producer and transaction serialization/version contract; verify whether any existing normative format already binds the body.
+2. Add a production-level composition point so the admitted action/pre-state/post-state evidence is not only a test helper; avoid making a caller-supplied evidence record authoritative by itself.
+3. Bind and validate the completed body fields that the existing contract requires, reusing current Treasury/TTL/min-ADA checks rather than replacing them.
+4. Add adversarial regressions for substituted outputs, datum/redeemer, mint/burn, reference inputs and carrier continuation, proving failure before signing; do not dispatch privileged workflows or submit transactions.
+5. Keep U-03 (concrete `K_c`/`Ω` proof) and RF8/U-02 (whole-program reachability) open until their separate evidence criteria are met.
+
+**Change scope:** documentation only. No protocol code, tests, workflows, economic rules/constants, V3/Reveal semantics or transaction changed. No tests were executed.
