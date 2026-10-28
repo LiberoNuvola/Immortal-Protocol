@@ -4633,3 +4633,20 @@ No package version or lockfile was changed in this pass because an installable 0
 This is a parallel compatibility audit, not a resumption of the blocked B3-A/B3-B proof claim. Materios remains an optional Agent C bridge, separate from the SDK core and Cardano pre-sign work. No V3/Reveal semantics, economic rules, Agent A Oracle/EEV logic, signing, deployment or on-chain submission changed. No new branch was created.
 
 **STATUS: SDK narrow pre-sign regressions have exact-HEAD CI evidence; full transaction-body binding remains open. Orynq 0.7.0 compatibility has been source-audited but not installed or runtime-tested; dependency upgrade remains gated on reproducible lockfile and test evidence.**
+
+
+### 45.47 POST-CHECKPOINT CI RECHECK — CURRENT SDK HEAD (2026-10-28)
+
+The central checkpoint commit `89b815dcfa090652d1152a79953924f719ba7af4` has now completed the following exact-HEAD workflows successfully:
+
+- [Cardano Adapter Sale Conformance #40743839461](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40743839461) — SUCCESS.
+- [Protocol Declaration Conformance #40743839447](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40743839447) — SUCCESS.
+- [IMMORTAL Portability Conformance #40743839216](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40743839216) — SUCCESS.
+- [Algorithmic Governability Adversarial Lab #40743839180](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40743839180) — SUCCESS.
+- [Documentation Link Check #40743839165](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40743839165) — SUCCESS.
+
+These five workflows are the complete set returned by the Actions API for this exact SHA at the time of this recheck. No separate No-result-dependent-authority run was returned for this SHA; do not infer that gate passed from the other workflows. GitGuardian's previously observed skipped/neutral scan is not a security pass.
+
+The upstream Orynq commit list was rechecked; latest remains `d1e1548682d33a430c0f42ac53f88f01a652fefe` (PR #220 flaky-test stabilization). No newer upstream commit was returned. IMMORTAL's Materios bridge remains pinned to 0.6.2 pending a reproducible 0.7.0 lockfile plus install/typecheck/test evidence.
+
+**Next technical gate:** complete-body semantic binding remains the highest-priority SDK blocker. Do not change the Haskell fingerprint source, infer a fingerprint/canonicalization, or label V08/V09 closed without an approved per-action predicate profile and negative tests proving rejection before signing/submission. The current successful workflows do not constitute Preprod ticket settlement or close R1/K_c, Oracle or EEV gates.
