@@ -4482,3 +4482,26 @@ At the re-observation time `2026-10-28T04:39:47.642Z`, chain tip was Conway bloc
 - Top-level blockers now include `STALE_TIMESTAMP`, `EXPIRED_PRICE_RECORD`, `MISSING_OR_UNSUPPORTED_PRECISION`, `EXPECTED_BASE_QUOTE_SYMBOLS_NOT_MATCHED`, `EXPECTED_PRICE_PAIR_NOT_FOUND`, and `EXTENDED_PROVIDER_AND_SIGNATORY_METADATA_NOT_FOUND`.
 
 This confirms an on-chain feed identity is present, but the on-chain record carries no usable fresh rate and lacks price-precision/pair fields. It is neither a qualified ADA/USD leg nor a qualified USD/USDM leg. Do not use the raw integer price fields without a declared precision and exact base/quote identity; do not infer an exchange rate from symbol in the feed address alone. Current Oracle remains blocked, EEV qualification is separate, and the first Issue remains unauthorized.
+
+## 45.40 AGENT A — R1/K_c CONCRETE CERTIFICATE AUDIT (2026-10-28)
+
+### Normative requirement (not a runtime boolean)
+
+Current source of truth: `docs/02-certification/CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md` (blob `32b54c73f6676467d197e8f6635155e4752cc17e`), with `docs/02-certification/NONVACUITY_AND_INITIAL_STATE_CERTIFICATION.md` (blob `3befe38974c963d8701a93bd21131999973f3dbc`).
+
+R1 is explicitly **not discharged** by the universal model or finite test fixtures. A concrete deployment must instantiate `(𝒮, A, Accept, Ω, T, Safe)`, provide an executable/deterministic characteristic predicate `χ` and witness selector `Wit`, discharge VC1–VC6, and bind the certificate to the declared initial state `S₀). The normative package enumerates E1–E10: E1 profile instantiation; E2 `χ`; E3 `Wit`; E4 VC2 safety; E5 VC3 inductiveness including all `ω ∈ Ω`; E6 VC4 acceptance; E7 authoritative/over-approximated Ω perimeter; E8 `S₀` non-vacuity witness; E9 conservatism/liveness cost; E10 SHA-256 digest of E2/E3 bound to deployment version. All six VC proof records and all ten E evidence records are required. R8 also requires the non-eroding-action/QNE check (or an explicit valid obstruction disposition); a constant safety margin or finite abstract model does not replace it.
+
+### Current code/fixture audit
+
+- Current `relayer/signedIssueAuthority.js` blob `bf3c93307c168661b592ed1aaf35f861d342896e` validates the external signed Issue authority envelope, requires VC1–VC6 and E1–E10 reference/digest fields, enforces Preprod deployment binding, and binds the certificate's carrier reference/state hash, EEV snapshot and ProtectedCapital source to the signed authority payload. It is a schema + signature + deployment-binding gate; it does **not** retrieve the referenced E1–E10 bytes or mechanically prove the mathematical claims from those references.
+- Current `relayer/signedIssueAuthority.test.js` blob `c9bc1acd02ca4d2bca4c70c1682208d1bfc5f52f` supplies `proof://VC1...`, `evidence://E1...`, synthetic repeated SHA-shaped strings and a synthetic certificate digest. Those tests correctly exercise envelope signature/failure/binding contracts, but they are not a concrete R1 certificate and must not be cited as evidence that VC1–VC6 or E1–E10 are true for Preprod.
+- Current `audit/preprod-issue/` tracked files are the initial-state, live-carrier and Issue/carrier-binding gap reports. No deployment-bound `K_c` certificate package (E1–E10 / VC1–VC6) is tracked there; `audit/preprod-evidence/` is generated workflow evidence, not a checked-in certificate.
+- Current `audit/cardano-integration/preprod-first-issue-readiness.mjs` blob `456cc66b2aaf3c9b32711616edc07e0d6fa302f0` checks for a provider module, a syntactically valid authority URL/key, EEV evidence/approval and Oracle source/freshness. It does not currently acquire and validate a fresh signed Issue authority envelope containing a current deployment-bound `K_c` certificate. URL/key presence alone must not be interpreted as certificate availability.
+
+### Exact disposition and safe next gate
+
+**R1 / concrete `K_c`: BLOCKED / NOT CERTIFIED.** Do not set `allOmegaSuccessorsCertified=true`, do not accept a certificate merely because its fields/digests have the expected shape, and do not manufacture `S₀`, `χ`, `Wit`, QNE or proof refs from GoldenVectors/finite model tests.
+
+The safe integration step is to make first-Issue readiness consume a **fresh, signed authority envelope for the exact current live candidate** and verify its signature and binding against independently observed Counter, Pool, B2 control, V3 carrier, direct-USDM snapshot and ProtectedCapital provenance; the external certification package must identify verifiable E1–E10 and VC1–VC6 artifacts and the profile's QNE/non-vacuity evidence. The certificate's on-chain binding must be for the actual carrier state hash and EEV snapshot, not a stale placeholder. This is a design/verification gate, not permission to create or approve such a certificate in CI.
+
+This R1 finding is independent of current Oracle blockers: the bootstrap Oracle quote is stale and external price-source truth remains unproven; physical direct-tUSDM EV1–EV7 qualification does not close R1. No signer, protected environment, external endpoint, certificate artifact, wallet signature, transaction, V3/Reveal semantics or economic rule was changed.
