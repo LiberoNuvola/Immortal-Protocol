@@ -4565,3 +4565,21 @@ Guardrails: no fingerprint formula, digest encoding, fee ceiling, validity rule 
 V08/V09 remain open. Concrete R1/K_c, Oracle source/freshness and EEV/Issue-admission gates remain independent. Agent A's Oracle/EEV front was not duplicated; Materios remains paused.
 
 **STATUS: DRAFT CONTRACT DETAIL RECORDED; REVIEW GATES MADE TESTABLE; RUNTIME INTEGRATION STILL BLOCKED ON APPROVAL/PROVENANCE.**
+
+
+## 45.44 AGENT B — ADDITIONAL SPENDING-INPUT CLASSIFICATION GATE (2026-10-28)
+
+### Runtime increment
+
+`Adapter/CARDANO/runtime/CardanoExecutionAdapter.ts` now keeps the existing check that every declared protocol input is present, and classifies any additional spending inputs against the selected wallet's own UTxO listing. An extra body input that is not in that list—or an unavailable, failed or malformed wallet UTxO listing—causes `submitEconomic` to reject before signing or submission. The wallet UTxO query is only required when additional body inputs exist.
+
+Regression cases added to `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`:
+- allow an extra input when the exact reference is returned by the connected wallet UTxO list;
+- reject an extra input not returned by that list;
+- reject extra inputs when the wallet UTxO list cannot be read.
+
+### Scope and remaining blockers
+
+This closes only the *unclassified additional spending-input* sub-gap. It does not bind the full output/datum/redeemer/value/mint/validity map to the pre-sign intent, and wallet-list membership alone does not prove that an extra input is economically inert. Full transition-body binding and fingerprint producer/canonicalization ownership remain open. No CI-green claim is made until the latest-head workflows are observed. No V3 carrier, Reveal, economic-kernel, R1/K_c or Agent A Oracle/EEV semantics were changed; Materios remains paused.
+
+**STATUS: EXTRA-INPUT CLASSIFICATION IMPLEMENTED WITH FOCUSED REGRESSIONS; COMPLETE BODY BINDING STILL OPEN.**
