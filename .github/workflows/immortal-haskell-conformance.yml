@@ -109,6 +109,10 @@ jobs:
         working-directory: plutus
         run: cabal test governance-canonical-replay-tests
 
+      - name: Authoritative Issue decision serialization and admission
+        working-directory: plutus
+        run: cabal test issue-decision-tests --test-show-details=direct
+
       - name: Economic Admission conformance
         working-directory: plutus
         run: cabal test economic-admission-tests
