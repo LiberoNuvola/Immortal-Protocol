@@ -89,9 +89,17 @@ describe('multi-oracle structural observation boundary', () => {
     )).toThrow(/exponent must be a canonical decimal integer/)
   })
 
-  it('rejects negative prices', () => {
+  it('rejects negative prices and non-canonical negative zero', () => {
     expect(() => normalizeOracleObservation(registry, input({ rawPrice: '-1' })))
       .toThrow(/rawPrice must be non-negative/)
+    expect(() => normalizeOracleObservation(registry, input({ rawPrice: '-0' })))
+      .toThrow(/rawPrice must be a canonical decimal integer/)
+  })
+
+  it('rejects unsafe JavaScript numeric inputs rather than silently rounding', () => {
+    expect(() => normalizeOracleObservation(
+      registry, input({ rawPrice: Number.MAX_SAFE_INTEGER + 1 }),
+    )).toThrow(/safe integer or decimal string/)
   })
 
   it('rejects a payload digest that no longer matches the observation', () => {
