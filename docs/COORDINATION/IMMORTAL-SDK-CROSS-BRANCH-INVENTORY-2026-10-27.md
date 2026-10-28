@@ -409,3 +409,8 @@ This remains documentation/review only. Fingerprint producer/canonicalization fo
 `CardanoExecutionAdapter.submitEconomic` now requires each actual additional spending input—beyond the caller-declared protocol input set—to be found in the selected wallet's UTxO listing. When the list cannot be read or any additional body reference is absent, the adapter rejects before signing/submission. The existing protocol-input subset check remains in force.
 
 The focused tests add a wallet-listed positive case and negative twins for an unclassified extra input and missing wallet-list capability. This closes only the *unclassified additional spending-input* sub-gap. Completed outputs/datum/redeemer/value/validity are not yet bound to the pre-sign intent; wallet membership alone is not proof that an extra UTxO is economically inert. V08/V09 and R1/K_c remain open; no V3/Reveal semantics or Agent A Oracle/EEV logic changed.
+
+
+## Follow-up: CI verified for additional-input classification (2026-10-28)
+
+Cardano Adapter Sale Conformance [#40639261291](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40639261291) completed SUCCESS on exact SHA `cf9a39cef0098c49b97d10353e2069a60bf59df6`, with both `economic-conformance` (including `Adapter/CARDANO/runtime/__tests__/EconomicAdmission.test.ts`) and `frontend-build` passing. Documentation Link Check, Portability, Algorithmic Governability, Protocol Declaration and Security Credential Boundary also completed successfully on that SHA. Preprod Context was still in progress and Integration Lab was pending at observation time. This validates the narrow adapter increment and build, not complete body binding or Preprod execution.
