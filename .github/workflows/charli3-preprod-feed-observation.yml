@@ -1,0 +1,55 @@
+name: Charli3 Preprod Oracle Feed — Read-Only Observation
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - "audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs"
+      - ".github/workflows/charli3-preprod-feed-observation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charli3-preprod-feed-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Re-observe exact official Charli3 Preprod ADA/USD and USDM/USD feed NFTs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact observation source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify read-only observer syntax
+        run: node --check audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
+
+      - name: Observe exact Preprod feed NFT UTxOs and inline datums
+        env:
+          KOIOS_PREPROD_URL: https://preprod.koios.rest/api/v1
+          PREPROD_CHARLI3_OBSERVATION_PATH: audit/preprod-evidence/charli3-preprod-feed-observation.json
+        run: node audit/cardano-integration/observe-charli3-preprod-usdm-usd.mjs
+
+      - name: Upload read-only feed observation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: charli3-preprod-feed-observation-${{ github.sha }}
+          path: audit/preprod-evidence/charli3-preprod-feed-observation.json
+          if-no-files-found: warn
+          retention-days: 30
