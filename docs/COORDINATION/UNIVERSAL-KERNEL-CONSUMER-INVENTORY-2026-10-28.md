@@ -491,3 +491,11 @@ Commit `8837ef4fd1c7e9603f2c309791e5eba2ac5652c2` extends `PreRichIssueDecisionT
 These assertions pin the existing Haskell serializer's externally observable text shape. They do not change the serializer, economics, or state transition behavior. They also do not replace SHA-256 golden vectors: expected pre/post/action digests and a TypeScript consumer remain outstanding.
 
 **Verification limit:** commit diff and updated source were inspected through GitHub; no GHC/Cabal execution is available in this pass. Therefore the assertions are committed but their execution status is **UNVERIFIED**, not PASS. No workflow dispatch or transaction was initiated.
+
+
+## 2026-10-28 — Issue serialization suite wired into Haskell conformance
+
+- Commit `6615d5707f641666635fea67f0610a7a7dac6cb6` adds `cabal test issue-decision-tests --test-show-details=direct` to `.github/workflows/immortal-haskell-conformance.yml`, so the existing push-triggered Haskell conformance workflow will include this suite on the next matching branch push.
+- Commit `f27610d572c90e2990aaaaf06956ba3fb997b4fe` adds a fixed pre-state SHA-256 assertion for the known ASCII serialization string. The expected digest was independently computed from that exact string; it is a pinned regression vector, **not evidence that Haskell/Cabal ran**.
+- Still outstanding: producer-generated post-state and action-fingerprint vectors, and a TypeScript consumer that checks the same canonical bytes/digests.
+- No workflow was manually dispatched. The workflow change is push-triggered by repository configuration; its run/result must be checked separately before marking tests passed.
