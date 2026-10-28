@@ -190,3 +190,71 @@ Before implementing packages, decide whether the first deliverable should be:
 2. a real package/workspace with build output, export maps, dependency boundaries, versioning, package-level tests and publication/release evidence.
 
 Do not turn the current Vite application's root manifest into a public SDK package by accident, and do not add a workspace/package manager migration as a side effect of the contract proposal. Any packaging change should be separately scoped and tested.
+
+
+## 11. Proposed pre-sign intent and completed-body predicates (review gate; not approved API)
+
+**Status: draft for maintainer review; this section authorizes no runtime/API change.** It records required relationships and known builder behavior; it does not introduce an economic algorithm, fingerprint formula, protocol rule, or conformance claim.
+
+### 11.1 Phase-separated candidate records
+
+The candidate contract has three distinct phases and must not overload one transaction reference:
+
+1. **Pre-sign transition intent.** A versioned record identifies action class, chain/environment/profile, authoritative admission reference, canonical action facts, canonical pre-state and candidate post-state fingerprints, and producer/canonicalization provenance for every fingerprint. It references the approved transition-predicate profile. It contains no submission receipt and makes no claim of ledger inclusion.
+2. **Completed-body binding.** After Lucid completion and before wallet signing, the adapter inspects the actual transaction body and evaluates spending inputs, reference inputs, redeemers, validity interval, fee, outputs, values and datums against the intent and approved transition-predicate profile. Where the adapter derives a candidate transaction ID from the completed body, its phase must be explicitly labelled as a candidate ID. The body itself—not a caller-provided parallel list—is the object being checked.
+3. **Submit/settlement observation.** After submission, retain the actual receipt and independently observed ledger evidence as separate phases. Neither a candidate body ID nor a successful submit receipt proves ledger inclusion, confirmation or finality.
+
+Candidate schema identifiers and field names require review before export. The existing CanonicalTransitionEvidence record remains settlement/evidence-oriented and must not be reused unchanged as the pre-sign record while transactionRef phase semantics are implicit.
+
+### 11.2 Required provenance and fail-closed behavior
+
+A pre-sign intent may carry an action fingerprint only when its canonical producer, producer version, canonicalization identifier and digest algorithm/encoding are identified and approved. This proposal deliberately defines no new fingerprint formula.
+
+- **Issue:** preserve the existing Haskell Issue-decision source and applicable V3 carrier binding as their own contracts. Do not replace or weaken either with a string comparison.
+- **Reveal, Claim and Expire:** the available local-Yaci hashJson values remain observed-trace fingerprints, not live authorization fingerprints. Until a production canonical producer and canonicalization contract is owned, reviewed and tested for each action, its production pre-sign binding is unavailable and the universal gate remains blocked.
+- A missing producer, unknown schema/action, absent provenance, stale or mismatched admission, mismatched chain/environment/profile, unresolved body input/output, or predicate failure must stop before wallet signing and transaction submission.
+- Do not derive an economic post-state fingerprint from transaction-body bytes by assumption. The transition-state fingerprint and transaction-body identity answer different questions and need an explicit reviewed relation.
+
+### 11.3 Body input/output classification contract
+
+Every actual spending input must resolve to exactly one reviewed class; the adapter must never silently classify unexplained inputs as wallet balancing.
+
+| Class | Required treatment |
+|---|---|
+| Protocol state input | Must match an expected transition role and exact approved UTxO reference. The protocol-state input set must have no missing or unexplained members. |
+| Wallet-balance input | Allowed only when independently resolved as controlled by the connected wallet and not one of the protocol state inputs. Merely appearing in Lucid's completed body is not evidence of wallet ownership. |
+| Reference input | Kept separate from spending inputs; role and identity must match the approved builder/predicate profile. A reference input cannot satisfy a required spending-input role. |
+| Protocol output/payment | Must satisfy the transition's semantic output role, destination, asset/value and datum constraints using existing builder/validator semantics. The right amount sent to the wrong destination is not equivalent. |
+| Wallet change output | Allowed only under the reviewed change-address/ownership and value-accounting rule. It must not absorb, omit or relabel a protocol payment, ticket NFT, carrier or state continuation. |
+| Fee / validity fields | Inspected as explicit body fields and checked against existing action and wallet/deployment policy. This proposal invents no fee ceiling or validity rule; any missing policy remains an open gate rather than an assumed pass. |
+
+Compare protocol roles semantically, not by assumed output index. The approved mapping must state whether roles are distinct outputs or may intentionally be combined. If role assignment is ambiguous, fail closed. Datum interpretation and redeemer discriminants must use the pinned schema and existing action semantics; this proposal does not prescribe a new CBOR canonicalization.
+
+### 11.4 Per-transition predicate inventory to approve
+
+These are the minimum fields already identified by the production-builder audit. The table is a review inventory, not a claim that the adapter currently enforces them.
+
+| Action | Required protocol spending roles | Required semantic output/body checks before signing |
+|---|---|---|
+| **Issue** | Counter; B1 PrizePool; V3 carrier only when the existing carrier-binding path requires it | Counter continuation; Pending Prize; PrizePool continuation; Treasury payment and existing minimum-ADA constraint; ticket NFT delivery; applicable V3 carrier continuation/binding; existing completed-body upper-validity check. Preserve the authoritative Issue witness and existing Treasury settlement checks. |
+| **Reveal** | Prize UTxO; B1 PrizePool | Existing Reveal redeemer; Prize continuation has the existing deterministic result/tier/payout and Revealed status; PrizePool continuation matches the builder's expected datum/value transition. Keep beacon and player-commitment checks. Do not change Reveal semantics or promote a post-Yaci trace hash into pre-sign authority. |
+| **Claim** | Prize UTxO; B1 PrizePool; owner ticket NFT UTxO | Existing Claim redeemer; Prize datum reaches the existing Claimed state; PrizePool continuation matches the expected transition; payout matches validated settlement quote/value and validator-derived destination; ticket NFT is returned to the buyer address. Preserve existing status, expiry, positive-payout and pending-liability checks. |
+| **Expire** | Prize UTxO; B1 PrizePool | Existing Expire redeemer; collateral ADA delivered to the permissionless executor; PrizePool continuation matches expected transition; no replacement Prize output; existing expiry lower-bound condition is present and not weakened. Preserve current rejection of non-lovelace assets in the expiring Prize UTxO. |
+
+For every row, the approved predicate profile must define how expected semantic outputs are present, correctly assigned and not duplicated while allowing independently validated wallet change. It must define exact datum fields/values from the existing builder and pinned schema, not guessed output positions or a new interpretation of economic policy.
+
+### 11.5 Minimum adversarial conformance matrix
+
+Before wiring this contract through every production submit path, add positive and negative twins for each action. All negative tests must assert that signing and submission were never called.
+
+- **Inputs:** missing required protocol input; wrong UTxO for a role; duplicate input; unexplained extra protocol/state input; a reference input incorrectly used as a spending input; a valid independently resolved wallet-balance input as the positive control.
+- **Outputs and value:** missing/duplicated protocol continuation; altered datum/status/result/tier/payout; altered asset quantity; wrong Treasury/payout/executor/buyer destination; missing or misdirected ticket NFT; unintended replacement Prize on Expire; valid change to the approved wallet destination as a positive control.
+- **Redeemer and validity:** wrong action/redeemer, missing required expiry bound, weakened or mismatched interval, or action/interval inconsistent with the existing builder.
+- **Provenance and phase:** unknown schema/action; absent fingerprint producer/canonicalization; admission/action/state mismatch; environment/profile mismatch; post-submit observation offered as pre-sign authorization; candidate body ID treated as a submit receipt; submit receipt treated as ledger confirmation.
+- **Mutation ordering:** a body modified after validation must not be the body subsequently signed. Bind validation to the exact completed body passed to the wallet-signing port, not to a different object or parallel declaration.
+
+### 11.6 Decision gate before implementation
+
+Review and close the following before runtime integration: (a) canonical fingerprint producer/encoding ownership per action; (b) exact protocol-versus-wallet input and protocol-versus-change output classification; (c) versioned per-action input/redeemer/validity/output/datum/value predicate profiles; (d) phase-separated record and compatibility policy; and (e) negative twins proving failure before signing/submission.
+
+Until then this is a concrete contract proposal, not implementation or approval. V08/V09 remain open; concrete Issue certificate R1/K_c, Oracle qualification and EEV remain independent gates. No V3, Reveal, economic-kernel or Agent A-owned Oracle/EEV semantics are changed by this document.
