@@ -3857,10 +3857,10 @@ The SDK API draft now records the newly confirmed runtime-wiring gap and a safe 
 
 ### Contract refinement
 
-The existing `CanonicalTransitionEvidence` object combines action/pre-state/post-state fingerprints with `transactionRef`. Since the real transaction reference becomes available after submit, it must not be fabricated or treated as a pre-sign field. We need two distinct evidence concepts before runtime export:
+The existing `CanonicalTransitionEvidence` object combines action/pre-state/post-state fingerprints with `transactionRef` but does not identify the reference's assurance phase. A candidate Cardano transaction ID may be derivable from a completed body before signature; that does not prove signature, submit acceptance, ledger inclusion or finality. We need phase-separated evidence semantics before runtime export:
 
 1. **Pre-sign transition-intent/admission binding** — action class/fingerprint, pre-state and candidate post-state fingerprints, environment/profile and authoritative admission reference, validated before wallet authorization and bound to the actual transaction body by transition-specific checks.
-2. **Post-submit settlement/observation evidence** — the real transaction reference and chain observation, with ledger inclusion/finality verified separately.
+2. **Submit/settlement observation evidence** — the adapter's actual submission receipt and independently observed chain result, with ledger inclusion/finality verified separately. Keep any precomputed candidate body ID explicitly labeled as a candidate, not as confirmation.
 
 The API proposal was updated at [IMMORTAL SDK API Contract Proposal](IMMORTAL-SDK-API-CONTRACT-PROPOSAL-2026-10-28.md). It explicitly notes that the general and Issue-specific binding helpers are currently exercised by tests rather than wired into every production Issue/Reveal/Claim/Expire path; the existing `submitEconomic` signature does not receive the combined evidence object. The equality regression therefore proves helper behavior, **not universal runtime enforcement**.
 

@@ -33,7 +33,7 @@ Proposed minimum fields:
 - `chain` and `environment`: identify the chain and distinguish local Yaci, Preprod, Mainnet, or other declared environments.
 - `action`: action identifier from a versioned action vocabulary; unknown values fail closed.
 - `preStateFingerprint` and `postStateFingerprint`: digest-encoded fingerprints with declared algorithm/encoding.
-- `transactionReference`: chain-specific transaction/observation reference where applicable.
+- `transactionReference`: chain-specific identifier/reference with explicit phase semantics (candidate body ID, accepted submit receipt, or independently observed ledger transaction); earlier phases must not imply later assurance.
 - `sourceReferences[]`: evidence locators, each with source type and observation time where the source provides it.
 - `assurance`: an explicit evidence level and verifier identity/version, never a caller-supplied claim that automatically grants authority.
 - `limitations[]`: unresolved checks such as source authenticity, freshness, profile qualification, or ledger inclusion.
@@ -42,16 +42,16 @@ The current `CanonicalTransitionEvidence.ts` is only a structural validator. Bef
 
 #### Phase split required before runtime export
 
-The current combined evidence shape contains `transactionRef`, although a transaction reference and ledger result are not yet available at the pre-sign decision point. Do not reuse this full object as the only pre-sign contract or fabricate a placeholder transaction reference.
+The current combined evidence shape contains `transactionRef` without declaring its phase. A candidate Cardano transaction ID may be derivable from a completed body before wallet signature; that candidate ID is not evidence of signature, submit receipt, ledger inclusion or finality. The schema must distinguish a `candidateTransactionId`, a `submittedTransactionRef`, and an independently observed/confirmed ledger result (or define equally explicit phase semantics) rather than overload one unqualified field. Do not fabricate placeholder references.
 
 The candidate contract should separate two records:
 
 1. **Pre-sign transition-intent binding** — a versioned, immutable record for the canonical action class, action fingerprint, pre-state fingerprint, candidate post-state fingerprint, environment/profile, authoritative admission reference and verifiers. It can be checked before wallet authorization. This binding alone does not prove the transaction body implements the claimed action; the adapter still must bind the actual completed transaction body to its declared inputs and the transition-specific input/output/action mapping.
-2. **Post-submit settlement/observation evidence** — a separate record created after submission, carrying the real transaction reference and evidence from the declared chain source (including environment and observed block/slot where available). Ledger inclusion/finality must be a separately verified claim, not inferred from a submitted transaction id.
+2. **Submit/settlement observation evidence** — a record that captures the adapter's actual submission receipt and independently obtained chain observations (including environment and observed block/slot where available). If the transaction ID was already computed from the completed body, retain its candidate phase separately; a returned submit receipt is still not proof of ledger inclusion or finality.
 
 The repository already has `CardanoObservedTransitionEvidence.ts` as a candidate for the observed side. It deliberately names its hashes as *observation fingerprints*, not canonical V3 state fingerprints, and currently has no explicit schema-version or independently verified ledger-finality field. Reuse or adapt it only with an explicit mapping to the canonical evidence record; do not merge the two identities or relabel observation hashes as canonical fingerprints.
 
-Keep the phases explicit: build candidate → validate admission/intent and completed transaction binding → wallet signature → submit → obtain the actual transaction reference → observe/verify the declared ledger result. A successful earlier phase never implies success of a later one.
+Keep the phases explicit: build candidate → derive a candidate body ID if supported → validate admission/intent and completed transaction binding → wallet signature → submit and capture the actual receipt → independently observe/verify the declared ledger result. A successful earlier phase never implies success of a later one.
 
 **Current production-wiring status:** call-site inspection found the general `assertEconomicAdmissionMatchesCanonicalEvidence` and Issue-specific `assertIssueAdmissionMatchesCanonicalEvidence` exercised by tests but not called by all production economic submission paths; `CardanoExecutionAdapter.submitEconomic` does not currently accept the combined evidence object. The fingerprint equality regression therefore validates a helper contract, not a universal runtime gate. Keep this explicit until the pre-sign/post-submit split, ownership and transition-specific mappings have been approved and wired into Issue/Reveal/Claim/Expire.
 
