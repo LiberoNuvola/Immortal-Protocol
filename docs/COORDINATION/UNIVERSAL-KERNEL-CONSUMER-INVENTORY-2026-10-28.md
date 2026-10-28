@@ -499,3 +499,15 @@ These assertions pin the existing Haskell serializer's externally observable tex
 - Commit `f27610d572c90e2990aaaaf06956ba3fb997b4fe` adds a fixed pre-state SHA-256 assertion for the known ASCII serialization string. The expected digest was independently computed from that exact string; it is a pinned regression vector, **not evidence that Haskell/Cabal ran**.
 - Still outstanding: producer-generated post-state and action-fingerprint vectors, and a TypeScript consumer that checks the same canonical bytes/digests.
 - No workflow was manually dispatched. The workflow change is push-triggered by repository configuration; its run/result must be checked separately before marking tests passed.
+
+
+## 2026-10-28 — CI log output for authoritative Issue digests
+
+Commit `ebcff2ed2b86989d648b9311c4da7ef66adc4b67` makes the Issue decision test print three machine-searchable lines after a successful producer decision:
+- `ISSUE_VECTOR_PRE_STATE_SHA256=`
+- `ISSUE_VECTOR_POST_STATE_SHA256=`
+- `ISSUE_VECTOR_ACTION_FINGERPRINT=`
+
+This allows the Haskell conformance log to supply producer-generated post-state and action-fingerprint values without guessing them. The change also explicitly imports `(++)`, which the test uses in its assertion messages and new vector output.
+
+**Still unverified:** no successful Haskell workflow log has been retrieved in this pass. Do not treat emitted vectors as available until the suite runs and the lines are captured from its actual output.
