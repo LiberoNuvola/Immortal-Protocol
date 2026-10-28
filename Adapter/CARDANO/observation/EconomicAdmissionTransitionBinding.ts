@@ -4,8 +4,8 @@
  *
  * This module does not compute economic truth or fingerprints. It only proves
  * that a persisted transition-evidence packet carries the same action,
- * canonical pre-state and candidate post-state identifiers that were
- * presented to the economic submission boundary.
+ * action fingerprint, canonical pre-state and candidate post-state identifiers
+ * that were presented to the economic submission boundary.
  */
 import type { EconomicAdmissionWitness } from '../runtime/EconomicAdmission'
 import {
@@ -21,6 +21,9 @@ export function assertEconomicAdmissionMatchesCanonicalEvidence(
 
   if (admission.actionClass !== evidence.actionClass) {
     throw new Error('economic admission action does not match canonical evidence')
+  }
+  if (admission.actionFingerprint !== evidence.actionFingerprint) {
+    throw new Error('economic admission action fingerprint does not match canonical evidence')
   }
   if (admission.stateHash !== evidence.preStateFingerprint) {
     throw new Error('economic admission pre-state hash does not match canonical evidence')
