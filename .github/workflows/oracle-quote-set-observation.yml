@@ -9,6 +9,8 @@ on:
       - "audit/cardano-integration/observe-preprod-oracle-quote-set.mjs"
       - "audit/cardano-integration/oracleQuoteSetObservation.mjs"
       - "audit/cardano-integration/observe-bootstrap-oracle-quote-set-koios.mjs"
+      - "audit/cardano-integration/preprod-oracle-state-datum.mjs"
+      - "audit/cardano-integration/preprod-oracle-state-liveness.mjs"
       - ".github/workflows/oracle-quote-set-observation.yml"
 
 permissions:
