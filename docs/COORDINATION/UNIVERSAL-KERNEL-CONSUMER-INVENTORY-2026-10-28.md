@@ -469,3 +469,16 @@ Therefore, do not label the existing V3 transition fixtures as Issue fingerprint
 GitHub source inspection confirms the gap and the reusable test target, but this environment has not executed Cabal/GHC. I have not generated or committed expected digests, because doing so without running the authoritative Haskell producer would risk presenting independently calculated values as Haskell-generated vectors. Before any golden fixture is called authoritative, run the Haskell producer in the project’s pinned build environment and capture its output; then add fixed expected values and a cross-language consumer. Keep observation/Yaci hashes in a separate schema and namespace.
 
 **Change scope:** this entry records the harness reuse check only. No runtime code, test source, Cabal configuration, workflow, economic rule, V3/Reveal semantics or transaction was changed. No tests or workflows were run.
+
+
+## 2026-10-28 — First executable Issue serialization assertions added
+
+Following the harness review, `plutus/test/PreRichIssueDecisionTest.hs` now asserts two exact serialization outputs from the existing Haskell producer:
+- the canonical serialization string for the existing `baseState` fixture;
+- the canonical Issue action string for the admitted `Issue 0 1` decision.
+
+Commit: `9c38567f1b4cdee2ab772d42bf7b8aaa317098ac`.
+
+This is a deliberately narrow regression improvement: it pins the current state/action serialization contract without changing the serialization implementation, digest algorithm, economic rules, or V3/Reveal behavior. It does **not** yet pin expected SHA-256 values, candidate-state serialization, multiple-class vectors, or every Jackpot status. Those still require a Haskell-generated vector fixture and cross-language consumer.
+
+**Verification limit:** the source and commit diff were fetched and inspected through GitHub; Cabal/GHC tests were not run in this pass. The new assertions must not be reported as passing until the test suite executes in the repository's pinned environment.
