@@ -4367,3 +4367,35 @@ Read-only qualification job [#40397642433, attempt 2](https://github.com/LiberoN
 This refresh proves the source UTxO and the direct-USDM EV1–EV7 derivation at the observation timestamp only. It does **not** create `DEPLOYMENT_APPROVED`, certify USD/USDM parity or conversion, resolve the R1/`K_c` certificate, produce a current signed Issue-authority binding, authorize Issue admission, or issue/purchase a Ticket NFT. The source-set remains `OBSERVED_NOT_QUALIFIED` pending the separate deployment-approval decision.
 
 The same artifact shows the materialized Oracle State manifest's `datumSemantics.timestampMs: null` with `maxAgeMs: 3600000`; therefore its price timestamp cannot currently support a freshness claim. Keep the USD/USDM conversion route blocked independently of direct physical tUSDM qualification. Do not infer a peg or conflate the Preprod test token with Mainnet Moneta USDM. No wallet signing, transaction submission, approval, economic-semantic change, V3/Reveal edit, new branch, SDK duplication, or Materios work occurred.
+
+## 45.36 AGENT A — ORACLE STATE DATUM DECODE + LIVE FRESHNESS OBSERVATION (2026-10-28)
+
+### Code defect fixed and tested
+
+The existing-on-chain branch in `audit/cardano-integration/preprod-direct-oracle-state-bootstrap.mjs` previously checked that the Oracle State singleton had an inline datum but left its local `oracleTimestamp` unset. It therefore emitted `datumSemantics.timestampMs: null` even though the datum had a timestamp. This was a manifest-materialization defect, not evidence that the chain datum had no timestamp.
+
+- Added `audit/cardano-integration/preprod-oracle-state-datum.mjs` to decode constructor 0 / five-field Oracle State datum and validate asset identity, configured price, publisher hash and non-negative timestamp.
+- Added `audit/cardano-integration/preprod-oracle-state-datum.test.mjs` with positive decode and fail-closed tests for invalid CBOR, constructor/field count, negative timestamp, unexpected price, asset and publisher.
+- The bootstrap now decodes and checks the actual UTxO datum for both reused and newly materialized states. It records the on-chain timestamp; it does not manufacture a fresh timestamp for an old datum.
+- Added `audit/cardano-integration/preprod-oracle-state-liveness.mjs`, a read-only exact-singleton observer. `.github/workflows/preprod-eev-qualification.yml` now runs it before EV1–EV7 re-qualification; it records actual timestamp age and freshness status without failing or rewriting a stale timestamp to appear fresh.
+- Added a fail-closed Oracle timestamp freshness check to `audit/cardano-integration/preprod-first-issue-readiness.mjs`. Its regression suite now verifies that missing and stale timestamps block readiness; the test fixtures use a currently fresh synthetic timestamp only for the valid path.
+- The direct-USDM conformance workflow runs both new regression suites.
+
+### Live Preprod evidence — exact commit `dd3f0cded40e115b70210872914322e5d6ed678e`
+
+Read-only EEV qualification run [#40632174413](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174413) completed **SUCCESS** at 2026-10-28 04:25 UTC. Its exact artifact is [12792161360](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174413/artifacts/12792161360), ZIP SHA-256 `39495bdac71131d6cb0796a669e679a1462383dc017d8dd639289ac0f5b8b561`.
+
+- Exact live Oracle State singleton: `fab6b85906cb804830954f50882623ef8a963d18330dedcd33fb23f3a1902a7a#0`; policy/unit and publisher identity match the deployment manifest.
+- The decoded on-chain datum timestamp is `1791481130142` = **2026-10-08T17:38:50.142Z**. Observed at `2026-10-28T04:25:03.595Z`; age `1,680,373,453 ms` = **19.4488 days**, while configured `maxAgeMs = 3,600,000` (one hour).
+- Observer status is explicitly `freshnessStatus: STALE`, `withinMaxAge: false`. Chain tip observed through Koios: Conway block `5,343,954`, hash `34180d6fb6294f478ff8b56a264231559b4408b803eb1cffb60605361c5afbfa`.
+- The observer did **not** mutate the UTxO or refresh its timestamp. The configured datum's value of `100` USDM subunits per lovelace remains a fixed Preprod compatibility quote, not a current independently authenticated market observation.
+
+### EEV and Issue gate disposition
+
+The same exact run re-observed the direct-USDM source and successfully re-qualified EV1–EV7:
+
+- Source-set `observedAt: 2026-10-28T04:25:05.301Z`, Pool UTxO `b84fce37cd31ea6463d2c59fa1c2a7cd0871e1620146fe3741308ab2e610b020#0`, physical tUSDM `1,000,000,000` atomic units, derivation `100,000` IMMORTAL USDM subunits; source-set evidence hash `4748b7b905a2c2150d6dc65e524b9d1f81076d4b2dad71b95076d26193255d1f`.
+- Qualification status `qualified`, all EV1–EV7 present, qualification evidence hash `7e7392c1d196a76d20ded3e6db3167a26d72f24fd00d4d9080296e879beef204`. `deploymentApproval: null` / `deploymentApproval: PENDING` remains unchanged.
+- All six current-commit workflows passed: [PRE-RICH Preprod EEV — Source Qualification Only #40632174413](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174413), [Cardano Adapter Sale #40632174433](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174433), [IMMORTAL Portability #40632174444](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174444), [Protocol Declaration #40632174403](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174403), [Algorithmic Governability #40632174448](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174448), and [Documentation Link Check #40632174505](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40632174505).
+
+**Disposition:** physical direct-tUSDM EV1–EV7 qualification is current as of its observation time. Oracle quote freshness is independently **BLOCKED / STALE**; the first-Issue readiness gate now rejects this state. Do not reset the on-chain timestamp with the same hardcoded quote, treat a read as a price update, infer USD/USDM parity, or mistake EEV qualification for `DEPLOYMENT_APPROVED` or Authoritative Issue Admission. No EEV approval, wallet signature, transaction submission, V3/Reveal change, SDK duplication, new branch or Materios work occurred.
