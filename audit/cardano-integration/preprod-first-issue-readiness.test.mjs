@@ -114,7 +114,7 @@ try {
     oracleConfiguration: { utxo: oracleUtxo },
     evidenceHash: '1'.repeat(64),
   }
-  const oracle = {
+  const oracle = setArtifactDigest({
     status: 'MATERIALIZED',
     network: 'cardano-preprod',
     oracleState: { utxo: oracleUtxo },
@@ -122,8 +122,12 @@ try {
       timestampMs: String(Date.now()),
       maxAgeMs: '3600000',
     },
-    evidenceHash: '2'.repeat(64),
-  }
+    qualification: {
+      externalPriceSourceVerified: true,
+      evidenceReference: 'synthetic://oracle-source-qualification',
+      evidenceHash: '3'.repeat(64),
+    },
+  })
   const qualification = withEvidenceHash({
     schema: 'PRE-RICH-EEV-USDM-DIRECT-V1-QUALIFICATION-v0.1',
     status: 'qualified',
@@ -228,13 +232,28 @@ try {
   assert.equal(ready.report.safety.transactionsSubmitted, false)
   assert.equal(ready.report.safety.walletSigned, false)
 
-  const staleOracle = {
+  const unverifiedOracle = setArtifactDigest({
+    ...oracle,
+    qualification: {
+      externalPriceSourceVerified: false,
+      evidenceReference: undefined,
+      evidenceHash: undefined,
+    },
+  })
+  await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), unverifiedOracle)
+  const unverifiedSource = runGate(env)
+  assert.equal(unverifiedSource.code, 2)
+  assert.ok(unverifiedSource.report.blockers.some(item =>
+    item.label === 'Oracle external price source is independently verified',
+  ))
+
+  const staleOracle = setArtifactDigest({
     ...oracle,
     datumSemantics: {
       timestampMs: String(Date.now() - 3_600_001),
       maxAgeMs: '3600000',
     },
-  }
+  })
   await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), staleOracle)
   const staleTimestamp = runGate(env)
   assert.equal(staleTimestamp.code, 2)
@@ -242,10 +261,10 @@ try {
     item.label === 'Oracle State price timestamp is present, non-future, and within maxAgeMs',
   ))
 
-  const missingTimestampOracle = {
+  const missingTimestampOracle = setArtifactDigest({
     ...oracle,
     datumSemantics: { timestampMs: null, maxAgeMs: '3600000' },
-  }
+  })
   await saveJson(resolve(evidenceDir, 'preprod-oracle-state-deployment.json'), missingTimestampOracle)
   const missingTimestamp = runGate(env)
   assert.equal(missingTimestamp.code, 2)
