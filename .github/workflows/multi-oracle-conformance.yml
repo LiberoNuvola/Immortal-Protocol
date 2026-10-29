@@ -1,0 +1,48 @@
+name: Multi-Oracle Registry Boundary Conformance
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - 'relayer/multiOracleObservation.js'
+      - 'relayer/multiOracleObservation.test.js'
+      - 'relayer/multiOracleRegistryBoundary.js'
+      - 'relayer/multiOracleRegistryBoundary.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/multi-oracle-conformance.yml'
+  pull_request:
+    paths:
+      - 'relayer/multiOracleObservation.js'
+      - 'relayer/multiOracleObservation.test.js'
+      - 'relayer/multiOracleRegistryBoundary.js'
+      - 'relayer/multiOracleRegistryBoundary.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/multi-oracle-conformance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multi-oracle-conformance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  multi-oracle-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact tested revision
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run multi-oracle structural and registry-boundary tests
+        run: npm run test:multi-oracle -- --reporter=verbose
