@@ -1,5 +1,5 @@
-const { describe, expect, it } = require('vitest')
-const { normalizeOracleObservation, digestPayload } = require('./multiOracleObservation')
+import { describe, expect, it } from 'vitest'
+import { normalizeOracleObservation, digestPayload } from './multiOracleObservation.js'
 
 const registry = {
   sourceId: 'source-alpha',
