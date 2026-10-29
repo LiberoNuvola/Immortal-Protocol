@@ -413,4 +413,42 @@ describe('signed multi-oracle registry snapshot verifier', () => {
       sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
     })).rejects.toThrow(/equivocated at the same control sequence/)
   })
+
+  it('does not permit a revoked tuple to reappear within the same policy version', async () => {
+    let calls = 0
+    const currentnessProvider = {
+      resolveCurrentRegistryState: async () => ({
+        verificationStatus: 'VERIFIED',
+        authorityReference: 'fixture://authority/current-registry',
+        checkpointReference: 'fixture://checkpoint/current-registry-1',
+        policyVersion: 'policy-test-v1',
+        controlSequence: String(41 + calls++),
+        registrySequence: '12',
+        registryVersion: 'registry-test-v1',
+        registryDigest: digestRegistryPayload(payload()),
+        registryStatus: 'CURRENT',
+        revokedEntries: calls === 1 ? [] : calls === 2 ? [{
+          sourceId: 'source-alpha',
+          feedId: 'feed-ada-usd',
+          policyVersion: 'policy-test-v1',
+        }] : [],
+      }),
+    }
+    const provider = createSignedMultiOracleRegistryProvider({
+      envelope: envelope(),
+      trustedPublicKeyPem,
+      registryReference: 'fixture://signed-registry/snapshot-1',
+      trustRootReference: 'fixture://trust-root/ed25519-key-1',
+      currentnessProvider,
+    })
+    await provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/revoked in authoritative currentness state/)
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/revocation tombstone disappeared/)
+  })
 })
