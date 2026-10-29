@@ -530,7 +530,19 @@ async function main(): Promise<void> {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : String(error));
+    const errorName =
+      error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(error.name)
+        ? error.name
+        : "UnknownError";
+    const rawCode = isRecord(error) ? error.code : undefined;
+    const code = typeof rawCode === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(rawCode)
+      ? rawCode
+      : undefined;
+    console.error(JSON.stringify({
+      mode: "fatal-error",
+      errorType: errorName,
+      ...(code ? { code } : {})
+    }));
     process.exitCode = 1;
   });
 }
