@@ -1,6 +1,6 @@
-const { describe, expect, it, vi } = require('vitest')
-const { normalizeUsingRegistryProvider } = require('./multiOracleRegistryBoundary')
-const { digestPayload } = require('./multiOracleObservation')
+import { describe, expect, it, vi } from 'vitest'
+import { normalizeUsingRegistryProvider } from './multiOracleRegistryBoundary.js'
+import { digestPayload } from './multiOracleObservation.js'
 
 const registryEntry = {
   sourceId: 'source-alpha',
