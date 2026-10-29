@@ -209,6 +209,9 @@ function createSignedMultiOracleRegistryProvider({
     throw new Error('trusted currentnessProvider.resolveCurrentRegistryState is required')
   }
   const verified = verifySignedMultiOracleRegistrySnapshot(envelope, trustedPublicKeyPem)
+  // Process-local high-water mark: defense-in-depth only. Durable rollback
+  // protection must be supplied by the external authoritative currentness provider.
+  const lastSeenCurrentness = new Map()
 
   async function resolveCurrentState(requestedPolicy) {
     // The provider must read and authenticate the current, rollback-resistant
@@ -248,12 +251,48 @@ function createSignedMultiOracleRegistryProvider({
     if (!Array.isArray(state.revokedEntries)) {
       throw new Error('currentness.revokedEntries must be an array')
     }
+    const normalizedRevokedEntries = state.revokedEntries.map((value, index) => {
+      requiredObject(value, 'currentness.revokedEntries[' + index + ']')
+      return {
+        sourceId: requiredString(value.sourceId, 'revokedEntries[' + index + '].sourceId'),
+        feedId: requiredString(value.feedId, 'revokedEntries[' + index + '].feedId'),
+        policyVersion: requiredString(value.policyVersion, 'revokedEntries[' + index + '].policyVersion'),
+      }
+    }).sort((left, right) =>
+      [left.sourceId, left.feedId, left.policyVersion].join('\\u0000').localeCompare(
+        [right.sourceId, right.feedId, right.policyVersion].join('\\u0000'),
+      ),
+    )
+    const currentnessDigest = digestRegistryPayload({
+      authorityReference,
+      checkpointReference,
+      policyVersion: currentPolicyVersion,
+      controlSequence,
+      registrySequence: currentRegistrySequence,
+      registryVersion: currentRegistryVersion,
+      registryDigest: currentRegistryDigest,
+      registryStatus: state.registryStatus,
+      revokedEntries: normalizedRevokedEntries,
+    })
+    const previous = lastSeenCurrentness.get(requestedPolicy)
+    if (previous && BigInt(controlSequence) < BigInt(previous.controlSequence)) {
+      throw new Error('authoritative currentness control sequence rolled back within this process')
+    }
+    if (previous && controlSequence === previous.controlSequence &&
+        currentnessDigest !== previous.currentnessDigest) {
+      throw new Error('authoritative currentness state equivocated at the same control sequence')
+    }
+    if (!previous || BigInt(controlSequence) > BigInt(previous.controlSequence)) {
+      lastSeenCurrentness.set(requestedPolicy, { controlSequence, currentnessDigest })
+    }
 
     return {
       authorityReference,
       checkpointReference,
       controlSequence,
-      revokedKeys: new Set(state.revokedEntries.map(revocationKey)),
+      revokedKeys: new Set(normalizedRevokedEntries.map(value =>
+        [value.sourceId, value.feedId, value.policyVersion].join('\\u0000'),
+      )),
     }
   }
 
