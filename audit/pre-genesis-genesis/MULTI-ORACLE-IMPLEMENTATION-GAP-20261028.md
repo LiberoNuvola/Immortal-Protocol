@@ -93,3 +93,14 @@ Both conversion legs must have exact pair direction, unit/scale semantics, times
 ## Conclusion
 
 The repository has a useful additive data structure for multiple asset quotes, but the currently inspected valuation path still authorizes one configured publisher. The next engineering task is therefore not to bolt on more feeds: it is to specify and test the governed source-verification and aggregation boundary, while preserving the existing single-oracle path until the new path is qualified.
+
+## 7. Follow-up contracts recorded on 2026-10-29
+
+The subsequent adapter-level audit refined the authority and liveness gaps without approving a source, governance model, threshold, or production integration:
+
+- [Multi-Oracle Registry Currentness Contract v0.1](MULTI-ORACLE-REGISTRY-CURRENTNESS-CONTRACT-v0.1-20261029.md): defines the proposed exact registry-head/currentness binding, revocation checks, and fail-closed boundary. A production-authoritative currentness provider remains unimplemented.
+- [Multi-Oracle Authority Decision Gate Recommendation v0.1](MULTI-ORACLE-AUTHORITY-DECISION-GATE-RECOMMENDATION-v0.1-20261029.md): recommends investigating proof-backed, ledger-verifiable registry state while keeping the authority gate open until the update-authorization predicate can be independently verified.
+- [Multi-Oracle Liveness Report Contract v0.1](MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md): proposes a non-authoritative report separating registry currentness, endpoint availability, observation integrity, measured freshness, optional divergence, and downstream policy evaluation.
+
+These are follow-up proposals, not implementation approval. They do not change the earlier constraints: no source/feed activation, no aggregation or freshness/divergence threshold, no fallback or USD/USDM conversion, and no changes to the economic kernel, V3, Reveal, EEV or Issue Admission. The liveness report must not be used as source-admission authority or as an automatic fallback selector.
+
