@@ -17,7 +17,8 @@ import Prelude
 
 import EconomicStateV3
 import PreRichIssueDecision
-  ( IssueDecisionInput (..)
+  ( IssueDecision (..)
+  , IssueDecisionInput (..)
   , produceIssueDecision
   , canonicalV3State
   , canonicalIssueAction
