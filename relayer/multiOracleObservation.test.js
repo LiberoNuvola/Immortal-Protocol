@@ -8,6 +8,7 @@ const registry = {
   quoteAsset: 'USD',
   timestampUnit: 'unix-ms',
   activationState: 'ACTIVE',
+  policyVersion: 'policy-test-v1',
 }
 
 const canonical = {
@@ -78,6 +79,12 @@ describe('multi-oracle structural observation boundary', () => {
     expect(() => normalizeOracleObservation(
       registry, input({ timestampUnit: 'unix-seconds' }),
     )).toThrow(/timestamp unit/)
+  })
+
+  it('rejects an observation policy version that differs from the registry', () => {
+    expect(() => normalizeOracleObservation(
+      registry, input({ policyVersion: 'policy-other-v1' }),
+    )).toThrow(/policyVersion does not match registry/)
   })
 
   it('rejects absent source timestamp and malformed integer fields', () => {
