@@ -52,9 +52,31 @@ async function normalizeUsingRegistryProvider(registryProvider, input) {
   const trustRootReference = requiredString(resolution.trustRootReference, 'trustRootReference')
   const signatureScheme = requiredString(resolution.signatureScheme, 'signatureScheme')
   const registryVersion = requiredString(resolution.registryVersion, 'registryVersion')
+  const registrySequence = requiredString(resolution.registrySequence, 'registrySequence')
+  if (!/^(0|[1-9][0-9]*)$/.test(registrySequence)) {
+    throw new Error('registrySequence must be a canonical non-negative decimal sequence')
+  }
   const registryDigest = requiredString(resolution.registryDigest, 'registryDigest').toLowerCase()
   if (!/^[0-9a-f]{64}$/.test(registryDigest)) {
     throw new Error('registryDigest must be a SHA-256 hex digest')
+  }
+  const currentnessAuthorityReference = requiredString(
+    resolution.currentnessAuthorityReference,
+    'currentnessAuthorityReference',
+  )
+  const currentnessCheckpointReference = requiredString(
+    resolution.currentnessCheckpointReference,
+    'currentnessCheckpointReference',
+  )
+  const currentnessControlSequence = requiredString(
+    resolution.currentnessControlSequence,
+    'currentnessControlSequence',
+  )
+  if (!/^(0|[1-9][0-9]*)$/.test(currentnessControlSequence)) {
+    throw new Error('currentnessControlSequence must be a canonical non-negative decimal sequence')
+  }
+  if (resolution.currentnessVerificationStatus !== 'VERIFIED') {
+    throw new Error('authoritative currentness state must be independently verified')
   }
   if (!resolution.entry || typeof resolution.entry !== 'object') {
     throw new Error('registry resolution entry is required')
@@ -74,7 +96,12 @@ async function normalizeUsingRegistryProvider(registryProvider, input) {
       trustRootReference,
       signatureScheme,
       registryVersion,
+      registrySequence,
       registryDigest,
+      currentnessAuthorityReference,
+      currentnessCheckpointReference,
+      currentnessControlSequence,
+      currentnessVerificationStatus: 'VERIFIED',
       verificationStatus: 'VERIFIED',
     }),
   })
