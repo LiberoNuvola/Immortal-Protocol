@@ -136,6 +136,7 @@ executable reference-economic-conformance
         base ^>=4.18.2,
         aeson,
         bytestring,
+        directory,
         pre-rich-plutus
     default-language: Haskell2010
 
