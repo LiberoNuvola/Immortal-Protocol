@@ -4877,3 +4877,20 @@ Read-only upstream review completed against the public GitHub commit histories. 
 4. **No semantic replacement:** do not substitute Orynq receipts/Merkle proofs for the separate B3-A finality, B3-B historical-state, or B3-C execution-proof obligations in `SEMANTIC-REVIEW-MATERIOS-B3-PROOF-BOUNDARIES-2026-10-21.md`. Preserve the existing fail-closed classification until the required native evidence is acquired and independently verified.
 5. **Next scoped implementation step:** inspect the exact `work/b3-materios-provenance-evidence` source and current green branch dependency graph side-by-side; map each candidate SDK primitive to an existing call site and test; then propose only a minimal adapter-level patch with regression tests. No dependency upgrade, branch operation, workflow dispatch, transaction, or runtime/economic change was performed in this pass.
 
+
+
+## B3 code-to-upstream mapping — follow-up inspection 2026-10-29
+
+The targeted source/test inspection of `work/b3-materios-provenance-evidence` confirms the following before any SDK integration:
+
+- `poc/materios-checkpoint/src/selectionCommitment.ts` already extracts the unique `SessionCommitteeManagement::set` inherent and fails closed on absent, duplicate, or truncated matching extrinsics. Its comments explicitly state that extraction alone does not prove canonicality/finality or execute the selector.
+- `poc/materios-checkpoint/src/runtimeApi.ts` constructs the `calculate_committee` call data by concatenating supplied SCALE inputs with the SCALE u64 epoch. It explicitly does not synthesize the authority-selection inputs.
+- `poc/materios-checkpoint/src/executionProof.ts` validates packet shape, input-hash/call-data bindings, packet identity and runtime-code binding; its module contract explicitly says this is not cryptographic trie/runtime/finality proof verification.
+- Existing `test-executionProof.ts` has regression coverage for hash tampering, packet identity changes, exact call-data binding, malformed context, and selection-commitment matching. `test-rpc-b3.ts` covers exact RPC method/parameters, missing and duplicate GRANDPA justifications, and unique on-chain selection-input extraction. `test-rpc-capabilities.ts` correctly distinguishes a missing method from an unknown/malformed RPC catalogue.
+
+### Decision
+
+Do **not** add `@fluxpointstudios/orynq-sdk-anchors-materios` 0.7.0 as a dependency to the main PRE-RICH application at this stage. Its relevant retry/reconciliation behavior belongs to the submission/anchor adapter path; the B3 POC's critical unresolved boundary is independent verification of proof contents, exact finalized block/state binding, and canonical runtime identity. Adding a package alone would not close that boundary and could introduce its documented error-code migration.
+
+Next code change should be scoped to the B3 POC after the independent verifier interface and evidence fixtures are identified: add a verifier-facing contract/test proving that the supplied proof packet is rejected unless the verifier result binds the same chain/genesis, finalized block hash and number, state root, runtime code hash, call data, result, and selection-input commitment. This is a proposed test obligation, not evidence that such a verifier currently exists. Keep B3-A/B/C classifications separate; do not upgrade the SDK or change economics, V3, Reveal, branch topology, or on-chain state as a shortcut.
+
