@@ -35,6 +35,8 @@ function resolution(overrides = {}) {
   return {
     verificationStatus: 'VERIFIED',
     registryReference: 'registry-evidence:test-snapshot-001',
+    trustRootReference: 'trust-root:test-fixture',
+    signatureScheme: 'Ed25519',
     registryVersion: 'registry-v1',
     registryDigest: 'a'.repeat(64),
     policyVersion: 'policy-test-v1',
@@ -54,10 +56,13 @@ describe('multi-oracle registry provider boundary', () => {
 
     expect(registryProvider.resolveVerifiedRegistrySnapshot).toHaveBeenCalledWith({
       sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
       policyVersion: 'policy-test-v1',
     })
     expect(result.observation.rawPrice).toBe('69508700')
     expect(result.registryBinding.registryDigest).toBe('a'.repeat(64))
+    expect(result.registryBinding.trustRootReference).toBe('trust-root:test-fixture')
+    expect(result.registryBinding.signatureScheme).toBe('Ed25519')
     expect(result.registryBinding.verificationStatus).toBe('VERIFIED')
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.registryBinding)).toBe(true)
