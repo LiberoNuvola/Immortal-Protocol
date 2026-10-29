@@ -331,7 +331,7 @@ describe('signed multi-oracle registry snapshot verifier', () => {
       sourceId: 'source-alpha',
       feedId: 'feed-ada-usd',
       policyVersion: 'policy-test-v1',
-    })).rejects.toThrow(/revoked or not the authoritative current snapshot/)
+    })).rejects.toThrow(/signed registry snapshot digest has been revoked/)
   })
 
   it('rejects a source/feed/policy tuple revoked in the currentness overlay', async () => {
