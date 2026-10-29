@@ -213,6 +213,7 @@ function createSignedMultiOracleRegistryProvider({
   // protection must be supplied by the external authoritative currentness provider.
   const lastSeenCurrentness = new Map()
   const seenRevocationsByPolicy = new Map()
+  const revokedRegistryDigests = new Set()
 
   async function resolveCurrentState(requestedPolicy) {
     // The provider must read and authenticate the current, rollback-resistant
@@ -231,24 +232,12 @@ function createSignedMultiOracleRegistryProvider({
     if (currentPolicyVersion !== requestedPolicy) {
       throw new Error('current registry state policy version mismatch')
     }
-    if (state.registryStatus !== 'CURRENT') {
-      throw new Error('registry snapshot is revoked or not the authoritative current snapshot')
-    }
+    const registryStatus = requiredString(state.registryStatus, 'currentness.registryStatus')
     const controlSequence = canonicalSequence(state.controlSequence, 'currentness.controlSequence')
     const currentRegistrySequence = canonicalSequence(state.registrySequence, 'currentness.registrySequence')
     const currentRegistryVersion = requiredString(state.registryVersion, 'currentness.registryVersion')
     const currentRegistryDigest = requiredDigest(state.registryDigest, 'currentness.registryDigest')
 
-    if (BigInt(currentRegistrySequence) > BigInt(verified.payload.registrySequence)) {
-      throw new Error('registry snapshot is stale or rolled back relative to the authoritative current checkpoint')
-    }
-    if (BigInt(currentRegistrySequence) < BigInt(verified.payload.registrySequence)) {
-      throw new Error('registry snapshot sequence is ahead of the authoritative current checkpoint')
-    }
-    if (currentRegistryVersion !== verified.payload.registryVersion ||
-        currentRegistryDigest !== verified.registryDigest) {
-      throw new Error('registry snapshot does not match the authoritative current checkpoint')
-    }
     if (!Array.isArray(state.revokedEntries)) {
       throw new Error('currentness.revokedEntries must be an array')
     }
@@ -272,7 +261,7 @@ function createSignedMultiOracleRegistryProvider({
       registrySequence: currentRegistrySequence,
       registryVersion: currentRegistryVersion,
       registryDigest: currentRegistryDigest,
-      registryStatus: state.registryStatus,
+      registryStatus,
       revokedEntries: normalizedRevokedEntries,
     })
     const revokedKeys = new Set(normalizedRevokedEntries.map(value =>
@@ -299,6 +288,26 @@ function createSignedMultiOracleRegistryProvider({
       ...previouslyRevokedKeys,
       ...revokedKeys,
     ]))
+
+    // Remember explicitly revoked snapshots before returning an error, so a
+    // later higher-sequence response cannot reactivate the same signed digest.
+    if (registryStatus === 'REVOKED') revokedRegistryDigests.add(currentRegistryDigest)
+    if (revokedRegistryDigests.has(verified.registryDigest)) {
+      throw new Error('signed registry snapshot digest has been revoked')
+    }
+    if (registryStatus !== 'CURRENT') {
+      throw new Error('registry snapshot is revoked or not the authoritative current snapshot')
+    }
+    if (BigInt(currentRegistrySequence) > BigInt(verified.payload.registrySequence)) {
+      throw new Error('registry snapshot is stale or rolled back relative to the authoritative current checkpoint')
+    }
+    if (BigInt(currentRegistrySequence) < BigInt(verified.payload.registrySequence)) {
+      throw new Error('registry snapshot sequence is ahead of the authoritative current checkpoint')
+    }
+    if (currentRegistryVersion !== verified.payload.registryVersion ||
+        currentRegistryDigest !== verified.registryDigest) {
+      throw new Error('registry snapshot does not match the authoritative current checkpoint')
+    }
 
     return {
       authorityReference,
