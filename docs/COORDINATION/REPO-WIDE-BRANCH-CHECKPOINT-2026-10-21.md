@@ -4775,3 +4775,18 @@ The branch advanced concurrently to `bc0a6ac0d3e545524252368af8df4bd23840ded3` t
 A newer [Integration Lab #40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) was in progress on `ca2e9c1` at the last poll. The first Lab run's success does not replace the pending run's result if exact-SHA coverage is required.
 
 **Disposition:** keep SDK Issue fingerprint/canonical-body binding, Agent A's Oracle registry work, R1/K_c and EEV/deployment approval as distinct gates. No branch topology changes, live wallet signature, Preprod ticket purchase, or V3/Reveal semantics change occurred in this increment.
+
+
+### 45.53 ISSUE CANONICAL SERIALIZATION FIX + EXACT-HEAD CI PENDING (2026-10-29)
+
+The Haskell run [#40820152084](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152084) completed **FAILURE** after the record-selector import fix. The failure was not a hash mismatch: the first test, `canonical Jackpot inactive serialization`, failed before the Haskell-produced vectors or Node consumer ran.
+
+Source review identified the cause in `PRE-RICH/onchain/PreRichIssueDecision.hs`: the recursive `classes` serializer appended a trailing `|` after the final class, while the outer `joinFields` already inserted the separator before the following control state. That produced a non-canonical double separator. The fix separates class-field rendering from inter-class separators and emits no trailing separator. The multi-class golden in `plutus/test/PreRichIssueDecisionTest.hs` also omitted one canonical field (the Jackpot threshold zero); it now expects the complete ordered field sequence.
+
+- Commit [`304bb53f6b49177aa029c4b806e1a0088fda60b1`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/304bb53f6b49177aa029c4b806e1a0088fda60b1): fix trailing separator in Issue canonical state serialization.
+- Commit [`1f58942fa486ecaafdae5993ec5259b19b042fb2`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/1f58942fa486ecaafdae5993ec5259b19b042fb2): correct the multi-class canonical vector. This exact source revision includes both changes.
+- Exact-revision Haskell conformance [#40823466348](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823466348) is running on `1f58942`; at checkpoint time it is in Haskell setup, so the Issue test and independent Node vector consumer are **not yet verified green**.
+- Exact-revision Cardano Integration Lab [#40823466339](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823466339) is running on the same SHA and is still restoring the Cabal/Plutus build state.
+- Earlier Integration Lab [#40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) completed **SUCCESS** on `ca2e9c1`, but that does not substitute for the newer exact-revision lab.
+
+The patch is confined to the application-owned canonical serializer and its conformance fixture. It does not alter economic admission rules, state transitions, validator logic, V3/Reveal semantics, EEV/Oracle logic, or branch topology. Do not mark the Issue fingerprint gate GREEN until the new Haskell test and Node consumer have both passed on an observed run.
