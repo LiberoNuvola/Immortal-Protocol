@@ -9,6 +9,7 @@ import {
   prepareBlobData,
   submitCertifiedReceipt
 } from "@fluxpointstudios/orynq-sdk-anchors-materios";
+import * as OrynqMateriosSdk from "@fluxpointstudios/orynq-sdk-anchors-materios";
 
 const MAX_PACKET_BYTES = 32 * 1024 * 1024;
 const VERIFIED_SCOPE = "exact header.stateRoot + exact storage key + exact returned value";
@@ -244,6 +245,159 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+/**
+ * Return a machine-readable, allow-listed summary of a failed Materios submission.
+ * No error message, cause, signer URI, signer address, RPC URL or gateway URL is emitted.
+ *
+ * SDK 0.7.0 exposes resolveInclusion; the namespace is inspected dynamically so the
+ * bridge remains type-checkable against the currently pinned 0.6.2 package. If the
+ * resolver is absent, an inclusion-unknown error stays unresolved and cannot be retried.
+ */
+export async function dispositionMateriosSubmissionFailure(
+  error: unknown,
+  provider: unknown,
+  sdkNamespace: unknown = OrynqMateriosSdk,
+  plannedReceiptId?: string
+): Promise<JsonRecord> {
+  const source = isRecord(error) ? error : {};
+  const errorName = typeof source.name === "string" ? source.name : "UnknownError";
+  const code = typeof source.code === "string" ? source.code : undefined;
+  const id = typeof source.id === "string" ? source.id : undefined;
+  const txHash = typeof source.txHash === "string" ? source.txHash : undefined;
+  const lastHead = isRecord(source.lastHead)
+    ? {
+        ...(typeof source.lastHead.number === "number" ? { number: source.lastHead.number } : {}),
+        ...(typeof source.lastHead.hash === "string" ? { hash: source.lastHead.hash } : {})
+      }
+    : undefined;
+
+  if (errorName === "MateriosCertificationError") {
+    const result = isRecord(source.result) ? source.result : {};
+    const receipt: JsonRecord = {};
+    for (const key of ["receiptId", "blockHash", "blockNumber", "txHash", "confirmed", "certHash", "leafHash"]) {
+      const value = result[key];
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        receipt[key] = value;
+      }
+    }
+    return {
+      errorType: errorName,
+      disposition: "receipt-already-landed-never-resubmit",
+      safeToResubmit: false,
+      failureStage: source.stage === "certification" || source.stage === "anchor" ? source.stage : "unknown",
+      receipt,
+      receiptIdMatchesPlan: typeof result.receiptId === "string" && plannedReceiptId !== undefined
+        ? result.receiptId === plannedReceiptId
+        : null,
+      certification: typeof result.certHash === "string" && result.certHash.length > 0 ? "observed" : "not-observed",
+      l1Anchor: result.anchor ? "observed" : "not-observed"
+    };
+  }
+
+  if (errorName === "MateriosSubmissionError" && code === "inclusion-unknown") {
+    const sdk = isRecord(sdkNamespace) ? sdkNamespace : {};
+    const resolver = sdk.resolveInclusion;
+    if (typeof resolver !== "function") {
+      return {
+        errorType: errorName,
+        code,
+        disposition: "finalized-inclusion-resolution-required-but-unavailable",
+        safeToResubmit: false,
+        ...(id ? { receiptId: id } : {}),
+        ...(txHash ? { txHash } : {}),
+        ...(lastHead ? { lastObservedHead: lastHead } : {})
+      };
+    }
+
+    try {
+      const resolution: unknown = await (resolver as (p: unknown, e: unknown) => Promise<unknown>)(provider, error);
+      const resolved = isRecord(resolution) ? resolution : {};
+      const status = typeof resolved.status === "string" ? resolved.status : "unknown";
+      const resolvedId = typeof resolved.id === "string" ? resolved.id : undefined;
+      const sameId = id !== undefined && resolvedId === id &&
+        (plannedReceiptId === undefined || id === plannedReceiptId);
+      if (status === "landed") {
+        return {
+          errorType: errorName,
+          code,
+          disposition: "finalized-inclusion-resolved-landed-never-resubmit",
+          safeToResubmit: false,
+          ...(resolvedId ? { receiptId: resolvedId } : (id ? { receiptId: id } : {})),
+          resolution: {
+            status,
+            ...(typeof resolved.blockHash === "string" ? { blockHash: resolved.blockHash } : {}),
+            ...(typeof resolved.blockNumber === "number" ? { blockNumber: resolved.blockNumber } : {})
+          }
+        };
+      }
+      if (status === "not-landed") {
+        return {
+          errorType: errorName,
+          code,
+          disposition: sameId ? "finalized-not-landed-same-id-and-payload-only" : "finalized-not-landed-id-mismatch-review",
+          safeToResubmit: sameId,
+          ...(resolvedId ? { receiptId: resolvedId } : (id ? { receiptId: id } : {})),
+          resolution: {
+            status,
+            ...(typeof resolved.reason === "string" ? { reason: resolved.reason } : {})
+          }
+        };
+      }
+      return {
+        errorType: errorName,
+        code,
+        disposition: "finalized-inclusion-remains-unresolved",
+        safeToResubmit: false,
+        ...(id ? { receiptId: id } : {}),
+        resolution: { status }
+      };
+    } catch (resolutionError: unknown) {
+      return {
+        errorType: errorName,
+        code,
+        disposition: "finalized-inclusion-resolution-failed",
+        safeToResubmit: false,
+        ...(id ? { receiptId: id } : {}),
+        ...(txHash ? { txHash } : {}),
+        resolutionErrorType: isRecord(resolutionError) && typeof resolutionError.name === "string"
+          ? resolutionError.name
+          : "UnknownError"
+      };
+    }
+  }
+
+  if (errorName === "MateriosSubmissionError" && code === "not-landed") {
+    const sameId = id !== undefined && plannedReceiptId !== undefined && id === plannedReceiptId;
+    const allowed = source.safeToResubmit === true && sameId;
+    return {
+      errorType: errorName,
+      code,
+      disposition: allowed ? "not-landed-same-id-and-payload-only" : "not-landed-retry-eligibility-unverified",
+      safeToResubmit: allowed,
+      ...(id ? { receiptId: id } : {}),
+      ...(txHash ? { txHash } : {})
+    };
+  }
+
+  if (errorName === "MateriosSubmissionError" && code === "dispatch") {
+    return {
+      errorType: errorName,
+      code,
+      disposition: "correct-cause-do-not-resubmit-unchanged",
+      safeToResubmit: false,
+      ...(id ? { receiptId: id } : {}),
+      ...(txHash ? { txHash } : {})
+    };
+  }
+
+  return {
+    errorType: errorName,
+    ...(code ? { code } : {}),
+    disposition: "stop-for-manual-review",
+    safeToResubmit: false
+  };
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const submit = args.includes("--submit");
@@ -269,7 +423,7 @@ async function main(): Promise<void> {
     chunkMerkleRoot: plan.chunkMerkleRoot,
     chunkCount: plan.chunkCount,
     byteLength: plan.byteLength,
-    note: "Blob receipt: SDK 0.6.2 submits the uploaded-chunk Merkle root, not the semantic/content hash."
+    note: "Blob receipt: the pinned SDK submits the uploaded-chunk Merkle root, not the semantic/content hash."
   };
 
   if (!submit) {
@@ -298,7 +452,9 @@ async function main(): Promise<void> {
       throw new Error("INVALID_MATERIOS_ANCHOR_TIMEOUT_MS");
     }
 
-    const result = await submitCertifiedReceipt(
+    let result: Awaited<ReturnType<typeof submitCertifiedReceipt>>;
+    try {
+      result = await submitCertifiedReceipt(
       provider,
       {
         contentHash: plan.contentHash,
@@ -322,7 +478,22 @@ async function main(): Promise<void> {
         certificationPollOpts: { timeoutMs: certificationTimeoutMs },
         anchorPollOpts: { timeoutMs: anchorTimeoutMs }
       }
-    );
+      );
+    } catch (submissionError: unknown) {
+      const failure = await dispositionMateriosSubmissionFailure(
+        submissionError,
+        provider,
+        OrynqMateriosSdk,
+        plan.receiptId
+      );
+      console.error(JSON.stringify({
+        mode: "submission-error",
+        plan: planSummary,
+        failure
+      }, null, 2));
+      process.exitCode = 1;
+      return;
+    }
 
     if (result.confirmed !== true) {
       throw new Error("MATERIOS_RECEIPT_STORAGE_CONFIRMATION_MISSING");
