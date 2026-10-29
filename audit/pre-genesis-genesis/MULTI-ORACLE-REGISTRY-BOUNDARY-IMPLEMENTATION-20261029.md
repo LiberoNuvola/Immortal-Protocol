@@ -7,9 +7,9 @@ Normative status: non-normative; no economic or oracle-source policy approved
 
 ## Verified test evidence
 
-The focused suite ran against commit `eb59f109542ea904873127f9747ad1131b59234c`, which includes the new signed-snapshot verifier, provider, source/feed/policy-bound resolver, and all three test files.
+The focused suite passed against commit `bc0a6ac0d3e545524252368af8df4bd23840ded3`, including the signed-snapshot verifier, provider, source/feed/policy-bound resolver, all three test files, and the finalized workflow path filters.
 
-GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40820207176](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820207176).
+GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40820221542](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820221542).
 
 Result:
 - 3 test files passed
@@ -17,7 +17,7 @@ Result:
 - Test command: `npm run test:multi-oracle -- --reporter=verbose`
 - Locked dependency installation via `npm ci --no-audit --no-fund` passed.
 
-A later commit added the same two registry snapshot files to the workflow's path filters and is running separately: [run #40820221542](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820221542). The test result above belongs to the exact SHA identified above, not to every later commit.
+The run's exact tested SHA was `bc0a6ac0d3e545524252368af8df4bd23840ded3`; the later documentation-only update did not alter executable source, tests, the package script, or the workflow.
 
 ## Files and behavior
 
