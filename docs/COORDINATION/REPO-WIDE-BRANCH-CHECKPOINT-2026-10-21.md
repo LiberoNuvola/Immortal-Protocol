@@ -4816,8 +4816,8 @@ This is a coordination/evidence update only. It does not supersede protocol deci
 #### Multi-oracle registry and liveness
 
 - The registry authority decision remains **OPEN**. The current Oracle State singleton is not a multi-oracle registry; a feed catalogue or signed observation does not establish authority to admit/revoke IMMORTAL source/feed/policy tuples.
-- The observational contract is recorded in [MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md](../audit/pre-genesis-genesis/MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md). It separates registry currentness, endpoint availability, observation integrity, measured freshness, optional divergence, and downstream policy evaluation. It defines no universal `healthy` boolean, threshold, aggregation, or fallback.
-- The external-candidate boundary is recorded in [MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md](../audit/pre-genesis-genesis/MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md), including the exact branch source review of the Pyth probe. Pyth observation verification and IMMORTAL source admission remain separate proof obligations.
+- The observational contract is recorded in [MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md](../../audit/pre-genesis-genesis/MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md). It separates registry currentness, endpoint availability, observation integrity, measured freshness, optional divergence, and downstream policy evaluation. It defines no universal `healthy` boolean, threshold, aggregation, or fallback.
+- The external-candidate boundary is recorded in [MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md](../../audit/pre-genesis-genesis/MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md), including the exact branch source review of the Pyth probe. Pyth observation verification and IMMORTAL source admission remain separate proof obligations.
 
 #### Pyth observation verifier — exact source findings
 
