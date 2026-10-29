@@ -78,6 +78,23 @@ function requiredDigest(value, field) {
   return digest
 }
 
+function canonicalSequence(value, field) {
+  const text = requiredString(value, field)
+  if (!/^(0|[1-9][0-9]*)$/.test(text)) {
+    throw new Error(field + ' must be a canonical non-negative decimal sequence')
+  }
+  return BigInt(text).toString()
+}
+
+function revocationKey(value, index) {
+  requiredObject(value, 'registry currentness revokedEntries[' + index + ']')
+  return [
+    requiredString(value.sourceId, 'revokedEntries[' + index + '].sourceId'),
+    requiredString(value.feedId, 'revokedEntries[' + index + '].feedId'),
+    requiredString(value.policyVersion, 'revokedEntries[' + index + '].policyVersion'),
+  ].join('\\u0000')
+}
+
 function normalizeRegistryEntry(entry, index, snapshotPolicyVersion) {
   requiredObject(entry, 'registry.entries[' + index + ']')
   const requiredFields = [
@@ -107,6 +124,7 @@ function verifySignedMultiOracleRegistrySnapshot(envelope, trustedPublicKeyPem) 
     throw new Error('registry snapshot schema is invalid')
   }
   const registryVersion = requiredString(payload.registryVersion, 'registryVersion')
+  const registrySequence = canonicalSequence(payload.registrySequence, 'registrySequence')
   const policyVersion = requiredString(payload.policyVersion, 'policyVersion')
   if (!Array.isArray(payload.entries)) throw new Error('registry entries must be an array')
 
@@ -162,6 +180,7 @@ function verifySignedMultiOracleRegistrySnapshot(envelope, trustedPublicKeyPem) 
   const normalizedPayload = Object.freeze({
     ...payload,
     registryVersion,
+    registrySequence,
     policyVersion,
     entries: Object.freeze(entries),
   })
@@ -182,10 +201,61 @@ function createSignedMultiOracleRegistryProvider({
   trustedPublicKeyPem,
   registryReference,
   trustRootReference,
+  currentnessProvider,
 }) {
   const reference = requiredString(registryReference, 'registryReference')
   const rootReference = requiredString(trustRootReference, 'trustRootReference')
+  if (!currentnessProvider || typeof currentnessProvider.resolveCurrentRegistryState !== 'function') {
+    throw new Error('trusted currentnessProvider.resolveCurrentRegistryState is required')
+  }
   const verified = verifySignedMultiOracleRegistrySnapshot(envelope, trustedPublicKeyPem)
+
+  async function resolveCurrentState(requestedPolicy) {
+    // The provider must read and authenticate the current, rollback-resistant
+    // authoritative state on every call. This adapter intentionally does not
+    // treat a signed but replayed checkpoint as proof of currentness.
+    const state = await currentnessProvider.resolveCurrentRegistryState({
+      policyVersion: requestedPolicy,
+    })
+    requiredObject(state, 'current registry state')
+    if (state.verificationStatus !== 'VERIFIED') {
+      throw new Error('authoritative current registry state must be independently verified')
+    }
+    const authorityReference = requiredString(state.authorityReference, 'currentness.authorityReference')
+    const checkpointReference = requiredString(state.checkpointReference, 'currentness.checkpointReference')
+    const currentPolicyVersion = requiredString(state.policyVersion, 'currentness.policyVersion')
+    if (currentPolicyVersion !== requestedPolicy) {
+      throw new Error('current registry state policy version mismatch')
+    }
+    if (state.registryStatus !== 'CURRENT') {
+      throw new Error('registry snapshot is revoked or not the authoritative current snapshot')
+    }
+    const controlSequence = canonicalSequence(state.controlSequence, 'currentness.controlSequence')
+    const currentRegistrySequence = canonicalSequence(state.registrySequence, 'currentness.registrySequence')
+    const currentRegistryVersion = requiredString(state.registryVersion, 'currentness.registryVersion')
+    const currentRegistryDigest = requiredDigest(state.registryDigest, 'currentness.registryDigest')
+
+    if (BigInt(currentRegistrySequence) > BigInt(verified.payload.registrySequence)) {
+      throw new Error('registry snapshot is stale or rolled back relative to the authoritative current checkpoint')
+    }
+    if (BigInt(currentRegistrySequence) < BigInt(verified.payload.registrySequence)) {
+      throw new Error('registry snapshot sequence is ahead of the authoritative current checkpoint')
+    }
+    if (currentRegistryVersion !== verified.payload.registryVersion ||
+        currentRegistryDigest !== verified.registryDigest) {
+      throw new Error('registry snapshot does not match the authoritative current checkpoint')
+    }
+    if (!Array.isArray(state.revokedEntries)) {
+      throw new Error('currentness.revokedEntries must be an array')
+    }
+
+    return {
+      authorityReference,
+      checkpointReference,
+      controlSequence,
+      revokedKeys: new Set(state.revokedEntries.map(revocationKey)),
+    }
+  }
 
   return Object.freeze({
     async resolveVerifiedRegistrySnapshot({ sourceId, feedId, policyVersion }) {
@@ -195,6 +265,9 @@ function createSignedMultiOracleRegistryProvider({
       if (requestedPolicy !== verified.payload.policyVersion) {
         throw new Error('requested policy version does not match verified registry snapshot')
       }
+
+      // Check authoritative currentness/revocation before returning any source entry.
+      const currentness = await resolveCurrentState(requestedPolicy)
       const matches = verified.payload.entries.filter(entry =>
         entry.sourceId === requestedSource &&
         entry.feedId === requestedFeed &&
@@ -202,6 +275,13 @@ function createSignedMultiOracleRegistryProvider({
       )
       if (matches.length === 0) throw new Error('source/feed/policy entry not found in verified registry snapshot')
       if (matches.length !== 1) throw new Error('source/feed/policy entry is ambiguous in verified registry snapshot')
+      const entry = matches[0]
+      if (currentness.revokedKeys.has([requestedSource, requestedFeed, requestedPolicy].join('\\u0000'))) {
+        throw new Error('source/feed/policy entry is revoked in authoritative currentness state')
+      }
+      if (entry.activationState !== 'ACTIVE') {
+        throw new Error('source is not active in the authoritative current registry snapshot')
+      }
 
       return Object.freeze({
         verificationStatus: verified.verificationStatus,
@@ -209,9 +289,14 @@ function createSignedMultiOracleRegistryProvider({
         registryReference: reference,
         trustRootReference: rootReference,
         registryVersion: verified.payload.registryVersion,
+        registrySequence: verified.payload.registrySequence,
         registryDigest: verified.registryDigest,
         policyVersion: verified.payload.policyVersion,
-        entry: matches[0],
+        currentnessAuthorityReference: currentness.authorityReference,
+        currentnessCheckpointReference: currentness.checkpointReference,
+        currentnessControlSequence: currentness.controlSequence,
+        currentnessVerificationStatus: 'VERIFIED',
+        entry,
       })
     },
   })
