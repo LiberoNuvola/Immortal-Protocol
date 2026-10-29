@@ -4722,3 +4722,30 @@ Findings:
 
 Disposition: documentation-only, non-normative. No quorum, threshold, freshness, source-weight or fallback rule selected. No economic kernel, V3/Reveal, transaction, deployment approval or branch topology changed. Next gate is source-registry/verification-predicate design and ledger-level conformance vectors, with transaction-size and execution-budget measurements before any production integration.
 
+
+
+### 45.51 CURRENT SDK VECTORS + MATERIOS RECOVERY TESTS (2026-10-29)
+
+This entry records concrete work on the existing two branches; it does not promote either branch or close upstream/deployment gates.
+
+#### IMMORTAL SDK / authoritative Issue vector
+
+- Commit [`f2c54ef0da3a4da34569586aa3a88c60731ffa84`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/f2c54ef0da3a4da34569586aa3a88c60731ffa84) fixes the Haskell test's explicit `Prelude` import by bringing `Maybe(Nothing, Just)` into scope. No decision semantics, economic kernel, validator or V3/Reveal code changed.
+- Added `scripts/verify-issue-decision-vectors.mjs` (commit [`55a8fb9bb1f74a226069bc5a4e873424298245e5`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/55a8fb9bb1f74a226069bc5a4e873424298245e5)) and wired it after `issue-decision-tests` in `.github/workflows/immortal-haskell-conformance.yml` (commit [`64041cbb4cfbcf418770d02497c5f71903e6dfd0`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/64041cbb4cfbcf418770d02497c5f71903e6dfd0)). The independent Node consumer checks one fixed Haskell-produced Issue decision vector, recomputes SHA-256 with Char8-compatible ASCII bytes, and validates the action preimage composition.
+- Golden vector pinned by the consumer: pre-state digest `f4023fbcd4876200c00daa2c947b0836aa7b25b81b4113c61d034214b6c4e42d`; candidate-state digest `0a456146eff69a6a2f6c86d473ca95cced7eccd523dbb66124a635c7cece2fa6`; Issue action fingerprint `f075c7d9b87f1f4361cd02f15f67cef55d44e27918516409899b49e89e5b3303`. The consumer also pins the canonical strings and exact `Issue|0|1|preHash|postHash` preimage.
+- Exact run [IMMORTAL Haskell Semantic Conformance #40817809315](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40817809315) was queued on current source `64041cbb4cfbcf418770d02497c5f71903e6dfd0` at the time of this checkpoint. Earlier run [#40816830724](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40816830724) on `f2c54ef` remained in progress and had not yet reported a result for the Issue vector step. **Do not claim this test gate GREEN until the new exact-HEAD run completes.**
+- The current Node consumer proves one checked-in vector agrees across the Haskell producer and independent SHA-256 calculation. It does not prove universal canonicalization, full completed-transaction-body binding, authority truth or pre-sign enforcement for every action.
+
+#### Materios/Orynq bridge on existing Agent C branch
+
+- Current observed `work/b3-materios-provenance-evidence` HEAD: [`366946245f51812da1e4aa6a23754706a2463212`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/366946245f51812da1e4aa6a23754706a2463212).
+- Added typed, sanitized error disposition and no-resubmit handling for `MateriosCertificationError`; `inclusion-unknown` only proceeds through `resolveInclusion` when the installed SDK exports it; `not-landed` is retry-eligible only when `safeToResubmit` is true and the receipt ID exactly matches the deterministic planned ID; `dispatch` and unknown failures fail closed. No automatic retry loop has been added. Top-level fatal logging emits only an allow-listed error type/code and does not print raw messages, causes, signer material or private URLs.
+- Added five deterministic regression tests and made bridge CI run `npm run typecheck` and `npm test` immediately after pinned dependency installation and before contacting Materios. Exact run [Materios Orynq Evidence Bridge #40817432814](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40817432814) has completed the install, TypeScript typecheck, test suite, RPC preflight and exact witness capture successfully; the Rust storage-proof verifier test was still running at checkpoint time. The later Rust proof verification and receipt-plan dry-run are not yet evidenced by that run.
+- The bridge package and lockfile deliberately remain pinned to SDK `0.6.2`. Upstream GitHub source says `0.7.0`, while the public npm search result currently lists the installed package at `0.6.2`; a publishable/installable `0.7.0` tarball has not been confirmed. See [public npm package catalog](https://www.npmjs.com/search?q=keywords%3Aorynq). Do not claim the new resolver path was executed against published 0.7.0.
+- The bridge CI is a read-only proof capture / deterministic test / dry-run path. No live Materios receipt was submitted; no signer was used; independent GRANDPA finality remains outside what this bridge proves.
+
+#### Unchanged blockers and boundaries
+
+- Full transaction-body-to-intent binding remains open: protocol outputs, datums, redeemers, asset values, mint/burn, fees and validity still require approved, versioned per-action predicate profiles plus pre-sign rejection twins. This increment does not close V08/V09.
+- The independent `R1/K_c`, Oracle qualification, current EEV/deployment approval and first PRE-RICH Issue on Cardano Preprod remain separate gates. The stale configured Oracle quote noted in §45.48 has not been refreshed by this work.
+- No new branch, wallet signature, live transaction, deployment approval, V3/Reveal semantic change, economic-kernel change, or Agent A Oracle/EEV implementation change occurred.
