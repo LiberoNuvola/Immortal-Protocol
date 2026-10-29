@@ -106,3 +106,33 @@ The next productive step is to qualify the *observation verifier* independently 
 - No signer set, quorum, freshness/divergence threshold, aggregation rule, fallback, or USD/USDM conversion is selected.
 - No changes to Oracle State, economic consumers, the universal kernel, V3, Reveal, EEV, Issue Admission, or Materios.
 - No transaction signed, submitted, minted, or deployed; no new branch created.
+
+
+## 9. Exact repository follow-up — Pyth observation verifier (2026-10-29)
+
+Read-only inspection was repeated against the existing `work/immortal-green-closure` branch, not the default branch. This is a source-boundary check; no new probe, deployment, or ledger action was performed.
+
+| Path | Current blob SHA | What the source establishes | What it does not establish |
+|---|---|---|---|
+| `scripts/testPythSignedUpdatePreprod.mts` | `0a2c62dab3296b7209bf9812f251254069ee082e` | Uses the pinned Pyth Pro Preprod policy guard, resolves the Pyth State via the Pyth SDK/Koios, fetches a genuine signed ADA/USD update, and records its digest. Default path returns `PREPARED_NOT_SUBMITTED` before loading a wallet or building/signing/submitting a transaction. | No confirmed ledger verification; no source liveness/truth; no USDM conversion; no IMMORTAL registry admission; no MintPolicy binding. |
+| `.github/workflows/pyth-native-ledger-probe.yml` | `5c0a4264ab48878a54b21f18a1188e4126a3a37d` | Manual `workflow_dispatch`; `submit_preprod` defaults to false; uses repository secrets for Lazer access and, only for submission, a dedicated Preprod wallet and Blockfrost. | This workflow has not been dispatched in this review. A successful source review is not a run result. |
+| `scripts/pythPreprodConfig.mts` | `5458fec9cc0dcd1762c4acef68d4cce74215fddf` | Fails closed unless the policy ID matches the documented Pyth Pro Cardano Preprod deployment. | Deployment identity does not prove a live state UTxO, accepted signature, or feed approval. |
+| `poc/aiken-pyth-ada-usd/lib/immortal/ada_usd_probe.ak` | `9f314ddcde19fb7a795dc282bb7a076791a685a9` | Isolated consumer selects exactly one feed ID 16 (ADA/USD), preserves raw price/exponent, and checks both timestamps against the transaction validity upper bound. | It is an isolated probe, not the production oracle path; its one-hour bound is probe behavior, not a new policy decision. |
+| `plutus/PythQuoteCarrierBinding.hs` | `669b99a0e4564504012bda8402b706d0ae7a9a9b` | Checks carrier topology/continuity and extracts a raw quote tuple; documentation explicitly delegates signature verification to the same-transaction Pyth consumer. | Does not independently authenticate the Pyth update and is not wired into production MintPolicy. |
+| `plutus/MintPolicy.hs` | `0d59fc05b4c11873984fffd10014bd46d8470509` | The current inspected source retains the existing Treasury valuation call path through `Economic.totalUsdmValue`. | Does not consume the Pyth quote carrier or candidate conversion. |
+
+### Qualification result
+
+The repository already has the isolated observation-authentication probe and a safe preparation-only path. Do **not** create another parser, quote carrier, synthetic conversion test, or duplicate workflow to make progress. The next distinct evidence gate is an explicitly dispatched, preparation-only run of the existing manual workflow, bound to an exact branch commit, producing `PREPARED_NOT_SUBMITTED` evidence with the Pyth State identity, withdrawal-script hash, payload byte length and digest. That run needs the configured Pyth Lazer credential; this review has neither accessed nor emitted secrets.
+
+A preparation-only artifact would establish successful resolution/fetch for that run only. It would still not prove native-ledger signature acceptance/rejection, feed liveness/truth, IMMORTAL source admission, USD/USDM denomination, or production MintPolicy binding. The `submit_preprod=true` path is a separate wallet-funded transaction action and is not authorized or performed by this audit.
+
+**Operational limitation:** the connected GitHub actions available to this review expose repository/file inspection and workflow-run inspection/rerun functions, but no workflow-dispatch creation action. Therefore the next step cannot honestly be reported as executed from this interface. An authorized operator must manually dispatch the existing workflow with `submit_preprod=false`; no new branch or workflow is needed.
+
+### Non-regression
+
+- No new branch; only the existing `work/immortal-green-closure` branch is in scope.
+- No workflow dispatch, wallet access, signature, transaction, deployment, or on-chain state change.
+- No provider/feed approved for IMMORTAL, no source registry authority selected, and no freshness/aggregation/quorum/fallback policy invented.
+- No USD/USDM parity or conversion assumed; feed 16 remains ADA/USD.
+- No change to Oracle State, `MintPolicy`, economic consumers, V3, Reveal, EEV, Issue Admission, universal-kernel semantics, or Materios.
