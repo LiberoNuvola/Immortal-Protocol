@@ -347,4 +347,70 @@ describe('signed multi-oracle registry snapshot verifier', () => {
     })).rejects.toThrow(/revoked in authoritative currentness state/)
     expect(calls).toBe(2)
   })
+
+  it('rejects a decreasing currentness control sequence within one provider process', async () => {
+    let calls = 0
+    const currentnessProvider = {
+      resolveCurrentRegistryState: async () => ({
+        verificationStatus: 'VERIFIED',
+        authorityReference: 'fixture://authority/current-registry',
+        checkpointReference: 'fixture://checkpoint/current-registry-1',
+        policyVersion: 'policy-test-v1',
+        controlSequence: ++calls === 1 ? '41' : '40',
+        registrySequence: '12',
+        registryVersion: 'registry-test-v1',
+        registryDigest: digestRegistryPayload(payload()),
+        registryStatus: 'CURRENT',
+        revokedEntries: [],
+      }),
+    }
+    const provider = createSignedMultiOracleRegistryProvider({
+      envelope: envelope(),
+      trustedPublicKeyPem,
+      registryReference: 'fixture://signed-registry/snapshot-1',
+      trustRootReference: 'fixture://trust-root/ed25519-key-1',
+      currentnessProvider,
+    })
+    await provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/control sequence rolled back/)
+  })
+
+  it('rejects changed revocation state at the same currentness control sequence', async () => {
+    let calls = 0
+    const currentnessProvider = {
+      resolveCurrentRegistryState: async () => ({
+        verificationStatus: 'VERIFIED',
+        authorityReference: 'fixture://authority/current-registry',
+        checkpointReference: 'fixture://checkpoint/current-registry-1',
+        policyVersion: 'policy-test-v1',
+        controlSequence: '41',
+        registrySequence: '12',
+        registryVersion: 'registry-test-v1',
+        registryDigest: digestRegistryPayload(payload()),
+        registryStatus: 'CURRENT',
+        revokedEntries: ++calls === 1 ? [] : [{
+          sourceId: 'source-alpha',
+          feedId: 'feed-ada-usd',
+          policyVersion: 'policy-test-v1',
+        }],
+      }),
+    }
+    const provider = createSignedMultiOracleRegistryProvider({
+      envelope: envelope(),
+      trustedPublicKeyPem,
+      registryReference: 'fixture://signed-registry/snapshot-1',
+      trustRootReference: 'fixture://trust-root/ed25519-key-1',
+      currentnessProvider,
+    })
+    await provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha', feedId: 'feed-ada-usd', policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/equivocated at the same control sequence/)
+  })
 })
