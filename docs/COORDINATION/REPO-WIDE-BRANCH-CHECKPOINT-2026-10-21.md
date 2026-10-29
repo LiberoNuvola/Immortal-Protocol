@@ -4807,3 +4807,30 @@ The corrective-revision runs remain **in progress**, not green:
 - The earlier [Integration Lab #40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) is **SUCCESS** on `ca2e9c1`; it is useful earlier-revision evidence, not a substitute for the new run on the serializer fix.
 
 **Next gate:** observe the completion of the Haskell and Integration Lab runs before updating the Issue-vector gate. To mark the Haskell gate GREEN, require the Issue Haskell test and `scripts/verify-issue-decision-vectors.mjs` both to pass. To claim a user-owned PRE-RICH ticket, separately require the actual Preprod admission certificate/deployment approval, wallet signature and confirmed on-chain issue transaction. No new wallet signature, live Preprod ticket purchase, or V3/Reveal semantic change is evidenced by this poll.
+
+
+### 45.55 MULTI-ORACLE CURRENTNESS + PYTH OBSERVATION BOUNDARY (2026-10-29)
+
+This is a coordination/evidence update only. It does not supersede protocol decisions, approve a feed, or close a production gate.
+
+#### Multi-oracle registry and liveness
+
+- The registry authority decision remains **OPEN**. The current Oracle State singleton is not a multi-oracle registry; a feed catalogue or signed observation does not establish authority to admit/revoke IMMORTAL source/feed/policy tuples.
+- The observational contract is recorded in [MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md](../audit/pre-genesis-genesis/MULTI-ORACLE-LIVENESS-REPORT-CONTRACT-v0.1-20261029.md). It separates registry currentness, endpoint availability, observation integrity, measured freshness, optional divergence, and downstream policy evaluation. It defines no universal `healthy` boolean, threshold, aggregation, or fallback.
+- The external-candidate boundary is recorded in [MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md](../audit/pre-genesis-genesis/MULTI-ORACLE-EXTERNAL-CANDIDATE-BOUNDARY-AUDIT-20261029.md), including the exact branch source review of the Pyth probe. Pyth observation verification and IMMORTAL source admission remain separate proof obligations.
+
+#### Pyth observation verifier — exact source findings
+
+- `scripts/testPythSignedUpdatePreprod.mts`, blob `0a2c62dab3296b7209bf9812f251254069ee082e`, fetches a genuine signed Pyth Pro/Lazer ADA/USD update and resolves the Pyth State through SDK/Koios. With the default no-submit mode it records `PREPARED_NOT_SUBMITTED` before wallet loading or transaction construction/signing/submission.
+- `.github/workflows/pyth-native-ledger-probe.yml`, blob `5c0a4264ab48878a54b21f18a1188e4126a3a37d`, is manual-only; `submit_preprod` defaults false. This review did not dispatch it, access secrets, or submit a transaction. The connected GitHub actions interface has no workflow-dispatch creation action, so do not claim a live preparation artifact.
+- `poc/aiken-pyth-ada-usd/lib/immortal/ada_usd_probe.ak` is isolated and uses feed ID 16 (ADA/USD), retaining raw price/exponent. No USD/USDM conversion or parity is implied.
+- `plutus/PythQuoteCarrierBinding.hs` extracts a bound raw quote tuple but is not wired into production MintPolicy. `plutus/MintPolicy.hs` continues to value Treasury through `Economic.totalUsdmValue` and the legacy Oracle State path.
+- A preparation-only run, when manually executed with the configured Pyth Lazer credential, would evidence successful state resolution and payload retrieval for that run only. It would not prove ledger signature acceptance/rejection, feed truth/liveness, IMMORTAL registry authority, USD/USDM denomination, or production quote-to-MintPolicy binding. The `submit_preprod=true` wallet-funded ledger path is a separate action and remains unperformed.
+
+#### Routing / non-regression
+
+1. Do not add a second parser, quote carrier, synthetic conversion test, or duplicate workflow. The next distinct external evidence step is an authorized manual dispatch of the existing workflow with `submit_preprod=false`.
+2. Keep the source-admission authority gate open until an independently verifiable update-authorization predicate is established.
+3. No signer set, quorum, aggregation, fallback, threshold, USD/USDM conversion, or provider/feed approval is selected.
+4. No changes to V3, Reveal, EEV, Issue Admission, economic consumers, universal-kernel semantics, or Materios; no new branch or on-chain action.
+
