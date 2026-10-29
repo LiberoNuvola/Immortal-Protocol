@@ -7,13 +7,13 @@ Normative status: non-normative; no economic or oracle-source policy approved
 
 ## Verified test evidence
 
-The focused suite passed against commit `7a4f1939be7cdba594e883f4d33102ba4591dd01`, including signed-snapshot verification, exact source/feed/policy resolution, currentness/checkpoint matching, revocation checks, and process-local anti-rollback checks.
+The focused suite passed against commit `51f372d12e8eaf671e6042bc9c70d3b8faa2e327`, including signed-snapshot verification, exact source/feed/policy resolution, currentness/checkpoint matching, revocation checks, terminal revoked-digest rejection, sequence rollback and same-sequence equivocation checks.
 
-GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40823474832](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823474832).
+GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40823847938](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823847938).
 
 Result:
 - 3 test files passed
-- 50 tests passed
+- 53 tests passed
 - Test command: `npm run test:multi-oracle -- --reporter=verbose`
 - Locked dependency installation via `npm ci --no-audit --no-fund` passed.
 
@@ -23,9 +23,11 @@ Result:
 - `relayer/multiOracleRegistrySnapshot.js`: verifies an `IMMORTAL-MULTI-ORACLE-REGISTRY-V1` snapshot using canonical JSON, SHA-256 digest checking, and an Ed25519 signature against a caller-supplied public key. Snapshot payloads now include a canonical decimal `registrySequence`.
 - The signed snapshot provider requires an injected `currentnessProvider.resolveCurrentRegistryState`. On every source lookup it checks that the independently verified currentness result has the same policy version, registry sequence, registry version and digest as the signed snapshot; requires the registry status to be `CURRENT`; and checks the current revocation overlay before returning an entry.
 - Source/feed/policy resolution is exact. Wrong feeds, ambiguous entries, inactive entries and revoked tuples fail closed; no alternate feed or legacy quote is selected.
-- A process-local high-water mark rejects a decreasing currentness control sequence. Different state at the same control sequence is rejected as equivocation. These checks are defense-in-depth and are not durable across process restarts.
+- A process-local high-water mark rejects a decreasing currentness control sequence or registry sequence, and rejects different registry version/digest data at the same registry sequence. Different currentness state at the same control sequence is rejected as equivocation. A newer authoritative checkpoint is recorded before a stale candidate snapshot is rejected, so a later read cannot silently roll back within the same provider process.
+- Source/feed/policy revocation tombstones are monotonic within a policy version: once observed as revoked, a tuple cannot silently disappear from later overlays. An explicitly revoked registry digest is terminal for that provider instance. These local guards are defense-in-depth and are not durable across process restarts.
 - `relayer/multiOracleRegistryBoundary.js` returns the currentness authority/checkpoint references and sequence together with the registry version, sequence, digest, signature scheme and exact source identity, so this evidence remains bound in the normalized result.
-- `relayer/multiOracleObservation.test.js`, `relayer/multiOracleRegistryBoundary.test.js`, `relayer/multiOracleRegistrySnapshot.test.js`: 50 focused tests, including tampered snapshots, invalid signatures, wrong trust key, duplicate entries, wrong policy/feed, stale/ahead sequence, digest mismatch, revoked entries, unverified currentness, sequence rollback, same-sequence equivocation and read-per-lookup revocation changes.
+- `relayer/multiOracleObservation.test.js`, `relayer/multiOracleRegistryBoundary.test.js`, `relayer/multiOracleRegistrySnapshot.test.js`: 53 focused tests, including tampered snapshots, invalid signatures, wrong trust key, duplicate entries, wrong policy/feed, stale/ahead sequence, checkpoint digest mismatch, revoked entries and registry digests, unverified currentness, control/registry sequence rollback, same-sequence equivocation, revocation tombstone removal, and currentness read on every lookup.
+- `audit/pre-genesis-genesis/MULTI-ORACLE-REGISTRY-CURRENTNESS-CONTRACT-v0.1-20261029.md`: describes the provider interface, monotonicity requirements, revocation rules and open authority decision.
 - `.github/workflows/multi-oracle-conformance.yml`: dedicated conformance workflow.
 - `package.json`: exposes `test:multi-oracle`.
 
@@ -60,4 +62,4 @@ No production relayer/consumer is wired to this provider. No Plutus consumer, de
 5. Implement source-specific adapters and validate source publication timestamps, pair direction, integer scale and evidence binding.
 6. Keep aggregation, quorum, divergence/freshness policy, USD/USDM composition, and production consumer migration separate until explicitly approved.
 
-The 50 passing tests establish the behavior of the technical adapter and its fail-closed boundaries for the tested revision. They do not qualify an oracle source for PRE-RICH or clear the existing Issue Admission blocker.
+The 53 passing tests establish the behavior of the technical adapter and its fail-closed boundaries for the tested revision. They do not qualify an oracle source for PRE-RICH or clear the existing Issue Admission blocker.
