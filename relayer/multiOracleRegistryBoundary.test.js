@@ -39,7 +39,12 @@ function resolution(overrides = {}) {
     signatureScheme: 'Ed25519',
     registryVersion: 'registry-v1',
     registryDigest: 'a'.repeat(64),
+    registrySequence: '12',
     policyVersion: 'policy-test-v1',
+    currentnessAuthorityReference: 'fixture://authority/current-registry',
+    currentnessCheckpointReference: 'fixture://checkpoint/current-registry-1',
+    currentnessControlSequence: '41',
+    currentnessVerificationStatus: 'VERIFIED',
     entry: registryEntry,
     ...overrides,
   }
@@ -61,6 +66,11 @@ describe('multi-oracle registry provider boundary', () => {
     })
     expect(result.observation.rawPrice).toBe('69508700')
     expect(result.registryBinding.registryDigest).toBe('a'.repeat(64))
+    expect(result.registryBinding.registrySequence).toBe('12')
+    expect(result.registryBinding.currentnessAuthorityReference).toBe('fixture://authority/current-registry')
+    expect(result.registryBinding.currentnessCheckpointReference).toBe('fixture://checkpoint/current-registry-1')
+    expect(result.registryBinding.currentnessControlSequence).toBe('41')
+    expect(result.registryBinding.currentnessVerificationStatus).toBe('VERIFIED')
     expect(result.registryBinding.trustRootReference).toBe('trust-root:test-fixture')
     expect(result.registryBinding.signatureScheme).toBe('Ed25519')
     expect(result.registryBinding.verificationStatus).toBe('VERIFIED')
@@ -85,6 +95,27 @@ describe('multi-oracle registry provider boundary', () => {
       provider(resolution({ policyVersion: 'policy-other-v1' })),
       observation(),
     )).rejects.toThrow(/policy version mismatch/)
+  })
+
+  it('rejects a currentness response not independently verified by the provider', async () => {
+    await expect(normalizeUsingRegistryProvider(
+      provider(resolution({ currentnessVerificationStatus: 'UNVERIFIED' })),
+      observation(),
+    )).rejects.toThrow(/currentness state must be independently verified/)
+  })
+
+  it('rejects non-canonical registry sequence values', async () => {
+    await expect(normalizeUsingRegistryProvider(
+      provider(resolution({ registrySequence: '0012' })),
+      observation(),
+    )).rejects.toThrow(/registrySequence must be a canonical/)
+  })
+
+  it('rejects malformed currentness checkpoint sequence values', async () => {
+    await expect(normalizeUsingRegistryProvider(
+      provider(resolution({ currentnessControlSequence: '4.1' })),
+      observation(),
+    )).rejects.toThrow(/currentnessControlSequence must be a canonical/)
   })
 
   it('rejects malformed registry digests', async () => {
