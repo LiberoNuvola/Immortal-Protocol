@@ -4790,3 +4790,20 @@ Source review identified the cause in `PRE-RICH/onchain/PreRichIssueDecision.hs`
 - Earlier Integration Lab [#40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) completed **SUCCESS** on `ca2e9c1`, but that does not substitute for the newer exact-revision lab.
 
 The patch is confined to the application-owned canonical serializer and its conformance fixture. It does not alter economic admission rules, state transitions, validator logic, V3/Reveal semantics, EEV/Oracle logic, or branch topology. Do not mark the Issue fingerprint gate GREEN until the new Haskell test and Node consumer have both passed on an observed run.
+
+
+### 45.54 ISSUE FIX FOLLOW-UP POLL + CURRENT CI LIMITS (2026-10-29 05:51 UTC)
+
+The prior Haskell run [#40820152084](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152084) failed at the first assertion, `canonical Jackpot inactive serialization`, before it emitted any ISSUE_VECTOR values. This run was on `ca2e9c15`, before the serializer correction. The observed corrective commits are:
+
+- [`304bb53f6b49177aa029c4b806e1a0088fda60b1`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/304bb53f6b49177aa029c4b806e1a0088fda60b1) removes the trailing class separator from `canonicalV3State`, avoiding the extra separator when the outer serializer joins the control state.
+- [`1f58942fa486ecaafdae5993ec5259b19b042fb2`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/1f58942fa486ecaafdae5993ec5259b19b042fb2) corrects the multi-class golden string to include the zero Jackpot threshold field.
+
+As of this poll, branch `work/immortal-green-closure` HEAD is [`7f44012546b34cecc6923cebea25d0543eb47b46`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/7f44012546b34cecc6923cebea25d0543eb47b46). The commits after `1f58942` observed in the branch history concern Oracle currentness, anti-rollback, revocation, tests, and documentation; no later Issue serializer/test edit was observed. Preserve those concurrent Agent A changes.
+
+The corrective-revision runs remain **in progress**, not green:
+- [Haskell Semantic Conformance #40823466348](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823466348), SHA `1f58942`: the last observed active step was “Beacon commitment cross-language conformance”; the Issue decision serialization/admission step was still pending. The job-log endpoint returned `BlobNotFound` while the run was active, so no result for the Issue vector or independent Node consumer is available yet.
+- [Cardano Integration Lab #40823466339](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823466339), same SHA: setup, Ogmios qualification, V3 Reveal reference-script publication, FundTreasury canonical Oracle valuation, and the TicketIssued 500x solvency boundary trace had passed; native Yaci UTxO decoder conformance was still active. Its job-log endpoint likewise had no published log blob during this poll.
+- The earlier [Integration Lab #40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) is **SUCCESS** on `ca2e9c1`; it is useful earlier-revision evidence, not a substitute for the new run on the serializer fix.
+
+**Next gate:** observe the completion of the Haskell and Integration Lab runs before updating the Issue-vector gate. To mark the Haskell gate GREEN, require the Issue Haskell test and `scripts/verify-issue-decision-vectors.mjs` both to pass. To claim a user-owned PRE-RICH ticket, separately require the actual Preprod admission certificate/deployment approval, wallet signature and confirmed on-chain issue transaction. No new wallet signature, live Preprod ticket purchase, or V3/Reveal semantic change is evidenced by this poll.
