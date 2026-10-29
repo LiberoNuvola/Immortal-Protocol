@@ -212,6 +212,7 @@ function createSignedMultiOracleRegistryProvider({
   // Process-local high-water mark: defense-in-depth only. Durable rollback
   // protection must be supplied by the external authoritative currentness provider.
   const lastSeenCurrentness = new Map()
+  const seenRevocationsByPolicy = new Map()
 
   async function resolveCurrentState(requestedPolicy) {
     // The provider must read and authenticate the current, rollback-resistant
@@ -274,6 +275,15 @@ function createSignedMultiOracleRegistryProvider({
       registryStatus: state.registryStatus,
       revokedEntries: normalizedRevokedEntries,
     })
+    const revokedKeys = new Set(normalizedRevokedEntries.map(value =>
+      [value.sourceId, value.feedId, value.policyVersion].join('\\u0000'),
+    ))
+    const previouslyRevokedKeys = seenRevocationsByPolicy.get(requestedPolicy) || new Set()
+    for (const revokedKey of previouslyRevokedKeys) {
+      if (!revokedKeys.has(revokedKey)) {
+        throw new Error('revocation tombstone disappeared within the same policy version')
+      }
+    }
     const previous = lastSeenCurrentness.get(requestedPolicy)
     if (previous && BigInt(controlSequence) < BigInt(previous.controlSequence)) {
       throw new Error('authoritative currentness control sequence rolled back within this process')
@@ -285,14 +295,16 @@ function createSignedMultiOracleRegistryProvider({
     if (!previous || BigInt(controlSequence) > BigInt(previous.controlSequence)) {
       lastSeenCurrentness.set(requestedPolicy, { controlSequence, currentnessDigest })
     }
+    seenRevocationsByPolicy.set(requestedPolicy, new Set([
+      ...previouslyRevokedKeys,
+      ...revokedKeys,
+    ]))
 
     return {
       authorityReference,
       checkpointReference,
       controlSequence,
-      revokedKeys: new Set(normalizedRevokedEntries.map(value =>
-        [value.sourceId, value.feedId, value.policyVersion].join('\\u0000'),
-      )),
+      revokedKeys,
     }
   }
 
