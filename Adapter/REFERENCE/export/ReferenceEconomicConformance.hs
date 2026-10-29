@@ -10,6 +10,7 @@ import Data.Aeson
   , (.:?)
   )
 import qualified Data.ByteString.Lazy as BL
+import System.Directory (doesFileExist)
 import System.Exit (exitFailure)
 import UniversalEconomicKernel
 import UniversalEconomicState
@@ -107,9 +108,18 @@ stateFor pc decomposition =
         (decompositionMandatoryFutureCosts d)
         (decompositionAdditionalProtectedCapital d)
 
+findVectorFile :: IO FilePath
+findVectorFile = go ["Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json", "../Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json"]
+  where
+    go [] = pure "Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json"
+    go (candidate : rest) = do
+      exists <- doesFileExist candidate
+      if exists then pure candidate else go rest
+
 main :: IO ()
 main = do
-  decoded <- eitherDecode <$> BL.readFile "Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json"
+  vectorFile <- findVectorFile
+  decoded <- eitherDecode <$> BL.readFile vectorFile
   file <-
     case decoded of
       Left err -> putStrLn ("REFERENCE_ERROR|" ++ err) >> exitFailure
