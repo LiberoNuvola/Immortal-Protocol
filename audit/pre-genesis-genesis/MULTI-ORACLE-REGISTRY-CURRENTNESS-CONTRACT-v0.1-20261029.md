@@ -89,17 +89,23 @@ No alternate feed, legacy quote, or older snapshot may be substituted silently.
 
 ## 5. Sequence rollback and equivocation
 
-The implementation maintains a process-local high-water mark per policy:
+The implementation maintains process-local high-water marks per policy:
 
 - lower `controlSequence` than previously accepted: reject;
+- lower `registrySequence` than previously observed, even if `controlSequence` increased: reject;
+- same `registrySequence` paired with a different `registryVersion` or `registryDigest`: reject as registry-sequence equivocation;
 - same `controlSequence` but changed currentness state: reject as equivocation;
+- once a source/feed/policy tuple is observed in the revocation overlay, its tombstone must remain in subsequent overlays under the same policy version;
+- once the bound registry digest is explicitly marked `REVOKED`, that digest is terminal for this provider instance;
 - higher `controlSequence`: accept only if every currentness and source check also passes.
+
+The currentness sequence and revocation high-water marks are recorded before rejecting a candidate snapshot as stale. Otherwise, seeing a newer checkpoint and then a rolled-back checkpoint could be accepted as the first *successful* read.
 
 The fingerprint covers authority/checkpoint references, policy, control sequence, current registry sequence/version/digest, registry status and the canonical sorted revocation set.
 
-This in-process guard is defence-in-depth only. It resets on restart and is not an authoritative monotonic store. Durable anti-rollback must come from the currentness provider's authenticated source or a separately persisted/consensus-backed checkpoint with an approved trust model.
+These in-process guards are defence-in-depth only. They reset on restart and are not an authoritative monotonic store. Durable anti-rollback must come from the currentness provider's authenticated source or a separately persisted/consensus-backed checkpoint with an approved trust model.
 
-The registry sequence advances when the registry snapshot changes. The control sequence must also advance when currentness/revocation state changes even if the registry snapshot itself stays the same. A changed revocation set at an unchanged control sequence is equivocation.
+The registry sequence advances when the registry snapshot changes. The control sequence must also advance when currentness/revocation state changes even if the registry snapshot itself stays the same. A changed revocation set at an unchanged control sequence is equivocation. Revocation tombstones do not disappear within the same policy version; a reactivation attempt requires a new governed policy/version and an independently verified currentness state.
 
 ## 6. Revocation semantics
 
@@ -121,7 +127,7 @@ This is an evaluation order, not approval of a specific chain, contract, source,
 
 ## 8. Implemented coverage and remaining proof gap
 
-The focused GitHub Actions run [#40823474832](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823474832) passed 3 files / 50 tests, including rejection of stale/ahead snapshots, checkpoint digest mismatch, revoked source/feed/policy tuples, unverified currentness, local sequence rollback and same-sequence equivocation.
+The focused GitHub Actions run [#40823847938](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823847938) passed 3 files / 53 tests, including rejection of stale/ahead snapshots, checkpoint digest mismatch, revoked source/feed/policy tuples and registry digests, unverified currentness, control/registry sequence rollback, same-sequence equivocation, and disappearing revocation tombstones.
 
 These tests verify boundary logic with generated fixtures. They do **not** prove that a real currentness provider exists, that the provider's response is cryptographically authentic, or that its monotonic state survives restart.
 
