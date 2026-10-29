@@ -90,7 +90,7 @@ main = do
             , TicketClassState 1 2 3 4 5 False
             ]
         })
-      == "0|0|0|0|0|0|0|0|0|0|1|1|1|2|3|4|5|0|0|0|0|inactive|0")
+      == "0|0|0|0|0|0|0|0|0|0|1|1|1|2|3|4|5|0|0|0|0|0|inactive|0")
     "canonical serialization preserves multiple class order and saleability"
 
   case produceIssueDecision input of
