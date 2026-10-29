@@ -32,6 +32,7 @@ function payload(overrides = {}) {
   return {
     schema: 'IMMORTAL-MULTI-ORACLE-REGISTRY-V1',
     registryVersion: 'registry-test-v1',
+    registrySequence: '12',
     policyVersion: 'policy-test-v1',
     entries: [{ ...registryEntry }],
     ...overrides,
@@ -64,12 +65,34 @@ function observation(overrides = {}) {
   return { ...fields, payloadDigest: digestPayload(fields) }
 }
 
-function registryProvider(envelopeValue = envelope(), publicKeyPem = trustedPublicKeyPem) {
+function registryProvider(
+  envelopeValue = envelope(),
+  publicKeyPem = trustedPublicKeyPem,
+  currentnessOverrides = {},
+) {
+  const { currentSnapshotEnvelope = envelopeValue, state: stateOverrides = {} } = currentnessOverrides
+  const currentPayload = currentSnapshotEnvelope.payload
+  const currentnessProvider = {
+    resolveCurrentRegistryState: async ({ policyVersion }) => ({
+      verificationStatus: 'VERIFIED',
+      authorityReference: 'fixture://authority/current-registry',
+      checkpointReference: 'fixture://checkpoint/current-registry-1',
+      policyVersion: currentPayload.policyVersion ?? policyVersion,
+      controlSequence: '41',
+      registrySequence: currentPayload.registrySequence,
+      registryVersion: currentPayload.registryVersion,
+      registryDigest: digestRegistryPayload(currentPayload),
+      registryStatus: 'CURRENT',
+      revokedEntries: [],
+      ...stateOverrides,
+    }),
+  }
   return createSignedMultiOracleRegistryProvider({
     envelope: envelopeValue,
     trustedPublicKeyPem: publicKeyPem,
     registryReference: 'fixture://signed-registry/snapshot-1',
     trustRootReference: 'fixture://trust-root/ed25519-key-1',
+    currentnessProvider,
   })
 }
 
@@ -184,5 +207,144 @@ describe('signed multi-oracle registry snapshot verifier', () => {
     const provider = registryProvider(envelope(inactivePayload))
     await expect(normalizeUsingRegistryProvider(provider, observation()))
       .rejects.toThrow(/not active/)
+  })
+
+  it('requires an injected authoritative currentness provider instead of trusting signature alone', () => {
+    expect(() => createSignedMultiOracleRegistryProvider({
+      envelope: envelope(),
+      trustedPublicKeyPem,
+      registryReference: 'fixture://signed-registry/snapshot-1',
+      trustRootReference: 'fixture://trust-root/ed25519-key-1',
+    })).toThrow(/currentnessProvider/)
+  })
+
+  it('rejects an older signed snapshot when the authoritative checkpoint has advanced', async () => {
+    const staleSnapshot = envelope(payload({ registrySequence: '11', registryVersion: 'registry-test-v0' }))
+    const currentSnapshot = envelope(payload({ registrySequence: '12', registryVersion: 'registry-test-v1' }))
+    const provider = registryProvider(staleSnapshot, trustedPublicKeyPem, {
+      currentSnapshotEnvelope: currentSnapshot,
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/stale or rolled back/)
+  })
+
+  it('rejects a snapshot ahead of the authoritative checkpoint', async () => {
+    const futureSnapshot = envelope(payload({ registrySequence: '13', registryVersion: 'registry-test-v2' }))
+    const currentSnapshot = envelope(payload({ registrySequence: '12', registryVersion: 'registry-test-v1' }))
+    const provider = registryProvider(futureSnapshot, trustedPublicKeyPem, {
+      currentSnapshotEnvelope: currentSnapshot,
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/ahead of the authoritative current checkpoint/)
+  })
+
+  it('rejects a matching sequence with a different current checkpoint digest', async () => {
+    const provider = registryProvider(envelope(), trustedPublicKeyPem, {
+      state: { registryDigest: 'f'.repeat(64) },
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/does not match the authoritative current checkpoint/)
+  })
+
+  it('rejects a registry state marked revoked or not current', async () => {
+    const provider = registryProvider(envelope(), trustedPublicKeyPem, {
+      state: { registryStatus: 'REVOKED' },
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/revoked or not the authoritative current snapshot/)
+  })
+
+  it('rejects a source/feed/policy tuple revoked in the currentness overlay', async () => {
+    const provider = registryProvider(envelope(), trustedPublicKeyPem, {
+      state: {
+        revokedEntries: [{
+          sourceId: 'source-alpha',
+          feedId: 'feed-ada-usd',
+          policyVersion: 'policy-test-v1',
+        }],
+      },
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/revoked in authoritative currentness state/)
+  })
+
+  it('rejects an unauthenticated currentness response', async () => {
+    const provider = registryProvider(envelope(), trustedPublicKeyPem, {
+      state: { verificationStatus: 'UNVERIFIED' },
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/current registry state must be independently verified/)
+  })
+
+  it('rejects malformed checkpoint control sequence', async () => {
+    const provider = registryProvider(envelope(), trustedPublicKeyPem, {
+      state: { controlSequence: '0041' },
+    })
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/canonical non-negative decimal sequence/)
+  })
+
+  it('reads currentness state on each source resolution instead of caching revocations', async () => {
+    let calls = 0
+    const currentnessProvider = {
+      resolveCurrentRegistryState: async () => {
+        calls += 1
+        return {
+          verificationStatus: 'VERIFIED',
+          authorityReference: 'fixture://authority/current-registry',
+          checkpointReference: 'fixture://checkpoint/current-registry-1',
+          policyVersion: 'policy-test-v1',
+          controlSequence: String(calls),
+          registrySequence: '12',
+          registryVersion: 'registry-test-v1',
+          registryDigest: digestRegistryPayload(payload()),
+          registryStatus: 'CURRENT',
+          revokedEntries: calls === 1 ? [] : [{
+            sourceId: 'source-alpha',
+            feedId: 'feed-ada-usd',
+            policyVersion: 'policy-test-v1',
+          }],
+        }
+      },
+    }
+    const provider = createSignedMultiOracleRegistryProvider({
+      envelope: envelope(),
+      trustedPublicKeyPem,
+      registryReference: 'fixture://signed-registry/snapshot-1',
+      trustRootReference: 'fixture://trust-root/ed25519-key-1',
+      currentnessProvider,
+    })
+    expect((await provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).verificationStatus).toBe('VERIFIED')
+    await expect(provider.resolveVerifiedRegistrySnapshot({
+      sourceId: 'source-alpha',
+      feedId: 'feed-ada-usd',
+      policyVersion: 'policy-test-v1',
+    })).rejects.toThrow(/revoked in authoritative currentness state/)
+    expect(calls).toBe(2)
   })
 })
