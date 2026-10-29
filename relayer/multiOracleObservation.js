@@ -94,6 +94,9 @@ function normalizeOracleObservation(registryEntry, input) {
   if (timestampUnit !== requiredString(registryEntry.timestampUnit, 'registry.timestampUnit')) {
     throw new Error('timestamp unit does not match registry')
   }
+  if (policyVersion !== requiredString(registryEntry.policyVersion, 'registry.policyVersion')) {
+    throw new Error('policyVersion does not match registry')
+  }
   if (BigInt(rawPrice) < 0n) throw new Error('rawPrice must be non-negative')
   if (input.payloadDigest === undefined) throw new Error('payloadDigest is required')
   const supplied = requiredString(input.payloadDigest, 'payloadDigest').toLowerCase()
