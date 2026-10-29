@@ -4751,3 +4751,27 @@ This entry records concrete work on the existing two branches; it does not promo
 - Full transaction-body-to-intent binding remains open: protocol outputs, datums, redeemers, asset values, mint/burn, fees and validity still require approved, versioned per-action predicate profiles plus pre-sign rejection twins. This increment does not close V08/V09.
 - The independent `R1/K_c`, Oracle qualification, current EEV/deployment approval and first PRE-RICH Issue on Cardano Preprod remain separate gates. The stale configured Oracle quote noted in §45.48 has not been refreshed by this work.
 - No new branch, wallet signature, live transaction, deployment approval, V3/Reveal semantic change, economic-kernel change, or Agent A Oracle/EEV implementation change occurred.
+
+
+### 45.52 ISSUE VECTOR FOLLOW-UP + LEDGER LAB RESULT (2026-10-29)
+
+#### Issue test compile correction
+
+The exact run [IMMORTAL Haskell Semantic Conformance #40817809315](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40817809315) completed FAILURE on `64041cbb4cfbcf418770d02497c5f71903e6dfd0`. The first correction imported `Maybe (Nothing, Just)`; the next compiler failure showed that the test's explicit `PreRichIssueDecision` import still omitted the `IssueDecision` record selectors used by the vector checks. Commit [`ca2e9c15eaaf64751091a28f9f563f1b5a1dca13`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/ca2e9c15eaaf64751091a28f9f563f1b5a1dca13) now imports `IssueDecision (..)`. This is test-import scope only; no producer, economic, validator, V3 or Reveal logic changed.
+
+The golden hashes were independently recomputed using SHA-256 over the exact ASCII/Char8 preimages and match the pinned values in §45.51:
+- pre-state: `f4023fbcd4876200c00daa2c947b0836aa7b25b81b4113c61d034214b6c4e42d`;
+- candidate state: `0a456146eff69a6a2f6c86d473ca95cced7eccd523dbb66124a635c7cece2fa6`;
+- Issue action fingerprint: `f075c7d9b87f1f4361cd02f15f67cef55d44e27918516409899b49e89e5b3303`.
+
+Run [#40820152084](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152084) was in progress on SHA `ca2e9c15eaaf64751091a28f9f563f1b5a1dca13` at last poll, still in Haskell setup before the Issue vector step. Do not call the Issue vector gate GREEN until this step and the independent Node consumer finish successfully.
+
+The branch advanced concurrently to `bc0a6ac0d3e545524252368af8df4bd23840ded3` through five later Agent A Oracle registry/test/workflow commits (`60528a9`, `6cde82d`, `8016019`, `eb59f10`, `bc0a6ac`). The Issue test fix is an ancestor of the current tip; those intervening commits change Oracle/relayer scope rather than the Issue vector test. Preserve Agent A's changes and do not overwrite that work.
+
+#### Cardano Integration Lab
+
+[IMMORTAL Cardano Integration Lab #40816830711](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40816830711) completed **SUCCESS** on SHA `f2c54ef0da3a4da34569586aa3a88c60731ffa84`. Its job passed the Ogmios evaluator qualification, real Cardano ledger smoke transaction, active Aiken V3 economic Reveal transition trace, FundTreasury canonical Oracle valuation trace, and native Yaci UTxO decoder conformance. Treat this as Integration Lab evidence for that SHA, not as evidence that a user-owned PRE-RICH ticket was bought on Preprod.
+
+A newer [Integration Lab #40820152076](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820152076) was in progress on `ca2e9c1` at the last poll. The first Lab run's success does not replace the pending run's result if exact-SHA coverage is required.
+
+**Disposition:** keep SDK Issue fingerprint/canonical-body binding, Agent A's Oracle registry work, R1/K_c and EEV/deployment approval as distinct gates. No branch topology changes, live wallet signature, Preprod ticket purchase, or V3/Reveal semantics change occurred in this increment.
