@@ -104,9 +104,10 @@ describe('multi-oracle structural observation boundary', () => {
   })
 
   it('rejects unsafe JavaScript numeric inputs rather than silently rounding', () => {
-    expect(() => normalizeOracleObservation(
-      registry, input({ rawPrice: Number.MAX_SAFE_INTEGER + 1 }),
-    )).toThrow(/safe integer or decimal string/)
+    const candidate = input()
+    candidate.rawPrice = Number.MAX_SAFE_INTEGER + 1
+    expect(() => normalizeOracleObservation(registry, candidate))
+      .toThrow(/safe integer or decimal string/)
   })
 
   it('rejects a payload digest that no longer matches the observation', () => {
