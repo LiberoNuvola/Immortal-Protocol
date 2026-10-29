@@ -27,6 +27,6 @@
     "test:genesis-mint-policy-remote": "node --import=tsx ./scripts/testGenesisCarrierMintPolicyRemote.mts",
     "issue-authority-server": "node --import=tsx relayer/issueAuthorityServer.js",
     "test:multi-oracle-observation": "vitest run relayer/multiOracleObservation.test.js",
-    "test:multi-oracle": "vitest run relayer/multiOracleObservation.test.js relayer/multiOracleRegistryBoundary.test.js"
+    "test:multi-oracle": "vitest run relayer/multiOracleObservation.test.js relayer/multiOracleRegistryBoundary.test.js relayer/multiOracleRegistrySnapshot.test.js"
   }
 }
