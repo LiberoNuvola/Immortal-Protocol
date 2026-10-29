@@ -277,12 +277,26 @@ function createSignedMultiOracleRegistryProvider({
     if (previous && BigInt(controlSequence) < BigInt(previous.controlSequence)) {
       throw new Error('authoritative currentness control sequence rolled back within this process')
     }
+    if (previous && BigInt(currentRegistrySequence) < BigInt(previous.registrySequence)) {
+      throw new Error('authoritative registry sequence rolled back within this process')
+    }
+    if (previous && currentRegistrySequence === previous.registrySequence &&
+        (currentRegistryVersion !== previous.registryVersion ||
+         currentRegistryDigest !== previous.registryDigest)) {
+      throw new Error('authoritative registry sequence equivocated across registry version/digest')
+    }
     if (previous && controlSequence === previous.controlSequence &&
         currentnessDigest !== previous.currentnessDigest) {
       throw new Error('authoritative currentness state equivocated at the same control sequence')
     }
     if (!previous || BigInt(controlSequence) > BigInt(previous.controlSequence)) {
-      lastSeenCurrentness.set(requestedPolicy, { controlSequence, currentnessDigest })
+      lastSeenCurrentness.set(requestedPolicy, {
+        controlSequence,
+        currentnessDigest,
+        registrySequence: currentRegistrySequence,
+        registryVersion: currentRegistryVersion,
+        registryDigest: currentRegistryDigest,
+      })
     }
     seenRevocationsByPolicy.set(requestedPolicy, new Set([
       ...previouslyRevokedKeys,
