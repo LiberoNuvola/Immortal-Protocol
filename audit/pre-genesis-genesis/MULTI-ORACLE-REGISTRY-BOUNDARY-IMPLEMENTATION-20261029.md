@@ -1,52 +1,63 @@
 # Multi-Oracle Registry Boundary — implementation record
 
-Status: **SIGNED-SNAPSHOT VERIFICATION AND SOURCE/FEED RESOLUTION IMPLEMENTED; TARGETED TESTS PASS; NOT PRODUCTION-WIRED**
+Status: **SIGNED SNAPSHOT + CURRENTNESS/REVOCATION BOUNDARY IMPLEMENTED; TARGETED TESTS PASS; NOT PRODUCTION-WIRED**
 Date: 2026-10-29
 Branch: `work/immortal-green-closure`
 Normative status: non-normative; no economic or oracle-source policy approved
 
 ## Verified test evidence
 
-The focused suite passed against commit `bc0a6ac0d3e545524252368af8df4bd23840ded3`, including the signed-snapshot verifier, provider, source/feed/policy-bound resolver, all three test files, and the finalized workflow path filters.
+The focused suite passed against commit `7a4f1939be7cdba594e883f4d33102ba4591dd01`, including signed-snapshot verification, exact source/feed/policy resolution, currentness/checkpoint matching, revocation checks, and process-local anti-rollback checks.
 
-GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40820221542](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40820221542).
+GitHub Actions: [Multi-Oracle Registry Boundary Conformance run #40823474832](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823474832).
 
 Result:
 - 3 test files passed
-- 36 tests passed
+- 50 tests passed
 - Test command: `npm run test:multi-oracle -- --reporter=verbose`
 - Locked dependency installation via `npm ci --no-audit --no-fund` passed.
-
-The run's exact tested SHA was `bc0a6ac0d3e545524252368af8df4bd23840ded3`; the later documentation-only update did not alter executable source, tests, the package script, or the workflow.
 
 ## Files and behavior
 
 - `relayer/multiOracleObservation.js`: normalizes canonical integer fields, checks source/feed/pair/timestamp-unit consistency, validates the payload digest, and requires observation `policyVersion` to match the supplied registry entry.
-- `relayer/multiOracleRegistrySnapshot.js`: verifies an `IMMORTAL-MULTI-ORACLE-REGISTRY-V1` snapshot using canonical JSON bytes, SHA-256 payload digest checking, and an Ed25519 signature against a caller-supplied public key. It rejects invalid signatures, digest mismatches, wrong schemas, unsupported key types, duplicate source/feed/policy entries and entries whose policy version differs from the signed snapshot.
-- The signed snapshot provider resolves by the exact triple `sourceId + feedId + policyVersion`; it does not silently choose a different feed. Resolution returns the registry digest/version, signature scheme and caller-supplied trust-root reference.
-- `relayer/multiOracleRegistryBoundary.js`: connects a trusted provider to the structural normalizer and returns a frozen registry-binding envelope.
-- `relayer/multiOracleObservation.test.js`, `relayer/multiOracleRegistryBoundary.test.js`, `relayer/multiOracleRegistrySnapshot.test.js`: 36 focused tests, including rejection of a wrong signing key, a tampered payload, a recomputed digest without a matching signature, malformed signature material, duplicate entries, mismatched policies, inactive sources and a wrong requested feed.
+- `relayer/multiOracleRegistrySnapshot.js`: verifies an `IMMORTAL-MULTI-ORACLE-REGISTRY-V1` snapshot using canonical JSON, SHA-256 digest checking, and an Ed25519 signature against a caller-supplied public key. Snapshot payloads now include a canonical decimal `registrySequence`.
+- The signed snapshot provider requires an injected `currentnessProvider.resolveCurrentRegistryState`. On every source lookup it checks that the independently verified currentness result has the same policy version, registry sequence, registry version and digest as the signed snapshot; requires the registry status to be `CURRENT`; and checks the current revocation overlay before returning an entry.
+- Source/feed/policy resolution is exact. Wrong feeds, ambiguous entries, inactive entries and revoked tuples fail closed; no alternate feed or legacy quote is selected.
+- A process-local high-water mark rejects a decreasing currentness control sequence. Different state at the same control sequence is rejected as equivocation. These checks are defense-in-depth and are not durable across process restarts.
+- `relayer/multiOracleRegistryBoundary.js` returns the currentness authority/checkpoint references and sequence together with the registry version, sequence, digest, signature scheme and exact source identity, so this evidence remains bound in the normalized result.
+- `relayer/multiOracleObservation.test.js`, `relayer/multiOracleRegistryBoundary.test.js`, `relayer/multiOracleRegistrySnapshot.test.js`: 50 focused tests, including tampered snapshots, invalid signatures, wrong trust key, duplicate entries, wrong policy/feed, stale/ahead sequence, digest mismatch, revoked entries, unverified currentness, sequence rollback, same-sequence equivocation and read-per-lookup revocation changes.
 - `.github/workflows/multi-oracle-conformance.yml`: dedicated conformance workflow.
 - `package.json`: exposes `test:multi-oracle`.
 
-The test registry identities and keys are generated fixtures only. No production registry key, real source, or feed was activated.
+All source/feed/key identities in unit tests are generated fixtures. No production key, real source, or feed was activated.
 
-## Security boundary — do not overstate this result
+## Currentness security boundary
 
-The verifier now checks that a snapshot is correctly signed by the **public key supplied to it**, and that the payload digest matches the canonical signed payload. It does **not** establish that the supplied public key is itself authoritative. The `trustRootReference` is provenance metadata supplied by the caller, not proof of the key's governance. The caller must obtain the trust anchor through an approved, authenticated channel.
+**A valid registry signature is not proof that the signed snapshot is still current.** The adapter now requires a separate currentness provider and compares its checkpoint to the signed snapshot, but the provider's `verificationStatus: "VERIFIED"` is still an assertion that must be backed by a real authentication and anti-replay implementation.
 
-The snapshot verifier also does not determine whether a signed snapshot is the latest authoritative version, whether a later revocation exists, or whether an activation was properly authorized. Those require a separately specified trust-root distribution, registry publication/version/currentness rule, and governed activation/revocation process. No freshness or expiry threshold has been selected.
+The currentness provider MUST, for each lookup:
+1. authenticate the current registry head and current revocation state using a separately approved trust path;
+2. verify that this result cannot be replayed or rolled back to an older valid checkpoint;
+3. return a canonical control sequence, checkpoint reference, policy version, registry sequence/version/digest, current status and complete revocation overlay;
+4. fail closed on missing proof, stale/ambiguous state, source unavailability, or an unknown status.
 
-Ed25519 is the implemented envelope scheme for this initial technical adapter, consistent with the existing Node crypto signature pattern in the repository. This is an implementation format, not approval of any oracle source, signing authority, committee, quorum, or economic policy.
+The in-memory sequence high-water mark only detects rollback/equivocation while that provider instance is alive. It resets on restart and is not a durable anti-rollback root. A production currentness provider must anchor monotonic state outside this process (or verify a current state proof from an authoritative system). The exact authority mechanism has **not** been chosen; no synthetic endpoint, trust root, or source has been designated.
 
-No production relayer/consumer was wired to this provider. No Plutus consumer, deployed Oracle State, V3, Reveal, economic constant, Issue rule, fallback, freshness bound, quorum, aggregation function, USD/USDM source, or conversion policy was changed or approved. No on-chain transaction or deployment was initiated.
+The `trustRootReference` and `currentnessAuthorityReference` are provenance identifiers, not proof of authority by themselves. The caller still must securely obtain and rotate the approved public key and authenticate the currentness provider. No freshness or expiry threshold has been chosen.
+
+Ed25519 is the implemented snapshot envelope scheme for this technical adapter. This is not approval of a specific oracle source, registry publisher, committee, quorum, aggregation method or economic policy.
+
+## Production and governance status
+
+No production relayer/consumer is wired to this provider. No Plutus consumer, deployed Oracle State, V3, Reveal, economic constant, Issue rule, fallback, source allowlist, oracle quorum, aggregation function, USD/USDM source, or conversion policy was changed or approved. No on-chain transaction or deployment was initiated.
 
 ## Remaining gates
 
-1. Approve how the trusted public key is distributed, pinned, rotated and revoked, and identify who is authorized to sign registry snapshots.
-2. Define how the consumer identifies the current registry version and detects stale snapshots, rollback and revocation; add the relevant negative tests.
-3. Freeze source-specific verification contracts and dependency/independence classifications through the proper governance decision; do not infer them from feed catalogs.
-4. After the source authority gates, implement source-specific adapters for the actual authentication evidence and check source publication timestamps, pair direction, integer scale and valuation binding.
-5. Keep aggregation, quorum, divergence/freshness policy, USD/USDM composition, and production consumer migration separate until explicitly approved.
+1. Select and approve the actual authority of current registry state and revocations. Evaluate rollback-resistant, proof-verifiable state first; any trusted-server fallback must be explicit about its trust assumptions.
+2. Define public-key publication, pinning, rotation and revocation for snapshot signatures and currentness evidence.
+3. Specify a durable monotonic/checkpoint rule or a verifiable current-state proof that survives process restart, including how to reject stale reads, rollback and equivocation.
+4. Approve source identities, feed IDs, authentication methods and dependency/independence classifications; a feed catalog alone is not qualification.
+5. Implement source-specific adapters and validate source publication timestamps, pair direction, integer scale and evidence binding.
+6. Keep aggregation, quorum, divergence/freshness policy, USD/USDM composition, and production consumer migration separate until explicitly approved.
 
-The 36 passing tests establish the behavior of the signed-snapshot technical adapter and the existing structural boundary for the tested revision. They do not qualify an oracle source for PRE-RICH or clear the existing Issue Admission blocker.
+The 50 passing tests establish the behavior of the technical adapter and its fail-closed boundaries for the tested revision. They do not qualify an oracle source for PRE-RICH or clear the existing Issue Admission blocker.
