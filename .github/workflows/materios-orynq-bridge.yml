@@ -40,6 +40,14 @@ jobs:
         working-directory: poc/materios-orynq-bridge
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Typecheck Orynq bridge
+        working-directory: poc/materios-orynq-bridge
+        run: npm run typecheck
+
+      - name: Test Orynq bridge
+        working-directory: poc/materios-orynq-bridge
+        run: npm test
+
       - name: Setup Rust verifier toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
