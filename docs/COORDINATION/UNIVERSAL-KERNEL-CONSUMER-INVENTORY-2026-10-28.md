@@ -546,3 +546,17 @@ The narrow Issue serialization golden vector is now **CI-verified on commit `1f5
 - Commit [`c83ee7d`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/c83ee7d6177591fc08f29a9c57608f256817f79b) changes the reference conformance executable to read `../Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json`, which resolves from the workflow's `plutus` working directory.
 - This is a path-only correction; no vector values, universal-kernel semantics, V3/Reveal behavior, or economic parameters were changed.
 - **Verification pending:** the push-triggered Haskell workflow must run against this commit. Do not mark the overall Haskell workflow green until the run confirms the reference conformance step and all later steps pass.
+
+
+### Follow-up verification — Haskell conformance green (2026-10-29)
+
+- GitHub Actions run [#40920916939](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40920916939) on commit `c83ee7d6177591fc08f29a9c57608f256817f79b` completed with overall conclusion **success**.
+- Confirmed successful steps include `Portability vectors through UniversalEconomicKernel`, `Cardano V3 to Universal boundary conformance`, `Normalized Reference economic output`, `Genesis admission conformance`, `Genesis regime carrier conformance`, and `Historical PRE policy UPLC decode`. The run's overall success also covers the earlier steps in the same job.
+- This closes the specific Haskell CI blocker caused by the relative path in `ReferenceEconomicConformance.hs`. It does not prove complete call-graph reachability, an authenticated producer for each admission input, certified `K_c`, complete `Ω`, or infinite-horizon viability.
+
+### Follow-up audit — admission viability remains an asserted input
+
+- Exact current branch source `PRE-RICH/onchain/PreRichEconomicAdmission.hs` accepts `truthVerified`, `eevFresh`, `obligationsComplete`, and `allOmegaSuccessorsInCertifiedKernel` as `Bool` arguments and passes them into the gate/admissibility decision. This function validates the values it receives; it does not itself authenticate their origin or enumerate/prove all admissible successors.
+- `IMMORTAL/kernel/UniversalEconomicKernel.hs` remains a chain-neutral arithmetic module for ProtectedCapital, RawSurplus, non-negativity and solvency. These predicates alone cannot certify a viability kernel.
+- Therefore the next implementation-independent deliverable is a source-anchored producer/caller map for those four flags and EEV/liquidity inputs, followed by a normative specification of the state/action/successor relation. Until the producer path and proof object are established, treat `allOmegaSuccessorsInCertifiedKernel` as an assertion at this boundary, not a certificate.
+- No code, protocol semantics, V3/Reveal behavior, economic constants, branch topology, or ledger state was changed by this audit note.
