@@ -29,10 +29,12 @@ async function normalizeUsingRegistryProvider(registryProvider, input) {
   if (!input || typeof input !== 'object') throw new Error('observation is required')
 
   const sourceId = requiredString(input.sourceId, 'sourceId')
+  const feedId = requiredString(input.feedId, 'feedId')
   const policyVersion = requiredString(input.policyVersion, 'policyVersion')
 
   const resolution = await registryProvider.resolveVerifiedRegistrySnapshot({
     sourceId,
+    feedId,
     policyVersion,
   })
 
@@ -47,6 +49,8 @@ async function normalizeUsingRegistryProvider(registryProvider, input) {
   }
 
   const registryReference = requiredString(resolution.registryReference, 'registryReference')
+  const trustRootReference = requiredString(resolution.trustRootReference, 'trustRootReference')
+  const signatureScheme = requiredString(resolution.signatureScheme, 'signatureScheme')
   const registryVersion = requiredString(resolution.registryVersion, 'registryVersion')
   const registryDigest = requiredString(resolution.registryDigest, 'registryDigest').toLowerCase()
   if (!/^[0-9a-f]{64}$/.test(registryDigest)) {
@@ -67,6 +71,8 @@ async function normalizeUsingRegistryProvider(registryProvider, input) {
       sourceId,
       policyVersion,
       registryReference,
+      trustRootReference,
+      signatureScheme,
       registryVersion,
       registryDigest,
       verificationStatus: 'VERIFIED',
