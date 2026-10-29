@@ -111,7 +111,12 @@ jobs:
 
       - name: Authoritative Issue decision serialization and admission
         working-directory: plutus
-        run: cabal test issue-decision-tests --test-show-details=direct
+        shell: bash
+        run: |
+          set -euo pipefail
+          vector_log="$RUNNER_TEMP/issue-decision-tests.log"
+          cabal test issue-decision-tests --test-show-details=direct 2>&1 | tee "$vector_log"
+          node ../scripts/verify-issue-decision-vectors.mjs "$vector_log"
 
       - name: Economic Admission conformance
         working-directory: plutus
