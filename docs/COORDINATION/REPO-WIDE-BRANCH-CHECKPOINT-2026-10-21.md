@@ -4834,3 +4834,24 @@ This is a coordination/evidence update only. It does not supersede protocol deci
 3. No signer set, quorum, aggregation, fallback, threshold, USD/USDM conversion, or provider/feed approval is selected.
 4. No changes to V3, Reveal, EEV, Issue Admission, economic consumers, universal-kernel semantics, or Materios; no new branch or on-chain action.
 
+
+
+## Agent C checkpoint — Issue authority proof producer still external/unverified (2026-10-29)
+
+**Branch head at entry:** `b2d92d88f3a43b24d088ebb67376d04a76a7e1fe`.  
+**Audit record:** [Universal Kernel Consumer Inventory](UNIVERSAL-KERNEL-CONSUMER-INVENTORY-2026-10-28.md), section “Follow-up deployment-artifact search”.
+
+### New verified findings
+- The current `.env.example` leaves `ISSUE_AUTHORITY_SOURCE_URL` and `ISSUE_AUTHORITY_PUBLIC_KEY` as commented placeholders; no concrete endpoint/deployment identity is committed there.
+- `src/authoritativeIssueAdmissionProducer.ts` is dependency injection only and explicitly does not compute EEV, ProtectedCapital, viability or Gate truth.
+- `src/remoteAuthoritativeIssueAdmissionProvider.ts` is an HTTP transport client; it accepts a returned admitted witness but does not independently prove the certificate.
+- `relayer/issueAuthorityServer.js` composes Cardano observation and Haskell admission around an upstream authority URL. The upstream certificate producer/verifier has not been identified in the repository tree.
+- The local signed-envelope path verifies signature, freshness, state/input binding and artifact-reference/digest structure; that is not independent validation of VC1–VC6, E1–E10, or Ω evidence P1–P8.
+
+### Required external hand-off
+The authority-service owner must provide: (1) source repository or immutable deployment artifact; (2) deployment version/identity and public-key fingerprint; (3) resolver for VC1–VC6 and E1–E10 references; (4) independent verifier/version and machine-readable results; (5) Ω perimeter package P1–P8 bound to the same model/deployment version. Do not request or commit private key material. If unavailable, classify the external dependency as unverified and keep first-user Issue fail-closed.
+
+### CI snapshot for parent commit
+At `b2d92d88f3a43b24d088ebb67376d04a76a7e1fe`, green: IMMORTAL Portability Conformance, Protocol Declaration Conformance, PRE-RICH B2 Control Carrier Conformance, Cardano Adapter Sale Conformance, Documentation Link Check, Algorithmic Governability Adversarial Lab. IMMORTAL Haskell Semantic Conformance, Cardano Integration Lab and Kernel Invalid-Class Fail-Closed Audit were still running at the time of observation. Preprod Context completed successfully, but reveal/deployment jobs were skipped. These results do not discharge Kc, concrete Ω completeness, proof-content verification, infinite-horizon viability, or the first real Preprod ticket.
+
+**Scope guard:** no economic rules/constants, V3, Reveal semantics, branch topology, secrets, or ledger state changed. No workflow was manually dispatched and no transaction was submitted.
