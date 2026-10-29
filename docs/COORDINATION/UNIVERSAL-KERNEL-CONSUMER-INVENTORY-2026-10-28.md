@@ -525,3 +525,17 @@ Commit `d382afbde0a8d1dcde6f80074486884e23dcb70c` extends the Haskell test's mac
 This gives a future CI-log consumer enough information to independently recompute the pre-state, post-state, and action digest from the exact serialization, and to detect whether a mismatch comes from serialization or hashing. It does not itself verify the generated values; the Haskell suite must execute first.
 
 **Run status:** the GitHub Actions run-listing capability available here only returned pull-request-triggered runs and returned none for the recent commits. The workflow page could not be retrieved through the web interface. No successful run or digest output has been observed yet.
+
+
+## 2026-10-29 — Haskell Issue vector CI evidence recovered
+
+The previously missing Actions evidence has now been recovered from the actual job log.
+
+- Workflow run: [IMMORTAL Haskell Semantic Conformance #40823466348](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40823466348), source commit `1f58942fa486ecaafdae5993ec5259b19b042fb2`, started 2026-10-29 05:27 UTC.
+- The `Authoritative Issue decision serialization and admission` step **passed**, including `cabal test issue-decision-tests --test-show-details=direct` and `node ../scripts/verify-issue-decision-vectors.mjs`.
+- Haskell emitted the expected pre-state SHA-256 `f4023fbcd4876200c00daa2c947b0836aa7b25b81b4113c61d034214b6c4e42d`, candidate-state SHA-256 `0a456146eff69a6a2f6c86d473ca95cced7eccd523dbb66124a635c7cece2fa6`, and action fingerprint `f075c7d9b87f1f4361cd02f15f67cef55d44e27918516409899b49e89e5b3303`. The JavaScript verifier reported `status: PASS` and independently recomputed all three digests from the logged canonical preimages.
+- **Overall workflow status: FAIL, for a separate later step.** `cabal run reference-economic-conformance` could not open `Adapter/REFERENCE/conformance/immortal-portability-vectors.v1.json` at that run's checked-out source revision. The file exists on the currently inspected branch ref (blob `18334f0a12a333c4da796e9c15fe93454c2dd1cf`), so this is a source-revision-specific failure to reconcile, not evidence of an Issue fingerprint mismatch.
+
+### Interpretation and next action
+
+The narrow Issue serialization golden vector is now **CI-verified on commit `1f58942...`**. This closes the previous evidence gap for that single fixture, but does not prove complete cross-language action coverage, authoritative input provenance, transaction-body intent binding, a certified `K_c`, complete `Ω`, or infinite-horizon viability. The Haskell workflow remains red overall until the reference-vector path mismatch is resolved and the full workflow passes on a current source revision. No protocol semantics, V3/Reveal behavior, or economic constants were changed in this evidence-recovery pass.
