@@ -74,7 +74,10 @@ canonicalV3State s =
     ]
   where
     classes [] = ""
-    classes (c:cs) =
+    classes [c] = classFields c
+    classes (c:cs) = classFields c P.++ "|" P.++ classes cs
+
+    classFields c =
       joinFields
         [ i (tcsClassId c)
         , i (tcsIssued c)
@@ -82,7 +85,7 @@ canonicalV3State s =
         , i (tcsExposure c)
         , i (tcsCap c)
         , b (tcsSaleable c)
-        ] P.++ "|" P.++ classes cs
+        ]
 
     control c =
       joinFields
