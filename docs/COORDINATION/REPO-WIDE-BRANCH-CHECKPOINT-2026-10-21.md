@@ -5489,3 +5489,52 @@ The entitlement blocker has a newly documented self-serve path that should be at
 4. If the trial token still receives 403 for feed 16 at `fixed_rate@200ms`, stop retries and ask Pyth support/account management to grant `crypto` + `spot` + feed ID `16` at the required channel. The Terminal lists `data@dourolabs.xyz` for support.
 
 **Evidence boundary:** the existence of a 14-day trial and the ADA/USD feed metadata are documented; no evidence yet proves that the user's account has activated the trial or that its token will carry the exact grant. The last native run `41008762196` remains `BLOCKED_PYTH_FEED_ENTITLEMENT`; artifact `12956797007` is unchanged. No further endpoint retries were made. No wallet, transaction, on-chain state or production integration was touched.
+
+## Agent C addendum — repeated B3-B live proof and corrected RPC retention diagnostic (2026-10-30)
+
+**Exact workflow:** [Materios B3 #41009886923](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41009886923), source SHA `f4ef39536033ec983c8b571166228dcb5249c59b`. This run exercised the post-verification report correction and the revised endpoint diagnostic.
+
+### Second independent live receipt cycle
+
+- `live-storage-proof`: **SUCCESS**.
+- `verifier`: **SUCCESS** (Rust formatting and tests).
+- `checkpoint-typescript`: **SUCCESS**.
+- `finalized-state-capture`: **SUCCESS**.
+- `real-grandpa-witness`: **FAILURE**.
+- `live-execution-proof`: **SKIPPED**.
+- Overall workflow: **FAILURE**, solely because the separate GRANDPA witness job failed.
+
+The collector selected a newer certified receipt, not the previous run's record:
+
+- Receipt ID: `0x592ab8d50aec2d3d5b37ebe8b2364d4e2f388e36f6ce5b963c80363d1ea3d17d`.
+- Certification block: `2507539`.
+- Certification hash: `0x528e2bc1ba1db0c5e08de462fc234dc97ae6b8e4a45f3718eebcb4390fc50cff`.
+- `cert_hash`: `0xfc7b86cf8aecae3e96632133c76832725d59a289a8c8ea57e1a62b97f6743b9b`.
+- Receipt submission block: `2507538`.
+- Read proofs for complete `System.Events` values in both blocks were captured and passed native Rust verification.
+- Event-derived AccountId32 signer set matched the events-indexer signer set; three `AttestationRecorded` events had counts 1, 2, 3 and threshold 3; no committee mutation was present in the interval.
+- Artifact [materios-b3b-live-storage-proof #12957042030](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41009886923/artifacts/12957042030) records `SYSTEM_EVENTS_STORAGE_PROOFS_RUST_VERIFIED_SIGNER_SET_MATCHED`, contiguous two-block proof coverage and post-Rust-verification semantics.
+
+### Endpoint-retention diagnosis corrected and verified
+
+The earlier diagnostic placed genesis acquisition inside one broad try block. A pruned historical state read then discarded the already-known genesis from the observation and misleadingly printed `MATERIOS_RPC_ENDPOINTS_SAME_GENESIS=false`.
+
+The revised diagnostic records genesis, historical block hash, header, storage and read-proof outcomes independently. In run #41009886923 it established:
+
+- both `/preprod-rpc` and `/rpc` have the same genesis hash `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`;
+- both return the same block hash for height `2507143`;
+- both can return that block's header, but both report `UnknownBlock: State already discarded` for historical storage/read-proof retrieval at that old height;
+- the receipt selector found a more recent certified receipt at block `2507539`, whose historical ReceiptRecord, CommitteeMembers, AttestationThreshold and read proof were successfully retrieved.
+
+This means the endpoints are not different networks. They share the same chain/genesis and a bounded historical-state retention limitation. The selector's recent-receipt/archive-aware behavior is therefore essential; do not retry a pruned receipt indefinitely or substitute latest state for historical state.
+
+### Current disposition
+
+B3-B native storage and event-proof capture has now passed on **two distinct live certified receipt lifecycles**, including full contiguous `System.Events` proofs and signer-set agreement. The exact claims remain bounded:
+- authenticated storage values and event vectors against the supplied block state roots: **PASS for the two recorded receipt cycles**;
+- finality/canonical block-root binding by independent GRANDPA witness: **OPEN**;
+- individual attester signatures / individual extrinsic signatures: **OPEN / NOT VERIFIED**;
+- full Beacon proof and B3-C succinct/ZK proof plus Cardano verification: **OPEN**.
+
+The GRANDPA witness job remains the sole failing subjob in both exact runs #41009622074 and #41009886923. Do not report the overall workflow as successful until B3-A is independently verified.
+
