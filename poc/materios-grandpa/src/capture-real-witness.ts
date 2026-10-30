@@ -800,14 +800,16 @@ async function main(): Promise<void> {
   } else {
     console.log("dense scan found no attached justification; probing grandpa_proveFinality");
     let encodedProof: unknown = null;
+    let proveFinalityError: string | null = null;
     try {
       encodedProof = await rpc<unknown>(
         "grandpa_proveFinality",
         [finalizedHeightNumber],
       );
     } catch (error) {
-      const message = String(error);
-      if (!message.includes("-32601 Method not found")) throw error;
+      proveFinalityError =
+        error instanceof Error ? error.message : String(error);
+      if (!proveFinalityError.includes("-32601 Method not found")) throw error;
       console.log("grandpa_proveFinality is not exposed; trying GRANDPA justification subscription");
     }
 
@@ -872,7 +874,97 @@ async function main(): Promise<void> {
         "justificationBytes=" + proofJustification.length,
       );
     } else {
-      const liveWitness = await waitForJustificationNotification();
+      let liveWitness: { blockHash: string; justificationHex: string };
+      try {
+        liveWitness = await waitForJustificationNotification();
+      } catch (error) {
+        const subscriptionError =
+          error instanceof Error ? error.message : String(error);
+        const proveFinalityMissing =
+          proveFinalityError !== null &&
+          proveFinalityError.includes("-32601 Method not found");
+        const subscriptionMethodMissing =
+          subscriptionError.includes("-32601 Method not found");
+        const diagnosticStatus =
+          proveFinalityMissing && subscriptionMethodMissing
+            ? "BLOCKED_GRANDPA_RPC_METHODS_NOT_EXPOSED"
+            : "BLOCKED_NO_GRANDPA_JUSTIFICATION_SOURCE";
+        const outDir = join(HERE, "..", "out");
+        mkdirSync(outDir, { recursive: true });
+        const diagnosticPath = join(
+          outDir,
+          "MateriosGrandpaRpcCapabilityDiagnostic.json",
+        );
+        const diagnostic = {
+          schema_version: "materios-grandpa-rpc-capability-diagnostic-v1",
+          status: diagnosticStatus,
+          captured_at: new Date().toISOString(),
+          chain_id: CHAIN_ID,
+          rpc_endpoint: RPC,
+          finalized_head: {
+            block_number: finalizedHeight.toString(),
+            block_hash: finalizedHash,
+            state_root: finalizedHeader.stateRoot,
+          },
+          genesis_hash: genesisHash,
+          probes: {
+            chain_getBlock_justifications: {
+              lookback_start: scanStart,
+              lookback_end: finalizedHeightNumber,
+              blocks_scanned: recentBlocks.length,
+              blocks_with_grandpa_justification: witnessedBlocks.map((block) => ({
+                block_number: block.number,
+                block_hash: block.hash,
+              })),
+              status:
+                witnessedBlocks.length > 0
+                  ? "AVAILABLE"
+                  : "NO_FRNK_JUSTIFICATION_IN_SCANNED_BLOCKS",
+            },
+            grandpa_proveFinality: {
+              status:
+                encodedProof !== null
+                  ? "RETURNED"
+                  : proveFinalityMissing
+                    ? "METHOD_NOT_FOUND"
+                    : proveFinalityError
+                      ? "ERROR"
+                      : "NO_PROOF_RETURNED",
+              error: proveFinalityError,
+            },
+            grandpa_subscribeJustifications: {
+              status: subscriptionMethodMissing
+                ? "METHOD_NOT_FOUND"
+                : "ERROR",
+              error: subscriptionError,
+            },
+          },
+          claim: {
+            cryptographic_finality_verified: false,
+            authority_set_provenance_verified: false,
+            overall_b3a_status: "OPEN",
+          },
+          non_claim:
+            "This diagnostic records RPC capability responses only. It is not a GRANDPA justification, a finality proof, or evidence that the finalized head is independently authenticated.",
+        };
+        writeFileSync(
+          diagnosticPath,
+          JSON.stringify(diagnostic, null, 2) + "\n",
+          "utf8",
+        );
+        console.error(
+          "GRANDPA_WITNESS_UNAVAILABLE:",
+          diagnosticStatus,
+          "diagnostic:",
+          diagnosticPath,
+        );
+        throw new Error(
+          "No verifiable GRANDPA justification source is available. " +
+          "A machine-readable diagnostic was written to " +
+          diagnosticPath,
+        );
+      }
+
       const liveHeader = await getHeader(liveWitness.blockHash);
       const liveBlockNumber = parseBlockNumber(
         liveHeader.number,
