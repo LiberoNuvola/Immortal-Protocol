@@ -9,6 +9,7 @@ Substrate read proof; Rust verifies those bytes against that block's stateRoot.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -32,6 +33,52 @@ TARGET_EVENT_IDS = {
     CERTIFIED_EVENT,
     SUBMITTED_EVENT,
 }
+BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+
+def ss58_account_id(value: str, expected_prefix: int = 42) -> str:
+    """Decode/checksum-verify a Materios SS58 AccountId32 address."""
+    if not isinstance(value, str) or not value:
+        raise ValueError("SS58 address is empty")
+    number = 0
+    for character in value:
+        digit = BASE58_ALPHABET.find(character)
+        if digit < 0:
+            raise ValueError("SS58 address contains a non-Base58 character")
+        number = number * 58 + digit
+
+    decoded = bytearray()
+    while number:
+        decoded.insert(0, number & 0xff)
+        number >>= 8
+    leading_zeroes = len(value) - len(value.lstrip("1"))
+    decoded = bytearray(b"\\x00" * leading_zeroes) + decoded
+
+    if len(decoded) != 35:
+        raise ValueError(f"SS58 AccountId32 must decode to 35 bytes, got {len(decoded)}")
+    if decoded[0] != expected_prefix:
+        raise ValueError(
+            f"SS58 prefix mismatch: expected {expected_prefix}, got {decoded[0]}"
+        )
+    expected = hashlib.blake2b(b"SS58PRE" + decoded[:33], digest_size=64).digest()[:2]
+    if bytes(decoded[33:35]) != expected:
+        raise ValueError("SS58 checksum mismatch")
+    return bytes(decoded[1:33]).hex()
+
+
+def account_id_from_event_value(value: Any) -> str:
+    """Normalize either an AccountId32 hex value or an SS58 address."""
+    if isinstance(value, str) and value.lower().startswith("0x"):
+        raw = normalize_hex(value, "event attester")
+        if len(raw) != 66:
+            raise ValueError("event attester hex must be a 32-byte AccountId")
+        return raw[2:]
+    if isinstance(value, str):
+        return ss58_account_id(value)
+    raw = normalize_hex(value, "event attester")
+    if len(raw) != 66:
+        raise ValueError("event attester bytes must be a 32-byte AccountId")
+    return raw[2:]
 
 
 def normalize_hex(value: Any, field: str) -> str:
@@ -202,6 +249,7 @@ def validate_attestation_event_history(
         raise ValueError("AvailabilityCertified event cert_hash does not match indexer")
 
     attester_addresses: list[str] = []
+    attester_account_ids: list[str] = []
     counts: list[int] = []
     event_thresholds: list[int] = []
     for event in attestations:
@@ -210,6 +258,7 @@ def validate_attestation_event_history(
         if not isinstance(attester, str) or not attester:
             raise ValueError("AttestationRecorded attester is missing or invalid")
         attester_addresses.append(attester)
+        attester_account_ids.append(account_id_from_event_value(attester))
         counts.append(_as_int(attrs.get("count"), "AttestationRecorded count"))
         event_thresholds.append(
             _as_int(attrs.get("threshold"), "AttestationRecorded threshold")
@@ -220,10 +269,17 @@ def validate_attestation_event_history(
             f"AttestationRecorded event count {len(attestations)} does not match "
             f"indexer signer count {len(expected)}"
         )
-    if len(set(attester_addresses)) != len(attester_addresses):
-        raise ValueError("AttestationRecorded events contain duplicate attesters")
-    if set(attester_addresses) != set(expected):
-        raise ValueError("AttestationRecorded event signer set differs from indexer")
+    if len(set(attester_account_ids)) != len(attester_account_ids):
+        raise ValueError("AttestationRecorded events contain duplicate AccountId32 values")
+
+    expected_account_ids = [ss58_account_id(address) for address in expected]
+    if set(attester_account_ids) != set(expected_account_ids):
+        raise ValueError(
+            "AttestationRecorded AccountId32 set differs from indexer signers: "
+            f"events={sorted(attester_account_ids)} "
+            f"indexer={sorted(expected_account_ids)} "
+            f"event_addresses={attester_addresses} indexer_addresses={expected}"
+        )
     if event_thresholds != [threshold] * len(attestations):
         raise ValueError(
             "AttestationRecorded event threshold differs from authenticated "
@@ -283,6 +339,7 @@ def validate_attestation_event_history(
         "attestation_recorded_events": attestations,
         "availability_certified_event": certified[0],
         "attester_order": attester_addresses,
+        "attester_account_ids": attester_account_ids,
         "attester_count": len(attester_addresses),
         "threshold": threshold,
         "count_sequence": counts,
@@ -490,6 +547,20 @@ def capture(
         )
 
     matching_events.sort(key=lambda item: (item["block_number"], item["event_index"]))
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "decoded-event-diagnostics.json").write_text(
+        json.dumps(
+            {
+                "receipt_id": receipt_id,
+                "cert_hash": cert_hash,
+                "indexer_signers": indexed_signers,
+                "decoded_matching_events": matching_events,
+                "captured_blocks": sorted(captured_blocks),
+            },
+            indent=2,
+        ) + "\\n",
+        encoding="utf-8",
+    )
     validation = validate_attestation_event_history(
         matching_events,
         receipt_id,
