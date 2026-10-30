@@ -271,6 +271,19 @@ jobs:
           poc/materios-checkpoint/out/b3b-storage-value.hex
           poc/materios-checkpoint/out/b3b-proof-scale.hex
 
+      - name: Native verification of exact-block committee snapshot
+        run: |
+          cargo run --manifest-path poc/materios-execution-verifier/Cargo.toml --bin verify-storage-proof -- \
+            poc/materios-checkpoint/out/b3b-state-root.hex \
+            poc/materios-checkpoint/out/b3b-committee-members-key.hex \
+            poc/materios-checkpoint/out/b3b-committee-members-value.hex \
+            poc/materios-checkpoint/out/b3b-committee-proof-scale.hex
+          cargo run --manifest-path poc/materios-execution-verifier/Cargo.toml --bin verify-storage-proof -- \
+            poc/materios-checkpoint/out/b3b-state-root.hex \
+            poc/materios-checkpoint/out/b3b-attestation-threshold-key.hex \
+            poc/materios-checkpoint/out/b3b-attestation-threshold-value.hex \
+            poc/materios-checkpoint/out/b3b-committee-proof-scale.hex
+
       - name: Upload B3-B live evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -282,4 +295,9 @@ jobs:
             poc/materios-checkpoint/out/b3b-storage-key.hex
             poc/materios-checkpoint/out/b3b-storage-value.hex
             poc/materios-checkpoint/out/b3b-proof-scale.hex
+            poc/materios-checkpoint/out/b3b-committee-members-key.hex
+            poc/materios-checkpoint/out/b3b-committee-members-value.hex
+            poc/materios-checkpoint/out/b3b-attestation-threshold-key.hex
+            poc/materios-checkpoint/out/b3b-attestation-threshold-value.hex
+            poc/materios-checkpoint/out/b3b-committee-proof-scale.hex
           if-no-files-found: error
