@@ -5180,3 +5180,63 @@ A successful Rust check would establish only that the native execution proof rep
 - No transaction, wallet signature, feed approval, production wiring, or on-chain state change occurred. No changes to V3/Reveal semantics, EEV, Issue Admission, economic rules, or Materios.
 
 **Disposition:** build evidence is now complete and checksum-verifiable. Native signed-update observation remains externally blocked solely by the absent Lazer credential; keep that gate open.
+
+## Agent C checkpoint — B3-C exact-head CI, live B3-B proof and upstream RPC blocker (2026-10-30)
+
+**Branch:** `work/immortal-green-closure`.  
+**Code under test:** `d77ebbe25b6b1b89e91318e4debdd18b01a13349`.  
+**Checkpoint HEAD before this entry:** `022bb4131f2d94e457f2c33a55968db9b7084512`.  
+**Scope:** B3-C integration conformance, B3-B live storage evidence classification, upstream Materios node capability audit. No V3, Reveal, economic, authority-selection or on-chain state changes.
+
+### Exact-head Materios B3 workflow #41005869822
+
+Source SHA: `d77ebbe25b6b1b89e91318e4debdd18b01a13349`.
+
+- `verifier`: **SUCCESS** — `cargo fmt --all -- --check` passed; `cargo test` passed. Test output: 10 library tests and 3 CLI parsing tests passed, 0 failed.
+- `checkpoint-typescript`: **SUCCESS** — checkpoint/B3-C typecheck, `test:execution-proof`, and `test:rpc-b3` passed.
+- `finalized-state-capture`: **SUCCESS** — finalized state/header/runtime evidence captured and uploaded. Its payload explicitly reports GRANDPA finality proof unavailable; capture is extraction only.
+- `live-storage-proof`: **SUCCESS** — B3-B live proof capture, native Rust proof verification, and artifact upload all passed.
+- `real-grandpa-witness`: **FAIL** — the two public RPC endpoints returned `chain_getBlock.justifications = null`; `grandpa_proveFinality` was unavailable; `grandpa_subscribeJustifications` returned JSON-RPC `-32601 Method not found`. No GRANDPA cryptographic witness was acquired.
+- `live-execution-proof`: **SKIPPED** — the manual dispatch input `run_live_execution_proof` was false. No live B3-C execution proof was attempted.
+
+The overall run is **FAIL** because the independent real-GRANDPA witness job failed, not because the Rust B3-C CLI tests failed. Do not summarize the overall run as green.
+
+Run: [Materios B3 #41005869822](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869822).
+
+### B3-B live storage result — narrow claim only
+
+Artifact: [materios-b3b-live-storage-proof, ID 12955811042](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869822/artifacts/12955811042). The artifact was downloaded and its JSON inspected.
+
+Authenticated by the Rust verifier at the observed block/state root:
+- receipt storage key derived from the receipt ID;
+- exact value present under the exact storage key;
+- SCALE proof accepted by the native Substrate trie verifier;
+- proof result bound to the observed header state root;
+- 10 proof nodes / 3,035 proof SCALE bytes.
+
+The packet reports receipt ID `0xeacc4944b81b823d46f6dd02a237038a75f3a599626e2781db67d02aec44633a`, observed state block `2507142`, block hash `0x55dc66cf3f96c18bd944e70e8b6c24113b4e8361514325bb333397472d5b5a3d`, and non-zero `availabilityCertHash`.
+
+**Important semantic limit:** the auto-discovery path in `capture-storage-proof.ts` selects a ReceiptRecord because its `availabilityCertHash` is non-zero and uses the finalized-state snapshot block for the storage read. It does not bind that block to an independently observed `AvailabilityCertified` event or prove signer quorum. The artifact's `receipt.certification.signers = 0` is hard-coded by the collector in this path; it is not a measured signer count. Therefore this artifact proves the storage key/value/state-root relation and the presence of a non-zero certificate-hash field only. It does **not** prove certificate validity, signer count, quorum, or GRANDPA finality. Do not use it as certification or B3-A evidence.
+
+### Upstream Materios B3-C RPC blocker — verified source
+
+The IMMORTAL TypeScript collector calls the documented narrow method:
+
+`materios_b3_calculateCommitteeProof(block_hash, call_data_hex)`.
+
+A fresh audit of [Flux-Point-Studios/materios main at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`](https://github.com/Flux-Point-Studios/materios/tree/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30) found that `partnerchain/node/src/rpc.rs` registers only `System`, `OrinqReceipts`, and `MotraRpc`. The upstream node source has no `materios_b3_calculateCommitteeProof` registration, no `ProofProvider`/execution-proof endpoint, and no `ExecutorProvider` wiring in its existing `FullDeps`. Upstream branch search found no `execution proof` branch; PR searches found no matching `prove_execution`, `ProofProvider`, or `B3` PR.
+
+The RPC contract in `docs/04-verification/MATERIOS-B3-EXECUTION-PROOF-RPC.md` is therefore **proposed, not deployed**. Its implementation requires an upstream Materios node change to access the native SDK execution-proof provider, whitelist the exact committee Runtime API method, return the exact result plus SCALE StorageProof, deploy to Preprod, and verify the method on the public RPC. A conventional `state_call` plus `state_getReadProof` is not a substitute for native execution proof.
+
+### Current disposition / next gate
+
+- IMMORTAL B3-C source integration: **implemented**.
+- Rust CLI format and tests: **PASS**.
+- TypeScript packet/RPC conformance: **PASS**.
+- B3-B live storage relation: **PASS**, with the narrow scope stated above.
+- B3-A independent GRANDPA finality: **OPEN / blocked by unavailable public RPC justification evidence**.
+- B3-C live execution proof: **BLOCKED_UPSTREAM_RPC_NOT_DEPLOYED**; the live job remains opt-in and was not dispatched.
+- Full B3 composition and authority-transition provenance: **OPEN**.
+
+Next required dependency is upstream Flux Point node implementation/deployment of the native proof RPC, followed by a confirmed capability check and an opt-in IMMORTAL live execution-proof run. Do not create a second verifier, reconstruct selector semantics, or change V3/Reveal to work around this dependency.
+
