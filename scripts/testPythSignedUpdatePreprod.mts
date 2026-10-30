@@ -101,7 +101,33 @@ async function writeEvidence(evidence: Record<string, unknown>): Promise<void> {
 
 async function main(): Promise<void> {
   const policyId = validatePythPreprodPolicyId(required('PYTH_CARDANO_POLICY_ID'))
-  const lazerToken = required('PYTH_LAZER_TOKEN')
+  const lazerToken = process.env.PYTH_LAZER_TOKEN?.trim()
+  if (!lazerToken) {
+    await writeEvidence({
+      schema: 'immortal-pyth-native-ledger-probe-v1',
+      network: 'cardano-preprod',
+      probe: 'Pyth Pro/Lazer ADA/USD signed-update consumer, feed ID 16',
+      pythProduct: 'Pyth Pro (formerly Pyth Lazer); not Pyth Core',
+      pythPolicyId: policyId,
+      pythPolicyIdSource: PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
+      pythPolicyIdPinnedToPublishedPreprodDeployment: true,
+      priceFeedId: FEED_ID_ADA_USD,
+      priceFeedPair: 'ADA/USD',
+      quoteCurrency: 'USD',
+      usdmConversion: 'NOT_APPLIED',
+      status: 'BLOCKED_MISSING_REQUIRED_SECRET',
+      blocker: 'PYTH_LAZER_TOKEN is not configured for this GitHub Actions run',
+      signedUpdateFetched: false,
+      pythStateResolved: false,
+      walletLoaded: false,
+      transactionBuilt: false,
+      transactionSigned: false,
+      transactionSubmitted: false,
+      ledgerGateA: 'NOT_PROVEN',
+      timestampUtc: new Date().toISOString(),
+    })
+    throw new Error('PYTH_LAZER_TOKEN is required')
+  }
   const readClient = Client.make(preprod).withKoios({
     baseUrl: 'https://preprod.koios.rest/api/v1',
   })
