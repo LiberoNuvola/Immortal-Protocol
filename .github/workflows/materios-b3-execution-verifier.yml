@@ -373,6 +373,55 @@ jobs:
           print("All historical System.Events storage proofs verified:", len(proofs))
           PY
 
+      - name: Record Rust-verified event evidence and enforce signer-set agreement
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          root = pathlib.Path("poc/materios-checkpoint/out/attestation-events")
+          report_path = root / "MateriosAttestationEventProof.json"
+          manifest_path = root / "proof-blocks.json"
+          report = json.loads(report_path.read_text())
+          proofs = json.loads(manifest_path.read_text()).get("proofs", [])
+          validation = report["event_validation"]
+          coverage = report["committee_stability"]["proof_coverage"]
+          expected_count = coverage["end_block"] - coverage["start_block"] + 1
+
+          if len(proofs) != expected_count:
+              raise SystemExit(
+                  f"proof manifest count {len(proofs)} does not match lifecycle "
+                  f"block count {expected_count}"
+              )
+          observed = sorted(item["block_number"] for item in proofs)
+          expected = list(range(coverage["start_block"], coverage["end_block"] + 1))
+          if observed != expected:
+              raise SystemExit("proof manifest does not cover every lifecycle block")
+
+          report["claims"]["complete_interval_storage_proof_verification"] = "PASS"
+          report["claims"]["rust_storage_proof_verification"] = "PASS"
+          report["committee_stability"]["system_events_storage_proofs_rust_verified"] = True
+          report["committee_stability"]["rust_verified_proof_block_count"] = len(proofs)
+          report["committee_stability"]["proof_coverage"]["rust_verified"] = True
+          report["event_validation"]["signer_set_gate"] = (
+              "PASS" if validation["signer_set_matches"] else "FAIL_INDEXER_EVENT_SIGNER_MISMATCH"
+          )
+          report["status"] = (
+              "SYSTEM_EVENTS_STORAGE_PROOFS_RUST_VERIFIED_SIGNER_SET_MATCHED"
+              if validation["signer_set_matches"]
+              else "SYSTEM_EVENTS_STORAGE_PROOFS_RUST_VERIFIED_SIGNER_SET_MISMATCH"
+          )
+          report_path.write_text(json.dumps(report, indent=2) + "\n")
+
+          print("Rust-verified System.Events proof blocks:", len(proofs))
+          print("Receipt event signer set matches indexer:", validation["signer_set_matches"])
+          if not validation["signer_set_matches"]:
+              print("Event-only AccountIds:", validation["signer_set_mismatch"]["event_only_account_ids"])
+              print("Indexer-only AccountIds:", validation["signer_set_mismatch"]["indexer_only_account_ids"])
+              sys.exit("Signer set mismatch preserved in artifact; certification gate remains blocked")
+          PY
+
       - name: Upload B3-B live evidence
         if: always()
         uses: actions/upload-artifact@v4
