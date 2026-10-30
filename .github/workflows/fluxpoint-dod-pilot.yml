@@ -26,6 +26,7 @@ on:
       - "docs/**"
   pull_request:
     branches:
+      - main
       - b1-hardening
     paths:
       - ".fluxpoint-gates.json"
