@@ -72,3 +72,59 @@ Therefore classify this as **INDEXER-CORROBORATED CERTIFICATE + NATIVE STORAGE P
 2. Derive the active quorum rule from the deployed runtime/configuration and verify the returned signer set satisfies it.
 3. Obtain a real GRANDPA justification and verify it independently against the trusted authority-set history.
 4. Keep B3-C execution proof as a separate gate until the Materios node deploys the native execution-proof RPC described in MATERIOS-B3-EXECUTION-PROOF-RPC.md.
+
+## Exact-block committee and threshold proof — 2026-10-30
+
+The capture was extended to read the runtime's actual `OrinqReceipts.CommitteeMembers` and `OrinqReceipts.AttestationThreshold` storage values at the same indexed certification block. Both keys are now included in a native `state_getReadProof`, and the existing Rust verifier independently checks each value against the same block header state root.
+
+- Updated source commit: `582ffb737162649862e9fdee519ab4cdb3e87569`
+- Exact-head workflow: [Materios B3 #41007657185](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41007657185)
+- Updated artifact: [materios-b3b-live-storage-proof, artifact 12955808846](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41007657185/artifacts/12955808846)
+
+### Authenticated block-end committee snapshot
+
+At certification block `2507143`, hash `0xb61e01165006e4b5ab56fb90a0fbc726fcf62d65179121eed1788899d0763f6c` and state root `0x15d3bd860ec9f9b6ce04da19f13eefecd7c00e687e9e3241eb912b37656fa1e7`, the packet records:
+
+- Committee size: **68** AccountId32 members.
+- AttestationThreshold: **3**, raw SCALE value `0x03000000`.
+- Indexer signer count: **3**.
+- Each of the three indexer SS58 addresses passed SS58 prefix-42/checksum validation, decoded to an AccountId32, and was present in the authenticated 68-member CommitteeMembers snapshot.
+- The three decoded signer account IDs are:
+  - `0x44f3bafbc393f24fcfabbf57d4ca73a6a6b5df358cdaa9480a517a97f189964b`
+  - `0x8ed446c7114fbeb751866e6752dedf36fba9b3d2832a9fc50a005e00ed0ab124`
+  - `0x925fe8605fe32a53a7b391498fc1b0ab91d3af7319607bd70b850b4f5fa9d255`
+
+The signer count therefore equals the **block-end on-chain threshold** (3/3) and each reported signer is a member of the block-end committee snapshot.
+
+### Native proof verification
+
+The exact-head `live-storage-proof` job passed all three proof checks against the same state root:
+
+1. ReceiptRecord: 80-byte Blake2_128Concat storage key; 330-byte value.
+2. CommitteeMembers: 32-byte plain StorageValue key; 2,178-byte SCALE value.
+3. AttestationThreshold: 32-byte plain StorageValue key; 4-byte SCALE value.
+
+The Rust CLI emitted `SUBSTRATE_STORAGE_PROOF_VALID=true`, `SUBSTRATE_STATE_ROOT_BOUND=true` and the preserved B3-B PASS markers for all three values. The CLI now accepts generic non-empty Substrate trie key widths rather than incorrectly requiring every key to be 80 bytes.
+
+Rust conformance on the same source commit:
+- 10 existing verifier library tests passed;
+- 3 execution-proof CLI tests passed;
+- 4 new generic storage-key CLI tests passed;
+- total: **17 passed, 0 failed**.
+
+TypeScript checkpoint/B3-C typecheck, execution packet tests, RPC tests, and the new attestation-evidence tests all passed.
+
+### Trust boundary — stronger, still not full signer-proof
+
+This raises the status from indexer-only signer corroboration to:
+
+**INDEXER-REPORTED SIGNER SET + RUST-AUTHENTICATED BLOCK-END COMMITTEE AND THRESHOLD + NATIVE RECEIPT STORAGE PROOF VERIFIED.**
+
+The following remain explicitly unproven:
+- the capture has not yet independently authenticated the `System.Events` values containing the individual `AttestationRecorded` calls;
+- signer addresses are still supplied by the Materios events indexer; their actual extrinsic/event inclusion and signatures have not been independently verified;
+- the CommitteeMembers and threshold are proven at **block-end state**. The event order of any committee change in the same block as certification is not independently reconstructed;
+- the node's finalized-head/hash observations are not an independent GRANDPA justification.
+
+Therefore do **not** label this as cryptographically verified signer signatures, event inclusion, dispatch-time quorum, or GRANDPA finality. The next narrow closure task is to authenticate and decode the exact `System.Events` storage proof(s) for the receipt's `AttestationRecorded` events and compare them to the indexer signer list, then establish event ordering/committee state at dispatch time.
+
