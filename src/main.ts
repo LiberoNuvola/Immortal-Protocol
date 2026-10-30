@@ -920,8 +920,10 @@ document.getElementById('buy')?.addEventListener('click', async () => {
       authoritativeIssueAdmissionProvider: provider,
     })
 
-    document.getElementById('issue-gate-state')!.textContent = 'ADMITTED'
-    status('Ticket Issue submitted and confirmed: ' + result.txHash)
+    // submitTx returning a transaction reference proves submission was accepted
+    // by the configured provider; it is not, by itself, ledger inclusion.
+    document.getElementById('issue-gate-state')!.textContent = 'SUBMITTED'
+    status('Issue submission accepted by the configured provider. Checking the connected wallet for the resulting ticket… ' + result.txHash)
     await observeWalletTicket()
   } catch (error) {
     document.getElementById('issue-gate-state')!.textContent = 'LOCKED'
