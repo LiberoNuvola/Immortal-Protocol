@@ -80,7 +80,7 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
           issued: 1n,
           unresolved: 1n,
           exposure: 1n,
-          cap: 1n,
+          cap: 10n,
           saleable: true,
         },
         {
@@ -88,7 +88,7 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
           issued: 1n,
           unresolved: 1n,
           exposure: 2n,
-          cap: 1n,
+          cap: 10n,
           saleable: true,
         },
         {
@@ -96,7 +96,7 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
           issued: 1n,
           unresolved: 1n,
           exposure: 3n,
-          cap: 1n,
+          cap: 10n,
           saleable: true,
         },
       ],
@@ -165,11 +165,11 @@ describe('P2.6 — Cardano Reveal replay conformance', () => {
         { classId: 0n, issued: 1n, cap: 10n, saleable: true },
         { classId: 1n, issued: 1n, cap: 10n, saleable: true },
         { classId: 2n, issued: 1n, cap: 10n, saleable: true },
-        { classId: 3n, issued: 0n, cap: 10n, saleable: true },
-        { classId: 4n, issued: 0n, cap: 10n, saleable: true },
-        { classId: 5n, issued: 0n, cap: 10n, saleable: true },
-        { classId: 6n, issued: 0n, cap: 10n, saleable: true },
-        { classId: 7n, issued: 0n, cap: 10n, saleable: true },
+        { classId: 3n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 4n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 5n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 6n, issued: 1n, cap: 10n, saleable: true },
+        { classId: 7n, issued: 1n, cap: 10n, saleable: true },
       ],
     }
 
