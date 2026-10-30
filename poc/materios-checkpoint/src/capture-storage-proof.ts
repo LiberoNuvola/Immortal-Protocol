@@ -12,15 +12,9 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const RPC =
   process.env.MATERIOS_RPC ??
   "https://materios.fluxpointstudios.com/preprod-rpc";
-const FIREHOSE =
-  process.env.MATERIOS_FIREHOSE ??
-  "https://materios.fluxpointstudios.com/api/firehose/stream";
 const INDEXER =
   process.env.MATERIOS_EVENTS ??
   "https://materios.fluxpointstudios.com/preprod-events";
-const RECEIPT_TIMEOUT_MS = Number(
-  process.env.MATERIOS_RECEIPT_TIMEOUT_MS ?? "120000",
-);
 
 const MASK64 = (1n << 64n) - 1n;
 const P1 = 11400714785074694791n;
@@ -213,75 +207,23 @@ function receiptStorageKey(receiptId: string): string {
   return bytesToHex(key);
 }
 
-async function waitForReceiptId(): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    RECEIPT_TIMEOUT_MS,
-  );
+type CertificationSigner = {
+  attester: string;
+  rewardBase: string;
+};
 
-  try {
-    const response = await fetch(FIREHOSE, {
-      signal: controller.signal,
-      headers: { accept: "text/event-stream" },
-    });
-
-    if (!response.ok || !response.body) {
-      throw new Error(
-        `firehose HTTP ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split(/\r?\n/);
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        const raw = line.slice(5).trim();
-        if (!raw) continue;
-
-        let event: unknown;
-        try {
-          event = JSON.parse(raw);
-        } catch {
-          continue;
-        }
-
-        if (
-          typeof event === "object" &&
-          event !== null &&
-          (event as Record<string, unknown>).kind ===
-            "receipt:certified"
-        ) {
-          const receiptId = (event as Record<string, unknown>).receiptId;
-          if (typeof receiptId === "string") return receiptId;
-        }
-      }
-    }
-  } finally {
-    clearTimeout(timeout);
-  }
-
-  throw new Error("firehose ended without a receipt:certified event");
-}
-
-async function getCertification(
-  receiptId: string,
-): Promise<{
+type IndexedCertification = {
   block: number;
   hash: string;
   certHash: string;
-  signers: number;
-}> {
+  signerCount: number;
+  signers: CertificationSigner[];
+  source: "materios-preprod-events/receipt-attestors";
+};
+
+async function getCertification(
+  receiptId: string,
+): Promise<IndexedCertification> {
   const url =
     `${INDEXER}/receipt-attestors?receiptId=${encodeURIComponent(
       receiptId,
@@ -295,11 +237,18 @@ async function getCertification(
       if (body.certified !== true) {
         throw new Error("indexer says receipt is not certified");
       }
+      if (
+        typeof body.receipt_id !== "string" ||
+        body.receipt_id.toLowerCase() !== receiptId.toLowerCase()
+      ) {
+        throw new Error("indexer receipt_id does not match requested receipt");
+      }
 
       const block = body.certified_at_block;
       const hash = body.certified_at_hash;
       const certHash = body.cert_hash;
-      const signers = body.signer_count;
+      const signerCount = body.signer_count;
+      const rawSigners = body.signers;
 
       if (typeof block !== "number" || !Number.isSafeInteger(block) || block < 0) {
         throw new Error("indexer certified_at_block is invalid");
@@ -312,19 +261,62 @@ async function getCertification(
       }
       if (
         typeof certHash !== "string" ||
-        !/^0x[0-9a-fA-F]+$/.test(certHash)
+        !/^0x[0-9a-fA-F]{64}$/.test(certHash)
       ) {
         throw new Error("indexer cert_hash is invalid");
       }
       if (
-        typeof signers !== "number" ||
-        !Number.isSafeInteger(signers) ||
-        signers < 0
+        typeof signerCount !== "number" ||
+        !Number.isSafeInteger(signerCount) ||
+        signerCount <= 0
       ) {
-        throw new Error("indexer signer_count is invalid");
+        throw new Error("indexer signer_count must be a positive integer");
+      }
+      if (!Array.isArray(rawSigners)) {
+        throw new Error("indexer signers must be an array");
       }
 
-      return { block, hash, certHash, signers };
+      const signers: CertificationSigner[] = rawSigners.map((entry, index) => {
+        if (typeof entry !== "object" || entry === null) {
+          throw new Error(`indexer signers[${index}] is invalid`);
+        }
+        const signer = entry as Record<string, unknown>;
+        if (
+          typeof signer.attester !== "string" ||
+          !/^[1-9A-HJ-NP-Za-km-z]{40,60}$/.test(signer.attester)
+        ) {
+          throw new Error(`indexer signers[${index}].attester is invalid`);
+        }
+        if (
+          typeof signer.reward_base !== "string" ||
+          !/^\\d+$/.test(signer.reward_base)
+        ) {
+          throw new Error(`indexer signers[${index}].reward_base is invalid`);
+        }
+        return {
+          attester: signer.attester,
+          rewardBase: signer.reward_base,
+        };
+      });
+
+      const uniqueAttesters = new Set(signers.map((signer) => signer.attester));
+      if (uniqueAttesters.size !== signers.length) {
+        throw new Error("indexer signers contains duplicate attesters");
+      }
+      if (signers.length !== signerCount) {
+        throw new Error(
+          `indexer signer_count ${signerCount} does not match signers array length ${signers.length}`,
+        );
+      }
+
+      return {
+        block,
+        hash: hash.toLowerCase(),
+        certHash: certHash.toLowerCase(),
+        signerCount,
+        signers,
+        source: "materios-preprod-events/receipt-attestors",
+      };
     }
 
     if (response.status !== 404) {
@@ -707,12 +699,7 @@ async function main(): Promise<void> {
     process.env.MATERIOS_CERT_HASH;
 
   let receiptId: string;
-  let certification: {
-    block: number;
-    hash: string;
-    certHash: string;
-    signers: number;
-  };
+  let certification: IndexedCertification;
   let storageKey: string;
   let storageValue: string;
 
@@ -721,9 +708,7 @@ async function main(): Promise<void> {
     envCertifiedBlock &&
     envCertHash
   ) {
-    const block = Number(
-      BigInt(envCertifiedBlock),
-    );
+    const block = Number(BigInt(envCertifiedBlock));
 
     if (
       !Number.isSafeInteger(block) ||
@@ -731,149 +716,101 @@ async function main(): Promise<void> {
       !/^0x[0-9a-fA-F]{64}$/.test(envReceiptId) ||
       !/^0x[0-9a-fA-F]{64}$/.test(envCertHash)
     ) {
-      throw new Error(
-        "invalid chain-event certification inputs",
-      );
+      throw new Error("invalid chain-event certification inputs");
     }
 
-    receiptId = envReceiptId;
-    certification = {
-      block,
-      hash: await rpc.call<string>(
-        "chain_getBlockHash",
-        [block],
-      ),
-      certHash: envCertHash,
-      signers: 0,
-    };
-    storageKey = receiptStorageKey(
-      receiptId,
-    );
-
-    const chainHeader =
-      await rpc.getHeader(
-        certification.hash,
-      );
-    const chainFinalized =
-      await rpc.getFinalizedHead();
-    const chainFinalizedHeader =
-      await rpc.getHeader(
-        chainFinalized,
-      );
-
-    const finalizedBlock =
-      Number(
-        BigInt(
-          chainFinalizedHeader.number,
-        ),
-      );
+    receiptId = envReceiptId.toLowerCase();
+    certification = await getCertification(receiptId);
 
     if (
-      !Number.isSafeInteger(finalizedBlock) ||
-      finalizedBlock < block
+      certification.block !== block ||
+      certification.certHash !== envCertHash.toLowerCase()
     ) {
       throw new Error(
-        "certification block is not covered by finalized head",
+        "explicit certification inputs do not match Materios events indexer",
       );
     }
-
-    storageValue =
-      (await rpc.getStorage(
-        storageKey,
-        certification.hash,
-      )) ?? "";
-
-    if (!storageValue) {
-      throw new Error(
-        "receipt storage is absent at certification block",
-      );
-    }
-
-    const parsed =
-      parseReceiptRecord(
-        storageValue,
-      );
-
-    if (
-      parsed.availabilityCertHash.toLowerCase() !==
-      certification.certHash.toLowerCase()
-    ) {
-      throw new Error(
-        "AvailabilityCertified cert_hash does not match ReceiptRecord availability_cert_hash",
-      );
-    }
-
-    certification =
-      {
-        ...certification,
-        hash: certification.hash,
-      };
-
-    console.log(
-      "using on-chain AvailabilityCertified event:",
-      receiptId,
-    );
-    console.log(
-      "certified_block:",
-      certification.block,
-    );
-    console.log(
-      "certified_hash:",
-      certification.hash,
-    );
-    console.log(
-      "cert_hash:",
-      certification.certHash,
-    );
-
-    void chainHeader;
+    storageKey = receiptStorageKey(receiptId);
   } else {
     console.log(
       "Discovering a recent certified receipt from finalized state...",
     );
 
-    const discovered =
-      await discoverRecentCertifiedReceipt(rpc);
+    const discovered = await discoverRecentCertifiedReceipt(rpc);
+    receiptId = discovered.receiptId;
+    certification = await getCertification(receiptId);
+    storageKey = discovered.storageKey;
 
-    receiptId =
-      discovered.receiptId;
-    certification =
-      discovered.certification;
-    storageKey =
-      discovered.storageKey;
-    storageValue =
-      discovered.storageValue;
+    if (
+      certification.certHash.toLowerCase() !==
+      discovered.certification.certHash.toLowerCase()
+    ) {
+      throw new Error(
+        "events-indexer cert_hash does not match the finalized ReceiptRecord",
+      );
+    }
   }
 
-  const header =
-    await rpc.getHeader(
-      certification.hash,
+  const rpcHashAtCertificationBlock = await rpc.call<unknown>(
+    "chain_getBlockHash",
+    [certification.block],
+  );
+  if (
+    typeof rpcHashAtCertificationBlock !== "string" ||
+    rpcHashAtCertificationBlock.toLowerCase() !== certification.hash
+  ) {
+    throw new Error(
+      "events-indexer certified_at_hash does not match chain_getBlockHash at certified_at_block",
     );
+  }
 
-  const finalizedHeadHash =
-    await rpc.getFinalizedHead();
-  const finalizedHead =
-    await rpc.getHeader(
-      finalizedHeadHash,
+  const header = await rpc.getHeader(certification.hash);
+  if (BigInt(header.number) !== BigInt(certification.block)) {
+    throw new Error(
+      "certified_at_hash header number does not match events-indexer certified_at_block",
     );
+  }
 
-  const finalizedBlockNumber =
-    Number(
-      BigInt(finalizedHead.number),
-    );
+  const finalizedHeadHash = await rpc.getFinalizedHead();
+  const finalizedHead = await rpc.getHeader(finalizedHeadHash);
+  const finalizedBlockNumber = Number(BigInt(finalizedHead.number));
 
   if (
-    !Number.isSafeInteger(
-      finalizedBlockNumber,
-    ) ||
-    finalizedBlockNumber <
-      certification.block
+    !Number.isSafeInteger(finalizedBlockNumber) ||
+    finalizedBlockNumber < certification.block
   ) {
     throw new Error(
       `certified block ${certification.block} is ahead of finalized head ${finalizedBlockNumber}`,
     );
   }
 
+  storageValue =
+    (await rpc.getStorage(storageKey, certification.hash)) ?? "";
+  if (!storageValue) {
+    throw new Error(
+      "receipt storage is absent at the indexed certification block",
+    );
+  }
+
+  const parsed = parseReceiptRecord(storageValue);
+  if (
+    parsed.availabilityCertHash.toLowerCase() !==
+    certification.certHash.toLowerCase()
+  ) {
+    throw new Error(
+      "events-indexer cert_hash does not match ReceiptRecord availability_cert_hash at certified block",
+    );
+  }
+
+  console.log("indexed AvailabilityCertified evidence:", receiptId);
+  console.log("certified_block:", certification.block);
+  console.log("certified_hash:", certification.hash);
+  console.log("cert_hash:", certification.certHash);
+  console.log("indexer_signer_count:", certification.signerCount);
+  console.log(
+    "indexer_signers:",
+    certification.signers.map((signer) => signer.attester).join(","),
+  );
   const readProof =
     await rpc.getReadProof(
       [storageKey],
@@ -921,9 +858,27 @@ async function main(): Promise<void> {
       proof_scale_hex:
         proofScaleHex,
     },
+    certification_indexer: {
+      source: certification.source,
+      certified: true,
+      signer_count: certification.signerCount,
+      signers: certification.signers,
+      signer_count_matches_signer_list:
+        certification.signerCount === certification.signers.length,
+      signatures_independently_verified: false,
+      quorum_threshold_independently_verified: false,
+    },
     transport_checks: {
       finalized_head_covers_observed_block:
         true,
+      certified_at_hash_matches_chain_hash_at_height:
+        true,
+      certified_at_hash_header_number_matches_indexer_block:
+        true,
+      indexer_cert_hash_matches_authenticated_receipt_storage:
+        true,
+      indexer_signer_count_matches_signer_list:
+        certification.signerCount === certification.signers.length,
       storage_value_present:
         true,
       storage_key_derived_from_receipt_id:
