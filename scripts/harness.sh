@@ -91,9 +91,15 @@ changed() {
   case "$file" in
     src/*|Adapter/*|PRE-RICH/*|index.html|vite.config.*|tsconfig*.json)
       root_ts
-      if [[ "$file" == *.test.ts || "$file" == *.spec.ts ]]; then
+      if [ "$file" = "PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts" ]; then
+        need_bin node_modules/.bin/tsx
+        run "Changed assertion fixture" ./node_modules/.bin/tsx "$file"
+      elif grep -q "node:test" "$file"; then
+        need_bin node_modules/.bin/tsx
+        run "Changed Node-native suite" ./node_modules/.bin/tsx --test "$file"
+      elif [[ "$file" == *.test.* || "$file" == *.spec.* ]]; then
         need_bin node_modules/.bin/vitest
-        run "Changed Vitest file" ./node_modules/.bin/vitest run "$file"
+        run "Changed Vitest suite" ./node_modules/.bin/vitest run "$file"
       else root_tests; fi
       case "$file" in src/*|index.html|vite.config.*) root_build ;; esac ;;
     poc/materios-checkpoint/*) materios_ts ;;
@@ -119,6 +125,7 @@ changed() {
   esac
   echo "FPL_CHANGED_DOD=PASS ($file)"
 }
+
 case "${1:---full}" in
   --full) full ;;
   --changed) changed "${2:-}" ;;
