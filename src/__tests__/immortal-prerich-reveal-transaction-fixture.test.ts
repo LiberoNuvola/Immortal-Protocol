@@ -166,14 +166,14 @@ function unresolvedTicketsAfterReveal() {
 
 function authoritativeClasses() {
   return [
-    { classId: 0n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 1n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 2n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 3n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 4n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 5n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 6n, issued: 1n, cap: 1n, saleable: true },
-    { classId: 7n, issued: 1n, cap: 1n, saleable: true },
+    { classId: 0n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 1n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 2n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 3n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 4n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 5n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 6n, issued: 1n, cap: 10n, saleable: true },
+    { classId: 7n, issued: 1n, cap: 10n, saleable: true },
   ]
 }
 
