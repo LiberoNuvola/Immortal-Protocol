@@ -36,8 +36,17 @@ TARGET_EVENT_IDS = {
 BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
-def ss58_account_id(value: str, expected_prefix: int = 42) -> str:
-    """Decode/checksum-verify a Materios SS58 AccountId32 address."""
+def ss58_account_id(
+    value: str,
+    expected_prefix: int | tuple[int, ...] = 42,
+) -> str:
+    """Decode/checksum-verify an SS58 AccountId32 address.
+
+    Indexer addresses are canonicalized to prefix 42. The Substrate metadata
+    decoder may render the same AccountId32 event value with prefix 0; both
+    encodings are accepted only at the event boundary and are compared by the
+    underlying 32-byte AccountId, not by their SS58 text.
+    """
     if not isinstance(value, str) or not value:
         raise ValueError("SS58 address is empty")
     number = 0
@@ -56,9 +65,14 @@ def ss58_account_id(value: str, expected_prefix: int = 42) -> str:
 
     if len(decoded) != 35:
         raise ValueError(f"SS58 AccountId32 must decode to 35 bytes, got {len(decoded)}")
-    if decoded[0] != expected_prefix:
+    allowed_prefixes = (
+        expected_prefix
+        if isinstance(expected_prefix, tuple)
+        else (expected_prefix,)
+    )
+    if decoded[0] not in allowed_prefixes:
         raise ValueError(
-            f"SS58 prefix mismatch: expected {expected_prefix}, got {decoded[0]}"
+            f"SS58 prefix mismatch: expected one of {allowed_prefixes}, got {decoded[0]}"
         )
     expected = hashlib.blake2b(b"SS58PRE" + decoded[:33], digest_size=64).digest()[:2]
     if bytes(decoded[33:35]) != expected:
@@ -74,7 +88,7 @@ def account_id_from_event_value(value: Any) -> str:
             raise ValueError("event attester hex must be a 32-byte AccountId")
         return raw[2:]
     if isinstance(value, str):
-        return ss58_account_id(value)
+        return ss58_account_id(value, expected_prefix=(42, 0))
     raw = normalize_hex(value, "event attester")
     if len(raw) != 66:
         raise ValueError("event attester bytes must be a 32-byte AccountId")
