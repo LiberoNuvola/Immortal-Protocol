@@ -5472,3 +5472,20 @@ This is a strong **B3-B live state/storage/event proof result for this receipt a
 
 **Disposition:** B3-B receipt, committee, threshold and full-lifecycle `System.Events` read proofs are **PASS for the recorded receipt**, including native Rust verification and signer-set agreement. GRANDPA finality, individual attester signature verification, source/runtime canonicality, and full B3-C remain open. The subsequent workflow edit at `f4ef3953...` also corrects the diagnostic so unavailable historical state no longer makes the two RPC endpoints appear to have different genesis hashes; that diagnostic correction is not part of run #41009622074 and must be exercised by the next run.
 
+## Agent B addendum — Pyth Terminal free API trial route (2026-10-30)
+
+The entitlement blocker has a newly documented self-serve path that should be attempted before any paid upgrade or account-manager escalation:
+
+- Pyth's official Developer Hub page for [Pyth Terminal](https://docs.pyth.network/pro/pyth-terminal) explicitly says Terminal can generate a **free Pyth Pro API trial key**, instantly and without a credit card. The Explore pages advertise a **14-day trial**.
+- The official [ADA/USD feed page](https://app.pyth.com/explore/Crypto.ADA%2FUSD) confirms the exact required feed: `Crypto.ADA/USD`, feed ID `16`, asset class `Crypto`, instrument `Spot`, status `Stable`, minimum channel `fixed_rate@200ms`, 24/7 coverage.
+- The official [Pyth Pro FAQ](https://docs.pyth.network/pro/faq) says token grants can restrict asset type, minimum channel and optional feed IDs; when access is not granted, Pyth returns HTTP 403/not-entitled. It says permissions can be adjusted through the account manager.
+- Distinguish the temporary free API trial from the permanent **Free** plan on the pricing page: that permanent plan is view-only/no API. The Starter tier lists API access to all crypto symbols and up to one-second frequency; Pro includes wider asset classes and higher frequency. Do not assume a specific account has a grant merely because an API key exists.
+
+### Next operator action
+
+1. In the authenticated Pyth Terminal, open the ADA/USD feed page above and activate **Start free trial** / the trial prompt (the Terminal sign-up flow requires login).
+2. After activation, retrieve the current API key from the Terminal. If the trial issues a different key, replace the repository Actions secret `PYTH_LAZER_TOKEN` with that key; never paste it into chat, workflow logs, or source control.
+3. Only after activation, run the existing read-only native probe once. A successful API call should move past `BLOCKED_PYTH_FEED_ENTITLEMENT`; it still must not be called a cryptographic or native-ledger pass until state resolution and subsequent explicit ledger verification are independently demonstrated.
+4. If the trial token still receives 403 for feed 16 at `fixed_rate@200ms`, stop retries and ask Pyth support/account management to grant `crypto` + `spot` + feed ID `16` at the required channel. The Terminal lists `data@dourolabs.xyz` for support.
+
+**Evidence boundary:** the existence of a 14-day trial and the ADA/USD feed metadata are documented; no evidence yet proves that the user's account has activated the trial or that its token will carry the exact grant. The last native run `41008762196` remains `BLOCKED_PYTH_FEED_ENTITLEMENT`; artifact `12956797007` is unchanged. No further endpoint retries were made. No wallet, transaction, on-chain state or production integration was touched.
