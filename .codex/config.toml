@@ -1,0 +1,4 @@
+# Enable Flux Point for Codex sessions in this repository.
+# Install the marketplace and plugin once per machine (see docs/04-verification/FLUXPOINT-DOD-PILOT.md).
+[plugins."fluxpoint@fluxpoint"]
+enabled = true
