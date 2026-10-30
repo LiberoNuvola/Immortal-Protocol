@@ -259,6 +259,45 @@ jobs:
       - name: Test historical attestation event proof validation
         run: python poc/materios-checkpoint/test-attestation-event-proofs.py
 
+      - name: Diagnose Materios Preprod historical-state retention
+        run: |
+          python3 - <<'PY'
+          import json
+          from substrateinterface import SubstrateInterface
+
+          block_number = 2507143
+          receipt_key = "0xf2f45ef88f71bc25f444a160450145be5087a88ab53079a394ab62a465d4618308417218f0ac29efed5cc8f0ba063d27279c26e797ac8aab732344a7702ba5e985e420c0677232a833bff60c2d1791b7"
+          endpoints = [
+              "wss://materios.fluxpointstudios.com/preprod-rpc",
+              "wss://materios.fluxpointstudios.com/rpc",
+          ]
+          observations = []
+          for endpoint in endpoints:
+              try:
+                  substrate = SubstrateInterface(url=endpoint, ss58_format=42)
+                  genesis = substrate.get_block_hash(0)
+                  block_hash = substrate.get_block_hash(block_number)
+                  item = {"endpoint": endpoint, "genesis_hash": genesis, "block_hash": block_hash}
+                  if block_hash:
+                      header = substrate.rpc_request("chain_getHeader", [block_hash])
+                      storage = substrate.rpc_request("state_getStorage", [receipt_key, block_hash])
+                      proof = substrate.rpc_request("state_getReadProof", [[receipt_key], block_hash])
+                      item["header_available"] = bool(header.get("result"))
+                      item["state_available"] = bool(storage.get("result"))
+                      item["read_proof_available"] = bool(proof.get("result", {}).get("proof"))
+                      item["read_proof_nodes"] = len(proof.get("result", {}).get("proof", []))
+                  observations.append(item)
+              except Exception as exc:
+                  observations.append({"endpoint": endpoint, "error": str(exc)})
+          print(json.dumps(observations, indent=2))
+          same_genesis = (
+              len(observations) == 2
+              and observations[0].get("genesis_hash")
+              and observations[0].get("genesis_hash") == observations[1].get("genesis_hash")
+          )
+          print("MATERIOS_RPC_ENDPOINTS_SAME_GENESIS=", bool(same_genesis))
+          PY
+
       - name: Typecheck live proof capture
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
