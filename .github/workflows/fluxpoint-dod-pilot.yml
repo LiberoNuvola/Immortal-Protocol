@@ -29,6 +29,8 @@ on:
       - b1-hardening
     paths:
       - ".fluxpoint-gates.json"
+      - ".claude/settings.json"
+      - ".codex/config.toml"
       - "scripts/harness.sh"
       - ".github/workflows/fluxpoint-dod-pilot.yml"
       - "package.json"
