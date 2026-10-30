@@ -5240,3 +5240,57 @@ The RPC contract in `docs/04-verification/MATERIOS-B3-EXECUTION-PROOF-RPC.md` is
 
 Next required dependency is upstream Flux Point node implementation/deployment of the native proof RPC, followed by a confirmed capability check and an opt-in IMMORTAL live execution-proof run. Do not create a second verifier, reconstruct selector semantics, or change V3/Reveal to work around this dependency.
 
+## Agent C checkpoint — B3-B certification-indexed capture and exact-block signer corroboration (2026-10-30)
+
+**Source HEAD for this change:** `c0b42f005ae13ab1a756c7abdc04cb6d2ccd6cb5`.  
+**Workflow:** [Materios B3 #41006875990](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41006875990).  
+**Artifact:** [B3-B live storage proof #12956085640](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41006875990/artifacts/12956085640).
+
+### Collector correction
+
+The earlier auto-discovery path selected a ReceiptRecord with a non-zero availability certificate hash and used the latest finalized observation block as a stand-in certification block. It left signer count at a hard-coded zero. That was adequate only for a narrow storage inclusion demonstration and was explicitly not certification evidence.
+
+The collector now obtains the exact certification metadata from the Materios events indexer endpoint `/receipt-attestors?receiptId=...`. It fails closed unless:
+- the returned receipt ID matches;
+- the indexer says certified;
+- certification block, block hash and certificate hash are well-formed;
+- signer_count is positive and matches the signer list;
+- all signer addresses are valid SS58 strings and unique;
+- the indexed block hash matches `chain_getBlockHash(certified_at_block)`;
+- the returned header number matches that block;
+- the node-reported finalized head covers it;
+- the exact ReceiptRecord at that block contains the same availability certificate hash;
+- the storage proof for the exact key/value verifies natively against that block header's state root.
+
+The previously unused signer-count placeholder was removed; the JSON evidence now records the actual indexer-reported signer list, count, source and explicit non-claims. The indexer contract is backed by the current Flux Point gateway source, which decodes the event-indexer response in [materios-gateway src/routes/trace.ts](https://github.com/Flux-Point-Studios/materios-gateway/blob/main/src/routes/trace.ts).
+
+### Exact-head result
+
+For source SHA `c0b42f005ae13ab1a756c7abdc04cb6d2ccd6cb5`:
+- `checkpoint-typescript`: **SUCCESS**.
+- `verifier`: **SUCCESS** — formatting and all Rust tests passed (10 library + 3 CLI parsing tests).
+- `live-storage-proof`: **SUCCESS** — live Preprod capture and native Rust storage proof verification passed.
+- `finalized-state-capture`: **SUCCESS**.
+- `real-grandpa-witness`: **FAILURE**.
+- `live-execution-proof`: **SKIPPED**; no B3-C live call made because the upstream node RPC is still not deployed and manual dispatch remained false.
+
+Overall workflow #41006875990 is **FAILURE** because of the independent GRANDPA witness job. Do not relabel the overall workflow as green.
+
+### B3-B artifact facts
+
+- Receipt ID: `0x279c26e797ac8aab732344a7702ba5e985e420c0677232a833bff60c2d1791b7`.
+- Indexed certification block: `2507143`.
+- Certification block hash: `0xb61e01165006e4b5ab56fb90a0fbc726fcf62d65179121eed1788899d0763f6c`.
+- `cert_hash`: `0x289e0df9266767040b43682f6a9e122f79034cbefe7e449db5ac8b4aef59164d`.
+- Header state root: `0x15d3bd860ec9f9b6ce04da19f13eefecd7c00e687e9e3241eb912b37656fa1e7`.
+- Indexer-reported signers: **3**, three distinct SS58 identities; the signers-list length matches signer_count.
+- Native verifier: 10 proof nodes and exact key/value/stateRoot relation, all B3-B success markers emitted.
+
+### Remaining trust boundary
+
+The signer identities/count are still supplied by the events indexer. Their signatures are **not independently verified** by this capture, and the active quorum threshold is **not independently derived/checked**. The node's finalized-head observation and RPC hash-at-height are not an independent GRANDPA justification. Thus classify the result as **INDEXER-CORROBORATED CERTIFICATE + NATIVE STORAGE PROOF VERIFIED**, not cryptographic signer-quorum or GRANDPA finality verification.
+
+The preceding entry's warning about run #132 and its `signers=0` placeholder remains historically accurate for artifact #12955811042. It is superseded for the new collector and artifact #12956085640 only; do not retroactively rewrite the old evidence.
+
+**Next work:** independently verify the indexed signer identities/signatures against the attestation records and the exact committee/quorum at block 2507143; separately obtain and verify a real GRANDPA justification; keep B3-C live execution proof blocked until the upstream Materios native execution-proof RPC is deployed. No V3, Reveal, economic, or on-chain changes.
+
