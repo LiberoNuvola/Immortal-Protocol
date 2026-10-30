@@ -5031,3 +5031,45 @@ Its three negative cases stopped at build and were labelled `INCONCLUSIVE_NOT_SU
 4. The remaining production blockers are unchanged: live Preprod deployment/evidence, qualified real USDM state and authoritative Issue Admission, certified R1/Kc/Ω viability evidence, and an actual user-wallet signature/confirmed ticket Issue transaction.
 
 **Scope of this entry:** evidence classification and coordination documentation only. No source-code, workflow semantics, key, secret, branch topology or on-chain state changed.
+
+
+## Agent B — first-user Issue submission phase and live-app path audit (2026-10-30)
+
+**Source commit:** [`68f51116e5c3cfca18864ce010e0fcddb5935180`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/68f51116e5c3cfca18864ce010e0fcddb5935180) on `work/immortal-green-closure`.
+
+### Active browser path verified
+
+- The current `src/main.ts` Buy Ticket handler calls `mintSerialNFTWithAuthoritativeAdmission`, not the legacy helper. It observes the live V3 carrier, derives class-saleability evidence from that state, loads the deployment-bound V3 validator factory, obtains the remote Issue provider and submits through the existing authoritative Issue entry point.
+- `mintSerialNFTWithAuthoritativeAdmission` forces both `requireV3CarrierBinding: true` and `requireB2ControlBinding: true`. The live DApp path therefore requests the existing carrier and B2 bindings; this audit did not change those predicates.
+- The legacy `src/tickets.ts::buyTickets` still calls the lower-level `mintSerialNFT`. Its old `src/legacyBindings.ts` caller supplies no mint options, and `buyTickets` rejects missing options before reaching mint. Current `src/main.ts` does not import that legacy binding. Do not treat this stale helper as the active first-user Issue path; keep it fail-closed and out of the production flow.
+
+### Submission versus confirmation correction
+
+The active UI previously set the gate label to `ADMITTED` and displayed “submitted and confirmed” immediately after the adapter returned a transaction reference. The production submission adapter calls the provider's `submitTx` and returns its transaction reference; it does not await ledger inclusion. The UI then makes a wallet UTxO observation separately, but the earlier text claimed confirmation before that observation.
+
+Commit `68f51116` changes only the post-submit presentation:
+- gate label becomes `SUBMITTED`;
+- text says the configured provider accepted the submission and the app is checking the connected wallet for the resulting ticket;
+- the existing wallet-ticket observation remains the next step.
+
+This is a phase-honesty correction only. It does not change admission, transaction construction, signing, submission, economic rules, V3, Reveal, or any on-chain semantics.
+
+### Exact-head CI
+
+For exact SHA `68f51116e5c3cfca18864ce010e0fcddb5935180`, the following jobs completed **SUCCESS**:
+- [Protocol Declaration #41004817386](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817386)
+- [Documentation Link Check #41004817360](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817360)
+- [IMMORTAL Portability #41004817375](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817375)
+- [Algorithmic Governability #41004817311](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817311)
+- [Cardano Adapter Sale #41004817320](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817320): both frontend build and economic conformance succeeded.
+- [PRE-RICH Action Refinement #41004817471](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817471)
+
+At the time of this entry, [IMMORTAL Cardano Integration Lab #41004817474](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817474) and [PRE-RICH B2 Control Carrier #41004817334](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41004817334) were still in Plutus toolchain setup. They are PENDING, not green or failed; poll their exact run records before updating the result.
+
+### Preprod evidence boundary
+
+The latest observed [Preprod Context run #40936394084](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40936394084) completed its `preprod-context` job successfully, but `preprod-v3-carrier-observation`, `preprod-deploy`, `direct-usdm-preprod-bootstrap` and `real-preprod-reveal` were all **SKIPPED**. It supplies context only; it does not evidence a new V3 observation, deployment, bootstrap, Reveal or ticket Issue on Preprod.
+
+The first real Issue remains blocked by the separately recorded external authority/certificate-producer dependency and the still unverified concrete `K_c` / Ω viability package. No wallet signature or transaction was performed by this pass.
+
+**Disposition:** submission-phase UI wording corrected and bounded exact-head CI partially green; two Plutus CI jobs pending at checkpoint time; no Preprod deployment or first-user ticket proved.
