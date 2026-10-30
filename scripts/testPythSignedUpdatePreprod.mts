@@ -131,7 +131,52 @@ async function main(): Promise<void> {
   // Fetch first so this run independently proves that the configured Pyth Pro
   // credential can obtain a real signed ADA/USD payload, even if state decoding
   // later reveals an Evolution/Pyth SDK compatibility problem.
-  const signedUpdate = await fetchSignedUpdate(lazerToken)
+  let signedUpdate: Buffer
+  try {
+    signedUpdate = await fetchSignedUpdate(lazerToken)
+  } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : String(error)
+    const safeMessage = rawMessage
+      .split(lazerToken)
+      .join('[REDACTED]')
+      .slice(0, 600)
+    const feedEntitlementDenied =
+      /\b403\b|not entitled|no grant accepts this feed/i.test(safeMessage)
+
+    await writeEvidence({
+      schema: 'immortal-pyth-native-ledger-probe-v1',
+      network: 'cardano-preprod',
+      probe: 'Pyth Pro/Lazer ADA/USD signed-update consumer, feed ID 16',
+      pythProduct: 'Pyth Pro (formerly Pyth Lazer); not Pyth Core',
+      pythPolicyId: policyId,
+      pythPolicyIdSource: PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
+      pythPolicyIdPinnedToPublishedPreprodDeployment: true,
+      priceFeedId: FEED_ID_ADA_USD,
+      priceFeedPair: 'ADA/USD',
+      quoteCurrency: 'USD',
+      usdmConversion: 'NOT_APPLIED',
+      status: feedEntitlementDenied
+        ? 'BLOCKED_PYTH_FEED_ENTITLEMENT'
+        : 'BLOCKED_PYTH_SIGNED_UPDATE_FETCH',
+      failureClass: feedEntitlementDenied
+        ? 'FEED_ENTITLEMENT_REQUIRED'
+        : 'SIGNED_UPDATE_FETCH_FAILED',
+      blocker: safeMessage,
+      tokenConfigured: true,
+      tokenValueExposed: false,
+      signedUpdateFetched: false,
+      pythStateResolved: false,
+      walletLoaded: false,
+      transactionBuilt: false,
+      transactionSigned: false,
+      transactionSubmitted: false,
+      issueAuthorized: false,
+      ledgerGateA: 'NOT_PROVEN',
+      timestampUtc: new Date().toISOString(),
+    })
+    throw error
+  }
+
   const stateUnit = policyId + Buffer.from('Pyth State', 'utf8').toString('hex')
 
   // Use the exact Evolution SDK release pinned by the official Pyth JS SDK.
