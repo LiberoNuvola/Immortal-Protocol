@@ -73,6 +73,24 @@ class AttestationEventProofTests(unittest.TestCase):
         encoded = MODULE.encode_storage_proof_scale(["0x0102", "0xaabbcc"])
         self.assertEqual(encoded, "0x080801020caabbcc")
 
+    def test_complete_proof_coverage_includes_blocks_without_relevant_events(self):
+        self.assertEqual(
+            MODULE.require_complete_proof_block_coverage([100, 101, 102, 103], 100, 103),
+            [100, 101, 102, 103],
+        )
+
+    def test_rejects_missing_system_events_proof_for_intermediate_block(self):
+        with self.assertRaisesRegex(ValueError, "not complete and contiguous"):
+            MODULE.require_complete_proof_block_coverage([100, 102, 103], 100, 103)
+
+    def test_rejects_duplicate_system_events_proof_block(self):
+        with self.assertRaisesRegex(ValueError, "not complete and contiguous"):
+            MODULE.require_complete_proof_block_coverage([100, 101, 101, 102], 100, 102)
+
+    def test_rejects_system_events_proof_outside_receipt_lifecycle(self):
+        with self.assertRaisesRegex(ValueError, "not complete and contiguous"):
+            MODULE.require_complete_proof_block_coverage([99, 100, 101, 102], 100, 102)
+
     def test_valid_event_history_matches_indexer_and_threshold(self):
         result = MODULE.validate_attestation_event_history(
             valid_history(), RECEIPT_ID, CERT_HASH, SIGNERS, 3, 103
