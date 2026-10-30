@@ -1,0 +1,92 @@
+name: Flux Point DoD Pilot
+
+on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - ".fluxpoint-gates.json"
+      - "scripts/harness.sh"
+      - ".github/workflows/fluxpoint-dod-pilot.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "src/**"
+      - "Adapter/**"
+      - "PRE-RICH/**"
+      - "poc/materios-checkpoint/**"
+      - "poc/materios-execution-verifier/**"
+      - "poc/aiken-reveal-parity/**"
+      - "poc/aiken-pyth-ada-usd/**"
+      - "verification/**"
+      - "IMMORTAL/**"
+      - "plutus/**"
+      - "docs/**"
+  pull_request:
+    branches:
+      - b1-hardening
+    paths:
+      - ".fluxpoint-gates.json"
+      - "scripts/harness.sh"
+      - ".github/workflows/fluxpoint-dod-pilot.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "src/**"
+      - "Adapter/**"
+      - "PRE-RICH/**"
+      - "poc/materios-checkpoint/**"
+      - "poc/materios-execution-verifier/**"
+      - "poc/aiken-reveal-parity/**"
+      - "poc/aiken-pyth-ada-usd/**"
+      - "verification/**"
+      - "IMMORTAL/**"
+      - "plutus/**"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-dod:
+    name: Local DoD harness + B3-C Rust tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            poc/materios-checkpoint/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Materios checkpoint dependencies
+        run: npm ci --prefix poc/materios-checkpoint --no-audit --no-fund
+
+      - name: Run Flux Point local Definition-of-Done contract
+        run: bash scripts/harness.sh --full
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Cache Materios verifier build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Verify Rust formatting
+        run: cargo fmt --manifest-path poc/materios-execution-verifier/Cargo.toml --all -- --check
+
+      - name: Run native Materios execution-verifier tests
+        run: cargo test --manifest-path poc/materios-execution-verifier/Cargo.toml
