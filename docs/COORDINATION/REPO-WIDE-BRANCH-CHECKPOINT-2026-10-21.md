@@ -5073,3 +5073,28 @@ The latest observed [Preprod Context run #40936394084](https://github.com/Libero
 The first real Issue remains blocked by the separately recorded external authority/certificate-producer dependency and the still unverified concrete `K_c` / Ω viability package. No wallet signature or transaction was performed by this pass.
 
 **Disposition:** submission-phase UI wording corrected and bounded exact-head CI partially green; two Plutus CI jobs pending at checkpoint time; no Preprod deployment or first-user ticket proved.
+
+
+## Agent B checkpoint — Pyth automatic probe and credential boundary (2026-10-30)
+
+**Commits:**
+- Workflow push automation and scoped paths: [`ba0d0160669890fe5c3ddde267e6ddf2f6200739`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/ba0d0160669890fe5c3ddde267e6ddf2f6200739).
+- Corrected workflow copy of the already-pinned Pyth Preprod policy ID: [`15077fee5581c5be2ffc1554059a06aa37c00a15`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/15077fee5581c5be2ffc1554059a06aa37c00a15).
+- Runner now preserves a machine-readable blocked-state artifact when the Lazer credential is absent: [`47870a75e2f752f53605bcc168d231d9088dfe8b`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/47870a75e2f752f53605bcc168d231d9088dfe8b).
+
+### Workflow and exact-head evidence
+
+- `.github/workflows/pyth-native-ledger-probe.yml` is now push-triggered only on `work/immortal-green-closure` and only for the enumerated Pyth runner, workflow, Aiken consumer, and dependency paths. `workflow_dispatch` remains available in the YAML; GitHub's default-branch requirement still applies before the UI dispatcher can be used from the repository Actions page. No scheduled trigger has been added.
+- The workflow's pinned policy ID now exactly matches `scripts/pythPreprodConfig.mts`. The isolated Pyth workflow verified the published policy constant and type-checked the guarded native-ledger runner successfully.
+- [Isolated Pyth ADA/USD Probe #41005329580](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005329580): **SUCCESS**. The two jobs passed: synthetic Aiken source-boundary tests, isolated Plutus V3 build, artifact metadata capture, official policy-ID test, and TypeScript type-check. Build artifact: `12955173057`, status `COMPILED_PROBE_ONLY`; compiled Plutus blueprint hash `70c53ca8bcfab8d04726ecfd56e3256b47941d7f0620837a91966b5b08cf1a29`. This is compile/synthetic-test evidence only, not signature or native-ledger acceptance.
+- [Pyth Signed Update — Preprod Ledger Probe #41005329555](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005329555): expected fail-closed result because repository secret `PYTH_LAZER_TOKEN` is absent/empty. Aiken compilation succeeded. The runner wrote and uploaded artifact `12955003583`, containing `status=BLOCKED_MISSING_REQUIRED_SECRET`, `signedUpdateFetched=false`, `pythStateResolved=false`, `walletLoaded=false`, `transactionBuilt=false`, `transactionSigned=false`, `transactionSubmitted=false`, and `ledgerGateA=NOT_PROVEN`. The job then exits nonzero with `PYTH_LAZER_TOKEN is required`; the fail-closed status is not relabelled as a probe pass.
+- In that run `PYTH_SUBMIT_PREPROD=false`; the test mnemonic and Blockfrost project ID were empty. No wallet was loaded and no transaction was built, signed, or submitted.
+
+### Remaining external prerequisite and evidence limits
+
+- The next prerequisite is to configure the repository Actions secret `PYTH_LAZER_TOKEN` with the Pyth Pro/Lazer credential. Do not paste the token into chat or commit it. The safe push mode does not require the test mnemonic or Blockfrost key; those remain relevant only to the separately guarded manual submit path.
+- Once the secret exists, the next Pyth push should fetch a real signed update and emit `PREPARED_NOT_SUBMITTED`. This would prove payload retrieval and Pyth State resolution for that run only; it would not prove native-ledger signature acceptance, feed truth/liveness, IMMORTAL registry admission, USD/USDM conversion, or production MintPolicy binding.
+- `workflow_dispatch` still requires the workflow to be present on `main` before appearing in the Actions UI; this branch-only push automation does not solve that default-branch publication requirement. Do not merge the full work branch to accomplish it: branch divergence remains broad and unrelated.
+- No Pyth feed is approved, no USD/USDM parity is assumed, no production Oracle/MintPolicy/Issue path is wired, and no on-chain state changed. No changes were made to V3 or Reveal semantics, EEV, Issue Admission, economic rules, or Materios.
+
+**Disposition:** branch-scoped automatic observation workflow is active; synthetic/build conformance is green; native signed-update probe is correctly blocked by the missing Lazer secret and retains an auditable failure artifact. The authority and production-integration gates remain open.
