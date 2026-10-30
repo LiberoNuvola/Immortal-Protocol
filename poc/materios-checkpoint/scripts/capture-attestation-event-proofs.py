@@ -349,6 +349,35 @@ def validate_attestation_event_history(
     }
 
 
+
+def require_complete_proof_block_coverage(
+    proof_block_numbers: list[int],
+    receipt_submission_block: int,
+    certification_block: int,
+) -> list[int]:
+    """Require one authenticated System.Events proof for every lifecycle block."""
+    if receipt_submission_block < 0 or certification_block < 0:
+        raise ValueError("proof coverage block numbers must be non-negative")
+    if receipt_submission_block > certification_block:
+        raise ValueError("receipt submission block is after certification block")
+
+    expected = list(range(receipt_submission_block, certification_block + 1))
+    observed = sorted(proof_block_numbers)
+    if observed != expected:
+        missing = sorted(set(expected) - set(observed))
+        duplicates = sorted(
+            number for number in set(observed) if observed.count(number) > 1
+        )
+        unexpected = sorted(set(observed) - set(expected))
+        raise ValueError(
+            "System.Events proof coverage is not complete and contiguous: "
+            f"missing={missing[:20]} duplicates={duplicates[:20]} "
+            f"unexpected={unexpected[:20]}"
+        )
+    return expected
+
+
+
 def rpc_result(substrate: Any, method: str, params: list[Any]) -> Any:
     response = substrate.rpc_request(method, params)
     if not isinstance(response, dict):
@@ -432,7 +461,7 @@ def capture(
         )
 
     scan_start = max(1, certification_block - lookback)
-    captured_blocks: dict[int, dict[str, Any]] = {}
+    scanned_event_blocks: dict[int, dict[str, Any]] = {}
     matching_events: list[dict[str, Any]] = []
     receipt_submitted_coordinate: tuple[int, int] | None = None
     scanned = 0
@@ -457,76 +486,32 @@ def capture(
             for event in decoded_events
             if target_event_for_receipt(event, receipt_id)
         ]
-        committee_changes = [
-            event
-            for event in decoded_events
-            if event["module_id"] == "OrinqReceipts"
-            and event["event_id"] in COMMITTEE_MUTATIONS
-        ]
 
-        if target_matches or committee_changes:
-            header = rpc_result(
-                substrate, "chain_getHeader", [block_hash]
-            )
-            if not isinstance(header, dict) or not isinstance(header.get("stateRoot"), str):
-                raise RuntimeError(f"invalid header for event block {block_number}")
-            proof = rpc_result(
-                substrate, "state_getReadProof", [[events_key], block_hash]
-            )
-            if not isinstance(proof, dict) or not isinstance(proof.get("proof"), list):
-                raise RuntimeError(f"invalid System.Events read proof at block {block_number}")
-
-            proof_nodes = proof["proof"]
-            if not proof_nodes or not all(isinstance(node, str) for node in proof_nodes):
-                raise RuntimeError(f"empty or malformed System.Events proof at block {block_number}")
-
-            prefix = f"block-{block_number}"
-            files = {
-                "state_root": f"{prefix}-state-root.hex",
-                "storage_key": f"{prefix}-system-events-key.hex",
-                "storage_value": f"{prefix}-system-events-value.hex",
-                "proof_scale": f"{prefix}-system-events-proof-scale.hex",
-            }
-            output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / files["state_root"]).write_text(
-                normalize_hex(header["stateRoot"], "stateRoot") + "\n",
-                encoding="utf-8",
-            )
-            (output_dir / files["storage_key"]).write_text(
-                normalize_hex(events_key, "System.Events storage key") + "\n",
-                encoding="utf-8",
-            )
-            (output_dir / files["storage_value"]).write_text(
-                normalize_hex(raw_value, "System.Events storage value") + "\n",
-                encoding="utf-8",
-            )
-            (output_dir / files["proof_scale"]).write_text(
-                encode_storage_proof_scale(proof_nodes) + "\n",
-                encoding="utf-8",
-            )
-
-            block_events = [
-                {
-                    **event,
-                    "block_number": block_number,
-                    "block_hash": block_hash,
-                }
-                for event in decoded_events
-                if target_event_for_receipt(event, receipt_id)
-                or (
-                    event["module_id"] == "OrinqReceipts"
-                    and event["event_id"] in COMMITTEE_MUTATIONS
-                )
-            ]
-            captured_blocks[block_number] = {
+        # Retain the complete decoded System.Events vector and raw value for every
+        # scanned block. Proof collection is performed below for every block from
+        # ReceiptSubmitted through AvailabilityCertified, including blocks whose
+        # vectors contain no target receipt event or committee mutation.
+        block_events = [
+            {
+                **event,
                 "block_number": block_number,
                 "block_hash": block_hash,
-                "state_root": header["stateRoot"],
-                "event_count": len(decoded_events),
-                "relevant_events": block_events,
-                "files": files,
             }
-            matching_events.extend(block_events)
+            for event in decoded_events
+            if target_event_for_receipt(event, receipt_id)
+            or (
+                event["module_id"] == "OrinqReceipts"
+                and event["event_id"] in COMMITTEE_MUTATIONS
+            )
+        ]
+        scanned_event_blocks[block_number] = {
+            "block_number": block_number,
+            "block_hash": block_hash,
+            "raw_events_hex": normalize_hex(raw_value, "System.Events storage value"),
+            "event_count": len(decoded_events),
+            "relevant_events": block_events,
+        }
+        matching_events.extend(block_events)
 
         submission = [
             event
@@ -570,13 +555,90 @@ def capture(
         certification_block,
     )
 
-    proof_blocks = [
-        captured_blocks[number]
-        for number in sorted(captured_blocks)
-        if number >= validation["receipt_submission_block"]
-    ]
-    if not proof_blocks:
-        raise RuntimeError("no System.Events proof blocks were captured")
+    receipt_submission_block = validation["receipt_submission_block"]
+    covered_block_numbers = require_complete_proof_block_coverage(
+        list(scanned_event_blocks),
+        receipt_submission_block,
+        certification_block,
+    )
+
+    # Authenticate a System.Events value for every block in the entire receipt
+    # lifecycle. Empty/no-relevant-event blocks are included: without their
+    # read proofs, absence of committee mutations cannot be established.
+    captured_blocks: dict[int, dict[str, Any]] = {}
+    for block_number in covered_block_numbers:
+        scanned_block = scanned_event_blocks[block_number]
+        block_hash = scanned_block["block_hash"]
+        header = rpc_result(substrate, "chain_getHeader", [block_hash])
+        if not isinstance(header, dict) or not isinstance(header.get("stateRoot"), str):
+            raise RuntimeError(f"invalid header for System.Events block {block_number}")
+        header_number = header.get("number")
+        if (
+            not isinstance(header_number, str)
+            or not header_number.startswith("0x")
+            or int(header_number, 16) != block_number
+        ):
+            raise RuntimeError(
+                f"header number/hash mismatch for System.Events block {block_number}"
+            )
+        if not HASH_RE.fullmatch(header["stateRoot"]):
+            raise RuntimeError(f"invalid stateRoot for System.Events block {block_number}")
+
+        proof = rpc_result(
+            substrate, "state_getReadProof", [[events_key], block_hash]
+        )
+        if not isinstance(proof, dict) or not isinstance(proof.get("proof"), list):
+            raise RuntimeError(
+                f"invalid System.Events read proof at block {block_number}"
+            )
+        proof_nodes = proof["proof"]
+        if not proof_nodes or not all(isinstance(node, str) for node in proof_nodes):
+            raise RuntimeError(
+                f"empty or malformed System.Events proof at block {block_number}"
+            )
+        if (
+            proof.get("at") is not None
+            and str(proof["at"]).lower() != block_hash.lower()
+        ):
+            raise RuntimeError(
+                f"System.Events read proof at does not match block {block_number}"
+            )
+
+        prefix = f"block-{block_number}"
+        files = {
+            "state_root": f"{prefix}-state-root.hex",
+            "storage_key": f"{prefix}-system-events-key.hex",
+            "storage_value": f"{prefix}-system-events-value.hex",
+            "proof_scale": f"{prefix}-system-events-proof-scale.hex",
+        }
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / files["state_root"]).write_text(
+            normalize_hex(header["stateRoot"], "stateRoot") + "\n",
+            encoding="utf-8",
+        )
+        (output_dir / files["storage_key"]).write_text(
+            normalize_hex(events_key, "System.Events storage key") + "\n",
+            encoding="utf-8",
+        )
+        (output_dir / files["storage_value"]).write_text(
+            scanned_block["raw_events_hex"] + "\n",
+            encoding="utf-8",
+        )
+        (output_dir / files["proof_scale"]).write_text(
+            encode_storage_proof_scale(proof_nodes) + "\n",
+            encoding="utf-8",
+        )
+        captured_blocks[block_number] = {
+            "block_number": block_number,
+            "block_hash": block_hash,
+            "state_root": header["stateRoot"],
+            "event_count": scanned_block["event_count"],
+            "relevant_events": scanned_block["relevant_events"],
+            "files": files,
+            "proof_node_count": len(proof_nodes),
+        }
+
+    proof_blocks = [captured_blocks[number] for number in covered_block_numbers]
     if not any(
         item["block_number"] == certification_block
         and any(
@@ -589,7 +651,7 @@ def capture(
 
     result = {
         "schema_version": "materios-attestation-event-proof-v1",
-        "status": "SYSTEM_EVENTS_STORAGE_PROOFS_CAPTURED_AWAITING_RUST_VERIFICATION",
+        "status": "COMPLETE_SYSTEM_EVENTS_BLOCK_COVERAGE_AWAITING_RUST_VERIFICATION",
         "source": {
             "rpc": rpc_url,
             "metadata_source": "state_getMetadata at each exact block hash via substrate-interface",
@@ -608,25 +670,47 @@ def capture(
         },
         "event_validation": validation,
         "committee_stability": {
-            "no_committee_mutation_between_receipt_submission_and_certification": True,
-            "semantics": "No CommitteeUpdated/CommitteeMemberJoined/CommitteeMemberLeft event was found after ReceiptSubmitted through the end of the certification block.",
+            "no_committee_mutation_in_metadata_decoded_system_events": (
+                len(validation["committee_changes_during_receipt_lifecycle"]) == 0
+            ),
+            "system_events_storage_proof_for_every_block": True,
+            "proof_coverage": {
+                "start_block": receipt_submission_block,
+                "end_block": certification_block,
+                "block_count": len(proof_blocks),
+                "contiguous": True,
+                "missing_blocks": [],
+            },
+            "semantics": (
+                "The complete System.Events storage value for every block from "
+                "ReceiptSubmitted through AvailabilityCertified is captured with a "
+                "block-specific stateRoot and native read proof. The absence of "
+                "committee mutations remains pending until all listed proofs pass "
+                "the Rust verifier."
+            ),
         },
         "proofs": proof_blocks,
         "claims": {
             "raw_system_events_bytes_decoded_with_exact_block_metadata": True,
             "system_events_storage_read_proofs_captured": True,
+            "every_block_between_submission_and_certification_has_a_read_proof": True,
             "attestation_recorded_event_signers_match_indexer_signer_list": True,
             "attestation_recorded_event_counts_are_sequential": True,
             "attestation_recorded_threshold_matches_on_chain_threshold": True,
             "availability_certified_event_matches_receipt_and_cert_hash": True,
-            "committee_did_not_change_during_receipt_lifecycle": True,
+            "committee_mutation_events_in_complete_decoded_interval": len(
+                validation["committee_changes_during_receipt_lifecycle"]
+            ),
+            "complete_interval_storage_proof_verification": "PENDING_WORKFLOW_STEP",
             "rust_storage_proof_verification": "PENDING_WORKFLOW_STEP",
             "block_header_finality": "NOT_INDEPENDENTLY_VERIFIED",
             "individual_extrinsic_signatures": "NOT_INDEPENDENTLY_VERIFIED",
         },
         "non_claim": (
-            "System.Events inclusion is only authenticated against the supplied block state roots; "
-            "the block roots are not yet bound by an independently verified GRANDPA justification. "
+            "System.Events values are captured with native read proofs for every block "
+            "in the receipt lifecycle, but inclusion is authenticated only after each listed "
+            "proof passes the Rust verifier; the block roots are not yet bound by an "
+            "independently verified GRANDPA justification. "
             "This does not independently verify each signed extrinsic or GRANDPA finality."
         ),
     }
