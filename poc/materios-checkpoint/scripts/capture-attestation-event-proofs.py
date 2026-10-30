@@ -558,7 +558,14 @@ def capture(
                 "cert_hash": cert_hash,
                 "indexer_signers": indexed_signers,
                 "decoded_matching_events": matching_events,
-                "captured_blocks": sorted(captured_blocks),
+                "scanned_event_blocks": [
+                    {
+                        "block_number": number,
+                        "block_hash": scanned_event_blocks[number]["block_hash"],
+                        "event_count": scanned_event_blocks[number]["event_count"],
+                    }
+                    for number in sorted(scanned_event_blocks)
+                ],
             },
             indent=2,
         ) + "\n",
