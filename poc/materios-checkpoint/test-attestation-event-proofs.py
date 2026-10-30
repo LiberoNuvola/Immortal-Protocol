@@ -149,6 +149,24 @@ class AttestationEventProofTests(unittest.TestCase):
                 history, RECEIPT_ID, CERT_HASH, SIGNERS, 3, 103
             )
 
+    def test_preserves_authenticated_event_signer_mismatch_when_requested(self):
+        history = valid_history()
+        history[1]["attributes"]["attester"] = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+        result = MODULE.validate_attestation_event_history(
+            history,
+            RECEIPT_ID,
+            CERT_HASH,
+            SIGNERS,
+            3,
+            103,
+            allow_signer_mismatch=True,
+        )
+        self.assertFalse(result["signer_set_matches"])
+        self.assertEqual(
+            result["signer_set_mismatch"]["event_only_account_ids"],
+            ["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"],
+        )
+
     def test_rejects_signer_list_mismatch(self):
         history = valid_history()
         history[1]["attributes"]["attester"] = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
