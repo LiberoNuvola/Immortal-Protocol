@@ -5675,3 +5675,60 @@ The harness and gate declarations remain part of the trust base and can be chang
 
 **No Preprod deployment or PRE-RICH Issue is established by this pilot. No wallet signing or transaction submission was performed.**
 
+
+
+## Agent C addendum — B3 evidence-layer review and Flux Point boundary assessment (2026-10-30)
+
+**Reviewed exact live run:** [Materios B3 execution-proof verifier #41010549260](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010549260), source SHA `a291e6576cd28b128889a433eaa8c82f53d60d64`. This is a field-level review of the retained run artifacts and the current B3 workflow/probe source, not a new live run.
+
+### B3-B — what the artifacts actually establish
+
+Artifact [materios-b3b-live-storage-proof #12957705428](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010549260/artifacts/12957705428) was downloaded and inspected. It records:
+
+- Receipt `0x592ab8d50aec2d3d5b37ebe8b2364d4e2f388e36f6ce5b963c80363d1ea3d17d`, certification block **2507539**, block hash `0x528e2bc1ba1db0c5e08de462fc234dc97ae6b8e4a45f3718eebcb4390fc50cff`, and cert hash `0xfc7b86cf8aecae3e96632133c76832725d59a289a8c8ea57e1a62b97f6743b9b`.
+- The receipt storage read proof contains 10 proof nodes and was passed to the native Rust storage-proof verifier by the workflow.
+- The complete metadata-decoded `System.Events` storage values for both blocks **2507538** (ReceiptSubmitted) and **2507539** (AvailabilityCertified) have read proofs independently verified by Rust against the supplied state root at each exact block.
+- The event-derived three-signer AccountId32 set matches the events-indexer signer set; the on-chain committee snapshot and threshold (3) were read at certification block 2507539; no committee mutation event was found in the authenticated two-block interval.
+- The artifact's transport checks record the certification block/hash binding, receipt storage binding, committee/threshold snapshot and signer membership checks as true.
+
+**Keep the limits explicit:** the artifact itself sets `signatures_independently_verified=false` and `quorum_threshold_independently_verified=false` for the indexer certification; individual attester/extrinsic signatures are not independently verified. Most importantly, the supplied block state roots are **not independently bound to GRANDPA finality** by this job. Therefore B3-B storage/event proof verification is PASS for this captured receipt lifecycle, but it is not a canonical/finalized Materios claim.
+
+### B3-A — exact current blocker and WebSocket probe status
+
+Artifact [materios-grandpa-witness-diagnostic #12957004506](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010549260/artifacts/12957004506) records:
+
+- chain `materios_preprod_v6`, genesis `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`;
+- finalized-head observation at block **2507635**, hash `0x5f8f6f64e8b3b8c84d8a0ede719a8a6166feaba469ecfcf2228c05be82a5e706`;
+- 769 recent blocks scanned (2506867–2507635), with no FRNK justification in `chain_getBlock.justifications`;
+- `grandpa_proveFinality` and `grandpa_subscribeJustifications` both return JSON-RPC `-32601 Method not found`.
+
+The job table confirms `real-grandpa-witness` failed and `live-execution-proof` was skipped; the Rust verifier, checkpoint TypeScript, finalized-state capture and B3-B live storage-proof jobs succeeded. This is an interface/capability failure, not a failed cryptographic verification of a captured justification: no justification was obtained.
+
+**Important source/run distinction:** the current B3 workflow file (blob `48f755fb6cea5cf4d2f291fc0f716319cf79865b`) now contains a read-only WebSocket capability/candidate probe step before witness capture, using `poc/materios-checkpoint/src/probe-websocket-rpc-capabilities.mjs` (blob `8ccdf8c6f80c2e92ffa3baa0887c7064903a6965`). That probe checks the WebSocket RPC catalogue, `grandpa_proveFinality`, `grandpa_subscribeJustifications`, and can retain raw FRNK payload bytes plus hashes as **unverified acquisition evidence**. However, run #41010549260's recorded job steps do **not** include that new WebSocket probe step. Do not describe the new probe as live-tested or as having found a justification until a subsequent exact-head workflow run records its step and artifact.
+
+### B3-C — missing upstream input, not missing local verifier
+
+The Rust crate `poc/materios-execution-verifier` exists and its format/tests passed in the exact-head DoD pilot #41010944867. Its execution verifier requires an exact state root, SCALE proof, runtime WASM plus expected code hash, runtime method, call-data bytes and expected result. It deliberately does not establish finality or that the supplied WASM is the deployed runtime at the target block.
+
+The remaining B3-C dependency is a real, reproducible upstream execution-proof acquisition path for the exact Materios target (proof bytes, target block/state root, runtime identity and exact API input/output), not another local verifier. The previous upstream issue #50 concerns `materios_b3_calculateCommitteeProof` and is closed/not planned; it must not be conflated with the distinct GRANDPA justification RPC gap.
+
+### Flux Point applicability decision
+
+- **Native Command Binding:** do not duplicate or replace IMMORTAL's evidence packet. Flux Point binds a worker's reported shell readings to local native CLI journals/transcripts; it is useful for auditing agent-executed commands, but it does not authenticate Materios RPC responses, state roots, GRANDPA finality, runtime identity or chain storage proofs. The B3 evidence boundary remains the existing Rust verifier plus explicit source/target provenance.
+- **Exact worktree bases:** retain as a future Graph-mode hardening candidate if/when a multi-agent graph is introduced. The existing A/B/C work remains on its assigned branches; no graph campaign is currently required to close the live B3 blockers.
+- No second verifier, new branch, wholesale merge, or changes to V3, Reveal, economic rules or Materios authority-selector semantics are warranted by this review.
+
+### Current evidence matrix
+
+| Layer | Current classification | What would change it |
+|---|---|---|
+| B3-B receipt/committee/events storage proofs | **PASS — bounded to recorded receipt lifecycle and supplied state roots** | Keep exact artifacts and Rust verification; finality remains a separate layer |
+| B3-A GRANDPA justification acquisition | **BLOCKED — public HTTP methods absent; 769-block scan had no FRNK justification** | Run the current WebSocket probe at exact HEAD; if no payload, obtain a confirmed FPS archive/sync-node contract or authorized archive-capable node |
+| B3-A authority-set provenance | **OPEN** | Authenticate the authority set at the proof target and verify the transition chain; current-head fallback remains diagnostic/untrusted |
+| B3-C native execution proof | **OPEN / SKIPPED in #41010549260** | Obtain exact upstream proof artifact and bind runtime WASM identity, state root, method, calldata and expected result |
+| Flux Point Native Command Binding | **NOT ADOPTED for chain evidence** | Optional later use for agent shell-command provenance only |
+| Flux Point exact worktree base | **DEFERRED** | Revisit with a real locked Graph campaign |
+
+**Next bounded action:** execute the current B3 workflow at its exact current branch HEAD so the newly added WebSocket probe is actually run and its JSON artifact retained. Inspect its catalogue, genesis match, candidate block/header, raw FRNK payload status and hashes. If it yields a payload, feed it only through the existing GRANDPA verifier and keep authority-set provenance fail-closed. If it does not, request the confirmed FPS archive/sync-node endpoint and retention contract; do not guess a hostname or treat the RPC finalized label as proof.
+
+**No B3-A/B3-C closure is claimed. No Preprod ticket, wallet action or on-chain protocol change was performed.**
