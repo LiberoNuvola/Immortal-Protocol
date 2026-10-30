@@ -52,7 +52,7 @@ def ss58_account_id(value: str, expected_prefix: int = 42) -> str:
         decoded.insert(0, number & 0xff)
         number >>= 8
     leading_zeroes = len(value) - len(value.lstrip("1"))
-    decoded = bytearray(b"\\x00" * leading_zeroes) + decoded
+    decoded = bytearray(b"\x00" * leading_zeroes) + decoded
 
     if len(decoded) != 35:
         raise ValueError(f"SS58 AccountId32 must decode to 35 bytes, got {len(decoded)}")
@@ -543,7 +543,7 @@ def capture(
                 "captured_blocks": sorted(captured_blocks),
             },
             indent=2,
-        ) + "\\n",
+        ) + "\n",
         encoding="utf-8",
     )
     validation = validate_attestation_event_history(
