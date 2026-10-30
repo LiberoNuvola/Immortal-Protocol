@@ -345,7 +345,11 @@ def validate_attestation_event_history(
 
     for event in attestations + certified:
         phase = event.get("phase")
-        if not isinstance(phase, dict) or "ApplyExtrinsic" not in phase:
+        is_apply_extrinsic = (
+            phase == "ApplyExtrinsic"
+            or (isinstance(phase, dict) and "ApplyExtrinsic" in phase)
+        )
+        if not is_apply_extrinsic:
             raise ValueError(
                 f"{event['event_id']} event is not attributed to an ApplyExtrinsic phase"
             )
