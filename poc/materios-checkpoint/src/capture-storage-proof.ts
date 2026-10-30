@@ -7,6 +7,11 @@ import { writeFile } from "node:fs/promises";
 import { blake2b } from "@noble/hashes/blake2.js";
 import { MateriosRpc } from "./rpc.js";
 import { bytesToHex, hexToBytes } from "./scale.js";
+import {
+  decodeAttestationThresholdScale,
+  decodeCommitteeMembersScale,
+  verifyIndexedSignerSetAgainstCommittee,
+} from "./attestationEvidence.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const RPC =
@@ -185,6 +190,15 @@ function encodeStorageProofScale(nodes: string[]): string {
     }),
   ];
   return bytesToHex(concat(encoded));
+}
+
+function plainStorageKey(storageName: string): string {
+  return bytesToHex(
+    concat([
+      twox128("OrinqReceipts"),
+      twox128(storageName),
+    ]),
+  );
 }
 
 function receiptStorageKey(receiptId: string): string {
@@ -796,7 +810,44 @@ async function main(): Promise<void> {
     );
   }
 
+  // Read the exact on-chain committee and threshold at the certification block.
+  // These are block-end storage values: same-block event ordering is not
+  // independently reconstructed here.
+  const committeeMembersKey = plainStorageKey("CommitteeMembers");
+  const attestationThresholdKey = plainStorageKey("AttestationThreshold");
+  const [committeeMembersValue, attestationThresholdValue] = await Promise.all([
+    rpc.getStorage(committeeMembersKey, certification.hash),
+    rpc.getStorage(attestationThresholdKey, certification.hash),
+  ]);
+  if (committeeMembersValue === null) {
+    throw new Error("CommitteeMembers storage is absent at certification block");
+  }
+  if (attestationThresholdValue === null) {
+    throw new Error("AttestationThreshold storage is absent at certification block");
+  }
+
+  const committeeMembers = decodeCommitteeMembersScale(committeeMembersValue);
+  const attestationThreshold =
+    decodeAttestationThresholdScale(attestationThresholdValue);
+  const verifiedAttesters = verifyIndexedSignerSetAgainstCommittee(
+    certification.signers.map((signer) => signer.attester),
+    committeeMembers,
+    attestationThreshold,
+  );
+
+  const committeeReadProof = await rpc.getReadProof(
+    [committeeMembersKey, attestationThresholdKey],
+    certification.hash,
+  );
+  const committeeProofScaleHex = encodeStorageProofScale(
+    committeeReadProof.proof,
+  );
+
   console.log("indexed AvailabilityCertified evidence:", receiptId);
+  console.log("on-chain committee size:", committeeMembers.length);
+  console.log("on-chain attestation threshold:", attestationThreshold);
+  console.log("indexer signers present in on-chain committee:", verifiedAttesters.length);
+  console.log("indexer signer count meets on-chain threshold:", true);
   console.log("certified_block:", certification.block);
   console.log("certified_hash:", certification.hash);
   console.log("cert_hash:", certification.certHash);
@@ -856,11 +907,42 @@ async function main(): Promise<void> {
       source: certification.source,
       certified: true,
       signer_count: certification.signerCount,
-      signers: certification.signers,
+      signers: certification.signers.map((signer) => ({
+        ...signer,
+        account_id: verifiedAttesters.find(
+          (entry) => entry.address === signer.attester,
+        )?.accountId ?? null,
+      })),
       signer_count_matches_signer_list:
         certification.signerCount === certification.signers.length,
       signatures_independently_verified: false,
       quorum_threshold_independently_verified: false,
+      signer_list_independently_compared_to_on_chain_committee: true,
+    },
+    on_chain_committee_snapshot: {
+      at_block: certification.block,
+      at_hash: certification.hash,
+      state_root: header.stateRoot,
+      committee_members_storage_key: committeeMembersKey,
+      committee_members_storage_value: committeeMembersValue,
+      committee_member_count: committeeMembers.length,
+      committee_members_account_ids: committeeMembers,
+      attestation_threshold_storage_key: attestationThresholdKey,
+      attestation_threshold_storage_value: attestationThresholdValue,
+      attestation_threshold: attestationThreshold,
+      signer_membership_matches: true,
+      signer_count_meets_threshold:
+        verifiedAttesters.length >= attestationThreshold,
+      snapshot_semantics: "BLOCK_END_STATE",
+      same_block_committee_update_order_independently_checked: false,
+      attestation_recorded_events_independently_verified: false,
+      signatures_independently_verified: false,
+    },
+    committee_read_proof: {
+      at: committeeReadProof.at,
+      node_count: committeeReadProof.proof.length,
+      proof_nodes: committeeReadProof.proof,
+      proof_scale_hex: committeeProofScaleHex,
     },
     transport_checks: {
       finalized_head_covers_observed_block:
@@ -873,6 +955,15 @@ async function main(): Promise<void> {
         true,
       indexer_signer_count_matches_signer_list:
         certification.signerCount === certification.signers.length,
+      committee_members_and_threshold_read_at_certification_block:
+        true,
+      indexer_signers_are_members_of_on_chain_committee_snapshot:
+        true,
+      indexer_signer_count_meets_on_chain_threshold:
+        verifiedAttesters.length >= attestationThreshold,
+      committee_snapshot_proof_at_matches_certification_block:
+        committeeReadProof.at.toLowerCase() ===
+        certification.hash.toLowerCase(),
       storage_value_present:
         true,
       storage_key_derived_from_receipt_id:
@@ -953,6 +1044,32 @@ async function main(): Promise<void> {
       "b3b-proof-scale.hex",
     ),
     proofScaleHex + "\n",
+    "utf8",
+  );
+
+  await writeFile(
+    join(outputDir, "b3b-committee-members-key.hex"),
+    committeeMembersKey + "\n",
+    "utf8",
+  );
+  await writeFile(
+    join(outputDir, "b3b-committee-members-value.hex"),
+    committeeMembersValue + "\n",
+    "utf8",
+  );
+  await writeFile(
+    join(outputDir, "b3b-attestation-threshold-key.hex"),
+    attestationThresholdKey + "\n",
+    "utf8",
+  );
+  await writeFile(
+    join(outputDir, "b3b-attestation-threshold-value.hex"),
+    attestationThresholdValue + "\n",
+    "utf8",
+  );
+  await writeFile(
+    join(outputDir, "b3b-committee-proof-scale.hex"),
+    committeeProofScaleHex + "\n",
     "utf8",
   );
 
