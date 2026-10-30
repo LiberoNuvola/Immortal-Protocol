@@ -4962,3 +4962,40 @@ Not checked (OPEN):
 ### 9. Not done
 
 No key, endpoint, deployment, transaction, workflow dispatch, economic rule, V3, Reveal or branch-topology change. `AGENTS.md` versus §10.46 remains an owner reconciliation item.
+
+
+
+## B3-C independent execution verifier — correction and exact evidence review (2026-10-30)
+
+This section corrects the tentative wording in the 2026-10-29 “B3 code-to-upstream mapping” note that described the independent verifier interface as not yet identified. A dedicated Rust verifier already exists on `work/b3-materios-provenance-evidence`; the remaining gap is its end-to-end composition and real evidence, not the absence of a verifier implementation.
+
+### Existing implementation confirmed at B3 HEAD
+
+Observed B3 branch HEAD: `366946245f51812da1e4aa6a23754706a2463212`.
+
+- `poc/materios-execution-verifier/src/lib.rs` exposes `verify_execution_proof(ExecutionProofInput)`. It strictly decodes SCALE `StorageProof`, rejects trailing bytes, binds supplied runtime WASM to the expected Blake2-256 code hash, runs `execution_proof_check` against the supplied state root and exact runtime method/call bytes, and requires the reproduced result to equal the expected result.
+- The verifier README explicitly limits its claim: it does not establish GRANDPA finality, block canonicality, deployed-runtime provenance, source/build reproducibility, selector-input semantics, or the surrounding authority transition.
+- `poc/materios-checkpoint/src/executionProof.ts` remains a transport/structural validator. It binds packet identity, selection-input hash, call data and declared runtime hash; its own contract correctly disclaims cryptographic trie/runtime/finality verification.
+- `test-executionProof.ts` covers structural mutations and local bindings. The Rust crate tests malformed/empty/trailing SCALE proof cases and runtime hash mismatch. These are focused verifier/unit tests, not a live execution-proof witness.
+
+### Workflow evidence inspected
+
+The B3 execution-verifier workflow includes a Rust verifier test job, finalized-state capture, live GRANDPA witness acquisition and native B3-B storage-proof verification. It does **not** currently show a workflow step that takes a captured native execution-proof packet, supplies the exact authenticated state root and trusted runtime artifact to `verify_execution_proof`, and emits a machine-readable B3-C verification result bound back to the TypeScript packet identity and the same finalized checkpoint. This is the specific composition/integration gap to close; do not create a second verifier.
+
+Observed historical [Materios B3 execution-proof verifier #127](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40551843291), on B3 SHA `875087e3b92b21486175e0e83e84706abd14a06c`:
+- Rust verifier formatting and unit tests: **SUCCESS**.
+- Finalized-state capture: **SUCCESS**.
+- Live B3-B storage-proof capture and native verification: **SUCCESS**.
+- GRANDPA witness acquisition found a raw FRNK candidate at block `2471424`, hash `0xdcf28d0d21715e914000db6f10e216c8702fc39cd3275368746da3158cf2d16c`, round `46478`, set ID `4352`, with four precommits; independent cryptographic verification: **FAIL**; transition witness: **not found**. The job correctly failed closed.
+- Both tested public RPC endpoints returned `grandpa_proveFinality` method-not-found and no block justifications at their finalized head. A separate WebSocket probe captured raw historical FRNK material, but raw capture is not a valid finality proof.
+
+The later Orynq evidence bridge run #29 on B3 HEAD `3669462` is a different workflow and must not be represented as a B3-A/B/C verifier pass.
+
+### Required next increment
+
+1. Keep the existing Rust verifier as the cryptographic execution engine; add only a narrowly scoped composition adapter/test that checks its successful result is bound to the exact packet fields: chain/genesis, finalized block hash+number, state root, runtime code hash, method, call data, result, selection-input commitment and packet/evidence digest.
+2. The composition must consume independently verified checkpoint/finality and runtime-provenance outputs; it must not turn packet metadata or caller booleans into proof.
+3. Add mutation tests for each cross-object binding and a machine-readable result that distinguishes structural packet validation, native execution-proof verification, and outer B3-A finality/runtime provenance.
+4. Keep synthetic fixtures explicitly synthetic. Do not mark B3-C live PASS until an actual captured execution proof has been independently verified and bound to the exact checkpoint/runtime. B3-A remains OPEN because the observed real GRANDPA candidate failed cryptographic verification and no transition witness was found; B3-B's historical success does not close B3 overall.
+
+**Scope:** audit/checkpoint correction only. No code, selector semantics, economics, V3, Reveal, branch topology, workflow dispatch, secrets, or on-chain state changed.
