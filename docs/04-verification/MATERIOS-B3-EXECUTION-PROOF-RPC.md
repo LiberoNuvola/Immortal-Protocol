@@ -114,3 +114,20 @@ The extracted hash is the exact on-chain commitment that must equal `blake2_256(
 SDK-level checks confirm that the exact Polkadot SDK revision resolved by Materios contains both the `ProofProvider::execution_proof` surface and the `CallExecutor::prove_execution` primitive. The Materios node's current custom RPC surface does not expose this proof operation.
 
 Therefore the missing artifact is a thin node transport addition plus the real finalized proof fixture. No selector reimplementation is required.
+
+## Upstream node audit — 2026-10-30
+
+The live upstream source was rechecked against `Flux-Point-Studios/materios` main at commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (2026-10-21):
+
+- [Pinned upstream node RPC implementation](https://github.com/Flux-Point-Studios/materios/blob/7d5c36e7dcd60824d84353e93df5d4a03c9c6c30/partnerchain/node/src/rpc.rs) currently registers `System`, `OrinqReceipts`, and `MotraRpc` only. Its `FullDeps` has a client and transaction pool; the B3 execution-proof handler and its executor access are not registered there.
+- A source search of the upstream main tree found no `materios_b3_calculateCommitteeProof`, `ProofProvider`, `execution_proof`, or `prove_execution` implementation in the node.
+- The upstream main branch tree was non-truncated (526 entries). A branch search for `execution proof` returned no matching branch; upstream PR search returned no exact `prove_execution`, `ProofProvider`, or `B3` PR match.
+
+Therefore `materios_b3_calculateCommitteeProof(block_hash, call_data_hex)` remains a **proposed, not deployed** RPC contract. The IMMORTAL collector's client implementation is ready and typechecked, but it must not be run as a live proof capture against the current public node and must not treat a method-not-found response as a proof result.
+
+### Required upstream delta
+
+The node-side change belongs in the upstream Materios repository, not in IMMORTAL's client adapter. Extend the existing node RPC dependencies with the SDK executor access needed to call the already available native execution-proof primitive; register only the committee proof method; restrict it to the exact canonical Runtime API method; bind the requested block and runtime version; SCALE-encode the returned native `StorageProof`; and return the exact tuple specified above. Then deploy that node build to Materios Preprod and verify the endpoint on the public RPC before enabling the IMMORTAL live job.
+
+Do not replace this with `state_call` plus a normal `state_getReadProof`, locally recompute the selector, or label a normal call result as an execution proof. Those paths do not provide the native execution witness required by B3-C.
+
