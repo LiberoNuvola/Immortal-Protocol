@@ -1,11 +1,23 @@
 name: Pyth Signed Update — Preprod Ledger Probe
 
 on:
+  push:
+    branches:
+      - work/immortal-green-closure
+    paths:
+      - ".github/workflows/pyth-native-ledger-probe.yml"
+      - "scripts/testPythSignedUpdatePreprod.mts"
+      - "scripts/pythPreprodConfig.mts"
+      - "poc/aiken-pyth-ada-usd/**"
+      - "plutus/PythQuoteCarrierBinding.hs"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
     inputs:
       pyth_policy_id:
         description: "Verified 56-hex Pyth deployment policy ID for Cardano Preprod"
         required: true
+        default: "c7d51d897fdfceb7684f2a1a9ef428a027ec0582cadee158429f7e45"
         type: string
       submit_preprod:
         description: "Submit two test-only Preprod transactions using the dedicated PYTH_PREPROD_TEST_MNEMONIC wallet"
@@ -55,11 +67,11 @@ jobs:
 
       - name: Fetch genuine signed update; submit only when explicitly requested
         env:
-          PYTH_CARDANO_POLICY_ID: ${{ inputs.pyth_policy_id }}
-          PYTH_SUBMIT_PREPROD: ${{ inputs.submit_preprod }}
+          PYTH_CARDANO_POLICY_ID: ${{ github.event.inputs.pyth_policy_id || 'c7d51d897fdfceb7684f2a1a9ef428a027ec0582cadee158429f7e45' }}
+          PYTH_SUBMIT_PREPROD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.submit_preprod == 'true' && 'true' || 'false' }}
           PYTH_LAZER_TOKEN: ${{ secrets.PYTH_LAZER_TOKEN }}
-          PYTH_PREPROD_TEST_MNEMONIC: ${{ secrets.PYTH_PREPROD_TEST_MNEMONIC }}
-          BLOCKFROST_PROJECT_ID: ${{ secrets.PREPROD_BLOCKFROST_PROJECT_ID || secrets.VITE_BLOCKFROST_PROJECT_ID }}
+          PYTH_PREPROD_TEST_MNEMONIC: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.submit_preprod == 'true' && secrets.PYTH_PREPROD_TEST_MNEMONIC || '' }}
+          BLOCKFROST_PROJECT_ID: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.submit_preprod == 'true' && (secrets.PREPROD_BLOCKFROST_PROJECT_ID || secrets.VITE_BLOCKFROST_PROJECT_ID) || '' }}
         run: node --import=tsx ./scripts/testPythSignedUpdatePreprod.mts
 
       - name: Upload probe evidence
