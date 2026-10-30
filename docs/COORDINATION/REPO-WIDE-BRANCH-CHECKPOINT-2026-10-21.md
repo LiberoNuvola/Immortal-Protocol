@@ -5165,3 +5165,18 @@ A successful Rust check would establish only that the native execution proof rep
 
 **Disposition:** TypeScript-to-Rust execution-proof integration is present in source; exact-head Rust conformance and a live proof artifact are pending. Keep B3-A finality separate. No change to V3, Reveal, economics, other chain adapters, or on-chain state.
 
+
+
+## Agent B addendum — Pyth build-evidence package integrity (2026-10-30)
+
+- Commit [`2df11a826877182b1e487a6330f0a6280cf1b776`](https://github.com/LiberoNuvola/Immortal-Protocol/commit/2df11a826877182b1e487a6330f0a6280cf1b776) fixes the isolated Pyth build artifact packaging by including `aiken.toml`, which was previously named in `SHA256SUMS` but omitted from the uploaded archive.
+- Exact-head [Isolated Pyth ADA/USD Probe #41006171183](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41006171183): **SUCCESS** on both jobs. Aiken synthetic tests and Plutus V3 compilation passed; official Pyth Preprod policy-ID verification and TypeScript type-check of the native-ledger runner passed.
+- Artifact `12954779275` (`pyth-ada-usd-probe-2df11a826877182b1e487a6330f0a6280cf1b776`) downloaded and inspected. It contains `aiken.toml`, `aiken.lock`, `plutus.json`, `build-manifest.json`, and `SHA256SUMS`. All three checksums independently verified **OK**:
+  - `aiken.toml`: `ecd2615377622857982fea7de81e81eb664d8fc31866a8067ed976fc5054397b`
+  - `aiken.lock`: `bfecbc5440e3c386bcc8e382daa13d1d6695c8d0ede8003cf88bc19a4e423e07`
+  - `plutus.json`: `70c53ca8bcfab8d04726ecfd56e3256b47941d7f0620837a91966b5b08cf1a29`
+- Manifest reports `status=COMPILED_PROBE_ONLY`, `plutusVersion=v3`, and six blueprint validator entries. This remains compilation/synthetic-test evidence only; it does not establish Pyth signed-update retrieval, signature verification, native-ledger acceptance, source authority, USD/USDM conversion, or production MintPolicy binding.
+- The native-ledger probe remains blocked at its last exact-head execution by missing/empty repository secret `PYTH_LAZER_TOKEN`; artifact `12955003583` explicitly records `BLOCKED_MISSING_REQUIRED_SECRET` and confirms no wallet or transaction action. No token can be configured through the current GitHub integration; it must be added in repository Settings → Secrets and variables → Actions. Do not expose it in chat or source control.
+- No transaction, wallet signature, feed approval, production wiring, or on-chain state change occurred. No changes to V3/Reveal semantics, EEV, Issue Admission, economic rules, or Materios.
+
+**Disposition:** build evidence is now complete and checksum-verifiable. Native signed-update observation remains externally blocked solely by the absent Lazer credential; keep that gate open.
