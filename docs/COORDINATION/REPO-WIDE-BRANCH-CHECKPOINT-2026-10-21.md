@@ -4894,3 +4894,71 @@ Do **not** add `@fluxpointstudios/orynq-sdk-anchors-materios` 0.7.0 as a depende
 
 Next code change should be scoped to the B3 POC after the independent verifier interface and evidence fixtures are identified: add a verifier-facing contract/test proving that the supplied proof packet is rejected unless the verifier result binds the same chain/genesis, finalized block hash and number, state root, runtime code hash, call data, result, and selection-input commitment. This is a proposed test obligation, not evidence that such a verifier currently exists. Keep B3-A/B/C classifications separate; do not upgrade the SDK or change economics, V3, Reveal, branch topology, or on-chain state as a shortcut.
 
+
+
+## Agent C (Claude Code session) — external certificate-producer search, local-verifier boundary and Kc/Ω status — 2026-10-30
+
+Section numbers in this file are duplicated across agents; this entry is deliberately unnumbered and is cited by heading and commit. It extends, and does not contradict, the earlier "Agent C checkpoint — Issue authority proof producer still external/unverified (2026-10-29)" entry. Evidence was collected 2026-10-29 on `work/immortal-green-closure` at `d0a36be` (the `387c00f` delta touches none of the files cited below) and on the branches named. Classification vocabulary: PRESENT / SPECIFIED / TESTED_BOUNDED / VERIFIED / OPEN / NOT_RUN.
+
+### 1. Result in one paragraph
+
+No implementation, owner, repository, deployment or key custodian of the external service that produces the Issue authority envelope and its viability certificates was found. The viability proof set (VC1–VC6, E1–E10, EV1–EV7) is therefore **NOT VERIFIED**; concrete Kc is **NOT CERTIFIED**; Ω completeness against the declared perimeter is **OPEN**; and no step toward a first real Preprod Issue is evidenced as closed by anything executed here. A signed, correctly shaped envelope is evidence that the key holder signed it, not that the certificates it references are valid.
+
+### 2. Search coverage (bounded)
+
+- Green source: grep of the code and docs for producer/certificate/viability/authority terms and for every use of `ISSUE_AUTHORITY_*`.
+- All 27 branches: the current recursive git tree of each (REST, none truncated), matched by path against authority/producer/certificate/viability/prover/signer/service/deployment-file patterns; plus the 25-branch path/SHA ledger dated 2026-10-21. Content was grepped on green only, not on every branch.
+- `LiberoNuvola/Carob-Three-Project` (11 files, last commit 2026-10-04): no match.
+- Notion: two searches; no page names the service owner, repository or deployment. The only relevant statement is the "Issue Admission Boundary Audit — 10 Oct 2026" finding that repository source does not prove the external signed authority service is deployed or used for first-user Issue.
+- Limits: private repositories, other organisations, deployed infrastructure and secrets are not visible from this session (Actions secrets API returned 403 through the proxy; not retried). A negative result here is a bounded negative, not proof the service does not exist.
+
+### 3. What exists in the repository (PRESENT)
+
+- `relayer/issueAuthorityServer.js` — downstream HTTP adapter (`POST /issue-admission`, `GET /healthz`, exact-origin CORS). It requires `ISSUE_AUTHORITY_SOURCE_URL`/`ISSUE_AUTHORITY_URL` and `ISSUE_AUTHORITY_PUBLIC_KEY`; it is not the producer.
+- `relayer/signedIssueAuthority.js` — client: `GET` upstream with query parameters, then `verifySignedIssueAuthorityEnvelope`.
+- `relayer/preprodIssueAuthorityEnvelope.js` — `signIssueAuthorityEnvelope`, a signing **library** that never computes EEV, ProtectedCapital or viability. Its only callers are `relayer/preprodIssueAuthorityEnvelope.test.js`; there is no server, CLI or workflow around it, and no `ISSUE_AUTHORITY_PRIVATE_KEY` consumer other than that function.
+- On-chain: `PRE-RICH/onchain/V3EconomicStateCarrier.hs` (`bindingAuthorityValid`) verifies one Ed25519 signature by a single deploy-time key (`scripts/deployV3Carrier.mts` takes it from `ISSUE_AUTHORITY_PUBLIC_KEY`) over `actionClass|decisionReference|observationReference|stateHash|actionFingerprint|postStateHash`. Nothing on-chain consumes VC/E/EV evidence. Per `FIRST-REAL-PREPROD-TICKET-READINESS-20261021.md` Track B, this is authority-backed admission, not permissionless closure.
+- `.env.example` leaves both authority variables commented; no concrete endpoint or deployment is recorded anywhere in the tree.
+
+### 4. What the local verifier does and does not check
+
+Checked (and exercised by the tests in §5): envelope schema/version, `actionClass = Issue`, outer Ed25519 signature over the canonical payload, carrier-binding signature, exact equality of the Counter/B2-control/Pool/carrier references, class/price/unit/observation reference, freshness window against local wall clock, ProtectedCapital component sum, the viability certificate's binding to carrier reference/`stateHash`/EEV snapshot/ProtectedCapital source, and — in `Adapter/CARDANO/observation/PreprodAuthoritativeIssueProvider.ts` — equality of Pool value, `preEEV`, `candidateEEV` and `observedAt` with the directly observed physical USDM. The Haskell `issue-admission` decision digests are recomputed and compared with the signed ones.
+
+Not checked (OPEN):
+
+- VC1–VC6, E1–E10 and EV1–EV7 are `{reference, digest}` pairs validated only as a non-empty string and 64 hex characters. Nothing dereferences the reference, recomputes the digest, or checks that the artifact establishes χ, safety inclusion, inductiveness, acceptance compatibility, envelope soundness or non-vacuity.
+- `truthVerified`, `eevFresh`, `obligationsComplete` and `allOmegaSuccessorsCertified` are booleans asserted by the signer. The Haskell decision takes them as inputs; `viabilityCertificate` never enters Haskell and is forwarded to the witness unchanged.
+- All fixtures are synthetic (`proof://VC1`, repeated-digit digests). They test the shape of the contract, not any real certificate.
+
+### 5. Executed evidence (TESTED_BOUNDED), green `d0a36be`, Node v22.22.0, `npm ci` clean
+
+- PASS: `node relayer/signedIssueAuthority.test.js`; `node relayer/preprodIssueAuthorityEnvelope.test.js`; `node --test relayer/preprodIssueObservationReader.test.js` (5/5); `relayer/preprodIssueAdmissionProvider.test.mjs` via `tsx` (exit 0).
+- PASS: vitest, 4 files / 30 tests — `src/__tests__/preRichIssueAdmissionBridge.test.ts` (17), `Adapter/CARDANO/observation/HaskellIssueAdmissionProvider.test.ts` (3), `Adapter/CARDANO/runtime/__tests__/AuthoritativeIssueAdmission.test.ts` (5), `relayer/preprodIssueObservationProvider.test.js` (5).
+- Did not load under this harness (not failures of assertions, and not referenced by any workflow or `package.json` script): `relayer/authoritativeIssueRefinementEnvelope.test.js` and `relayer/issueAdmissionProvider.test.js` (`require('vitest')` from CommonJS), `relayer/preprodIssueObservation.test.js` (parse error under vitest 1.6.1). Classified NOT_RUN.
+- NOT_RUN: the Haskell `issue-admission` executable and Plutus conformance (no `ghc`/`cabal` in this container); any live Preprod, Blockfrost or authority-endpoint call.
+- None of this is evidence that a producer exists or that any certificate is valid.
+
+### 6. Kc and Ω status
+
+- `docs/audits/V3-VIABILITY-AUDIT-2026-10-05.md` (green, B3): QNE ABSENT; concrete Kc NOT CERTIFIED; under the literal four-action closure K* is empty; root cause is the missing lifecycle action with Accept/Ω/T/Safe/QNE semantics. `docs/workflow-c/C6-RECONCILIATION.md` (release snapshot 2026-10-18): NOT CERTIFIED.
+- R1 finite checker (`scripts/check-r1-finite-certificate.mjs`, only on `release/public-main-curated-2026-09-24` at `04f2684`; checker SHA-256 `27f933aaac9dfba9068648c4a82bfb745f88e882e2043fe30803d7af8ae6a63c`, test SHA-256 `a15caaac57ca078345a8ba4fe311742a92901c1877acb145735c9b4985db1a1a`): its 8-test regression suite passes standalone (8/8, synthetic model, `node --test`). Its own schema document limits this to test/mechanical evidence relative to a supplied finite model, with S0 authenticity, Ω-versus-reality, action-space completeness, transition refinement and R7 exhaustiveness external. No branch contains both this checker and `relayer/issueAuthorityServer.js`; nothing in the Issue path calls or consumes the checker's output.
+- `docs/workflow-c/C7-OMEGA-WORKSHEET.md` (release branch): all 13 Ω contract elements OPEN. `docs/research/OMEGA-EXECUTION-ADMISSIBILITY-REVIEW-B3-v1.md` (B3, 2026-10-20): evidence producer OPEN — blocking.
+- C6 remains blocked on the undecided profile/action decision recorded in the Agent C registers (paths A/B/C); this entry does not choose one.
+
+### 7. External hand-off list (restates existing requirements; invents no semantics, commits no keys)
+
+1. Identify the producer: owner, repository, deployment, and custodian of the Ed25519 private key; publish the public-key fingerprint and bind it to the deployed V3 carrier address.
+2. Publish the content-addressed artifacts behind each VC1–VC6, E1–E10 and EV1–EV7 digest, per `CONCRETE_KERNEL_CERTIFICATION_SPECIFICATION.md` and the EEV qualification contract.
+3. Provide a verifier independent of the signer that dereferences those artifacts, recomputes the digests, and re-checks χ, safety inclusion, inductiveness, acceptance compatibility, envelope soundness and non-vacuity.
+4. Declare the Ω perimeter and the authority that fixes it against the 13 C7 elements; decide the lifecycle action/profile (C6 paths A/B/C) so a QNE witness can exist.
+5. For the first real Preprod ticket: the A1–A3 steps and closure criteria in `FIRST-REAL-PREPROD-TICKET-READINESS-20261021.md`, with the settlement-builder status recorded by Agent A on 2026-10-24 (source-level narrowing only; ledger gate and quote freshness still open).
+
+### 8. Findings carried from the 2026-10-25 pass (earlier session; commits cited)
+
+- B3 `poc/materios-grandpa` at `722aef1`: `tsc` exit 0; vitest 15 files / 149 tests pass; the two chain-identity regression tests ("B3-A chain identity regression", "B3-A chain label regression" in `poc/materios-grandpa/test/verifier.test.ts`) are load-bearing per mutation testing of the `CHAIN_ID_MISMATCH` and `GENESIS_HASH_MISMATCH` checks. The branch has since advanced to `3669462`; those results were not re-run at the new tip. This is TESTED_BOUNDED and says nothing about a real GRANDPA proof, historical storage proof or runtime execution proof for anchor block 1856408.
+- The recorded B3-B live-storage artifact (run `39933665986`) concerns block 2409483, not the anchor 1856408; it must not be cited for the anchor.
+- PR #35 (head `19aff55`, still draft): the red contribution gate is the designed fail-closed BOOTSTRAP_REVIEW_REQUIRED result. `CONTROL_PLANE_PATTERNS` covers `.github/workflows/`, `audit/algorithmic-governability/`, `CONTRIBUTING.md` and `docs/00-normative/` but not `PRE-RICH/onchain/` or `audit/cardano-integration/`, so such files can reach the reduced path (possible scope gap). The PR also carries a V3 carrier mint-policy change and Reveal diagnostics that are outside a governance PR's scope; that is an owner decision, not made here.
+
+### 9. Not done
+
+No key, endpoint, deployment, transaction, workflow dispatch, economic rule, V3, Reveal or branch-topology change. `AGENTS.md` versus §10.46 remains an owner reconciliation item.
