@@ -27,7 +27,7 @@ def event(index, block, event_id, attributes):
         "event_index": index,
         "block_number": block,
         "block_hash": "0x" + f"{block:064x}",
-        "phase": {"ApplyExtrinsic": index},
+        "phase": "ApplyExtrinsic",
         "module_id": "OrinqReceipts",
         "event_id": event_id,
         "attributes": attributes,
@@ -216,7 +216,7 @@ class AttestationEventProofTests(unittest.TestCase):
 
     def test_rejects_attestation_event_without_extrinsic_phase(self):
         history = valid_history()
-        history[1]["phase"] = {"Initialization": None}
+        history[1]["phase"] = "Initialization"
         with self.assertRaisesRegex(ValueError, "ApplyExtrinsic"):
             MODULE.validate_attestation_event_history(
                 history, RECEIPT_ID, CERT_HASH, SIGNERS, 3, 103
