@@ -5098,3 +5098,38 @@ The first real Issue remains blocked by the separately recorded external authori
 - No Pyth feed is approved, no USD/USDM parity is assumed, no production Oracle/MintPolicy/Issue path is wired, and no on-chain state changed. No changes were made to V3 or Reveal semantics, EEV, Issue Admission, economic rules, or Materios.
 
 **Disposition:** branch-scoped automatic observation workflow is active; synthetic/build conformance is green; native signed-update probe is correctly blocked by the missing Lazer secret and retains an auditable failure artifact. The authority and production-integration gates remain open.
+
+
+## Agent B — independent DoD gate review: Flux Point `fluxpoint-plugins` (2026-10-30)
+
+**Reviewed upstream:** [`Flux-Point-Studios/fluxpoint-plugins`](https://github.com/Flux-Point-Studios/fluxpoint-plugins), `main` at `175c0a79f9a998b5fe1e212b511dd490ec06f4a8`, manifest version `fluxpoint 1.49.0` (Apache-2.0). This is newer than the older 1.42.0 directory snapshot referenced by the shared post. Repository's current Immortal branch HEAD during this review: `e3660316643c755a96acbf612f955bffcb786847`.
+
+### Relevant capabilities verified in source
+
+- One plugin supports Claude Code and Codex. Loop mode uses SessionStart, PostToolUse, PreCompact and Stop hooks; it runs a repo-owned `scripts/harness.sh --changed` after edits and `--full` at eligible stops. Bash gate execution is attested from observed runtime hook results for declared exact commands, not merely from an agent's prose.
+- Proof-strength ratchets cover proof escape hatches, theorem/specification statements and assumption sets; the Aiken/eUTxO and TypeScript/Python builder taxonomies require named property tests or explicit reasoned waivers.
+- Cardano-specific checks include `plutus-budget.py` for compiled Aiken script size and configured/measured execution budgets, and `blueprint-guard.py` for builder-produced PlutusData against CIP-57 datum/redeemer schemas in a fresh `plutus.json`.
+- Graph mode enforces typed node contracts and refuses a mutating node that certifies its own work. On Codex, native graph Workflow execution is unavailable; the documented subagent fallback records `degraded-subagents` provenance. The Stop-hook loop gate itself is supported by both runtimes.
+
+### Critical boundaries — do not oversell the gate
+
+1. The runtime hook is not an independent cryptographic authority. The repo's `scripts/harness.sh`, manifests and baselines remain part of the trust base. The gate is dormant if the repo has no harness; `FPL_DISABLE=1` is an explicit kill switch; default `FPL_MAX_BLOCKS=3` yields a checkpoint after three blocked stops. `WORK.md` and local evidence are reviewable but not tamper-proof. CI, protected branch rules and independent review remain necessary.
+2. `plutus-budget.py` reads `compiledCode` length from Aiken `plutus.json`; this is script-payload size, not the complete signed transaction CBOR size. It uses defaults only as fallback and must receive the target network's current `cardano-cli query protocol-parameters` JSON for authoritative limits. Execution units are transaction/context measurements; the tool correctly reports absent measurements as unmeasured rather than passed. It cannot replace the already existing full-transaction Yaci CBOR/ExUnits evidence pipeline.
+3. `blueprint-guard.py` checks data-shape conformance only. Opaque `Data` schemas are explicitly reported as opaque/blind, and unsupported schema constructs are `UNCHECKED`, not conformant. CIP-57 conformance does not prove economic semantics, validator correctness, phase-1 acceptance or a ledger execution.
+4. The attack taxonomy is a coverage/specification floor: it requires a named test or an explicit waiver. It does not itself execute every eUTxO attack against Yaci/Preprod or prove that a named test is a valid adversarial control. Keep actual ledger twins and independent red-team/evidence review.
+5. Optional Blaster verification is a pinned Lean/SMT bridge with explicit solver trust; upstream documentation says it does not reconstruct kernel proofs or provide a Cardano ledger model.
+
+### Fit against IMMORTAL at the reviewed HEAD
+
+The Immortal tree had no Fluxpoint plugin/config/manifests, no root `WORK.md` and no root `scripts/harness.sh`. The repository already has extensive GitHub Actions, formal/conformance suites, a Cardano Integration Lab, P2.8 evidence gates, and Aiken projects nested under `poc/` rather than a root `aiken.toml`. Therefore a blind `/fluxpoint:init` would not automatically discover/cover the full protocol topology; the repo-specific harness must explicitly call the existing checks and point the Aiken budget/blueprint gates at the correct nested project roots.
+
+### Agent B recommendation
+
+**Adopt as an additional local/session DoD control, not as a replacement for GitHub Actions or ledger evidence.** A safe pilot should:
+- pin the plugin to a reviewed version/commit and install its Codex hook integration in the actual coding-agent environment;
+- create a short, fast local `--changed`/Stop contract and a repo-specific `--full` contract that delegates to existing tests, Haskell/Plutus builds, nested Aiken checks and the existing evidence classifiers rather than duplicating their commands;
+- arm the Aiken eUTxO taxonomy and the TypeScript builder taxonomy against existing real tests, marking only genuinely inapplicable cases with explicit reviewed waivers;
+- run `plutus-budget.py`/CIP-57 conformance only on the actual generated Aiken blueprint(s), supply current target-network protocol parameters, and leave full transaction size, measured Yaci ExUnits, Preprod and authoritative Issue proofs to their existing gates;
+- require branch-protected CI and independent review for changes to the harness, manifests, ratchet baselines and waivers.
+
+**Disposition:** positive technical fit; no blind plugin install, no harness scaffold and no source/workflow changes made in this review. Do not claim “agents cannot grade their own work” as a security guarantee until the repo-specific harness and protected CI trust base are actually installed and tested.
