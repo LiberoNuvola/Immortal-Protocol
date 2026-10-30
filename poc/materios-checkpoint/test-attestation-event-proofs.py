@@ -137,7 +137,7 @@ class AttestationEventProofTests(unittest.TestCase):
     def test_rejects_signer_list_mismatch(self):
         history = valid_history()
         history[1]["attributes"]["attester"] = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-        with self.assertRaisesRegex(ValueError, "signer set"):
+        with self.assertRaisesRegex(ValueError, "AccountId32 set differs"):
             MODULE.validate_attestation_event_history(
                 history, RECEIPT_ID, CERT_HASH, SIGNERS, 3, 103
             )
