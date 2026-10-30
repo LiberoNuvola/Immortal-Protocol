@@ -5294,3 +5294,48 @@ The preceding entry's warning about run #132 and its `signers=0` placeholder rem
 
 **Next work:** independently verify the indexed signer identities/signatures against the attestation records and the exact committee/quorum at block 2507143; separately obtain and verify a real GRANDPA justification; keep B3-C live execution proof blocked until the upstream Materios native execution-proof RPC is deployed. No V3, Reveal, economic, or on-chain changes.
 
+## Agent C checkpoint — authenticated committee membership and threshold at B3-B certification block (2026-10-30)
+
+**Source commit:** `582ffb737162649862e9fdee519ab4cdb3e87569`.  
+**Exact-head workflow:** [Materios B3 #41007657185](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41007657185).  
+**Artifact:** [B3-B live storage proof #12955808846](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41007657185/artifacts/12955808846).
+
+### Additional verified state
+
+The B3-B collector now reads the exact block-end `OrinqReceipts.CommitteeMembers` and `OrinqReceipts.AttestationThreshold` values at certification block 2507143. It decodes the SS58 indexer signer addresses (prefix 42, checksum verified) into AccountId32 and checks them against the on-chain committee list. The capture also requires the signer count to meet the exact threshold read from storage.
+
+Exact observed values:
+- Committee size: **68**.
+- On-chain `AttestationThreshold`: **3** (`0x03000000` SCALE u32).
+- Indexer-reported signers: **3**; all three decoded AccountId32 values appear in the committee set.
+- Receipt, committee and threshold keys/values are all included in the same-block proof packet.
+
+### Exact-head workflow result
+
+For source SHA `582ffb737162649862e9fdee519ab4cdb3e87569`:
+- `checkpoint-typescript`: **SUCCESS** — typecheck, execution packet tests, RPC tests, and new SS58/committee evidence tests.
+- `verifier`: **SUCCESS** — formatting; 10 library tests + 3 execution-proof CLI tests + 4 generic storage CLI tests = **17 passed, 0 failed**.
+- `live-storage-proof`: **SUCCESS** — capture plus native Rust verification of ReceiptRecord, CommitteeMembers and AttestationThreshold storage proofs against the same certification-block state root.
+- `finalized-state-capture`: **SUCCESS**.
+- `real-grandpa-witness`: **FAILURE** — public node still does not expose justifications; the two endpoints returned null `chain_getBlock.justifications`, and `grandpa_subscribeJustifications` returned `-32601 Method not found`.
+- `live-execution-proof`: **SKIPPED** — still blocked until upstream Materios deploys the native B3-C RPC.
+
+Overall workflow #41007657185 remains **FAILURE** because of the independent GRANDPA witness job. Do not summarize the run as green.
+
+### Stronger but bounded B3-B classification
+
+The evidence now proves the receipt's storage relation, exact certification block/hash and cert_hash, plus the block-end committee and threshold storage values. It also proves that the indexer-reported signer list has three distinct, checksum-valid addresses which map to members of the authenticated 68-account committee and that 3 meets the authenticated block-end threshold 3.
+
+Classification:
+**INDEXER-REPORTED SIGNER SET + RUST-AUTHENTICATED BLOCK-END COMMITTEE/THRESHOLD + NATIVE RECEIPT STORAGE PROOF VERIFIED.**
+
+It still does **not** authenticate `System.Events` or independently verify the exact `AttestationRecorded` calls; it does not verify individual signer signatures; it does not reconstruct any committee mutations ordered within the certification block; and it does not authenticate GRANDPA finality. The committee and threshold are explicitly block-end state, not a proof of the state at each attestation dispatch.
+
+### Technical correction
+
+The old `verify-storage-proof` CLI hard-coded an 80-byte storage-key width, matching the ReceiptRecord Blake2_128Concat map but rejecting plain 32-byte Substrate StorageValue keys. This run validates the generic CLI correction: storage keys are now any non-empty byte string, while state root, SCALE proof, exact key/value and trie-root checks remain strict. Existing B3-B markers are preserved, and generic Substrate proof markers were added.
+
+### Next closure task
+
+Authenticate and decode the exact `System.Events` storage proof(s) for the receipt's `AttestationRecorded` records, compare the event signer set with the indexer response, and reconstruct event-time committee/threshold ordering. This remains separate from B3-A GRANDPA finality and from B3-C native execution proof. No V3, Reveal, economic, or on-chain changes.
+
