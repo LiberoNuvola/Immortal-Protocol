@@ -6,6 +6,12 @@ concurrency:
 
 on:
   workflow_dispatch:
+    inputs:
+      run_live_execution_proof:
+        description: Acquire a real Materios committee execution proof and verify it with Rust
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - work/immortal-green-closure
@@ -46,6 +52,79 @@ jobs:
       - name: Run verifier tests
         run: cargo test
 
+  checkpoint-typescript:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
+
+      - name: Install Materios checkpoint dependencies
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - name: Typecheck checkpoint and B3-C collector
+        run: npm --prefix poc/materios-checkpoint run typecheck
+
+      - name: Test execution-proof packet bindings
+        run: npm --prefix poc/materios-checkpoint run test:execution-proof
+
+      - name: Test B3 RPC transport and exact-block bindings
+        run: npm --prefix poc/materios-checkpoint run test:rpc-b3
+
+  live-execution-proof:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_execution_proof == true
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
+
+      - name: Install Materios checkpoint dependencies
+        run: npm ci --prefix poc/materios-checkpoint
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "poc/materios-execution-verifier"
+
+      - name: Capture real execution proof and invoke existing Rust verifier
+        run: npm --prefix poc/materios-checkpoint run capture:verify:execution
+        env:
+          MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_CHAIN_ID: materios_preprod_v6
+          MATERIOS_B3_BLOCK_HASH: ${{ vars.MATERIOS_B3_BLOCK_HASH }}
+          MATERIOS_B3_AUTHORITY_SELECTION_INPUTS_HEX: ${{ vars.MATERIOS_B3_AUTHORITY_SELECTION_INPUTS_HEX }}
+          MATERIOS_B3_SIDECHAIN_EPOCH: ${{ vars.MATERIOS_B3_SIDECHAIN_EPOCH }}
+          MATERIOS_B3_CARDANO_EPOCH_NONCE_HEX: ${{ vars.MATERIOS_B3_CARDANO_EPOCH_NONCE_HEX }}
+          MATERIOS_B3_GENESIS_UTXO_HEX: ${{ vars.MATERIOS_B3_GENESIS_UTXO_HEX }}
+          MATERIOS_B3_SELECTION_PATH_KIND: ${{ vars.MATERIOS_B3_SELECTION_PATH_KIND }}
+          MATERIOS_B3_SELECTION_PATH_EVIDENCE_HASH: ${{ vars.MATERIOS_B3_SELECTION_PATH_EVIDENCE_HASH }}
+          MATERIOS_B3_SELECTION_PATH_UNTIL_EPOCH: ${{ vars.MATERIOS_B3_SELECTION_PATH_UNTIL_EPOCH }}
+          MATERIOS_B3_AUTHORITY_COMMITMENT: ${{ vars.MATERIOS_B3_AUTHORITY_COMMITMENT }}
+
+      - name: Upload B3-C execution-proof packet and Rust attestation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: materios-b3c-execution-proof
+          path: poc/materios-checkpoint/out/b3c/
+          if-no-files-found: warn
+
   finalized-state-capture:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
@@ -58,6 +137,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
 
       - name: Install Materios checkpoint dependencies
         run: npm ci --prefix poc/materios-checkpoint
@@ -76,7 +156,6 @@ jobs:
           name: materios-b3a-finalized-state-capture
           path: poc/materios-checkpoint/out/MateriosFinalizedStateCapture.json
           if-no-files-found: error
-
 
   real-grandpa-witness:
     if: github.event_name != 'pull_request'
@@ -102,7 +181,6 @@ jobs:
           MATERIOS_RPC_PRIMARY: https://materios.fluxpointstudios.com/rpc
           MATERIOS_RPC_LEGACY: https://materios.fluxpointstudios.com/preprod-rpc
         run: |
-          node <<'NODE'
           const urls = [process.env.MATERIOS_RPC_PRIMARY, process.env.MATERIOS_RPC_LEGACY];
           async function rpc(url, method, params=[]) {
             const r = await fetch(url, {
@@ -130,7 +208,7 @@ jobs:
               console.log(JSON.stringify({url,error:String(e)}));
             }
           }
-          NODE
+
       - name: Capture and verify real Materios GRANDPA witness
         working-directory: poc/materios-grandpa
         run: npx tsx src/capture-real-witness.ts
@@ -160,6 +238,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: poc/materios-checkpoint/package-lock.json
 
       - name: Install Materios checkpoint dependencies
         run: npm ci --prefix poc/materios-checkpoint
@@ -175,6 +254,7 @@ jobs:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_FIREHOSE: https://materios.fluxpointstudios.com/api/firehose/stream
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
