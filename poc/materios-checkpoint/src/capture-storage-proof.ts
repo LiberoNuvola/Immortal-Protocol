@@ -289,7 +289,7 @@ async function getCertification(
         }
         if (
           typeof signer.reward_base !== "string" ||
-          !/^\\d+$/.test(signer.reward_base)
+          !/^[0-9]+$/.test(signer.reward_base)
         ) {
           throw new Error(`indexer signers[${index}].reward_base is invalid`);
         }
@@ -413,10 +413,7 @@ async function discoverRecentCertifiedReceipt(
 ): Promise<{
   receiptId: string;
   certification: {
-    block: number;
-    hash: string;
     certHash: string;
-    signers: number;
   };
   storageKey: string;
   storageValue: string;
@@ -648,10 +645,7 @@ async function discoverRecentCertifiedReceipt(
   return {
     receiptId: candidate.receiptId,
     certification: {
-      block: finalizedNumber,
-      hash: finalizedHeadHash,
       certHash: parsed.availabilityCertHash,
-      signers: 0,
     },
     storageKey: candidate.storageKey,
     storageValue,
