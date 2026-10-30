@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "fluxpoint": {
+      "source": { "source": "github", "repo": "Flux-Point-Studios/fluxpoint-plugins" }
+    }
+  },
+  "enabledPlugins": {
+    "fluxpoint@fluxpoint": true
+  }
+}
