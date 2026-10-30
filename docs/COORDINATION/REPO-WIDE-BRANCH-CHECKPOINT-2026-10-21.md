@@ -5416,3 +5416,59 @@ Pyth Pro's current FAQ states that each access token has permissions for asset t
 Until Pyth adjusts or confirms the token grant, stop calling the price endpoint. Once entitlement is confirmed, rerun the existing read-only probe; do not enable the manual submission path. The State-datum compatibility check and native-ledger signature verification remain future gates.
 
 **Disposition:** build/typecheck green; native probe correctly fail-closed at Pyth feed entitlement; no on-chain effects. This is an external data-access blocker, not evidence that ADA/USD was cryptographically verified or accepted by the Cardano ledger.
+
+## Agent C addendum — live B3-B receipt lifecycle event proofs (2026-10-30)
+
+**Exact workflow evidence:** [Materios B3 execution-proof verifier #41009622074](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41009622074), source SHA `bd1740356f42e70d4484ea3d61d97ece261f720d`.  
+**Current branch HEAD at this checkpoint update:** `f4ef39536033ec983c8b571166228dcb5249c59b`.  
+**Scope:** live receipt/storage/event proof acquisition and evidence classification. No upstream Materios changes, no V3/Reveal/economic changes, and no on-chain transaction was submitted by this workflow.
+
+### Exact live B3-B evidence
+
+The workflow completed with these job outcomes:
+
+- `live-storage-proof`: **SUCCESS**.
+- `verifier`: **SUCCESS** — Rust formatting and test suite passed.
+- `checkpoint-typescript`: **SUCCESS** — TypeScript typecheck, execution-proof packet tests, RPC B3 tests, and attestation-event decoding/membership tests passed.
+- `finalized-state-capture`: **SUCCESS** — extraction artifact only; it is not independent GRANDPA verification.
+- `real-grandpa-witness`: **FAILURE** — public Materios RPC did not return a usable GRANDPA justification; see the open B3-A boundary below.
+- `live-execution-proof`: **SKIPPED** — the opt-in native execution-proof RPC remains unavailable upstream.
+
+The overall workflow conclusion is therefore **FAILURE**, due to the separate `real-grandpa-witness` job. Do not relabel the overall run green; the successful B3-B storage/event subjob is independently useful and exact-head evidence.
+
+### Receipt and event lifecycle
+
+- Receipt ID: `0xbd395bad8cc65bde234537a5e306de71ec3e693407ce402653ebdb8004584e28`.
+- Certification block: `2507448`, hash `0xed7ffb3524c1713225ed1a6024ecdb1e60ce6f762a8e394830dd3aec5fff4511`.
+- Receipt submission event: block `2507447`, event index 27.
+- Three `AttestationRecorded` events: block `2507448`, event indices 3, 5 and 7; counts 1, 2, 3; each reports threshold 3.
+- `AvailabilityCertified`: block `2507448`, event index 22; its `cert_hash` matches the indexer and on-chain ReceiptRecord.
+- Committee snapshot at certification block: 68 members. On-chain `AttestationThreshold` value: 3.
+- The three event-derived AccountId32 values, when decoded from SS58 prefix 0, exactly match the three indexer signer identities decoded from SS58 prefix 42. Comparison is on the underlying 32-byte AccountId, with SS58 checksum validation; text order is not treated as semantic.
+- No `CommitteeUpdated`, `CommitteeMemberJoined`, or `CommitteeMemberLeft` event was found after `ReceiptSubmitted` through certification.
+
+### Full interval proof verification — material improvement
+
+The collector captured the complete `System.Events` storage value for **every block** from submission through certification, not only blocks with relevant events. The manifest `attestation-events/proof-blocks.json` contains exactly:
+
+| Block | Hash | Read proof |
+|---:|---|---|
+| 2507447 | `0xf9d4126f624cdf56611f4968c9702f28612ee11f5a848a2dd38c7349478e236a` | Rust PASS |
+| 2507448 | `0xed7ffb3524c1713225ed1a6024ecdb1e60ce6f762a8e394830dd3aec5fff4511` | Rust PASS |
+
+Coverage is contiguous, two of two blocks, with no gaps. The workflow invoked the native Rust `verify-storage-proof` CLI for every `System.Events` proof and for the live ReceiptRecord, CommitteeMembers and AttestationThreshold proofs. The post-verification gate then required the manifest count/range to match the receipt lifecycle and required the event-derived AccountId32 signer set to equal the indexer set. Both checks passed.
+
+Artifact: [materios-b3b-live-storage-proof #12957097122](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41009622074/artifacts/12957097122). The report status is `SYSTEM_EVENTS_STORAGE_PROOFS_RUST_VERIFIED_SIGNER_SET_MATCHED`; signer-set mismatch is `null`; committee mutation count is zero.
+
+### Limits that remain open
+
+This is a strong **B3-B live state/storage/event proof result for this receipt and the two-block lifecycle**, not full Beacon/finality certification:
+
+1. The read proofs authenticate the supplied `stateRoot` values. Their binding to canonical finalized headers is still open until an independent GRANDPA justification and authority-transition chain is verified.
+2. The metadata decoder retained the `ApplyExtrinsic` phase variant but did not retain its u32 extrinsic index in the JSON report. The event storage is authenticated, but individual signed extrinsic inclusion/signatures are not independently verified by this artifact.
+3. The indexer reports signer identities; the observed event-derived AccountId32 set matches those identities and all event count/threshold fields match. This does not independently validate the three attester signatures or prove the full cryptographic quorum predicate.
+4. B3-A independent GRANDPA finality remains **OPEN**. The live GRANDPA job failed because public RPC justifications were absent / unsupported.
+5. Full B3-C succinct/ZK proof generation and Cardano-side verification remain **OPEN**; the local Rust native execution-witness verifier is only preparatory infrastructure, and its live RPC path is not deployed upstream.
+
+**Disposition:** B3-B receipt, committee, threshold and full-lifecycle `System.Events` read proofs are **PASS for the recorded receipt**, including native Rust verification and signer-set agreement. GRANDPA finality, individual attester signature verification, source/runtime canonicality, and full B3-C remain open. The subsequent workflow edit at `f4ef3953...` also corrects the diagnostic so unavailable historical state no longer makes the two RPC endpoints appear to have different genesis hashes; that diagnostic correction is not part of run #41009622074 and must be exercised by the next run.
+
