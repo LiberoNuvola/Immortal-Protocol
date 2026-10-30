@@ -5339,3 +5339,50 @@ The old `verify-storage-proof` CLI hard-coded an 80-byte storage-key width, matc
 
 Authenticate and decode the exact `System.Events` storage proof(s) for the receipt's `AttestationRecorded` records, compare the event signer set with the indexer response, and reconstruct event-time committee/threshold ordering. This remains separate from B3-A GRANDPA finality and from B3-C native execution proof. No V3, Reveal, economic, or on-chain changes.
 
+## Agent C addendum — B3-C scope correction and upstream RPC disposition (2026-10-30)
+
+**Source branch:** `work/immortal-green-closure`.  
+**Evidence reviewed:** current IMMORTAL source and workflow, exact-head Materios B3 run #41007657185, upstream `Flux-Point-Studios/materios` source at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30`, and upstream issue #50.  
+**Scope:** status correction and external dependency classification only. No code, V3, Reveal, economics, authority-selector semantics, external repository, or on-chain state changed by this addendum.
+
+### Exact-head evidence supersedes the earlier pending Rust entry
+
+[Materios B3 #41007657185](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41007657185), source SHA `582ffb737162649862e9fdee519ab4cdb3e87569`, completed these jobs:
+
+- `verifier`: **SUCCESS** — `cargo fmt` and `cargo test`; 17 Rust tests passed (10 library, 3 execution-proof CLI, 4 generic storage CLI), 0 failed.
+- `checkpoint-typescript`: **SUCCESS** — typecheck, execution-proof packet tests, B3 RPC tests, attestation-evidence tests.
+- `live-storage-proof`: **SUCCESS** — live Preprod capture and native verification of ReceiptRecord, CommitteeMembers and AttestationThreshold proofs against the same certification-block StateRoot.
+- `finalized-state-capture`: **SUCCESS** — extraction artifact only; no independent GRANDPA witness.
+- `real-grandpa-witness`: **FAILURE** — both public RPC endpoints returned null `chain_getBlock.justifications`; `grandpa_subscribeJustifications` returned `-32601 Method not found`; no cryptographic GRANDPA witness was produced.
+- `live-execution-proof`: **SKIPPED** — manual dispatch remained false; no live execution-proof RPC call was made.
+
+The workflow's overall result remains **FAILURE** because the independent GRANDPA witness job failed. This does not negate the successful Rust/B3-B jobs, and the successful subjobs do not turn the entire workflow green.
+
+### Upstream B3 execution-proof RPC is an explicit closed dependency
+
+The proposed method `materios_b3_calculateCommitteeProof(block_hash, call_data_hex)` is still absent from upstream Materios main. The current upstream `partnerchain/node/src/rpc.rs` at commit `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` registers only `System`, `OrinqReceipts`, and `MotraRpc`; it does not register the B3 proof handler or wire the SDK executor proof provider.
+
+Upstream [issue #50](https://github.com/Flux-Point-Studios/materios/issues/50), which requested this exact node-side RPC, is **CLOSED** with state reason **`not_planned`** (2026-09-26). The source search found no matching implementation commit, branch or pull request. This is stronger than merely saying the endpoint has not yet been observed: the requested upstream work item was closed as not planned, and the current node source still lacks the handler.
+
+No upstream issue was reopened and no change was made to the external Flux Point repository. The IMMORTAL manual live job must remain undispatched until a separately authorized node implementation/deployment (or an explicitly reviewed equivalent endpoint using the same native SDK `ProofProvider::execution_proof` semantics) is available. Setting GitHub repository variables alone cannot satisfy this missing node capability.
+
+### Important B3 classification correction
+
+The Rust CLI and TypeScript collector are useful, tested **preparatory native execution-witness infrastructure**. They are not, by themselves, the B3-C proof described in `docs/IMMORTAL-SYSTEM-MAP.md`.
+
+The system map defines:
+`B3-A + B3-B → succinct/ZK proof → Cardano verification`.
+
+The current native pipeline stops after off-chain verification of the Substrate execution proof against a supplied stateRoot/WASM. It does not produce a succinct/SNARK/ZK proof, define and prove the complete public-input relation combining authenticated finality/state/application value/Beacon context, or provide a Cardano Plutus verifier accepting that proof. No proof system has been selected by this implementation.
+
+Correct status:
+- IMMORTAL native execution-witness collector/CLI: **IMPLEMENTED**.
+- Rust and TypeScript conformance at exact SHA `582ffb...`: **PASS**.
+- Live native execution-witness acquisition: **BLOCKED_UPSTREAM_RPC_NOT_DEPLOYED**.
+- B3-A independent GRANDPA finality: **OPEN**.
+- B3-B state/storage proof: **PASS within the recorded receipt/committee/threshold scope**, with attestation events/signature verification and dispatch-time ordering still open as separately recorded above.
+- Full B3-C succinct/ZK relation and Cardano verification: **OPEN / proof system not selected**.
+- Full B3 publisher-independent Beacon: **OPEN**.
+
+The earlier Agent C entry about the `d77ebbe...` CLI formatting/run being pending is superseded for native Rust conformance by #41007657185. Its caveat that native execution-proof checking alone does not authenticate finality/runtime canonicality remains valid. Do not retroactively change earlier artifacts or claim the live B3-C job passed.
+
