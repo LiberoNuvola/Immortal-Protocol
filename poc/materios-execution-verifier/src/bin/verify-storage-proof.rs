@@ -26,6 +26,15 @@ fn decode_hex_file(path: &str) -> Result<Vec<u8>, String> {
     Ok(out)
 }
 
+fn validate_storage_key(storage_key: &[u8]) -> Result<(), String> {
+    if storage_key.is_empty() {
+        return Err("storage key must not be empty".into());
+    }
+    // Substrate trie keys are not fixed-width: plain StorageValue keys are
+    // typically 32 bytes, while Blake2_128Concat StorageMap keys are longer.
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
@@ -44,10 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if state_root.len() != 32 {
         return Err(format!("state root must be 32 bytes, got {}", state_root.len()).into());
     }
-
-    if storage_key.len() != 80 {
-        return Err(format!("storage key must be 80 bytes, got {}", storage_key.len()).into());
-    }
+    validate_storage_key(&storage_key)?;
 
     verify_storage_proof(StorageProofInput {
         state_root: state_root.as_slice().try_into().expect("32 bytes checked"),
@@ -55,8 +61,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         storage_key: &storage_key,
         expected_value: &storage_value,
     })
-    .map_err(|e| format!("B3-B storage proof verification failed: {e}"))?;
+    .map_err(|e| format!("Substrate storage proof verification failed: {e}"))?;
 
+    println!("SUBSTRATE_STORAGE_PROOF_VALID=true");
+    println!("SUBSTRATE_STORAGE_KEY_BYTES={}", storage_key.len());
+    println!("SUBSTRATE_STORAGE_VALUE_BYTES={}", storage_value.len());
+    println!("SUBSTRATE_STATE_ROOT_BOUND=true");
+
+    // Preserve the original B3-B markers for existing receipt-proof log
+    // consumers. The same generic verifier also accepts plain StorageValue
+    // keys such as OrinqReceipts.CommitteeMembers and AttestationThreshold.
     println!("B3_B_STORAGE_PROOF_VALID=true");
     println!("B3_B_STORAGE_KEY_EXISTS=true");
     println!("B3_B_STORAGE_VALUE_MATCH=true");
@@ -64,4 +78,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("B3_B_RESULT=PASS");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_plain_storage_value_key_width() {
+        assert_eq!(validate_storage_key(&[0x11; 32]), Ok(()));
+    }
+
+    #[test]
+    fn accepts_concat_storage_map_key_width() {
+        assert_eq!(validate_storage_key(&[0x22; 80]), Ok(()));
+    }
+
+    #[test]
+    fn rejects_empty_storage_key() {
+        assert_eq!(
+            validate_storage_key(&[]),
+            Err("storage key must not be empty".into())
+        );
+    }
+
+    #[test]
+    fn accepts_arbitrary_nonzero_storage_key_width() {
+        assert_eq!(validate_storage_key(&[0x33; 47]), Ok(()));
+    }
 }
