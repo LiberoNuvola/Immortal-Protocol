@@ -26,13 +26,13 @@ import {
   type Script,
   type UTxO,
 } from '@lucid-evolution/lucid'
-import { Client, preprod } from '@evolution-sdk/evolution'
 import { PythLazerClient } from '@pythnetwork/pyth-lazer-sdk'
 import {
   PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
   validatePythPreprodPolicyId,
 } from './pythPreprodConfig.mts'
 import {
+  createReadClient,
   getPythScriptHash,
   getPythState,
 } from '@pythnetwork/pyth-lazer-cardano-js'
@@ -128,14 +128,82 @@ async function main(): Promise<void> {
     })
     throw new Error('PYTH_LAZER_TOKEN is required')
   }
-  const readClient = Client.make(preprod).withKoios({
-    baseUrl: 'https://preprod.koios.rest/api/v1',
-  })
-  const pythState = await getPythState(policyId, readClient)
-  const pythWithdrawScriptHash = validHex(getPythScriptHash(pythState), 56, 'Pyth withdraw script hash')
+  // Fetch first so this run independently proves that the configured Pyth Pro
+  // credential can obtain a real signed ADA/USD payload, even if state decoding
+  // later reveals an Evolution/Pyth SDK compatibility problem.
   const signedUpdate = await fetchSignedUpdate(lazerToken)
-
   const stateUnit = policyId + Buffer.from('Pyth State', 'utf8').toString('hex')
+
+  // Use the read-client factory exported by the same Pyth SDK package that
+  // decodes the State NFT. This avoids crossing SDK module instances if npm
+  // installs more than one Evolution SDK copy in the runner.
+  const readClient = createReadClient('preprod')
+  const pythState = await getPythState(policyId, readClient)
+
+  let pythWithdrawScriptHash: string
+  try {
+    pythWithdrawScriptHash = validHex(
+      getPythScriptHash(pythState),
+      56,
+      'Pyth withdraw script hash',
+    )
+  } catch (error) {
+    const datumOption = pythState.datumOption
+    const datumData =
+      datumOption && typeof datumOption === 'object' && 'data' in datumOption
+        ? (datumOption as { data?: unknown }).data
+        : undefined
+    const typeName = (value: unknown): string | null => {
+      if (value === null || value === undefined) return null
+      if (typeof value !== 'object') return typeof value
+      return (
+        (value as { constructor?: { name?: string } }).constructor?.name ??
+        'Object'
+      )
+    }
+    const datumDataTag =
+      datumData &&
+      typeof datumData === 'object' &&
+      '_tag' in datumData
+        ? String((datumData as { _tag?: unknown })._tag)
+        : null
+    const diagnostic = {
+      schema: 'immortal-pyth-native-ledger-probe-v1',
+      network: 'cardano-preprod',
+      probe: 'Pyth Pro/Lazer ADA/USD signed-update consumer, feed ID 16',
+      pythProduct: 'Pyth Pro (formerly Pyth Lazer); not Pyth Core',
+      pythPolicyId: policyId,
+      pythPolicyIdSource: PYTH_PRO_CONTRACT_ADDRESSES_SOURCE,
+      pythPolicyIdPinnedToPublishedPreprodDeployment: true,
+      priceFeedId: FEED_ID_ADA_USD,
+      priceFeedPair: 'ADA/USD',
+      quoteCurrency: 'USD',
+      usdmConversion: 'NOT_APPLIED',
+      status: 'BLOCKED_PYTH_STATE_DATUM_DECODE',
+      blocker: error instanceof Error ? error.message : String(error),
+      signedUpdateFetched: true,
+      signedUpdateBytes: signedUpdate.length,
+      signedUpdateSha256: sha256Hex(signedUpdate),
+      signedUpdateHexStored: false,
+      pythStateResolved: true,
+      pythStateUnit: stateUnit,
+      pythStateDatumOptionType: typeName(datumOption),
+      pythStateDatumDataType: typeName(datumData),
+      pythStateDatumDataTag: datumDataTag,
+      pythStateDatumDataKeys:
+        datumData && typeof datumData === 'object'
+          ? Object.keys(datumData as Record<string, unknown>).slice(0, 12)
+          : [],
+      walletLoaded: false,
+      transactionBuilt: false,
+      transactionSigned: false,
+      transactionSubmitted: false,
+      ledgerGateA: 'NOT_PROVEN',
+      timestampUtc: new Date().toISOString(),
+    }
+    await writeEvidence(diagnostic)
+    throw error
+  }
   const common = {
     schema: 'immortal-pyth-native-ledger-probe-v1',
     network: 'cardano-preprod',
