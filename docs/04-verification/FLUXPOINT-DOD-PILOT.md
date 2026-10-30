@@ -61,9 +61,14 @@ The `--changed <file>` path dispatches to the file's native test runner: Vitest 
 
 ## Verified CI evidence
 
-[Flux Point DoD Pilot run #41010532616](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010532616) completed **success** at source commit `1e53f8967e9f58059a8725f28fd9d70321a1b9c8`. At that SHA, the full harness, Rust formatting check and Materios execution-verifier tests all succeeded.
+Two exact-head CI runs now exercise the pilot:
 
-That run followed fixture-only corrections in:
+- [Flux Point DoD Pilot #41010532616](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010532616) completed **SUCCESS** at source commit `1e53f8967e9f58059a8725f28fd9d70321a1b9c8`. It passed the full harness, Rust formatting check and Materios execution-verifier tests.
+- [Flux Point DoD Pilot #41010944867](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944867) completed **SUCCESS** at source commit `38a13d8acf77479d2934d521b1802c47e757f750`. Its exact step record confirms root and checkpoint dependency installation, full harness, scoped Node-native gate, scoped Vitest gate, Rust formatting, and native Materios execution-verifier tests all completed successfully.
+
+The second run also exercised the dedicated scoped-edit regression test added to the workflow. A green workflow proves that these declared commands ran and passed at the recorded source SHA; it does not mean the Claude/Codex plugin was installed on developer workstations or that the upstream Flux Point feature set is complete.
+
+The first run followed fixture-only corrections in:
 
 - `src/__tests__/immortal-cardano-replay.test.ts`: expected class caps now match the declared authoritative cap, and a Reveal observation preserves issue counters for unaffected classes;
 - `src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts`: the active saleable class has a cap above its issued count.
