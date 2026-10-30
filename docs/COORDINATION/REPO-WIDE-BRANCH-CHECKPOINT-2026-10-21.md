@@ -4999,3 +4999,35 @@ The later Orynq evidence bridge run #29 on B3 HEAD `3669462` is a different work
 4. Keep synthetic fixtures explicitly synthetic. Do not mark B3-C live PASS until an actual captured execution proof has been independently verified and bound to the exact checkpoint/runtime. B3-A remains OPEN because the observed real GRANDPA candidate failed cryptographic verification and no transition witness was found; B3-B's historical success does not close B3 overall.
 
 **Scope:** audit/checkpoint correction only. No code, selector semantics, economics, V3, Reveal, branch topology, workflow dispatch, secrets, or on-chain state changed.
+
+
+## Agent B — exact Aiken V3 Reveal ledger evidence and legacy V2 emulator classification (2026-10-30)
+
+**Current branch HEAD when recorded:** `e90b4cb48473b71fb7e7484f4f3440f65bab3130`.  
+**Evidence source:** [IMMORTAL Cardano Integration Lab #40944935457](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40944935457), exact workflow SHA `f5b7c3c8ab49e1da23669a0665c81d5fb96320e3`. The following source blobs were compared between that run SHA and current HEAD and are unchanged: `src/__tests__/immortal-cardano-reveal-emulator-b1.mjs`, `.github/workflows/pre-rich-emulator-reveal.yml`, `audit/cardano-integration/reveal-ledger-trace.ts`, `audit/cardano-integration/aiken-reveal-ledger-probe.ts`, and `audit/cardano-integration/aiken-reference-script-publication-probe.ts`.
+
+### Active Reveal path — TESTED_BOUNDED on local Yaci
+
+- The active economic Reveal trace uses the isolated Aiken Plutus V3 Prize validator plus the real parameterized Haskell Plutus V2 B1PrizePool validator. This is the path explicitly described in the Integration Lab's JEV record; it is not the legacy Haskell V2 Prize Reveal emulator.
+- The signed transaction reported `revealSerializedBytes = 1245`, with active Yaci/Cardano `maxTxSize = 16384` and `belowMaxTxSize = true`. This is the full serialized signed Reveal transaction, not merely a script payload or reference-script publication transaction.
+- The trace recorded Yaci-measured ExUnits for both spends and assigned budgets that covered those measurements: spend 0 measured 2,262,871 memory / 490,505,264 steps, assigned 2,285,500 / 495,410,317; spend 1 measured 1,396,961 / 590,652,705, assigned 1,410,931 / 596,559,233. Aggregate protocol execution limits were not exposed in the trace's parameter object (`protocolExecutionLimits: null`); do not infer aggregate-limit certification from budget coverage alone.
+- The workflow step outputs for active Aiken Reveal spend, positive ledger twin, non-zero winning twin and wrong-secret negative twin were all `success`. The wrong-secret twin reached ledger submission and was rejected by Yaci; the source trace verifies the original Prize and Pool inputs remain unspent after rejection.
+- The native Yaci integration lab, V3 carrier ledger gate, economic Reveal/Expire trace, FundTreasury valuation trace, TicketIssued 500x boundary trace, Claim trace, P2.8 UTxO decoder and P2.8 evidence gate all completed successfully in this run. The Lab uploaded its evidence packet: artifact `12931111477`.
+- Scope limit: this is synthetic-fixture/local-Yaci evidence. It is not Preprod, mainnet, production wallet, production PrizePool qualification, or full Haskell/Aiken semantic parity.
+
+### Legacy Haskell V2 emulator — FAILED diagnostic, not the active Reveal path
+
+The separate [PRE-RICH Emulator Reveal Conformance #40944935520](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/40944935520) rebuilt fresh Plutus artifacts and passed its emulator smoke, but the Haskell V2 Prize Reveal conformance failed during transaction construction with:
+
+`Spend[0] attempted to instantiate a non-polymorphic term`.
+
+Its three negative cases stopped at build and were labelled `INCONCLUSIVE_NOT_SUBMIT_REJECTION`; they are not ledger rejection evidence. The diagnostic size probe deliberately lifted emulator `maxTxSize` to 100,000 and measured a 16,297-byte Prize reference-script publication transaction (and 11,704-byte Pool publication transaction). These are publication transactions, not the subsequent Reveal spend; the raised limit means the diagnostic cannot establish canonical Cardano size acceptance. The separate V2 Prize evaluator probe repeats the non-polymorphic-term failure.
+
+### Agent B disposition
+
+1. Keep the successful Aiken V3 + B1PrizePool V2 path as the active local-ledger Reveal evidence. Preserve its measured signed transaction size and Yaci acceptance/rejection observations.
+2. Keep the Haskell V2 Prize emulator failure visible as a legacy diagnostic failure. Do not relabel it PASS, treat its build-stage negative cases as ledger rejection, or let it overwrite the active Aiken V3 evidence.
+3. Do not change V3, Reveal semantics, economic rules, Cardano's 16,384-byte limit, or the active path to work around the legacy evaluator error. Any future V2 repair requires an isolated diagnosis of the evaluator/runtime/schema mismatch and its own exact-head evidence.
+4. The remaining production blockers are unchanged: live Preprod deployment/evidence, qualified real USDM state and authoritative Issue Admission, certified R1/Kc/Ω viability evidence, and an actual user-wallet signature/confirmed ticket Issue transaction.
+
+**Scope of this entry:** evidence classification and coordination documentation only. No source-code, workflow semantics, key, secret, branch topology or on-chain state changed.
