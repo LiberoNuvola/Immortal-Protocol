@@ -25,28 +25,27 @@ root_tests() {
   # assertion files are accidentally treated as Vitest suites.
   local -a vitest_files=()
   mapfile -t vitest_files < <(
-    find src Adapter PRE-RICH -type f \\( -name '*.test.*' -o -name '*.spec.*' \\) -print |
+    find src Adapter PRE-RICH -type f \( -name '*.test.*' -o -name '*.spec.*' \) -print |
       sort |
-      grep -Ev '^(src/__tests__/(b1-invariants|economic-admission-input-binding|immortal-cardano-adapter-conformance|immortal-cardano-replay|immortal-cardano-universal-boundary|immortal-prerich-reveal-transaction-fixture|preSnekDecoder|prize-validator-row-tier-immutability|reference-cardano-differential)\\.test\\.ts|PRE-RICH/tests/conformance/GenesisTreasuryAdmission\\.test\\.ts|PRE-RICH/tests/unit/PreRichAwraReference\\.node\\.test\\.ts)$'
+      grep -Ev '^(src/__tests__/(b1-invariants|economic-admission-input-binding|immortal-cardano-adapter-conformance|immortal-cardano-replay|immortal-cardano-universal-boundary|immortal-prerich-reveal-transaction-fixture|preSnekDecoder|prize-validator-row-tier-immutability|reference-cardano-differential)\.test\.ts|PRE-RICH/tests/conformance/GenesisTreasuryAdmission\.test\.ts|PRE-RICH/tests/unit/PreRichAwraReference\.node\.test\.ts)$'
   )
-  [ "${#vitest_files[@]}" -gt 0 ] || fail "no Vitest suites discovered in src, Adapter or PRE-RICH"
+  if [ "${#vitest_files[@]}" -eq 0 ]; then fail "no Vitest suites discovered in src, Adapter or PRE-RICH"; fi
   need_bin node_modules/.bin/tsx
-
   run "Vitest suites (src, Adapter, PRE-RICH)" ./node_modules/.bin/vitest run "${vitest_files[@]}"
 
   # Execute node:test files with the runner they import, not with Vitest.
-  run "Node-native source conformance suites" ./node_modules/.bin/tsx --test \\
-    src/__tests__/b1-invariants.test.ts \\
-    src/__tests__/economic-admission-input-binding.test.ts \\
-    src/__tests__/immortal-cardano-adapter-conformance.test.ts \\
-    src/__tests__/immortal-cardano-replay.test.ts \\
-    src/__tests__/immortal-cardano-universal-boundary.test.ts \\
-    src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts \\
-    src/__tests__/preSnekDecoder.test.ts \\
-    src/__tests__/prize-validator-row-tier-immutability.test.ts \\
+  run "Node-native source conformance suites" ./node_modules/.bin/tsx --test \
+    src/__tests__/b1-invariants.test.ts \
+    src/__tests__/economic-admission-input-binding.test.ts \
+    src/__tests__/immortal-cardano-adapter-conformance.test.ts \
+    src/__tests__/immortal-cardano-replay.test.ts \
+    src/__tests__/immortal-cardano-universal-boundary.test.ts \
+    src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts \
+    src/__tests__/preSnekDecoder.test.ts \
+    src/__tests__/prize-validator-row-tier-immutability.test.ts \
     PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts
   # This file contains top-level assertions rather than a node:test suite.
-  run "Genesis Treasury admission assertions" ./node_modules/.bin/tsx \\
+  run "Genesis Treasury admission assertions" ./node_modules/.bin/tsx \
     PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts
 
   echo "Excluded from this Node harness: reference-cardano-differential.test.ts (requires GHC/Cabal); poc/materios-grandpa (separate locked package)."
