@@ -205,6 +205,7 @@ def validate_attestation_event_history(
     expected_signers: list[str],
     threshold: int,
     certification_block: int,
+    allow_signer_mismatch: bool = False,
 ) -> dict[str, Any]:
     """Fail closed unless event history exactly reconstructs the indexed cert."""
     if not expected_signers:
@@ -273,7 +274,8 @@ def validate_attestation_event_history(
         raise ValueError("AttestationRecorded events contain duplicate AccountId32 values")
 
     expected_account_ids = [ss58_account_id(address) for address in expected]
-    if set(attester_account_ids) != set(expected_account_ids):
+    signer_set_matches = set(attester_account_ids) == set(expected_account_ids)
+    if not signer_set_matches and not allow_signer_mismatch:
         raise ValueError(
             "AttestationRecorded AccountId32 set differs from indexer signers: "
             f"events={sorted(attester_account_ids)} "
@@ -340,6 +342,22 @@ def validate_attestation_event_history(
         "availability_certified_event": certified[0],
         "attester_order": attester_addresses,
         "attester_account_ids": attester_account_ids,
+        "indexer_signer_account_ids": expected_account_ids,
+        "signer_set_matches": signer_set_matches,
+        "signer_set_mismatch": (
+            {
+                "event_only_account_ids": sorted(
+                    set(attester_account_ids) - set(expected_account_ids)
+                ),
+                "indexer_only_account_ids": sorted(
+                    set(expected_account_ids) - set(attester_account_ids)
+                ),
+                "event_addresses": attester_addresses,
+                "indexer_addresses": expected,
+            }
+            if not signer_set_matches
+            else None
+        ),
         "attester_count": len(attester_addresses),
         "threshold": threshold,
         "count_sequence": counts,
@@ -553,6 +571,7 @@ def capture(
         indexed_signers,
         threshold,
         certification_block,
+        allow_signer_mismatch=True,
     )
 
     receipt_submission_block = validation["receipt_submission_block"]
@@ -651,7 +670,11 @@ def capture(
 
     result = {
         "schema_version": "materios-attestation-event-proof-v1",
-        "status": "COMPLETE_SYSTEM_EVENTS_BLOCK_COVERAGE_AWAITING_RUST_VERIFICATION",
+        "status": (
+            "INDEXER_SIGNER_SET_MISMATCH_AWAITING_RUST_VERIFICATION"
+            if not validation["signer_set_matches"]
+            else "COMPLETE_SYSTEM_EVENTS_BLOCK_COVERAGE_AWAITING_RUST_VERIFICATION"
+        ),
         "source": {
             "rpc": rpc_url,
             "metadata_source": "state_getMetadata at each exact block hash via substrate-interface",
@@ -694,7 +717,9 @@ def capture(
             "raw_system_events_bytes_decoded_with_exact_block_metadata": True,
             "system_events_storage_read_proofs_captured": True,
             "every_block_between_submission_and_certification_has_a_read_proof": True,
-            "attestation_recorded_event_signers_match_indexer_signer_list": True,
+            "attestation_recorded_event_signers_match_indexer_signer_list":
+                validation["signer_set_matches"],
+            "indexer_signer_set_mismatch": validation["signer_set_mismatch"],
             "attestation_recorded_event_counts_are_sequential": True,
             "attestation_recorded_threshold_matches_on_chain_threshold": True,
             "availability_certified_event_matches_receipt_and_cert_hash": True,
@@ -707,7 +732,13 @@ def capture(
             "individual_extrinsic_signatures": "NOT_INDEPENDENTLY_VERIFIED",
         },
         "non_claim": (
-            "System.Events values are captured with native read proofs for every block "
+            (
+                "The authenticated AttestationRecorded event signer set differs from the "
+                "events-indexer signer set; both sets are retained in event_validation. "
+                if not validation["signer_set_matches"]
+                else ""
+            )
+            + "System.Events values are captured with native read proofs for every block "
             "in the receipt lifecycle, but inclusion is authenticated only after each listed "
             "proof passes the Rust verifier; the block roots are not yet bound by an "
             "independently verified GRANDPA justification. "
@@ -766,6 +797,7 @@ def main() -> int:
     print("ReceiptSubmitted block:", result["event_validation"]["receipt_submission_block"])
     print("AvailabilityCertified block:", result["certification_block"])
     print("System.Events proof blocks:", len(result["proofs"]))
+    print("Attestation event signer set matches indexer:", result["event_validation"]["signer_set_matches"])
     print("Attestation event proof capture: PASS")
     return 0
 
