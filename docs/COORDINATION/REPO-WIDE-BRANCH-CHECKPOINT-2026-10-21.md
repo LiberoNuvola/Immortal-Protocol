@@ -5594,3 +5594,43 @@ To resume B3-A without changing protocol semantics, the next required input is a
 
 **No finality PASS is claimed.** The diagnostic pipeline now retains explicit machine-readable evidence for this upstream interface blocker and the ordinary workflow remains red until B3-A is genuinely verified.
 
+## Agent C addendum — Flux Point DoD pilot exact-head verification (2026-10-30)
+
+**Exact successful workflow:** [Flux Point DoD Pilot #41010944867](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944867).  
+**Source SHA:** 38a13d8acf77479d2934d521b1802c47e757f750.  
+**Scope:** repository-local DoD harness plus the existing Materios Rust verifier. No protocol-semantic, V3, Reveal, economic, Preprod, on-chain, or upstream Flux Point changes.
+
+### Exact step evidence
+
+The single job "Local DoD harness + B3-C Rust tests" completed SUCCESS with every substantive step successful:
+
+1. Root dependencies installed with npm ci --no-audit --no-fund.
+2. Materios checkpoint dependencies installed.
+3. bash scripts/harness.sh --full — SUCCESS.
+4. Scoped Node-native edit gate on src/__tests__/b1-invariants.test.ts — SUCCESS.
+5. Scoped Vitest edit gate on Adapter/CARDANO/observation/DirectUsdmEev.test.ts — SUCCESS.
+6. Rust toolchain and cache setup — SUCCESS.
+7. cargo fmt --manifest-path poc/materios-execution-verifier/Cargo.toml --all -- --check — SUCCESS.
+8. cargo test --manifest-path poc/materios-execution-verifier/Cargo.toml — SUCCESS.
+
+Other exact-head CI triggered by the same commit also completed SUCCESS:
+- [Documentation Link Check #41010944819](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944819)
+- [Algorithmic Governability #41010944828](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944828)
+- [IMMORTAL Portability #41010944911](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944911)
+- [Protocol Declaration #41010944874](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944874)
+- [Cardano Adapter Sale #41010944839](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944839)
+
+### Interpretation and explicit limits
+
+This is a successful exact-head integration test of the repository-owned harness and two native scoped-test dispatch paths. It also re-validates the current Rust execution/storage verifier test suite. The harness now has a working CI proof that its declared local commands and file-to-runner routing execute successfully.
+
+It does not establish:
+- that the Flux Point plugin has been installed on a developer workstation; project Codex/Claude settings only configure activation after the developer installs the marketplace plugin;
+- that plugin hooks ran inside this GitHub Actions runner (the workflow runs the repo harness directly);
+- full integration of Flux Point's Aiken eUTxO attack taxonomy, CIP-57 blueprint guard, Plutus budget ratchet, graph mode, or Blaster;
+- Haskell/Plutus build or generated Haskell–Aiken parity, Yaci ledger evidence, full transaction CBOR, execution-unit measurements, Preprod deployment, or first-ticket Issue.
+
+The earlier upstream plugin review and local trust-boundary cautions remain in force: the harness itself is part of the trust base; retain independent required GitHub Actions and review of the harness/gate declarations.
+
+**Disposition:** repository-side DoD pilot PASS at SHA 38a13d8. It is an additional local evidence gate, not a security guarantee and not a replacement for the dedicated protocol/ledger/Preprod gates.
+
