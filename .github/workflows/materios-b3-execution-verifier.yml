@@ -77,6 +77,9 @@ jobs:
       - name: Test B3 RPC transport and exact-block bindings
         run: npm --prefix poc/materios-checkpoint run test:rpc-b3
 
+      - name: Test on-chain attestation evidence decoding and membership checks
+        run: npm --prefix poc/materios-checkpoint run test:attestation-evidence
+
   live-execution-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_live_execution_proof == true
     runs-on: ubuntu-24.04
