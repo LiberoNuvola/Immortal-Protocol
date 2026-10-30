@@ -38,9 +38,15 @@ import {
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 
-const RPC =
+const PRIMARY_RPC =
   process.env.MATERIOS_RPC ??
   "https://materios.fluxpointstudios.com/rpc";
+
+// Optional dedicated endpoint for retained GRANDPA justifications. It is
+// never trusted by configuration alone: main() binds its genesis and exact
+// finalized checkpoint to PRIMARY_RPC before accepting any witness.
+const RPC =
+  process.env.MATERIOS_GRANDPA_RPC?.trim() || PRIMARY_RPC;
 
 const CHAIN_ID =
   process.env.MATERIOS_CHAIN_ID ??
@@ -127,11 +133,12 @@ function sha256Hex(value: string): string {
   );
 }
 
-async function rpc<T>(
+async function rpcAt<T>(
+  endpoint: string,
   method: string,
   params: unknown[] = [],
 ): Promise<T> {
-  const response = await fetch(RPC, {
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -144,7 +151,8 @@ async function rpc<T>(
 
   if (!response.ok) {
     throw new Error(
-      "RPC HTTP " + response.status + " " + response.statusText + " for " + method,
+      "RPC HTTP " + response.status + " " + response.statusText + " for " + method +
+      " at " + endpoint,
     );
   }
 
@@ -157,15 +165,24 @@ async function rpc<T>(
         ": " +
         body.error.code +
         " " +
-        body.error.message,
+        body.error.message +
+        " at " +
+        endpoint,
     );
   }
 
   if (!Object.prototype.hasOwnProperty.call(body, "result")) {
-    throw new Error("RPC " + method + ": missing result");
+    throw new Error("RPC " + method + ": missing result at " + endpoint);
   }
 
   return body.result as T;
+}
+
+async function rpc<T>(
+  method: string,
+  params: unknown[] = [],
+): Promise<T> {
+  return rpcAt<T>(RPC, method, params);
 }
 
 function extractGrandpaJustification(
@@ -600,7 +617,8 @@ async function waitForJustificationNotification(
   timeoutMs = 120_000,
 ): Promise<{ blockHash: string; justificationHex: string }> {
   const endpoint =
-    process.env.MATERIOS_WS_RPC ??
+    process.env.MATERIOS_GRANDPA_WS_RPC?.trim() ||
+    process.env.MATERIOS_WS_RPC?.trim() ||
     RPC.replace(/^https:/, "wss:").replace(/^http:/, "ws:");
 
   return await new Promise((resolve, reject) => {
@@ -718,29 +736,79 @@ async function getHeader(
 
 async function main(): Promise<void> {
   console.log("Materios real GRANDPA witness capture");
-  console.log("RPC:", RPC);
+  console.log("reference RPC:", PRIMARY_RPC);
+  console.log("witness RPC:", RPC);
   console.log("chain:", CHAIN_ID);
 
+  // Resolve the reference checkpoint from the primary chain endpoint. A
+  // separately configured archive/justification provider must agree on the
+  // genesis hash, finalized block hash, block number and stateRoot exactly.
   const finalizedHash = requireHash(
-    await rpc<unknown>("chain_getFinalizedHead"),
-    "chain_getFinalizedHead",
+    await rpcAt<unknown>(PRIMARY_RPC, "chain_getFinalizedHead"),
+    "primary chain_getFinalizedHead",
   );
-
-  const finalizedHeader = await getHeader(finalizedHash);
+  const finalizedHeader = await rpcAt<SubstrateHeader>(
+    PRIMARY_RPC,
+    "chain_getHeader",
+    [finalizedHash],
+  );
   const finalizedHeight = parseBlockNumber(
     finalizedHeader.number,
-    "finalized block number",
+    "primary finalized block number",
   );
+  const genesisHash = requireHash(
+    await rpcAt<unknown>(PRIMARY_RPC, "chain_getBlockHash", [0]),
+    "primary genesis block hash",
+  );
+
+  if (RPC !== PRIMARY_RPC) {
+    const witnessGenesisHash = requireHash(
+      await rpc<unknown>("chain_getBlockHash", [0]),
+      "witness provider genesis block hash",
+    );
+    const witnessFinalizedHash = requireHash(
+      await rpc<unknown>("chain_getFinalizedHead"),
+      "witness provider chain_getFinalizedHead",
+    );
+    const witnessFinalizedHeader = await getHeader(witnessFinalizedHash);
+
+    if (witnessGenesisHash !== genesisHash) {
+      throw new Error(
+        "GRANDPA witness provider genesis mismatch: reference=" +
+        genesisHash + " witness=" + witnessGenesisHash,
+      );
+    }
+    if (witnessFinalizedHash !== finalizedHash) {
+      throw new Error(
+        "GRANDPA witness provider finalized-head mismatch: reference=" +
+        finalizedHash + " witness=" + witnessFinalizedHash,
+      );
+    }
+    if (
+      parseBlockNumber(witnessFinalizedHeader.number, "witness finalized block number") !==
+        finalizedHeight ||
+      requireHash(witnessFinalizedHeader.stateRoot, "witness finalized stateRoot") !==
+        requireHash(finalizedHeader.stateRoot, "primary finalized stateRoot") ||
+      requireHash(witnessFinalizedHeader.parentHash, "witness finalized parentHash") !==
+        requireHash(finalizedHeader.parentHash, "primary finalized parentHash") ||
+      requireHash(witnessFinalizedHeader.extrinsicsRoot, "witness finalized extrinsicsRoot") !==
+        requireHash(finalizedHeader.extrinsicsRoot, "primary finalized extrinsicsRoot")
+    ) {
+      throw new Error(
+        "GRANDPA witness provider finalized header differs from the primary reference",
+      );
+    }
+    console.log(
+      "GRANDPA provider binding: exact genesis + finalized hash + header MATCH",
+    );
+  } else {
+    console.log("GRANDPA provider binding: same endpoint as primary reference");
+  }
 
   console.log(
     "finalized:",
     finalizedHeight.toString(),
     finalizedHash,
-  );
-
-  const genesisHash = requireHash(
-    await rpc<unknown>("chain_getBlockHash", [0]),
-    "genesis block hash",
   );
 
   const finalizedHeightNumber = Number(finalizedHeight);
@@ -901,6 +969,13 @@ async function main(): Promise<void> {
           captured_at: new Date().toISOString(),
           chain_id: CHAIN_ID,
           rpc_endpoint: RPC,
+          reference_rpc_endpoint: PRIMARY_RPC,
+          reference_binding: {
+            status: RPC === PRIMARY_RPC
+              ? "SAME_ENDPOINT"
+              : "MATCHED_BEFORE_WITNESS_RETRIEVAL",
+            cryptographic_finality_verified: false,
+          },
           finalized_head: {
             block_number: finalizedHeight.toString(),
             block_hash: finalizedHash,
@@ -1002,6 +1077,43 @@ async function main(): Promise<void> {
     witness.blockNumber.toString(),
     witness.blockHash,
   );
+
+  // Bind the retrieved justification target to the primary endpoint's
+  // canonical hash at the same height, then compare all header commitments.
+  const witnessBlockNumberNumber = Number(witness.blockNumber);
+  if (!Number.isSafeInteger(witnessBlockNumberNumber)) {
+    throw new Error("GRANDPA witness block number exceeds JavaScript safe integer range");
+  }
+  const primaryWitnessHash = requireHash(
+    await rpcAt<unknown>(PRIMARY_RPC, "chain_getBlockHash", [
+      witnessBlockNumberNumber,
+    ]),
+    "primary chain_getBlockHash at GRANDPA witness height",
+  );
+  if (primaryWitnessHash !== witness.blockHash) {
+    throw new Error(
+      "GRANDPA witness block hash is not canonical at its height on the primary endpoint",
+    );
+  }
+  const primaryWitnessHeader = await rpcAt<SubstrateHeader>(
+    PRIMARY_RPC,
+    "chain_getHeader",
+    [primaryWitnessHash],
+  );
+  if (
+    parseBlockNumber(primaryWitnessHeader.number, "primary GRANDPA witness block number") !==
+      witness.blockNumber ||
+    requireHash(primaryWitnessHeader.parentHash, "primary GRANDPA witness parentHash") !==
+      requireHash(witness.header.parentHash, "witness parentHash") ||
+    requireHash(primaryWitnessHeader.stateRoot, "primary GRANDPA witness stateRoot") !==
+      requireHash(witness.header.stateRoot, "witness stateRoot") ||
+    requireHash(primaryWitnessHeader.extrinsicsRoot, "primary GRANDPA witness extrinsicsRoot") !==
+      requireHash(witness.header.extrinsicsRoot, "witness extrinsicsRoot")
+  ) {
+    throw new Error(
+      "GRANDPA witness target header does not match the primary endpoint at the same block hash",
+    );
+  }
 
   const authoritiesHex = await rpc<string>(
     "state_call",
@@ -1119,6 +1231,14 @@ async function main(): Promise<void> {
     schema_version: "materios-real-grandpa-witness-v1",
     chain_id: CHAIN_ID,
     rpc_endpoint: RPC,
+    reference_rpc_endpoint: PRIMARY_RPC,
+    reference_binding: {
+      same_genesis: true,
+      same_finalized_hash: true,
+      same_finalized_header: true,
+      witness_block_hash_matches_primary_at_height: true,
+      witness_header_matches_primary: true,
+    },
     captured_at: new Date().toISOString(),
     finalized_head: {
       block_number: finalizedHeight.toString(),
