@@ -5634,3 +5634,44 @@ The earlier upstream plugin review and local trust-boundary cautions remain in f
 
 **Disposition:** repository-side DoD pilot PASS at SHA 38a13d8. It is an additional local evidence gate, not a security guarantee and not a replacement for the dedicated protocol/ledger/Preprod gates.
 
+## Agent B — Flux Point DoD pilot implementation (2026-10-30)
+
+The independent source review recorded earlier is now implemented as a bounded repository-side Loop/DoD pilot.
+
+### Repo-side changes
+
+- `.fluxpoint-gates.json` binds the full DoD predicate to `scripts/harness.sh --full`.
+- The harness explicitly scopes Vitest discovery to `src/`, `Adapter/` and `PRE-RICH/`, sends the Node-native test suites to `tsx --test`, and runs the Genesis Treasury top-level assertion fixture directly with `tsx`. It does not sweep the separately locked `poc/materios-grandpa` package into the root Vitest run.
+- The `--changed <file>` path dispatches to the native runner: Node-native `node:test`, direct assertion fixture, or Vitest. Unknown/unmapped paths remain fail-closed.
+- `.github/workflows/fluxpoint-dod-pilot.yml` runs `--full`, independently exercises one Node-native and one Vitest `--changed` path, then runs Rust formatting and `cargo test` for `poc/materios-execution-verifier`.
+- Repository activation files are present at `.codex/config.toml` and `.claude/settings.json`; operational instructions are documented in `docs/04-verification/FLUXPOINT-DOD-PILOT.md`.
+
+### Fixture fixes exposed by the first native test pass
+
+The first native Node run surfaced stale fixture inputs/expectations, not a production V3 regression:
+- `src/__tests__/immortal-cardano-replay.test.ts`: expected class caps were `1` while the fixture's authoritative input declared `10`; the observed post-state also changed issue counters for classes untouched by Reveal.
+- `src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts`: the active class was marked saleable even though `issued=1` equalled `cap=1`. Its fixture cap is now `10`.
+
+Only test fixture/expected values were changed. No V3 projection code, Reveal implementation, IMMORTAL economic rule, Plutus validator, or on-chain semantics were changed.
+
+### Exact-head CI result
+
+[Flux Point DoD Pilot #41010944867](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010944867) completed **SUCCESS** at `38a13d8acf77479d2934d521b1802c47e757f750`. The single job passed:
+1. `scripts/harness.sh --full`;
+2. scoped Node-native edit gate (`src/__tests__/b1-invariants.test.ts`);
+3. scoped Vitest edit gate (`Adapter/CARDANO/observation/DirectUsdmEev.test.ts`);
+4. Rust formatting check;
+5. native Materios execution-verifier Rust tests.
+
+The same exact SHA also passed Documentation Link Check, Algorithmic Governability, IMMORTAL Portability, Protocol Declaration, and Cardano Adapter Sale conformance. Agent C independently recorded the exact run in the preceding checkpoint addendum.
+
+### Runtime activation and remaining scope
+
+The Codex/Claude project settings **enable** Flux Point after a developer installs the marketplace/plugin on that machine. The machine-level install commands were not run by GitHub Actions or this ChatGPT session; no claim is made that local Stop or PostToolUse hooks are already active. The reviewed upstream manifest is `fluxpoint 1.49.0` at `175c0a79f9a998b5fe1e212b511dd490ec06f4a8`; that is a review reference, not a technical version pin on marketplace installation.
+
+This is not yet the full feature set: there is no root `WORK.md` or locked `.fluxpoint-spec.json`, no mapped eUTxO `.fluxpoint-attacks.json` taxonomy, no Plutus budget/CIP-57 blueprint manifest, no Blaster gate and no graph-mode campaign. These require a real obligation-to-test mapping and review, not blanket declarations. The harness deliberately leaves Haskell/Plutus, generated Haskell–Aiken parity, Yaci/ledger execution, complete transaction CBOR and measured ExUnits, Preprod deployment and first Issue to their dedicated workflows/evidence gates. The GHC/Cabal-dependent differential test is not silently counted as passing.
+
+The harness and gate declarations remain part of the trust base and can be changed by contributors. Maintain independent required GitHub Actions and review on harness/gate/baseline changes.
+
+**No Preprod deployment or PRE-RICH Issue is established by this pilot. No wallet signing or transaction submission was performed.**
+
