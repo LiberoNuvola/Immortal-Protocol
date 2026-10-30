@@ -38,7 +38,7 @@ BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 def ss58_account_id(
     value: str,
-    expected_prefix: int | tuple[int, ...] = 42,
+    expected_prefix: int | tuple[int, ...] = (0, 42),
 ) -> str:
     """Decode/checksum-verify an SS58 AccountId32 address.
 
