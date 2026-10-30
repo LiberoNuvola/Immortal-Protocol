@@ -5133,3 +5133,35 @@ The Immortal tree had no Fluxpoint plugin/config/manifests, no root `WORK.md` an
 - require branch-protected CI and independent review for changes to the harness, manifests, ratchet baselines and waivers.
 
 **Disposition:** positive technical fit; no blind plugin install, no harness scaffold and no source/workflow changes made in this review. Do not claim “agents cannot grade their own work” as a security guarantee until the repo-specific harness and protected CI trust base are actually installed and tested.
+
+## Agent C checkpoint — B3-C native execution-proof integration (2026-10-30)
+
+**Branch:** `work/immortal-green-closure` (existing branch; no branch created).  
+**Source HEAD at this entry:** `d77ebbe25b6b1b89e91318e4debdd18b01a13349`.  
+**Scope:** connect the existing TypeScript `materios-execution-proof-v2` packet path to the existing Rust `verify_execution_proof` implementation. No changes to V3, Reveal semantics, IMMORTAL economics, Cardano on-chain state, or the independent GRANDPA verifier.
+
+### Implemented integration
+
+- Added `poc/materios-execution-verifier/src/bin/verify-execution-proof.rs`, a narrow CLI adapter over the existing Rust library function. It pins the method to `SessionValidatorManagementApi_calculate_committee`, passes the exact state root, SCALE proof, WASM, expected Blake2-256 code hash, call data and result into the existing verifier, and emits a machine-readable success marker plus the reproduced result.
+- Added `poc/materios-checkpoint/src/capture-verify-execution-proof.ts`. It selects one exact target block, checks the RPC-reported finalized height and hash-at-height observation, reads block header/runtime/proof data at that same hash, extracts the unique `SessionCommitteeManagement::set` input commitment from the same block's extrinsics, checks the `materios-execution-proof-v2` packet and its exact call-data/input bindings, then invokes the existing Rust verifier and checks the reproduced result against the TypeScript packet.
+- Added package command `capture:verify:execution`.
+- Added opt-in `live-execution-proof` job to `.github/workflows/materios-b3-execution-verifier.yml`, controlled by workflow-dispatch input `run_live_execution_proof` (default false). Ordinary CI separately runs Rust and TypeScript tests. The workflow's existing GRANDPA RPC probe heredoc was restored after the prior run exposed a malformed shell block.
+- Added `docs/04-verification/MATERIOS-B3-C-EXECUTION-PIPELINE.md` with inputs, outputs and trust boundaries.
+
+### Evidence and current CI classification
+
+- The existing TypeScript packet tests, RPC B3 tests and TypeScript typecheck completed **SUCCESS** in Materios B3 workflow run [#131](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005713620), at source SHA `3d1b5d4760cc35553951e4d36ea08336a92acf11`. That run predates the current Rust formatting correction and is not evidence that the new Rust CLI compiled.
+- Run [#132](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005749782), source SHA `547f745f7c0f0c305792ab6e3bc54c3af5bbd319`, found a `rustfmt` mismatch in the new CLI; `cargo test` was consequently skipped. Its older GRANDPA probe also ran the JS body as shell and failed; the workflow heredoc was repaired in that branch revision. This run is not a successful B3-C verifier test.
+- The CLI was formatted and committed in `d77ebbe25b6b1b89e91318e4debdd18b01a13349`. The new Materios B3 workflow run for that exact SHA is [#41005869822](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869822); it was still pending when this checkpoint entry was written. Do not mark Rust conformance green until that exact-head run completes its formatting and test jobs.
+- Other exact-head checks already completed on `d77ebbe...`: [Documentation Link Check #41005869847](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869847), [IMMORTAL Portability #41005869915](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869915), and [Algorithmic Governability #41005869817](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41005869817) completed **SUCCESS**. Protocol Declaration and Cardano Adapter Sale were still running at the time of the update.
+
+### Required context for an actual live B3-C capture
+
+The opt-in job requires the exact authoritative values to be configured as GitHub repository variables: `MATERIOS_B3_AUTHORITY_SELECTION_INPUTS_HEX`, `MATERIOS_B3_SIDECHAIN_EPOCH`, `MATERIOS_B3_CARDANO_EPOCH_NONCE_HEX`, `MATERIOS_B3_GENESIS_UTXO_HEX`, `MATERIOS_B3_SELECTION_PATH_KIND`, `MATERIOS_B3_SELECTION_PATH_EVIDENCE_HASH`, `MATERIOS_B3_AUTHORITY_COMMITMENT`; `MATERIOS_B3_SELECTION_PATH_UNTIL_EPOCH` is required only for a pinned path. `MATERIOS_B3_BLOCK_HASH` may pin the exact committee-transition block and is recommended when the latest finalized head does not contain the set inherent. The script fails closed on missing inputs, an absent/duplicate inherent, a non-matching selection commitment, a block mismatch, or a failed native proof check. No selection inputs are generated or guessed by the script.
+
+### Trust boundary / status
+
+A successful Rust check would establish only that the native execution proof reproduces the expected result against the supplied state root and supplied WASM bytes. The current collector's RPC finalized-head/header and hash-at-height checks are still node observations; they do not independently authenticate the header or GRANDPA finality. The runtime bytes' Blake2-256 is matched to the packet but canonical deployment/source-build correspondence remains OPEN. GRANDPA finality/authority transition, runtime deployment provenance, authority-selection semantics/enactment, and full B3 composition all remain separate OPEN predicates. The live capture has not been run and no real B3-C PASS is claimed in this entry.
+
+**Disposition:** TypeScript-to-Rust execution-proof integration is present in source; exact-head Rust conformance and a live proof artifact are pending. Keep B3-A finality separate. No change to V3, Reveal, economics, other chain adapters, or on-chain state.
+
