@@ -5538,3 +5538,59 @@ B3-B native storage and event-proof capture has now passed on **two distinct liv
 
 The GRANDPA witness job remains the sole failing subjob in both exact runs #41009622074 and #41009886923. Do not report the overall workflow as successful until B3-A is independently verified.
 
+## Agent C addendum — B3-A RPC capability diagnostic and justification-retention blocker (2026-10-30)
+
+**Exact workflow:** [Materios B3 execution-proof verifier #41010549260](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010549260), source SHA `a291e6576cd28b128889a433eaa8c82f53d60d64`.  
+**Branch at append:** `085a2b7761388857a0666c87de36b511c7fbe571`.  
+**Scope:** B3-A capability diagnosis and evidence retention. No upstream repository changed, no new endpoint/hostname guessed, no authority/finality policy changed.
+
+### Exact run outcome
+
+Run #41010549260 completed **FAILURE** overall because the `real-grandpa-witness` job failed to obtain a justification. Its other relevant jobs completed **SUCCESS**:
+
+- `verifier`: SUCCESS (Rust formatting and verifier tests).
+- `checkpoint-typescript`: SUCCESS.
+- `finalized-state-capture`: SUCCESS (state/runtime extraction only, not independent finality).
+- `live-storage-proof`: SUCCESS (the B3-B storage and attestation-event proof pipeline).
+- `real-grandpa-witness`: FAILURE (no justification source exposed by the public RPC).
+- `live-execution-proof`: SKIPPED (separate B3-C upstream native proof RPC remains absent).
+
+The failure now uploads [artifact #12957004506](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41010549260/artifacts/12957004506), containing `MateriosGrandpaRpcCapabilityDiagnostic.json`. It is not an empty or absent witness artifact.
+
+### Machine-readable RPC observations
+
+The diagnostic was inspected from the uploaded ZIP and reports:
+
+- Chain: `materios_preprod_v6`.
+- RPC: `https://materios.fluxpointstudios.com/rpc`.
+- Genesis hash: `0x0e46e33f639a56cc8780fd871d9a15e16d99af248526f907cb560cb40849f7bf`.
+- RPC-reported finalized head: block `2507635`, hash `0x5f8f6f64e8b3b8c84d8a0ede719a8a6166feaba469ecfcf2228c05be82a5e706`, stateRoot `0x837b80abb4689452b83f2424ab2efd41c8a1cb3401920a6c333b39e524053860`.
+- Dense recent block scan: heights `2506867..2507635`, **769 blocks**, zero FRNK justifications returned by `chain_getBlock.justifications`.
+- `grandpa_proveFinality(finalizedHeight)`: JSON-RPC `-32601 Method not found`.
+- `grandpa_subscribeJustifications`: JSON-RPC `-32601 Method not found`.
+- Both public HTTP RPC routes `/rpc` and `/preprod-rpc` return `justifications: null` on the current finalized head and the same finalized-head hash. The previously corrected endpoint-retention diagnostic also established same genesis and same historical block hash between the routes; their difference is historical state pruning, not a separate network.
+
+The file status is `BLOCKED_GRANDPA_RPC_METHODS_NOT_EXPOSED`. It explicitly sets `cryptographic_finality_verified=false`, `authority_set_provenance_verified=false`, `overall_b3a_status=OPEN`. This is an observed capability diagnosis, not a finality proof.
+
+### Upstream source and advertised sync-node distinction
+
+Current public upstream `Flux-Point-Studios/materios` main was observed at repository update `2026-10-21T09:20:25Z`. Relevant source blobs:
+
+- `partnerchain/node/src/rpc.rs`: `30827863c7b8f6fb507b008cee9f572ec48fe06f`. Its `create_full` registers only `System`, `OrinqReceipts`, and `MotraRpc`; it does not merge a GRANDPA RPC module.
+- `partnerchain/node/src/service.rs`: `33298f0fbce45ea7f333728302ee8080eaf12ec8`. GRANDPA is active; `GRANDPA_JUSTIFICATION_PERIOD` is 512 and the service wires `justification_import`, `justification_sync_link`, and `justification_generation_period`. This is evidence that the node service handles GRANDPA justification import/generation, **not** that the public HTTP/WSS API exposes those objects or retains them for arbitrary historical RPC retrieval.
+- `docs/OPERATOR_KIT.md`: `d637bbd281f90819b53fde25018b1f6cf4ddae3d`. It describes an FPS-side justification-pruning ban loop, recommends a snapshot-to-tip bootstrap to skip already-pruned heights, and says FPS are also deploying a justification-retaining public sync node. The document does not name a dedicated sync-node URL, RPC port, readiness status, or JSON-RPC capability contract. File history shows this note was added in June 2026; it is not a verified current endpoint announcement.
+- The operator kit README's published read/write endpoint remains `wss://materios.fluxpointstudios.com/rpc`; it does not document a second sync-node RPC address.
+
+The separate upstream issue [#50](https://github.com/Flux-Point-Studios/materios/issues/50) is **CLOSED / not_planned**, but its title is specifically `materios_b3_calculateCommitteeProof` (the B3-C native execution-proof RPC). Do **not** treat that issue as the GRANDPA-RPC decision or reopen it to solve this different blocker.
+
+### Current disposition and next required external evidence
+
+- B3-B receipt/committee/threshold/System.Events proofs: **PASS for the two distinct receipt lifecycles already recorded above**; later exact-head rerun #41010549260 also re-ran the same current receipt lifecycle and passed.
+- B3-A independent GRANDPA finality: **BLOCKED_RPC_METHODS_NOT_EXPOSED**. No justification artifact has been produced.
+- B3-C live execution-proof RPC: remains separately blocked upstream and opt-in skipped.
+- The announced public sync node is **UNVERIFIED / endpoint not published in current public documentation**. No guessed subdomain was probed.
+
+To resume B3-A without changing protocol semantics, the next required input is a confirmed FPS sync-node endpoint and its supported retrieval contract (P2P-only vs RPC; `chain_getBlock.justifications`, `grandpa_proveFinality`, or another documented justification retrieval path; retention window and chain/genesis). Alternatively, an authorized archive-capable Materios full node can be brought up from the documented snapshot-to-tip path and used to capture future justifications, but its output still must pass the existing independent authority-set/finality verifier. A finalized-head hash, a GRANDPA period constant, or an RPC-reported finalized label is not a substitute.
+
+**No finality PASS is claimed.** The diagnostic pipeline now retains explicit machine-readable evidence for this upstream interface blocker and the ordinary workflow remains red until B3-A is genuinely verified.
+
