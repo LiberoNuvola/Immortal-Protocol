@@ -1,6 +1,6 @@
 # Materios B3-C native execution-proof pipeline
 
-Status: integration implemented; live evidence remains pending until the Materios node exposes the native RPC and the required authoritative selection context is configured.
+Status: preparatory native execution-witness integration implemented; exact-head Rust/TypeScript conformance passed; live capture blocked because the proposed upstream Materios RPC is not deployed. This is not the succinct/ZK proof or Cardano verifier required for complete B3-C.
 
 ## Existing verifier reuse
 
@@ -81,3 +81,32 @@ This pipeline does **not** promote an RPC response into authenticated canonical 
 In particular, a WASM hash computed from the node's `:code` response and checked against the same captured bytes is a byte-identity check, not a proof of canonical runtime deployment. A matching block hash at height and an RPC finalized-head height are also RPC observations, not independent GRANDPA verification.
 
 The workflow's ordinary CI path still runs Rust formatting/tests and TypeScript conformance tests. The live execution-proof job is separately opt-in so missing upstream RPC capability or unconfigured authoritative context cannot be confused with a successful synthetic test or make unrelated CI silently claim B3-C completion.
+
+
+## Classification against the actual B3 system boundary
+
+This pipeline is a **preparatory native execution-witness stage**, not a completed B3-C proof.
+
+The system map defines B3-C as:
+
+`B3-A + B3-B → succinct/ZK proof → Cardano verification`.
+
+The pipeline in this document stops after an off-chain native Substrate proof is checked by the Rust verifier. It does not:
+- generate a succinct/SNARK/ZK proof from the verified execution witness;
+- define or prove the complete public-input relation combining authenticated GRANDPA finality, StateRoot, storage/application value and Beacon context;
+- produce a proof artifact that the Cardano Plutus verifier accepts;
+- implement or benchmark the Cardano-side proof verifier or its actual transaction/script budget.
+
+Therefore the correct classification is `B3-C_PREPARATORY_NATIVE_EXECUTION_WITNESS`. A successful run of `verify_execution_proof` is useful evidence for the later prover, but it must not be reported as B3-C closure, succinct-proof generation, or Cardano verification. The proof-system research note remains non-normative; no proof system is selected here.
+
+## Upstream capability decision — 2026-10-30
+
+The proposed producer RPC is not deployed in the upstream Materios node.
+
+- Upstream repository: `Flux-Point-Studios/materios`, `main` at `7d5c36e7dcd60824d84353e93df5d4a03c9c6c30` (latest observed commit, 2026-10-21).
+- `partnerchain/node/src/rpc.rs` registers only `System`, `OrinqReceipts`, and `MotraRpc`; there is no `materios_b3_calculateCommitteeProof` handler or executor-proof dependency wiring.
+- Upstream issue [#50](https://github.com/Flux-Point-Studios/materios/issues/50), which proposed this narrow RPC, is **CLOSED / NOT_PLANNED** since 2026-09-26. The current source still contains no implementation, and no matching upstream branch/PR/commit was found in the audit.
+
+Consequently, configuring IMMORTAL repository variables cannot make the live job succeed against the current public node. The collector will reach a JSON-RPC method-not-found response once it calls the proposed method. Do not dispatch the live job as an availability test and do not substitute `state_call` plus `state_getReadProof`; that would not be the native execution witness specified by this contract.
+
+A future live attempt requires a separately authorized upstream implementation/deployment or a different explicitly reviewed node endpoint that exposes the same native SDK `ProofProvider::execution_proof` semantics. The upstream issue is not reopened and no external repository was modified in this pass.
