@@ -263,16 +263,20 @@ def validate_attestation_event_history(
             event["block_number"],
             event["event_index"],
         ) > submitted_key
-        and (
-            event["block_number"],
-            event["event_index"],
-        ) < certified_key
     ]
     if committee_changes:
         raise ValueError(
-            "committee changed between ReceiptSubmitted and AvailabilityCertified; "
-            "block-end committee snapshot cannot be asserted as event-time committee"
+            "committee changed after ReceiptSubmitted and before the end of the "
+            "certification block; block-end committee snapshot cannot be asserted "
+            "as the committee throughout the receipt lifecycle"
         )
+
+    for event in attestations + certified:
+        phase = event.get("phase")
+        if not isinstance(phase, dict) or "ApplyExtrinsic" not in phase:
+            raise ValueError(
+                f"{event['event_id']} event is not attributed to an ApplyExtrinsic phase"
+            )
 
     return {
         "receipt_submitted_event": submitted[0],
@@ -534,7 +538,7 @@ def capture(
         "event_validation": validation,
         "committee_stability": {
             "no_committee_mutation_between_receipt_submission_and_certification": True,
-            "semantics": "No CommitteeUpdated/CommitteeMemberJoined/CommitteeMemberLeft event was found after ReceiptSubmitted and before AvailabilityCertified in the scanned canonical event sequence.",
+            "semantics": "No CommitteeUpdated/CommitteeMemberJoined/CommitteeMemberLeft event was found after ReceiptSubmitted through the end of the certification block.",
         },
         "proofs": proof_blocks,
         "claims": {
