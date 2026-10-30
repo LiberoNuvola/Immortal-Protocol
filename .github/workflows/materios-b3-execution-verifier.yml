@@ -248,6 +248,17 @@ jobs:
       - name: Install Materios checkpoint dependencies
         run: npm ci --prefix poc/materios-checkpoint
 
+      - name: Setup Python for metadata-aware historical event decoding
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Substrate metadata decoder
+        run: python -m pip install "substrate-interface>=1.7.0,<2.0"
+
+      - name: Test historical attestation event proof validation
+        run: python poc/materios-checkpoint/test-attestation-event-proofs.py
+
       - name: Typecheck live proof capture
         working-directory: poc/materios-checkpoint
         run: npm run typecheck
@@ -258,6 +269,12 @@ jobs:
         env:
           MATERIOS_RPC: https://materios.fluxpointstudios.com/preprod-rpc
           MATERIOS_EVENTS: https://materios.fluxpointstudios.com/preprod-events
+
+      - name: Capture historical System.Events proofs for receipt attestations
+        run: python poc/materios-checkpoint/scripts/capture-attestation-event-proofs.py
+        env:
+          MATERIOS_RPC_WS: wss://materios.fluxpointstudios.com/preprod-rpc
+          MATERIOS_ATTESTATION_EVENT_LOOKBACK: "1024"
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -287,6 +304,36 @@ jobs:
             poc/materios-checkpoint/out/b3b-attestation-threshold-value.hex \
             poc/materios-checkpoint/out/b3b-committee-proof-scale.hex
 
+      - name: Native verification of every historical System.Events proof
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+
+          root = pathlib.Path("poc/materios-checkpoint/out/attestation-events")
+          manifest = json.loads((root / "proof-blocks.json").read_text())
+          proofs = manifest.get("proofs", [])
+          if not proofs:
+              raise SystemExit("no historical System.Events proofs were captured")
+
+          for item in proofs:
+              files = item["files"]
+              command = [
+                  "cargo", "run", "--quiet",
+                  "--manifest-path", "poc/materios-execution-verifier/Cargo.toml",
+                  "--bin", "verify-storage-proof", "--",
+                  str(root / files["state_root"]),
+                  str(root / files["storage_key"]),
+                  str(root / files["storage_value"]),
+                  str(root / files["proof_scale"]),
+              ]
+              print("Verifying System.Events at block", item["block_number"], item["block_hash"])
+              subprocess.run(command, check=True)
+
+          print("All historical System.Events storage proofs verified:", len(proofs))
+          PY
+
       - name: Upload B3-B live evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -303,4 +350,5 @@ jobs:
             poc/materios-checkpoint/out/b3b-attestation-threshold-key.hex
             poc/materios-checkpoint/out/b3b-attestation-threshold-value.hex
             poc/materios-checkpoint/out/b3b-committee-proof-scale.hex
+            poc/materios-checkpoint/out/attestation-events/
           if-no-files-found: error
