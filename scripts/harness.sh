@@ -18,7 +18,44 @@ if [ -z "$PY" ]; then
 fi
 
 root_ts() { need_bin node_modules/.bin/tsc; run "Root TypeScript typecheck" ./node_modules/.bin/tsc --noEmit; }
-root_tests() { need_bin node_modules/.bin/vitest; run "Root Vitest suites" ./node_modules/.bin/vitest run src Adapter PRE-RICH; }
+root_tests() {
+  need_bin node_modules/.bin/vitest
+  # Vitest 1.6 discovers only real Vitest suites when each project subtree is
+  # selected explicitly. These files use node:test or top-level Node assertions;
+  # handing them to Vitest produces "No test suite found" despite valid tests.
+  run "Root Vitest suites (src)" ./node_modules/.bin/vitest run --dir src \
+    --exclude '**/b1-invariants.test.ts' \
+    --exclude '**/economic-admission-input-binding.test.ts' \
+    --exclude '**/immortal-cardano-adapter-conformance.test.ts' \
+    --exclude '**/immortal-cardano-replay.test.ts' \
+    --exclude '**/immortal-cardano-universal-boundary.test.ts' \
+    --exclude '**/immortal-prerich-reveal-transaction-fixture.test.ts' \
+    --exclude '**/preSnekDecoder.test.ts' \
+    --exclude '**/prize-validator-row-tier-immutability.test.ts' \
+    --exclude '**/reference-cardano-differential.test.ts'
+  run "Adapter Vitest suites" ./node_modules/.bin/vitest run --dir Adapter
+  run "PRE-RICH Vitest suites" ./node_modules/.bin/vitest run --dir PRE-RICH \
+    --exclude '**/GenesisTreasuryAdmission.test.ts' \
+    --exclude '**/PreRichAwraReference.node.test.ts'
+
+  need_bin node_modules/.bin/tsx
+  # Execute node:test files with the runner they import, not with Vitest.
+  run "Node-native source conformance suites" ./node_modules/.bin/tsx --test \
+    src/__tests__/b1-invariants.test.ts \
+    src/__tests__/economic-admission-input-binding.test.ts \
+    src/__tests__/immortal-cardano-adapter-conformance.test.ts \
+    src/__tests__/immortal-cardano-replay.test.ts \
+    src/__tests__/immortal-cardano-universal-boundary.test.ts \
+    src/__tests__/immortal-prerich-reveal-transaction-fixture.test.ts \
+    src/__tests__/preSnekDecoder.test.ts \
+    src/__tests__/prize-validator-row-tier-immutability.test.ts \
+    PRE-RICH/tests/unit/PreRichAwraReference.node.test.ts
+  # This file contains top-level assertions rather than a node:test suite.
+  run "Genesis Treasury admission assertions" ./node_modules/.bin/tsx \
+    PRE-RICH/tests/conformance/GenesisTreasuryAdmission.test.ts
+
+  echo "Excluded from this Node harness: reference-cardano-differential.test.ts (requires GHC/Cabal); poc/materios-grandpa (separate locked package)."
+}
 root_build() { need npm; run "Frontend production build" npm run build; }
 boundaries() {
   need node
