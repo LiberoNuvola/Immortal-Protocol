@@ -6,6 +6,8 @@ on:
       - work/immortal-green-closure
     paths:
       - ".fluxpoint-gates.json"
+      - ".codex/config.toml"
+      - ".claude/settings.json"
       - "scripts/harness.sh"
       - ".github/workflows/fluxpoint-dod-pilot.yml"
       - "package.json"
@@ -74,6 +76,12 @@ jobs:
 
       - name: Run Flux Point local Definition-of-Done contract
         run: bash scripts/harness.sh --full
+
+      - name: Verify scoped Node-native edit gate
+        run: bash scripts/harness.sh --changed src/__tests__/b1-invariants.test.ts
+
+      - name: Verify scoped Vitest edit gate
+        run: bash scripts/harness.sh --changed Adapter/CARDANO/observation/DirectUsdmEev.test.ts
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
