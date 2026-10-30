@@ -273,27 +273,50 @@ jobs:
           ]
           observations = []
           for endpoint in endpoints:
+              item = {"endpoint": endpoint}
               try:
                   substrate = SubstrateInterface(url=endpoint, ss58_format=42)
-                  genesis = substrate.get_block_hash(0)
-                  block_hash = substrate.get_block_hash(block_number)
-                  item = {"endpoint": endpoint, "genesis_hash": genesis, "block_hash": block_hash}
+                  try:
+                      item["genesis_hash"] = substrate.get_block_hash(0)
+                  except Exception as exc:
+                      item["genesis_error"] = str(exc)
+                  try:
+                      item["block_hash"] = substrate.get_block_hash(block_number)
+                  except Exception as exc:
+                      item["block_hash_error"] = str(exc)
+
+                  block_hash = item.get("block_hash")
                   if block_hash:
-                      header = substrate.rpc_request("chain_getHeader", [block_hash])
-                      storage = substrate.rpc_request("state_getStorage", [receipt_key, block_hash])
-                      proof = substrate.rpc_request("state_getReadProof", [[receipt_key], block_hash])
-                      item["header_available"] = bool(header.get("result"))
-                      item["state_available"] = bool(storage.get("result"))
-                      item["read_proof_available"] = bool(proof.get("result", {}).get("proof"))
-                      item["read_proof_nodes"] = len(proof.get("result", {}).get("proof", []))
-                  observations.append(item)
+                      for label, method, params in [
+                          ("header", "chain_getHeader", [block_hash]),
+                          ("storage", "state_getStorage", [receipt_key, block_hash]),
+                          ("read_proof", "state_getReadProof", [[receipt_key], block_hash]),
+                      ]:
+                          try:
+                              response = substrate.rpc_request(method, params)
+                              if response.get("error"):
+                                  raise RuntimeError(response["error"])
+                              result = response.get("result")
+                              if label == "header":
+                                  item["header_available"] = bool(result)
+                              elif label == "storage":
+                                  item["state_available"] = bool(result)
+                              else:
+                                  nodes = result.get("proof", []) if isinstance(result, dict) else []
+                                  item["read_proof_available"] = bool(nodes)
+                                  item["read_proof_nodes"] = len(nodes)
+                          except Exception as exc:
+                              item[f"{label}_error"] = str(exc)
               except Exception as exc:
-                  observations.append({"endpoint": endpoint, "error": str(exc)})
+                  item["connection_error"] = str(exc)
+              observations.append(item)
+
           print(json.dumps(observations, indent=2))
+          genesis_hashes = [item.get("genesis_hash") for item in observations]
           same_genesis = (
-              len(observations) == 2
-              and observations[0].get("genesis_hash")
-              and observations[0].get("genesis_hash") == observations[1].get("genesis_hash")
+              len(genesis_hashes) == 2
+              and all(genesis_hashes)
+              and genesis_hashes[0] == genesis_hashes[1]
           )
           print("MATERIOS_RPC_ENDPOINTS_SAME_GENESIS=", bool(same_genesis))
           PY
@@ -404,8 +427,28 @@ jobs:
           report["committee_stability"]["system_events_storage_proofs_rust_verified"] = True
           report["committee_stability"]["rust_verified_proof_block_count"] = len(proofs)
           report["committee_stability"]["proof_coverage"]["rust_verified"] = True
+          report["committee_stability"]["semantics"] = (
+              "For every block from ReceiptSubmitted through AvailabilityCertified, "
+              "the complete metadata-decoded System.Events storage value is bound by "
+              "a native read proof verified by Rust against that block's supplied "
+              "stateRoot. No committee mutation event was present after ReceiptSubmitted "
+              "in the authenticated event vectors. The state roots are not independently "
+              "bound to GRANDPA finality by this job."
+          )
           report["event_validation"]["signer_set_gate"] = (
               "PASS" if validation["signer_set_matches"] else "FAIL_INDEXER_EVENT_SIGNER_MISMATCH"
+          )
+          report["event_validation"]["phase_index_note"] = (
+              "Metadata decoder retained the ApplyExtrinsic phase variant but not its "
+              "u32 extrinsic index; individual extrinsic inclusion/signatures are not "
+              "claimed by this artifact."
+          )
+          report["non_claim"] = (
+              "Rust verifies every System.Events storage read proof against the supplied "
+              "block stateRoot, and the event-derived AccountId32 signer set matches the "
+              "events-indexer set. This artifact does not independently verify GRANDPA "
+              "finality, source-runtime canonicality, the individual signed extrinsics, "
+              "or the underlying attester signatures."
           )
           report["status"] = (
               "SYSTEM_EVENTS_STORAGE_PROOFS_RUST_VERIFIED_SIGNER_SET_MATCHED"
