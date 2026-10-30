@@ -91,6 +91,33 @@ class AttestationEventProofTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not complete and contiguous"):
             MODULE.require_complete_proof_block_coverage([99, 100, 101, 102], 100, 102)
 
+    def test_ss58_addresses_decode_to_expected_account_ids(self):
+        expected = [
+            "44f3bafbc393f24fcfabbf57d4ca73a6a6b5df358cdaa9480a517a97f189964b",
+            "8ed446c7114fbeb751866e6752dedf36fba9b3d2832a9fc50a005e00ed0ab124",
+            "925fe8605fe32a53a7b391498fc1b0ab91d3af7319607bd70b850b4f5fa9d255",
+        ]
+        self.assertEqual(
+            [MODULE.ss58_account_id(address) for address in SIGNERS],
+            expected,
+        )
+
+    def test_attester_event_hex_and_ss58_normalize_to_same_account_id(self):
+        account_id = MODULE.ss58_account_id(SIGNERS[0])
+        self.assertEqual(
+            MODULE.account_id_from_event_value("0x" + account_id),
+            account_id,
+        )
+        self.assertEqual(
+            MODULE.account_id_from_event_value(SIGNERS[0]),
+            account_id,
+        )
+
+    def test_ss58_checksum_is_verified(self):
+        mutated = SIGNERS[0][:-1] + ("1" if SIGNERS[0][-1] != "1" else "2")
+        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+            MODULE.ss58_account_id(mutated)
+
     def test_valid_event_history_matches_indexer_and_threshold(self):
         result = MODULE.validate_attestation_event_history(
             valid_history(), RECEIPT_ID, CERT_HASH, SIGNERS, 3, 103
