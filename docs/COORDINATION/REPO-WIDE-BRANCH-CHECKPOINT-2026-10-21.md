@@ -5386,3 +5386,33 @@ Correct status:
 
 The earlier Agent C entry about the `d77ebbe...` CLI formatting/run being pending is superseded for native Rust conformance by #41007657185. Its caveat that native execution-proof checking alone does not authenticate finality/runtime canonicality remains valid. Do not retroactively change earlier artifacts or claim the live B3-C job passed.
 
+## Agent B addendum — Pyth Pro feed entitlement probe (2026-10-30, latest)
+
+**Commits on `work/immortal-green-closure`:**
+- `84caec2c5ea9e4c152bc4082eaf022cfa28a7b30`: moved signed-update fetch ahead of Pyth State decoding and added datum diagnostics. The first revision temporarily referenced a helper not exported by the pinned published SDK; that was caught by CI before native execution.
+- `ebe4c04785098db23b47259bfa0e7cbb27715908`: corrected the import to the pinned published Evolution SDK API. Exact-head TypeScript type-check passed.
+- `e18c111f426ae333b3d85a830100c32500496f7f`: writes machine-readable evidence for failed signed-update retrieval, with the response sanitized and no secret or signed payload stored.
+
+### Exact-head evidence
+
+- [Pyth Signed Update — Preprod Ledger Probe #41008762196](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41008762196): native read-only runner reached Pyth Pro and received HTTP **403**:
+  `Not entitled: feed 16 (no grant accepts this feed (asset type 'crypto', instrument type 'spot'))`.
+- Artifact `12956797007`, `pyth-native-ledger-probe-e18c111f426ae333b3d85a830100c32500496f7f`, records:
+  - `status=BLOCKED_PYTH_FEED_ENTITLEMENT`
+  - `failureClass=FEED_ENTITLEMENT_REQUIRED`
+  - `tokenConfigured=true`, `tokenValueExposed=false`
+  - `signedUpdateFetched=false`, `pythStateResolved=false`
+  - `walletLoaded=false`, `transactionBuilt=false`, `transactionSigned=false`, `transactionSubmitted=false`
+  - `issueAuthorized=false`, `ledgerGateA=NOT_PROVEN`.
+- [Isolated Pyth ADA/USD Probe #41008762385](https://github.com/LiberoNuvola/Immortal-Protocol/actions/runs/41008762385): both jobs succeeded. Official Preprod policy-ID guard, TypeScript strict type-check, synthetic Aiken tests, and isolated Plutus V3 compile passed.
+- This supersedes the older missing-secret-only observation above. GitHub Actions did inject the configured secret (masked in logs); Pyth denied access to ADA/USD feed ID 16. Do not describe the current blocker as a missing repository secret or a bad token.
+- The earlier `State NFT datum is not a Constr` failure has not yet been retested after the fetch-first ordering, because the feed-entitlement rejection occurs before Pyth State resolution. It remains unclassified, not fixed or proven.
+- `PYTH_SUBMIT_PREPROD=false`; no wallet credentials were injected. No transaction, signature, ledger acceptance, feed approval, USD/USDM conversion, production Oracle/MintPolicy/Issue wiring, or on-chain change occurred. V3/Reveal, EEV, Issue Admission, economic rules and Materios were not modified.
+
+### External prerequisite
+
+Pyth Pro's current FAQ states that each access token has permissions for asset types, minimum channel and optionally specific feed IDs; it directs customers to their account manager to adjust them. Request an entitlement that explicitly covers **Crypto / spot / feed ID 16 (ADA/USD)** and the required channel `fixed_rate@200ms` (or confirm an allowed slower channel before changing the probe). The Pyth Terminal public pricing page lists Free as view-only/no API access, Starter as API access for crypto symbols with up to 1-second updates, and Pro as broader asset coverage with higher frequency. These plan descriptions do not prove that this particular token has the required grant.
+
+Until Pyth adjusts or confirms the token grant, stop calling the price endpoint. Once entitlement is confirmed, rerun the existing read-only probe; do not enable the manual submission path. The State-datum compatibility check and native-ledger signature verification remain future gates.
+
+**Disposition:** build/typecheck green; native probe correctly fail-closed at Pyth feed entitlement; no on-chain effects. This is an external data-access blocker, not evidence that ADA/USD was cryptographically verified or accepted by the Cardano ledger.
