@@ -422,159 +422,113 @@ function parseReceiptRecord(
   };
 }
 
+function isHistoricalStateUnavailable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /UnknownBlock|state already discarded|historical state.*(?:pruned|discarded|unavailable)|state.*(?:pruned|discarded)/i.test(message);
+}
+
 async function discoverRecentCertifiedReceipt(
   rpc: MateriosRpc,
 ): Promise<{
   receiptId: string;
-  certification: {
-    certHash: string;
-  };
+  certification: IndexedCertification;
   storageKey: string;
   storageValue: string;
+  committeeMembersValue: string;
+  attestationThresholdValue: string;
 }> {
-  const finalizedHeadHash =
-    await rpc.getFinalizedHead();
-  const finalizedHead =
-    await rpc.getHeader(finalizedHeadHash);
-
+  const finalizedHeadHash = await rpc.getFinalizedHead();
+  const finalizedHead = await rpc.getHeader(finalizedHeadHash);
+  const finalizedNumber = BigInt(finalizedHead.number);
   const prefix = bytesToHex(
-    concat([
-      twox128("OrinqReceipts"),
-      twox128("Receipts"),
-    ]),
+    concat([twox128("OrinqReceipts"), twox128("Receipts")]),
   );
 
   const rawKeys: string[] = [];
   let startKey: string | null = null;
 
   for (;;) {
-    const page = await rpc.call<unknown>(
-      "state_getKeysPaged",
-      [
-        prefix,
-        1000,
-        startKey,
-        finalizedHeadHash,
-      ],
-    );
-
+    const page = await rpc.call<unknown>("state_getKeysPaged", [
+      prefix,
+      1000,
+      startKey,
+      finalizedHeadHash,
+    ]);
     if (
       !Array.isArray(page) ||
       !page.every(
         (key) =>
-          typeof key === "string" &&
-          /^0x[0-9a-fA-F]+$/.test(key),
+          typeof key === "string" && /^0x[0-9a-fA-F]+$/.test(key),
       )
     ) {
-      throw new Error(
-        "state_getKeysPaged returned invalid receipt keys",
-      );
+      throw new Error("state_getKeysPaged returned invalid receipt keys");
     }
-
     rawKeys.push(...(page as string[]));
-
-    if (page.length < 1000) {
-      break;
-    }
+    if (page.length < 1000) break;
 
     const nextStart = page[page.length - 1] as string;
     if (nextStart === startKey) {
-      throw new Error(
-        "state_getKeysPaged pagination made no progress",
-      );
+      throw new Error("state_getKeysPaged pagination made no progress");
     }
-
     startKey = nextStart;
   }
 
   const uniqueKeys = [...new Set(rawKeys)];
-
-  console.log(
-    "finalized_head:",
-    finalizedHeadHash,
-  );
-  console.log(
-    "finalized_block:",
-    BigInt(finalizedHead.number).toString(),
-  );
-  console.log(
-    "receipt_keys:",
-    uniqueKeys.length,
-  );
+  console.log("finalized_head:", finalizedHeadHash);
+  console.log("finalized_block:", finalizedNumber.toString());
+  console.log("receipt_keys:", uniqueKeys.length);
 
   const candidates: ReceiptCandidate[] = [];
-
   for (let start = 0; start < uniqueKeys.length; start += 500) {
     const batch = uniqueKeys.slice(start, start + 500);
-
-    const response = await rpc.call<unknown>(
-      "state_queryStorageAt",
-      [batch, finalizedHeadHash],
-    );
-
+    const response = await rpc.call<unknown>("state_queryStorageAt", [
+      batch,
+      finalizedHeadHash,
+    ]);
     if (
       !Array.isArray(response) ||
       response.length !== 1 ||
       typeof response[0] !== "object" ||
       response[0] === null ||
-      !Array.isArray(
-        (response[0] as Record<string, unknown>).changes,
-      )
+      !Array.isArray((response[0] as Record<string, unknown>).changes)
     ) {
-      throw new Error(
-        "state_queryStorageAt returned invalid receipt storage data",
-      );
+      throw new Error("state_queryStorageAt returned invalid receipt storage data");
     }
 
     const changes =
       (response[0] as Record<string, unknown>).changes as unknown[];
-
     for (const change of changes) {
       if (
         !Array.isArray(change) ||
         change.length !== 2 ||
         typeof change[0] !== "string" ||
         typeof change[1] !== "string"
-      ) {
-        continue;
-      }
+      ) continue;
 
       const storageKey = change[0];
       const storageValue = change[1];
-
       if (
         !/^0x[0-9a-fA-F]{160}$/.test(storageKey) ||
         !/^0x[0-9a-fA-F]+$/.test(storageValue)
-      ) {
-        continue;
-      }
+      ) continue;
 
       try {
-        const parsed =
-          parseReceiptRecord(storageValue);
-
+        const parsed = parseReceiptRecord(storageValue);
         if (
           parsed.availabilityCertHash ===
           "0x0000000000000000000000000000000000000000000000000000000000000000"
-        ) {
-          continue;
-        }
+        ) continue;
 
         candidates.push({
-          receiptId: bytesToHex(
-            hexToBytes(storageKey).slice(-32),
-          ),
+          receiptId: bytesToHex(hexToBytes(storageKey).slice(-32)),
           storageKey,
-          createdAtMillis:
-            parsed.createdAtMillis,
-          availabilityCertHash:
-            parsed.availabilityCertHash,
+          createdAtMillis: parsed.createdAtMillis,
+          availabilityCertHash: parsed.availabilityCertHash,
         });
       } catch {
         // Ignore records that cannot be strictly decoded.
       }
     }
-
     console.log(
       "storage page:",
       Math.min(start + 500, uniqueKeys.length),
@@ -590,80 +544,153 @@ async function discoverRecentCertifiedReceipt(
         ? -1
         : 1,
   );
+  console.log("certified receipt candidates:", candidates.length);
 
-  console.log(
-    "certified receipt candidates:",
-    candidates.length,
+  const configuredLimit = Number(
+    process.env.MATERIOS_B3B_MAX_DISCOVERY_CANDIDATES ?? "25",
   );
-
-  const candidate = candidates[0];
-  if (!candidate) {
-    throw new Error(
-      "no currently certified ReceiptRecord found at finalized head",
-    );
-  }
-
-  const storageValue =
-    await rpc.getStorage(
-      candidate.storageKey,
-      finalizedHeadHash,
-    );
-
-  if (storageValue === null) {
-    throw new Error(
-      "selected certified ReceiptRecord is absent at finalized head",
-    );
-  }
-
-  const finalizedNumber =
-    Number(BigInt(finalizedHead.number));
-
   if (
-    !Number.isSafeInteger(finalizedNumber) ||
-    finalizedNumber < 0
+    !Number.isSafeInteger(configuredLimit) ||
+    configuredLimit < 1 ||
+    configuredLimit > 100
   ) {
     throw new Error(
-      "finalized head number is invalid",
+      "MATERIOS_B3B_MAX_DISCOVERY_CANDIDATES must be an integer from 1 to 100",
     );
   }
 
-  const parsed =
-    parseReceiptRecord(storageValue);
+  const committeeMembersKey = plainStorageKey("CommitteeMembers");
+  const attestationThresholdKey = plainStorageKey("AttestationThreshold");
+  const attempts = candidates.slice(0, configuredLimit);
+  let prunedStateCandidates = 0;
+  let missingIndexerCandidates = 0;
 
-  if (
-    parsed.availabilityCertHash ===
-    "0x0000000000000000000000000000000000000000000000000000000000000000"
-  ) {
-    throw new Error(
-      "selected ReceiptRecord is not certified",
+  for (const [index, candidate] of attempts.entries()) {
+    console.log(
+      `historical-state availability probe ${index + 1}/${attempts.length}:`,
+      candidate.receiptId,
     );
+
+    let certification: IndexedCertification;
+    try {
+      certification = await getCertification(candidate.receiptId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/did not materialize within retry window|not certified/i.test(message)) {
+        missingIndexerCandidates += 1;
+        console.log("skip: certification indexer has no complete record");
+        continue;
+      }
+      throw error;
+    }
+
+    if (
+      certification.certHash.toLowerCase() !==
+      candidate.availabilityCertHash.toLowerCase()
+    ) {
+      throw new Error(
+        `events-indexer cert_hash does not match current ReceiptRecord for ${candidate.receiptId}`,
+      );
+    }
+    if (BigInt(certification.block) > finalizedNumber) {
+      throw new Error(
+        `indexer certification block ${certification.block} is above finalized head ${finalizedNumber}`,
+      );
+    }
+
+    const hashAtHeight = await rpc.call<unknown>(
+      "chain_getBlockHash",
+      [certification.block],
+    );
+    if (
+      typeof hashAtHeight !== "string" ||
+      hashAtHeight.toLowerCase() !== certification.hash.toLowerCase()
+    ) {
+      throw new Error(
+        `indexer certification hash does not match chain_getBlockHash at block ${certification.block}`,
+      );
+    }
+
+    const header = await rpc.getHeader(certification.hash);
+    if (BigInt(header.number) !== BigInt(certification.block)) {
+      throw new Error(
+        `certification header number mismatch at block ${certification.block}`,
+      );
+    }
+
+    try {
+      const [
+        historicalReceiptValue,
+        committeeMembersValue,
+        attestationThresholdValue,
+      ] = await Promise.all([
+        rpc.getStorage(candidate.storageKey, certification.hash),
+        rpc.getStorage(committeeMembersKey, certification.hash),
+        rpc.getStorage(attestationThresholdKey, certification.hash),
+      ]);
+
+      if (
+        historicalReceiptValue === null ||
+        committeeMembersValue === null ||
+        attestationThresholdValue === null
+      ) {
+        console.log("skip: one or more certification-block storage values are absent");
+        prunedStateCandidates += 1;
+        continue;
+      }
+
+      const historicalRecord = parseReceiptRecord(historicalReceiptValue);
+      if (
+        historicalRecord.availabilityCertHash.toLowerCase() !==
+        certification.certHash.toLowerCase()
+      ) {
+        throw new Error(
+          "historical ReceiptRecord cert_hash does not match the events indexer",
+        );
+      }
+
+      // Probe the native proof provider before selecting this receipt. A successful
+      // state_getStorage alone is insufficient if historical proof material was pruned.
+      const historicalProof = await rpc.getReadProof(
+        [
+          candidate.storageKey,
+          committeeMembersKey,
+          attestationThresholdKey,
+        ],
+        certification.hash,
+      );
+      if (historicalProof.at.toLowerCase() !== certification.hash.toLowerCase()) {
+        throw new Error("historical read proof is not bound to the certification block");
+      }
+
+      console.log("selected_receipt:", candidate.receiptId);
+      console.log("certified_block:", certification.block);
+      console.log("certified_hash:", certification.hash);
+      console.log("preflight_proof_nodes:", historicalProof.proof.length);
+
+      return {
+        receiptId: candidate.receiptId,
+        certification,
+        storageKey: candidate.storageKey,
+        storageValue: historicalReceiptValue,
+        committeeMembersValue,
+        attestationThresholdValue,
+      };
+    } catch (error) {
+      if (isHistoricalStateUnavailable(error)) {
+        prunedStateCandidates += 1;
+        console.log(
+          `skip: historical state/proof pruned at certification block ${certification.block}`,
+        );
+        continue;
+      }
+      throw error;
+    }
   }
 
-  console.log(
-    "selected_receipt:",
-    candidate.receiptId,
+  throw new Error(
+    `no certified receipt with retrievable historical state/proof found among ${attempts.length} newest candidates (indexer-missing=${missingIndexerCandidates}, pruned-or-absent=${prunedStateCandidates}); an archive-capable Materios RPC or a newer certified receipt is required`,
   );
-  console.log(
-    "finalized_observation_block:",
-    finalizedNumber,
-  );
-  console.log(
-    "finalized_observation_hash:",
-    finalizedHeadHash,
-  );
-  console.log(
-    "availability_cert_hash:",
-    parsed.availabilityCertHash,
-  );
-
-  return {
-    receiptId: candidate.receiptId,
-    certification: {
-      certHash: parsed.availabilityCertHash,
-    },
-    storageKey: candidate.storageKey,
-    storageValue,
-  };
 }
 
 async function main(): Promise<void> {
@@ -709,7 +736,9 @@ async function main(): Promise<void> {
   let receiptId: string;
   let certification: IndexedCertification;
   let storageKey: string;
-  let storageValue: string;
+  let storageValue: string | null = null;
+  let discoveredCommitteeMembersValue: string | null = null;
+  let discoveredAttestationThresholdValue: string | null = null;
 
   if (
     envReceiptId &&
@@ -746,17 +775,11 @@ async function main(): Promise<void> {
 
     const discovered = await discoverRecentCertifiedReceipt(rpc);
     receiptId = discovered.receiptId;
-    certification = await getCertification(receiptId);
+    certification = discovered.certification;
     storageKey = discovered.storageKey;
-
-    if (
-      certification.certHash.toLowerCase() !==
-      discovered.certification.certHash.toLowerCase()
-    ) {
-      throw new Error(
-        "events-indexer cert_hash does not match the finalized ReceiptRecord",
-      );
-    }
+    storageValue = discovered.storageValue;
+    discoveredCommitteeMembersValue = discovered.committeeMembersValue;
+    discoveredAttestationThresholdValue = discovered.attestationThresholdValue;
   }
 
   const rpcHashAtCertificationBlock = await rpc.call<unknown>(
@@ -792,7 +815,7 @@ async function main(): Promise<void> {
     );
   }
 
-  storageValue =
+  storageValue ??=
     (await rpc.getStorage(storageKey, certification.hash)) ?? "";
   if (!storageValue) {
     throw new Error(
@@ -816,8 +839,12 @@ async function main(): Promise<void> {
   const committeeMembersKey = plainStorageKey("CommitteeMembers");
   const attestationThresholdKey = plainStorageKey("AttestationThreshold");
   const [committeeMembersValue, attestationThresholdValue] = await Promise.all([
-    rpc.getStorage(committeeMembersKey, certification.hash),
-    rpc.getStorage(attestationThresholdKey, certification.hash),
+    discoveredCommitteeMembersValue !== null
+      ? Promise.resolve(discoveredCommitteeMembersValue)
+      : rpc.getStorage(committeeMembersKey, certification.hash),
+    discoveredAttestationThresholdValue !== null
+      ? Promise.resolve(discoveredAttestationThresholdValue)
+      : rpc.getStorage(attestationThresholdKey, certification.hash),
   ]);
   if (committeeMembersValue === null) {
     throw new Error("CommitteeMembers storage is absent at certification block");
