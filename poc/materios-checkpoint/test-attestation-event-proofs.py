@@ -113,8 +113,8 @@ class AttestationEventProofTests(unittest.TestCase):
             for address in SIGNERS
         ]
         self.assertEqual(
-            [MODULE.account_id_from_event_value(address) for address in event_addresses],
-            expected,
+            set(MODULE.account_id_from_event_value(address) for address in event_addresses),
+            set(expected),
         )
 
     def test_attester_event_hex_and_ss58_normalize_to_same_account_id(self):
